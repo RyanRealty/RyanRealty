@@ -1,6 +1,6 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/admin/v2'
 
 /**
  * EmailLogCsvButton — client-side CSV download of the sent-email log page the
@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button'
  * network) to a Blob and triggers a browser download — the same pattern as the
  * query-builder CSV export. Every value comes from a real email_events row, so
  * the CSV carries no fabricated metric (CLAUDE.md §0).
+ *
+ * 11C: the shadcn outline Button became the v2 quiet Button. Same onClick, same
+ * disabled rule, same CSV bytes — the export is not the page's primary action,
+ * so it stays quiet and the one primary stays on the filter's Apply.
  */
 
 export type EmailLogCsvRow = {
@@ -75,7 +79,7 @@ export function EmailLogCsvButton({ rows }: { rows: EmailLogCsvRow[] }) {
   }
 
   return (
-    <Button type="button" size="sm" variant="outline" onClick={download} disabled={rows.length === 0}>
+    <Button type="button" variant="quiet" onClick={download} disabled={rows.length === 0}>
       Export CSV
     </Button>
   )

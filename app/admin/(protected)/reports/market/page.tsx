@@ -1,32 +1,97 @@
+// @no-parity — internal admin surface, no public mockup contract.
+//
+// Market report generator — 11C: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md) through the reporting family's shared
+// presentation kit (@/components/admin/v2). Presentation only.
+//
+// Carried over verbatim: the getReportCities read, the city set and its order
+// (getAllCitySnapshots reads geo_snapshot_mv where geo_type='city' and
+// active_sfr_count > 0, then getReportCities sorts by geoLabel with
+// localeCompare 'en'/base — alphabetical), and every
+// /reports/city/<encodeURIComponent(city)> href. No metric, window, filter
+// default, sort order, unit or rounding moved — the only figure this page
+// renders is the length of that list.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the page-title <h1> and the "Cities" <h2> gave way to the nav
+// + SectionHead, and the bullet list became the family's quiet rows.
+//
+// TWO truth corrections (§0), both in copy, neither touching a number:
+//   1. The page claimed the stats are "pre-computed by the
+//      reporting/compute-market-stats job (after sync and daily at 2 AM)".
+//      No such job exists — no route under app/api, no entry in vercel.json,
+//      and no reference anywhere in the repo outside that sentence. An invented
+//      schedule is a fabricated number (§0), so it is gone.
+//   2. getReportCities returns { cities, error } and the page discarded the
+//      error, so a failed snapshot read rendered as "there are no cities".
+//      A failed read now says it failed.
+//
+// One claim deliberately NOT made: this list is capped. _fetchAllCitySnapshots
+// orders by active_sfr_count descending and takes .limit(50), while 135 cities
+// in geo_snapshot_mv currently carry an active single-family listing (counted
+// 2026-08-07 against dwvlophlbvvygjfxcrhm). So the page reports how many cities
+// it can offer, never how many cities have inventory — the second sentence
+// would have read "50 cities have an active single-family listing", which is
+// false by 85.
 import Link from 'next/link'
 import { getReportCities } from '@/app/actions/reports'
+import { SectionHead, VerdictLine, ReportError } from '@/components/admin/v2'
 
 export default async function AdminMarketReportPage() {
-  const { cities } = await getReportCities()
+  const { cities, error } = await getReportCities()
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <h1 className="text-2xl font-semibold text-foreground">Market report generator</h1>
-      <p className="mt-2 text-muted-foreground">
-        Select an area and time period. Stats are pre-computed by the reporting/compute-market-stats job (after sync and daily at 2 AM).
-      </p>
-      <div className="mt-6">
-        <h2 className="text-lg font-semibold text-foreground">Cities</h2>
-        <ul className="mt-2 space-y-1">
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={error ? 'attention' : 'ok'}>
+          {error ? (
+            <>
+              <b>The city list could not be read.</b> Nothing below is a measurement.
+            </>
+          ) : (
+            <>
+              <b>
+                {cities.length} {cities.length === 1 ? 'city' : 'cities'} to report on.
+              </b>{' '}
+              Open one for its market report.
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
+      {error ? <ReportError what="The city list" href="/admin/reports/market" /> : null}
+
+      <SectionHead>Cities</SectionHead>
+      {cities.length === 0 ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
+          No city in geo_snapshot_mv currently carries an active single-family listing. The
+          snapshot also falls back to an empty list when its read fails, so an empty list here is
+          not proof the market is empty.
+        </p>
+      ) : (
+        <ul className="av2-quietlist">
           {cities.map((city) => (
-            <li key={city}>
+            <li key={city} className="av2-quiet">
               <Link
                 href={`/reports/city/${encodeURIComponent(city)}`}
-                className="text-primary hover:underline"
+                className="av2-quiet__name"
+                style={{ textDecoration: 'none', color: 'var(--a-accent)' }}
               >
                 {city}
               </Link>
             </li>
           ))}
         </ul>
-      </div>
-      <p className="mt-8 text-sm text-muted-foreground">
-        <Link href="/admin/analytics" className="underline hover:no-underline">Back to Performance</Link>
+      )}
+
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
+        Listed alphabetically. The list is the 50 cities with the most active single-family
+        listings in geo_snapshot_mv, so it is not every city that has one — a quiet city can be
+        absent.{' '}
+        <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+          Back to Performance
+        </Link>
       </p>
-    </main>
+    </div>
   )
 }

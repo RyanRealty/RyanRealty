@@ -1,62 +1,128 @@
+// @no-parity — admin-internal reporting surface, no public mockup contract.
 /**
  * /admin/reports/traffic-sources — comprehensive "how is everyone getting
  * to my site" report.
  *
  * The single most important attribution view: combines GA4 (source/medium +
- * channel groups) with our own visits / visitor_sessions tables (first-touch
- * UTMs + raw referrers + landing pages) so you can see where every visitor
- * came from across three independent data sources side by side.
+ * channel groups) with our own visitor_sessions table (first-touch UTMs + raw
+ * referrers + landing pages) so you can see where every visitor came from
+ * across independent data sources side by side.
  *
- * Why three data sources? They each have blind spots:
+ * Why more than one source? They each have blind spots:
  *
  *   - **GA4 source/medium** — aggregated, polished, includes Google modeling
  *     for cookieless visitors. But you can't see individual URLs or
  *     referrers, only the bucketed source/medium pair.
  *   - **visitor_sessions** — our own first-touch attribution per session
  *     with full UTM + raw referrer + landing page. Survives ad blockers.
- *     But only fires when the WordPress + Next.js tracking snippet runs.
- *   - **visits** — every page view with its raw referrer. Fires from the
- *     visit-tracker on every authenticated session AND for the legacy
- *     WordPress site via the snippet. Includes a lot more granular data
- *     (every page hit), but no UTM parsing — just raw referrer URLs.
+ *     But only fires when the tracking snippet runs.
  *
- * The page renders ONE table per source so you can spot gaps:
+ * The page renders ONE table per view so you can spot gaps:
  *
- *   1. Hero metrics — GA4 sessions, visits, unique cookies, GBP website
- *      clicks (the "source said it sent X clicks" number)
- *   2. GA4 default channel group breakdown (Organic Search, Direct, Paid
- *      Social, Email, Referral, etc.)
- *   3. GA4 source / medium top 20
+ *   1. Hero metrics — GA4 sessions, captured sessions, GBP website clicks
+ *   2. GBP attribution callout — GBP website clicks from
+ *      marketing_channel_daily vs how many are visible as google/organic
+ *      sessions in GA4. A big gap means the GBP "Website" link is not tagged.
+ *   3. GA4 source / medium
  *   4. visitor_sessions UTM source / medium / campaign (first-touch, our DB)
- *   5. visits referrer top 30 (RAW referring URLs)
+ *   5. Raw referrers, classified into a coarse platform bucket
  *   6. Top landing pages (where visitors arrive first)
- *   7. Untagged traffic analysis — sessions with referrers but no UTMs.
- *      These are the channels you should fix by adding canonical UTMs.
- *      See docs/UTM_TRACKING_CONVENTION.md for the convention.
- *   8. GBP attribution callout — separate count of GBP website clicks
- *      from marketing_channel_daily vs how many of those are visible as
- *      google/organic sessions in GA4. Big gap = GBP "Website" link is
- *      not UTM-tagged.
+ *   7. Untagged traffic — sessions with referrers but no UTMs. These are the
+ *      channels to fix by adding canonical UTMs. See
+ *      docs/UTM_TRACKING_CONVENTION.md for the convention.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
+ * through the reporting family's shared presentation kit
+ * (@/components/admin/v2). Presentation only.
+ *
+ * Carried over verbatim: normalizeParams, resolveDateRange and the '30d'
+ * default, formatInt and formatPct (dash on a zero denominator, one decimal),
+ * getServiceSupabase, fetchAllRows' 1000-row paging, classifyReferrer's every
+ * branch and its ordering, sinceIso / untilIso / sinceDate, the GA4 read, the
+ * visitor_sessions read (same select, same first_seen_at bounds, same
+ * ascending order), the marketing_channel_daily read filtered to
+ * channel='gbp' AND scope='account', the three GBP metric sums
+ * (website_clicks · call_clicks · business_direction_requests), the
+ * ga4GoogleOrganic regex, the UTM tally keys and its '(no utm)' /
+ * '(no campaign)' fallbacks, the referrer tally and its '(direct / typed)'
+ * fallback, the landing-page tally and its '(unknown)' fallback, the untagged
+ * filter (referrer AND NOT utm_source, minus the internal and direct buckets),
+ * googleReferrerVisits, every slice (20 · 30 · 20 · 12), every row cap
+ * (10 · 10 · 10 · 12), the engagement-rate rounding (x*100).toFixed(0), and
+ * every outbound link. No metric, date window, filter default, sort order,
+ * unit or rounding moved.
+ *
+ * Shape changed, data did not: the page-title <h1> is gone (the nav names the
+ * page), the five section <h2>s became SectionHead, the DashboardSummaryStrip
+ * and the GBP number block became the family's typographic numbers strip, five
+ * shadcn table/card pairs became the family's grid (one source of markup,
+ * scrolling inside its own box), and the platform Badges became plain text — a
+ * platform is a category, and the admin's color vocabulary is reserved for
+ * status (ADMIN_UI §1). The untagged table in particular rendered an accent
+ * Badge on EVERY row, which is the chip wall the acceptance bar bans.
+ *
+ * FOUR truth corrections (§0). None moves a number:
+ *
+ *   1. The hero showed "Sessions captured" AND "First-touch sessions" as two
+ *      figures. Both were `.length` of a read of visitor_sessions over the same
+ *      first_seen_at window — the same rows, so ALWAYS the same number, printed
+ *      twice under two names, the second captioned "w/ attribution" as though a
+ *      filter had been applied. No such filter exists. One figure now, named
+ *      for what it counts. Because the two reads were provably the same row
+ *      set, the second read is gone: `visits` is derived from `sessions` by
+ *      projecting {landing_page → path, referrer}, which is exactly what its
+ *      own `select('path:landing_page, referrer')` alias produced. Same rows,
+ *      same tallies, and one fewer 60-page scan of a table holding ~60k rows
+ *      per 30-day window — plus the two reads can no longer disagree when
+ *      first_seen_at ties order differently between them.
+ *   2. The page said its raw referrers came from the `visits` table, and
+ *      labelled that column "Visits". `visits` is retired; the read has been
+ *      visitor_sessions since W1.5, and the count is sessions. The header, the
+ *      section copy, the column label and the data-sources note now name the
+ *      table the query actually reads. Every figure is byte-for-byte the one
+ *      that was there before.
+ *   3. `uniqueVisitorsApprox` counted DISTINCT LANDING PAGES, was commented
+ *      "rough", was never rendered, and was not a visitor count by any
+ *      definition. Deleted.
+ *   4. The GBP note asserted the profile link went live UTM-tagged on a
+ *      specific date. A date is a number and needs a source (§0). The tagging
+ *      is real and provable — visitor_sessions carries utm_source='gbp' rows —
+ *      so the instruction stays and the unsourced date is gone.
+ *   5. The old "Showing 10 of N" line counted the ALREADY-SLICED array, so a
+ *      table cut from 8,039 distinct landing pages announced "Showing 10 of
+ *      20". The denominator is now the real distinct count. The rows on screen
+ *      are the same rows; only the sentence describing how much is hidden
+ *      stopped understating it.
+ *
+ * Wall-of-identical-states probe (ADMIN_UI §3 acceptance bar rule 6, run
+ * 2026-08-07 against dwvlophlbvvygjfxcrhm, trailing 30 days): 60,029 sessions ·
+ * 6 distinct utm_source · 10,696 sessions carrying a referrer · 8,039 distinct
+ * landing pages · 43 sessions tagged utm_source='gbp'. Every table on this page
+ * has a real distribution behind it.
  */
 
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
 // Cached GA4 wrapper (React request-dedup + 15-min Supabase ga4_query_cache
 // tier) — the raw getGA4Summary fires 9 GA4 runReport calls per request on
 // this force-dynamic page. Same signature and result shape; errors pass
 // through uncached so the ga4Ok/ga4Error banner keeps working.
 import { getGA4SummaryCached as getGA4Summary } from '@/lib/ga4-cache'
 import type { GA4Summary } from '@/app/actions/ga4-report'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
 import { resolveDateRange } from '@/app/admin/(protected)/analytics/_lib/queries'
+import {
+  SectionHead,
+  VerdictLine,
+  ReportGrid,
+  ReportNumbers,
+  ReportError,
+  ReportSkeleton,
+  type ReportColumn,
+  type ReportGridRow,
+  type ReportNumberItem,
+} from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -86,6 +152,16 @@ function getServiceSupabase() {
   if (!url?.trim() || !key?.trim()) throw new Error('Supabase service role not configured')
   return createClient(url, key)
 }
+
+/** Row caps the old tables applied. Carried over unchanged. */
+const CAP_TABLE = 10
+const CAP_UNTAGGED = 12
+
+const MUTED = { color: 'var(--a-text-2)' }
+// overflowWrap is load-bearing, not decoration: a UTM string and a referrer URL
+// are single unbreakable tokens, and at 375px one of them pushed the PAGE into
+// horizontal scroll. A grid may scroll inside its own box; the page may not.
+const MONO = { fontFamily: 'var(--a-font-mono)', overflowWrap: 'anywhere' as const }
 
 // Classify a raw referrer into a coarse "what platform sent them" bucket.
 // Mirrors the GA4 default channel group taxonomy.
@@ -129,7 +205,13 @@ type GbpDaily = { metric: string; value: number; date: string }
 
 // ─── Content ──────────────────────────────────────────────────────────────
 
-async function TrafficSourcesContent({ range }: { range: { startDate: string; endDate: string } }) {
+async function TrafficSourcesContent({
+  range,
+  refreshHref,
+}: {
+  range: { startDate: string; endDate: string }
+  refreshHref: string
+}) {
   const supabase = getServiceSupabase()
   const sinceIso = `${range.startDate}T00:00:00.000Z`
   const untilIso = `${range.endDate}T23:59:59.999Z`
@@ -137,8 +219,8 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
 
   // Every count and tally on this page aggregates raw rows in JS, and
   // PostgREST silently caps a single response at 1000 rows regardless of
-  // .limit() — a 30-day window already has ~2k visits / ~6k sessions, so the
-  // old .limit(50000)/.limit(20000) reads silently plateaued at 1000. Page
+  // .limit() — a 30-day window already holds ~60k sessions, so the old
+  // .limit(50000)/.limit(20000) reads silently plateaued at 1000. Page
   // with .range() until a short read (same pattern as getLeadIntake).
   async function fetchAllRows<T>(
     build: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: { message: string } | null }>,
@@ -155,21 +237,9 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
     return rows
   }
 
-  // Parallel fetch: GA4 + visits + visitor_sessions + GBP totals.
-  const [ga4Result, visits, sessions, gbp] = await Promise.all([
+  // Parallel fetch: GA4 + visitor_sessions + GBP totals.
+  const [ga4Result, sessions, gbp] = await Promise.all([
     getGA4Summary(range.startDate, range.endDate),
-    // Repointed off the retired `visits` table to visitor_sessions (W1.5):
-    // referrer lives on the session, and landing_page is the first-touch path.
-    // Aliased `path:landing_page` keeps the VisitRow {path, referrer} shape.
-    fetchAllRows<VisitRow>((from, to) =>
-      supabase
-        .from('visitor_sessions')
-        .select('path:landing_page, referrer')
-        .gte('first_seen_at', sinceIso)
-        .lte('first_seen_at', untilIso)
-        .order('first_seen_at', { ascending: true })
-        .range(from, to),
-    ),
     fetchAllRows<SessionRow>((from, to) =>
       supabase
         .from('visitor_sessions')
@@ -194,6 +264,10 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
     ),
   ])
 
+  // The referrer view is the SAME visitor_sessions rows, projected exactly as
+  // the old second read's `select('path:landing_page, referrer')` alias did.
+  const visits: VisitRow[] = sessions.map((s) => ({ path: s.landing_page, referrer: s.referrer }))
+
   const ga4Ok = ga4Result.ok
   const ga4: GA4Summary | null = ga4Ok ? ga4Result.data : null
   const ga4Error = ga4Ok ? null : ga4Result.error
@@ -202,7 +276,6 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
   const ga4Sessions = ga4?.sessions ?? 0
   const ga4Users = ga4?.totalUsers ?? 0
   const visitsCount = visits.length
-  const uniqueVisitorsApprox = new Set(visits.map((v) => v.path)).size  // rough
   const gbpWebsiteClicks = gbp
     .filter((r) => r.metric === 'website_clicks')
     .reduce((acc, r) => acc + (Number(r.value) || 0), 0)
@@ -232,7 +305,7 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
     .sort((a, b) => b.count - a.count)
     .slice(0, 20)
 
-  // visits.referrer: raw referrer + classified bucket.
+  // Raw referrer + classified bucket.
   const refTally = new Map<string, { referrer: string; bucket: string; count: number }>()
   for (const v of visits) {
     const raw = v.referrer?.trim() || ''
@@ -269,244 +342,307 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
     .sort((a, b) => b[1] - a[1])
     .slice(0, 12)
 
-  // GBP attribution gap: visits whose referrer matches a google host.
+  // GBP attribution gap: sessions whose referrer matches a google host.
   const googleReferrerVisits = visits.filter((v) => {
     const bucket = classifyReferrer(v.referrer)
     return bucket === 'google'
   }).length
 
+  const heroFigures: ReportNumberItem[] = [
+    {
+      key: 'ga4',
+      label: `GA4 sessions · ${formatInt(ga4Users)} unique users`,
+      value: formatInt(ga4Sessions),
+    },
+    {
+      key: 'captured',
+      label: 'Sessions captured · visitor_sessions, first-party',
+      value: formatInt(visitsCount),
+    },
+    {
+      key: 'gbp',
+      label: `GBP website clicks · ${formatInt(gbpCallClicks)} calls, ${formatInt(gbpDirectionsClicks)} directions`,
+      value: formatInt(gbpWebsiteClicks),
+    },
+  ]
+
+  const gbpFigures: ReportNumberItem[] = [
+    { key: 'g1', label: 'GBP website clicks (source-side)', value: formatInt(gbpWebsiteClicks) },
+    { key: 'g2', label: 'GA4 google/organic sessions', value: formatInt(ga4GoogleOrganic) },
+    { key: 'g3', label: 'Sessions with a google.* referrer', value: formatInt(googleReferrerVisits) },
+  ]
+
+  const utmColumns: ReportColumn[] = [
+    { key: 'source', label: 'Source' },
+    { key: 'medium', label: 'Medium' },
+    { key: 'campaign', label: 'Campaign' },
+    { key: 'sessions', label: 'Sessions', numeric: true },
+  ]
+
+  const referrerColumns: ReportColumn[] = [
+    { key: 'platform', label: 'Platform' },
+    { key: 'referrer', label: 'Referrer' },
+    { key: 'sessions', label: 'Sessions', numeric: true },
+    { key: 'share', label: 'Share', numeric: true },
+  ]
+
+  const overflowNote = (shown: number, all: number) =>
+    all > shown ? (
+      <p
+        style={{
+          fontSize: 'var(--a-text-xs)',
+          color: 'var(--a-text-2)',
+          fontVariantNumeric: 'tabular-nums',
+          marginTop: 10,
+        }}
+      >
+        Showing {shown} of {all}.
+      </p>
+    ) : null
+
+  const utmGrid: ReportGridRow[] = topUtms.slice(0, CAP_TABLE).map((r) => ({
+    key: `${r.source}|${r.medium}|${r.campaign}`,
+    cells: [
+      <span key="s" style={MONO}>{r.source}</span>,
+      <span key="m" style={MONO}>{r.medium}</span>,
+      <span key="c" style={MONO}>{r.campaign}</span>,
+      formatInt(r.count),
+    ],
+  }))
+
+  const referrerGrid: ReportGridRow[] = topReferrers.slice(0, CAP_TABLE).map((r) => ({
+    key: `${r.bucket}|${r.referrer}`,
+    cells: [
+      <span key="b" style={MONO}>{r.bucket}</span>,
+      <span key="r" style={{ ...MUTED, wordBreak: 'break-all' }}>{r.referrer}</span>,
+      formatInt(r.count),
+      <span key="s" style={MUTED}>{formatPct(r.count, visitsCount)}</span>,
+    ],
+  }))
+
+  const landingGrid: ReportGridRow[] = topLandings.slice(0, CAP_TABLE).map(([lp, count]) => ({
+    key: lp,
+    cells: [<span key="l" style={{ ...MONO, wordBreak: 'break-all' }}>{lp}</span>, formatInt(count)],
+  }))
+
+  const untaggedGrid: ReportGridRow[] = untaggedSorted.slice(0, CAP_UNTAGGED).map(([platform, count]) => ({
+    key: platform,
+    cells: [
+      <span key="p" style={MONO}>{platform}</span>,
+      formatInt(count),
+      <span key="u" style={{ ...MONO, ...MUTED, wordBreak: 'break-all' }}>
+        ?utm_source={platform}&amp;utm_medium=referral&amp;utm_campaign=organic
+      </span>,
+    ],
+  }))
+
   return (
-    <div className="space-y-6">
-      {!ga4Ok && (
-        <Alert variant="destructive">
-          <AlertDescription className="text-sm">
-            GA4 Data API call failed: <code className="rounded bg-muted px-1">{ga4Error}</code>. The Supabase-side numbers below are still accurate.
-          </AlertDescription>
-        </Alert>
-      )}
+    <>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={ga4Ok ? 'ok' : 'attention'}>
+          {ga4Ok ? (
+            <>
+              <b>
+                {formatInt(visitsCount)} {visitsCount === 1 ? 'session' : 'sessions'} captured
+                first-party, {formatInt(ga4Sessions)} counted by GA4
+              </b>{' '}
+              over {range.startDate} to {range.endDate}. The two count differently on purpose —
+              compare them, do not add them.
+            </>
+          ) : (
+            <>
+              <b>GA4 could not be read, so every GA4 figure below is a zero.</b> The
+              visitor_sessions and GBP figures are still measurements.
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-      {/* 1. Hero metrics — glanceable KPI band */}
-      <DashboardSummaryStrip
-        stats={[
-          { label: `GA4 sessions (${range.startDate} to ${range.endDate})`, value: formatInt(ga4Sessions), caption: `${formatInt(ga4Users)} unique users` },
-          { label: 'Sessions captured', value: formatInt(visitsCount), caption: 'visitor_sessions (first-party, by landing page)' },
-          { label: 'First-touch sessions', value: formatInt(sessions.length), caption: 'visitor_sessions w/ attribution' },
-          { label: 'GBP website clicks', value: formatInt(gbpWebsiteClicks), caption: `${formatInt(gbpCallClicks)} calls · ${formatInt(gbpDirectionsClicks)} directions` },
-        ]}
-      />
+      {!ga4Ok ? (
+        <>
+          <ReportError what="The GA4 Data API" href={refreshHref} />
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 20px' }}>
+            The call returned: <code style={MONO}>{ga4Error}</code>.
+          </p>
+        </>
+      ) : null}
 
-      {/* GBP attribution callout — the one place where you can spot the
-          gap between what GBP reports as outbound clicks and what GA4 sees
-          as inbound google/organic sessions. */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Google Business Profile attribution gap</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div>
-              <p className="text-xs text-muted-foreground">GBP website clicks (source-side)</p>
-              <p className="text-2xl font-semibold tabular-nums">{formatInt(gbpWebsiteClicks)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">GA4 google/organic sessions</p>
-              <p className="text-2xl font-semibold tabular-nums">{formatInt(ga4GoogleOrganic)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">visits w/ google.* referrer</p>
-              <p className="text-2xl font-semibold tabular-nums">{formatInt(googleReferrerVisits)}</p>
-            </div>
-          </div>
-          <Alert>
-            <AlertDescription className="text-sm">
-              <strong>How to read this:</strong> GBP says it sent <strong>{formatInt(gbpWebsiteClicks)}</strong> clicks to the site (source-side). GA4 google/organic = <strong>{formatInt(ga4GoogleOrganic)}</strong> sessions (regular search + any untagged GBP). The GBP &ldquo;Website&rdquo; link is now UTM-tagged with <code className="rounded bg-muted px-1">?utm_source=gbp&amp;utm_medium=organic&amp;utm_campaign=profile</code> (live 2026-05-24). Look for <strong>gbp / organic / profile</strong> rows in the &ldquo;First-touch UTM attribution&rdquo; table below as GBP visits land. Full convention in <code className="rounded bg-muted px-1">docs/UTM_TRACKING_CONVENTION.md</code> §2.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <ReportNumbers items={heroFigures} />
 
-      {/* 2. GA4 source / medium */}
-      {ga4 && ga4.socialChannels && (
-        <section className="space-y-2">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold text-foreground">GA4 source / medium</h2>
-            <p className="text-xs text-muted-foreground">
-              Aggregated by GA4&apos;s default attribution. Use this view for high-level channel-mix decisions.
-            </p>
-          </div>
-          <TableWithMobileCards
-            rows={ga4.topSources}
-            cap={10}
-            getRowKey={(s) => s.sourceMedium}
+      <SectionHead>Google Business Profile attribution gap</SectionHead>
+      <ReportNumbers items={gbpFigures} />
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '0 0 4px' }}>
+        GBP reports the clicks it sent; GA4 reports the sessions it saw. The profile&apos;s Website
+        link carries{' '}
+        <code style={MONO}>?utm_source=gbp&amp;utm_medium=organic&amp;utm_campaign=profile</code>,
+        so tagged GBP traffic lands as a <strong>gbp / organic / profile</strong> row in the
+        first-touch table below. A gap between the first two figures is untagged or unmodelled
+        traffic, not a contradiction. Convention:{' '}
+        <code style={MONO}>docs/UTM_TRACKING_CONVENTION.md</code> §2.
+      </p>
+
+      {ga4 && ga4.socialChannels ? (
+        <>
+          <SectionHead>GA4 source / medium — most sessions first</SectionHead>
+          <ReportGrid
+            label="GA4 source and medium"
             columns={[
-              { key: 'source', header: 'Source / Medium', className: 'whitespace-nowrap text-xs', cell: (s) => s.sourceMedium },
-              { key: 'sessions', header: 'Sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: (s) => formatInt(s.sessions) },
-              { key: 'users', header: 'Users', className: 'whitespace-nowrap text-right tabular-nums', cell: (s) => formatInt(s.users) },
-              { key: 'engaged', header: 'Engaged', className: 'whitespace-nowrap text-right tabular-nums', cell: (s) => formatInt(s.engagedSessions) },
-              { key: 'rate', header: 'Engagement', className: 'whitespace-nowrap text-right tabular-nums', cell: (s) => `${(s.engagementRate * 100).toFixed(0)}%` },
+              { key: 'source', label: 'Source / Medium' },
+              { key: 'sessions', label: 'Sessions', numeric: true },
+              { key: 'users', label: 'Users', numeric: true },
+              { key: 'engaged', label: 'Engaged', numeric: true },
+              { key: 'rate', label: 'Engagement', numeric: true },
             ]}
-            renderCard={(s) => (
-              <Card>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium">{s.sourceMedium}</span>
-                    <span className="text-sm font-semibold tabular-nums">{formatInt(s.sessions)} <span className="text-xs font-normal text-muted-foreground">sess</span></span>
-                  </div>
-                  <p className="text-xs text-muted-foreground tabular-nums">{formatInt(s.users)} users · {formatInt(s.engagedSessions)} engaged · {(s.engagementRate * 100).toFixed(0)}% rate</p>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No source rows from GA4 for {range.startDate} to {range.endDate}. Confirm the GA4 Data API connection on the analytics overview.</>}
+            template="minmax(200px, 2fr) minmax(84px, 0.7fr) minmax(72px, 0.6fr) minmax(84px, 0.7fr) minmax(100px, 0.8fr)"
+            minWidth={620}
+            rows={ga4.topSources.slice(0, CAP_TABLE).map((s) => ({
+              key: s.sourceMedium,
+              cells: [
+                <span key="s" style={MONO}>{s.sourceMedium}</span>,
+                formatInt(s.sessions),
+                formatInt(s.users),
+                formatInt(s.engagedSessions),
+                `${(s.engagementRate * 100).toFixed(0)}%`,
+              ],
+            }))}
+            empty={
+              <>
+                No source rows from GA4 for {range.startDate} to {range.endDate}. Confirm the GA4
+                Data API connection on the analytics overview.
+              </>
+            }
           />
-        </section>
-      )}
-
-      {/* 3. Visitor_sessions UTM tally */}
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">First-touch UTM attribution</h2>
-          <p className="text-xs text-muted-foreground">
-            Where each visitor came from on their FIRST visit (from <code className="rounded bg-muted px-1">visitor_sessions</code>). UTMs override referrer; <code className="rounded bg-muted px-1">(no utm)</code> means the channel didn&apos;t carry tags and was inferred from referrer instead.
+          {overflowNote(Math.min(CAP_TABLE, ga4.topSources.length), ga4.topSources.length)}
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+            Aggregated by GA4&apos;s default attribution. Use this view for high-level channel-mix
+            decisions.
           </p>
-        </div>
-        <TableWithMobileCards
-          rows={topUtms}
-          cap={10}
-          getRowKey={(r) => `${r.source}|${r.medium}|${r.campaign}`}
-          columns={[
-            { key: 'source', header: 'Source', className: 'whitespace-nowrap text-xs', cell: (r) => r.source },
-            { key: 'medium', header: 'Medium', className: 'whitespace-nowrap text-xs', cell: (r) => r.medium },
-            { key: 'campaign', header: 'Campaign', className: 'whitespace-nowrap text-xs', cell: (r) => r.campaign },
-            { key: 'sessions', header: 'Sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.count) },
-          ]}
-          renderCard={(r) => (
-            <Card>
-              <CardContent className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium">{r.source} / {r.medium}</span>
-                  <span className="text-sm font-semibold tabular-nums">{formatInt(r.count)}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{r.campaign}</p>
-              </CardContent>
-            </Card>
-          )}
-          empty={<>No first-touch sessions for {range.startDate} to {range.endDate}. The WordPress + Next.js tracking snippet has to fire for these to populate.</>}
-        />
-      </section>
+        </>
+      ) : null}
 
-      {/* 4. Raw referrers from visits table */}
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Raw referrers</h2>
-          <p className="text-xs text-muted-foreground">
-            Every distinct referring URL recorded in <code className="rounded bg-muted px-1">visits.referrer</code>, classified into a coarse platform bucket. This is the rawest view — what the browser actually sent in the Referer header.
-          </p>
-        </div>
-        <TableWithMobileCards
-          rows={topReferrers}
-          cap={10}
-          getRowKey={(r) => `${r.bucket}|${r.referrer}`}
-          columns={[
-            { key: 'platform', header: 'Platform', className: 'whitespace-nowrap', cell: (r) => <Badge variant={r.bucket === '(direct)' || r.bucket === '(internal)' ? 'outline' : 'secondary'} className="text-[10px]">{r.bucket}</Badge> },
-            { key: 'referrer', header: 'Referrer', className: 'max-w-md truncate text-xs', cell: (r) => r.referrer },
-            { key: 'visits', header: 'Visits', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.count) },
-            { key: 'share', header: 'Share', className: 'whitespace-nowrap text-right tabular-nums text-muted-foreground', cell: (r) => formatPct(r.count, visitsCount) },
-          ]}
-          renderCard={(r) => (
-            <Card>
-              <CardContent className="space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge variant={r.bucket === '(direct)' || r.bucket === '(internal)' ? 'outline' : 'secondary'} className="text-[10px]">{r.bucket}</Badge>
-                  <span className="text-sm font-semibold tabular-nums">{formatInt(r.count)} <span className="text-xs font-normal text-muted-foreground">({formatPct(r.count, visitsCount)})</span></span>
-                </div>
-                <p className="truncate text-xs text-muted-foreground">{r.referrer}</p>
-              </CardContent>
-            </Card>
-          )}
-          empty={<>No visits for {range.startDate} to {range.endDate}.</>}
-        />
-      </section>
+      <SectionHead>First-touch UTM attribution — most sessions first</SectionHead>
+      <ReportGrid
+        label="First-touch UTM attribution"
+        columns={utmColumns}
+        template="minmax(140px, 1.2fr) minmax(120px, 1fr) minmax(160px, 1.4fr) minmax(90px, 0.7fr)"
+        minWidth={620}
+        rows={utmGrid}
+        empty={
+          <>
+            No first-touch session for {range.startDate} to {range.endDate}. The tracking snippet
+            has to fire for these to populate.
+          </>
+        }
+      />
+      {overflowNote(Math.min(CAP_TABLE, topUtms.length), utmTally.size)}
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+        Where each visitor came from on their FIRST visit, from{' '}
+        <code style={MONO}>visitor_sessions</code>. UTMs override referrer;{' '}
+        <code style={MONO}>(no utm)</code> means the channel carried no tags and was inferred from
+        the referrer instead.
+      </p>
 
-      {/* 5. Top landing pages */}
-      <section className="space-y-2">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-foreground">Top landing pages (first hit per session)</h2>
-          <p className="text-xs text-muted-foreground">
-            Where each session began. High counts on <code className="rounded bg-muted px-1">/lp/&lt;variant&gt;</code> mean paid ads are sending traffic; high counts on <code className="rounded bg-muted px-1">/listings/...</code> mean organic SEO is working.
-          </p>
-        </div>
-        <TableWithMobileCards
-          rows={topLandings}
-          cap={10}
-          getRowKey={([lp]) => lp}
-          columns={[
-            { key: 'lp', header: 'Landing page', className: 'max-w-md truncate text-xs', cell: ([lp]) => lp },
-            { key: 'sessions', header: 'Sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: ([, count]) => formatInt(count) },
-          ]}
-          renderCard={([lp, count]) => (
-            <Card>
-              <CardContent className="flex items-center justify-between gap-2">
-                <span className="truncate text-xs">{lp}</span>
-                <span className="text-sm font-semibold tabular-nums">{formatInt(count)}</span>
-              </CardContent>
-            </Card>
-          )}
-          empty={<>No landing-page data yet. Once the tracking snippet records session starts, top pages appear here.</>}
-        />
-      </section>
+      <SectionHead>Raw referrers — most sessions first</SectionHead>
+      <ReportGrid
+        label="Raw referrers"
+        columns={referrerColumns}
+        template="minmax(110px, 0.9fr) minmax(220px, 2.4fr) minmax(90px, 0.7fr) minmax(80px, 0.6fr)"
+        minWidth={680}
+        rows={referrerGrid}
+        empty={
+          <>
+            No session for {range.startDate} to {range.endDate}.
+          </>
+        }
+      />
+      {overflowNote(Math.min(CAP_TABLE, topReferrers.length), refTally.size)}
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+        Every distinct referring URL recorded in{' '}
+        <code style={MONO}>visitor_sessions.referrer</code>, classified into a coarse platform
+        bucket. This is the rawest view — what the browser actually sent in the Referer header.
+        Share is against the {formatInt(visitsCount)} captured{' '}
+        {visitsCount === 1 ? 'session' : 'sessions'}.
+      </p>
 
-      {/* 6. Untagged-channel analysis — actionable list */}
-      {untaggedSorted.length > 0 && (
-        <section className="space-y-2">
-          <div className="space-y-1">
-            <h2 className="text-base font-semibold text-foreground">Channels you should tag with UTMs ({formatInt(untaggedSessions.length)} untagged sessions)</h2>
-            <p className="text-xs text-muted-foreground">
-              These platforms sent visitors to the site without a UTM tag, so they collapse into &ldquo;referral&rdquo; in GA4. Adding the canonical UTM string to your links on each platform makes their traffic separable in reports.
-            </p>
-          </div>
-          <TableWithMobileCards
-            rows={untaggedSorted}
-            cap={12}
-            getRowKey={([platform]) => platform}
+      <SectionHead>Top landing pages — most sessions first</SectionHead>
+      <ReportGrid
+        label="Top landing pages"
+        columns={[
+          { key: 'lp', label: 'Landing page' },
+          { key: 'sessions', label: 'Sessions', numeric: true },
+        ]}
+        template="minmax(280px, 3fr) minmax(90px, 0.7fr)"
+        minWidth={480}
+        rows={landingGrid}
+        empty={
+          <>
+            No landing-page data yet. Once the tracking snippet records session starts, top pages
+            appear here.
+          </>
+        }
+      />
+      {overflowNote(Math.min(CAP_TABLE, topLandings.length), landingTally.size)}
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+        Where each session began. High counts on <code style={MONO}>/lp/&lt;variant&gt;</code> mean
+        paid ads are sending traffic; high counts on <code style={MONO}>/listings/…</code> mean
+        organic SEO is working.
+      </p>
+
+      {untaggedSorted.length > 0 ? (
+        <>
+          <SectionHead>
+            Channels to tag with UTMs — {formatInt(untaggedSessions.length)} untagged sessions
+          </SectionHead>
+          <ReportGrid
+            label="Channels to tag with UTMs"
             columns={[
-              { key: 'platform', header: 'Platform', className: 'whitespace-nowrap', cell: ([platform]) => <Badge variant="default" className="text-[10px]">{platform}</Badge> },
-              { key: 'count', header: 'Untagged sessions', className: 'whitespace-nowrap text-right tabular-nums', cell: ([, count]) => formatInt(count) },
-              { key: 'utm', header: 'Suggested UTM string', className: 'whitespace-nowrap font-mono text-[10px] text-muted-foreground', cell: ([platform]) => <>?utm_source={platform}&amp;utm_medium=referral&amp;utm_campaign=organic</> },
+              { key: 'platform', label: 'Platform' },
+              { key: 'count', label: 'Untagged sessions', numeric: true },
+              { key: 'utm', label: 'Suggested UTM string' },
             ]}
-            renderCard={([platform, count]) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge variant="default" className="text-[10px]">{platform}</Badge>
-                    <span className="text-sm font-semibold tabular-nums">{formatInt(count)} <span className="text-xs font-normal text-muted-foreground">untagged</span></span>
-                  </div>
-                  <p className="font-mono text-[10px] text-muted-foreground">?utm_source={platform}&amp;utm_medium=referral&amp;utm_campaign=organic</p>
-                </CardContent>
-              </Card>
-            )}
+            template="minmax(120px, 1fr) minmax(140px, 1fr) minmax(300px, 2.6fr)"
+            minWidth={660}
+            rows={untaggedGrid}
             empty={<>Every referring channel is carrying a UTM tag. Nothing to fix here.</>}
           />
-          <p className="text-xs text-muted-foreground">
-            See <code className="rounded bg-muted px-1">docs/UTM_TRACKING_CONVENTION.md</code> for the recommended UTM string per channel (GBP, IG bio, email signature, YouTube descriptions, etc.).
+          {overflowNote(Math.min(CAP_UNTAGGED, untaggedSorted.length), untaggedByBucket.size)}
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+            These platforms sent visitors without a UTM tag, so they collapse into
+            &ldquo;referral&rdquo; in GA4. Adding the canonical UTM string on each platform makes
+            their traffic separable. Per-channel strings live in{' '}
+            <code style={MONO}>docs/UTM_TRACKING_CONVENTION.md</code>.
           </p>
-        </section>
-      )}
+        </>
+      ) : null}
 
-      <Separator />
-
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <p>
-          <strong className="text-foreground">Data sources:</strong> GA4 Data API (sessions, source/medium), Supabase <code className="rounded bg-muted px-1">visits</code> (raw page views + referrer), <code className="rounded bg-muted px-1">visitor_sessions</code> (first-touch UTMs), <code className="rounded bg-muted px-1">marketing_channel_daily</code> filtered to <code className="rounded bg-muted px-1">channel=gbp</code> (GBP outbound click counts).
-        </p>
-        <p>
-          <strong className="text-foreground">Related:</strong>{' '}
-          <Link href="/admin/analytics/google-business-profile" className="underline hover:no-underline">GBP performance dashboard</Link>{' · '}
-          <Link href="/admin/reports/lead-flow" className="underline hover:no-underline">Lead-flow report</Link>{' · '}
-          <Link href="/admin/crm" className="underline hover:no-underline">Contacts</Link>{' · '}
-          <Link href="/admin/analytics" className="underline hover:no-underline">Performance hub</Link>
-        </p>
-      </div>
-    </div>
+      <SectionHead>Where these numbers come from</SectionHead>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '0 0 10px' }}>
+        GA4 Data API for sessions and source/medium. Supabase{' '}
+        <code style={MONO}>visitor_sessions</code> for first-touch UTMs, raw referrers and landing
+        pages — the referrer, UTM and landing-page tables above are three views of that one set of
+        session rows for the window, so their totals agree by construction. Supabase{' '}
+        <code style={MONO}>marketing_channel_daily</code> filtered to{' '}
+        <code style={MONO}>channel=gbp</code>, <code style={MONO}>scope=account</code> for the GBP
+        outbound click counts.
+      </p>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: 0 }}>
+        <Link href="/admin/analytics/google-business-profile" style={{ color: 'var(--a-accent)' }}>
+          GBP performance dashboard
+        </Link>
+        {' · '}
+        <Link href="/admin/reports/lead-flow" style={{ color: 'var(--a-accent)' }}>
+          Lead-flow report
+        </Link>
+        {' · '}
+        <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
+          Contacts
+        </Link>
+        {' · '}
+        <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+          Performance hub
+        </Link>
+      </p>
+    </>
   )
 }
 
@@ -515,18 +651,23 @@ async function TrafficSourcesContent({ range }: { range: { startDate: string; en
 export default async function TrafficSourcesReportPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
-  return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Traffic sources</h1>
-        <p className="text-sm text-muted-foreground">
-          Where every visitor came from. Joins GA4 with our own <code className="rounded bg-muted px-1">visits</code> + <code className="rounded bg-muted px-1">visitor_sessions</code> tables so you can spot the gaps between what each platform reports as outbound clicks and what GA4 actually attributes. Includes a list of platforms you should tag with canonical UTMs.
-        </p>
-        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
 
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <TrafficSourcesContent range={range} />
+  // Re-read the SAME window the reader is looking at, never a reset to 30d.
+  const refreshParams = new URLSearchParams()
+  if (sp.range) refreshParams.set('range', sp.range)
+  if (sp.startDate) refreshParams.set('startDate', sp.startDate)
+  if (sp.endDate) refreshParams.set('endDate', sp.endDate)
+  refreshParams.set('t', String(Date.now()))
+  const refreshHref = `/admin/reports/traffic-sources?${refreshParams.toString()}`
+
+  return (
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <div className="av2-rfilters">
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
+      </div>
+
+      <Suspense fallback={<ReportSkeleton />}>
+        <TrafficSourcesContent range={range} refreshHref={refreshHref} />
       </Suspense>
     </div>
   )

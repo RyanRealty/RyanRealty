@@ -1,8 +1,9 @@
+// @no-parity — admin-internal reporting surface, no public mockup contract.
 /**
  * /admin/reports/lead-flow — end-to-end funnel report.
  *
  * Joins GA4 Data API (sessions, generate_lead events by lp_variant) with
- * Supabase (visits, crm_people, valuation_requests, listing_inquiries,
+ * Supabase (visitor_events, crm_people, valuation_requests, listing_inquiries,
  * cmas) to surface:
  *
  *   1. Hero metrics — sessions, leads captured, CMAs out
@@ -22,20 +23,57 @@
  *     The old marketing_assignments ledger is decommissioned.
  *   - listing_inquiries powers Path I (Schedule a showing / Ask a question
  *     from listing details).
- *   - When a surface shows 0 sessions in 30 days, "wiring gap" is suppressed
+ *   - When a surface shows 0 sessions in the window, "wiring gap" is suppressed
  *     because we cannot tell whether the wiring works until traffic arrives.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
+ * through the reporting family's shared presentation kit
+ * (@/components/admin/v2). Presentation only.
+ *
+ * Carried over verbatim: normalizeParams, resolveDateRange and the '30d'
+ * default, formatInt and formatPct (dash on a zero denominator, one decimal),
+ * getServiceSupabase, the whole LEAD_SURFACES registry, classifyWiring's four
+ * branches and the meta-leadgen-form special case, statusLabel's wording,
+ * cutoffIso / untilIso / lookbackDays / windowLabel, fetchAllVisitPaths' paging
+ * and URL→path reduction, every read in the Promise.all (including the day
+ * granular getLeadIntake bounds that share the analytics cache entry, the two
+ * count-only head reads, and countCmasInRange), the ga4EventsByLp event-name
+ * filter, assignmentsBySource, sessionsForPrefix, the wiringRows build, the
+ * broker and channel splits and their descending sorts, the dailySeries
+ * construction anchored to the selected end date, maxDaily, the bar arithmetic
+ * Math.round((count / maxDaily) * 30), the reverse().slice(0, 14) window, every
+ * funnel stage and its source string, the conversion-rate figure, and every
+ * table's row cap (10 · 12 · 10 · 10 · 10). No metric, date window, filter
+ * default, sort order, unit or rounding moved.
+ *
+ * Shape changed, data did not: the page-title <h1> is gone (the nav names the
+ * page), the DashboardSummaryStrip became the family's typographic numbers
+ * strip, six shadcn Card/table pairs plus their parallel mobile card lists
+ * became the family's grid (one source of markup, scrolling inside its own
+ * box), the wiring Badge became a StateWord — text plus color, never color
+ * alone — and the ui Skeleton became ReportSkeleton.
+ *
+ * THREE truth corrections (§0), none of which touches a figure:
+ *   1. The conversion-rate note asserted "Industry benchmark for real-estate
+ *      sites with mixed paid + organic traffic is 0.5%–2%; below 0.3% usually
+ *      means wiring gaps or page-friction issues". No source, no citation,
+ *      nothing in the repo to trace it to — an unsourced benchmark a broker
+ *      would judge spend against. §0 says an unverifiable stat is cut, not
+ *      softened. The measured conversion rate stays, verbatim.
+ *   2. The timeline was titled "Daily leads (last 14 days)" and described its
+ *      bars as "proportional to the busiest day in the 30-day window". Both are
+ *      false whenever the picker is not on 30d or the range ends in the past:
+ *      the rows are the 14 most recent days OF THE SELECTED RANGE and maxDaily
+ *      is computed over that same range. The words now match the arithmetic.
+ *   3. A failed GA4 call rendered an alert and then four zeros styled exactly
+ *      like measurements. The failure now leads through ReportError, and the
+ *      zeroed GA4 figures say they are not a measurement. The Supabase-side
+ *      figures are unaffected and still say so.
  */
 
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
-import DashboardSummaryStrip from '@/components/admin/DashboardSummaryStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 // Cached GA4 wrapper (React request-dedup + 15-min Supabase ga4_query_cache
 // tier) — the raw getGA4Summary fires 9 GA4 runReport calls per request on
 // this force-dynamic page. Same signature and result shape; errors pass
@@ -46,6 +84,19 @@ import { countCmasInRange } from '@/lib/data/sync/syncWrites'
 import { getLeadIntake } from '@/lib/data'
 import { DateRangePicker } from '@/app/admin/(protected)/analytics/_components/DateRangePicker'
 import { resolveDateRange } from '@/app/admin/(protected)/analytics/_lib/queries'
+import {
+  SectionHead,
+  StateWord,
+  VerdictLine,
+  ReportGrid,
+  ReportNumbers,
+  ReportError,
+  ReportSkeleton,
+  type AdminState,
+  type ReportColumn,
+  type ReportGridRow,
+  type ReportNumberItem,
+} from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -78,14 +129,26 @@ function getServiceSupabase() {
   return createClient(url, key)
 }
 
+/** Row caps the old tables applied. Carried over unchanged. */
+const CAP_SOURCES = 10
+const CAP_WIRING = 12
+const CAP_SPLIT = 10
+const CAP_EVENTS = 10
+const CAP_DAYS = 14
+
+const MUTED = { color: 'var(--a-text-2)' }
+// A table name or event name is one unbreakable token; without this a 375px
+// viewport gets PAGE-level horizontal scroll, which the acceptance bar forbids.
+const CODE = { fontFamily: 'var(--a-font-mono)', overflowWrap: 'anywhere' as const }
+
 // ─── Lead-surface registry ────────────────────────────────────────────────
 // Every code path that captures a lead. Used for the wiring-health table.
 //
 // `lp_variant` is the value the server-side fireLeadGenerated call writes to
 // the GA4 event param of the same name. `assignment_source` is the value
-// written to marketing_assignments.source by the canonical tagger or the
-// inline ledger insert. `path_prefix` is the URL we match in the visits
-// table to count raw landings on this surface.
+// written to crm_people.source by the canonical tagger or the inline ledger
+// insert. `path_prefix` is the URL we match in the visitor_events table to
+// count raw landings on this surface.
 
 type LeadSurface = {
   /** Short human label for the row. */
@@ -94,7 +157,7 @@ type LeadSurface = {
   lp_variant: string
   /** crm_people.source value written by the server action for this surface. */
   assignment_source: string | null
-  /** URL path used in visits table matching. */
+  /** URL path used in visitor_events matching. */
   path_prefix: string
   /** Notes column to surface caveats. */
   notes?: string
@@ -151,17 +214,19 @@ function classifyWiring(sessions: number, ga4Events: number, assignments: number
   return 'wired'
 }
 
-function statusBadgeVariant(s: WiringStatus): 'default' | 'destructive' | 'secondary' | 'outline' {
+/**
+ * Status is text + color, never color alone (WCAG 1.4.1). Only `silent` is
+ * actionable, so only `silent` gets a loud color; "no traffic yet" and
+ * "server-to-server" are facts about coverage, not faults, and read neutral.
+ */
+function statusTone(s: WiringStatus): AdminState {
   switch (s) {
     case 'wired':
-      return 'default'
+      return 'ok'
     case 'silent':
-      return 'destructive'
-    case 'meta-only':
-      return 'secondary'
-    case 'untested':
+      return 'down'
     default:
-      return 'outline'
+      return 'waiting'
   }
 }
 
@@ -180,7 +245,13 @@ function statusLabel(s: WiringStatus): string {
 
 // ─── The async data content ───────────────────────────────────────────────
 
-async function LeadFlowContent({ range }: { range: { startDate: string; endDate: string } }) {
+async function LeadFlowContent({
+  range,
+  refreshHref,
+}: {
+  range: { startDate: string; endDate: string }
+  refreshHref: string
+}) {
   const cutoffIso = `${range.startDate}T00:00:00.000Z`
   // Honor the SELECTED end date for every CRM-side read, matching GA4. The
   // old code ran leads/CMAs/visits through now(), so a custom historical
@@ -193,9 +264,9 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
 
   const supabase = getServiceSupabase()
 
-  // visits can exceed 1000 rows in a window, and PostgREST silently caps a
-  // single response at 1000 regardless of .limit() — page with .range() until
-  // a short read (same pattern as getLeadIntake).
+  // visitor_events can exceed 1000 rows in a window, and PostgREST silently
+  // caps a single response at 1000 regardless of .limit() — page with .range()
+  // until a short read (same pattern as getLeadIntake).
   async function fetchAllVisitPaths(): Promise<Array<{ path: string }>> {
     const rows: Array<{ path: string }> = []
     const PAGE = 1000
@@ -337,305 +408,309 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
   const ga4LeadEvents = ga4?.totalLeadEvents ?? 0
   const totalAssignments = intake.inboundLeads
   const totalInquiries = valuationCount + listingInquiryCount  // form-level submits
-  const conversionRate = ga4Sessions > 0 ? totalAssignments / ga4Sessions : 0
+
+  const heroFigures: ReportNumberItem[] = [
+    { key: 'sessions', label: 'Sessions · GA4, all sources', value: formatInt(ga4Sessions) },
+    { key: 'events', label: 'Lead events · GA4 generate_lead + siblings', value: formatInt(ga4LeadEvents) },
+    { key: 'leads', label: 'Leads captured · crm_people, inbound sources', value: formatInt(totalAssignments) },
+    { key: 'cmas', label: 'CMAs created · cmas table inserts', value: formatInt(cmaCount) },
+  ]
+
+  const funnelStages = [
+    { stage: 'Sessions', source: 'GA4', count: ga4Sessions, pct: '100%' },
+    { stage: 'Form submits', source: 'valuation_requests + listing_inquiries', count: totalInquiries, pct: formatPct(totalInquiries, ga4Sessions) },
+    { stage: 'Lead events fired', source: 'GA4 generate_lead', count: ga4LeadEvents, pct: formatPct(ga4LeadEvents, ga4Sessions) },
+    { stage: 'Leads captured (CRM)', source: 'crm_people, inbound sources', count: totalAssignments, pct: formatPct(totalAssignments, ga4Sessions) },
+    { stage: 'CMAs created', source: 'cmas', count: cmaCount, pct: formatPct(cmaCount, ga4Sessions) },
+  ]
+
+  const funnelColumns: ReportColumn[] = [
+    { key: 'stage', label: 'Stage' },
+    { key: 'source', label: 'Source' },
+    { key: 'count', label: 'Count', numeric: true },
+    { key: 'pct', label: 'vs sessions', numeric: true },
+  ]
+
+  const funnelGrid: ReportGridRow[] = funnelStages.slice(0, 8).map((r) => ({
+    key: r.stage,
+    cells: [
+      r.stage,
+      <span key="s" style={MUTED}>{r.source}</span>,
+      formatInt(r.count),
+      <span key="p" style={MUTED}>{r.pct}</span>,
+    ],
+  }))
+
+  const wiringColumns: ReportColumn[] = [
+    { key: 'surface', label: 'Surface' },
+    { key: 'sessions', label: 'Sessions', numeric: true },
+    { key: 'events', label: 'GA4 events', numeric: true },
+    { key: 'assignments', label: 'CRM leads', numeric: true },
+    { key: 'status', label: 'Status' },
+    { key: 'notes', label: 'Notes' },
+  ]
+
+  const wiringGrid: ReportGridRow[] = wiringRows.slice(0, CAP_WIRING).map((row) => ({
+    key: row.surface.lp_variant,
+    cells: [
+      row.surface.label,
+      formatInt(row.sessions),
+      formatInt(row.ga4_events),
+      formatInt(row.assignments),
+      <StateWord key="st" state={statusTone(row.status)}>{statusLabel(row.status)}</StateWord>,
+      <span key="n" style={MUTED}>{row.surface.notes ?? ''}</span>,
+    ],
+  }))
+
+  const splitColumns = (first: string): ReportColumn[] => [
+    { key: 'name', label: first },
+    { key: 'count', label: 'Count', numeric: true },
+    { key: 'share', label: 'Share', numeric: true },
+  ]
+
+  const brokerRows = Array.from(brokerSplit.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([broker, count]) => ({ broker, count }))
+  const channelRows = Array.from(channelSplit.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([channel, count]) => ({ channel, count }))
+
+  const brokerGrid: ReportGridRow[] = brokerRows.slice(0, CAP_SPLIT).map((r) => ({
+    key: r.broker,
+    cells: [
+      <span key="b" style={{ textTransform: 'capitalize' }}>{r.broker}</span>,
+      formatInt(r.count),
+      <span key="s" style={MUTED}>{formatPct(r.count, totalAssignments)}</span>,
+    ],
+  }))
+
+  const channelGrid: ReportGridRow[] = channelRows.slice(0, CAP_SPLIT).map((r) => ({
+    key: r.channel,
+    cells: [
+      r.channel,
+      formatInt(r.count),
+      <span key="s" style={MUTED}>{formatPct(r.count, totalAssignments)}</span>,
+    ],
+  }))
+
+  const timelineRows = [...dailySeries].reverse().slice(0, CAP_DAYS)
 
   return (
-    <div className="space-y-6">
-      {/* GA4 access warning if the service account call failed */}
-      {!ga4Ok && (
-        <Alert variant="destructive">
-          <AlertDescription className="text-sm">
-            GA4 Data API call failed: <code className="rounded bg-muted px-1">{ga4Error}</code>. Sessions and event counts will show as zero until the service account regains access. Supabase-side numbers (assignments, inquiries, CMAs) are still accurate.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* 1. Hero metrics */}
-      <DashboardSummaryStrip
-        stats={[
-          { label: `Sessions (${windowLabel})`, value: formatInt(ga4Sessions), caption: 'GA4, all sources' },
-          { label: `Lead events (${windowLabel})`, value: formatInt(ga4LeadEvents), caption: 'GA4 generate_lead + siblings' },
-          { label: `Leads captured (${windowLabel})`, value: formatInt(totalAssignments), caption: 'crm_people, inbound sources' },
-          { label: `CMAs created (${windowLabel})`, value: formatInt(cmaCount), caption: 'cmas table inserts' },
-        ]}
-      />
-
-      {/* 2. End-to-end funnel */}
-      <Card>
-        <CardHeader>
-          <CardTitle>End-to-end funnel ({windowLabel})</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Visitor → engaged → form submit → broker assigned → CMA. Sessions and engagement come from GA4. Submits come from valuation_requests + listing_inquiries. Assignments and CMAs from Supabase canonical tables.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <TableWithMobileCards
-            rows={[
-              { stage: 'Sessions', source: 'GA4', count: ga4Sessions, pct: '100%' },
-              { stage: 'Form submits', source: 'valuation_requests + listing_inquiries', count: totalInquiries, pct: formatPct(totalInquiries, ga4Sessions) },
-              { stage: 'Lead events fired', source: 'GA4 generate_lead', count: ga4LeadEvents, pct: formatPct(ga4LeadEvents, ga4Sessions) },
-              { stage: 'Leads captured (CRM)', source: 'crm_people, inbound sources', count: totalAssignments, pct: formatPct(totalAssignments, ga4Sessions) },
-              { stage: 'CMAs created', source: 'cmas', count: cmaCount, pct: formatPct(cmaCount, ga4Sessions) },
-            ]}
-            cap={8}
-            getRowKey={(r) => r.stage}
-            columns={[
-              { key: 'stage', header: 'Stage', className: 'whitespace-nowrap font-medium', cell: (r) => r.stage },
-              { key: 'source', header: 'Source', className: 'whitespace-nowrap text-xs text-muted-foreground', cell: (r) => r.source },
-              { key: 'count', header: 'Count', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.count) },
-              { key: 'pct', header: 'vs sessions', className: 'whitespace-nowrap text-right tabular-nums text-muted-foreground', cell: (r) => r.pct },
-            ]}
-            renderCard={(r) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-foreground">{r.stage}</span>
-                    <span className="shrink-0 text-sm tabular-nums text-foreground">{formatInt(r.count)}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                    <span className="truncate">{r.source}</span>
-                    <span className="shrink-0 tabular-nums">{r.pct} of sessions</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No funnel data for {windowLabel}.</>}
-          />
-          <p className="mt-3 text-xs text-muted-foreground">
-            Sessions-to-assignment conversion rate: <span className="font-medium text-foreground">{formatPct(totalAssignments, ga4Sessions)}</span>. Industry benchmark for real-estate sites with mixed paid + organic traffic is 0.5%–2%; below 0.3% usually means wiring gaps or page-friction issues, not traffic quality.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* 3. Wiring health by surface */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Wiring health by lead surface</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            For each lead-capture surface in the codebase: how much traffic reached it (sessions to the URL prefix), how many GA4 generate_lead events fired tagged with that lp_variant, and how many CRM leads landed with that source. A surface marked silent has traffic but no events or leads — typically a wiring regression to investigate.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <TableWithMobileCards
-            rows={wiringRows}
-            cap={12}
-            getRowKey={(row) => row.surface.lp_variant}
-            columns={[
-              { key: 'surface', header: 'Surface', className: 'font-medium', cell: (row) => row.surface.label },
-              { key: 'sessions', header: 'Sessions', className: 'text-right tabular-nums', cell: (row) => formatInt(row.sessions) },
-              { key: 'events', header: 'GA4 events', className: 'text-right tabular-nums', cell: (row) => formatInt(row.ga4_events) },
-              { key: 'assignments', header: 'CRM leads', className: 'text-right tabular-nums', cell: (row) => formatInt(row.assignments) },
-              { key: 'status', header: 'Status', cell: (row) => <Badge variant={statusBadgeVariant(row.status)}>{statusLabel(row.status)}</Badge> },
-              { key: 'notes', header: 'Notes', className: 'text-xs text-muted-foreground', cell: (row) => row.surface.notes ?? '' },
-            ]}
-            renderCard={(row) => (
-              <Card>
-                <CardContent className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="min-w-0 text-sm font-medium text-foreground">{row.surface.label}</span>
-                    <Badge variant={statusBadgeVariant(row.status)} className="shrink-0">{statusLabel(row.status)}</Badge>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground sm:grid-cols-3">
-                    <div>
-                      <div className="uppercase tracking-wide">Sessions</div>
-                      <div className="tabular-nums text-foreground">{formatInt(row.sessions)}</div>
-                    </div>
-                    <div>
-                      <div className="uppercase tracking-wide">GA4 events</div>
-                      <div className="tabular-nums text-foreground">{formatInt(row.ga4_events)}</div>
-                    </div>
-                    <div>
-                      <div className="uppercase tracking-wide">CRM leads</div>
-                      <div className="tabular-nums text-foreground">{formatInt(row.assignments)}</div>
-                    </div>
-                  </div>
-                  {row.surface.notes ? (
-                    <p className="text-xs text-muted-foreground">{row.surface.notes}</p>
-                  ) : null}
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No lead surfaces registered.</>}
-          />
-        </CardContent>
-      </Card>
-
-      {/* 4. Top GA4 lead sources (utm + medium) */}
-      {ga4 && ga4.leadSources.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Top lead sources (GA4)</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              source/medium attribution from GA4 for sessions that fired any generate_lead family event. Useful for paid-ad ROAS decisions.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <TableWithMobileCards
-              rows={ga4.leadSources}
-              cap={10}
-              getRowKey={(src) => src.sourceMedium}
-              columns={[
-                { key: 'src', header: 'Source / Medium', className: 'whitespace-nowrap text-xs', cell: (src) => src.sourceMedium },
-                { key: 'events', header: 'Lead events', className: 'whitespace-nowrap text-right tabular-nums', cell: (src) => formatInt(src.leadEvents) },
-                { key: 'users', header: 'Users', className: 'whitespace-nowrap text-right tabular-nums', cell: (src) => formatInt(src.users) },
-              ]}
-              renderCard={(src) => (
-                <Card>
-                  <CardContent className="space-y-1">
-                    <p className="break-words text-xs font-medium text-foreground">{src.sourceMedium}</p>
-                    <p className="text-xs text-muted-foreground tabular-nums">{formatInt(src.leadEvents)} lead events · {formatInt(src.users)} users</p>
-                  </CardContent>
-                </Card>
-              )}
-              empty={<>No GA4 lead sources for {windowLabel}.</>}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 5. Broker + channel split of inbound leads */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Leads by broker ({windowLabel})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TableWithMobileCards
-              rows={Array.from(brokerSplit.entries()).sort((a, b) => b[1] - a[1]).map(([broker, count]) => ({ broker, count }))}
-              cap={10}
-              getRowKey={(r) => r.broker}
-              columns={[
-                { key: 'broker', header: 'Broker', className: 'whitespace-nowrap font-medium capitalize', cell: (r) => r.broker },
-                { key: 'count', header: 'Count', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.count) },
-                { key: 'share', header: 'Share', className: 'whitespace-nowrap text-right tabular-nums text-muted-foreground', cell: (r) => formatPct(r.count, totalAssignments) },
-              ]}
-              renderCard={(r) => (
-                <Card>
-                  <CardContent className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium capitalize text-foreground">{r.broker}</span>
-                    <span className="text-xs text-muted-foreground tabular-nums">{formatInt(r.count)} · {formatPct(r.count, totalAssignments)}</span>
-                  </CardContent>
-                </Card>
-              )}
-              empty={<>No leads in window.</>}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Leads by channel ({windowLabel})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TableWithMobileCards
-              rows={Array.from(channelSplit.entries()).sort((a, b) => b[1] - a[1]).map(([channel, count]) => ({ channel, count }))}
-              cap={10}
-              getRowKey={(r) => r.channel}
-              columns={[
-                { key: 'channel', header: 'Channel', className: 'whitespace-nowrap font-medium', cell: (r) => r.channel },
-                { key: 'count', header: 'Count', className: 'whitespace-nowrap text-right tabular-nums', cell: (r) => formatInt(r.count) },
-                { key: 'share', header: 'Share', className: 'whitespace-nowrap text-right tabular-nums text-muted-foreground', cell: (r) => formatPct(r.count, totalAssignments) },
-              ]}
-              renderCard={(r) => (
-                <Card>
-                  <CardContent className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-foreground">{r.channel}</span>
-                    <span className="text-xs text-muted-foreground tabular-nums">{formatInt(r.count)} · {formatPct(r.count, totalAssignments)}</span>
-                  </CardContent>
-                </Card>
-              )}
-              empty={<>No leads in window.</>}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 6. Daily timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily leads (last 14 days)</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            One row per day, most recent first. Bar length is proportional to the busiest day in the 30-day window.
-          </p>
-        </CardHeader>
-        <CardContent>
-          {dailySeries.some((d) => d.count > 0) ? (
+    <>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={ga4Ok ? 'ok' : 'attention'}>
+          {ga4Ok ? (
             <>
-              <ul className="space-y-1 font-mono text-xs">
-                {[...dailySeries].reverse().slice(0, 14).map((d) => {
-                  const bars = Math.round((d.count / maxDaily) * 30)
-                  return (
-                    <li key={d.date} className="flex items-center gap-3">
-                      <span className="w-24 shrink-0 text-muted-foreground">{d.date}</span>
-                      <span className="w-8 shrink-0 text-right tabular-nums text-foreground">{d.count}</span>
-                      <span className="text-primary">{'█'.repeat(bars)}</span>
-                    </li>
-                  )
-                })}
-              </ul>
-              <p className="mt-3 text-xs text-muted-foreground tabular-nums">Showing 14 of {dailySeries.length} days.</p>
+              <b>
+                {formatInt(totalAssignments)}{' '}
+                {totalAssignments === 1 ? 'lead' : 'leads'} captured from{' '}
+                {formatInt(ga4Sessions)} {ga4Sessions === 1 ? 'session' : 'sessions'}
+              </b>{' '}
+              over {windowLabel} — {formatPct(totalAssignments, ga4Sessions)} of sessions.
             </>
           ) : (
-            <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-              No assignments recorded for {windowLabel}.
-            </div>
+            <>
+              <b>GA4 could not be read, so every session and event figure below is a zero.</b> The
+              Supabase-side figures — leads, submits, CMAs — are still measurements.
+            </>
           )}
-        </CardContent>
-      </Card>
+        </VerdictLine>
+      </div>
 
-      {/* 7. Top GA4 lead-event names */}
-      {ga4 && ga4.topLeadEvents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Top GA4 lead-event names ({windowLabel})</CardTitle>
-            <p className="text-xs text-muted-foreground">
-              How the generate_lead family events broke down by name. Use this to spot duplicate naming or events that should be consolidated.
+      {!ga4Ok ? (
+        <>
+          <ReportError what="The GA4 Data API" href={refreshHref} />
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 20px' }}>
+            The call returned:{' '}
+            <code style={CODE}>{ga4Error}</code>. Sessions and
+            event counts stay at zero until the service account regains access.
+          </p>
+        </>
+      ) : null}
+
+      <ReportNumbers items={heroFigures} />
+
+      <SectionHead>End-to-end funnel · {windowLabel}</SectionHead>
+      <ReportGrid
+        label={`End-to-end funnel, ${windowLabel}`}
+        columns={funnelColumns}
+        template="minmax(150px, 1.2fr) minmax(200px, 2fr) minmax(84px, 0.7fr) minmax(90px, 0.7fr)"
+        minWidth={640}
+        rows={funnelGrid}
+        empty={<>No funnel data for {windowLabel}.</>}
+      />
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+        Visitor → engaged → form submit → broker assigned → CMA. Sessions and engagement come from
+        GA4; submits from valuation_requests + listing_inquiries; leads and CMAs from the Supabase
+        canonical tables. Sessions-to-lead conversion:{' '}
+        <span style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>
+          {formatPct(totalAssignments, ga4Sessions)}
+        </span>
+        .
+      </p>
+
+      <SectionHead>Wiring health by lead surface</SectionHead>
+      <ReportGrid
+        label="Wiring health by lead surface"
+        columns={wiringColumns}
+        template="minmax(180px, 1.6fr) minmax(84px, 0.7fr) minmax(94px, 0.7fr) minmax(90px, 0.7fr) minmax(150px, 1.2fr) minmax(180px, 1.6fr)"
+        minWidth={880}
+        rows={wiringGrid}
+        empty={<>No lead surfaces registered.</>}
+      />
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+        Per surface: traffic that reached its URL prefix, GA4 generate_lead events tagged with its
+        lp_variant, and CRM leads carrying its source. A surface reads Silent when traffic arrived
+        but neither an event nor a lead did — that is the wiring regression to chase. A surface
+        with no traffic is not judged.
+      </p>
+
+      {ga4 && ga4.leadSources.length > 0 ? (
+        <>
+          <SectionHead>Top lead sources (GA4)</SectionHead>
+          <ReportGrid
+            label="Top lead sources from GA4"
+            columns={[
+              { key: 'src', label: 'Source / Medium' },
+              { key: 'events', label: 'Lead events', numeric: true },
+              { key: 'users', label: 'Users', numeric: true },
+            ]}
+            template="minmax(200px, 2fr) minmax(100px, 0.8fr) minmax(80px, 0.7fr)"
+            minWidth={460}
+            rows={ga4.leadSources.slice(0, CAP_SOURCES).map((src) => ({
+              key: src.sourceMedium,
+              cells: [src.sourceMedium, formatInt(src.leadEvents), formatInt(src.users)],
+            }))}
+            empty={<>No GA4 lead sources for {windowLabel}.</>}
+          />
+          {ga4.leadSources.length > CAP_SOURCES ? (
+            <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', fontVariantNumeric: 'tabular-nums', marginTop: 10 }}>
+              Showing {CAP_SOURCES} of {ga4.leadSources.length}.
             </p>
-          </CardHeader>
-          <CardContent>
-            <TableWithMobileCards
-              rows={ga4.topLeadEvents}
-              cap={10}
-              getRowKey={(ev) => ev.eventName}
-              columns={[
-                { key: 'name', header: 'Event name', className: 'whitespace-nowrap text-xs', cell: (ev) => ev.eventName },
-                { key: 'count', header: 'Count', className: 'whitespace-nowrap text-right tabular-nums', cell: (ev) => formatInt(ev.eventCount) },
-                { key: 'users', header: 'Users', className: 'whitespace-nowrap text-right tabular-nums', cell: (ev) => formatInt(ev.users) },
-              ]}
-              renderCard={(ev) => (
-                <Card>
-                  <CardContent className="space-y-1">
-                    <p className="break-words text-xs font-medium text-foreground">{ev.eventName}</p>
-                    <p className="text-xs text-muted-foreground tabular-nums">{formatInt(ev.eventCount)} events · {formatInt(ev.users)} users</p>
-                  </CardContent>
-                </Card>
-              )}
-              empty={<>No GA4 lead-event names for {windowLabel}.</>}
-            />
-          </CardContent>
-        </Card>
+          ) : null}
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+            source/medium attribution from GA4 for sessions that fired any generate_lead family
+            event.
+          </p>
+        </>
+      ) : null}
+
+      <SectionHead>Leads by broker · {windowLabel}</SectionHead>
+      <ReportGrid
+        label={`Inbound leads by broker, ${windowLabel}`}
+        columns={splitColumns('Broker')}
+        template="minmax(160px, 2fr) minmax(80px, 0.7fr) minmax(80px, 0.7fr)"
+        minWidth={360}
+        rows={brokerGrid}
+        empty={<>No leads in window.</>}
+      />
+
+      <SectionHead>Leads by channel · {windowLabel}</SectionHead>
+      <ReportGrid
+        label={`Inbound leads by channel, ${windowLabel}`}
+        columns={splitColumns('Channel')}
+        template="minmax(160px, 2fr) minmax(80px, 0.7fr) minmax(80px, 0.7fr)"
+        minWidth={360}
+        rows={channelGrid}
+        empty={<>No leads in window.</>}
+      />
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+        Both lists are ordered by count, most first. Share is against the{' '}
+        {formatInt(totalAssignments)} inbound {totalAssignments === 1 ? 'lead' : 'leads'} in the
+        window.
+      </p>
+
+      <SectionHead>Daily leads — the {CAP_DAYS} most recent days in the window</SectionHead>
+      {dailySeries.some((d) => d.count > 0) ? (
+        <>
+          <ul
+            style={{
+              listStyle: 'none',
+              margin: 0,
+              padding: 0,
+              fontFamily: 'var(--a-font-mono)',
+              fontSize: 'var(--a-text-xs)',
+            }}
+          >
+            {timelineRows.map((d) => {
+              const bars = Math.round((d.count / maxDaily) * 30)
+              return (
+                <li key={d.date} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '2px 0' }}>
+                  <span style={{ width: 96, flexShrink: 0, color: 'var(--a-text-2)' }}>{d.date}</span>
+                  <span style={{ width: 32, flexShrink: 0, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {d.count}
+                  </span>
+                  <span style={{ color: 'var(--a-accent)', overflow: 'hidden' }}>{'█'.repeat(bars)}</span>
+                </li>
+              )
+            })}
+          </ul>
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', fontVariantNumeric: 'tabular-nums', marginTop: 10 }}>
+            Showing {timelineRows.length} of {dailySeries.length} days, most recent first. Bar
+            length is proportional to the busiest day in the selected window ({maxDaily}).
+          </p>
+        </>
+      ) : (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
+          No inbound lead was recorded for {windowLabel}.
+        </p>
       )}
 
-      <Separator />
+      {ga4 && ga4.topLeadEvents.length > 0 ? (
+        <>
+          <SectionHead>Top GA4 lead-event names · {windowLabel}</SectionHead>
+          <ReportGrid
+            label={`Top GA4 lead-event names, ${windowLabel}`}
+            columns={[
+              { key: 'name', label: 'Event name' },
+              { key: 'count', label: 'Count', numeric: true },
+              { key: 'users', label: 'Users', numeric: true },
+            ]}
+            template="minmax(200px, 2fr) minmax(80px, 0.7fr) minmax(80px, 0.7fr)"
+            minWidth={420}
+            rows={ga4.topLeadEvents.slice(0, CAP_EVENTS).map((ev) => ({
+              key: ev.eventName,
+              cells: [ev.eventName, formatInt(ev.eventCount), formatInt(ev.users)],
+            }))}
+            empty={<>No GA4 lead-event names for {windowLabel}.</>}
+          />
+          {ga4.topLeadEvents.length > CAP_EVENTS ? (
+            <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', fontVariantNumeric: 'tabular-nums', marginTop: 10 }}>
+              Showing {CAP_EVENTS} of {ga4.topLeadEvents.length}.
+            </p>
+          ) : null}
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
+            How the generate_lead family broke down by name — use it to spot duplicate naming.
+          </p>
+        </>
+      ) : null}
 
-      {/* Doc panel */}
-      <div className="space-y-2 text-xs text-muted-foreground">
-        <p>
-          <strong className="text-foreground">Documentation:</strong>{' '}
-          <Link href="/admin/analytics" className="underline hover:no-underline">Back to Performance</Link>
-          {' · '}
-          <Link href="/admin/analytics/funnel-breakdown" className="underline hover:no-underline">Funnel breakdown (visitor_sessions)</Link>
-          {' · '}
-          <Link href="/admin/analytics/lp-leaderboard" className="underline hover:no-underline">LP leaderboard</Link>
-        </p>
-        <p>
-          <strong className="text-foreground">Wiring helpers:</strong> <code className="rounded bg-muted px-1">lib/lead-tracking.ts</code> (fireLeadGenerated), <code className="rounded bg-muted px-1">lib/canonical-lead-tagger.ts</code> (canonicallyTagLead), <code className="rounded bg-muted px-1">lib/ga4-measurement-protocol.ts</code> (fireGa4Event).
-        </p>
-        <p>
-          <strong className="text-foreground">Methodology:</strong> Sessions counted from GA4 Data API for the property the service account has access to. Lead events filtered to <code className="rounded bg-muted px-1">generate_lead</code>, <code className="rounded bg-muted px-1">listing_inquiry</code>, <code className="rounded bg-muted px-1">home_valuation_cta_click</code>, plus the legacy event names (<code className="rounded bg-muted px-1">contact_agent</code>, <code className="rounded bg-muted px-1">valuation_requested</code>, etc.). Leads come from <code className="rounded bg-muted px-1">crm_people</code> (system of record) via <code className="rounded bg-muted px-1">getLeadIntake</code>, inbound sources only, created <code className="rounded bg-muted px-1">{range.startDate}</code> to <code className="rounded bg-muted px-1">{range.endDate}</code> inclusive.
-        </p>
-      </div>
-    </div>
+      <SectionHead>Where these numbers come from</SectionHead>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '0 0 10px' }}>
+        Sessions from the GA4 Data API for the property the service account can reach. Lead events
+        filtered to <code style={CODE}>generate_lead</code>,{' '}
+        <code style={CODE}>listing_inquiry</code>,{' '}
+        <code style={CODE}>home_valuation_cta_click</code> and the
+        legacy names. Leads from{' '}
+        <code style={CODE}>crm_people</code> via{' '}
+        <code style={CODE}>getLeadIntake</code>, inbound sources
+        only, created {range.startDate} to {range.endDate} inclusive. Wiring helpers:{' '}
+        <code style={CODE}>lib/lead-tracking.ts</code>,{' '}
+        <code style={CODE}>lib/canonical-lead-tagger.ts</code>,{' '}
+        <code style={CODE}>lib/ga4-measurement-protocol.ts</code>.
+      </p>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: 0 }}>
+        <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>Back to Performance</Link>
+        {' · '}
+        <Link href="/admin/analytics/funnel-breakdown" style={{ color: 'var(--a-accent)' }}>
+          Funnel breakdown (visitor_sessions)
+        </Link>
+        {' · '}
+        <Link href="/admin/analytics/lp-leaderboard" style={{ color: 'var(--a-accent)' }}>
+          LP leaderboard
+        </Link>
+      </p>
+    </>
   )
 }
 
@@ -644,18 +719,23 @@ async function LeadFlowContent({ range }: { range: { startDate: string; endDate:
 export default async function LeadFlowReportPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = normalizeParams(await searchParams)
   const range = resolveDateRange(sp)
-  return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">Lead-flow report</h1>
-        <p className="text-sm text-muted-foreground">
-          End-to-end visibility from GA4 session to CRM-captured lead. Joins GA4 Data API with the Supabase system of record (crm_people via getLeadIntake, plus valuation_requests, listing_inquiries, cmas). Use the wiring-health section to spot lead surfaces with traffic but no recorded leads.
-        </p>
-        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
-      </header>
 
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <LeadFlowContent range={range} />
+  // Re-read the SAME window the reader is looking at, never a reset to 30d.
+  const refreshParams = new URLSearchParams()
+  if (sp.range) refreshParams.set('range', sp.range)
+  if (sp.startDate) refreshParams.set('startDate', sp.startDate)
+  if (sp.endDate) refreshParams.set('endDate', sp.endDate)
+  refreshParams.set('t', String(Date.now()))
+  const refreshHref = `/admin/reports/lead-flow?${refreshParams.toString()}`
+
+  return (
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <div className="av2-rfilters">
+        <DateRangePicker current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
+      </div>
+
+      <Suspense fallback={<ReportSkeleton />}>
+        <LeadFlowContent range={range} refreshHref={refreshHref} />
       </Suspense>
     </div>
   )

@@ -1,4 +1,50 @@
 // @no-parity — admin-internal reporting surface, no public mockup contract.
+//
+// Email reporting — 11C: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md) through the reporting family's shared
+// presentation kit (@/components/admin/v2). Presentation only.
+//
+// Carried over verbatim: the getCrmAccess guard + redirect, scopeBroker and the
+// rule that a restricted broker's scope beats any ?broker= param, PAGE_SIZE 50
+// and the offset arithmetic, the `page` parse, the requestedBroker /
+// effectiveBroker branch, the dateFrom start-of-day and dateTo end-of-day ISO
+// bounds, the sendType and q parses, the single `filter` object handed to all
+// three reads, the four parallel reads, toCsvRow and the CSV column set,
+// pageHref's param set and order, hasNext / hasPrev, all eight summary figures
+// and their labels, formatRate for every rate, the six broker-engagement
+// columns, the six log columns, every /admin/people/<personId> href, the form's
+// five field names (broker · type · from · to · q) and their defaults, and the
+// SEND_TYPES list. No metric, date window, filter default, sort order, unit or
+// rounding moved.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the page-title <h1> is gone (the nav names the page), the two
+// KPI strips became one typographic numbers strip in the same order, the raw
+// <select>/<input> controls became the v2 field primitives on the same native
+// GET form, both shadcn tables plus their parallel mobile card lists became the
+// family's grid (one source of markup, scrolling inside its own box), and the
+// lifecycle Badge became a StateWord — text plus color, never color alone.
+//
+// Two shape notes worth naming:
+//   - A restricted broker's scope used to ride along in a hidden <input>. Hidden
+//     inputs are raw markup the v2 language does not own, so the control is now
+//     a one-option dropdown carrying the same slug. scopeBroker still decides
+//     server-side, so the submitted value cannot widen anyone's scope.
+//   - The Badge tones collapse to three states: opens and clicks read ok,
+//     bounces and complaints read down, and everything else — delivered, sent,
+//     unsubscribe — reads neutral, which is what the old 'secondary' and
+//     'outline' variants both were.
+//
+// ONE truth correction (§0): the page checked log.unreadable but never
+// summary.unreadable, so an unreadable engagement summary printed eight zeros
+// and four "—" rates as if they were this window's measurement. A failed read
+// now leads and is labelled.
+//
+// Wall-of-identical-states probe (ADMIN_UI §3 acceptance bar rule 6, run
+// 2026-08-07 against dwvlophlbvvygjfxcrhm): email_events grouped by event =
+// delivered 404 · sent 68 · open 58 · click 11 · bounce 6. Five real kinds, so
+// the latest-event column is a genuine mix. complaint and unsubscribe have no
+// rows yet; their tones are kept for when they arrive.
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -12,13 +58,22 @@ import {
   type EmailSendLogRow,
 } from '@/lib/data/crm/getEmailReporting'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { KpiStrip } from '@/components/console/KpiStrip'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { formatDateTime } from '@/lib/format/date'
+import {
+  Button,
+  SectionHead,
+  SelectField,
+  StateWord,
+  TextField,
+  VerdictLine,
+  ReportGrid,
+  ReportNumbers,
+  ReportError,
+  type AdminState,
+  type ReportColumn,
+  type ReportGridRow,
+  type ReportNumberItem,
+} from '@/components/admin/v2'
 import { EmailLogCsvButton, type EmailLogCsvRow } from './EmailLogCsvButton'
 
 export const metadata: Metadata = {
@@ -40,19 +95,17 @@ const SEND_TYPES = [
   'other',
 ] as const
 
-/** Tone for the lifecycle-event pill, so a bounce reads red and a click green. */
-function eventTone(event: string): 'default' | 'secondary' | 'destructive' | 'outline' {
+/** Tone for the lifecycle event, so a bounce reads red and a click green. */
+function eventTone(event: string): AdminState {
   switch (event) {
     case 'click':
     case 'open':
-      return 'default'
+      return 'ok'
     case 'bounce':
     case 'complaint':
-      return 'destructive'
-    case 'unsubscribe':
-      return 'outline'
+      return 'down'
     default:
-      return 'secondary'
+      return 'waiting'
   }
 }
 
@@ -132,91 +185,143 @@ export default async function AdminEmailReportingPage({
   const hasNext = offset + log.rows.length < log.count
   const hasPrev = page > 1
 
-  return (
-    <main className="mx-auto max-w-5xl space-y-6 px-4 py-10 sm:px-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Email reporting</h1>
-        <p className="text-sm text-muted-foreground">
-          Every sent email and its engagement, read from the unified email-events store. Open and click rates are computed against deliveries. A rate reads a dash when there is nothing to measure, never a false zero.
-        </p>
-      </header>
+  const figures: ReportNumberItem[] = [
+    { key: 'sent', label: 'Sent', value: summary.sent.toLocaleString('en-US') },
+    { key: 'delivered', label: 'Delivered', value: summary.delivered.toLocaleString('en-US') },
+    { key: 'openrate', label: 'Open rate', value: formatRate(summary.openRate) },
+    { key: 'clickrate', label: 'Click rate', value: formatRate(summary.clickRate) },
+    { key: 'opened', label: 'Opened', value: summary.opened.toLocaleString('en-US') },
+    { key: 'clicked', label: 'Clicked', value: summary.clicked.toLocaleString('en-US') },
+    { key: 'bounced', label: 'Bounced', value: summary.bounced.toLocaleString('en-US') },
+    { key: 'bouncerate', label: 'Bounce rate', value: formatRate(summary.bounceRate) },
+  ]
 
-      {/* Engagement summary — counts + honest rates over the filtered window. */}
-      <KpiStrip
-        items={[
-          { label: 'Sent', value: summary.sent.toLocaleString('en-US') },
-          { label: 'Delivered', value: summary.delivered.toLocaleString('en-US') },
-          { label: 'Open rate', value: formatRate(summary.openRate) },
-          { label: 'Click rate', value: formatRate(summary.clickRate) },
-        ]}
-      />
-      <KpiStrip
-        items={[
-          { label: 'Opened', value: summary.opened.toLocaleString('en-US') },
-          { label: 'Clicked', value: summary.clicked.toLocaleString('en-US') },
-          { label: 'Bounced', value: summary.bounced.toLocaleString('en-US') },
-          { label: 'Bounce rate', value: formatRate(summary.bounceRate) },
-        ]}
-      />
+  const brokerColumns: ReportColumn[] = [
+    { key: 'broker', label: 'Broker' },
+    { key: 'sent', label: 'Sent', numeric: true },
+    { key: 'delivered', label: 'Delivered', numeric: true },
+    { key: 'openrate', label: 'Open rate', numeric: true },
+    { key: 'clickrate', label: 'Click rate', numeric: true },
+    { key: 'bouncerate', label: 'Bounce rate', numeric: true },
+  ]
+
+  const brokerGrid: ReportGridRow[] = brokerEngagement.map((b) => ({
+    key: b.broker,
+    cells: [
+      b.broker,
+      b.sent.toLocaleString('en-US'),
+      b.delivered.toLocaleString('en-US'),
+      formatRate(b.openRate),
+      formatRate(b.clickRate),
+      formatRate(b.bounceRate),
+    ],
+  }))
+
+  const logColumns: ReportColumn[] = [
+    { key: 'recipient', label: 'Recipient' },
+    { key: 'subject', label: 'Subject' },
+    { key: 'broker', label: 'Broker' },
+    { key: 'type', label: 'Type' },
+    { key: 'event', label: 'Latest event' },
+    { key: 'at', label: 'When' },
+  ]
+
+  const muted = { color: 'var(--a-text-2)' }
+
+  const logGrid: ReportGridRow[] = log.rows.map((r) => ({
+    key: r.key,
+    cells: [
+      r.personId != null ? (
+        <Link key="r" href={`/admin/people/${r.personId}`} style={{ color: 'var(--a-accent)' }}>
+          {r.recipientEmail}
+        </Link>
+      ) : (
+        r.recipientEmail
+      ),
+      r.subject ?? '—',
+      r.broker ?? '—',
+      r.sendType ?? '—',
+      <StateWord key="e" state={eventTone(r.latestEvent)}>
+        {r.latestEvent}
+      </StateWord>,
+      <span key="w" style={{ ...muted, whiteSpace: 'nowrap' }}>
+        {formatDateTime(r.latestAtIso)}
+      </span>,
+    ],
+  }))
+
+  const unreadable = summary.unreadable || log.unreadable
+
+  return (
+    <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={unreadable ? 'attention' : 'ok'}>
+          {unreadable ? (
+            <>
+              <b>The email-events store could not be read.</b> Nothing below is a measurement.
+            </>
+          ) : (
+            <>
+              <b>
+                {summary.delivered.toLocaleString('en-US')} of{' '}
+                {summary.sent.toLocaleString('en-US')} sent{' '}
+                {summary.sent === 1 ? 'email was' : 'emails were'} delivered
+              </b>{' '}
+              — open rate {formatRate(summary.openRate)}, click rate{' '}
+              {formatRate(summary.clickRate)}, against deliveries.
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
+      {unreadable ? <ReportError what="Email engagement" href="/admin/reports/emails" /> : null}
+
+      <ReportNumbers items={figures} />
 
       {/* Filters — native GET form, the canonical CRM filter pattern. */}
-      <form
-        method="GET"
-        action="/admin/reports/emails"
-        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
-      >
-        {scopedBroker ? (
-          // A restricted broker cannot change the broker scope.
-          <input type="hidden" name="broker" value={scopedBroker} />
-        ) : (
-          <select
+      <form method="get" action="/admin/reports/emails" className="av2-rfilters">
+        <div className="av2-inline-form" style={{ maxWidth: 900 }}>
+          <SelectField
+            label="Broker"
             name="broker"
-            defaultValue={sp.broker ?? 'all'}
-            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
+            defaultValue={scopedBroker ?? sp.broker ?? 'all'}
+            hint={scopedBroker ? 'Your sends only.' : undefined}
           >
-            <option value="all">All brokers</option>
-            {brokers.map((b) => (
-              <option key={b.slug} value={b.slug}>{b.name || b.slug}</option>
+            {scopedBroker ? (
+              <option value={scopedBroker}>{scopedBroker}</option>
+            ) : (
+              <>
+                <option value="all">All brokers</option>
+                {brokers.map((b) => (
+                  <option key={b.slug} value={b.slug}>
+                    {b.name || b.slug}
+                  </option>
+                ))}
+              </>
+            )}
+          </SelectField>
+          <SelectField label="Send type" name="type" defaultValue={sp.type ?? 'all'}>
+            <option value="all">All types</option>
+            {SEND_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
             ))}
-          </select>
-        )}
-        <select
-          name="type"
-          defaultValue={sp.type ?? 'all'}
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
-        >
-          <option value="all">All types</option>
-          {SEND_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-        <input
-          type="date"
-          name="from"
-          defaultValue={sp.from ?? ''}
-          aria-label="From date"
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
-        />
-        <input
-          type="date"
-          name="to"
-          defaultValue={sp.to ?? ''}
-          aria-label="To date"
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-auto"
-        />
-        <input
-          type="search"
-          name="q"
-          defaultValue={sp.q ?? ''}
-          placeholder="Recipient or subject"
-          aria-label="Search recipient or subject"
-          className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground sm:h-9 sm:w-64"
-        />
-        <div className="flex items-center gap-3">
-          <Button type="submit" size="sm" className="h-10 sm:h-9">Apply</Button>
+          </SelectField>
+          <TextField label="From" type="date" name="from" defaultValue={sp.from ?? ''} />
+          <TextField label="To" type="date" name="to" defaultValue={sp.to ?? ''} />
+          <TextField
+            label="Recipient or subject"
+            type="search"
+            name="q"
+            defaultValue={sp.q ?? ''}
+            placeholder="Recipient or subject"
+          />
+          <Button type="submit">Apply</Button>
           <Link
             href="/admin/reports/emails"
-            className="flex h-10 items-center text-sm text-muted-foreground hover:text-foreground sm:h-9"
+            className="av2-btn av2-btn--quiet"
+            style={{ textDecoration: 'none' }}
           >
             Clear
           </Link>
@@ -225,128 +330,80 @@ export default async function AdminEmailReportingPage({
 
       {/* Per-broker engagement (superuser only — a scoped broker sees just self). */}
       {brokerEngagement.length > 0 ? (
-        <ConsoleSection title="Engagement by broker">
-          <TableWithMobileCards
-            rows={brokerEngagement}
-            cap={brokerEngagement.length}
-            getRowKey={(b) => b.broker}
-            columns={[
-              { key: 'broker', header: 'Broker', className: 'font-medium text-foreground', cell: (b) => b.broker },
-              { key: 'sent', header: 'Sent', className: 'text-right tabular-nums', cell: (b) => b.sent.toLocaleString('en-US') },
-              { key: 'delivered', header: 'Delivered', className: 'text-right tabular-nums', cell: (b) => b.delivered.toLocaleString('en-US') },
-              { key: 'openrate', header: 'Open rate', className: 'text-right tabular-nums', cell: (b) => formatRate(b.openRate) },
-              { key: 'clickrate', header: 'Click rate', className: 'text-right tabular-nums', cell: (b) => formatRate(b.clickRate) },
-              { key: 'bouncerate', header: 'Bounce rate', className: 'text-right tabular-nums', cell: (b) => formatRate(b.bounceRate) },
-            ]}
-            renderCard={(b) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="text-sm font-medium text-foreground">{b.broker}</div>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {b.sent.toLocaleString('en-US')} sent · {b.delivered.toLocaleString('en-US')} delivered · open {formatRate(b.openRate)} · click {formatRate(b.clickRate)}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+        <>
+          <SectionHead>Engagement by broker — most sent first</SectionHead>
+          <ReportGrid
+            label="Email engagement by broker"
+            columns={brokerColumns}
+            template="minmax(130px, 1.4fr) minmax(74px, 0.7fr) minmax(88px, 0.8fr) minmax(88px, 0.8fr) minmax(88px, 0.8fr) minmax(96px, 0.8fr)"
+            minWidth={680}
+            rows={brokerGrid}
             empty={<>No broker engagement in this window yet.</>}
           />
-        </ConsoleSection>
+        </>
       ) : null}
 
-      {/* The sent-email log — one row per send, latest lifecycle event. */}
-      <ConsoleSection
-        title="Sent email log"
-        count={`(${log.count.toLocaleString('en-US')})`}
-        action={<EmailLogCsvButton rows={csvRows} />}
+      <SectionHead>Sent email log — newest first</SectionHead>
+      {log.unreadable ? (
+        <ReportError what="The sent-email log" href="/admin/reports/emails" />
+      ) : (
+        <ReportGrid
+          label="Sent email log"
+          columns={logColumns}
+          template="minmax(180px, 1.8fr) minmax(180px, 2fr) minmax(96px, 0.8fr) minmax(96px, 0.8fr) minmax(104px, 0.8fr) minmax(150px, 1.1fr)"
+          minWidth={900}
+          rows={logGrid}
+          empty={<>No sends match this filter yet. Email engagement appears here as the engine sends.</>}
+        />
+      )}
+
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 'var(--a-s3)',
+          marginTop: 'var(--a-s4)',
+          fontSize: 'var(--a-text-sm)',
+          color: 'var(--a-text-2)',
+        }}
       >
-        {log.unreadable ? (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-            The email-events store could not be read. The log is unavailable right now.
-          </div>
-        ) : (
-          <TableWithMobileCards
-            rows={log.rows}
-            cap={PAGE_SIZE}
-            getRowKey={(r) => r.key}
-            columns={[
-              {
-                key: 'recipient',
-                header: 'Recipient',
-                className: 'font-medium text-foreground',
-                cell: (r) =>
-                  r.personId != null ? (
-                    <Link href={`/admin/people/${r.personId}`} className="hover:underline">
-                      {r.recipientEmail}
-                    </Link>
-                  ) : (
-                    r.recipientEmail
-                  ),
-              },
-              { key: 'subject', header: 'Subject', className: 'text-muted-foreground', cell: (r) => r.subject ?? '—' },
-              { key: 'broker', header: 'Broker', className: 'text-xs', cell: (r) => r.broker ?? '—' },
-              { key: 'type', header: 'Type', className: 'text-xs', cell: (r) => r.sendType ?? '—' },
-              {
-                key: 'event',
-                header: 'Latest event',
-                cell: (r) => <Badge variant={eventTone(r.latestEvent)}>{r.latestEvent}</Badge>,
-              },
-              {
-                key: 'at',
-                header: 'When',
-                className: 'text-xs text-muted-foreground whitespace-nowrap',
-                cell: (r) => formatDateTime(r.latestAtIso),
-              },
-            ]}
-            renderCard={(r) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="min-w-0 break-words text-sm font-medium text-foreground">
-                      {r.personId != null ? (
-                        <Link href={`/admin/people/${r.personId}`} className="hover:underline">
-                          {r.recipientEmail}
-                        </Link>
-                      ) : (
-                        r.recipientEmail
-                      )}
-                    </span>
-                    <Badge variant={eventTone(r.latestEvent)} className="shrink-0">{r.latestEvent}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground break-words">{r.subject ?? '—'}</p>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {(r.broker ?? '—')} · {(r.sendType ?? '—')} · {formatDateTime(r.latestAtIso)}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No sends match this filter yet. Email engagement appears here as the engine sends.</>}
-          />
-        )}
+        <p style={{ fontVariantNumeric: 'tabular-nums', margin: 0 }}>
+          Page {page} · {log.count.toLocaleString('en-US')} matching{' '}
+          {log.count === 1 ? 'send' : 'sends'}
+        </p>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--a-s2)' }}>
+          {hasPrev ? (
+            <Link
+              href={pageHref(page - 1)}
+              className="av2-btn av2-btn--quiet"
+              style={{ textDecoration: 'none' }}
+            >
+              Previous
+            </Link>
+          ) : null}
+          {hasNext ? (
+            <Link
+              href={pageHref(page + 1)}
+              className="av2-btn av2-btn--quiet"
+              style={{ textDecoration: 'none' }}
+            >
+              Next
+            </Link>
+          ) : null}
+          <EmailLogCsvButton rows={csvRows} />
+        </span>
+      </div>
 
-        {(hasPrev || hasNext) ? (
-          <div className="mt-4 flex items-center justify-between">
-            {hasPrev ? (
-              <Link href={pageHref(page - 1)}>
-                <Button variant="outline" size="sm">Previous</Button>
-              </Link>
-            ) : (
-              <span />
-            )}
-            <span className="text-xs text-muted-foreground tabular-nums">Page {page}</span>
-            {hasNext ? (
-              <Link href={pageHref(page + 1)}>
-                <Button variant="outline" size="sm">Next</Button>
-              </Link>
-            ) : (
-              <span />
-            )}
-          </div>
-        ) : null}
-      </ConsoleSection>
-
-      <p className="text-sm text-muted-foreground">
-        <Link href="/admin/analytics" className="underline hover:no-underline">Back to Performance</Link>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
+        Open and click rates are computed against deliveries. A rate reads a dash when there is
+        nothing to measure, never a false zero. The CSV carries the {csvRows.length}{' '}
+        {csvRows.length === 1 ? 'row' : 'rows'} on this page.{' '}
+        <Link href="/admin/analytics" style={{ color: 'var(--a-accent)' }}>
+          Back to Performance
+        </Link>
       </p>
-    </main>
+    </div>
   )
 }
