@@ -1,6 +1,8 @@
 // @no-parity — internal admin surface, no public mockup contract
 import { notFound } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
+import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
+import { resolvePersonAssignedBroker } from '@/lib/data/crm/leadAssignedBroker'
 import { getClientPortalView } from '@/lib/data/crm/getClientPortalView'
 import { VerdictLine } from '@/components/admin/v2'
 import { ClientPortalReadOnlyView } from '@/components/admin/crm/portal-view/ClientPortalReadOnlyView'
@@ -50,11 +52,35 @@ export default async function ClientPortalViewPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  await requireAdminPage('people.view')
+  const ctx = await requireAdminPage('people.view')
 
   const { id: idRaw } = await params
   const id = Number(idRaw)
   if (!Number.isFinite(id) || id <= 0) notFound()
+
+  // BROKER SCOPE. requireAdminPage only asks "may this ROLE open people pages",
+  // and CAPABILITY_ROLES['people.view'] includes 'broker' — so without the check
+  // below, any broker could walk ids and read ANY contact's saved homes, hidden
+  // homes, named areas, alert recipients and site activity. getClientPortalView
+  // and all four of its downstream readers carry no scope of their own;
+  // listingAlerts.ts:395 even says "No user scope — the caller is an admin action
+  // gated by getCrmAccess", which is not the guard this route runs.
+  //
+  // Built from the capability context and the PURE decision rather than
+  // app/actions/crm's requirePersonInScope, because this page is pinned
+  // read-only by construction: clientPortalView.test.ts forbids importing any
+  // @/app/actions/ module so a write can never sneak onto the mirror. Same
+  // policy either way — scopeBroker returns null for the superuser, and
+  // isPersonInScope is the same unit-tested function every CRM mutation uses.
+  //
+  // Fails closed: resolvePersonAssignedBroker THROWS on a read error rather than
+  // reporting "no owner", and a missing row denies. notFound() rather than
+  // access-denied so the response cannot be used to probe which ids exist.
+  const scoped = scopeBroker({ role: ctx.role, brokerSlug: ctx.brokerSlug })
+  if (scoped) {
+    const owner = await resolvePersonAssignedBroker(id)
+    if (!owner.found || !isPersonInScope(scoped, owner.assignedBroker)) notFound()
+  }
 
   const view = await getClientPortalView({ crmPersonId: id })
   if (!view) notFound()
