@@ -6,30 +6,50 @@
  *
  * Reads the file client-side (no server form submission needed), calls
  * createImportJobAction, and navigates to /admin/crm/import/new/map?job=<id>.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
+ * pattern 6 (config form: single column, label above).
+ *
+ * Carried over verbatim: handleFileChange's `e.target.files?.[0]` read and its
+ * setError(null), handleSubmit's preventDefault → `await file.text()` →
+ * `createImportJobAction(text)` → `router.push('/admin/crm/import/new/map?job='
+ * + result.data.jobId)`, the "Choose a CSV file first." guard, the
+ * `disabled={loading || !fileName}` submit condition, the "Parsing…" label, the
+ * error-to-string catch, the `accept=".csv,text/csv"` filter, and the Cancel
+ * href (/admin/crm/import). The action still receives one argument: the text of
+ * the file the broker picked.
+ *
+ * Shape changed, data did not: the <h1> chrome is gone (the nav names the
+ * page), the hand-rolled drop zone with its `sr-only` <input> became the v2
+ * TextField primitive, and the four step pills became one line of plain text.
+ * ONE mechanism moved with the markup: the File handle now lives in state
+ * (captured from the same change event that already set fileName) instead of a
+ * ref into the removed input — `await file.text()` runs on the same File, so
+ * the string handed to createImportJobAction is unchanged.
  */
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { Button, TextField, VerdictLine } from '@/components/admin/v2'
 import { createImportJobAction } from '@/app/actions/crm-import'
 
 export default function ImportUploadPage() {
   const router = useRouter()
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [file, setFile] = useState<File | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    setFile(file ?? null)
     setFileName(file?.name ?? null)
     setError(null)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const file = fileRef.current?.files?.[0]
     if (!file) { setError('Choose a CSV file first.'); return }
 
     setLoading(true)
@@ -46,72 +66,63 @@ export default function ImportUploadPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      {/* Breadcrumb */}
-      <nav className="mb-2 text-xs text-muted-foreground">
-        <Link href="/admin/crm/import" className="hover:text-foreground">Import contacts</Link>
-        <span className="px-1.5">/</span>
-        <span className="text-foreground">Upload CSV</span>
+    <div className="av2-scope" style={{ maxWidth: 640, margin: '0 auto', padding: 16 }}>
+      <nav
+        aria-label="Breadcrumb"
+        style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+      >
+        <Link href="/admin/crm/import" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          Import contacts
+        </Link>
       </nav>
 
-      {/* Step indicator */}
-      <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="rounded-full bg-primary text-primary-foreground px-2 py-0.5 font-semibold">1</span>
-        <span className="font-medium text-foreground">Upload</span>
-        <span className="text-border">›</span>
-        <span>Map fields</span>
-        <span className="text-border">›</span>
-        <span>Preview</span>
-        <span className="text-border">›</span>
-        <span>Run</span>
-      </div>
-
-      <h1 className="text-2xl font-bold text-foreground mb-1">Upload a CSV</h1>
-      <p className="text-sm text-muted-foreground mb-8">
-        Your file must have a header row. Maximum 10 MB. Contacts are matched
-        by email — existing contacts are updated, new ones are created.
+      <p style={{ margin: '0 0 14px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+        <span style={{ color: 'var(--a-text)', fontWeight: 600 }}>1 Upload</span>
+        {' · '}2 Map fields{' · '}3 Preview{' · '}4 Run
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Drop zone */}
-        <label
-          htmlFor="csvFile"
-          className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-card px-6 py-12 text-center cursor-pointer hover:border-primary transition-colors"
-        >
-          <svg className="h-10 w-10 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-          </svg>
-          <div>
-            <span className="text-sm font-medium text-foreground">
-              {fileName ? fileName : 'Click to choose a CSV file'}
-            </span>
-            <p className="mt-0.5 text-xs text-muted-foreground">CSV · max 10 MB</p>
-          </div>
-          <input
-            id="csvFile"
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="sr-only"
-            onChange={handleFileChange}
-          />
-        </label>
+      <div style={{ margin: '0 0 20px' }}>
+        <VerdictLine tone="ok">
+          <b>Pick the CSV to import.</b> It needs a header row and has to be under 10 MB.
+        </VerdictLine>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <TextField
+          label="CSV file"
+          hint="The first row is read as the column headers. The next step maps them to CRM fields."
+          type="file"
+          accept=".csv,text/csv"
+          onChange={handleFileChange}
+        />
 
         {error && (
-          <p className="rounded-lg bg-destructive/10 border border-destructive/30 px-4 py-2 text-sm text-destructive">
+          <p
+            role="alert"
+            style={{ margin: '12px 0 0', fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}
+          >
             {error}
           </p>
         )}
 
-        <div className="flex items-center gap-3">
-          <Button type="submit" disabled={loading || !fileName} className="min-w-[120px]">
+        <div className="av2-wordrow" style={{ marginTop: 20 }}>
+          <Button type="submit" disabled={loading || !fileName} style={{ minWidth: 120 }}>
             {loading ? 'Parsing…' : 'Continue'}
           </Button>
-          <Link href="/admin/crm/import">
-            <Button type="button" variant="outline">Cancel</Button>
+          <Link
+            href="/admin/crm/import"
+            className="av2-btn av2-btn--quiet"
+            style={{ textDecoration: 'none' }}
+          >
+            Cancel
           </Link>
         </div>
       </form>
-    </main>
+
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
+        Contacts are matched by email: an existing contact is updated field by field and its tags
+        merged, a new one is created. A row carrying neither a name nor an email is skipped.
+      </p>
+    </div>
   )
 }

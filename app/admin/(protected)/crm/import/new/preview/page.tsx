@@ -3,23 +3,58 @@
 
 /**
  * Step 3 — Preview first 10 rows + dup warnings, then kick off the import.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only.
+ *
+ * THE RUN CALL IS THE PAYLOAD, carried over character for character:
+ * handleRun still calls `startImportAction(jobId)` first, then
+ * `fetch('/api/admin/crm-import', { method: 'POST', headers: { 'Content-Type':
+ * 'application/json' }, body: JSON.stringify({ jobId }) })` — the route reads
+ * `body.jobId`, so that key may not be renamed — then pushes to
+ * /admin/crm/import/<jobId>. Both failure branches (non-ok response body.error
+ * / `Server error <status>`, and the network catch) keep their exact strings and
+ * their setRunning(false).
+ *
+ * Also carried over verbatim: `?job=` and `Number(params.get('job') ?? 0)`, the
+ * 'Invalid job id' guard, the effect's [jobId] dependency, getImportPreviewAction
+ * and the three pieces of state it fills, the dup test
+ * `dupWarnings.some((w) => w.rowIndex === i + 1)`, the tags `slice(0, 3)` + "+N"
+ * overflow, every `.toLocaleString()` call, and all three hrefs (the Back link's
+ * /admin/crm/import/new/map?job=<jobId>, Cancel's /admin/crm/import, and the
+ * status push target).
+ *
+ * Shape changed, data did not: the <h1> chrome is gone (the nav names the
+ * page), the dup banner folded into the verdict line, the shadcn table became
+ * the admin's one grid, the tag Badges became text, the four step pills became
+ * one line of plain text, and a duplicate row is now named in words next to its
+ * email rather than shaded a colour (WCAG 1.4.1 — the wash alone carried the
+ * meaning before).
  */
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Button,
+  ReportGrid,
+  SectionHead,
+  StateWord,
+  VerdictLine,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 import { getImportPreviewAction, startImportAction } from '@/app/actions/crm-import'
 import type { ImportContact, DupWarning } from '@/lib/crm/import'
+
+const COLUMNS: ReportColumn[] = [
+  { key: 'n', label: '#', numeric: true },
+  { key: 'name', label: 'Name' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'stage', label: 'Stage' },
+  { key: 'tags', label: 'Tags' },
+]
 
 export default function ImportPreviewPage() {
   const router = useRouter()
@@ -78,107 +113,125 @@ export default function ImportPreviewPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <p className="text-sm text-muted-foreground">Loading preview…</p>
-      </main>
+      <div className="av2-scope" style={{ maxWidth: 880, margin: '0 auto', padding: 16 }}>
+        <p role="status" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          Loading preview…
+        </p>
+      </div>
     )
   }
 
+  const rows: ReportGridRow[] = preview.map((c, i) => {
+    const isDup = dupWarnings.some((w) => w.rowIndex === i + 1)
+    return {
+      key: String(i),
+      cells: [
+        <span key="n" style={{ color: isDup ? 'var(--a-warn)' : 'var(--a-text-2)' }}>{i + 1}</span>,
+        c.name || <span key="name" style={{ color: 'var(--a-text-2)' }}>—</span>,
+        <span key="email">
+          {c.email ?? '—'}
+          {isDup ? (
+            <>
+              {' '}
+              <StateWord state="slow">repeat email</StateWord>
+            </>
+          ) : null}
+        </span>,
+        c.phone ?? '—',
+        c.stage ?? '—',
+        c.tags.slice(0, 3).join(' · ') + (c.tags.length > 3 ? ` +${c.tags.length - 3}` : ''),
+      ],
+    }
+  })
+
+  const linkOff = running
+    ? { textDecoration: 'none', opacity: 0.5, pointerEvents: 'none' as const }
+    : { textDecoration: 'none' }
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <nav className="mb-2 text-xs text-muted-foreground">
-        <Link href="/admin/crm/import" className="hover:text-foreground">Import contacts</Link>
-        <span className="px-1.5">/</span>
-        <span className="text-foreground">Preview</span>
+    <div className="av2-scope" style={{ maxWidth: 880, margin: '0 auto', padding: 16 }}>
+      <nav
+        aria-label="Breadcrumb"
+        style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+      >
+        <Link href="/admin/crm/import" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          Import contacts
+        </Link>
       </nav>
 
-      <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5">1</span>
-        <span>Upload</span>
-        <span className="text-border">›</span>
-        <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5">2</span>
-        <span>Map fields</span>
-        <span className="text-border">›</span>
-        <span className="rounded-full bg-primary text-primary-foreground px-2 py-0.5 font-semibold">3</span>
-        <span className="font-medium text-foreground">Preview</span>
-        <span className="text-border">›</span>
-        <span>Run</span>
-      </div>
-
-      <h1 className="text-2xl font-bold text-foreground mb-1">Preview</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        First 10 of {totalRows.toLocaleString()} rows. Review then run the import.
-        Contacts matched by email will be updated; others created.
+      <p style={{ margin: '0 0 14px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+        1 Upload{' · '}2 Map fields{' · '}
+        <span style={{ color: 'var(--a-text)', fontWeight: 600 }}>3 Preview</span>
+        {' · '}4 Run
       </p>
 
-      {dupWarnings.length > 0 && (
-        <div className="mb-4 rounded-lg bg-warning/10 border border-warning/30 px-4 py-3 text-sm text-warning">
-          <strong>{dupWarnings.length} duplicate email{dupWarnings.length > 1 ? 's' : ''}</strong> found
-          within this file. Only the first occurrence will be imported; later rows will update the same contact.
-        </div>
-      )}
+      <div style={{ margin: '0 0 20px' }}>
+        <VerdictLine tone={dupWarnings.length > 0 ? 'attention' : 'ok'}>
+          <b>{totalRows.toLocaleString()} rows ready to import.</b>{' '}
+          {dupWarnings.length > 0 ? (
+            <>
+              {dupWarnings.length} duplicate email{dupWarnings.length > 1 ? 's' : ''} inside this
+              file — only the first occurrence is imported, later rows update the same contact.
+            </>
+          ) : (
+            <>No email repeats inside this file.</>
+          )}
+        </VerdictLine>
+      </div>
 
       {error && (
-        <p className="mb-4 rounded-lg bg-destructive/10 border border-destructive/30 px-4 py-2 text-sm text-destructive">
+        <p
+          role="alert"
+          style={{ margin: '0 0 16px', fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}
+        >
           {error}
         </p>
       )}
 
-      {/* Preview table */}
       {preview.length > 0 && (
-        <div className="mb-6 rounded-xl border border-border bg-card overflow-x-auto no-scrollbar">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Stage</TableHead>
-                <TableHead>Tags</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {preview.map((c, i) => {
-                const isDup = dupWarnings.some((w) => w.rowIndex === i + 1)
-                return (
-                  <TableRow key={i} className={isDup ? 'bg-warning/5' : undefined}>
-                    <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell className="text-sm font-medium text-foreground">
-                      {c.name || <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.email ?? '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.phone ?? '—'}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{c.stage ?? '—'}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {c.tags.slice(0, 3).map((t) => (
-                          <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
-                        ))}
-                        {c.tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs text-muted-foreground">+{c.tags.length - 3}</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          <SectionHead>
+            The first {preview.length} {preview.length === 1 ? 'row' : 'rows'}
+          </SectionHead>
+          <ReportGrid
+            label="First rows of the import"
+            columns={COLUMNS}
+            template="minmax(44px, 0.35fr) minmax(130px, 1.2fr) minmax(160px, 1.5fr) minmax(110px, 1fr) minmax(84px, 0.8fr) minmax(120px, 1.1fr)"
+            minWidth={720}
+            rows={rows}
+            empty={<>No row survived the mapping. Go back and map at least one column.</>}
+          />
+        </>
       )}
 
-      <div className="flex items-center gap-3">
-        <Button onClick={handleRun} disabled={running} className="min-w-[160px]">
+      <div className="av2-wordrow" style={{ marginTop: 20 }}>
+        <Button onClick={handleRun} disabled={running} style={{ minWidth: 160 }}>
           {running ? 'Starting import…' : `Run import (${totalRows.toLocaleString()} rows)`}
         </Button>
-        <Link href={`/admin/crm/import/new/map?job=${jobId}`}>
-          <Button variant="outline" disabled={running}>Back</Button>
+        <Link
+          href={`/admin/crm/import/new/map?job=${jobId}`}
+          className="av2-btn av2-btn--quiet"
+          style={linkOff}
+          aria-disabled={running || undefined}
+          tabIndex={running ? -1 : undefined}
+        >
+          Back
         </Link>
-        <Link href="/admin/crm/import">
-          <Button variant="ghost" disabled={running}>Cancel</Button>
+        <Link
+          href="/admin/crm/import"
+          className="av2-btn av2-btn--quiet"
+          style={linkOff}
+          aria-disabled={running || undefined}
+          tabIndex={running ? -1 : undefined}
+        >
+          Cancel
         </Link>
       </div>
-    </main>
+
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
+        Contacts are matched by email: an existing contact is updated field by field and its tags
+        merged, a new one is created. A row carrying neither a name nor an email is skipped.
+      </p>
+    </div>
   )
 }

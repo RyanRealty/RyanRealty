@@ -7,14 +7,34 @@
  * Reads from the crm_imports row (via getImportPreviewAction which re-parses
  * the stored CSV) and shows a select per header. Saves the mapping with
  * updateImportMappingAction then navigates to the preview step.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
+ * pattern 6 (config form: single column, label above).
+ *
+ * THE MAPPING IS THE PAYLOAD, so it is carried over character for character:
+ * `headers` is still `Object.keys(result.data.mapping)`, each control is still
+ * keyed by the raw CSV header string, its value is still
+ * `mapping[header] ?? '__skip__'`, its options are still IMPORTABLE_FIELDS with
+ * `value={f.key}` / `{f.label}`, and setMapping still writes
+ * `{ ...prev, [header]: value as ImportableFieldKey }`. updateImportMappingAction
+ * stores that object as crm_imports.field_mapping and mapRowToContact reads it
+ * as header → field key, so neither side of a pair may drift.
+ *
+ * Also carried over verbatim: `?job=` and `Number(params.get('job') ?? 0)`, the
+ * 'Invalid job id' guard, the effect's [jobId] dependency, the saving flow and
+ * its 'Saving…' label, the push to /admin/crm/import/new/preview?job=<jobId>,
+ * the Cancel href, and totalRows' `.toLocaleString()`.
+ *
+ * Shape changed, data did not: the <h1> chrome is gone (the nav names the
+ * page), the shadcn Select + Label pair became the v2 SelectField (which owns
+ * the label), the rows became a responsive grid instead of a fixed 160px label
+ * column, and the four step pills became one line of plain text.
  */
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
+import { Button, SelectField, VerdictLine } from '@/components/admin/v2'
 import { IMPORTABLE_FIELDS, type FieldMapping, type ImportableFieldKey } from '@/lib/crm/import'
 import { getImportPreviewAction, updateImportMappingAction } from '@/app/actions/crm-import'
 
@@ -53,81 +73,91 @@ export default function ImportMapPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-10">
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      </main>
+      <div className="av2-scope" style={{ maxWidth: 640, margin: '0 auto', padding: 16 }}>
+        <p role="status" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          Loading…
+        </p>
+      </div>
     )
   }
 
+  const mapped = headers.filter((h) => (mapping[h] ?? '__skip__') !== '__skip__').length
+  const skipped = headers.length - mapped
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <nav className="mb-2 text-xs text-muted-foreground">
-        <Link href="/admin/crm/import" className="hover:text-foreground">Import contacts</Link>
-        <span className="px-1.5">/</span>
-        <span className="text-foreground">Map fields</span>
+    <div className="av2-scope" style={{ maxWidth: 640, margin: '0 auto', padding: 16 }}>
+      <nav
+        aria-label="Breadcrumb"
+        style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+      >
+        <Link href="/admin/crm/import" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          Import contacts
+        </Link>
       </nav>
 
-      <div className="mb-6 flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="rounded-full bg-muted text-muted-foreground px-2 py-0.5">1</span>
-        <span>Upload</span>
-        <span className="text-border">›</span>
-        <span className="rounded-full bg-primary text-primary-foreground px-2 py-0.5 font-semibold">2</span>
-        <span className="font-medium text-foreground">Map fields</span>
-        <span className="text-border">›</span>
-        <span>Preview</span>
-        <span className="text-border">›</span>
-        <span>Run</span>
-      </div>
-
-      <h1 className="text-2xl font-bold text-foreground mb-1">Map CSV columns</h1>
-      <p className="text-sm text-muted-foreground mb-8">
-        {totalRows.toLocaleString()} data rows detected. Match each column to a CRM field, or skip it.
-        Columns mapped to &quot;skip&quot; are ignored.
+      <p style={{ margin: '0 0 14px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+        1 Upload{' · '}
+        <span style={{ color: 'var(--a-text)', fontWeight: 600 }}>2 Map fields</span>
+        {' · '}3 Preview{' · '}4 Run
       </p>
 
+      <div style={{ margin: '0 0 20px' }}>
+        <VerdictLine tone={mapped > 0 ? 'ok' : 'attention'}>
+          <b>
+            {mapped} of {headers.length} {headers.length === 1 ? 'column' : 'columns'} mapped,{' '}
+            {skipped} skipped.
+          </b>{' '}
+          {totalRows.toLocaleString()} data rows.
+        </VerdictLine>
+      </div>
+
       {error && (
-        <p className="mb-4 rounded-lg bg-destructive/10 border border-destructive/30 px-4 py-2 text-sm text-destructive">
+        <p
+          role="alert"
+          style={{ margin: '0 0 16px', fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}
+        >
           {error}
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="rounded-xl border border-border bg-card divide-y divide-border">
+      <form onSubmit={handleSubmit}>
+        <div className="av2-editgrid">
           {headers.map((header) => (
-            <div key={header} className="flex items-center gap-4 px-4 py-3">
-              <Label className="w-40 shrink-0 text-sm font-medium text-foreground truncate" title={header}>
-                {header}
-              </Label>
-              <Select
-                value={mapping[header] ?? '__skip__'}
-                onValueChange={(val) =>
-                  setMapping((prev) => ({ ...prev, [header]: val as ImportableFieldKey }))
-                }
-              >
-                <SelectTrigger className="flex-1 h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {IMPORTABLE_FIELDS.map((f) => (
-                    <SelectItem key={f.key} value={f.key}>
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectField
+              key={header}
+              label={header}
+              value={mapping[header] ?? '__skip__'}
+              onChange={(e) =>
+                setMapping((prev) => ({ ...prev, [header]: e.target.value as ImportableFieldKey }))
+              }
+            >
+              {IMPORTABLE_FIELDS.map((f) => (
+                <option key={f.key} value={f.key}>
+                  {f.label}
+                </option>
+              ))}
+            </SelectField>
           ))}
         </div>
 
-        <div className="flex items-center gap-3 pt-2">
-          <Button type="submit" disabled={saving} className="min-w-[140px]">
+        <div className="av2-wordrow" style={{ marginTop: 20 }}>
+          <Button type="submit" disabled={saving} style={{ minWidth: 140 }}>
             {saving ? 'Saving…' : 'Preview import'}
           </Button>
-          <Link href="/admin/crm/import">
-            <Button type="button" variant="outline">Cancel</Button>
+          <Link
+            href="/admin/crm/import"
+            className="av2-btn av2-btn--quiet"
+            style={{ textDecoration: 'none' }}
+          >
+            Cancel
           </Link>
         </div>
       </form>
-    </main>
+
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
+        A column left on “— skip this column —” is not read. First name and last name are joined
+        into the contact&apos;s name; tags split on commas.
+      </p>
+    </div>
   )
 }
