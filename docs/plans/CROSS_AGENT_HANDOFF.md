@@ -3,7 +3,7 @@
 
 # Current — 2026-08-07 (Claude Code, local) — PHASE 11 COMPLETE
 
-`main` @ `<tip>`, pushed, deployed READY and spot-checked on production. Disk is the
+`main` @ `7e6c8cfe`, pushed, deployed READY and spot-checked on production. Disk is the
 source of truth: `docs/plans/ADMIN_PRODUCT/{state.json,work-queue.json,progress.txt,decisions.md}`.
 Read `progress.txt` from the bottom — the last three entries are 11C, 11D and 11E.
 
