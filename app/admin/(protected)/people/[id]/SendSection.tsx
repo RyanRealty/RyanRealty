@@ -40,6 +40,7 @@ export async function SendSection({
     <section aria-label="Send">
       <SectionHead>Send</SectionHead>
       <ContactSendCenter
+      triggerClassName="av2-btn av2-btn--quiet av2-btn--touch"
         personId={personId}
         emailSuppressed={emailSuppressed}
         bpos={bpos}

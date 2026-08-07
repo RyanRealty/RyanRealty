@@ -152,7 +152,9 @@ export default function ConsoleQuickAction() {
           // §29 single-FAB rule: hidden at < md on calendar/tasks (their own FAB).
           mobileSuppressed ? 'hidden md:flex' : 'flex',
         )}
-        style={{ backgroundColor: 'var(--console-info)' }}
+        // v2 accent (11C): the FAB is global admin chrome, so it speaks the
+        // locked admin language rather than the retired console palette.
+        style={{ backgroundColor: 'var(--a-btn-bg, var(--console-info))', color: 'var(--a-btn-fg, #fff)' }}
       >
         <Plus className="h-6 w-6" />
       </button>

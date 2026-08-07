@@ -82,6 +82,10 @@ export function ContactSendCenter(props: {
   /** Bound sendNewsletterToContactAction(personId) — takes the per-attempt
       idempotency key (A5: duplicate submit no-ops, failed send releases). */
   newsletterSendAction: (idempotencyKey: string) => Promise<{ ok: boolean; error?: string; message?: string }>
+  /** Presentation only: v2 hosts pass av2 button classes so the trigger
+   *  speaks the admin language. Omitted everywhere else — the legacy
+   *  workspace keeps the shadcn primary. Never affects the send path. */
+  triggerClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -334,7 +338,11 @@ export function ContactSendCenter(props: {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" className="w-full min-h-11">
+        <Button
+          type="button"
+          className={props.triggerClassName ?? 'w-full min-h-11'}
+          {...(props.triggerClassName ? { variant: 'ghost' as const } : {})}
+        >
           <Send className="mr-2 h-4 w-4" aria-hidden />
           Send to contact
         </Button>
