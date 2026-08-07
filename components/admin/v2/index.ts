@@ -23,6 +23,7 @@ export { ThreadBubble, type ThreadBubbleProps } from './ThreadBubble'
 export { RailNav, type RailGroup, type RailItem } from './RailNav'
 export { TabBar, type TabItem } from './TabBar'
 export { TextField, TextAreaField, SelectField } from './Field'
+export { EntityTitle } from './EntityTitle'
 // The admin's one tabular reader — every migrated data/list page draws from it.
 export {
   ReportGrid,

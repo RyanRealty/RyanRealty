@@ -1,14 +1,38 @@
 // @no-parity — internal admin surface, no public mockup contract
+//
+// Newsletter analytics — P11C: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md) through the shared presentation kit
+// (@/components/admin/v2). Presentation only.
+//
+// Carried over verbatim — and this page's authz is gated by G-NL-12b
+// (scripts/check-newsletter-scope.mjs), so none of it may move: the
+// getCrmAccess() → /admin/access-denied redirect, scopeBroker(access), the
+// `isSuperuser = restrictedSlug === null` test, the selectedBroker resolution
+// (a restricted broker's slug comes ONLY from the session; the ?broker= param
+// is consulted only when isSuperuser), slugsToShow, the per-broker
+// getBrokerNewsletterAnalytics + getBrokerWarmList(slug, 50) reads, the totals
+// reduce, ctr/ctor, the warm-list sort (newest engagement first) and its
+// 50-row slice, the BrokerFilterSelect mount and its props, the 25-row display
+// cap, the /admin/people/[id] hrefs, and the pct()/fmtDate() formatters.
+//
+// Shape changed, data did not: the KPI tile board became the family's
+// typographic numbers strip (same four figures, same formatting), the shadcn
+// table + mobile-card pair became the family's ONE grid, and the page title is
+// gone — the nav names this page, and the verdict names the scope.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { getBrokerNewsletterAnalytics, getBrokerWarmList } from '@/lib/data'
-import { KpiStrip } from '@/components/console/KpiStrip'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
-import { Card, CardContent } from '@/components/ui/card'
+import {
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  VerdictLine,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 import { BrokerFilterSelect } from './BrokerFilterSelect'
 import { formatDate } from '@/lib/format/date'
 
@@ -24,6 +48,9 @@ function fmtDate(iso: string): string {
 }
 
 type WarmRow = { email: string; personId: number | null; clicks: number; lastAt: string }
+
+/** Rows shown in the warm list before the "Showing N of M." line (legacy cap: 25). */
+const ROW_CAP = 25
 
 /**
  * Newsletter analytics (spec §9.5 / Phase 8). Role gate:
@@ -82,29 +109,27 @@ export default async function NewsletterAnalyticsPage({
     .sort((a, b) => (a.lastAt < b.lastAt ? 1 : a.lastAt > b.lastAt ? -1 : 0))
     .slice(0, 50)
 
-  const kpiItems = [
-    { label: 'Recipients', value: totals.recipients.toLocaleString('en-US') },
-    { label: 'Delivered', value: totals.delivered.toLocaleString('en-US') },
-    { label: 'Click rate', value: pct(ctr) },
-    { label: 'CTOR', value: pct(ctor) },
+  const columns: ReportColumn[] = [
+    { key: 'email', label: 'Email' },
+    { key: 'clicks', label: 'Clicks', numeric: true },
+    { key: 'lastAt', label: 'Last engaged', numeric: true },
   ]
 
-  const columns: TwmcColumn<WarmRow>[] = [
-    {
-      key: 'email',
-      header: 'Email',
-      cell: (r) =>
-        r.personId ? (
-          <Link href={`/admin/people/${r.personId}`} className="font-medium text-foreground hover:underline">
-            {r.email}
-          </Link>
-        ) : (
-          <span className="text-foreground">{r.email}</span>
-        ),
-    },
-    { key: 'clicks', header: 'Clicks', className: 'tabular-nums', cell: (r) => <span>{r.clicks.toLocaleString('en-US')}</span> },
-    { key: 'lastAt', header: 'Last engaged', className: 'tabular-nums', cell: (r) => <span className="text-muted-foreground">{fmtDate(r.lastAt)}</span> },
-  ]
+  const shown = warmList.slice(0, ROW_CAP)
+  const gridRows: ReportGridRow[] = shown.map((r) => ({
+    key: r.email,
+    cells: [
+      r.personId ? (
+        <Link key="email" href={`/admin/people/${r.personId}`} style={{ color: 'var(--a-accent)' }}>
+          {r.email}
+        </Link>
+      ) : (
+        r.email
+      ),
+      r.clicks.toLocaleString('en-US'),
+      fmtDate(r.lastAt),
+    ],
+  }))
 
   const heading = isSuperuser
     ? selectedBroker === 'all'
@@ -113,60 +138,70 @@ export default async function NewsletterAnalyticsPage({
     : CRM_BROKER_DISPLAY[restrictedSlug]
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Newsletter analytics</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {heading}. Delivery and engagement across every issue, and the warm list for follow-up.
-          </p>
-        </div>
-        {isSuperuser ? (
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={totals.delivered === 0 ? 'attention' : 'ok'}>
+          {totals.delivered === 0 ? (
+            <b>{heading}: nothing delivered yet.</b>
+          ) : (
+            <b>
+              {heading}: {pct(ctr)} click rate on {totals.delivered.toLocaleString('en-US')}{' '}
+              delivered.
+            </b>
+          )}
+        </VerdictLine>
+      </div>
+
+      {isSuperuser ? (
+        <div className="av2-rfilters">
           <BrokerFilterSelect
             brokers={CRM_BROKERS.map((slug) => ({ slug, name: CRM_BROKER_DISPLAY[slug] }))}
             value={selectedBroker}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
-      <div className="mt-6">
-        <KpiStrip items={kpiItems} />
-      </div>
+      <ReportNumbers
+        items={[
+          { key: 'recipients', label: 'Recipients', value: totals.recipients.toLocaleString('en-US') },
+          { key: 'delivered', label: 'Delivered', value: totals.delivered.toLocaleString('en-US') },
+          { key: 'ctr', label: 'Click rate', value: pct(ctr) },
+          { key: 'ctor', label: 'CTOR', value: pct(ctor) },
+        ]}
+      />
 
-      <div className="mt-8">
-        <ConsoleSection
-          title="Warm list"
-          count={`(${warmList.length} recipient${warmList.length === 1 ? '' : 's'})`}
+      <SectionHead>
+        Warm list ({warmList.length} recipient{warmList.length === 1 ? '' : 's'})
+      </SectionHead>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+        Recipients who clicked in a newsletter, newest engagement first. Open the CRM card to follow
+        up.
+      </p>
+      <ReportGrid
+        label="Warm list"
+        columns={columns}
+        template="minmax(200px, 2fr) minmax(72px, 0.6fr) minmax(120px, 1fr)"
+        minWidth={480}
+        rows={gridRows}
+        empty="No clicks recorded yet for this scope."
+      />
+      {warmList.length > shown.length ? (
+        <p
+          style={{
+            fontSize: 'var(--a-text-xs)',
+            color: 'var(--a-text-2)',
+            fontVariantNumeric: 'tabular-nums',
+            marginTop: 12,
+          }}
         >
-          <p className="mb-3 text-sm text-muted-foreground">
-            Recipients who clicked in a newsletter, newest engagement first. Open the CRM card to follow up.
-          </p>
-          <TableWithMobileCards
-            rows={warmList}
-            columns={columns}
-            getRowKey={(r) => r.email}
-            cap={25}
-            renderCard={(r) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    {r.personId ? (
-                      <Link href={`/admin/people/${r.personId}`} className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline">
-                        {r.email}
-                      </Link>
-                    ) : (
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.email}</span>
-                    )}
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{r.clicks} clicks</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground tabular-nums">{fmtDate(r.lastAt)}</div>
-                </CardContent>
-              </Card>
-            )}
-            empty={<p>No clicks recorded yet for this scope.</p>}
-          />
-        </ConsoleSection>
-      </div>
-    </main>
+          Showing {shown.length.toLocaleString('en-US')} of {warmList.length.toLocaleString('en-US')}
+          .
+        </p>
+      ) : null}
+
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
+        The figures above cover every issue this scope has sent, not a date window.
+      </p>
+    </div>
   )
 }

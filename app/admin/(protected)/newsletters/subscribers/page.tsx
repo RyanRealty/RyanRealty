@@ -1,14 +1,39 @@
 // @no-parity — internal admin surface, no public mockup contract
+//
+// Newsletter subscribers — P11C: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md) through the shared presentation kit
+// (@/components/admin/v2). Presentation only.
+//
+// Carried over verbatim: the getCrmAccess() → /admin/access-denied redirect,
+// every query param and its parsing (`page` `q` `status` `segment` `broker`,
+// the STATUSES/SEGMENTS allow-lists, PAGE_SIZE = 50), the
+// newsletterSubscriberCounts() + listSubscribersWithBroker() reads and their
+// args, the totalPages / from / to arithmetic, the pageHref builder (same
+// params, same order, same "omit page=1" rule), SEGMENT_LABELS, brokerLabel(),
+// every column and the value in it, the SubscriberRowActions props, the
+// SubscriberFilters / AddSubscriberForm / BulkEnrollForm mounts, and every href.
+//
+// Shape changed, data did not: the KPI tile board became the family's
+// typographic numbers strip, the shadcn table + mobile-card pair became the
+// family's ONE grid (which carries its own phone shape), status pills became
+// state words carrying the same status text, the row-actions column now
+// carries the header "Actions" where the legacy table left it blank, and the
+// page title is gone — the nav names this page.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { newsletterSubscriberCounts, type NewsletterSegment, type SubscriberStatus } from '@/lib/data'
 import { listSubscribersWithBroker, type SubscriberWithBroker } from '@/lib/data/newsletter/subscribersAdmin'
-import { Button } from '@/components/ui/button'
-import { StatusPill } from '@/components/console/StatusPill'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
-import { TableWithMobileCards, type TwmcColumn } from '@/components/admin/TableWithMobileCards'
+import {
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  StateWord,
+  VerdictLine,
+  type AdminState,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 import SubscriberFilters from '@/components/admin/newsletter/SubscriberFilters'
 import SubscriberRowActions from '@/components/admin/newsletter/SubscriberRowActions'
 import { AddSubscriberForm } from '../SubscriberForms'
@@ -26,14 +51,16 @@ const SEGMENT_LABELS: Record<string, string> = {
 const STATUSES = new Set(['active', 'unsubscribed', 'bounced', 'complained'])
 const SEGMENTS = new Set(['general', 'buyer', 'seller', 'past-client'])
 
-function subscriberStatusPill(status: SubscriberWithBroker['status']) {
-  const tone = ({
-    active: 'success',
-    unsubscribed: 'neutral',
-    bounced: 'danger',
-    complained: 'danger',
-  } as const)[status] ?? 'neutral'
-  return <StatusPill tone={tone} label={status} />
+/** Same status→severity mapping the pills carried; the word itself is unchanged. */
+const SUBSCRIBER_STATE = {
+  active: 'ok',
+  unsubscribed: 'waiting',
+  bounced: 'down',
+  complained: 'down',
+} as const satisfies Record<SubscriberWithBroker['status'], AdminState>
+
+function subscriberStatusWord(status: SubscriberWithBroker['status']) {
+  return <StateWord state={SUBSCRIBER_STATE[status] ?? 'waiting'}>{status}</StateWord>
 }
 
 function brokerLabel(slug: string): string {
@@ -64,12 +91,6 @@ export default async function NewsletterSubscribersPage({
     listSubscribersWithBroker({ ...filters, page, pageSize: PAGE_SIZE }),
   ])
 
-  const kpiItems = [
-    { label: 'Active', value: counts.active.toLocaleString('en-US') },
-    { label: 'Unsubscribed', value: counts.unsubscribed.toLocaleString('en-US') },
-    { label: 'Total', value: counts.total.toLocaleString('en-US') },
-  ]
-
   const totalPages = Math.max(1, Math.ceil(list.total / list.pageSize))
   const from = list.total === 0 ? 0 : (list.page - 1) * list.pageSize + 1
   const to = Math.min(list.page * list.pageSize, list.total)
@@ -84,114 +105,140 @@ export default async function NewsletterSubscribersPage({
     return `/admin/newsletters/subscribers${next.size ? `?${next.toString()}` : ''}`
   }
 
-  const columns: TwmcColumn<SubscriberWithBroker>[] = [
-    { key: 'email', header: 'Email', cell: (r) => <span className="font-medium text-foreground">{r.email}</span> },
-    { key: 'name', header: 'Name', cell: (r) => <span className="text-muted-foreground">{r.name ?? '—'}</span> },
-    { key: 'broker', header: 'Broker', cell: (r) => <span className="text-muted-foreground">{brokerLabel(r.broker)}</span> },
-    { key: 'segment', header: 'Segment', cell: (r) => <span className="text-muted-foreground">{SEGMENT_LABELS[r.segment] ?? r.segment}</span> },
-    { key: 'status', header: 'Status', cell: (r) => subscriberStatusPill(r.status) },
-    { key: 'source', header: 'Source', cell: (r) => <span className="text-muted-foreground">{r.source ?? '—'}</span> },
-    {
-      key: 'action',
-      header: '',
-      className: 'text-right',
-      cell: (r) => (
-        <SubscriberRowActions
-          id={r.id}
-          email={r.email}
-          name={r.name}
-          segment={r.segment}
-          status={r.status}
-          broker={r.broker}
-          hasCrmPerson={r.crm_person_id != null}
-        />
-      ),
-    },
+  const columns: ReportColumn[] = [
+    { key: 'email', label: 'Email' },
+    { key: 'name', label: 'Name' },
+    { key: 'broker', label: 'Broker' },
+    { key: 'segment', label: 'Segment' },
+    { key: 'status', label: 'Status' },
+    { key: 'source', label: 'Source' },
+    { key: 'action', label: 'Actions' },
   ]
 
+  const shown = list.rows.slice(0, PAGE_SIZE)
+  const gridRows: ReportGridRow[] = shown.map((r) => ({
+    key: r.id,
+    cells: [
+      r.email,
+      r.name ?? '—',
+      brokerLabel(r.broker),
+      SEGMENT_LABELS[r.segment] ?? r.segment,
+      subscriberStatusWord(r.status),
+      r.source ?? '—',
+      <SubscriberRowActions
+        key="actions"
+        id={r.id}
+        email={r.email}
+        name={r.name}
+        segment={r.segment}
+        status={r.status}
+        broker={r.broker}
+        hasCrmPerson={r.crm_person_id != null}
+      />,
+    ],
+  }))
+
   return (
-    <main className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-8">
-      <div className="mb-1 text-sm text-muted-foreground">
-        <Link href="/admin/newsletters" className="inline-flex min-h-10 items-center hover:text-foreground">← Back to Newsletter</Link>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
+        <Link href="/admin/newsletters" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          Newsletter
+        </Link>
+      </nav>
+
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={counts.active === 0 ? 'attention' : 'ok'}>
+          <b>
+            {counts.active.toLocaleString('en-US')} active,{' '}
+            {counts.unsubscribed.toLocaleString('en-US')} unsubscribed,{' '}
+            {counts.total.toLocaleString('en-US')} on file.
+          </b>
+        </VerdictLine>
       </div>
-      <h1 className="text-2xl font-bold text-foreground">Subscribers</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Search, filter, edit, and export the newsletter list.</p>
 
-      <div className="mt-6">
-        <KpiStrip items={kpiItems} />
+      <ReportNumbers
+        items={[
+          { key: 'active', label: 'Active', value: counts.active.toLocaleString('en-US') },
+          { key: 'unsubscribed', label: 'Unsubscribed', value: counts.unsubscribed.toLocaleString('en-US') },
+          { key: 'total', label: 'Total', value: counts.total.toLocaleString('en-US') },
+        ]}
+      />
+
+      <SectionHead>Add subscriber</SectionHead>
+      <AddSubscriberForm />
+
+      <SectionHead>Bulk add subscribers</SectionHead>
+      <BulkEnrollForm />
+
+      <SectionHead>Subscriber list</SectionHead>
+      <div className="av2-rfilters">
+        <SubscriberFilters />
       </div>
+      <p
+        style={{
+          fontSize: 'var(--a-text-xs)',
+          color: 'var(--a-text-2)',
+          fontVariantNumeric: 'tabular-nums',
+          margin: '0 0 12px',
+        }}
+      >
+        {list.total === 0
+          ? 'No subscribers'
+          : `${from.toLocaleString('en-US')}–${to.toLocaleString('en-US')} of ${list.total.toLocaleString('en-US')}`}
+      </p>
 
-      <ConsoleSection title="Add subscriber" className="mt-6">
-        <AddSubscriberForm />
-      </ConsoleSection>
+      <ReportGrid
+        label="Newsletter subscribers"
+        columns={columns}
+        template="minmax(190px, 2fr) minmax(110px, 1fr) minmax(78px, 0.7fr) minmax(90px, 0.8fr) minmax(96px, 0.8fr) minmax(96px, 0.9fr) minmax(120px, 1fr)"
+        minWidth={940}
+        rows={gridRows}
+        empty="No subscribers match. Clear the filters, or add one above."
+      />
 
-      <ConsoleSection title="Bulk add subscribers" className="mt-6">
-        <BulkEnrollForm />
-      </ConsoleSection>
-
-      <div className="mt-8">
-        <ConsoleSection
-          title="Subscriber list"
-          action={
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {list.total === 0 ? 'No subscribers' : `${from.toLocaleString('en-US')}–${to.toLocaleString('en-US')} of ${list.total.toLocaleString('en-US')}`}
-            </p>
-          }
+      {totalPages > 1 ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginTop: 16,
+          }}
         >
-          <div className="mb-4">
-            <SubscriberFilters />
-          </div>
-
-          <TableWithMobileCards
-            rows={list.rows}
-            columns={columns}
-            getRowKey={(r) => r.id}
-            cap={PAGE_SIZE}
-            renderCard={(r) => (
-              <div className="rounded-lg border border-border bg-muted/40 p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{r.email}</span>
-                  {subscriberStatusPill(r.status)}
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                  <span>{r.name ?? 'No name'}</span>
-                  <span>{brokerLabel(r.broker)}</span>
-                  <span>{SEGMENT_LABELS[r.segment] ?? r.segment}</span>
-                  <span>{r.source ?? '—'}</span>
-                </div>
-                <div className="mt-2">
-                  <SubscriberRowActions
-                    id={r.id}
-                    email={r.email}
-                    name={r.name}
-                    segment={r.segment}
-                    status={r.status}
-                    broker={r.broker}
-                    hasCrmPerson={r.crm_person_id != null}
-                  />
-                </div>
-              </div>
-            )}
-            empty={<p>No subscribers match. Clear the filters, or add one above.</p>}
-          />
-
-          {totalPages > 1 ? (
-            <div className="mt-4 flex items-center justify-between gap-3">
-              {page > 1 ? (
-                <Button asChild variant="outline" size="sm">
-                  <Link href={pageHref(page - 1)}>← Previous</Link>
-                </Button>
-              ) : <span />}
-              <span className="text-xs text-muted-foreground tabular-nums">Page {page.toLocaleString('en-US')} of {totalPages.toLocaleString('en-US')}</span>
-              {page < totalPages ? (
-                <Button asChild variant="outline" size="sm">
-                  <Link href={pageHref(page + 1)}>Next →</Link>
-                </Button>
-              ) : <span />}
-            </div>
-          ) : null}
-        </ConsoleSection>
-      </div>
-    </main>
+          {page > 1 ? (
+            <Link
+              href={pageHref(page - 1)}
+              className="av2-btn av2-btn--quiet"
+              style={{ textDecoration: 'none' }}
+            >
+              ← Previous
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span
+            style={{
+              fontSize: 'var(--a-text-xs)',
+              color: 'var(--a-text-2)',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            Page {page.toLocaleString('en-US')} of {totalPages.toLocaleString('en-US')}
+          </span>
+          {page < totalPages ? (
+            <Link
+              href={pageHref(page + 1)}
+              className="av2-btn av2-btn--quiet"
+              style={{ textDecoration: 'none' }}
+            >
+              Next →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </div>
+      ) : null}
+    </div>
   )
 }

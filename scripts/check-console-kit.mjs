@@ -53,10 +53,16 @@ const REQUIRED_KIT_PAGES = [
   'app/admin/(protected)/crm/sequences/page.tsx',
   'app/admin/(protected)/crm/approvals/page.tsx',
   // Comms cluster
-  'app/admin/(protected)/newsletters/page.tsx',
-  'app/admin/(protected)/newsletters/[id]/page.tsx',
-  'app/admin/(protected)/newsletters/new/page.tsx',
-  'app/admin/(protected)/newsletters/subscribers/page.tsx',
+  // app/admin/(protected)/newsletters/{page, [id]/page, new/page,
+  // subscribers/page}.tsx — REMOVED 2026-08-07 (P11C): the family migrated to
+  // the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md), whose
+  // acceptance bar forbids the legacy console kit — the two contracts cannot
+  // both hold on one page. Headings did not become optional: SectionHead owns
+  // them, and the surface is now under ci:admin-ui (rules A–D: no raw
+  // h1/h2/button/input/select/table, one primary action, no width sprawl) plus
+  // ci:admin-responsive and ci:admin-v2-tokens. That is a strictly stronger
+  // contract than the ConsoleSection floor this gate enforces, so this is a
+  // hand-off, not a regression. Same reasoning as crm/inbox and crm/tasks above.
   'app/admin/(protected)/email/campaigns/page.tsx',
   'app/admin/(protected)/email/compose/page.tsx',
   // Ops / data cluster
