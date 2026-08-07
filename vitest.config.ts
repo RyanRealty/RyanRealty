@@ -57,6 +57,9 @@ export default defineConfig({
       'scripts/skyslope-pdf-advisory-agent.test.mjs',
       'scripts/lib/**/*.test.mjs',
       'scripts/__tests__/**/*.test.mjs',
+      // Gate break-tests written in TS next to their gate (scripts/ is excluded
+      // from tsconfig, so these are transpiled here and never type-checked).
+      'scripts/*.test.ts',
       'eslint-rules/**/*.test.mjs',
       'components/site/__tests__/**/*.test.ts',
       'components/site/__tests__/**/*.test.tsx',

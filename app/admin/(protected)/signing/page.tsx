@@ -32,6 +32,7 @@
 // carries its own phone shape), and the shadcn Accordion disclosure became a
 // native <details> holding the same "See all N envelopes" split.
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getEnvelopesOverview } from '@/app/actions/tc-envelopes'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 import {
@@ -98,6 +99,10 @@ function gridRows(rows: EnvelopeRow[]): ReportGridRow[] {
 }
 
 export default async function SigningDashboard() {
+  // CAPABILITY GUARD — see the sibling [envelopeId] page for the full reasoning.
+  // Neither page in this family ran any auth of its own.
+  await requireAdminPage('transactions.view')
+
   const envelopes = await getEnvelopesOverview()
   const counts = envelopes.reduce<Record<string, number>>((acc, e) => {
     acc[e.status] = (acc[e.status] ?? 0) + 1

@@ -85,6 +85,12 @@ for (const file of files) {
       const callee = node.expression.getText(src)
       if (callee === 'redirect' || callee === 'permanentRedirect') callsRedirect = true
     }
+    // A FRAGMENT renders too. Without this, `if (!row) redirect(...); return
+    // <>{row.gci}</>` reads as a JSX-free redirect bridge and the whole rule-B
+    // classification skips it. Caught 2026-08-07 while building the sibling
+    // ci:entity-scope, which shares this bridge test — cosmetic here (a
+    // migration counter), a hole there (an authorization check).
+    if (ts.isJsxFragment(node)) hasJsx = true
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       hasJsx = true
       const tag = node.tagName.getText(src)
