@@ -11,6 +11,7 @@
  */
 
 import { sendEmail } from '@/lib/resend'
+import { formatPublishedPhone } from '@/lib/cma/format-phone'
 import { sendGmailMessage } from '@/lib/gmail-draft'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
 
@@ -84,6 +85,10 @@ export async function sendLeadConfirmation(params: {
   leadName: string | null
   subjectAddress: string
   brokerName: string | null
+  /** Assigned broker's @ryan-realty.com mailbox — sender + reply-to. Matt fallback. */
+  brokerEmail?: string | null
+  /** Assigned broker's PUBLISHABLE line (E.164 twilio_number). Matt fallback. */
+  brokerPhone?: string | null
 }): Promise<void> {
   // Suppression chokepoint (fails closed). A lead who opted out of email never
   // gets the confirmation by EITHER path (Gmail send-as-matt or Resend
@@ -93,6 +98,17 @@ export async function sendLeadConfirmation(params: {
 
   const firstName = params.leadName?.split(/\s+/)[0] ?? 'there'
   const brokerFirst = params.brokerName?.split(/\s+/)[0] ?? 'one of our brokers'
+  // The assigned broker signs and sends (locked directive, Matt 2026-08-04:
+  // "CMAs sign as the lead's assigned broker — their mailbox sends via Gmail
+  // DWD; Matt fallback"). Supersedes the 2026-06-05 send-as-Matt-always note
+  // below for the assigned-broker case; the mechanics are unchanged.
+  const signName = params.brokerName?.trim() || 'Matt Ryan'
+  const signEmail =
+    params.brokerEmail?.trim().toLowerCase().endsWith('@ryan-realty.com')
+      ? (params.brokerEmail as string).trim()
+      : 'matt@ryan-realty.com'
+  const signPhone = formatPublishedPhone(params.brokerPhone) ?? '541.703.3095'
+  const signPhoneHref = (params.brokerPhone ?? '+15417033095').replace(/[^\d+]/g, '')
   const subject = `Your home value request for ${params.subjectAddress}`
   const text = [
     `Hi ${firstName},`,
@@ -106,9 +122,9 @@ export async function sendLeadConfirmation(params: {
     `If you have anything you'd like us to know upfront, like recent`,
     `improvements, timing, or specific questions, just reply to this email.`,
     '',
-    `Matt Ryan`,
+    signName,
     `Ryan Realty`,
-    `541.703.3095`,
+    signPhone,
     `https://ryan-realty.com`,
   ].join('\n')
 
@@ -119,9 +135,9 @@ export async function sendLeadConfirmation(params: {
   <p>${escapeHtml(brokerFirst)} from Ryan Realty will pull recent comparable sales, apply the right adjustments for your property, and email you a personalized analysis within the next business day.</p>
   <p>If you have anything you'd like us to know upfront, like recent improvements, timing, or specific questions, just reply to this email.</p>
   <p style="margin-top:32px;color:#5b6473;font-size:13px;">
-    Matt Ryan<br/>
+    ${escapeHtml(signName)}<br/>
     Ryan Realty<br/>
-    <a href="tel:5417033095" style="color:#5b6473;">541.703.3095</a><br/>
+    <a href="tel:${escapeHtml(signPhoneHref)}" style="color:#5b6473;">${escapeHtml(signPhone)}</a><br/>
     <a href="https://ryan-realty.com" style="color:#5b6473;">ryan-realty.com</a>
   </p>
 </div>
@@ -133,12 +149,12 @@ export async function sendLeadConfirmation(params: {
   // sending domain required. (Matt 2026-06-05: "email is matt@ryan-realty.com" —
   // not the noreply, not the mail. subdomain.)
   const gmailRes = await sendGmailMessage({
-    impersonateAs: 'matt@ryan-realty.com',
+    impersonateAs: signEmail,
     to: params.leadEmail,
     subject,
     bodyText: text,
     bodyHtml: html,
-    replyTo: 'matt@ryan-realty.com',
+    replyTo: signEmail,
   })
   if (!gmailRes.ok) {
     // Suppression chokepoint (fails closed) — re-checked in this scope so the
@@ -152,11 +168,11 @@ export async function sendLeadConfirmation(params: {
     )
     await sendEmail({
       to: params.leadEmail,
-      from: 'Matt Ryan <matt@mail.ryan-realty.com>',
+      from: `${signName} <${signEmail.replace('@ryan-realty.com', '@mail.ryan-realty.com')}>`,
       subject,
       text,
       html,
-      replyTo: 'matt@ryan-realty.com',
+      replyTo: signEmail,
     })
   }
 }

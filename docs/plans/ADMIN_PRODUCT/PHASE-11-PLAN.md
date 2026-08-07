@@ -135,21 +135,45 @@ compliance-adjacent and outrank cosmetics:
 - `assigned_broker` scatter across person/conversation/tasks/deals/alerts → one
   resolution rule needed; columns exist, semantics don't. Blocks correct scoping
   everywhere, and Matt's locked scope answer (own-book + PB full view) depends on it.
-- **Signing broker — CONFIRMED BROKEN 2026-08-06. Do this FIRST, ahead of all
-  Phase-11 UI work.** Matt restated it as canon: *"The CMA is always signed by the
-  Lead's Assigned Broker. Matt is a fallback."* The code does the opposite.
-  `lib/cma-request.ts:88-96` resolves an env default and then **explicitly discards
-  the person id** — `void fubPersonId`, with a `TODO` still referencing FUB, which
-  was decommissioned 2026-06-24. Line 415 then stamps `assigned_broker: broker.slug`
-  onto the `cmas` row, so the wrong broker propagates into the record. Same env
-  default in `lib/cma-delivery.ts:607` and `lib/bpo/build.ts:49`.
-  **Effect: every CMA and BPO signs as Matt regardless of who owns the lead** — on a
-  document a consumer receives from a licensed brokerage. This is a §0/compliance
-  issue, not a UI nicety, and it is live (19 CMA drafts in the P9 valuations count).
-  Fix: resolve `crm_people.assigned_broker` (or `assigned_broker_slug` /
-  `assigned_broker_email` — all three columns exist per the schema snapshot) at
-  request time, fall back to Matt only when unassigned. All three call sites.
-  Add a test that pins the resolution and a gate if it recurs.
+- **Signing broker — FIXED 2026-08-06 (ships in the same commit as this edit).**
+  The locked directive — *"The CMA is always signed by the Lead's Assigned Broker.
+  Matt is a fallback"* (Matt, restated 2026-08-06) — is now the code's behavior.
+  One shared resolver: `lib/data/cma/signing-broker.ts
+  resolveSigningBrokerForPerson`, wired into both broken paths:
+  - `lib/cma-request.ts resolveBrokerSlug` — was `void fubPersonId` + env default.
+  - `lib/cma-delivery.ts resolveAssignedBroker` — was calling the DEAD FUB API
+    (always fell through to Matt); `getFubAssignedUserEmail` and the
+    `getFubApiKey` import are deleted (a Track-3B win in passing).
+  - `lib/bpo/build.ts` was inspected and left alone — broker-initiated, the admin
+    form passes an explicit `brokerSlug`; the directive concerns lead-driven docs.
+  **The load-bearing discovery:** `crm_people.assigned_broker` holds the SHORT
+  slug (`matt` 18,179 · `rebecca` 124 · `paul` 71 · null 4,598 — live counts
+  2026-08-06) while `brokers.slug` is the full web slug — the join is on
+  `brokers.crm_slug` (migration 20260625171000). A slug-based match would have
+  compiled, passed a shallow test, and silently kept signing everything as Matt.
+  **Second catch:** the resolver returns `twilio_number`, never `brokers.phone` —
+  activating Rebecca/Paul for the first time would otherwise have leaked their
+  personal cells into client-facing CMA emails (ci:broker-published-phone class).
+  Pinned by `lib/data/cma/signing-broker.test.ts` (6 tests: crm_slug join
+  asserted, publishable-vs-personal phone split, both slug spaces, all three
+  fallback paths). Live-verified: person 11784 (assigned `rebecca`) resolves to
+  `rebecca-peterson` through the exact query path. DAL index refreshed (G16).
+  **A 3-lens adversarial panel then refuted the first draft** and its catches
+  are folded in: (1) the call site fed `fubPersonId` while the CRM kickoff and
+  expired-cron pass only `crmPersonId` — the litmus path itself would still
+  have signed Matt; now `crmPersonId ?? fubPersonId`. (2) The lead-confirmation
+  email named the assigned broker in the body while signing/sending as Matt —
+  now the assigned broker's mailbox signs and sends (Gmail DWD, Matt fallback),
+  superseding the 2026-06-05 send-as-Matt note per the P3 lock. (3)
+  `cma_deliveries.broker_imessage_to` (a reach-the-BROKER column) now gets
+  `notifyPhone` (the cell), not the Twilio line. (4) E.164 renders formatted
+  in client-facing signatures (`lib/cma/format-phone.ts`). (5) GA4
+  `assigned_broker` user property uses the short `crmSlug` matching
+  lead-tracking's typed space; the `cmas` row keeps the full slug.
+  **Accepted, not changed:** delivery review now routes to Matt instead of
+  erroring when unassigned (that IS the locked fallback); the pre-existing
+  `fub_legacy_id` mirror-stamp ambiguity at `lib/cma-request.ts:436-444` is
+  Track 3B's to retire.
 - `fsbo_listings.status='off_market'`: readers exist, writers zero → exclusion
   branch dead.
 - Dupe-candidate queue missing → cross-channel identity conflicts invisible.

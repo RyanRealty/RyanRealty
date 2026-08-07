@@ -17,6 +17,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
 import { fireGa4Event } from '@/lib/ga4-measurement-protocol'
 import { sendBrokerNotification, sendLeadConfirmation } from '@/lib/cma/request-emails'
 
@@ -84,31 +85,21 @@ export type CreateCmaRequestResult =
 import { slugifyAddress } from '@/lib/cma/address-slug'
 export { slugifyAddress }
 
-/** Resolve the broker who should sign the CMA (matt-ryan default). */
-async function resolveBrokerSlug(fubPersonId: number | null): Promise<{
-  slug: string
-  email: string | null
-  displayName: string | null
-}> {
-  const sb = createServiceClient()
-  const defaultSlug = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'matthew-ryan').trim().toLowerCase()
-
-  // TODO: when FUB person has an assignedUserId, resolve to that broker's
-  // slug. For now, fall back to the env default.
-  void fubPersonId
-
-  const { data } = await sb
-    .from('brokers')
-    .select('slug, email, display_name')
-    .eq('slug', defaultSlug)
-    .eq('is_active', true)
-    .limit(1)
-  const row = (data as Array<{ slug: string; email: string | null; display_name: string | null }> | null)?.[0]
-  if (row?.slug) {
-    return { slug: row.slug, email: row.email, displayName: row.display_name }
-  }
-  // Final fallback if the brokers row is missing/disabled.
-  return { slug: defaultSlug, email: 'matt@ryan-realty.com', displayName: 'Matt Ryan' }
+/**
+ * Resolve the broker who signs the CMA: the lead's ASSIGNED broker, Matt as
+ * the fallback (locked directive, Matt 2026-08-04 / restated 2026-08-06).
+ * The one implementation lives in lib/data/cma/signing-broker.ts.
+ *
+ * Person-id spaces: crmPersonId is always a crm_people.id. fubPersonId is the
+ * legacy field name — every LIVE caller passes a native crm_people.id in it
+ * (identity-bridge cookie, sendEvent/ensureNativeLead returns; verified
+ * 2026-08-06), so it is a safe second choice when crmPersonId is absent.
+ */
+async function resolveSigningBroker(input: {
+  crmPersonId?: number | null
+  fubPersonId?: number | null
+}) {
+  return resolveSigningBrokerForPerson(input.crmPersonId ?? input.fubPersonId ?? null)
 }
 
 export async function createCmaRequest(
@@ -129,7 +120,7 @@ export async function createCmaRequest(
           : requestSource === 'crm-kickoff'
             ? 'Broker kick-off (CRM)'
             : 'Seller LP submission'
-    const broker = await resolveBrokerSlug(input.fubPersonId ?? null)
+    const broker = await resolveSigningBroker(input)
 
     // Resolve broker uuid so the cmas row has a valid FK if the cmas.broker_id
     // column is uuid (it is). If we can't resolve, leave null and let the
@@ -412,7 +403,9 @@ export async function createCmaRequest(
         subject_state: input.parsedState ?? undefined,
       },
       userProperties: {
-        assigned_broker: broker.slug,
+        // Short CRM slug (matt/rebecca/paul) — lead-tracking types this
+        // property in the short space; the cmas ROW keeps the full slug.
+        assigned_broker: broker.crmSlug ?? broker.slug,
         lead_status: 'cma-draft',
       },
     })
@@ -436,6 +429,8 @@ export async function createCmaRequest(
         leadName,
         subjectAddress: rawAddress,
         brokerName: broker.displayName,
+        brokerEmail: broker.email,
+        brokerPhone: broker.phone,
       }).catch((e) => console.warn('[cma-request] lead confirmation failed:', e))
     }
 

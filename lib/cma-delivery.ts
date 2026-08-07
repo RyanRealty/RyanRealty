@@ -30,7 +30,6 @@
  */
 
 import 'server-only'
-import { getFubApiKey } from '@/lib/crm/fub-env'
 
 import React from 'react'
 import { renderToBuffer } from '@react-pdf/renderer'
@@ -44,6 +43,8 @@ import {
 import { CMAPdfDocument } from '@/lib/pdf/cma-pdf'
 import { EMAIL_FONT_STACK } from '@/lib/email/brand'
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveSigningBrokerForPerson } from '@/lib/data/cma/signing-broker'
+import { formatPublishedPhone } from '@/lib/cma/format-phone'
 import { sendEmail } from '@/lib/resend'
 import { signDeliveryToken } from '@/lib/cma-delivery-tokens'
 
@@ -342,7 +343,7 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
     cma,
     brokerName: assignedBroker?.displayName ?? null,
     brokerEmail: assignedBroker?.email ?? null,
-    brokerPhone: assignedBroker?.phone ?? null,
+    brokerPhone: formatPublishedPhone(assignedBroker?.phone) ?? null,
   })
 
   // ── Step 8: persist the draft state → 'ready'
@@ -360,7 +361,9 @@ export async function processCmaDelivery(deliveryId: string): Promise<{
       assigned_broker_slug: assignedBroker?.slug ?? null,
       assigned_broker_email: assignedBroker?.email ?? null,
       assigned_broker_name: assignedBroker?.displayName ?? null,
-      broker_imessage_to: assignedBroker?.phone ?? null,
+      // The line we reach the BROKER on (column comment: 'E.164 phone we
+      // attempt iMessage on') — the broker's cell, not the Twilio line.
+      broker_imessage_to: assignedBroker?.notifyPhone ?? assignedBroker?.phone ?? null,
       email_subject: subject,
       email_body_html: html,
       email_body_text: text,
@@ -557,100 +560,34 @@ type AssignedBroker = {
   slug: string
   displayName: string | null
   email: string | null
+  /** Publishable line (twilio_number, E.164) — client-facing renders only. */
   phone: string | null
+  /** The line we reach the BROKER on (brokers.phone — personal cell for
+   *  Paul/Rebecca). Internal columns only; never rendered to a client. */
+  notifyPhone: string | null
 }
 
 /**
- * Resolve which broker should review + send this CMA.
+ * Resolve which broker should review + send this CMA: the lead's ASSIGNED
+ * broker (crm_people.assigned_broker → brokers.crm_slug), Matt as the
+ * fallback — the locked directive (Matt 2026-08-04 / restated 2026-08-06).
+ * The one implementation is lib/data/cma/signing-broker.ts. The old FUB
+ * assigned-user path is gone with the FUB decommission (2026-06-24).
  *
- * Strategy (in order):
- *   1. If the FUB person already has an assigned user, look up that user's
- *      email and match it to a row in the `brokers` Supabase table.
- *   2. Otherwise, fall back to the env-configured default broker
- *      (CMA_DEFAULT_BROKER_SLUG, defaults to 'ryan-matt').
- *
- * Returns null only if no broker row is resolvable in either path.
+ * Phone is the PUBLISHABLE twilio_number, never brokers.phone — for Paul and
+ * Rebecca `phone` is their personal cell, and this email is client-facing.
  */
 async function resolveAssignedBroker(params: {
   fubPersonId: number | null
 }): Promise<AssignedBroker | null> {
-  const sb = createServiceClient()
-
-  // 1. FUB-assigned user → broker email match
-  if (params.fubPersonId) {
-    const fubUserEmail = await getFubAssignedUserEmail(params.fubPersonId)
-    if (fubUserEmail) {
-      const { data } = await sb
-        .from('brokers')
-        .select('slug, display_name, email, phone')
-        .ilike('email', fubUserEmail)
-        .eq('is_active', true)
-        .limit(1)
-      const row = (data as Array<{
-        slug: string
-        display_name: string | null
-        email: string | null
-        phone: string | null
-      }> | null)?.[0]
-      if (row?.slug) {
-        return {
-          slug: row.slug,
-          displayName: row.display_name,
-          email: row.email,
-          phone: row.phone,
-        }
-      }
-    }
-  }
-
-  // 2. Env default
-  const defaultSlug = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'matthew-ryan')
-    .trim()
-    .toLowerCase()
-  const { data: defaultRow } = await sb
-    .from('brokers')
-    .select('slug, display_name, email, phone')
-    .eq('slug', defaultSlug)
-    .eq('is_active', true)
-    .limit(1)
-  const def = (defaultRow as Array<{
-    slug: string
-    display_name: string | null
-    email: string | null
-    phone: string | null
-  }> | null)?.[0]
-  if (def?.slug) {
-    return {
-      slug: def.slug,
-      displayName: def.display_name,
-      email: def.email,
-      phone: def.phone,
-    }
-  }
-  return null
-}
-
-async function getFubAssignedUserEmail(personId: number): Promise<string | null> {
-  const apiKey = (getFubApiKey() ?? '').trim()
-  if (!apiKey) return null
-  try {
-    const auth = `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}`
-    const r = await fetch(
-      `https://api.followupboss.com/v1/people/${personId}?fields=assignedUserId`,
-      { headers: { Authorization: auth, Accept: 'application/json' } }
-    )
-    if (!r.ok) return null
-    const personRow = (await r.json()) as { assignedUserId?: number | null }
-    const userId = personRow.assignedUserId
-    if (!userId || userId <= 0) return null
-    const u = await fetch(`https://api.followupboss.com/v1/users/${userId}`, {
-      headers: { Authorization: auth, Accept: 'application/json' },
-    })
-    if (!u.ok) return null
-    const userRow = (await u.json()) as { email?: string }
-    return userRow.email?.trim() || null
-  } catch {
-    return null
+  const broker = await resolveSigningBrokerForPerson(params.fubPersonId)
+  if (!broker.slug) return null
+  return {
+    slug: broker.slug,
+    displayName: broker.displayName,
+    email: broker.email,
+    phone: broker.phone,
+    notifyPhone: broker.notifyPhone,
   }
 }
 
