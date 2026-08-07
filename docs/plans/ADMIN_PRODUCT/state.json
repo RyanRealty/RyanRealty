@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "11C-4 shipped (5 families / 21 pages, ef88c7a READY); 11D reports + bpo/cmas/crm-deals in flight",
+  "current_process": "11C-5 + 11D shipped (38 pages, 8 families, 86->48 legacy; cb8b8c31 READY). Wave 3 in flight: the 8 two-page families.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-07T11:15:00Z"
+  "updated_at": "2026-08-07T12:20:00Z"
 }
