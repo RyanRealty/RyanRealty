@@ -5,6 +5,10 @@
  * /admin/crm/deals — the §10 dual-pipeline Deals Kanban
  * (spec: docs/fub-crm-spec/10-deals-pipelines.md).
  *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — the board, the sub-bar, the detail modal and the mobile
+ * header are mounted unchanged.
+ *
  * Layout (§2): pipeline sub-bar (tabs + gear + toolbar filters) over a
  * full-width, horizontally-scrolling board of stage columns. Pipeline/status/
  * agent filters + the open deal modal all live in the URL
@@ -15,6 +19,24 @@
  * crm_deal_stages) + broker-scoped board rows (listDealsBoard — scope enforced
  * at the data layer). Clicking a card mounts the §11 DealDetailModal over the
  * board (getCrmDeal + the same dealInScope guard the mutations use).
+ *
+ * Carried over verbatim: requireAdminPage('people.view'), the getCrmAccess
+ * guard and its redirect('/admin/access-denied'), scopeBroker, the isSuperuser
+ * derivation, the one() search-param reader, ?status= with its 'current'
+ * default and three-value allowlist, the superuser-only ?agent= rule, the three
+ * parallel reads, the crmActive broker filter and its {slug,name} shape,
+ * ?pipeline= resolved by id-or-name with the first-tab default, the activeDeals
+ * filter (a pipeline-less deal rides the first tab), ?deal= parsing +
+ * getCrmDeal + the dealInScope visibility rule, BROKER_HEADSHOT, every prop
+ * handed to MobileCrmHeader / DealsSubBar / DealsBoard / DealDetailModal, and
+ * the "No pipelines configured." empty state.
+ *
+ * Shape changed, data did not: the page's own <main> is GONE — ConsoleShell
+ * owns the single landmark and this page was rendering a second one (two <main>
+ * elements at 375 and 1280, measured 2026-08-07); the column layout and
+ * min-height moved from Tailwind classes onto the av2-scope wrapper's inline
+ * style; and the board now leads with one verdict line whose only claim is the
+ * number of cards it is about to draw.
  */
 
 import { redirect } from 'next/navigation'
@@ -26,6 +48,7 @@ import { getDealPipelines } from '@/lib/data/crm/getDealPipelines'
 import { listDealsBoard, type DealBoardStatusFilter } from '@/lib/data/crm/listDealsBoard'
 import { getCrmDeal } from '@/lib/data/crm/getCrmDeal'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
+import { VerdictLine } from '@/components/admin/v2'
 import { DealsSubBar } from '@/components/admin/crm/deals/DealsSubBar'
 import { DealsBoard } from '@/components/admin/crm/deals/DealsBoard'
 import { DealDetailModal } from '@/components/admin/crm/deals/DealDetailModal'
@@ -97,7 +120,10 @@ export default async function CrmDealsPage({
     dealInScope(scoped, openDeal.assigned_broker, openDeal.person?.assigned_broker ?? null)
 
   return (
-    <main className="flex min-h-[calc(100vh-4rem)] flex-col">
+    <div
+      className="av2-scope"
+      style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 4rem)' }}
+    >
       {/* ── MOBILE (< md): §23 root-tab navy header — the same language every
              other CRM root wears (People/Activity/Inbox/Calendar). Deals was
              the one root without it (2026-07-02 mobile audit, "one CRM one
@@ -110,6 +136,20 @@ export default async function CrmDealsPage({
           searchHref="/admin/crm"
         />
       </div>
+
+      {/* The only claim here is the card count the board is about to draw:
+          activeDeals IS the array handed to DealsBoard. */}
+      {activePipeline ? (
+        <div style={{ margin: '0 0 10px' }}>
+          <VerdictLine tone={activeDeals.length ? 'ok' : 'attention'}>
+            <b>
+              {activeDeals.length.toLocaleString('en-US')}{' '}
+              {activeDeals.length === 1 ? 'deal' : 'deals'} on the {activePipeline.name} board.
+            </b>
+          </VerdictLine>
+        </div>
+      ) : null}
+
       <DealsSubBar
         pipelines={pipelines}
         activePipeline={activePipeline?.name ?? ''}
@@ -130,7 +170,9 @@ export default async function CrmDealsPage({
             brokerSlug={access.brokerSlug}
           />
         ) : (
-          <p className="px-4 py-8 text-sm text-muted-foreground">No pipelines configured.</p>
+          <p style={{ padding: '32px 16px', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+            No pipelines configured.
+          </p>
         )}
       </div>
 
@@ -142,6 +184,6 @@ export default async function CrmDealsPage({
           isOwner={isSuperuser}
         />
       ) : null}
-    </main>
+    </div>
   )
 }
