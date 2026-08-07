@@ -1,7 +1,45 @@
-> **NEWEST, START HERE: Admin Product OS — BOOT + P1 + P2 complete, BLOCKED_ON_MATT: process (2026-08-04, Claude Code local).**
-> Prior: the entire audit roadmap closed, 1 to 21 (2026-08-03).
+> **NEWEST, START HERE: Admin Product OS — all four locks granted; P11 interior underway, 11A + 11B shipped (2026-08-07, Claude Code local).**
+> Prior: BOOT → P2 complete, blocked on the process lock (2026-08-04).
 
-# Current — 2026-08-04 (Claude Code, local) — Admin Product OS
+# Current — 2026-08-07 (Claude Code, local) — Admin Product OS P11
+
+`main` @ `4efbebca`, pushed, production READY. Disk is the source of truth:
+`docs/plans/ADMIN_PRODUCT/{state.json,work-queue.json,progress.txt,decisions.md}`
+plus the plan of record `PHASE-11-PLAN.md`.
+
+**All four locks granted** (process 08-04, IA 08-05, visual 08-05, litmus re-timed
+08-07). Phase `P11_INTERIOR`. P1–P10 shipped the spine: 11 destinations, v2
+primitives, the §5 chrome. P11 is the interior — making that spine the ONLY admin.
+
+Shipped since the last handoff:
+- `82e14a42` — CMA/BPO signing: the lead's ASSIGNED broker signs, Matt is the
+  fallback. Every document had been signing as Matt (the join is `brokers.crm_slug`,
+  not `slug`). Compliance-adjacent; 3-lens adversarial panel caught 4 more defects.
+- `1f0f537e` — 11A gates: `ci:admin-ui` (G65) AST ratchet (251 raw elements, 131
+  legacy pages, 21 widths — shrink-only), axe WCAG 2.2 AA across 148 admin routes
+  (`e2e/axe-baseline.json`, 51 routes with violations), visual regression per
+  destination.
+- `f7fbf72d` — 11B: the person workspace folded onto `/admin/people/[id]` (Messages
+  + canonical composers, Send, Details, Tasks, Homes, Notes); legacy workspace
+  relocated to `/admin/people/[id]/tools`; `/admin/crm/[id]` is a query-preserving
+  bridge; ~45 deep-link producers repointed; admin chrome de-branded (phone wordmark
+  bar removed, desktop navy top bar replaced with the locked 216px left rail).
+- `4efbebca` — litmus re-timed on production: 4.4s broker-action, ONE tap, address
+  auto-prefilled, idempotency proven on a real double-tap. Fixtures cleaned to zero.
+
+**Next unit: `11c-crm-tree`** (queue top). 57 remaining `/admin/crm` pages, ordered by
+the weekly-use evidence in `decisions.md`, one family per commit. FIRST item: restyle
+the two deliberate 11B holdouts — ContactSendCenter's black send bar and the
+quick-action FAB. Both are send chokepoints mounted as-is; restyle WITHOUT touching
+the send path.
+
+To run it: fresh session, `/model claude-fable-5`, paste
+`docs/plans/ADMIN_PRODUCT/PHASE-11-EXECUTE-PROMPT.md`. It orients from disk.
+
+Do not reopen a lock. Do not resurrect a cut-list route. Amnesia covers SHAPE
+(naming, nav, groupings), not just pixels.
+
+# Prior — 2026-08-04 (Claude Code, local) — Admin Product OS
 
 `main` @ `36df337f`, pushed. The Admin Product OS ran BOOT → P1 → all of P2 in one
 day. State lives on disk, chat is disposable:
