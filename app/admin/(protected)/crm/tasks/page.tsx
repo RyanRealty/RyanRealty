@@ -15,6 +15,41 @@
  *
  * Scope: the agent dropdown is superuser-only (§1.4.3); everyone else is
  * pinned to their own broker slug AT THE DATA LAYER via getTaskQueue.
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — TasksView, MobileTasksScreen and NewTaskDialog are mounted
+ * unchanged with the same props and the same server actions.
+ *
+ * Carried over verbatim: requireAdminPage('tasks.use'), the getCrmAccess guard
+ * + redirect, parseView and its future→upcoming alias, the §1.4.3 agent rule
+ * (superuser-only, allowlisted against CRM_BROKERS) and the brokerScope it
+ * derives, the §1.1 default landing (Overdue when overdue > 0, else Today, with
+ * the second getTaskQueue read that switch requires), the completed-view
+ * substitution, needCompleted, zonedDateKey(now) for todayKey, the crmActive
+ * broker filter, all nine server-action wrappers with their { ok, error }
+ * shapes, and ?new=1 auto-open.
+ *
+ * Dates: zonedDateKey stays on `now`. It is the Pacific calendar-day key the
+ * queue's own Today/Overdue/Upcoming boundaries are computed from; formatDate
+ * prints a human string, not a key, and cannot substitute for it.
+ *
+ * Shape changed, data did not: the page's own <main> is GONE — ConsoleShell
+ * owns the single landmark and this page rendered a second one; the mobile
+ * full-bleed offsets now cancel only the shell padding; max-w-6xl became an
+ * inline maxWidth of the same 1152px; and the <h1>Tasks</h1> is gone
+ * (acceptance-bar rule 1 — the nav names the page).
+ *
+ * A FALSE CLAIM was cut with it. The subtitle read "Every task across the
+ * book, by when it is due." The default agent scope is `me`, so the default
+ * view is ONE broker's tasks, never the book — and undated tasks have no "when
+ * it is due" at all (they land in Future by §1.8). The verdict line that
+ * replaces it states the scope getTaskQueue was actually given.
+ *
+ * That verdict deliberately carries NO counts. TasksView completes a task with
+ * optimistic client state (`striking`/`gone`) and decrements its own overdue
+ * badge without a router.refresh(), so a server-rendered "N overdue" would be
+ * wrong within seconds of the broker starting work. The scope is a URL param
+ * (router.push → server re-render), so it cannot drift.
  */
 
 import { redirect } from 'next/navigation'
@@ -37,7 +72,8 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { getTaskQueue, getCrmTaskTypes, type TaskQueueView } from '@/lib/data/crm/getTaskQueue'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { zonedDateKey } from '@/lib/format/date'
-import { CRM_BROKERS } from '@/lib/crm/constants'
+import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
+import { VerdictLine } from '@/components/admin/v2'
 import TasksView, { type TaskActions, type TasksDesktopView } from '@/components/admin/crm/tasks/TasksView'
 import MobileTasksScreen from '@/components/admin/crm/tasks/mobile/MobileTasksScreen'
 import NewTaskDialog from '@/components/admin/crm/tasks/NewTaskDialog'
@@ -159,15 +195,27 @@ export default async function CrmTasksPage({
 
   const desktopView: TasksDesktopView = view === 'completed' ? 'upcoming' : (view as TasksDesktopView)
 
+  // The one claim: the scope getTaskQueue was given. brokerScope IS the value
+  // passed to every read above, so this cannot name a filter the rows do not
+  // carry. null = a superuser who widened to All.
+  const scopeLabel = brokerScope
+    ? CRM_BROKER_DISPLAY[brokerScope as keyof typeof CRM_BROKER_DISPLAY] ?? brokerScope
+    : null
+
   return (
-    <main className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 sm:py-5">
+    <div className="av2-scope" style={{ maxWidth: 1152, margin: '0 auto' }}>
       <div className="mb-3 hidden flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between md:flex">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground md:text-2xl">Tasks</h1>
-          <p className="hidden text-sm text-muted-foreground md:block">
-            Every task across the book, by when it is due.
-          </p>
-        </div>
+        <VerdictLine tone="ok">
+          {scopeLabel ? (
+            <>
+              <b>{scopeLabel}&rsquo;s tasks.</b>
+            </>
+          ) : (
+            <>
+              <b>Every broker&rsquo;s tasks.</b>
+            </>
+          )}
+        </VerdictLine>
         <NewTaskDialog
           taskTypes={taskTypes}
           createAction={createTask}
@@ -196,8 +244,9 @@ export default async function CrmTasksPage({
       </div>
 
       {/* ── Mobile (< md): the §29 Screen C Tasks list — full-bleed under the
-          shell chrome (cancels shell px-4 pt-5 + page px-3 py-4). ── */}
-      <div className="-mx-7 -mt-9 md:hidden sm:-mx-10 sm:-mt-12">
+          shell chrome (cancels shell px-4 pt-5 / sm:px-6 sm:pt-7; the page
+          adds no padding of its own since the v2 migration). ── */}
+      <div className="-mx-4 -mt-5 md:hidden sm:-mx-6 sm:-mt-7">
         <MobileTasksScreen
           rows={view === 'completed' ? [] : main.rows}
           completedRows={completedRes?.rows ?? []}
@@ -215,6 +264,6 @@ export default async function CrmTasksPage({
           searchAction={searchContact}
         />
       </div>
-    </main>
+    </div>
   )
 }

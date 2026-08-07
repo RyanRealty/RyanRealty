@@ -19,6 +19,7 @@
  * the health board renders a red/zero tile rather than crashing the whole page.
  */
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 
 export type SuppressionChannel = 'all' | 'email' | 'sms' | 'call'
 
@@ -48,9 +49,26 @@ export async function getSuppressionCounts(): Promise<SuppressionCounts> {
   // person_id is nullable (value-keyed suppressions exist), so a per-person net
   // count uses a Set keyed by the non-null person_id only; null-person rows still
   // count toward the channel/reason totals.
-  const { data, error } = await sb
-    .from('crm_suppressions')
-    .select('person_id,channel,reason')
+  // PAGED, and ordered. A bare .select() is capped by PostgREST at 1,000 rows
+  // per response, which silently truncated EVERY figure this function returns:
+  // measured 2026-08-07, the board printed 1,000 suppression rows / 999 blocked
+  // people / 4.4% of contacts, against a real 5,169 / 3,228 / 14.3%, and showed
+  // 0 for email, sms and call because the first 1,000 rows in default order are
+  // all channel='all'. The colour was right only by luck — a board reading 4.4%
+  // stays green well past a real 25% crossing, which is the opposite of what a
+  // compliance health signal is for. The .order('id') is required, not
+  // decorative: range pagination without a stable sort can repeat or skip rows.
+  const { rows: data, error } = await fetchPagedRows<{
+    person_id: number | null
+    channel: string | null
+    reason: string | null
+  }>((from, to) =>
+    sb
+      .from('crm_suppressions')
+      .select('person_id,channel,reason')
+      .order('id', { ascending: true })
+      .range(from, to),
+  )
 
   if (error || !data) {
     return {

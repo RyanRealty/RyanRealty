@@ -9,6 +9,41 @@
 //   RIGHT — persistent filter panel (§9) / column chooser (§8), inside
 //           PeopleListView so the toolbar controls the slot.
 // The < md branch is the §24 mobile People root (mob-09/10) — untouched here.
+//
+// 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Presentation only — every island (PeopleSidebar, PeopleListView,
+// MobilePeopleRoot, BrokerScopeSheet, ContactsSearch, MobileCrmHeader) is
+// mounted unchanged with the same props.
+//
+// Carried over verbatim: requireAdminPage('people.view'), the getCrmAccess
+// guard + redirect, scopeBroker and the ?broker=all → undefined rule feeding
+// effectiveBroker, the eleven parallel reads, the getPeopleListSignals second
+// pass keyed on the rendered ids, primaryContact, BROKER_HEADSHOT, fmtFubDate
+// on every date cell (see the note below), pageHref and its baseParams carry
+// set, the saved-view grouping + appliedViewInfo derivation, every picker's
+// filter rule, activeFilters, filterExportHref, panelFilters, and the ?ptab=
+// / ?pond= / ?neighborhood= handling.
+//
+// Dates: fmtFubDate stays. It is a RELATIVE formatter ("today", "3 days ago",
+// then "Aug 30th '26"); lib/format/date's formatDate is absolute and re-projects
+// to America/Los_Angeles. Printed side by side on this session's samples they
+// disagree on every row, and on a bare date-only string formatDate moves the
+// printed day back one. Swapping would rewrite every Last Visit / Last Activity
+// / Created cell, so nothing was swapped.
+//
+// Shape changed, data did not: the page's own <main> is GONE — ConsoleShell
+// owns the single landmark and this page rendered a second one; the mobile
+// full-bleed offsets now cancel only the shell padding, since the page no
+// longer adds its own; max-w-[1600px] became an inline maxWidth of the same
+// 1600px; and the desktop branch leads with one verdict line whose only claims
+// are `total` (the count listCrmPeople returned for the rows it is drawing) and
+// `effectiveBroker` (the slug that read was scoped to).
+//
+// MobileCrmHeader is mounted UNCHANGED and is pinned here by
+// ci:crm-screen-parity (mobile-activity-people). It renders a 56px navy
+// bg-primary bar — the public brand as admin design input, which ADMIN_UI §5
+// blacklists. That is a cross-family decision (its other callers), filed
+// separately; it is not touched here.
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess, getCrmOverview, listCrmPeople, listCrmSequences } from '@/app/actions/crm'
@@ -22,6 +57,7 @@ import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
 import { getCrmNeighborhoodOptions } from '@/lib/data/crm/getCrmNeighborhoodOptions'
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
+import { VerdictLine } from '@/components/admin/v2'
 import ContactsSearch from '@/components/admin/crm/ContactsSearch'
 import BrokerScopeSheet from '@/components/admin/crm/BrokerScopeSheet'
 import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
@@ -213,15 +249,22 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
     neighborhood: sp.neighborhood || undefined,
   }
 
+  // The verdict's scope clause names the slug the read was actually scoped to.
+  // listCrmPeople self-scopes with `scope ?? filters.broker`, which is exactly
+  // effectiveBroker, so this cannot describe a different filter than the rows.
+  const scopeLabel = effectiveBroker
+    ? CRM_BROKER_DISPLAY[effectiveBroker as keyof typeof CRM_BROKER_DISPLAY] ?? effectiveBroker
+    : null
+
   return (
-    <main className="mx-auto max-w-[1600px] px-4 pb-8 pt-2 sm:px-6 sm:py-6">
+    <div className="av2-scope" style={{ maxWidth: 1600, margin: '0 auto' }}>
       {/* ── MOBILE (< md): §24 People root — navy §1.3 header (avatar ·
              "Everyone ▾" scope · search) over All Lists / Stages / filtered
              list (mob-09 / mob-10). Full-bleed: cancels the ConsoleShell main
-             padding (px-4 pt-5 / sm:px-6 sm:pt-7) + this page's own
-             (px-4 pt-2 / sm:px-6 sm:py-6). Matt punch list #3 (2026-07-02):
-             one CRM, one style — same navy header language as calendar/inbox. */}
-      <div className="-mx-8 -mt-7 md:hidden sm:-mx-12 sm:-mt-13">
+             padding (px-4 pt-5 / sm:px-6 sm:pt-7). Matt punch list #3
+             (2026-07-02): one CRM, one style — same navy header language as
+             calendar/inbox. */}
+      <div className="-mx-4 -mt-5 md:hidden sm:-mx-6 sm:-mt-7">
         <MobileCrmHeader
           brokerName={access.brokerSlug ? CRM_BROKER_DISPLAY[access.brokerSlug as keyof typeof CRM_BROKER_DISPLAY] ?? access.brokerSlug : 'Broker'}
           brokerHeadshot={access.brokerSlug ? BROKER_HEADSHOT[access.brokerSlug] ?? null : null}
@@ -261,7 +304,28 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         })()}
       </div>
 
-      {/* ── DESKTOP (md+): §2 three-region layout ───────────────────────────── */}
+      {/* ── DESKTOP (md+): §2 three-region layout ─────────────────────────────
+             Phone is excluded on purpose: MobilePeopleRoot carries its own
+             count bar and mounts full-bleed under a negative top margin, so a
+             line above it would be overlapped. */}
+      <div className="mb-3 hidden md:block">
+        <VerdictLine tone={total > 0 ? 'ok' : 'attention'}>
+          {total > 0 ? (
+            <>
+              <b>
+                {total.toLocaleString('en-US')} {total === 1 ? 'person' : 'people'}
+              </b>{' '}
+              in this list{scopeLabel ? <> · {scopeLabel} only</> : null}.
+            </>
+          ) : (
+            <>
+              <b>This list came back empty.</b>
+              {scopeLabel ? <> {scopeLabel} only.</> : null}
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
       <div className="hidden gap-6 md:flex md:items-start">
         <PeopleSidebar
           views={savedViewItems}
@@ -301,6 +365,6 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
           filterExportHref={filterExportHref}
         />
       </div>
-    </main>
+    </div>
   )
 }

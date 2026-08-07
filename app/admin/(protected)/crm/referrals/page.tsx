@@ -1,18 +1,40 @@
 // @no-parity — internal admin surface, no public mockup contract
-/**
- * /admin/crm/referrals — the referral queue (W12 referral-capture tier).
- *
- * Disposition surface for out-of-area leads: everyone the buyer-intake
- * classifier (lib/referral-geo.ts) routed OUT of the standard drip
- * (referral:candidate) plus fail-closed unclassified property inquiries
- * (geo:unclassified). A broker connects the lead with a local broker by hand
- * and records the handoff here, which writes a referral_receivables row
- * (fee_basis_pct, default 25) and a timeline entry.
- *
- * referral_receivables lands via migration 20260722212000_referral_tier.sql;
- * the DAL feature-detects, so pre-migration this page renders the queue and a
- * plain "ledger not applied yet" note instead of erroring.
- */
+//
+// /admin/crm/referrals — the referral queue (W12 referral-capture tier). P11D:
+// migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// PRESENTATION ONLY.
+//
+// Out-of-area leads never enter a drip: the buyer-intake classifier
+// (lib/referral-geo.ts) routes them out with referral:candidate, and fail-closed
+// unclassified property inquiries carry geo:unclassified. A broker connects the
+// lead with a local broker by hand and records the handoff here, which writes a
+// referral_receivables row and a timeline entry.
+//
+// Carried over verbatim: requireAdminPage('people.view') on the page and
+// requireAdminAction('people.view') inside the server action, the
+// recordReferralForm body character for character (the same trims, the same
+// `feeRaw === '' ? undefined : Number(feeRaw)`, the same console.error, the same
+// revalidatePath), the listReferralCandidates + listReferralReceivables reads,
+// the already-referred filter, `dynamic = 'force-dynamic'`, the metadata title,
+// both /admin/crm/<personId> hrefs, the /admin/crm back href, the
+// pre-migration "ledger not applied yet" branch, and formatDate on both
+// timestamps (both are timestamptz, which formatDate renders in Pacific — the
+// date-only UTC pitfall does not apply, so nothing was swapped).
+//
+// FORM FIELDS UNCHANGED — personId · referredTo · feeBasisPct. What changed is
+// how personId travels: the shadcn hidden <Input> became the submit button's own
+// name/value. A submit button's name/value is part of the submitted entry list
+// (HTML forms spec), and React 19 implements it for server actions via
+// createFormDataWithSubmitter (present in react-dom 19.2.3), so
+// formData.get('personId') reads the same value under the same key. This is the
+// one way to carry the id without a raw <input>, which ci:admin-ui rule A bans
+// on this file. The path is fail-closed either way: recordReferralReceivable
+// rejects personId <= 0 before it writes anything.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark) and the <h1> with it, ConsoleSection became SectionHead, the
+// shadcn badges became state words, and both empty states now say why they are
+// empty instead of only that they are.
 import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { requireAdminPage, requireAdminAction } from '@/lib/admin/require-admin'
@@ -21,10 +43,7 @@ import {
   listReferralReceivables,
   recordReferralReceivable,
 } from '@/lib/data/crm/referralReceivables'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { Button, SectionHead, StateWord, TextField, VerdictLine } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
 
 export const metadata = { title: 'Referral queue | CRM | Admin' }
@@ -55,100 +74,133 @@ export default async function CrmReferralsPage() {
   const queue = candidates.filter((c) => !referredPersonIds.has(c.personId))
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <div className="mb-1 text-sm text-muted-foreground">
-        <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground md:min-h-0">
+    <div className="av2-scope" style={{ maxWidth: 768, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={queue.length > 0 ? 'attention' : 'ok'}>
+          {queue.length > 0 ? (
+            <>
+              <b>
+                {queue.length.toLocaleString('en-US')} out-of-area{' '}
+                {queue.length === 1 ? 'lead is' : 'leads are'} waiting on a handoff.
+              </b>{' '}
+              Each one is sitting in no sequence until you record where it went.
+            </>
+          ) : (
+            <>
+              <b>Nothing is waiting on a handoff.</b>{' '}
+              {receivables.rows.length.toLocaleString('en-US')}{' '}
+              {receivables.rows.length === 1 ? 'referral has' : 'referrals have'} been recorded.
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
+      <div className="av2-wordrow" style={{ margin: '0 0 18px' }}>
+        <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
           Back to CRM
         </Link>
       </div>
-      <h1 className="text-2xl font-bold text-foreground">Referral queue</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Out-of-area leads never enter a drip. Connect each one with a local broker, then record the
-        handoff so the referral fee has a paper trail.
-      </p>
 
       {receivables.available ? null : (
-        <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: '0 0 20px' }}>
           The receivables ledger table is not applied yet (migration
           20260722212000_referral_tier.sql). The queue below works; recording a handoff starts
           working the moment the migration lands.
         </p>
       )}
 
-      <div className="mt-6 space-y-5">
-        <ConsoleSection title={`Waiting on a handoff (${queue.length})`}>
-          {queue.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Nothing waiting. Out-of-area inquiries land here automatically.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {queue.map((c) => (
-                <li key={c.personId} className="py-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link href={`/admin/crm/${c.personId}`} className="font-medium text-foreground hover:underline">
-                      {c.name}
-                    </Link>
-                    {c.bucket === 'referral' ? (
-                      <Badge variant="secondary">
-                        {c.cityInterest ? c.cityInterest.replace(/-/g, ' ') : 'out of area'}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">geo unclassified, review</Badge>
-                    )}
-                    <span className="text-xs tabular-nums text-muted-foreground">{formatDate(c.createdAt)}</span>
-                    {c.source ? <span className="text-xs text-muted-foreground">{c.source}</span> : null}
-                  </div>
-                  <form action={recordReferralForm} className="mt-3 flex flex-wrap items-center gap-2">
-                    <Input type="hidden" name="personId" value={c.personId} readOnly className="hidden" />
-                    <Input
-                      name="referredTo"
-                      required
-                      placeholder="Referred to (broker, brokerage)"
-                      className="h-9 w-64 max-w-full"
-                    />
-                    <Input
-                      name="feeBasisPct"
-                      type="number"
-                      min={0}
-                      max={100}
-                      step="0.5"
-                      placeholder="25"
-                      aria-label="Referral fee percent"
-                      className="h-9 w-20 tabular-nums"
-                    />
-                    <Button type="submit" size="sm" disabled={!receivables.available}>
-                      Record handoff
-                    </Button>
-                  </form>
-                </li>
-              ))}
-            </ul>
-          )}
-        </ConsoleSection>
-
-        <ConsoleSection title={`Recorded referrals (${receivables.rows.length})`}>
-          {receivables.rows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No referrals recorded yet.
-            </p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {receivables.rows.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center gap-2 py-3 text-sm">
-                  <Link href={`/admin/crm/${r.personId}`} className="font-medium text-foreground hover:underline">
-                    Contact #{r.personId}
+      <section aria-label="Waiting on a handoff">
+        <SectionHead>Waiting on a handoff — {queue.length.toLocaleString('en-US')}</SectionHead>
+        {queue.length === 0 ? (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
+            Empty. A lead lands here when the intake classifier tags it{' '}
+            <code>referral:candidate</code> (outside our area) or <code>geo:unclassified</code> (the
+            property could not be placed), which happens on the public contact form and the
+            listing-agent contact path.
+          </p>
+        ) : (
+          <ul className="av2-quietlist">
+            {queue.map((c) => (
+              <li key={c.personId} className="av2-quiet" style={{ display: 'block' }}>
+                <div className="av2-wordrow" style={{ marginBottom: 8 }}>
+                  <Link
+                    href={`/admin/crm/${c.personId}`}
+                    style={{ color: 'var(--a-text)', fontWeight: 500, textDecoration: 'none' }}
+                  >
+                    {c.name}
                   </Link>
-                  <span className="text-muted-foreground">to {r.referredTo}</span>
-                  <span className="tabular-nums text-muted-foreground">{r.feeBasisPct}%</span>
-                  <Badge variant="outline">{r.status}</Badge>
-                  <span className="ml-auto text-xs tabular-nums text-muted-foreground">{formatDate(r.createdAt)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </ConsoleSection>
-      </div>
-    </main>
+                  {c.bucket === 'referral' ? (
+                    <StateWord state="waiting">
+                      {c.cityInterest ? c.cityInterest.replace(/-/g, ' ') : 'out of area'}
+                    </StateWord>
+                  ) : (
+                    <StateWord state="slow">geo unclassified, review</StateWord>
+                  )}
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDate(c.createdAt)}</span>
+                  {c.source ? <span>{c.source}</span> : null}
+                </div>
+                <form action={recordReferralForm} className="av2-inline-form">
+                  <TextField
+                    label="Referred to"
+                    name="referredTo"
+                    required
+                    placeholder="Broker, brokerage"
+                  />
+                  <TextField
+                    label="Fee %"
+                    name="feeBasisPct"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step="0.5"
+                    placeholder="25"
+                    hint="Blank means 25"
+                    style={{ maxWidth: 120 }}
+                  />
+                  <Button
+                    type="submit"
+                    name="personId"
+                    value={c.personId}
+                    disabled={!receivables.available}
+                  >
+                    Record handoff
+                  </Button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section aria-label="Recorded referrals">
+        <SectionHead>
+          Recorded referrals — {receivables.rows.length.toLocaleString('en-US')}
+        </SectionHead>
+        {receivables.rows.length === 0 ? (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
+            Empty. A row appears here the moment a handoff above is recorded, and carries the fee
+            basis it was recorded with.
+          </p>
+        ) : (
+          <ul className="av2-quietlist">
+            {receivables.rows.map((r) => (
+              <li key={r.id} className="av2-quiet">
+                <Link
+                  href={`/admin/crm/${r.personId}`}
+                  className="av2-quiet__name"
+                  style={{ color: 'var(--a-text)', textDecoration: 'none' }}
+                >
+                  Contact #{r.personId}
+                </Link>
+                <span>to {r.referredTo}</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{r.feeBasisPct}%</span>
+                <StateWord state={r.status === 'paid' ? 'ok' : 'waiting'}>{r.status}</StateWord>
+                <span className="av2-quiet__fig">{formatDate(r.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   )
 }

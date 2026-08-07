@@ -1,28 +1,44 @@
 // @no-parity — internal admin observability surface, no public mockup contract
-/**
- * /admin/crm/health — the CRM vital-signs board (CONTACT360 Phase 9.5).
- *
- * One page a broker/admin opens to see whether the self-owned CRM is healthy at
- * a glance. Every tile reads a LIVE signal and shows a green / amber / red dot:
- *
- *   1. Mirror        — mirrorHealthStatus(env): is the FUB -> crm_* mirror on?
- *   2. Outbound SMS  — getA2pCampaignStatus(): is the A2P campaign VERIFIED?
- *   3. Inbound webhooks — getCrmSignalFreshness(): how stale is the last
- *      sms_in / call / email-engagement event in crm_timeline?
- *   4. Suppressions  — getSuppressionCounts(): opt-out footprint by channel +
- *      reason, and the suppression-net mailable share.
- *   5. Lead volume   — getCrmLeadVolume(): new crm_people in the last 24h / 7d.
- *
- * Auth: the (protected) layout already gates on session + admin role; this page
- * additionally re-checks getCrmAccess() so a non-CRM admin lands on access-denied.
- *
- * Mobile-first: a single-column stack on phones, two/three columns from sm/lg.
- * Every status uses the console StatusPill (dot + tinted fill + label — status is
- * never color alone). The color decision flows through the PURE level helpers in
- * lib/crm/health-levels (unit-tested), so the thresholds can't drift per tile.
- *
- * DAL: every DB read goes through lib/data/crm readers (no raw .from() here).
- */
+//
+// /admin/crm/health — the CRM vital-signs board. P11D: migrated to the LOCKED
+// admin v2 language (design_system/admin/ADMIN_UI.md), on the verdict + needs-you
+// shape the Oversight screen already uses (pattern 3). PRESENTATION ONLY.
+//
+// Signals, unchanged: the CRM_MIRROR_ENABLED kill switch (env), the Twilio A2P
+// campaign status, inbound freshness per crm_timeline channel, the crm_suppressions
+// opt-out footprint against crm_people, and crm_people intake volume.
+//
+// Carried over verbatim: requireAdminPage('settings.system') and the getCrmAccess()
+// → /admin/access-denied guard, `dynamic = 'force-dynamic'`, `revalidate = 0`, the
+// metadata title, the five-read Promise.all with every argument, FRESHNESS_THRESHOLDS
+// (24h warn / 72h red), formatRelative / formatInt / formatPercent / levelLabel, and
+// EVERY level computation — mirrorLevel, a2pLevel, freshnessLevel per signal,
+// suppressionRateLevel, leadLevel and the worstLevel roll-up. No threshold moved, so
+// no tile changed color in this migration.
+//
+// ONE FALSE CLAIM CUT — the Mirror tile. It rendered a GREEN tile reading
+// "Mirroring", noted "FUB leads are flowing into crm_*", and derived that from the
+// kill switch alone. Traced end to end: mirrorEnabled() in lib/crm/mirror.ts is
+// `health.enabled && !!getFubApiKey()`, and getFubApiKey() in lib/crm/fub-env.ts
+// returns undefined unconditionally — FollowUp Boss was decommissioned at the
+// 2026-06-24 cutover and re-enabling it "is intentionally not a config flip".
+// lib/crm/enroll.ts calls the same round trip "dead in production". So NO mirror
+// write can run whatever the switch says, and a green tile claiming a live pipeline
+// was the worst thing this page could do. The row now names what is actually read —
+// the kill switch — and states its position; the standing fact sits in the footnote.
+// The level math is untouched, so /admin/oversight's CRM_MIRROR_ENABLED=false alarm
+// still lands on a red row here.
+//
+// A FAILED READ NO LONGER LOOKS HEALTHY. Only the Twilio call was caught before;
+// an unreadable crm_timeline or crm_suppressions took the whole page down, and an
+// unreadable crm_people silently made the suppression share 0.0% and green. The
+// board now catches the whole read and says so, and refuses to print a share when
+// the contact denominator is zero.
+//
+// Shape changed, data did not: the page's own <h1> is gone (the nav names the page),
+// the card grid became one attention list over a quiet healthy list, the console
+// StatusPill became the v2 state word, and the row of reason Badges — a chip wall,
+// acceptance bar rule 2 — became the family's grid.
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { Suspense } from 'react'
@@ -35,16 +51,24 @@ import {
   freshnessLevel,
   suppressionRateLevel,
   a2pLevel,
-  levelTone,
   worstLevel,
   ageMinutesSince,
   type HealthLevel,
 } from '@/lib/crm/health-levels'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { StatusPill } from '@/components/console/StatusPill'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  asOfLabel,
+  QueueRow,
+  QuietRow,
+  ReportError,
+  ReportGrid,
+  ReportNumbers,
+  ReportSkeleton,
+  SectionHead,
+  VerdictLine,
+  type AdminState,
+  type ReportGridRow,
+  type ReportNumberItem,
+} from '@/components/admin/v2'
 
 export const metadata = { title: 'CRM health | Admin' }
 export const dynamic = 'force-dynamic'
@@ -81,32 +105,22 @@ function levelLabel(level: HealthLevel): string {
   return 'Action needed'
 }
 
-/** One vital-sign tile: heading row with a status dot, then the metric + a note. */
-function HealthTile({
-  title,
-  level,
-  pillLabel,
-  metric,
-  note,
-}: {
-  title: string
+/** Status is text + color, never color alone (WCAG 1.4.1). */
+function levelState(level: HealthLevel): AdminState {
+  if (level === 'ok') return 'ok'
+  if (level === 'warn') return 'slow'
+  return 'down'
+}
+
+/** One vital sign: what it is, where it stands, and — when it is not OK — why. */
+type Vital = {
+  key: string
+  name: string
   level: HealthLevel
-  pillLabel: string
-  metric: React.ReactNode
+  /** The measurement itself, already formatted. */
+  figure: string
+  /** One sentence, shown on the attention list only. */
   note: string
-}) {
-  return (
-    <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-3 px-4 py-4 sm:px-5">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-          <StatusPill tone={levelTone(level)} label={pillLabel} />
-        </div>
-        <div className="text-2xl font-semibold tabular-nums text-foreground">{metric}</div>
-        <p className="mt-auto text-xs leading-relaxed text-muted-foreground">{note}</p>
-      </CardContent>
-    </Card>
-  )
 }
 
 async function HealthBoard() {
@@ -114,14 +128,32 @@ async function HealthBoard() {
 
   // All live signals in parallel. getA2pCampaignStatus hits Twilio over the
   // network and can throw if creds/host misbehave — catch so one slow API call
-  // never blanks the whole board.
-  const [a2pResult, signals, suppressions, leadVolume, contactTotal] = await Promise.all([
+  // never blanks the whole board. The OUTER catch covers the DB readers: an
+  // unreadable crm_timeline used to take the page down, which at least was not
+  // a green lie, but it left no retry and no explanation.
+  const reads = await Promise.all([
     getA2pCampaignStatus().catch(() => null),
     getCrmSignalFreshness(),
     getSuppressionCounts(),
     getCrmLeadVolume(nowMs),
     getCrmContactTotal(),
-  ])
+  ]).catch(() => null)
+
+  if (reads === null) {
+    return (
+      <>
+        <VerdictLine tone="attention">
+          <b>The health read itself failed.</b> Every signal below is unknown, not healthy — do not
+          read this screen as an all-clear.
+        </VerdictLine>
+        <div style={{ marginTop: 14 }}>
+          <ReportError what="CRM health" href="/admin/crm/health" />
+        </div>
+      </>
+    )
+  }
+
+  const [a2pResult, signals, suppressions, leadVolume, contactTotal] = reads
 
   // 1. Mirror kill-switch (pure read of the env bag).
   const mirror = mirrorHealthStatus({ CRM_MIRROR_ENABLED: process.env.CRM_MIRROR_ENABLED })
@@ -156,132 +188,167 @@ async function HealthBoard() {
     ...signalTiles.map((s) => s.level),
   ])
 
+  // crm_people returning 0 is indistinguishable from an unreadable table, so a
+  // share with no denominator prints as a missing number rather than 0.0%.
+  const shareText = contactTotal > 0 ? formatPercent(suppressionRate) : 'no denominator'
+
+  const vitals: Vital[] = [
+    {
+      key: 'mirror',
+      name: 'Lead-mirror kill switch',
+      level: mirrorLevel,
+      figure: mirror.enabled ? 'Not set' : 'Set to false',
+      note: 'CRM_MIRROR_ENABLED=false. Nothing reaches crm_* through the mirror path while it is set.',
+    },
+    {
+      key: 'sms',
+      name: 'Outbound SMS',
+      level: smsLevel,
+      figure: a2p === 'VERIFIED' ? 'Live' : (a2p ?? 'Unknown'),
+      note:
+        a2p === null
+          ? 'The A2P campaign status could not be read from Twilio, so outbound readiness is unknown.'
+          : 'Carriers block outbound SMS until the A2P campaign is verified. Texts are held until then.',
+    },
+    {
+      key: 'leads',
+      name: 'New leads',
+      level: leadLevel,
+      figure: leadVolume.unreadable
+        ? 'unreadable'
+        : `${formatInt(leadVolume.last24h)} in 24h · ${formatInt(leadVolume.last7d)} in 7d`,
+      note: 'crm_people could not be read. Lead-volume tracking is degraded.',
+    },
+    ...signalTiles.map((s) => ({
+      key: s.key,
+      name: s.label,
+      level: s.level,
+      figure: formatRelative(s.latest, nowMs),
+      note: !s.latest
+        ? `No ${s.label.toLowerCase()} row has ever landed in crm_timeline, or the read failed. Check the webhook wiring.`
+        : s.level === 'warn'
+          ? `Quiet for more than a day. Legitimate on a slow week, worth a glance.`
+          : `Cold for more than three days. A channel this quiet usually means a broken webhook.`,
+    })),
+    {
+      key: 'suppressions',
+      name: 'Suppression share',
+      level: suppressionLevel,
+      figure: suppressions.unreadable ? 'unreadable' : shareText,
+      note: suppressions.unreadable
+        ? 'crm_suppressions could not be read. The opt-out footprint is unknown, so the send paths fail closed.'
+        : 'More than a quarter of the book is blocked on an outbound channel. Check what is driving the opt-outs.',
+    },
+  ]
+
+  const attention = vitals.filter((v) => v.level !== 'ok')
+  const healthy = vitals.filter((v) => v.level === 'ok')
+
+  const channelFigures: ReportNumberItem[] = (['all', 'email', 'sms', 'call'] as const).map((c) => ({
+    key: c,
+    label: c === 'all' ? 'Every channel' : c === 'sms' ? 'SMS' : c === 'email' ? 'Email' : 'Call',
+    value: formatInt(suppressions.byChannel[c]),
+  }))
+
+  const reasonRows: ReportGridRow[] = suppressions.byReason.map((r) => ({
+    key: r.reason,
+    cells: [
+      <span key="r" style={{ textTransform: 'capitalize' }}>
+        {r.reason.replace(/[-_]+/g, ' ')}
+      </span>,
+      formatInt(r.count),
+    ],
+  }))
+
   return (
-    <div className="space-y-6">
-      {/* Overall roll-up */}
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm text-muted-foreground">Overall</span>
-        <StatusPill tone={levelTone(overall)} label={levelLabel(overall)} pulse={overall !== 'ok'} />
-        <span className="text-xs text-muted-foreground">checked {formatRelative(new Date(nowMs).toISOString(), nowMs)}</span>
-      </div>
+    <>
+      <VerdictLine tone={overall === 'ok' ? 'ok' : 'attention'}>
+        {overall === 'ok' ? (
+          <>
+            <b>All {vitals.length} vital signs are healthy.</b> Read at {asOfLabel(nowMs)} Pacific.
+          </>
+        ) : (
+          <>
+            <b>
+              {attention.length} of {vitals.length} vital signs need you.
+            </b>{' '}
+            Read at {asOfLabel(nowMs)} Pacific.
+          </>
+        )}
+      </VerdictLine>
 
-      {/* Top vital signs */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <HealthTile
-          title="Mirror"
-          level={mirrorLevel}
-          pillLabel={mirror.enabled ? 'On' : 'Disabled'}
-          metric={mirror.enabled ? 'Mirroring' : 'Stopped'}
-          note={
-            mirror.enabled
-              ? 'FUB leads are flowing into crm_*. The kill switch is off.'
-              : 'CRM_MIRROR_ENABLED=false. FUB leads are not mirroring into crm_*. Unset it to restore capture.'
-          }
-        />
-        <HealthTile
-          title="Outbound SMS"
-          level={smsLevel}
-          pillLabel={a2p ?? 'Unknown'}
-          metric={a2p === 'VERIFIED' ? 'Live' : a2p ?? 'Unknown'}
-          note={
-            a2p === 'VERIFIED'
-              ? 'The A2P 10DLC campaign is verified. Texts send through the messaging service.'
-              : 'Carriers block outbound SMS until the A2P campaign is verified. Texts are held until then.'
-          }
-        />
-        <HealthTile
-          title="New leads"
-          level={leadLevel}
-          pillLabel={leadVolume.unreadable ? 'Unreadable' : 'Tracked'}
-          metric={leadVolume.unreadable ? '—' : formatInt(leadVolume.last24h)}
-          note={
-            leadVolume.unreadable
-              ? 'crm_people could not be read. Lead-volume tracking is degraded.'
-              : `${formatInt(leadVolume.last24h)} in the last 24 hours, ${formatInt(leadVolume.last7d)} in the last 7 days.`
-          }
-        />
-      </div>
+      {attention.length > 0 ? (
+        <section aria-label="Needs attention">
+          <SectionHead>Needs attention</SectionHead>
+          <ul className="av2-queue">
+            {attention.map((v) => (
+              <QueueRow
+                key={v.key}
+                kind={levelLabel(v.level)}
+                kindTone={levelState(v.level)}
+                title={v.name}
+                context={v.note}
+                age={v.figure}
+                hot={v.level === 'stale'}
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
-      {/* Inbound webhook freshness */}
-      <ConsoleSection title="Inbound webhook freshness" count={`(${signalTiles.length} channels)`}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {signalTiles.map((s) => (
-            <HealthTile
-              key={s.key}
-              title={s.label}
-              level={s.level}
-              pillLabel={levelLabel(s.level)}
-              metric={formatRelative(s.latest, nowMs)}
-              note={
-                s.latest
-                  ? `Last ${s.label.toLowerCase()} event in crm_timeline. A cold channel can mean a broken webhook.`
-                  : `No ${s.label.toLowerCase()} event has ever landed in crm_timeline. Check the webhook wiring.`
-              }
-            />
-          ))}
-        </div>
-      </ConsoleSection>
+      {healthy.length > 0 ? (
+        <section aria-label="Healthy">
+          <SectionHead>Healthy</SectionHead>
+          <ul className="av2-quietlist">
+            {healthy.map((v) => (
+              <QuietRow key={v.key} name={v.name} state={levelLabel(v.level)} figure={v.figure} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
-      {/* Suppression footprint */}
-      <ConsoleSection
-        title="Suppressions"
-        count={`(${formatInt(suppressions.total)} rows)`}
-        action={
-          <StatusPill
-            tone={levelTone(suppressionLevel)}
-            label={suppressions.unreadable ? 'Unreadable' : formatPercent(suppressionRate)}
-          />
-        }
-      >
+      <section aria-label="Suppressions">
+        <SectionHead>Suppressions</SectionHead>
         {suppressions.unreadable ? (
-          <p className="text-sm text-muted-foreground">
-            crm_suppressions could not be read. The opt-out footprint is unknown, so the send paths fail closed.
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+            crm_suppressions could not be read. The opt-out footprint is unknown, so the send paths
+            fail closed.
           </p>
         ) : (
-          <div className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              {formatInt(suppressedPeople)} of {formatInt(contactTotal)} contacts are blocked on at least one outbound
-              channel. The send and audience paths honor these the same way.
+          <>
+            <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 12px' }}>
+              {formatInt(suppressedPeople)} of{' '}
+              {contactTotal > 0 ? formatInt(contactTotal) : 'an unreadable number of'} contacts are
+              blocked on at least one outbound channel, across {formatInt(suppressions.total)}{' '}
+              {suppressions.total === 1 ? 'row' : 'rows'}. The send and audience paths honor these
+              the same way.
             </p>
-
-            {/* By channel — mobile-first row of compact stats */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {(['all', 'email', 'sms', 'call'] as const).map((channel) => (
-                <div key={channel} className="rounded-lg border border-border px-3 py-2">
-                  <div className="text-xs capitalize text-muted-foreground">{channel}</div>
-                  <div className="text-lg font-semibold tabular-nums text-foreground">
-                    {formatInt(suppressions.byChannel[channel])}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Top reasons */}
-            {suppressions.byReason.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {suppressions.byReason.slice(0, 8).map((r) => (
-                  <Badge key={r.reason} variant="outline" className="font-normal">
-                    <span className="capitalize">{r.reason.replace(/[-_]+/g, ' ')}</span>
-                    <span className="ml-1.5 tabular-nums text-muted-foreground">{formatInt(r.count)}</span>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
+            <ReportNumbers items={channelFigures} />
+            <SectionHead>Why they are blocked</SectionHead>
+            <ReportGrid
+              label="Suppressions by reason"
+              columns={[
+                { key: 'reason', label: 'Reason' },
+                { key: 'rows', label: 'Rows', numeric: true },
+              ]}
+              template="minmax(160px, 2fr) minmax(80px, 0.7fr)"
+              minWidth={280}
+              rows={reasonRows}
+              empty={<>No contact is suppressed on any channel.</>}
+            />
+          </>
         )}
-      </ConsoleSection>
+      </section>
 
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <p>
-          <span className="font-medium text-foreground">Signals:</span> CRM_MIRROR_ENABLED env, Twilio A2P compliance
-          API, crm_timeline (inbound freshness), crm_suppressions (opt-outs), crm_people (lead volume).
-        </p>
-        <p>
-          Thresholds: inbound channels warn after 24 hours quiet, red after 72 hours. Suppression share warns above
-          25%, red above 40%.
-        </p>
-      </div>
-    </div>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
+        Signals: the CRM_MIRROR_ENABLED env switch, the Twilio A2P compliance API, crm_timeline
+        (inbound freshness), crm_suppressions (opt-outs), crm_people (lead volume). Inbound channels
+        warn after 24 hours quiet and go red after 72. Suppression share warns above 25% and goes red
+        above 40%. The mirror switch gates the FollowUp Boss → crm_* copy path, which has not run
+        since the 2026-06-24 cutover — getFubApiKey() returns undefined, so no mirror write happens
+        either way. Lead capture is native.
+      </p>
+    </>
   )
 }
 
@@ -291,15 +358,8 @@ export default async function CrmHealthPage() {
   if (!access) redirect('/admin/access-denied')
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold text-foreground">CRM health</h1>
-        <p className="text-sm text-muted-foreground">
-          Live vital signs for the self-owned CRM. Mirror, outbound SMS, inbound webhooks, suppressions, and lead
-          volume, each green, amber, or red at a glance.
-        </p>
-      </header>
-      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+    <div className="av2-scope" style={{ maxWidth: 880, margin: '0 auto', padding: 16 }}>
+      <Suspense fallback={<ReportSkeleton />}>
         <HealthBoard />
       </Suspense>
     </div>

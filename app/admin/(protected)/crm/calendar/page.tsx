@@ -22,6 +22,34 @@
  * < md renders the §29 Screen A mobile Calendar (mob-08) via
  * MobileCalendarScreen — registry entry mobile-calendar-tasks in
  * docs/fub-crm-spec/crm-screens.json (ci:crm-screen-parity).
+ *
+ * 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — CalendarView and MobileCalendarScreen are mounted
+ * unchanged with the same props and the same server actions.
+ *
+ * Carried over verbatim: requireAdminPage('calendar.use'), the getCrmAccess
+ * guard + redirect, the §2.1 Day default and isViewMode allowlist, the ?date=
+ * / legacy ?month=YYYY-MM resolution and its todayKey fallback, the §2.15
+ * superuser-only agent rule and the brokerScope it derives, apptEvents with its
+ * wall-clock parsing and 62-day multi-day cap, the amber open-task mapping via
+ * zonedDateKey/zonedMinutes, the closing mapping's `close_date.slice(0, 10)`,
+ * the month∪week fetch window and the scheduleNeedsFetch second read, the
+ * today/tomorrow schedule filter, appointmentsById, the guest-name resolution,
+ * the crmActive broker filter, and all seven server-action wrappers.
+ *
+ * Dates: nothing swapped, and one swap was actively rejected. `close_date` is a
+ * bare date and is read with a string slice — routing it through formatDate
+ * would parse it as UTC, re-project to America/Los_Angeles and move the printed
+ * closing back one calendar day. zonedDateKey stays on the true instants
+ * (crm_tasks.due_at), wall* stays on the wall-clock appointment columns.
+ *
+ * Shape changed, data did not: the page's own <main> is GONE — ConsoleShell
+ * owns the single landmark and this page rendered a second one; the mobile
+ * full-bleed offsets now cancel only the shell padding; max-w-7xl became an
+ * inline maxWidth of the same 1280px; and the desktop branch leads with one
+ * verdict line counting scheduleEvents on todayKey — the exact rows the
+ * Schedule pane draws under "Today". Appointment writes revalidate this path
+ * and call router.refresh(), so that count re-renders with the data.
  */
 
 import { redirect } from 'next/navigation'
@@ -60,6 +88,7 @@ import {
 } from '@/lib/crm/calendar'
 import { zonedDateKey, zonedMinutes } from '@/lib/format/date'
 import { getCrmTaskTypes } from '@/lib/data/crm/getTaskQueue'
+import { VerdictLine } from '@/components/admin/v2'
 import CalendarView, { type CalendarViewMode } from '@/components/admin/crm/calendar/CalendarView'
 import MobileCalendarScreen from '@/components/admin/crm/calendar/mobile/MobileCalendarScreen'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
@@ -277,9 +306,34 @@ export default async function CrmCalendarPage({
     return r.ok ? { ok: true } : { ok: false, error: r.error }
   }
 
+  // scheduleEvents IS the array CalendarView's Schedule pane draws; this is a
+  // count of the rows it puts under "Today", not a claim about the day itself.
+  const todayCount = scheduleEvents.filter((e) => e.dateKey === todayKey).length
+
   return (
-    <main className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-4 sm:py-5">
-      {/* ── Desktop: the §2.2 two-column calendar ── */}
+    <div className="av2-scope" style={{ maxWidth: 1280, margin: '0 auto' }}>
+      {/* ── Desktop: the §2.2 two-column calendar ──
+             Phone is excluded: MobileCalendarScreen mounts full-bleed under a
+             negative top margin and would overlap a line above it. */}
+      <div className="mb-3 hidden md:block">
+        <VerdictLine tone={todayCount > 0 ? 'ok' : 'attention'}>
+          {todayCount > 0 ? (
+            <>
+              <b>
+                {todayCount} {todayCount === 1 ? 'thing' : 'things'} on today&rsquo;s calendar.
+              </b>
+            </>
+          ) : (
+            /* The calendar readers fail soft — an unreadable table returns an
+               empty list, not an error — so this says what the read returned
+               and stops, rather than asserting the day is free. */
+            <>
+              <b>Today&rsquo;s calendar came back empty.</b>
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
       <div className="hidden md:block">
         <CalendarView
           view={view}
@@ -304,9 +358,9 @@ export default async function CrmCalendarPage({
       </div>
 
       {/* ── Mobile (< md): the §29 Screen A calendar (mob-08) — full-bleed
-          under the shell chrome (cancels shell px-4 pt-5 + page px-3 py-4;
-          sm: shell px-6 pt-7 + page px-4 py-5). ── */}
-      <div className="-mx-7 -mt-9 md:hidden sm:-mx-10 sm:-mt-12">
+          under the shell chrome (cancels shell px-4 pt-5 / sm:px-6 sm:pt-7;
+          the page adds no padding of its own since the v2 migration). ── */}
+      <div className="-mx-4 -mt-5 md:hidden sm:-mx-6 sm:-mt-7">
         <MobileCalendarScreen
           key={`${dateKey.slice(0, 7)}-01`}
           monthKey={`${dateKey.slice(0, 7)}-01`}
@@ -331,6 +385,6 @@ export default async function CrmCalendarPage({
           searchContactsAction={searchContacts}
         />
       </div>
-    </main>
+    </div>
   )
 }

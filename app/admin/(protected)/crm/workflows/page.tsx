@@ -1,4 +1,37 @@
 // @no-parity — internal admin surface, no public mockup contract
+//
+// /admin/crm/workflows — the enrollment board. P11D: migrated to the LOCKED
+// admin v2 language (design_system/admin/ADMIN_UI.md). PRESENTATION ONLY.
+//
+// This screen drives automated outreach, so NOTHING that decides who is enrolled
+// or when a touch fires was touched. Carried over verbatim: the getCrmAccess() →
+// /admin/access-denied guard, the `?boardError=` decode, getWorkflowBoard() and
+// its scoping, all five 'use server' adapters character for character — approve ·
+// pause · resume · advance · dismiss, each with the same FormData key
+// 'enrollmentId', the same action call, and the same
+// redirect(`/admin/crm/workflows?boardError=…`) on failure — fmtRelative, the
+// awaiting/running/paused count math (paused still folds paused_reply in), the
+// per-status choice of which action is primary and which are secondary, the
+// stepLabels the DAL builds, `dynamic = 'force-dynamic'`, the metadata title,
+// and both hrefs (/admin/crm and /admin/crm/sequences).
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the <h1>/<h2>/ConsoleSection/Alert/Card stack with it, and the
+// two duplicate renderings of every enrollment — a phone stack and a desktop
+// kanban, each with its own copy of the five action forms — collapsed into ONE
+// queue-row list per step (ADMIN_UI pattern 1, phone-first, single line at
+// 1024px). No horizontal board to scroll, no `compact` fork.
+//
+// ONE PERSON CAN NO LONGER GO MISSING. Both old branches rendered enrollments by
+// walking stepLabels, so an enrollment whose step_index sat past the sequence's
+// last step drew nothing at all — on the board by status, invisible on screen.
+// Those now fall into a named group. Checked against live data 2026-08-07: all
+// 15 board enrollments are within range, so this changes no pixel today.
+//
+// NO RULE-PRECEDENCE CLAIM IS MADE HERE. The sibling automations page had to cut
+// "first matching rule wins" because it holds for autoEnrollPerson and not for
+// fireTrigger. This page never claimed it and still does not: it says only what
+// its own rows show.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
@@ -10,12 +43,13 @@ import {
   advanceEnrollmentNowAction,
   dismissEnrollmentAction,
 } from '@/app/actions/crm'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { cn } from '@/lib/utils'
+import {
+  Button,
+  QueueRow,
+  SectionHead,
+  VerdictLine,
+  type AdminState,
+} from '@/components/admin/v2'
 
 export const metadata = { title: 'Workflows | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -70,19 +104,13 @@ function fmtRelative(iso: string | null): string {
   return `${Math.floor(ms / 86_400_000)}d ago`
 }
 
-function brokerInitials(broker: string | null): string {
-  if (!broker) return '?'
-  return broker
-    .split(/[-_\s]/)
-    .map((w) => w[0]?.toUpperCase() ?? '')
-    .slice(0, 2)
-    .join('')
-}
-
-function statusVariant(status: string): 'default' | 'secondary' | 'outline' | 'destructive' | 'warning' {
-  if (status === 'awaiting_broker') return 'warning'
-  if (status === 'running') return 'default'
-  return 'secondary'
+/** Status as a plain word plus its tone — status is text + color, never color alone. */
+function stateOf(status: string): { word: string; tone: AdminState } {
+  if (status === 'awaiting_broker') return { word: 'Waiting on you', tone: 'waiting' }
+  if (status === 'running') return { word: 'Running', tone: 'ok' }
+  if (status === 'paused') return { word: 'Paused', tone: 'slow' }
+  if (status === 'paused_reply') return { word: 'Paused on reply', tone: 'slow' }
+  return { word: status.replace(/_/g, ' '), tone: 'waiting' }
 }
 
 type Enrollment = {
@@ -95,77 +123,66 @@ type Enrollment = {
   nextRunAt: string | null
 }
 
-// One enrollment's interior — shared by the desktop kanban card and the mobile
-// stacked list so the action forms aren't duplicated. `compact` keeps the dense
-// kanban sizing; the mobile list uses larger, thumb-friendly controls.
-function EnrollmentCardBody({ en, compact }: { en: Enrollment; compact?: boolean }) {
+/**
+ * One enrollment's actions. The per-status choice of primary and secondaries is
+ * carried over unchanged; only the button skins changed.
+ */
+function EnrollmentActions({ en }: { en: Enrollment }) {
+  const primary =
+    en.status === 'awaiting_broker' ? { action: approveForm, label: 'Approve' }
+    : en.status === 'running' ? { action: pauseForm, label: 'Pause' }
+    : (en.status === 'paused' || en.status === 'paused_reply') ? { action: resumeForm, label: 'Resume' }
+    : null
+  const secondary = [
+    en.status === 'running' ? { action: advanceForm, label: 'Run next now' } : null,
+    { action: dismissForm, label: 'Stop' },
+  ].filter((s): s is { action: typeof dismissForm; label: string } => s !== null)
+
   return (
-    <>
-      <div className="flex items-start justify-between gap-1">
+    <span style={{ display: 'inline-flex', gap: 8, flexWrap: 'wrap' }}>
+      {primary ? (
+        <form action={primary.action}>
+          <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
+          <Button type="submit">{primary.label}</Button>
+        </form>
+      ) : null}
+      {secondary.map((s) => (
+        <form key={s.label} action={s.action}>
+          <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
+          <Button type="submit" variant="quiet">
+            {s.label}
+          </Button>
+        </form>
+      ))}
+    </span>
+  )
+}
+
+/** One enrollment as a queue row: state word, the person (a door), where it is next. */
+function EnrollmentRow({ en }: { en: Enrollment }) {
+  const state = stateOf(en.status)
+  const next =
+    en.status === 'awaiting_broker'
+      ? 'waiting on approval'
+      : en.nextRunAt
+        ? `next touch ${fmtRelative(en.nextRunAt)}`
+        : null
+  const broker = en.assignedBroker ?? 'unassigned'
+  return (
+    <QueueRow
+      kind={state.word}
+      kindTone={state.tone}
+      title={
         <Link
           href={`/admin/crm/${en.personId}`}
-          className={
-            compact
-              ? 'min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline'
-              : 'min-w-0 flex-1 truncate text-base font-semibold text-foreground hover:underline'
-          }
+          style={{ color: 'var(--a-text)', textDecoration: 'none' }}
         >
           {en.personName ?? `#${en.personId}`}
         </Link>
-        <span
-          className="ml-1 shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-          title={en.assignedBroker ?? 'unassigned'}
-        >
-          {brokerInitials(en.assignedBroker)}
-        </span>
-      </div>
-      <div className="mt-1 flex items-center gap-1.5">
-        <Badge variant={statusVariant(en.status)} className="text-[10px]">
-          {en.status === 'awaiting_broker' ? 'waiting on you' : en.status.replace('_', ' ')}
-        </Badge>
-      </div>
-      <div className="mt-1 text-[11px] text-muted-foreground">
-        {en.status === 'awaiting_broker'
-          ? 'waiting on approval'
-          : en.nextRunAt
-            ? `next: ${fmtRelative(en.nextRunAt)}`
-            : null}
-      </div>
-
-      {/* Action row — one clear PRIMARY action; secondary actions demoted to a
-          quieter row below (FUB hierarchy, no button sprawl). */}
-      {(() => {
-        const primary =
-          en.status === 'awaiting_broker' ? { action: approveForm, label: 'Approve' }
-          : en.status === 'running' ? { action: pauseForm, label: 'Pause' }
-          : (en.status === 'paused' || en.status === 'paused_reply') ? { action: resumeForm, label: 'Resume' }
-          : null
-        const secondary = [
-          en.status === 'running' ? { action: advanceForm, label: 'Run next now' } : null,
-          { action: dismissForm, label: 'Stop' },
-        ].filter((s): s is { action: typeof dismissForm; label: string } => s !== null)
-        const primaryBtn = compact ? 'h-6 w-full px-2 text-[11px]' : 'h-10 w-full px-3 text-sm'
-        const secondaryBtn = compact ? 'h-6 w-full px-2 text-[11px]' : 'h-9 w-full px-3 text-sm'
-        return (
-          <div className={compact ? 'mt-2 flex flex-col gap-1' : 'mt-3 flex flex-col gap-2'}>
-            {primary ? (
-              <form action={primary.action}>
-                <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
-                <Button type="submit" size="sm" variant="default" className={primaryBtn}>{primary.label}</Button>
-              </form>
-            ) : null}
-            <div className={compact ? 'flex gap-1' : 'flex gap-2'}>
-              {secondary.map((s) => (
-                <form key={s.label} action={s.action} className="flex-1">
-                  <input type="hidden" name="enrollmentId" value={en.enrollmentId} />
-                  <Button type="submit" size="sm" variant="outline" className={cn(secondaryBtn, s.label === 'Stop' && 'text-muted-foreground')}>{s.label}</Button>
-                </form>
-              ))}
-            </div>
-          </div>
-        )
-      })()}
-    </>
+      }
+      context={next ? `${broker} · ${next}` : broker}
+      action={<EnrollmentActions en={en} />}
+    />
   )
 }
 
@@ -191,142 +208,127 @@ export default async function CrmWorkflowsPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1600px] px-3 py-6 sm:px-6 sm:py-8">
-      <div className="mb-1">
-        <Link
-          href="/admin/crm"
-          className="inline-flex min-h-[40px] items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          Back to CRM
-        </Link>
-      </div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-foreground">Enrollment board</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Active leads moving through automated sequences. Each column is a workflow step.
-          </p>
-        </div>
-        <Link href="/admin/crm/sequences" className="shrink-0">
-          <Button variant="outline" size="sm" className="h-10 md:h-8">
-            Build workflows
-          </Button>
-        </Link>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={counts.awaiting_broker > 0 ? 'attention' : 'ok'}>
+          {counts.awaiting_broker > 0 ? (
+            <>
+              <b>
+                {counts.awaiting_broker.toLocaleString('en-US')}{' '}
+                {counts.awaiting_broker === 1 ? 'step is' : 'steps are'} waiting on your approval.
+              </b>{' '}
+              {counts.running.toLocaleString('en-US')} running, {counts.paused.toLocaleString('en-US')}{' '}
+              paused.
+            </>
+          ) : (
+            <>
+              <b>
+                {counts.running.toLocaleString('en-US')} running,{' '}
+                {counts.paused.toLocaleString('en-US')} paused across{' '}
+                {sequences.length.toLocaleString('en-US')} active{' '}
+                {sequences.length === 1 ? 'sequence' : 'sequences'}.
+              </b>{' '}
+              Nothing is waiting on your approval.
+            </>
+          )}
+        </VerdictLine>
       </div>
 
       {boardError ? (
-        <Alert variant="destructive" className="mt-4">
-          <AlertDescription>{boardError}</AlertDescription>
-        </Alert>
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: '0 0 16px' }}>
+          {boardError}
+        </p>
       ) : null}
 
-      {/* Summary */}
-      <ConsoleSection title="Summary" className="mt-4">
-        <p className="text-sm text-muted-foreground">
-          Across {sequences.length} active {sequences.length === 1 ? 'sequence' : 'sequences'}:
-        </p>
-        <div className="mt-2 grid grid-cols-3 gap-2 sm:mt-2 sm:grid-cols-none sm:flex sm:flex-wrap sm:items-center sm:gap-4">
-          <span className="text-sm tabular-nums text-foreground">
-            <span className="font-semibold">{counts.awaiting_broker}</span>{' '}
-            <span className="block text-muted-foreground sm:inline">waiting on approval</span>
-          </span>
-          <span className="text-sm tabular-nums text-foreground">
-            <span className="font-semibold">{counts.running}</span>{' '}
-            <span className="block text-muted-foreground sm:inline">running</span>
-          </span>
-          <span className="text-sm tabular-nums text-foreground">
-            <span className="font-semibold">{counts.paused}</span>{' '}
-            <span className="block text-muted-foreground sm:inline">paused</span>
-          </span>
-        </div>
-      </ConsoleSection>
+      <div className="av2-wordrow" style={{ margin: '0 0 18px' }}>
+        <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
+          Back to CRM
+        </Link>
+        <Link
+          href="/admin/crm/sequences"
+          className="av2-btn av2-btn--quiet"
+          style={{ textDecoration: 'none', marginLeft: 'auto' }}
+        >
+          Build workflows
+        </Link>
+      </div>
 
-      {/* Per-sequence board */}
-      <div className="mt-8 space-y-10">
-        {sequences.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              No active sequences. Activate a sequence on the Sequences page to see leads here.
-            </CardContent>
-          </Card>
-        ) : (
-          sequences.map((seq) => (
-            <section key={seq.sequenceId}>
-              <div className="mb-3 flex flex-wrap items-baseline gap-3">
-                <h2 className="text-lg font-semibold text-foreground">{seq.sequenceName}</h2>
-                <span className="text-sm tabular-nums text-muted-foreground">
-                  {seq.enrollments.length} {seq.enrollments.length === 1 ? 'person' : 'people'} active
-                </span>
-              </div>
+      {sequences.length === 0 ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          No sequence is active. Activate one on the automations page and the people it enrolls show
+          up here.
+        </p>
+      ) : (
+        sequences.map((seq) => {
+          const offBoard = seq.enrollments.filter(
+            (e) => e.stepIndex < 0 || e.stepIndex >= seq.stepLabels.length,
+          )
+          return (
+            <section key={seq.sequenceId} aria-label={seq.sequenceName}>
+              <SectionHead>
+                {seq.sequenceName} — {seq.enrollments.length.toLocaleString('en-US')}{' '}
+                {seq.enrollments.length === 1 ? 'person' : 'people'} active
+              </SectionHead>
 
               {seq.enrollments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No one is in this workflow yet.</p>
+                <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                  No one is in this workflow yet.
+                </p>
               ) : (
                 <>
-                  {/* Mobile — stacked cards grouped by step (one column, thumb-friendly) */}
-                  <div className="space-y-4 md:hidden">
-                    {seq.stepLabels.map((label, stepIdx) => {
-                      const stepEnrollments = seq.enrollments.filter((e) => e.stepIndex === stepIdx)
-                      if (stepEnrollments.length === 0) return null
-                      return (
-                        <div key={stepIdx}>
-                          <div className="mb-2 truncate text-xs font-medium uppercase text-muted-foreground">
-                            {label}
-                          </div>
-                          <div className="space-y-2">
-                            {stepEnrollments.map((en) => (
-                              <Card key={en.enrollmentId} className="shadow-none">
-                                <CardContent className="px-4 py-3">
-                                  <EnrollmentCardBody en={en} />
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
+                  {seq.stepLabels.map((label, stepIdx) => {
+                    const stepEnrollments = seq.enrollments.filter((e) => e.stepIndex === stepIdx)
+                    if (stepEnrollments.length === 0) return null
+                    return (
+                      <div key={stepIdx} role="group" aria-label={label}>
+                        <div
+                          style={{
+                            fontSize: 'var(--a-text-xs)',
+                            fontWeight: 600,
+                            letterSpacing: '.05em',
+                            textTransform: 'uppercase',
+                            color: 'var(--a-text-2)',
+                            margin: '12px 0 6px',
+                          }}
+                        >
+                          {label}
                         </div>
-                      )
-                    })}
-                  </div>
+                        <ul className="av2-queue">
+                          {stepEnrollments.map((en) => (
+                            <EnrollmentRow key={en.enrollmentId} en={en} />
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
 
-                  {/* Desktop — horizontal step board (kanban) */}
-                  <div className="hidden overflow-x-auto no-scrollbar pb-2 md:block">
-                    <div
-                      className="inline-flex min-w-full gap-3"
-                      style={{ gridTemplateColumns: `repeat(${seq.stepCount}, minmax(200px, 1fr))` }}
-                    >
-                      {seq.stepLabels.map((label, stepIdx) => {
-                        const stepEnrollments = seq.enrollments.filter((e) => e.stepIndex === stepIdx)
-                        return (
-                          <div
-                            key={stepIdx}
-                            className="w-56 shrink-0 rounded-lg border border-border bg-card p-3"
-                          >
-                            <div className="mb-2 truncate text-xs font-medium uppercase text-muted-foreground">
-                              {label}
-                            </div>
-                            {stepEnrollments.length === 0 ? (
-                              <p className="text-xs text-muted-foreground">—</p>
-                            ) : (
-                              <div className="space-y-2">
-                                {stepEnrollments.map((en) => (
-                                  <Card key={en.enrollmentId} className="shadow-none">
-                                    <CardContent className="px-3 py-2">
-                                      <EnrollmentCardBody en={en} compact />
-                                    </CardContent>
-                                  </Card>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
+                  {offBoard.length > 0 ? (
+                    <div role="group" aria-label="Past the last step">
+                      <div
+                        style={{
+                          fontSize: 'var(--a-text-xs)',
+                          fontWeight: 600,
+                          letterSpacing: '.05em',
+                          textTransform: 'uppercase',
+                          color: 'var(--a-warn)',
+                          margin: '12px 0 6px',
+                        }}
+                      >
+                        Past the last step
+                      </div>
+                      <ul className="av2-queue">
+                        {offBoard.map((en) => (
+                          <EnrollmentRow key={en.enrollmentId} en={en} />
+                        ))}
+                      </ul>
                     </div>
-                  </div>
+                  ) : null}
                 </>
               )}
             </section>
-          ))
-        )}
-      </div>
-    </main>
+          )
+        })
+      )}
+    </div>
   )
 }
