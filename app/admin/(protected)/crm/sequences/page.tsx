@@ -1,4 +1,37 @@
 // @no-parity — internal admin surface, no public mockup contract
+//
+// /admin/crm/sequences — the automations index. P11E: migrated to the LOCKED
+// admin v2 language (design_system/admin/ADMIN_UI.md). PRESENTATION ONLY.
+//
+// This page drives automated multi-touch outreach, so nothing that decides WHO
+// is enrolled or WHEN a touch fires was touched. Carried over verbatim: the
+// requireAdminPage('settings.automations') guard, the getCrmAccess() →
+// /admin/access-denied redirect, scopeBroker(access), the six-read Promise.all
+// and every argument in it, all fourteen 'use server' adapters character for
+// character (create/duplicate/setStatus/archive/remove workflow · the four
+// folder actions · moveToFolder · the five rule actions, including the FormData
+// keys 'sequenceId' and 'status'), planTypeFromFubId and its 69/70/71/72 map,
+// BROKER_HEADSHOT, CREATED_ON_FMT and its M/D/YYYY shot-34 convention, every
+// field of AutomationListRow and RuleRow, the sequence/tag/stage/broker option
+// filters, and both hrefs (/admin/crm and /admin/crm/workflows).
+//
+// AutomationsListView and AutomationRulesManager are MOUNTED UNCHANGED — the
+// sanctioned pattern for a client island that owns a mutation surface. Every
+// enrollment, step-timing, pause-on-reply and exit control still lives inside
+// them, untouched by this change.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the page opens with the counts the two islands already hold,
+// the "Enrollment board" outline button became the family's quiet word-row
+// link, and ConsoleSection became SectionHead.
+//
+// ONE CLAIM CUT. The enrollment-rules blurb read "First matching rule wins."
+// That is true on ONE of the engine's two paths and false on the other:
+// autoEnrollPerson (lib/crm/enroll.ts) sorts matched rules by position and
+// takes candidates[0], but fireTrigger (lib/crm/trigger-dispatch.ts) loops
+// every matching rule and dispatches all of them. A broker adding a second
+// tag_added rule for the same tag would be misled. The page now states only
+// what its own rows prove.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { redirect } from 'next/navigation'
@@ -27,8 +60,7 @@ import { getCrmTags } from '@/lib/data/crm/getCrmTags'
 import { getCrmStages } from '@/lib/data/crm/getCrmStages'
 import { scopeBroker } from '@/lib/crm/scope'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
-import { Button } from '@/components/ui/button'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
   AutomationsListView,
   type AutomationListRow,
@@ -207,16 +239,33 @@ export default async function CrmAutomationsPage() {
     label: CRM_BROKER_DISPLAY[slug as CrmBrokerSlug],
   }))
 
+  // The verdict reads the same two collections the islands below render.
+  const activeCount = rows.filter((r) => r.status === 'active').length
+  const activeRules = ruleRows.filter((r) => r.isActive).length
+
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-      <div className="mb-3 flex items-center justify-between gap-3 text-sm text-muted-foreground">
-        <Link href="/admin/crm" className="inline-flex min-h-10 items-center hover:text-foreground md:min-h-0">
+    <div className="av2-scope" style={{ maxWidth: 1152, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={activeCount > 0 ? 'ok' : 'attention'}>
+          <b>
+            {activeCount.toLocaleString('en-US')} of {rows.length.toLocaleString('en-US')}{' '}
+            {rows.length === 1 ? 'automation is' : 'automations are'} active.
+          </b>{' '}
+          {activeRules.toLocaleString('en-US')} of {ruleRows.length.toLocaleString('en-US')}{' '}
+          {ruleRows.length === 1 ? 'enrollment rule' : 'enrollment rules'} on.
+        </VerdictLine>
+      </div>
+
+      <div className="av2-wordrow" style={{ margin: '0 0 18px' }}>
+        <Link href="/admin/crm" style={{ color: 'var(--a-accent)' }}>
           Back to CRM
         </Link>
-        <Link href="/admin/crm/workflows" className="shrink-0">
-          <Button variant="outline" size="sm" className="h-8">
-            Enrollment board
-          </Button>
+        <Link
+          href="/admin/crm/workflows"
+          className="av2-btn av2-btn--quiet"
+          style={{ textDecoration: 'none', marginLeft: 'auto' }}
+        >
+          Enrollment board
         </Link>
       </div>
 
@@ -240,11 +289,8 @@ export default async function CrmAutomationsPage() {
 
       {/* Enrollment rules — the engine's event → enroll path (kept from the
           working build; §12.9.2 automatic enrollment). */}
-      <ConsoleSection title="Enrollment rules" className="mt-10">
-        <p className="mb-3 text-sm text-muted-foreground">
-          Rules that enroll a contact automatically. The tag-added to enroll-in-automation path runs in the engine
-          today. First matching rule wins.
-        </p>
+      <div style={{ marginTop: 40 }}>
+        <SectionHead>Enrollment rules</SectionHead>
         <AutomationRulesManager
           rows={ruleRows}
           sequences={sequenceOptions}
@@ -259,7 +305,7 @@ export default async function CrmAutomationsPage() {
             reorder: reorderRules,
           }}
         />
-      </ConsoleSection>
-    </main>
+      </div>
+    </div>
   )
 }

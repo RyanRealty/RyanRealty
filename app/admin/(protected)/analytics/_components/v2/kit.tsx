@@ -13,7 +13,7 @@
  * GridSkeleton≈Loading, LaneNote≈.av2-note, Stamp≈.av2-stamp). Two readers for
  * one family is drift. The merge worth keeping takes the stacking behaviour
  * here (a nine-column list must not scroll sideways on a phone — that is the
- * rule TableWithMobileCards existed to enforce) plus the ARIA table roles and
+ * rule the retired TableWithMobileCards existed to enforce) plus the ARIA roles and
  * the keyboard-reachable scroll region from there.
  */
 import './analytics-v2.css'

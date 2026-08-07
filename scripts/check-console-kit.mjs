@@ -50,7 +50,10 @@ const REQUIRED_KIT_PAGES = [
   // TaskQueue branch; the page is under the stricter ci:crm-screen-parity
   // contract (crm-screens.json "tasks-calendar-desktop" + "mobile-calendar-tasks"
   // — requiredComponents + committed verify screenshots).
-  'app/admin/(protected)/crm/sequences/page.tsx',
+  // app/admin/(protected)/crm/sequences/page.tsx — REMOVED 2026-08-07 (P11C):
+  // migrated to the LOCKED admin v2 language, same hand-off as the newsletters
+  // family below. SectionHead owns the headings; the surface is under
+  // ci:admin-ui (rules A–D), ci:admin-responsive and ci:admin-v2-tokens.
   'app/admin/(protected)/crm/approvals/page.tsx',
   // Comms cluster
   // app/admin/(protected)/newsletters/{page, [id]/page, new/page,
@@ -63,8 +66,13 @@ const REQUIRED_KIT_PAGES = [
   // ci:admin-responsive and ci:admin-v2-tokens. That is a strictly stronger
   // contract than the ConsoleSection floor this gate enforces, so this is a
   // hand-off, not a regression. Same reasoning as crm/inbox and crm/tasks above.
-  'app/admin/(protected)/email/campaigns/page.tsx',
-  'app/admin/(protected)/email/compose/page.tsx',
+  // app/admin/(protected)/email/{campaigns,compose}/page.tsx — REMOVED
+  // 2026-08-07 (P11C): migrated to the LOCKED admin v2 language, same hand-off
+  // as the newsletters family above. Worth recording that ConsoleSection was
+  // actively harming compose: its shadcn <Card> carries overflow-hidden, which
+  // silently CLIPPED EmailBodyEditor's 492px toolbar at 375px and made its
+  // right-hand buttons unreachable on a phone. SectionHead owns the headings now
+  // and each island sits in its own overflow-x box.
   // Ops / data cluster
   'app/admin/(protected)/approval-queue/page.tsx',
   // app/admin/(protected)/expired-listings/page.tsx — REMOVED 2026-07-15: pure
@@ -72,8 +80,20 @@ const REQUIRED_KIT_PAGES = [
   // index retired into the Expireds dashboard, which carries ConsoleSections).
   // app/admin/(protected)/spark-status/page.tsx — REMOVED 2026-07-07: pure
   // redirect to /admin/sync/spark (admin consolidation — Spark is a tab inside
-  // System health). The surface it pointed at (sync) stays in this list.
-  'app/admin/(protected)/sync/page.tsx',
+  // System health).
+  // app/admin/(protected)/sync/page.tsx — REMOVED 2026-08-07 (P11C): migrated to
+  // the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md), whose
+  // acceptance bar forbids the legacy console kit — the two contracts cannot
+  // both hold on one page. Same hand-off as the newsletters family above.
+  // Headings did not become optional and the page is not a data dump: the ONE
+  // ConsoleSection this page carried wrapped a lead paragraph under a "Sync
+  // status" title, which is exactly the page-title chrome ADMIN_UI rule 1 bans
+  // (the nav already names the page). Every panel below it keeps its own
+  // heading — "Live sync status" / "Live history yield" / "Terminal history
+  // finalization" (SyncLiveStatusAndTerminal), "Spark API vs database" /
+  // "Listing status (DB)" (SyncHeavyStatusSections), "Backfill health" /
+  // "Strict verification" (BackfillHealthPanel). The surface is now under
+  // ci:admin-ui (rules A–D), ci:admin-responsive and ci:admin-v2-tokens.
   // app/admin/(protected)/reports/page.tsx — REMOVED 2026-07-07: pure redirect
   // to /admin/analytics (admin consolidation — the Reports launchpad merged
   // into the Performance hub, which carries the catalog + ConsoleSections).

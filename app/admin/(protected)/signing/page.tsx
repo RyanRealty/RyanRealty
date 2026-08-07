@@ -1,26 +1,100 @@
 // @no-parity — internal admin tool (signing dashboard), no public mockup contract
+//
+// /admin/signing — the envelope dashboard. P11E: migrated to the LOCKED admin
+// v2 language (design_system/admin/ADMIN_UI.md) through the family's shared
+// presentation kit (@/components/admin/v2). PRESENTATION ONLY.
+//
+// These are legally binding e-signature envelopes, so nothing that decides
+// state was touched. Carried over verbatim: getEnvelopesOverview() and its
+// shape, the `counts` reduce keyed on the RAW e.status string, the `active`
+// filter (`status === 'sent' || status === 'partially_signed'`), ALL_PREVIEW =
+// 8 and the slice(0, 8) / slice(8) split, the four summary statuses and their
+// order (sent · partially_signed · completed · draft), every status word from
+// ENVELOPE_STATUS_LABEL (not one of them re-worded), `signedCount/recipientCount`,
+// the `/admin/signing/${e.id}` and `/admin/deals/${encodeURIComponent(e.dealKey)}`
+// hrefs, the `e.dealKey ? e.dealAddress ?? e.dealKey : 'No deal'` fallback
+// chain, and `dynamic = 'force-dynamic'`. No envelope status string, signer
+// order, token or audit field is read or written here.
+//
+// DATE FORMATTER — DELIBERATELY NOT SWAPPED. `sentAt.slice(0, 10)` prints the
+// UTC calendar day of tc_envelopes.sent_at. formatDate() would re-project that
+// instant into America/Los_Angeles, which moves the printed day BACK BY ONE for
+// anything sent after 5pm Pacific (e.g. sent_at 2026-08-08T01:30:00Z prints
+// "2026-08-08" today and would print "Aug 7, 2026" after a swap). That is a
+// changed date on a legal document's record, not a presentation change, so the
+// slice stays exactly as it was.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the <h1> is gone (the nav names this page), the four status
+// cards became the family's typographic numbers strip carrying the same four
+// counts, the status pills became state words carrying the same status text,
+// the mobile-card / desktop-table pair became the family's ONE grid (which
+// carries its own phone shape), and the shadcn Accordion disclosure became a
+// native <details> holding the same "See all N envelopes" split.
 import Link from 'next/link'
 import { getEnvelopesOverview } from '@/app/actions/tc-envelopes'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import { cn } from '@/lib/utils'
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  StateWord,
+  VerdictLine,
+  type AdminState,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
-const STATUS_STYLE: Record<EnvelopeStatus, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'bg-primary/15 text-primary',
-  partially_signed: 'bg-warning/20 text-warning-foreground',
-  completed: 'bg-success/20 text-success-foreground',
-  voided: 'bg-destructive/15 text-destructive',
+/** Same status→severity mapping the pills carried; the word itself is unchanged. */
+const STATUS_STATE: Record<EnvelopeStatus, AdminState> = {
+  draft: 'waiting',
+  sent: 'accent',
+  partially_signed: 'slow',
+  completed: 'ok',
+  voided: 'down',
+}
+
+type EnvelopeRow = Awaited<ReturnType<typeof getEnvelopesOverview>>[number]
+
+const COLUMNS: ReportColumn[] = [
+  { key: 'envelope', label: 'Envelope' },
+  { key: 'deal', label: 'Deal' },
+  { key: 'status', label: 'Status' },
+  { key: 'signed', label: 'Signed', numeric: true },
+  { key: 'sent', label: 'Sent', numeric: true },
+]
+
+const TEMPLATE =
+  'minmax(180px, 2fr) minmax(150px, 1.6fr) minmax(120px, 1fr) minmax(74px, 0.6fr) minmax(104px, 0.8fr)'
+
+function gridRows(rows: EnvelopeRow[]): ReportGridRow[] {
+  return rows.map((e) => ({
+    key: e.id,
+    cells: [
+      <Link key="n" href={`/admin/signing/${e.id}`} style={{ color: 'var(--a-accent)' }}>
+        {e.name}
+      </Link>,
+      e.dealKey ? (
+        <Link
+          key="d"
+          href={`/admin/deals/${encodeURIComponent(e.dealKey)}`}
+          style={{ color: 'var(--a-accent)' }}
+        >
+          {e.dealAddress ?? e.dealKey}
+        </Link>
+      ) : (
+        '—'
+      ),
+      <StateWord key="s" state={STATUS_STATE[e.status] ?? 'waiting'}>
+        {ENVELOPE_STATUS_LABEL[e.status]}
+      </StateWord>,
+      `${e.signedCount}/${e.recipientCount}`,
+      // UTC calendar day of sent_at — see the formatter note in the header.
+      e.sentAt ? e.sentAt.slice(0, 10) : '—',
+    ],
+  }))
 }
 
 export default async function SigningDashboard() {
@@ -34,133 +108,89 @@ export default async function SigningDashboard() {
   const allPreview = envelopes.slice(0, ALL_PREVIEW)
   const allRest = envelopes.slice(ALL_PREVIEW)
 
-  return (
-    <main className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">Signing</h1>
-        <p className="text-sm text-muted-foreground">
-          Every envelope across all deals. Compose new envelopes from a deal&apos;s documents.
-        </p>
-      </header>
+  const SUMMARY: EnvelopeStatus[] = ['sent', 'partially_signed', 'completed', 'draft']
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {(['sent', 'partially_signed', 'completed', 'draft'] as EnvelopeStatus[]).map((s) => (
-          <Card key={s}>
-            <CardContent className="pt-4">
-              <p className="text-2xl font-bold tabular-nums text-foreground">{counts[s] ?? 0}</p>
-              <p className="text-xs text-muted-foreground">{ENVELOPE_STATUS_LABEL[s]}</p>
-            </CardContent>
-          </Card>
-        ))}
+  return (
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={active.length > 0 ? 'attention' : 'ok'}>
+          {envelopes.length === 0 ? (
+            <>
+              <b>No envelope has been created yet.</b>
+            </>
+          ) : active.length > 0 ? (
+            <>
+              <b>
+                {active.length.toLocaleString('en-US')}{' '}
+                {active.length === 1 ? 'envelope is' : 'envelopes are'} out for signature.
+              </b>{' '}
+              {(counts.completed ?? 0).toLocaleString('en-US')} completed ·{' '}
+              {(counts.draft ?? 0).toLocaleString('en-US')} in draft.
+            </>
+          ) : (
+            <>
+              <b>Nothing is out for signature.</b>{' '}
+              {(counts.completed ?? 0).toLocaleString('en-US')} completed ·{' '}
+              {(counts.draft ?? 0).toLocaleString('en-US')} in draft.
+            </>
+          )}
+        </VerdictLine>
       </div>
+
+      <ReportNumbers
+        items={SUMMARY.map((s) => ({
+          key: s,
+          label: ENVELOPE_STATUS_LABEL[s],
+          value: (counts[s] ?? 0).toLocaleString('en-US'),
+        }))}
+      />
 
       {active.length ? (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold text-foreground">Out for signature</h2>
-          <EnvelopeTable rows={active} />
-        </section>
+        <>
+          <SectionHead>Out for signature</SectionHead>
+          <ReportGrid
+            label="Envelopes out for signature"
+            columns={COLUMNS}
+            template={TEMPLATE}
+            minWidth={760}
+            rows={gridRows(active)}
+            empty={null}
+          />
+        </>
       ) : null}
 
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-foreground">All envelopes</h2>
-        {envelopes.length ? (
-          <>
-            {/* Curate, never dump: most recent few, rest behind a disclosure. */}
-            <EnvelopeTable rows={allPreview} />
-            {allRest.length > 0 ? (
-              <Accordion type="single" collapsible className="mt-2">
-                <AccordionItem value="all-envelopes-rest" className="border-0">
-                  <AccordionTrigger className="min-h-11 justify-center gap-2 text-sm font-medium text-foreground hover:no-underline">
-                    See all {envelopes.length} envelopes
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-1">
-                    <EnvelopeTable rows={allRest} />
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            ) : null}
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No envelopes yet. Open a deal and use “New envelope” on a document to start.
-          </p>
-        )}
-      </section>
-    </main>
-  )
-}
-
-function EnvelopeTable({ rows }: { rows: Awaited<ReturnType<typeof getEnvelopesOverview>> }) {
-  return (
-    <>
-      {/* Envelope cards — phones (one thumb-tap per envelope) */}
-      <div className="space-y-2 md:hidden">
-        {rows.map((e) => (
-          <Card key={e.id} className="transition-colors hover:bg-muted/50">
-            <CardContent className="p-4">
-              <Link href={`/admin/signing/${e.id}`} className="block">
-                <div className="flex items-start justify-between gap-2">
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{e.name}</span>
-                  <Badge className={cn('shrink-0', STATUS_STYLE[e.status])}>{ENVELOPE_STATUS_LABEL[e.status]}</Badge>
-                </div>
-                <div className="mt-1 truncate text-xs text-muted-foreground">
-                  {e.dealKey ? e.dealAddress ?? e.dealKey : 'No deal'}
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="tabular-nums">
-                    Signed {e.signedCount}/{e.recipientCount}
-                  </span>
-                  <span className="shrink-0 tabular-nums">{e.sentAt ? e.sentAt.slice(0, 10) : '—'}</span>
-                </div>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
+      <div style={{ marginTop: active.length ? 28 : 0 }}>
+        <SectionHead>All envelopes</SectionHead>
+        {/* Curate, never dump: most recent few, rest behind a disclosure. */}
+        <ReportGrid
+          label="All envelopes"
+          columns={COLUMNS}
+          template={TEMPLATE}
+          minWidth={760}
+          rows={gridRows(allPreview)}
+          empty={
+            <>
+              No envelopes yet. Open a deal and use &ldquo;New envelope&rdquo; on a document to
+              start.
+            </>
+          }
+        />
+        {allRest.length > 0 ? (
+          <details className="av2-rcols" style={{ marginTop: 12 }}>
+            <summary>See all {envelopes.length.toLocaleString('en-US')} envelopes</summary>
+            <div style={{ paddingTop: 12 }}>
+              <ReportGrid
+                label="The rest of the envelopes"
+                columns={COLUMNS}
+                template={TEMPLATE}
+                minWidth={760}
+                rows={gridRows(allRest)}
+                empty={null}
+              />
+            </div>
+          </details>
+        ) : null}
       </div>
-
-      {/* Envelope table — desktop */}
-      <div className="hidden overflow-hidden rounded-lg border border-border bg-card md:block">
-        <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Envelope</TableHead>
-            <TableHead>Deal</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Signed</TableHead>
-            <TableHead>Sent</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((e) => (
-            <TableRow key={e.id}>
-              <TableCell>
-                <Link href={`/admin/signing/${e.id}`} className="font-medium text-foreground hover:underline">
-                  {e.name}
-                </Link>
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
-                {e.dealKey ? (
-                  <Link href={`/admin/deals/${encodeURIComponent(e.dealKey)}`} className="hover:underline">
-                    {e.dealAddress ?? e.dealKey}
-                  </Link>
-                ) : (
-                  '—'
-                )}
-              </TableCell>
-              <TableCell>
-                <Badge className={STATUS_STYLE[e.status]}>{ENVELOPE_STATUS_LABEL[e.status]}</Badge>
-              </TableCell>
-              <TableCell className="text-sm tabular-nums text-muted-foreground">
-                {e.signedCount}/{e.recipientCount}
-              </TableCell>
-              <TableCell className="text-xs tabular-nums text-muted-foreground">
-                {e.sentAt ? e.sentAt.slice(0, 10) : '—'}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      </div>
-    </>
+    </div>
   )
 }

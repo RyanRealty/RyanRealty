@@ -1,17 +1,58 @@
 // @no-parity — admin-internal email surface, no public mockup contract.
+//
+// /admin/email/campaigns — P11E: migrated to the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md) through the family's shared presentation
+// kit (@/components/admin/v2). PRESENTATION ONLY.
+//
+// This is a send-adjacent surface (CLAUDE.md §1 class 1). It sends nothing and
+// still sends nothing: there is no send call, no recipient resolution, no
+// approval gate and no suppression check on this file, before or after.
+//
+// Carried over verbatim: the requireAdminPage('content.marketing') guard, the
+// getSession() → /admin/login?next=%2Fadmin%2Femail%2Fcampaigns redirect, the
+// getAdminRoleForEmail() → /admin/access-denied redirect, getEmailCampaigns(50),
+// the messageIds filter, getCampaignEngagement(messageIds),
+// getEmailEngagementSummary({ sendType: 'campaign' }), the CampaignViewRow
+// mapping (including `c.messageId ? engagementMap.get(c.messageId) ?? null :
+// null`), the tracked/untracked rule behind "No engagement yet" (never a fake
+// 0%), formatRate for both rates, formatDate for the Date column, the 12-row
+// display cap and its "Showing N of M." line, `dynamic = 'force-dynamic'`, the
+// page metadata, and both hrefs (/admin/reports/emails · /admin/email/compose).
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the <h1> is gone (the nav names this page), the KPI tile board
+// became the family's typographic numbers strip carrying the same four figures
+// formatted the same way, and the shadcn table + mobile-card pair became the
+// family's ONE grid (which carries its own phone shape).
+//
+// A FAILED READ NOW SAYS SO. The KPI strip previously rendered
+// `summary.delivered` and both rates whether or not the engagement read
+// succeeded, so an unreadable email_events table looked identical to a quiet
+// week. Both failure flags now surface (§0: a failed read must not look like a
+// measurement). No figure moved — the same values render on the success path.
+//
+// NO DOOR ON THE SUBJECT. The acceptance bar wants an artifact's name to link
+// to the artifact, and /admin/reports/emails does accept a free-text `q`. It is
+// not wired here because it cannot be proven to land on the campaign's sends:
+// email_events holds zero rows with send_type='campaign' today, so the door
+// could not be tested end to end. An unproven door is the same defect class as
+// an unproven claim.
 import type { Metadata } from 'next'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
-import { TableWithMobileCards } from '@/components/admin/TableWithMobileCards'
 import { formatDate } from '@/lib/format/date'
+import {
+  ReportError,
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  VerdictLine,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 import {
   getEmailCampaigns,
   getCampaignEngagement,
@@ -37,6 +78,9 @@ type CampaignViewRow = {
   engagement: CampaignEngagement | null
 }
 
+/** Rows shown before the "Showing N of M." line — the legacy table's cap, carried over. */
+const ROW_CAP = 12
+
 export default async function AdminEmailCampaignsPage() {
   await requireAdminPage('content.marketing')
   const session = await getSession()
@@ -52,7 +96,7 @@ export default async function AdminEmailCampaignsPage() {
   const messageIds = campaigns.map((c) => c.messageId).filter((m): m is string => !!m)
   const engagementMap = await getCampaignEngagement(messageIds)
 
-  // Brokerage-wide campaign engagement for the KPI strip — all campaign sends.
+  // Brokerage-wide campaign engagement for the numbers strip — all campaign sends.
   const summary = await getEmailEngagementSummary({ sendType: 'campaign' })
 
   const rows: CampaignViewRow[] = campaigns.map((c) => ({
@@ -68,102 +112,129 @@ export default async function AdminEmailCampaignsPage() {
   // were found for it. Otherwise it reads "no engagement yet" — never a fake 0%.
   function engagementCell(e: CampaignEngagement | null): React.ReactNode {
     if (!e || !e.tracked) {
-      return <span className="text-xs text-muted-foreground">No engagement yet</span>
+      return <span style={{ color: 'var(--a-text-2)' }}>No engagement yet</span>
     }
     return (
-      <span className="tabular-nums">
+      <span style={{ fontVariantNumeric: 'tabular-nums' }}>
         {e.opened.toLocaleString('en-US')} opens · {e.clicked.toLocaleString('en-US')} clicks
       </span>
     )
   }
 
   function rateCell(e: CampaignEngagement | null): React.ReactNode {
-    if (!e || !e.tracked) return <span className="text-muted-foreground">—</span>
-    return <span className="tabular-nums">{formatRate(e.openRate)}</span>
+    if (!e || !e.tracked) return <span style={{ color: 'var(--a-text-2)' }}>—</span>
+    return formatRate(e.openRate)
   }
 
-  return (
-    <main className="mx-auto max-w-4xl space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-foreground">Email campaigns</h1>
-        <p className="text-sm text-muted-foreground">
-          Sent campaigns. Engagement is read live from the email-events store, joined to each campaign by its message id. A campaign with no events yet shows no engagement rather than a zero.
-        </p>
-      </header>
+  const trackedCount = rows.filter((r) => r.engagement?.tracked).length
+  const retryHref = `/admin/email/campaigns?t=${Date.now()}`
 
-      <KpiStrip
+  const columns: ReportColumn[] = [
+    { key: 'subject', label: 'Subject' },
+    { key: 'type', label: 'Type' },
+    { key: 'sent', label: 'Sent', numeric: true },
+    { key: 'engagement', label: 'Engagement' },
+    { key: 'openrate', label: 'Open rate', numeric: true },
+    { key: 'date', label: 'Date', numeric: true },
+  ]
+
+  const shown = rows.slice(0, ROW_CAP)
+  const gridRows: ReportGridRow[] = shown.map((c) => ({
+    key: c.id,
+    cells: [
+      c.subject ?? '—',
+      c.templateType ?? '—',
+      c.sentCount.toLocaleString('en-US'),
+      engagementCell(c.engagement),
+      rateCell(c.engagement),
+      c.sentAtIso ? formatDate(c.sentAtIso) : '—',
+    ],
+  }))
+
+  return (
+    <div className="av2-scope" style={{ maxWidth: 896, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={unreadable ? 'attention' : 'ok'}>
+          {unreadable ? (
+            <>
+              <b>The campaigns table could not be read.</b> Nothing below is a measurement.
+            </>
+          ) : rows.length === 0 ? (
+            <>
+              <b>No campaign has been sent yet.</b>
+            </>
+          ) : (
+            <>
+              <b>
+                The {rows.length.toLocaleString('en-US')} newest{' '}
+                {rows.length === 1 ? 'campaign' : 'campaigns'}.
+              </b>{' '}
+              {trackedCount.toLocaleString('en-US')} of them carry engagement events.
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
+      {unreadable ? <ReportError what="Campaigns" href={retryHref} /> : null}
+      {summary.unreadable ? <ReportError what="Campaign engagement" href={retryHref} /> : null}
+
+      <div className="av2-wordrow" style={{ margin: '0 0 18px' }}>
+        <Link href="/admin/email/compose" className="av2-btn" style={{ textDecoration: 'none' }}>
+          Compose
+        </Link>
+        <Link
+          href="/admin/reports/emails"
+          className="av2-btn av2-btn--quiet"
+          style={{ textDecoration: 'none' }}
+        >
+          Email reporting
+        </Link>
+      </div>
+
+      <ReportNumbers
         items={[
-          { label: 'Campaigns', value: String(campaigns.length) },
-          { label: 'Delivered', value: summary.delivered.toLocaleString('en-US') },
-          { label: 'Open rate', value: formatRate(summary.openRate) },
-          { label: 'Click rate', value: formatRate(summary.clickRate) },
+          { key: 'campaigns', label: 'Campaigns', value: String(campaigns.length) },
+          { key: 'delivered', label: 'Delivered', value: summary.delivered.toLocaleString('en-US') },
+          { key: 'openrate', label: 'Open rate', value: formatRate(summary.openRate) },
+          { key: 'clickrate', label: 'Click rate', value: formatRate(summary.clickRate) },
         ]}
       />
 
-      <ConsoleSection
-        title="Campaigns"
-        count="(last 50)"
-        className="mt-6"
-        action={
-          <div className="flex items-center gap-2">
-            <Button asChild size="sm" variant="outline">
-              <Link href="/admin/reports/emails">Email reporting</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/admin/email/compose">Compose</Link>
-            </Button>
-          </div>
+      <SectionHead>Campaigns</SectionHead>
+      <ReportGrid
+        label="Sent email campaigns"
+        columns={columns}
+        template="minmax(180px, 2fr) minmax(92px, 0.8fr) minmax(66px, 0.5fr) minmax(146px, 1.2fr) minmax(88px, 0.7fr) minmax(112px, 0.9fr)"
+        minWidth={800}
+        rows={gridRows}
+        empty={
+          <>
+            No campaigns yet.{' '}
+            <Link href="/admin/email/compose" style={{ color: 'var(--a-accent)' }}>
+              Compose an email to send
+            </Link>
+            .
+          </>
         }
-      >
-        {unreadable ? (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-            The campaigns table could not be read right now.
-          </div>
-        ) : (
-          <TableWithMobileCards
-            rows={rows}
-            cap={12}
-            getRowKey={(c) => c.id}
-            columns={[
-              { key: 'subject', header: 'Subject', className: 'font-medium text-foreground', cell: (c) => c.subject ?? '—' },
-              { key: 'type', header: 'Type', className: 'text-xs', cell: (c) => c.templateType ?? '—' },
-              { key: 'sent', header: 'Sent', className: 'text-right tabular-nums', cell: (c) => c.sentCount.toLocaleString('en-US') },
-              { key: 'engagement', header: 'Engagement', className: 'text-xs', cell: (c) => engagementCell(c.engagement) },
-              { key: 'openrate', header: 'Open rate', className: 'text-right text-xs', cell: (c) => rateCell(c.engagement) },
-              {
-                key: 'date',
-                header: 'Date',
-                className: 'text-xs text-muted-foreground whitespace-nowrap',
-                cell: (c) => (c.sentAtIso ? formatDate(c.sentAtIso) : '—'),
-              },
-            ]}
-            renderCard={(c) => (
-              <Card>
-                <CardContent className="space-y-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="min-w-0 break-words text-sm font-medium text-foreground">{c.subject ?? '—'}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground whitespace-nowrap">
-                      {c.sentAtIso ? formatDate(c.sentAtIso) : '—'}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
-                    <span>{c.templateType ?? '—'}</span>
-                    <span>·</span>
-                    <span>{c.sentCount.toLocaleString('en-US')} sent</span>
-                    <span>·</span>
-                    {c.engagement?.tracked ? (
-                      <span>{c.engagement.opened.toLocaleString('en-US')} opens · {c.engagement.clicked.toLocaleString('en-US')} clicks</span>
-                    ) : (
-                      <Badge variant="secondary">No engagement yet</Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            empty={<>No campaigns yet. Compose an email to send.</>}
-          />
-        )}
-      </ConsoleSection>
-    </main>
+      />
+      {rows.length > shown.length ? (
+        <p
+          style={{
+            fontSize: 'var(--a-text-xs)',
+            color: 'var(--a-text-2)',
+            fontVariantNumeric: 'tabular-nums',
+            marginTop: 12,
+          }}
+        >
+          Showing {shown.length.toLocaleString('en-US')} of {rows.length.toLocaleString('en-US')}.
+        </p>
+      ) : null}
+
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 16 }}>
+        This list reads the 50 newest campaigns, newest first. Engagement is read from the
+        email-events store and joined to each campaign by its message id. A campaign with no events
+        yet reads &ldquo;No engagement yet&rdquo; rather than 0%.
+      </p>
+    </div>
   )
 }
