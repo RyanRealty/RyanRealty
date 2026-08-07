@@ -56,27 +56,65 @@ const SCAN_DIRS = [
   'app/admin/(protected)/audiences',
   'app/admin/(protected)/content',
   'app/admin/(protected)/settings/page.tsx',
-  // 11C/11D (2026-08-07). 54 pages migrated across fourteen families; these 42
-  // files are scoped here. The other 15 are deferred for ONE stated reason, not
-  // skipped: they mount client islands from @/components/admin/<legacy> or
-  // @/components/ui (BpoBoard, CmaBoard, DealsBoard, the newsletter panels,
-  // ListingsCsvExport, AdminListingEditor), which rule 3 blacklists and which
-  // the migration mounts as-is by design — the same call already recorded above
-  // for people/[id]'s G50 composer chokepoints. Each lands here when its island
-  // migrates; the work-queue item is 11f-mounted-islands.
+  // 11C/11D/11E (2026-08-07). The admin interior migration is COMPLETE — all
+  // 143 admin pages are on the v2 language and ci:admin-ui rule B reads 0
+  // legacy pages. These 90 files are token-scoped here.
+  //
+  // The rest are deferred for ONE stated reason, not skipped: they mount client
+  // islands from @/components/admin/<legacy> or @/components/ui — BpoBoard,
+  // CmaBoard, DealsBoard, ProspectDetailPage, the newsletter panels,
+  // ListingsCsvExport, AdminListingEditor, SignOffControls and friends — which
+  // rule 3 blacklists and which the migration mounts as-is BY DESIGN, the same
+  // call already recorded above for people/[id]. A page joins this list the day
+  // its island migrates; the work-queue item is 11f-mounted-islands.
+  'app/admin/(protected)/analytics/action-required/page.tsx',
+  'app/admin/(protected)/analytics/ad-roi/page.tsx',
+  'app/admin/(protected)/analytics/cost-per-lead/page.tsx',
+  'app/admin/(protected)/analytics/demographics/page.tsx',
+  'app/admin/(protected)/analytics/funnel-breakdown/page.tsx',
+  'app/admin/(protected)/analytics/google-business-profile/page.tsx',
+  'app/admin/(protected)/analytics/google-search/page.tsx',
+  'app/admin/(protected)/analytics/listing-performance/page.tsx',
+  'app/admin/(protected)/analytics/lp-leaderboard/page.tsx',
+  'app/admin/(protected)/analytics/meta-health/page.tsx',
+  'app/admin/(protected)/analytics/page.tsx',
+  'app/admin/(protected)/analytics/social/page.tsx',
+  'app/admin/(protected)/approval-queue/page.tsx',
+  'app/admin/(protected)/audiences/page.tsx',
+  'app/admin/(protected)/audit-log/page.tsx',
+  'app/admin/(protected)/blog/page.tsx',
+  'app/admin/(protected)/broker-links/CopyLinkButton.tsx',
+  'app/admin/(protected)/broker-links/page.tsx',
   'app/admin/(protected)/brokers/edit/page.tsx',
   'app/admin/(protected)/brokers/new/page.tsx',
   'app/admin/(protected)/brokers/page.tsx',
+  'app/admin/(protected)/closings/page.tsx',
+  'app/admin/(protected)/commissions/page.tsx',
+  'app/admin/(protected)/content/page.tsx',
+  'app/admin/(protected)/crm/approvals/page.tsx',
   'app/admin/(protected)/crm/deals/[id]/page.tsx',
+  'app/admin/(protected)/crm/health/page.tsx',
   'app/admin/(protected)/crm/import/[id]/page.tsx',
   'app/admin/(protected)/crm/import/new/map/page.tsx',
   'app/admin/(protected)/crm/import/new/page.tsx',
   'app/admin/(protected)/crm/import/new/preview/page.tsx',
   'app/admin/(protected)/crm/import/page.tsx',
+  'app/admin/(protected)/crm/new/page.tsx',
+  'app/admin/(protected)/crm/referrals/page.tsx',
+  'app/admin/(protected)/crm/settings/appointments/page.tsx',
+  'app/admin/(protected)/crm/settings/brokers/page.tsx',
+  'app/admin/(protected)/crm/settings/company/registration/page.tsx',
+  'app/admin/(protected)/crm/settings/page.tsx',
+  'app/admin/(protected)/crm/settings/team/page.tsx',
+  'app/admin/(protected)/crm/workflows/page.tsx',
+  'app/admin/(protected)/deals/[key]/page.tsx',
   'app/admin/(protected)/email/campaigns/page.tsx',
+  'app/admin/(protected)/financials/page.tsx',
+  'app/admin/(protected)/forms/page.tsx',
   'app/admin/(protected)/geo/area-guide-upload/page.tsx',
   'app/admin/(protected)/geo/page.tsx',
   'app/admin/(protected)/geo/resort-communities/page.tsx',
+  'app/admin/(protected)/guides/page.tsx',
   'app/admin/(protected)/help/HelpSearch.tsx',
   'app/admin/(protected)/help/[slug]/page.tsx',
   'app/admin/(protected)/help/page.tsx',
@@ -87,10 +125,15 @@ const SCAN_DIRS = [
   'app/admin/(protected)/media/page.tsx',
   'app/admin/(protected)/media/photos/page.tsx',
   'app/admin/(protected)/media/stock-photos/page.tsx',
+  'app/admin/(protected)/messages/page.tsx',
   'app/admin/(protected)/newsletters/analytics/page.tsx',
   'app/admin/(protected)/newsletters/enroll/page.tsx',
   'app/admin/(protected)/newsletters/new/page.tsx',
   'app/admin/(protected)/newsletters/page.tsx',
+  'app/admin/(protected)/oversight/page.tsx',
+  'app/admin/(protected)/people/[id]/page.tsx',
+  'app/admin/(protected)/people/page.tsx',
+  'app/admin/(protected)/prospecting/page.tsx',
   'app/admin/(protected)/reports/brokers/page.tsx',
   'app/admin/(protected)/reports/cma-performance/page.tsx',
   'app/admin/(protected)/reports/custom/page.tsx',
@@ -98,14 +141,22 @@ const SCAN_DIRS = [
   'app/admin/(protected)/reports/lead-flow/page.tsx',
   'app/admin/(protected)/reports/leads/page.tsx',
   'app/admin/(protected)/reports/market/page.tsx',
+  'app/admin/(protected)/reports/page.tsx',
   'app/admin/(protected)/reports/traffic-sources/page.tsx',
+  'app/admin/(protected)/settings/page.tsx',
+  'app/admin/(protected)/sign-off/page.tsx',
   'app/admin/(protected)/signing/[envelopeId]/page.tsx',
   'app/admin/(protected)/signing/page.tsx',
+  'app/admin/(protected)/site-pages/page.tsx',
   'app/admin/(protected)/sync/page.tsx',
   'app/admin/(protected)/sync/spark/page.tsx',
+  'app/admin/(protected)/today/page.tsx',
+  'app/admin/(protected)/users/page.tsx',
+  'app/admin/(protected)/valuations/page.tsx',
   'app/admin/(protected)/visitors/VisitorFilterSelect.tsx',
   'app/admin/(protected)/visitors/[sessionId]/page.tsx',
   'app/admin/(protected)/visitors/live/page.tsx',
+  'app/admin/access-denied/page.tsx',
 ]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 

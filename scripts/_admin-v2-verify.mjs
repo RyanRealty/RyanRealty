@@ -70,7 +70,13 @@ for (const width of [375, 1280]) {
       await page.close()
       continue
     }
-    const probe = await page.evaluate(() => {
+    // The evaluate lives in its own try: a route that REDIRECTS during the
+    // settle above (e.g. /admin/setup -> /admin -> /admin/login when setup is
+    // already complete) destroys the execution context, and an uncaught throw
+    // here killed the whole run instead of reporting that one route.
+    let probe
+    try {
+      probe = await page.evaluate(() => {
       const de = document.documentElement
       // Widest element that pokes past the viewport, for a fixable report.
       let worst = null
@@ -89,8 +95,21 @@ for (const width of [375, 1280]) {
         worst,
         title: document.title,
         bodyLen: document.body.innerText.trim().length,
+        landedOn: location.pathname + location.search,
       }
-    })
+      })
+    } catch (e) {
+      // Report the route, do not take the run down with it.
+      results.push({
+        route,
+        width,
+        status: 'PROBE_FAIL',
+        error: String(e).slice(0, 120),
+        landedOn: page.url().replace(BASE, ''),
+      })
+      await page.close()
+      continue
+    }
     results.push({ route, width, status, ...probe, errors: errors.slice(0, 4) })
     await page.close()
   }
@@ -112,6 +131,7 @@ for (const r of results) {
     hscroll.padStart(9),
     String(r.bodyLen ?? '-').padStart(6),
     r.worst ? ` widest=${r.worst}` : '',
+    r.landedOn && r.landedOn !== r.route ? ` landed=${r.landedOn}` : '',
     r.errors?.length ? ` ERR:${r.errors[0]}` : '',
   )
 }

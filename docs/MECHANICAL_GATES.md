@@ -221,3 +221,30 @@ were handed out from script headers instead of from this table, twice, in parall
 `check-private-key-parity.mjs` shows the fix: it was renumbered to G60 with the note
 "(Renumbered from G58 per docs/MECHANICAL_GATES.md, which is authoritative.)" — do that when you
 next touch one of the scripts above.
+
+## Retired gates
+
+**`ci:console-kit` (`scripts/check-console-kit.mjs`) — RETIRED 2026-08-07 (P11E).**
+
+It encoded a Matt directive of 2026-06-15, after the lead-command-center drift: *every
+broker-facing admin console surface must be assembled from the SHARED console kit so the look
+lives in one place and cannot drift page-by-page*, with `ConsoleSection`'s mandatory heading
+answering "a bunch of text and boxes, no headings". The gate asserted that each page in
+`REQUIRED_KIT_PAGES` imported `ConsoleSection`.
+
+**The directive is not retired. Its mechanism is.** Phase 11 migrated all 143 admin pages onto
+the locked v2 language (`design_system/admin/ADMIN_UI.md`), whose acceptance bar forbids the
+legacy console kit — the two contracts cannot both hold on one page. Over 11C–11E every entry
+on the list moved to the v2 side, each with a dated hand-off comment, until the list asserted
+nothing. A gate with an empty assertion list passes trivially and reads green, which is worse
+than no gate: it looks like coverage.
+
+The same intent is now carried, more strictly, by three gates that ARE on the chain:
+
+| directive | now enforced by |
+|---|---|
+| one shared kit, no page-by-page drift | `ci:admin-ui` rule B — a `page.tsx` under `app/admin` that does not import `@/components/admin/v2` is a legacy page; the counter ratcheted 131 → 0 |
+| headings are mandatory, no headless data dump | `SectionHead` / `EntityTitle` own headings; `ci:admin-ui` rule A bans raw `<h1>`/`<h2>` outright |
+| the look lives in one place | `ci:admin-v2-tokens` — every colour through `var(--a-*)`, no hex, no Tailwind palette, no brand leak; plus `ci:admin-responsive` |
+
+`ci:gates-wired` counts 211 gate files with 0 running nowhere after the deletion.

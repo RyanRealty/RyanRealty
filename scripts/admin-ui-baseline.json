@@ -10,82 +10,26 @@
     "app/admin/(protected)/audiences/page.tsx": {
       "h2": 1
     },
-    "app/admin/(protected)/audit-log/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/blog/page.tsx": {
-      "h1": 1,
-      "h2": 1
-    },
-    "app/admin/(protected)/broker-links/page.tsx": {
-      "h1": 1,
-      "h2": 2
-    },
     "app/admin/(protected)/closings/page.tsx": {
       "h2": 3
-    },
-    "app/admin/(protected)/commissions/page.tsx": {
-      "h1": 1
     },
     "app/admin/(protected)/content/page.tsx": {
       "h2": 1
     },
-    "app/admin/(protected)/content-library/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/activity/page.tsx": {
-      "h1": 1
-    },
     "app/admin/(protected)/crm/approvals/page.tsx": {
-      "h1": 1,
       "input": 4
     },
-    "app/admin/(protected)/crm/health/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/inbox/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/referrals/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/reporting/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/subscriptions/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/tasks/page.tsx": {
-      "h1": 1
-    },
     "app/admin/(protected)/crm/workflows/page.tsx": {
-      "input": 2,
-      "h1": 1,
-      "h2": 1
-    },
-    "app/admin/(protected)/deals/[key]/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/dscr/page.tsx": {
-      "h1": 1
+      "input": 2
     },
     "app/admin/(protected)/financials/ExpenseLedger.tsx": {
       "h2": 1
-    },
-    "app/admin/(protected)/financials/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/forms/page.tsx": {
-      "h1": 1
     },
     "app/admin/(protected)/geo/area-guide-upload/AreaGuideUploadClient.tsx": {
       "h2": 2,
       "input": 1,
       "button": 3,
       "table": 1
-    },
-    "app/admin/(protected)/guides/page.tsx": {
-      "h1": 1
     },
     "app/admin/(protected)/listings/page.tsx": {
       "input": 1
@@ -99,9 +43,6 @@
     },
     "app/admin/(protected)/messages/page.tsx": {
       "input": 1
-    },
-    "app/admin/(protected)/operations/page.tsx": {
-      "h1": 1
     },
     "app/admin/(protected)/oversight/page.tsx": {
       "h2": 4
@@ -134,14 +75,8 @@
     "app/admin/(protected)/settings/MySettingsForm.tsx": {
       "h2": 3
     },
-    "app/admin/(protected)/settings/account/page.tsx": {
-      "h1": 1
-    },
     "app/admin/(protected)/settings/page.tsx": {
       "h2": 1
-    },
-    "app/admin/(protected)/sign-off/page.tsx": {
-      "h1": 2
     },
     "app/admin/(protected)/site-pages/HeroMediaForm.tsx": {
       "h2": 1
@@ -154,9 +89,6 @@
     },
     "app/admin/(protected)/site-pages/TeamImageForm.tsx": {
       "h2": 1
-    },
-    "app/admin/(protected)/site-pages/page.tsx": {
-      "h1": 1
     },
     "app/admin/(protected)/sync/CronSyncStatus.tsx": {
       "h2": 2
@@ -186,62 +118,17 @@
       "h2": 5,
       "input": 6
     },
-    "app/admin/(protected)/users/page.tsx": {
-      "h1": 1
-    },
     "app/admin/(protected)/valuations/page.tsx": {
       "h2": 5
     },
-    "app/admin/access-denied/page.tsx": {
-      "h1": 1
-    },
     "app/admin/error.tsx": {
       "h2": 1
-    },
-    "app/admin/login/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/setup/page.tsx": {
-      "h1": 1
     }
   },
-  "legacyPages": [
-    "app/admin/(protected)/approval-queue/page.tsx",
-    "app/admin/(protected)/audit-log/page.tsx",
-    "app/admin/(protected)/blog/page.tsx",
-    "app/admin/(protected)/broker-links/page.tsx",
-    "app/admin/(protected)/commissions/page.tsx",
-    "app/admin/(protected)/content-library/page.tsx",
-    "app/admin/(protected)/crm/activity/page.tsx",
-    "app/admin/(protected)/crm/approvals/page.tsx",
-    "app/admin/(protected)/crm/calendar/page.tsx",
-    "app/admin/(protected)/crm/health/page.tsx",
-    "app/admin/(protected)/crm/inbox/page.tsx",
-    "app/admin/(protected)/crm/new/page.tsx",
-    "app/admin/(protected)/crm/page.tsx",
-    "app/admin/(protected)/crm/referrals/page.tsx",
-    "app/admin/(protected)/crm/reporting/page.tsx",
-    "app/admin/(protected)/crm/subscriptions/page.tsx",
-    "app/admin/(protected)/crm/tasks/page.tsx",
-    "app/admin/(protected)/crm/workflows/page.tsx",
-    "app/admin/(protected)/deals/[key]/page.tsx",
-    "app/admin/(protected)/dscr/page.tsx",
-    "app/admin/(protected)/financials/page.tsx",
-    "app/admin/(protected)/forms/page.tsx",
-    "app/admin/(protected)/guides/page.tsx",
-    "app/admin/(protected)/operations/page.tsx",
-    "app/admin/(protected)/prospecting/[kind]/[id]/page.tsx",
-    "app/admin/(protected)/settings/account/page.tsx",
-    "app/admin/(protected)/sign-off/page.tsx",
-    "app/admin/(protected)/site-pages/page.tsx",
-    "app/admin/(protected)/users/page.tsx",
-    "app/admin/access-denied/page.tsx",
-    "app/admin/login/page.tsx",
-    "app/admin/setup/page.tsx"
-  ],
+  "legacyPages": [],
   "extraPrimaryButtons": {
     "app/admin/(protected)/people/[id]/page.tsx": 1,
     "app/admin/(protected)/today/page.tsx": 2
   },
-  "distinctWidths": 17
+  "distinctWidths": 12
 }
