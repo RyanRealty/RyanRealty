@@ -1,7 +1,125 @@
-> **NEWEST, START HERE: Admin Product OS — 11C + 11D COMPLETE; the interior is 63% migrated (2026-08-07, Claude Code local).**
-> Prior: P11 11A + 11B shipped (2026-08-07). BOOT → P2 complete, blocked on the process lock (2026-08-04).
+> **NEWEST, START HERE: Admin Product OS — PHASE 11 COMPLETE. The admin interior migration is done: 143/143 pages on v2, legacy count 131 → 0 (2026-08-07, Claude Code local).**
+> Prior: 11C + 11D (2026-08-07 midday). 11A + 11B (2026-08-07 morning). BOOT → P2 (2026-08-04).
 
-# Current — 2026-08-07 (Claude Code, local) — Admin Product OS 11C + 11D COMPLETE
+# Current — 2026-08-07 (Claude Code, local) — PHASE 11 COMPLETE
+
+`main` @ `<tip>`, pushed, deployed READY and spot-checked on production. Disk is the
+source of truth: `docs/plans/ADMIN_PRODUCT/{state.json,work-queue.json,progress.txt,decisions.md}`.
+Read `progress.txt` from the bottom — the last three entries are 11C, 11D and 11E.
+
+**Phase is now `P12_CORRECTNESS`.** All four locks stand; nothing this session reopened one.
+
+## The number that mattered
+
+`ci:admin-ui` rule B — a `page.tsx` under `app/admin` that does not import
+`@/components/admin/v2` — was the counter the whole phase was built to drive:
+
+| | 11A seed | session start | now |
+|---|---|---|---|
+| legacy pages | 131 | 86 | **0** |
+| raw elements | 251 | 207 | **106** |
+| distinct widths | 21 | 19 | **12** |
+
+**86 pages migrated today across 14 families and 32 singletons**, in five waves of
+fenced parallel builders, one commit per fence.
+
+## What this surfaced, and it is the real product of the session
+
+Thirteen-plus false claims were living in admin copy. Not typos — statements a
+licensed broker would act on:
+
+- **Two named cron jobs that do not exist** (`compute-broker-stats`,
+  `compute-market-stats`), each cited as the source of the figures beneath it.
+- **Three phantom components** — `LiveTable`, `ApprovalQueueRealtime`, and a "Help
+  button" removed two days earlier — each describing behaviour to the broker that
+  nothing in the repo provides.
+- **An unsourced "industry benchmark of 0.5%–2%"** on the page ad spend is judged from.
+- **A count labelled "Active listings" that was off by 2.16×** (a top-50-city
+  snapshot sum presented as all active inventory), and **another off by 2.1×** on
+  the listing detail page.
+- **"Published 87 · Drafts 0"** derived from the wrong column; the real split is
+  55 published / 28 archived / 3 draft / 1 pending.
+- **A green health tile claiming "FUB leads are flowing"** when `getFubApiKey()`
+  has returned `undefined` unconditionally since the June decommission.
+
+And three things that had **never worked**: the BPO preview iframe (a global
+`X-Frame-Options: DENY` overrode the route's own `SAMEORIGIN`), the CSV import
+status page (Next 15 `params` read as a plain object, so it sat on "Loading…"
+forever under a heading reading "Job #"), and a compliance health board
+**under-reporting blocked contacts by 3.2×** because a bare `.select()` hit
+PostgREST's 1,000-row cap — it would have sailed past its own 25% warn band
+without changing colour.
+
+## The lesson to carry into P12
+
+**Builders refused my instructions seven times and were right every time.** All
+seven were formatter swaps I had asked for that would have moved a §0 figure.
+`formatPrice` rounds to the nearest $1,000 ($332.49 of ad spend → `$0`).
+`formatDate` re-projects a date-only string from UTC into Pacific, moving a
+printed calendar day back one — twice on a **legal document's** record. And on the
+money pages even `formatPriceExact`, which I recommended all session, is wrong:
+`financials` branches on `net >= 0`, and on negatives `Math.round` and `Intl`
+halfExpand disagree by $1 and move the sign.
+
+The single instruction that caught all seven was **"prove the swap before you make
+it."** Write briefs a builder is able to refuse.
+
+Two verdicts also deliberately ship **without counts**, which is that rule
+extended rather than broken: `TasksView` completes optimistically without a
+`router.refresh()`, and `GlobalActivityFeed` refetches without touching the URL —
+so a server-rendered count would be wrong within seconds of the first tap. Do not
+state a fact the page cannot keep true.
+
+## A gate was retired, and this is the item to review
+
+`ci:console-kit` encoded Matt's 2026-06-15 directive: every broker-facing console
+surface assembled from the shared kit. Over 11C–11E every page on its list moved
+to the v2 language, whose acceptance bar forbids `ConsoleSection`, until the list
+asserted **nothing**. A gate with an empty list passes trivially and reads green,
+which is worse than no gate because it looks like coverage.
+
+**The directive is not retired — its mechanism is.** `docs/MECHANICAL_GATES.md`
+gains a *Retired gates* section mapping each clause to the gate that now carries
+it, more strictly. Reverse it if you disagree; the reasoning is written down.
+
+## Open, ranked, each with why it was not fixed inline
+
+1. **SECURITY — person/deal scope on entity READERS is a class, three instances.**
+   `crm/deals/[id]` fixed; `people/[id]/portal` and `/admin/deals/[key]` open. The
+   second is not a one-liner — `getTcDeal` returns only a display name, so it needs
+   a decision on what *owns* a TC transaction. `ci:crm-scope` cannot see any of
+   them; it inspects writes only. → `task_84b647c1`
+2. **Blog edit silently publishes archived posts** — the editor prefills status
+   from the wrong column, so saving any of 28 archived posts pushes it live. →
+   `task_16114f83`
+3. **The audit log renders zero rows to a superuser** (RLS on a cookie-scoped
+   read), on a compliance surface. → `task_ff0a4e2c`
+4. Readers that swallow errors and return empty, so a failed read is
+   indistinguishable from an empty one — a class, ~7 functions.
+5. Hydration mismatch traced to `SiteHeader` under `HideChrome`. → `task_af3d76b5`
+
+**Not verified and not claimed:** the populated row paths on
+`/admin/signing/[envelopeId]` and `/admin/crm/approvals` (both tables legitimately
+empty; inserting a fixture into a legal-document table was the wrong trade), and
+`/admin/setup`'s own markup (it redirects here because setup is complete).
+
+## Two process errors of mine, recorded so they are not repeated
+
+- `git commit` commits the **index**, and a parallel builder had staged its own
+  files — one commit swept in seven pages under a message that did not describe
+  them. Caught pre-push and split.
+- `git commit --only <paths>` does **not** pick up untracked files, so one commit
+  landed importing two files it did not contain. With parallel builders creating
+  files, `--only` needs an explicit `git add` of the new paths first.
+
+## Next
+
+Queue top is `12-person-scope-class`. `scripts/_admin-v2-verify.mjs` is the
+harness the next session inherits — it mints its own magic-link session and
+asserts 200 / exactly one `<main>` / no page-level horizontal scroll at 375 and
+1280, and it reports a redirecting route instead of dying on it.
+
+# Prior — 2026-08-07 midday (Claude Code, local) — 11C + 11D
 
 `main` @ `2843c492`, pushed. Last CODE commit `e8871f2a` deployed READY (the tip is
 docs-only and correctly skipped by `vercel.json`'s `ignoreCommand`). Disk is the

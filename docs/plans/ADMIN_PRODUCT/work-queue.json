@@ -1,38 +1,33 @@
 [
   {
-    "id": "11e-singletons",
-    "phase": "P11",
-    "note": "32 remaining legacy pages, ALL singletons — every multi-page family shipped 2026-08-07. No family structure left, so batch by RISK not directory. Send/compliance-adjacent: crm/inbox, crm/approvals, approval-queue, sign-off, crm/tasks, crm/calendar. Read-only/low-risk: audit-log, dscr, guides, financials, commissions, blog, site-pages, content-library, broker-links, forms, users, operations, deals, prospecting, settings, crm (root), crm/activity, crm/health, crm/new, crm/referrals, crm/reporting, crm/subscriptions, crm/workflows. LOOK BEFORE MIGRATING: access-denied, login, setup are auth-flow pages and may not want the console shell at all — decide that first."
-  },
-  {
-    "id": "11e-converge-third-reader",
-    "phase": "P11",
-    "note": "analytics/_components/v2/DataGrid.tsx + that folder's kit.tsx still duplicate components/admin/v2/ReportGrid for the six analytics pages. Two of the three readers were merged in 11C-4; this is the third. The merge worth keeping takes kit's phone-stacking behaviour plus DataGrid's ARIA table roles and keyboard-reachable scroll region."
-  },
-  {
-    "id": "11e-switch-primitive",
-    "phase": "P11",
-    "note": "The v2 barrel has no Switch. geo's ResortCommunityToggle stays mounted as-is because hand-rolling one means a raw <button role=\"switch\"> that fails ci:admin-ui rule A. Add Switch to components/admin/v2, then migrate the toggle."
-  },
-  {
-    "id": "11f-mounted-islands",
-    "phase": "P11",
-    "note": "Client islands mounted as-is behind migrated shells, still carrying legacy markup and @/components/ui imports — this is why 15 of the 54 migrated pages are NOT yet in check-admin-v2-tokens SCAN_DIRS. AdminMediaManager, PhotoCurationBoard, StockPhotosPicker, GenerateBannersButton, AreaGuideUploadClient, ResortCommunityToggle, the newsletter compose/enroll/bulk/preview panels, BpoBoard, CmaBoard, DealsBoard/DealDetailModal, ManagePipelines (still renders its own h1 + shadcn primary), ListingsCsvExport, AdminListingEditor. Each island migrated = flip its page to the bare-dir scope. Also fold the duplicated folder-structure explanation on geo/area-guide-upload (page + island both print it)."
-  },
-  {
     "id": "12-person-scope-class",
     "phase": "P12",
-    "note": "SECURITY, filed as task_84b647c1. A CLASS of missing broker-scope guards on admin entity READER pages. crm/deals/[id] FIXED 2026-08-07 (4aa3de68). STILL OPEN: people/[id]/portal gates only on requireAdminPage('people.view') and CAPABILITY_ROLES includes 'broker', so any broker reads any contact's saved/hidden homes, named areas, alert recipients and site activity; people/[id]'s identity header (getInboxContactCard) is also unscoped though the fold below it is scoped. ci:crm-scope cannot see either — it inspects WRITES in app/actions/crm*.ts. Needs a light DAL reader for assigned_broker, a shared page guard on the existing pure isPersonInScope, a sweep of every [id]/[slug] reader, and an AST gate seeded as a shrink-only ratchet."
+    "note": "SECURITY, top of queue, filed as task_84b647c1. A CLASS of missing broker-scope guards on admin entity READER pages — three instances found 2026-08-07. FIXED: crm/deals/[id] (4aa3de68) now runs dealInScope. OPEN: people/[id]/portal gates only on requireAdminPage('people.view') and CAPABILITY_ROLES includes 'broker', so any broker reads any contact's saved/hidden homes, named areas, alert recipients and site activity. OPEN: /admin/deals/[key] has no capability guard beyond the layout session check, so a restricted broker walking property keys reads every broker's GCI and splits — and this one is NOT a one-liner, getTcDeal returns broker_name (a display string, no ownership key), so it needs a decision on what OWNS a TC transaction. ALSO: people/[id]'s identity header (getInboxContactCard) is unscoped though the fold below it is scoped. ci:crm-scope cannot see any of these — it inspects WRITES in app/actions/crm*.ts. Needs a light DAL reader for assigned_broker, a shared page guard on the existing pure isPersonInScope, a sweep of every [id]/[slug] reader, and an AST gate seeded shrink-only."
   },
   {
     "id": "12-send-integrity",
     "phase": "P12",
-    "note": "Group MMS chokepoint, block-reason ledger, gate-drop record. Compliance-adjacent — may run parallel to P11."
+    "note": "Group MMS chokepoint, block-reason ledger, gate-drop record. Compliance-adjacent."
   },
   {
     "id": "12-correctness",
     "phase": "P12",
-    "note": "Listing-edit sync overlay, assigned_broker resolution rule, fsbo off_market writer, dupe-candidate queue. Plus, found 2026-08-07: getCmaAdminRowBySlug discards its Supabase error so a transient read failure renders as 'this CMA does not exist' — ~20 callers on send/publish paths, needs per-caller tests (task_cc5d6fc3). listImportJobsAction filters crm_imports by nothing, so /admin/crm/import lists mailbox syncs and lead-intake runs as 'Past imports' (task_8b0b02f0). broker_stats was DROP TABLE'd by migration 20260425090000 yet exists in the live snapshot with 0 rows."
+    "note": "Listing-edit sync overlay, assigned_broker resolution rule, fsbo off_market writer, dupe-candidate queue. Plus the reader-swallows-error class found 2026-08-07: getCmaAdminRowBySlug (~20 callers on send/publish paths, task_cc5d6fc3), getTaskQueue / listCrmPeople / getGlobalActivityFeed / getAppointments / getCommissionsRollup / getTcFinancials all console.error then return empty, so a failed read is indistinguishable from an empty result. The v2 pages mitigated by saying 'this list came back empty' (a claim about the READ, not the world); the real fix is an ok:false on those return types. Also: listImportJobsAction filters crm_imports by nothing (task_8b0b02f0); financials.closings counts commission ROWS not deals (1:1 today, double-reports if a cycle ever gets two rows); broker_stats was DROP TABLE'd by migration 20260425090000 yet exists in the live snapshot with 0 rows."
+  },
+  {
+    "id": "12-published-figures",
+    "phase": "P12",
+    "note": "Two figures corrected on their own pages in 11E are STILL WRONG elsewhere. (a) getTotalListingsCount() sums geo_snapshot_mv.active_sfr_count over the TOP 50 CITIES (3,530) while 136 cities have non-zero counts and `listings` holds 7,611 Active rows — removed from /admin/operations, but DashboardSyncPanel.tsx:57 still renders it under the heading 'Active', fed by getAdminSyncCounts (app/actions/listings.ts:1796) plus two /api/admin/sync/* routes. (b) The market/reports pages' _fetchAllCitySnapshots .limit(50) is the same cap — a verdict nearly shipped reading 'N cities have an active single-family listing' when 135 qualify."
+  },
+  {
+    "id": "12-blog-publish-risk",
+    "phase": "P12",
+    "note": "DATA RISK, filed as task_16114f83. /admin/blog openEdit prefills `status: post.published_at ? 'published' : 'draft'` — it reads the wrong column, and all 87 posts have published_at set. Opening any of the 28 archived_stats_unverified posts and saving silently publishes it to the public site. getAdminBlogPosts never selects `status` at all, so fix that first. Check whether any were ALREADY flipped by a past edit."
+  },
+  {
+    "id": "12-audit-log-blind",
+    "phase": "P12",
+    "note": "COMPLIANCE, filed as task_ff0a4e2c. /admin/audit-log renders ZERO rows though admin_actions holds one — getAdminActions (app/actions/admin-audit.ts) reads through the cookie-scoped anon client and RLS hides it from a superuser. An audit log that silently renders empty is indistinguishable from one with nothing in it. While there: one row total across the whole table is suspiciously low — check whether the WRITE path is wired everywhere it should be."
   },
   {
     "id": "12-measurement",
@@ -40,14 +35,24 @@
     "note": "first-broker-action stamp, reply-latency interval, CMA SLA reader."
   },
   {
+    "id": "11f-mounted-islands",
+    "phase": "P11_TAIL",
+    "note": "The only P11 remnant. Client islands mounted as-is behind migrated shells still carry legacy markup and @/components/ui imports — this is why 90 of 143 pages are token-gated and the rest are not. AdminMediaManager, PhotoCurationBoard, StockPhotosPicker, GenerateBannersButton, AreaGuideUploadClient, ResortCommunityToggle, the newsletter panels, BpoBoard, CmaBoard, DealsBoard/DealDetailModal, ManagePipelines (still renders its own h1 + shadcn primary), ListingsCsvExport, AdminListingEditor, SignOffControls, ProspectDetailPage.client, GlobalActivityFeed (7 type toggles = a chip wall). Each island migrated = add its page to SCAN_DIRS in check-admin-v2-tokens.mjs. Needs a Switch primitive in the v2 barrel first (geo's ResortCommunityToggle is blocked on it). Also fold the duplicated folder-structure explanation on geo/area-guide-upload."
+  },
+  {
+    "id": "11f-converge-third-reader",
+    "phase": "P11_TAIL",
+    "note": "analytics/_components/v2/DataGrid.tsx + that folder's kit.tsx still duplicate components/admin/v2/ReportGrid for the six analytics pages. Two of three readers merged in 11C-4; this is the third. Keep kit's phone-stacking behaviour plus DataGrid's ARIA table roles and keyboard-reachable scroll region."
+  },
+  {
     "id": "12-admin-chrome-debt",
     "phase": "P12",
-    "note": "MobileCrmHeader renders a bg-primary NAVY bar on phone, violating §5 amnesia, on crm/deals (migrated) + crm and crm/activity (not yet) — task_b5a50db5; check what nav it carries before deleting, ConsoleShell's v2 TabBar may not cover it. Intermittent hydration mismatch TRACED to SiteHeader under HideChrome, firing on already-v2 untouched surfaces — task_af3d76b5. lead-flow's funnel shows 'CMAs created — 104.4% vs sessions', arithmetically right but CMAs are broker-created, not visitor-driven. /admin/bpo/new and /admin/crm/deals/[id] have no inbound link anywhere. sync/BackfillHealthPanel.tsx:267 claims a strict-verify cron that is not scheduled."
+    "note": "MobileCrmHeader renders a bg-primary NAVY bar on phone against §5 amnesia — now PROVEN to carry no root-tab nav (ConsoleShell's CrmMobileTabBar owns the five tabs; its scope control and search are already duplicated by TopBarScope and ConsoleCommandPaletteTrigger), so only its avatar's /admin/settings link needs re-homing before deletion (task_7803e171). Intermittent hydration mismatch TRACED to SiteHeader under HideChrome, firing on already-v2 untouched surfaces (task_af3d76b5). Client-component locale formatters in AdminUsersList + DscrScreen.client (task_00b9af6e). /admin/crm/subscriptions renders the admin error boundary — a tab island's server action 500s on mount, pre-existing (restoring HEAD fails identically). /admin/content-library takes 28-44s to render because signDeliverableDownload runs once per row across 402 deliverables. /admin/bpo/new and /admin/crm/deals/[id] have no inbound link anywhere in the repo."
   },
   {
     "id": "3b-fub-identifiers",
     "phase": "TRACK3",
-    "note": "~171 files of fubPersonId/FUB_* identifiers + fub_* residue columns -> CRM-native vocabulary. Then 3D: ci:no-fub gate over the 3C functional-string allowlist. Note 11C already removed several USER-FACING FUB references (a 'FUB' column header on visitors/[sessionId], a footnote claiming hot leads fire FUB tasks) — those were copy, not identifiers."
+    "note": "~171 files of fubPersonId/FUB_* identifiers + fub_* residue columns -> CRM-native vocabulary. Then 3D: ci:no-fub gate over the 3C functional-string allowlist. Note 11C-11E already removed the user-facing FUB copy (a 'FUB' column header on visitors/[sessionId], a footnote claiming hot leads fire FUB tasks, a green health tile claiming FUB leads were flowing) — those were claims, not identifiers."
   },
   {
     "id": "pricing-depth-followons",
