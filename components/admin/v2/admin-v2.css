@@ -68,9 +68,13 @@
 .av2-wk__l { font-size:var(--a-text-sm); color:var(--a-text-2); }
 
 /* ---- QuietRow (healthy = near-zero weight) ---- */
-.av2-quiet { display:flex; align-items:baseline; gap:var(--a-s3); padding:10px 2px;
+/* flex-wrap: the row is name + auto-margin figure, and without wrapping the
+   figure pushed past the viewport — /admin/audiences measured scrollWidth 381
+   against a 375 client on 2026-08-07, widest element .av2-quiet__fig. The
+   figure now drops to its own line instead of scrolling the page. */
+.av2-quiet { display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--a-s3); padding:10px 2px;
   border-bottom:1px solid var(--a-border); font-size:var(--a-text-sm); color:var(--a-text-2); }
-.av2-quiet__name { color:var(--a-text); font-weight:500; min-width:130px; }
+.av2-quiet__name { color:var(--a-text); font-weight:500; min-width:130px; overflow-wrap:anywhere; }
 .av2-quiet__ok { color:var(--a-ok); font-weight:600; }
 .av2-quiet__fig { margin-left:auto; font-variant-numeric:tabular-nums; }
 

@@ -56,12 +56,13 @@ const SCAN_DIRS = [
   'app/admin/(protected)/audiences',
   'app/admin/(protected)/content',
   'app/admin/(protected)/settings/page.tsx',
-  // 11C/11D (2026-08-07). 38 pages migrated across eight families; these 28 are
-  // scoped here. The other 10 are deferred for ONE reason, not skipped: they
-  // mount client islands from @/components/admin/<legacy> (BpoBoard, CmaBoard,
-  // DealsBoard, the newsletter panels), which rule 3 blacklists and which the
-  // migration mounts as-is by design — the same call already recorded above for
-  // people/[id]'s G50 composer chokepoints. Each lands here when its island
+  // 11C/11D (2026-08-07). 54 pages migrated across fourteen families; these 42
+  // files are scoped here. The other 15 are deferred for ONE stated reason, not
+  // skipped: they mount client islands from @/components/admin/<legacy> or
+  // @/components/ui (BpoBoard, CmaBoard, DealsBoard, the newsletter panels,
+  // ListingsCsvExport, AdminListingEditor), which rule 3 blacklists and which
+  // the migration mounts as-is by design — the same call already recorded above
+  // for people/[id]'s G50 composer chokepoints. Each lands here when its island
   // migrates; the work-queue item is 11f-mounted-islands.
   'app/admin/(protected)/brokers/edit/page.tsx',
   'app/admin/(protected)/brokers/new/page.tsx',
@@ -72,9 +73,16 @@ const SCAN_DIRS = [
   'app/admin/(protected)/crm/import/new/page.tsx',
   'app/admin/(protected)/crm/import/new/preview/page.tsx',
   'app/admin/(protected)/crm/import/page.tsx',
+  'app/admin/(protected)/email/campaigns/page.tsx',
   'app/admin/(protected)/geo/area-guide-upload/page.tsx',
   'app/admin/(protected)/geo/page.tsx',
   'app/admin/(protected)/geo/resort-communities/page.tsx',
+  'app/admin/(protected)/help/HelpSearch.tsx',
+  'app/admin/(protected)/help/[slug]/page.tsx',
+  'app/admin/(protected)/help/page.tsx',
+  'app/admin/(protected)/listings/ListingsStatusFilter.tsx',
+  'app/admin/(protected)/listings/[listingKey]/page.tsx',
+  'app/admin/(protected)/listings/page.tsx',
   'app/admin/(protected)/media/banners/page.tsx',
   'app/admin/(protected)/media/page.tsx',
   'app/admin/(protected)/media/photos/page.tsx',
@@ -91,6 +99,13 @@ const SCAN_DIRS = [
   'app/admin/(protected)/reports/leads/page.tsx',
   'app/admin/(protected)/reports/market/page.tsx',
   'app/admin/(protected)/reports/traffic-sources/page.tsx',
+  'app/admin/(protected)/signing/[envelopeId]/page.tsx',
+  'app/admin/(protected)/signing/page.tsx',
+  'app/admin/(protected)/sync/page.tsx',
+  'app/admin/(protected)/sync/spark/page.tsx',
+  'app/admin/(protected)/visitors/VisitorFilterSelect.tsx',
+  'app/admin/(protected)/visitors/[sessionId]/page.tsx',
+  'app/admin/(protected)/visitors/live/page.tsx',
 ]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 

@@ -69,12 +69,6 @@
     "app/admin/(protected)/dscr/page.tsx": {
       "h1": 1
     },
-    "app/admin/(protected)/email/campaigns/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/email/compose/page.tsx": {
-      "h1": 1
-    },
     "app/admin/(protected)/financials/ExpenseLedger.tsx": {
       "h2": 1
     },
@@ -93,21 +87,7 @@
     "app/admin/(protected)/guides/page.tsx": {
       "h1": 1
     },
-    "app/admin/(protected)/help/HelpSearch.tsx": {
-      "h2": 1
-    },
-    "app/admin/(protected)/help/[slug]/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/help/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/listings/[listingKey]/page.tsx": {
-      "h1": 1,
-      "h2": 2
-    },
     "app/admin/(protected)/listings/page.tsx": {
-      "h1": 1,
       "input": 1
     },
     "app/admin/(protected)/media/photos/PhotoCurationBoard.tsx": {
@@ -163,13 +143,6 @@
     "app/admin/(protected)/sign-off/page.tsx": {
       "h1": 2
     },
-    "app/admin/(protected)/signing/[envelopeId]/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/signing/page.tsx": {
-      "h1": 1,
-      "h2": 2
-    },
     "app/admin/(protected)/site-pages/HeroMediaForm.tsx": {
       "h2": 1
     },
@@ -219,12 +192,6 @@
     "app/admin/(protected)/valuations/page.tsx": {
       "h2": 5
     },
-    "app/admin/(protected)/visitors/[sessionId]/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/visitors/live/page.tsx": {
-      "h1": 1
-    },
     "app/admin/access-denied/page.tsx": {
       "h1": 1
     },
@@ -254,36 +221,20 @@
     "app/admin/(protected)/crm/page.tsx",
     "app/admin/(protected)/crm/referrals/page.tsx",
     "app/admin/(protected)/crm/reporting/page.tsx",
-    "app/admin/(protected)/crm/sequences/[id]/edit/page.tsx",
-    "app/admin/(protected)/crm/sequences/page.tsx",
     "app/admin/(protected)/crm/subscriptions/page.tsx",
     "app/admin/(protected)/crm/tasks/page.tsx",
     "app/admin/(protected)/crm/workflows/page.tsx",
     "app/admin/(protected)/deals/[key]/page.tsx",
     "app/admin/(protected)/dscr/page.tsx",
-    "app/admin/(protected)/email/campaigns/page.tsx",
-    "app/admin/(protected)/email/compose/page.tsx",
     "app/admin/(protected)/financials/page.tsx",
     "app/admin/(protected)/forms/page.tsx",
     "app/admin/(protected)/guides/page.tsx",
-    "app/admin/(protected)/help/[slug]/page.tsx",
-    "app/admin/(protected)/help/page.tsx",
-    "app/admin/(protected)/listings/[listingKey]/page.tsx",
-    "app/admin/(protected)/listings/page.tsx",
     "app/admin/(protected)/operations/page.tsx",
-    "app/admin/(protected)/people/[id]/portal/page.tsx",
-    "app/admin/(protected)/people/[id]/tools/page.tsx",
     "app/admin/(protected)/prospecting/[kind]/[id]/page.tsx",
     "app/admin/(protected)/settings/account/page.tsx",
     "app/admin/(protected)/sign-off/page.tsx",
-    "app/admin/(protected)/signing/[envelopeId]/page.tsx",
-    "app/admin/(protected)/signing/page.tsx",
     "app/admin/(protected)/site-pages/page.tsx",
-    "app/admin/(protected)/sync/page.tsx",
-    "app/admin/(protected)/sync/spark/page.tsx",
     "app/admin/(protected)/users/page.tsx",
-    "app/admin/(protected)/visitors/[sessionId]/page.tsx",
-    "app/admin/(protected)/visitors/live/page.tsx",
     "app/admin/access-denied/page.tsx",
     "app/admin/login/page.tsx",
     "app/admin/setup/page.tsx"
@@ -292,5 +243,5 @@
     "app/admin/(protected)/people/[id]/page.tsx": 1,
     "app/admin/(protected)/today/page.tsx": 2
   },
-  "distinctWidths": 18
+  "distinctWidths": 17
 }
