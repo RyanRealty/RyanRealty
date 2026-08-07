@@ -1,16 +1,49 @@
 // @no-parity — internal admin tool (brokerage P&L, TC rung 12)
+//
+// 11D: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
+// worklist pattern (4). Presentation only — every figure on this page is money a
+// broker gets paid, so nothing about how a number is produced or printed moved.
+//
+// THE FORMATTER STAYS. `money` is NOT routed through lib/format/money.ts.
+// formatPrice rounds to the nearest $1,000 — it turns this page's $332 ad spend
+// into $0 and its $586 net into $1,000. formatPriceExact agrees with `money` on
+// every positive value, null and undefined, but diverges exactly where this page
+// lives: net can be NEGATIVE, and there formatPriceExact prints -$4,200 where
+// `money` prints $-4,200, and rounds -1234.5 to -$1,235 where Math.round gives
+// $-1,234 (Math.round breaks .5 toward +∞; Intl breaks it away from zero). A
+// different string or a different dollar on a P&L is a §0 figure change, not a
+// presentation change, so the helper is carried character for character.
+//
+// Carried over verbatim: requireAdminPage('financials.view'), getTcFinancials(),
+// the liveExpenses filter, `current = years[0]` (years arrive newest-first), the
+// four summary figures and their labels, the eight P&L columns and their labels,
+// the per-category breakdown and its `manualExpenses > 0` condition and
+// amount-descending sort, the /admin/commissions href, the AddExpense and
+// ExpenseLedger islands (mounted unchanged — both write to the ledger), and the
+// methodology footnote.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the summary tiles became the family's typographic numbers strip
+// (same four figures, same labels), and the two shadcn tables plus their phone
+// card decks became ReportGrids that scroll inside their own box. The tile
+// CAPTIONS are gone and no figure went with them — "2 closings", "agents
+// $111,769", "ads $332 · other $0" are columns of the P&L grid for the same
+// year, and "brokerage retained minus expenses" is the note under it.
+//
+// The verdict does NOT print the subtraction. Net is computed on the unrounded
+// values (918.75 − 332.49 = 586.26 → $586), so a sentence reading "$919 minus
+// $332" would invite the reader to arrive at $587. The displayed components live
+// in the grid; the method note states the formula. §0: the narrative has to
+// reconcile to the figure beside it.
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import DashboardSummaryStrip, { type SummaryStat } from '@/components/admin/DashboardSummaryStrip'
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  VerdictLine,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 import { getTcFinancials } from '@/app/actions/tc-financials'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { TC_EXPENSE_CATEGORIES } from '@/lib/tc/expense-categories'
@@ -23,6 +56,23 @@ const money = (v: number | null | undefined) =>
   v == null ? '—' : `$${Math.round(v).toLocaleString('en-US')}`
 const CATEGORY_LABEL = Object.fromEntries(TC_EXPENSE_CATEGORIES.map((c) => [c.value, c.label]))
 
+const PL_COLUMNS: ReportColumn[] = [
+  { key: 'year', label: 'Year' },
+  { key: 'closings', label: 'Closings', numeric: true },
+  { key: 'gci', label: 'Commission income', numeric: true },
+  { key: 'agent', label: 'Agent share', numeric: true },
+  { key: 'retained', label: 'Brokerage retained', numeric: true },
+  { key: 'ads', label: 'Ad spend (auto)', numeric: true },
+  { key: 'other', label: 'Other expenses', numeric: true },
+  { key: 'net', label: 'Net', numeric: true },
+]
+
+const CATEGORY_COLUMNS: ReportColumn[] = [
+  { key: 'year', label: 'Year' },
+  { key: 'category', label: 'Category' },
+  { key: 'amount', label: 'Amount', numeric: true },
+]
+
 export default async function FinancialsPage() {
   // Brokerage P&L is superuser-only (D4/D3 money caps). The nav hides this from
   // brokers; the page must ENFORCE it too — a broker typing /admin/financials
@@ -32,184 +82,110 @@ export default async function FinancialsPage() {
   const liveExpenses = expenses.filter((e) => !e.archived)
   const current = years[0] // years come pre-sorted newest-first
 
-  const summary: SummaryStat[] = current
-    ? [
-        {
-          label: `Net · ${current.year}`,
-          value: money(current.net),
-          caption: 'brokerage retained minus expenses',
-          tone: current.net >= 0 ? 'success' : 'warning',
-        },
-        {
-          label: 'Brokerage retained',
-          value: money(current.brokerageRetained),
-          caption: `${current.closings} closing${current.closings === 1 ? '' : 's'}`,
-        },
-        {
-          label: 'Commission income',
-          value: money(current.gci),
-          caption: `agents ${money(current.agentShare)}`,
-        },
-        {
-          label: 'Expenses',
-          value: money(current.totalExpenses),
-          caption: `ads ${money(current.adsSpend)} · other ${money(current.manualExpenses)}`,
-        },
-      ]
-    : []
+  const plRows: ReportGridRow[] = years.map((y) => ({
+    key: y.year,
+    cells: [
+      y.year,
+      y.closings,
+      money(y.gci),
+      money(y.agentShare),
+      money(y.brokerageRetained),
+      money(y.adsSpend),
+      money(y.manualExpenses),
+      money(y.net),
+    ],
+  }))
+
+  const categoryRows: ReportGridRow[] = years
+    .filter((y) => y.manualExpenses > 0)
+    .flatMap((y) =>
+      Object.entries(y.expensesByCategory)
+        .sort((a, b) => b[1] - a[1])
+        .map(([cat, amt]) => ({
+          key: `${y.year}-${cat}`,
+          cells: [y.year, CATEGORY_LABEL[cat] ?? cat, money(amt)],
+        })),
+    )
 
   return (
-    <main className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">Financials</h1>
-          <p className="max-w-prose text-sm text-muted-foreground">
-            Settlement-verified commissions and the brokerage expense ledger. Ad spend pulls live from
-            the ads ledger. Net = brokerage retained minus expenses.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/commissions"
-            className="text-sm font-medium text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground"
-          >
-            Commissions →
-          </Link>
-          <AddExpense />
-        </div>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1024, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={current && current.net >= 0 ? 'ok' : 'attention'}>
+          {current ? (
+            <>
+              <b>
+                Net {money(current.net)} in {current.year}.
+              </b>{' '}
+              {current.closings} closing{current.closings === 1 ? '' : 's'} settled this year. The
+              row below carries what it is made of.
+            </>
+          ) : (
+            <>
+              <b>No year came back with a closing, an expense or an ad charge.</b> An empty read and
+              a failed read look identical here, so this is not proof the ledger is empty.
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-      {/* Glanceable summary — the bottom-line numbers for the current year, no scroll */}
-      {summary.length ? <DashboardSummaryStrip stats={summary} /> : null}
+      <ReportNumbers
+        items={
+          current
+            ? [
+                { key: 'net', label: `Net · ${current.year}`, value: money(current.net) },
+                { key: 'retained', label: 'Brokerage retained', value: money(current.brokerageRetained) },
+                { key: 'gci', label: 'Commission income', value: money(current.gci) },
+                { key: 'expenses', label: 'Expenses', value: money(current.totalExpenses) },
+              ]
+            : []
+        }
+      />
 
-      {/* P&L by year */}
-      <ConsoleSection title="Profit and loss by year">
+      <div className="av2-wordrow" style={{ margin: '0 0 4px' }}>
+        <Link href="/admin/commissions" style={{ color: 'var(--a-accent)' }}>
+          Commissions →
+        </Link>
+        <AddExpense />
+      </div>
 
-        {years.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-sm text-muted-foreground">
-              No closed deals on record yet. Verified commissions land here as transactions settle.
-            </CardContent>
-          </Card>
-        ) : (
+      <SectionHead>Profit and loss by year</SectionHead>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
+        Verified and paid commissions, plus the brokerage expense ledger. Ad spend pulls live from
+        the ads ledger. Net = brokerage retained minus expenses.
+      </p>
+      <ReportGrid
+        label="Profit and loss by year"
+        columns={PL_COLUMNS}
+        template="minmax(56px, 0.5fr) minmax(64px, 0.5fr) repeat(6, minmax(96px, 1fr))"
+        minWidth={860}
+        rows={plRows}
+        empty={
           <>
-            {/* Per-year cards — phones (the wide table won't fit; lead with the bottom line) */}
-            <div className="space-y-3 md:hidden">
-              {years.map((y) => (
-                <Card key={y.year} size="sm">
-                  <CardHeader className="flex flex-row items-baseline justify-between gap-2 pb-2">
-                    <CardTitle className="text-base tabular-nums">{y.year}</CardTitle>
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {y.closings} closing{y.closings === 1 ? '' : 's'}
-                    </span>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Net</span>
-                      <span
-                        className={
-                          'text-xl font-semibold tabular-nums ' +
-                          (y.net >= 0 ? 'text-success' : 'text-warning')
-                        }
-                      >
-                        {money(y.net)}
-                      </span>
-                    </div>
-                    <dl className="space-y-1 border-t border-border pt-2 text-sm tabular-nums">
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-muted-foreground">Commission income</dt>
-                        <dd className="text-foreground">{money(y.gci)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-muted-foreground">Agent share</dt>
-                        <dd className="text-foreground">{money(y.agentShare)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-muted-foreground">Brokerage retained</dt>
-                        <dd className="text-foreground">{money(y.brokerageRetained)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-muted-foreground">Ad spend (auto)</dt>
-                        <dd className="text-foreground">{money(y.adsSpend)}</dd>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <dt className="text-muted-foreground">Other expenses</dt>
-                        <dd className="text-foreground">{money(y.manualExpenses)}</dd>
-                      </div>
-                    </dl>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Full P&L table — desktop (unchanged) */}
-            <div className="hidden rounded-lg border border-border bg-card md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20">Year</TableHead>
-                    <TableHead className="w-24 text-right">Closings</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Commission income</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Agent share</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Brokerage retained</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Ad spend (auto)</TableHead>
-                    <TableHead className="whitespace-nowrap text-right">Other expenses</TableHead>
-                    <TableHead className="text-right">Net</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {years.map((y) => (
-                    <TableRow key={y.year}>
-                      <TableCell className="font-medium tabular-nums">{y.year}</TableCell>
-                      <TableCell className="text-right tabular-nums">{y.closings}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.gci)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.agentShare)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.brokerageRetained)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.adsSpend)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">{money(y.manualExpenses)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-medium tabular-nums">{money(y.net)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            No closed deal is on record yet. Verified commissions land here as transactions settle.
           </>
-        )}
+        }
+      />
 
-        <p className="max-w-prose text-xs text-muted-foreground">
-          Agent share includes owner compensation (Matt at 100% split). Ad spend reads live from the
-          marketing ads ledger so it is never double-entered here. Projected deals are excluded everywhere.
-        </p>
-      </ConsoleSection>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 12 }}>
+        Agent share includes owner compensation (Matt at 100% split). Ad spend reads live from the
+        marketing ads ledger so it is never double-entered here. Projected deals are excluded
+        everywhere.
+      </p>
 
-      {/* Expense breakdown per year */}
-      {years.some((y) => y.manualExpenses > 0) ? (
-        <ConsoleSection title="Expenses by category">
-          <div className="grid gap-3 md:grid-cols-2">
-            {years
-              .filter((y) => y.manualExpenses > 0)
-              .map((y) => (
-                <Card key={y.year} size="sm">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">{y.year}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-1">
-                    {Object.entries(y.expensesByCategory)
-                      .sort((a, b) => b[1] - a[1])
-                      .map(([cat, amt]) => (
-                        <p key={cat} className="flex justify-between gap-2 text-sm tabular-nums">
-                          <span className="text-muted-foreground">{CATEGORY_LABEL[cat] ?? cat}</span>
-                          <span className="text-foreground">{money(amt)}</span>
-                        </p>
-                      ))}
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-        </ConsoleSection>
+      {categoryRows.length > 0 ? (
+        <>
+          <SectionHead>Expenses by category</SectionHead>
+          <ReportGrid
+            label="Expenses by category"
+            columns={CATEGORY_COLUMNS}
+            template="minmax(56px, 0.4fr) minmax(160px, 2fr) minmax(96px, 0.8fr)"
+            minWidth={420}
+            rows={categoryRows}
+            empty={<>No manual expense is recorded against any year.</>}
+          />
+        </>
       ) : null}
 
-      {/* Expense ledger — capped, with "See all" */}
       <ExpenseLedger
         expenses={liveExpenses.map((e) => ({
           id: e.id,
@@ -222,6 +198,6 @@ export default async function FinancialsPage() {
           vendor: e.vendor,
         }))}
       />
-    </main>
+    </div>
   )
 }

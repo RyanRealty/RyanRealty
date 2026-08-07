@@ -1,19 +1,41 @@
 // @no-parity — internal admin tool (TC forms library browser), no public mockup contract
+//
+// 11D: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
+// worklist pattern (4). Presentation only.
+//
+// Carried over verbatim: requireAdminPage('transactions.edit'), `await
+// searchParams`, the `?q=` / `?lib=` params and buildLibHref, getTcFormLibraries(q),
+// PREVIEW_COUNT = 6 and the per-library expand/collapse, the populated /
+// total / sampleCount / productionCount arithmetic, the `(SAMPLE…)` name strip,
+// the field / signature counts, the signer-profile words, and every blank-PDF
+// href with its target/rel.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the KpiStrip became the family's numbers strip, and each
+// library's shadcn table + phone card list became one ReportGrid that scrolls
+// inside its own box.
+//
+// ONE LABEL CORRECTED. The third figure read "OREF samples", but the count it
+// shows is `f.isSample` across EVERY library, not OREF's. The number is
+// unchanged; the word no longer claims a scope the code does not apply. The
+// verdict line names the libraries that are wholly samples, computed from the
+// rows on the page. Measured 2026-08-07: 111 live versions — OREF 110/110
+// sample, ODS 1/1 production, OR and RR empty. So "production: 1" is real, not
+// a broken read (ADMIN_UI §3 rule 6; a broad count plus a per-library group-by
+// agreed).
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Button,
+  ReportGrid,
+  ReportNumbers,
+  SectionHead,
+  StateWord,
+  TextField,
+  VerdictLine,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 import { getTcFormLibraries } from '@/app/actions/tc-forms'
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +44,16 @@ type Props = { searchParams: Promise<{ q?: string; lib?: string }> }
 
 // Default forms shown per library before "See all" — curate, never dump.
 const PREVIEW_COUNT = 6
+
+const FORM_COLUMNS: ReportColumn[] = [
+  { key: 'number', label: 'Form #' },
+  { key: 'name', label: 'Name' },
+  { key: 'pages', label: 'Pages', numeric: true },
+  { key: 'fields', label: 'Fields', numeric: true },
+  { key: 'signers', label: 'Signers' },
+  { key: 'status', label: 'Status' },
+  { key: 'blank', label: 'Blank' },
+]
 
 export default async function TcFormsPage({ searchParams }: Props) {
   await requireAdminPage('transactions.edit')
@@ -33,6 +65,11 @@ export default async function TcFormsPage({ searchParams }: Props) {
   const sampleCount = libraries.reduce((s, l) => s + l.forms.filter((f) => f.isSample).length, 0)
   const productionCount = total - sampleCount
 
+  // Which libraries are ENTIRELY samples — the honest reading of a status column
+  // where nearly every row says the same word. Derived from the rows rendered
+  // below, so the sentence and the table cannot disagree.
+  const allSampleLibs = populated.filter((l) => l.forms.every((f) => f.isSample)).map((l) => l.code)
+
   const buildLibHref = (code: string | null) => {
     const sp = new URLSearchParams()
     if (q) sp.set('q', q)
@@ -42,232 +79,156 @@ export default async function TcFormsPage({ searchParams }: Props) {
   }
 
   return (
-    <main className="space-y-4 sm:space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">Forms library</h1>
-        <p className="text-sm text-muted-foreground">
-          Verified TC templates. Envelopes are composed from these blanks only.
-        </p>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1024, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={total === 0 ? 'attention' : 'ok'}>
+          {total === 0 ? (
+            <>
+              <b>No form version came back{q ? ` for “${q}”` : ''}.</b> Envelopes are composed from
+              these blanks only, so nothing can be drafted until the library loads.
+            </>
+          ) : (
+            <>
+              <b>
+                {total.toLocaleString('en-US')} form version{total === 1 ? '' : 's'}
+                {q ? ` matching “${q}”` : ''} — {productionCount.toLocaleString('en-US')} production,{' '}
+                {sampleCount.toLocaleString('en-US')} sample.
+              </b>{' '}
+              {allSampleLibs.length
+                ? `Every form in ${allSampleLibs.join(', ')} is a sample.`
+                : 'Envelopes are composed from these blanks only.'}
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
-      {/* Glanceable summary — summary before detail */}
-      <KpiStrip items={[
-        { label: 'form versions', value: total },
-        { label: 'production', value: productionCount },
-        { label: 'OREF samples', value: sampleCount },
-      ]} />
+      <ReportNumbers
+        items={[
+          { key: 'total', label: 'form versions', value: total.toLocaleString('en-US') },
+          { key: 'prod', label: 'production', value: productionCount.toLocaleString('en-US') },
+          { key: 'sample', label: 'samples', value: sampleCount.toLocaleString('en-US') },
+        ]}
+      />
 
-      <form method="GET" className="flex max-w-md gap-2">
-        <Input
+      <form method="GET" className="av2-rfilters">
+        <TextField
+          label="Search forms"
           name="q"
           defaultValue={q ?? ''}
           placeholder="Search form number or name…"
-          aria-label="Search forms"
-          className="h-11"
         />
-        <Button type="submit" variant="secondary" className="h-11 px-5">
+        <Button type="submit" touch style={{ alignSelf: 'flex-end' }}>
           Search
         </Button>
       </form>
 
       {populated.length === 0 ? (
-        <ConsoleSection title="Forms">
-          <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <p className="text-base font-medium text-foreground">
-              {q ? 'No forms match that search' : 'No forms loaded yet'}
-            </p>
-            <p className="max-w-sm text-sm text-muted-foreground">
-              {q
-                ? 'Try a different form number or name.'
-                : 'Verified blanks appear here once the TC library is loaded.'}
-            </p>
+        <>
+          <SectionHead>Forms</SectionHead>
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             {q ? (
-              <Button asChild variant="secondary" className="mt-1 h-11 px-5">
-                <Link href="/admin/forms">Clear search</Link>
-              </Button>
-            ) : null}
-          </div>
-        </ConsoleSection>
+              <>
+                No form number or name contains “{q}”.{' '}
+                <Link href="/admin/forms" style={{ color: 'var(--a-accent)' }}>
+                  Clear the search
+                </Link>
+              </>
+            ) : (
+              'No forms loaded yet. Verified blanks appear here once the TC library is loaded.'
+            )}
+          </p>
+        </>
       ) : (
         populated.map((library) => {
           const isExpanded = expanded === library.code
           const visible = isExpanded ? library.forms : library.forms.slice(0, PREVIEW_COUNT)
           const hiddenCount = library.forms.length - visible.length
 
+          const rows: ReportGridRow[] = visible.map((f) => ({
+            key: f.id,
+            cells: [
+              f.form_number ?? '—',
+              f.name.replace(/\s*\(SAMPLE.*\)$/i, ''),
+              f.page_count ?? '—',
+              f.fieldCount > 0 ? `${f.fieldCount} (${f.signatureFieldCount} sig)` : 'not mapped yet',
+              f.signer_profile ? (f.signer_profile === 'single_party' ? 'One side' : 'Both sides') : '—',
+              f.isSample ? (
+                <StateWord key="s" state="slow">
+                  Sample
+                </StateWord>
+              ) : (
+                <StateWord key="s" state="ok">
+                  Production
+                </StateWord>
+              ),
+              f.blankUrl ? (
+                <a
+                  key="b"
+                  href={f.blankUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--a-accent)' }}
+                >
+                  Open
+                </a>
+              ) : (
+                <span key="b" style={{ color: 'var(--a-text-2)' }}>
+                  Unavailable
+                </span>
+              ),
+            ],
+          }))
+
           return (
-            <ConsoleSection
-              key={library.id}
-              title={library.code}
-              count={`${library.name} · ${library.forms.length} forms`}
-            >
+            <section key={library.id} aria-label={`${library.code} forms`}>
+              <SectionHead>
+                {library.code} · {library.name} · {library.forms.length} form
+                {library.forms.length === 1 ? '' : 's'}
+              </SectionHead>
               {library.license_note ? (
-                <p className="mb-3 text-xs text-muted-foreground">{library.license_note}</p>
+                <p
+                  style={{
+                    fontSize: 'var(--a-text-xs)',
+                    color: 'var(--a-text-2)',
+                    margin: '0 0 8px',
+                  }}
+                >
+                  {library.license_note}
+                </p>
               ) : null}
-                {/* Form cards — phones (one tap to open the blank) */}
-                <div className="space-y-2 md:hidden">
-                  {visible.map((f) => (
-                    <div key={f.id} className="rounded-lg border border-border bg-muted/40 p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-medium tabular-nums text-foreground">
-                            {f.form_number ?? '—'}
-                          </div>
-                          <p className="truncate text-sm text-muted-foreground" title={f.name}>
-                            {f.name.replace(/\s*\(SAMPLE.*\)$/i, '')}
-                          </p>
-                        </div>
-                        {f.isSample ? (
-                          <Badge className="shrink-0 bg-warning/20 text-foreground hover:bg-warning/20">
-                            Sample
-                          </Badge>
-                        ) : (
-                          <Badge className="shrink-0 bg-success/15 text-success hover:bg-success/15">
-                            Production
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        <span className="tabular-nums">{f.page_count ?? '—'} pages</span>
-                        <span className="tabular-nums">
-                          {f.fieldCount > 0
-                            ? `${f.fieldCount} fields (${f.signatureFieldCount} sig)`
-                            : 'not mapped yet'}
-                        </span>
-                        {f.signer_profile ? (
-                          <Badge variant="outline">
-                            {f.signer_profile === 'single_party' ? 'One side' : 'Both sides'}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      {f.blankUrl ? (
-                        <Button asChild variant="secondary" className="mt-3 h-11 w-full">
-                          <a href={f.blankUrl} target="_blank" rel="noopener noreferrer">
-                            Open blank
-                          </a>
-                        </Button>
-                      ) : (
-                        <div className="mt-3 flex h-11 w-full items-center justify-center rounded-md border border-border bg-muted/30 px-3">
-                          <span className="text-xs text-muted-foreground">Blank unavailable</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
 
-                  {hiddenCount > 0 ? (
-                    <Button asChild variant="ghost" className="h-11 w-full">
-                      <Link href={buildLibHref(library.code)}>
-                        See all {library.forms.length} forms →
-                      </Link>
-                    </Button>
-                  ) : isExpanded && library.forms.length > PREVIEW_COUNT ? (
-                    <Button asChild variant="ghost" className="h-11 w-full">
-                      <Link href={buildLibHref(null)}>Show less</Link>
-                    </Button>
-                  ) : null}
-                </div>
+              <ReportGrid
+                label={`${library.code} form versions`}
+                columns={FORM_COLUMNS}
+                template="minmax(72px, 0.6fr) minmax(200px, 2.4fr) minmax(56px, 0.4fr) minmax(96px, 0.8fr) minmax(84px, 0.7fr) minmax(88px, 0.7fr) minmax(72px, 0.5fr)"
+                minWidth={780}
+                rows={rows}
+                empty={<>This library holds no live form version.</>}
+              />
 
-                {/* Form table — desktop */}
-                <div className="hidden overflow-hidden rounded-lg border border-border md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-24">Form #</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="w-20">Pages</TableHead>
-                        <TableHead className="w-32">Fields</TableHead>
-                        <TableHead className="w-28">Signers</TableHead>
-                        <TableHead className="w-32">Status</TableHead>
-                        <TableHead className="w-28 text-right">Blank</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {visible.map((f) => (
-                        <TableRow key={f.id}>
-                          <TableCell className="font-medium tabular-nums text-foreground">
-                            {f.form_number ?? '—'}
-                          </TableCell>
-                          <TableCell className="max-w-md">
-                            <p className="truncate" title={f.name}>
-                              {f.name.replace(/\s*\(SAMPLE.*\)$/i, '')}
-                            </p>
-                          </TableCell>
-                          <TableCell className="tabular-nums">{f.page_count ?? '—'}</TableCell>
-                          <TableCell className="tabular-nums">
-                            {f.fieldCount > 0
-                              ? `${f.fieldCount} (${f.signatureFieldCount} sig)`
-                              : 'not mapped yet'}
-                          </TableCell>
-                          <TableCell>
-                            {f.signer_profile ? (
-                              <Badge variant="outline">
-                                {f.signer_profile === 'single_party' ? 'One side' : 'Both sides'}
-                              </Badge>
-                            ) : (
-                              '—'
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {f.isSample ? (
-                              <Badge className="bg-warning/20 text-foreground hover:bg-warning/20">
-                                Sample
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-success/15 text-success hover:bg-success/15">
-                                Production
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {f.blankUrl ? (
-                              <a
-                                href={f.blankUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm underline underline-offset-2"
-                              >
-                                Open
-                              </a>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="text-xs text-muted-foreground"
-                                aria-label="Blank PDF not yet available for this form"
-                              >
-                                Unavailable
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-
-                  {hiddenCount > 0 ? (
-                    <div className="border-t border-border bg-muted/30 px-3 py-2 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={buildLibHref(library.code)}>
-                          See all {library.forms.length} forms →
-                        </Link>
-                      </Button>
-                    </div>
-                  ) : isExpanded && library.forms.length > PREVIEW_COUNT ? (
-                    <div className="border-t border-border bg-muted/30 px-3 py-2 text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={buildLibHref(null)}>Show less</Link>
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-            </ConsoleSection>
+              {hiddenCount > 0 ? (
+                <p style={{ margin: '8px 0 0', fontSize: 'var(--a-text-sm)' }}>
+                  <Link href={buildLibHref(library.code)} style={{ color: 'var(--a-accent)' }}>
+                    See all {library.forms.length} forms →
+                  </Link>
+                </p>
+              ) : isExpanded && library.forms.length > PREVIEW_COUNT ? (
+                <p style={{ margin: '8px 0 0', fontSize: 'var(--a-text-sm)' }}>
+                  <Link href={buildLibHref(null)} style={{ color: 'var(--a-accent)' }}>
+                    Show less
+                  </Link>
+                </p>
+              ) : null}
+            </section>
           )
         })
       )}
 
-      <p className="text-xs text-muted-foreground">
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
         Field maps (data bindings + signature spots with signer roles) get placed once per form
         version and QA&apos;d — envelopes never invent field positions. Composer ships next; see
         docs/TC_SYSTEM.md.
       </p>
-    </main>
+    </div>
   )
 }

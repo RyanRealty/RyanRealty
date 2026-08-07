@@ -1,26 +1,52 @@
 // @no-parity — internal admin tool (deal detail: documents, archive, checklist, audit)
+//
+// 11D: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
+// ENTITY page (pattern 5: identity header + stacked context sections).
+// Presentation only.
+//
+// THE FORMATTERS STAY. `money`, `d10` and `kb` are NOT routed through lib/format.
+// formatPrice rounds to the nearest $1,000 — a sale price of $894,750 prints as
+// $895,000, which on a settlement figure is a wrong number. formatPriceExact
+// agrees with `money` on positives and null but flips the sign placement on
+// negatives and breaks .5 the other way. `d10` slices the first ten characters
+// of the stored date; formatDate parses a date-only string as UTC and
+// re-projects it to America/Los_Angeles, moving a printed closing day BACK BY
+// ONE. All three are §0 figure changes, not presentation changes.
+//
+// Carried over verbatim: `params` / `searchParams` as Promises and both awaits,
+// `archived === '1'`, getTcDeal(decodeURIComponent(key)) and its notFound(),
+// getDealContacts, getCommissionsForCycles over every cycle id,
+// getAnticipatedDocuments per cycle, getEnvelopesForCycle and the envelope-cycle
+// labels, the archived-document filter, the first-cycle-open default, every
+// commission expression (gross, the referral + tc + other fee sum, agent net and
+// its split percent, brokerage net, paid date, the two-decimal commission
+// percent), every cycle fact (sale price, office gross, escrow number, MLS
+// number, closing/dead dates, sellers, buyers), the anticipated-document
+// predictor's counts and citations, the checklist and its document links, the
+// audit trail's 16-character timestamp slice and 120-character detail slice, and
+// both ?archived= hrefs.
+//
+// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
+// the landmark), the address moved from a raw <h1> into EntityTitle, the shadcn
+// Accordion became a native <details> disclosure with the same first-cycle-open
+// default and the same summary text, the shadcn document table plus its phone
+// card deck became one ReportGrid that scrolls inside its own box, and every
+// Badge became a v2 state word. The archived row's 60% opacity is gone — the
+// "Archived" state word carries that meaning in text, which is the rule the
+// opacity was standing in for. The hover preview moved to ./DocumentName
+// unchanged; the commission, upload, archive, download and checklist editors are
+// mounted unchanged.
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-import { getTcDeal, type TcCycle, type TcDocument } from '@/app/actions/tc'
+  EntityTitle,
+  ReportGrid,
+  SectionHead,
+  StateWord,
+  type ReportGridRow,
+} from '@/components/admin/v2'
+import { getTcDeal, type TcCycle } from '@/app/actions/tc'
 import { getAnticipatedDocuments, type AnticipatedDocsResult } from '@/app/actions/tc-required-docs'
-import { cn } from '@/lib/utils'
 import { getDealContacts } from '@/app/actions/tc-contacts'
 import { getCommissionsForCycles, type TcCommission } from '@/app/actions/tc-commissions'
 import { ArchiveToggle, DownloadButton } from './DocumentRowActions'
@@ -29,7 +55,17 @@ import { CommissionEdit } from './CommissionControls'
 import { ChecklistStatusControl } from './ChecklistControls'
 import { DealContacts } from './DealContacts'
 import { DealEnvelopes, type DealEnvelopesCycle } from './DealEnvelopes'
+import { DocumentName } from './DocumentName'
 import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
+import {
+  COMMISSION_STATUS,
+  DOC_COLUMNS,
+  DOC_MIN_WIDTH,
+  DOC_TEMPLATE,
+  ROLE_LABEL,
+  SIDE_LABEL,
+  STAGE_LABEL,
+} from './_columns'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,113 +80,59 @@ const d10 = (v: string | null | undefined) => (v ? String(v).slice(0, 10) : '—
 const kb = (n: number | null | undefined) =>
   n == null ? '—' : n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`
 
-/** Mouse-over preview: first page + last page (signature blocks live on the
- *  last page of most OREF forms) so signature state is visible without a click. */
-function DocNameWithPreview({ doc }: { doc: TcDocument }) {
-  const name = (
-    <p className="truncate font-medium text-foreground" title={doc.name}>
-      {doc.name}
-    </p>
-  )
-  if (!doc.thumbFirstUrl) return name
-  const single = !doc.thumbLastUrl
-  return (
-    <HoverCard openDelay={150} closeDelay={80}>
-      <HoverCardTrigger asChild>
-        <p className="cursor-zoom-in truncate font-medium text-foreground underline decoration-dotted decoration-border underline-offset-4">
-          {doc.name}
-        </p>
-      </HoverCardTrigger>
-      <HoverCardContent side="right" align="start" className="w-auto max-w-[680px] p-3">
-        <div className="flex gap-3">
-          <figure className="m-0">
-            {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL, remote loader not configured for storage host */}
-            <img
-              src={doc.thumbFirstUrl}
-              alt={`First page of ${doc.name}`}
-              className="max-h-[420px] w-auto rounded-md border border-border bg-white"
-            />
-            <figcaption className="mt-1 text-center text-[10px] text-muted-foreground">
-              page 1{single ? ' (only page)' : ''}
-            </figcaption>
-          </figure>
-          {doc.thumbLastUrl ? (
-            <figure className="m-0">
-              {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL */}
-              <img
-                src={doc.thumbLastUrl}
-                alt={`Last page of ${doc.name}`}
-                className="max-h-[420px] w-auto rounded-md border border-border bg-white"
-              />
-              <figcaption className="mt-1 text-center text-[10px] text-muted-foreground">
-                last page · signatures
-              </figcaption>
-            </figure>
-          ) : null}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
-  )
-}
+const quiet = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' } as const
+const tiny = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' } as const
 
-const ROLE_LABEL: Record<string, string> = {
-  listing: 'Listing side',
-  buyer: 'Buyer side',
-  dual: 'Disclosed dual agency',
-  unknown: 'Role not set',
-}
-
-const SIDE_LABEL: Record<string, string> = {
-  listing: 'Listing side',
-  buyer: 'Buyer side',
-  both: 'Both sides',
-  unknown: 'Side not set',
-}
-
-const COMMISSION_STATUS: Record<string, { label: string; className: string }> = {
-  projected: { label: 'Projected', className: 'bg-warning/30 text-foreground hover:bg-warning/30' },
-  settlement_verified: { label: 'Settlement verified', className: 'bg-success/15 text-success hover:bg-success/15' },
-  paid: { label: 'Paid', className: 'bg-primary text-primary-foreground hover:bg-primary' },
-}
-
-/** Commission block per sale cycle (rung 11). */
+/** Commission block per sale cycle (rung 11). Every figure expression here is
+ *  carried from the pre-11D markup character for character. */
 function CommissionSection({ rows }: { rows: TcCommission[] }) {
   if (!rows.length) return null
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <p className="mb-3 text-sm font-medium text-foreground">Commission</p>
-      <div className="space-y-2">
-        {rows.map((r) => {
-          const st = COMMISSION_STATUS[r.status] ?? COMMISSION_STATUS.projected
-          const fees = r.referral_fee + r.tc_fee + r.other_deductions
-          return (
-            <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-muted/50 px-3 py-2">
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-sm text-foreground">
-                  {r.broker_name}
-                  <span className="ml-2 text-xs text-muted-foreground">{SIDE_LABEL[r.side]}</span>
-                  {r.commission_percent != null ? (
-                    <span className="ml-2 text-xs tabular-nums text-muted-foreground">{Number(r.commission_percent.toFixed(2))}%</span>
-                  ) : null}
-                </p>
-                <p className="text-xs tabular-nums text-muted-foreground">
-                  Gross {money(r.gci)}
-                  {fees > 0 ? <> · fees {money(fees)}</> : null}
-                  {' · '}agent {money(r.agent_net)} ({Number(r.split_percent)}%)
-                  {' · '}brokerage {money(r.brokerage_net)}
-                  {r.paid_at ? <> · paid {d10(r.paid_at)}</> : null}
-                </p>
-                {r.notes ? <p className="truncate text-xs text-muted-foreground">{r.notes}</p> : null}
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge className={st.className}>{st.label}</Badge>
-                <CommissionEdit row={r} />
-              </div>
+    <section aria-label="Commission">
+      <SectionHead>Commission</SectionHead>
+      {rows.map((r) => {
+        const st = COMMISSION_STATUS[r.status] ?? COMMISSION_STATUS.projected
+        const fees = r.referral_fee + r.tc_fee + r.other_deductions
+        return (
+          <div
+            key={r.id}
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '10px 2px',
+              borderBottom: '1px solid var(--a-border)',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 'var(--a-text-md)' }}>
+                {r.broker_name}
+                <span style={{ ...tiny, marginLeft: 8 }}>{SIDE_LABEL[r.side]}</span>
+                {r.commission_percent != null ? (
+                  <span style={{ ...tiny, marginLeft: 8, fontVariantNumeric: 'tabular-nums' }}>
+                    {Number(r.commission_percent.toFixed(2))}%
+                  </span>
+                ) : null}
+              </p>
+              <p style={{ ...tiny, margin: '2px 0 0', fontVariantNumeric: 'tabular-nums' }}>
+                Gross {money(r.gci)}
+                {fees > 0 ? <> · fees {money(fees)}</> : null}
+                {' · '}agent {money(r.agent_net)} ({Number(r.split_percent)}%)
+                {' · '}brokerage {money(r.brokerage_net)}
+                {r.paid_at ? <> · paid {d10(r.paid_at)}</> : null}
+              </p>
+              {r.notes ? <p style={{ ...tiny, margin: '2px 0 0' }}>{r.notes}</p> : null}
             </div>
-          )
-        })}
-      </div>
-    </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <StateWord state={st.state}>{st.label}</StateWord>
+              <CommissionEdit row={r} />
+            </div>
+          </div>
+        )
+      })}
+    </section>
   )
 }
 
@@ -159,61 +141,59 @@ function AnticipatedDocs({ data }: { data: AnticipatedDocsResult | null }) {
   if (!data || data.documents.length === 0) return null
   const missing = data.documents.filter((d) => !d.present)
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-medium text-foreground">
-          Documents anticipated{' '}
-          <span className="font-normal text-muted-foreground">
-            ({ROLE_LABEL[data.role] ?? data.role})
-          </span>
-        </p>
-        <p className="text-xs tabular-nums text-muted-foreground">
-          {data.documents.filter((d) => d.present).length}/{data.documents.length} present
-          {data.missingRequired > 0 ? ` · ${data.missingRequired} required missing` : ''}
-        </p>
-      </div>
-      <ul className="space-y-1.5">
+    <section aria-label="Documents anticipated">
+      <SectionHead>Documents anticipated · {ROLE_LABEL[data.role] ?? data.role}</SectionHead>
+      <p style={{ ...tiny, margin: '0 0 8px', fontVariantNumeric: 'tabular-nums' }}>
+        {data.documents.filter((d) => d.present).length}/{data.documents.length} present
+        {data.missingRequired > 0 ? ` · ${data.missingRequired} required missing` : ''}
+      </p>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
         {data.documents.slice(0, 12).map((d) => (
-          <li key={d.id} className="flex items-start gap-2 text-sm">
+          <li
+            key={d.id}
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'baseline',
+              gap: 8,
+              padding: '6px 2px',
+              borderBottom: '1px solid var(--a-border)',
+              fontSize: 'var(--a-text-sm)',
+            }}
+          >
+            <StateWord state={d.present ? 'ok' : d.severity === 'required' ? 'down' : 'slow'}>
+              {d.present ? 'On file' : d.severity === 'required' ? 'Required' : 'Expected'}
+            </StateWord>
             <span
-              className={cn(
-                'mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold',
-                d.present
-                  ? 'bg-success text-success-foreground'
-                  : d.severity === 'required'
-                    ? 'bg-destructive text-destructive-foreground'
-                    : 'bg-warning/30 text-foreground'
-              )}
-              aria-hidden
+              style={{
+                color: d.present ? 'var(--a-text-2)' : 'var(--a-text)',
+                textDecoration: d.present ? 'line-through' : undefined,
+              }}
             >
-              {d.present ? '✓' : '!'}
+              {d.label}
             </span>
-            <span className="min-w-0">
-              <span className={cn('text-foreground', d.present && 'text-muted-foreground line-through')}>
-                {d.label}
-              </span>
-              {d.orefForm ? <span className="ml-1 text-xs text-muted-foreground">OREF {d.orefForm}</span> : null}
-              <span className="ml-2 text-xs text-muted-foreground" title={d.citation}>
-                {d.severity === 'verify' ? '⚑ verify · ' : ''}
-                {d.citation}
-              </span>
+            {d.orefForm ? <span style={tiny}>OREF {d.orefForm}</span> : null}
+            <span style={tiny} title={d.citation}>
+              {d.severity === 'verify' ? '⚑ verify · ' : ''}
+              {d.citation}
             </span>
           </li>
         ))}
       </ul>
       {data.documents.length > 12 ? (
-        <p className="mt-2 text-xs font-medium text-muted-foreground">
+        <p style={{ ...tiny, margin: '8px 0 0', fontWeight: 500 }}>
           Showing 12 of {data.documents.length}
         </p>
       ) : null}
       {missing.length > 0 ? (
-        <p className="mt-3 text-xs text-muted-foreground">
-          {missing.length} not yet on file. {data.unknown.length > 0
+        <p style={{ ...tiny, margin: '8px 0 0' }}>
+          {missing.length} not yet on file.{' '}
+          {data.unknown.length > 0
             ? `Confirm to refine: ${data.unknown.slice(0, 4).join(', ')}${data.unknown.length > 4 ? '…' : ''}`
             : ''}
         </p>
       ) : null}
-    </div>
+    </section>
   )
 }
 
@@ -232,162 +212,137 @@ function CycleSection({
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
   const docNameById = new Map(cycle.documents.map((doc) => [doc.id, doc.name]))
 
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm tabular-nums text-foreground">
-        {cycle.sale_price ? <span>{money(cycle.sale_price)}</span> : null}
-        {cycle.office_gross ? <span className="text-muted-foreground">gross {money(cycle.office_gross)}</span> : null}
-        {cycle.escrow_number ? <span className="text-muted-foreground">escrow {cycle.escrow_number}</span> : null}
-        {cycle.mls_number ? <span className="text-muted-foreground">MLS {cycle.mls_number}</span> : null}
-        {cycle.actual_closing_date ? (
-          <span className="text-muted-foreground">closed {d10(cycle.actual_closing_date)}</span>
-        ) : cycle.escrow_closing_date ? (
-          <span className="text-muted-foreground">closes {d10(cycle.escrow_closing_date)}</span>
+  const docRows: ReportGridRow[] = docs.map((doc) => ({
+    key: doc.id,
+    cells: [
+      <span key="n" style={{ display: 'block', minWidth: 0 }}>
+        <DocumentName doc={doc} />
+        {doc.archived && doc.archived_reason ? (
+          <span style={{ ...tiny, display: 'block' }} title={doc.archived_reason}>
+            {doc.archived_reason}
+          </span>
         ) : null}
-        {cycle.dead_date ? <span className="text-muted-foreground">dead {d10(cycle.dead_date)}</span> : null}
-      </div>
-      {(cycle.sellers.length || cycle.buyers.length) ? (
-        <p className="text-xs text-muted-foreground">
+      </span>,
+      doc.page_count ?? '—',
+      kb(doc.bytes),
+      d10(doc.source_uploaded_at),
+      <span key="s" style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+        {doc.is_broker_notes ? <StateWord state="accent">Broker notes</StateWord> : null}
+        {doc.archived ? (
+          <StateWord state="waiting">Archived</StateWord>
+        ) : (
+          <StateWord state="ok">Live</StateWord>
+        )}
+      </span>,
+      <span key="a" style={{ display: 'inline-flex', gap: 8 }}>
+        <DownloadButton documentId={doc.id} disabled={!doc.storage_path} />
+        <ArchiveToggle documentId={doc.id} archived={doc.archived} docName={doc.name} />
+      </span>,
+    ],
+  }))
+
+  return (
+    <>
+      <p
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '4px 20px',
+          margin: '12px 0 0',
+          fontSize: 'var(--a-text-sm)',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {cycle.sale_price ? <span>{money(cycle.sale_price)}</span> : null}
+        {cycle.office_gross ? <span style={quiet}>gross {money(cycle.office_gross)}</span> : null}
+        {cycle.escrow_number ? <span style={quiet}>escrow {cycle.escrow_number}</span> : null}
+        {cycle.mls_number ? <span style={quiet}>MLS {cycle.mls_number}</span> : null}
+        {cycle.actual_closing_date ? (
+          <span style={quiet}>closed {d10(cycle.actual_closing_date)}</span>
+        ) : cycle.escrow_closing_date ? (
+          <span style={quiet}>closes {d10(cycle.escrow_closing_date)}</span>
+        ) : null}
+        {cycle.dead_date ? <span style={quiet}>dead {d10(cycle.dead_date)}</span> : null}
+      </p>
+      {cycle.sellers.length || cycle.buyers.length ? (
+        <p style={{ ...tiny, margin: '4px 0 0' }}>
           {cycle.sellers.length ? `Sellers: ${cycle.sellers.join(', ')}` : ''}
           {cycle.sellers.length && cycle.buyers.length ? ' · ' : ''}
           {cycle.buyers.length ? `Buyers: ${cycle.buyers.join(', ')}` : ''}
         </p>
       ) : null}
 
-      {/* Anticipated documents (Oregon-law required-doc predictor) */}
       <AnticipatedDocs data={anticipated} />
-
-      {/* Commission (rung 11) */}
       <CommissionSection rows={commissions} />
 
-      {/* Documents */}
-      <div className="rounded-lg border border-border bg-card">
-        <div className="flex items-center justify-between px-4 py-2">
-          <p className="text-sm font-medium text-foreground">
-            Documents <span className="tabular-nums text-muted-foreground">({docs.length}{!showArchived && archivedCount ? ` live · ${archivedCount} archived hidden` : ''})</span>
-          </p>
+      <section aria-label="Documents">
+        <SectionHead>
+          Documents ({docs.length}
+          {!showArchived && archivedCount ? ` live · ${archivedCount} archived hidden` : ''})
+        </SectionHead>
+        <div style={{ margin: '0 0 8px' }}>
           <DocumentUpload
             cycleId={cycle.id}
             checklistItems={cycle.checklist.map((it) => ({ id: it.id, name: it.name }))}
           />
         </div>
-        {/* Document cards — phones (each doc is one stacked card) */}
-        <div className="space-y-2 border-t border-border p-3 md:hidden">
-          {docs.map((doc) => (
-            <div
-              key={doc.id}
-              className={cn('rounded-md border border-border bg-muted/40 p-3', doc.archived && 'opacity-60')}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <DocNameWithPreview doc={doc} />
-                  {doc.archived && doc.archived_reason ? (
-                    <p className="truncate text-xs text-muted-foreground" title={doc.archived_reason}>
-                      {doc.archived_reason}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex shrink-0 flex-wrap justify-end gap-1">
-                  {doc.is_broker_notes ? (
-                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Broker notes</Badge>
-                  ) : null}
-                  {doc.archived ? (
-                    <Badge variant="secondary">Archived</Badge>
-                  ) : (
-                    <Badge className="bg-success/15 text-success hover:bg-success/15">Live</Badge>
-                  )}
-                </div>
-              </div>
-              <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-                {doc.page_count ?? '—'} pages · {kb(doc.bytes)} · {d10(doc.source_uploaded_at)}
-              </p>
-              <div className="mt-3 flex justify-end gap-2">
-                <DownloadButton documentId={doc.id} disabled={!doc.storage_path} />
-                <ArchiveToggle documentId={doc.id} archived={doc.archived} docName={doc.name} />
-              </div>
-            </div>
-          ))}
-        </div>
+        <ReportGrid
+          label="Cycle documents"
+          columns={DOC_COLUMNS}
+          template={DOC_TEMPLATE}
+          minWidth={DOC_MIN_WIDTH}
+          rows={docRows}
+          empty={
+            <>
+              No document on this cycle{!showArchived && archivedCount
+                ? ` — ${archivedCount} archived one${archivedCount === 1 ? ' is' : 's are'} hidden. Use "Show archived" above.`
+                : '. Upload one above.'}
+            </>
+          }
+        />
+      </section>
 
-        {/* Document table — desktop */}
-        <div className="hidden md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead className="w-20">Pages</TableHead>
-                <TableHead className="w-24">Size</TableHead>
-                <TableHead className="w-28">Uploaded</TableHead>
-                <TableHead className="w-40">State</TableHead>
-                <TableHead className="w-44 text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {docs.map((doc) => (
-                <TableRow key={doc.id} className={cn(doc.archived && 'opacity-60')}>
-                  <TableCell className="max-w-md">
-                    <DocNameWithPreview doc={doc} />
-                    {doc.archived && doc.archived_reason ? (
-                      <p className="truncate text-xs text-muted-foreground" title={doc.archived_reason}>
-                        {doc.archived_reason}
-                      </p>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="tabular-nums">{doc.page_count ?? '—'}</TableCell>
-                  <TableCell className="tabular-nums">{kb(doc.bytes)}</TableCell>
-                  <TableCell className="tabular-nums">{d10(doc.source_uploaded_at)}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {doc.is_broker_notes ? (
-                        <Badge className="bg-primary text-primary-foreground hover:bg-primary">Broker notes</Badge>
-                      ) : null}
-                      {doc.archived ? (
-                        <Badge variant="secondary">Archived</Badge>
-                      ) : (
-                        <Badge className="bg-success/15 text-success hover:bg-success/15">Live</Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <DownloadButton documentId={doc.id} disabled={!doc.storage_path} />
-                      <ArchiveToggle documentId={doc.id} archived={doc.archived} docName={doc.name} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Checklist */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <p className="mb-3 text-sm font-medium text-foreground">Checklist</p>
-        <div className="grid gap-2 lg:grid-cols-2">
-          {cycle.checklist.map((item) => (
-            <div key={item.id} className="flex items-start justify-between gap-2 rounded-md bg-muted/50 px-3 py-2">
-              <div className="min-w-0">
-                <p className="text-sm text-foreground">{item.name}</p>
-                {item.documentIds.length ? (
-                  <p className="truncate text-xs text-muted-foreground">
-                    {item.documentIds
-                      .map((id) => docNameById.get(id))
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </p>
-                ) : null}
-              </div>
-              <ChecklistStatusControl
-                itemId={item.id}
-                status={item.status}
-                docCount={item.documentIds.length}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+      <section aria-label="Checklist">
+        <SectionHead>Checklist</SectionHead>
+        {cycle.checklist.length === 0 ? (
+          <p style={{ ...quiet, margin: 0 }}>No checklist item on this cycle.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {cycle.checklist.map((item) => (
+              <li
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  padding: '8px 2px',
+                  borderBottom: '1px solid var(--a-border)',
+                }}
+              >
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: 'block', fontSize: 'var(--a-text-sm)' }}>{item.name}</span>
+                  {item.documentIds.length ? (
+                    <span style={{ ...tiny, display: 'block' }}>
+                      {item.documentIds
+                        .map((id) => docNameById.get(id))
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  ) : null}
+                </span>
+                <ChecklistStatusControl
+                  itemId={item.id}
+                  status={item.status}
+                  docCount={item.documentIds.length}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
   )
 }
 
@@ -418,69 +373,59 @@ export default async function TcDealPage({ params, searchParams }: Props) {
     }))
   )
 
-  const stageLabel: Record<string, string> = {
-    pending: 'Under contract',
-    active_listing: 'Active listing',
-    pre_contract: 'Pre-contract',
-    closed: 'Closed',
-    dead: 'Canceled',
-  }
-
   return (
-    <main className="space-y-6">
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <Link href="/admin/deals" className="text-sm text-muted-foreground hover:underline">
-            ← Deals
-          </Link>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{deal.address}</h1>
-            <p className="text-sm text-muted-foreground">
-              {deal.broker_name ?? '—'} · {deal.stage_detail ?? stageLabel[deal.stage] ?? deal.stage}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge className="bg-primary text-primary-foreground hover:bg-primary">
-              {stageLabel[deal.stage] ?? deal.stage}
-            </Badge>
-            <Link
-              href={showArchived ? `/admin/deals/${encodeURIComponent(deal.property_key)}` : `/admin/deals/${encodeURIComponent(deal.property_key)}?archived=1`}
-              className="text-xs text-muted-foreground underline underline-offset-2"
-            >
-              {showArchived ? 'Hide archived' : 'Show archived'}
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1100, margin: '0 auto', padding: 16 }}>
+      <nav aria-label="Breadcrumb" style={{ ...tiny, margin: '0 0 8px' }}>
+        <Link href="/admin/deals" style={{ color: 'var(--a-accent)' }}>
+          Deals
+        </Link>
+      </nav>
 
-      <Accordion
-        type="multiple"
-        defaultValue={deal.cycles.length ? [deal.cycles[0].id] : []}
-        className="space-y-3"
-      >
-        {deal.cycles.map((cycle) => (
-          <AccordionItem key={cycle.id} value={cycle.id} className="rounded-lg border border-border bg-card px-4">
-            <AccordionTrigger className="text-sm font-semibold text-foreground">
-              <span>
-                {cycle.kind === 'listing' ? 'Listing folder' : 'Sale cycle'} · {cycle.status ?? '—'}
-                <span className="ml-2 font-normal text-muted-foreground">
-                  {cycle.documents.filter((doc) => !doc.archived).length} live docs · {cycle.source_guid.slice(0, 8)}
-                </span>
-              </span>
-            </AccordionTrigger>
-            <AccordionContent>
-              <CycleSection
-                cycle={cycle}
-                showArchived={showArchived}
-                anticipated={anticipatedByCycle.get(cycle.id) ?? null}
-                commissions={commissions.filter((r) => r.cycle_id === cycle.id)}
-              />
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      <EntityTitle>{deal.address}</EntityTitle>
+
+      <div className="av2-wordrow" style={{ margin: '6px 0 0' }}>
+        <StateWord state={deal.stage === 'dead' ? 'down' : deal.stage === 'closed' ? 'ok' : 'accent'}>
+          {STAGE_LABEL[deal.stage] ?? deal.stage}
+        </StateWord>
+        <span style={quiet}>
+          {deal.broker_name ?? '—'} · {deal.stage_detail ?? STAGE_LABEL[deal.stage] ?? deal.stage}
+        </span>
+        <Link
+          href={
+            showArchived
+              ? `/admin/deals/${encodeURIComponent(deal.property_key)}`
+              : `/admin/deals/${encodeURIComponent(deal.property_key)}?archived=1`
+          }
+          style={{ ...tiny, color: 'var(--a-accent)' }}
+        >
+          {showArchived ? 'Hide archived' : 'Show archived'}
+        </Link>
+      </div>
+
+      {deal.cycles.length === 0 ? (
+        <p style={{ ...quiet, marginTop: 20 }}>
+          This deal has no cycle. Documents, commission and the checklist all hang off a cycle, so
+          there is nothing to show until one syncs.
+        </p>
+      ) : null}
+
+      {deal.cycles.map((cycle, i) => (
+        <details key={cycle.id} className="av2-rcols" open={i === 0} style={{ marginTop: 16 }}>
+          <summary>
+            {cycle.kind === 'listing' ? 'Listing folder' : 'Sale cycle'} · {cycle.status ?? '—'} ·{' '}
+            {cycle.documents.filter((doc) => !doc.archived).length} live docs ·{' '}
+            {cycle.source_guid.slice(0, 8)}
+          </summary>
+          <div>
+            <CycleSection
+              cycle={cycle}
+              showArchived={showArchived}
+              anticipated={anticipatedByCycle.get(cycle.id) ?? null}
+              commissions={commissions.filter((r) => r.cycle_id === cycle.id)}
+            />
+          </div>
+        </details>
+      ))}
 
       {/* Deal team & contacts (co-agents + lender/title/escrow/appraiser/TC) */}
       <DealContacts dealId={deal.id} contacts={contacts} />
@@ -488,30 +433,39 @@ export default async function TcDealPage({ params, searchParams }: Props) {
       {/* Envelopes & signing (Phase 2b) */}
       <DealEnvelopes cycles={envelopeCycles} />
 
-      {/* Audit trail */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Recent activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {deal.events.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No events yet.</p>
-          ) : (
-            <ul className="space-y-1.5 text-xs">
-              {deal.events.map((e) => (
-                <li key={e.id} className="flex flex-wrap gap-2 text-muted-foreground">
-                  <span className="tabular-nums">{String(e.created_at).slice(0, 16).replace('T', ' ')}</span>
-                  <span className="font-medium text-foreground">{e.action}</span>
-                  <span>{e.actor}</span>
-                  {e.detail && Object.keys(e.detail).length ? (
-                    <span className="truncate">{JSON.stringify(e.detail).slice(0, 120)}</span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    </main>
+      <section aria-label="Recent activity">
+        <SectionHead>Recent activity</SectionHead>
+        {deal.events.length === 0 ? (
+          <p style={{ ...tiny, margin: 0 }}>No events yet.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {deal.events.map((e) => (
+              <li
+                key={e.id}
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  padding: '6px 2px',
+                  borderBottom: '1px solid var(--a-border)',
+                  ...tiny,
+                }}
+              >
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {String(e.created_at).slice(0, 16).replace('T', ' ')}
+                </span>
+                <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>{e.action}</span>
+                <span>{e.actor}</span>
+                {e.detail && Object.keys(e.detail).length ? (
+                  <span style={{ overflowWrap: 'anywhere' }}>
+                    {JSON.stringify(e.detail).slice(0, 120)}
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   )
 }
