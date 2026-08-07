@@ -1,5 +1,23 @@
+// @no-parity — admin utility page, not a marketing route; no mockup contract
+// @data-free — reads no @/lib/data; the sign-in flow lives in the client island
+//
+// 11D: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Carried over verbatim: the server-side GOOGLE_OAUTH_CLIENT_ID read (deliberately
+// NOT a NEXT_PUBLIC_ duplicate), the `next=` destination preservation and its
+// /admin prefix check, the metadata (title + noindex), and the AdminLoginForm
+// mount with both props unchanged.
+//
+// Shape changed, behavior did not: no ConsoleShell sits above this route, so the
+// page renders its own <main>. It is on admin tokens, not the public brand — this
+// is the door into the admin and it should look like what it opens (ADMIN_UI §5
+// blacklists the public brand as design input for the admin). The "Ryan Realty"
+// logotype became a plain quiet link home, and the "Sign in with your Ryan Realty
+// Google account" line was dropped because AdminLoginForm already renders "Use
+// your @ryan-realty.com Google account" directly below it.
+import '@/components/admin/v2/admin-v2.css'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { EntityTitle } from '@/components/admin/v2'
 import AdminLoginForm from '@/components/admin/AdminLoginForm'
 
 export const metadata: Metadata = {
@@ -21,19 +39,36 @@ export default async function AdminLoginPage({
   const { next } = await searchParams
   const dest = next && next.startsWith('/admin') ? next : undefined
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-muted px-4">
-      <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8 shadow-sm">
-        <div className="mb-6 flex justify-center">
-          <Link href="/" className="text-xl font-bold text-primary">
-            Ryan Realty
-          </Link>
-        </div>
-        <h1 className="text-center text-lg font-semibold text-foreground">Admin Portal</h1>
-        <p className="mt-1 text-center text-sm text-muted-foreground">
-          Sign in with your Ryan Realty Google account
-        </p>
+    <main
+      className="av2-scope"
+      style={{
+        minHeight: '100vh',
+        background: 'var(--a-bg)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 360,
+          background: 'var(--a-surface)',
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          padding: 24,
+        }}
+      >
+        <EntityTitle>Admin sign in</EntityTitle>
         <AdminLoginForm googleClientId={googleClientId} next={dest} />
       </div>
+      <p style={{ margin: '20px 0 0', fontSize: 'var(--a-text-sm)' }}>
+        <Link href="/" style={{ color: 'var(--a-accent)' }}>
+          Back to the site
+        </Link>
+      </p>
     </main>
   )
 }

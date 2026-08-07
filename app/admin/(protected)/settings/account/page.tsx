@@ -1,10 +1,40 @@
 // @no-parity — internal admin surface, no public mockup contract
+//
+// /admin/settings/account — §9 My Settings.
+//
+// The signed-in broker edits their own notification preferences and email
+// signature. Superusers see their own row (by email match). Brokers are
+// restricted to their own row. report_viewers have no broker row, so the page
+// says so.
+//
+// < md this renders the mob-06 Settings modal structure (MobileSettingsScreen —
+// full-screen sheet, profile card, icon-circle feature rows, support links).
+//
+// 11D: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+// Carried over verbatim: getSession(), the two redirect('/admin/access-denied')
+// guards (no email, no admin_roles row), the brokers select and its exact column
+// list, `.eq('email', email).maybeSingle()`, the CRM_BROKER_BY_EMAIL →
+// BROKER_HEADSHOTS → OAuth-avatar fallback chain, the mobileBroker mapping and
+// every one of its defaults, `metadata`, `dynamic = 'force-dynamic'`, and all
+// three island mounts (MobileSettingsScreen, MySettingsForm, BrokerPushOptIn)
+// with their props unchanged.
+//
+// Shape changed, data did not: ConsoleShell owns the <main>, so the desktop half
+// no longer opens a second one (this page rendered TWO main landmarks on desktop
+// before). Page-title chrome is gone — the nav names the page (ADMIN_UI §3
+// acceptance bar rule 1) — and the column is the config-form width from pattern 6
+// (single column, 640px) instead of max-w-2xl.
+//
+// One qualifier was CUT, not carried: the empty state said settings are "only
+// available for active brokers". The read is `brokers` filtered by email with no
+// active/status predicate, so "active" was not something this page checks.
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { BROKER_HEADSHOTS } from '@/components/admin/crm/inbox/mobile/mobile-data'
+import { VerdictLine } from '@/components/admin/v2'
 import MySettingsForm from '../MySettingsForm'
 import MobileSettingsScreen from '../MobileSettingsScreen'
 import BrokerPushOptIn from '@/components/admin/push/BrokerPushOptIn'
@@ -13,19 +43,6 @@ import pkg from '@/package.json'
 export const metadata = { title: 'My settings | Admin' }
 export const dynamic = 'force-dynamic'
 
-/**
- * /admin/settings — §9 My Settings.
- *
- * The signed-in broker edits their own notification preferences and email
- * signature. Superusers see their own row (by email match). Brokers are
- * restricted to their own row. report_viewers have no broker row so the page
- * shows a message.
- *
- * < md this renders the mob-06 FUB-iOS Settings modal structure
- * (MobileSettingsScreen — full-screen sheet, navy header, profile card,
- * icon-circle feature rows, support links) re-skinned to Ryan Realty tokens.
- * Desktop keeps the MySettingsForm surface unchanged.
- */
 export default async function MySettingsPage() {
   const session = await getSession()
   const email = session?.user?.email?.trim().toLowerCase()
@@ -43,8 +60,8 @@ export default async function MySettingsPage() {
     .maybeSingle()
 
   // Mobile audit P2-8 (2026-07-02): the profile card wears the same broker
-  // headshot the navy CRM headers use — the real headshot for the three
-  // brokers, falling back to the OAuth avatar (then initials) for others.
+  // headshot the CRM headers use — the real headshot for the three brokers,
+  // falling back to the OAuth avatar (then initials) for others.
   const crmSlug = CRM_BROKER_BY_EMAIL[email] ?? null
   const avatarUrl: string | null =
     (crmSlug ? BROKER_HEADSHOTS[crmSlug] : null) ??
@@ -75,18 +92,27 @@ export default async function MySettingsPage() {
         appVersion={pkg.version}
       />
 
-      {/* md+ — the desktop My Settings surface, unchanged */}
-      <main className="mx-auto hidden max-w-2xl px-4 py-8 sm:px-6 md:block">
-        <h1 className="text-2xl font-bold text-foreground mb-1">My settings</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Notification preferences and email signature for {email}.
-        </p>
+      {/* md+ — the desktop My Settings surface */}
+      <div
+        className="av2-scope hidden md:block"
+        style={{ maxWidth: 640, margin: '0 auto', padding: 16 }}
+      >
+        <div style={{ margin: '0 0 20px' }}>
+          <VerdictLine tone={broker ? 'ok' : 'attention'}>
+            {broker ? (
+              <>
+                <b>Your notification channels, email signature, and web push.</b> These settings
+                apply to {email} only.
+              </>
+            ) : (
+              <>
+                <b>No broker row matches {email}.</b> There are no notification settings to edit.
+              </>
+            )}
+          </VerdictLine>
+        </div>
 
-        {!broker ? (
-          <div className="rounded-xl border border-border bg-card px-6 py-8 text-sm text-muted-foreground text-center">
-            No broker profile found for {email}. Settings are only available for active brokers.
-          </div>
-        ) : (
+        {broker ? (
           <MySettingsForm
             brokerId={broker.id}
             displayName={broker.display_name ?? email}
@@ -98,11 +124,11 @@ export default async function MySettingsPage() {
             gmailSignatureHtml={broker.gmail_signature_html ?? null}
             gmailSignatureSyncedAt={broker.gmail_signature_synced_at ?? null}
           />
-        )}
+        ) : null}
 
         {/* W5.5 leg b — the durable web-push channel opt-in, next to the SMS toggle. */}
         <BrokerPushOptIn />
-      </main>
+      </div>
     </>
   )
 }
