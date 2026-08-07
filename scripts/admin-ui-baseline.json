@@ -30,15 +30,6 @@
       "h1": 1,
       "h2": 2
     },
-    "app/admin/(protected)/brokers/edit/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/brokers/new/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/brokers/page.tsx": {
-      "h1": 1
-    },
     "app/admin/(protected)/closings/page.tsx": {
       "h2": 3
     },
@@ -69,24 +60,6 @@
     },
     "app/admin/(protected)/crm/health/page.tsx": {
       "h1": 1
-    },
-    "app/admin/(protected)/crm/import/[id]/page.tsx": {
-      "h1": 1,
-      "h2": 1
-    },
-    "app/admin/(protected)/crm/import/new/map/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/import/new/page.tsx": {
-      "h1": 1,
-      "input": 1
-    },
-    "app/admin/(protected)/crm/import/new/preview/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/crm/import/page.tsx": {
-      "h1": 1,
-      "h2": 1
     },
     "app/admin/(protected)/crm/inbox/page.tsx": {
       "h1": 1
@@ -129,29 +102,11 @@
     "app/admin/(protected)/forms/page.tsx": {
       "h1": 1
     },
-    "app/admin/(protected)/geo/AssignCommunity.tsx": {
-      "h2": 1,
-      "select": 2
-    },
-    "app/admin/(protected)/geo/NeighborhoodForm.tsx": {
-      "h2": 1,
-      "select": 1
-    },
     "app/admin/(protected)/geo/area-guide-upload/AreaGuideUploadClient.tsx": {
       "h2": 2,
       "input": 1,
       "button": 3,
       "table": 1
-    },
-    "app/admin/(protected)/geo/area-guide-upload/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/geo/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/geo/resort-communities/page.tsx": {
-      "input": 1,
-      "h1": 1
     },
     "app/admin/(protected)/guides/page.tsx": {
       "h1": 1
@@ -173,12 +128,6 @@
       "h1": 1,
       "input": 1
     },
-    "app/admin/(protected)/media/banners/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/media/page.tsx": {
-      "h1": 1
-    },
     "app/admin/(protected)/media/photos/PhotoCurationBoard.tsx": {
       "h1": 1,
       "button": 4
@@ -188,24 +137,6 @@
     },
     "app/admin/(protected)/messages/page.tsx": {
       "input": 1
-    },
-    "app/admin/(protected)/newsletters/[id]/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/newsletters/analytics/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/newsletters/enroll/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/newsletters/new/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/newsletters/page.tsx": {
-      "h1": 1
-    },
-    "app/admin/(protected)/newsletters/subscribers/page.tsx": {
-      "h1": 1
     },
     "app/admin/(protected)/operations/page.tsx": {
       "h1": 1
@@ -361,9 +292,6 @@
     "app/admin/(protected)/bpo/new/page.tsx",
     "app/admin/(protected)/bpo/page.tsx",
     "app/admin/(protected)/broker-links/page.tsx",
-    "app/admin/(protected)/brokers/edit/page.tsx",
-    "app/admin/(protected)/brokers/new/page.tsx",
-    "app/admin/(protected)/brokers/page.tsx",
     "app/admin/(protected)/cmas/[slug]/page.tsx",
     "app/admin/(protected)/cmas/new/page.tsx",
     "app/admin/(protected)/cmas/page.tsx",
@@ -376,11 +304,6 @@
     "app/admin/(protected)/crm/deals/page.tsx",
     "app/admin/(protected)/crm/deals/pipelines/page.tsx",
     "app/admin/(protected)/crm/health/page.tsx",
-    "app/admin/(protected)/crm/import/[id]/page.tsx",
-    "app/admin/(protected)/crm/import/new/map/page.tsx",
-    "app/admin/(protected)/crm/import/new/page.tsx",
-    "app/admin/(protected)/crm/import/new/preview/page.tsx",
-    "app/admin/(protected)/crm/import/page.tsx",
     "app/admin/(protected)/crm/inbox/page.tsx",
     "app/admin/(protected)/crm/new/page.tsx",
     "app/admin/(protected)/crm/page.tsx",
@@ -397,24 +320,11 @@
     "app/admin/(protected)/email/compose/page.tsx",
     "app/admin/(protected)/financials/page.tsx",
     "app/admin/(protected)/forms/page.tsx",
-    "app/admin/(protected)/geo/area-guide-upload/page.tsx",
-    "app/admin/(protected)/geo/page.tsx",
-    "app/admin/(protected)/geo/resort-communities/page.tsx",
     "app/admin/(protected)/guides/page.tsx",
     "app/admin/(protected)/help/[slug]/page.tsx",
     "app/admin/(protected)/help/page.tsx",
     "app/admin/(protected)/listings/[listingKey]/page.tsx",
     "app/admin/(protected)/listings/page.tsx",
-    "app/admin/(protected)/media/banners/page.tsx",
-    "app/admin/(protected)/media/page.tsx",
-    "app/admin/(protected)/media/photos/page.tsx",
-    "app/admin/(protected)/media/stock-photos/page.tsx",
-    "app/admin/(protected)/newsletters/[id]/page.tsx",
-    "app/admin/(protected)/newsletters/analytics/page.tsx",
-    "app/admin/(protected)/newsletters/enroll/page.tsx",
-    "app/admin/(protected)/newsletters/new/page.tsx",
-    "app/admin/(protected)/newsletters/page.tsx",
-    "app/admin/(protected)/newsletters/subscribers/page.tsx",
     "app/admin/(protected)/operations/page.tsx",
     "app/admin/(protected)/people/[id]/portal/page.tsx",
     "app/admin/(protected)/people/[id]/tools/page.tsx",
