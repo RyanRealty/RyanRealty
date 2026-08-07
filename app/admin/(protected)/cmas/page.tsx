@@ -1,24 +1,41 @@
 // @no-parity — internal admin surface, no public mockup contract
-/**
- * /admin/cmas — the Seller-CMA worklist, sibling of /admin/prospecting.
- * Same shape: KPI strip, URL-driven filters, a responsive card grid, a
- * `?id=` detail drawer, and a guarded email-only send dialog (CmaBoard,
- * components/admin/cma/worklist/). `cmas/[slug]/page.tsx` (the full-document
- * review page) is unchanged — CmaBoard's "Review" action still links there.
- *
- * listCmasForAdmin (lib/data/sync/syncWrites.ts) now filters to seller CMAs
- * only (doc_type='cma') — expired-audit documents live in the prospecting
- * worklist, not here. Filtering/pagination stay presentational in this page:
- * the CMA table is ~170 rows (docs/DATABASE_SCHEMA_SNAPSHOT.md), well inside
- * one bounded window, so a second DAL surface isn't warranted for this size.
- */
-
+//
+// /admin/cmas — the Seller-CMA worklist. P11C: migrated to the LOCKED admin v2
+// language (design_system/admin/ADMIN_UI.md) through the shared presentation
+// kit (@/components/admin/v2). Presentation only — this file is the shell
+// around CmaBoard, and the board is mounted unchanged.
+//
+// listCmasForAdmin (lib/data/sync/syncWrites.ts) filters to seller CMAs only
+// (doc_type='cma') — expired-audit documents live in the prospecting worklist,
+// not here. Filtering/pagination stay presentational in this page: the CMA
+// table is a few hundred rows (docs/DATABASE_SCHEMA_SNAPSHOT.md), well inside
+// one bounded window, so a second DAL surface isn't warranted for this size.
+//
+// Carried over verbatim: requireAdminPage('prospecting.view'), WINDOW=500 and
+// PAGE_SIZE=24, the STATUSES set, str(), toWorklistStatus(), every field of
+// mapRow (including the hasDocument db:/public/cmas/ prefix rule), the
+// listCmasForAdmin({ limit: WINDOW, offset: 0 }) read, the summary counts
+// (total from the DAL; drafts/finalized/delivered/sent/published over the
+// window), the sorted city set, the status → city → q filter order and the q
+// lowercase match across address/subdivision/client name/client email, the
+// totalPages/page clamp and slice, the `?id=` detail lookup, the
+// CmaWorklistFilters object, the /admin/cmas/new href and its "Build CMA"
+// label, and every CmaBoard prop and action (approveCmaAction,
+// prepareCmaSendAction, sendCmaToLeadAction, sendTemplateSelfTestAction) with
+// basePath '/admin/cmas'.
+//
+// Shape changed, data did not: the page title and its paragraph are gone (the
+// nav names this page — acceptance bar rule 1), replaced by the family's
+// verdict line, whose figures are summary.drafts / summary.delivered /
+// summary.published — the same counts the board's own numbers strip prints
+// directly beneath it. The shadcn button became the v2 button class on the
+// same link.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listCmasForAdmin } from '@/lib/data'
 import { approveCmaAction, prepareCmaSendAction, sendCmaToLeadAction } from '@/app/actions/cma-admin'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
-import { Button } from '@/components/ui/button'
+import { VerdictLine } from '@/components/admin/v2'
 import { CmaBoard } from '@/components/admin/cma/worklist/CmaBoard.client'
 import type {
   CmaStatusFilter,
@@ -128,18 +145,40 @@ export default async function AdminCmasPage({
   const filters: CmaWorklistFilters = { q: qRaw, city, status, page, pageSize: PAGE_SIZE }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-foreground">Comparative Market Analyses</h1>
-          <p className="text-sm text-muted-foreground">
-            Every seller CMA the shop has built. Approve a draft, then send it to the client.
-          </p>
-        </div>
-        <Button asChild className="min-h-11">
-          <Link href="/admin/cmas/new">Build CMA</Link>
-        </Button>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1152, margin: '0 auto' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap',
+          margin: '0 0 14px',
+        }}
+      >
+        <VerdictLine tone={summary.drafts > 0 ? 'attention' : 'ok'}>
+          {summary.drafts > 0 ? (
+            <>
+              <b>
+                {summary.drafts} draft{summary.drafts === 1 ? '' : 's'} waiting for your review.
+              </b>{' '}
+              {summary.delivered} delivered · {summary.published} live on a listing page.
+            </>
+          ) : summary.total > 0 ? (
+            <>
+              <b>No drafts waiting.</b> {summary.delivered} delivered · {summary.published} live on a
+              listing page.
+            </>
+          ) : (
+            <>
+              <b>No CMAs on the board.</b>
+            </>
+          )}
+        </VerdictLine>
+        <Link href="/admin/cmas/new" className="av2-btn av2-btn--touch" style={{ textDecoration: 'none' }}>
+          Build CMA
+        </Link>
+      </div>
 
       <CmaBoard
         filters={filters}

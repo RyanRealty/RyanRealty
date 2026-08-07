@@ -1,19 +1,31 @@
 // @no-parity — internal admin surface, no public mockup contract.
-/**
- * /admin/bpo — the Broker Price Opinion worklist. The Buyer Price-Opinion
- * sibling of /admin/prospecting: a KPI strip + filterable card grid + `?id=`
- * detail drawer + guarded send dialog over `broker_price_opinions`, replacing
- * the old raw table index. The canonical per-opinion review/rebuild/finalize
- * surface stays at /admin/bpo/[slug] (linked from every card) — this page is
- * the fast triage worklist on top of it.
- */
-
+//
+// /admin/bpo — the Broker Price Opinion worklist. P11C: migrated to the LOCKED
+// admin v2 language (design_system/admin/ADMIN_UI.md) through the shared
+// presentation kit (@/components/admin/v2). Presentation only — this file is
+// the shell around BpoBoard, and the board is mounted unchanged.
+//
+// Carried over verbatim: requireAdminPage('prospecting.view'), the STATUSES
+// set, str(), the posture default ('buyer' unless ?posture=seller), the status
+// default ('all' unless the param is in STATUSES), page (min 1) and the
+// pageSize of 24, the BpoWorklistFilters object, listBposForAdmin(filters),
+// the `?id=` → getBpoWorklistRowById detail read, the totalPages ceiling, and
+// every BpoBoard prop and action (prepareBpoSendPreviewAction, sendBpoDeliverable,
+// sendBpoTestAction, finalizeBpoAction) with basePath '/admin/bpo'.
+//
+// Shape changed, data did not: the page title and its paragraph are gone (the
+// nav names this page — acceptance bar rule 1), replaced by the family's
+// verdict line, whose three figures are summary.drafts / summary.final /
+// summary.sent — the same posture-scoped, non-archived counts the board's own
+// numbers strip prints directly beneath it. The Tailwind width wrapper became
+// the scope div at the same 1152px clamp.
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { listBposForAdmin, getBpoWorklistRowById } from '@/lib/data/bpo/reads'
 import type { BpoPosture, BpoStatusFilter, BpoWorklistFilters } from '@/lib/data/bpo/reads'
 import { finalizeBpoAction } from '@/app/actions/bpo-admin'
 import { prepareBpoSendPreviewAction, sendBpoTestAction } from '@/app/actions/contact-bpo'
 import { sendBpoDeliverable } from '@/app/actions/send-deliverable'
+import { VerdictLine } from '@/components/admin/v2'
 import { BpoBoard } from '@/components/admin/bpo/worklist/BpoBoard.client'
 
 export const dynamic = 'force-dynamic'
@@ -55,15 +67,31 @@ export default async function AdminBpoWorklistPage({
   const detail = openId ? await getBpoWorklistRowById(openId) : null
   const totalPages = Math.max(1, Math.ceil(result.total / pageSize))
 
+  const { drafts, final, sent, total } = result.summary
+
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-      <header className="mb-5">
-        <h1 className="text-2xl font-semibold text-foreground">Broker price opinions</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Our opinion of value for any home, weighing comps, market conditions, and the property&rsquo;s full listing
-          history. Review a draft, finalize it, then send it to the linked contact.
-        </p>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 1152, margin: '0 auto' }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={drafts > 0 ? 'attention' : 'ok'}>
+          {drafts > 0 ? (
+            <>
+              <b>
+                {drafts} {posture} draft{drafts === 1 ? '' : 's'} waiting for your review.
+              </b>{' '}
+              {final} final · {sent} sent.
+            </>
+          ) : total > 0 ? (
+            <>
+              <b>No {posture} drafts waiting.</b> {final} final · {sent} sent.
+            </>
+          ) : (
+            <>
+              <b>No {posture} opinions on the board.</b> Archived opinions sit behind the status
+              filter.
+            </>
+          )}
+        </VerdictLine>
+      </div>
 
       <BpoBoard
         filters={filters}

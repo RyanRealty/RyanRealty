@@ -163,6 +163,14 @@ const nextConfig: NextConfig = {
       // and /cma/[slug] 302-redirects there — the redirect target needs the
       // same frame policy or the admin preview iframe goes blank for old CMAs.
       { source: '/cmas/:path*', headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }] },
+      // The BPO review page (/admin/bpo/[slug]) frames its opinion document the
+      // same way the CMA page does, and app/bpo/[slug]/route.ts sets SAMEORIGIN
+      // on its own response — but the global DENY above is applied over it
+      // (same-key headers: last match wins), so the frame has never rendered.
+      // Measured 2026-08-07: /bpo/<slug>?variant=full returned DENY and resolved
+      // to chrome-error://chromewebdata/ while /cma/<slug> returned SAMEORIGIN
+      // and rendered. Cross-origin embedding stays blocked either way.
+      { source: '/bpo/:slug', headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }] },
       // SITE_SPEC §45-47 — aggressive edge caching on the public LP families.
       // The cookie-aware Header / Footer live inside <Suspense> islands; the
       // page shell + content (sourced from cached MVs) is safe to cache at

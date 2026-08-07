@@ -1,34 +1,76 @@
 // @no-parity — internal admin tool, no public mockup contract.
-/**
- * /admin/bpo/[slug] — per-opinion review page.
- *
- * The broker SEES the rendered opinion (large iframe of the stored document,
- * never raw code), reads the listing-history signals that drove it, adjusts the
- * opinion of value if warranted (rebuild), and finalizes. Everything is an
- * explicit click.
- */
-
+//
+// /admin/bpo/[slug] — per-opinion review page. P11C: migrated to the LOCKED
+// admin v2 language (design_system/admin/ADMIN_UI.md) through the shared
+// presentation kit (@/components/admin/v2). Presentation only. This is an
+// ENTITY page (ADMIN_UI §3 pattern 5), so the h1 is the subject address —
+// content, not page-title chrome — and it renders through EntityTitle.
+//
+// The broker SEES the rendered opinion (large iframe of the stored document,
+// never raw code), reads the listing-history signals that drove it, adjusts
+// the opinion of value if warranted (rebuild), and finalizes. Everything is an
+// explicit click.
+//
+// Carried over verbatim: getSession() → getAdminRoleForEmail(), both
+// /admin/access-denied redirects (no role, and the report_viewer role), the
+// slug normalisation (trim + lowercase), the Promise.all over
+// getBpoAdminRowBySlug + listActiveBrokersForCma, notFound() on a missing row,
+// the broker { slug, displayName } mapping, status / hasDocument /
+// buildError / market / listingHistory / signals / offerHeadline, the
+// `/bpo/<slug>?variant=full` preview src and the identical target=_blank link,
+// the /admin/bpo href, and every BpoReviewActions prop — bpoId, slug, status,
+// opinionValue, priceOverride, purpose, brokerSlug (the signing broker,
+// unchanged in value and resolution), brokers, hasDocument.
+//
+// Every §0 figure is byte-identical to the pre-migration page: opinion of
+// value and the supported range still run through formatPriceExact, confidence
+// is still String(row.confidence ?? '—'), and the comps · listing-history cell
+// still prints `${comps_count ?? '—'} · ${failed_attempts} failed` with the
+// same null rule. The market footnote keeps its geo label, months of supply,
+// and Math.round on median DOM.
+//
+// Shape changed, data did not: the KPI card strip became the family's
+// typographic numbers strip, the shadcn Badge became a state word carrying the
+// same status text, the console panels became v2 section heads, and the
+// two-column desktop grid became the locked pattern-5 stack (one 960px lane) —
+// which is why the build-error sentence no longer says "the panel on the
+// right". The signal severity was a bare colored dot (color alone, WCAG 1.4.1)
+// and is now the severity word in the matching state color: strong → down,
+// info → waiting, everything else → accent, exactly the old color mapping.
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { listActiveBrokersForCma } from '@/lib/data'
 import { getBpoAdminRowBySlug } from '@/lib/data/bpo/reads'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
+import {
+  EntityTitle,
+  ReportNumbers,
+  SectionHead,
+  StateWord,
+  type AdminState,
+} from '@/components/admin/v2'
 import { BpoReviewActions } from '@/components/admin/bpo/BpoReviewActions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
-import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
 const usd = formatPriceExact
 
 type Signal = { code?: string; severity?: string; text?: string }
+
+/** Same split the retired Badge made: 'final' reads finished, anything else waits. */
+function statusState(status: string): AdminState {
+  return status === 'final' ? 'ok' : 'waiting'
+}
+
+/** Same split the retired severity dot made, now carried by the word too. */
+function severityState(severity: string | undefined): AdminState {
+  if (severity === 'strong') return 'down'
+  if (severity === 'info') return 'waiting'
+  return 'accent'
+}
 
 export default async function AdminBpoReviewPage({ params }: { params: Promise<{ slug: string }> }) {
   const session = await getSession()
@@ -55,45 +97,55 @@ export default async function AdminBpoReviewPage({ params }: { params: Promise<{
   const previewSrc = hasDocument ? `/bpo/${safeSlug}?variant=full` : null
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold text-foreground">{String(row.subject_address ?? safeSlug)}</h1>
-            <Badge variant={status === 'final' ? 'default' : 'outline'} className="capitalize">
-              {status}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {row.purpose ? `${String(row.purpose)} · ` : ''}
-            {row.subject_status ? `${String(row.subject_status)} listing · ` : ''}
-            {row.broker_slug ? `signed by ${String(row.broker_slug)} · ` : ''}
-            built {formatDate((row.built_at as string | null) ?? (row.created_at as string | null))}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {hasDocument ? (
-            <Button asChild variant="outline" className="min-h-11">
-              <Link href={`/bpo/${safeSlug}?variant=full`} target="_blank" rel="noopener noreferrer">
-                Open full page
-              </Link>
-            </Button>
-          ) : null}
-          <Button asChild variant="outline" className="min-h-11">
-            <Link href="/admin/bpo">Back to opinions</Link>
-          </Button>
-        </div>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
+        <Link href="/admin/bpo" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          Price opinions
+        </Link>
+      </nav>
 
-      <KpiStrip
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+        <EntityTitle>{String(row.subject_address ?? safeSlug)}</EntityTitle>
+        <StateWord state={statusState(status)}>{status}</StateWord>
+      </div>
+
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
+        {row.purpose ? `${String(row.purpose)} · ` : ''}
+        {row.subject_status ? `${String(row.subject_status)} listing · ` : ''}
+        {row.broker_slug ? `signed by ${String(row.broker_slug)} · ` : ''}
+        built {formatDate((row.built_at as string | null) ?? (row.created_at as string | null))}
+      </p>
+
+      {hasDocument ? (
+        <p style={{ margin: '12px 0 0' }}>
+          <Link
+            href={`/bpo/${safeSlug}?variant=full`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="av2-btn av2-btn--quiet av2-btn--touch"
+            style={{ textDecoration: 'none' }}
+          >
+            Open full page
+          </Link>
+        </p>
+      ) : null}
+
+      <div style={{ marginTop: 18 }} />
+      <ReportNumbers
         items={[
-          { label: 'Opinion of value', value: usd((row.opinion_value as number | null) ?? null) },
           {
+            key: 'opinion',
+            label: 'Opinion of value',
+            value: usd((row.opinion_value as number | null) ?? null),
+          },
+          {
+            key: 'range',
             label: 'Supported range',
             value: `${usd((row.value_low as number | null) ?? null)} – ${usd((row.value_high as number | null) ?? null)}`,
           },
-          { label: 'Confidence', value: String(row.confidence ?? '—') },
+          { key: 'confidence', label: 'Confidence', value: String(row.confidence ?? '—') },
           {
+            key: 'comps',
             label: 'Comps · listing history',
             value: `${row.comps_count ?? '—'} · ${
               listingHistory?.failed_attempts != null ? `${listingHistory.failed_attempts} failed` : '—'
@@ -103,80 +155,114 @@ export default async function AdminBpoReviewPage({ params }: { params: Promise<{
       />
 
       {offerHeadline ? (
-        <div className="rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Offer strategy</p>
-          <p className="mt-0.5 text-sm font-medium text-foreground">{offerHeadline}</p>
-        </div>
+        <p
+          style={{
+            border: '1px solid var(--a-border)',
+            background: 'var(--a-accent-wash)',
+            borderRadius: 'var(--a-r-lg)',
+            padding: '12px 16px',
+            margin: '0 0 8px',
+            fontSize: 'var(--a-text-md)',
+            color: 'var(--a-text)',
+          }}
+        >
+          <span
+            style={{
+              display: 'block',
+              fontSize: 'var(--a-text-xs)',
+              fontWeight: 600,
+              letterSpacing: '.05em',
+              textTransform: 'uppercase',
+              color: 'var(--a-text-2)',
+              marginBottom: 2,
+            }}
+          >
+            Offer strategy
+          </span>
+          {offerHeadline}
+        </p>
       ) : null}
 
       {buildError ? (
-        <Alert variant="destructive">
-          <AlertDescription>
-            The last build did not finish: {buildError}. Fix the input and rebuild from the panel on the right.
-          </AlertDescription>
-        </Alert>
+        <p
+          style={{
+            background: 'var(--a-danger-wash)',
+            borderRadius: 'var(--a-r-lg)',
+            padding: '12px 16px',
+            margin: '0 0 8px',
+            fontSize: 'var(--a-text-sm)',
+            color: 'var(--a-danger)',
+          }}
+        >
+          The last build did not finish: {buildError}. Fix the input and rebuild from the review
+          panel.
+        </p>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="space-y-6">
-          {signals.length > 0 ? (
-            <ConsoleSection title="Listing-history signals">
-              <ul className="space-y-2">
-                {signals.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm">
-                    <span
-                      className={cn(
-                        'mt-1.5 h-2 w-2 shrink-0 rounded-full',
-                        s.severity === 'strong' ? 'bg-destructive' : s.severity === 'info' ? 'bg-muted-foreground' : 'bg-primary',
-                      )}
-                      aria-hidden
-                    />
-                    <span className="text-foreground">{s.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </ConsoleSection>
-          ) : null}
+      {signals.length > 0 ? (
+        <>
+          <SectionHead>Listing-history signals</SectionHead>
+          <ul className="av2-quietlist">
+            {signals.map((s, i) => (
+              <li key={i} className="av2-quiet">
+                {s.severity ? (
+                  <StateWord state={severityState(s.severity)}>{s.severity}</StateWord>
+                ) : null}
+                <span style={{ color: 'var(--a-text)' }}>{s.text}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
 
-          <ConsoleSection title="Opinion document">
-            {previewSrc ? (
-              <div className="overflow-hidden rounded-lg border border-border bg-muted">
-                <iframe
-                  src={previewSrc}
-                  title={`Broker price opinion for ${String(row.subject_address ?? safeSlug)}`}
-                  className="w-full bg-background"
-                  style={{ height: '78vh', minHeight: 600 }}
-                />
-              </div>
-            ) : (
-              <p className="px-2 py-8 text-center text-sm text-muted-foreground">
-                No document yet. Use Save and rebuild to generate it.
-              </p>
-            )}
-          </ConsoleSection>
-        </div>
+      <SectionHead>Review</SectionHead>
+      <BpoReviewActions
+        bpoId={String(row.id)}
+        slug={safeSlug}
+        status={status}
+        opinionValue={(row.opinion_value as number | null) ?? null}
+        priceOverride={(row.price_override as number | null) ?? null}
+        purpose={(row.purpose as string | null) ?? null}
+        brokerSlug={(row.broker_slug as string | null) ?? null}
+        brokers={brokers}
+        hasDocument={hasDocument}
+      />
+      {market ? (
+        <p style={{ marginTop: 16, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {String(market.geo_label ?? '')}
+          {market.months_of_supply != null ? ` · ${String(market.months_of_supply)} months of supply` : ''}
+          {market.median_dom != null ? ` · median ${Math.round(Number(market.median_dom))} days` : ''}
+        </p>
+      ) : null}
 
-        <ConsoleSection title="Review">
-          <BpoReviewActions
-            bpoId={String(row.id)}
-            slug={safeSlug}
-            status={status}
-            opinionValue={(row.opinion_value as number | null) ?? null}
-            priceOverride={(row.price_override as number | null) ?? null}
-            purpose={(row.purpose as string | null) ?? null}
-            brokerSlug={(row.broker_slug as string | null) ?? null}
-            brokers={brokers}
-            hasDocument={hasDocument}
+      <SectionHead>Opinion document</SectionHead>
+      {previewSrc ? (
+        <div
+          style={{
+            overflow: 'hidden',
+            borderRadius: 'var(--a-r-lg)',
+            border: '1px solid var(--a-border)',
+            background: 'var(--a-inset)',
+          }}
+        >
+          <iframe
+            src={previewSrc}
+            title={`Broker price opinion for ${String(row.subject_address ?? safeSlug)}`}
+            style={{ width: '100%', height: '78vh', minHeight: 600, background: 'var(--a-bg)', border: 0 }}
           />
-          {market ? (
-            <p className="mt-4 text-xs text-muted-foreground">
-              {String(market.geo_label ?? '')}
-              {market.months_of_supply != null ? ` · ${String(market.months_of_supply)} months of supply` : ''}
-              {market.median_dom != null ? ` · median ${Math.round(Number(market.median_dom))} days` : ''}
-            </p>
-          ) : null}
-        </ConsoleSection>
-      </div>
+        </div>
+      ) : (
+        <p
+          style={{
+            padding: '32px 8px',
+            textAlign: 'center',
+            fontSize: 'var(--a-text-sm)',
+            color: 'var(--a-text-2)',
+          }}
+        >
+          No document yet. Use Save and rebuild to generate it.
+        </p>
+      )}
     </div>
   )
 }

@@ -1,17 +1,29 @@
 // @no-parity — internal admin tool, no public mockup contract.
-/**
- * /admin/cmas/new — manual "Build CMA" form. Address or MLS lookup, client
- * info, broker select. The deterministic builder runs on submit and the
- * browser lands on the review page for the new draft.
- */
-
+//
+// /admin/cmas/new — manual "Build CMA" form. P11C: migrated to the LOCKED
+// admin v2 language (design_system/admin/ADMIN_UI.md) through the shared
+// presentation kit (@/components/admin/v2). Presentation only. This is a
+// CONFIG FORM (ADMIN_UI §3 pattern 6): single column, label-above, one lane.
+//
+// Carried over verbatim: getSession() → getAdminRoleForEmail(), both
+// /admin/access-denied redirects (no role, and the report_viewer role), the
+// listActiveBrokersForCma() read and the { slug, displayName } mapping fed to
+// the form — which is the signing-broker choice, resolved exactly as before —
+// the BuildCmaForm mount (which still runs the deterministic builder on submit
+// and lands on the new draft's review page), the /admin/cmas href, the
+// "Subject and client" section heading, and the description of what the
+// builder does.
+//
+// Shape changed, data did not: the page title is gone (the nav names this page
+// — acceptance bar rule 1), the "Back to CMAs" shadcn button became the
+// breadcrumb link to the same href, and the console panel became a v2 section
+// head.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { listActiveBrokersForCma } from '@/lib/data'
-import { Button } from '@/components/ui/button'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
+import { SectionHead } from '@/components/admin/v2'
 import { BuildCmaForm } from '@/components/admin/cma/BuildCmaForm'
 
 export const dynamic = 'force-dynamic'
@@ -29,23 +41,20 @@ export default async function AdminCmaNewPage() {
   }))
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-foreground">Build a CMA</h1>
-          <p className="text-sm text-muted-foreground">
-            The builder pulls the subject from the MLS record, selects closed comps, prices with three
-            methods, and renders the full report. It lands as a draft for your review. Nothing sends.
-          </p>
-        </div>
-        <Button asChild variant="outline" className="min-h-11">
-          <Link href="/admin/cmas">Back to CMAs</Link>
-        </Button>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
+      <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
+        <Link href="/admin/cmas" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          CMAs
+        </Link>
+      </nav>
 
-      <ConsoleSection title="Subject and client">
-        <BuildCmaForm brokers={brokers} />
-      </ConsoleSection>
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 4px' }}>
+        The builder pulls the subject from the MLS record, selects closed comps, prices with three
+        methods, and renders the full report. It lands as a draft for your review. Nothing sends.
+      </p>
+
+      <SectionHead>Subject and client</SectionHead>
+      <BuildCmaForm brokers={brokers} />
     </div>
   )
 }

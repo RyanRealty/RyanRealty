@@ -1,23 +1,56 @@
 // @no-parity — internal admin tool, no public mockup contract.
-/**
- * /admin/cmas/[slug] — per-CMA review page.
- *
- * Matt SEES the CMA (large rendered iframe of the stored document — never raw
- * code), edits client info + price adjustment (rebuild), approves the draft,
- * and sends through the CRM — a tracked email from the signing broker's own
- * mailbox (Resend fallback). Sending is an explicit click.
- */
-
+//
+// /admin/cmas/[slug] — per-CMA review page. P11C: migrated to the LOCKED admin
+// v2 language (design_system/admin/ADMIN_UI.md) through the shared
+// presentation kit (@/components/admin/v2). Presentation only. This is an
+// ENTITY page (ADMIN_UI §3 pattern 5), so the h1 is the subject address —
+// content, not page-title chrome — and it renders through EntityTitle.
+//
+// Matt SEES the CMA (large rendered iframe of the stored document — never raw
+// code), edits client info + price adjustment (rebuild), approves the draft,
+// and sends through the CRM — a tracked email from the signing broker's own
+// mailbox (Resend fallback). Sending is an explicit click.
+//
+// Carried over verbatim: getSession() → getAdminRoleForEmail(), both
+// /admin/access-denied redirects (no role, and the report_viewer role), the
+// slug normalisation (trim + lowercase), the Promise.all over
+// getCmaAdminRowBySlug + listActiveBrokersForCma, notFound() on a missing row,
+// the broker { slug, displayName } mapping, status / hasStoredHtml /
+// isLegacyFile / hasDocument / buildError / summary / marketSummary, the
+// listingKey trim, cmaPublishRefusals(row) and cmaPublishConcerns(row) — the
+// same functions the publish action enforces, so the panel can never offer a
+// button the server would refuse — the three-way previewSrc (stored → /cma/<slug>,
+// legacy file → html_path minus the public prefix, otherwise null), the
+// `/api/cma/<slug>/pdf` target=_blank link, the /admin/cmas href, every
+// CmaReviewActions prop (cmaId, slug, status, clientName, clientEmail,
+// clientPhone, recommendedList, priceOverride, brokerSlug — the signing
+// broker, unchanged in value and resolution — brokers, hasDocument), and every
+// CmaPublishControl prop (slug, subjectAddress, listingKey, valueLow,
+// valueHigh, published, publishedAt, publishedBy, blockers, concerns).
+//
+// Every §0 figure is byte-identical to the pre-migration page: recommended
+// list and the value range still run through formatPriceExact, comps is still
+// String(row.comps_count ?? '—'), and the market cell still prints
+// `${geo_label ?? '—'} · ${months_of_supply} MoS` with the same null rules.
+//
+// Shape changed, data did not: the KPI card strip became the family's
+// typographic numbers strip, the shadcn Badge became a state word carrying the
+// same status text, the console panels became v2 section heads, and the
+// two-column desktop grid became the locked pattern-5 stack (one 960px lane) —
+// which is why the build-error sentence no longer says "the panel on the
+// right".
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { getCmaAdminRowBySlug, listActiveBrokersForCma } from '@/lib/data'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { KpiStrip } from '@/components/console/KpiStrip'
+import {
+  EntityTitle,
+  ReportNumbers,
+  SectionHead,
+  StateWord,
+  type AdminState,
+} from '@/components/admin/v2'
 import { CmaReviewActions } from '@/components/admin/cma/CmaReviewActions'
 import { CmaPublishControl } from '@/components/admin/cma/CmaPublishControl'
 import { cmaPublishConcerns, cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
@@ -28,15 +61,16 @@ export const dynamic = 'force-dynamic'
 
 const usd = formatPriceExact
 
-
-function statusVariant(status: string) {
+/** The retired Badge variants, one for one: default → ok, secondary → accent,
+ *  outline → waiting. Same three-way split, now carried by text + color. */
+function statusState(status: string): AdminState {
   switch (status) {
     case 'finalized':
-      return 'default' as const
+      return 'ok'
     case 'delivered':
-      return 'secondary' as const
+      return 'accent'
     default:
-      return 'outline' as const
+      return 'waiting'
   }
 }
 
@@ -88,43 +122,55 @@ export default async function AdminCmaReviewPage({
       : null
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold text-foreground">{String(row.subject_address ?? safeSlug)}</h1>
-            <Badge variant={statusVariant(status)} className="capitalize">{status}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {row.client_name ? `Prepared for ${String(row.client_name)}` : 'No client on file'}
-            {row.client_email ? ` · ${String(row.client_email)}` : ''}
-            {row.broker_slug ? ` · signed by ${String(row.broker_slug)}` : ''}
-            {` · built ${formatDate((row.built_at as string | null) ?? (row.created_at as string | null))}`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {hasDocument ? (
-            <Button asChild variant="outline" className="min-h-11">
-              <Link href={`/api/cma/${safeSlug}/pdf`} target="_blank" rel="noopener noreferrer">
-                Open PDF
-              </Link>
-            </Button>
-          ) : null}
-          <Button asChild variant="outline" className="min-h-11">
-            <Link href="/admin/cmas">Back to CMAs</Link>
-          </Button>
-        </div>
-      </header>
+    <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
+        <Link href="/admin/cmas" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+          CMAs
+        </Link>
+      </nav>
 
-      <KpiStrip
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+        <EntityTitle>{String(row.subject_address ?? safeSlug)}</EntityTitle>
+        <StateWord state={statusState(status)}>{status}</StateWord>
+      </div>
+
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
+        {row.client_name ? `Prepared for ${String(row.client_name)}` : 'No client on file'}
+        {row.client_email ? ` · ${String(row.client_email)}` : ''}
+        {row.broker_slug ? ` · signed by ${String(row.broker_slug)}` : ''}
+        {` · built ${formatDate((row.built_at as string | null) ?? (row.created_at as string | null))}`}
+      </p>
+
+      {hasDocument ? (
+        <p style={{ margin: '12px 0 0' }}>
+          <Link
+            href={`/api/cma/${safeSlug}/pdf`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="av2-btn av2-btn--quiet av2-btn--touch"
+            style={{ textDecoration: 'none' }}
+          >
+            Open PDF
+          </Link>
+        </p>
+      ) : null}
+
+      <div style={{ marginTop: 18 }} />
+      <ReportNumbers
         items={[
-          { label: 'Recommended list', value: usd((row.recommended_list as number | null) ?? null) },
           {
+            key: 'recommended',
+            label: 'Recommended list',
+            value: usd((row.recommended_list as number | null) ?? null),
+          },
+          {
+            key: 'range',
             label: 'Value range',
             value: `${usd((row.value_low as number | null) ?? null)} – ${usd((row.value_high as number | null) ?? null)}`,
           },
-          { label: 'Comps', value: String(row.comps_count ?? '—') },
+          { key: 'comps', label: 'Comps', value: String(row.comps_count ?? '—') },
           {
+            key: 'market',
             label: 'Market',
             value: marketSummary
               ? `${String(marketSummary.geo_label ?? '—')} · ${marketSummary.months_of_supply != null ? `${marketSummary.months_of_supply} MoS` : '—'}`
@@ -134,63 +180,78 @@ export default async function AdminCmaReviewPage({
       />
 
       {buildError ? (
-        <Alert variant="destructive">
-          <AlertDescription>
-            The last build did not finish: {buildError}. Fix the input (address or MLS) and rebuild from the
-            panel on the right.
-          </AlertDescription>
-        </Alert>
+        <p
+          style={{
+            background: 'var(--a-danger-wash)',
+            borderRadius: 'var(--a-r-lg)',
+            padding: '12px 16px',
+            margin: '0 0 8px',
+            fontSize: 'var(--a-text-sm)',
+            color: 'var(--a-danger)',
+          }}
+        >
+          The last build did not finish: {buildError}. Fix the input (address or MLS) and rebuild
+          from the review panel.
+        </p>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <ConsoleSection title="Document preview">
-          {previewSrc ? (
-            <div className="overflow-hidden rounded-lg border border-border bg-muted">
-              <iframe
-                src={previewSrc}
-                title={`CMA preview for ${String(row.subject_address ?? safeSlug)}`}
-                className="w-full bg-background"
-                style={{ height: '75vh', minHeight: 600 }}
-              />
-            </div>
-          ) : (
-            <p className="px-2 py-8 text-center text-sm text-muted-foreground">
-              No document yet. Use Save and rebuild to generate it.
-            </p>
-          )}
-        </ConsoleSection>
+      <SectionHead>Review and send</SectionHead>
+      <CmaReviewActions
+        cmaId={String(row.id)}
+        slug={safeSlug}
+        status={status}
+        clientName={(row.client_name as string | null) ?? null}
+        clientEmail={(row.client_email as string | null) ?? null}
+        clientPhone={(row.client_phone as string | null) ?? null}
+        recommendedList={(row.recommended_list as number | null) ?? null}
+        priceOverride={(row.price_override as number | null) ?? null}
+        brokerSlug={(row.broker_slug as string | null) ?? null}
+        brokers={brokers}
+        hasDocument={hasDocument}
+      />
 
-        <ConsoleSection title="Review and send">
-          <CmaReviewActions
-            cmaId={String(row.id)}
-            slug={safeSlug}
-            status={status}
-            clientName={(row.client_name as string | null) ?? null}
-            clientEmail={(row.client_email as string | null) ?? null}
-            clientPhone={(row.client_phone as string | null) ?? null}
-            recommendedList={(row.recommended_list as number | null) ?? null}
-            priceOverride={(row.price_override as number | null) ?? null}
-            brokerSlug={(row.broker_slug as string | null) ?? null}
-            brokers={brokers}
-            hasDocument={hasDocument}
-          />
-        </ConsoleSection>
+      <SectionHead>Listing page</SectionHead>
+      <CmaPublishControl
+        slug={safeSlug}
+        subjectAddress={String(row.subject_address ?? safeSlug)}
+        listingKey={listingKey || null}
+        valueLow={(row.value_low as number | null) ?? null}
+        valueHigh={(row.value_high as number | null) ?? null}
+        published={row.published_to_listing === true}
+        publishedAt={(row.published_at as string | null) ?? null}
+        publishedBy={(row.published_by as string | null) ?? null}
+        blockers={blockers}
+        concerns={concerns}
+      />
 
-        <ConsoleSection title="Listing page" className="lg:col-start-2">
-          <CmaPublishControl
-            slug={safeSlug}
-            subjectAddress={String(row.subject_address ?? safeSlug)}
-            listingKey={listingKey || null}
-            valueLow={(row.value_low as number | null) ?? null}
-            valueHigh={(row.value_high as number | null) ?? null}
-            published={row.published_to_listing === true}
-            publishedAt={(row.published_at as string | null) ?? null}
-            publishedBy={(row.published_by as string | null) ?? null}
-            blockers={blockers}
-            concerns={concerns}
+      <SectionHead>Document preview</SectionHead>
+      {previewSrc ? (
+        <div
+          style={{
+            overflow: 'hidden',
+            borderRadius: 'var(--a-r-lg)',
+            border: '1px solid var(--a-border)',
+            background: 'var(--a-inset)',
+          }}
+        >
+          <iframe
+            src={previewSrc}
+            title={`CMA preview for ${String(row.subject_address ?? safeSlug)}`}
+            style={{ width: '100%', height: '75vh', minHeight: 600, background: 'var(--a-bg)', border: 0 }}
           />
-        </ConsoleSection>
-      </div>
+        </div>
+      ) : (
+        <p
+          style={{
+            padding: '32px 8px',
+            textAlign: 'center',
+            fontSize: 'var(--a-text-sm)',
+            color: 'var(--a-text-2)',
+          }}
+        >
+          No document yet. Use Save and rebuild to generate it.
+        </p>
+      )}
     </div>
   )
 }
