@@ -127,12 +127,18 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.05846,
     lng: -121.31955,
     recurrence: 'Annually, Thursday evenings from early July through early August',
-    nextConfirmedDate: '2026-07-09',
-    endDate: '2026-08-06',
+    // 2026-08-08: the 2026 series CONCLUDED on August 6. Re-verified against
+    // munchandmusic.com, which publishes "Our 2026 series dates: July 2, July 9,
+    // July 16, July 23, July 30, and August 6" and announces no 2027 season. Per
+    // this file's own doctrine, the dates go null and the page renders the
+    // recurrence descriptor only — a guessed 2027 date is exactly what §0 bans.
+    // Roll these forward when the organizer publishes next year's dates.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Free',
     organizer: 'Munch & Music',
     officialUrl: 'https://www.munchandmusic.com/',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-08-08',
     blurb:
       'A free Thursday-evening concert series on the Stilson Builders stage in Drake Park, running from early July into August. Music starts at 5:30 in the evening and runs until around 9, with food carts, a beer garden, and a kids area on the lawn along Mirror Pond.',
     brokerPov:
