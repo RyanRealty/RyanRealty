@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "11F UNIT 4 COMPLETE 2026-08-08 \u2014 /admin/operations on v2 (nine islands moved into the route, bare-dir in SCAN_DIRS); token-gated admin pages 106 of 170, ratchet re-seeded smaller (104 raw / 11 widths). Four false claims retired with evidence (a vapourware notifications panel deleted, a decommissioned-FUB footnote deleted, a 15-min cadence that is weekly, a 'sync job history' that is completed-full-syncs-only). Shipped 168060e8. Next: crm/inbox 12 islands, crm 8, the remaining 11 crm/settings editors.",
+  "current_process": "11F UNIT 5 COMPLETE 2026-08-08 \u2014 the independent singles (dscr, content-library, login, setup, email/compose) on v2; token-gated admin pages 111 of 170, 33 real pages left. Auth doors verified logged-out. Shipped 60c3ce7f + ce63da92 + 8c8ff5e8. NEXT: crm/inbox \u2014 12 islands, ~3,400 lines, TWO live send paths; budget a whole session, do not start it partially.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-08T08:05:00Z"
+  "updated_at": "2026-08-08T10:15:00Z"
 }
