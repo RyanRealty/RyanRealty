@@ -33,6 +33,10 @@ import { getYouTubeAccessToken } from '@/lib/youtube'
 import { getLinkedInAccessToken } from '@/lib/linkedin'
 import { getXAccessToken } from '@/lib/x'
 import { getOrRefreshGoogleBusinessProfileAccessToken } from '@/lib/google-business-profile'
+import {
+  markActionMeasuredIfReady,
+  reconcileExecutedWithPerformance,
+} from '@/lib/marketing-brain/measurement-status'
 
 let _supabase: SupabaseClient | null = null
 
@@ -216,56 +220,6 @@ export async function runMeasurementLoop(opts: RunMeasurementLoopOptions = {}): 
   }
 
   return report
-}
-
-/**
- * Flip marketing_brain_actions.status to `measured` once content_performance
- * has at least one metrics window for the action. Status `measured` was in the
- * stage vocabulary but never written by this loop (CAP-015 class gap).
- */
-async function markActionMeasuredIfReady(actionId: string): Promise<void> {
-  const supabase = getSupabase()
-  const { count, error: cErr } = await supabase
-    .from('content_performance')
-    .select('id', { count: 'planned', head: true })
-    .eq('action_id', actionId)
-  if (cErr) {
-    console.error('markActionMeasuredIfReady count:', cErr.message)
-    return
-  }
-  if ((count ?? 0) < 1) return
-  const { error } = await supabase
-    .from('marketing_brain_actions')
-    .update({ status: 'measured' })
-    .eq('id', actionId)
-    .eq('status', 'executed')
-  if (error) {
-    console.error('markActionMeasuredIfReady update:', error.message)
-  }
-}
-
-/** One-shot reconcile: any executed action with content_performance → measured. */
-async function reconcileExecutedWithPerformance(): Promise<void> {
-  const supabase = getSupabase()
-  const { data: perfRows, error: pErr } = await supabase
-    .from('content_performance')
-    .select('action_id')
-    .not('action_id', 'is', null)
-    .limit(500)
-  if (pErr) {
-    console.error('reconcileExecutedWithPerformance:', pErr.message)
-    return
-  }
-  const ids = [...new Set((perfRows ?? []).map((r: { action_id: string }) => r.action_id).filter(Boolean))]
-  if (ids.length === 0) return
-  const { error } = await supabase
-    .from('marketing_brain_actions')
-    .update({ status: 'measured' })
-    .in('id', ids)
-    .eq('status', 'executed')
-  if (error) {
-    console.error('reconcileExecutedWithPerformance update:', error.message)
-  }
 }
 
 // ---------------------------------------------------------------------------
