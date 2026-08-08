@@ -54,7 +54,7 @@ import {
   moveInList,
   parseOptions,
   serializeOptions,
-} from '@/components/admin/crm/settings/config-editor-helpers'
+} from '@/lib/admin/config-editor-helpers'
 
 export type FieldType = 'text' | 'number' | 'date' | 'select'
 export type FieldOption = { value: string; label: string }

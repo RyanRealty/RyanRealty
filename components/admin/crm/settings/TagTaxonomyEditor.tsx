@@ -47,7 +47,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { Pencil, Trash2, GripVertical } from 'lucide-react'
-import { moveInList } from '@/components/admin/crm/settings/config-editor-helpers'
+import { moveInList } from '@/lib/admin/config-editor-helpers'
 
 export type TagRow = {
   id: number

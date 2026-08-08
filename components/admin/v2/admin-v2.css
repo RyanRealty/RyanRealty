@@ -276,10 +276,46 @@ textarea.av2-input { min-height:88px; resize:vertical; }
    platform hands us free would edit the P6 visual lock for nothing. */
 .av2-dialog__head { display:flex; align-items:center; justify-content:space-between;
   gap:var(--a-s3); margin-bottom:var(--a-s3); }
-/* Inside a dialog head the SectionHead primitive reads as the dialog TITLE, not
-   a lane label — same element, title-scale presentation. */
-.av2-dialog__head .av2-lane-head { font-size:var(--a-text-lg); letter-spacing:0;
-  text-transform:none; color:var(--a-text); margin:0; }
+.av2-dialog__title { font-size:var(--a-text-lg); font-weight:600; color:var(--a-text); margin:0; }
 .av2-dialog__body { display:flex; flex-direction:column; gap:var(--a-s3); }
 .av2-dialog__body p { margin:0; }
 .av2-dialog__quiet { color:var(--a-text-2); }
+.av2-dialog__foot { display:flex; justify-content:flex-end; gap:var(--a-s2);
+  margin-top:var(--a-s5); }
+/* Phone: full-width stacked actions, primary last (thumb reach). */
+@media (max-width:480px) {
+  .av2-dialog { width:calc(100vw - var(--a-s4)); max-width:none; padding:var(--a-s4); }
+  .av2-dialog__foot { flex-direction:column-reverse; }
+  .av2-dialog__foot .av2-btn { width:100%; min-height:var(--a-touch); }
+}
+
+/* ---- Switch (11F): a native checkbox with role="switch"; the track and thumb
+   are drawn here so nothing re-implements focus or activation. ---- */
+.av2-switch { display:inline-flex; align-items:center; gap:var(--a-s2);
+  font-family:var(--a-font); font-size:var(--a-text-sm); color:var(--a-text-2);
+  cursor:pointer; }
+.av2-switch input { position:absolute; opacity:0; width:0; height:0; }
+.av2-switch__track { position:relative; flex-shrink:0; width:34px; height:20px;
+  border-radius:999px; background:var(--a-border-strong); transition:background var(--a-t-fast); }
+.av2-switch__track::after { content:''; position:absolute; top:2px; left:2px;
+  width:16px; height:16px; border-radius:50%; background:var(--a-bg);
+  transition:transform var(--a-t-fast); }
+.av2-switch input:checked + .av2-switch__track { background:var(--a-accent); }
+.av2-switch input:checked + .av2-switch__track::after { transform:translateX(14px); }
+.av2-switch input:focus-visible + .av2-switch__track { outline:none; box-shadow:var(--a-focus); }
+.av2-switch input:disabled + .av2-switch__track { opacity:.5; }
+.av2-switch input:disabled ~ .av2-switch__text { opacity:.5; }
+.av2-switch:has(input:disabled) { cursor:not-allowed; }
+.av2-switch input:checked ~ .av2-switch__text { color:var(--a-text); }
+
+/* ---- Icon-only control inside a dense row. Keeps the 44px hit area on touch
+   without a 44px box on desktop (pointer:fine gets the tight metric). ---- */
+.av2-iconbtn { display:inline-flex; align-items:center; justify-content:center;
+  width:var(--a-touch); height:var(--a-touch); padding:0; border:1px solid transparent;
+  border-radius:var(--a-r-md); background:none; color:var(--a-text-2); cursor:pointer;
+  transition:color var(--a-t-fast); }
+@media (pointer:fine) { .av2-iconbtn { width:30px; height:30px; } }
+.av2-iconbtn:hover:not(:disabled) { color:var(--a-text); background:var(--a-inset); }
+.av2-iconbtn--danger:hover:not(:disabled) { color:var(--a-danger); }
+.av2-iconbtn:focus-visible { outline:none; box-shadow:var(--a-focus); }
+.av2-iconbtn:disabled { opacity:.35; cursor:not-allowed; }

@@ -4,7 +4,7 @@ import {
   parseOptions,
   serializeOptions,
   capitalizeNoun,
-} from './config-editor-helpers'
+} from '@/lib/admin/config-editor-helpers'
 
 describe('moveInList', () => {
   it('moves a middle row up', () => {

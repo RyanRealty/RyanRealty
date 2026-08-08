@@ -1,9 +1,8 @@
 // @no-parity — internal admin surface, no public mockup contract
 // 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
 // Presentation only — the owner-only guard, the read, and the five actions handed
-// to ConfigTableEditor are carried over verbatim. ConfigTableEditor is SHARED with
-// /stages and /segments (and with TagTaxonomyEditor + CustomFieldEditor), so it is
-// left untouched here and migrates once, with the family.
+// to ConfigTableEditor are carried over verbatim. ConfigTableEditor now lives in
+// _components/ and is shared by three pages (stages, segments, areas).
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
@@ -16,7 +15,7 @@ import {
   listCrmReportAreasAction,
 } from '@/app/actions/crm-report-areas'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import { ConfigTableEditor, type ConfigEditorRow } from '@/components/admin/crm/settings/ConfigTableEditor'
+import { ConfigTableEditor, type ConfigEditorRow } from '../_components/ConfigTableEditor'
 
 export const metadata = { title: 'Market-report areas | CRM settings' }
 export const dynamic = 'force-dynamic'

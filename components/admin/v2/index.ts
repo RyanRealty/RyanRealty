@@ -13,6 +13,9 @@
  * import from it here.
  */
 export { Button, type AdminButtonProps } from './Button'
+export { IconButton, type AdminIconButtonProps } from './IconButton'
+export { Switch, type AdminSwitchProps } from './Switch'
+export { Dialog, ConfirmDialog, type AdminDialogProps } from './Dialog'
 export { StateWord, type AdminState } from './StateWord'
 export { FilterChip, type FilterChipProps } from './Chip'
 export { QueueRow, type QueueRowProps } from './QueueRow'

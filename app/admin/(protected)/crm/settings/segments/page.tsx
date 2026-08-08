@@ -1,8 +1,8 @@
 // @no-parity — internal admin surface, no public mockup contract
 // P11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
 // Presentation only — the guard, the list-action read, and the five server
-// actions are carried over verbatim. ConfigTableEditor is shared with
-// /admin/crm/settings/areas, so it is left untouched here.
+// actions are carried over verbatim. ConfigTableEditor now lives in
+// _components/ and is shared by three pages (stages, segments, areas).
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
@@ -15,7 +15,7 @@ import {
   listCrmNewsletterSegmentsAction,
 } from '@/app/actions/crm-newsletter-segments'
 import { VerdictLine } from '@/components/admin/v2'
-import { ConfigTableEditor, type ConfigEditorRow } from '@/components/admin/crm/settings/ConfigTableEditor'
+import { ConfigTableEditor, type ConfigEditorRow } from '../_components/ConfigTableEditor'
 
 export const metadata = { title: 'Newsletter segments | CRM settings' }
 export const dynamic = 'force-dynamic'
