@@ -16,7 +16,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSetupComplete } from '@/app/actions/admin-setup'
 import { EntityTitle } from '@/components/admin/v2'
-import AdminSetupClient from '@/components/admin/AdminSetupClient'
+import AdminSetupClient from './_components/AdminSetupClient'
 
 export const metadata: Metadata = {
   title: 'Admin setup',

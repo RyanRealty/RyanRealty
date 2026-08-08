@@ -6,6 +6,19 @@
  * the same interface). This surface only adapts the composer's FormData to
  * sendAdminEmail's {to, subject, body} signature; the suppression check
  * lives in the action (fails closed).
+ *
+ * 11F: presentation migrated to the LOCKED admin v2 language (ADMIN_UI.md).
+ * PRESENTATION ONLY — sendAction's validation/parsing, the recipient/subject/
+ * body extraction, the error/success messages and the router.refresh() are
+ * byte-for-byte unchanged. The wrapping <Card> became the v2 av2-pane and the
+ * message text moved to v2 tokens.
+ *
+ * EmailComposer stays imported from components/admin/crm/EmailComposer
+ * UNCHANGED and MOUNTED AS-IS: it is the G50 compose chokepoint
+ * (ci:composer-discipline — "every send uses the same interface"), the same
+ * sanctioned exception already recorded for CommsSection.tsx /
+ * SendSection.tsx in check-admin-v2-tokens.mjs. Rebuilding or re-skinning it
+ * here would fork the one canonical send surface.
  */
 
 import { useState } from 'react'
@@ -50,7 +63,7 @@ export default function AdminEmailCompose({ className = '' }: Props) {
   }
 
   return (
-    <div className={`space-y-3 rounded-lg border border-border bg-card p-6 shadow-sm ${className}`}>
+    <div className={`av2-pane ${className}`}>
       <EmailComposer
         key={resetV}
         initialSubject=""
@@ -61,7 +74,14 @@ export default function AdminEmailCompose({ className = '' }: Props) {
         footnote="Sends one email from the Ryan Realty transactional mailbox. Suppressed recipients are blocked automatically."
       />
       {message ? (
-        <p className={message.type === 'error' ? 'text-sm text-destructive' : 'text-sm text-success'}>
+        <p
+          role="alert"
+          style={{
+            margin: 0,
+            fontSize: 'var(--a-text-sm)',
+            color: message.type === 'error' ? 'var(--a-danger)' : 'var(--a-ok)',
+          }}
+        >
           {message.text}
         </p>
       ) : null}

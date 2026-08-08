@@ -175,6 +175,21 @@ const SCAN_DIRS = [
   'app/admin/(protected)/visitors/[sessionId]/page.tsx',
   'app/admin/(protected)/visitors/live/page.tsx',
   'app/admin/access-denied/page.tsx',
+  // 11F (2026-08-08) — the two auth-door islands, moved into their route's own
+  // _components/ (components/admin/AdminLoginForm.tsx / AdminSetupClient.tsx
+  // no longer exist). Both are clean: no legacy imports, no raw color.
+  'app/admin/login/page.tsx',
+  'app/admin/login/_components/AdminLoginForm.tsx',
+  'app/admin/setup/page.tsx',
+  'app/admin/setup/_components/AdminSetupClient.tsx',
+  // 11F (2026-08-08) — email/compose, file-form not bare dir: the page itself
+  // is clean, but its two islands (AdminEmailCompose.tsx, ComposeToCohort.tsx,
+  // now under _components/) mount the G50 compose chokepoints (EmailComposer /
+  // EmailBodyEditor) and the BulkProgress poller AS-IS BY DESIGN — the same
+  // sanctioned-legacy-import call already recorded above for people/[id]'s
+  // CommsSection.tsx / SendSection.tsx. Add the two islands here only if they
+  // stop mounting those.
+  'app/admin/(protected)/email/compose/page.tsx',
 ]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 

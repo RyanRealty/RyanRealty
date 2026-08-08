@@ -3,8 +3,16 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { setSetupComplete } from '@/app/actions/admin-setup'
-import { Button } from "@/components/ui/button"
+import { Button, SectionHead } from '@/components/admin/v2'
 
+/**
+ * 11F: presentation migrated to the LOCKED admin v2 language (ADMIN_UI.md).
+ * PRESENTATION ONLY — this is the first-run door into the admin. The step
+ * state, the setSetupComplete() call, the redirect-to-/admin on completion,
+ * and the error handling are byte-for-byte unchanged; only the raw <h2>s
+ * became SectionHead (ci:admin-ui rule A bans raw headings under app/admin)
+ * and the Button + text classes moved to v2 tokens.
+ */
 export default function AdminSetupClient() {
   const router = useRouter()
   const [step, setStep] = useState(1)
@@ -28,47 +36,38 @@ export default function AdminSetupClient() {
     <div className="mt-6 space-y-6">
       {step === 1 && (
         <section>
-          <h2 className="font-semibold text-foreground">Step 1: Admin account</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <SectionHead>Step 1: Admin account</SectionHead>
+          <p className="mt-1" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             Ensure your admin account exists. Sign in at the main site or use the admin login page. Your email must be granted admin access (e.g. in admin_roles or as the designated superuser).
           </p>
-          <Button
-            type="button"
-            onClick={() => setStep(2)}
-            className="mt-3 rounded-lg bg-border px-4 py-2 text-sm font-medium text-foreground hover:bg-border"
-          >
+          <Button type="button" variant="quiet" onClick={() => setStep(2)} className="mt-3">
             Next
           </Button>
         </section>
       )}
       {step === 2 && (
         <section>
-          <h2 className="font-semibold text-foreground">Step 2: Brokerage basics</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <SectionHead>Step 2: Brokerage basics</SectionHead>
+          <p className="mt-1" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             Configure brokerage name and branding in Settings after setup.
           </p>
-          <Button
-            type="button"
-            onClick={() => setStep(3)}
-            className="mt-3 rounded-lg bg-border px-4 py-2 text-sm font-medium text-foreground hover:bg-border"
-          >
+          <Button type="button" variant="quiet" onClick={() => setStep(3)} className="mt-3">
             Next
           </Button>
         </section>
       )}
       {step === 3 && (
         <section>
-          <h2 className="font-semibold text-foreground">Step 3: Complete</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <SectionHead>Step 3: Complete</SectionHead>
+          <p className="mt-1" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             You&apos;re all set. Welcome to your admin dashboard.
           </p>
-          {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
-          <Button
-            type="button"
-            onClick={handleComplete}
-            disabled={loading}
-            className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-accent/90 disabled:opacity-50"
-          >
+          {error && (
+            <p className="mt-2" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+              {error}
+            </p>
+          )}
+          <Button type="button" onClick={handleComplete} disabled={loading} className="mt-3">
             {loading ? 'Completing…' : 'Finish setup'}
           </Button>
         </section>

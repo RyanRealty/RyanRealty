@@ -27,8 +27,8 @@
 // box, never the page), so the buttons are reachable and the page still does
 // not scroll sideways.
 import type { Metadata } from 'next'
-import AdminEmailCompose from '@/components/admin/AdminEmailCompose'
-import ComposeToCohort from '@/components/admin/email/ComposeToCohort'
+import AdminEmailCompose from './_components/AdminEmailCompose'
+import ComposeToCohort from './_components/ComposeToCohort'
 import { SectionHead } from '@/components/admin/v2'
 
 export const metadata: Metadata = {

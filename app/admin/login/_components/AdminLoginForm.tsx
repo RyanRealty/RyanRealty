@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import { GoogleIcon } from '@/components/icons/AuthProviderIcons'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/admin/v2'
 
 const ADMIN_NEXT = '/admin'
 
@@ -22,6 +22,12 @@ const ADMIN_NEXT = '/admin'
  *
  * Requires the site origin under "Authorized JavaScript origins" on the Google
  * OAuth web client (GOOGLE_OAUTH_CLIENT_ID) — One Tap will not render otherwise.
+ *
+ * 11F: presentation migrated to the LOCKED admin v2 language (ADMIN_UI.md).
+ * PRESENTATION ONLY — this is one of the two auth doors. Every handler, the
+ * nonce/PKCE flow, the One Tap init, the redirect destination logic and the
+ * error handling are byte-for-byte unchanged; only the Button import and the
+ * color/type classes moved to v2 tokens.
  */
 
 interface GoogleIdConfig {
@@ -164,31 +170,38 @@ export default function AdminLoginForm({ googleClientId, next }: { googleClientI
           {/* One Tap renders its personalized "Continue as <name>" button here */}
           <div ref={buttonRef} className="flex min-h-11 justify-center" />
           {/* Secondary path when One Tap can't auto-detect the account */}
-          <Button
-            type="button"
-            variant="link"
-            onClick={handleRedirect}
-            disabled={loading}
-            className="mx-auto block h-auto text-xs text-muted-foreground hover:text-foreground"
-          >
-            {loading ? 'Signing in…' : 'Sign in with a different account'}
-          </Button>
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="quiet"
+              onClick={handleRedirect}
+              disabled={loading}
+              style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+            >
+              {loading ? 'Signing in…' : 'Sign in with a different account'}
+            </Button>
+          </div>
         </>
       ) : (
         <Button
           type="button"
-          variant="outline"
           onClick={handleRedirect}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-3 rounded-lg py-2.5 text-sm font-medium disabled:opacity-50"
+          className="w-full gap-3"
         >
           <GoogleIcon className="size-5" />
           {loading ? 'Signing in…' : 'Continue with Google'}
         </Button>
       )}
 
-      <p className="text-center text-xs text-muted-foreground">Use your @ryan-realty.com Google account.</p>
-      {error && <p className="text-center text-sm text-destructive">{error}</p>}
+      <p className="text-center" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+        Use your @ryan-realty.com Google account.
+      </p>
+      {error && (
+        <p className="text-center" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+          {error}
+        </p>
+      )}
     </div>
   )
 }

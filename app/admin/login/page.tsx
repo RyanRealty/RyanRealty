@@ -18,7 +18,7 @@ import '@/components/admin/v2/admin-v2.css'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { EntityTitle } from '@/components/admin/v2'
-import AdminLoginForm from '@/components/admin/AdminLoginForm'
+import AdminLoginForm from './_components/AdminLoginForm'
 
 export const metadata: Metadata = {
   title: 'Admin sign in',
