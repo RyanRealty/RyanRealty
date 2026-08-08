@@ -44,6 +44,40 @@ export function Menu({
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  // Which item to land on when the panel opens: 'first' for ArrowDown/click,
+  // 'last' for ArrowUp. Null means "do not move focus" (mouse click).
+  const [landOn, setLandOn] = useState<'first' | 'last' | null>(null)
+
+  const enabledItems = () =>
+    Array.from(panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []).filter(
+      (el) => !el.disabled,
+    )
+
+  // Move focus into the panel once it exists in the DOM.
+  useEffect(() => {
+    if (!open || !landOn) return
+    const items = enabledItems()
+    if (!items.length) return
+    ;(landOn === 'first' ? items[0] : items[items.length - 1]).focus()
+    setLandOn(null)
+  }, [open, landOn])
+
+  function moveFocus(dir: 1 | -1) {
+    const items = enabledItems()
+    if (!items.length) return
+    const i = items.indexOf(document.activeElement as HTMLButtonElement)
+    // From the trigger (i === -1) ArrowDown enters at the top, ArrowUp at the end.
+    const next = i === -1 ? (dir === 1 ? 0 : items.length - 1) : (i + dir + items.length) % items.length
+    items[next].focus()
+  }
+
+  function onPanelKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveFocus(1) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveFocus(-1) }
+    else if (e.key === 'Home') { e.preventDefault(); enabledItems()[0]?.focus() }
+    else if (e.key === 'End') { e.preventDefault(); const it = enabledItems(); it[it.length - 1]?.focus() }
+  }
 
   useEffect(() => {
     if (!open) return
@@ -73,12 +107,26 @@ export function Menu({
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v)
+          setLandOn(null)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowDown') { e.preventDefault(); setOpen(true); setLandOn('first') }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); setOpen(true); setLandOn('last') }
+        }}
       >
         {trigger}
       </button>
       {open ? (
-        <div className="av2-menu__panel" role="menu" aria-label={label} data-align={align}>
+        <div
+          ref={panelRef}
+          className="av2-menu__panel"
+          role="menu"
+          aria-label={label}
+          data-align={align}
+          onKeyDown={onPanelKeyDown}
+        >
           {items.map((it) => (
             <button
               key={it.label}

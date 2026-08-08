@@ -2,11 +2,16 @@
 
 /**
  * AutomationsListView — the §12.2 Automations list (FUB /2/automations/v2),
- * re-skinned to Ryan Realty tokens.
+ * re-skinned to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ *
+ * 11F: migrated off shadcn (Table/Dialog/DropdownMenu/Select/Tooltip/Avatar/
+ * Button/Input/Textarea/Switch/Label/Badge/Alert) onto components/admin/v2.
+ * PRESENTATION ONLY — every prop, callback, computation, sort/filter default
+ * and user-facing string carries over unchanged.
  *
  * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.2 + the
  * pixel reference docs/fub-crm-spec/screens/screen-34.md:
- *   - Header: "Automations" + search + Create Folder (outline) +
+ *   - Header: "Automations" + search + Create Folder (quiet) +
  *     Create Automation (primary → name dialog → routes to the visual editor).
  *   - Folder section: "{N} Folder(s)" label + folder cards ("My Automations /
  *     N Automations"); clicking a card filters the table; user folders get
@@ -21,85 +26,54 @@
  * four auto-enroll masters, guarded delete (server refuses live enrollments /
  * masters), archive, the create dialog (name + description + stop-on-reply).
  *
- * Design-system only: Table, Button, Badge, Dialog, Input, Textarea, Switch,
- * Select, Avatar, Tooltip, DropdownMenu, Alert.
+ * Table markup is a hand-rolled div/role grid (ConfigTableEditor.tsx's
+ * pattern, av2-rgrid* classes from report-grid.css) plus an av2-cardlist
+ * phone fallback — never a raw <table>. The original had no phone layout at
+ * all (just a horizontally-scrolling <table>); the fallback is new, added
+ * because the v2 language bans <table> outright, not a behavior change.
+ *
+ * ci:admin-ui rule C (at most one primary-variant v2 <Button> per file):
+ * this file's ONE primary is "+ Create Automation" — the page's entry point
+ * for the whole surface. Every dialog submit that used to be a default/
+ * primary shadcn Button (Create automation, Create/Rename folder, Move) is
+ * `variant="quiet"` here instead. Cancel buttons were already quiet-
+ * equivalent (outline); Delete stays `variant="danger"`, which rule C does
+ * not count as primary.
+ *
+ * Design-system only: Button, IconButton, Menu, Dialog, ConfirmDialog,
+ * TextField, TextAreaField, SelectField, SearchField, Switch, VerdictLine,
+ * SectionHead + tokens. No raw HTML controls, no hex, no shadcn/ui imports.
  */
 
 import { useRouter } from 'next/navigation'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition, type CSSProperties } from 'react'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
+  Button,
+  ConfirmDialog,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  SearchField,
+  SectionHead,
+  SelectField,
+  Switch,
+  TextAreaField,
+  TextField,
+  VerdictLine,
+  type AdminMenuItem,
+} from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
+import { ArrowUpDown, Info, Search } from 'lucide-react'
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { cn } from '@/lib/utils'
-import { ArrowUpDown, ChevronDown, Folder, Info, MoreHorizontal, Search } from 'lucide-react'
+  AutomationCard,
+  AutomationDesktopRow,
+  AutomationFolderCard,
+  engagedLabel,
+  type AutomationFolderItem,
+  type AutomationListRow,
+  type WorkflowPlanType,
+} from './automations-list-bits'
 
-export type WorkflowPlanType = 'buyer' | 'seller' | 'expired' | 'fsbo' | null
-
-export type AutomationFolderItem = {
-  id: number
-  name: string
-  isSystem: boolean
-  memberCount: number
-}
-
-export type AutomationListRow = {
-  id: number
-  name: string
-  status: string
-  stepCount: number
-  planType: WorkflowPlanType
-  isAutoEnrollMaster: boolean
-  /** Other automations that reference this one via Run Automation (§12.2.3 col 2). */
-  usedBy: Array<{ id: number; name: string }>
-  /** Total contacts ever enrolled (§12.2.3 "Started"). */
-  started: number
-  /** Contacts with an email open/reply on this automation; null = unreadable (§0). */
-  engaged: number | null
-  completed: number
-  createdByName: string
-  createdByAvatarUrl: string | null
-  /** Pre-formatted server-side (hydration-safe) M/D/YYYY per shot-34. */
-  createdOnLabel: string
-  createdAtMs: number
-  folderId: number | null
-}
+export type { WorkflowPlanType, AutomationFolderItem, AutomationListRow }
+export { engagedLabel }
 
 type ActionResult = { ok: true; id?: number } | { ok: false; error: string }
 
@@ -113,21 +87,6 @@ export type AutomationsListActions = {
   renameFolder: (id: number, name: string) => Promise<ActionResult>
   deleteFolder: (id: number) => Promise<ActionResult>
   moveToFolder: (sequenceId: number, folderId: number | null) => Promise<ActionResult>
-}
-
-/** §12.2.3 Engaged format: null → em-dash placeholder, 0 → "0%", else "N+ P%". */
-export function engagedLabel(engaged: number | null, started: number): string {
-  if (engaged == null) return '—'
-  if (engaged === 0) return '0%'
-  const pct = started > 0 ? Math.round((engaged / started) * 100) : 0
-  return `${engaged}+ ${pct}%`
-}
-
-const PLAN_BADGES: Record<Exclude<WorkflowPlanType, null>, string> = {
-  buyer: 'Default buyer',
-  seller: 'Default seller',
-  expired: 'Default expired',
-  fsbo: 'Default FSBO',
 }
 
 export function AutomationsListView({
@@ -226,479 +185,376 @@ export function AutomationsListView({
     }
   }
 
+  function rowMenuItems(row: AutomationListRow, isArchived: boolean): AdminMenuItem[] {
+    const items: AdminMenuItem[] = [
+      { label: 'Edit', onSelect: () => router.push(`/admin/crm/sequences/${row.id}/edit`) },
+      { label: 'Duplicate', onSelect: () => run(() => actions.duplicate(row.id), 'Automation duplicated') },
+      {
+        label: 'Move to Folder',
+        onSelect: () => {
+          setMoveRow(row)
+          setMoveTarget(row.folderId != null ? String(row.folderId) : 'none')
+        },
+      },
+    ]
+    if (!isArchived) {
+      items.push({ label: 'Archive', onSelect: () => run(() => actions.archive(row.id), 'Automation archived') })
+    }
+    items.push({
+      label: 'Delete',
+      danger: true,
+      disabled: row.isAutoEnrollMaster,
+      onSelect: () => {
+        setDeleteRow(row)
+        setNote(null)
+      },
+    })
+    return items
+  }
+
+  function linkedMenuItems(row: AutomationListRow): AdminMenuItem[] {
+    return row.usedBy.map((u) => ({ label: u.name, onSelect: () => router.push(`/admin/crm/sequences/${u.id}/edit`) }))
+  }
+
+  const emptyMessage = `No automations${search ? ' match this search' : activeFolder != null ? ' in this folder' : ' yet. Create the first one above'}.`
+
+  // Desktop grid column template (report-grid.css reads this at >=720px; below
+  // that the wrapping `hidden md:block` div is display:none and the
+  // av2-cardlist phone fallback below takes over).
+  const gridStyle = {
+    '--rgrid-cols':
+      'minmax(210px,1.6fr) minmax(150px,1fr) 60px 80px 90px 90px minmax(120px,1fr) 92px 100px 40px',
+    '--rgrid-min': '1220px',
+  } as CSSProperties
+
   return (
-    <TooltipProvider delayDuration={200}>
-      <div className="space-y-5">
-        {/* ── Header row (§12.2.1): title · search · Create Folder · Create Automation ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-foreground">Automations</h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search..."
-                className="h-9 w-56 rounded-full pl-8"
-                aria-label="Search automations"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9"
-              disabled={pending}
-              onClick={() => {
-                setFolderName('')
-                setFolderDialog({ mode: 'create' })
-              }}
-            >
-              Create Folder
-            </Button>
-            <Button
-              size="sm"
-              className="h-9"
-              disabled={pending}
-              onClick={() => {
-                setForm({ name: '', description: '', stopOnReply: true })
-                setNote(null)
-                setCreateOpen(true)
-              }}
-            >
-              + Create Automation
-            </Button>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s5)' }}>
+      {/* ── Header row (§12.2.1): title · search · Create Folder · Create Automation ── */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--a-s3)' }}>
+        <SectionHead>Automations</SectionHead>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--a-s2)' }}>
+          <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+            <Search
+              size={14}
+              aria-hidden
+              style={{ position: 'absolute', left: 10, color: 'var(--a-text-2)', pointerEvents: 'none' }}
+            />
+            <SearchField
+              aria-label="Search automations"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              style={{ paddingLeft: 30, borderRadius: 999, width: 224 }}
+            />
+          </span>
+          <Button
+            variant="quiet"
+            disabled={pending}
+            onClick={() => {
+              setFolderName('')
+              setFolderDialog({ mode: 'create' })
+            }}
+          >
+            Create Folder
+          </Button>
+          {/* This file's ONE primary (ci:admin-ui rule C) — the page's entry point. */}
+          <Button
+            disabled={pending}
+            onClick={() => {
+              setForm({ name: '', description: '', stopOnReply: true })
+              setNote(null)
+              setCreateOpen(true)
+            }}
+          >
+            + Create Automation
+          </Button>
         </div>
-
-        {note ? (
-          <Alert variant={note.tone === 'err' ? 'destructive' : 'default'}>
-            <AlertDescription className="whitespace-pre-wrap">{note.text}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        {analyticsUnreadable ? (
-          <Alert variant="destructive">
-            <AlertDescription>
-              Enrollment analytics could not be read right now. Started / Engaged / Completed may be inaccurate.
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        {/* ── Folder section (§12.2.2 / shot-34) ── */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">
-            {folders.length} {folders.length === 1 ? 'Folder' : 'Folders'}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {folders.map((f) => {
-              const active = activeFolder === f.id
-              return (
-                <div
-                  key={f.id}
-                  className={cn(
-                    'flex items-center gap-2 rounded-xl border bg-card px-3 py-2 shadow-sm transition-colors',
-                    active ? 'border-primary ring-1 ring-primary' : 'border-border hover:border-primary/40',
-                  )}
-                >
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 text-left"
-                    onClick={() => setActiveFolder(active ? null : f.id)}
-                    aria-pressed={active}
-                  >
-                    <Folder className="h-5 w-5 text-warning" aria-hidden />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-medium text-foreground">{f.name}</span>
-                      <span className="block text-xs tabular-nums text-muted-foreground">
-                        {f.memberCount} {f.memberCount === 1 ? 'Automation' : 'Automations'}
-                      </span>
-                    </span>
-                  </button>
-                  {!f.isSystem ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" aria-label={`Manage folder ${f.name}`}>
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onSelect={() => {
-                            setFolderName(f.name)
-                            setFolderDialog({ mode: 'rename', id: f.id })
-                          }}
-                        >
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onSelect={() => run(() => actions.deleteFolder(f.id), 'Folder deleted', () => setActiveFolder(null))}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : null}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* ── Automations table (§12.2.3) ── */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">
-            {visible.length} {visible.length === 1 ? 'Automation' : 'Automations'}
-          </p>
-          <div className="overflow-x-auto rounded-xl border border-border bg-card no-scrollbar">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-56">Name</TableHead>
-                  <TableHead>Linked Automations</TableHead>
-                  <TableHead className="text-right">Steps</TableHead>
-                  <TableHead className="text-right">Started</TableHead>
-                  <TableHead className="text-right">
-                    <span className="inline-flex items-center gap-1">
-                      Engaged
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" aria-label="What counts as engaged" />
-                        </TooltipTrigger>
-                        <TooltipContent>Contacts who opened or replied to an email from this automation.</TooltipContent>
-                      </Tooltip>
-                    </span>
-                  </TableHead>
-                  <TableHead className="text-right">Completed</TableHead>
-                  <TableHead>Created By</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>
-                    <button
-                      type="button"
-                      className="inline-flex items-center gap-1 hover:text-foreground"
-                      onClick={() => setSortDesc((v) => !v)}
-                      aria-label={`Sort by created on, currently ${sortDesc ? 'newest first' : 'oldest first'}`}
-                    >
-                      Created On
-                      <ArrowUpDown className="h-3.5 w-3.5" aria-hidden />
-                    </button>
-                  </TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visible.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={10} className="py-8 text-center text-sm text-muted-foreground">
-                      No automations{search ? ' match this search' : activeFolder != null ? ' in this folder' : ' yet. Create the first one above'}.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  visible.map((row) => {
-                    const status = statusOverride[row.id] ?? row.status
-                    const isActive = status === 'active'
-                    const isArchived = status === 'archived'
-                    return (
-                      <TableRow key={row.id}>
-                        <TableCell className="font-medium text-foreground">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <Button
-                              type="button"
-                              variant="link"
-                              className="block h-auto max-w-72 truncate p-0 text-left font-medium"
-                              title={row.name}
-                              onClick={() => router.push(`/admin/crm/sequences/${row.id}/edit`)}
-                            >
-                              {row.name}
-                            </Button>
-                            {row.planType ? (
-                              <Badge variant="secondary" className="shrink-0 text-xs">
-                                {PLAN_BADGES[row.planType]}
-                              </Badge>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {row.usedBy.length > 0 ? (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  className="h-6 rounded-full px-2.5 text-xs"
-                                  aria-label={`Used by ${row.usedBy.length} automations`}
-                                >
-                                  Using: {row.usedBy.length}
-                                  <ChevronDown className="ml-1 h-3 w-3" aria-hidden />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start">
-                                <DropdownMenuLabel>Referenced by</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                {row.usedBy.map((u) => (
-                                  <DropdownMenuItem key={u.id} onSelect={() => router.push(`/admin/crm/sequences/${u.id}/edit`)}>
-                                    {u.name}
-                                  </DropdownMenuItem>
-                                ))}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">None</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-muted-foreground">{row.stepCount}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {row.started > 0 ? (
-                            <Button
-                              type="button"
-                              variant="link"
-                              className="h-auto p-0 tabular-nums"
-                              onClick={() => router.push('/admin/crm/workflows')}
-                              title="Open the enrollment board"
-                            >
-                              {row.started}
-                            </Button>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-foreground">
-                          {engagedLabel(row.engaged, row.started)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {row.completed > 0 ? (
-                            <Button
-                              type="button"
-                              variant="link"
-                              className="h-auto p-0 tabular-nums"
-                              onClick={() => router.push('/admin/crm/workflows')}
-                              title="Open the enrollment board"
-                            >
-                              {row.completed}
-                            </Button>
-                          ) : (
-                            <span className="text-muted-foreground">0</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <span className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              {row.createdByAvatarUrl ? <AvatarImage src={row.createdByAvatarUrl} alt="" /> : null}
-                              <AvatarFallback className="text-xs">
-                                {row.createdByName
-                                  .split(' ')
-                                  .map((p) => p[0])
-                                  .join('')
-                                  .slice(0, 2)
-                                  .toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="max-w-28 truncate text-sm text-foreground" title={row.createdByName}>
-                              {row.createdByName}
-                            </span>
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {isArchived ? (
-                            <Badge variant="outline">Archived</Badge>
-                          ) : (
-                            <Switch
-                              checked={isActive}
-                              disabled={pending}
-                              onCheckedChange={(v) => toggleStatus(row, v)}
-                              aria-label={`${row.name} is ${isActive ? 'enabled' : 'disabled'}`}
-                            />
-                          )}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap tabular-nums text-muted-foreground">{row.createdOnLabel}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" disabled={pending} aria-label={`Actions for ${row.name}`}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => router.push(`/admin/crm/sequences/${row.id}/edit`)}>Edit</DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => run(() => actions.duplicate(row.id), 'Automation duplicated')}>
-                                Duplicate
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onSelect={() => {
-                                  setMoveRow(row)
-                                  setMoveTarget(row.folderId != null ? String(row.folderId) : 'none')
-                                }}
-                              >
-                                Move to Folder
-                              </DropdownMenuItem>
-                              {isArchived ? null : (
-                                <DropdownMenuItem onSelect={() => run(() => actions.archive(row.id), 'Automation archived')}>
-                                  Archive
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                disabled={row.isAutoEnrollMaster}
-                                className="text-destructive focus:text-destructive"
-                                onSelect={() => {
-                                  setDeleteRow(row)
-                                  setNote(null)
-                                }}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-
-        {/* Create automation dialog (name → route to the visual editor, §12.2.1) */}
-        <Dialog open={createOpen} onOpenChange={(o) => !pending && setCreateOpen(o)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>New automation</DialogTitle>
-              <DialogDescription>
-                An automation starts disabled. Build its steps in the visual editor, then enable it.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="au-name">Name</Label>
-                <Input id="au-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} autoFocus />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="au-desc">Description (optional)</Label>
-                <Textarea
-                  id="au-desc"
-                  value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-                <div className="min-w-0">
-                  <Label htmlFor="au-stop" className="text-sm font-medium">
-                    Stop on reply
-                  </Label>
-                  <p className="text-xs text-muted-foreground">Pause a person the moment they reply.</p>
-                </div>
-                <Switch
-                  id="au-stop"
-                  checked={form.stopOnReply}
-                  disabled={pending}
-                  onCheckedChange={(v) => setForm((f) => ({ ...f, stopOnReply: v }))}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={pending}>
-                Cancel
-              </Button>
-              <Button onClick={submitCreate} disabled={pending}>
-                Create automation
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Create / rename folder dialog */}
-        <Dialog open={!!folderDialog} onOpenChange={(o) => !pending && !o && setFolderDialog(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{folderDialog?.mode === 'rename' ? 'Rename folder' : 'Create folder'}</DialogTitle>
-              <DialogDescription>Folders group automations on this page.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-1.5">
-              <Label htmlFor="fold-name">Folder name</Label>
-              <Input id="fold-name" value={folderName} onChange={(e) => setFolderName(e.target.value)} autoFocus />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setFolderDialog(null)} disabled={pending}>
-                Cancel
-              </Button>
-              <Button onClick={submitFolder} disabled={pending || !folderName.trim()}>
-                {folderDialog?.mode === 'rename' ? 'Rename' : 'Create folder'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Move to Folder dialog (§12.2.3 row action) */}
-        <Dialog open={!!moveRow} onOpenChange={(o) => !pending && !o && setMoveRow(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Move {moveRow?.name}</DialogTitle>
-              <DialogDescription>Pick the folder this automation lives in.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-1.5">
-              <Label htmlFor="move-folder">Folder</Label>
-              <Select value={moveTarget} onValueChange={setMoveTarget}>
-                <SelectTrigger id="move-folder">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No folder</SelectItem>
-                  {folders.map((f) => (
-                    <SelectItem key={f.id} value={String(f.id)}>
-                      {f.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setMoveRow(null)} disabled={pending}>
-                Cancel
-              </Button>
-              <Button
-                disabled={pending}
-                onClick={() => {
-                  if (!moveRow) return
-                  const folderId = moveTarget === 'none' ? null : Number(moveTarget)
-                  run(() => actions.moveToFolder(moveRow.id, folderId), 'Automation moved', () => setMoveRow(null))
-                }}
-              >
-                Move
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete dialog (guarded server-side: masters + live enrollments refuse) */}
-        <Dialog open={!!deleteRow} onOpenChange={(o) => !pending && !o && setDeleteRow(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete {deleteRow?.name}</DialogTitle>
-              <DialogDescription>
-                This removes the automation for good. It is refused if anyone is still enrolled. Archive instead to
-                keep the history.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteRow(null)} disabled={pending}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                disabled={pending}
-                onClick={() => {
-                  if (!deleteRow) return
-                  run(() => actions.remove(deleteRow.id), 'Automation deleted', () => setDeleteRow(null))
-                }}
-              >
-                Delete automation
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
-    </TooltipProvider>
+
+      {note ? (
+        <VerdictLine tone={note.tone === 'err' ? 'attention' : 'ok'}>
+          <span style={{ whiteSpace: 'pre-wrap' }}>{note.text}</span>
+        </VerdictLine>
+      ) : null}
+
+      {analyticsUnreadable ? (
+        <VerdictLine tone="attention">
+          Enrollment analytics could not be read right now. Started / Engaged / Completed may be inaccurate.
+        </VerdictLine>
+      ) : null}
+
+      {/* ── Folder section (§12.2.2 / shot-34) ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s2)' }}>
+        <p className="a-num" style={{ margin: 0, fontSize: 'var(--a-text-xs)', fontWeight: 500, color: 'var(--a-text-2)' }}>
+          {folders.length} {folders.length === 1 ? 'Folder' : 'Folders'}
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--a-s2)' }}>
+          {folders.map((f) => {
+            const active = activeFolder === f.id
+            return (
+              <AutomationFolderCard
+                key={f.id}
+                folder={f}
+                active={active}
+                onToggle={() => setActiveFolder(active ? null : f.id)}
+                onRename={() => {
+                  setFolderName(f.name)
+                  setFolderDialog({ mode: 'rename', id: f.id })
+                }}
+                onDelete={() => run(() => actions.deleteFolder(f.id), 'Folder deleted', () => setActiveFolder(null))}
+              />
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Automations list (§12.2.3) ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--a-s2)' }}>
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text-2)' }}>
+            <span className="a-num">{visible.length}</span> {visible.length === 1 ? 'Automation' : 'Automations'}
+          </p>
+          {/* Sort control lives once, shared by the desktop grid AND the phone
+              card list below it — the original table-header sort button had no
+              phone equivalent at all. */}
+          {/* Downgraded from primary: this file's one primary is the header
+              "+ Create Automation" button (ci:admin-ui rule C). */}
+          <Button
+            variant="quiet"
+            className="av2-automation-sortbtn"
+            onClick={() => setSortDesc((v) => !v)}
+            aria-label={`Sort by created on, currently ${sortDesc ? 'newest first' : 'oldest first'}`}
+          >
+            Created On
+            <ArrowUpDown size={12} aria-hidden />
+          </Button>
+        </div>
+
+        {/* Desktop grid — hidden below md; the phone card list below takes over */}
+        <div className="hidden md:block">
+          <div className="av2-rgrid__scroll" role="group" tabIndex={0} aria-label="Automations">
+            <div className="av2-rgrid" role="table" aria-label="Automations" style={gridStyle}>
+              <div className="av2-rgrid__head" role="row">
+                <span role="columnheader" className="av2-rgrid__h">Name</span>
+                <span role="columnheader" className="av2-rgrid__h">Linked Automations</span>
+                <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Steps</span>
+                <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Started</span>
+                <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    Engaged
+                    <span
+                      title="Contacts who opened or replied to an email from this automation."
+                      aria-label="What counts as engaged"
+                      style={{ display: 'inline-flex', color: 'var(--a-text-2)', cursor: 'help' }}
+                    >
+                      <Info size={12} aria-hidden />
+                    </span>
+                  </span>
+                </span>
+                <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Completed</span>
+                <span role="columnheader" className="av2-rgrid__h">Created By</span>
+                <span role="columnheader" className="av2-rgrid__h">Status</span>
+                <span role="columnheader" className="av2-rgrid__h">Created On</span>
+                <span role="columnheader" className="av2-rgrid__h" style={{ textAlign: 'right' }}>Actions</span>
+              </div>
+
+              {visible.length === 0 ? (
+                <div className="av2-rgrid__empty" role="row">
+                  <span role="cell">{emptyMessage}</span>
+                </div>
+              ) : (
+                visible.map((row) => {
+                  const status = statusOverride[row.id] ?? row.status
+                  const isActive = status === 'active'
+                  const isArchived = status === 'archived'
+                  return (
+                    <AutomationDesktopRow
+                      key={row.id}
+                      row={row}
+                      isActive={isActive}
+                      isArchived={isArchived}
+                      pending={pending}
+                      onOpenEditor={() => router.push(`/admin/crm/sequences/${row.id}/edit`)}
+                      onOpenWorkflows={() => router.push('/admin/crm/workflows')}
+                      onToggleStatus={(checked) => toggleStatus(row, checked)}
+                      rowMenuItems={rowMenuItems(row, isArchived)}
+                      linkedMenuItems={linkedMenuItems(row)}
+                    />
+                  )
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Phone card list — visible below md */}
+        <div className="av2-cardlist">
+          {visible.length === 0 ? (
+            <p style={{ margin: 0, padding: '28px 2px', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              {emptyMessage}
+            </p>
+          ) : (
+            visible.map((row) => {
+              const status = statusOverride[row.id] ?? row.status
+              const isActive = status === 'active'
+              const isArchived = status === 'archived'
+              return (
+                <AutomationCard
+                  key={row.id}
+                  row={row}
+                  isActive={isActive}
+                  isArchived={isArchived}
+                  pending={pending}
+                  onOpenEditor={() => router.push(`/admin/crm/sequences/${row.id}/edit`)}
+                  onOpenWorkflows={() => router.push('/admin/crm/workflows')}
+                  onToggleStatus={(checked) => toggleStatus(row, checked)}
+                  rowMenuItems={rowMenuItems(row, isArchived)}
+                  linkedMenuItems={linkedMenuItems(row)}
+                />
+              )
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Create automation dialog (name → route to the visual editor, §12.2.1) */}
+      <Dialog
+        open={createOpen}
+        onClose={() => {
+          if (!pending) setCreateOpen(false)
+        }}
+        title="New automation"
+        description="An automation starts disabled. Build its steps in the visual editor, then enable it."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setCreateOpen(false)} disabled={pending}>
+              Cancel
+            </Button>
+            {/* Downgraded from primary: this file's one primary is the header
+                "+ Create Automation" button (ci:admin-ui rule C). */}
+            <Button variant="quiet" onClick={submitCreate} disabled={pending}>
+              Create automation
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          label="Name"
+          value={form.name}
+          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+          autoFocus
+        />
+        <TextAreaField
+          label="Description (optional)"
+          value={form.description}
+          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          rows={3}
+        />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            border: '1px solid var(--a-border)',
+            borderRadius: 'var(--a-r-md)',
+            padding: 12,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+              Stop on reply
+            </p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+              Pause a person the moment they reply.
+            </p>
+          </div>
+          <Switch
+            label="Stop on reply"
+            labelHidden
+            checked={form.stopOnReply}
+            disabled={pending}
+            onChange={(e) => setForm((f) => ({ ...f, stopOnReply: e.target.checked }))}
+          />
+        </div>
+      </Dialog>
+
+      {/* Create / rename folder dialog */}
+      <Dialog
+        open={!!folderDialog}
+        onClose={() => {
+          if (!pending) setFolderDialog(null)
+        }}
+        title={folderDialog?.mode === 'rename' ? 'Rename folder' : 'Create folder'}
+        description="Folders group automations on this page."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setFolderDialog(null)} disabled={pending}>
+              Cancel
+            </Button>
+            {/* Downgraded from primary — see the header button note above. */}
+            <Button variant="quiet" onClick={submitFolder} disabled={pending || !folderName.trim()}>
+              {folderDialog?.mode === 'rename' ? 'Rename' : 'Create folder'}
+            </Button>
+          </>
+        }
+      >
+        <TextField label="Folder name" value={folderName} onChange={(e) => setFolderName(e.target.value)} autoFocus />
+      </Dialog>
+
+      {/* Move to Folder dialog (§12.2.3 row action) */}
+      <Dialog
+        open={!!moveRow}
+        onClose={() => {
+          if (!pending) setMoveRow(null)
+        }}
+        title={`Move ${moveRow?.name ?? ''}`}
+        description="Pick the folder this automation lives in."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setMoveRow(null)} disabled={pending}>
+              Cancel
+            </Button>
+            {/* Downgraded from primary — see the header button note above. */}
+            <Button
+              variant="quiet"
+              disabled={pending}
+              onClick={() => {
+                if (!moveRow) return
+                const folderId = moveTarget === 'none' ? null : Number(moveTarget)
+                run(() => actions.moveToFolder(moveRow.id, folderId), 'Automation moved', () => setMoveRow(null))
+              }}
+            >
+              Move
+            </Button>
+          </>
+        }
+      >
+        <SelectField label="Folder" value={moveTarget} onChange={(e) => setMoveTarget(e.target.value)}>
+          <option value="none">No folder</option>
+          {folders.map((f) => (
+            <option key={f.id} value={String(f.id)}>
+              {f.name}
+            </option>
+          ))}
+        </SelectField>
+      </Dialog>
+
+      {/* Delete dialog (guarded server-side: masters + live enrollments refuse) */}
+      <ConfirmDialog
+        open={!!deleteRow}
+        onClose={() => {
+          if (!pending) setDeleteRow(null)
+        }}
+        title={`Delete ${deleteRow?.name ?? ''}`}
+        description="This removes the automation for good. It is refused if anyone is still enrolled. Archive instead to keep the history."
+        confirmLabel="Delete automation"
+        busy={pending}
+        onConfirm={() => {
+          if (!deleteRow) return
+          run(() => actions.remove(deleteRow.id), 'Automation deleted', () => setDeleteRow(null))
+        }}
+      />
+    </div>
   )
 }

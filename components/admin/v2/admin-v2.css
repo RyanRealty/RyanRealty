@@ -302,6 +302,25 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .rr-mail-body img { width:100%; height:auto; }
 .rr-mail-body table { width:100%; }
 
+/* ---- Combobox (11F): searchable single-select, APG keyboard pattern. Reach for
+   it only when a list is long enough to need a search — a short fixed list is
+   SelectField's job, which the platform makes accessible for free. ---- */
+.av2-combo { position:relative; display:block; }
+.av2-combo .av2-input { width:100%; }
+.av2-combo__panel { position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:30;
+  max-height:260px; overflow-y:auto; padding:var(--a-s1);
+  background:var(--a-bg); border:1px solid var(--a-border); border-radius:var(--a-r-md);
+  box-shadow:var(--a-shadow-overlay); }
+.av2-combo__opt { display:flex; flex-direction:column; gap:1px; padding:var(--a-s2) var(--a-s3);
+  border-radius:var(--a-r-sm); cursor:pointer; }
+/* Highlight follows the KEYBOARD (aria-activedescendant), so hover and arrow keys
+   land on the same visual state — a keyboard user sees what a mouse user sees. */
+.av2-combo__opt--active { background:var(--a-accent-wash); }
+.av2-combo__opt[aria-selected="true"] .av2-combo__label { font-weight:600; }
+.av2-combo__label { font-size:var(--a-text-md); color:var(--a-text); }
+.av2-combo__hint { font-size:var(--a-text-sm); color:var(--a-text-2); }
+.av2-combo__empty { margin:0; padding:var(--a-s3); font-size:var(--a-text-sm); color:var(--a-text-2); }
+
 /* ---- Menu (11F): overflow ACTIONS anchored to a trigger. Not a form control —
    choosing a value is SelectField's job. ---- */
 .av2-menu { position:relative; display:inline-flex; }
@@ -389,3 +408,11 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-reorder { display:flex; flex-direction:column; }
 .av2-reorder .av2-iconbtn { width:30px; height:20px; }
 @media (pointer:coarse) { .av2-reorder .av2-iconbtn { width:var(--a-touch); height:30px; } }
+
+/* ---- Automations (crm/sequences) hover affordances the inline-style
+   conversion can't express — the shadcn originals carried hover:border-primary/40
+   on a folder-filter card and hover:text-foreground on a sortable column
+   button. Named for the feature, not reused elsewhere, so a later change to
+   one doesn't silently retint the other. ---- */
+.av2-automation-foldercard:hover { border-color:var(--a-accent); }
+.av2-automation-sortbtn:hover { color:var(--a-text); }

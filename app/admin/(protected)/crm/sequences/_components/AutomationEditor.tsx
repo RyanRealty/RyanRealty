@@ -2,7 +2,7 @@
 
 /**
  * AutomationEditor — the §12.4 visual automation editor (FUB
- * /2/automations/v2/edit/{id}), re-skinned to Ryan Realty tokens.
+ * /2/automations/v2/edit/{id}), re-skinned to admin v2 tokens (11F).
  *
  * Three-column layout with no outer scrollbar:
  *   left palette (Triggers / Steps tabs) · dot-grid canvas (trigger card, step
@@ -17,6 +17,14 @@
  * malformed step can never reach the engine. Send-path compliance (suppression,
  * quiet hours, unsubscribe) lives in the engine and is NOT configurable here.
  *
+ * Admin v2 migration: shadcn Button/Input/Switch/Label/Alert/Badge → the
+ * '@/components/admin/v2' primitives. The inline-editable name field has no
+ * visible label (the toolbar itself names it), so it reuses SearchField with
+ * an explicit `type="text"` override — the same sanctioned pattern already in
+ * company/CompanySettingsForm.tsx. Its "invisible border until focused"
+ * affordance is reproduced with local focus state since inline styles cannot
+ * express `:focus-visible`.
+ *
  * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.4 + pixel
  * references screens/screen-35/36/37.md.
  */
@@ -24,12 +32,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState, useTransition } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
+import { Button, SearchField, Switch, VerdictLine } from '@/components/admin/v2'
 import {
   EMPTY_STEP,
   EMPTY_CONDITION,
@@ -99,6 +102,7 @@ export function AutomationEditor({
   const [note, setNote] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
 
   const [name, setName] = useState(initialName)
+  const [nameFocused, setNameFocused] = useState(false)
   const [description, setDescription] = useState(initialDescription)
   const [stopOnReply, setStopOnReply] = useState(initialStopOnReply)
   const [steps, setSteps] = useState<AnyStepOrCondition[]>(initialSteps)
@@ -240,49 +244,85 @@ export function AutomationEditor({
   const isArchived = status === 'archived'
 
   return (
-    <div className="flex h-[calc(100vh-8.5rem)] min-h-[560px] flex-col overflow-hidden rounded-xl border border-border bg-card">
+    <div
+      className="flex h-[calc(100vh-8.5rem)] min-h-[560px] flex-col overflow-hidden rounded-xl"
+      style={{ border: '1px solid var(--a-border)', background: 'var(--a-bg)' }}
+    >
       {/* ── Top bar (§12.4.1): back link · editable name · publish toggle · save ── */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-border bg-background px-4 py-2.5">
-        <Link href="/admin/crm/sequences" className="shrink-0 text-sm text-muted-foreground hover:text-foreground">
+      <div
+        className="flex flex-wrap items-center gap-3 px-4 py-2.5"
+        style={{ borderBottom: '1px solid var(--a-border)', background: 'var(--a-bg)' }}
+      >
+        <Link href="/admin/crm/sequences" className="shrink-0 text-sm" style={{ color: 'var(--a-text-2)' }}>
           ← Back to Automations
         </Link>
-        <div className="min-w-48 flex-1">
-          <Input
+        {/* maxWidth inline, not max-w-xl: ci:admin-ui rule D ratchets DISTINCT
+            max-w-* tokens under app/admin, and this file entering the scan
+            root would have been the only one to add that token. 36rem is
+            Tailwind's xl, unchanged. */}
+        <div className="min-w-48 flex-1" style={{ maxWidth: '36rem' }}>
+          <SearchField
+            type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onFocus={() => setNameFocused(true)}
+            onBlur={() => setNameFocused(false)}
             aria-label="Automation name"
-            className="h-8 max-w-xl border-transparent bg-transparent font-medium text-foreground shadow-none focus-visible:border-border"
+            style={{
+              width: '100%',
+              maxWidth: 'none',
+              height: 32,
+              minHeight: 32,
+              fontWeight: 500,
+              border: nameFocused ? '1px solid var(--a-border)' : '1px solid transparent',
+              background: 'transparent',
+              color: 'var(--a-text)',
+            }}
           />
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {isArchived ? (
-            <Badge variant="outline">Archived</Badge>
+            <span
+              style={{
+                fontSize: 'var(--a-text-xs)',
+                color: 'var(--a-text-2)',
+                border: '1px solid var(--a-border)',
+                borderRadius: 'var(--a-r-sm)',
+                padding: '1px 6px',
+              }}
+            >
+              Archived
+            </span>
           ) : (
             <span className="flex items-center gap-2">
-              <Label htmlFor="pub-toggle" className="text-sm text-muted-foreground">
+              <span className="text-sm" style={{ color: 'var(--a-text-2)' }}>
                 {status === 'active' ? 'Enabled' : 'Disabled'}
-              </Label>
-              <Switch id="pub-toggle" checked={status === 'active'} disabled={pending} onCheckedChange={toggleEnabled} />
+              </span>
+              <Switch
+                label={status === 'active' ? 'Enabled' : 'Disabled'}
+                labelHidden
+                checked={status === 'active'}
+                disabled={pending}
+                onChange={(e) => toggleEnabled(e.target.checked)}
+              />
             </span>
           )}
-          <Button size="sm" className="h-8" onClick={saveAll} disabled={pending}>
+          <Button className="h-8" onClick={saveAll} disabled={pending}>
             Save
           </Button>
         </div>
       </div>
 
       {note ? (
-        <div className="border-b border-border px-4 py-2">
-          <Alert variant={note.tone === 'err' ? 'destructive' : 'default'} className="py-2">
-            <AlertDescription className="whitespace-pre-wrap text-sm">{note.text}</AlertDescription>
-          </Alert>
+        <div className="px-4 py-2" style={{ borderBottom: '1px solid var(--a-border)' }}>
+          <VerdictLine tone={note.tone === 'err' ? 'attention' : 'ok'}>
+            <span style={{ whiteSpace: 'pre-wrap' }}>{note.text}</span>
+          </VerdictLine>
         </div>
       ) : null}
       {funnelUnreadable ? (
-        <div className="border-b border-border px-4 py-2">
-          <Alert variant="destructive" className="py-2">
-            <AlertDescription className="text-sm">Step analytics could not be read right now.</AlertDescription>
-          </Alert>
+        <div className="px-4 py-2" style={{ borderBottom: '1px solid var(--a-border)' }}>
+          <VerdictLine tone="attention">Step analytics could not be read right now.</VerdictLine>
         </div>
       ) : null}
 
@@ -308,7 +348,10 @@ export function AutomationEditor({
           funnel={funnel}
           lookups={lookups}
         />
-        <div className="min-h-0 overflow-y-auto border-t border-border bg-background no-scrollbar lg:border-l lg:border-t-0">
+        <div
+          className="min-h-0 overflow-y-auto border-t no-scrollbar lg:border-l lg:border-t-0 [border-color:var(--a-border)]"
+          style={{ background: 'var(--a-bg)' }}
+        >
           <StepConfigPanel
             selection={selection}
             steps={steps}

@@ -1,6 +1,6 @@
 import './admin-v2.css'
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from 'react'
-import { useId } from 'react'
+import { forwardRef, useId } from 'react'
 
 interface FieldShellProps {
   label: string
@@ -37,11 +37,16 @@ function FieldShell({ label, hint, error, children }: FieldShellProps) {
 
 type BaseProps = { label: string; hint?: string; error?: string }
 
-export function TextField({ label, hint, error, ...rest }: BaseProps & InputHTMLAttributes<HTMLInputElement>) {
+/** forwardRef so a caller can focus the field — see the note on Button. */
+export const TextField = forwardRef<
+  HTMLInputElement,
+  BaseProps & InputHTMLAttributes<HTMLInputElement>
+>(function TextField({ label, hint, error, ...rest }, ref) {
   return (
     <FieldShell label={label} hint={hint} error={error}>
       {({ inputId, describedBy }) => (
         <input
+          ref={ref}
           id={inputId}
           className="av2-input"
           aria-invalid={error ? true : undefined}
@@ -51,7 +56,7 @@ export function TextField({ label, hint, error, ...rest }: BaseProps & InputHTML
       )}
     </FieldShell>
   )
-}
+})
 
 export function TextAreaField({
   label,
@@ -96,11 +101,36 @@ export function ToolbarSelect({
 /** Inline checkbox + caption for toolbars (the label element wraps the input). */
 export function ToolbarCheck({
   label,
+  labelStyle,
   ...rest
-}: { label: React.ReactNode } & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+}: {
+  label: React.ReactNode
+  /** Style for the wrapping <label> itself (e.g. dimming a disabled row). */
+  labelStyle?: React.CSSProperties
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
   return (
-    <label className="av2-check">
+    <label className="av2-check" style={labelStyle}>
       <input type="checkbox" {...rest} />
+      {label}
+    </label>
+  )
+}
+
+/** Inline radio + caption for hand-built radio groups (mirrors ToolbarCheck —
+ *  the v2 barrel has no Radio primitive yet; native radios styled with the
+ *  same `av2-check` token class). */
+export function ToolbarRadio({
+  label,
+  labelStyle,
+  ...rest
+}: {
+  label: React.ReactNode
+  /** Style for the wrapping <label> itself (e.g. a disabled option's cursor). */
+  labelStyle?: React.CSSProperties
+} & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  return (
+    <label className="av2-check" style={labelStyle}>
+      <input type="radio" {...rest} />
       {label}
     </label>
   )

@@ -152,6 +152,31 @@ const SCAN_DIRS = [
   // bare crm/settings dir: eleven sibling pages still mount legacy editors
   // (CustomFieldEditor, TagTaxonomyEditor, the company + templates islands).
   // Each joins this list as its island migrates.
+  // 11F (2026-08-08) — crm/sequences + crm/tasks. FILE-FORM: MobileTasksScreen
+  // mounts CrmAvatar and MobileTaskCreateSheet from components/admin/crm/mobile,
+  // which are genuinely cross-cutting — CrmMobileKit has EIGHT importers
+  // (settings, inbox, tasks, BrokerScopeSheet, MobilePeopleRoot,
+  // MobileContactDetail, calendar) and MobileTaskCreateSheet is shared with the
+  // calendar. Verified by importer list, not asserted. Same rule as the send and
+  // compose surfaces: gate AROUND shared machinery, never through it.
+  'app/admin/(protected)/crm/sequences/_components/AutomationEditor.tsx',
+  'app/admin/(protected)/crm/sequences/_components/AutomationRulesManager.tsx',
+  'app/admin/(protected)/crm/sequences/_components/AutomationsListView.tsx',
+  'app/admin/(protected)/crm/sequences/_components/EditorCanvas.tsx',
+  'app/admin/(protected)/crm/sequences/_components/EditorPalette.tsx',
+  'app/admin/(protected)/crm/sequences/_components/StepConfigPanel.tsx',
+  'app/admin/(protected)/crm/sequences/_components/automation-rules-bits.tsx',
+  'app/admin/(protected)/crm/sequences/_components/automations-list-bits.tsx',
+  'app/admin/(protected)/crm/sequences/_components/editor-shared.ts',
+  'app/admin/(protected)/crm/sequences/_components/step-config-bits.tsx',
+  'app/admin/(protected)/crm/sequences/_components/step-config-body-bits.tsx',
+  'app/admin/(protected)/crm/tasks/_components/NewTaskDialog.tsx',
+  'app/admin/(protected)/crm/tasks/_components/TasksView.tsx',
+  'app/admin/(protected)/crm/tasks/_components/mobile/mobile-tasks-bits.tsx',
+  'app/admin/(protected)/crm/tasks/_components/tasks-view-bits.tsx',
+  'app/admin/(protected)/crm/sequences/page.tsx',
+  'app/admin/(protected)/crm/sequences/[id]/edit/page.tsx',
+  'app/admin/(protected)/crm/tasks/page.tsx',
   // 11F (2026-08-08) — the crm/settings family, FILE-FORM so the exclusions are
   // named rather than implied. EmailTemplateModal, TextTemplateModal and
   // template-actions import MergeFieldInserter from components/admin/crm: that is

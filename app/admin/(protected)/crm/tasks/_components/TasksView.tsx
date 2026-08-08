@@ -13,42 +13,25 @@
  *
  * Completion (§1.6): optimistic — checkbox fills, text strikes through, the
  * Overdue badge decrements in the same tick, the row slides out after ~500ms.
+ *
+ * Admin v2 migration (11F): every shadcn/ui import replaced with
+ * '@/components/admin/v2' primitives; every semantic shadcn color utility
+ * (surface / muted-text / accent / destructive, …) replaced with var(--a-*)
+ * tokens or av2 CSS classes per design_system/admin/ADMIN_UI.md. Presentation
+ * only — no data, props, effects, conditionals, or user-facing strings changed.
  */
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Clock, Info, Pencil } from 'lucide-react'
 import {
-  Check, ChevronsRight, ClipboardList, Clock, DoorOpen, Flag, Heart, Home,
-  Info, Mail, MessageSquare, Pencil, Phone, User,
-} from 'lucide-react'
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
-import { taskGroupLabel, time12 } from '@/lib/crm/calendar'
-import { zonedDateKey, zonedMinutes } from '@/lib/format/date'
+  Button, ConfirmDialog, Dialog, ToolbarCheck, ToolbarSelect,
+} from '@/components/admin/v2'
+import { taskGroupLabel } from '@/lib/crm/calendar'
+import { zonedDateKey } from '@/lib/format/date'
 import type { TaskQueueRow, TaskQueueCounts, CrmTaskType } from '@/lib/data/crm/getTaskQueue'
+import { HowTasksWorkBody, TaskDetailForm, TaskRow, TypeIcon, avatarTint } from './tasks-view-bits'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -82,42 +65,6 @@ export type TasksViewProps = {
   showCompleted: boolean
   actions: TaskActions
   clearOverdue: () => Promise<{ ok: boolean; cleared?: number; error?: string }>
-}
-
-// ── §1.12 type icon map ───────────────────────────────────────────────────────
-
-function TypeIcon({ type }: { type: string | null }) {
-  const cls = 'h-4 w-4 shrink-0'
-  switch (type) {
-    case 'Follow Up': return <Flag className={cn(cls, 'text-primary')} aria-hidden />
-    case 'Call': return <Phone className={cn(cls, 'text-success')} aria-hidden />
-    case 'Email': return <Mail className={cn(cls, 'text-primary')} aria-hidden />
-    case 'Text': return <MessageSquare className={cn(cls, 'text-primary')} aria-hidden />
-    case 'Showing': return <Home className={cn(cls, 'text-warning')} aria-hidden />
-    case 'Closing': return <Check className={cn(cls, 'text-success')} aria-hidden />
-    case 'Open House': return <DoorOpen className={cn(cls, 'text-warning')} aria-hidden />
-    case 'Thank You': return <Heart className={cn(cls, 'text-destructive')} aria-hidden />
-    default: return <ClipboardList className={cn(cls, 'text-muted-foreground')} aria-hidden />
-  }
-}
-
-/** Deterministic avatar tint per contact (§1.5.3 "color assigned per contact"). */
-const AVATAR_TINTS = [
-  'bg-primary/15 text-primary',
-  'bg-success/15 text-success',
-  'bg-warning/25 text-warning-foreground',
-  'bg-secondary text-secondary-foreground',
-  'bg-muted text-muted-foreground',
-] as const
-
-function initials(name: string | null): string {
-  if (!name) return '?'
-  const parts = name.trim().split(/\s+/)
-  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
-}
-
-function avatarTint(id: number | null): string {
-  return AVATAR_TINTS[Math.abs(id ?? 0) % AVATAR_TINTS.length]
 }
 
 const VIEW_TITLES: Record<TasksDesktopView, string> = {
@@ -247,28 +194,37 @@ export default function TasksView({
   return (
     <div className="flex min-w-0 flex-col">
       {/* ══ Sub-tab bar + toolbar (§1.3 / §1.4) ══ */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border">
+      <div className="flex flex-wrap items-center gap-2" style={{ borderBottom: '1px solid var(--a-border)' }}>
         <div className="flex items-center">
           {tabs.map((t) => {
             const active = view === t.key
             return (
               <Button
                 key={t.key}
-                type="button"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => nav({ view: t.key === 'upcoming' ? 'future' : t.key })}
-                className={cn(
-                  'relative h-10 gap-1.5 rounded-none px-4 text-sm',
-                  active
-                    ? 'font-semibold text-foreground after:absolute after:inset-x-1 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary'
-                    : 'text-muted-foreground',
-                )}
+                className="relative gap-1.5 px-4 text-sm"
+                style={{
+                  minHeight: 40,
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 0,
+                  color: active ? 'var(--a-text)' : 'var(--a-text-2)',
+                  fontWeight: active ? 600 : 500,
+                }}
               >
                 {t.label}
                 {t.key === 'overdue' && overdueBadge > 0 && (
-                  <Badge className="h-5 bg-warning px-1.5 tabular-nums text-warning-foreground hover:bg-warning">
+                  <span className="av2-state av2-state--slow a-num" style={{ marginLeft: 2 }}>
                     {overdueBadge}
-                  </Badge>
+                  </span>
+                )}
+                {active && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-1 bottom-0 h-0.5 rounded-full"
+                    style={{ background: 'var(--a-accent)' }}
+                  />
                 )}
               </Button>
             )
@@ -281,71 +237,38 @@ export default function TasksView({
         <HowTasksWorkButton />
 
         {/* §1.4.2 — Filters ▾ */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" size="sm" className="h-8">
-              Filters ▾
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuCheckboxItem
-              checked={allTypesChecked}
-              onCheckedChange={() => setHiddenTypes(allTypesChecked ? new Set(taskTypes.map((t) => t.key)) : new Set())}
-              onSelect={(e) => e.preventDefault()}
-            >
-              All types
-            </DropdownMenuCheckboxItem>
-            {taskTypes.filter((t) => t.isActive).map((t) => (
-              <DropdownMenuCheckboxItem
-                key={t.key}
-                checked={!hiddenTypes.has(t.key)}
-                onCheckedChange={() => toggleType(t.key)}
-                onSelect={(e) => e.preventDefault()}
-              >
-                <span className="flex items-center gap-2">
-                  <TypeIcon type={t.key} />
-                  {t.label}
-                </span>
-              </DropdownMenuCheckboxItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuCheckboxItem
-              checked={showCompleted}
-              onCheckedChange={(v) => nav({ completed: v === true })}
-              onSelect={(e) => e.preventDefault()}
-            >
-              Show Completed
-            </DropdownMenuCheckboxItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <FiltersMenu
+          taskTypes={taskTypes}
+          hiddenTypes={hiddenTypes}
+          allTypesChecked={allTypesChecked}
+          onToggleType={toggleType}
+          onToggleAll={() => setHiddenTypes(allTypesChecked ? new Set(taskTypes.map((t) => t.key)) : new Set())}
+          showCompleted={showCompleted}
+          onToggleCompleted={(v) => nav({ completed: v })}
+        />
 
         {/* §1.4.3 — agent scope (permission-gated to the owner) */}
         {isSuperuser ? (
-          <Select value={agent} onValueChange={(v) => nav({ agent: v })}>
-            <SelectTrigger className="h-8 w-28 text-xs" aria-label="Agent scope">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="me">Me</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-              {brokers.filter((b) => b.slug !== currentBrokerSlug).map((b) => (
-                <SelectItem key={b.slug} value={b.slug}>{b.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ToolbarSelect aria-label="Agent scope" value={agent} onChange={(e) => nav({ agent: e.target.value })}>
+            <option value="me">Me</option>
+            <option value="all">All</option>
+            {brokers.filter((b) => b.slug !== currentBrokerSlug).map((b) => (
+              <option key={b.slug} value={b.slug}>{b.name}</option>
+            ))}
+          </ToolbarSelect>
         ) : (
-          <Button type="button" variant="outline" size="sm" className="h-8" disabled>
+          <Button variant="quiet" disabled>
             Me
           </Button>
         )}
       </div>
 
-      {error && <p className="mt-2 text-sm font-medium text-destructive">{error}</p>}
+      {error && <p className="mt-2 text-sm font-medium" style={{ color: 'var(--a-danger)' }}>{error}</p>}
 
       {/* ══ Two-panel body (§1.2) ══ */}
       <div className="mt-3 flex min-w-0 items-stretch gap-3">
         {/* LEFT PANEL — idle gray / selected-task detail */}
-        <div className="w-2/5 shrink-0 rounded-xl bg-muted/60 p-3">
+        <div className="w-2/5 shrink-0 rounded-xl p-3" style={{ background: 'var(--a-inset)' }}>
           {selected ? (
             <TaskDetailCard
               task={selected}
@@ -357,15 +280,15 @@ export default function TasksView({
               onClose={() => setSelectedId(null)}
             />
           ) : (
-            <p className="p-4 text-sm text-muted-foreground">Select a task to see its details.</p>
+            <p className="p-4 text-sm" style={{ color: 'var(--a-text-2)' }}>Select a task to see its details.</p>
           )}
         </div>
 
         {/* TASK LIST PANEL */}
-        <Card className="min-w-0 flex-1 gap-0 rounded-xl py-0">
+        <div className="min-w-0 flex-1 rounded-xl" style={{ border: '1px solid var(--a-border)', background: 'var(--a-bg)' }}>
           {/* §1.5.1 content header */}
           <div className="flex items-center justify-between gap-2 px-4 py-3">
-            <span className="flex items-center gap-2 text-[15px] font-semibold text-foreground">
+            <span className="flex items-center gap-2 text-[15px] font-semibold" style={{ color: 'var(--a-text)' }}>
               <Clock className="h-4 w-4" aria-hidden />
               {VIEW_TITLES[view]}
             </span>
@@ -377,131 +300,136 @@ export default function TasksView({
               />
             )}
           </div>
-          <Separator />
+          <div style={{ borderTop: '1px solid var(--a-border)' }} />
 
           {/* §1.5.2 / §1.5.3 date groups + rows */}
           {groups.length === 0 ? (
             <div className="flex flex-col items-center gap-2 px-4 py-14 text-center">
-              <Pencil className="h-8 w-8 text-muted-foreground/40" aria-hidden />
-              <p className="text-sm text-muted-foreground">
+              <Pencil className="h-8 w-8" style={{ color: 'var(--a-text-2)', opacity: 0.4 }} aria-hidden />
+              <p className="text-sm" style={{ color: 'var(--a-text-2)' }}>
                 {view === 'upcoming' ? 'No future tasks.' : view === 'today' ? 'No tasks due today.' : 'No overdue tasks.'}
               </p>
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/admin/crm/tasks?view=${view === 'upcoming' ? 'future' : view}&new=1`}>Create task</Link>
-              </Button>
+              <Link
+                href={`/admin/crm/tasks?view=${view === 'upcoming' ? 'future' : view}&new=1`}
+                className="av2-btn av2-btn--quiet"
+              >
+                Create task
+              </Link>
             </div>
           ) : (
             <div className="pb-2">
               {groups.map((g) => (
                 <div key={g.key}>
-                  <p className="px-4 pb-1 pt-3 text-[13px] text-muted-foreground">
+                  <p className="px-4 pb-1 pt-3 text-[13px]" style={{ color: 'var(--a-text-2)' }}>
                     {g.label} ({g.tasks.length})
                   </p>
-                  <div className="divide-y divide-border/70">
-                    {g.tasks.map((t) => (
-                      <TaskRow
-                        key={t.id}
-                        task={t}
-                        struck={striking.has(t.id) || !!t.completedAt}
-                        completed={!!t.completedAt}
-                        selected={selectedId === t.id}
-                        disabled={pending}
-                        onCheck={() => completeTask(t)}
-                        onSelect={() => setSelectedId(t.id)}
-                      />
+                  <div className="flex flex-col">
+                    {g.tasks.map((t, idx) => (
+                      <div key={t.id} style={idx > 0 ? { borderTop: '1px solid var(--a-border)' } : undefined}>
+                        <TaskRow
+                          task={t}
+                          struck={striking.has(t.id) || !!t.completedAt}
+                          completed={!!t.completedAt}
+                          selected={selectedId === t.id}
+                          disabled={pending}
+                          onCheck={() => completeTask(t)}
+                          onSelect={() => setSelectedId(t.id)}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </Card>
+        </div>
       </div>
     </div>
   )
 }
 
-// ── §1.5.3 task row ───────────────────────────────────────────────────────────
+// ── §1.4.2 Filters ▾ — a multi-check panel, not an actions menu, so it is not
+// built from the Menu primitive (Menu auto-closes on every item click; a
+// filter checklist must stay open while checks are toggled — the same reason
+// the original DropdownMenuCheckboxItem calls e.preventDefault() on select).
+// The panel reuses the av2-menu / av2-menu__panel token classes for visual
+// consistency and ToolbarCheck for each row. ─────────────────────────────────
 
-function TaskRow({
-  task,
-  struck,
-  completed,
-  selected,
-  disabled,
-  onCheck,
-  onSelect,
+function FiltersMenu({
+  taskTypes,
+  hiddenTypes,
+  allTypesChecked,
+  onToggleType,
+  onToggleAll,
+  showCompleted,
+  onToggleCompleted,
 }: {
-  task: TaskQueueRow
-  struck: boolean
-  completed: boolean
-  selected: boolean
-  disabled: boolean
-  onCheck: () => void
-  onSelect: () => void
+  taskTypes: CrmTaskType[]
+  hiddenTypes: Set<string>
+  allTypesChecked: boolean
+  onToggleType: (key: string) => void
+  onToggleAll: () => void
+  showCompleted: boolean
+  onToggleCompleted: (v: boolean) => void
 }) {
-  const dueLabel = task.dueAt ? time12(zonedMinutes(task.dueAt)) : ''
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDocDown(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
   return (
-    <div
-      className={cn(
-        'flex items-center gap-3 px-4 py-2.5 transition-colors',
-        selected && 'bg-secondary/50',
-        completed && 'opacity-60',
+    <div ref={wrapRef} className="av2-menu">
+      <Button
+        variant="quiet"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        Filters ▾
+      </Button>
+      {open && (
+        <div className="av2-menu__panel" role="menu" aria-label="Task filters" data-align="end" style={{ minWidth: 220 }}>
+          <div style={{ padding: '4px 8px' }}>
+            <ToolbarCheck label="All types" checked={allTypesChecked} onChange={onToggleAll} />
+          </div>
+          {taskTypes.filter((t) => t.isActive).map((t) => (
+            <div key={t.key} style={{ padding: '4px 8px' }}>
+              <ToolbarCheck
+                label={
+                  <span className="flex items-center gap-2">
+                    <TypeIcon type={t.key} />
+                    {t.label}
+                  </span>
+                }
+                checked={!hiddenTypes.has(t.key)}
+                onChange={() => onToggleType(t.key)}
+              />
+            </div>
+          ))}
+          <div style={{ borderTop: '1px solid var(--a-border)', margin: '4px 0' }} />
+          <div style={{ padding: '4px 8px' }}>
+            <ToolbarCheck
+              label="Show Completed"
+              checked={showCompleted}
+              onChange={(e) => onToggleCompleted(e.target.checked)}
+            />
+          </div>
+        </div>
       )}
-    >
-      <Checkbox
-        checked={struck}
-        disabled={disabled || completed}
-        onCheckedChange={() => onCheck()}
-        aria-label={`Complete: ${task.name}`}
-      />
-      <Avatar className="h-8 w-8">
-        <AvatarFallback className={cn('text-[11px] font-medium', avatarTint(task.personId))}>
-          {initials(task.personName)}
-        </AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          {task.personId ? (
-            <Link
-              href={`/admin/people/${task.personId}`}
-              className="truncate text-sm font-medium text-primary hover:underline"
-            >
-              {task.personName ?? `Contact #${task.personId}`}
-            </Link>
-          ) : (
-            <span className="truncate text-sm font-medium text-foreground">No contact</span>
-          )}
-          <TypeIcon type={task.type} />
-          <span className={cn('min-w-0 truncate text-sm text-foreground/80', struck && 'line-through')}>
-            {task.name}
-          </span>
-        </span>
-        <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-          <User className="h-3 w-3" aria-hidden />
-          {task.assignedBroker
-            ? task.assignedBroker.charAt(0).toUpperCase() + task.assignedBroker.slice(1)
-            : 'Unassigned'}
-        </span>
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-0.5">
-        {dueLabel && (
-          <span className="flex items-center gap-1 text-xs tabular-nums text-muted-foreground">
-            <Clock className="h-3 w-3" aria-hidden />
-            {dueLabel}
-          </span>
-        )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onSelect}
-          aria-label={`Open task: ${task.name}`}
-          className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
-        >
-          <ChevronsRight className="h-4 w-4" aria-hidden />
-        </Button>
-      </div>
     </div>
   )
 }
@@ -531,6 +459,7 @@ function TaskDetailCard({
   const [type, setType] = useState(task.type ?? 'Follow Up')
   const [due, setDue] = useState(task.dueAt ? task.dueAt.slice(0, 16) : '')
   const [err, setErr] = useState<string | null>(null)
+  const tint = avatarTint(task.personId)
 
   const run = (fn: () => Promise<{ ok: boolean; error?: string }>, after?: () => void) => {
     setErr(null)
@@ -543,97 +472,28 @@ function TaskDetailCard({
   }
 
   return (
-    <Card className="gap-0 rounded-lg py-0">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className={cn('text-[11px] font-medium', avatarTint(task.personId))}>
-              {initials(task.personName)}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            {task.personId ? (
-              <Link href={`/admin/people/${task.personId}`} className="text-sm font-semibold text-primary hover:underline">
-                {task.personName ?? `Contact #${task.personId}`}
-              </Link>
-            ) : (
-              <p className="text-sm font-semibold text-foreground">No contact</p>
-            )}
-            {task.personStage && <p className="text-xs text-muted-foreground">{task.personStage}</p>}
-          </div>
-        </div>
-        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onClose}>
-          Close
-        </Button>
-      </div>
-      <Separator />
-      <div className="space-y-3 px-4 py-3">
-        <div className="space-y-1">
-          <Label htmlFor="task-detail-name" className="text-xs text-muted-foreground">Task</Label>
-          <Input id="task-detail-name" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Type</Label>
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger aria-label="Task type"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {taskTypes.map((t) => (
-                  <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="task-detail-due" className="text-xs text-muted-foreground">Due</Label>
-            <Input id="task-detail-due" type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
-          </div>
-        </div>
-        {isSuperuser && (
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Assigned to</Label>
-            <Select
-              value={task.assignedBroker ?? ''}
-              onValueChange={(v) => run(() => actions.reassign(task.id, v))}
-            >
-              <SelectTrigger aria-label="Reassign"><SelectValue placeholder="Unassigned" /></SelectTrigger>
-              <SelectContent>
-                {brokers.map((b) => (
-                  <SelectItem key={b.slug} value={b.slug}>{b.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        {err && <p className="text-xs font-medium text-destructive">{err}</p>}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button
-            type="button" size="sm" disabled={pending || !name.trim()}
-            onClick={() => run(() => actions.update({ id: task.id, name: name.trim(), type, dueAt: due ? `${due}:00Z` : null }))}
-          >
-            Save
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled={pending} onClick={onComplete}>
-            Complete
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled={pending}
-            onClick={() => run(() => actions.snooze(task.id, 1))}>
-            Snooze 1d
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled={pending}
-            onClick={() => run(() => actions.snooze(task.id, 7))}>
-            7d
-          </Button>
-          <Button
-            type="button" variant="ghost" size="sm" disabled={pending}
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => run(() => actions.remove(task.id), onClose)}
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
-    </Card>
+    <TaskDetailForm
+      task={task}
+      taskTypes={taskTypes}
+      brokers={brokers}
+      isSuperuser={isSuperuser}
+      tint={tint}
+      name={name}
+      type={type}
+      due={due}
+      err={err}
+      pending={pending}
+      onNameChange={setName}
+      onTypeChange={setType}
+      onDueChange={setDue}
+      onReassign={(v) => run(() => actions.reassign(task.id, v))}
+      onSave={() => run(() => actions.update({ id: task.id, name: name.trim(), type, dueAt: due ? `${due}:00Z` : null }))}
+      onComplete={onComplete}
+      onSnooze1={() => run(() => actions.snooze(task.id, 1))}
+      onSnooze7={() => run(() => actions.snooze(task.id, 7))}
+      onDelete={() => run(() => actions.remove(task.id), onClose)}
+      onClose={onClose}
+    />
   )
 }
 
@@ -648,47 +508,43 @@ function ClearOverdueLink({
   clearOverdue: () => Promise<{ ok: boolean; cleared?: number; error?: string }>
   onCleared: () => void
 }) {
+  const [open, setOpen] = useState(false)
   const [pending, startTransition] = useTransition()
   const [err, setErr] = useState<string | null>(null)
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-auto p-0 text-sm font-medium text-primary hover:bg-transparent hover:underline"
-        >
-          Clear My Overdue Tasks
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Clear your overdue tasks?</AlertDialogTitle>
-          <AlertDialogDescription>
+    <>
+      <Button
+        variant="quiet"
+        className="text-sm font-medium"
+        style={{ background: 'transparent', border: 'none', padding: 0, minHeight: 'auto', color: 'var(--a-accent)' }}
+        onClick={() => setOpen(true)}
+      >
+        Clear My Overdue Tasks
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Clear your overdue tasks?"
+        description={
+          <>
             This completes all of your overdue tasks (up to {count} shown). It never touches
             another agent&rsquo;s tasks, and it cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {err && <p className="text-sm font-medium text-destructive">{err}</p>}
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={pending}
-            onClick={(e) => {
-              e.preventDefault()
-              startTransition(async () => {
-                const res = await clearOverdue()
-                if (!res.ok) { setErr(res.error ?? 'Could not clear tasks'); return }
-                onCleared()
-              })
-            }}
-          >
-            {pending ? 'Clearing…' : 'Clear tasks'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </>
+        }
+        confirmLabel={pending ? 'Clearing…' : 'Clear tasks'}
+        busy={pending}
+        onConfirm={() => {
+          setErr(null)
+          startTransition(async () => {
+            const res = await clearOverdue()
+            if (!res.ok) { setErr(res.error ?? 'Could not clear tasks'); return }
+            onCleared()
+          })
+        }}
+      >
+        {err && <p className="text-sm font-medium" style={{ color: 'var(--a-danger)' }}>{err}</p>}
+      </ConfirmDialog>
+    </>
   )
 }
 
@@ -698,35 +554,12 @@ function HowTasksWorkButton() {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button type="button" variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => setOpen(true)}>
+      <Button variant="quiet" className="gap-1.5" onClick={() => setOpen(true)}>
         <Info className="h-3.5 w-3.5" aria-hidden />
         How Tasks work
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Clock className="h-4 w-4" aria-hidden />
-              How Tasks Work
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              Tasks are action reminders tied to a contact. They land in one of three buckets:
-              <span className="font-medium text-foreground"> Today&rsquo;s Tasks</span> (due today),
-              <span className="font-medium text-foreground"> Overdue</span> (past due — clear these first), and
-              <span className="font-medium text-foreground"> Future</span> (due later, or no due date yet).
-            </p>
-            <p>
-              Check a task off when it&rsquo;s done — completion is recorded on the contact&rsquo;s
-              timeline. Tasks with a due time also show on the Calendar in amber.
-            </p>
-            <p>
-              Create tasks from a contact&rsquo;s page, from the New Task button here, or let
-              automations create them for you.
-            </p>
-          </div>
-        </DialogContent>
+      <Dialog open={open} onClose={() => setOpen(false)} title="How Tasks Work">
+        <HowTasksWorkBody />
       </Dialog>
     </>
   )

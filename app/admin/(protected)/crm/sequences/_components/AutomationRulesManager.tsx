@@ -3,6 +3,11 @@
 /**
  * AutomationRulesManager — the trigger-config island (Wave 6 authoring).
  *
+ * 11F: migrated off shadcn (Table/Dialog/Select/Button/Input/Label/Badge/
+ * Switch/Alert) onto components/admin/v2, the LOCKED admin visual language
+ * (design_system/admin/ADMIN_UI.md). PRESENTATION ONLY — every prop,
+ * callback, computation and user-facing string carries over unchanged.
+ *
  * Manages crm_automation_rules: "when TRIGGER fires, run ACTION". A rule is
  * (trigger_type + trigger_value) -> (action_type + action_value). The engine
  * today wires the tag_added -> enroll_sequence path; the other triggers/actions
@@ -18,40 +23,43 @@
  * broker picker for assign_broker. Likewise an inactivity trigger takes a day
  * count, the others a free value (tag/stage/source string).
  *
- * Design-system only. Reorder is up/down (a11y + robust).
+ * Reorder is up/down (a11y + robust) — IconButton chevrons, the same
+ * av2-reorder pattern ConfigTableEditor.tsx uses.
+ *
+ * ci:admin-ui rule C (at most one primary-variant v2 <Button> per file): this
+ * file's ONE primary is the header "New rule" button. The dialog's submit
+ * ("Create rule" / "Save"), which was a default/primary shadcn Button, is
+ * `variant="quiet"` here instead; its Cancel was already quiet-equivalent.
+ * Row actions (reorder / edit / delete) are IconButtons, matching the same
+ * Manage-column idiom ConfigTableEditor.tsx uses for its config tables.
+ *
+ * Design-system only: Button, IconButton, Dialog, ConfirmDialog, SelectField,
+ * TextField, Switch, VerdictLine + tokens. No raw HTML controls, no hex, no
+ * shadcn/ui imports.
  */
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type CSSProperties } from 'react'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
+  Button,
+  ConfirmDialog,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  IconButton,
+  SelectField,
+  Switch,
+  TextField,
+  VerdictLine,
+} from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
+import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+  ActionValueControl,
+  TriggerValueControl,
+  type BrokerOption,
+  type FormState,
+  type KeyLabelOption,
+  type SequenceOption,
+} from './automation-rules-bits'
 
 export type RuleRow = {
   id: number
@@ -64,9 +72,7 @@ export type RuleRow = {
   position: number
 }
 
-export type SequenceOption = { id: number; name: string }
-export type KeyLabelOption = { key: string; label: string }
-export type BrokerOption = { slug: string; label: string }
+export type { SequenceOption, KeyLabelOption, BrokerOption, FormState }
 
 type ActionResult = { ok: true } | { ok: false; error: string }
 
@@ -97,14 +103,6 @@ const ACTION_TYPES = [
   { value: 'assign_broker', label: 'Assign broker' },
 ] as const
 
-type FormState = {
-  name: string
-  triggerType: string
-  triggerValue: string
-  actionType: string
-  actionValue: string
-}
-
 const EMPTY: FormState = {
   name: '',
   triggerType: 'tag_added',
@@ -116,6 +114,20 @@ const EMPTY: FormState = {
 function labelFor(list: ReadonlyArray<{ value: string; label: string }>, value: string): string {
   return list.find((x) => x.value === value)?.label ?? value
 }
+
+/** Badge substitution (11F recipe): a static label, never a status pill. */
+const badgeStyle: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-sm)',
+  padding: '1px 6px',
+  whiteSpace: 'nowrap',
+}
+
+const CELL_RIGHT: CSSProperties = { textAlign: 'right' }
+const ROW_BETWEEN: CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }
+const CARD_SUBTEXT: CSSProperties = { margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
 
 export function AutomationRulesManager({
   rows,
@@ -252,390 +264,252 @@ export function AutomationRulesManager({
     return `${a}: ${row.actionValue}`
   }
 
+  const gridStyle = {
+    '--rgrid-cols': 'minmax(150px,1fr) minmax(170px,1fr) minmax(170px,1fr) 100px 176px',
+    '--rgrid-min': '860px',
+  } as CSSProperties
+
+  const emptyMessage = 'No automation rules yet. Create the first one above.'
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {rows.length} {rows.length === 1 ? 'rule' : 'rules'}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s4)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          <span className="a-num">{rows.length}</span> {rows.length === 1 ? 'rule' : 'rules'}
         </p>
-        <Button size="sm" onClick={openCreate} disabled={pending}>
+        {/* This file's ONE primary (ci:admin-ui rule C). */}
+        <Button onClick={openCreate} disabled={pending}>
           New rule
         </Button>
       </div>
 
       {note ? (
-        <Alert variant={note.tone === 'err' ? 'destructive' : 'default'}>
-          <AlertDescription className="whitespace-pre-wrap">{note.text}</AlertDescription>
-        </Alert>
+        <VerdictLine tone={note.tone === 'err' ? 'attention' : 'ok'}>
+          <span style={{ whiteSpace: 'pre-wrap' }}>{note.text}</span>
+        </VerdictLine>
       ) : null}
 
-      <div className="rounded-xl border border-border bg-card overflow-x-auto no-scrollbar">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-1/4">Rule</TableHead>
-              <TableHead className="w-1/4">When</TableHead>
-              <TableHead className="w-1/4">Then</TableHead>
-              <TableHead className="w-1/6">Status</TableHead>
-              <TableHead className="text-right">Manage</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {/* Desktop grid — hidden below md; the phone card list below takes over */}
+      <div className="hidden md:block">
+        <div className="av2-rgrid__scroll" role="group" tabIndex={0} aria-label="Automation rules">
+          <div className="av2-rgrid" role="table" aria-label="Automation rules" style={gridStyle}>
+            <div className="av2-rgrid__head" role="row">
+              <span role="columnheader" className="av2-rgrid__h">Rule</span>
+              <span role="columnheader" className="av2-rgrid__h">When</span>
+              <span role="columnheader" className="av2-rgrid__h">Then</span>
+              <span role="columnheader" className="av2-rgrid__h">Status</span>
+              <span role="columnheader" className="av2-rgrid__h" style={CELL_RIGHT}>Manage</span>
+            </div>
+
             {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
-                  No automation rules yet. Create the first one above.
-                </TableCell>
-              </TableRow>
+              <div className="av2-rgrid__empty" role="row">
+                <span role="cell">{emptyMessage}</span>
+              </div>
             ) : (
               rows.map((row, i) => (
-                <TableRow key={row.id}>
-                  <TableCell className="font-medium text-foreground">{row.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{triggerSummary(row)}</TableCell>
-                  <TableCell className="text-muted-foreground">{actionSummary(row)}</TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center gap-2">
+                <div key={row.id} role="row" className="av2-rgrid__row">
+                  <span role="cell" data-label="" className="av2-rgrid__c" style={{ fontWeight: 600, color: 'var(--a-text)' }}>
+                    {row.name}
+                  </span>
+                  <span role="cell" data-label="When" className="av2-rgrid__c">
+                    {triggerSummary(row)}
+                  </span>
+                  <span role="cell" data-label="Then" className="av2-rgrid__c">
+                    {actionSummary(row)}
+                  </span>
+                  <span role="cell" data-label="Status" className="av2-rgrid__c">
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       <Switch
+                        label={`${row.name} active`}
+                        labelHidden
                         checked={row.isActive}
                         disabled={pending}
-                        onCheckedChange={(next) => submitActive(row, next)}
-                        aria-label={`${row.name} active`}
+                        onChange={(e) => submitActive(row, e.target.checked)}
                       />
-                      <Badge variant={row.isActive ? 'default' : 'secondary'}>
-                        {row.isActive ? 'On' : 'Off'}
-                      </Badge>
+                      <span style={badgeStyle}>{row.isActive ? 'On' : 'Off'}</span>
                     </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="inline-flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        disabled={pending || i === 0}
-                        aria-label={`Move ${row.name} up`}
-                        onClick={() => move(row, -1)}
-                      >
-                        <span aria-hidden>↑</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        disabled={pending || i === rows.length - 1}
-                        aria-label={`Move ${row.name} down`}
-                        onClick={() => move(row, 1)}
-                      >
-                        <span aria-hidden>↓</span>
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-8" disabled={pending} onClick={() => openEdit(row)}>
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-destructive hover:text-destructive"
+                  </span>
+                  <span role="cell" data-label="Manage" className="av2-rgrid__c" style={CELL_RIGHT}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                      <span className="av2-reorder">
+                        <IconButton
+                          label={`Move ${row.name} up`}
+                          tone="quiet"
+                          disabled={pending || i === 0}
+                          onClick={() => move(row, -1)}
+                        >
+                          <ChevronUp size={14} />
+                        </IconButton>
+                        <IconButton
+                          label={`Move ${row.name} down`}
+                          tone="quiet"
+                          disabled={pending || i === rows.length - 1}
+                          onClick={() => move(row, 1)}
+                        >
+                          <ChevronDown size={14} />
+                        </IconButton>
+                      </span>
+                      <IconButton label={`Edit ${row.name}`} tone="quiet" disabled={pending} onClick={() => openEdit(row)}>
+                        <Pencil size={16} />
+                      </IconButton>
+                      <IconButton
+                        label={`Delete ${row.name}`}
+                        tone="danger"
                         disabled={pending}
                         onClick={() => {
                           setDeleteRow(row)
                           setNote(null)
                         }}
                       >
-                        Delete
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                        <Trash2 size={16} />
+                      </IconButton>
+                    </span>
+                  </span>
+                </div>
               ))
             )}
-          </TableBody>
-        </Table>
+          </div>
+        </div>
+      </div>
+
+      {/* Phone card list — visible below md */}
+      <div className="av2-cardlist">
+        {rows.length === 0 ? (
+          <p style={{ margin: 0, padding: '28px 2px', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+            {emptyMessage}
+          </p>
+        ) : (
+          rows.map((row, i) => (
+            <div key={row.id} className="av2-pane">
+              <div style={ROW_BETWEEN}>
+                <p style={{ margin: 0, fontWeight: 600, color: 'var(--a-text)', fontSize: 'var(--a-text-sm)' }}>{row.name}</p>
+                <span style={badgeStyle}>{row.isActive ? 'On' : 'Off'}</span>
+              </div>
+              <p style={CARD_SUBTEXT}>When: {triggerSummary(row)}</p>
+              <p style={CARD_SUBTEXT}>Then: {actionSummary(row)}</p>
+              <div style={ROW_BETWEEN}>
+                <Switch
+                  label={`${row.name} active`}
+                  labelHidden
+                  stateText={row.isActive ? 'On' : 'Off'}
+                  checked={row.isActive}
+                  disabled={pending}
+                  onChange={(e) => submitActive(row, e.target.checked)}
+                />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <span className="av2-reorder">
+                    <IconButton
+                      label={`Move ${row.name} up`}
+                      tone="quiet"
+                      disabled={pending || i === 0}
+                      onClick={() => move(row, -1)}
+                    >
+                      <ChevronUp size={14} />
+                    </IconButton>
+                    <IconButton
+                      label={`Move ${row.name} down`}
+                      tone="quiet"
+                      disabled={pending || i === rows.length - 1}
+                      onClick={() => move(row, 1)}
+                    >
+                      <ChevronDown size={14} />
+                    </IconButton>
+                  </span>
+                  <IconButton label={`Edit ${row.name}`} tone="quiet" disabled={pending} onClick={() => openEdit(row)}>
+                    <Pencil size={16} />
+                  </IconButton>
+                  <IconButton
+                    label={`Delete ${row.name}`}
+                    tone="danger"
+                    disabled={pending}
+                    onClick={() => {
+                      setDeleteRow(row)
+                      setNote(null)
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </IconButton>
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Create / edit dialog */}
-      <Dialog open={formOpen} onOpenChange={(o) => !pending && setFormOpen(o)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editId == null ? 'New rule' : 'Edit rule'}</DialogTitle>
-            <DialogDescription>
-              When the trigger fires, the action runs. Only the tag-added to enroll-in-workflow path runs in the engine
-              today. The rest persist for the next engine pass.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="rule-name">Name</Label>
-              <Input id="rule-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} autoFocus />
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="rule-trigger">When</Label>
-                <Select
-                  value={form.triggerType}
-                  onValueChange={(v) => setForm((f) => ({ ...f, triggerType: v, triggerValue: '' }))}
-                >
-                  <SelectTrigger id="rule-trigger">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRIGGER_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="rule-trigger-value">Trigger value</Label>
-                <TriggerValueControl form={form} tags={tags} stages={stages} setForm={setForm} disabled={pending} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="rule-action">Then</Label>
-                <Select
-                  value={form.actionType}
-                  onValueChange={(v) => setForm((f) => ({ ...f, actionType: v, actionValue: '' }))}
-                >
-                  <SelectTrigger id="rule-action">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACTION_TYPES.map((a) => (
-                      <SelectItem key={a.value} value={a.value}>
-                        {a.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="rule-action-value">Action target</Label>
-                <ActionValueControl
-                  form={form}
-                  sequences={sequences}
-                  tags={tags}
-                  stages={stages}
-                  brokers={brokers}
-                  setForm={setForm}
-                  disabled={pending}
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={pending}>
+      <Dialog
+        open={formOpen}
+        onClose={() => {
+          if (!pending) setFormOpen(false)
+        }}
+        title={editId == null ? 'New rule' : 'Edit rule'}
+        description="When the trigger fires, the action runs. Only the tag-added to enroll-in-workflow path runs in the engine today. The rest persist for the next engine pass."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setFormOpen(false)} disabled={pending}>
               Cancel
             </Button>
-            <Button onClick={submitForm} disabled={pending}>
+            {/* Downgraded from primary: this file's one primary is the header
+                "New rule" button (ci:admin-ui rule C). */}
+            <Button variant="quiet" onClick={submitForm} disabled={pending}>
               {editId == null ? 'Create rule' : 'Save'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextField label="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} autoFocus />
+
+        <div className="av2-editgrid">
+          <SelectField
+            label="When"
+            value={form.triggerType}
+            onChange={(e) => setForm((f) => ({ ...f, triggerType: e.target.value, triggerValue: '' }))}
+          >
+            {TRIGGER_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </SelectField>
+          <TriggerValueControl form={form} tags={tags} stages={stages} setForm={setForm} disabled={pending} />
+        </div>
+
+        <div className="av2-editgrid">
+          <SelectField
+            label="Then"
+            value={form.actionType}
+            onChange={(e) => setForm((f) => ({ ...f, actionType: e.target.value, actionValue: '' }))}
+          >
+            {ACTION_TYPES.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label}
+              </option>
+            ))}
+          </SelectField>
+          <ActionValueControl
+            form={form}
+            sequences={sequences}
+            tags={tags}
+            stages={stages}
+            brokers={brokers}
+            setForm={setForm}
+            disabled={pending}
+          />
+        </div>
       </Dialog>
 
       {/* Delete dialog */}
-      <Dialog open={!!deleteRow} onOpenChange={(o) => !pending && !o && setDeleteRow(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete {deleteRow?.name}</DialogTitle>
-            <DialogDescription>This removes the automation rule. It cannot be undone.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteRow(null)} disabled={pending}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={submitDelete} disabled={pending}>
-              Delete rule
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteRow}
+        onClose={() => {
+          if (!pending) setDeleteRow(null)
+        }}
+        title={`Delete ${deleteRow?.name ?? ''}`}
+        description="This removes the automation rule. It cannot be undone."
+        confirmLabel="Delete rule"
+        busy={pending}
+        onConfirm={submitDelete}
+      />
     </div>
-  )
-}
-
-// ── Type-aware value controls ─────────────────────────────────────────────────
-
-function TriggerValueControl({
-  form,
-  tags,
-  stages,
-  setForm,
-  disabled,
-}: {
-  form: FormState
-  tags: KeyLabelOption[]
-  stages: KeyLabelOption[]
-  setForm: React.Dispatch<React.SetStateAction<FormState>>
-  disabled: boolean
-}) {
-  if (form.triggerType === 'tag_added') {
-    return (
-      <KeyPicker
-        id="rule-trigger-value"
-        placeholder="Choose a tag"
-        value={form.triggerValue}
-        options={tags}
-        disabled={disabled}
-        onChange={(v) => setForm((f) => ({ ...f, triggerValue: v }))}
-      />
-    )
-  }
-  if (form.triggerType === 'stage_changed') {
-    return (
-      <KeyPicker
-        id="rule-trigger-value"
-        placeholder="Choose a stage"
-        value={form.triggerValue}
-        options={stages}
-        disabled={disabled}
-        onChange={(v) => setForm((f) => ({ ...f, triggerValue: v }))}
-      />
-    )
-  }
-  if (form.triggerType === 'inactivity') {
-    return (
-      <Input
-        id="rule-trigger-value"
-        type="number"
-        min={1}
-        inputMode="numeric"
-        placeholder="Days"
-        value={form.triggerValue}
-        disabled={disabled}
-        onChange={(e) => setForm((f) => ({ ...f, triggerValue: e.target.value }))}
-      />
-    )
-  }
-  // source_is (free text)
-  return (
-    <Input
-      id="rule-trigger-value"
-      placeholder="Source value"
-      value={form.triggerValue}
-      disabled={disabled}
-      onChange={(e) => setForm((f) => ({ ...f, triggerValue: e.target.value }))}
-    />
-  )
-}
-
-function ActionValueControl({
-  form,
-  sequences,
-  tags,
-  stages,
-  brokers,
-  setForm,
-  disabled,
-}: {
-  form: FormState
-  sequences: SequenceOption[]
-  tags: KeyLabelOption[]
-  stages: KeyLabelOption[]
-  brokers: BrokerOption[]
-  setForm: React.Dispatch<React.SetStateAction<FormState>>
-  disabled: boolean
-}) {
-  if (form.actionType === 'enroll_sequence') {
-    return (
-      <Select value={form.actionValue} disabled={disabled} onValueChange={(v) => setForm((f) => ({ ...f, actionValue: v }))}>
-        <SelectTrigger id="rule-action-value">
-          <SelectValue placeholder="Choose a workflow" />
-        </SelectTrigger>
-        <SelectContent>
-          {sequences.length === 0 ? (
-            <SelectItem value="__none__" disabled>
-              No workflows
-            </SelectItem>
-          ) : (
-            sequences.map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.name}
-              </SelectItem>
-            ))
-          )}
-        </SelectContent>
-      </Select>
-    )
-  }
-  if (form.actionType === 'add_tag') {
-    return (
-      <KeyPicker
-        id="rule-action-value"
-        placeholder="Choose a tag"
-        value={form.actionValue}
-        options={tags}
-        disabled={disabled}
-        onChange={(v) => setForm((f) => ({ ...f, actionValue: v }))}
-      />
-    )
-  }
-  if (form.actionType === 'set_stage') {
-    return (
-      <KeyPicker
-        id="rule-action-value"
-        placeholder="Choose a stage"
-        value={form.actionValue}
-        options={stages}
-        disabled={disabled}
-        onChange={(v) => setForm((f) => ({ ...f, actionValue: v }))}
-      />
-    )
-  }
-  // assign_broker
-  return (
-    <Select value={form.actionValue} disabled={disabled} onValueChange={(v) => setForm((f) => ({ ...f, actionValue: v }))}>
-      <SelectTrigger id="rule-action-value">
-        <SelectValue placeholder="Choose a broker" />
-      </SelectTrigger>
-      <SelectContent>
-        {brokers.map((b) => (
-          <SelectItem key={b.slug} value={b.slug}>
-            {b.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
-
-function KeyPicker({
-  id,
-  placeholder,
-  value,
-  options,
-  disabled,
-  onChange,
-}: {
-  id: string
-  placeholder: string
-  value: string
-  options: KeyLabelOption[]
-  disabled: boolean
-  onChange: (v: string) => void
-}) {
-  return (
-    <Select value={value} disabled={disabled} onValueChange={onChange}>
-      <SelectTrigger id={id}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.length === 0 ? (
-          <SelectItem value="__none__" disabled>
-            None available
-          </SelectItem>
-        ) : (
-          options.map((o) => (
-            <SelectItem key={o.key} value={o.key}>
-              {o.label}
-            </SelectItem>
-          ))
-        )}
-      </SelectContent>
-    </Select>
   )
 }

@@ -7,17 +7,21 @@
  * (Conditions, Time Delay) and an Actions section (every engine-executable
  * channel). Tiles are draggable onto the canvas (drop zones on the connector
  * lines) AND clickable (appends at the end) — the dragged tile shows a dashed
- * primary border per the spec's drag affordance. A search input filters tiles.
+ * accent border per the spec's drag affordance. A search input filters tiles.
+ *
+ * Admin v2 migration (11F): the shadcn Tabs/Input stack is replaced with
+ * '@/components/admin/v2' + a hand-rolled APG tablist (the v2 barrel has no
+ * Tabs primitive yet). The tablist reproduces Radix's default keyboard
+ * behaviour — ArrowLeft/ArrowRight/Home/End move focus AND selection, with a
+ * roving tabindex — since Radix Tabs activates on arrow-key move by default.
  *
  * Spec: docs/fub-crm-spec/12-action-plans-and-automations.md §12.4.2 + the
  * pixel reference screens/screen-35.md (tab strip, search, drag banner,
  * Controls / Actions sections, drag handles).
  */
 
-import { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
+import { useState, type KeyboardEvent, useRef} from 'react'
+import { Button, SearchField } from '@/components/admin/v2'
 import {
   GitBranch,
   GripVertical,
@@ -57,6 +61,19 @@ const CHANNEL_ICONS: Record<StepChannel, typeof Mail> = {
   stop_other_plans: PauseCircle,
 }
 
+const TAB_ORDER = ['triggers', 'steps'] as const
+type TabKey = (typeof TAB_ORDER)[number]
+
+/** DOM id per tab, used to move focus without a ref — the v2 Button is a
+ *  plain function component (no forwardRef), so a callback ref never
+ *  attaches to the underlying <button>. Both tab buttons are always mounted
+ *  (only their aria-selected/tabIndex change), so the lookup always finds
+ *  the element it needs synchronously. */
+const TAB_IDS: Record<TabKey, string> = {
+  triggers: 'palette-tab-triggers',
+  steps: 'palette-tab-steps',
+}
+
 function payloadKey(p: PaletteDragPayload): string {
   return p.kind === 'channel' ? `channel:${p.channel}` : p.kind
 }
@@ -80,8 +97,8 @@ function PaletteTile({
 }) {
   const isDragging = dragging != null && payloadKey(dragging) === payloadKey(payload)
   return (
-    <button
-      type="button"
+    <Button
+      variant="quiet"
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData(PALETTE_DRAG_TYPE, encodeDragPayload(payload))
@@ -90,18 +107,31 @@ function PaletteTile({
       }}
       onDragEnd={() => onDragChange(null)}
       onClick={onClick}
-      className={cn(
-        'flex w-full cursor-grab items-center gap-2.5 rounded-lg border bg-card px-3 py-2 text-left shadow-sm transition-colors',
-        isDragging ? 'border-dashed border-primary' : 'border-border hover:border-primary/50',
-      )}
+      className="w-full text-left transition-colors"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        gap: 10,
+        padding: '8px 12px',
+        borderRadius: 'var(--a-r-md)',
+        cursor: 'grab',
+        fontWeight: 400,
+        minHeight: 'auto',
+        justifyContent: 'flex-start',
+        border: isDragging ? '1px dashed var(--a-accent)' : '1px solid var(--a-border)',
+        background: 'var(--a-bg)',
+      }}
       title={description}
     >
-      <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+      <Icon aria-hidden style={{ width: 16, height: 16, flexShrink: 0, color: 'var(--a-accent)' }} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-foreground">{label}</span>
+        <span className="block truncate text-sm font-medium" style={{ color: 'var(--a-text)' }}>
+          {label}
+        </span>
       </span>
-      <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-    </button>
+      <GripVertical aria-hidden style={{ width: 16, height: 16, flexShrink: 0, color: 'var(--a-text-2)' }} />
+    </Button>
   )
 }
 
@@ -122,56 +152,178 @@ export function EditorPalette({
   onTimeDelay: () => void
   onAddTrigger: (type: SequenceTriggerType) => void
 }) {
+  const [tab, setTab] = useState<TabKey>('steps')
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
   const actions = ACTION_TILES.filter((t) => !q || t.label.toLowerCase().includes(q))
   const controls = CONTROL_TILES.filter((t) => !q || t.label.toLowerCase().includes(q))
   const triggers = SEQUENCE_TRIGGER_TYPES.filter((t) => !q || TRIGGER_TYPE_LABELS[t].toLowerCase().includes(q))
 
+  // Button forwards its ref (see Button.tsx), so the roving tabindex moves
+  // focus through React rather than looking the node up in the document.
+  const tabRefs = useRef<Partial<Record<TabKey, HTMLButtonElement | null>>>({})
+  function selectTab(next: TabKey) {
+    setTab(next)
+    tabRefs.current[next]?.focus()
+  }
+
+  /** Reproduces Radix Tabs' default keyboard behaviour: arrow keys move focus
+   *  AND selection (roving tabindex), Home/End jump to the first/last tab. */
+  function onTabKeyDown(e: KeyboardEvent<HTMLButtonElement>, current: TabKey) {
+    const idx = TAB_ORDER.indexOf(current)
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault()
+      selectTab(TAB_ORDER[(idx + 1) % TAB_ORDER.length])
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      selectTab(TAB_ORDER[(idx - 1 + TAB_ORDER.length) % TAB_ORDER.length])
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      selectTab(TAB_ORDER[0])
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      selectTab(TAB_ORDER[TAB_ORDER.length - 1])
+    }
+  }
+
+  function tabStyle(key: TabKey) {
+    const active = tab === key
+    return {
+      padding: '8px 0',
+      borderRadius: 'var(--a-r-md)',
+      border: '1px solid var(--a-border)',
+      background: active ? 'var(--a-accent-wash)' : 'var(--a-bg)',
+      color: active ? 'var(--a-accent)' : 'var(--a-text-2)',
+      fontWeight: active ? 600 : 500,
+    }
+  }
+
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto border-r border-border bg-background p-3 no-scrollbar">
-      <Tabs defaultValue="steps" className="flex min-h-0 flex-col gap-3">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="triggers">Triggers</TabsTrigger>
-          <TabsTrigger value="steps">Steps</TabsTrigger>
-        </TabsList>
+    <div
+      className="flex h-full flex-col gap-3 overflow-y-auto p-3 no-scrollbar"
+      style={{ borderRight: '1px solid var(--a-border)', background: 'var(--a-bg)' }}
+    >
+      <div className="flex min-h-0 flex-col gap-3">
+        <div role="tablist" aria-label="Palette" className="grid w-full grid-cols-2" style={{ gap: 4 }}>
+          <Button
+            ref={(el) => {
+              tabRefs.current.triggers = el
+            }}
+            variant="quiet"
+            role="tab"
+            id={TAB_IDS.triggers}
+            aria-selected={tab === 'triggers'}
+            aria-controls="palette-panel-triggers"
+            tabIndex={tab === 'triggers' ? 0 : -1}
+            onClick={() => selectTab('triggers')}
+            onKeyDown={(e) => onTabKeyDown(e, 'triggers')}
+            className="text-sm"
+            style={tabStyle('triggers')}
+          >
+            Triggers
+          </Button>
+          <Button
+            ref={(el) => {
+              tabRefs.current.steps = el
+            }}
+            variant="quiet"
+            role="tab"
+            id={TAB_IDS.steps}
+            aria-selected={tab === 'steps'}
+            aria-controls="palette-panel-steps"
+            tabIndex={tab === 'steps' ? 0 : -1}
+            onClick={() => selectTab('steps')}
+            onKeyDown={(e) => onTabKeyDown(e, 'steps')}
+            className="text-sm"
+            style={tabStyle('steps')}
+          >
+            Steps
+          </Button>
+        </div>
 
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-          <Input
+          <Search
+            aria-hidden
+            style={{
+              position: 'absolute',
+              left: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 14,
+              height: 14,
+              color: 'var(--a-text-2)',
+              pointerEvents: 'none',
+            }}
+          />
+          <SearchField
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search"
-            className="h-8 pl-8 text-sm"
             aria-label="Search palette"
+            style={{ width: '100%', maxWidth: 'none', paddingLeft: 32 }}
           />
         </div>
 
-        <TabsContent value="triggers" className="mt-0 space-y-2">
-          <p className="rounded-lg border border-dashed border-border bg-secondary/40 px-2.5 py-2 text-xs text-muted-foreground">
+        <div
+          role="tabpanel"
+          id="palette-panel-triggers"
+          aria-labelledby="palette-tab-triggers"
+          hidden={tab !== 'triggers'}
+          className="mt-0 space-y-2"
+        >
+          <p
+            className="rounded-lg px-2.5 py-2 text-xs"
+            style={{ border: '1px dashed var(--a-border)', background: 'var(--a-inset)', color: 'var(--a-text-2)' }}
+          >
             Click a trigger to add it. Any one matching trigger starts the automation.
           </p>
           {triggers.map((t) => (
-            <button
+            <Button
               key={t}
-              type="button"
+              variant="quiet"
               onClick={() => onAddTrigger(t)}
-              className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-left shadow-sm transition-colors hover:border-primary/50"
+              className="w-full text-left transition-colors"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                width: '100%',
+                gap: 10,
+                padding: '8px 12px',
+                borderRadius: 'var(--a-r-md)',
+                fontWeight: 400,
+                minHeight: 'auto',
+                justifyContent: 'flex-start',
+                border: '1px solid var(--a-border)',
+                background: 'var(--a-bg)',
+              }}
             >
-              <Zap className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              <span className="truncate text-sm font-medium text-foreground">{TRIGGER_TYPE_LABELS[t]}</span>
-            </button>
+              <Zap aria-hidden style={{ width: 16, height: 16, flexShrink: 0, color: 'var(--a-accent)' }} />
+              <span className="truncate text-sm font-medium" style={{ color: 'var(--a-text)' }}>
+                {TRIGGER_TYPE_LABELS[t]}
+              </span>
+            </Button>
           ))}
-        </TabsContent>
+        </div>
 
-        <TabsContent value="steps" className="mt-0 space-y-3">
-          <p className="rounded-lg border border-dashed border-border bg-secondary/40 px-2.5 py-2 text-xs text-muted-foreground">
+        <div
+          role="tabpanel"
+          id="palette-panel-steps"
+          aria-labelledby="palette-tab-steps"
+          hidden={tab !== 'steps'}
+          className="mt-0 space-y-3"
+        >
+          <p
+            className="rounded-lg px-2.5 py-2 text-xs"
+            style={{ border: '1px dashed var(--a-border)', background: 'var(--a-inset)', color: 'var(--a-text-2)' }}
+          >
             Drag a step to the canvas, or click to add it at the end.
           </p>
 
           {controls.length ? (
             <div className="space-y-1.5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Controls</p>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--a-text-2)' }}>
+                Controls
+              </p>
               {controls.map((t) =>
                 t.kind === 'condition' ? (
                   <PaletteTile
@@ -202,7 +354,9 @@ export function EditorPalette({
 
           {actions.length ? (
             <div className="space-y-1.5">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</p>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--a-text-2)' }}>
+                Actions
+              </p>
               {actions.map((t) => (
                 <PaletteTile
                   key={t.channel}
@@ -217,8 +371,8 @@ export function EditorPalette({
               ))}
             </div>
           ) : null}
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   )
 }

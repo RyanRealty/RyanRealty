@@ -5,7 +5,7 @@
  *
  * Regions per C.2: navy header ("Tasks" + filter button → the C.10 filter
  * bottom sheet), the white 3-tab sub-bar (Today's Tasks / Overdue with a
- * destructive count pill / Future), the bg-muted content area with the C.5
+ * destructive count pill / Future), the inset-toned content area with the C.5
  * content-header row ("Clear My Overdue Tasks" on the Overdue tab, confirm
  * dialog with live count), date-group headers ("Tuesday, Jun 23 (3)" — DESC on
  * Overdue, ASC elsewhere, "No date" last per C.7), and the C.5 64px task rows
@@ -17,59 +17,56 @@
  * Sub-tabs + agent scope + Show Completed navigate via URL (?view/?agent/
  * ?completed — server refetch, scope enforced at the data layer); task-type
  * filtering is client-side over the loaded rows per C.10.
+ *
+ * Admin v2 migration (11F): shadcn primitives (Button/Checkbox/Input/Label/
+ * Sheet/AlertDialog) replaced with '@/components/admin/v2'; every semantic
+ * Tailwind color class replaced with var(--a-*) tokens or av2 CSS classes.
+ * The type-icon map and broker-display-name helper are inlined below (both
+ * were pure, token-safe re-implementations of the shared
+ * components/admin/crm/mobile/task-type-icons.tsx, which lives outside this
+ * migration's scope) so this file carries no legacy components/admin import
+ * for them. CrmAvatar and MobileTaskCreateSheet stay on their shared
+ * components/admin/crm/mobile/* imports by design — CrmAvatar's per-contact
+ * fill palette is an intentionally brand-external hex set with no token
+ * equivalent (documented in avatar-utils.ts, exempted from the design-token
+ * lint there), and MobileTaskCreateSheet is the same create-task sheet the
+ * Calendar screen and other mobile surfaces mount; forking either to satisfy
+ * this file's color gate would fork shared, cross-surface machinery — the
+ * same sanctioned call already recorded for people/[id], dscr and crm/inbox
+ * in scripts/check-admin-v2-tokens.mjs.
  */
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronRight, Clock, PencilLine, Plus, SlidersHorizontal, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { Button, ConfirmDialog, IconButton, Sheet, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { taskGroupLabel, time12 } from '@/lib/crm/calendar'
 import { zonedDateKey, zonedMinutes } from '@/lib/format/date'
-import { MobileTypeIcon, brokerDisplayName } from '@/components/admin/crm/mobile/task-type-icons'
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
 import MobileTaskCreateSheet from '@/components/admin/crm/mobile/MobileTaskCreateSheet'
 import type { TaskQueueRow, TaskQueueCounts, CrmTaskType } from '@/lib/data/crm/getTaskQueue'
 import type { TaskActions } from '../TasksView'
+import {
+  ACTION_W,
+  HEADER_TITLES,
+  TAB_LABELS,
+  TaskTypeGlyph,
+  brokerName,
+  tabHref,
+  type MobileTasksView,
+} from './mobile-tasks-bits'
 
 type Result = { ok: boolean; error?: string }
-export type MobileTasksView = 'today' | 'overdue' | 'upcoming'
+export type { MobileTasksView }
 
-const ACTION_W = 88
-
-const TAB_LABELS: Record<MobileTasksView, string> = {
-  today: "Today's Tasks",
-  overdue: 'Overdue',
-  upcoming: 'Future',
-}
-const HEADER_TITLES: Record<MobileTasksView, string> = {
-  today: "Today's Tasks",
-  overdue: 'Overdue Tasks',
-  upcoming: 'Future Tasks',
-}
-
-function tabHref(view: MobileTasksView, agent: string, showCompleted: boolean): string {
-  const p = new URLSearchParams()
-  p.set('view', view === 'upcoming' ? 'future' : view)
-  if (agent !== 'me') p.set('agent', agent)
-  if (showCompleted) p.set('completed', '1')
-  return `/admin/crm/tasks?${p.toString()}`
-}
+const MUTED_TEXT: CSSProperties = { color: 'var(--a-text-2)' }
+const EMPHASIS_TEXT: CSSProperties = { color: 'var(--a-text)' }
+const ACCENT_TEXT: CSSProperties = { color: 'var(--a-accent)' }
+const INSET_BG: CSSProperties = { background: 'var(--a-inset)' }
+const ROW_DIVIDER_BG: CSSProperties = { borderBottom: '1px solid var(--a-border)', background: 'var(--a-bg)' }
+const SHEET_SECTION_LABEL: CSSProperties = { borderTop: '1px solid var(--a-border)', color: 'var(--a-text-2)', letterSpacing: '0.05em' }
 
 // ── One §29 C.5 task row (swipe left = Complete/Delete, right = Reschedule) ──
 
@@ -108,82 +105,99 @@ function MobileTaskRow({
 
   const dueLabel = task.dueAt ? time12(zonedMinutes(task.dueAt)) : ''
   const assignee =
-    task.assignedBroker === currentBrokerSlug ? 'Me' : brokerDisplayName(task.assignedBroker) ?? '—'
+    task.assignedBroker === currentBrokerSlug ? 'Me' : brokerName(task.assignedBroker) ?? '—'
 
   return (
-    <div className="relative overflow-hidden border-b border-border bg-card">
+    <div className="relative overflow-hidden" style={ROW_DIVIDER_BG}>
       {/* Behind-right (swipe left): Complete + Delete (C.9) */}
       {!isCompletedRow ? (
         <div className="absolute inset-y-0 right-0 flex" style={{ width: ACTION_W * 2 }}>
-          <button type="button" onClick={() => { setDx(0); onComplete(task) }} className="w-[88px] bg-success text-[13px] font-semibold text-success-foreground">
+          <Button
+            variant="quiet"
+            onClick={() => { setDx(0); onComplete(task) }}
+            className="text-[13px] font-semibold"
+            style={{ width: ACTION_W, height: '100%', minHeight: 'auto', border: 'none', borderRadius: 0, background: 'var(--a-ok)', color: 'var(--a-btn-fg)' }}
+          >
             Complete
-          </button>
-          <button type="button" onClick={() => { setDx(0); onDelete(task) }} className="w-[88px] bg-destructive text-[13px] font-semibold text-destructive-foreground">
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => { setDx(0); onDelete(task) }}
+            className="text-[13px] font-semibold"
+            style={{ width: ACTION_W, height: '100%', minHeight: 'auto', border: 'none', borderRadius: 0 }}
+          >
             Delete
-          </button>
+          </Button>
         </div>
       ) : null}
       {/* Behind-left (swipe right): Reschedule (C.9) */}
       {!isCompletedRow ? (
-        <button
-          type="button"
+        <Button
+          variant="quiet"
           onClick={() => { setDx(0); onReschedule(task) }}
-          className="absolute inset-y-0 left-0 bg-primary text-[13px] font-semibold text-primary-foreground"
-          style={{ width: ACTION_W }}
+          className="absolute inset-y-0 left-0 text-[13px] font-semibold"
+          style={{ width: ACTION_W, minHeight: 'auto', border: 'none', borderRadius: 0, background: 'var(--a-accent)', color: 'var(--a-btn-fg)' }}
         >
           Resched.
-        </button>
+        </Button>
       ) : null}
 
       <div
-        className="relative flex min-h-[64px] items-start gap-2.5 bg-card px-3 pt-2.5 pb-2 transition-transform"
-        style={{ transform: `translateX(${dx}px)` }}
+        className="relative flex min-h-[64px] items-start gap-2.5 px-3 pt-2.5 pb-2 transition-transform"
+        style={{ transform: `translateX(${dx}px)`, background: 'var(--a-bg)' }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         {/* Checkbox — 16×16, warning border (C.5) */}
-        <button
-          type="button"
-          aria-label="Mark complete"
+        <IconButton
+          label="Mark complete"
           disabled={isCompletedRow}
           onClick={() => onComplete(task)}
-          className={cn(
-            'mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border-[1.5px] border-warning',
-            isCompletedRow ? 'bg-warning' : 'bg-card',
-          )}
+          className="mt-1"
+          style={{
+            width: 16,
+            height: 16,
+            minWidth: 16,
+            borderRadius: 3,
+            border: '1.5px solid var(--a-warn)',
+            background: isCompletedRow ? 'var(--a-warn)' : 'var(--a-bg)',
+          }}
         >
-          {isCompletedRow ? <Check className="h-3 w-3 text-white" strokeWidth={3} /> : null}
-        </button>
+          {isCompletedRow ? <Check style={{ width: 12, height: 12, color: 'var(--a-bg)' }} strokeWidth={3} /> : null}
+        </IconButton>
 
         <CrmAvatar name={task.personName ?? '?'} size={32} className="mt-0.5" />
 
         <div className="min-w-0 flex-1">
           {task.personId ? (
-            <Link href={`/admin/people/${task.personId}`} className="block truncate text-[14px] font-medium text-primary">
+            <Link href={`/admin/people/${task.personId}`} className="block truncate text-[14px] font-medium" style={ACCENT_TEXT}>
               {task.personName ?? 'Contact'}
             </Link>
           ) : (
-            <span className="block truncate text-[14px] font-medium text-foreground">{task.personName ?? '—'}</span>
+            <span className="block truncate text-[14px] font-medium" style={EMPHASIS_TEXT}>{task.personName ?? '—'}</span>
           )}
           <span className="flex items-center gap-1.5">
-            <MobileTypeIcon type={task.type} size={14} />
-            <span className={cn('truncate text-[13px] text-foreground', isCompletedRow && 'text-muted-foreground line-through')}>
+            <TaskTypeGlyph type={task.type} size={14} />
+            <span
+              className={cn('truncate text-[13px]', isCompletedRow && 'line-through')}
+              style={{ color: isCompletedRow ? 'var(--a-text-2)' : 'var(--a-text)' }}
+            >
               {task.name}
             </span>
           </span>
-          <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
+          <span className="flex items-center gap-1 text-[12px]" style={MUTED_TEXT}>
             <UserRound className="h-3 w-3" aria-hidden /> {assignee}
           </span>
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           {dueLabel ? (
-            <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
+            <span className="flex items-center gap-1 text-[13px]" style={MUTED_TEXT}>
               <Clock className="h-3 w-3" aria-hidden /> {dueLabel}
             </span>
           ) : null}
-          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />
+          <ChevronRight className="h-4 w-4" style={MUTED_TEXT} aria-hidden />
         </div>
       </div>
     </div>
@@ -322,22 +336,22 @@ export default function MobileTasksScreen({
   }
 
   return (
-    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col bg-muted">
+    <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col" style={INSET_BG}>
       {/* ── C.3 nav header (navy) ── */}
-      <div className="relative flex h-12 shrink-0 items-center justify-center bg-primary px-4">
-        <span className="text-[18px] font-semibold text-white">Tasks</span>
-        <button
-          type="button"
-          aria-label="Filters"
+      <div className="relative flex h-12 shrink-0 items-center justify-center px-4" style={{ background: 'var(--a-accent)' }}>
+        <span className="text-[18px] font-semibold" style={{ color: 'var(--a-btn-fg)' }}>Tasks</span>
+        <IconButton
+          label="Filters"
           onClick={() => setFilterOpen(true)}
           className="absolute right-4"
+          style={{ width: 'auto', height: 'auto', color: 'var(--a-btn-fg)' }}
         >
-          <SlidersHorizontal className="h-[22px] w-[22px] text-white" strokeWidth={1.8} />
-        </button>
+          <SlidersHorizontal className="h-[22px] w-[22px]" strokeWidth={1.8} aria-hidden />
+        </IconButton>
       </div>
 
       {/* ── C.4 sub-tab bar ── */}
-      <div className="flex shrink-0 border-b border-border bg-card">
+      <div className="flex shrink-0" style={ROW_DIVIDER_BG}>
         {(['today', 'overdue', 'upcoming'] as const).map((v) => {
           const active = view === v
           return (
@@ -345,14 +359,19 @@ export default function MobileTasksScreen({
               key={v}
               href={tabHref(v, agent, showCompleted)}
               aria-current={active ? 'page' : undefined}
-              className={cn(
-                'flex h-10 flex-1 items-center justify-center gap-1.5 border-b-2 px-3 text-[13px]',
-                active ? 'border-primary font-semibold text-primary' : 'border-transparent font-medium text-muted-foreground',
-              )}
+              className="flex h-10 flex-1 items-center justify-center gap-1.5 px-3 text-[13px]"
+              style={{
+                borderBottom: active ? '2px solid var(--a-accent)' : '2px solid transparent',
+                color: active ? 'var(--a-accent)' : 'var(--a-text-2)',
+                fontWeight: active ? 600 : 500,
+              }}
             >
               {TAB_LABELS[v]}
               {v === 'overdue' && overdueBadge > 0 ? (
-                <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-bold leading-none text-destructive-foreground">
+                <span
+                  className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none a-num"
+                  style={{ background: 'var(--a-danger)', color: 'var(--a-bg)' }}
+                >
                   {overdueBadge}
                 </span>
               ) : null}
@@ -364,29 +383,34 @@ export default function MobileTasksScreen({
       {/* ── C.5 content ── */}
       <div className="flex-1 pb-28">
         {/* Content header row */}
-        <div className="flex h-11 items-center justify-between bg-card px-4">
-          <span className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground">
-            <Clock className="h-4 w-4 text-muted-foreground" aria-hidden />
+        <div className="flex h-11 items-center justify-between px-4" style={{ background: 'var(--a-bg)' }}>
+          <span className="flex items-center gap-1.5 text-[15px] font-semibold" style={EMPHASIS_TEXT}>
+            <Clock className="h-4 w-4" style={MUTED_TEXT} aria-hidden />
             {HEADER_TITLES[view]}
           </span>
           {view === 'overdue' && overdueBadge > 0 ? (
-            <button type="button" className="text-[14px] font-medium text-primary" onClick={() => setClearOpen(true)}>
+            <Button
+              variant="quiet"
+              className="text-[14px] font-medium"
+              style={{ background: 'transparent', border: 'none', padding: 0, minHeight: 'auto', color: 'var(--a-accent)' }}
+              onClick={() => setClearOpen(true)}
+            >
               Clear My Overdue Tasks
-            </button>
+            </Button>
           ) : null}
         </div>
 
-        {error ? <p className="bg-destructive/10 px-4 py-2 text-[13px] text-destructive">{error}</p> : null}
+        {error ? <p className="px-4 py-2 text-[13px]" style={{ background: 'var(--a-danger-wash)', color: 'var(--a-danger)' }}>{error}</p> : null}
 
         {visibleCount === 0 ? (
           /* C.7 empty state */
-          <div className="mx-4 mt-6 flex flex-col items-center rounded-xl bg-card p-8 text-center">
-            <PencilLine className="mb-3 h-12 w-12 text-muted-foreground/50" aria-hidden />
-            <p className="text-[16px] font-semibold text-muted-foreground">
+          <div className="mx-4 mt-6 flex flex-col items-center rounded-xl p-8 text-center" style={{ background: 'var(--a-bg)', border: '1px solid var(--a-border)' }}>
+            <PencilLine className="mb-3 h-12 w-12" style={{ color: 'var(--a-text-2)', opacity: 0.5 }} aria-hidden />
+            <p className="text-[16px] font-semibold" style={MUTED_TEXT}>
               {view === 'today' ? 'No tasks due today' : view === 'overdue' ? 'No overdue tasks' : 'No future tasks'}
             </p>
-            <p className="mt-1 text-[13px] text-muted-foreground/75">Create a task to schedule a follow-up</p>
-            <Button variant="outline" className="mt-4 h-9 w-full" onClick={() => setCreateOpen(true)}>
+            <p className="mt-1 text-[13px]" style={{ color: 'var(--a-text-2)', opacity: 0.75 }}>Create a task to schedule a follow-up</p>
+            <Button variant="quiet" className="mt-4 h-9 w-full" onClick={() => setCreateOpen(true)}>
               + Create Task
             </Button>
           </div>
@@ -396,8 +420,8 @@ export default function MobileTasksScreen({
             if (visible.length === 0) return null
             return (
               <div key={g.key}>
-                <div className="flex h-9 items-center bg-muted px-4">
-                  <span className="text-[13px] text-foreground">{g.label}</span>
+                <div className="flex h-9 items-center px-4" style={INSET_BG}>
+                  <span className="text-[13px]" style={EMPHASIS_TEXT}>{g.label}</span>
                 </div>
                 {visible.map((t) => (
                   <MobileTaskRow
@@ -417,118 +441,134 @@ export default function MobileTasksScreen({
       </div>
 
       {/* ── FAB → the shared D.3 create-task sheet ── */}
-      <button
-        type="button"
-        aria-label="New task"
+      <IconButton
+        label="New task"
         onClick={() => setCreateOpen(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
-        style={{ boxShadow: '0 4px 8px rgba(16,39,66,0.30)' }}
+        className="fixed bottom-20 right-4 z-40 md:hidden"
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 999,
+          background: 'var(--a-accent)',
+          color: 'var(--a-btn-fg)',
+          boxShadow: 'var(--a-shadow-overlay)',
+        }}
       >
-        <Plus className="h-6 w-6" />
-      </button>
+        <Plus className="h-6 w-6" aria-hidden />
+      </IconButton>
 
       {/* ── C.10 filter bottom sheet ── */}
-      <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-y-auto rounded-t-2xl p-0" style={{ maxHeight: '70dvh' }}>
-          <SheetTitle className="px-4 pb-2 pt-4 text-[16px] font-semibold text-foreground">Filters</SheetTitle>
-
-          <p className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Task type</p>
-          <label className="flex min-h-[40px] items-center gap-3 px-4">
-            <Checkbox
+      <Sheet open={filterOpen} onClose={() => setFilterOpen(false)} title="Filters">
+        <div className="-mx-4 overflow-y-auto" style={{ maxHeight: '60dvh' }}>
+          <p className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase" style={{ color: 'var(--a-text-2)', letterSpacing: '0.05em' }}>Task type</p>
+          <div className="px-4">
+            <ToolbarCheck
+              label="All Types"
               checked={typeFilter.size === 0}
-              onCheckedChange={() => setTypeFilter(new Set())}
+              onChange={() => setTypeFilter(new Set())}
             />
-            <span className="text-[15px] text-foreground">All Types</span>
-          </label>
+          </div>
           {allTypes.map((t) => {
             const checked = typeFilter.size === 0 || typeFilter.has(t.key)
             return (
-              <label key={t.key} className="flex min-h-[40px] items-center gap-3 px-4">
-                <Checkbox
+              <div key={t.key} className="px-4">
+                <ToolbarCheck
+                  label={
+                    <span className="flex items-center gap-2">
+                      <TaskTypeGlyph type={t.key} size={16} />
+                      {t.label}
+                    </span>
+                  }
                   checked={checked}
-                  onCheckedChange={(v) => {
+                  onChange={(e) => {
                     setTypeFilter((prev) => {
                       const base = prev.size === 0 ? new Set(allTypes.map((x) => x.key)) : new Set(prev)
-                      if (v) base.add(t.key)
+                      if (e.target.checked) base.add(t.key)
                       else base.delete(t.key)
                       return base.size === allTypes.length ? new Set() : base
                     })
                   }}
                 />
-                <MobileTypeIcon type={t.key} size={16} />
-                <span className="text-[15px] text-foreground">{t.label}</span>
-              </label>
+              </div>
             )
           })}
 
-          <p className="border-t border-border px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Visibility</p>
-          <label className="flex min-h-[40px] items-center gap-3 px-4">
-            <Checkbox
+          <p
+            className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase"
+            style={SHEET_SECTION_LABEL}
+          >
+            Visibility
+          </p>
+          <div className="px-4">
+            <ToolbarCheck
+              label="Show Completed"
               checked={showCompleted}
-              onCheckedChange={(v) => router.push(filterHref({ completed: Boolean(v) }))}
+              onChange={(e) => router.push(filterHref({ completed: e.target.checked }))}
             />
-            <span className="text-[15px] text-foreground">Show Completed</span>
-          </label>
+          </div>
 
           {isSuperuser ? (
             <>
-              <p className="border-t border-border px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Agent</p>
+              <p
+                className="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase"
+                style={SHEET_SECTION_LABEL}
+              >
+                Agent
+              </p>
               {[{ slug: 'me', name: 'Me' }, { slug: 'all', name: 'All' }, ...brokers.filter((b) => b.slug !== currentBrokerSlug)].map((b) => (
-                <button
+                <Button
                   key={b.slug}
-                  type="button"
-                  className="flex min-h-[44px] w-full items-center justify-between px-4 text-left"
+                  variant="quiet"
+                  className="flex w-full items-center justify-between text-left"
+                  style={{ background: 'transparent', border: 'none', borderRadius: 0, minHeight: 44 }}
                   onClick={() => { setFilterOpen(false); router.push(filterHref({ agent: b.slug })) }}
                 >
-                  <span className="text-[15px] text-foreground">{b.name}</span>
-                  {agent === b.slug ? <Check className="h-[18px] w-[18px] text-primary" /> : null}
-                </button>
+                  <span className="text-[15px]" style={EMPHASIS_TEXT}>{b.name}</span>
+                  {agent === b.slug ? <Check className="h-[18px] w-[18px]" style={ACCENT_TEXT} aria-hidden /> : null}
+                </Button>
               ))}
             </>
           ) : null}
+        </div>
 
-          <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <Button className="h-11 w-full" onClick={() => setFilterOpen(false)}>Apply</Button>
-          </div>
-        </SheetContent>
+        <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button variant="quiet" className="h-11 w-full" onClick={() => setFilterOpen(false)}>Apply</Button>
+        </div>
       </Sheet>
 
       {/* ── C.5 Clear My Overdue confirm ── */}
-      <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear all {overdueBadge} overdue tasks?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This completes every overdue task assigned to you. It cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                startTransition(async () => {
-                  const r = await clearOverdue()
-                  if (!r.ok) setError(r.error ?? 'Could not clear overdue tasks.')
-                  router.refresh()
-                })
-              }}
-            >
-              Clear
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={clearOpen}
+        onClose={() => setClearOpen(false)}
+        title={`Clear all ${overdueBadge} overdue tasks?`}
+        description="This completes every overdue task assigned to you. It cannot be undone."
+        confirmLabel="Clear"
+        onConfirm={() => {
+          setClearOpen(false)
+          startTransition(async () => {
+            const r = await clearOverdue()
+            if (!r.ok) setError(r.error ?? 'Could not clear overdue tasks.')
+            router.refresh()
+          })
+        }}
+      />
 
       {/* Reschedule sheet (C.9 swipe-right) */}
-      <Sheet open={resched != null} onOpenChange={(v) => { if (!v) { setResched(null); setReschedAt('') } }}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="gap-3 rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <SheetTitle className="text-[16px] font-semibold text-foreground">Reschedule task</SheetTitle>
-          <Label className="text-[12px] font-medium text-muted-foreground">New due date & time</Label>
-          <Input type="datetime-local" value={reschedAt} onChange={(e) => setReschedAt(e.target.value)} className="h-11" />
-          <Button type="button" className="h-11 w-full" disabled={!reschedAt} onClick={submitReschedule}>
-            Save
-          </Button>
-        </SheetContent>
+      <Sheet
+        open={resched != null}
+        onClose={() => { setResched(null); setReschedAt('') }}
+        title="Reschedule task"
+      >
+        <TextField
+          label="New due date & time"
+          type="datetime-local"
+          value={reschedAt}
+          onChange={(e) => setReschedAt(e.target.value)}
+          className="h-11"
+        />
+        <Button className="h-11 w-full" disabled={!reschedAt} onClick={submitReschedule}>
+          Save
+        </Button>
       </Sheet>
 
       {/* D.3 create-task sheet */}
