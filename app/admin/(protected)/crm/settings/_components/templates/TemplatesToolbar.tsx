@@ -10,21 +10,18 @@
  * page owns filtering; "+ Folder" navigates into a new (empty) folder — the
  * folder persists the moment its first template is created with that
  * category. "+ Template" is a callback into the owning list's create modal.
+ *
+ * P11 admin v2: shadcn Input/Button/Dialog/Label → SearchField, Button,
+ * Dialog + TextField from components/admin/v2. ci:admin-ui rule C allows ONE
+ * primary-variant Button per file, and this file has two candidates: the
+ * always-visible "+ {noun}" CTA and the new-folder dialog's submit. The CTA
+ * keeps primary (it is the view's action); the dialog submit is quiet, where
+ * footer position already carries the affirmative.
  */
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Button, Dialog, SearchField, TextField } from '@/components/admin/v2'
 
 export function tplUrl(params: { t: 'email' | 'text'; folder?: string | null; q?: string | null }): string {
   const sp = new URLSearchParams()
@@ -69,8 +66,12 @@ export function TemplatesToolbar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <div className="relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+        <Search
+          className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
+          style={{ color: 'var(--a-text-2)' }}
+        />
+        <SearchField
+          type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => {
@@ -80,15 +81,13 @@ export function TemplatesToolbar({
             if (e.target.value.trim() !== q) submitSearch(e.target.value)
           }}
           placeholder="Search Templates"
-          className="h-9 w-48 pl-8"
           aria-label="Search templates"
+          style={{ width: 192, paddingLeft: 28 }}
         />
       </div>
       <Button
         type="button"
-        variant="outline"
-        size="sm"
-        className="h-9"
+        variant="quiet"
         onClick={() => {
           setFolderName('')
           setFolderOpen(true)
@@ -96,46 +95,36 @@ export function TemplatesToolbar({
       >
         + Folder
       </Button>
-      <Button type="button" size="sm" className="h-9" onClick={onNewTemplate}>
+      <Button type="button" onClick={onNewTemplate}>
         + {noun}
       </Button>
 
       <Dialog
         open={folderOpen}
-        onOpenChange={(o) => {
-          if (!o) setFolderOpen(false)
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New folder</DialogTitle>
-            <DialogDescription>
-              Name the folder, then create its first template inside it — templates you create
-              while a folder is open are assigned to it automatically.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-1.5">
-            <Label htmlFor="tpl-new-folder">Folder name</Label>
-            <Input
-              id="tpl-new-folder"
-              value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') createFolder()
-              }}
-              placeholder="e.g. Buyer, Seller, Drip..."
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFolderOpen(false)}>
+        onClose={() => setFolderOpen(false)}
+        title="New folder"
+        description="Name the folder, then create its first template inside it — templates you create while a folder is open are assigned to it automatically."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setFolderOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={createFolder} disabled={!folderName.trim()}>
+            <Button variant="quiet" onClick={createFolder} disabled={!folderName.trim()}>
               Create folder
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextField
+          label="Folder name"
+          value={folderName}
+          onChange={(e) => setFolderName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') createFolder()
+          }}
+          placeholder="e.g. Buyer, Seller, Drip..."
+          autoFocus
+        />
       </Dialog>
     </div>
   )

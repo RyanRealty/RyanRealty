@@ -111,8 +111,25 @@ for (const file of files) {
   }
   visit(src)
 
-  // Rule D — width tokens (string scan is fine here: class strings, not code)
-  for (const m of text.matchAll(/max-w-(\[[^\]]+\]|[0-9a-z]+)/g)) widthTokens.add(m[0])
+  // Rule D — width tokens. Scanned from STRING LITERALS ONLY, via the AST above.
+  // A raw text scan used to be used here, on the assumption that a `max-w-*`
+  // could only be a class string. It cannot: on 2026-08-08 a code COMMENT
+  // explaining why a token had been removed re-triggered the gate that asked for
+  // its removal. A comment is not a class.
+  function collectWidths(node) {
+    if (
+      ts.isStringLiteral(node) ||
+      ts.isNoSubstitutionTemplateLiteral(node) ||
+      ts.isTemplateHead(node) ||
+      ts.isTemplateMiddle(node) ||
+      ts.isTemplateTail(node) ||
+      ts.isJsxText(node)
+    ) {
+      for (const m of node.text.matchAll(/max-w-(\[[^\]]+\]|[0-9a-z]+)/g)) widthTokens.add(m[0])
+    }
+    ts.forEachChild(node, collectWidths)
+  }
+  collectWidths(src)
 
   if (Object.keys(rawCounts).length) rawByFile[file] = rawCounts
   // Rule C only counts files where v2 Button is actually in play

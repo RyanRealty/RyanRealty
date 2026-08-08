@@ -1,7 +1,7 @@
 {
   "note": "G66 ci:entity-scope — SHRINK-ONLY. Every page.tsx under app/admin in a dynamic route segment must CALL scopeBroker / isPersonInScope / dealInScope / requirePersonInScope, or be a pure redirect bridge (redirect + no JSX), or be listed here. This list is the debt, not the permission: it may only shrink. A page missing from it fails, a count above `count` fails, and deleting a line while the page is still unscoped fails (it reads as NEW). Re-seed ONLY after genuinely adding a scope check: `node scripts/check-entity-scope.mjs --write-baseline`, then commit the smaller baseline. Never hand-add a path to let a new page through.",
   "seeded": "2026-08-08",
-  "count": 11,
+  "count": 10,
   "unscopedDynamicPages": [
     "app/admin/(protected)/bpo/[slug]/page.tsx",
     "app/admin/(protected)/cmas/[slug]/page.tsx",
@@ -10,7 +10,6 @@
     "app/admin/(protected)/help/[slug]/page.tsx",
     "app/admin/(protected)/listings/[listingKey]/page.tsx",
     "app/admin/(protected)/newsletters/[id]/page.tsx",
-    "app/admin/(protected)/people/[id]/tools/page.tsx",
     "app/admin/(protected)/prospecting/[kind]/[id]/page.tsx",
     "app/admin/(protected)/signing/[envelopeId]/page.tsx",
     "app/admin/(protected)/visitors/[sessionId]/page.tsx"

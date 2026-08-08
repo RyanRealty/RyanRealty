@@ -2,9 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { setWeeklyReportRecipientsAction } from '@/app/actions/crm-company-settings'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button, IconButton, SearchField } from '@/components/admin/v2'
 
 /**
  * WeeklyRecipientsEditor — spec §1.7 / AC-10.
@@ -14,6 +12,10 @@ import { Input } from '@/components/ui/input'
  * (§1.9 — not the form's Save button). These recipients receive the REAL Monday
  * weekly pipeline digest (app/api/cron/weekly-pipeline-digest); when the list
  * is empty the digest falls back to the account owner.
+ *
+ * P11F: migrated to the LOCKED admin v2 language. "+ Add Email" and the inline
+ * "Add" never render together, but ci:admin-ui rule C counts primary Buttons
+ * per FILE — the commit ("Add") keeps the one primary, the opener is quiet.
  */
 export function WeeklyRecipientsEditor({ recipients: initial }: { recipients: string[] }) {
   const [recipients, setRecipients] = useState<string[]>(initial)
@@ -40,38 +42,48 @@ export function WeeklyRecipientsEditor({ recipients: initial }: { recipients: st
   }
 
   return (
-    <div className="space-y-2">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s2)' }}>
       {recipients.length === 0 && !adding && (
-        <p className="text-sm text-muted-foreground">
+        <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           No recipients added — the weekly report goes to the account owner.
         </p>
       )}
 
       {recipients.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap" style={{ gap: 'var(--a-s1)' }}>
           {recipients.map((r) => (
-            <Badge key={r} variant="secondary" className="gap-0.5 pr-0.5 font-normal">
+            <span
+              key={r}
+              className="inline-flex items-center"
+              style={{
+                gap: 2,
+                fontSize: 'var(--a-text-xs)',
+                color: 'var(--a-text-2)',
+                border: '1px solid var(--a-border)',
+                borderRadius: 'var(--a-r-sm)',
+                padding: '1px 6px',
+              }}
+            >
               {r}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={`Remove ${r}`}
-                className="h-4 w-4 rounded-full text-muted-foreground hover:text-destructive"
+              <IconButton
+                label={`Remove ${r}`}
+                tone="danger"
                 disabled={isPending}
                 onClick={() => persist(recipients.filter((x) => x !== r))}
+                style={{ width: 18, height: 18, borderRadius: 999 }}
               >
                 ×
-              </Button>
-            </Badge>
+              </IconButton>
+            </span>
           ))}
         </div>
       )}
 
       {adding ? (
-        <div className="flex items-center gap-2">
-          <Input
+        <div className="flex items-center" style={{ gap: 'var(--a-s2)' }}>
+          <SearchField
             type="email"
+            aria-label="Add Email"
             value={email}
             placeholder="name@example.com"
             onChange={(e) => setEmail(e.target.value)}
@@ -81,23 +93,17 @@ export function WeeklyRecipientsEditor({ recipients: initial }: { recipients: st
                 if (email.trim()) persist([...recipients, email.trim().toLowerCase()])
               }
             }}
-            className="h-8 max-w-64"
+            style={{ maxWidth: 256 }}
             autoFocus
           />
           <Button
-            type="button"
-            size="sm"
-            className="h-8"
             disabled={isPending || !email.trim()}
             onClick={() => persist([...recipients, email.trim().toLowerCase()])}
           >
             {isPending ? 'Saving...' : 'Add'}
           </Button>
           <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-8"
+            variant="quiet"
             disabled={isPending}
             onClick={() => {
               setAdding(false)
@@ -108,17 +114,16 @@ export function WeeklyRecipientsEditor({ recipients: initial }: { recipients: st
           </Button>
         </div>
       ) : (
-        <Button
-          type="button"
-          variant="link"
-          className="h-auto p-0 text-sm text-primary"
-          onClick={() => setAdding(true)}
-        >
-          + Add Email
-        </Button>
+        <div>
+          <Button variant="quiet" onClick={() => setAdding(true)}>
+            + Add Email
+          </Button>
+        </div>
       )}
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && (
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>{error}</p>
+      )}
     </div>
   )
 }

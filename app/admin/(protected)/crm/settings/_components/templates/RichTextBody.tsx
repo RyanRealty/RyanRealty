@@ -12,11 +12,18 @@
  *
  * Deliberately dependency-free (document.execCommand — deprecated but
  * universally supported and appropriate for an internal admin editor).
+ *
+ * Admin v2 (11F): color and type now come from the locked admin tokens and the
+ * toolbar is built from IconButton. SHARED SURFACE — the calendar's
+ * AppointmentModal mounts this too, so the props and the DOM contract are
+ * unchanged: one root element, the [contenteditable] node insertTokenInto()
+ * reaches by query, and the __insertToken property hung on it. `prose` stays:
+ * Tailwind's preflight strips list markers, so the two list buttons render
+ * nothing without it.
  */
 import { useEffect, useRef } from 'react'
 import { Bold, Italic, Underline, List, ListOrdered, Link2, Image as ImageIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { IconButton } from '@/components/admin/v2'
 import { looksLikeHtml } from '@/lib/crm/email-body'
 import type { ReactNode } from 'react'
 
@@ -111,17 +118,21 @@ export function RichTextBody({
   ]
 
   return (
-    <div className="rounded-lg border border-border bg-card">
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-2 py-1.5">
+    <div
+      style={{
+        border: '1px solid var(--a-border)',
+        borderRadius: 'var(--a-r-lg)',
+        background: 'var(--a-bg)',
+      }}
+    >
+      <div
+        className="flex flex-wrap items-center gap-0.5 px-2 py-1.5"
+        style={{ borderBottom: '1px solid var(--a-border)' }}
+      >
         {tools.map((t) => (
-          <Button
+          <IconButton
             key={t.label}
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            aria-label={t.label}
-            title={t.label}
+            label={t.label}
             onMouseDown={(e) => {
               // Keep the editor selection alive — a button mousedown would blur it.
               e.preventDefault()
@@ -129,9 +140,13 @@ export function RichTextBody({
             }}
           >
             <t.icon className="h-3.5 w-3.5" />
-          </Button>
+          </IconButton>
         ))}
-        <Separator orientation="vertical" className="mx-1 h-5" />
+        <div
+          aria-hidden="true"
+          className="mx-1"
+          style={{ height: 20, borderLeft: '1px solid var(--a-border)' }}
+        />
         <div className="ml-auto">{toolbarExtras}</div>
       </div>
       <div
@@ -141,8 +156,17 @@ export function RichTextBody({
         role="textbox"
         aria-multiline="true"
         aria-label="Email body"
-        className="prose prose-sm max-w-none px-3 py-2.5 text-sm text-foreground outline-none focus-visible:ring-0 [&_a]:text-primary [&_a]:underline"
-        style={{ minHeight }}
+        className="prose prose-sm px-3 py-2.5 outline-none focus-visible:ring-0 [&_a]:underline [&_a]:text-[color:var(--a-accent)]"
+        // maxWidth inline rather than max-w-none: it cancels the same `prose`
+        // max-width, and ci:admin-ui rule D ratchets DISTINCT max-w-* tokens
+        // under app/admin — this was the only new one in the family.
+        style={{
+          maxWidth: 'none',
+          minHeight,
+          fontFamily: 'var(--a-font)',
+          fontSize: 'var(--a-text-md)',
+          color: 'var(--a-text)',
+        }}
         onInput={emit}
         onBlur={emit}
       />

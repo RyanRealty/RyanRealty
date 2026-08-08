@@ -13,8 +13,16 @@
  * appear. For email templates the preview wraps the body the same way the
  * live send path does (composeOutboundHtml) so the rendered output matches
  * what the recipient sees.
+ *
+ * P11 admin-v2: the shadcn semantic color classes resolve to the PUBLIC brand
+ * palette, so every one of them moved onto the locked admin tokens
+ * (var(--a-*)). The SMS bubble is now the v2 ThreadBubble — the same
+ * outbound bubble the real thread renders, so the preview and the thread stop
+ * being two different pictures of one message. Layout classes are untouched;
+ * no data, merge, or render path changed.
  */
-import { useMemo } from 'react'
+import { useMemo, type CSSProperties } from 'react'
+import { ThreadBubble } from '@/components/admin/v2'
 import { renderCrmMerge, type MergeContext } from '@/lib/crm/merge'
 import { buildEmailPreviewDoc } from '@/lib/crm/email-body'
 import { cn } from '@/lib/utils'
@@ -35,6 +43,15 @@ const PLACEHOLDER_PERSON = {
     cmaLink: 'https://ryan-realty.com/cma/preview',
   },
 }
+
+/** The pane's small uppercase caption — v2 meta type, one definition. */
+const CAPTION_STYLE = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  color: 'var(--a-text-2)',
+} as const satisfies CSSProperties
 
 export function TemplatePreviewPane({
   channel,
@@ -73,7 +90,16 @@ export function TemplatePreviewPane({
 
   if (!body.trim()) {
     return (
-      <div className={cn('flex items-center justify-center rounded-xl border border-border bg-muted/40 py-12 text-sm text-muted-foreground', className)}>
+      <div
+        className={cn('flex items-center justify-center py-12', className)}
+        style={{
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          background: 'var(--a-inset)',
+          fontSize: 'var(--a-text-sm)',
+          color: 'var(--a-text-2)',
+        }}
+      >
         Write a template body to see the preview.
       </div>
     )
@@ -81,16 +107,24 @@ export function TemplatePreviewPane({
 
   if (channel === 'sms') {
     return (
-      <div className={cn('rounded-xl border border-border bg-muted/40 p-5 space-y-2', className)}>
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          SMS preview · placeholder values shown
-        </div>
+      <div
+        className={cn('p-5 space-y-2', className)}
+        style={{
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          background: 'var(--a-inset)',
+        }}
+      >
+        <div style={CAPTION_STYLE}>SMS preview · placeholder values shown</div>
         <div className="flex justify-end">
-          <div className="max-w-xs whitespace-pre-wrap rounded-2xl rounded-br-sm bg-primary px-4 py-2 text-sm leading-snug text-primary-foreground">
-            {mergedBody}
-          </div>
+          <ThreadBubble direction="out">
+            <span style={{ whiteSpace: 'pre-wrap' }}>{mergedBody}</span>
+          </ThreadBubble>
         </div>
-        <div className="text-right text-xs text-muted-foreground">
+        <div
+          className="text-right"
+          style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+        >
           {mergedBody.length} characters
         </div>
       </div>
@@ -100,18 +134,32 @@ export function TemplatePreviewPane({
   return (
     <div className={cn('space-y-2', className)}>
       {mergedSubject ? (
-        <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject: </span>
-          <span className="text-sm font-medium text-foreground">{mergedSubject}</span>
+        <div
+          className="px-3 py-2"
+          style={{
+            border: '1px solid var(--a-border)',
+            borderRadius: 'var(--a-r-md)',
+            background: 'var(--a-inset)',
+          }}
+        >
+          <span style={CAPTION_STYLE}>Subject: </span>
+          <span style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+            {mergedSubject}
+          </span>
         </div>
       ) : null}
       <iframe
         title="Email template preview"
         sandbox=""
         srcDoc={previewDoc ?? ''}
-        className="h-80 w-full rounded-xl border border-border bg-card"
+        className="h-80 w-full"
+        style={{
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          background: 'var(--a-bg)',
+        }}
       />
-      <p className="text-[11px] text-muted-foreground">
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
         Preview uses placeholder values. Merge fields resolve to real contact data when sent.
       </p>
     </div>

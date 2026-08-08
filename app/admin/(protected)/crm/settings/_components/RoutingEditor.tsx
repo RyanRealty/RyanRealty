@@ -11,22 +11,19 @@
  *
  * The actions are FormData-based; this component builds the FormData and routes
  * the result through a uniform { ok, error } wrapper.
+ *
+ * Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY — every FormData key, every action call and the strategy /
+ * default-broker / rule wiring below are byte-for-byte what they were. The
+ * "pick one of N" rows (strategy, default broker) were shadcn Buttons whose
+ * selected member carried the primary variant; they are FilterChips now, so the
+ * pressed state is announced (aria-pressed) instead of implied by fill, and the
+ * file keeps its single primary action ("Add rule").
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import { Button, FilterChip, SectionHead, SelectField, TextField } from '@/components/admin/v2'
 import type { AssignmentStrategy, AssignmentRule } from '@/lib/data/crm/getCrmAssignmentConfig'
 
 type Result = { ok: boolean; error?: string }
@@ -43,6 +40,13 @@ const STRATEGY_HELP: Record<AssignmentStrategy, string> = {
   round_robin: 'Each new lead rotates to the next routing-eligible broker. Eligibility is set on the Brokers page.',
   by_source: 'A lead routes by its source. Unmatched sources fall back to the default broker.',
 }
+
+/** Bordered well used for the standing note and each rule row. */
+const WELL = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-md)',
+  padding: 'var(--a-s2)',
+} as const
 
 export default function RoutingEditor({
   strategy,
@@ -86,28 +90,34 @@ export default function RoutingEditor({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+      <div
+        style={{
+          border: '1px solid var(--a-border)',
+          background: 'var(--a-inset)',
+          borderRadius: 'var(--a-r-lg)',
+          padding: 'var(--a-s3)',
+          fontSize: 'var(--a-text-sm)',
+          color: 'var(--a-text-2)',
+        }}
+      >
         The live default routes every new lead to Matt. Changing the strategy below takes effect right away, with no
         deploy.
       </div>
 
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+      {error ? (
+        <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-danger)' }}>{error}</p>
+      ) : null}
 
       {/* Strategy */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Routing strategy</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <section aria-label="Routing strategy">
+        <SectionHead>Routing strategy</SectionHead>
+        <div className="av2-pane">
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             {(Object.keys(STRATEGY_LABEL) as AssignmentStrategy[]).map((s) => (
-              <Button
+              <FilterChip
                 key={s}
-                type="button"
-                size="sm"
-                variant={strategy === s ? 'default' : 'outline'}
+                pressed={strategy === s}
                 disabled={pending}
-                className={cn('h-10 justify-start sm:h-9')}
                 onClick={() =>
                   run(() => {
                     const fd = new FormData()
@@ -117,31 +127,26 @@ export default function RoutingEditor({
                 }
               >
                 {STRATEGY_LABEL[s]}
-              </Button>
+              </FilterChip>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground">{STRATEGY_HELP[strategy]}</p>
-        </CardContent>
-      </Card>
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>{STRATEGY_HELP[strategy]}</p>
+        </div>
+      </section>
 
       {/* Default broker */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Default broker</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p className="text-xs text-muted-foreground">
+      <section aria-label="Default broker">
+        <SectionHead>Default broker</SectionHead>
+        <div className="av2-pane">
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             Used by All to one, and as the fallback when no source rule matches.
           </p>
           <div className="flex flex-wrap gap-1.5">
             {brokers.map((b) => (
-              <Button
+              <FilterChip
                 key={b.slug}
-                type="button"
-                size="sm"
-                variant={defaultBroker === b.slug ? 'default' : 'outline'}
+                pressed={defaultBroker === b.slug}
                 disabled={pending}
-                className="h-10 sm:h-9"
                 onClick={() =>
                   run(() => {
                     const fd = new FormData()
@@ -151,39 +156,32 @@ export default function RoutingEditor({
                 }
               >
                 {b.name}
-              </Button>
+              </FilterChip>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* By-source rules */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">By-source rules</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
+      <section aria-label="By-source rules">
+        <SectionHead>By-source rules</SectionHead>
+        <div className="av2-pane">
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             Route a lead from a named source to a specific broker. These apply only when the strategy is By lead source.
           </p>
 
           {rules.length > 0 ? (
             <div className="space-y-2">
               {rules.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-2"
-                >
-                  <div className="min-w-0 text-sm text-foreground">
-                    <span className="font-medium">{r.source}</span>
-                    <span className="text-muted-foreground"> goes to </span>
-                    <span className="font-medium">{brokerName(r.broker)}</span>
+                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2" style={WELL}>
+                  <div className="min-w-0" style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>
+                    <span style={{ fontWeight: 500 }}>{r.source}</span>
+                    <span style={{ color: 'var(--a-text-2)' }}> goes to </span>
+                    <span style={{ fontWeight: 500 }}>{brokerName(r.broker)}</span>
                   </div>
                   <Button
                     type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-9 px-2.5 text-destructive sm:h-8"
+                    variant="danger"
                     disabled={pending}
                     onClick={() =>
                       run(() => {
@@ -199,40 +197,31 @@ export default function RoutingEditor({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No source rules yet.</p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>No source rules yet.</p>
           )}
 
           {/* Add a rule */}
-          <div className="grid grid-cols-1 gap-2 rounded-lg border border-border p-3 sm:grid-cols-3 sm:items-end">
-            <div className="space-y-1.5">
-              <Label htmlFor="rule-source">Source</Label>
-              <Input
-                id="rule-source"
-                value={newSource}
-                onChange={(e) => setNewSource(e.target.value)}
-                placeholder="Zillow"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rule-broker">Broker</Label>
-              <Select value={newBroker} onValueChange={setNewBroker}>
-                <SelectTrigger id="rule-broker">
-                  <SelectValue placeholder="Select a broker" />
-                </SelectTrigger>
-                <SelectContent>
-                  {brokers.map((b) => (
-                    <SelectItem key={b.slug} value={b.slug}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div
+            className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-end"
+            style={{ border: '1px solid var(--a-border)', borderRadius: 'var(--a-r-md)', padding: 'var(--a-s3)' }}
+          >
+            <TextField
+              label="Source"
+              value={newSource}
+              onChange={(e) => setNewSource(e.target.value)}
+              placeholder="Zillow"
+            />
+            <SelectField label="Broker" value={newBroker} onChange={(e) => setNewBroker(e.target.value)}>
+              {brokers.map((b) => (
+                <option key={b.slug} value={b.slug}>
+                  {b.name}
+                </option>
+              ))}
+            </SelectField>
             <Button
               type="button"
-              size="sm"
+              touch
               disabled={pending || !newSource.trim() || !newBroker}
-              className="h-10 sm:h-9"
               onClick={() =>
                 run(
                   () => {
@@ -249,8 +238,8 @@ export default function RoutingEditor({
               Add rule
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   )
 }

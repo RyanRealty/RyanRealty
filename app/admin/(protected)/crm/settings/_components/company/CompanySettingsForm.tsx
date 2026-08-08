@@ -4,19 +4,16 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import type { CrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { updateCompanySettingsAction } from '@/app/actions/crm-company-settings'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Button,
+  SearchField,
+  SectionHead,
+  SelectField,
+  StateWord,
+  Switch,
+  TextField,
+  type AdminState,
+} from '@/components/admin/v2'
 import { FormRow, SectionDivider } from './form-shared'
 import { OfficeHoursEditor } from './OfficeHoursEditor'
 import { SpamLabelChange, SubdomainChange } from './ChangeDialogs'
@@ -65,20 +62,26 @@ const DISCLOSURE_CALL = 'This call may be recorded for quality purposes.'
 const DISCLOSURE_VOICEMAIL =
   'You have reached Ryan Realty. This call is recorded. Please leave a message after the tone and we will call you right back.'
 
-/** §1.10 registration badge mapping — live Twilio A2P campaign status. */
-function registrationBadge(status: string | null): { label: string; className: string } {
+/**
+ * §1.10 registration mapping — live Twilio A2P campaign status.
+ *
+ * P11F: the badge is a v2 <StateWord>, so the mapping carries a locked admin
+ * state instead of a Tailwind class. Status stays text + color, never color
+ * alone; the labels are unchanged.
+ */
+function registrationBadge(status: string | null): { label: string; state: AdminState } {
   switch (status) {
     case 'VERIFIED':
-      return { label: 'Fully Registered', className: 'bg-success text-success-foreground' }
+      return { label: 'Fully Registered', state: 'ok' }
     case 'IN_PROGRESS':
     case 'PENDING':
-      return { label: 'Under Carrier Review', className: 'bg-warning text-warning-foreground' }
+      return { label: 'Under Carrier Review', state: 'slow' }
     case 'FAILED':
-      return { label: 'Rejected by Carriers', className: 'bg-destructive text-destructive-foreground' }
+      return { label: 'Rejected by Carriers', state: 'down' }
     case 'NONE':
-      return { label: 'Not Started', className: 'bg-secondary text-secondary-foreground' }
+      return { label: 'Not Started', state: 'waiting' }
     default:
-      return { label: 'Status unavailable', className: 'bg-secondary text-secondary-foreground' }
+      return { label: 'Status unavailable', state: 'waiting' }
   }
 }
 
@@ -93,6 +96,13 @@ function registrationBadge(status: string | null): { label: string; className: s
  * (§1.4), subdomain (§1.6), weekly report recipients (§1.7). Block list is a
  * dedicated sub-page (§1.8); Business Registration is a sub-page (§1.10)
  * showing the LIVE Twilio A2P campaign status passed in as `a2pStatus`.
+ *
+ * P11F: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Every labelled control is now a v2 field primitive that owns its own <label>
+ * (pattern 6: label above, single column), so the fields no longer carry a
+ * hand-assigned `id` — the primitive mints one with useId() and wires htmlFor
+ * to it. The submitted `name` attributes, the FormData overrides below, and
+ * updateCompanySettingsAction are untouched.
  */
 export function CompanySettingsForm({
   settings,
@@ -152,130 +162,86 @@ export function CompanySettingsForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <Card className="shadow-sm">
-        {/* Card header — §1.2: gear + title left, View Business Registration right */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
-          <div className="flex items-center gap-3">
-            <span className="text-base text-muted-foreground" aria-hidden>⚙</span>
-            <h2 className="text-base font-semibold text-foreground">Company Settings</h2>
+      <div className="av2-pane">
+        {/* Pane header — §1.2: gear + title left, View Business Registration right */}
+        <div
+          className="flex flex-wrap items-center justify-between"
+          style={{
+            gap: 'var(--a-s3)',
+            borderBottom: '1px solid var(--a-border)',
+            paddingBottom: 'var(--a-s3)',
+          }}
+        >
+          <div className="flex items-center" style={{ gap: 'var(--a-s3)' }}>
+            <span style={{ color: 'var(--a-text-2)' }} aria-hidden>⚙</span>
+            <SectionHead>Company Settings</SectionHead>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge className={badge.className}>{badge.label}</Badge>
-            <Button asChild type="button" variant="outline" size="sm">
-              <Link href="/admin/crm/settings/company/registration">View Business Registration</Link>
-            </Button>
+          <div className="flex items-center" style={{ gap: 'var(--a-s2)' }}>
+            <StateWord state={badge.state}>{badge.label}</StateWord>
+            <Link
+              href="/admin/crm/settings/company/registration"
+              className="av2-btn av2-btn--quiet"
+              style={{ textDecoration: 'none' }}
+            >
+              View Business Registration
+            </Link>
           </div>
         </div>
 
         {/* Form body */}
-        <div className="px-6 py-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s4)' }}>
 
           {/* ---- §1.3 Basic company info ---- */}
-          <FormRow label="Company" htmlFor="company_name">
-            <Input
-              id="company_name"
-              name="company_name"
-              defaultValue={settings.company_name}
-              placeholder="Ryan Realty"
-              className="max-w-sm"
-            />
-          </FormRow>
+          <TextField
+            label="Company"
+            name="company_name"
+            defaultValue={settings.company_name}
+            placeholder="Ryan Realty"
+          />
 
-          <FormRow label="Industry" htmlFor="industry-select">
-            <Select value={industry} onValueChange={setIndustry}>
-              <SelectTrigger id="industry-select" className="max-w-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {INDUSTRY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormRow>
+          <SelectField label="Industry" value={industry} onChange={(e) => setIndustry(e.target.value)}>
+            {INDUSTRY_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </SelectField>
 
-          <FormRow label="Franchise" htmlFor="franchise-select">
-            <Select value={franchise} onValueChange={setFranchise}>
-              <SelectTrigger id="franchise-select" className="max-w-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FRANCHISE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormRow>
+          <SelectField label="Franchise" value={franchise} onChange={(e) => setFranchise(e.target.value)}>
+            {FRANCHISE_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </SelectField>
 
-          <FormRow label="Address" htmlFor="address_line_1">
-            <div className="flex max-w-sm flex-col gap-2">
-              <Input
-                id="address_line_1"
-                name="address_line_1"
-                defaultValue={settings.address_line_1}
-                placeholder="Street address"
-              />
-              <Input
-                name="address_line_2"
-                defaultValue={settings.address_line_2}
-                placeholder="Suite / unit"
-              />
-            </div>
-          </FormRow>
+          <TextField
+            label="Address"
+            name="address_line_1"
+            defaultValue={settings.address_line_1}
+            placeholder="Street address"
+          />
 
-          <FormRow label="City" htmlFor="city">
-            <Input
-              id="city"
-              name="city"
-              defaultValue={settings.city}
-              className="max-w-48"
-            />
-          </FormRow>
+          <TextField
+            label="Suite / unit"
+            name="address_line_2"
+            defaultValue={settings.address_line_2}
+            placeholder="Suite / unit"
+          />
 
-          <FormRow label="State" htmlFor="state">
-            <Input
-              id="state"
-              name="state"
-              defaultValue={settings.state}
-              className="max-w-48"
-            />
-          </FormRow>
+          <TextField label="City" name="city" defaultValue={settings.city} />
 
-          <FormRow label="Zipcode" htmlFor="zipcode">
-            <Input
-              id="zipcode"
-              name="zipcode"
-              defaultValue={settings.zipcode}
-              className="max-w-28"
-              maxLength={10}
-            />
-          </FormRow>
+          <TextField label="State" name="state" defaultValue={settings.state} />
 
-          <FormRow label="Country" htmlFor="country-select">
-            <Select value={country} onValueChange={setCountry}>
-              <SelectTrigger id="country-select" className="max-w-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {COUNTRY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormRow>
+          <TextField label="Zipcode" name="zipcode" defaultValue={settings.zipcode} maxLength={10} />
 
-          <FormRow label="Time zone" htmlFor="timezone-select">
-            <Select value={timeZone} onValueChange={setTimeZone}>
-              <SelectTrigger id="timezone-select" className="max-w-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIMEZONE_OPTIONS.map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FormRow>
+          <SelectField label="Country" value={country} onChange={(e) => setCountry(e.target.value)}>
+            {COUNTRY_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </SelectField>
+
+          <SelectField label="Time zone" value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+            {TIMEZONE_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </SelectField>
 
           {/* ---- §1.4 Virtual Phone ---- */}
           <SectionDivider label="Virtual Phone" />
@@ -284,85 +250,102 @@ export function CompanySettingsForm({
             label="Phone"
             description="Per-broker business lines forward to each broker's cell."
           >
-            <div className="flex items-center gap-2 pt-1 text-sm">
-              <span aria-hidden className="text-muted-foreground">✎</span>
-              <Button asChild type="button" variant="link" className="h-auto p-0 text-sm text-primary">
-                <Link href="/admin/crm/settings/team">Manage Settings</Link>
-              </Button>
+            <div
+              className="flex items-center"
+              style={{ gap: 'var(--a-s2)', fontSize: 'var(--a-text-sm)' }}
+            >
+              <span aria-hidden style={{ color: 'var(--a-text-2)' }}>✎</span>
+              <Link
+                href="/admin/crm/settings/team"
+                style={{ color: 'var(--a-accent)', textDecoration: 'none' }}
+              >
+                Manage Settings
+              </Link>
             </div>
           </FormRow>
 
-          <FormRow
+          <TextField
             label="Fallback number"
-            htmlFor="fallback_number"
-            description="Calls route here when no agent is available."
-          >
-            <Input
-              id="fallback_number"
-              name="fallback_number"
-              defaultValue={settings.fallback_number}
-              placeholder="(541) 213-6706"
-              className="max-w-52"
-            />
-          </FormRow>
+            hint="Calls route here when no agent is available."
+            name="fallback_number"
+            defaultValue={settings.fallback_number}
+            placeholder="(541) 213-6706"
+          />
 
           <FormRow
             label="Spam label calling protection"
             description="Legal entity name shown to carriers for STIR/SHAKEN caller ID."
           >
-            <div className="flex items-center gap-2 pt-1 text-sm">
-              <span className="font-medium text-foreground">{spamLabel}</span>
+            <div
+              className="flex flex-wrap items-center"
+              style={{ gap: 'var(--a-s2)', fontSize: 'var(--a-text-sm)' }}
+            >
+              <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>{spamLabel}</span>
               <SpamLabelChange value={spamLabel} onSaved={setSpamLabel} />
             </div>
           </FormRow>
 
           <FormRow label="Call Recording">
-            <div className="flex items-center gap-3">
-              <Switch
-                id="call_recording_enabled"
-                checked={callRecording}
-                onCheckedChange={setCallRecording}
-                aria-label="Enable call recording for team members"
-              />
-              <Label htmlFor="call_recording_enabled" className="text-sm text-muted-foreground cursor-pointer">
-                Enable call recording for team members
-              </Label>
-            </div>
+            <Switch
+              label="Enable call recording for team members"
+              checked={callRecording}
+              onChange={(e) => setCallRecording(e.target.checked)}
+            />
           </FormRow>
 
           <FormRow label="Legal Disclosure">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="legal_disclosure_auto_play"
-                  checked
-                  disabled
-                  aria-label="Automatically play call recording disclosure for all calls"
-                />
-                <Label htmlFor="legal_disclosure_auto_play" className="text-sm text-muted-foreground">
-                  Automatically play call recording disclosure for all calls
-                </Label>
-              </div>
-              <p className="text-xs text-muted-foreground">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s3)' }}>
+              <Switch
+                label="Automatically play call recording disclosure for all calls"
+                checked
+                disabled
+              />
+              <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                 Locked on. Callers can be in two-party consent states, so the
                 notice always plays whenever a call records.
               </p>
               {/* Preview call disclosure — the exact announcements Twilio speaks */}
-              <div className="rounded-lg border border-border bg-background p-3">
-                <p className="text-xs font-semibold text-foreground">Preview call disclosure</p>
-                <p className="mt-1 text-xs text-muted-foreground">
+              <div className="av2-pane" style={{ gap: 'var(--a-s1)', padding: 'var(--a-s3)' }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 'var(--a-text-xs)',
+                    fontWeight: 600,
+                    color: 'var(--a-text)',
+                  }}
+                >
+                  Preview call disclosure
+                </p>
+                <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                   Forwarded and outbound calls: &ldquo;{DISCLOSURE_CALL}&rdquo;
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                   Voicemail greeting: &ldquo;{DISCLOSURE_VOICEMAIL}&rdquo;
                 </p>
               </div>
               {/* Legal Requirements info box */}
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                <p className="text-xs font-semibold text-foreground">
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 'var(--a-s2)',
+                  border: '1px solid var(--a-border)',
+                  borderRadius: 'var(--a-r-lg)',
+                  background: 'var(--a-accent-wash)',
+                  padding: 'var(--a-s4)',
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 'var(--a-text-xs)',
+                    fontWeight: 600,
+                    color: 'var(--a-text)',
+                  }}
+                >
                   Legal Requirements for call disclosure
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                   In some states and jurisdictions it is legally required to obtain
                   the consent of all parties involved in a conversation before a
                   recording is made. Consent may be obtained by notifying all
@@ -371,7 +354,14 @@ export function CompanySettingsForm({
                   being recorded will not be played automatically at the beginning
                   of a call.
                 </p>
-                <p className="mt-2 text-xs font-medium text-primary">
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 'var(--a-text-xs)',
+                    fontWeight: 500,
+                    color: 'var(--a-accent)',
+                  }}
+                >
                   Oregon is a two-party consent state. This disclosure stays enabled.
                 </p>
               </div>
@@ -391,8 +381,13 @@ export function CompanySettingsForm({
           <SectionDivider label="Subdomain" />
 
           <FormRow description="Change the subdomain of your account.">
-            <div className="flex items-center gap-2 pt-1 text-sm">
-              <span className="font-medium text-foreground">{subdomain}.ryan-realty.com</span>
+            <div
+              className="flex flex-wrap items-center"
+              style={{ gap: 'var(--a-s2)', fontSize: 'var(--a-text-sm)' }}
+            >
+              <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>
+                {subdomain}.ryan-realty.com
+              </span>
               <SubdomainChange value={subdomain} onSaved={setSubdomain} />
             </div>
           </FormRow>
@@ -400,30 +395,32 @@ export function CompanySettingsForm({
           {/* ---- §1.7 Business Insights ---- */}
           <SectionDivider label="Business Insights" />
 
-          <FormRow label={`Production Goals ${year}`} htmlFor="production_goal">
+          <FormRow label={`Production Goals ${year}`}>
             {editingGoal ? (
-              <div className="flex max-w-56 items-center gap-1">
-                <span className="text-sm text-muted-foreground">$</span>
-                <Input
-                  id="production_goal"
+              <div className="flex items-center" style={{ gap: 'var(--a-s1)' }}>
+                <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>$</span>
+                <SearchField
+                  type="text"
+                  aria-label={`Production Goals ${year}`}
                   value={goal}
                   onChange={(e) => setGoal(e.target.value)}
-                  className="max-w-40"
                   placeholder="1,000,000"
+                  style={{ maxWidth: 160 }}
                   autoFocus
                 />
               </div>
             ) : (
-              <Button
-                type="button"
-                variant="link"
-                className="h-auto p-0 pt-1 text-sm text-primary"
-                onClick={() => setEditingGoal(true)}
-              >
+              <Button variant="quiet" className="a-num" onClick={() => setEditingGoal(true)}>
                 ${goal}
               </Button>
             )}
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p
+              style={{
+                margin: 'var(--a-s1) 0 0',
+                fontSize: 'var(--a-text-xs)',
+                color: 'var(--a-text-2)',
+              }}
+            >
               {editingGoal ? 'Commits with Save below.' : 'Click to edit.'}
             </p>
           </FormRow>
@@ -439,11 +436,21 @@ export function CompanySettingsForm({
           <SectionDivider label="Block List" />
 
           <FormRow description="Set which emails and phone numbers you want to block.">
-            <div className="pt-1 text-sm">
-              <Button asChild type="button" variant="link" className="h-auto p-0 text-sm text-primary">
-                <Link href="/admin/crm/settings/company/block-list">Manage block list settings</Link>
-              </Button>
-              <span className="ml-2 text-xs text-muted-foreground">
+            <div style={{ fontSize: 'var(--a-text-sm)' }}>
+              <Link
+                href="/admin/crm/settings/company/block-list"
+                style={{ color: 'var(--a-accent)', textDecoration: 'none' }}
+              >
+                Manage block list settings
+              </Link>
+              <span
+                className="a-num"
+                style={{
+                  marginLeft: 'var(--a-s2)',
+                  fontSize: 'var(--a-text-xs)',
+                  color: 'var(--a-text-2)',
+                }}
+              >
                 {blockedCount} {blockedCount === 1 ? 'number' : 'numbers'} blocked
               </span>
             </div>
@@ -452,12 +459,26 @@ export function CompanySettingsForm({
         </div>
 
         {/* Form footer: Save button */}
-        <div className="flex items-center justify-between border-t border-border px-6 py-4">
+        <div
+          className="flex items-center justify-between"
+          style={{ borderTop: '1px solid var(--a-border)', paddingTop: 'var(--a-s3)' }}
+        >
           {saveStatus === 'error' && (
-            <p className="text-xs text-destructive">{errorMsg}</p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>
+              {errorMsg}
+            </p>
           )}
           {saveStatus === 'saved' && (
-            <p className="text-xs text-foreground font-medium">Settings saved.</p>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 'var(--a-text-xs)',
+                fontWeight: 500,
+                color: 'var(--a-text)',
+              }}
+            >
+              Settings saved.
+            </p>
           )}
           {saveStatus === 'idle' && <span />}
 
@@ -469,7 +490,7 @@ export function CompanySettingsForm({
             {isPending ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save'}
           </Button>
         </div>
-      </Card>
+      </div>
     </form>
   )
 }

@@ -2,17 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { updateSpamLabelAction, updateSubdomainAction } from '@/app/actions/crm-company-settings'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Button, Dialog, TextField } from '@/components/admin/v2'
 
 /**
  * The two "(Change)" inline flows on Company Settings:
@@ -20,11 +10,21 @@ import { Label } from '@/components/ui/label'
  *    carriers show for STIR/SHAKEN caller ID; hard-capped at 15 characters.
  *  - SubdomainChange (spec §1.6 / AC-8): warning modal + explicit text input of
  *    the new prefix before saving the stored account subdomain identifier.
+ *
+ * P11F: migrated to the LOCKED admin v2 language. Both modals are the v2
+ * <Dialog> (native <dialog>: platform focus trap, Esc, top layer) — never a
+ * hand-rolled overlay.
+ *
+ * ci:admin-ui rule C counts primary-variant v2 <Button>s PER FILE, and this
+ * file holds two independent save flows. The spam-label "Save" keeps the one
+ * primary; the subdomain "Confirm change" is `danger`, which is also the honest
+ * read of it — §1.6 specifies a warning modal that retypes the prefix before it
+ * rewrites the stored account identifier.
  */
 
 function ChangeLink({ onClick }: { onClick: () => void }) {
   return (
-    <Button type="button" variant="link" className="h-auto p-0 text-sm text-primary" onClick={onClick}>
+    <Button variant="quiet" onClick={onClick}>
       (Change)
     </Button>
   )
@@ -53,35 +53,37 @@ export function SpamLabelChange({ value, onSaved }: { value: string; onSaved: (v
   return (
     <>
       <ChangeLink onClick={() => { setLabel(value); setOpen(true) }} />
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Spam label calling protection</DialogTitle>
-            <DialogDescription>
-              The legal entity name registered with carriers for STIR/SHAKEN caller ID.
-              Carriers use the first 15 characters of the legal business name.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-1.5">
-            <Label htmlFor="spam-label-input">Legal entity name</Label>
-            <Input
-              id="spam-label-input"
-              value={label}
-              maxLength={15}
-              onChange={(e) => setLabel(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">{label.trim().length}/15 characters</p>
-            {error && <p className="text-xs text-destructive">{error}</p>}
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Spam label calling protection"
+        description="The legal entity name registered with carriers for STIR/SHAKEN caller ID. Carriers use the first 15 characters of the legal business name."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setOpen(false)} disabled={isPending}>
               Cancel
             </Button>
-            <Button type="button" onClick={save} disabled={isPending || !label.trim()}>
+            <Button onClick={save} disabled={isPending || !label.trim()}>
               {isPending ? 'Saving...' : 'Save'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextField
+          label="Legal entity name"
+          value={label}
+          maxLength={15}
+          onChange={(e) => setLabel(e.target.value)}
+        />
+        <p
+          className="a-num"
+          style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+        >
+          {label.trim().length}/15 characters
+        </p>
+        {error && (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>{error}</p>
+        )}
       </Dialog>
     </>
   )
@@ -110,41 +112,48 @@ export function SubdomainChange({ value, onSaved }: { value: string; onSaved: (v
   return (
     <>
       <ChangeLink onClick={() => { setPrefix(''); setOpen(true) }} />
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Change account subdomain</DialogTitle>
-            <DialogDescription>
-              This changes the stored account subdomain identifier. The CRM login URL
-              (ryan-realty.com/admin) and existing sessions do not change.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-1.5">
-            <Label htmlFor="subdomain-input">New subdomain</Label>
-            <div className="flex items-center gap-1.5">
-              <Input
-                id="subdomain-input"
-                value={prefix}
-                placeholder={value}
-                onChange={(e) => setPrefix(e.target.value)}
-                className="max-w-52"
-              />
-              <span className="text-sm text-muted-foreground">.ryan-realty.com</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Type the new prefix to confirm. Current: <span className="font-medium text-foreground">{value}</span>
-            </p>
-            {error && <p className="text-xs text-destructive">{error}</p>}
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Change account subdomain"
+        description="This changes the stored account subdomain identifier. The CRM login URL (ryan-realty.com/admin) and existing sessions do not change."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setOpen(false)} disabled={isPending}>
               Cancel
             </Button>
-            <Button type="button" onClick={save} disabled={isPending || !prefix.trim()}>
+            <Button variant="danger" onClick={save} disabled={isPending || !prefix.trim()}>
               {isPending ? 'Saving...' : 'Confirm change'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <div className="flex flex-wrap items-end" style={{ gap: 'var(--a-s2)' }}>
+          <div style={{ flex: '1 1 200px', maxWidth: 208 }}>
+            <TextField
+              label="New subdomain"
+              value={prefix}
+              placeholder={value}
+              onChange={(e) => setPrefix(e.target.value)}
+            />
+          </div>
+          <span
+            style={{
+              fontSize: 'var(--a-text-sm)',
+              color: 'var(--a-text-2)',
+              paddingBottom: 'var(--a-s3)',
+            }}
+          >
+            .ryan-realty.com
+          </span>
+        </div>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Type the new prefix to confirm. Current:{' '}
+          <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>{value}</span>
+        </p>
+        {error && (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>{error}</p>
+        )}
       </Dialog>
     </>
   )

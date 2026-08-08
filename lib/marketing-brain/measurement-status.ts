@@ -6,25 +6,14 @@
  * Kept out of measurement-loop.ts to honor ci:file-size-budget.
  */
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
-
-let _supabase: SupabaseClient | null = null
-
-function getSupabase(): SupabaseClient {
-  if (_supabase) return _supabase
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) throw new Error('Supabase service-role credentials not configured')
-  _supabase = createClient(url, key)
-  return _supabase
-}
+import { createServiceClient } from '@/lib/supabase/service'
 
 /**
  * Flip status to `measured` once content_performance has at least one row
  * for the action.
  */
 export async function markActionMeasuredIfReady(actionId: string): Promise<void> {
-  const supabase = getSupabase()
+  const supabase = createServiceClient()
   const { count, error: cErr } = await supabase
     .from('content_performance')
     .select('id', { count: 'planned', head: true })
@@ -46,7 +35,7 @@ export async function markActionMeasuredIfReady(actionId: string): Promise<void>
 
 /** Historical reconcile: executed actions with content_performance → measured. */
 export async function reconcileExecutedWithPerformance(): Promise<void> {
-  const supabase = getSupabase()
+  const supabase = createServiceClient()
   const { data: perfRows, error: pErr } = await supabase
     .from('content_performance')
     .select('action_id')

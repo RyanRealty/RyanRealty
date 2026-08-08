@@ -4,7 +4,7 @@
  * EmailTemplateModal — the §13.1.3 / §13.1.4 Add + Edit Email Template modal.
  *
  * Spec anatomy, top to bottom:
- *   header    ✉ "Edit Email Template" + "Created on <date> by <name>" metadata
+ *   header    "Edit Email Template" + "Created on <date> by <name>" metadata
  *             (renders only when created_at is known — FUB-seeded rows carry
  *             none and we never fabricate a date, §0)
  *   notice    "In use by N automations" when referenced (informational — saving
@@ -18,25 +18,27 @@
  * Preview tab (renders the exact outbound HTML), the Active switch (pickers
  * filter on it), and "Send test to myself" (routed through the compliance-
  * gated send paths — sends to the calling broker only).
+ *
+ * Admin v2 (11F): shadcn Dialog/Alert/Tabs/Input/Label/Checkbox/Switch/Button
+ * were replaced by the locked admin language. Two notes for a reviewer:
+ *   - The Body/Preview tab pair is a FilterChip segmented control, which keeps
+ *     the original's mount behaviour exactly — the inactive pane unmounts, as
+ *     Radix Tabs also did.
+ *   - TextField owns its <input>, so the caret-aware merge-token inserters
+ *     reach the control through the field row's wrapper rather than a ref on
+ *     the control itself. Same insertion, same cursor restore.
  */
 import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { Mail } from 'lucide-react'
 import {
+  Button,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+  FilterChip,
+  Switch,
+  TextField,
+  ToolbarCheck,
+  VerdictLine,
+} from '@/components/admin/v2'
 import { TemplatePreviewPane } from '../TemplatePreviewPane'
 import { MergeFieldInserter, insertAtCursor } from '@/components/admin/crm/MergeFieldInserter'
 import { RichTextBody, insertTokenInto } from './RichTextBody'
@@ -83,17 +85,18 @@ export function EmailTemplateModal({
   const [pending, setPending] = useState(false)
   const [testSending, setTestSending] = useState(false)
   const [note, setNote] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
+  const [tab, setTab] = useState<'edit' | 'preview'>('edit')
 
-  const subjectRef = useRef<HTMLInputElement>(null)
-  const previewRef = useRef<HTMLInputElement>(null)
+  const subjectRowRef = useRef<HTMLDivElement>(null)
+  const previewRowRef = useRef<HTMLDivElement>(null)
   const bodyWrapRef = useRef<HTMLDivElement>(null)
 
   const isEdit = row !== null
   const createdBy = row?.ownerBroker ? brokerNames[row.ownerBroker] ?? row.ownerBroker : null
 
-  function insertIntoInput(ref: React.RefObject<HTMLInputElement | null>, set: (v: string) => void) {
+  function insertIntoInput(rowRef: React.RefObject<HTMLDivElement | null>, set: (v: string) => void) {
     return (token: string) => {
-      const el = ref.current
+      const el = rowRef.current?.querySelector('input') ?? null
       if (!el) {
         set(token)
         return
@@ -146,91 +149,109 @@ export function EmailTemplateModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !pending && !o && onClose()}>
-      <DialogContent className="overflow-y-auto sm:max-w-3xl" style={{ maxHeight: '92vh' }}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-primary" />
-            {isEdit ? 'Edit Email Template' : 'Add Email Template'}
-          </DialogTitle>
-          <DialogDescription>
-            {isEdit && row?.createdAt ? (
-              <>Created on {fmtCreated(row.createdAt)}{createdBy ? ` by ${createdBy}` : ''}</>
-            ) : (
-              'Merge fields resolve to real contact + agent data at send time.'
-            )}
-          </DialogDescription>
-        </DialogHeader>
+    <Dialog
+      open={open}
+      onClose={() => {
+        if (!pending) onClose()
+      }}
+      title={isEdit ? 'Edit Email Template' : 'Add Email Template'}
+      description={
+        isEdit && row?.createdAt ? (
+          <>Created on {fmtCreated(row.createdAt)}{createdBy ? ` by ${createdBy}` : ''}</>
+        ) : (
+          'Merge fields resolve to real contact + agent data at send time.'
+        )
+      }
+      footer={
+        <>
+          <Button variant="quiet" onClick={onClose} disabled={pending || testSending}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="quiet"
+            onClick={testSend}
+            disabled={pending || testSending || !body.trim()}
+            title="Sends this draft to your own inbox with sample contact data"
+          >
+            {testSending ? 'Sending...' : 'Send test to myself'}
+          </Button>
+          <Button onClick={save} disabled={pending || testSending}>
+            {pending ? 'Saving...' : 'Save'}
+          </Button>
+        </>
+      }
+    >
+      {isEdit && row && row.usage > 0 ? (
+        <VerdictLine tone="attention">
+          In use by {row.usage} automation step{row.usage === 1 ? '' : 's'}
+          {row.usedBy.length > 0 ? ` (${row.usedBy.join(', ')})` : ''}. Saving updates every
+          reference.
+        </VerdictLine>
+      ) : null}
 
-        {isEdit && row && row.usage > 0 ? (
-          <Alert>
-            <AlertDescription>
-              In use by {row.usage} automation step{row.usage === 1 ? '' : 's'}
-              {row.usedBy.length > 0 ? ` (${row.usedBy.join(', ')})` : ''}. Saving updates every
-              reference.
-            </AlertDescription>
-          </Alert>
-        ) : null}
+      {note ? (
+        <VerdictLine tone={note.tone === 'err' ? 'attention' : 'ok'}>
+          <span className="whitespace-pre-wrap">{note.text}</span>
+        </VerdictLine>
+      ) : null}
 
-        {note ? (
-          <Alert variant={note.tone === 'err' ? 'destructive' : 'default'}>
-            <AlertDescription className="whitespace-pre-wrap">{note.text}</AlertDescription>
-          </Alert>
-        ) : null}
+      <div className="space-y-3">
+        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
 
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="etpl-name">Name</Label>
-            <Input id="etpl-name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        <div className="av2-inline-form" ref={subjectRowRef}>
+          <TextField label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <MergeFieldInserter
+            channel="email"
+            customFields={customFields}
+            onInsert={insertIntoInput(subjectRowRef, setSubject)}
+          />
+        </div>
+
+        <div className="av2-inline-form" ref={previewRowRef}>
+          <TextField
+            label="Preview text"
+            value={previewText}
+            onChange={(e) => setPreviewText(e.target.value)}
+            placeholder="Shown beneath the subject in the inbox preview (optional)"
+          />
+          <MergeFieldInserter
+            channel="email"
+            customFields={customFields}
+            onInsert={insertIntoInput(previewRowRef, setPreviewText)}
+          />
+        </div>
+
+        <div>
+          <div
+            className="flex w-fit gap-0.5 p-0.5"
+            style={{ background: 'var(--a-inset)', borderRadius: 'var(--a-r-md)' }}
+          >
+            {([
+              { key: 'edit' as const, label: 'Body' },
+              { key: 'preview' as const, label: 'Preview' },
+            ]).map((t) => (
+              <FilterChip
+                key={t.key}
+                pressed={tab === t.key}
+                onClick={() => setTab(t.key)}
+                style={{
+                  borderRadius: 'var(--a-r-sm)',
+                  border: 'none',
+                  padding: '4px 12px',
+                  fontSize: 'var(--a-text-xs)',
+                  fontWeight: 500,
+                  background: tab === t.key ? 'var(--a-bg)' : 'transparent',
+                  color: tab === t.key ? 'var(--a-text)' : 'var(--a-text-2)',
+                }}
+              >
+                {t.label}
+              </FilterChip>
+            ))}
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="etpl-subject">Subject</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="etpl-subject"
-                ref={subjectRef}
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                className="flex-1"
-              />
-              <MergeFieldInserter
-                channel="email"
-                customFields={customFields}
-                onInsert={insertIntoInput(subjectRef, setSubject)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="etpl-preview">Preview text</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="etpl-preview"
-                ref={previewRef}
-                value={previewText}
-                onChange={(e) => setPreviewText(e.target.value)}
-                placeholder="Shown beneath the subject in the inbox preview (optional)"
-                className="flex-1"
-              />
-              <MergeFieldInserter
-                channel="email"
-                customFields={customFields}
-                onInsert={insertIntoInput(previewRef, setPreviewText)}
-              />
-            </div>
-          </div>
-
-          <Tabs defaultValue="edit">
-            <TabsList className="h-8">
-              <TabsTrigger value="edit" className="text-xs">
-                Body
-              </TabsTrigger>
-              <TabsTrigger value="preview" className="text-xs">
-                Preview
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="edit" className="mt-2">
+          {tab === 'edit' ? (
+            <div className="mt-2">
               <div ref={bodyWrapRef}>
                 <RichTextBody
                   value={row?.body ?? ''}
@@ -246,15 +267,23 @@ export function EmailTemplateModal({
                   }
                 />
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p
+                className="mt-2"
+                style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+              >
                 The sender&rsquo;s signature is added automatically at send time from{' '}
-                <Link href="/admin/crm/settings" className="text-primary underline">
+                <Link
+                  href="/admin/crm/settings"
+                  className="underline"
+                  style={{ color: 'var(--a-accent)' }}
+                >
                   My Settings
                 </Link>
                 . Inline styles only — style blocks and iframes are stripped.
               </p>
-            </TabsContent>
-            <TabsContent value="preview" className="mt-2">
+            </div>
+          ) : (
+            <div className="mt-2">
               <TemplatePreviewPane
                 channel="email"
                 subject={subject}
@@ -262,65 +291,40 @@ export function EmailTemplateModal({
                 signatureHtml={null}
                 mergeContext={mergeContext}
               />
-            </TabsContent>
-          </Tabs>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="etpl-shared"
-              checked={isShared}
-              onCheckedChange={(v) => setIsShared(v === true)}
-            />
-            <Label htmlFor="etpl-shared" className="cursor-pointer text-sm">
-              Share this template with everyone
-            </Label>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="etpl-folder">Folder</Label>
-              <Input
-                id="etpl-folder"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Buyer, Seller, Drip..."
-                list="etpl-folder-options"
-              />
-              <datalist id="etpl-folder-options">
-                {folders.map((f) => (
-                  <option key={f} value={f} />
-                ))}
-              </datalist>
             </div>
-            <div className="flex items-end pb-1">
-              <span className="inline-flex items-center gap-2">
-                <Switch id="etpl-active" checked={isActive} onCheckedChange={setIsActive} />
-                <Label htmlFor="etpl-active" className="cursor-pointer text-sm">
-                  Active (available in pickers)
-                </Label>
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
-        <DialogFooter className="flex-wrap gap-2">
-          <Button variant="outline" onClick={onClose} disabled={pending || testSending}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={testSend}
-            disabled={pending || testSending || !body.trim()}
-            title="Sends this draft to your own inbox with sample contact data"
-          >
-            {testSending ? 'Sending...' : 'Send test to myself'}
-          </Button>
-          <Button onClick={save} disabled={pending || testSending}>
-            {pending ? 'Saving...' : 'Save'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+        <ToolbarCheck
+          checked={isShared}
+          onChange={(e) => setIsShared(e.target.checked)}
+          label="Share this template with everyone"
+        />
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <TextField
+              label="Folder"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g. Buyer, Seller, Drip..."
+              list="etpl-folder-options"
+            />
+            <datalist id="etpl-folder-options">
+              {folders.map((f) => (
+                <option key={f} value={f} />
+              ))}
+            </datalist>
+          </div>
+          <div className="flex items-end pb-1">
+            <Switch
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              label="Active (available in pickers)"
+            />
+          </div>
+        </div>
+      </div>
     </Dialog>
   )
 }

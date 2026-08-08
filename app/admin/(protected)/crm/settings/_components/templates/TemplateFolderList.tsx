@@ -9,42 +9,28 @@
  * no rename/delete. User folders map to crm_templates.category (channel-
  * scoped): the pencil renames the folder across its templates, the trash
  * removes the folder (templates stay, unfoldered). Both confirm first.
+ *
+ * P11 admin v2: the shadcn Table/AlertDialog/Dialog/Badge/Button/Input/Label
+ * stack is gone. The table is the hand-rolled div/role grid that
+ * ConfigTableEditor established (av2-rgrid* + report-grid.css) with an
+ * av2-cardlist phone fallback; the overlays are v2 Dialog / ConfirmDialog.
+ * Rename/delete wiring, folder semantics and every user-facing string are
+ * unchanged — presentation moved, behaviour did not.
  */
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 import { Pencil, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
+  Button,
+  ConfirmDialog,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+  IconButton,
+  SectionHead,
+  TextField,
+  VerdictLine,
+} from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 import { TemplatesToolbar, tplUrl } from './TemplatesToolbar'
 import { EmailTemplateModal } from './EmailTemplateModal'
 import { TextTemplateModal } from './TextTemplateModal'
@@ -56,6 +42,22 @@ export type TemplateFolderSummary = {
   name: string
   count: number
   system: boolean
+}
+
+/** The language's label chip — a bordered span, never a pill (pills filter). */
+const COUNT_CHIP: CSSProperties = {
+  display: 'inline-block',
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-sm)',
+  padding: '1px 6px',
+}
+
+const FOLDER_LINK: CSSProperties = {
+  color: 'var(--a-accent)',
+  textDecoration: 'none',
+  fontWeight: 500,
 }
 
 export function TemplateFolderList({
@@ -84,6 +86,13 @@ export function TemplateFolderList({
   const noun = kind === 'email' ? 'Email Template' : 'Text Template'
   const channelName = kind === 'email' ? 'email' : 'sms'
 
+  // Desktop column template — the custom properties report-grid.css reads at
+  // >=720px. Below md this block is `hidden` and the card list takes over.
+  const gridStyle = {
+    '--rgrid-cols': 'minmax(200px,1fr) 140px 96px',
+    '--rgrid-min': '460px',
+  } as CSSProperties
+
   function run(action: () => Promise<{ ok: true; message?: string } | { ok: false; error: string }>) {
     setNote(null)
     startTransition(async () => {
@@ -97,81 +106,103 @@ export function TemplateFolderList({
     })
   }
 
+  function folderActions(f: TemplateFolderSummary) {
+    if (f.system) return null
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+        <IconButton
+          label={`Rename folder ${f.name}`}
+          tone="quiet"
+          disabled={pending}
+          onClick={() => {
+            setRenameFrom(f.name)
+            setRenameTo(f.name)
+          }}
+        >
+          <Pencil size={14} />
+        </IconButton>
+        <IconButton
+          label={`Delete folder ${f.name}`}
+          tone="danger"
+          disabled={pending}
+          onClick={() => setDeleteFolder(f.name)}
+        >
+          <Trash2 size={14} />
+        </IconButton>
+      </span>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground">
+        <SectionHead>
           {folders.length} {noun} Folder{folders.length === 1 ? '' : 's'}
-        </h2>
+        </SectionHead>
         <TemplatesToolbar kind={t} folder={null} q={q} onNewTemplate={() => setCreateOpen(true)} />
       </div>
 
       {note ? (
-        <Alert variant={note.tone === 'err' ? 'destructive' : 'default'}>
-          <AlertDescription>{note.text}</AlertDescription>
-        </Alert>
+        <VerdictLine tone={note.tone === 'err' ? 'attention' : 'ok'}>{note.text}</VerdictLine>
       ) : null}
 
-      <div className="overflow-x-auto no-scrollbar rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead className="text-right tabular-nums">{noun}s</TableHead>
-              <TableHead className="w-24 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {/* Desktop grid — hidden below md; the card list below takes over */}
+      <div className="hidden md:block">
+        <div className="av2-rgrid__scroll" role="group" tabIndex={0} aria-label={`${noun} folders`}>
+          <div className="av2-rgrid" role="table" aria-label={`${noun} folders`} style={gridStyle}>
+            <div className="av2-rgrid__head" role="row">
+              <span role="columnheader" className="av2-rgrid__h">
+                Name
+              </span>
+              <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">
+                {noun}s
+              </span>
+              <span role="columnheader" className="av2-rgrid__h" style={{ textAlign: 'right' }}>
+                Actions
+              </span>
+            </div>
+
             {folders.map((f) => (
-              <TableRow key={f.id}>
-                <TableCell>
-                  <Link
-                    href={tplUrl({ t, folder: f.id })}
-                    className="font-medium text-primary hover:underline"
-                  >
+              <div key={f.id} role="row" className="av2-rgrid__row">
+                <span role="cell" data-label="Name" className="av2-rgrid__c">
+                  <Link href={tplUrl({ t, folder: f.id })} style={FOLDER_LINK}>
                     {f.name}
                   </Link>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="secondary" className="tabular-nums">
+                </span>
+                <span role="cell" data-label={`${noun}s`} className="av2-rgrid__c av2-rgrid__c--n">
+                  <span className="a-num" style={COUNT_CHIP}>
                     {f.count}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {!f.system ? (
-                    <span className="inline-flex items-center gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
-                        aria-label={`Rename folder ${f.name}`}
-                        disabled={pending}
-                        onClick={() => {
-                          setRenameFrom(f.name)
-                          setRenameTo(f.name)
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        aria-label={`Delete folder ${f.name}`}
-                        disabled={pending}
-                        onClick={() => setDeleteFolder(f.name)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </span>
-                  ) : null}
-                </TableCell>
-              </TableRow>
+                  </span>
+                </span>
+                <span role="cell" data-label="Actions" className="av2-rgrid__c" style={{ textAlign: 'right' }}>
+                  {folderActions(f)}
+                </span>
+              </div>
             ))}
-          </TableBody>
-        </Table>
+          </div>
+        </div>
+      </div>
+
+      {/* Phone card list — the layout lives in av2-cardlist, never md:hidden
+          plus an inline display (the inline style wins and both layouts show) */}
+      <div className="av2-cardlist">
+        {folders.map((f) => (
+          <div
+            key={f.id}
+            className="av2-pane"
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+          >
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <Link href={tplUrl({ t, folder: f.id })} style={FOLDER_LINK}>
+                {f.name}
+              </Link>
+              <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                {noun}s <span className="a-num">{f.count}</span>
+              </p>
+            </div>
+            {folderActions(f)}
+          </div>
+        ))}
       </div>
 
       {/* Create template from the folder level (lands in My templates unless a folder is typed) */}
@@ -205,28 +236,18 @@ export function TemplateFolderList({
       {/* Rename folder */}
       <Dialog
         open={renameFrom !== null}
-        onOpenChange={(o) => {
-          if (!o && !pending) setRenameFrom(null)
+        onClose={() => {
+          if (!pending) setRenameFrom(null)
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename folder</DialogTitle>
-            <DialogDescription>
-              Every {channelName} template in &ldquo;{renameFrom}&rdquo; moves to the new name.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-1.5">
-            <Label htmlFor="folder-rename">New folder name</Label>
-            <Input
-              id="folder-rename"
-              value={renameTo}
-              onChange={(e) => setRenameTo(e.target.value)}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameFrom(null)} disabled={pending}>
+        title="Rename folder"
+        description={
+          <>
+            Every {channelName} template in &ldquo;{renameFrom}&rdquo; moves to the new name.
+          </>
+        }
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setRenameFrom(null)} disabled={pending}>
               Cancel
             </Button>
             <Button
@@ -240,37 +261,32 @@ export function TemplateFolderList({
             >
               Rename
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextField
+          label="New folder name"
+          value={renameTo}
+          onChange={(e) => setRenameTo(e.target.value)}
+          autoFocus
+        />
       </Dialog>
 
       {/* Delete folder */}
-      <AlertDialog open={deleteFolder !== null} onOpenChange={(o) => !o && setDeleteFolder(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete folder {deleteFolder}</AlertDialogTitle>
-            <AlertDialogDescription>
-              The folder goes away. Its templates are kept and stay available in All {noun}s.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={pending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={(e) => {
-                e.preventDefault()
-                const name = deleteFolder
-                if (!name) return
-                run(() => shared.actions.renameCategory(name, '', channelName))
-                setDeleteFolder(null)
-              }}
-            >
-              Delete folder
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={deleteFolder !== null}
+        onClose={() => setDeleteFolder(null)}
+        title={`Delete folder ${deleteFolder ?? ''}`}
+        description={`The folder goes away. Its templates are kept and stay available in All ${noun}s.`}
+        confirmLabel="Delete folder"
+        busy={pending}
+        onConfirm={() => {
+          const name = deleteFolder
+          if (!name) return
+          run(() => shared.actions.renameCategory(name, '', channelName))
+          setDeleteFolder(null)
+        }}
+      />
     </div>
   )
 }

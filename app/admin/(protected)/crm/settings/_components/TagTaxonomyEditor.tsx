@@ -11,41 +11,37 @@
  * Compliance tags are protected: the actions refuse rename/merge/delete, and the
  * UI hides those controls for protected rows.
  *
- * Design-system only. The server actions are the guard + the chunked rewrite;
- * this island renders state and dispatches.
+ * Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
+ * following its already-migrated sibling ConfigTableEditor.tsx in this folder.
+ * Presentation only — the six server actions, the FormData field names, every
+ * validation branch and every user-facing string are carried over verbatim.
+ *
+ * Table markup is the hand-rolled div/role grid ConfigTableEditor uses
+ * (av2-rgrid* + report-grid.css, role="table"/"row"/"columnheader"/"cell")
+ * rather than the <ReportGrid> component: that component is server-only and
+ * stateless, and these cells are interactive (Switch, IconButton) with a shared
+ * pending state. The phone fallback carries its layout in `av2-cardlist`, NOT
+ * `md:hidden` plus an inline display — an inline style outranks the class and
+ * leaves BOTH layouts on screen at desktop.
+ *
+ * ci:admin-ui rule C allows ONE primary-variant Button per FILE, and this island
+ * may not be split (no new files in this unit), so the island's single primary
+ * is the header "+ Add tag". "Merge tags" and both non-destructive dialog
+ * submits are quiet; the two destructive submits are danger.
  */
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type CSSProperties } from 'react'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
+  Button,
+  ConfirmDialog,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Card } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+  IconButton,
+  SectionHead,
+  SelectField,
+  Switch,
+  TextField,
+  VerdictLine,
+} from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 import { Pencil, Trash2, GripVertical } from 'lucide-react'
 import { moveInList } from '@/lib/admin/config-editor-helpers'
 
@@ -73,6 +69,19 @@ export type TagTaxonomyEditorActions = {
   setActive: (formData: FormData) => Promise<ActionResult>
   reorder: (orderedIds: number[]) => Promise<ActionResult>
 }
+
+/** Quiet outline pill for a row-level qualifier. Pills proper are FilterChip's. */
+const BADGE: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-sm)',
+  padding: '1px 6px',
+  fontWeight: 400,
+}
+
+/** Monospaced key inputs — the key is a literal stored on every contact. */
+const MONO: CSSProperties = { fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-xs)' }
 
 export function TagTaxonomyEditor({
   rows,
@@ -188,18 +197,26 @@ export function TagTaxonomyEditor({
   // Merge sources cannot be protected (the action refuses); destinations can.
   const mergeSources = rows.filter((r) => !r.isProtected)
 
+  // Desktop column template — the custom properties report-grid.css reads at
+  // >=720px. Below md the whole block is `hidden`, so the stacked-block rules
+  // in that file never apply here; the card list takes over instead.
+  const gridStyle = {
+    '--rgrid-cols': '52px minmax(220px,1fr) 88px 132px 88px',
+    '--rgrid-min': '600px',
+  } as CSSProperties
+
   return (
     <div className="space-y-4">
-      {/* FUB-style header: count left, actions right */}
+      {/* count left, actions right */}
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground">
+        <SectionHead>
           {rows.length.toLocaleString('en-US')}{' '}
-          <span className="font-normal text-muted-foreground">
+          <span style={{ fontWeight: 400, color: 'var(--a-text-2)' }}>
             {rows.length === 1 ? 'Tag' : 'Tags'}
           </span>
-        </h2>
+        </SectionHead>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => setMergeOpen(true)} disabled={pending}>
+          <Button variant="quiet" onClick={() => setMergeOpen(true)} disabled={pending}>
             Merge tags
           </Button>
           <Button onClick={() => setAddOpen(true)} disabled={pending}>
@@ -209,92 +226,101 @@ export function TagTaxonomyEditor({
       </div>
 
       {note ? (
-        <Alert variant={note.tone === 'err' ? 'destructive' : 'default'}>
-          <AlertDescription>{note.text}</AlertDescription>
-        </Alert>
+        <VerdictLine tone={note.tone === 'err' ? 'attention' : 'ok'}>{note.text}</VerdictLine>
       ) : null}
 
-      {/* Desktop table */}
-      <div className="hidden md:block overflow-x-auto no-scrollbar rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-8 px-2" />
-              <TableHead>Name</TableHead>
-              <TableHead className="w-28 text-right tabular-nums">Used</TableHead>
-              <TableHead className="w-28">Status</TableHead>
-              <TableHead className="w-20 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {/* Desktop grid — hidden below md; the card list below takes over */}
+      <div className="hidden md:block">
+        <div className="av2-rgrid__scroll" role="group" tabIndex={0} aria-label="Tags">
+          <div className="av2-rgrid" role="table" aria-label="Tags" style={gridStyle}>
+            <div className="av2-rgrid__head" role="row">
+              <span role="columnheader" className="av2-rgrid__h" />
+              <span role="columnheader" className="av2-rgrid__h">
+                Name
+              </span>
+              <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">
+                Used
+              </span>
+              <span role="columnheader" className="av2-rgrid__h">
+                Status
+              </span>
+              <span role="columnheader" className="av2-rgrid__h" style={{ textAlign: 'right' }}>
+                Actions
+              </span>
+            </div>
+
             {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
-                  No tags yet. Add the first one.
-                </TableCell>
-              </TableRow>
+              <div className="av2-rgrid__empty" role="row">
+                <span role="cell">No tags yet. Add the first one.</span>
+              </div>
             ) : (
               rows.map((row, idx) => (
-                <TableRow key={row.id} className="group">
-                  <TableCell className="w-8 px-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity"
+                <div key={row.id} role="row" className="av2-rgrid__row">
+                  {/* Reorder — always visible. The old opacity-0 group-hover reveal
+                      was undiscoverable by touch or keyboard; the migrated sibling
+                      made the same control permanent. */}
+                  <span role="cell" data-label="" className="av2-rgrid__c">
+                    <IconButton
+                      label={`Move ${row.label} up`}
+                      tone="quiet"
                       disabled={pending || idx === 0}
-                      aria-label={`Move ${row.label} up`}
                       onClick={() => submitReorder(row.id, -1)}
                     >
-                      <GripVertical className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+                      <GripVertical size={16} />
+                    </IconButton>
+                  </span>
 
-                  <TableCell className="font-medium text-foreground">
-                    <span className="inline-flex items-center gap-2">
+                  <span role="cell" data-label="Name" className="av2-rgrid__c">
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontWeight: 600,
+                        color: 'var(--a-text)',
+                      }}
+                    >
                       {row.label}
-                      {row.isProtected ? (
-                        <Badge variant="outline" className="text-xs">
-                          Compliance
-                        </Badge>
-                      ) : null}
+                      {row.isProtected ? <span style={BADGE}>Compliance</span> : null}
                     </span>
-                  </TableCell>
+                  </span>
 
-                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                  <span role="cell" data-label="Used" className="av2-rgrid__c av2-rgrid__c--n">
                     {row.usageCount.toLocaleString('en-US')}
-                  </TableCell>
+                  </span>
 
-                  <TableCell>
-                    <span className="inline-flex items-center gap-2">
-                      <Switch
-                        checked={row.isActive}
-                        disabled={pending}
-                        onCheckedChange={(next) => submitActive(row, next)}
-                        aria-label={`${row.label} active`}
-                      />
-                      <span
-                        className={cn(
-                          'text-xs',
-                          row.isActive ? 'text-foreground' : 'text-muted-foreground',
-                        )}
-                      >
-                        {row.isActive ? 'Active' : 'Off'}
-                      </span>
-                    </span>
-                  </TableCell>
+                  <span role="cell" data-label="Status" className="av2-rgrid__c">
+                    <Switch
+                      label={`${row.label} active`}
+                      labelHidden
+                      stateText={row.isActive ? 'Active' : 'Off'}
+                      checked={row.isActive}
+                      disabled={pending}
+                      onChange={(e) => submitActive(row, e.target.checked)}
+                    />
+                  </span>
 
-                  <TableCell className="text-right">
-                    <div className="inline-flex items-center gap-1">
+                  <span role="cell" data-label="Actions" className="av2-rgrid__c" style={{ textAlign: 'right' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
                       {row.isProtected ? (
-                        <span className="w-16" />
+                        <>
+                          <span
+                            className="av2-iconbtn"
+                            aria-hidden="true"
+                            style={{ visibility: 'hidden', pointerEvents: 'none' }}
+                          />
+                          <span
+                            className="av2-iconbtn"
+                            aria-hidden="true"
+                            style={{ visibility: 'hidden', pointerEvents: 'none' }}
+                          />
+                        </>
                       ) : (
                         <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                          <IconButton
+                            label={`Rename ${row.label}`}
+                            tone="quiet"
                             disabled={pending}
-                            aria-label={`Rename ${row.label}`}
                             onClick={() => {
                               setRenameRow(row)
                               setRenameKey(row.key)
@@ -302,61 +328,67 @@ export function TagTaxonomyEditor({
                               setNote(null)
                             }}
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                            <Pencil size={16} />
+                          </IconButton>
+                          <IconButton
+                            label={`Delete ${row.label}`}
+                            tone="danger"
                             disabled={pending}
-                            aria-label={`Delete ${row.label}`}
                             onClick={() => {
                               setDeleteRow(row)
                               setStripCarriers(false)
                               setNote(null)
                             }}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                            <Trash2 size={16} />
+                          </IconButton>
                         </>
                       )}
-                    </div>
-                  </TableCell>
-                </TableRow>
+                    </span>
+                  </span>
+                </div>
               ))
             )}
-          </TableBody>
-        </Table>
+          </div>
+        </div>
       </div>
 
-      {/* Mobile card list */}
-      <div className="md:hidden space-y-2">
+      {/* Phone card list — av2-cardlist owns the breakpoint, never an inline display */}
+      <div className="av2-cardlist">
         {rows.map((row) => (
-          <Card
+          <div
             key={row.id}
-            className="flex items-center justify-between gap-3 px-4 py-3"
+            className="av2-pane"
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
           >
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">{row.label}</p>
-              <p className="text-xs text-muted-foreground tabular-nums">
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p
+                className="truncate"
+                style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}
+              >
+                {row.label}
+              </p>
+              <p
+                className="a-num"
+                style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+              >
                 {row.usageCount.toLocaleString('en-US')} contacts
               </p>
             </div>
-            <div className="flex shrink-0 items-center gap-1">
+            <div style={{ display: 'flex', flexShrink: 0, alignItems: 'center', gap: 4 }}>
               <Switch
+                label={`${row.label} active`}
+                labelHidden
                 checked={row.isActive}
                 disabled={pending}
-                onCheckedChange={(next) => submitActive(row, next)}
-                aria-label={`${row.label} active`}
+                onChange={(e) => submitActive(row, e.target.checked)}
               />
               {!row.isProtected && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  <IconButton
+                    label={`Rename ${row.label}`}
+                    tone="quiet"
                     disabled={pending}
-                    aria-label={`Rename ${row.label}`}
                     onClick={() => {
                       setRenameRow(row)
                       setRenameKey(row.key)
@@ -364,154 +396,184 @@ export function TagTaxonomyEditor({
                       setNote(null)
                     }}
                   >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                    <Pencil size={16} />
+                  </IconButton>
+                  <IconButton
+                    label={`Delete ${row.label}`}
+                    tone="danger"
                     disabled={pending}
-                    aria-label={`Delete ${row.label}`}
                     onClick={() => {
                       setDeleteRow(row)
                       setStripCarriers(false)
                       setNote(null)
                     }}
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    <Trash2 size={16} />
+                  </IconButton>
                 </>
               )}
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
       {/* Add dialog */}
-      <Dialog open={addOpen} onOpenChange={(o) => !pending && setAddOpen(o)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add tag</DialogTitle>
-            <DialogDescription>The key is the literal value stored on each contact. It defaults to the label.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="tag-add-label">Label</Label>
-              <Input id="tag-add-label" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="New tag" autoFocus />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tag-add-key">Key (optional)</Label>
-              <Input id="tag-add-key" value={newKey} onChange={(e) => setNewKey(e.target.value)} placeholder="Defaults to the label" className="font-mono text-xs" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={pending}>Cancel</Button>
-            <Button onClick={submitAdd} disabled={pending}>Add tag</Button>
-          </DialogFooter>
-        </DialogContent>
+      <Dialog
+        open={addOpen}
+        onClose={() => {
+          if (!pending) setAddOpen(false)
+        }}
+        title="Add tag"
+        description="The key is the literal value stored on each contact. It defaults to the label."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setAddOpen(false)} disabled={pending}>
+              Cancel
+            </Button>
+            <Button variant="quiet" onClick={submitAdd} disabled={pending}>
+              Add tag
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          label="Label"
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+          placeholder="New tag"
+          autoFocus
+        />
+        <TextField
+          label="Key (optional)"
+          value={newKey}
+          onChange={(e) => setNewKey(e.target.value)}
+          placeholder="Defaults to the label"
+          style={MONO}
+        />
       </Dialog>
 
       {/* Rename dialog — changes the KEY everywhere */}
-      <Dialog open={!!renameRow} onOpenChange={(o) => !pending && !o && setRenameRow(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename {renameRow?.label}</DialogTitle>
-            <DialogDescription>
-              Renaming the key rewrites it on every contact that carries it
-              {renameRow ? ` (${renameRow.usageCount.toLocaleString('en-US')} now).` : '.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="tag-rename-key">New key</Label>
-              <Input id="tag-rename-key" value={renameKey} onChange={(e) => setRenameKey(e.target.value)} className="font-mono text-xs" autoFocus />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="tag-rename-label">New label</Label>
-              <Input id="tag-rename-label" value={renameLabel} onChange={(e) => setRenameLabel(e.target.value)} placeholder="Defaults to the key" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameRow(null)} disabled={pending}>Cancel</Button>
-            <Button onClick={submitRename} disabled={pending}>Rename everywhere</Button>
-          </DialogFooter>
-        </DialogContent>
+      <Dialog
+        open={!!renameRow}
+        onClose={() => {
+          if (!pending) setRenameRow(null)
+        }}
+        title={`Rename ${renameRow?.label ?? ''}`}
+        description={
+          <>
+            Renaming the key rewrites it on every contact that carries it
+            {renameRow ? ` (${renameRow.usageCount.toLocaleString('en-US')} now).` : '.'}
+          </>
+        }
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setRenameRow(null)} disabled={pending}>
+              Cancel
+            </Button>
+            <Button variant="quiet" onClick={submitRename} disabled={pending}>
+              Rename everywhere
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          label="New key"
+          value={renameKey}
+          onChange={(e) => setRenameKey(e.target.value)}
+          style={MONO}
+          autoFocus
+        />
+        <TextField
+          label="New label"
+          value={renameLabel}
+          onChange={(e) => setRenameLabel(e.target.value)}
+          placeholder="Defaults to the key"
+        />
       </Dialog>
 
       {/* Merge dialog */}
-      <Dialog open={mergeOpen} onOpenChange={(o) => !pending && setMergeOpen(o)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Merge tags</DialogTitle>
-            <DialogDescription>
-              Every contact carrying the first tag is moved to the second, then the first tag is removed. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>Merge this tag</Label>
-              <Select value={mergeFrom} onValueChange={setMergeFrom}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tag to fold in" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mergeSources.map((t) => (
-                    <SelectItem key={t.id} value={String(t.id)}>
-                      {t.label} ({t.usageCount.toLocaleString('en-US')})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Into this tag</Label>
-              <Select value={mergeInto} onValueChange={setMergeInto}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Destination tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rows.map((t) => (
-                    <SelectItem key={t.id} value={String(t.id)}>
-                      {t.label} ({t.usageCount.toLocaleString('en-US')})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMergeOpen(false)} disabled={pending}>Cancel</Button>
-            <Button variant="destructive" onClick={submitMerge} disabled={pending}>Merge tags</Button>
-          </DialogFooter>
-        </DialogContent>
+      <Dialog
+        open={mergeOpen}
+        onClose={() => {
+          if (!pending) setMergeOpen(false)
+        }}
+        title="Merge tags"
+        description="Every contact carrying the first tag is moved to the second, then the first tag is removed. This cannot be undone."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setMergeOpen(false)} disabled={pending}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={submitMerge} disabled={pending}>
+              Merge tags
+            </Button>
+          </>
+        }
+      >
+        <SelectField label="Merge this tag" value={mergeFrom} onChange={(e) => setMergeFrom(e.target.value)}>
+          <option value="" disabled>
+            Tag to fold in
+          </option>
+          {mergeSources.map((t) => (
+            <option key={t.id} value={String(t.id)}>
+              {t.label} ({t.usageCount.toLocaleString('en-US')})
+            </option>
+          ))}
+        </SelectField>
+        <SelectField label="Into this tag" value={mergeInto} onChange={(e) => setMergeInto(e.target.value)}>
+          <option value="" disabled>
+            Destination tag
+          </option>
+          {rows.map((t) => (
+            <option key={t.id} value={String(t.id)}>
+              {t.label} ({t.usageCount.toLocaleString('en-US')})
+            </option>
+          ))}
+        </SelectField>
       </Dialog>
 
       {/* Delete dialog */}
-      <Dialog open={!!deleteRow} onOpenChange={(o) => !pending && !o && setDeleteRow(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete {deleteRow?.label}</DialogTitle>
-            <DialogDescription>
-              Remove this tag from the taxonomy. Optionally strip it off every contact that carries it.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground">Strip from every contact</p>
-              <p className="text-xs text-muted-foreground">
-                {deleteRow?.usageCount
-                  ? `${deleteRow.usageCount.toLocaleString('en-US')} contacts carry this tag.`
-                  : 'No contacts carry this tag.'}
-              </p>
-            </div>
-            <Switch checked={stripCarriers} onCheckedChange={setStripCarriers} disabled={pending} aria-label="Strip from every contact" />
+      <ConfirmDialog
+        open={!!deleteRow}
+        onClose={() => {
+          if (!pending) setDeleteRow(null)
+        }}
+        title={`Delete ${deleteRow?.label ?? ''}`}
+        description="Remove this tag from the taxonomy. Optionally strip it off every contact that carries it."
+        confirmLabel="Delete tag"
+        onConfirm={submitDelete}
+        busy={pending}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            border: '1px solid var(--a-border)',
+            borderRadius: 'var(--a-r-md)',
+            padding: 12,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+              Strip from every contact
+            </p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+              {deleteRow?.usageCount
+                ? `${deleteRow.usageCount.toLocaleString('en-US')} contacts carry this tag.`
+                : 'No contacts carry this tag.'}
+            </p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteRow(null)} disabled={pending}>Cancel</Button>
-            <Button variant="destructive" onClick={submitDelete} disabled={pending}>Delete tag</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <Switch
+            label="Strip from every contact"
+            labelHidden
+            checked={stripCarriers}
+            disabled={pending}
+            onChange={(e) => setStripCarriers(e.target.checked)}
+          />
+        </div>
+      </ConfirmDialog>
     </div>
   )
 }

@@ -127,5 +127,5 @@
     "app/admin/(protected)/people/[id]/page.tsx": 1,
     "app/admin/(protected)/today/page.tsx": 2
   },
-  "distinctWidths": 11
+  "distinctWidths": 9
 }

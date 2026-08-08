@@ -152,7 +152,49 @@ const SCAN_DIRS = [
   // bare crm/settings dir: eleven sibling pages still mount legacy editors
   // (CustomFieldEditor, TagTaxonomyEditor, the company + templates islands).
   // Each joins this list as its island migrates.
-  'app/admin/(protected)/crm/settings/_components',
+  // 11F (2026-08-08) — the crm/settings family, FILE-FORM so the exclusions are
+  // named rather than implied. EmailTemplateModal, TextTemplateModal and
+  // template-actions import MergeFieldInserter from components/admin/crm: that is
+  // the shared merge-field machinery every compose surface uses, and forking it
+  // to satisfy a colour gate would fork what a broker's templates render. Same
+  // call as people/[id], email/compose, dscr and crm/inbox — a surface that
+  // COMPOSES is gated around its shared machinery, never through it.
+  'app/admin/(protected)/crm/settings/_components/AddRowDialog.tsx',
+  'app/admin/(protected)/crm/settings/_components/ConfigTableEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/CustomFieldEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/GroupEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/LeadFlowEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/MarketReportPreviewDialog.tsx',
+  'app/admin/(protected)/crm/settings/_components/PondEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/RenameRowDialog.tsx',
+  'app/admin/(protected)/crm/settings/_components/RoutingEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/SuppressionAdmin.tsx',
+  'app/admin/(protected)/crm/settings/_components/TagTaxonomyEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/TemplatePreviewPane.tsx',
+  'app/admin/(protected)/crm/settings/_components/company/BlockListManager.tsx',
+  'app/admin/(protected)/crm/settings/_components/company/ChangeDialogs.tsx',
+  'app/admin/(protected)/crm/settings/_components/company/CompanySettingsForm.tsx',
+  'app/admin/(protected)/crm/settings/_components/company/OfficeHoursEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/company/WeeklyRecipientsEditor.tsx',
+  'app/admin/(protected)/crm/settings/_components/company/form-shared.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/EmailTemplateList.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/EmojiPickerButton.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/RichTextBody.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/TemplateFolderList.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/TemplatePerfScore.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/TemplatesToolbar.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/TextTemplateList.tsx',
+  'app/admin/(protected)/crm/settings/assignment/page.tsx',
+  'app/admin/(protected)/crm/settings/company/block-list/page.tsx',
+  'app/admin/(protected)/crm/settings/company/page.tsx',
+  'app/admin/(protected)/crm/settings/custom-fields/page.tsx',
+  'app/admin/(protected)/crm/settings/groups/page.tsx',
+  'app/admin/(protected)/crm/settings/lead-flows/page.tsx',
+  'app/admin/(protected)/crm/settings/market-reports/page.tsx',
+  'app/admin/(protected)/crm/settings/ponds/page.tsx',
+  'app/admin/(protected)/crm/settings/suppression/page.tsx',
+  'app/admin/(protected)/crm/settings/tags/page.tsx',
+  'app/admin/(protected)/crm/settings/templates/page.tsx',
   'app/admin/(protected)/crm/settings/stages/page.tsx',
   'app/admin/(protected)/crm/settings/segments/page.tsx',
   'app/admin/(protected)/crm/settings/areas/page.tsx',

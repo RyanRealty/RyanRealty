@@ -15,40 +15,37 @@
  * deleteCrmFieldDefinitionAction(id). The key is immutable on edit (the action
  * ignores it). A protected field shows no delete control.
  *
- * Design-system only.
+ * Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
+ * following its already-migrated sibling ConfigTableEditor.tsx in this folder.
+ * Presentation only — the four server actions, the FieldInput payload, every
+ * validation branch and every user-facing string are carried over verbatim.
+ *
+ * Table markup is the hand-rolled div/role grid ConfigTableEditor uses
+ * (av2-rgrid* + report-grid.css) rather than the <ReportGrid> component, which
+ * is server-only and stateless while these cells are interactive. The phone
+ * fallback carries its layout in `av2-cardlist`, NOT `md:hidden` plus an inline
+ * display — an inline style outranks the class and leaves BOTH layouts on
+ * screen at desktop.
+ *
+ * ci:admin-ui rule C allows ONE primary-variant Button per FILE, and this island
+ * may not be split (no new files in this unit), so the island's single primary
+ * is the header "+ Add custom field"; the create/edit dialog's submit is quiet
+ * and the delete confirm is danger.
  */
-import { useState, useTransition } from 'react'
+import { useState, useTransition, type CSSProperties } from 'react'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
+  Button,
+  ConfirmDialog,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Card } from '@/components/ui/card'
+  IconButton,
+  SectionHead,
+  SelectField,
+  Switch,
+  TextAreaField,
+  TextField,
+  VerdictLine,
+} from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 import { Pencil, Trash2, GripVertical } from 'lucide-react'
 import {
   moveInList,
@@ -109,6 +106,30 @@ const EMPTY: FormState = {
   fieldGroup: '',
   hideIfEmpty: false,
   readOnly: false,
+}
+
+/** Quiet outline pill for a row-level qualifier. Pills proper are FilterChip's. */
+const BADGE: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-sm)',
+  padding: '1px 6px',
+  fontWeight: 400,
+}
+
+/** Monospaced inputs — the key and the options list are literals, not prose. */
+const MONO: CSSProperties = { fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-xs)' }
+
+/** The toggle wells inside the create/edit dialog. */
+const TOGGLE_WELL: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-md)',
+  padding: 12,
 }
 
 export function CustomFieldEditor({
@@ -206,283 +227,302 @@ export function CustomFieldEditor({
     run(() => actions.remove(deleteRow.id), 'Field removed', () => setDeleteRow(null))
   }
 
+  // Desktop column template — the custom properties report-grid.css reads at
+  // >=720px. Below md the whole block is `hidden`, so the stacked-block rules
+  // in that file never apply here; the card list takes over instead.
+  const gridStyle = {
+    '--rgrid-cols': '52px minmax(220px,1fr) 96px 120px 88px',
+    '--rgrid-min': '600px',
+  } as CSSProperties
+
   return (
     <div className="space-y-4">
-      {/* FUB-style header: count left, primary action right */}
+      {/* count left, primary action right */}
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground">
+        <SectionHead>
           {rows.length.toLocaleString('en-US')}{' '}
-          <span className="font-normal text-muted-foreground">
+          <span style={{ fontWeight: 400, color: 'var(--a-text-2)' }}>
             {rows.length === 1 ? 'Custom field' : 'Custom fields'}
           </span>
-        </h2>
+        </SectionHead>
         <Button onClick={openCreate} disabled={pending}>
           + Add custom field
         </Button>
       </div>
 
       {note ? (
-        <Alert variant={note.tone === 'err' ? 'destructive' : 'default'}>
-          <AlertDescription>{note.text}</AlertDescription>
-        </Alert>
+        <VerdictLine tone={note.tone === 'err' ? 'attention' : 'ok'}>{note.text}</VerdictLine>
       ) : null}
 
-      {/* Desktop table */}
-      <div className="hidden md:block overflow-x-auto no-scrollbar rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-8 px-2" />
-              <TableHead>Field name</TableHead>
-              <TableHead className="w-24">Type</TableHead>
-              <TableHead className="w-28">Group</TableHead>
-              <TableHead className="w-20 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {/* Desktop grid — hidden below md; the card list below takes over */}
+      <div className="hidden md:block">
+        <div className="av2-rgrid__scroll" role="group" tabIndex={0} aria-label="Custom fields">
+          <div className="av2-rgrid" role="table" aria-label="Custom fields" style={gridStyle}>
+            <div className="av2-rgrid__head" role="row">
+              <span role="columnheader" className="av2-rgrid__h" />
+              <span role="columnheader" className="av2-rgrid__h">
+                Field name
+              </span>
+              <span role="columnheader" className="av2-rgrid__h">
+                Type
+              </span>
+              <span role="columnheader" className="av2-rgrid__h">
+                Group
+              </span>
+              <span role="columnheader" className="av2-rgrid__h" style={{ textAlign: 'right' }}>
+                Actions
+              </span>
+            </div>
+
             {rows.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
-                  No custom fields yet. Add the first one.
-                </TableCell>
-              </TableRow>
+              <div className="av2-rgrid__empty" role="row">
+                <span role="cell">No custom fields yet. Add the first one.</span>
+              </div>
             ) : (
               rows.map((row, idx) => (
-                <TableRow key={row.id} className="group">
-                  <TableCell className="w-8 px-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-muted-foreground opacity-0 group-hover:opacity-100 disabled:opacity-0 transition-opacity"
+                <div key={row.id} role="row" className="av2-rgrid__row">
+                  {/* Reorder — always visible. The old opacity-0 group-hover reveal
+                      was undiscoverable by touch or keyboard; the migrated sibling
+                      made the same control permanent. */}
+                  <span role="cell" data-label="" className="av2-rgrid__c">
+                    <IconButton
+                      label={`Move ${row.label} up`}
+                      tone="quiet"
                       disabled={pending || idx === 0}
-                      aria-label={`Move ${row.label} up`}
                       onClick={() => submitReorder(row.id, -1)}
                     >
-                      <GripVertical className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+                      <GripVertical size={16} />
+                    </IconButton>
+                  </span>
 
-                  <TableCell className="font-medium text-foreground">
-                    <span className="inline-flex items-center gap-2">
+                  <span role="cell" data-label="Field name" className="av2-rgrid__c">
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontWeight: 600,
+                        color: 'var(--a-text)',
+                      }}
+                    >
                       {row.label}
-                      {row.isProtected ? (
-                        <Badge variant="outline" className="text-xs">
-                          System
-                        </Badge>
-                      ) : null}
+                      {row.isProtected ? <span style={BADGE}>System</span> : null}
                     </span>
-                  </TableCell>
+                  </span>
 
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs uppercase">
-                      {row.type}
-                    </Badge>
-                  </TableCell>
+                  <span role="cell" data-label="Type" className="av2-rgrid__c">
+                    <span style={{ ...BADGE, textTransform: 'uppercase' }}>{row.type}</span>
+                  </span>
 
-                  <TableCell className="text-sm text-muted-foreground">
+                  <span role="cell" data-label="Group" className="av2-rgrid__c">
                     {row.fieldGroup ?? '—'}
-                  </TableCell>
+                  </span>
 
-                  <TableCell className="text-right">
-                    <div className="inline-flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  <span role="cell" data-label="Actions" className="av2-rgrid__c" style={{ textAlign: 'right' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, justifyContent: 'flex-end' }}>
+                      <IconButton
+                        label={`Edit ${row.label}`}
+                        tone="quiet"
                         disabled={pending}
-                        aria-label={`Edit ${row.label}`}
                         onClick={() => openEdit(row)}
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                        <Pencil size={16} />
+                      </IconButton>
                       {row.isProtected ? (
-                        <span className="w-8" />
+                        <span
+                          className="av2-iconbtn"
+                          aria-hidden="true"
+                          style={{ visibility: 'hidden', pointerEvents: 'none' }}
+                        />
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        <IconButton
+                          label={`Delete ${row.label}`}
+                          tone="danger"
                           disabled={pending}
-                          aria-label={`Delete ${row.label}`}
                           onClick={() => {
                             setDeleteRow(row)
                             setNote(null)
                           }}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          <Trash2 size={16} />
+                        </IconButton>
                       )}
-                    </div>
-                  </TableCell>
-                </TableRow>
+                    </span>
+                  </span>
+                </div>
               ))
             )}
-          </TableBody>
-        </Table>
+          </div>
+        </div>
       </div>
 
-      {/* Mobile card list */}
-      <div className="md:hidden space-y-2">
+      {/* Phone card list — av2-cardlist owns the breakpoint, never an inline display */}
+      <div className="av2-cardlist">
         {rows.map((row) => (
-          <Card
+          <div
             key={row.id}
-            className="flex items-center justify-between gap-3 px-4 py-3"
+            className="av2-pane"
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
           >
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">{row.label}</p>
-              <p className="text-xs text-muted-foreground uppercase">{row.type}</p>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p
+                className="truncate"
+                style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}
+              >
+                {row.label}
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 'var(--a-text-xs)',
+                  color: 'var(--a-text-2)',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {row.type}
+              </p>
             </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+            <div style={{ display: 'flex', flexShrink: 0, alignItems: 'center', gap: 4 }}>
+              <IconButton
+                label={`Edit ${row.label}`}
+                tone="quiet"
                 disabled={pending}
-                aria-label={`Edit ${row.label}`}
                 onClick={() => openEdit(row)}
               >
-                <Pencil className="h-4 w-4" />
-              </Button>
+                <Pencil size={16} />
+              </IconButton>
               {!row.isProtected && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                <IconButton
+                  label={`Delete ${row.label}`}
+                  tone="danger"
                   disabled={pending}
-                  aria-label={`Delete ${row.label}`}
                   onClick={() => {
                     setDeleteRow(row)
                     setNote(null)
                   }}
                 >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                  <Trash2 size={16} />
+                </IconButton>
               )}
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 
       {/* Create / edit dialog */}
-      <Dialog open={formOpen} onOpenChange={(o) => !pending && setFormOpen(o)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editId == null ? 'Add field' : 'Edit field'}</DialogTitle>
-            <DialogDescription>
-              {editId == null
-                ? 'The key is the stable identifier on the contact data. It cannot change later.'
-                : 'The key is fixed. Only the label, type, options, group, and flags change.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="fd-label">Label</Label>
-                <Input id="fd-label" value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} autoFocus />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="fd-key">Key</Label>
-                <Input
-                  id="fd-key"
-                  value={form.key}
-                  onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))}
-                  disabled={editId != null}
-                  className="font-mono text-xs"
-                  placeholder="lower_snake_case"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="fd-type">Type</Label>
-                <Select
-                  value={form.type}
-                  onValueChange={(v) => setForm((f) => ({ ...f, type: v as FieldType }))}
-                >
-                  <SelectTrigger id="fd-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text">Text</SelectItem>
-                    <SelectItem value="number">Number</SelectItem>
-                    <SelectItem value="date">Date</SelectItem>
-                    <SelectItem value="select">Select</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="fd-group">Group (optional)</Label>
-                <Input id="fd-group" value={form.fieldGroup} onChange={(e) => setForm((f) => ({ ...f, fieldGroup: e.target.value }))} />
-              </div>
-            </div>
-
-            {form.type === 'select' ? (
-              <div className="space-y-1.5">
-                <Label htmlFor="fd-options">Options</Label>
-                <Textarea
-                  id="fd-options"
-                  value={form.optionsText}
-                  onChange={(e) => setForm((f) => ({ ...f, optionsText: e.target.value }))}
-                  rows={5}
-                  className="font-mono text-xs"
-                  placeholder={'one per line\nvalue|Label\nbuyer|Buyer'}
-                />
-                <p className="text-xs text-muted-foreground">One option per line. Use value|Label to set a display label.</p>
-              </div>
-            ) : null}
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                <span className="text-sm font-medium text-foreground">Hide when empty</span>
-                <Switch
-                  checked={form.hideIfEmpty}
-                  onCheckedChange={(v) => setForm((f) => ({ ...f, hideIfEmpty: v }))}
-                  disabled={pending}
-                  aria-label="Hide when empty"
-                />
-              </div>
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                <span className="text-sm font-medium text-foreground">Read only</span>
-                <Switch
-                  checked={form.readOnly}
-                  onCheckedChange={(v) => setForm((f) => ({ ...f, readOnly: v }))}
-                  disabled={pending}
-                  aria-label="Read only"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)} disabled={pending}>
+      <Dialog
+        open={formOpen}
+        onClose={() => {
+          if (!pending) setFormOpen(false)
+        }}
+        title={editId == null ? 'Add field' : 'Edit field'}
+        description={
+          editId == null
+            ? 'The key is the stable identifier on the contact data. It cannot change later.'
+            : 'The key is fixed. Only the label, type, options, group, and flags change.'
+        }
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setFormOpen(false)} disabled={pending}>
               Cancel
             </Button>
-            <Button onClick={submitForm} disabled={pending}>
+            <Button variant="quiet" onClick={submitForm} disabled={pending}>
               {editId == null ? 'Add field' : 'Save'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <TextField
+            label="Label"
+            value={form.label}
+            onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+            autoFocus
+          />
+          <TextField
+            label="Key"
+            value={form.key}
+            onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))}
+            disabled={editId != null}
+            style={MONO}
+            placeholder="lower_snake_case"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <SelectField
+            label="Type"
+            value={form.type}
+            onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as FieldType }))}
+          >
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="date">Date</option>
+            <option value="select">Select</option>
+          </SelectField>
+          <TextField
+            label="Group (optional)"
+            value={form.fieldGroup}
+            onChange={(e) => setForm((f) => ({ ...f, fieldGroup: e.target.value }))}
+          />
+        </div>
+
+        {form.type === 'select' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s1)' }}>
+            <TextAreaField
+              label="Options"
+              value={form.optionsText}
+              onChange={(e) => setForm((f) => ({ ...f, optionsText: e.target.value }))}
+              rows={5}
+              style={MONO}
+              placeholder={'one per line\nvalue|Label\nbuyer|Buyer'}
+            />
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+              One option per line. Use value|Label to set a display label.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div style={TOGGLE_WELL}>
+            <span style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+              Hide when empty
+            </span>
+            <Switch
+              label="Hide when empty"
+              labelHidden
+              checked={form.hideIfEmpty}
+              onChange={(e) => setForm((f) => ({ ...f, hideIfEmpty: e.target.checked }))}
+              disabled={pending}
+            />
+          </div>
+          <div style={TOGGLE_WELL}>
+            <span style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+              Read only
+            </span>
+            <Switch
+              label="Read only"
+              labelHidden
+              checked={form.readOnly}
+              onChange={(e) => setForm((f) => ({ ...f, readOnly: e.target.checked }))}
+              disabled={pending}
+            />
+          </div>
+        </div>
       </Dialog>
 
       {/* Delete dialog */}
-      <Dialog open={!!deleteRow} onOpenChange={(o) => !pending && !o && setDeleteRow(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remove {deleteRow?.label}</DialogTitle>
-            <DialogDescription>
-              This removes the field definition only. The stored values on each contact are kept, and the field can be re-added later.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteRow(null)} disabled={pending}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={submitDelete} disabled={pending}>
-              Remove field
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={!!deleteRow}
+        onClose={() => {
+          if (!pending) setDeleteRow(null)
+        }}
+        title={`Remove ${deleteRow?.label ?? ''}`}
+        description="This removes the field definition only. The stored values on each contact are kept, and the field can be re-added later."
+        confirmLabel="Remove field"
+        onConfirm={submitDelete}
+        busy={pending}
+      />
     </div>
   )
 }

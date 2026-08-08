@@ -1,28 +1,43 @@
 import type { ReactNode } from 'react'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
+import '@/components/admin/v2/admin-v2.css'
 
 /**
  * Shared layout primitives for the Company Settings form (spec §1.2):
- * all-caps section dividers flanked by rules + the two-column form row
- * (labels left ~30%, controls right ~70%).
+ * all-caps section dividers flanked by rules + the config-form row.
+ *
+ * P11F: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * The row is now pattern 6 — label above, hint under it, single column —
+ * matching `.av2-field`, because every labelled control on this form is now a
+ * v2 field primitive (TextField / SelectField) that renders its own label. A
+ * two-column row would have put a second label beside the primitive's own.
+ * FormRow survives for the rows whose control is NOT a single field: the
+ * recording switch, the disclosure block, the office-hours editor, the
+ * recipient chips and the sub-page links.
  */
 
 /** All-caps section divider with flanking separators (FUB-style). */
 export function SectionDivider({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-4 py-4">
-      <Separator className="flex-1" />
-      <span className="shrink-0 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+    <div className="flex items-center" style={{ gap: 'var(--a-s4)', padding: 'var(--a-s4) 0' }}>
+      <div className="flex-1" style={{ borderTop: '1px solid var(--a-border)' }} />
+      <span
+        className="shrink-0"
+        style={{
+          fontSize: 'var(--a-text-xs)',
+          fontWeight: 600,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          color: 'var(--a-text-2)',
+        }}
+      >
         {label}
       </span>
-      <Separator className="flex-1" />
+      <div className="flex-1" style={{ borderTop: '1px solid var(--a-border)' }} />
     </div>
   )
 }
 
-/** Two-column form row: label left (~30%), control(s) right (~70%). */
+/** Config-form row: label above (~`.av2-field`), description under it, control below. */
 export function FormRow({
   label,
   htmlFor,
@@ -37,20 +52,23 @@ export function FormRow({
   className?: string
 }) {
   return (
-    <div className={cn('grid grid-cols-[1fr_2fr] items-start gap-x-6 gap-y-1 py-2.5', className)}>
-      <div className="pt-1">
-        {label && (
-          <Label
-            htmlFor={htmlFor}
-            className="text-sm font-medium text-foreground leading-snug"
-          >
-            {label}
-          </Label>
-        )}
-        {description && (
-          <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{description}</p>
-        )}
-      </div>
+    <div
+      className={className}
+      style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s1)', maxWidth: 640 }}
+    >
+      {label && (
+        <label
+          htmlFor={htmlFor}
+          style={{ fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text)' }}
+        >
+          {label}
+        </label>
+      )}
+      {description && (
+        <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          {description}
+        </p>
+      )}
       <div className="min-w-0">{children}</div>
     </div>
   )

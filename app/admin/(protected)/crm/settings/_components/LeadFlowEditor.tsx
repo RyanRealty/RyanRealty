@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * LeadFlowEditor — FUB-style editor for lead_flows + their rule rows.
+ * LeadFlowEditor — editor for lead_flows + their rule rows.
  *
  * One card per flow showing:
  *   - source, display name, default distribution target
@@ -10,23 +10,61 @@
  *   - archive / delete actions
  *
  * New-flow creation form at the bottom.
+ *
+ * Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY — a flow rule decides WHICH broker, group or pond receives
+ * a lead, so every FormData key, the condition shape, the rule ordering
+ * (position '0') and every action call are carried over unchanged.
+ *
+ * ci:admin-ui rule C allows ONE primary Button per file and this file holds two
+ * submits. "Save rule" keeps it: it sits beside its own Cancel, and two quiet
+ * buttons side by side name no default. "Create lead flow" is the only control
+ * in its section, so it reads unambiguously as quiet.
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { cn } from '@/lib/utils'
+import {
+  Button,
+  FilterChip,
+  IconButton,
+  SearchField,
+  SectionHead,
+  TextField,
+  ToolbarSelect,
+} from '@/components/admin/v2'
 import type { LeadFlow, LeadFlowRule } from '@/lib/data/crm/getLeadFlow'
 import type { CrmGroup } from '@/lib/data/crm/getCrmGroups'
 import type { CrmPond } from '@/lib/data/crm/getCrmPonds'
 
 type Result = { ok: boolean; error?: string; id?: number }
 type BrokerOption = { slug: string; name: string }
+
+/** Outlined caption box — pills are reserved for FilterChip. */
+const TAG = {
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-sm)',
+  padding: '1px 6px',
+} as const
+
+/** Uppercase micro-label over a list (matches .av2-lane-head, inside a pane). */
+const MICRO_LABEL = {
+  margin: 0,
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  letterSpacing: '.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+} as const
+
+/** Field caption for a control that carries its name beside it, not above it. */
+const INLINE_LABEL = {
+  fontSize: 'var(--a-text-sm)',
+  fontWeight: 600,
+  color: 'var(--a-text)',
+} as const
 
 /** Human-readable summary of what a target points to. */
 function targetLabel(
@@ -46,9 +84,9 @@ function targetLabel(
 /** Compact representation of a single condition. */
 function conditionBadge(cond: { field: string; op: string; value: string }, idx: number) {
   return (
-    <Badge key={idx} variant="outline" className="text-xs font-normal tabular-nums">
+    <span key={idx} className="a-num" style={TAG}>
       {cond.field} {cond.op} {cond.value}
-    </Badge>
+    </span>
   )
 }
 
@@ -108,114 +146,127 @@ function FlowRuleEditor({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
-      <p className="text-xs font-semibold text-foreground uppercase tracking-widest">New rule</p>
-      {localError && <p className="text-xs text-destructive">{localError}</p>}
+    <div
+      className="space-y-3"
+      style={{
+        border: '1px solid var(--a-border)',
+        background: 'var(--a-inset)',
+        borderRadius: 'var(--a-r-md)',
+        padding: 'var(--a-s3)',
+      }}
+    >
+      <p style={{ ...MICRO_LABEL, color: 'var(--a-text)' }}>New rule</p>
+      {localError && <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>{localError}</p>}
 
       {/* Conditions */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Label className="text-xs">Match</Label>
-          <Select value={conditionMatch} onValueChange={(v) => setConditionMatch(v as 'all' | 'any')} disabled={localPending || pending}>
-            <SelectTrigger className="h-8 w-24 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="any">Any</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-xs text-muted-foreground">conditions</span>
+          <span style={INLINE_LABEL}>Match</span>
+          <ToolbarSelect
+            aria-label="Match conditions"
+            value={conditionMatch}
+            onChange={(e) => setConditionMatch(e.target.value as 'all' | 'any')}
+            disabled={localPending || pending}
+          >
+            <option value="all">All</option>
+            <option value="any">Any</option>
+          </ToolbarSelect>
+          <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>conditions</span>
         </div>
         {conditions.map((c, i) => (
           <div key={i} className="flex flex-wrap gap-1.5 items-end">
-            <Select value={c.field} onValueChange={(v) => updateCond(i, 'field', v)} disabled={localPending || pending}>
-              <SelectTrigger className="h-8 w-24 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="price">Price</SelectItem>
-                <SelectItem value="area">Area</SelectItem>
-                <SelectItem value="tag">Tag</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={c.op} onValueChange={(v) => updateCond(i, 'op', v)} disabled={localPending || pending}>
-              <SelectTrigger className="h-8 w-24 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {c.field === 'price' && <>
-                  <SelectItem value="gt">{'>'}</SelectItem>
-                  <SelectItem value="lt">{'<'}</SelectItem>
-                  <SelectItem value="eq">{'='}</SelectItem>
-                </>}
-                {(c.field === 'area' || c.field === 'tag') && <>
-                  <SelectItem value="eq">equals</SelectItem>
-                  <SelectItem value="contains">contains</SelectItem>
-                </>}
-              </SelectContent>
-            </Select>
-            <Input
-              className="h-8 w-32 text-xs"
+            <ToolbarSelect
+              aria-label={`Condition ${i + 1} field`}
+              value={c.field}
+              onChange={(e) => updateCond(i, 'field', e.target.value)}
+              disabled={localPending || pending}
+            >
+              <option value="price">Price</option>
+              <option value="area">Area</option>
+              <option value="tag">Tag</option>
+            </ToolbarSelect>
+            <ToolbarSelect
+              aria-label={`Condition ${i + 1} operator`}
+              value={c.op}
+              onChange={(e) => updateCond(i, 'op', e.target.value)}
+              disabled={localPending || pending}
+            >
+              {c.field === 'price' && <>
+                <option value="gt">{'>'}</option>
+                <option value="lt">{'<'}</option>
+                <option value="eq">{'='}</option>
+              </>}
+              {(c.field === 'area' || c.field === 'tag') && <>
+                <option value="eq">equals</option>
+                <option value="contains">contains</option>
+              </>}
+            </ToolbarSelect>
+            <SearchField
+              type="text"
+              aria-label={`Condition ${i + 1} value`}
               placeholder={c.field === 'price' ? '750000' : 'value'}
               value={c.value}
               onChange={(e) => updateCond(i, 'value', e.target.value)}
               disabled={localPending || pending}
             />
-            <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive" onClick={() => removeCond(i)}>×</Button>
+            <IconButton type="button" label={`Remove condition ${i + 1}`} tone="danger" onClick={() => removeCond(i)}>×</IconButton>
           </div>
         ))}
-        <Button type="button" size="sm" variant="ghost" className="h-8 text-xs px-2" onClick={addCond} disabled={localPending || pending}>
+        <Button type="button" variant="quiet" onClick={addCond} disabled={localPending || pending}>
           + Add condition
         </Button>
-        {conditions.length === 0 && <p className="text-xs text-muted-foreground">No conditions — rule always matches.</p>}
+        {conditions.length === 0 && (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+            No conditions — rule always matches.
+          </p>
+        )}
       </div>
 
       {/* Distribution target */}
       <div className="space-y-2">
-        <Label className="text-xs">Route to</Label>
+        <p style={{ ...INLINE_LABEL, margin: 0 }}>Route to</p>
         <div className="flex flex-wrap gap-1.5">
           {(['broker', 'group', 'pond'] as const).map((k) => (
-            <Button key={k} type="button" size="sm" variant={targetKind === k ? 'default' : 'outline'} className="h-8 text-xs" onClick={() => setTargetKind(k)} disabled={localPending || pending}>
+            <FilterChip key={k} pressed={targetKind === k} onClick={() => setTargetKind(k)} disabled={localPending || pending}>
               {k.charAt(0).toUpperCase() + k.slice(1)}
-            </Button>
+            </FilterChip>
           ))}
         </div>
         {targetKind === 'broker' && (
-          <Select value={target.broker} onValueChange={(v) => setTarget((t) => ({ ...t, broker: v }))} disabled={localPending || pending}>
-            <SelectTrigger className="h-8 w-48 text-xs">
-              <SelectValue placeholder="Select broker" />
-            </SelectTrigger>
-            <SelectContent>
-              {brokers.map((b) => <SelectItem key={b.slug} value={b.slug}>{b.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <ToolbarSelect
+            aria-label="Route to broker"
+            value={target.broker}
+            onChange={(e) => { const v = e.target.value; setTarget((t) => ({ ...t, broker: v })) }}
+            disabled={localPending || pending}
+          >
+            {brokers.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
+          </ToolbarSelect>
         )}
         {targetKind === 'group' && (
-          <Select value={target.groupId} onValueChange={(v) => setTarget((t) => ({ ...t, groupId: v }))} disabled={localPending || pending}>
-            <SelectTrigger className="h-8 w-48 text-xs">
-              <SelectValue placeholder="Select group" />
-            </SelectTrigger>
-            <SelectContent>
-              {groups.map((g) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <ToolbarSelect
+            aria-label="Route to group"
+            value={target.groupId}
+            onChange={(e) => { const v = e.target.value; setTarget((t) => ({ ...t, groupId: v })) }}
+            disabled={localPending || pending}
+          >
+            {groups.map((g) => <option key={g.id} value={String(g.id)}>{g.name}</option>)}
+          </ToolbarSelect>
         )}
         {targetKind === 'pond' && (
-          <Select value={target.pondId} onValueChange={(v) => setTarget((t) => ({ ...t, pondId: v }))} disabled={localPending || pending}>
-            <SelectTrigger className="h-8 w-48 text-xs">
-              <SelectValue placeholder="Select pond" />
-            </SelectTrigger>
-            <SelectContent>
-              {ponds.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <ToolbarSelect
+            aria-label="Route to pond"
+            value={target.pondId}
+            onChange={(e) => { const v = e.target.value; setTarget((t) => ({ ...t, pondId: v })) }}
+            disabled={localPending || pending}
+          >
+            {ponds.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+          </ToolbarSelect>
         )}
       </div>
 
       <div className="flex gap-2">
-        <Button type="button" size="sm" className="h-9" onClick={save} disabled={localPending || pending}>Save rule</Button>
-        <Button type="button" size="sm" variant="ghost" className="h-9" onClick={onDone} disabled={localPending || pending}>Cancel</Button>
+        <Button type="button" onClick={save} disabled={localPending || pending}>Save rule</Button>
+        <Button type="button" variant="quiet" onClick={onDone} disabled={localPending || pending}>Cancel</Button>
       </div>
     </div>
   )
@@ -279,29 +330,36 @@ export default function LeadFlowEditor({
 
   return (
     <div className="space-y-6">
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+      {error ? (
+        <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-danger)' }}>{error}</p>
+      ) : null}
 
       {flows.length === 0 && (
-        <p className="text-sm text-muted-foreground">No lead flows yet. Create one below.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>
+          No lead flows yet. Create one below.
+        </p>
       )}
 
       {/* Existing flows */}
       {flows.map((flow) => (
-        <ConsoleSection
-          key={flow.id}
-          title={flow.displayName}
-          count={flow.archived ? 'archived' : undefined}
-          action={
-            <Badge variant="outline" className="text-xs font-mono tabular-nums">
-              {flow.source}
-            </Badge>
-          }
-        >
-          <div className="space-y-4">
+        <section key={flow.id} aria-label={flow.displayName}>
+          <SectionHead>{flow.displayName}</SectionHead>
+          <div className="av2-pane">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {flow.archived ? (
+                <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>archived</span>
+              ) : (
+                <span />
+              )}
+              <span className="a-num shrink-0" style={{ ...TAG, fontFamily: 'var(--a-font-mono)' }}>
+                {flow.source}
+              </span>
+            </div>
+
             {/* Default target */}
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Default target:</span>
-              <span className="font-medium text-foreground">
+            <div className="flex items-center gap-2" style={{ fontSize: 'var(--a-text-md)' }}>
+              <span style={{ color: 'var(--a-text-2)' }}>Default target:</span>
+              <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>
                 {targetLabel(flow.assignedBrokerSlug, flow.assignedGroupId, flow.assignedPondId, brokers, groups, ponds)}
               </span>
             </div>
@@ -309,16 +367,24 @@ export default function LeadFlowEditor({
             {/* Rules */}
             {flow.rules.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Rules</p>
+                <p style={MICRO_LABEL}>Rules</p>
                 <div className="space-y-2">
-                  {flow.rules.map((rule, idx) => (
+                  {flow.rules.map((rule: LeadFlowRule, idx: number) => (
                     <div
                       key={rule.id}
-                      className="flex flex-wrap items-start justify-between gap-2 rounded-lg border border-border p-2.5"
+                      className="flex flex-wrap items-start justify-between gap-2"
+                      style={{
+                        border: '1px solid var(--a-border)',
+                        borderRadius: 'var(--a-r-md)',
+                        padding: '10px',
+                      }}
                     >
                       <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                          <span>#{idx + 1}</span>
+                        <div
+                          className="flex flex-wrap items-center gap-1"
+                          style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+                        >
+                          <span className="a-num">#{idx + 1}</span>
                           <span>·</span>
                           <span>{rule.conditionMatch === 'all' ? 'All' : 'Any'} of:</span>
                         </div>
@@ -327,20 +393,19 @@ export default function LeadFlowEditor({
                             {rule.conditions.map((c, ci) => conditionBadge(c, ci))}
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">Always matches</span>
+                          <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Always matches</span>
                         )}
-                        <div className="text-xs text-foreground">
-                          <span className="text-muted-foreground">Route to: </span>
-                          <span className="font-medium">
+                        <div style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text)' }}>
+                          <span style={{ color: 'var(--a-text-2)' }}>Route to: </span>
+                          <span style={{ fontWeight: 500 }}>
                             {targetLabel(rule.assignedBrokerSlug, rule.assignedGroupId, rule.assignedPondId, brokers, groups, ponds)}
                           </span>
                         </div>
                       </div>
                       <Button
                         type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 px-2 text-destructive shrink-0"
+                        variant="danger"
+                        className="shrink-0"
                         disabled={pending}
                         onClick={() =>
                           run(
@@ -369,26 +434,27 @@ export default function LeadFlowEditor({
                 pending={pending}
               />
             ) : (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className={cn('h-9', flow.archived && 'opacity-50')}
-                disabled={pending || flow.archived}
-                onClick={() => setAddingRuleTo(flow.id)}
-              >
-                Add rule
-              </Button>
+              <div>
+                <Button
+                  type="button"
+                  variant="quiet"
+                  disabled={pending || flow.archived}
+                  onClick={() => setAddingRuleTo(flow.id)}
+                >
+                  Add rule
+                </Button>
+              </div>
             )}
 
             {/* Archive / Delete */}
-            <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+            <div
+              className="flex flex-wrap items-center gap-2"
+              style={{ borderTop: '1px solid var(--a-border)', paddingTop: 'var(--a-s3)' }}
+            >
               {!flow.archived ? (
                 <Button
                   type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-9 px-2.5 text-muted-foreground"
+                  variant="quiet"
                   disabled={pending}
                   onClick={() =>
                     run(() => { const fd = new FormData(); fd.set('id', String(flow.id)); return fd }, archiveLeadFlowAction)
@@ -399,9 +465,7 @@ export default function LeadFlowEditor({
               ) : (
                 <Button
                   type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-9 px-2.5 text-foreground"
+                  variant="quiet"
                   disabled={pending}
                   onClick={() =>
                     run(() => { const fd = new FormData(); fd.set('id', String(flow.id)); fd.set('archived', 'false'); return fd }, updateLeadFlowAction)
@@ -412,9 +476,7 @@ export default function LeadFlowEditor({
               )}
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="h-9 px-2.5 text-destructive hover:text-destructive"
+                variant="danger"
                 disabled={pending}
                 onClick={() => {
                   if (!confirm(`Delete flow for source "${flow.source}"? This cannot be undone.`)) return
@@ -425,101 +487,90 @@ export default function LeadFlowEditor({
               </Button>
             </div>
           </div>
-        </ConsoleSection>
+        </section>
       ))}
 
       {/* Create new flow */}
-      <ConsoleSection title="New lead flow">
-        <div className="space-y-4">
+      <section aria-label="New lead flow">
+        <SectionHead>New lead flow</SectionHead>
+        <div className="av2-pane">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-end">
-            <div className="space-y-1.5">
-              <Label htmlFor="new-flow-source">Source</Label>
-              <Input
-                id="new-flow-source"
-                value={newSource}
-                onChange={(e) => setNewSource(e.target.value)}
-                placeholder="seller-lp"
-                disabled={pending}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="new-flow-display">Display name</Label>
-              <Input
-                id="new-flow-display"
-                value={newDisplay}
-                onChange={(e) => setNewDisplay(e.target.value)}
-                placeholder="Seller landing page"
-                disabled={pending}
-              />
-            </div>
+            <TextField
+              label="Source"
+              value={newSource}
+              onChange={(e) => setNewSource(e.target.value)}
+              placeholder="seller-lp"
+              disabled={pending}
+            />
+            <TextField
+              label="Display name"
+              value={newDisplay}
+              onChange={(e) => setNewDisplay(e.target.value)}
+              placeholder="Seller landing page"
+              disabled={pending}
+            />
           </div>
 
           {/* Target kind */}
           <div className="space-y-2">
-            <Label className="text-xs">Route to</Label>
+            <p style={{ ...INLINE_LABEL, margin: 0 }}>Route to</p>
             <div className="flex flex-wrap gap-1.5">
               {(['broker', 'group', 'pond'] as const).map((k) => (
-                <Button
-                  key={k}
-                  type="button"
-                  size="sm"
-                  variant={newTargetKind === k ? 'default' : 'outline'}
-                  className="h-9"
-                  onClick={() => setNewTargetKind(k)}
-                  disabled={pending}
-                >
+                <FilterChip key={k} pressed={newTargetKind === k} onClick={() => setNewTargetKind(k)} disabled={pending}>
                   {k.charAt(0).toUpperCase() + k.slice(1)}
-                </Button>
+                </FilterChip>
               ))}
             </div>
             {newTargetKind === 'broker' && (
-              <Select value={newBroker} onValueChange={setNewBroker} disabled={pending}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select broker" />
-                </SelectTrigger>
-                <SelectContent>
-                  {brokers.map((b) => <SelectItem key={b.slug} value={b.slug}>{b.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <ToolbarSelect
+                aria-label="Route to broker"
+                value={newBroker}
+                onChange={(e) => setNewBroker(e.target.value)}
+                disabled={pending}
+              >
+                {brokers.map((b) => <option key={b.slug} value={b.slug}>{b.name}</option>)}
+              </ToolbarSelect>
             )}
             {newTargetKind === 'group' && (
-              <Select value={newGroupId} onValueChange={setNewGroupId} disabled={pending}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select group" />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((g) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <ToolbarSelect
+                aria-label="Route to group"
+                value={newGroupId}
+                onChange={(e) => setNewGroupId(e.target.value)}
+                disabled={pending}
+              >
+                {groups.map((g) => <option key={g.id} value={String(g.id)}>{g.name}</option>)}
+              </ToolbarSelect>
             )}
             {newTargetKind === 'pond' && (
-              <Select value={newPondId} onValueChange={setNewPondId} disabled={pending}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Select pond" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ponds.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <ToolbarSelect
+                aria-label="Route to pond"
+                value={newPondId}
+                onChange={(e) => setNewPondId(e.target.value)}
+                disabled={pending}
+              >
+                {ponds.map((p) => <option key={p.id} value={String(p.id)}>{p.name}</option>)}
+              </ToolbarSelect>
             )}
           </div>
 
-          <Button
-            type="button"
-            size="sm"
-            className="h-10 sm:h-9"
-            disabled={pending || !newSource.trim()}
-            onClick={() =>
-              run(buildNewFlowFd, createLeadFlowAction, () => {
-                setNewSource('')
-                setNewDisplay('')
-              })
-            }
-          >
-            Create lead flow
-          </Button>
+          <div>
+            <Button
+              type="button"
+              variant="quiet"
+              touch
+              disabled={pending || !newSource.trim()}
+              onClick={() =>
+                run(buildNewFlowFd, createLeadFlowAction, () => {
+                  setNewSource('')
+                  setNewDisplay('')
+                })
+              }
+            >
+              Create lead flow
+            </Button>
+          </div>
         </div>
-      </ConsoleSection>
+      </section>
     </div>
   )
 }
