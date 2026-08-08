@@ -230,3 +230,71 @@ language, by pain: Today first (the "what am I supposed to do" answer), then
 Messages, People (carries the v2 kickoff surface), Prospecting, Oversight, and
 the rest per the locked IA. One family per commit, browser-verified, cut-list
 items never resurrected. P10 lands the closing mechanical gates.
+
+---
+
+## 2026-08-07 — WHICH ADMIN SURFACES ARE BROKER-SCOPED — OBSERVED, NOT YET RATIFIED
+
+Phase 12's first unit went looking for missing broker-scope guards and found
+that the admin has **two access models running side by side**. Neither was ever
+written down, so every session that notices the difference re-litigates it. This
+records what the code does today. **Matt has not ratified the second half.**
+
+**CRM — broker-scoped (Option A, Matt 2026-06-22).** The superuser sees every
+broker's data; every other broker is restricted to their own `assigned_broker`.
+Enforced by `scopeBroker` + `isPersonInScope` / `dealInScope`, and applied
+consistently across the list pages, every mutation, and now the entity readers.
+Two readers had skipped it and were fixed 2026-08-07: `crm/deals/[id]`
+(`4aa3de68`) and `people/[id]/portal` (`92701b66`), plus `people/[id]` itself,
+whose prospect story, CMA/BPO list and 30-item activity feed rendered outside
+the already-scoped fold.
+
+**Transaction Coordination and Valuations — brokerage-wide.** No TC or CMA/BPO
+surface filters by broker ANYWHERE: not the list reads, not the detail pages,
+not the mutations. `getClosings` reads every `tc_deals` row unfiltered and
+selects `broker_name` only to display it.
+
+**That is defensible and may well be intended** — Oregon principal-broker
+supervision means Matt must see everything, a transaction desk is brokerage-wide
+by nature, and coverage requires it. It is recorded here so it reads as a design
+rather than an oversight.
+
+**If Matt decides TC/valuations should be scoped, the obvious keys do not work
+— measured 2026-08-07, not assumed:**
+
+- `tc_deals.fub_person_ids` is EMPTY on all 33 rows, so the person-link chain
+  `dealInScope` uses does not exist there.
+- `tc_deals.broker_name` is free text: "Rebecca Peterson" against
+  `brokers.display_name` "Rebecca **Ryser** Peterson". A naive name join misses
+  all 6 of her deals — fail-closed locks her out of her own transactions,
+  fail-open does nothing.
+- `cmas.broker_slug` uses the FULL WEB slug space (`matthew-ryan`,
+  `paul-stevenson`), not the CRM slug (`matt`, `paul`), so
+  `isPersonInScope('rebecca', …)` would deny everything. The join would have to
+  go through `brokers.crm_slug`.
+- `cmas.person_id` is set on 93 of 266 rows; `broker_price_opinions.person_id`
+  on 0 of 3.
+
+The honest fix would be a real `broker_slug` ownership column plus a backfill,
+not a join heuristic. Filed as `task_c59a0e1c`.
+
+**A third model, separate from both: CAPABILITY.** Independent of ownership,
+several detail pages ran no capability check at all while their own list pages
+did — reachable by direct URL with a role the list bounces. Closed 2026-08-07 on
+`deals/[key]`, `signing` + `signing/[envelopeId]`, and `visitors/live` +
+`visitors/[sessionId]`. `admin_roles` was probed rather than assumed: exactly one
+superuser and two brokers, no `report_viewer`, so no live user changed access —
+this is hardening ahead of such an account existing. The capability chosen for
+`signing` (`transactions.view`, the tc_* domain) and for `visitors`
+(`people.view`, since the sensitive half is the contact a session resolves to)
+are judgment calls stated in each file, because those families declared no
+policy to copy.
+
+**The test used throughout, worth keeping:** a missing guard is a DEFECT when
+the sibling list page and the family's mutations apply it and only the reader
+skips it. It is a DESIGN when nothing in the family scopes. That distinction is
+what separated the three real fixes from four pages that merely looked wrong.
+
+Mechanically enforced from here by **G66 `ci:entity-scope`** (shrink-only): a new
+`page.tsx` in a dynamic route segment under `app/admin` must call a scope
+decision, be a pure redirect bridge, or be added to the baseline deliberately.
