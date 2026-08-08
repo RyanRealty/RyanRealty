@@ -132,3 +132,86 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 
 ### Admin without-v2
 - All 27 classified redirect stubs (Q-admin-without-v2-classified.txt).
+
+### Resume pass 2026-08-08T20:55Z (Grok session handoff)
+
+**Live anchors refreshed** → `inventories/M-live-db-counts.json`
+
+| Metric | Count |
+|--------|------:|
+| listings | 594623 |
+| crm_people | 22978 |
+| marketing_brain_actions | 652 |
+| brain ready / executed / measured / in_production | 397 / 90 / **0** / 91 |
+| content_performance | 6 |
+| tc_deals / skyslope_transactions | 33 / 33 |
+| expired_listings | 248 |
+| cmas | 267 |
+| brokers | 3 |
+| market_pulse_live / market_stats_cache | 45 / 12995 |
+| email_events | 564 (latest created_at **2026-08-08** — write path live) |
+| crm_message | 45299 (latest sample **2026-08-01**) |
+| crm_suppressions | 5169 |
+| newsletter_subscribers | 5346 |
+| newsletters | total 24 (draft 15 / failed 5 / sent 4) |
+| crm_sequences | 7 (active 4 / paused 3) |
+| crm_sequence_enrollments | 33 |
+| crm_sequence_sends | 4 (latest claimed_at 2026-07-18) |
+| meta_audience_log | 64 (latest ran_at **2026-06-23** — stale) |
+
+### CAP path proofs (disk)
+- Regenerated `inventories/R-cap-path-proofs.json`: CAP-001…035 all **disk_signal true** except **CAP-033** (Grok memory external).
+- This is **path/existence evidence**, not maturity VERIFIED for every CAP.
+- CAP-002 public surface includes `search` route inventory row; homes-for-sale may be rewrite-backed (0 literal inventory path).
+- CAP-008: `app/lp/*` dirs present (sell-your-home, buyer-listing-alerts, fsbo, expired-listing, …).
+- CAP-010: `app/api/cron/crm-sequence-engine` present + live enrollments/sends tables.
+- CAP-017: Remotion under `listing_video_v4/` (productization still low).
+- CAP-031: snapshot-channels PLATFORMS includes **google-ads** (prior orphan fix still on disk).
+
+### INT social token health (auth tables — no secrets logged)
+| Table | Rows | Token state (expires_at vs 2026-08-08 ~20:55Z) |
+|-------|-----:|-----------------------------------------------|
+| linkedin_auth | 1 | **EXPIRED** (2026-07-09) |
+| tiktok_auth | 1 | **VALID** until 2026-08-09 12:01Z |
+| x_auth | 1 | **EXPIRED** (2026-08-08 14:01Z) |
+| youtube_auth | 1 | **EXPIRED** (2026-08-08 13:01Z) |
+| google_business_profile_auth | 1 | **EXPIRED** (2026-08-08 13:01Z) |
+| threads_auth | 0 | NOT_CONNECTED |
+| nextdoor_auth | 0 | NOT_CONNECTED |
+| pinterest_auth | 0 | NOT_CONNECTED |
+| broker_gcal_tokens | 0 | EMPTY |
+
+**VERIFIED class:** multi-social is not “connected once forever” — most tokens expired or never connected. CAP-019 health is **red/amber**, not green.
+
+### INT-017 SkySlope live
+- `skyslope_transactions` count **33** (matches tc_deals).
+- Sample `synced_at` **2026-06-10** — mirror freshness **STALE** relative to “today”; needs sync-health Sense, not just row presence.
+
+### INT-007 Meta audience ops
+- `meta_audience_log` last LIVE run **2026-06-23** (add received 13883). Heartbeat **stale** (~7 weeks).
+
+### INT-005 / CAP-010 email measurement
+- `email_events` **564** rows; latest **2026-08-08** → Resend/webhook path still receiving events.
+- Sequence sends sparse (4 rows; last claim July 18) vs 33 enrollments mostly stopped/paused — engine present but low active throughput.
+
+### CAP-015 reconfirm
+- measured **0** exact filter; ready **397** — prior class diagnosis holds.
+
+### CAP-029 Bytespider re-check
+- middleware comment: “Bytespider deliberately NOT listed”; `bytespider` appears only in that comment (count=1). Prior fix **still holds**.
+
+### Env key presence (local .env.local, 112 keys) — not live health
+- KEY_PRESENT (exact name match this pass): Supabase, Spark, Cron, Twilio, Resend, LinkedIn, TikTok, YouTube, X, SkySlope, ElevenLabs, Apify, OpenAI, Anthropic, xAI, Maps, Upstash, Sentry, RentCast, SchoolDigger, NeverBounce, BatchData, Pexels/Unsplash, Replicate/Fal, VAPID, Inngest, Google OAuth.
+- Meta: uses `META_CAPI_ACCESS_TOKEN` / `NEXT_PUBLIC_META_PIXEL_ID` (not FACEBOOK_* names).
+- GBP: `GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID` (not GBP_ACCOUNT_ID).
+- Threads: `THREADS_CLIENT_ID` present; auth table empty.
+- Nextdoor/Pinterest: no client keys found; auth empty.
+- FUB: `FOLLOWUPBOSS_API_KEY` present (legacy residue, not SoR).
+- AdSense: `NEXT_PUBLIC_ADSENSE_CLIENT_ID` present.
+
+### Still not done this pass
+- Dual-model adversary
+- Full CAP maturity cell close (only path + selective live)
+- Hosted ClosePrice migration apply
+- Token refresh / reconnect ops for expired socials
+- CAP-015 publish class fix

@@ -1,139 +1,90 @@
-[
-  {
-    "t": "listings",
-    "s": 206,
-    "n": "594619"
+{
+  "captured_at": "2026-08-08T20:55:00Z",
+  "listings": 594623,
+  "crm_people": 22978,
+  "marketing_brain_actions": 652,
+  "brain_by_status": {
+    "ready": 397,
+    "executed": 90,
+    "measured": 0,
+    "in_production": 91,
+    "approved": 0,
+    "pending": 1,
+    "killed": 73
   },
-  {
-    "t": "market_pulse_live",
-    "s": 206,
-    "n": "45"
+  "content_performance": 6,
+  "tc_deals": 33,
+  "skyslope_transactions": 33,
+  "expired_listings": 248,
+  "cmas": 267,
+  "brokers": 3,
+  "market_pulse_live": 45,
+  "market_stats_cache": 12995,
+  "email_events": 564,
+  "crm_message": 45299,
+  "crm_suppressions": 5169,
+  "newsletter_subscribers": 5346,
+  "newsletters": {
+    "draft": 15,
+    "failed": 5,
+    "sent": 4,
+    "total": 24
   },
-  {
-    "t": "market_stats_cache",
-    "s": 206,
-    "n": "12995"
+  "crm_sequences": {
+    "active": 4,
+    "paused": 3,
+    "total": 7
   },
-  {
-    "t": "crm_people",
-    "s": 206,
-    "n": "22977"
+  "crm_sequence_enrollments": 33,
+  "crm_sequence_sends": 4,
+  "meta_audience_log": 64,
+  "social_auth": {
+    "linkedin_auth": {
+      "rows": 1,
+      "expires_at": "2026-07-09T02:26:37Z",
+      "state": "EXPIRED"
+    },
+    "tiktok_auth": {
+      "rows": 1,
+      "expires_at": "2026-08-09T12:01:02Z",
+      "state": "VALID"
+    },
+    "x_auth": {
+      "rows": 1,
+      "expires_at": "2026-08-08T14:01:02Z",
+      "state": "EXPIRED"
+    },
+    "youtube_auth": {
+      "rows": 1,
+      "expires_at": "2026-08-08T13:01:01Z",
+      "state": "EXPIRED"
+    },
+    "google_business_profile_auth": {
+      "rows": 1,
+      "expires_at": "2026-08-08T13:01:01Z",
+      "state": "EXPIRED"
+    },
+    "threads_auth": {
+      "rows": 0,
+      "state": "NOT_CONNECTED"
+    },
+    "nextdoor_auth": {
+      "rows": 0,
+      "state": "NOT_CONNECTED"
+    },
+    "pinterest_auth": {
+      "rows": 0,
+      "state": "NOT_CONNECTED"
+    },
+    "broker_gcal_tokens": {
+      "rows": 0,
+      "state": "EMPTY"
+    }
   },
-  {
-    "t": "marketing_brain_actions",
-    "s": 206,
-    "n": "651"
-  },
-  {
-    "t": "brokers",
-    "s": 206,
-    "n": "3"
-  },
-  {
-    "t": "cmas",
-    "s": 206,
-    "n": "266"
-  },
-  {
-    "t": "expired_listings",
-    "s": 206,
-    "n": "247"
-  },
-  {
-    "t": "boundaries",
-    "s": 206,
-    "n": "3312"
-  },
-  {
-    "t": "tc_deals",
-    "s": 206,
-    "n": "33"
-  },
-  {
-    "t": "listing_history",
-    "s": 206,
-    "n": "3896191"
-  },
-  {
-    "t": "marketing_brain_actions",
-    "s": 200,
-    "n": "1",
-    "status": "pending"
-  },
-  {
-    "t": "marketing_brain_actions",
-    "s": 206,
-    "n": "91",
-    "status": "in_production"
-  },
-  {
-    "t": "marketing_brain_actions",
-    "s": 206,
-    "n": "396",
-    "status": "ready"
-  },
-  {
-    "t": "marketing_brain_actions",
-    "s": 200,
-    "n": "0",
-    "status": "approved"
-  },
-  {
-    "t": "marketing_brain_actions",
-    "s": 206,
-    "n": "90",
-    "status": "executed"
-  },
-  {
-    "t": "marketing_brain_actions",
-    "s": 200,
-    "n": "0",
-    "status": "measured"
-  },
-  {
-    "t": "marketing_brain_actions",
-    "s": 206,
-    "n": "73",
-    "status": "killed"
-  },
-  {
-    "t": "tiktok_auth",
-    "s": 200,
-    "n": "1"
-  },
-  {
-    "t": "youtube_auth",
-    "s": 200,
-    "n": "1"
-  },
-  {
-    "t": "linkedin_auth",
-    "s": 200,
-    "n": "1"
-  },
-  {
-    "t": "x_auth",
-    "s": 200,
-    "n": "1"
-  },
-  {
-    "t": "threads_auth",
-    "s": 200,
-    "n": "0"
-  },
-  {
-    "t": "google_business_profile_auth",
-    "s": 200,
-    "n": "1"
-  },
-  {
-    "t": "pinterest_auth",
-    "s": 200,
-    "n": "0"
-  },
-  {
-    "t": "nextdoor_auth",
-    "s": 200,
-    "n": "0"
+  "stale_ops": {
+    "meta_audience_log_latest_ran_at": "2026-06-23",
+    "skyslope_transactions_sample_synced_at": "2026-06-10",
+    "email_events_latest_created_at": "2026-08-08T20:04:50Z",
+    "crm_message_latest_created_at": "2026-08-01T21:52:23Z"
   }
-]
+}

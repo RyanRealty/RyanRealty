@@ -62,12 +62,14 @@ If `git status` shows dirty inbox files → **only** write under `docs/plans/ENT
 ## Verified highlights (see EVIDENCE-LOG)
 
 - Methodology served: **v3** (12920 cache); v4 rows **0**  
-- CRM stages: **Nurture 20371 / Sphere 2338 / …** — total 22977; most CRM_STAGES unused  
-- Admin pages: **143** import v2, **27** do not  
-- Brain: ready **396**, measured **0**  
+- CRM stages: Nurture-heavy; people **22978**  
+- Admin pages: **143** import v2, **27** redirect stubs  
+- Brain: ready **397**, measured **0**, executed 90, in_production 91  
 - Expired: via **sync-delta**, not scheduled detect-expired cron  
-- google-ads snapshot: **orphan** vs snapshot-channels PLATFORMS  
-- tc_deals: **33**  
+- google-ads snapshot: **wired** into snapshot-channels PLATFORMS  
+- tc_deals / skyslope_transactions: **33** (mirror sample stale 2026-06-10)  
+- Social auth: TikTok valid; LI/X/YT/GBP **EXPIRED**; Threads/Pin/ND empty  
+- Newsletter subs **5346**; sequences 7 (4 active); email_events live  
 
 ---
 
@@ -77,12 +79,15 @@ Full gap list (every item, not HIGH-only): **`ALL-OPEN-ITEMS.md`**. Frame: **`RE
 
 1. ~~Crons / digests / google-ads / G44 / admin-in-scope / redirect census / Bytespider middleware~~  
 2. ~~ClosePrice migration authored~~ — **still apply on hosted Supabase** (S-015)  
-3. **R-MAP-1/2** — verify remaining CAP/INT cells with evidence  
-4. **R-SHIP-2 CAP-015** — ready/publish/measure class (ready≈CMA backlog; measured path)  
-5. **R-SHIP-4** entity-scope baseline shrink where pages now scoped  
-6. **R-MAP-3** dual-model adversary → then **v1 plan**  
-7. Re-census admin after further 11F lands  
-8. Never ask Matt to continue — only Matt-gated items  
+3. ~~R-MAP-1/2 partial~~ — path proofs CAP-001…035; social INT token_expiry filled; live anchors refreshed (2026-08-08T20:55Z)  
+4. **R-MAP-1/2 continue** — remaining CAP maturity path-probes beyond disk; INT last_success for Spark/Twilio/etc.  
+5. **Social reconnect ops** — LI/X/YT/GBP tokens EXPIRED; TikTok only valid; Threads/Pin/ND park-or-connect  
+6. **R-SHIP-2 CAP-015** — ready/publish/measure class (ready≈397; measured=0)  
+7. **R-SHIP-4** entity-scope baseline shrink where pages now scoped  
+8. **SkySlope mirror freshness** — transactions n=33 but sample synced_at 2026-06-10  
+9. **R-MAP-3** dual-model adversary → then **v1 plan**  
+10. Re-census admin after further 11F lands  
+11. Never ask Matt to continue — only Matt-gated items  
 
 ---
 

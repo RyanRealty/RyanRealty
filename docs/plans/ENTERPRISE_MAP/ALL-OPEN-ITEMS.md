@@ -2,7 +2,7 @@
 
 **Rule:** Comprehensive means **every** open item is listed. Severity is a column, not a gate for inclusion.  
 **Status codes:** OPEN · PARTIAL · BLOCKED_MATT · BLOCKED_ENV · DONE  
-**Updated:** 2026-08-08  
+**Updated:** 2026-08-08 (resume 20:55Z — social token health + live anchors)  
 
 This is the full remainder of the ask: close the map + execute every advancement class the plan named. Nothing below is optional because it is “low.”
 
@@ -29,7 +29,7 @@ This is the full remainder of the ask: close the map + execute every advancement
 | MAP-015 | Inventory O dark cron refcounts maintain | PARTIAL | done once |
 | MAP-016 | Inventory P DB probes / stages / brain samples | PARTIAL | several files |
 | MAP-017 | Inventory Q admin v2 import + classified redirects | PARTIAL | re-census after every 11F land |
-| MAP-018 | Inventory R CAP path proofs expand to all CAP | PARTIAL | only subset |
+| MAP-018 | Inventory R CAP path proofs expand to all CAP | PARTIAL | CAP-001–035 disk_signal (CAP-033 external); maturity still open |
 | MAP-019 | Dual-check UNKNOWN protocol for every null claim | OPEN | |
 | MAP-020 | Dual-model adversary PASS | OPEN | self-pass only |
 | MAP-021 | Promote ADVANCEMENT_PLAN v0.1 → **v1** | OPEN | only after map cells closed |
