@@ -1,4 +1,5 @@
 import 'server-only'
+import { createHash } from 'node:crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 
 /**
@@ -152,4 +153,45 @@ export async function withIdempotency<T>(
     return reread.data.result as T
   }
   throw new IdempotencyInFlightError(args.key)
+}
+
+/**
+ * A deterministic idempotency key derived from the send ITSELF, for callers that
+ * did not receive one from the client.
+ *
+ * Why this exists: SmsComposer renders its `idempotencyKey` field blank on SSR
+ * and first paint — a value there would be a hydration mismatch — and fills it
+ * in an effect after mount. A submit landing before hydration therefore carried
+ * '', and the send action's `if (!idempotencyKey)` branch skipped the ledger
+ * entirely and reached the provider unguarded. Server-action forms post without
+ * JS, so that window is reachable, and on this path a duplicate is a second real
+ * text to a client (and, with 2+ recipients, a second carrier GROUP thread).
+ *
+ * `bucketMs` decides what "the same send" means, and the default is DELIBERATELY
+ * SHORT. Without a client token you cannot distinguish "one intent submitted
+ * twice" from "two intentional identical sends", so every heuristic trades one
+ * error for the other — and the two errors are not symmetric here. On a ledger
+ * hit withSendIdempotency REPLAYS the stored result, so a false collapse
+ * silently swallows a real message the broker believes was sent; a false miss
+ * merely delivers a visible duplicate. The short window keeps the failure on the
+ * visible side.
+ *
+ * TWO LIMITS, both accepted and neither hidden:
+ *   1. BOUNDARY STRADDLE. Buckets are wall-clock, so two submits a moment apart
+ *      can land either side of an edge and produce different keys. A sub-second
+ *      double-tap therefore still sends twice roughly (gap / bucketMs) of the
+ *      time. Pinned by test rather than left as a surprise.
+ *   2. It only fires when the client sent no key at all. The composer's own
+ *      per-attempt key remains the primary defence and has neither limit.
+ *
+ * Content-addressed, so two genuinely different messages never collide
+ * regardless of timing — that half is exact, and the tests pin each field.
+ */
+export function deriveFallbackSendKey(parts: Array<string | number>, bucketMs = 10_000): string {
+  const bucket = Math.floor(Date.now() / bucketMs)
+  const digest = createHash('sha256')
+    .update([...parts, bucket].join('\u0000'))
+    .digest('hex')
+    .slice(0, 32)
+  return `auto:${digest}`
 }

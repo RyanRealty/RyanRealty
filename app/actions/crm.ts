@@ -960,12 +960,11 @@ export async function sendCrmSmsAction(formData: FormData): Promise<CrmActionRes
   return { ok: true }
   }
 
-  if (!idempotencyKey) return performSend()
-  const { withSendIdempotency } = await import('@/lib/crm/idempotency')
-  return withSendIdempotency(
-    { key: `sms:${personId}:${idempotencyKey}`, scope: 'sms', onInFlight: { ok: true } },
-    performSend,
-  )
+  // An EMPTY composer key still gets a ledger entry — deriveFallbackSendKey says why.
+  const { withSendIdempotency, deriveFallbackSendKey } = await import('@/lib/crm/idempotency')
+  const f = (n: string) => String(formData.get(n) ?? '')
+  const key = idempotencyKey || deriveFallbackSendKey([personId, f('body'), f('recipientIds'), f('recipientPhones'), f('attachments')])
+  return withSendIdempotency({ key: `sms:${personId}:${key}`, scope: 'sms', onInFlight: { ok: true } }, performSend)
 }
 
 /**

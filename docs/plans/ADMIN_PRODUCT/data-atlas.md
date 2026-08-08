@@ -52,7 +52,7 @@ Chain notation: `writer → store → reader → human outcome`. ✓ chain holds
 
 - ✓ Keywords/UI/enroll-consent → `crm_suppressions` (channel+reason) → `isSuppressed` (fail-closed) inside every governed send path → block/allow with artifact status.
 - ✓ A2P: Twilio status → engine gate → visible queue rows on non-VERIFIED. Quiet hours: pure function, no store.
-- ✗ Group MMS path: inline suppression only, bypasses `sendGovernedSms` idempotency → double-send window. GAP (code path, not schema).
+- ~~✗ Group MMS path: inline suppression only, bypasses `sendGovernedSms` idempotency → double-send window.~~ **CORRECTED + CLOSED 2026-08-07.** The original reading was wrong in one direction and right in another. It is TRUE that the group branch never calls `sendGovernedSms` — a carrier group is not person-keyed. But it is NOT unguarded: it runs `requirePersonInScope` and a fail-closed `isSuppressed` per member, quiet hours are checked once for the whole action (`crm.ts:792`, above the branch), and the branch sits INSIDE `performSend`, which the action wraps in `withSendIdempotency`. So there was no blanket bypass. The REAL window was narrower: `SmsComposer` renders `idempotencyKey` blank on SSR and first paint (a value there would be a hydration mismatch) and fills it after mount, and the action read `if (!idempotencyKey) return performSend()` — so a submit landing before hydration reached Twilio with no ledger row, and server-action forms post without JS. Closed by deriving a fallback key from the send itself (primary person + body + recipient ids + phones + attachments + a 60s bucket); the unwrapped branch is gone, so every send now holds a lease.
 - ✗ Block reasons outside sequences (manual/bulk drops) → log lines only, no queryable row. GAP: per-attempt block ledger missing — blocks send-integrity auditing. Minimal fix is a reason column/row on existing artifacts, flag for P7.
 
 ## 6. sequence-run
@@ -140,7 +140,7 @@ Chain notation: `writer → store → reader → human outcome`. ✓ chain holds
 
 ## Gaps that block LITMUS or send integrity (rollup)
 
-- **Send integrity:** group-MMS idempotency bypass (5) · listing-alert send-then-mark duplicate window (11) · FSBO off_market dead branch (4) · per-attempt block ledger absent (5).
+- **Send integrity:** ~~group-MMS idempotency bypass (5)~~ **CLOSED 2026-08-07 — and the finding was partly mis-stated; see §5** · listing-alert send-then-mark duplicate window (11) · FSBO off_market dead branch (4) · per-attempt block ledger absent (5).
 - **Litmus:** alert drop invisibility + no alert→action latency (1) · CMA signs as wrong broker (3) · killed-build dead end (3).
 - **Correctness substrate:** listing-edit revert (10) · no CRM↔TC bridge + legacy-mirror dashboard (16) · `assigned_broker` scatter (7) · dupe-candidate blindness (8).
 
