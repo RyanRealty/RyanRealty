@@ -123,6 +123,21 @@ history in the order it happened, and each names the phase it closed; a phrase l
   pages were never added to SCAN_DIRS — work done, invisible to CI, and absent
   from the coverage count. Check `TOKEN-GATED n of 170` before calling a unit
   complete.
+- **A gate that inspects code reads the AST, never the text.** Twice in one
+  session a text-scanning check matched its own explanatory COMMENT: the new
+  `ci:server-type-reexport` matched its worked example, and `ci:admin-ui` rule D
+  matched a `max-w-*` token inside the comment explaining that token's removal.
+  Both are AST-based now, and rule D's width count fell 11 → 9 once comments
+  stopped counting. Regression-prove a gate three ways: green clean, FIRES on the
+  re-injected bug, green again.
+- **A dead orchestrator is not a dead unit.** When a Workflow process exits
+  mid-run, the agents' EDITS are already on disk — only their self-reports are
+  lost, and those were never evidence. Verify the tree, not the transcript:
+  diff each file against its pre-migration content on behavioural signals
+  (server actions, FormData fields, state, handlers, aria/role/name attrs).
+- **A 404 on `/` means the SERVER, not the code.** A live next-server can serve
+  404 for every route while the files exist and every gate is green; restart via
+  `preview_start`. curl then getting 403 is the bot screen working, not a fault.
 - **The token gate reads IMPORTS, not appearance.** It bans `components/ui`
   imports, raw hex and Tailwind PALETTE classes — it does NOT see shadcn
   *semantic* classes (`bg-card`, `text-foreground`, `text-muted-foreground`,
