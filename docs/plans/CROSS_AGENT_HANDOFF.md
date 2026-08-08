@@ -1,5 +1,6 @@
-> **NEWEST, START HERE: Admin Product OS — 11F unit 1 shipped. The reporting family (15 pages) is inside the admin token gate, islands and all: 102 of 170 admin pages now gated, up from 86 (2026-08-08, Claude Code local).**
-> Prior: PHASE 11 COMPLETE — 143/143 pages on v2, legacy count 131 → 0 (2026-08-07). 11C + 11D (2026-08-07 midday). 11A + 11B (2026-08-07 morning). BOOT → P2 (2026-08-04).
+> **FLEET + MAP (Grok 2026-08-08): Enterprise Map lives at `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. Advancement plan v0.1. Committed `601fb891` on main (map + google-ads fan-out + digest cron schedules). Does not replace admin Current below.**
+> **NEWEST SUBJECT: Admin Product OS — 11F (Claude). Inbox may still be in flight — do not mix commits. Token-gate progress has moved since early 11F unit 1 notes; trust ADMIN_PRODUCT state/progress.**
+> Prior: PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
 # Current — 2026-08-08 (Claude Code, local) — 11F UNIT 1
 
