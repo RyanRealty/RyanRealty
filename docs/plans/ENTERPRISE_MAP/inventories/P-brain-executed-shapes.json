@@ -1,0 +1,138 @@
+[
+  {
+    "id": "567d201b",
+    "type": "content:listing_image",
+    "keys": [
+      "published_at",
+      "published_to",
+      "publish_result",
+      "publish_payload",
+      "platforms_published"
+    ],
+    "preview": "{\"published_at\":\"2026-06-16T23:07:25.568Z\",\"published_to\":[{\"post_id\":\"18097446890589527\",\"platform\":\"instagram\"}],\"publish_result\":{\"results\":{\"instagram\":{\"url\":null,\"status\":\"published\",\"success\":t"
+  },
+  {
+    "id": "434c6fb9",
+    "type": "content:listing_image",
+    "keys": [
+      "published_at",
+      "published_to",
+      "publish_result",
+      "publish_payload",
+      "platforms_published"
+    ],
+    "preview": "{\"published_at\":\"2026-06-16T23:07:17.340Z\",\"published_to\":[{\"post_id\":\"18102474494170170\",\"platform\":\"instagram\"}],\"publish_result\":{\"results\":{\"instagram\":{\"url\":null,\"status\":\"published\",\"success\":t"
+  },
+  {
+    "id": "f0b1ed93",
+    "type": "comms:matt_summary",
+    "keys": [
+      "subject",
+      "recipient",
+      "body_length",
+      "delivered_at",
+      "triggered_by",
+      "delivery_channel",
+      "resend_message_id"
+    ],
+    "preview": "{\"subject\":\"Brain digest 2026-08-08\",\"recipient\":\"matt@ryan-realty.com\",\"body_length\":566,\"delivered_at\":\"2026-08-08T14:00:04.521Z\",\"triggered_by\":\"daily-digest-cron-direct-send\",\"delivery_channel\":\"e"
+  },
+  {
+    "id": "13a71b6e",
+    "type": "comms:matt_summary",
+    "keys": [
+      "subject",
+      "recipient",
+      "body_length",
+      "delivered_at",
+      "triggered_by",
+      "delivery_channel",
+      "resend_message_id"
+    ],
+    "preview": "{\"subject\":\"Brain digest 2026-08-07\",\"recipient\":\"matt@ryan-realty.com\",\"body_length\":295,\"delivered_at\":\"2026-08-07T14:00:31.311Z\",\"triggered_by\":\"daily-digest-cron-direct-send\",\"delivery_channel\":\"e"
+  },
+  {
+    "id": "767d713c",
+    "type": "comms:matt_summary",
+    "keys": [
+      "subject",
+      "recipient",
+      "body_length",
+      "delivered_at",
+      "triggered_by",
+      "delivery_channel",
+      "resend_message_id"
+    ],
+    "preview": "{\"subject\":\"Brain digest 2026-08-06\",\"recipient\":\"matt@ryan-realty.com\",\"body_length\":295,\"delivered_at\":\"2026-08-06T14:00:30.960Z\",\"triggered_by\":\"daily-digest-cron-direct-send\",\"delivery_channel\":\"e"
+  },
+  {
+    "id": "30d3b0fc",
+    "type": "comms:matt_summary",
+    "keys": [
+      "subject",
+      "recipient",
+      "body_length",
+      "delivered_at",
+      "triggered_by",
+      "delivery_channel",
+      "resend_message_id"
+    ],
+    "preview": "{\"subject\":\"Brain digest 2026-08-05\",\"recipient\":\"matt@ryan-realty.com\",\"body_length\":295,\"delivered_at\":\"2026-08-05T14:00:33.682Z\",\"triggered_by\":\"daily-digest-cron-direct-send\",\"delivery_channel\":\"e"
+  },
+  {
+    "id": "97ce6ef7",
+    "type": "comms:matt_summary",
+    "keys": [
+      "subject",
+      "recipient",
+      "body_length",
+      "delivered_at",
+      "triggered_by",
+      "delivery_channel",
+      "resend_message_id"
+    ],
+    "preview": "{\"subject\":\"Brain digest 2026-08-04\",\"recipient\":\"matt@ryan-realty.com\",\"body_length\":295,\"delivered_at\":\"2026-08-04T14:00:30.239Z\",\"triggered_by\":\"daily-digest-cron-direct-send\",\"delivery_channel\":\"e"
+  },
+  {
+    "id": "8d3a3b4d",
+    "type": "comms:matt_summary",
+    "keys": [
+      "subject",
+      "recipient",
+      "body_length",
+      "delivered_at",
+      "triggered_by",
+      "delivery_channel",
+      "resend_message_id"
+    ],
+    "preview": "{\"subject\":\"Brain digest 2026-08-03\",\"recipient\":\"matt@ryan-realty.com\",\"body_length\":295,\"delivered_at\":\"2026-08-03T14:00:36.606Z\",\"triggered_by\":\"daily-digest-cron-direct-send\",\"delivery_channel\":\"e"
+  },
+  {
+    "id": "19b35108",
+    "type": "comms:matt_summary",
+    "keys": [
+      "subject",
+      "recipient",
+      "body_length",
+      "delivered_at",
+      "triggered_by",
+      "delivery_channel",
+      "resend_message_id"
+    ],
+    "preview": "{\"subject\":\"Brain digest 2026-08-02\",\"recipient\":\"matt@ryan-realty.com\",\"body_length\":295,\"delivered_at\":\"2026-08-02T14:01:04.075Z\",\"triggered_by\":\"daily-digest-cron-direct-send\",\"delivery_channel\":\"e"
+  },
+  {
+    "id": "b2feec13",
+    "type": "comms:matt_summary",
+    "keys": [
+      "subject",
+      "recipient",
+      "body_length",
+      "delivered_at",
+      "triggered_by",
+      "delivery_channel",
+      "resend_message_id"
+    ],
+    "preview": "{\"subject\":\"Brain digest 2026-08-01\",\"recipient\":\"matt@ryan-realty.com\",\"body_length\":484,\"delivered_at\":\"2026-08-01T14:00:56.850Z\",\"triggered_by\":\"daily-digest-cron-direct-send\",\"delivery_channel\":\"e"
+  }
+]

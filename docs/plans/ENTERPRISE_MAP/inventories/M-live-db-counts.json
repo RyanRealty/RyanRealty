@@ -1,0 +1,139 @@
+[
+  {
+    "t": "listings",
+    "s": 206,
+    "n": "594619"
+  },
+  {
+    "t": "market_pulse_live",
+    "s": 206,
+    "n": "45"
+  },
+  {
+    "t": "market_stats_cache",
+    "s": 206,
+    "n": "12995"
+  },
+  {
+    "t": "crm_people",
+    "s": 206,
+    "n": "22977"
+  },
+  {
+    "t": "marketing_brain_actions",
+    "s": 206,
+    "n": "651"
+  },
+  {
+    "t": "brokers",
+    "s": 206,
+    "n": "3"
+  },
+  {
+    "t": "cmas",
+    "s": 206,
+    "n": "266"
+  },
+  {
+    "t": "expired_listings",
+    "s": 206,
+    "n": "247"
+  },
+  {
+    "t": "boundaries",
+    "s": 206,
+    "n": "3312"
+  },
+  {
+    "t": "tc_deals",
+    "s": 206,
+    "n": "33"
+  },
+  {
+    "t": "listing_history",
+    "s": 206,
+    "n": "3896191"
+  },
+  {
+    "t": "marketing_brain_actions",
+    "s": 200,
+    "n": "1",
+    "status": "pending"
+  },
+  {
+    "t": "marketing_brain_actions",
+    "s": 206,
+    "n": "91",
+    "status": "in_production"
+  },
+  {
+    "t": "marketing_brain_actions",
+    "s": 206,
+    "n": "396",
+    "status": "ready"
+  },
+  {
+    "t": "marketing_brain_actions",
+    "s": 200,
+    "n": "0",
+    "status": "approved"
+  },
+  {
+    "t": "marketing_brain_actions",
+    "s": 206,
+    "n": "90",
+    "status": "executed"
+  },
+  {
+    "t": "marketing_brain_actions",
+    "s": 200,
+    "n": "0",
+    "status": "measured"
+  },
+  {
+    "t": "marketing_brain_actions",
+    "s": 206,
+    "n": "73",
+    "status": "killed"
+  },
+  {
+    "t": "tiktok_auth",
+    "s": 200,
+    "n": "1"
+  },
+  {
+    "t": "youtube_auth",
+    "s": 200,
+    "n": "1"
+  },
+  {
+    "t": "linkedin_auth",
+    "s": 200,
+    "n": "1"
+  },
+  {
+    "t": "x_auth",
+    "s": 200,
+    "n": "1"
+  },
+  {
+    "t": "threads_auth",
+    "s": 200,
+    "n": "0"
+  },
+  {
+    "t": "google_business_profile_auth",
+    "s": 200,
+    "n": "1"
+  },
+  {
+    "t": "pinterest_auth",
+    "s": 200,
+    "n": "0"
+  },
+  {
+    "t": "nextdoor_auth",
+    "s": 200,
+    "n": "0"
+  }
+]

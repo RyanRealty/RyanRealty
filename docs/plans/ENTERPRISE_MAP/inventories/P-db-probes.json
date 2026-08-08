@@ -1,0 +1,44 @@
+[
+  {
+    "path": "crm_people?select=id&limit=1",
+    "status": 206,
+    "n": "22977"
+  },
+  {
+    "path": "crm_people?select=lifecycle_stage&limit=1",
+    "status": 400
+  },
+  {
+    "path": "crm_people?select=stage&limit=1",
+    "status": 206,
+    "n": "22977"
+  },
+  {
+    "path": "crm_people?select=status&limit=1",
+    "status": 400
+  },
+  {
+    "path": "crm_people?select=journey_stage&limit=1",
+    "status": 400
+  },
+  {
+    "path": "cache meth v3-2026-05-07",
+    "status": 206,
+    "n": "12920"
+  },
+  {
+    "path": "cache meth v4-2026-05-15",
+    "status": 200,
+    "n": "0"
+  },
+  {
+    "path": "cache meth v1-pre-fix",
+    "status": 206,
+    "n": "70"
+  },
+  {
+    "path": "pulse sample",
+    "status": 200,
+    "body": "[{\"methodology_version\":\"v3-2026-05-07\"}, \n {\"methodology_version\":\"v3-2026-05-07\"}, \n {\"methodology_version\":\"v3-2026-05-07\"}, \n {\"methodology_version\":\"v3-2026-05-07\"}, \n {\"methodology_version\":\"v3-2026-05-07\"}]"
+  }
+]

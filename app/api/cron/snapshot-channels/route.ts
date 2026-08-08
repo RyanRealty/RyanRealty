@@ -2,12 +2,10 @@
  * Phase 11.5 canonical consolidated snapshot handler.
  *
  * The autonomous pipeline brief calls this handler `snapshot-channels`. The
- * existing infrastructure runs 9 separate handlers (marketing-snapshot-ga4,
- * marketing-snapshot-gsc, marketing-snapshot-meta-ads, marketing-snapshot-meta-page,
- * marketing-snapshot-x, marketing-snapshot-linkedin, marketing-snapshot-tiktok,
- * marketing-snapshot-gbp, marketing-snapshot-youtube). marketing-snapshot-fub was
- * removed 2026-07-09 (FUB decommissioned 2026-06-24; the route never existed in
- * this codebase, so this platform silently 404'd on every run until now).
+ * existing infrastructure runs per-platform handlers under marketing-snapshot-*.
+ * marketing-snapshot-fub was removed 2026-07-09 (FUB decommissioned 2026-06-24).
+ * google-ads was restored to the fan-out list 2026-08-08 (Enterprise Map: route
+ * existed with a fan-out header comment but was omitted from PLATFORMS).
  *
  * This handler is the consolidated entry point. It fires every individual
  * snapshot in parallel against the same authenticated CRON_SECRET, collects
@@ -34,6 +32,8 @@ const PLATFORMS = [
   'tiktok',
   'gbp',
   'youtube',
+  // Was on disk with a fan-out comment but omitted here — orphan until 2026-08-08 map pass.
+  'google-ads',
 ] as const
 
 export async function GET(request: NextRequest) {
