@@ -103,13 +103,21 @@ history in the order it happened, and each names the phase it closed; a phrase l
   still MOUNT legacy client islands, which token-gate rule 3 blacklists — so
   only some pages sit inside `ci:admin-v2-tokens`. Unit 1 took crm/reporting
   (`4c0186e1`), unit 2 the shared CRM config-table editor (`a76013b4`,
-  `629564b5`): **105 of 170 admin pages token-gated**, up from 86. Pick the next
-  family by pages-per-shared-island, not by page count.
+  `629564b5`), unit 4 the nine operations panels (`168060e8`): **106 of 170
+  admin pages token-gated**, up from 86, and the `ci:admin-ui` ratchet re-seeded
+  smaller (104 raw elements, 11 widths). Pick the next family by
+  pages-per-shared-island, not by page count.
 - **The v2 barrel is the pressure valve.** When a migration needs a control the
   barrel lacks, ADD THE PRIMITIVE — never widen a ratchet baseline and never
   reach back into `components/ui`. It now carries Button, IconButton, Switch,
   Dialog, ConfirmDialog, ToolbarSelect, ToolbarCheck, the Field family,
   ReportGrid, and the `av2-subnav` / `av2-cardlist` / `av2-reorder` patterns.
+- **The token gate reads IMPORTS, not appearance.** It bans `components/ui`
+  imports, raw hex and Tailwind PALETTE classes — it does NOT see shadcn
+  *semantic* classes (`bg-card`, `text-foreground`, `text-muted-foreground`,
+  `border-border`), which render the PUBLIC palette. Nine operations panels had
+  8 import violations and 298 semantic classes. Grep those names per file before
+  migrating, and assert 0 inside the page's own `.av2-scope` after.
 - **Verify by loading routes at 375 AND 1280 and asserting visible-control
   COUNTS.** Status codes are not enough: a settings page shipped rendering every
   row's toggle, rename and delete twice with every gate green (`md:hidden` plus

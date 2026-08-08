@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "11F UNIT 3 COMPLETE 2026-08-08 \u2014 \u00a70 fix on /admin/operations: 'Active' was 2,915 for a 7,658 active bucket and 'Listings (total)' was 0 for 594,608 rows; both now read the service-role DAL their siblings use, verified in-browser at 7,659 / 617,326 (the latter labelled an estimate, measured 3.82% high). Shipped 2f7732db. The nine Dashboard*Panel islands are NOT yet on v2 \u2014 that migration is now presentation-only and is the next unit. Token-gated admin pages 105 of 170.",
+  "current_process": "11F UNIT 4 COMPLETE 2026-08-08 \u2014 /admin/operations on v2 (nine islands moved into the route, bare-dir in SCAN_DIRS); token-gated admin pages 106 of 170, ratchet re-seeded smaller (104 raw / 11 widths). Four false claims retired with evidence (a vapourware notifications panel deleted, a decommissioned-FUB footnote deleted, a 15-min cadence that is weekly, a 'sync job history' that is completed-full-syncs-only). Shipped 168060e8. Next: crm/inbox 12 islands, crm 8, the remaining 11 crm/settings editors.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-08T06:40:00Z"
+  "updated_at": "2026-08-08T08:05:00Z"
 }
