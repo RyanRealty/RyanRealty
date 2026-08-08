@@ -101,9 +101,20 @@ history in the order it happened, and each names the phase it closed; a phrase l
   queue note that predates it.
 - **11F (the P11 tail) runs alongside P12.** Pages are on v2 SHELLS but many
   still MOUNT legacy client islands, which token-gate rule 3 blacklists — so
-  only some pages sit inside `ci:admin-v2-tokens`. 11F unit 1 (2026-08-08,
-  `4c0186e1`) took crm/reporting: **102 of 170 admin pages token-gated**, up
-  from 86. Pick the next family by pages-per-shared-island, not by page count.
+  only some pages sit inside `ci:admin-v2-tokens`. Unit 1 took crm/reporting
+  (`4c0186e1`), unit 2 the shared CRM config-table editor (`a76013b4`,
+  `629564b5`): **105 of 170 admin pages token-gated**, up from 86. Pick the next
+  family by pages-per-shared-island, not by page count.
+- **The v2 barrel is the pressure valve.** When a migration needs a control the
+  barrel lacks, ADD THE PRIMITIVE — never widen a ratchet baseline and never
+  reach back into `components/ui`. It now carries Button, IconButton, Switch,
+  Dialog, ConfirmDialog, ToolbarSelect, ToolbarCheck, the Field family,
+  ReportGrid, and the `av2-subnav` / `av2-cardlist` / `av2-reorder` patterns.
+- **Verify by loading routes at 375 AND 1280 and asserting visible-control
+  COUNTS.** Status codes are not enough: a settings page shipped rendering every
+  row's toggle, rename and delete twice with every gate green (`md:hidden` plus
+  an inline `display` — the inline style wins). A responsive class and an inline
+  display property on one element is always a bug.
 - **Two gates measure different things — do not read one as the other.**
   `ci:admin-ui` = the migration ratchet (legacy pages, raw elements, widths).
   `ci:admin-v2-tokens` = what is inside the *scanned* paths (color, brand leak,

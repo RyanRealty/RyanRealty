@@ -107,6 +107,14 @@ const SCAN_DIRS = [
   // shared sub-nav and the shared broker+date filter now live in
   // crm/reporting/_components/ instead of components/admin/crm/reporting/.
   'app/admin/(protected)/crm/reporting',
+  // 11F (2026-08-08) — the three ConfigTableEditor consumers. File-form, not the
+  // bare crm/settings dir: eleven sibling pages still mount legacy editors
+  // (CustomFieldEditor, TagTaxonomyEditor, the company + templates islands).
+  // Each joins this list as its island migrates.
+  'app/admin/(protected)/crm/settings/_components',
+  'app/admin/(protected)/crm/settings/stages/page.tsx',
+  'app/admin/(protected)/crm/settings/segments/page.tsx',
+  'app/admin/(protected)/crm/settings/areas/page.tsx',
   'app/admin/(protected)/crm/settings/appointments/page.tsx',
   'app/admin/(protected)/crm/settings/brokers/page.tsx',
   'app/admin/(protected)/crm/settings/company/registration/page.tsx',
