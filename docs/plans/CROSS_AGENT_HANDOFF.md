@@ -1,7 +1,72 @@
-> **NEWEST, START HERE: Admin Product OS — PHASE 11 COMPLETE. The admin interior migration is done: 143/143 pages on v2, legacy count 131 → 0 (2026-08-07, Claude Code local).**
-> Prior: 11C + 11D (2026-08-07 midday). 11A + 11B (2026-08-07 morning). BOOT → P2 (2026-08-04).
+> **NEWEST, START HERE: Admin Product OS — 11F unit 1 shipped. The reporting family (15 pages) is inside the admin token gate, islands and all: 102 of 170 admin pages now gated, up from 86 (2026-08-08, Claude Code local).**
+> Prior: PHASE 11 COMPLETE — 143/143 pages on v2, legacy count 131 → 0 (2026-08-07). 11C + 11D (2026-08-07 midday). 11A + 11B (2026-08-07 morning). BOOT → P2 (2026-08-04).
 
-# Current — 2026-08-07 (Claude Code, local) — PHASE 11 COMPLETE
+# Current — 2026-08-08 (Claude Code, local) — 11F UNIT 1
+
+`main` @ `ad56f804`, pushed; code commit `4c0186e1` deployed READY (`cli-4c0186e`) and
+probed on production. Disk is the source of truth:
+`docs/plans/ADMIN_PRODUCT/{state.json,work-queue.json,progress.txt,decisions.md}`.
+Read `progress.txt` from the bottom — the last entry is this one.
+
+**Phase stays `P12_CORRECTNESS`.** All four locks stand; nothing this session reopened one.
+11F is the P11 tail and runs alongside P12, not instead of it.
+
+## What 11F actually is, because the name hides it
+
+Phase 11 drove `ci:admin-ui` rule B (legacy pages) to 0 — every admin page imports the
+v2 barrel. That is the SHELL. Many of those pages still **mount legacy client islands**,
+which the token gate's rule 3 blacklists, so those pages were never inside
+`ci:admin-v2-tokens` at all. **Two gates, two different questions:**
+
+| gate | asks |
+|---|---|
+| `ci:admin-ui` | is the page migrated? (legacy pages · raw elements · widths) |
+| `ci:admin-v2-tokens` | inside the *scanned* paths: any raw color, brand leak, legacy import? |
+
+A page can pass the first and be invisible to the second. That gap is 11F.
+
+| | before | now |
+|---|---|---|
+| admin pages inside the token gate | 86 / 170 | **102 / 170** |
+| real pages still outside (excl. 26 redirect stubs) | 58 | **42** |
+
+Ratchets unmoved and unre-seeded: 106 raw elements · 12 widths · 0 legacy pages.
+
+## What the gate was hiding
+
+`#102742` — the **public brand navy**, blacklisted as admin design input since
+2026-08-04 — was hardcoded in the agent-activity chart (7 places) and the properties
+map (markers, map style, InfoWindow). Every one of those pages *looked* migrated. Both
+now resolve `--a-*` off the document at runtime, which recharts and the Google Maps API
+both require since neither takes `var()` where it counts.
+
+## Two things to carry forward
+
+1. **Pick the next family by pages-per-shared-island, not page count.** One component
+   (`ReportingTabStrip`) blocked 15 pages; migrating it alone unlocked all 15.
+   Remaining, largest-first: crm/settings 17 · crm/inbox 12 (one page, twelve islands) ·
+   operations 9 · crm 8 · crm/deals 5 · crm/sequences 5.
+2. **"This is duplicate nav" is a claim about the RAIL — go read `lib/admin/nav.ts`.**
+   The 14-item reporting strip looked exactly like the chrome §5 amnesia exists to kill.
+   The rail exposes that family as ONE child; the other 14 reports have no second door.
+   Deleting it would have stranded 14 working pages.
+
+## Filed, not fixed
+
+**Dark mode is unreachable.** `ADMIN_UI.md` §6 and the P6 lock both say "ship both from
+day one". Nothing in the codebase sets `data-theme` — the attribute appears only in the
+two `tokens.css` files. Forcing it pre-hydration proves the admin tokens flip correctly
+**and** that `document.body` stays white, so every dark token would paint light-on-white.
+`ci:admin-contrast` passes because it computes token *pairs*, not what the body paints.
+Queued as `11f-admin-dark-mode-unreachable`.
+
+## One process note
+
+Green gates plus clean `tsc` shipped a phone view that landed with its active tab
+scrolled off-screen. It was caught by loading all 15 routes at 375 and asserting the
+**active state**, not the status code. Worth keeping in the verification recipe.
+
+# Prior — 2026-08-07 (Claude Code, local) — PHASE 11 COMPLETE
 
 `main` @ `7e6c8cfe`, pushed, deployed READY and spot-checked on production. Disk is the
 source of truth: `docs/plans/ADMIN_PRODUCT/{state.json,work-queue.json,progress.txt,decisions.md}`.
