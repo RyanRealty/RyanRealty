@@ -42,6 +42,7 @@ import {
   getCrmPersonFull,
   getCrmSmsTemplates,
   getTwilioSmsStatus,
+  requirePersonInScope,
 } from '@/app/actions/crm'
 import { Button, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
 import {
@@ -99,10 +100,31 @@ export default async function PersonPage({
     replyChannel?: string
   }>
 }) {
-  await requireAdminPage('people.view')
+  const ctx = await requireAdminPage('people.view')
   const idNum = Number((await params).id)
   if (!Number.isFinite(idNum) || idNum <= 0) notFound()
   const sp = await searchParams
+
+  // BROKER SCOPE, and it has to run BEFORE the reads below.
+  //
+  // The B2 fold was already scoped — getCrmPersonFull returns an empty bundle
+  // out of scope — and the comment there says the identity header still renders
+  // from the card, which was the accepted trade. But the header is not the only
+  // thing outside the fold: the prospect story, the CMA/BPO list and the full
+  // 30-item activity feed all render after {fold} from reads that carry no
+  // scope of their own. That is materially more than the documented intent, on
+  // the one family (CRM) that IS broker-scoped everywhere else — its list page,
+  // its mutations and the fold itself all apply this rule.
+  //
+  // Same function every CRM mutation uses. Superuser is unaffected: scopeBroker
+  // returns null inside it and it short-circuits to ok. notFound() rather than
+  // access-denied so the response cannot be used to probe which ids exist.
+  const inScope = await requirePersonInScope(idNum, {
+    email: ctx.email,
+    role: ctx.role,
+    brokerSlug: ctx.brokerSlug,
+  })
+  if (!inScope.ok) notFound()
 
   const card = await getInboxContactCard(idNum)
   if (!card) {

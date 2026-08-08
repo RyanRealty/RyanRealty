@@ -47,6 +47,7 @@
 // which is why the Identified filter returns a short list.
 import { Suspense } from 'react'
 import Link from 'next/link'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import {
   ReportGrid,
   ReportNumbers,
@@ -221,6 +222,9 @@ export default async function LiveVisitorsPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
+  // CAPABILITY GUARD — see the [sessionId] sibling for the reasoning. Neither
+  // page in this family ran any auth of its own.
+  await requireAdminPage('people.view')
   const sp = normalizeParams(await searchParams)
   const filter = (sp.filter === 'anonymous' || sp.filter === 'identified') ? sp.filter : 'all'
 

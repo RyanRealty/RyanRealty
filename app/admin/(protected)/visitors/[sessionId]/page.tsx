@@ -58,6 +58,7 @@
 // rows and listing_city on all of them, so the listing label renders MLS-only
 // today (530 rows carry a listing_mls).
 import { notFound } from 'next/navigation'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { formatPriceExact } from '@/lib/format/money'
@@ -175,6 +176,24 @@ export default async function VisitorSessionPage({
 }: {
   params: Promise<{ sessionId: string }>
 }) {
+  // CAPABILITY GUARD. Neither this page nor /admin/visitors/live ran ANY auth of
+  // its own — only the (protected) layout's "signed in with SOME admin role" —
+  // and this page builds its own service-role client inline. An identified
+  // session resolves to a crm_people row (crm_person_id / identified_email) and
+  // renders that contact's identity plus their full browsing behaviour.
+  //
+  // A JUDGMENT CALL, stated: this family declares no capability anywhere, so
+  // there was no sibling policy to copy, and no analytics capability exists
+  // ('performance.view' is [] — superuser only — which would lock both brokers
+  // out of a surface they use). I applied 'people.view' because the sensitive
+  // half of a visitor session is the CONTACT it resolves to. No live user
+  // changes access: it is ['broker'], superuser always passes, and admin_roles
+  // holds one superuser and two brokers. Say so if you'd rather it were tighter.
+  //
+  // NOT broker scope. Anonymous sessions have no owner at all, so whether
+  // analytics rows should inherit a contact's ownership is a product question,
+  // filed rather than guessed.
+  await requireAdminPage('people.view')
   const { sessionId } = await params
   const session = await fetchSession(sessionId)
   if (!session) notFound()
