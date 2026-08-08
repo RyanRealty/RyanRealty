@@ -35,7 +35,7 @@ import {
 import LeadSourcesFilters from './LeadSourcesFilters'
 import { AgentActivityChart } from '../agent-activity/AgentActivityChart'
 import { LeadSourcesKpiStrip } from './LeadSourcesKpiStrip'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Lead Sources | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -197,7 +197,7 @@ export default async function LeadSourcesPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active="lead-sources" />
+      <ReportingSubNav active="lead-sources" />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={report === null ? 'attention' : 'ok'}>

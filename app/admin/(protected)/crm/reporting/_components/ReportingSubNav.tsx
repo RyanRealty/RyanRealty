@@ -1,20 +1,26 @@
 /**
- * ReportingTabStrip — the ONE shared sub-nav tab strip for every
- * /admin/crm/reporting/* page (desktop audit P2-8, 2026-07-02).
+ * ReportingSubNav — the ONE shared sub-nav for every /admin/crm/reporting/*
+ * page. Migrated to the v2 admin language in 11F (was
+ * components/admin/crm/reporting/ReportingTabStrip, which imported
+ * components/ui and blocked 15 pages from the token gate).
  *
- * Every report page previously re-declared its own REPORTING_TABS array
- * inline (13×), which is exactly how Contact Attempts drifted out of sync
- * (audit P1-5: missing Marketing + Deals). This module owns the canonical
- * base strip plus the three "contextual" reports that surface their own tab
- * only while active (Call Logs, Speed to Lead, Contact Attempts — FUB shows
- * these as hub cards, not permanent tabs), and the strip JSX, so the set can
- * never diverge again.
+ * WHY A SUB-NAV EXISTS HERE AT ALL, given §5 gives the rail the destinations:
+ * lib/admin/nav.ts exposes this family as a SINGLE child ("Reporting" →
+ * /admin/crm/reporting). The other 14 reports have no other door. Deleting the
+ * strip would strand them, so it migrates rather than dies — underline-on-
+ * current (av2-subnav), not pills, so it reads as navigation and not as the
+ * filter chip row acceptance bar #2 bans.
+ *
+ * The tab SET is owned here and nowhere else: every report page used to
+ * re-declare its own array (13×), which is exactly how Contact Attempts drifted
+ * out of sync (audit P1-5: missing Marketing + Deals).
  *
  * Server component (Link only) — usable from every reporting page.
  */
+import '@/components/admin/v2/admin-v2.css'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
-import HowReportingWorks from '@/components/admin/crm/reporting/HowReportingWorks'
+import { HowReportingWorks } from './HowReportingWorks'
+import { ScrollActiveIntoView } from './ScrollActiveIntoView'
 
 export type ReportingTabKey =
   | 'overview'
@@ -35,7 +41,7 @@ export type ReportingTabKey =
 
 type Tab = { key: ReportingTabKey; label: string; href: string }
 
-/** The 11 always-visible tabs, in FUB order. */
+/** The 11 always-visible tabs. */
 const BASE_TABS: Tab[] = [
   { key: 'overview', label: 'Overview', href: '/admin/crm/reporting' },
   { key: 'agent-activity', label: 'Agent Activity', href: '/admin/crm/reporting/agent-activity' },
@@ -71,31 +77,25 @@ export function reportingTabs(active: ReportingTabKey | null): Array<Tab & { act
   return tabs
 }
 
-/** The rendered strip (identical markup previously copy-pasted per page). */
-export function ReportingTabStrip({ active }: { active: ReportingTabKey | null }) {
+export function ReportingSubNav({ active }: { active: ReportingTabKey | null }) {
   return (
-    <div className="mb-6 flex items-center border-b border-border">
-      <div className="no-scrollbar flex items-center gap-0 overflow-x-auto">
+    <nav className="av2-subnav" aria-label="Reports">
+      <div className="av2-subnav__scroll">
+        <ScrollActiveIntoView />
         {reportingTabs(active).map((tab) => (
           <Link
             key={tab.key}
             href={tab.href}
-            className={cn(
-              'shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors',
-              tab.active
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
-            )}
+            className="av2-subnav__link"
+            aria-current={tab.active ? 'page' : undefined}
           >
             {tab.label}
           </Link>
         ))}
       </div>
-      {/* The working §11.1 explainer dialog on every page (the old copy-pasted
-          strips rendered an inert Badge on 11 of 13 pages — zero-inert rule). */}
-      <div className="ml-auto shrink-0 pb-0.5 pl-4">
+      <div className="av2-subnav__aside">
         <HowReportingWorks />
       </div>
-    </div>
+    </nav>
   )
 }

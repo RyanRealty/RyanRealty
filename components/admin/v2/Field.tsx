@@ -74,6 +74,38 @@ export function TextAreaField({
   )
 }
 
+/**
+ * Toolbar variants (11F). Pattern 6's labelled fields are for config forms;
+ * report toolbars need the same controls compact and label-free. The primitive
+ * owns the raw element (ci:admin-ui rule A) and the aria-label is REQUIRED —
+ * dropping the visible label never drops the accessible one.
+ */
+export function ToolbarSelect({
+  'aria-label': ariaLabel,
+  children,
+  className,
+  ...rest
+}: SelectHTMLAttributes<HTMLSelectElement> & { 'aria-label': string }) {
+  return (
+    <select className={['av2-input', 'av2-input--bar', className ?? ''].filter(Boolean).join(' ')} aria-label={ariaLabel} {...rest}>
+      {children}
+    </select>
+  )
+}
+
+/** Inline checkbox + caption for toolbars (the label element wraps the input). */
+export function ToolbarCheck({
+  label,
+  ...rest
+}: { label: React.ReactNode } & Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  return (
+    <label className="av2-check">
+      <input type="checkbox" {...rest} />
+      {label}
+    </label>
+  )
+}
+
 export function SelectField({
   label,
   hint,

@@ -6,7 +6,7 @@
 //
 // Carried over verbatim: requireAdminPage('people.view'), the getCrmAccess() →
 // /admin/access-denied guard, `dynamic = 'force-dynamic'`, the metadata title,
-// ReportingTabStrip mounted UNCHANGED with active={null}, the three group names,
+// ReportingSubNav mounted UNCHANGED with active={null}, the three group names,
 // and every surviving href character for character.
 //
 // Shape changed, data did not: the <h1> is gone (the nav names the page), the
@@ -33,7 +33,7 @@ import { requireAdminPage } from '@/lib/admin/require-admin'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from './_components/ReportingSubNav'
 
 export const metadata = { title: 'Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -82,7 +82,7 @@ export default async function CrmReportingPage() {
 
   return (
     <div className="av2-scope" style={{ maxWidth: 880, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active={null} />
+      <ReportingSubNav active={null} />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone="ok">

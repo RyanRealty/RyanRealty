@@ -25,8 +25,8 @@ import {
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { formatDate, formatDateTime as fmtDateTimeFn } from '@/lib/format/date'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import AppointmentsFilters from './AppointmentsFilters'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import BrokerDateFilters from '../_components/BrokerDateFilters'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Appointments | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -195,7 +195,7 @@ export default async function AppointmentsReportPage({
 
   return (
     <div className="av2-scope" style={PAGE}>
-      <ReportingTabStrip active="appointments" />
+      <ReportingSubNav active="appointments" />
 
       {unreadable ? (
         <VerdictLine tone="attention">
@@ -217,7 +217,7 @@ export default async function AppointmentsReportPage({
         </Link>
         {/* Filter controls — superuser only; non-superusers are broker-scoped */}
         {isSuperuser ? (
-          <AppointmentsFilters
+          <BrokerDateFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
             brokers={CRM_BROKERS.map((slug) => ({

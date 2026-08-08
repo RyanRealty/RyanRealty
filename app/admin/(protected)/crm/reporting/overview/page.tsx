@@ -5,11 +5,12 @@
 // superuser/broker scoping, ?broker/?date/?t handling, the getOverviewReport call
 // and its catch-to-null, every zero default, the seven metrics and their delta
 // maths (OverviewKpiStrip), the three hub-card groups and every href in them, and
-// the ReportingTabStrip sub-nav.
+// the ReportingSubNav sub-nav.
 //
-// The filter bar is now OverviewFilters — the same two params and the same
-// router.push target as the CallsFilters this page borrowed, in a file this page
-// owns, because CallsFilters is still shared with four unmigrated report pages.
+// The filter bar is OverviewFilters — the same two params and the same
+// router.push target as the shared filter bar this page borrowed before 11C.
+// The sibling reports now share _components/BrokerDateFilters; see that file
+// and OverviewFilters for why these two have not been folded together.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
@@ -25,7 +26,7 @@ import {
 import { VerdictLine, SectionHead, ReportFreshness, ReportError } from '@/components/admin/v2'
 import { OverviewKpiStrip } from './OverviewKpiStrip'
 import OverviewFilters from './OverviewFilters'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Overview | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -110,7 +111,7 @@ export default async function CrmOverviewReportPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active="overview" />
+      <ReportingSubNav active="overview" />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={totals.newLeads > 0 ? 'ok' : 'attention'}>

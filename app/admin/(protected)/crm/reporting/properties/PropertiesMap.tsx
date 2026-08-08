@@ -3,8 +3,12 @@
 /**
  * PropertiesMap — Google Maps panel for the Properties report.
  *
- * Uses the vanilla Google Maps JS API via useGoogleMapsReady, placing a navy
- * numbered pin for each property that has lat/lng coordinates. Renders its own
+ * Uses the vanilla Google Maps JS API via useGoogleMapsReady, placing an
+ * admin-accent numbered pin for each property that has lat/lng coordinates.
+ * Marker colors and map styling are resolved from the admin v2 CSS tokens
+ * (--a-accent, --a-btn-fg, --a-inset, --a-surface, --a-bg, --a-border) at
+ * render time, so the map follows the admin theme including dark mode.
+ * Renders its own
  * <GoogleMapsBootstrap /> because the admin console tree does not mount the
  * global one (that lives in the public-site RootProvider).
  *
@@ -34,6 +38,21 @@ export function PropertiesMap({ rows }: Props) {
   useEffect(() => {
     if (!ready || !containerRef.current) return
 
+    // Google Maps JS takes literal colour strings — it cannot consume
+    // var(...). Resolve the admin tokens from the applied stylesheet at
+    // runtime instead (safe here: this effect only runs client-side, after
+    // mount, once `ready` is true).
+    const s = getComputedStyle(document.documentElement)
+    const token = (n: string) => s.getPropertyValue(n).trim()
+    const accent = token('--a-accent')
+    const btnFg = token('--a-btn-fg')
+    const inset = token('--a-inset')
+    const surface = token('--a-surface')
+    const bg = token('--a-bg')
+    const border = token('--a-border')
+    const text = token('--a-text')
+    const text2 = token('--a-text-2')
+
     // Create the map once; reuse on data changes.
     if (!mapRef.current) {
       mapRef.current = new google.maps.Map(containerRef.current, {
@@ -47,12 +66,13 @@ export function PropertiesMap({ rows }: Props) {
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: true,
-        // Subtle navy/cream-friendly style (vector fallback-safe)
+        // Draws the admin accent/surface tokens, so the map follows the
+        // admin theme (including dark mode) instead of a fixed palette.
         styles: [
-          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9d2d3' }] },
-          { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f5f5f0' }] },
-          { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-          { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#e0e0e0' }] },
+          { featureType: 'water', elementType: 'geometry', stylers: [{ color: inset }] },
+          { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: surface }] },
+          { featureType: 'road', elementType: 'geometry', stylers: [{ color: bg }] },
+          { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: border }] },
           { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
         ],
       })
@@ -64,7 +84,7 @@ export function PropertiesMap({ rows }: Props) {
 
     const mappable = rows.filter((r) => r.lat !== null && r.lng !== null)
 
-    // Place a navy circle pin for each property, labelled with inquiry count.
+    // Place an accent-filled circle pin for each property, labelled with inquiry count.
     for (const row of mappable) {
       const marker = new google.maps.Marker({
         position: { lat: row.lat!, lng: row.lng! },
@@ -72,17 +92,18 @@ export function PropertiesMap({ rows }: Props) {
         title: row.fullAddress,
         label: {
           text: String(row.viewCount),
-          color: '#faf8f4',
+          color: btnFg,
           fontSize: '10px',
           fontWeight: '700',
         },
         icon: {
-          // Navy filled circle — matches brand navy #102742
+          // Admin-accent filled circle, drawn from --a-accent so it follows
+          // the admin theme (including dark mode).
           path: google.maps.SymbolPath.CIRCLE,
           scale: 11,
-          fillColor: '#102742',
+          fillColor: accent,
           fillOpacity: 1,
-          strokeColor: '#faf8f4',
+          strokeColor: btnFg,
           strokeWeight: 1.5,
         },
       })
@@ -90,11 +111,11 @@ export function PropertiesMap({ rows }: Props) {
       // Info window on pin click.
       const infoWindow = new google.maps.InfoWindow({
         content: `<div style="font-family:system-ui,sans-serif;font-size:13px;padding:4px 2px;min-width:160px">
-          <div style="font-weight:600;color:#102742">${row.fullAddress}</div>
-          <div style="color:#666;margin-top:4px;font-size:12px">${row.viewCount}&nbsp;${row.viewCount === 1 ? 'inquiry' : 'inquiries'}</div>
+          <div style="font-weight:600;color:${text}">${row.fullAddress}</div>
+          <div style="color:${text2};margin-top:4px;font-size:12px">${row.viewCount}&nbsp;${row.viewCount === 1 ? 'inquiry' : 'inquiries'}</div>
           ${
             row.listingUrl
-              ? `<div style="margin-top:6px"><a href="${row.listingUrl}" style="color:#102742;font-size:12px;text-decoration:underline" target="_blank">View listing</a></div>`
+              ? `<div style="margin-top:6px"><a href="${row.listingUrl}" style="color:${accent};font-size:12px;text-decoration:underline" target="_blank">View listing</a></div>`
               : ''
           }
         </div>`,

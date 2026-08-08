@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   AreaChart,
   Area,
@@ -10,16 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { Card } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
+import { ToolbarSelect, ToolbarCheck } from '@/components/admin/v2'
 import { METRIC_OPTIONS, METRIC_LABELS, type MetricKey } from '@/lib/crm/reporting-constants'
 import type { TimeSeriesPoint } from '@/lib/data/crm/getAgentActivityReport'
 import { formatDate } from '@/lib/format/date'
@@ -109,6 +100,39 @@ export function AgentActivityChart({ timeSeries, prevTimeSeries, prevDateStart, 
   const [granularity, setGranularity] = useState<Granularity>('daily')
   const [showPrev, setShowPrev] = useState(false)
 
+  // Chart colors are resolved from the live admin-v2 CSS custom properties at
+  // mount rather than hardcoded — recharts SVG presentation attributes don't
+  // reliably resolve var(...), so real color strings are read off the
+  // document root instead. This is what lets the chart follow the admin's
+  // light/dark token swap, which the previous hardcoded navy never did.
+  // Until the effect runs the values are '' — recharts renders an empty
+  // stroke poorly, so 'currentColor' (inherits .av2-scope's --a-text) is used
+  // as the one-frame fallback instead of leaving the strokes blank.
+  const [tok, setTok] = useState({
+    current: '', compare: '', prev: '', grid: '', axis: '', surface: '', border: '', text: '',
+  })
+  useEffect(() => {
+    const s = getComputedStyle(document.documentElement)
+    setTok({
+      current: s.getPropertyValue('--a-accent').trim(),
+      compare: s.getPropertyValue('--a-text-2').trim(),
+      prev: s.getPropertyValue('--a-border-strong').trim(),
+      grid: s.getPropertyValue('--a-border').trim(),
+      axis: s.getPropertyValue('--a-text-2').trim(),
+      surface: s.getPropertyValue('--a-surface').trim(),
+      border: s.getPropertyValue('--a-border').trim(),
+      text: s.getPropertyValue('--a-text').trim(),
+    })
+  }, [])
+  const currentColor = tok.current || 'currentColor'
+  const compareColor = tok.compare || 'currentColor'
+  const prevColor = tok.prev || 'currentColor'
+  const gridColor = tok.grid || 'currentColor'
+  const axisColor = tok.axis || 'currentColor'
+  const surfaceColor = tok.surface || 'currentColor'
+  const borderColor = tok.border || 'currentColor'
+  const textColor = tok.text || 'currentColor'
+
   const currentBuckets = useMemo(() => aggregatePoints(timeSeries, granularity), [timeSeries, granularity])
   const prevBuckets = useMemo(() => aggregatePoints(prevTimeSeries, granularity), [prevTimeSeries, granularity])
 
@@ -135,183 +159,171 @@ export function AgentActivityChart({ timeSeries, prevTimeSeries, prevDateStart, 
   const prevRangeLabel = `${fmtLongDate(prevDateStart)} - ${fmtLongDate(prevDateEnd)}`
 
   return (
-    <Card className="mb-4">
-      <div className="p-4">
-        {/* Chart controls row */}
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          {/* Metric A */}
-          <Select value={metric} onValueChange={(v) => setMetric(v as MetricKey)}>
-            <SelectTrigger className="h-8 w-40 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 shrink-0 rounded-sm bg-primary" />
-                <SelectValue />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              {METRIC_OPTIONS.map((opt) => (
-                <SelectItem key={opt.key} value={opt.key} className="text-xs">
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <span className="text-xs text-muted-foreground">vs</span>
-
-          {/* Metric B */}
-          <Select value={compareMetric} onValueChange={setCompareMetric}>
-            <SelectTrigger className="h-8 w-32 text-xs">
-              <SelectValue placeholder="Select" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none" className="text-xs">
-                None
-              </SelectItem>
-              {METRIC_OPTIONS.filter((opt) => opt.key !== metric).map((opt) => (
-                <SelectItem key={opt.key} value={opt.key} className="text-xs">
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Granularity */}
-          <Select
-            value={granularity}
-            onValueChange={(v) => setGranularity(v as Granularity)}
+    <div className="av2-pane" style={{ marginBottom: 'var(--a-s4)' }}>
+      {/* Chart controls row */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Metric A */}
+        <div className="flex items-center gap-1.5">
+          <span
+            className="inline-block h-2 w-2 shrink-0 rounded-sm"
+            style={{ background: 'var(--a-accent)' }}
+          />
+          <ToolbarSelect
+            aria-label="Metric"
+            value={metric}
+            onChange={(e) => setMetric(e.target.value as MetricKey)}
           >
-            <SelectTrigger className="h-8 w-28 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily" className="text-xs">Daily</SelectItem>
-              <SelectItem value="weekly" className="text-xs">Weekly</SelectItem>
-              <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Compare to previous period */}
-          <div className="ml-auto flex items-center gap-2">
-            <Checkbox
-              id="cmp-prev"
-              checked={showPrev}
-              onCheckedChange={(v) => setShowPrev(!!v)}
-            />
-            <Label
-              htmlFor="cmp-prev"
-              className="cursor-pointer text-xs text-muted-foreground"
-            >
-              Compare to previous period:
-            </Label>
-            <span className="text-xs text-muted-foreground">{prevRangeLabel}</span>
-          </div>
+            {METRIC_OPTIONS.map((opt) => (
+              <option key={opt.key} value={opt.key}>
+                {opt.label}
+              </option>
+            ))}
+          </ToolbarSelect>
         </div>
 
-        {/* Area chart */}
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={chartData}
-              margin={{ top: 4, right: 4, bottom: 0, left: 4 }}
-            >
-              <defs>
-                <linearGradient id="aa-grad-current" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#102742" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#102742" stopOpacity={0.01} />
-                </linearGradient>
-                <linearGradient id="aa-grad-compare" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#5b6473" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#5b6473" stopOpacity={0.01} />
-                </linearGradient>
-                <linearGradient id="aa-grad-prev" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#a7b0bf" stopOpacity={0.12} />
-                  <stop offset="95%" stopColor="#a7b0bf" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+        <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>vs</span>
 
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="hsl(var(--border))"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                tickFormatter={fmtAxisDate}
-                tickLine={false}
-                axisLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                tickLine={false}
-                axisLine={false}
-                allowDecimals={false}
-                width={48}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-                labelFormatter={(label) => {
-                  try { return fmtLongDate(String(label)) } catch { return String(label) }
-                }}
-                formatter={(val: number, name: string) => [
-                  val.toLocaleString('en-US'),
-                  name,
-                ]}
-              />
+        {/* Metric B */}
+        <ToolbarSelect
+          aria-label="Compare metric"
+          value={compareMetric}
+          onChange={(e) => setCompareMetric(e.target.value)}
+        >
+          <option value="none">None</option>
+          {METRIC_OPTIONS.filter((opt) => opt.key !== metric).map((opt) => (
+            <option key={opt.key} value={opt.key}>
+              {opt.label}
+            </option>
+          ))}
+        </ToolbarSelect>
 
-              {/* Primary metric series */}
-              <Area
-                type="monotone"
-                dataKey="current"
-                name={METRIC_LABELS[metric]}
-                stroke="#102742"
-                strokeWidth={2}
-                fill="url(#aa-grad-current)"
-                dot={{ r: 3, fill: '#102742', strokeWidth: 0 }}
-                activeDot={{ r: 5, fill: '#102742' }}
-                isAnimationActive={false}
-              />
+        {/* Granularity */}
+        <ToolbarSelect
+          aria-label="Granularity"
+          value={granularity}
+          onChange={(e) => setGranularity(e.target.value as Granularity)}
+        >
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </ToolbarSelect>
 
-              {/* Compare metric (vs) */}
-              {compareMetric !== 'none' && (
-                <Area
-                  type="monotone"
-                  dataKey="compare"
-                  name={METRIC_LABELS[compareMetric as MetricKey]}
-                  stroke="#5b6473"
-                  strokeWidth={2}
-                  fill="url(#aa-grad-compare)"
-                  dot={{ r: 3, fill: '#5b6473', strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: '#5b6473' }}
-                  isAnimationActive={false}
-                />
-              )}
-
-              {/* Previous period overlay */}
-              {showPrev && (
-                <Area
-                  type="monotone"
-                  dataKey="previous"
-                  name={`${METRIC_LABELS[metric]} (prev.)`}
-                  stroke="#a7b0bf"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 2"
-                  fill="url(#aa-grad-prev)"
-                  dot={false}
-                  activeDot={false}
-                  isAnimationActive={false}
-                />
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
+        {/* Compare to previous period */}
+        <div className="ml-auto flex items-center gap-2">
+          <ToolbarCheck
+            label="Compare to previous period:"
+            checked={showPrev}
+            onChange={(e) => setShowPrev(e.target.checked)}
+          />
+          <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>{prevRangeLabel}</span>
         </div>
       </div>
-    </Card>
+
+      {/* Area chart */}
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={chartData}
+            margin={{ top: 4, right: 4, bottom: 0, left: 4 }}
+          >
+            <defs>
+              <linearGradient id="aa-grad-current" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={currentColor} stopOpacity={0.15} />
+                <stop offset="95%" stopColor={currentColor} stopOpacity={0.01} />
+              </linearGradient>
+              <linearGradient id="aa-grad-compare" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={compareColor} stopOpacity={0.15} />
+                <stop offset="95%" stopColor={compareColor} stopOpacity={0.01} />
+              </linearGradient>
+              <linearGradient id="aa-grad-prev" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={prevColor} stopOpacity={0.12} />
+                <stop offset="95%" stopColor={prevColor} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={gridColor}
+              vertical={false}
+            />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 11, fill: axisColor }}
+              tickFormatter={fmtAxisDate}
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: axisColor }}
+              tickLine={false}
+              axisLine={false}
+              allowDecimals={false}
+              width={48}
+            />
+            <Tooltip
+              contentStyle={{
+                background: surfaceColor,
+                border: `1px solid ${borderColor}`,
+                borderRadius: 8,
+                fontSize: 12,
+                color: textColor,
+              }}
+              labelFormatter={(label) => {
+                try { return fmtLongDate(String(label)) } catch { return String(label) }
+              }}
+              formatter={(val: number, name: string) => [
+                val.toLocaleString('en-US'),
+                name,
+              ]}
+            />
+
+            {/* Primary metric series */}
+            <Area
+              type="monotone"
+              dataKey="current"
+              name={METRIC_LABELS[metric]}
+              stroke={currentColor}
+              strokeWidth={2}
+              fill="url(#aa-grad-current)"
+              dot={{ r: 3, fill: currentColor, strokeWidth: 0 }}
+              activeDot={{ r: 5, fill: currentColor }}
+              isAnimationActive={false}
+            />
+
+            {/* Compare metric (vs) */}
+            {compareMetric !== 'none' && (
+              <Area
+                type="monotone"
+                dataKey="compare"
+                name={METRIC_LABELS[compareMetric as MetricKey]}
+                stroke={compareColor}
+                strokeWidth={2}
+                fill="url(#aa-grad-compare)"
+                dot={{ r: 3, fill: compareColor, strokeWidth: 0 }}
+                activeDot={{ r: 5, fill: compareColor }}
+                isAnimationActive={false}
+              />
+            )}
+
+            {/* Previous period overlay */}
+            {showPrev && (
+              <Area
+                type="monotone"
+                dataKey="previous"
+                name={`${METRIC_LABELS[metric]} (prev.)`}
+                stroke={prevColor}
+                strokeWidth={1.5}
+                strokeDasharray="4 2"
+                fill="url(#aa-grad-prev)"
+                dot={false}
+                activeDot={false}
+                isAnimationActive={false}
+              />
+            )}
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   )
 }

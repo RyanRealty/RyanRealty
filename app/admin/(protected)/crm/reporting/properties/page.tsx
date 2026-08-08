@@ -28,7 +28,7 @@ import {
 } from '@/components/admin/v2'
 import PropertiesFilters from './PropertiesFilters'
 import { PropertiesMap } from './PropertiesMap'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Properties | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -116,7 +116,7 @@ export default async function PropertiesPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active="properties" />
+      <ReportingSubNav active="properties" />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={report === null ? 'attention' : 'ok'}>

@@ -7,7 +7,7 @@
 // getAgentActivityReport call and its catch-to-null, every zero default, the
 // per-metric drill hrefs, the column-totals row that only renders with more than
 // one agent row, the closed-deals view and its commission rounding, and the
-// ReportingTabStrip sub-nav.
+// ReportingSubNav sub-nav.
 //
 // AgentActivityChart stays as it is: it is shared with the Lead Sources report,
 // so it is not this unit's to restyle (it migrates with that page).
@@ -39,7 +39,7 @@ import AgentActivityFilters from './AgentActivityFilters'
 import ShowMeSelector from './ShowMeSelector'
 import { AgentActivityChart } from './AgentActivityChart'
 import { AgentActivityKpiStrip } from './AgentActivityKpiStrip'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Agent Activity | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -279,7 +279,7 @@ export default async function AgentActivityPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active="agent-activity" />
+      <ReportingSubNav active="agent-activity" />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={(isDealsView ? dealsTotal : totals.newLeads) > 0 ? 'ok' : 'attention'}>

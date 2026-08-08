@@ -17,7 +17,7 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { getBatchEmailsReport, type BatchEmailRow } from '@/lib/data/crm/getBatchEmailsReport'
 import { formatDate } from '@/lib/format/date'
 import { SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Batch Emails | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -158,7 +158,7 @@ export default async function BatchEmailsPage({
 
   return (
     <div className="av2-scope" style={PAGE}>
-      <ReportingTabStrip active="batch-emails" />
+      <ReportingSubNav active="batch-emails" />
 
       {unreadable ? (
         <VerdictLine tone="attention">

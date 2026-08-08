@@ -10,7 +10,7 @@
 // Presentation only. Carried over verbatim: the getCrmAccess guard, the
 // superuser/broker scoping, ?broker/?date/?t handling, the DAL call and its
 // catch-to-null, every zero default, the prior-period sub-labels, the per-source
-// drill hrefs, and the ReportingTabStrip sub-nav.
+// drill hrefs, and the ReportingSubNav sub-nav.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
@@ -29,7 +29,7 @@ import {
   type ReportGridRow,
 } from '@/components/admin/v2'
 import ContactAttemptsFilters from './ContactAttemptsFilters'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Contact Attempts | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -147,7 +147,7 @@ export default async function ContactAttemptsPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active="contact-attempts" />
+      <ReportingSubNav active="contact-attempts" />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={totals.leads > 0 && totals.avgAttempts > 0 ? 'ok' : 'attention'}>

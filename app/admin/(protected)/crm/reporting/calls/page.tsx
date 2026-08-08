@@ -13,8 +13,8 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { getCallsReport, type CallsRow, type CallsTotals } from '@/lib/data/crm/getCallsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import CallsFilters from './CallsFilters'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import BrokerDateFilters from '../_components/BrokerDateFilters'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Calls | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -192,7 +192,7 @@ export default async function CallsReportPage({
 
   return (
     <div className="av2-scope" style={PAGE}>
-      <ReportingTabStrip active="calls" />
+      <ReportingSubNav active="calls" />
 
       {unreadable ? (
         <VerdictLine tone="attention">
@@ -215,7 +215,7 @@ export default async function CallsReportPage({
         </Link>
         {/* Filter controls — agent + date (no lead-type per the Calls reference) */}
         {isSuperuser ? (
-          <CallsFilters
+          <BrokerDateFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
             brokers={CRM_BROKERS.map((slug) => ({

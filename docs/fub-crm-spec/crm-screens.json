@@ -186,7 +186,7 @@
     "status": "done",
     "requiredComponents": [
       "ShowMeSelector",
-      "ReportingTabStrip",
+      "ReportingSubNav",
       "AgentActivityFilters",
       "AgentActivityChart",
       "AgentActivityKpiStrip",

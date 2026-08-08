@@ -5,7 +5,7 @@
 // (a broker sees their own row, the principal sees the roster), the ?year clamp
 // (2020–2030, else this year), the DAL call and its catch-to-null, formatPrice
 // for GCI, the goal-progress computation, the honest "goal-setting not shipped"
-// notice, and the ReportingTabStrip sub-nav.
+// notice, and the ReportingSubNav sub-nav.
 //
 // Two deliberate changes the ADMIN_UI acceptance bar requires:
 //   - the standalone "<year> Goals" <h1> is gone (no page-title chrome; the nav
@@ -29,7 +29,7 @@ import {
   type ReportGridRow,
 } from '@/components/admin/v2'
 import { AgentGoalsYearSelect } from './AgentGoalsYearSelect'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Agent Goals | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -176,7 +176,7 @@ export default async function AgentGoalsPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active="agent-goals" />
+      <ReportingSubNav active="agent-goals" />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={goalsSet > 0 ? 'ok' : 'attention'}>

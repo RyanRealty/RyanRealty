@@ -27,7 +27,7 @@ import {
   type ReportGridRow,
 } from '@/components/admin/v2'
 import MarketingFilters from './MarketingFilters'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Marketing | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -83,7 +83,7 @@ export default async function MarketingReportPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active="marketing" />
+      <ReportingSubNav active="marketing" />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={report === null ? 'attention' : 'ok'}>

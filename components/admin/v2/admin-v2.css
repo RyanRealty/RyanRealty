@@ -170,6 +170,12 @@
 .av2-input:focus-visible { outline:none; box-shadow:var(--a-focus); }
 .av2-input[aria-invalid="true"] { border-color:var(--a-danger); }
 textarea.av2-input { min-height:88px; resize:vertical; }
+/* Toolbar variants (11F): same control, compact + label-free for report bars. */
+.av2-input--bar { min-height:32px; padding:4px 8px; font-size:var(--a-text-sm); max-width:200px; }
+.av2-check { display:inline-flex; align-items:center; gap:var(--a-s2); font-family:var(--a-font);
+  font-size:var(--a-text-sm); color:var(--a-text-2); cursor:pointer; }
+.av2-check input { accent-color:var(--a-accent); width:15px; height:15px; margin:0; }
+.av2-check input:focus-visible { outline:none; box-shadow:var(--a-focus); border-radius:2px; }
 
 /* ---- Entity fold (pattern 5: stacked context sections on a person page) ---- */
 .av2-pane { display:flex; flex-direction:column; gap:var(--a-s3); border:1px solid var(--a-border);
@@ -228,3 +234,52 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-context__h { font-size:var(--a-text-xs); font-weight:600; letter-spacing:.06em; text-transform:uppercase;
   color:var(--a-text-2); margin:var(--a-s4) 0 var(--a-s1); }
 .av2-context__row { padding:var(--a-s1) 0; border-bottom:1px solid var(--a-border); color:var(--a-text); }
+
+/* ---- Sub-nav (11F): sibling routes UNDER one rail destination ----
+   NOT a filter set and NOT a substitute for the rail — acceptance bar #2 bans
+   pill rows of filters, and §5 gives the rail the 11 destinations. This is the
+   third case: a family of sibling report routes the rail exposes as a SINGLE
+   child, which would otherwise be unreachable. Underline-on-current, not pills,
+   so it reads as navigation rather than state. */
+.av2-subnav { display:flex; align-items:center; gap:var(--a-s3);
+  border-bottom:1px solid var(--a-border); margin-bottom:var(--a-s5); }
+/* Phone: the aside would squeeze the row to ~1.5 tabs and hide the current one.
+   It wraps above instead; the tab row keeps the full width and edge-clips, which
+   is also what signals it scrolls (the scrollbar itself is hidden). */
+@media (max-width:640px) {
+  .av2-subnav { flex-wrap:wrap; row-gap:0; }
+  .av2-subnav__aside { order:1; flex-basis:100%; display:flex; justify-content:flex-end;
+    padding-bottom:var(--a-s2); }
+  .av2-subnav__scroll { order:2; flex-basis:100%; }
+}
+.av2-subnav__scroll { display:flex; align-items:center; overflow-x:auto; scrollbar-width:none; }
+.av2-subnav__scroll::-webkit-scrollbar { display:none; }
+.av2-subnav__link { flex-shrink:0; font-family:var(--a-font); font-size:var(--a-text-md);
+  color:var(--a-text-2); text-decoration:none; padding:10px var(--a-s3);
+  border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap;
+  transition:color var(--a-t-fast); }
+.av2-subnav__link:hover { color:var(--a-text); }
+.av2-subnav__link[aria-current="page"] { color:var(--a-text); font-weight:600;
+  border-bottom-color:var(--a-accent); }
+.av2-subnav__link:focus-visible { outline:none; box-shadow:var(--a-focus); border-radius:var(--a-r-sm); }
+.av2-subnav__aside { margin-left:auto; flex-shrink:0; padding-bottom:var(--a-s1); }
+
+/* ---- Explainer dialog (native <dialog>: focus trap + Esc from the platform,
+   APG dialog semantics without a component library) ---- */
+.av2-dialog { border:1px solid var(--a-border); border-radius:var(--a-r-lg);
+  background:var(--a-bg); color:var(--a-text); font-family:var(--a-font);
+  font-size:var(--a-text-md); line-height:var(--a-leading);
+  padding:var(--a-s5); max-width:460px; width:calc(100vw - var(--a-s8));
+  box-shadow:var(--a-shadow-overlay); }
+/* No ::backdrop rule on purpose: the UA's default modal scrim already dims, and
+   the locked tokens.css carries no scrim token — inventing one to style what the
+   platform hands us free would edit the P6 visual lock for nothing. */
+.av2-dialog__head { display:flex; align-items:center; justify-content:space-between;
+  gap:var(--a-s3); margin-bottom:var(--a-s3); }
+/* Inside a dialog head the SectionHead primitive reads as the dialog TITLE, not
+   a lane label — same element, title-scale presentation. */
+.av2-dialog__head .av2-lane-head { font-size:var(--a-text-lg); letter-spacing:0;
+  text-transform:none; color:var(--a-text); margin:0; }
+.av2-dialog__body { display:flex; flex-direction:column; gap:var(--a-s3); }
+.av2-dialog__body p { margin:0; }
+.av2-dialog__quiet { color:var(--a-text-2); }

@@ -6,7 +6,7 @@
 // superuser/broker scoping, the ?broker/?date/?t handling, the DAL call and its
 // catch-to-null, every default, formatElapsed, the contact-rate computation,
 // the sub-5-minute highlight rule, the per-source drill hrefs, and the
-// ReportingTabStrip sub-nav (shared machinery, migrates with its own unit).
+// ReportingSubNav sub-nav (shared machinery, migrates with its own unit).
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
@@ -28,7 +28,7 @@ import {
   type ReportGridRow,
 } from '@/components/admin/v2'
 import SpeedToLeadFilters from './SpeedToLeadFilters'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Speed to Lead | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -183,7 +183,7 @@ export default async function SpeedToLeadPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
-      <ReportingTabStrip active="speed-to-lead" />
+      <ReportingSubNav active="speed-to-lead" />
 
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone={fastEnough ? 'ok' : 'attention'}>

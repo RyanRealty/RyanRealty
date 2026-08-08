@@ -101,6 +101,12 @@ const SCAN_DIRS = [
   'app/admin/(protected)/crm/import/page.tsx',
   'app/admin/(protected)/crm/new/page.tsx',
   'app/admin/(protected)/crm/referrals/page.tsx',
+  // 11F (2026-08-08) — the reporting family, BARE DIR (not file-form): its
+  // mounted islands migrated with it, so there is nothing left in the subtree to
+  // carve around, and a new file under it is covered the day it lands. The
+  // shared sub-nav and the shared broker+date filter now live in
+  // crm/reporting/_components/ instead of components/admin/crm/reporting/.
+  'app/admin/(protected)/crm/reporting',
   'app/admin/(protected)/crm/settings/appointments/page.tsx',
   'app/admin/(protected)/crm/settings/brokers/page.tsx',
   'app/admin/(protected)/crm/settings/company/registration/page.tsx',

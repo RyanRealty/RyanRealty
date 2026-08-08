@@ -14,8 +14,8 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { getTextsReport, type TextsRow, type TextsTotals } from '@/lib/data/crm/getTextsReport'
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import TextsFilters from './TextsFilters'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import BrokerDateFilters from '../_components/BrokerDateFilters'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Texts | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -187,7 +187,7 @@ export default async function TextsReportPage({
 
   return (
     <div className="av2-scope" style={PAGE}>
-      <ReportingTabStrip active="texts" />
+      <ReportingSubNav active="texts" />
 
       {unreadable ? (
         <VerdictLine tone="attention">
@@ -212,7 +212,7 @@ export default async function TextsReportPage({
         </Link>
         {/* Filter controls — agent + date */}
         {isSuperuser ? (
-          <TextsFilters
+          <BrokerDateFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
             brokers={CRM_BROKERS.map((slug) => ({

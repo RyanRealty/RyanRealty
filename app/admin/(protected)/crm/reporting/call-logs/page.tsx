@@ -27,8 +27,8 @@ import {
 import { CRM_BROKER_DISPLAY, CRM_BROKERS } from '@/lib/crm/constants'
 import { formatDate } from '@/lib/format/date'
 import { SectionHead, StateWord, VerdictLine, type AdminState } from '@/components/admin/v2'
-import CallsFilters from '../calls/CallsFilters'
-import { ReportingTabStrip } from '@/components/admin/crm/reporting/ReportingTabStrip'
+import BrokerDateFilters from '../_components/BrokerDateFilters'
+import { ReportingSubNav } from '../_components/ReportingSubNav'
 
 export const metadata = { title: 'Call Logs | Reporting | CRM' }
 export const dynamic = 'force-dynamic'
@@ -272,7 +272,7 @@ export default async function CallLogsPage({
 
   return (
     <div className="av2-scope" style={PAGE}>
-      <ReportingTabStrip active="call-logs" />
+      <ReportingSubNav active="call-logs" />
 
       {unreadable ? (
         <VerdictLine tone="attention">
@@ -294,11 +294,11 @@ export default async function CallLogsPage({
         <Link href={refreshHref} className="av2-btn" style={{ textDecoration: 'none' }}>
           Refresh results
         </Link>
-        {/* Reuses CallsFilters — identical broker + date filter bar.
+        {/* Reuses BrokerDateFilters — identical broker + date filter bar.
             usePathname() inside the component resolves the call-logs URL,
             so navigation updates this page's params correctly. */}
         {isSuperuser ? (
-          <CallsFilters
+          <BrokerDateFilters
             currentBroker={currentBroker}
             currentDate={currentDate}
             brokers={CRM_BROKERS.map((slug) => ({

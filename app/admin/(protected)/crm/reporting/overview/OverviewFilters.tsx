@@ -2,9 +2,15 @@
 // 11C: Overview's own agent + date filter, on the LOCKED admin v2 language.
 // Behaviour is byte-for-byte the contract the page had before (it borrowed the
 // Calls report's filter bar): the same two params, the same defaults, the same
-// router.push(`${pathname}?${params}`) target. It is a separate file only
-// because CallsFilters is shared with four legacy report pages that have not
-// migrated yet — this page may not restyle a component it does not own.
+// router.push(`${pathname}?${params}`) target.
+//
+// 11F: the reason this file was separate — "CallsFilters is shared with four
+// legacy report pages" — is gone. Those pages migrated and their three
+// byte-identical filter files collapsed into _components/BrokerDateFilters.
+// This one still differs in PRESENTATION (labelled SelectField vs the compact
+// unlabelled control), so merging means choosing which treatment a report
+// toolbar should carry. That is a design call, not a migration, and it is
+// queued rather than made silently here.
 import { useRouter, usePathname } from 'next/navigation'
 import { SelectField } from '@/components/admin/v2'
 
