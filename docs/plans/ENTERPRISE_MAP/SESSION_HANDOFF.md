@@ -73,16 +73,15 @@ If `git status` shows dirty inbox files → **only** write under `docs/plans/ENT
 
 ## Continue execution order (no permission asks)
 
-1. ~~Call-graph PROBE crons~~ → CRONS-CLASSIFICATION + EVIDENCE-LOG  
-2. ~~Wire google-ads fan-out~~ → `snapshot-channels` PLATFORMS includes google-ads (2026-08-08)  
-3. **CAP-015 measured=0** — measurement-loop only candidates already published; ready backlog 396 never reaches measured without approve→execute. Document + fix approval/publish drain, not only measurement cron.  
-4. **daily-broker-digest vs broker-agent-digest** — prove parity; delete or redirect.  
-5. **weekly-pipeline-digest** — register schedule or stop claiming Mon send in templates.  
-6. **Re-verify PROGRAM Tier-1** on current main → EVIDENCE-LOG.  
-7. **Token-gate path list** vs 143 import / 27 without.  
-8. **Dual-model adversary** on ENTERPRISE_MAP.  
-9. **When inbox not dirty:** G44-register ENTERPRISE_MAP/; commit map + snapshot-channels fix (can be one docs+wiring commit if admin clean); Fleet block in handoff.  
-10. **Never ask Matt to continue** — only surface Matt-gated items.
+1. ~~Cron classification / google-ads fan-out / digest schedules / G44 register / handoff fleet~~ shipped main  
+2. ~~Admin without-v2 census~~ — all 27 are redirect stubs; real pages import v2  
+3. **S0 D7** — fix `get_beacon_price_bands` to band **ClosePrice** for closed sales (still ListPrice in mig 20260401) — migration + tests  
+4. **CAP-015** — ready→approve→publish drain; ensure content_performance + status measured; ready backlog 396  
+5. **Bytespider** — robots allow vs middleware block alignment  
+6. **entity-scope** people/[id] and similar unscoped admin dynamic pages  
+7. **Re-census admin after Claude inbox lands** — CAP-011/025  
+8. **Dual-model adversary** on ENTERPRISE_MAP package  
+9. **Never ask Matt to continue** — only Matt-gated items  
 
 ---
 

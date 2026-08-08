@@ -101,3 +101,22 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 - Parallel Claude Code work on admin/inbox is **concurrent execution**, not exclusion from the enterprise map.
 - CAP-011, CAP-024, CAP-025, A-001, inventories B + Q remain mandatory coverage.
 - Collision control = do not edit the same dirty files; still inventory, disposition, plan, and re-verify admin.
+
+### Admin 11F / CAP-024-025 re-census (2026-08-08 grind continued)
+- Still 170 page.tsx under app/admin; **143** import v2, **27** do not.
+- **All 27 are redirect-ish stubs** (<40 lines, call redirect()) — bridges/legacy URLs, not full page shells missing v2.
+- Real admin product pages are on v2 barrel import. Token-gate (islands) remains a **separate** question from rule B.
+- CAP-024 shell: strengthen to **VERIFIED** for rule B; CAP-025 11F island purity still ACTIVE (inbox parallel).
+
+### PROGRAM Tier-1 re-probes
+- **D7 price bands / §0:** Latest migration def `get_beacon_price_bands` (20260401120000) still bands **ListPrice** on rows with StandardStatus LIKE closed. **STILL OPEN** — closed sales banded by list price is license-adjacent.
+- **Buyer LP alerts:** `app/lp/buyer-listing-alerts/actions.ts` now creates lead + autoEnroll + **upsertListingAlert** filter sets (comment: funnel gap closed 2026-07-21). Historical "enrolls nobody" claim **likely SUPERSEDED** — re-spot-check live after next LP submit; code path present.
+- **CRM scope:** `lib/crm/scope.ts` has scopeBroker + isPersonInScope + tests; requirePersonInScope used widely. Fail-open class **partially mitigated** — entity-scope gate still flags some admin pages (people/[id]). Keep CAP-009 risk but not "unscoped everywhere."
+- **Bytespider:** still allow robots + middleware block (prior log).
+
+### Digests (clarified)
+- daily-broker-digest ≠ broker-agent-digest (different products). Both intended; daily CRM digest + weekly pipeline now on vercel schedule (prior commit).
+
+### S0 D7 migration authored 2026-08-08
+- `supabase/migrations/20260808181843_beacon_price_bands_close_price.sql` — closed sales bands use ClosePrice; active still ListPrice; return keys unchanged.
+- Apply via db:push in same delivery as map commit.

@@ -28,7 +28,7 @@
 | CAP-021 | Broker public pages /team | 3 | routes exist | High | **Yes** | “Dialed” bar not closed |
 | CAP-022 | Broker platform / onboarding | 1–2 | 3 brokers | — | **Core thesis** | Not productized for recruit |
 | CAP-023 | Consumer portal /account | 3 | account routes | Med | No | |
-| CAP-024 | Admin Product OS shell | 4 | **143** pages import v2 of 170 | Low public | Ops | **VERIFIED** import census; 27 without |
+| CAP-024 | Admin Product OS shell | 4 | 143 import v2; **27 all redirect stubs** | Low public | Ops | **VERIFIED** rule B shell; bridges only without barrel |
 | CAP-025 | Admin token purity (11F) | 3 | 27 pages no v2 import; inbox in flight | Low public | Ops | Q-admin-without-v2-import.txt; Claude owns inbox |
 | CAP-026 | Design system public | 3–4 | design_system/ryan-realty + gates | High | Brand | Frankenstein residue |
 | CAP-027 | Design system admin v2 | 3 | components/admin/v2 | Ops | Ops | Rolling with 11F |
