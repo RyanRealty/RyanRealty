@@ -15,19 +15,19 @@
 // (its component was deleted in this wave once nothing imported it), and the
 // ConsoleSection around the quick links became a SectionHead.
 //
-// ONE FIGURE WAS CUT, not restyled: "Active listings". It printed
-// syncData.counts.activeCount, which is getTotalListingsCount() — the sum of
-// geo_snapshot_mv.active_sfr_count over the TOP 50 CITIES
-// (lib/data/geo/getGeoSnapshot.ts `_fetchAllCitySnapshots` carries .limit(50)).
-// Measured 2026-08-07: that sum is 3,530, while listings with
-// StandardStatus='Active' number 7,611 (4,646 of them PropertyType='A'), and
-// 136 cities carry a non-zero active SFR count, not 50. The label was wrong by
-// 2.16x, and its caption paired it with getTotalListingsRows() — every row of
-// every status in `listings` — so the two numbers did not share a universe.
-// The page cannot make that figure true from what it reads, so it does not
-// print it. The same value still renders inside DashboardSyncPanel under the
-// heading "Active"; that component is outside this migration's fence and the
-// defect is reported with it.
+// "ACTIVE LISTINGS" WAS CUT IN 11E AND IS BACK IN 11F, because the figure is
+// now true. 11E could not make it true from what the page read: activeCount was
+// getTotalListingsCount(), the sum of geo_snapshot_mv.active_sfr_count over the
+// TOP 50 CITIES, so it printed 2,915 (measured 2026-08-08) for an active bucket
+// holding 7,658 — and the DashboardSyncPanel below it published that same wrong
+// number under the heading "Active" while its OWN status breakdown, eight rows
+// further down, printed the right one from getActiveBucketCount().
+//
+// 11F fixed the source rather than the caption (getAdminSyncCounts): activeCount
+// is getActiveBucketCount() and totalListings is getAllListingsCount(). Both are
+// plain service-role counts, like every sibling on that panel. Cutting a figure
+// is the right move while it is a lie; restoring it is the right move once it
+// is not.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
@@ -104,6 +104,12 @@ export default async function AdminDashboardPage() {
   const missingPhoto = dataQuality.missingPrimaryPhoto
 
   const numbers: ReportNumberItem[] = [
+    {
+      key: 'active',
+      label: 'Active listings',
+      value: nf.format(syncData.counts.activeCount),
+      delta: { direction: 'flat', text: 'every property type' },
+    },
     {
       key: 'sessions',
       label: 'Sessions, 30 days',

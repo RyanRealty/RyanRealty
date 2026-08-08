@@ -49,7 +49,10 @@ export default function DashboardSyncPanel(props: Props) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="rounded-lg bg-muted p-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Listings (total)</p>
+          {/* "estimated" is not hedging — getAllListingsCount() reads planner
+              reltuples, measured 3.82% high on 2026-08-08. A bare "total" would
+              claim an exactness this number does not have. */}
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Listings (total, estimated)</p>
           <p className="mt-1 text-xl font-semibold text-foreground">{counts.totalListings.toLocaleString()}</p>
         </div>
         <div className="rounded-lg bg-muted p-3">

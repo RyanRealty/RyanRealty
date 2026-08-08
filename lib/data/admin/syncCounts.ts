@@ -185,10 +185,19 @@ export async function getAllListingsCount(): Promise<CountResult> {
   const sb = client()
   if (!sb) return ZERO
   // 'estimated' (planner reltuples) — an exact count is a full scan of the
-  // ~589k-row table that times out, and withRetry collapsed that error into
+  // ~594k-row table that times out, and withRetry collapsed that error into
   // {count: 0}, so the dashboard's "Listings (total)" card showed 0 next to
-  // sibling cards proving ~585k. The estimate is instant and within a fraction
-  // of a percent on a table this size, which is all a health card needs.
+  // sibling cards proving ~585k.
+  //
+  // MEASURED 2026-08-08, correcting this comment's earlier claim of "within a
+  // fraction of a percent": the estimate reads 617,326 against an exact 594,608,
+  // which is 3.82% HIGH. The cause is that `listings` has never been analyzed —
+  // pg_stat_user_tables.last_analyze AND last_autoanalyze are both NULL — so
+  // reltuples is whatever the last index build left behind. Two consequences:
+  // every caller must LABEL this figure as an estimate (a bare "Listings
+  // (total)" is a claim of exactness this cannot keep), and the real repair is
+  // an ANALYZE on that table, which also gives the query planner honest
+  // statistics for every other query against it. Filed with the P12 queue.
   return withRetry(async () =>
     sb.from('listings').select('ListingKey', { count: 'estimated', head: true })
   )

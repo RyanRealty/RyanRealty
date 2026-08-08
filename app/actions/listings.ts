@@ -1738,16 +1738,6 @@ export async function getActiveListingsCount(options: {
 }
 
 /**
- * Total active listing count (for nav or homepage). Active SFR only.
- * Reads from geo_snapshot_mv via the DAL — sub-2ms.
- */
-export async function getTotalListingsCount(): Promise<number> {
-  const { getAllCitySnapshots } = await import('@/lib/data')
-  const snapshots = await getAllCitySnapshots()
-  return snapshots.reduce((sum, s) => sum + (s.activeSfrCount ?? 0), 0)
-}
-
-/**
  * Total rows in listings table (all statuses). For admin/sync stats.
  */
 export async function getTotalListingsRows(): Promise<number> {
@@ -1839,10 +1829,20 @@ export async function getAdminSyncCounts(): Promise<AdminSyncCounts> {
     withdrawnStrictBacklogRes,
     canceledStrictBacklogRes,
   ] = await Promise.all([
-    // DAL: active total via getTotalListingsCount() — counts city snapshots.
-    getTotalListingsCount().then((count) => ({ count })),
-    // DAL: all rows via getTotalListingsRows() — counts listing_tile_mv
-    getTotalListingsRows().then((count) => ({ count })),
+    // 11F: both of these published a wrong number until 2026-08-08 (2,915 for a
+    // 7,658 active bucket; 0 for ~594k rows) because they routed through an
+    // inner unstable_cache nested in the operations page's outer one, while
+    // every sibling below is a plain service-role count and was right. They now
+    // call the same DAL family the siblings do — and the same one this panel's
+    // own status breakdown already used. Why, in full: lib/data/admin/syncCounts.ts.
+    (async () => {
+      const { getActiveBucketCount } = await import('@/lib/data')
+      return getActiveBucketCount()
+    })(),
+    (async () => {
+      const { getAllListingsCount } = await import('@/lib/data')
+      return getAllListingsCount()
+    })(),
     // DAL: admin sync counts (listing_history + history_finalized flags)
     (async () => {
       const { getListingHistoryRowCount } = await import('@/lib/data')

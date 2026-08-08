@@ -20,14 +20,17 @@
 // page, so acceptance-bar rule 1 grants it the property's own address — and
 // the two <h2> section cards became SectionHead lanes.
 //
-// TWO LABELS NOW MATCH THEIR QUERY. The "Database summary" card read
-// "Active: N · Total: M". `counts.activeCount` is getTotalListingsCount(),
-// which sums geo_snapshot_mv.active_sfr_count over the top 50 cities by that
-// count — active SINGLE-FAMILY rows across the city snapshots, measured at
-// 3,526 on 2026-08-07 while listing_tile_mv held 7,529 Active rows. Read as
-// "active listings" the old label was off by 2.1×. `counts.totalListings` is
-// getTotalListingCount(), every row in listing_tile_mv at every status
-// (594,414). Both numbers are unchanged; only the words are.
+// TWO LABELS MATCH THEIR QUERY. 11C narrowed the words to fit the data: the
+// card said "Active: N" while `counts.activeCount` was a top-50-city snapshot
+// sum of active SINGLE-FAMILY rows, so it became "Active single-family, top 50
+// city snapshots" — true, but a caption nobody could act on.
+//
+// 11F fixed the SOURCE instead (see getAdminSyncCounts): activeCount is now
+// getActiveBucketCount(), a plain service-role count of the active bucket in
+// `listings`, and totalListings is getAllListingsCount(), an estimated all-row
+// count. So the labels widen back to what a broker actually reads them as.
+// "Estimated" stays in the words because the count genuinely is planner
+// reltuples — an exact count times out on a 594k-row table.
 //
 // FORMATTERS. The local formatPrice was `Intl.NumberFormat(en-US, currency USD,
 // maximumFractionDigits 0)`; it is now formatPriceExact from lib/format/money,
@@ -138,8 +141,10 @@ export default async function AdminListingDetailPage({ params }: Props) {
       </p>
 
       <SectionHead>Feed totals — not this listing</SectionHead>
-      <p style={quiet}>Active single-family, top 50 city snapshots: {counts.activeCount}</p>
-      <p style={quiet}>Listing rows, every status: {counts.totalListings}</p>
+      <p style={quiet}>Active listings, every property type: {counts.activeCount}</p>
+      <p style={quiet}>
+        Listing rows, every status (estimated, runs ~4% high): {counts.totalListings}
+      </p>
 
       <div style={{ marginTop: 24 }}>
         <AdminListingEditor initialData={editableData} />
