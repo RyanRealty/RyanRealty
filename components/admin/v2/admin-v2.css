@@ -308,6 +308,13 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-switch:has(input:disabled) { cursor:not-allowed; }
 .av2-switch input:checked ~ .av2-switch__text { color:var(--a-text); }
 
+/* ---- Phone card list that stands in for a desktop grid (11F).
+   A CLASS, not `md:hidden` plus an inline display: an inline style outranks the
+   class, so the two together leave BOTH layouts on screen at desktop and every
+   row's controls render twice. Found in the crm/settings editor migration. ---- */
+.av2-cardlist { display:flex; flex-direction:column; gap:var(--a-s2); }
+@media (min-width:768px) { .av2-cardlist { display:none; } }
+
 /* ---- Icon-only control inside a dense row. Keeps the 44px hit area on touch
    without a 44px box on desktop (pointer:fine gets the tight metric). ---- */
 .av2-iconbtn { display:inline-flex; align-items:center; justify-content:center;
@@ -319,3 +326,8 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-iconbtn--danger:hover:not(:disabled) { color:var(--a-danger); }
 .av2-iconbtn:focus-visible { outline:none; box-shadow:var(--a-focus); }
 .av2-iconbtn:disabled { opacity:.35; cursor:not-allowed; }
+/* A stacked up/down pair must not set the row's height — two 30px buttons make
+   an 86px row where §2 asks for ~48px. Tight on a mouse, full target on touch. */
+.av2-reorder { display:flex; flex-direction:column; }
+.av2-reorder .av2-iconbtn { width:30px; height:20px; }
+@media (pointer:coarse) { .av2-reorder .av2-iconbtn { width:var(--a-touch); height:30px; } }

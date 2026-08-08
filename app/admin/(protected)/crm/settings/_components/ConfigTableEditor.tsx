@@ -41,8 +41,13 @@
  * nothing else on this route pulls it in.
  *
  * Two layouts, both required, matching the pre-migration behavior exactly:
- * a desktop grid (`hidden md:block`) and a mobile card list (`md:hidden`,
+ * a desktop grid (`hidden md:block`) and a phone card list (`av2-cardlist` of
  * `av2-pane` cards) — never both visible, never a raw <table>.
+ *
+ * The card list carries its layout in `av2-cardlist`, NOT `md:hidden` plus an
+ * inline `display:flex`. The inline style outranks the class, so that pairing
+ * left both layouts on screen at desktop and rendered every row's toggle,
+ * rename and delete control twice. Caught in a browser, not by a gate.
  *
  * Design-system only: Button, IconButton, Switch, ConfirmDialog, SelectField,
  * VerdictLine + tokens. No raw HTML controls, no hex.
@@ -264,7 +269,7 @@ export function ConfigTableEditor({
                       a touch screen or by keyboard; the mobile card list already showed
                       them always, so the desktop grid now matches it. */}
                   <span role="cell" data-label="" className="av2-rgrid__c">
-                    <span style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span className="av2-reorder">
                       <IconButton
                         label={`Move ${row.label} up`}
                         tone="quiet"
@@ -374,7 +379,7 @@ export function ConfigTableEditor({
       </div>
 
       {/* Mobile card list — visible below md (satisfies the table-no-mobile-fallback gate) */}
-      <div className="md:hidden" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--a-s2)' }}>
+      <div className="av2-cardlist">
         {rows.map((row, idx) => (
           <div
             key={row.id}
@@ -409,7 +414,7 @@ export function ConfigTableEditor({
               ) : null}
             </div>
             <div style={{ display: 'flex', flexShrink: 0, alignItems: 'center', gap: 4 }}>
-              <span style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className="av2-reorder">
                 <IconButton
                   label={`Move ${row.label} up`}
                   tone="quiet"
