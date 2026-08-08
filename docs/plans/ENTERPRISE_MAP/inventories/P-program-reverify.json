@@ -1,0 +1,63 @@
+[
+  {
+    "id": "PROGRAM-Bytespider",
+    "status": "DONE",
+    "notes": "middleware comment-only + robots allow"
+  },
+  {
+    "id": "PROGRAM-D7-ClosePrice-file",
+    "status": "DONE",
+    "files": [
+      "20260414190000_backfill_close_price_from_history_rpc.sql",
+      "20260808181843_beacon_price_bands_close_price.sql",
+      "20260808181843_beacon_price_bands_close_price.sql"
+    ]
+  },
+  {
+    "id": "PROGRAM-BuyerLP-alerts",
+    "status": "DONE_CODE",
+    "path": "app/lp/buyer-listing-alerts/actions.ts"
+  },
+  {
+    "id": "PROGRAM-google-ads-fanout",
+    "status": "DONE"
+  },
+  {
+    "id": "PROGRAM-sold-homes-nav",
+    "status": "PROBE",
+    "nav_files": [
+      "lib/site-nav.ts",
+      ".claude/worktrees/audit-e2e/lib/site-nav.ts",
+      ".claude/worktrees/unruffled-wright-842a26/lib/site-nav.ts",
+      ".claude/worktrees/angry-mirzakhani-d91bbf/lib/site-nav.ts",
+      "lib/site-nav.ts"
+    ]
+  },
+  {
+    "id": "PROGRAM-FUB-residue",
+    "status": "LEGACY_RESIDUE",
+    "file_count": 50,
+    "sample": [
+      "./social_media_skills/platforms/social-channel-specs.md",
+      "./social_media_skills/content/content-calendar.md",
+      "./social_media_skills/content/cross-platform-repurpose.md",
+      "./social_media_skills/README.md",
+      "./social_media_skills/neighbor-outreach-note/SKILL.md",
+      "./social_media_skills/postcard-farm-mailer/SKILL.md",
+      "./social_media_skills/ops/analytics-feedback-loop.md",
+      "./social_media_skills/ops/api-integration-wrappers.md",
+      "./social_media_skills/ops/community-management.md",
+      "./social_media_skills/newsletter/SKILL.md"
+    ]
+  },
+  {
+    "id": "PROGRAM-entity-scope-people",
+    "pages": []
+  },
+  {
+    "id": "PROGRAM-AEO-files",
+    "robots": true,
+    "llms": true,
+    "sitemap": true
+  }
+]

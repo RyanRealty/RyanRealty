@@ -1,74 +1,77 @@
 {
-  "captured_at": "2026-08-08T20:55:00Z",
-  "listings": 594623,
-  "crm_people": 22978,
-  "marketing_brain_actions": 652,
-  "brain_by_status": {
-    "ready": 397,
-    "executed": 90,
-    "measured": 0,
-    "in_production": 91,
-    "approved": 0,
-    "pending": 1,
-    "killed": 73
+  "captured_at": "2026-08-08T21:02:30.900311+00:00",
+  "anchors": {
+    "listings": "594623",
+    "listing_history": "3896211",
+    "crm_people": "22978",
+    "marketing_brain_actions": "652",
+    "content_performance": "6",
+    "tc_deals": "33",
+    "skyslope_transactions": "33",
+    "expired_listings": "248",
+    "cmas": "267",
+    "brokers": "3",
+    "market_pulse_live": "45",
+    "market_stats_cache": "12995",
+    "email_events": "564",
+    "crm_message": "45299",
+    "crm_suppressions": "5169",
+    "newsletter_subscribers": "5346",
+    "crm_sequences": "7",
+    "crm_sequence_enrollments": "33",
+    "crm_sequence_sends": "4",
+    "meta_audience_log": "64",
+    "newsletters": "24",
+    "brain_by_status": {
+      "ready": "397",
+      "executed": "90",
+      "measured": "0",
+      "in_production": "92",
+      "approved": "0",
+      "pending": "0",
+      "killed": "73"
+    },
+    "methodology_sample": {
+      "v3-2026-05-07": 999,
+      "v1-pre-fix": 1
+    },
+    "stage_sample_1000": {
+      "Nurture": 990,
+      "Sphere": 8,
+      "Active Client": 2
+    },
+    "table_sync_runs": "{'code': 'PGRST205', 'details': None, 'hint': \"Perhaps you m",
+    "table_sync_status": "{'code': 'PGRST205', 'details': None, 'hint': \"Perhaps you m",
+    "table_listing_sync_cursor": "{'code': 'PGRST205', 'details': None, 'hint': \"Perhaps you m",
+    "table_spark_sync_log": "{'code': 'PGRST205', 'details': None, 'hint': \"Perhaps you m"
   },
-  "content_performance": 6,
-  "tc_deals": 33,
-  "skyslope_transactions": 33,
-  "expired_listings": 248,
-  "cmas": 267,
-  "brokers": 3,
-  "market_pulse_live": 45,
-  "market_stats_cache": 12995,
-  "email_events": 564,
-  "crm_message": 45299,
-  "crm_suppressions": 5169,
-  "newsletter_subscribers": 5346,
-  "newsletters": {
-    "draft": 15,
-    "failed": 5,
-    "sent": 4,
-    "total": 24
-  },
-  "crm_sequences": {
-    "active": 4,
-    "paused": 3,
-    "total": 7
-  },
-  "crm_sequence_enrollments": 33,
-  "crm_sequence_sends": 4,
-  "meta_audience_log": 64,
-  "social_auth": {
+  "social": {
     "linkedin_auth": {
       "rows": 1,
-      "expires_at": "2026-07-09T02:26:37Z",
+      "expires_at": "2026-07-09T02:26:37.528+00:00",
       "state": "EXPIRED"
     },
     "tiktok_auth": {
       "rows": 1,
-      "expires_at": "2026-08-09T12:01:02Z",
+      "expires_at": "2026-08-09T12:01:02.794+00:00",
       "state": "VALID"
     },
     "x_auth": {
       "rows": 1,
-      "expires_at": "2026-08-08T14:01:02Z",
+      "expires_at": "2026-08-08T14:01:02.373+00:00",
       "state": "EXPIRED"
     },
     "youtube_auth": {
       "rows": 1,
-      "expires_at": "2026-08-08T13:01:01Z",
+      "expires_at": "2026-08-08T13:01:01.428+00:00",
       "state": "EXPIRED"
     },
     "google_business_profile_auth": {
       "rows": 1,
-      "expires_at": "2026-08-08T13:01:01Z",
+      "expires_at": "2026-08-08T13:01:01.476+00:00",
       "state": "EXPIRED"
     },
     "threads_auth": {
-      "rows": 0,
-      "state": "NOT_CONNECTED"
-    },
-    "nextdoor_auth": {
       "rows": 0,
       "state": "NOT_CONNECTED"
     },
@@ -76,15 +79,9 @@
       "rows": 0,
       "state": "NOT_CONNECTED"
     },
-    "broker_gcal_tokens": {
+    "nextdoor_auth": {
       "rows": 0,
-      "state": "EMPTY"
+      "state": "NOT_CONNECTED"
     }
-  },
-  "stale_ops": {
-    "meta_audience_log_latest_ran_at": "2026-06-23",
-    "skyslope_transactions_sample_synced_at": "2026-06-10",
-    "email_events_latest_created_at": "2026-08-08T20:04:50Z",
-    "crm_message_latest_created_at": "2026-08-01T21:52:23Z"
   }
 }

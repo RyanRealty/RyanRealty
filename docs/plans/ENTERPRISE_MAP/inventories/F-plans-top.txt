@@ -40,5 +40,4 @@ crm-golive-execution-2026-06-25.md
 data-architecture-plan.md
 master-plan.md
 money-path-contract-plan-2026-06-04.md
-task-registry.json
 twilio-cutover-2026-06-24.md

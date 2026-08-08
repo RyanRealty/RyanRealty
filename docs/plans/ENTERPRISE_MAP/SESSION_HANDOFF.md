@@ -75,25 +75,22 @@ If `git status` shows dirty inbox files → **only** write under `docs/plans/ENT
 
 ## Continue execution order (no permission asks)
 
-Full gap list (every item, not HIGH-only): **`ALL-OPEN-ITEMS.md`**. Frame: **`REMAINING.md`**.
+Full residual list: **`ALL-OPEN-ITEMS.md`**. Plan: **`synthesis/ADVANCEMENT_PLAN.md` v1**.
 
-1. ~~Crons / digests / google-ads / G44 / admin-in-scope / redirect census / Bytespider middleware~~  
-2. ~~ClosePrice migration authored~~ — **still apply on hosted Supabase** (S-015)  
-3. ~~R-MAP-1/2 partial~~ — path proofs CAP-001…035; social INT token_expiry filled; live anchors refreshed (2026-08-08T20:55Z)  
-4. **R-MAP-1/2 continue** — remaining CAP maturity path-probes beyond disk; INT last_success for Spark/Twilio/etc.  
-5. **Social reconnect ops** — LI/X/YT/GBP tokens EXPIRED; TikTok only valid; Threads/Pin/ND park-or-connect  
-6. **R-SHIP-2 CAP-015** — ready/publish/measure class (ready≈397; measured=0)  
-7. **R-SHIP-4** entity-scope baseline shrink where pages now scoped  
-8. **SkySlope mirror freshness** — transactions n=33 but sample synced_at 2026-06-10  
-9. **R-MAP-3** dual-model adversary → then **v1 plan**  
-10. Re-census admin after further 11F lands  
-11. Never ask Matt to continue — only Matt-gated items  
+1. ~~Inventories / matrices / dispositions / parks / fleet ritual / plan v1~~  
+2. Confirm dual-adversary DUAL-PASS.md; close any HIGH residual it finds  
+3. CAP-015: run measurement-loop / publisher published_to completeness  
+4. Reconnect runbook for expired socials (Matt OAuth)  
+5. SkySlope mirror re-sync ops  
+6. Hosted ClosePrice apply when supabase link available  
+7. Re-census admin after 11F lands  
+8. Ship ACTIVE residuals one class at a time — never drop from ALL-OPEN  
 
----
+**Updated:** 2026-08-08T21:08Z
 
 ## Matt-only blockers (stop and surface — do not invent approval)
 
-- F7 MV migration maintenance window  
+- ~~F7 MV migration maintenance window~~ **DONE** prod 2026-07-29 (do not re-open as Matt gate)  
 - Newsletter first cohort send  
 - Ad spend / publish / outbound to real people  
 - DNS cutover timing  

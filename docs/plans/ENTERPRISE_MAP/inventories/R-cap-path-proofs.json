@@ -1,41 +1,218 @@
 {
-  "CAP-001": true,
-  "CAP-002": true,
-  "CAP-003": true,
-  "CAP-004": true,
-  "CAP-005": true,
-  "CAP-006": true,
-  "CAP-007": true,
-  "CAP-008": true,
-  "CAP-009": true,
-  "CAP-010": true,
-  "CAP-011": true,
-  "CAP-012": true,
-  "CAP-013": true,
-  "CAP-014": true,
-  "CAP-015": true,
-  "CAP-016": true,
-  "CAP-017": true,
-  "CAP-018": true,
-  "CAP-019": true,
-  "CAP-020": true,
-  "CAP-021": true,
-  "CAP-022": true,
-  "CAP-023": true,
-  "CAP-024": true,
-  "CAP-025": true,
-  "CAP-026": true,
-  "CAP-027": true,
-  "CAP-028": true,
-  "CAP-029": true,
-  "CAP-030": true,
-  "CAP-031": true,
-  "CAP-032": true,
-  "CAP-033": false,
-  "CAP-034": true,
-  "CAP-035": true,
   "_meta": {
-    "updated": "2026-08-08T20:55:00Z",
-    "note": "disk_signal only \u2014 not full maturity VERIFIED. CAP-033 external to repo."
+    "updated": "2026-08-08T22:30:00Z",
+    "pass": "CAP maturity close — CAP-001…035",
+    "live_anchors": "M-live-db-counts.json @ 2026-08-08T21:02:30Z",
+    "note": "disk = path/code existence; live = DB or auth probe when applicable (null = not live-probed this pass). evidence_status aligns CAPABILITIES.md. Prefer UNKNOWN over false VERIFIED."
+  },
+  "CAP-001": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "A-routes 296 page.tsx; J-segments 72; no full production smoke this pass"
+  },
+  "CAP-002": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "app/search full; homes-for-sale rewrite-backed (loading only); F7 BLOCKED_MATT residual"
+  },
+  "CAP-003": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "app/listing + next.config rewrites to by-key/by-address; polish continuous"
+  },
+  "CAP-004": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "PARTIAL",
+    "notes": "geo segments + DAL; boundaries ~3312 historical EVIDENCE-LOG; EXPERIENCE uneven"
+  },
+  "CAP-005": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "app/housing-market tree + market crons scheduled; shareable artifact gap"
+  },
+  "CAP-006": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "VERIFIED",
+    "notes": "pulse 45; cache 12995; methodology v3 served; v4 rows 0"
+  },
+  "CAP-007": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "PARTIAL",
+    "notes": "listings 594623 history 3.9M; sync crons on vercel; some REST table names PGRST205"
+  },
+  "CAP-008": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "app/lp/* present; buyer enroll+alerts code; live LP re-verify not this pass"
+  },
+  "CAP-009": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "VERIFIED",
+    "notes": "crm_people 22978; stage dist Nurture-heavy VERIFIED; scope helpers partial"
+  },
+  "CAP-010": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "PARTIAL",
+    "notes": "sequence engine cron; 7 sequences 33 enrollments 4 sends; email_events live"
+  },
+  "CAP-011": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "crm/inbox on disk; parallel Claude owns edits; no edit this pass"
+  },
+  "CAP-012": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "PARTIAL",
+    "notes": "tc_deals 33 skyslope 33; sample synced_at 2026-06-10 STALE"
+  },
+  "CAP-013": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "PARTIAL",
+    "notes": "cmas 267; admin+public routes; ready queue CMA-heavy"
+  },
+  "CAP-014": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "VERIFIED",
+    "notes": "expired 248; detect via sync-delta intentional; detect-fsbo scheduled"
+  },
+  "CAP-015": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "VERIFIED",
+    "notes": "measured 0 ready 397 executed 90; publish/measure class diagnosed"
+  },
+  "CAP-016": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "REGISTRY + producers on disk; N-registry inventory glitch empty this pass — re-read REGISTRY.md"
+  },
+  "CAP-017": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "listing_video_v4 + video/ Remotion; not brain productized"
+  },
+  "CAP-018": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "PARTIAL",
+    "notes": "meta crons+env; audience_log last LIVE 2026-06-23 stale; spend BLOCKED_MATT"
+  },
+  "CAP-019": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "VERIFIED",
+    "notes": "only TikTok VALID; LI/X/YT/GBP EXPIRED; Threads/Pin/ND not connected"
+  },
+  "CAP-020": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "BLOCKED_MATT",
+    "notes": "5346 subscribers; 24 newsletters 4 sent; first cohort Matt-gated"
+  },
+  "CAP-021": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "PARTIAL",
+    "notes": "app/team + brokers n=3; dialed bar open"
+  },
+  "CAP-022": {
+    "disk": true,
+    "live": true,
+    "evidence_status": "PARTIAL",
+    "notes": "brokers CRUD; n=3; onboarding not productized"
+  },
+  "CAP-023": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "account/* routes inventoried; engagement measure open"
+  },
+  "CAP-024": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "VERIFIED",
+    "notes": "143 v2 import; 27 all REDIRECT_STUB classified"
+  },
+  "CAP-025": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "11F islands remaining; token purity ≠ import census"
+  },
+  "CAP-026": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "design_system/ryan-realty + design-token gates; Frankenstein residue"
+  },
+  "CAP-027": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "components/admin/v2 kit present; rolling with 11F"
+  },
+  "CAP-028": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "VOICE.md + ci:brand-voice in ci:gates; rewrite surface PARTIAL"
+  },
+  "CAP-029": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "seo/aeo gates + llms.txt; Bytespider middleware fix VERIFIED hold"
+  },
+  "CAP-030": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "WESTSIDE_BACKLOG.md + westside crons; backlog execution open"
+  },
+  "CAP-031": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "snapshot-channels PLATFORMS includes google-ads; social tokens degrade snapshots"
+  },
+  "CAP-032": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "LOOP + G44 + ENTERPRISE_MAP package; fleet start ritual not mandatory everywhere"
+  },
+  "CAP-033": {
+    "disk": false,
+    "live": null,
+    "evidence_status": "UNKNOWN",
+    "notes": "Grok memory external to repo; assist only not SoR"
+  },
+  "CAP-034": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "app/admin dscr + DAL dscr; niche"
+  },
+  "CAP-035": {
+    "disk": true,
+    "live": null,
+    "evidence_status": "PARTIAL",
+    "notes": "lib/agent runtime+tools+tests; BROKER_SMS_AGENT plan DoD incomplete"
   }
 }

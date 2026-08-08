@@ -1,53 +1,142 @@
-# Integration matrix (SEED)
+# Integration matrix (INT-001…037)
 
-Authority: **SoR** system of record · **Mirror** secondary · **Runtime** executes · **Legacy** present but not authority · **Optional** · **Unknown**
+**Captured:** 2026-08-08T21:30Z · **Env inventory:** `inventories/D-env-keys.txt` (117 keys) · **Live social/DB:** `inventories/P-db-probes.json`, `M-live-db-counts.json`  
+**Secrets:** key **names** only — never values.
 
-| ID | System | Env evidence | Code/runtime | Live signal (2026-08-08) | Authority | Health SEED | Notes |
-|----|--------|--------------|--------------|--------------------------|-----------|-------------|-------|
-| INT-001 | Supabase | URL + anon + service role | entire app | listings 594619 etc. | SoR (app data) | green (reachable) | Project dwvlophlbvvygjfxcrhm |
-| INT-002 | Spark MLS | SPARK_API_* | sync crons | inventory large | SoR (MLS feed) | needs freshness Sense | |
-| INT-003 | Vercel | CRON_SECRET | host + crons | production deploys | Runtime | needs deploy Sense | Build CPU cost constraint |
-| INT-004 | Twilio | multi SID + per-broker numbers | SMS/voice APIs | configured | Runtime comms | needs send health | |
-| INT-005 | Resend | RESEND_* | email | email_events n=564; latest 2026-08-08 | Runtime email | **events live** | | |
-| INT-006 | Google SA / Gmail | GOOGLE_SERVICE_ACCOUNT_* | gmail sync | configured | Runtime mail | | |
-| INT-007 | Meta | META_CAPI_* + pixel | webhooks CAPI ads | audience log n=64; last LIVE **2026-06-23** | Runtime ads/social | **STALE heartbeat** | Spend Matt-gated; re-run audience cron |
-| INT-008 | GA4 / GTM | measurement + API secret | analytics | configured | Mirror analytics | | |
-| INT-009 | GBP | GOOGLE_BUSINESS_PROFILE_* | snapshots + auth table | auth n=1; expires **EXPIRED** 2026-08-08 | Runtime local | **token EXPIRED** | Refresh OAuth | |
-| INT-010 | LinkedIn | client + auth n=1 | publish paths | expires **EXPIRED** 2026-07-09 | Runtime social | **token EXPIRED** | Reconnect required | |
-| INT-011 | TikTok | client + auth n=1 | | expires **VALID** until 2026-08-09 | Runtime social | **token OK (short)** | Auto-refresh watch | |
-| INT-012 | YouTube | client + auth n=1 | | expires **EXPIRED** 2026-08-08 | Runtime social | **token EXPIRED** | Reconnect | |
-| INT-013 | X | client + auth n=1 | | expires **EXPIRED** 2026-08-08 | Runtime social | **token EXPIRED** | Reconnect | |
-| INT-014 | Threads | THREADS_CLIENT_ID | auth n=0 | **not connected** | Optional | **dark** | Park or connect | |
-| INT-015 | Nextdoor | no client key in .env.local | auth n=0 | dark | Optional | **dark** | Park or connect | |
-| INT-016 | Pinterest | table; no client key found | auth n=0 | dark | Optional | **dark** | Park or connect | |
-| INT-017 | SkySlope | keys present | TC + skyslope_transactions | n=33; sample synced_at **2026-06-10** | Mirror/workflow | **STALE sync** | Strangler; refresh mirror |
-| INT-018 | Follow Up Boss | FOLLOWUPBOSS_* in .env.local | residual code/docs | cutover claimed 2026-06-24 | **Legacy** | residue | Must not be SoR |
-| INT-019 | ElevenLabs | API + Victoria voice | VO pipeline | configured | Runtime creative | | |
-| INT-020 | Apify | token | FSBO etc. | configured | Runtime scrape | | |
-| INT-021 | OpenAI | key | AI features | configured | Runtime AI | | |
-| INT-022 | Anthropic | key | AI features | configured | Runtime AI | | |
-| INT-023 | xAI | XAI_API_KEY | Grok | configured | Runtime AI | | |
-| INT-024 | Google Maps | NEXT_PUBLIC + remotion key | maps | configured | Runtime maps | | |
-| INT-025 | Upstash Redis | REST url/token | cache | configured | Runtime | | |
-| INT-026 | Sentry | DSN | monitoring | configured | Runtime | | |
-| INT-027 | RentCast | key | DSCR rents | configured | Runtime data | | |
-| INT-028 | SchoolDigger | keys | school pages | configured | Runtime data | | |
-| INT-029 | NeverBounce | key | email validate | configured | Runtime | | |
-| INT-030 | BatchData | key | enrichment | configured | Runtime | | |
-| INT-031 | Stock media | Pexels/Unsplash/Shutterstock | creative | configured | Runtime | | |
-| INT-032 | Gen media | Replicate/Fal/Synthesia | creative | configured | Runtime | | |
-| INT-033 | VAPID | keys | web push | configured | Runtime | | |
-| INT-034 | Inngest | keys | lib/inngest.ts | configured | Runtime? | **depth UNKNOWN** | Confirm if production jobs use it | |
-| INT-035 | Google OAuth / CrUX | keys | APIs | configured | Runtime | | |
-| INT-036 | AdSense | public client id | ads | configured | Optional | | |
+Authority: **SoR** system of record · **Mirror** secondary · **Runtime** executes · **Legacy** present but not authority · **Optional** · **Tooling**
+
+Health: **green** · **amber** · **red** · **dark** · **unknown**
+
+Disposition: **KEEP** · **FIX** · **RECONNECT** · **PARK** · **LEGACY_RESIDUE** · **TOOLING**
+
+| ID | System | Env evidence (names) | Code/runtime | Live signal (2026-08-08) | Authority | Health | Disposition | owner_loop |
+|----|--------|----------------------|--------------|--------------------------|-----------|--------|-------------|------------|
+| INT-001 | Supabase | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | entire app; `lib/supabase*`, `lib/data/**` | listings **594623**; pulse 45; cache 12995; crm_people 22978 | **SoR** (app data) | **green** | **KEEP** | Data / platform — continuous; project `dwvlophlbvvygjfxcrhm` |
+| INT-002 | Spark MLS | `SPARK_API_BASE_URL`, `SPARK_API_KEY` | `lib/spark.ts`, `app/actions/sync-spark.ts`, crons `sync-delta` / `sync-full` / `sync-verify-*` | inventory large (listings/history); dedicated sync_cursor REST tables not exposed (PGRST205) | **SoR** (MLS feed) | **amber** | **KEEP** | Sync lane — verify active-listing freshness via `sync-status-report`; do not treat row count alone as delta health |
+| INT-003 | Vercel | `CRON_SECRET` (+ platform project env) | host; `vercel.json` crons (**61** scheduled); `scripts/vercel-ignore-build.mjs` | production deploys from `main`; Build CPU cost constraint | **Runtime** | **green** | **KEEP** | Deploy loop — `deploy:verify` after user-facing push; docs-only skip via ignoreCommand |
+| INT-004 | Twilio | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_MESSAGING_SERVICE_SID`, `TWILIO_PHONE_NUMBER`, per-broker `TWILIO_NUMBER_*` / `TWILIO_FORWARD_*`, `TWILIO_NUMBER_MARKETING` | `app/api/twilio/*`, `lib/comms/sendGovernedSms.ts`, CRM SMS agent | `crm_message` **45299**; latest sample activity **2026-08-01** | **Runtime** comms | **amber** | **KEEP** | Comms loop — send health / failed SMS; feature flag `CRM_SMS_ALERTS` (see INT-037) |
+| INT-005 | Resend | `RESEND_API_KEY`, `RESEND_WEBHOOKS_API_KEY` (+ runtime `RESEND_FROM` / admin email) | `lib/resend.ts`, digests, sequence engine, webhooks | `email_events` **564**; latest **2026-08-08** | **Runtime** email | **green** | **KEEP** | Email loop — webhook nightly + deliverability; events prove write path live |
+| INT-006 | Google SA / Gmail | `GOOGLE_SERVICE_ACCOUNT_CLIENT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`, `GOOGLE_SERVICE_ACCOUNT_SUBJECT` | `lib/gmail-draft.ts`, `lib/marketing-brain/inbox-auth.ts`, `lib/agent/gmail.ts` | SA configured; `broker_gcal_tokens` **0** rows | **Runtime** mail | **amber** | **KEEP** | Inbox/agent loop — SA present; GCal tokens empty (not wired or never connected) |
+| INT-007 | Meta | `META_APP_ID`, `META_APP_SECRET`, `META_CAPI_ACCESS_TOKEN`, `META_PAGE_ACCESS_TOKEN`, `META_USER_ACCESS_TOKEN*`, `META_AD_ACCOUNT_ID`, `META_FB_PAGE_ID`, `META_FB_PAGE_NAME`, `META_IG_BUSINESS_ACCOUNT_ID`, `META_WEBHOOK_VERIFY_TOKEN`, `META_OAUTH_STATE`, `NEXT_PUBLIC_META_PIXEL_ID` | `lib/meta-*.ts`, `lib/meta/**`, CAPI, webhooks, ads | `meta_audience_log` **64**; last LIVE **2026-06-23** (~7w stale) | **Runtime** ads/social | **amber** | **FIX** | Seller growth / ads loop — re-run audience sync; spend remains Matt-gated; fix heartbeat not “add more keys” |
+| INT-008 | GA4 / GTM | `NEXT_PUBLIC_GA4_MEASUREMENT_ID`, `GA4_API_SECRET`, `GOOGLE_GA4_PROPERTY_ID`, `NEXT_PUBLIC_GTM_CONTAINER_ID` | `lib/ga4-*`, snapshot-channels `ga4`, site tags | keys present; snapshots in PLATFORMS | **Mirror** analytics | **amber** | **KEEP** | Analytics loop — mirror only; not SoR for leads |
+| INT-009 | GBP | `GOOGLE_BUSINESS_PROFILE_ACCOUNT_ID`, `GOOGLE_BUSINESS_PROFILE_LOCATION_ID`, `GOOGLE_BUSINESS_PROFILE_REDIRECT_URI` (+ OAuth falls back to `GOOGLE_OAUTH_*`) | `lib/google-business-profile.ts`, snapshot-channels `gbp`, `gbp-monthly-digest` | auth **1** row; expires **EXPIRED** 2026-08-08 13:01Z | **Runtime** local SEO | **red** | **RECONNECT** | Local SEO loop — OAuth refresh/reconnect; digest/cron useless until token valid |
+| INT-010 | LinkedIn | `LINKEDIN_CLIENT_ID`, `LINKEDIN_CLIENT_SECRET`, `LINKEDIN_PERSON_ID`, `LINKEDIN_REDIRECT_URI` | `lib/linkedin.ts`, publish/snapshot paths | auth **1**; expires **EXPIRED** 2026-07-09 | **Runtime** social | **red** | **RECONNECT** | Social publish loop — reconnect OAuth before any LinkedIn publish |
+| INT-011 | TikTok | `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_REDIRECT_URI` | `lib/tiktok.ts`, `app/api/tiktok/*`, `token-heartbeat`, measurement-loop | auth **1**; **VALID** until 2026-08-09 12:01Z | **Runtime** social | **amber** | **KEEP** | Social loop — only green-ish social; short TTL — watch auto-refresh / token-heartbeat |
+| INT-012 | YouTube | `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REDIRECT_URI` | `lib/youtube.ts`, `lib/youtube-market-report/**`, upload scripts | auth **1**; **EXPIRED** 2026-08-08 13:01Z | **Runtime** social/video | **red** | **RECONNECT** | Video distribute loop — reconnect before market-report publish |
+| INT-013 | X (Twitter) | `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_REDIRECT_URI` | `lib/x.ts`, snapshot-channels `x` | auth **1**; **EXPIRED** 2026-08-08 14:01Z | **Runtime** social | **red** | **RECONNECT** | Social publish loop — reconnect OAuth |
+| INT-014 | Threads | `THREADS_CLIENT_ID`, `THREADS_CLIENT_SECRET`, `THREADS_REDIRECT_URI` | `lib/threads.ts` (full OAuth+publish client); brand URL only in `lib/brand/contact.ts` | auth **0** NOT_CONNECTED | **Optional** | **dark** | **PARK** | **PARK disposition:** client keys exist but **no token row** and no production publish cadence. Do not schedule Threads work or spend reconnect effort until Matt prioritizes Threads distribution. Code may stay; treat as dormant optional surface. |
+| INT-015 | Nextdoor | `NEXTDOOR_CLIENT_ID`, `NEXTDOOR_CLIENT_SECRET`, `NEXTDOOR_REDIRECT_URI` | `lib/nextdoor.ts` (OAuth + post API; access gated by Nextdoor developer approval) | auth **0** NOT_CONNECTED | **Optional** | **dark** | **PARK** | **PARK disposition:** env clients present; **never OAuth-connected**. Nextdoor partner access may still be gated. Park until explicit “connect Nextdoor” decision — not a red failure of core product. |
+| INT-016 | Pinterest | *(no `PINTEREST_CLIENT_*` in D-env-keys)*; code expects `PINTEREST_CLIENT_ID/SECRET/REDIRECT_URI`, optional `PINTEREST_DEFAULT_BOARD_ID` | `lib/pinterest.ts` | auth **0** NOT_CONNECTED; client keys **absent** locally | **Optional** | **dark** | **PARK** | **PARK disposition:** library exists, **no client credentials in env inventory**, auth empty. Park permanently until product prioritizes pin distribution and issues app credentials. |
+| INT-017 | SkySlope | `SKYSLOPE_ACCESS_KEY`, `SKYSLOPE_ACCESS_SECRET`, `SKYSLOPE_CLIENT_ID`, `SKYSLOPE_CLIENT_SECRET`, `SKYSLOPE_LOGIN_EMAIL`, `SKYSLOPE_LOGIN_PASSWORD` | TC strangler; `lib/tc/*`, `skyslope_transactions` | rows **33** (= tc_deals); sample `synced_at` **2026-06-10** STALE | **Mirror**/workflow (not SoR; Vault is TC SoR) | **amber** | **FIX** | TC loop — refresh mirror sync; never treat SkySlope as transaction SoR |
+| INT-018 | Follow Up Boss | `FOLLOWUPBOSS_API_KEY`, `FOLLOWUPBOSS_SYSTEM`, `FOLLOWUPBOSS_SYSTEM_KEY`, `FUB_LOGIN_EMAIL`, `FUB_LOGIN_PASSWORD`, `NEXT_PUBLIC_FUB_PIXEL_ID`, `NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM` | `lib/followupboss.ts` = **native shim** (`sendEvent` → `ensureNativeLead`); cutover 2026-06-24 | CRM SoR is `crm_people` (22978); FUB HTTP intentionally dead | **Legacy** | **dark** | **LEGACY_RESIDUE** | CRM loop — **must not be SoR**. Keys may remain for historical verify-env; remove public FUB pixel/params when safe |
+| INT-019 | ElevenLabs | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `ELEVENLABS_VOICE_ID_VICTORIA`, `ELEVENLABS_VOICE_ID_ELLEN` | `lib/voice/*`, `scripts/_voice_lib.py`; Victoria locked | keys present; VO pipeline code live | **Runtime** creative | **green** | **KEEP** | Creative/VO loop — Victoria only for public VO; Ellen id is alt inventory |
+| INT-020 | Apify | `APIFY_API_TOKEN` | `lib/fsbo-detector.ts`, `lib/marketing-brain/competitor-recon.ts` | token present; FSBO/recon paths | **Runtime** scrape | **green** | **KEEP** | Prospecting loop — FSBO / competitor recon |
+| INT-021 | OpenAI | `OPENAI_API_KEY` | AI features across app/scripts | key present | **Runtime** AI | **unknown** | **KEEP** | AI loop — no per-call ledger probed this pass |
+| INT-022 | Anthropic | `ANTHROPIC_API_KEY` | `lib/ai/anthropic.ts`, producer-runtime, voice reviewer | key present; producers depend | **Runtime** AI | **green** | **KEEP** | Brain/producer loop — primary model path for many rows |
+| INT-023 | xAI | `XAI_API_KEY` | `lib/grok-*.ts` | key present | **Runtime** AI | **unknown** | **KEEP** | Grok creative loop |
+| INT-024 | Google Maps | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `REMOTION_GOOGLE_MAPS_KEY` | maps UI, CMA maps, Remotion | keys present; site maps critical path | **Runtime** maps | **green** | **KEEP** | Product maps loop |
+| INT-025 | Upstash Redis | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | `lib/x.ts`, `lib/pinterest.ts` OAuth state, rate limits | keys present; used as ephemeral OAuth state store | **Runtime** cache | **green** | **KEEP** | Platform loop — OAuth CSRF/state depends on Redis where used |
+| INT-026 | Sentry | `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Next/Sentry SDK wiring | DSN present | **Runtime** monitoring | **unknown** | **KEEP** | Observability — confirm event ingest separately if needed |
+| INT-027 | RentCast | `RENTCAST_API_KEY` | changelog notes HUD FMR preferred; calc accepts optional estimate | key in env; little/no live `.ts` call sites found this pass | **Optional** data | **dark** | **PARK** | DSCR/tools loop — prefer `lib/hud-fmr`; key may be residue until AVM product re-enabled |
+| INT-028 | SchoolDigger | `SCHOOLDIGGER_API_KEY`, `SCHOOLDIGGER_APP_ID` | research JSON / school URLs; tool inventory “configured” | keys present; static research more than live API traffic | **Optional** data | **dark** | **PARK** | Content/SEO schools — park live API until school pages re-wire to API; static data remains |
+| INT-029 | NeverBounce | `NEVERBOUNCE_API_KEY` | `scripts/_neverbounce-validate.mjs` | key present; script tooling | **Runtime**/Tooling | **unknown** | **KEEP** | Email hygiene loop — ops script; not continuous product path |
+| INT-030 | BatchData | `BATCHDATA_API_KEY` | `lib/owner-resolution.mjs`, expired owner lookup | key present; skip-trace path in expired processor | **Runtime** enrichment | **green** | **KEEP** | Expired/FSBO prospecting — Vercel must have key or skip-trace fails soft |
+| INT-031 | Stock media | `PEXELS_API_KEY`, `UNSPLASH_ACCESS_KEY`, `SHUTTERSTOCK_API_KEY`, `SHUTTERSTOCK_API_SECRET` | `lib/pexels-api.ts`, `lib/shutterstock-api.ts`, asset credits | keys present | **Runtime** creative | **unknown** | **KEEP** | Creative assets loop |
+| INT-032 | Gen media | `REPLICATE_API_TOKEN`, `FAL_KEY`, `SYNTHESIA_API_KEY` | `app/actions/broker-headshot.ts`, `app/actions/synthesia.ts`, video scripts | keys present | **Runtime** creative | **unknown** | **KEEP** | Creative gen loop — optional per deliverable |
+| INT-033 | VAPID (web push) | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `app/api/push/_lib/web-push.ts` | keys present | **Runtime** | **unknown** | **KEEP** | Push notifications loop — no subscription volume probed |
+| INT-034 | Inngest | `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` | `lib/inngest.ts` thin HTTP `send` (no-op if key missing); `app/api/admin/sync*` emits events | keys present; **no Inngest functions/worker surface** in repo — fire-and-forget only | **Optional**/Tooling | **amber** | **PARK** | Sync UX loop — **depth: not production job runner**. Crons own real work. Keep keys or drop; do not plan jobs on Inngest without re-architecture |
+| INT-035 | Google OAuth / CrUX | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_CRUX_API_KEY`, `GCP_USER_REFRESH_TOKEN` | GBP/YouTube/etc OAuth fallback; `scripts/measure-search-and-analytics.mjs` (CrUX) | OAuth clients present; dependent social tokens mostly expired | **Runtime**/Tooling | **amber** | **RECONNECT** | Shared OAuth + perf tooling — reconnect platform tokens (INT-009/012); CrUX is measure script only |
+| INT-036 | AdSense | `NEXT_PUBLIC_ADSENSE_CLIENT_ID` | public ad client id in env | id present | **Optional** | **unknown** | **KEEP** | Monetization optional — confirm slots live on money pages separately |
+| INT-037 | OTHER / tooling bucket | Leftover & cross-cutting keys from `D-env-keys.txt` not owned solely by INT-001…036 (see table below) | scattered flags, TC ingest, Vertex, Cursor, site URL | mixed (flags + tooling keys present) | **Tooling** / flags | **amber** | **TOOLING** | Map hygiene — do not invent INT rows for every flag; review annually for dead keys |
+
+## INT-037 leftover key map (from `inventories/D-env-keys.txt`)
+
+Keys **not** fully covered as primary credentials of INT-001…036, or dual-use flags:
+
+| Key name | Maps to | Disposition note |
+|----------|---------|------------------|
+| `CRM_SMS_ALERTS` | Twilio feature flag (`crm-alert-drain` expects `twilio`) | TOOLING/flag — KEEP with INT-004 |
+| `LEAD_SMS_IMESSAGE_FALLBACK` | SMS delivery preference | TOOLING/flag — KEEP with INT-004 |
+| `TC_FORMS_INGEST_SECRET` | `app/api/admin/forms/ingest` | TC ingest auth — KEEP with CAP-TC / INT-017 adjacency |
+| `NEXT_PUBLIC_SITE_URL` | absolute URLs, emails | Platform config — KEEP |
+| `CURSOR_API_KEY` | Cursor tooling | **TOOLING** only |
+| `VERTEX_PROJECT_ID`, `VERTEX_LOCATION` | Google Vertex (if used) | **TOOLING**/optional AI — no heavy runtime path found this pass |
+| `GCP_USER_REFRESH_TOKEN` | Google user refresh (scripts) | TOOLING — with INT-035 |
+| `ELEVENLABS_VOICE_ID_ELLEN` | alt ElevenLabs voice | KEEP under INT-019 inventory; Victoria remains canon |
+| `META_OAUTH_STATE` | Meta OAuth | KEEP under INT-007 |
+| `FOLLOWUPBOSS_*`, `FUB_*`, `NEXT_PUBLIC_FUB_*` | FUB residue | **LEGACY_RESIDUE** under INT-018 |
+| Remaining INT-001…036 keys | their INT rows | accounted |
+
+**D-env total:** 117 names. Primary integration keys assigned INT-001…036; residue + flags + Vertex/Cursor/site → INT-037 bucket.
+
+## PARK list (explicit)
+
+| ID | System | Why PARK (2026-08-08) |
+|----|--------|------------------------|
+| **INT-014** | Threads | Client keys only; `threads_auth` n=0; no publish cadence; optional social |
+| **INT-015** | Nextdoor | Client keys present; `nextdoor_auth` n=0; never connected; partner gate possible |
+| **INT-016** | Pinterest | No client keys in env; `pinterest_auth` n=0; library only |
+| **INT-027** | RentCast | Key present; product prefers HUD FMR; no active call-site census |
+| **INT-028** | SchoolDigger | Keys present; static research dominates; live API not product-critical |
+| **INT-034** | Inngest | Optional event emit only; not job orchestrator |
+
+## Health Sense rollup (required fields)
+
+| ID | last_success_at (known) | token_expiry | authority_ok | error_rate | owner_loop |
+|----|-------------------------|--------------|--------------|------------|------------|
+| INT-001 | continuous (live REST 2026-08-08) | n/a | yes SoR | unknown | Data |
+| INT-002 | inventory live; delta Sense still needed | n/a | yes SoR MLS | unknown | Sync |
+| INT-003 | deploys when main changes | n/a | yes Runtime | n/a | Deploy |
+| INT-004 | crm_message sample 2026-08-01 | n/a | yes | unknown | Comms |
+| INT-005 | email_events 2026-08-08 | n/a | yes | unknown | Email |
+| INT-006 | SA present; GCal empty | n/a | yes for Gmail SA | unknown | Inbox |
+| INT-007 | meta_audience LIVE 2026-06-23 | page tokens opaque | yes Runtime | stale ops | Ads |
+| INT-008 | snapshot path exists | n/a | mirror only | unknown | Analytics |
+| INT-009 | **expired** | 2026-08-08 13:01Z EXPIRED | no until reconnect | n/a | Local SEO |
+| INT-010 | **expired** | 2026-07-09 EXPIRED | no | n/a | Social |
+| INT-011 | valid short | 2026-08-09 12:01Z VALID | yes (until expiry) | n/a | Social |
+| INT-012 | **expired** | 2026-08-08 13:01Z EXPIRED | no | n/a | Video |
+| INT-013 | **expired** | 2026-08-08 14:01Z EXPIRED | no | n/a | Social |
+| INT-014 | never | n/a | n/a PARK | n/a | — |
+| INT-015 | never | n/a | n/a PARK | n/a | — |
+| INT-016 | never | n/a | n/a PARK | n/a | — |
+| INT-017 | synced_at sample 2026-06-10 | n/a | Mirror only (ok) | stale | TC |
+| INT-018 | cutover 2026-06-24 | n/a | **must be false as SoR** | n/a | CRM legacy |
+| INT-019…033 | keys present | n/a | yes where used | unknown | per row |
+| INT-034 | n/a (optional emit) | n/a | optional | n/a | PARK |
+| INT-035 | CrUX script-only; OAuth shared | see socials | partial | n/a | OAuth |
+| INT-036 | unknown | n/a | optional | n/a | Ads optional |
+| INT-037 | n/a | n/a | tooling | n/a | Hygiene |
+
+## Health counts (2026-08-08 close pass) — 37 rows
+
+| Health | n | IDs |
+|--------|--:|-----|
+| **green** | **9** | 001 Supabase · 003 Vercel · 005 Resend · 019 ElevenLabs · 020 Apify · 022 Anthropic · 024 Maps · 025 Upstash · 030 BatchData |
+| **amber** | **10** | 002 Spark · 004 Twilio · 006 Google SA · 007 Meta · 008 GA4/GTM · 011 TikTok · 017 SkySlope · 034 Inngest · 035 Google OAuth/CrUX · 037 OTHER/tooling |
+| **red** | **4** | 009 GBP · 010 LinkedIn · 012 YouTube · 013 X |
+| **dark** | **6** | 014 Threads · 015 Nextdoor · 016 Pinterest · 018 FUB · 027 RentCast · 028 SchoolDigger |
+| **unknown** | **8** | 021 OpenAI · 023 xAI · 026 Sentry · 029 NeverBounce · 031 Stock · 032 Gen media · 033 VAPID · 036 AdSense |
+| **sum** | **37** | |
+
+## Disposition counts
+
+| Disposition | n | IDs / notes |
+|-------------|--:|-------------|
+| **KEEP** | 22 | runtime retain (greens + most amber/unknown keepers) |
+| **FIX** | 2 | 007 Meta audience heartbeat · 017 SkySlope mirror freshness |
+| **RECONNECT** | 5 | 009 GBP · 010 LinkedIn · 012 YouTube · 013 X · 035 OAuth cluster |
+| **PARK** | 6 | 014 Threads · 015 Nextdoor · 016 Pinterest · 027 RentCast · 028 SchoolDigger · 034 Inngest |
+| **LEGACY_RESIDUE** | 1 | 018 FUB |
+| **TOOLING** | 1 | 037 OTHER bucket |
 
 ## Cron wiring note
 
-21 top-level cron dirs not named as first segment in vercel.json paths: see `inventories/C-crons-dark.txt`.  
-**Known nuance:** marketing-snapshot-* often fanned out by a parent cron — adversary must classify true-orphan vs fan-out child before calling them broken.
+21 top-level cron dirs not named as first segment in vercel.json paths: see `inventories/C-crons-dark.txt` (count evolved; use latest inventory).  
+**Known nuance:** marketing-snapshot-* often fanned out by `snapshot-channels` parent — classify true-orphan vs fan-out child before calling broken. `google-ads` now in PLATFORMS (prior fix).
 
-## Required health Sense fields
+## Evidence sources
 
-For each INT: last_success_at · error_rate · token_expiry · authority_ok · owner_loop
-
-**2026-08-08T20:55Z partial fill:** social token_expiry filled for INT-009…016; Meta audience last_success; SkySlope sample synced_at; Resend email_events latest; others still SEED.
+- `inventories/D-env-keys.txt`, `P-db-probes.json`, `M-live-db-counts.json`, `E-github-workflows.txt`, `Z-inventory-meta.json`  
+- Code: `lib/{threads,nextdoor,pinterest,tiktok,linkedin,x,youtube,google-business-profile,followupboss,inngest,resend,spark,meta-*}.ts`  
+- Append detail: `matrix/EVIDENCE-LOG.md` § INT close pass  

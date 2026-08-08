@@ -1,249 +1,246 @@
-{
-  "count": 61,
-  "crons": [
-    {
-      "path": "/api/cron/analytics-daily-digest",
-      "schedule": "30 14 * * *"
-    },
-    {
-      "path": "/api/cron/broker-agent-digest",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/buyer-lead-attribution",
-      "schedule": "30 13 * * *"
-    },
-    {
-      "path": "/api/cron/cma-build-worker",
-      "schedule": "14,44 * * * *"
-    },
-    {
-      "path": "/api/cron/crm-alert-drain",
-      "schedule": "* * * * *"
-    },
-    {
-      "path": "/api/cron/crm-auto-enroll",
-      "schedule": "4,19,34,49 * * * *"
-    },
-    {
-      "path": "/api/cron/crm-bulk-worker",
-      "schedule": "*/2 * * * *"
-    },
-    {
-      "path": "/api/cron/crm-geo-resolve",
-      "schedule": "10 9 * * *"
-    },
-    {
-      "path": "/api/cron/crm-gmail-sync",
-      "schedule": "9,24,39,54 * * * *"
-    },
-    {
-      "path": "/api/cron/crm-health-check",
-      "schedule": "11,41 * * * *"
-    },
-    {
-      "path": "/api/cron/crm-market-report-send",
-      "schedule": "0 4,10,16,22 * * *"
-    },
-    {
-      "path": "/api/cron/crm-portal-lead-intake",
-      "schedule": "6,21,36,51 * * * *"
-    },
-    {
-      "path": "/api/cron/crm-scheduled-sends",
-      "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/crm-sequence-engine",
-      "schedule": "13,28,43,58 * * * *"
-    },
-    {
-      "path": "/api/cron/crm-task-reminders",
-      "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/cron/daily-broker-digest",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/deploy-health",
-      "schedule": "7,37 * * * *"
-    },
-    {
-      "path": "/api/cron/detect-fsbo-listings",
-      "schedule": "35 9 * * *"
-    },
-    {
-      "path": "/api/cron/gbp-health-check",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/gbp-monthly-digest",
-      "schedule": "0 13 1 * *"
-    },
-    {
-      "path": "/api/cron/generate-market-narratives",
-      "schedule": "15 8 * * *"
-    },
-    {
-      "path": "/api/cron/loop-health-check",
-      "schedule": "30 12 * * *"
-    },
-    {
-      "path": "/api/cron/market-history-snapshot",
-      "schedule": "0 13 * * 1"
-    },
-    {
-      "path": "/api/cron/market-report",
-      "schedule": "0 14 * * 0"
-    },
-    {
-      "path": "/api/cron/market-stat-consistency",
-      "schedule": "40 14 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-audit-run",
-      "schedule": "0 11 * * 2"
-    },
-    {
-      "path": "/api/cron/marketing-competitor-recon",
-      "schedule": "0 10 * * 2"
-    },
-    {
-      "path": "/api/cron/marketing-daily-digest",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-inbox-poll",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/marketing-measurement-loop",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/marketing-optimization-report",
-      "schedule": "30 6 * * 1"
-    },
-    {
-      "path": "/api/cron/marketing-weekly-cycle",
-      "schedule": "0 16 * * 1"
-    },
-    {
-      "path": "/api/cron/meta-audience-sync",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/meta-westside-audience",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/newsletter-monthly-draft",
-      "schedule": "15 13 * * *"
-    },
-    {
-      "path": "/api/cron/newsletter-reconcile",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/newsletter-send",
-      "schedule": "*/2 * * * *"
-    },
-    {
-      "path": "/api/cron/performance-pull-30d",
-      "schedule": "0 5 * * *"
-    },
-    {
-      "path": "/api/cron/performance-pull-48h",
-      "schedule": "0 1 * * *"
-    },
-    {
-      "path": "/api/cron/performance-pull-7d",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/postmaster-sync",
-      "schedule": "30 12 * * *"
-    },
-    {
-      "path": "/api/cron/producer-dispatcher",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/producer-runtime",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/publisher-sweep",
-      "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/refresh-market-stats",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-market-stats-monthly-recompute",
-      "schedule": "0 4 * * 0"
-    },
-    {
-      "path": "/api/cron/refresh-mvs",
-      "schedule": "8 * * * *"
-    },
-    {
-      "path": "/api/cron/refresh-place-content",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-similar-listings",
-      "schedule": "30 4 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-subdivision-stats",
-      "schedule": "30 8 * * *"
-    },
-    {
-      "path": "/api/cron/saved-search-alerts",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/seller-lead-attribution",
-      "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/cron/snapshot-channels",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/sync-delta",
-      "schedule": "3,18,33,48 * * * *"
-    },
-    {
-      "path": "/api/cron/sync-full",
-      "schedule": "0 2 * * 0"
-    },
-    {
-      "path": "/api/cron/sync-history-terminal",
-      "schedule": "12 * * * *"
-    },
-    {
-      "path": "/api/cron/token-heartbeat",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/visitor-hot-lead-escalation",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/warm-sitemaps",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/weekly-pipeline-digest",
-      "schedule": "0 15 * * 1"
-    },
-    {
-      "path": "/api/cron/westside-cohort-digest",
-      "schedule": "0 15 * * 1"
-    }
-  ]
-}
+[
+  {
+    "path": "/api/cron/analytics-daily-digest",
+    "schedule": "30 14 * * *"
+  },
+  {
+    "path": "/api/cron/broker-agent-digest",
+    "schedule": "0 14 * * *"
+  },
+  {
+    "path": "/api/cron/buyer-lead-attribution",
+    "schedule": "30 13 * * *"
+  },
+  {
+    "path": "/api/cron/cma-build-worker",
+    "schedule": "14,44 * * * *"
+  },
+  {
+    "path": "/api/cron/crm-alert-drain",
+    "schedule": "* * * * *"
+  },
+  {
+    "path": "/api/cron/crm-auto-enroll",
+    "schedule": "4,19,34,49 * * * *"
+  },
+  {
+    "path": "/api/cron/crm-bulk-worker",
+    "schedule": "*/2 * * * *"
+  },
+  {
+    "path": "/api/cron/crm-geo-resolve",
+    "schedule": "10 9 * * *"
+  },
+  {
+    "path": "/api/cron/crm-gmail-sync",
+    "schedule": "9,24,39,54 * * * *"
+  },
+  {
+    "path": "/api/cron/crm-health-check",
+    "schedule": "11,41 * * * *"
+  },
+  {
+    "path": "/api/cron/crm-market-report-send",
+    "schedule": "0 4,10,16,22 * * *"
+  },
+  {
+    "path": "/api/cron/crm-portal-lead-intake",
+    "schedule": "6,21,36,51 * * * *"
+  },
+  {
+    "path": "/api/cron/crm-scheduled-sends",
+    "schedule": "*/5 * * * *"
+  },
+  {
+    "path": "/api/cron/crm-sequence-engine",
+    "schedule": "13,28,43,58 * * * *"
+  },
+  {
+    "path": "/api/cron/crm-task-reminders",
+    "schedule": "0 13 * * *"
+  },
+  {
+    "path": "/api/cron/daily-broker-digest",
+    "schedule": "0 15 * * *"
+  },
+  {
+    "path": "/api/cron/deploy-health",
+    "schedule": "7,37 * * * *"
+  },
+  {
+    "path": "/api/cron/detect-fsbo-listings",
+    "schedule": "35 9 * * *"
+  },
+  {
+    "path": "/api/cron/gbp-health-check",
+    "schedule": "0 9 * * *"
+  },
+  {
+    "path": "/api/cron/gbp-monthly-digest",
+    "schedule": "0 13 1 * *"
+  },
+  {
+    "path": "/api/cron/generate-market-narratives",
+    "schedule": "15 8 * * *"
+  },
+  {
+    "path": "/api/cron/loop-health-check",
+    "schedule": "30 12 * * *"
+  },
+  {
+    "path": "/api/cron/market-history-snapshot",
+    "schedule": "0 13 * * 1"
+  },
+  {
+    "path": "/api/cron/market-report",
+    "schedule": "0 14 * * 0"
+  },
+  {
+    "path": "/api/cron/market-stat-consistency",
+    "schedule": "40 14 * * *"
+  },
+  {
+    "path": "/api/cron/marketing-audit-run",
+    "schedule": "0 11 * * 2"
+  },
+  {
+    "path": "/api/cron/marketing-competitor-recon",
+    "schedule": "0 10 * * 2"
+  },
+  {
+    "path": "/api/cron/marketing-daily-digest",
+    "schedule": "0 14 * * *"
+  },
+  {
+    "path": "/api/cron/marketing-inbox-poll",
+    "schedule": "*/15 * * * *"
+  },
+  {
+    "path": "/api/cron/marketing-measurement-loop",
+    "schedule": "0 15 * * *"
+  },
+  {
+    "path": "/api/cron/marketing-optimization-report",
+    "schedule": "30 6 * * 1"
+  },
+  {
+    "path": "/api/cron/marketing-weekly-cycle",
+    "schedule": "0 16 * * 1"
+  },
+  {
+    "path": "/api/cron/meta-audience-sync",
+    "schedule": "0 9 * * *"
+  },
+  {
+    "path": "/api/cron/meta-westside-audience",
+    "schedule": "0 14 * * *"
+  },
+  {
+    "path": "/api/cron/newsletter-monthly-draft",
+    "schedule": "15 13 * * *"
+  },
+  {
+    "path": "/api/cron/newsletter-reconcile",
+    "schedule": "0 * * * *"
+  },
+  {
+    "path": "/api/cron/newsletter-send",
+    "schedule": "*/2 * * * *"
+  },
+  {
+    "path": "/api/cron/performance-pull-30d",
+    "schedule": "0 5 * * *"
+  },
+  {
+    "path": "/api/cron/performance-pull-48h",
+    "schedule": "0 1 * * *"
+  },
+  {
+    "path": "/api/cron/performance-pull-7d",
+    "schedule": "0 3 * * *"
+  },
+  {
+    "path": "/api/cron/postmaster-sync",
+    "schedule": "30 12 * * *"
+  },
+  {
+    "path": "/api/cron/producer-dispatcher",
+    "schedule": "0 * * * *"
+  },
+  {
+    "path": "/api/cron/producer-runtime",
+    "schedule": "0 * * * *"
+  },
+  {
+    "path": "/api/cron/publisher-sweep",
+    "schedule": "*/30 * * * *"
+  },
+  {
+    "path": "/api/cron/refresh-market-stats",
+    "schedule": "0 7 * * *"
+  },
+  {
+    "path": "/api/cron/refresh-market-stats-monthly-recompute",
+    "schedule": "0 4 * * 0"
+  },
+  {
+    "path": "/api/cron/refresh-mvs",
+    "schedule": "8 * * * *"
+  },
+  {
+    "path": "/api/cron/refresh-place-content",
+    "schedule": "0 3 * * *"
+  },
+  {
+    "path": "/api/cron/refresh-similar-listings",
+    "schedule": "30 4 * * *"
+  },
+  {
+    "path": "/api/cron/refresh-subdivision-stats",
+    "schedule": "30 8 * * *"
+  },
+  {
+    "path": "/api/cron/saved-search-alerts",
+    "schedule": "0 * * * *"
+  },
+  {
+    "path": "/api/cron/seller-lead-attribution",
+    "schedule": "0 13 * * *"
+  },
+  {
+    "path": "/api/cron/snapshot-channels",
+    "schedule": "0 12 * * *"
+  },
+  {
+    "path": "/api/cron/sync-delta",
+    "schedule": "3,18,33,48 * * * *"
+  },
+  {
+    "path": "/api/cron/sync-full",
+    "schedule": "0 2 * * 0"
+  },
+  {
+    "path": "/api/cron/sync-history-terminal",
+    "schedule": "12 * * * *"
+  },
+  {
+    "path": "/api/cron/token-heartbeat",
+    "schedule": "0 12 * * *"
+  },
+  {
+    "path": "/api/cron/visitor-hot-lead-escalation",
+    "schedule": "*/15 * * * *"
+  },
+  {
+    "path": "/api/cron/warm-sitemaps",
+    "schedule": "0 * * * *"
+  },
+  {
+    "path": "/api/cron/weekly-pipeline-digest",
+    "schedule": "0 15 * * 1"
+  },
+  {
+    "path": "/api/cron/westside-cohort-digest",
+    "schedule": "0 15 * * 1"
+  }
+]

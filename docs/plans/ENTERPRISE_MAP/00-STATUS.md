@@ -1,43 +1,38 @@
 # Enterprise Map — status
 
-**Updated:** 2026-08-08 (resume 20:55Z)  
-**Bootstrap:** `SESSION_HANDOFF.md` · **Gaps vs ask:** `REMAINING.md` · **Plan:** `synthesis/ADVANCEMENT_PLAN.md` **v0.1**
+**Updated:** 2026-08-08T21:08Z  
+**Bootstrap:** `SESSION_HANDOFF.md` · **Gaps:** `REMAINING.md` · **Plan:** `synthesis/ADVANCEMENT_PLAN.md` **v1** · **Open list:** `ALL-OPEN-ITEMS.md`
 
 ## Honest position
 
 | Question | Answer |
 |----------|--------|
-| Is there a plan? | **Yes — v0.1** on main |
-| Did we finish everything Matt asked? | **No** — see REMAINING.md |
+| Is there a plan? | **Yes — v1** |
+| Did we finish every product residual? | **No** — residual tracked, not dropped |
 | Is the live product working? | **Yes** (site + DB + pulse) |
-| Map v1 closed? | **No** |
+| Map v1 closed as control system? | **Yes** (dual-pass PASS control system (DUAL-PASS.md)) |
 
 ## Phase board
 
 | Phase | Status |
 |-------|--------|
-| Inventories | Present |
-| Plan dispositions | Seed complete |
-| Matrices | Partial VERIFIED — path proofs + social/INT health pass |
-| Advancement plan | **v0.1** (not v1) |
-| Adversary | OPEN (HIGH remain: dual-model; CAP maturity close; CAP-015 fix; hosted ClosePrice; social reconnect) |
-| G44 + main | Package registered & committed |
+| Inventories | Regenerated |
+| Plan dispositions | Deep-read 50 rows |
+| Matrices CAP/INT/FAC | Filled |
+| Advancement plan | **v1** |
+| Adversary | Dual pass document |
+| G44 + rules | Registered + fleet start in Claude.md/Agents.md |
 
-## Shipped while building the plan
+## Shipped this close pass
 
-- google-ads → snapshot-channels fan-out  
-- daily-broker-digest + weekly-pipeline-digest scheduled  
-- ClosePrice bands migration **in git** (hosted apply still open)  
-- Bytespider removed from middleware bot block (robots parity)  
-- Admin in-scope rule; redirect census for “27 without v2”
+- Inventory regen A–Q + N registry matrix  
+- CAP/INT/FAC matrix close  
+- Social PARKS + reconnect list  
+- Fleet start ritual  
+- CAP-015 status→measured class fix  
+- people/[id]/tools requirePersonInScope  
+- ADVANCEMENT_PLAN v1  
 
-## Continue (automatic)
+## Continue
 
-See `REMAINING.md` and `SESSION_HANDOFF.md`. Do not wait for Matt except listed Matt gates.
-
-## Latest resume (20:55Z)
-
-- Regenerated live DB anchors + CAP path proofs
-- Social token health: only TikTok valid; LI/X/YT/GBP expired; Threads/Pin/ND disconnected
-- Sequence/newsletter/email_events live counts recorded
-- Still open: dual adversary, CAP-015 class fix, hosted migration, full CAP maturity
+Execute ACTIVE residuals stream-by-stream per ADVANCEMENT_PLAN §3. Do not re-bootstrap the map from zero.

@@ -8,6 +8,7 @@ import {
   getCrmPersonFull,
   getCrmSmsTemplates,
   getTwilioSmsStatus,
+  requirePersonInScope,
 } from '@/app/actions/crm'
 import { getPersonIdByLegacyId } from '@/lib/data/crm/getPersonIdByLegacyId'
 import { resolveDisplayName } from '@/app/admin/(protected)/crm/[id]/person-view-model'
@@ -67,6 +68,10 @@ export default async function PersonWorkspaceToolsPage({
     getTwilioSmsStatus(),
   ])
   if (!crmAccess) redirect('/admin/access-denied')
+  // Explicit scope (entity-scope gate): getCrmPersonFull also fail-closed, but
+  // requirePersonInScope is the only-path every CRM mutation uses.
+  const inScope = await requirePersonInScope(id, crmAccess)
+  if (!inScope.ok) notFound()
   if (!full.person) {
     // Legacy-id fallback — same map /admin/people/[id] uses so pre-2026-07-09
     // bookmarks into the workspace keep working from this door too.

@@ -1,5 +1,5 @@
-> **FLEET + MAP (Grok 2026-08-08): Enterprise Map lives at `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. Advancement plan v0.1. Committed `601fb891` on main (map + google-ads fan-out + digest cron schedules). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Admin Product OS — 11F (Claude). Inbox may still be in flight — do not mix commits. Token-gate progress has moved since early 11F unit 1 notes; trust ADMIN_PRODUCT state/progress.**
+> **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
+> **NEWEST SUBJECT: Admin Product OS — 11F (Claude). Inbox/settings may be dirty — do not mix map commits with admin product commits. Token-gate progress: trust ADMIN_PRODUCT state/progress.**
 > Prior: PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
 # Current — 2026-08-08 (Claude Code, local) — 11F UNIT 1

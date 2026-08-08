@@ -175,6 +175,13 @@ export async function runMeasurementLoop(opts: RunMeasurementLoopOptions = {}): 
         const inserted = await persistMeasurement(candidate, metrics)
         if (inserted) {
           report.measurements_succeeded += 1
+          // Class fix (ENTERPRISE_MAP CAP-015): content_performance was written
+          // but marketing_brain_actions.status never left 'executed', so Sense
+          // showed measured=0 forever even when metrics existed.
+          await markActionMeasuredIfReady(candidate.action_id).catch((err) => {
+            const msg = err instanceof Error ? err.message : String(err)
+            console.error('runMeasurementLoop: markActionMeasured failed (non-fatal):', msg)
+          })
         } else {
           report.measurements_failed += 1
         }
@@ -199,7 +206,66 @@ export async function runMeasurementLoop(opts: RunMeasurementLoopOptions = {}): 
     })
   }
 
+  // Reconcile historical rows: content_performance exists but status stuck on
+  // executed (pre-class-fix). Soft-fail; does not affect measurement report.
+  if (!opts.dryRun) {
+    await reconcileExecutedWithPerformance().catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('runMeasurementLoop: reconcileExecutedWithPerformance failed (non-fatal):', msg)
+    })
+  }
+
   return report
+}
+
+/**
+ * Flip marketing_brain_actions.status to `measured` once content_performance
+ * has at least one metrics window for the action. Status `measured` was in the
+ * stage vocabulary but never written by this loop (CAP-015 class gap).
+ */
+async function markActionMeasuredIfReady(actionId: string): Promise<void> {
+  const supabase = getSupabase()
+  const { count, error: cErr } = await supabase
+    .from('content_performance')
+    .select('id', { count: 'planned', head: true })
+    .eq('action_id', actionId)
+  if (cErr) {
+    console.error('markActionMeasuredIfReady count:', cErr.message)
+    return
+  }
+  if ((count ?? 0) < 1) return
+  const { error } = await supabase
+    .from('marketing_brain_actions')
+    .update({ status: 'measured' })
+    .eq('id', actionId)
+    .eq('status', 'executed')
+  if (error) {
+    console.error('markActionMeasuredIfReady update:', error.message)
+  }
+}
+
+/** One-shot reconcile: any executed action with content_performance → measured. */
+async function reconcileExecutedWithPerformance(): Promise<void> {
+  const supabase = getSupabase()
+  const { data: perfRows, error: pErr } = await supabase
+    .from('content_performance')
+    .select('action_id')
+    .not('action_id', 'is', null)
+    .limit(500)
+  if (pErr) {
+    console.error('reconcileExecutedWithPerformance:', pErr.message)
+    return
+  }
+  const ids = [...new Set((perfRows ?? []).map((r: { action_id: string }) => r.action_id).filter(Boolean))]
+  if (ids.length === 0) return
+  const { error } = await supabase
+    .from('marketing_brain_actions')
+    .update({ status: 'measured' })
+    .in('id', ids)
+    .eq('status', 'executed')
+  if (error) {
+    console.error('reconcileExecutedWithPerformance update:', error.message)
+  }
 }
 
 // ---------------------------------------------------------------------------

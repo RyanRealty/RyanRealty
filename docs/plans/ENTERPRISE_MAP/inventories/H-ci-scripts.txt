@@ -234,6 +234,7 @@ ci:search-registry-generated
 ci:search-results
 ci:seo-routes
 ci:server-only-imports
+ci:server-type-reexport
 ci:service-client
 ci:service-client:baseline
 ci:shadcn-burndown

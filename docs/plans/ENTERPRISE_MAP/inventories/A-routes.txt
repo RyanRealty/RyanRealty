@@ -1,3 +1,4 @@
+(root)
 about
 accessibility
 account
@@ -261,7 +262,6 @@ open-houses
 open-houses/[city]
 oregon/[city]
 our-homes
-page.tsx
 parks
 parks/[slug]
 price-drops

@@ -6,6 +6,13 @@ nothing else. Anything longer than a rule lives in the doc it points at.
 **Read order:** §0 data accuracy → §1 approval → §2 brand voice → then whichever of §3–§9
 your task touches.
 
+**Fleet start (mandatory before subject tunnels):** read
+[`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`](docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md)
+and the current block in [`docs/plans/CROSS_AGENT_HANDOFF.md`](docs/plans/CROSS_AGENT_HANDOFF.md).
+The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for what exists,
+what is verified, and what is open — not a side doc. Subject work (admin, CRM, growth)
+still runs; it does not erase other planes from Sense.
+
 **Every development cycle routes through THE LOOP v1.1.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).**
 One self-improving cycle: ingest telemetry → diagnose → prioritize → fix the class → verify
 exhaustively → ship → measure → learn → lock behind a gate → compete. It carries the preflight

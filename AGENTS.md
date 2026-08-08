@@ -8,8 +8,9 @@ This document tells AI coding agents (Cursor, Copilot, Windsurf, etc.) how to au
 
 **Deliver Ryan Realty website to acceptance-criteria-passing state.** The site must be the best real estate website in Central Oregon, with listing detail pages that beat Zillow Showcase, sub-second LCP on every route, and a canonical Data Access Layer that prevents regression.
 
-Every session — Claude Code or Cursor — starts by reading these four files in order:
+Every session — Claude Code, Cursor, or Grok — starts by reading these files in order:
 
+0. **`docs/plans/ENTERPRISE_MAP/SESSION_HANDOFF.md`** + **`docs/plans/CROSS_AGENT_HANDOFF.md`** (Fleet Sense) — whole-system map, concurrent agents, open residual. Do not start a subject tunnel without this.
 1. **`docs/EXECUTION_PLAN.md`** — the wave-by-wave build plan (~6,000 words, every step listed)
 2. **`docs/SITE_SPEC.md`** — the per-route checklist with machine-checkable acceptance criteria
 3. **`docs/DATA_ACCESS_LAYER.md`** — the canonical DAL contract (every page calls `@/lib/data/*` functions; raw `.from('listings')` etc. outside `lib/data/` is banned by ESLint + CI)

@@ -1,31 +1,27 @@
-REDIRECT-ISH
-app/admin/(protected)/banners/page.tsx (9L)
-app/admin/(protected)/broker-dashboard/page.tsx (17L)
-app/admin/(protected)/crm/[id]/page.tsx (35L)
-app/admin/(protected)/crm/[id]/portal/page.tsx (21L)
-app/admin/(protected)/crm/automations/page.tsx (19L)
-app/admin/(protected)/crm/reporting/deals/page.tsx (14L)
-app/admin/(protected)/deals/page.tsx (17L)
-app/admin/(protected)/email/page.tsx (7L)
-app/admin/(protected)/expired-listings/[key]/page.tsx (20L)
-app/admin/(protected)/expired-listings/page.tsx (15L)
-app/admin/(protected)/expired-outreach/page.tsx (13L)
-app/admin/(protected)/expireds/page.tsx (13L)
-app/admin/(protected)/fsbos/page.tsx (13L)
-app/admin/(protected)/inbox/page.tsx (15L)
-app/admin/(protected)/page.tsx (19L)
-app/admin/(protected)/performance/page.tsx (15L)
-app/admin/(protected)/photos/page.tsx (20L)
-app/admin/(protected)/query-builder/page.tsx (12L)
-app/admin/(protected)/resort-communities/page.tsx (20L)
-app/admin/(protected)/search/page.tsx (17L)
-app/admin/(protected)/spark-status/page.tsx (9L)
-app/admin/(protected)/stock-photos/page.tsx (9L)
-app/admin/(protected)/transactions/page.tsx (15L)
-app/admin/(protected)/visitors/page.tsx (7L)
-app/admin/console/leads/[id]/page.tsx (35L)
-app/admin/console/leads/page.tsx (26L)
-app/admin/console/page.tsx (13L)
-
-REAL_OR_HEAVY
-
+(protected)/banners/page.tsx	REDIRECT_STUB	lines=9
+(protected)/broker-dashboard/page.tsx	REDIRECT_STUB	lines=17
+(protected)/crm/[id]/page.tsx	REDIRECT_STUB	lines=35
+(protected)/crm/[id]/portal/page.tsx	REDIRECT_STUB	lines=21
+(protected)/crm/automations/page.tsx	REDIRECT_STUB	lines=19
+(protected)/crm/reporting/deals/page.tsx	REDIRECT_STUB	lines=14
+(protected)/deals/page.tsx	REDIRECT_STUB	lines=17
+(protected)/email/page.tsx	REDIRECT_STUB	lines=7
+(protected)/expired-listings/[key]/page.tsx	REDIRECT_STUB	lines=20
+(protected)/expired-listings/page.tsx	REDIRECT_STUB	lines=15
+(protected)/expired-outreach/page.tsx	REDIRECT_STUB	lines=13
+(protected)/expireds/page.tsx	REDIRECT_STUB	lines=13
+(protected)/fsbos/page.tsx	REDIRECT_STUB	lines=13
+(protected)/inbox/page.tsx	REDIRECT_STUB	lines=15
+(protected)/page.tsx	REDIRECT_STUB	lines=19
+(protected)/performance/page.tsx	REDIRECT_STUB	lines=15
+(protected)/photos/page.tsx	REDIRECT_STUB	lines=20
+(protected)/query-builder/page.tsx	REDIRECT_STUB	lines=12
+(protected)/resort-communities/page.tsx	REDIRECT_STUB	lines=20
+(protected)/search/page.tsx	REDIRECT_STUB	lines=17
+(protected)/spark-status/page.tsx	REDIRECT_STUB	lines=9
+(protected)/stock-photos/page.tsx	REDIRECT_STUB	lines=9
+(protected)/transactions/page.tsx	REDIRECT_STUB	lines=15
+(protected)/visitors/page.tsx	REDIRECT_STUB	lines=7
+console/leads/[id]/page.tsx	REDIRECT_STUB	lines=35
+console/leads/page.tsx	REDIRECT_STUB	lines=26
+console/page.tsx	REDIRECT_STUB	lines=13
