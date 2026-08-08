@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/admin/v2'
 
 const STORAGE_KEY = 'admin_dashboard_panels'
 
@@ -48,19 +48,44 @@ export default function DashboardPanel({ id, title, children, defaultOpen = true
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card shadow-sm">
+    <section
+      style={{
+        border: '1px solid var(--a-border)',
+        borderRadius: 'var(--a-r-lg)',
+        background: 'var(--a-bg)',
+      }}
+    >
       <Button
-        type="button"
+        variant="quiet"
         onClick={toggle}
-        className="flex w-full items-center justify-between px-4 py-3 text-left font-semibold text-foreground hover:bg-muted"
         aria-expanded={open}
+        style={{
+          display: 'flex',
+          width: '100%',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 'var(--a-s3)',
+          textAlign: 'left',
+          fontSize: 'var(--a-text-md)',
+          fontWeight: 600,
+          color: 'var(--a-text)',
+          padding: 'var(--a-s3) var(--a-s4)',
+          minHeight: 'auto',
+          border: 'none',
+          background: 'transparent',
+          borderRadius: 'var(--a-r-lg)',
+        }}
       >
         <span>{title}</span>
-        <span className="text-muted-foreground" aria-hidden>
-          {open ? '\u25BC' : '\u25B6'}
+        <span style={{ color: 'var(--a-text-2)' }} aria-hidden>
+          {open ? '▼' : '▶'}
         </span>
       </Button>
-      {open && <div className="border-t border-border px-4 py-4">{children}</div>}
+      {open && (
+        <div style={{ borderTop: '1px solid var(--a-border)', padding: 'var(--a-s4)' }}>
+          {children}
+        </div>
+      )}
     </section>
   )
 }

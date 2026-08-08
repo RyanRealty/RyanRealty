@@ -6,8 +6,8 @@
 // Carried over verbatim: requireAdminPage('settings.system'), the
 // getSetupComplete() → /admin/setup redirect, the unstable_cache bundle
 // (['admin-dashboard-data'], revalidate 180, tag 'admin-dashboard') around the
-// same five fetchers in the same order, all eight DashboardPanel mounts with
-// their ids, titles, defaultOpen flags and props, and the six quick links.
+// same five fetchers in the same order, the DashboardPanel mounts with their
+// ids, titles, defaultOpen flags and props, and the six quick links.
 //
 // Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
 // the landmark), the <h1> title chrome is gone (the nav names the page), the
@@ -28,6 +28,19 @@
 // plain service-role counts, like every sibling on that panel. Cutting a figure
 // is the right move while it is a lie; restoring it is the right move once it
 // is not.
+//
+// 11F ALSO DELETED THE "Notification and alert center" PANEL rather than
+// migrating it. Its whole body was a promise: "The notification center will
+// show system-generated alerts... Notifications can be delivered in-app, by
+// email, or SMS with per-type toggles", under a heading, above "No
+// notifications yet. Alert wiring (sync failure, API health, etc.) is coming in
+// a follow-up." The alert wiring EXISTS and runs every minute —
+// /api/cron/crm-alert-drain in vercel.json, lib/crm/broker-alerts.ts exporting
+// queueBrokerAlert / queueBrokerHealthAlert / queueCmaReadyAlert /
+// queueReturnVisitAlert, and the whole P8 litmus wake-up path is built on it.
+// A panel telling a broker their alerts do not exist yet, while those alerts
+// are drained every 60 seconds, is a false claim; re-skinning it would have
+// shipped the claim in nicer type.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
@@ -40,15 +53,14 @@ import {
   getDashboardContentStatus,
   getDashboardMarketingData,
 } from '@/app/actions/dashboard'
-import DashboardPanel from '@/components/admin/DashboardPanel'
-import DashboardSyncPanel from '@/components/admin/DashboardSyncPanel'
-import DashboardLeadPanel from '@/components/admin/DashboardLeadPanel'
-import DashboardGA4Panel from '@/components/admin/DashboardGA4Panel'
-import DashboardNotificationsPanel from '@/components/admin/DashboardNotificationsPanel'
-import DashboardSitePerformancePanel from '@/components/admin/DashboardSitePerformancePanel'
-import DashboardRevenuePanel from '@/components/admin/DashboardRevenuePanel'
-import DashboardContentStatusPanel from '@/components/admin/DashboardContentStatusPanel'
-import DashboardMarketingCommandCenterPanel from '@/components/admin/DashboardMarketingCommandCenterPanel'
+import DashboardPanel from './_components/DashboardPanel'
+import DashboardSyncPanel from './_components/DashboardSyncPanel'
+import DashboardLeadPanel from './_components/DashboardLeadPanel'
+import DashboardGA4Panel from './_components/DashboardGA4Panel'
+import DashboardSitePerformancePanel from './_components/DashboardSitePerformancePanel'
+import DashboardRevenuePanel from './_components/DashboardRevenuePanel'
+import DashboardContentStatusPanel from './_components/DashboardContentStatusPanel'
+import DashboardMarketingCommandCenterPanel from './_components/DashboardMarketingCommandCenterPanel'
 import {
   ReportNumbers,
   SectionHead,
@@ -69,8 +81,8 @@ const QUICK_LINKS: { href: string; label: string }[] = [
   { href: '/admin/sync/spark', label: 'Spark API status' },
 ]
 
-// The five dashboard fetchers hit live third-party APIs (GA4, Meta Graph, FUB
-// fallback) and exact-count scans — 30-45s uncached per render, which read as
+// The five dashboard fetchers hit live third-party APIs (GA4, Meta Graph) and
+// exact-count scans — 30-45s uncached per render, which read as
 // "admin is down" on a phone. All five are service-role + Matt-scoped (no
 // cookies inside), so the bundle is globally cacheable. unstable_cache serves
 // stale while revalidating: only a cold start ever pays the full fetch.
@@ -149,9 +161,8 @@ export default async function AdminDashboardPage() {
   ]
 
   // overflowX 'clip' is the old <main>'s `overflow-x-clip`, carried over: the
-  // eight DashboardPanel islands mount unchanged and the open sync panel
-  // measures 426px against a 375px viewport. Clip contains it here the way it
-  // always did, and a descendant's own overflow-x:auto still scrolls.
+  // open sync panel measures wider than a 375px viewport. Clip contains it here
+  // the way it always did, and a descendant's own overflow-x:auto still scrolls.
   return (
     <div
       className="av2-scope"
@@ -204,10 +215,6 @@ export default async function AdminDashboardPage() {
 
         <DashboardPanel id="content" title="Content status" defaultOpen={false}>
           <DashboardContentStatusPanel data={contentStatus.data} error={contentStatus.error} />
-        </DashboardPanel>
-
-        <DashboardPanel id="notifications" title="Notification and alert center" defaultOpen={false}>
-          <DashboardNotificationsPanel />
         </DashboardPanel>
 
         <DashboardPanel id="siteperf" title="Site performance and technical health" defaultOpen={false}>

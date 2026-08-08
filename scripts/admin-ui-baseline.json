@@ -90,9 +90,6 @@
     "app/admin/(protected)/site-pages/TeamImageForm.tsx": {
       "h2": 1
     },
-    "app/admin/(protected)/sync/CronSyncStatus.tsx": {
-      "h2": 2
-    },
     "app/admin/(protected)/sync/SyncHeavyStatusSections.tsx": {
       "h2": 2
     },
@@ -130,5 +127,5 @@
     "app/admin/(protected)/people/[id]/page.tsx": 1,
     "app/admin/(protected)/today/page.tsx": 2
   },
-  "distinctWidths": 12
+  "distinctWidths": 11
 }

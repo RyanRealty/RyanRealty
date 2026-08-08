@@ -107,6 +107,10 @@ const SCAN_DIRS = [
   // shared sub-nav and the shared broker+date filter now live in
   // crm/reporting/_components/ instead of components/admin/crm/reporting/.
   'app/admin/(protected)/crm/reporting',
+  // 11F (2026-08-08) — operations, BARE DIR: its nine Dashboard*Panel islands
+  // moved into the route's own _components/ on the v2 language, so nothing in
+  // the subtree imports legacy any more.
+  'app/admin/(protected)/operations',
   // 11F (2026-08-08) — the three ConfigTableEditor consumers. File-form, not the
   // bare crm/settings dir: eleven sibling pages still mount legacy editors
   // (CustomFieldEditor, TagTaxonomyEditor, the company + templates islands).
