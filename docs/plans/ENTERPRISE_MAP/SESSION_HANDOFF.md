@@ -2,13 +2,16 @@
 
 **Read this first** in any new Claude Code or Grok session continuing the enterprise map.  
 **Do not ask Matt whether to continue.** Execute until closed or blocked on Matt-only gates.  
-**Do not touch** `app/admin/**/crm/inbox/**` or in-flight admin v2 files while a Claude inbox session may be dirty — check `git status` first.
+**Parallel admin work is IN SCOPE of the map — always.**  
+Claude (or anyone) may *edit* admin files in another session. That does **not** leave admin out of comprehensive coverage. CAP-011/024/025, ADMIN_PRODUCT, and all admin routes stay on the universe and advancement plan.
+
+**Collision rule only (not scope):** while `git status` shows dirty `app/admin/**/crm/inbox/**` or in-flight admin v2 islands owned by another session, **do not edit those same paths** from this session. Still **inventory, disposition, evidence, and plan** admin fully. When their work lands, re-census and promote cells.
 
 ---
 
 ## Mission
 
-Build and close the **Enterprise Map** so the whole Ryan Realty system (product + integrations + factory + plan dispositions) can move forward without shortcuts, plan-ghosts, or single-subject amnesia.
+Build and close the **Enterprise Map** so the whole Ryan Realty system (product + integrations + factory + plan dispositions) can move forward without shortcuts, plan-ghosts, or single-subject amnesia. **Admin Product OS is part of that whole — not a side quest to ignore until Claude is free.**
 
 **Package root:** `docs/plans/ENTERPRISE_MAP/`
 

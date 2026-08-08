@@ -15,7 +15,7 @@
 | CAP-008 | Lead capture / money paths | 3–4 | LPs + CRM ensureNativeLead | **Critical** | Yes | Historical LP enroll defects — re-verify |
 | CAP-009 | Native CRM | 3–4 | 22977 people; stage dist EVIDENCE-LOG | High | **Yes** | **VERIFIED** stages collapse to Nurture-heavy; multi-broker risk historical |
 | CAP-010 | Sequences / sends | 3–4 | crm-sequence-engine + Twilio/Resend | **Critical** | Yes | Measure weaker than suppress historically |
-| CAP-011 | CRM inbox | 3 | Active Claude 11F work | High | Yes | **IN FLIGHT — do not touch** |
+| CAP-011 | CRM inbox | 3 | Active Claude 11F work; full CAP in map | High | Yes | **IN SCOPE always**; parallel session owns *edits* only — re-census when landed |
 | CAP-012 | TC / closings | 2–3 | tc_* + admin closings; SkySlope integrated | High | Yes | TC_BUILDOUT PAUSED |
 | CAP-013 | CMA / BPO | 3–4 | 266 cmas; public deliverable routes | High | Yes | Production pipeline PARTIAL |
 | CAP-014 | Expired / FSBO prospecting | 3–4 | 247 expired; processor via sync-delta | Med-High | Yes | **VERIFIED** unscheduled detect-expired is intentional |

@@ -41,11 +41,11 @@ Until B3, treat this plan as **navigation**, not closed truth.
 
 | Track | What | Constraint |
 |-------|------|------------|
-| **T-Admin** | CAP-011 / A-001 crm/inbox 11F | Claude only; largest remaining token-gate island |
-| **T-Map** | This package B1–B5 | Grok (or any) docs-only under ENTERPRISE_MAP |
-| **T-Ops Sense** | Re-verify CAP-006 freshness, INT-002 sync, CAP-015 queue | Read-only queries OK anytime |
+| **T-Admin** | CAP-011 / A-001 / full 11F + P12 admin | May be edited by parallel Claude; **always on the map** — re-census on land; never “out of scope” |
+| **T-Map** | Package B1–B5 + all planes including admin evidence | Any session; avoid stomping dirty inbox files only |
+| **T-Ops Sense** | CAP-006, sync, CAP-015, **and** admin health | Read-only anytime |
 
-Admin finishing is **necessary for admin maturity**, not a gate on map baseline.
+Parallel admin work **is** enterprise advancement on the admin plane. Other planes do not wait for it to finish, and the map does not omit it.
 
 ---
 

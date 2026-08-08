@@ -4,9 +4,14 @@
 **Package:** `docs/plans/ENTERPRISE_MAP/`  
 **Bootstrap next session:** `SESSION_HANDOFF.md` (automatic — do not ask whether to continue)
 
-## Parallel safety
+## Parallel safety vs scope (do not confuse)
 
-Claude may own **crm/inbox**. This package writes **only** under `ENTERPRISE_MAP/`. No mixed commits. Check `git status` before any edit outside this tree.
+| | |
+|--|--|
+| **Scope** | **Admin is fully included** in the enterprise map (routes, 11F, process OS, CAP-011/024/025, A-001). Comprehensive means admin is never “left off.” |
+| **Collision** | Another session may *edit* inbox/admin v2 right now. Do not stomp those dirty files. Still **map and plan** admin. Re-census when they land. |
+
+Map package primary writes: `ENTERPRISE_MAP/`. Non-colliding code OK. Check `git status` before editing paths another agent has dirty.
 
 ## Phase board
 

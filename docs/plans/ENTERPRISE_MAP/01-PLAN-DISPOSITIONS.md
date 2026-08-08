@@ -37,7 +37,7 @@ Status vocabulary:
 
 | ID | Doc | Intent | What landed | What fell off | Status now |
 |----|-----|--------|-------------|---------------|------------|
-| A-001 | `ADMIN_PRODUCT/` | Process-first admin OS; IA lock; v2; correctness | Phase 11 shell 143/143; token gate ~111/170; locks; 21 process specs | 11F islands (inbox in flight); dark mode unreachable; P12 correctness | **ACTIVE** — Claude session on **crm/inbox** |
+| A-001 | `ADMIN_PRODUCT/` | Process-first admin OS; IA lock; v2; correctness | Phase 11 shell 143/143; token gate progress; locks; 21 process specs | 11F islands (inbox may be parallel session); dark mode unreachable; P12 correctness | **ACTIVE** — **always in enterprise map scope**; parallel Claude may hold edit lock on inbox only |
 | A-002 | `ADMIN_REBUILD/` | Specs + audits for rebuild | Specs, FULL-AUDIT, progress logs | Overlapped by ADMIN_PRODUCT execution | **ACTIVE** package / largely **feeding** A-001 |
 | A-003 | `ADMIN_CONSOLIDATION_*` | Collapse ~40 pages to workflows | Intent absorbed into Product OS | Standalone consolidation goal may lag IA lock | **PARTIAL** → prefer A-001 |
 

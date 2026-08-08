@@ -1,27 +1,39 @@
-# Coordination with concurrent Claude Code (admin inbox)
+# Coordination with concurrent Claude Code (admin)
+
+## Critical distinction (Matt 2026-08-08)
+
+| Concept | Meaning |
+|---------|---------|
+| **In scope** | Admin is **always** part of the comprehensive enterprise map (CAP-011/024/025, A-001, all admin routes, process registry, 11F, P12). Nothing is left off because another session is grinding it. |
+| **Path ownership (temporary)** | Only **who edits which files right now** to avoid merge pain — not a scope exclusion. |
+
+Parallel session = concurrent execution on one plane of the universe.  
+When their commit lands, the map **re-verifies and absorbs** it — it does not discover admin later.
 
 ## Decision: work in parallel, not wait forever
 
-Waiting until admin “is done” would re-create single-subject freeze of the whole company map.  
-Editing admin while Claude has dirty inbox files would cause merge pain and regression risk.
+Waiting until admin “is done” freezes other map planes.  
+Blindly editing the same dirty inbox files causes merge pain.  
+**Both:** keep **mapping and planning** admin fully; avoid stomping in-flight **edit** ownership.
 
-## Ownership
+## Ownership (edit rights only)
 
-| Owner | Paths / artifacts |
-|-------|-------------------|
-| **Claude Code** | `app/admin/**/crm/inbox/**`, in-flight `components/admin/v2/{Menu,Sheet,Field,...}`, any ADMIN_PRODUCT progress for inbox unit |
-| **Enterprise Map (Grok)** | `docs/plans/ENTERPRISE_MAP/**` only until inbox is committed |
-| **Shared later** | G44 register `ENTERPRISE_MAP/` in DEVELOPMENT_PROCESS; handoff fleet block; optional commit of this package alone |
+| Owner (edits) | Paths |
+|---------------|--------|
+| **Claude (while dirty)** | `app/admin/**/crm/inbox/**`, in-flight admin v2 islands for that unit, ADMIN_PRODUCT progress for that unit |
+| **Map session** | `docs/plans/ENTERPRISE_MAP/**` + non-colliding code; **always** inventory/evidence/plan for **all** of admin |
+| **After unit lands** | Any session re-census admin, update CAP cells, continue remaining 11F from inventories + ADMIN_PRODUCT queue |
 
 ## Rules
 
-1. No commits that mix inbox + ENTERPRISE_MAP.  
-2. No `git add -A` while both are dirty.  
-3. No rewriting CROSS_AGENT_HANDOFF admin Current to claim map finished — map is PARTIAL.  
-4. When Claude finishes inbox: pull/rebase if needed, then register + commit ENTERPRISE_MAP as its own docs commit (or batch with non-admin docs only).  
-5. If Claude needs `components/admin/v2` exclusively, Grok does not touch it.
+1. Admin CAP rows and A-001 stay **ACTIVE / required** on the map at all times.  
+2. Prefer separate commits when another agent has uncommitted inbox work.  
+3. No `git add -A` while foreign dirty admin paths exist.  
+4. Map session may **read** admin and **write map evidence** about admin anytime.  
+5. On land: pull → re-run Q-admin v2 census → EVIDENCE-LOG → CAP-011/025 → next 11F targets from without-v2 list + work-queue.  
+6. Handoff: Fleet/map block **alongside** admin Current — never erase admin subject.
 
-## Why parallel is safe
+## Why this is still comprehensive
 
-Enterprise Map is **read-mostly against the repo** + **write only under ENTERPRISE_MAP**.  
-It does not require a clean admin UI to enumerate routes, crons, env, plans, or dispositions.
+The enterprise system **includes** admin.  
+A parallel Claude session is **how** that slice moves forward right now, not a reason to omit it from “everything.”

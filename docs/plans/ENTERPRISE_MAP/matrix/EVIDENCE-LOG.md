@@ -96,3 +96,8 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 - **daily-broker-digest** is NOT superseded by broker-agent-digest (different products: per-broker CRM day vs Matt SMS-agent supervision).
 - **weekly-pipeline-digest** and **daily-broker-digest** were DARK_SCHEDULE; added to vercel.json at claimed schedules (0 15 * * * and 0 15 * * 1).
 - **neighborhood-default-subscriptions** is INTENTIONAL_MANUAL (Matt confirm=1) — not vestigial.
+
+### Scope rule — admin always included (Matt 2026-08-08)
+- Parallel Claude Code work on admin/inbox is **concurrent execution**, not exclusion from the enterprise map.
+- CAP-011, CAP-024, CAP-025, A-001, inventories B + Q remain mandatory coverage.
+- Collision control = do not edit the same dirty files; still inventory, disposition, plan, and re-verify admin.
