@@ -1,5 +1,7 @@
 # What’s left vs what was asked (honest)
 
+**Full itemized backlog (no severity filter):** **[`ALL-OPEN-ITEMS.md`](./ALL-OPEN-ITEMS.md)** — that file is comprehensive. This page is the short frame.
+
 **Asked for:** comprehensive understanding of everything (product + integrations + factory + plan intent/fall-off) → a plan to move the whole system forward → no shortcuts / no leaving things off.
 
 **What we have:** a real package on `main` that **starts** that job — not the finished closed plan.

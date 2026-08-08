@@ -73,7 +73,7 @@ If `git status` shows dirty inbox files → **only** write under `docs/plans/ENT
 
 ## Continue execution order (no permission asks)
 
-Full gap list: **`REMAINING.md`**.
+Full gap list (every item, not HIGH-only): **`ALL-OPEN-ITEMS.md`**. Frame: **`REMAINING.md`**.
 
 1. ~~Crons / digests / google-ads / G44 / admin-in-scope / redirect census / Bytespider middleware~~  
 2. ~~ClosePrice migration authored~~ — **still apply on hosted Supabase** (S-015)  
