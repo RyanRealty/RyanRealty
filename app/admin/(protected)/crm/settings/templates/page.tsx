@@ -44,10 +44,10 @@ import {
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
 import Link from 'next/link'
 import { VerdictLine } from '@/components/admin/v2'
-import { TemplateFolderList, type TemplateFolderSummary } from '@/components/admin/crm/settings/templates/TemplateFolderList'
-import { EmailTemplateList } from '@/components/admin/crm/settings/templates/EmailTemplateList'
-import { TextTemplateList } from '@/components/admin/crm/settings/templates/TextTemplateList'
-import type { TemplatesShared } from '@/components/admin/crm/settings/templates/template-actions'
+import { TemplateFolderList, type TemplateFolderSummary } from '@/app/admin/(protected)/crm/settings/_components/templates/TemplateFolderList'
+import { EmailTemplateList } from '@/app/admin/(protected)/crm/settings/_components/templates/EmailTemplateList'
+import { TextTemplateList } from '@/app/admin/(protected)/crm/settings/_components/templates/TextTemplateList'
+import type { TemplatesShared } from '@/app/admin/(protected)/crm/settings/_components/templates/template-actions'
 
 export const metadata = { title: 'Templates | CRM settings' }
 export const dynamic = 'force-dynamic'

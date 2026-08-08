@@ -6,7 +6,7 @@ import { getCrmCompanySettings } from '@/lib/data/crm/getCrmCompanySettings'
 import { getCrmBlockedNumbers } from '@/lib/data/crm/getCrmBlockedNumbers'
 import { getA2pCampaignStatus } from '@/lib/crm/twilio'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import { CompanySettingsForm } from '@/components/admin/crm/settings/company/CompanySettingsForm'
+import { CompanySettingsForm } from '@/app/admin/(protected)/crm/settings/_components/company/CompanySettingsForm'
 
 export const metadata = { title: 'Company settings | CRM admin' }
 export const dynamic = 'force-dynamic'

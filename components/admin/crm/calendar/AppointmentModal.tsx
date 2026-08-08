@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { RichTextBody } from '@/components/admin/crm/settings/templates/RichTextBody'
+import { RichTextBody } from '@/app/admin/(protected)/crm/settings/_components/templates/RichTextBody'
 import { time12, wallDateKey, wallMinutes } from '@/lib/crm/calendar'
 import type { AppointmentRow, AppointmentType, AppointmentOutcome } from '@/lib/data/crm/getAppointments'
 

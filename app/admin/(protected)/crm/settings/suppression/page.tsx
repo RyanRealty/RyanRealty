@@ -14,7 +14,7 @@ import {
 } from '@/lib/data/crm/getCrmSuppressions'
 import { addSuppressionAction, liftSuppressionAction } from '@/app/actions/crm-suppressions'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import { SuppressionAdmin, type SuppressionRow } from '@/components/admin/crm/settings/SuppressionAdmin'
+import { SuppressionAdmin, type SuppressionRow } from '@/app/admin/(protected)/crm/settings/_components/SuppressionAdmin'
 
 export const metadata = { title: 'Suppression list | CRM settings' }
 export const dynamic = 'force-dynamic'

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getCrmBlockedNumbers } from '@/lib/data/crm/getCrmBlockedNumbers'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import { BlockListManager } from '@/components/admin/crm/settings/company/BlockListManager'
+import { BlockListManager } from '@/app/admin/(protected)/crm/settings/_components/company/BlockListManager'
 import { formatDate } from '@/lib/format/date'
 
 export const metadata = { title: 'Block list | CRM admin' }

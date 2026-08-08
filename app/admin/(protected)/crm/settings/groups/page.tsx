@@ -16,7 +16,7 @@ import {
   removeGroupMemberAction,
 } from '@/app/actions/crm-groups'
 import { VerdictLine } from '@/components/admin/v2'
-import GroupEditor from '@/components/admin/crm/settings/GroupEditor'
+import GroupEditor from '@/app/admin/(protected)/crm/settings/_components/GroupEditor'
 
 export const metadata = { title: 'Groups | CRM settings | Admin' }
 export const dynamic = 'force-dynamic'

@@ -16,7 +16,7 @@ import {
 import { getCrmAssignmentConfig } from '@/lib/data/crm/getCrmAssignmentConfig'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import RoutingEditor from '@/components/admin/crm/settings/RoutingEditor'
+import RoutingEditor from '@/app/admin/(protected)/crm/settings/_components/RoutingEditor'
 
 export const metadata = { title: 'Lead routing | CRM settings | Admin' }
 export const dynamic = 'force-dynamic'

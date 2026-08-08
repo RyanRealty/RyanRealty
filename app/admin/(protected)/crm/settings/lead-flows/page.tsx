@@ -20,7 +20,7 @@ import {
   deleteLeadFlowRuleAction,
 } from '@/app/actions/crm-lead-flows'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import LeadFlowEditor from '@/components/admin/crm/settings/LeadFlowEditor'
+import LeadFlowEditor from '@/app/admin/(protected)/crm/settings/_components/LeadFlowEditor'
 
 export const metadata = { title: 'Lead Flows | CRM settings | Admin' }
 export const dynamic = 'force-dynamic'

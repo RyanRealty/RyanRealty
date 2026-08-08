@@ -17,7 +17,7 @@ import {
   removePondMemberAction,
 } from '@/app/actions/crm-ponds'
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import PondEditor from '@/components/admin/crm/settings/PondEditor'
+import PondEditor from '@/app/admin/(protected)/crm/settings/_components/PondEditor'
 
 export const metadata = { title: 'Ponds | CRM settings | Admin' }
 export const dynamic = 'force-dynamic'

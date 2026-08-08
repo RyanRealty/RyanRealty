@@ -15,7 +15,7 @@ import {
   deleteCrmFieldDefinitionAction,
 } from '@/app/actions/crm-field-definitions'
 import { VerdictLine } from '@/components/admin/v2'
-import { CustomFieldEditor, type FieldRow } from '@/components/admin/crm/settings/CustomFieldEditor'
+import { CustomFieldEditor, type FieldRow } from '@/app/admin/(protected)/crm/settings/_components/CustomFieldEditor'
 
 export const metadata = { title: 'Custom fields | CRM settings' }
 export const dynamic = 'force-dynamic'

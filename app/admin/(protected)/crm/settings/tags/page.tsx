@@ -17,7 +17,7 @@ import {
   listCrmTagsAction,
 } from '@/app/actions/crm-tags'
 import { VerdictLine } from '@/components/admin/v2'
-import { TagTaxonomyEditor, type TagRow } from '@/components/admin/crm/settings/TagTaxonomyEditor'
+import { TagTaxonomyEditor, type TagRow } from '@/app/admin/(protected)/crm/settings/_components/TagTaxonomyEditor'
 
 export const metadata = { title: 'Tags | CRM settings' }
 export const dynamic = 'force-dynamic'
