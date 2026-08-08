@@ -16,8 +16,8 @@ import { toast } from 'sonner'
 import {
   getAlertEngineSettingsAction,
   updateAlertEngineSettingsAction,
-  type AlertEngineSettings,
 } from '@/app/actions/alert-admin'
+import type { AlertEngineSettings } from '@/lib/data/leads/listingAlertApprovals'
 import type { AlertEventToggles, ListingEventType } from '@/lib/alerts/event-detection'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'

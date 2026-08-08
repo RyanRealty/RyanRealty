@@ -17,7 +17,7 @@ import type {
   AdminReportSubscriptionRow,
 } from '@/lib/data/crm/subscriptionsAdmin'
 import type { GlobalDeliverySummary } from '@/lib/data/crm/emailDelivery'
-import type { PendingApprovalGroup } from '@/app/actions/alert-admin'
+import type { PendingApprovalGroup } from '@/lib/data/leads/listingAlertApprovals'
 import AlertSubscriptionsTab from '@/components/admin/crm/subscriptions/AlertSubscriptionsTab'
 import ReportSubscriptionsTab from '@/components/admin/crm/subscriptions/ReportSubscriptionsTab'
 import DeliveryTab from '@/components/admin/crm/subscriptions/DeliveryTab'

@@ -34,8 +34,15 @@ import { getFiltersSummary } from '@/lib/search-filters'
 import type { ListingAlertListing } from '@/lib/crm/listing-alert-email'
 
 // ── Types the queue tab renders ───────────────────────────────────────────────
-
-export type { AlertEngineSettings, PendingApprovalGroup, PendingApprovalItem }
+//
+// These types are NOT re-exported from here. This file carries 'use server', and
+// Next emits a re-export from a server module as a RUNTIME binding — so
+// `export type { AlertEngineSettings, ... }` compiled to a reference to a name
+// that type-erasure had already removed, and the module threw
+// "ReferenceError: AlertEngineSettings is not defined" at evaluation. That took
+// /admin/crm/subscriptions to a 500 and the admin error boundary.
+// Consumers import these three from lib/data/leads/listingAlertApprovals, which
+// is where they are declared.
 
 const toEngineSettings = toAlertEngineSettings
 

@@ -20,10 +20,8 @@ import {
   approveAlertQueueItems,
   rejectAlertQueueItems,
 } from '@/app/actions/saved-search-alerts'
-import {
-  listPendingAlertApprovalsAction,
-  type PendingApprovalGroup,
-} from '@/app/actions/alert-admin'
+import { listPendingAlertApprovalsAction } from '@/app/actions/alert-admin'
+import type { PendingApprovalGroup } from '@/lib/data/leads/listingAlertApprovals'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
