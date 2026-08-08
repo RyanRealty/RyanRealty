@@ -336,3 +336,31 @@ Ship bar: each unit committed separately, pushed, deploy-verified READY, product
   FOUND, NOT INTRODUCED, NOT FIXED: /admin/prospecting/expired/<listing_key> scrolls horizontally at 375px (scrollWidth 433 vs a 375 viewport). The offenders are Google Maps' unclassed tile divs escaping ProspectMap.client, whose container sets no overflow. That file was last touched by ea0ef4dd, long before this session — confirmed via git log rather than assumed. The page is deliberately NOT in SCAN_DIRS, so nothing claims it is done.
   PROSPECTING IS A SUB-FAMILY, NOT A SINGLE. Its wrapper migrated, but the wrapper mounts six more legacy islands (ProspectDetailPanel, ProspectSendDialog 472L, ProspectComplianceRibbon, ProspectDocPill, ProspectMap, ProspectPriceHistory — 1,134 lines including a send path). 25 shadcn classes still render inside that page. Gating it would have been a false claim.
   NEXT in 11F: crm/inbox 12 islands (BUDGET A WHOLE SESSION — two send paths, and it is the surface a broker lives in) · crm 8 · the 11 remaining crm/settings editors (mechanical) · crm/deals 5 · crm/sequences 5 · prospecting's six sub-islands (fix the map overflow with them).
+
+=== MISSION: 11F UNIT 6 — crm/inbox, end-to-end (goal written 2026-08-08T10:40Z, BEFORE any code) ===
+WHAT EXISTS WHEN FINISHED
+  · All 17 files of the inbox family live in app/admin/(protected)/crm/inbox/_components/ and render
+    the LOCKED admin v2 language: zero imports from components/ui, zero shadcn SEMANTIC classes
+    (bg-card / text-foreground / text-muted-foreground / border-border and friends — the 240 the token
+    gate cannot see), all colour via var(--a-*).
+  · /admin/crm/inbox and every clean component are file-form entries in ci:admin-v2-tokens' SCAN_DIRS.
+    InlineReply.tsx and mobile/MobileComposeSheet.tsx are EXCLUDED by design, with the reason at the
+    entry: both mount the canonical SmsComposer / EmailComposer that ci:composer-discipline REQUIRES,
+    and forking the one send interface to satisfy a colour gate defeats the gate that matters more.
+  · components/admin/crm/inbox/ no longer exists.
+WHAT A REAL USER DOES WITH IT
+  A broker opens /admin/crm/inbox on a phone and on a desktop, reads the folder counts, opens a
+  conversation, reads the thread, replies by text and by email, adds a note, opens a contact, and
+  starts a new message — with the SAME data, the SAME folder semantics and the SAME send behaviour as
+  before. Nothing about what the page DOES may change; only what it looks like.
+WHAT MEETS THE BAR
+  · tsc clean · full `npm run ci:gates` exit 0 · ci:composer-discipline, ci:governed-send,
+    ci:crm-sms-safety and ci:crm-screen-parity all green (this family is a SEND surface).
+  · Loaded in a real browser at 375 AND 1280, authenticated: 200, exactly one <main>, no page-level
+    horizontal scroll, zero shadcn semantic classes inside the page's own scope, folder rail + thread
+    list + thread view all render real rows, and BOTH composers mount and accept input.
+  · Every send-path guard, FormData field, server action and idempotency key byte-identical to before —
+    proven by diff, not asserted.
+  · Ratchets unmoved or re-seeded SMALLER. Token-gated admin pages rise from 111.
+NOT IN SCOPE
+  Rebuilding the composers themselves; changing folder logic, queries, or any figure.
