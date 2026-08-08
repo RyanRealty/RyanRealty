@@ -168,8 +168,11 @@ const GOOD_BOT_RE =
 // healthy. CI probes now send the shared UA in scripts/lib/ci-probe-ua.mjs, and
 // `npm run ci:probe-ua` fails the build if anything added here would screen it.
 // Before adding a token, check it against that constant.
+// Bytespider deliberately NOT listed: app/robots.ts allows it for AI retrieval
+// parity with GPTBot/ClaudeBot (PROGRAM D5 / Enterprise Map 2026-08-08). Keep
+// other SEO scrapers blocked.
 const BAD_BOT_RE =
-  /(curl\/|wget|python-requests|python-urllib|urllib|aiohttp|httpx|libwww-perl|lwp::|java\/|okhttp|go-http-client|node-fetch|axios|guzzlehttp|apache-httpclient|httpclient|winhttp|wininet|mechanize|scrapy|httrack|colly|zgrab|masscan|nmap|nikto|sqlmap|nuclei|wpscan|gobuster|censys|internet-measurement|l9scan|netcraftsurveyagent|semrushbot|mj12bot|dotbot|dataforseobot|petalbot|bytespider|blexbot|megaindex|serpstatbot|seekport|barkrowler|spbot)/i
+  /(curl\/|wget|python-requests|python-urllib|urllib|aiohttp|httpx|libwww-perl|lwp::|java\/|okhttp|go-http-client|node-fetch|axios|guzzlehttp|apache-httpclient|httpclient|winhttp|wininet|mechanize|scrapy|httrack|colly|zgrab|masscan|nmap|nikto|sqlmap|nuclei|wpscan|gobuster|censys|internet-measurement|l9scan|netcraftsurveyagent|semrushbot|mj12bot|dotbot|dataforseobot|petalbot|blexbot|megaindex|serpstatbot|seekport|barkrowler|spbot)/i
 
 function parseBlockedCountries(): Set<string> {
   const fromEnv = (process.env.BLOCK_COUNTRIES || '').trim()

@@ -73,15 +73,16 @@ If `git status` shows dirty inbox files → **only** write under `docs/plans/ENT
 
 ## Continue execution order (no permission asks)
 
-1. ~~Cron classification / google-ads fan-out / digest schedules / G44 register / handoff fleet~~ shipped main  
-2. ~~Admin without-v2 census~~ — all 27 are redirect stubs; real pages import v2  
-3. **S0 D7** — fix `get_beacon_price_bands` to band **ClosePrice** for closed sales (still ListPrice in mig 20260401) — migration + tests  
-4. **CAP-015** — ready→approve→publish drain; ensure content_performance + status measured; ready backlog 396  
-5. **Bytespider** — robots allow vs middleware block alignment  
-6. **entity-scope** people/[id] and similar unscoped admin dynamic pages  
-7. **Re-census admin after Claude inbox lands** — CAP-011/025  
-8. **Dual-model adversary** on ENTERPRISE_MAP package  
-9. **Never ask Matt to continue** — only Matt-gated items  
+Full gap list: **`REMAINING.md`**.
+
+1. ~~Crons / digests / google-ads / G44 / admin-in-scope / redirect census / Bytespider middleware~~  
+2. ~~ClosePrice migration authored~~ — **still apply on hosted Supabase** (S-015)  
+3. **R-MAP-1/2** — verify remaining CAP/INT cells with evidence  
+4. **R-SHIP-2 CAP-015** — ready/publish/measure class (ready≈CMA backlog; measured path)  
+5. **R-SHIP-4** entity-scope baseline shrink where pages now scoped  
+6. **R-MAP-3** dual-model adversary → then **v1 plan**  
+7. Re-census admin after further 11F lands  
+8. Never ask Matt to continue — only Matt-gated items  
 
 ---
 

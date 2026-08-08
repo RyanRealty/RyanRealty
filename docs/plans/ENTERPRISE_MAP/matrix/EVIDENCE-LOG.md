@@ -120,3 +120,15 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 ### S0 D7 migration authored 2026-08-08
 - `supabase/migrations/20260808181843_beacon_price_bands_close_price.sql` — closed sales bands use ClosePrice; active still ListPrice; return keys unchanged.
 - Apply via db:push in same delivery as map commit.
+
+### Bytespider alignment (2026-08-08)
+- Removed `bytespider` from middleware BAD_BOT_RE so robots.txt Allow for Bytespider is not contradicted by 403 middleware.
+- Other scraper bots remain blocked.
+
+### CAP-015 ready sample (2026-08-08)
+- Of first 50 ready by created_at: 44 content:cma, few social; of 30 ready inspected: 1 publish_payload, 0 published_to.
+- Ready queue is largely **approval backlog for CMAs/ops**, not posts waiting to measure.
+- measured=0 class = publish identity + status transition + content_performance linkage for the few content executes.
+
+### Admin without-v2
+- All 27 classified redirect stubs (Q-admin-without-v2-classified.txt).

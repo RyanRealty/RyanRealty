@@ -1,0 +1,34 @@
+{
+  "readySampleTypes": {
+    "content:market_data_short": 1,
+    "content:cma": 44,
+    "ops:fub_tag_fix": 1,
+    "analyze:metric_decomposition": 1,
+    "ops:meta_budget": 1,
+    "content:blog_post": 1,
+    "content:ig_carousel": 1
+  },
+  "readySampleN": 50,
+  "contentPerformanceRows": 6,
+  "samplePerf": [
+    {
+      "id": "a6172593-03b3-49e0-a5c8-5ef55e46ef35",
+      "action_id": "434c6fb9-46f3-43fe-8eee-f3d3ef0567f4",
+      "platform": "facebook"
+    },
+    {
+      "id": "3effeaf5-c7e7-4699-aa2f-bbd4b2836d3f",
+      "action_id": "434c6fb9-46f3-43fe-8eee-f3d3ef0567f4",
+      "platform": "x"
+    },
+    {
+      "id": "ff541143-a5f2-4166-8ba0-cb9fb86f9174",
+      "action_id": "567d201b-b30e-4b6b-bb1f-a3b6edc3b30d",
+      "platform": "facebook"
+    }
+  ],
+  "ready30": {
+    "withPublishPayload": 1,
+    "withPublishedTo": 0
+  }
+}
