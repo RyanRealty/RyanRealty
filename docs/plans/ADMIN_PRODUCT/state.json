@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "11F UNIT 2 COMPLETE 2026-08-08 \u2014 CRM config-table editor (stages/segments/areas) on v2; Switch/Dialog/ConfirmDialog/IconButton added to the v2 barrel, so the remaining crm/settings editors are mostly mechanical and geo's ResortCommunityToggle is unblocked. Token-gated admin pages 105 of 170. Shipped a76013b4 + 629564b5, deployed READY. Next: 11F continues (crm/inbox 12, operations 9, crm 8, the other 11 settings editors), interleaved with the P12 correctness queue.",
+  "current_process": "11F UNIT 3 COMPLETE 2026-08-08 \u2014 \u00a70 fix on /admin/operations: 'Active' was 2,915 for a 7,658 active bucket and 'Listings (total)' was 0 for 594,608 rows; both now read the service-role DAL their siblings use, verified in-browser at 7,659 / 617,326 (the latter labelled an estimate, measured 3.82% high). Shipped 2f7732db. The nine Dashboard*Panel islands are NOT yet on v2 \u2014 that migration is now presentation-only and is the next unit. Token-gated admin pages 105 of 170.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-08T05:10:00Z"
+  "updated_at": "2026-08-08T06:40:00Z"
 }

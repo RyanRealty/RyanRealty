@@ -17,7 +17,7 @@
   {
     "id": "12-published-figures",
     "phase": "P12",
-    "note": "Two figures corrected on their own pages in 11E are STILL WRONG elsewhere. (a) getTotalListingsCount() sums geo_snapshot_mv.active_sfr_count over the TOP 50 CITIES (3,530) while 136 cities have non-zero counts and `listings` holds 7,611 Active rows \u2014 removed from /admin/operations, but DashboardSyncPanel.tsx:57 still renders it under the heading 'Active', fed by getAdminSyncCounts (app/actions/listings.ts:1796) plus two /api/admin/sync/* routes. (b) The market/reports pages' _fetchAllCitySnapshots .limit(50) is the same cap \u2014 a verdict nearly shipped reading 'N cities have an active single-family listing' when 135 qualify."
+    "note": "RESOLVED 2026-08-08 (2f7732db) for the admin surfaces, with one follow-on below. (a) getTotalListingsCount() summed geo_snapshot_mv.active_sfr_count over the TOP 50 CITIES and rendered under the heading 'Active' \u2014 measured 2,915 against an active bucket of 7,658. Root cause was not only the cap: it and totalListings were the ONLY two counts routing through an inner unstable_cache nested inside the operations page's outer unstable_cache, and they were the only two wrong. Both now call getActiveBucketCount() / getAllListingsCount() \u2014 the same DAL family every sibling on that panel uses, and the same one the panel's OWN status breakdown was already using eight rows below. getTotalListingsCount had no other caller and is deleted. Verified in a browser after the 180s cache turned over: 7,659 and 617,326. 'Active listings' is restored to the operations strip. (b) The market/reports _fetchAllCitySnapshots .limit(50) is UNTOUCHED and still caps the public-site city grid at 50 of 136 qualifying cities \u2014 that half of this item is still open."
   },
   {
     "id": "12-blog-publish-risk",
@@ -63,5 +63,10 @@
     "id": "11f-admin-dark-mode-unreachable",
     "phase": "P12",
     "note": "ADMIN_UI \u00a76 says dark mode ships from day one and the P6 lock records 'DECIDED (Matt): ship both'. It is NOT reachable: nothing in the codebase sets data-theme (grepped app/, components/, lib/ \u2014 the attribute appears only in the two tokens.css files). Measured 2026-08-08 by forcing it pre-hydration: the admin's own tokens flip correctly (--a-text #1c2024 -> #edeef0, panes/charts/map all follow), but document.body stays lab(100 0 0) = WHITE, so every dark token would render light-on-white and the surface would be unusable. Two things to decide: whether the body background is the admin's to own (it comes from outside app/admin), and whether a theme control is wanted at all. ci:admin-contrast passes because it computes token PAIRS, not what the body actually paints \u2014 it cannot see this."
+  },
+  {
+    "id": "12-listings-never-analyzed",
+    "phase": "P12",
+    "note": "DATA ACCURACY. `listings` has NEVER been analyzed: pg_stat_user_tables.last_analyze AND last_autoanalyze are both NULL (checked 2026-08-08), so pg_class.reltuples is whatever the last index build left behind. Measured drift: reltuples 617,326 vs exact count 594,608 = 3.82% HIGH. This is published \u2014 getAllListingsCount() uses count:'estimated' because an exact count times out, and it feeds the admin 'Listings (total)' card and the listing-detail database summary. Both are now LABELLED as estimates and the DAL comment carries the measured drift, so nothing claims false exactness; but the actual repair is an ANALYZE on that table, which also gives the query planner honest statistics for every other query against a 594k-row table \u2014 worth checking whether any slow query is a bad plan from these stats. Not run mid-unit because it is a production maintenance operation that deserves its own decision. Check autovacuum settings on the table while there: never-autoanalyzed on a table this size is itself the finding."
   }
 ]
