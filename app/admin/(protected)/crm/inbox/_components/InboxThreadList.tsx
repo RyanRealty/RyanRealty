@@ -39,7 +39,7 @@ import type {
   InboxFolderKey,
   InboxScopeKey,
 } from '@/lib/data/crm/getInboxQueue'
-import { inboxHref } from '@/components/admin/crm/inbox/inbox-url'
+import { inboxHref } from './inbox-url'
 
 export type ThreadListRow = InboxConversation & { tsLabel: string }
 

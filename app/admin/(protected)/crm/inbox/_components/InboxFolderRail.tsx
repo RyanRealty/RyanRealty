@@ -10,8 +10,8 @@ import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { InboxFolderCounts, InboxFolderKey, InboxScopeKey } from '@/lib/data/crm/getInboxQueue'
-import { inboxHref } from '@/components/admin/crm/inbox/inbox-url'
-import ComposeButton from '@/components/admin/crm/inbox/ComposeButton'
+import { inboxHref } from './inbox-url'
+import ComposeButton from './ComposeButton'
 
 const FOLDER_LABELS: Array<{ key: InboxFolderKey; label: string }> = [
   { key: 'inbox', label: 'Inbox' },

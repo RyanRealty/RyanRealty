@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
-import { inboxHref } from '@/components/admin/crm/inbox/inbox-url'
+import { inboxHref } from '../inbox-url'
 import type { InboxFolderKey, InboxScopeKey } from '@/lib/data/crm/getInboxQueue'
 import MobileInboxRow, { type MobileConvRow } from './MobileInboxRow'
 

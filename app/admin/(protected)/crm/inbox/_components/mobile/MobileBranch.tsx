@@ -12,7 +12,7 @@
  * and passed through — this component adds no data access and no send paths.
  */
 
-import AddPersonForm from '@/components/admin/crm/inbox/AddPersonForm'
+import AddPersonForm from '../AddPersonForm'
 import MobileInbox from './MobileInbox'
 import type { MobileConvRow } from './MobileInboxRow'
 import MobileThread, { type MobileThreadItem, type MobileThreadContext } from './MobileThread'

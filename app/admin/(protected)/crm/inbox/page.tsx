@@ -61,27 +61,27 @@ import { sendEmail } from '@/lib/resend'
 import { formatDateTime } from '@/lib/format/date'
 // v2 language (ADMIN_UI.md): the pane label + the failed-send line.
 import { SectionHead, VerdictLine } from '@/components/admin/v2'
-import InboxFolderRail from '@/components/admin/crm/inbox/InboxFolderRail'
-import InboxThreadList, { type ThreadListRow } from '@/components/admin/crm/inbox/InboxThreadList'
-import InboxThreadView, { type InboxThreadViewItem } from '@/components/admin/crm/inbox/InboxThreadView'
-import ThreadHeader from '@/components/admin/crm/inbox/ThreadHeader'
-import InlineReply from '@/components/admin/crm/inbox/InlineReply'
-import NoteTray from '@/components/admin/crm/inbox/NoteTray'
+import InboxFolderRail from '@/app/admin/(protected)/crm/inbox/_components/InboxFolderRail'
+import InboxThreadList, { type ThreadListRow } from '@/app/admin/(protected)/crm/inbox/_components/InboxThreadList'
+import InboxThreadView, { type InboxThreadViewItem } from '@/app/admin/(protected)/crm/inbox/_components/InboxThreadView'
+import ThreadHeader from '@/app/admin/(protected)/crm/inbox/_components/ThreadHeader'
+import InlineReply from '@/app/admin/(protected)/crm/inbox/_components/InlineReply'
+import NoteTray from '@/app/admin/(protected)/crm/inbox/_components/NoteTray'
 import ContactSidebar, {
   type SidebarActivityItem,
   type SidebarRecentItem,
-} from '@/components/admin/crm/inbox/ContactSidebar'
-import AddPersonForm from '@/components/admin/crm/inbox/AddPersonForm'
-import MobileBranch from '@/components/admin/crm/inbox/mobile/MobileBranch'
-import type { MobileThreadItem } from '@/components/admin/crm/inbox/mobile/MobileThread'
+} from '@/app/admin/(protected)/crm/inbox/_components/ContactSidebar'
+import AddPersonForm from '@/app/admin/(protected)/crm/inbox/_components/AddPersonForm'
+import MobileBranch from '@/app/admin/(protected)/crm/inbox/_components/mobile/MobileBranch'
+import type { MobileThreadItem } from '@/app/admin/(protected)/crm/inbox/_components/mobile/MobileThread'
 import {
   BROKER_HEADSHOTS,
   buildMobileRows,
   buildMobileThreadItems,
   pickMobileMode,
   splitComposeTemplates,
-} from '@/components/admin/crm/inbox/mobile/mobile-data'
-import { inboxHref, isScopeKey, isFolderKey, mapLegacyScope, relativeLabel, FOLDER_TITLES, BROKER_OPTIONS } from '@/components/admin/crm/inbox/inbox-url'
+} from '@/app/admin/(protected)/crm/inbox/_components/mobile/mobile-data'
+import { inboxHref, isScopeKey, isFolderKey, mapLegacyScope, relativeLabel, FOLDER_TITLES, BROKER_OPTIONS } from '@/app/admin/(protected)/crm/inbox/_components/inbox-url'
 
 export const metadata = { title: 'Inbox | CRM | Admin' }
 export const dynamic = 'force-dynamic'

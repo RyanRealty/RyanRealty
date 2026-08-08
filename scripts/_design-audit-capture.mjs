@@ -21,32 +21,35 @@ const only = onlyArg ? new Set(onlyArg.split(',')) : null
 const PAGES = [
   ['home',                 '/',                                          1, 'first-impression / homepage'],
   ['search',               '/homes-for-sale',                            1, 'core discovery / search results'],
-  ['listing-detail',       '/listing/20260328234720220317000000',        1, 'core action / listing detail (mid $550k)'],
-  ['listing-luxury',       '/listing/20250715233741474954000000',        2, 'listing detail (luxury $11.9M)'],
+  ['search-bend',          '/homes-for-sale/bend',                       1, 'core discovery / city search'],
+  ['listing-detail',       '/homes-for-sale/bend/mtn-high/60643-thunderbird-220225319', 1, 'core action / listing detail (~$969k)'],
+  ['listing-luxury',       '/homes-for-sale/bend/rimrock-west/4211-lower-village-220225179', 1, 'listing detail (luxury ~$1.9M)'],
   ['sell',                 '/sell',                                      1, 'seller funnel entry'],
   ['sell-valuation',       '/sell/valuation',                            1, 'seller conversion / valuation'],
   ['lp-seller-home-value', '/lp/seller-home-value',                      1, 'paid LP / seller value'],
   ['about',                '/about',                                     1, 'trust / about'],
   ['team',                 '/team',                                      1, 'trust / team'],
-  ['team-member',          '/team/matthew-ryan',                         2, 'trust / broker profile'],
+  ['team-member',          '/team/matthew-ryan',                         1, 'trust / broker profile'],
   ['contact',              '/contact',                                   1, 'conversion / contact'],
   ['cities',               '/cities',                                    1, 'discovery / cities hub'],
   ['city-bend',            '/cities/bend',                               1, 'discovery / city detail (Bend)'],
+  ['neighborhood',        '/cities/bend/awbrey-butte',                  1, 'discovery / neighborhood'],
   ['communities',          '/communities',                              1, 'discovery / communities hub'],
   ['community-tetherow',   '/communities/tetherow',                      1, 'discovery / community detail'],
   ['housing-market',       '/housing-market',                            1, 'authority / market hub'],
-  ['market-report',        '/housing-market/central-oregon',             2, 'authority / market report'],
+  ['market-report',        '/housing-market/central-oregon',             1, 'authority / market report'],
   ['reviews',              '/reviews',                                   1, 'trust / reviews'],
   ['blog',                 '/blog',                                      1, 'content / blog index'],
-  ['blog-post',            '/blog/understanding-home-appraisals',        2, 'content / article'],
-  ['buy',                  '/buy',                                       2, 'buyer funnel entry'],
-  ['luxury-homes-bend',    '/luxury-homes-bend',                         2, 'SEO landing / luxury'],
-  ['faq',                  '/faq',                                       2, 'support / faq'],
-  ['resources',            '/resources',                                 2, 'support / resources'],
-  ['open-houses',          '/open-houses',                               2, 'discovery / open houses'],
-  ['tools-mortgage',       '/tools/mortgage-calculator',                 2, 'tool / mortgage calc'],
-  ['login',                '/login',                                     2, 'account / login'],
-  ['signup',               '/signup',                                    2, 'account / signup'],
+  ['blog-post',            '/blog/understanding-home-appraisals',        1, 'content / article'],
+  ['buy',                  '/buy',                                       1, 'buyer funnel entry'],
+  ['luxury-homes-bend',    '/luxury-homes-bend',                         1, 'SEO landing / luxury'],
+  ['faq',                  '/faq',                                       1, 'support / faq'],
+  ['resources',            '/resources',                                 1, 'support / resources'],
+  ['open-houses',          '/open-houses',                               1, 'discovery / open houses'],
+  ['tools-mortgage',       '/tools/mortgage-calculator',                 1, 'tool / mortgage calc'],
+  ['zip',                  '/zip/97703',                                 1, 'discovery / zip page'],
+  ['login',                '/login',                                     1, 'account / login'],
+  ['signup',               '/signup',                                    1, 'account / signup'],
 ]
 
 const VIEWPORTS = {
@@ -121,11 +124,13 @@ async function capture(browser, name, path, vpName) {
   await ctx.close()
 }
 
+// Always capture desktop + mobile. Responsiveness is in scope for every public
+// template (Matt 2026-08-06). The old tier===1 mobile gate is retired.
 const browser = await chromium.launch()
-for (const [name, path, tier] of PAGES) {
+for (const [name, path] of PAGES) {
   if (only && !only.has(name)) continue
   await capture(browser, name, path, 'desktop')
-  if (tier === 1) await capture(browser, name, path, 'mobile')
+  await capture(browser, name, path, 'mobile')
 }
 await browser.close()
 writeFileSync(`${OUT}/_capture-manifest.json`, JSON.stringify(results, null, 2))
