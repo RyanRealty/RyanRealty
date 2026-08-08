@@ -111,6 +111,19 @@ const SCAN_DIRS = [
   // moved into the route's own _components/ on the v2 language, so nothing in
   // the subtree imports legacy any more.
   'app/admin/(protected)/operations',
+  // 11F (2026-08-08) — dscr + content-library, whose islands moved into their
+  // own routes. dscr is FILE-FORM, not bare dir: its DscrEmailDialog mounts the
+  // G50 EmailBodyEditor chokepoint that ci:composer-discipline requires, and
+  // forking that to satisfy a color gate would defeat the gate that matters
+  // more — the same sanctioned call recorded above for people/[id] and
+  // email/compose. NOT prospecting/[kind]/[id]: its wrapper migrated, but the
+  // wrapper mounts six more legacy islands (ProspectDetailPanel,
+  // ProspectSendDialog, ProspectComplianceRibbon, ProspectDocPill, ProspectMap,
+  // ProspectPriceHistory — 1,134 lines including a send path), so that page
+  // joins when its sub-family does.
+  'app/admin/(protected)/dscr/page.tsx',
+  'app/admin/(protected)/dscr/_components/DscrScreen.client.tsx',
+  'app/admin/(protected)/content-library',
   // 11F (2026-08-08) — the three ConfigTableEditor consumers. File-form, not the
   // bare crm/settings dir: eleven sibling pages still mount legacy editors
   // (CustomFieldEditor, TagTaxonomyEditor, the company + templates islands).

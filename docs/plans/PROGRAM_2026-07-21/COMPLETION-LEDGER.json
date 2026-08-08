@@ -958,7 +958,7 @@
         "migrations": [],
         "paths": [
           "lib/marketing-brain/deliverable-share.ts",
-          "components/admin/content-library/DeliverableShareBar.tsx",
+          "app/admin/(protected)/content-library/_components/DeliverableShareBar.tsx",
           "app/admin/(protected)/content-library/page.tsx"
         ]
       },

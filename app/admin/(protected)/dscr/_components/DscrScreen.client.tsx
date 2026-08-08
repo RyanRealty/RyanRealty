@@ -35,7 +35,7 @@ import '@/components/admin/v2/report-grid.css'
 // Deferred legacy island (not one of this unit's 3 moves) — DscrEmailDialog
 // still renders through shadcn/ui. Mounted as-is, same pattern already used
 // for ProspectDetailPage/BpoBoard/CmaBoard elsewhere in the admin.
-import { DscrEmailDialog } from '@/components/admin/dscr/DscrEmailDialog.client'
+import { DscrEmailDialog } from './DscrEmailDialog.client'
 
 const usdK = (v: number | null | undefined) =>
   v == null ? '—' : `$${Math.round(v / 1000).toLocaleString()}K`
