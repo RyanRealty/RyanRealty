@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "P11 COMPLETE 2026-08-07 — the admin interior migration is done. 143/143 admin pages on v2, ci:admin-ui legacy count 131 -> 0. Deployed 8d60e4d1 READY. Next: P12 correctness debt.",
+  "current_process": "11F UNIT 1 COMPLETE 2026-08-08 \u2014 crm/reporting (15 pages) is bare-dir under ci:admin-v2-tokens; token-gated admin pages 86 -> 102 of 170, ratchets unmoved. Shipped 4c0186e1, deployed READY. Next: 11F continues largest-first by island count (crm/settings 17, crm/inbox 12, operations 9), interleaved with the P12 correctness queue.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-07T15:50:00Z"
+  "updated_at": "2026-08-08T04:20:00Z"
 }

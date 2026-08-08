@@ -41,8 +41,12 @@ do not assume slash commands or autoload worked.
 
 ## Current program state (maintained by the agent)
 
+**The live phase is always `state.json.phase` — read it first. The bullets below are
+history in the order it happened, and each names the phase it closed; a phrase like
+"Phase is `P4_DATA`" is what was true THEN, not now.**
+
 - BOOT + P1 + P2 + P3 completed 2026-08-04. **Process lock GRANTED** (decisions.md,
-  Matt 2026-08-04). Phase is `P4_DATA`, no lock awaited.
+  Matt 2026-08-04). Phase moved to `P4_DATA`, no lock awaited.
 - Locked set: 15 KEEP / 5 MERGE / 1 thin — plus 5 locked directives (one deal entity;
   supervision alarms off the wake rail; reply-on-thread joins the wake rail; prospecting
   primary in P5; CMA signs as assigned broker). All in decisions.md.
@@ -77,7 +81,7 @@ do not assume slash commands or autoload worked.
   ~4.2s kickoff, real SMS rail, worker draft 44s, zero-residue cleanup) + the
   stale-session deep-link defect Matt's phone found, fixed at 3 redirect sites
   (2b0286b5), deployed, confirmed live. ALL FOUR LOCKS GRANTED.
-- **PROGRAM COMPLETE (finish round, 2026-08-05, prod c48f653):** all 11 locked
+- **P9 FINISH ROUND COMPLETE (2026-08-05, prod c48f653):** all 11 locked
   destinations LIVE on the v2 language (Today, Messages, People, Prospecting,
   Valuations, Closings, Oversight, Reports, Audiences, Content, Settings);
   locked 5-tab bar complete; P10 gates landed (ci:admin-nav-ia parity +
@@ -85,6 +89,22 @@ do not assume slash commands or autoload worked.
   to /admin/people/[id] and the litmus RE-TIMED on production (2 taps, address
   prefilled, ~3.5s kickoff). Bonus incident closed: the 23h-stuck delta cursor
   (numeric overflow class) — clamp at the mapper chokepoint, heal verified.
-- Remaining housekeeping only: fixture 60610 cleanup on Matt's word (see
-  work-queue.json). Heavy legacy machinery behind All-tools escapes is the
-  natural P11 (see the final report in progress.txt).
+- **P11 INTERIOR MIGRATION COMPLETE 2026-08-07** (8d60e4d1) — 143/143 admin
+  pages import `@/components/admin/v2`; `ci:admin-ui` rule B (legacy pages)
+  reads **0**, down from 131. The ratchet is shrink-only: re-seed with
+  `--write-baseline` and commit the smaller baseline only when counts genuinely
+  drop.
+- **P12 CORRECTNESS is the live phase** (`state.json.phase = P12_CORRECTNESS`).
+  Units shipped: entity-scope gate + three scope fixes (unit 1–2), SMS send
+  idempotency incl. the pre-hydration window (unit 3). The queue in
+  `work-queue.json` is the worklist; `progress.txt` is authoritative over any
+  queue note that predates it.
+- **11F (the P11 tail) runs alongside P12.** Pages are on v2 SHELLS but many
+  still MOUNT legacy client islands, which token-gate rule 3 blacklists — so
+  only some pages sit inside `ci:admin-v2-tokens`. 11F unit 1 (2026-08-08,
+  `4c0186e1`) took crm/reporting: **102 of 170 admin pages token-gated**, up
+  from 86. Pick the next family by pages-per-shared-island, not by page count.
+- **Two gates measure different things — do not read one as the other.**
+  `ci:admin-ui` = the migration ratchet (legacy pages, raw elements, widths).
+  `ci:admin-v2-tokens` = what is inside the *scanned* paths (color, brand leak,
+  legacy imports). A page can pass the first and be invisible to the second.
