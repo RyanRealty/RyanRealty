@@ -110,8 +110,19 @@ history in the order it happened, and each names the phase it closed; a phrase l
 - **The v2 barrel is the pressure valve.** When a migration needs a control the
   barrel lacks, ADD THE PRIMITIVE — never widen a ratchet baseline and never
   reach back into `components/ui`. It now carries Button, IconButton, Switch,
-  Dialog, ConfirmDialog, ToolbarSelect, ToolbarCheck, the Field family,
-  ReportGrid, and the `av2-subnav` / `av2-cardlist` / `av2-reorder` patterns.
+  Dialog, ConfirmDialog, **Sheet, Menu, SearchField**, ToolbarSelect,
+  ToolbarCheck, the Field family, ReportGrid, and the `av2-subnav` /
+  `av2-cardlist` / `av2-reorder` patterns. Every one requires its accessible
+  name in the TYPE, so a nameless control cannot compile.
+- **A surface that SENDS is gated around its composer, never through it.**
+  people/[id], email/compose, dscr and crm/inbox all mount the canonical
+  SmsComposer / EmailComposer that `ci:composer-discipline` requires; those files
+  stay file-form in SCAN_DIRS with the reason at the entry. Forking the one send
+  interface to satisfy a colour gate defeats the gate that matters more.
+- **Wiring the gate is part of the unit.** Twice now a migration finished and the
+  pages were never added to SCAN_DIRS — work done, invisible to CI, and absent
+  from the coverage count. Check `TOKEN-GATED n of 170` before calling a unit
+  complete.
 - **The token gate reads IMPORTS, not appearance.** It bans `components/ui`
   imports, raw hex and Tailwind PALETTE classes — it does NOT see shadcn
   *semantic* classes (`bg-card`, `text-foreground`, `text-muted-foreground`,

@@ -111,6 +111,30 @@ const SCAN_DIRS = [
   // moved into the route's own _components/ on the v2 language, so nothing in
   // the subtree imports legacy any more.
   'app/admin/(protected)/operations',
+  // 11F (2026-08-08) — crm/inbox. FILE-FORM, and the exclusions are the whole
+  // point: InlineReply, MobileThread and MobileComposeSheet mount the canonical
+  // SmsComposer / EmailComposer that ci:composer-discipline REQUIRES. A surface
+  // that SENDS is gated AROUND its composer, never through it — forking the one
+  // send interface to satisfy a colour gate would defeat the gate that matters
+  // more. Same call as people/[id], email/compose and dscr. Everything else in
+  // the family is listed here, so a new file under it is a deliberate decision
+  // rather than a silent gap.
+  'app/admin/(protected)/crm/inbox/page.tsx',
+  'app/admin/(protected)/crm/inbox/_components/AddPersonForm.tsx',
+  'app/admin/(protected)/crm/inbox/_components/ComposeButton.tsx',
+  'app/admin/(protected)/crm/inbox/_components/ContactSidebar.tsx',
+  'app/admin/(protected)/crm/inbox/_components/InboxFolderRail.tsx',
+  'app/admin/(protected)/crm/inbox/_components/InboxThreadList.tsx',
+  'app/admin/(protected)/crm/inbox/_components/InboxThreadView.tsx',
+  'app/admin/(protected)/crm/inbox/_components/NoteTray.tsx',
+  'app/admin/(protected)/crm/inbox/_components/ThreadHeader.tsx',
+  'app/admin/(protected)/crm/inbox/_components/inbox-url.ts',
+  'app/admin/(protected)/crm/inbox/_components/mobile/MobileAiPills.tsx',
+  'app/admin/(protected)/crm/inbox/_components/mobile/MobileBranch.tsx',
+  'app/admin/(protected)/crm/inbox/_components/mobile/MobileInbox.tsx',
+  'app/admin/(protected)/crm/inbox/_components/mobile/MobileInboxRow.tsx',
+  'app/admin/(protected)/crm/inbox/_components/mobile/mobile-data.ts',
+  'app/admin/(protected)/crm/inbox/_components/mobile/thread-bits.tsx',
   // 11F (2026-08-08) — dscr + content-library, whose islands moved into their
   // own routes. dscr is FILE-FORM, not bare dir: its DscrEmailDialog mounts the
   // G50 EmailBodyEditor chokepoint that ci:composer-discipline requires, and

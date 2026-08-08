@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "11F UNIT 5 COMPLETE 2026-08-08 \u2014 the independent singles (dscr, content-library, login, setup, email/compose) on v2; token-gated admin pages 111 of 170, 33 real pages left. Auth doors verified logged-out. Shipped 60c3ce7f + ce63da92 + 8c8ff5e8. NEXT: crm/inbox \u2014 12 islands, ~3,400 lines, TWO live send paths; budget a whole session, do not start it partially.",
+  "current_process": "11F UNIT 6 COMPLETE 2026-08-08 \u2014 crm/inbox migrated end-to-end (17 files, two send paths): 240 shadcn semantic classes and 41 ui imports to ZERO, gated file-form around the three composer-mounting files. Barrel grew Sheet/Menu/SearchField. Token-gated admin pages 112 of 170, 32 real pages left. Shipped c0df5aa9 + 33815142 + a7e00b48 + 0e0b0da4, deployed READY. NEXT: crm 8 islands, the 11 remaining crm/settings editors, crm/deals 5, crm/sequences 5, prospecting's six sub-islands.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-08T10:15:00Z"
+  "updated_at": "2026-08-08T12:30:00Z"
 }
