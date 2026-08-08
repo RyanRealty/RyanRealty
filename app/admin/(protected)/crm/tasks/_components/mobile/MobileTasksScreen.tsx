@@ -45,7 +45,7 @@ import { MobileTypeIcon, brokerDisplayName } from '@/components/admin/crm/mobile
 import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
 import MobileTaskCreateSheet from '@/components/admin/crm/mobile/MobileTaskCreateSheet'
 import type { TaskQueueRow, TaskQueueCounts, CrmTaskType } from '@/lib/data/crm/getTaskQueue'
-import type { TaskActions } from '@/components/admin/crm/tasks/TasksView'
+import type { TaskActions } from '../TasksView'
 
 type Result = { ok: boolean; error?: string }
 export type MobileTasksView = 'today' | 'overdue' | 'upcoming'

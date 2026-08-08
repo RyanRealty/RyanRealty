@@ -65,11 +65,11 @@ import {
   AutomationsListView,
   type AutomationListRow,
   type WorkflowPlanType,
-} from '@/components/admin/crm/automations/AutomationsListView'
+} from '@/app/admin/(protected)/crm/sequences/_components/AutomationsListView'
 import {
   AutomationRulesManager,
   type RuleRow,
-} from '@/components/admin/crm/workflows/AutomationRulesManager'
+} from '@/app/admin/(protected)/crm/sequences/_components/AutomationRulesManager'
 
 export const metadata = { title: 'Automations | CRM | Admin' }
 export const dynamic = 'force-dynamic'

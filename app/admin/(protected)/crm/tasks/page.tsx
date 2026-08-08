@@ -74,9 +74,9 @@ import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { zonedDateKey } from '@/lib/format/date'
 import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { VerdictLine } from '@/components/admin/v2'
-import TasksView, { type TaskActions, type TasksDesktopView } from '@/components/admin/crm/tasks/TasksView'
-import MobileTasksScreen from '@/components/admin/crm/tasks/mobile/MobileTasksScreen'
-import NewTaskDialog from '@/components/admin/crm/tasks/NewTaskDialog'
+import TasksView, { type TaskActions, type TasksDesktopView } from '@/app/admin/(protected)/crm/tasks/_components/TasksView'
+import MobileTasksScreen from '@/app/admin/(protected)/crm/tasks/_components/mobile/MobileTasksScreen'
+import NewTaskDialog from '@/app/admin/(protected)/crm/tasks/_components/NewTaskDialog'
 
 export const metadata = { title: 'Tasks | CRM | Admin' }
 export const dynamic = 'force-dynamic'

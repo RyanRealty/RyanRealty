@@ -42,15 +42,15 @@ import { getWorkflowStepAnalytics } from '@/lib/data/crm/getWorkflowAnalytics'
 import { scopeBroker } from '@/lib/crm/scope'
 import type { AnyStepOrCondition, SequenceTrigger } from '@/lib/crm/sequence-step-schema'
 import { StateWord, VerdictLine } from '@/components/admin/v2'
-import { AutomationEditor } from '@/components/admin/crm/automations/AutomationEditor'
+import { AutomationEditor } from '@/app/admin/(protected)/crm/sequences/_components/AutomationEditor'
 import type {
   TemplateOption,
   TagOption,
   StageOption,
   BrokerOption,
   SequenceOption,
-} from '@/components/admin/crm/automations/StepConfigPanel'
-import type { CanvasFunnelRow } from '@/components/admin/crm/automations/EditorCanvas'
+} from '@/app/admin/(protected)/crm/sequences/_components/StepConfigPanel'
+import type { CanvasFunnelRow } from '@/app/admin/(protected)/crm/sequences/_components/EditorCanvas'
 
 export const metadata = { title: 'Edit automation | CRM | Admin' }
 export const dynamic = 'force-dynamic'
