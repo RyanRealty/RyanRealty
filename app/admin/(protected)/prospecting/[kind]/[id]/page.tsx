@@ -42,7 +42,7 @@ import {
   sendProspectTest,
 } from '@/app/actions/prospecting'
 import { EntityTitle } from '@/components/admin/v2'
-import { ProspectDetailPage } from '@/components/admin/prospecting/ProspectDetailPage.client'
+import { ProspectDetailPage } from './_components/ProspectDetailPage.client'
 
 export const dynamic = 'force-dynamic'
 // The inline "Build audit" runs the deterministic CMA builder (~30-60s).

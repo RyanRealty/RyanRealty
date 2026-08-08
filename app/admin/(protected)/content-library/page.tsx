@@ -41,7 +41,7 @@ import {
   captionFor,
   shareableTypeLabel,
 } from '@/lib/marketing-brain/deliverable-share'
-import { DeliverableShareBar } from '@/components/admin/content-library/DeliverableShareBar'
+import { DeliverableShareBar } from './_components/DeliverableShareBar'
 import { ReportError, SectionHead, VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'

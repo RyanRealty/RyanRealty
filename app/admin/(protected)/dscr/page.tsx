@@ -39,7 +39,7 @@
 
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getDscrScreen, DSCR_DEFAULTS } from '@/lib/data/dscr/screen'
-import { DscrScreen } from '@/components/admin/dscr/DscrScreen.client'
+import { DscrScreen } from './_components/DscrScreen.client'
 import { VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'

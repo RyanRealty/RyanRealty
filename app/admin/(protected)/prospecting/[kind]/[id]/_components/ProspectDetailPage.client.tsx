@@ -8,15 +8,21 @@
  * ProspectingBoard: the build transition and the send dialog. Nothing here
  * re-implements a gate — every mutation is a server action passed in from the
  * route, and each one re-checks compliance live at click time.
+ *
+ * P11F: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
+ * and moved into the route's own _components/ (was
+ * components/admin/prospecting/ProspectDetailPage.client.tsx). ProspectDetailPanel
+ * and ProspectSendDialog stay mounted legacy islands (still shadcn) — out of
+ * scope for this unit, same deferred-child pattern already recorded in
+ * scripts/check-admin-v2-tokens.mjs for this exact component.
  */
 
 import { useCallback, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Card } from '@/components/ui/card'
 import type { ProspectDetail, ProspectKind, SendIntroResult } from '@/lib/data/prospecting/types'
-import { ProspectDetailPanel } from './ProspectDetailPanel.client'
-import { ProspectSendDialog, type ProspectSendContext } from './ProspectSendDialog.client'
+import { ProspectDetailPanel } from '@/components/admin/prospecting/ProspectDetailPanel.client'
+import { ProspectSendDialog, type ProspectSendContext } from '@/components/admin/prospecting/ProspectSendDialog.client'
 
 export function ProspectDetailPage({
   detail,
@@ -101,14 +107,14 @@ export function ProspectDetailPage({
 
   return (
     <>
-      <Card className="p-5 sm:p-6">
+      <div className="av2-pane">
         <ProspectDetailPanel
           detail={detail}
           onBuild={handleBuild}
           onSend={openSend}
           onOpenSend={() => openSend(detail.id)}
         />
-      </Card>
+      </div>
 
       <ProspectSendDialog
         open={dialog.open}
