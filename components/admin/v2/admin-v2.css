@@ -289,6 +289,64 @@ textarea.av2-input { min-height:88px; resize:vertical; }
   .av2-dialog__foot .av2-btn { width:100%; min-height:var(--a-touch); }
 }
 
+/* ---- Rendered email body (11F). The HTML comes from a mail provider, so its
+   links and images cannot be styled at the call site — only by descendant rule.
+   This lives here rather than in an inline <style> tag, which eslint's
+   no-restricted-syntax bans and which would re-declare itself per message. ---- */
+@layer base {
+  /* Layered on purpose: an un-layered element colour rule outranks the whole
+     Tailwind utilities layer regardless of specificity — the invisible-CTA-text
+     P0 of 2026-07-08, which ci:css-layers exists to prevent. */
+  .rr-mail-body a { color:var(--a-accent); }
+}
+.rr-mail-body img { width:100%; height:auto; }
+.rr-mail-body table { width:100%; }
+
+/* ---- Menu (11F): overflow ACTIONS anchored to a trigger. Not a form control —
+   choosing a value is SelectField's job. ---- */
+.av2-menu { position:relative; display:inline-flex; }
+.av2-menu__panel { position:absolute; top:calc(100% + 4px); z-index:30; min-width:180px;
+  display:flex; flex-direction:column; padding:var(--a-s1);
+  background:var(--a-bg); border:1px solid var(--a-border); border-radius:var(--a-r-md);
+  box-shadow:var(--a-shadow-overlay); }
+.av2-menu__panel[data-align="end"]   { right:0; }
+.av2-menu__panel[data-align="start"] { left:0; }
+.av2-menu__item { display:flex; align-items:center; gap:var(--a-s2); width:100%;
+  min-height:var(--a-touch); padding:0 var(--a-s3); border:none; background:none;
+  border-radius:var(--a-r-sm); cursor:pointer; text-align:left;
+  font-family:var(--a-font); font-size:var(--a-text-md); color:var(--a-text); }
+@media (pointer:fine) { .av2-menu__item { min-height:32px; } }
+.av2-menu__item:hover:not(:disabled) { background:var(--a-inset); }
+.av2-menu__item:focus-visible { outline:none; box-shadow:var(--a-focus); }
+.av2-menu__item--danger { color:var(--a-danger); }
+.av2-menu__item:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ---- Sheet (11F): the phone's overlay. Rises from the thumb, keeps context
+   visible above it. Dialog is for a question; Sheet is for a surface you act
+   on. Shares Dialog's platform mechanics via <dialog>.showModal(). ---- */
+.av2-sheet { position:fixed; left:0; right:0; bottom:0; top:auto; margin:0;
+  width:100%; max-width:none; max-height:92dvh; overflow-y:auto;
+  border:none; border-top:1px solid var(--a-border);
+  border-radius:var(--a-r-lg) var(--a-r-lg) 0 0;
+  background:var(--a-bg); color:var(--a-text); font-family:var(--a-font);
+  font-size:var(--a-text-md); line-height:var(--a-leading);
+  padding:var(--a-s3) var(--a-s4) var(--a-s5);
+  box-shadow:var(--a-shadow-overlay); }
+.av2-sheet__grip { width:36px; height:4px; border-radius:999px;
+  background:var(--a-border-strong); margin:0 auto var(--a-s3); }
+.av2-sheet__head { display:flex; align-items:center; justify-content:space-between;
+  gap:var(--a-s3); margin-bottom:var(--a-s3); }
+.av2-sheet__body { display:flex; flex-direction:column; gap:var(--a-s3); }
+/* Desktop: a sheet is a phone idiom — centre it so a wide viewport does not get
+   a full-width strip pinned to the bottom edge. */
+@media (min-width:768px) {
+  .av2-sheet { left:50%; right:auto; bottom:auto; top:50%;
+    transform:translate(-50%,-50%); width:min(560px, calc(100vw - var(--a-s8)));
+    max-height:85dvh; border:1px solid var(--a-border);
+    border-radius:var(--a-r-lg); padding:var(--a-s5); }
+  .av2-sheet__grip { display:none; }
+}
+
 /* ---- Switch (11F): a native checkbox with role="switch"; the track and thumb
    are drawn here so nothing re-implements focus or activation. ---- */
 .av2-switch { display:inline-flex; align-items:center; gap:var(--a-s2);

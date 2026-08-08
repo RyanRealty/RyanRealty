@@ -3,12 +3,12 @@
  * (spec §08 §3). Server component: Compose button (client child), the global
  * unread header, then MY INBOX and COMPANY sections each with the five FUB
  * folders (Inbox / Assigned / Drafts / Sent / Closed) and live count badges.
- * Active folder: left border accent + navy tint (spec §3.1).
+ * Active folder: accent wash + accent text, via the av2-rail__item
+ * [aria-current="page"] rule (admin v2 language, design_system/admin/ADMIN_UI.md).
  */
 
 import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import '@/components/admin/v2/admin-v2.css'
 import type { InboxFolderCounts, InboxFolderKey, InboxScopeKey } from '@/lib/data/crm/getInboxQueue'
 import { inboxHref } from './inbox-url'
 import ComposeButton from './ComposeButton'
@@ -38,9 +38,8 @@ function FolderSection({
 }) {
   return (
     <div>
-      <div className="px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {heading}{' '}
-        <span className="tabular-nums font-normal">({counts.inbox})</span>
+      <div className="av2-rail__group">
+        {heading} <span className="a-num" style={{ fontWeight: 400 }}>({counts.inbox})</span>
       </div>
       {FOLDER_LABELS.map((f) => {
         const active = activeScope === scopeKey && activeFolder === f.key
@@ -49,19 +48,12 @@ function FolderSection({
           <Link
             key={f.key}
             href={inboxHref({ scope: scopeKey, folder: f.key, view })}
-            className={cn(
-              'flex items-center justify-between border-l-2 py-1.5 pl-5 pr-3 text-sm transition-colors',
-              active
-                ? 'border-primary bg-primary/5 font-semibold text-foreground'
-                : 'border-transparent text-foreground hover:bg-primary/5',
-            )}
+            className="av2-rail__item"
             aria-current={active ? 'page' : undefined}
           >
             <span>{f.label}</span>
             {count > 0 ? (
-              <Badge variant="secondary" className="tabular-nums px-1.5 py-0 text-xs font-normal">
-                {count}
-              </Badge>
+              <span className="av2-rail__count a-num">{count}</span>
             ) : null}
           </Link>
         )
@@ -92,7 +84,7 @@ export default function InboxFolderRail({
       </div>
 
       {/* Global unread header (spec §3.1) */}
-      <div className="px-4 pb-1 text-xs text-muted-foreground tabular-nums">
+      <div className="px-4 pb-1 a-num" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
         {unreadTotal} Unread {unreadTotal === 1 ? 'Message' : 'Messages'}
       </div>
 
@@ -104,7 +96,7 @@ export default function InboxFolderRail({
         activeFolder={activeFolder}
         view={view}
       />
-      <div className="mx-4 my-2 border-t border-border" />
+      <div className="mx-4 my-2" style={{ borderTop: '1px solid var(--a-border)' }} />
       <FolderSection
         scopeKey="company"
         heading="Company"

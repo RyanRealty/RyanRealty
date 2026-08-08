@@ -68,7 +68,7 @@
   {
     "id": "inbox-mobile",
     "specRef": "docs/fub-crm-spec/26-mobile-inbox-and-conversations.md",
-    "route": "components/admin/crm/inbox/mobile/MobileBranch.tsx",
+    "route": "app/admin/(protected)/crm/inbox/_components/mobile/MobileBranch.tsx",
     "status": "done",
     "requiredComponents": [
       "MobileInbox",
@@ -210,7 +210,7 @@
   {
     "id": "mobile-compose",
     "specRef": "docs/fub-crm-spec/27-mobile-compose-email-text-call.md",
-    "route": "components/admin/crm/inbox/mobile/MobileComposeSheet.tsx",
+    "route": "app/admin/(protected)/crm/inbox/_components/mobile/MobileComposeSheet.tsx",
     "status": "done",
     "requiredComponents": [
       "MobileAiPills",

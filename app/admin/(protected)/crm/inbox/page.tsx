@@ -558,9 +558,9 @@ export default async function CrmInboxPage({
 
       {/* Desktop (>= md): folder tree | thread list | reading pane + contact sidebar. */}
       <div className="hidden md:block">
-        {/* divide-border stays: Tailwind v4 divide-* falls back to currentColor
-            without it, which would paint the pane rules in the text colour. */}
-        <div className="grid h-[calc(100vh-8.5rem)] grid-cols-[210px_minmax(280px,340px)_minmax(0,1fr)] divide-x divide-border overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        {/* Pane rules come from [&>*+*]:border-l in var(--a-border), not
+            Tailwind's divide-border (a PUBLIC-palette class). */}
+        <div className="grid h-[calc(100vh-8.5rem)] grid-cols-[210px_minmax(280px,340px)_minmax(0,1fr)] overflow-hidden rounded-xl border [&>*+*]:border-l" style={{ borderColor: 'var(--a-border)', background: 'var(--a-bg)' }}>
           {/* Pane 1: folder tree */}
           <InboxFolderRail
             activeScope={scopeKey}
@@ -595,10 +595,10 @@ export default async function CrmInboxPage({
             />
           </div>
 
-          {/* Pane 3: reading pane + contact sidebar */}
+          {/* Sidebar hidden <1536px: pane 3 is 416px at 1280, and sharing that with a ~230px sidebar renders ~one word per line. */}
           <div data-tour="inbox-reading" className="flex min-h-0 min-w-0">
             {readingPane}
-            {contactSidebar}
+            <div className="hidden 2xl:flex">{contactSidebar}</div>
           </div>
         </div>
       </div>

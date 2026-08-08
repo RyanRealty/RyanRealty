@@ -5,18 +5,23 @@
  * rendered as a full-screen pushed view (fixed overlay — FUB hides the tab bar
  * on pushed screens, AC-26E-07).
  *
- *   - Navy header: back ‹ · avatar + name (+ › to the contact profile) · phone
- *     (SMS threads → S8 calling-method sheet) · kebab popover (26-G).
- *   - Email mode: 22px-bold subject block, per-email sender rows + sanitized
- *     HTML bodies, reply arrow on the newest email (AC-26E-03/04).
- *   - SMS mode: bubbles (outbound right/navy · inbound left/muted), timestamp
- *     separators on >1h gaps, calls as centered markers; compose panel with the
- *     §27 S3 AI pill strip + the shared suppression-gated SmsComposer.
+ *   - Header: back ‹ · avatar + name (+ › to the contact profile) · phone
+ *     (SMS threads → S8 calling-method sheet) · kebab menu (26-G).
+ *   - Email mode: subject block, per-email sender rows + sanitized HTML
+ *     bodies, reply arrow on the newest email (AC-26E-03/04).
+ *   - SMS mode: bubbles (outbound right/accent-wash · inbound left/surface),
+ *     timestamp separators on >1h gaps, calls as centered markers; compose
+ *     panel with the §27 S3 AI pill strip + the shared suppression-gated
+ *     SmsComposer.
  *   - Right-edge handle → contact context drawer (AC-26E-06).
- *   - Block-number row (26-G) with AlertDialog confirm before executing.
+ *   - Block-number row (26-G) with a confirm dialog before executing.
  *
  * Every send goes through the pre-bound page actions (sendCrmSmsAction /
  * sendCrmEmailAction server-side) — this component never adds a send path.
+ *
+ * Visual language: Ryan Realty admin v2 (design_system/admin/ADMIN_UI.md,
+ * locked 2026-08-05). Color/type reach this file only via components/admin/v2
+ * primitives or var(--a-*) tokens — see components/admin/v2/admin-v2.css.
  */
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
@@ -32,27 +37,8 @@ import {
   Smartphone,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
+import { Button, ConfirmDialog, IconButton, Menu, Sheet, ThreadBubble, type AdminMenuItem } from '@/components/admin/v2'
+import { ErrorNote, ThreadAvatar, fmtPhone, mmss } from './thread-bits'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import MobileAiPills from './MobileAiPills'
@@ -87,15 +73,8 @@ export type MobileThreadContext = {
   lastCommunicationLabel: string | null
 }
 
-function mmss(sec: number): string {
-  return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`
-}
 
-/** (NNN) NNN-NNNN display for the Block row + call sheet (AC-26G-04). */
-function fmtPhone(raw: string): string {
-  const d = raw.replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
-  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : raw
-}
+
 
 export default function MobileThread({
   personId,
@@ -198,6 +177,10 @@ export default function MobileThread({
     }
   }, [])
 
+  // Kebab menu: close on outside click or Escape (Radix DropdownMenu did this
+  // internally; hand-rolled here since components/ui/dropdown-menu is banned
+  // design input for admin v2 — LEGACY_IMPORT).
+
   // Oldest-first for rendering; items arrive newest-first from the page.
   const ordered = useMemo(() => [...items].reverse(), [items])
   const emails = useMemo(() => ordered.filter((it) => it.category === 'email'), [ordered])
@@ -212,46 +195,34 @@ export default function MobileThread({
     })
   }
 
+  // 11F: the hand-rolled role="menu" panel became the v2 Menu primitive — same
+  // items, same conditions, same handlers, but click-outside / Escape / focus
+  // return now come from one place instead of three different hand-rolls in
+  // this folder. Items are built in the same order they rendered before.
+  const kebabItems: AdminMenuItem[] = [
+    ...(phone ? [{ label: 'Call', onSelect: () => setCallOpen(true) }] : []),
+    ...(canEmail ? [{ label: 'Email', onSelect: () => setReplyOpen(true) }] : []),
+    ...(mode === 'sms' && groupCompose && canText
+      ? [{ label: 'Start a group message', onSelect: () => setGroupOpen(true) }]
+      : []),
+    ...(mode === 'email' && canEmail ? [{ label: 'Reply', onSelect: () => setReplyOpen(true) }] : []),
+    { label: 'Mark as Unread', onSelect: () => triage('unread', true) },
+    status === 'closed'
+      ? { label: 'Reopen', onSelect: () => triage('open', false) }
+      : { label: 'Archive', onSelect: () => triage('closed', true) },
+    ...(phone
+      ? [{ label: `Block ${fmtPhone(phone)}`, onSelect: () => setBlockOpen(true), danger: true }]
+      : []),
+  ]
+
   const kebab = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button type="button" aria-label="Conversation actions" className="px-1">
-          <MoreHorizontal className="h-[22px] w-[22px] text-primary-foreground" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        {phone ? (
-          <DropdownMenuItem onSelect={() => setCallOpen(true)}>
-            <Phone className="h-4 w-4" aria-hidden /> Call
-          </DropdownMenuItem>
-        ) : null}
-        {canEmail ? (
-          <DropdownMenuItem onSelect={() => setReplyOpen(true)}>Email</DropdownMenuItem>
-        ) : null}
-        {mode === 'sms' && groupCompose && canText ? (
-          <DropdownMenuItem onSelect={() => setGroupOpen(true)}>Start a group message</DropdownMenuItem>
-        ) : null}
-        {mode === 'email' && canEmail ? (
-          <DropdownMenuItem onSelect={() => setReplyOpen(true)}>Reply</DropdownMenuItem>
-        ) : null}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => triage('unread', true)}>Mark as Unread</DropdownMenuItem>
-        {status === 'closed' ? (
-          <DropdownMenuItem onSelect={() => triage('open', false)}>Reopen</DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem onSelect={() => triage('closed', true)}>Archive</DropdownMenuItem>
-        )}
-        {phone ? (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive" onSelect={() => setBlockOpen(true)}>
-              <Phone className="h-4 w-4 text-destructive" aria-hidden /> Block {fmtPhone(phone)}
-            </DropdownMenuItem>
-          </>
-        ) : null}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Menu
+      label="Conversation actions"
+      items={kebabItems}
+      trigger={<MoreHorizontal className="h-[22px] w-[22px]" />}
+    />
   )
+
 
   return (
     // Height tracks the soft keyboard (--kb-inset via KeyboardInsetSync): the
@@ -259,51 +230,52 @@ export default function MobileThread({
     // keyboard top instead of hiding behind it (fixed inset-0 spans the full
     // LAYOUT viewport, which iOS keeps keyboard-height too tall).
     <div
-      className="fixed inset-x-0 top-0 z-50 flex flex-col bg-background md:hidden"
-      style={{ height: 'calc(100dvh - var(--kb-inset, 0px))' }}
+      className="fixed inset-x-0 top-0 z-50 flex flex-col md:hidden"
+      style={{ height: 'calc(100dvh - var(--kb-inset, 0px))', background: 'var(--a-bg)' }}
     >
-      {/* ── Navy header (pushed view — no tab bar behind) ─────────────────── */}
-      <div className="flex h-14 shrink-0 items-center gap-1 bg-primary px-2">
+      {/* ── Header (pushed view — no tab bar behind) ───────────────────────── */}
+      <div className="av2-threadhead shrink-0">
         <Link href={backHref} aria-label="Back to inbox" className="flex h-11 w-11 items-center justify-center">
-          <ChevronLeft className="h-6 w-6 text-primary-foreground" />
+          <ChevronLeft className="h-6 w-6" style={{ color: 'var(--a-text-2)' }} />
         </Link>
         <Link
           href={`/admin/people/${personId}`}
           className="flex min-w-0 flex-1 items-center justify-center gap-2"
         >
-          <CrmAvatar name={name} size={32} />
-          <span className="truncate text-[17px] font-semibold text-primary-foreground">{name}</span>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary-foreground" aria-hidden />
+          <ThreadAvatar name={name} size={32} />
+          <span className="av2-threadhead__name truncate" style={{ fontSize: 'var(--a-text-lg)', color: 'var(--a-text)' }}>
+            {name}
+          </span>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--a-text-2)' }} aria-hidden />
         </Link>
         {mode === 'sms' && phone ? (
-          <button
-            type="button"
-            aria-label={`Call ${name}`}
-            onClick={() => setCallOpen(true)}
-            className="px-1.5"
-          >
-            <Phone className="h-[22px] w-[22px] text-primary-foreground" />
-          </button>
+          <IconButton label={`Call ${name}`} onClick={() => setCallOpen(true)}>
+            <Phone className="h-[22px] w-[22px]" />
+          </IconButton>
         ) : null}
         {kebab}
       </div>
 
-      {note ? (
-        <Alert variant="destructive" className="mx-3 mt-2">
-          <AlertDescription>{note}</AlertDescription>
-        </Alert>
-      ) : null}
+      {note ? <ErrorNote className="mx-3 mt-2">{note}</ErrorNote> : null}
 
       {/* ── Scrollable body ───────────────────────────────────────────────── */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {mode === 'email' ? (
           <div className="pb-8">
-            {/* Subject block (AC-26E-02) */}
-            <h1 className="px-4 py-4 text-[22px] font-bold leading-tight text-foreground">
+            {/* Subject block (AC-26E-02). Not an <h1> — ADMIN_UI acceptance
+                bar #1 bans page-title chrome; this is per-conversation content. */}
+            <div
+              role="heading"
+              aria-level={2}
+              className="px-4 py-4 font-bold leading-tight"
+              style={{ fontSize: 'var(--a-text-xl)', color: 'var(--a-text)' }}
+            >
               {newestEmail?.subject ?? lastEmailSubject ?? '(no subject)'}
-            </h1>
+            </div>
             {emails.length === 0 ? (
-              <p className="px-4 py-8 text-sm text-muted-foreground">No emails in this conversation yet.</p>
+              <p className="px-4 py-8" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                No emails in this conversation yet.
+              </p>
             ) : null}
             {emails.map((it, i) => {
               const senderName = it.direction === 'out' ? it.broker ?? 'Ryan Realty' : name
@@ -311,36 +283,34 @@ export default function MobileThread({
               return (
                 <div key={it.id}>
                   {/* Sender / meta row (AC-26E-03) */}
-                  <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-                    <CrmAvatar name={senderName} size={36} />
+                  <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid var(--a-border)' }}>
+                    <ThreadAvatar name={senderName} size={36} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-semibold text-foreground">{senderName}</p>
-                      <p className="text-[13px] text-muted-foreground">{it.tsLabel}</p>
+                      <p className="truncate font-semibold" style={{ fontSize: 'var(--a-text-lg)', color: 'var(--a-text)' }}>
+                        {senderName}
+                      </p>
+                      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>{it.tsLabel}</p>
                     </div>
                     {last && canEmail ? (
-                      <button
-                        type="button"
-                        aria-label="Reply"
-                        onClick={() => setReplyOpen(true)}
-                        className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted"
-                      >
-                        <CornerUpLeft className="h-4 w-4 text-foreground" />
-                      </button>
+                      <IconButton label="Reply" onClick={() => setReplyOpen(true)}>
+                        <CornerUpLeft className="h-4 w-4" />
+                      </IconButton>
                     ) : null}
                   </div>
                   {/* Body (AC-26E-04, sanitized server-side) */}
                   <div className="px-4 pb-6 pt-5">
                     {it.contentHidden ? (
-                      <p className="text-sm italic text-muted-foreground">
+                      <p className="italic" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
                         Message content is unavailable (redacted by the legacy CRM export).
                       </p>
                     ) : it.safeHtml ? (
                       <div
-                        className="no-scrollbar overflow-x-auto text-[15px] leading-relaxed text-foreground [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_table]:max-w-full"
+                        className="rr-mail-body no-scrollbar overflow-x-auto leading-relaxed [&_a]:underline [&_img]:h-auto"
+                        style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}
                         dangerouslySetInnerHTML={{ __html: it.safeHtml }}
                       />
                     ) : (
-                      <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">
+                      <p className="whitespace-pre-wrap leading-relaxed" style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>
                         {it.body || it.snippet || '(no content)'}
                       </p>
                     )}
@@ -350,8 +320,8 @@ export default function MobileThread({
             })}
           </div>
         ) : (
-          /* SMS bubbles (26-I) — outbound right/navy, inbound left/muted */
-          <div className="flex flex-col gap-1 px-3 py-4 pb-8">
+          /* SMS bubbles (26-I) — outbound right/accent-wash, inbound left/surface */
+          <div className="av2-scroll px-3 py-4 pb-8">
             {ordered.map((it, i) => {
               const prev = ordered[i - 1]
               const gapMs = prev ? new Date(it.ts).getTime() - new Date(prev.ts).getTime() : Infinity
@@ -359,8 +329,11 @@ export default function MobileThread({
               if (it.category === 'call') {
                 return (
                   <div key={it.id} className="my-2 flex flex-col items-center gap-1">
-                    <div className="flex flex-wrap items-center justify-center gap-x-2 rounded-full bg-muted px-4 py-1 text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">
+                    <div
+                      className="av2-sysnote flex flex-wrap items-center justify-center gap-x-2 rounded-full px-4 py-1"
+                      style={{ background: 'var(--a-inset)' }}
+                    >
+                      <span className="font-medium" style={{ color: 'var(--a-text)' }}>
                         {it.kind === 'voicemail' ? 'Voicemail' : 'Call'}
                       </span>
                       <span className="tabular-nums">{it.tsLabel}</span>
@@ -372,7 +345,7 @@ export default function MobileThread({
                           href={`/api/admin/crm/recording/${it.recordingSid}`}
                           download
                           aria-label="Download recording"
-                          className="text-primary"
+                          style={{ color: 'var(--a-accent)' }}
                         >
                           <Download className="h-3 w-3" aria-hidden />
                         </a>
@@ -384,7 +357,7 @@ export default function MobileThread({
               if (it.category !== 'message') {
                 return (
                   <div key={it.id} className="my-1.5 flex justify-center">
-                    <span className="rounded-full bg-muted px-4 py-1 text-xs text-muted-foreground">
+                    <span className="av2-sysnote rounded-full px-4 py-1" style={{ background: 'var(--a-inset)' }}>
                       {it.subject ?? it.snippet ?? it.kind} · {it.tsLabel}
                     </span>
                   </div>
@@ -393,19 +366,12 @@ export default function MobileThread({
               const out = it.direction === 'out'
               return (
                 <div key={it.id} className={cn('flex flex-col', out ? 'items-end' : 'items-start')}>
-                  {sep ? (
-                    <div className="w-full py-2 text-center text-xs text-muted-foreground">{it.tsLabel}</div>
-                  ) : null}
-                  <div
-                    className={cn(
-                      'max-w-[78%] whitespace-pre-wrap rounded-[18px] px-4 py-2 text-[15px] leading-[22px]',
-                      out
-                        ? 'rounded-br-sm bg-primary text-primary-foreground [&_a]:underline'
-                        : 'rounded-bl-sm bg-muted text-foreground',
-                    )}
-                  >
-                    {it.contentHidden ? <em>Content unavailable</em> : it.body ?? it.snippet ?? ''}
-                  </div>
+                  {sep ? <div className="av2-sysnote w-full py-2">{it.tsLabel}</div> : null}
+                  <ThreadBubble direction={out ? 'out' : 'in'}>
+                    <span className="whitespace-pre-wrap">
+                      {it.contentHidden ? <em>Content unavailable</em> : it.body ?? it.snippet ?? ''}
+                    </span>
+                  </ThreadBubble>
                 </div>
               )
             })}
@@ -415,15 +381,8 @@ export default function MobileThread({
 
       {/* ── Compose panel (SMS mode) — AI pills + suppression-gated composer ── */}
       {mode === 'sms' ? (
-        <div
-          className="shrink-0 rounded-t-xl border-t border-border bg-background px-3 pt-2 shadow-[0_-1px_4px_rgba(0,0,0,0.08)]"
-          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
-        >
-          {sendError ? (
-            <Alert variant="destructive" className="mb-2">
-              <AlertDescription>{sendError}</AlertDescription>
-            </Alert>
-          ) : null}
+        <div className="av2-composer shrink-0" style={{ paddingBottom: 'max(var(--a-s3), env(safe-area-inset-bottom))' }}>
+          {sendError ? <ErrorNote className="mb-2">{sendError}</ErrorNote> : null}
           {canText && smsAllowed ? (
             <>
               <MobileAiPills
@@ -436,7 +395,10 @@ export default function MobileThread({
               <SmsComposer key={smsDraftV} initialBody={smsDraft} sendAction={smsAction} personId={personId} />
             </>
           ) : (
-            <p className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+            <p
+              className="av2-composer__warn rounded-xl p-3"
+              style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)', fontSize: 'var(--a-text-sm)' }}
+            >
               {canText
                 ? 'Texting is unavailable until A2P 10DLC business registration is Fully Registered.'
                 : 'No phone number on file for this contact.'}
@@ -446,152 +408,164 @@ export default function MobileThread({
       ) : null}
 
       {/* ── Right-edge context drawer handle (AC-26E-06) ─────────────────── */}
-      <button
-        type="button"
-        aria-label="Open contact details"
+      <IconButton
+        label="Open contact details"
         onClick={() => setDrawerOpen(true)}
-        className="absolute right-0 top-1/2 h-12 w-1.5 -translate-y-1/2 rounded-l-md bg-muted-foreground/40"
-      />
-      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent aria-describedby={undefined} side="right" className="w-80">
-          <SheetHeader>
-            <SheetTitle>{name}</SheetTitle>
-          </SheetHeader>
-          <div className="mt-3 space-y-2 text-sm">
-            {context.lastCommunicationLabel ? (
-              <p className="text-muted-foreground">Last communication {context.lastCommunicationLabel}</p>
-            ) : null}
-            <div className="divide-y divide-border">
-              {(
-                [
-                  ['Stage', context.stage],
-                  ['Agent', context.agentName],
-                  ['Source', context.source],
-                  ['Price', context.priceLabel],
-                  ['Timeframe', context.timeframe],
-                  ['Phone', phone ? fmtPhone(phone) : null],
-                ] as Array<[string, string | null]>
-              ).map(([label, value]) =>
-                value ? (
-                  <div key={label} className="flex items-center justify-between gap-3 py-2">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="truncate font-medium text-foreground">{value}</span>
-                  </div>
-                ) : null,
-              )}
-            </div>
-            {context.tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {context.tags.map((t) => (
-                  <Badge key={t} variant="outline" className="font-normal">
-                    {t}
-                  </Badge>
-                ))}
-              </div>
-            ) : null}
-            <Link href={`/admin/people/${personId}`} className="block pt-2 text-primary underline">
-              Open full contact profile
-            </Link>
-            {addPersonSlot ? <div className="pt-3">{addPersonSlot}</div> : null}
+        className="absolute right-0 top-1/2 -translate-y-1/2 rounded-l-md"
+        style={{ width: 6, height: 48, padding: 0, border: 'none', background: 'var(--a-text-2)', opacity: 0.4 }}
+      >
+        {null}
+      </IconButton>
+      <Sheet open={drawerOpen} onClose={() => setDrawerOpen(false)} title={name}>
+        <div className="space-y-2" style={{ fontSize: 'var(--a-text-sm)' }}>
+          {context.lastCommunicationLabel ? (
+            <p style={{ color: 'var(--a-text-2)' }}>Last communication {context.lastCommunicationLabel}</p>
+          ) : null}
+          <div>
+            {(
+              [
+                ['Stage', context.stage],
+                ['Agent', context.agentName],
+                ['Source', context.source],
+                ['Price', context.priceLabel],
+                ['Timeframe', context.timeframe],
+                ['Phone', phone ? fmtPhone(phone) : null],
+              ] as Array<[string, string | null]>
+            )
+              .filter(([, value]) => value)
+              .map(([label, value], idx) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between gap-3 py-2"
+                  style={idx > 0 ? { borderTop: '1px solid var(--a-border)' } : undefined}
+                >
+                  <span style={{ color: 'var(--a-text-2)' }}>{label}</span>
+                  <span className="truncate font-medium" style={{ color: 'var(--a-text)' }}>
+                    {value}
+                  </span>
+                </div>
+              ))}
           </div>
-        </SheetContent>
+          {context.tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {context.tags.map((t) => (
+                <span
+                  key={t}
+                  style={{
+                    border: '1px solid var(--a-border)',
+                    borderRadius: 'var(--a-r-sm)',
+                    padding: '2px 8px',
+                    fontSize: 'var(--a-text-xs)',
+                    color: 'var(--a-text-2)',
+                    fontWeight: 400,
+                  }}
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <Link href={`/admin/people/${personId}`} className="block pt-2 underline" style={{ color: 'var(--a-accent)' }}>
+            Open full contact profile
+          </Link>
+          {addPersonSlot ? <div className="pt-3">{addPersonSlot}</div> : null}
+        </div>
       </Sheet>
 
       {/* ── Email reply sheet (AC-26E-09) ─────────────────────────────────── */}
-      <Sheet open={replyOpen} onOpenChange={setReplyOpen}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-xl">
-          <SheetHeader>
-            <SheetTitle>Email {name}</SheetTitle>
-          </SheetHeader>
-          {sendError ? (
-            <Alert variant="destructive" className="mt-2">
-              <AlertDescription>{sendError}</AlertDescription>
-            </Alert>
-          ) : null}
-          <div className="mt-3">
-            <EmailComposer
-              initialSubject={lastEmailSubject ? `Re: ${lastEmailSubject.replace(/^((re|fwd?):\s*)+/i, '')}` : ''}
-              initialBody=""
-              signatureHtml={signatureHtml}
-              sendAction={emailAction}
-              personId={personId}
-            />
-          </div>
-        </SheetContent>
+      <Sheet open={replyOpen} onClose={() => setReplyOpen(false)} title={`Email ${name}`}>
+        <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {sendError ? <ErrorNote className="mb-3">{sendError}</ErrorNote> : null}
+          <EmailComposer
+            initialSubject={lastEmailSubject ? `Re: ${lastEmailSubject.replace(/^((re|fwd?):\s*)+/i, '')}` : ''}
+            initialBody=""
+            signatureHtml={signatureHtml}
+            sendAction={emailAction}
+            personId={personId}
+          />
+        </div>
       </Sheet>
 
       {/* ── S8 calling-method sheet ───────────────────────────────────────── */}
-      <Sheet open={callOpen} onOpenChange={setCallOpen}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="rounded-t-xl">
-          <SheetHeader>
-            <SheetTitle>Call {name}</SheetTitle>
-            {phone ? <p className="text-sm text-muted-foreground">{fmtPhone(phone)}</p> : null}
-          </SheetHeader>
-          <div className="mt-2 divide-y divide-border">
-            <button
-              type="button"
-              className="flex w-full items-center gap-3 py-3.5 text-left"
-              onClick={() => {
-                setCallOpen(false)
-                startTransition(async () => {
-                  const res = await callAction()
-                  setNote(
-                    res.ok
-                      ? 'Calling your cell now to connect you. The call is recorded and logged to the timeline.'
-                      : res.error ?? 'Could not start the call',
-                  )
-                })
-              }}
+      <Sheet
+        open={callOpen}
+        onClose={() => setCallOpen(false)}
+        title={`Call ${name}`}
+        description={phone ? fmtPhone(phone) : undefined}
+      >
+        <div>
+          <Button
+            variant="quiet"
+            className="w-full"
+            style={{
+              justifyContent: 'flex-start',
+              gap: 12,
+              minHeight: 0,
+              borderRadius: 0,
+              padding: '14px 0',
+              fontWeight: 400,
+              textAlign: 'left',
+              background: 'none',
+              border: 'none',
+            }}
+            onClick={() => {
+              setCallOpen(false)
+              startTransition(async () => {
+                const res = await callAction()
+                setNote(
+                  res.ok
+                    ? 'Calling your cell now to connect you. The call is recorded and logged to the timeline.'
+                    : res.error ?? 'Could not start the call',
+                )
+              })
+            }}
+          >
+            <Phone className="h-5 w-5" style={{ color: 'var(--a-text)' }} aria-hidden />
+            <span>
+              <span className="block font-medium" style={{ fontSize: 'var(--a-text-lg)', color: 'var(--a-text)' }}>
+                Call via Ryan Realty line
+              </span>
+              <span className="block" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                Rings your cell, bridges to the contact, recorded + logged
+              </span>
+            </span>
+          </Button>
+          {phone ? (
+            <a
+              href={`tel:${phone.replace(/[^+\d]/g, '')}`}
+              className="flex w-full items-center gap-3 py-3.5"
+              style={{ borderTop: '1px solid var(--a-border)' }}
             >
-              <Phone className="h-5 w-5 text-foreground" aria-hidden />
+              <Smartphone className="h-5 w-5" style={{ color: 'var(--a-text)' }} aria-hidden />
               <span>
-                <span className="block text-[15px] font-medium text-foreground">Call via Ryan Realty line</span>
-                <span className="block text-xs text-muted-foreground">
-                  Rings your cell, bridges to the contact, recorded + logged
+                <span className="block font-medium" style={{ fontSize: 'var(--a-text-lg)', color: 'var(--a-text)' }}>
+                  Call direct from this phone
+                </span>
+                <span className="block" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                  Uses your phone dialer — not tracked in the CRM
                 </span>
               </span>
-            </button>
-            {phone ? (
-              <a href={`tel:${phone.replace(/[^+\d]/g, '')}`} className="flex w-full items-center gap-3 py-3.5">
-                <Smartphone className="h-5 w-5 text-foreground" aria-hidden />
-                <span>
-                  <span className="block text-[15px] font-medium text-foreground">Call direct from this phone</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Uses your phone dialer — not tracked in the CRM
-                  </span>
-                </span>
-              </a>
-            ) : null}
-          </div>
-        </SheetContent>
+            </a>
+          ) : null}
+        </div>
       </Sheet>
 
       {/* ── Block confirmation (AC-26G-06) ────────────────────────────────── */}
-      <AlertDialog open={blockOpen} onOpenChange={setBlockOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Block {phone ? fmtPhone(phone) : ""}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Calls from this number will be rejected and texts dropped. You can unblock it from
-              CRM settings, Company, Block list.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (!phone) return
-                startTransition(async () => {
-                  const res = await blockAction(phone)
-                  setNote(res.ok ? `Blocked ${phone}.` : res.error ?? 'Could not block the number')
-                })
-              }}
-            >
-              Block number
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={blockOpen}
+        onClose={() => setBlockOpen(false)}
+        title={`Block ${phone ? fmtPhone(phone) : ''}?`}
+        description="Calls from this number will be rejected and texts dropped. You can unblock it from CRM settings, Company, Block list."
+        confirmLabel="Block number"
+        onConfirm={() => {
+          if (!phone) return
+          setBlockOpen(false)
+          startTransition(async () => {
+            const res = await blockAction(phone)
+            setNote(res.ok ? `Blocked ${phone}.` : res.error ?? 'Could not block the number')
+          })
+        }}
+      />
 
       {/* ── 26-G "Start a group message" → controlled compose sheet ───────── */}
       {groupCompose ? (

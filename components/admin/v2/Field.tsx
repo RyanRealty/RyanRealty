@@ -106,6 +106,29 @@ export function ToolbarCheck({
   )
 }
 
+/**
+ * SearchField — an unlabelled input for a toolbar or a list header (11F).
+ *
+ * The labelled TextField is pattern 6's config-form control; a search box in a
+ * thread list has no room for a label above it. `aria-label` is REQUIRED in the
+ * type for the same reason ToolbarSelect requires one: dropping the visible
+ * label must never drop the accessible one.
+ */
+export function SearchField({
+  'aria-label': ariaLabel,
+  className,
+  ...rest
+}: Omit<InputHTMLAttributes<HTMLInputElement>, 'aria-label'> & { 'aria-label': string }) {
+  return (
+    <input
+      type={rest.type ?? 'search'}
+      className={['av2-input', 'av2-input--bar', className ?? ''].filter(Boolean).join(' ')}
+      aria-label={ariaLabel}
+      {...rest}
+    />
+  )
+}
+
 export function SelectField({
   label,
   hint,

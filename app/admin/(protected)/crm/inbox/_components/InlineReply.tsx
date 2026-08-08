@@ -17,9 +17,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button, FilterChip, SearchField } from '@/components/admin/v2'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 
@@ -94,7 +92,16 @@ export default function InlineReply({
 
   if (!canText && !canEmail) {
     return (
-      <p className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+      <p
+        style={{
+          borderRadius: 'var(--a-r-lg)',
+          border: '1px solid var(--a-border)',
+          background: 'var(--a-inset)',
+          padding: 'var(--a-s3)',
+          fontSize: 'var(--a-text-sm)',
+          color: 'var(--a-text-2)',
+        }}
+      >
         No phone or email on file for this contact. Add one on the contact card to reply.
       </p>
     )
@@ -138,21 +145,20 @@ export default function InlineReply({
       <div className="flex flex-wrap items-center gap-2">
         {canEmail ? (
           <>
-            <Button size="sm" variant="outline" onClick={() => openEmail('reply')}>
+            <Button variant="quiet" onClick={() => openEmail('reply')}>
               Reply
             </Button>
-            <Button size="sm" variant="outline" onClick={() => openEmail('replyAll')}>
+            <Button variant="quiet" onClick={() => openEmail('replyAll')}>
               Reply All
             </Button>
-            <Button size="sm" variant="outline" onClick={() => openEmail('forward')}>
+            <Button variant="quiet" onClick={() => openEmail('forward')}>
               Forward
             </Button>
           </>
         ) : null}
         {canText ? (
           <Button
-            size="sm"
-            variant="outline"
+            variant="quiet"
             onClick={() => {
               setChannel('text')
               setOpen(true)
@@ -172,27 +178,43 @@ export default function InlineReply({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {canText ? (
-            <Button
-              type="button"
-              size="sm"
-              variant={channel === 'text' ? 'default' : 'ghost'}
+            <FilterChip
+              pressed={channel === 'text'}
               onClick={() => setChannel('text')}
+              style={{
+                fontFamily: 'var(--a-font)',
+                fontSize: 'var(--a-text-sm)',
+                fontWeight: 600,
+                padding: '7px 14px',
+                borderRadius: 'var(--a-r-md)',
+                border: '1px solid transparent',
+                background: channel === 'text' ? 'var(--a-btn-bg)' : 'transparent',
+                color: channel === 'text' ? 'var(--a-btn-fg)' : 'var(--a-text-2)',
+              }}
             >
               Text{hasTextDraft ? ' · draft' : ''}
-            </Button>
+            </FilterChip>
           ) : null}
           {canEmail ? (
-            <Button
-              type="button"
-              size="sm"
-              variant={channel === 'email' ? 'default' : 'ghost'}
+            <FilterChip
+              pressed={channel === 'email'}
               onClick={() => setChannel('email')}
+              style={{
+                fontFamily: 'var(--a-font)',
+                fontSize: 'var(--a-text-sm)',
+                fontWeight: 600,
+                padding: '7px 14px',
+                borderRadius: 'var(--a-r-md)',
+                border: '1px solid transparent',
+                background: channel === 'email' ? 'var(--a-btn-bg)' : 'transparent',
+                color: channel === 'email' ? 'var(--a-btn-fg)' : 'var(--a-text-2)',
+              }}
             >
               Email{hasEmailDraft ? ' · draft' : ''}
-            </Button>
+            </FilterChip>
           ) : null}
         </div>
-        <Button type="button" size="sm" variant="ghost" className="text-muted-foreground" onClick={discard}>
+        <Button variant="quiet" style={{ color: 'var(--a-text-2)' }} onClick={discard}>
           Discard
         </Button>
       </div>
@@ -200,20 +222,19 @@ export default function InlineReply({
       {/* Quick-tag row (spec §7.3, AC-15) */}
       <div className="flex flex-wrap items-center gap-1.5">
         {QUICK_TAGS.map((t) => (
-          <Badge
+          <span
             key={t}
-            variant="outline"
             role="button"
             tabIndex={0}
             aria-disabled={tagPending}
-            className="cursor-pointer font-normal hover:bg-primary/5"
+            className="av2-chip"
             onClick={() => addTag(t)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') addTag(t)
             }}
           >
             + {t}
-          </Badge>
+          </span>
         ))}
         {customTagOpen ? (
           <form
@@ -227,32 +248,48 @@ export default function InlineReply({
               }
             }}
           >
-            <Input
+            <SearchField
               autoFocus
+              type="text"
               value={customTag}
               onChange={(e) => setCustomTag(e.target.value)}
               placeholder="Tag name"
-              className="h-6 w-32 px-2 text-xs"
+              aria-label="Tag name"
+              style={{ width: 128, minHeight: 28, padding: '4px 8px', fontSize: 'var(--a-text-xs)' }}
             />
-            <Button type="submit" size="sm" variant="ghost" className="h-6 px-2 text-xs">
+            <Button
+              type="submit"
+              variant="quiet"
+              style={{
+                minHeight: 0,
+                fontFamily: 'var(--a-font)',
+                fontSize: 'var(--a-text-xs)',
+                fontWeight: 600,
+                color: 'var(--a-accent)',
+                background: 'none',
+                border: 'none',
+                padding: '4px 8px',
+              }}
+            >
               Add
             </Button>
           </form>
         ) : (
-          <Badge
-            variant="outline"
+          <span
             role="button"
             tabIndex={0}
-            className="cursor-pointer font-normal hover:bg-primary/5"
+            className="av2-chip"
             onClick={() => setCustomTagOpen(true)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') setCustomTagOpen(true)
             }}
           >
             + Custom
-          </Badge>
+          </span>
         )}
-        {tagNote ? <span className="text-xs text-muted-foreground">{tagNote}</span> : null}
+        {tagNote ? (
+          <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{tagNote}</span>
+        ) : null}
       </div>
 
       {channel === 'text' && canText ? (
@@ -265,7 +302,16 @@ export default function InlineReply({
             personId={personId}
           />
         ) : (
-          <p className="rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+          <p
+            className="av2-composer__warn"
+            style={{
+              borderRadius: 'var(--a-r-lg)',
+              border: '1px solid var(--a-warn)',
+              background: 'var(--a-warn-wash)',
+              padding: 'var(--a-s3)',
+              fontSize: 'var(--a-text-sm)',
+            }}
+          >
             Texting is unavailable until A2P 10DLC business registration is Fully Registered. Email
             still sends normally.
           </p>

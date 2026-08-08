@@ -11,13 +11,18 @@
  *
  * Touch-only gesture (mouse users get the buttons via the thread header) —
  * translateX capped at the action width, snaps open/closed on touchend.
+ *
+ * Admin v2 re-skin (P11F): colors draw from the admin tokens (design_system/
+ * admin/ADMIN_UI.md), not the public brand. The avatar is reimplemented
+ * locally (below) instead of importing CrmAvatar — components/admin/crm/* is
+ * blacklisted as design input for the admin (amnesia), so this file draws
+ * zero color from outside components/admin/v2.
  */
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, CornerUpLeft, Mail, MessageSquare, Phone } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
+import { Button } from '@/components/admin/v2'
 
 export type MobileConvRow = {
   /** The conversation this row represents (RC1). Distinct from personId: a contact's
@@ -41,11 +46,51 @@ export type MobileConvRow = {
 
 const ACTION_W = 88
 
+/** Initials for the fallback avatar — same algorithm the retired CrmAvatar
+ *  helper used, reimplemented so no color/logic is imported from outside v2. */
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+/**
+ * MobileAvatar — photo when available, else initials on the one accent wash
+ * (never a per-name color hash: ADMIN_UI.md §1 reserves color for meaning,
+ * so every avatar in the admin reads the same calm accent, not a rainbow).
+ * Exported for MobileInbox (broker avatar in the header, assign-picker rows).
+ */
+export function MobileAvatar({ name, src, size = 44 }: { name: string; src?: string | null; size?: number }) {
+  const dim = { width: size, height: size }
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt=""
+        referrerPolicy="no-referrer"
+        className="shrink-0"
+        style={{ ...dim, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top' }}
+      />
+    )
+  }
+  return (
+    <span
+      className="flex shrink-0 items-center justify-center rounded-full font-semibold"
+      style={{ ...dim, background: 'var(--a-accent-wash)', color: 'var(--a-accent)' }}
+    >
+      <span style={{ fontSize: Math.round(size * 0.36) }}>{initials(name)}</span>
+    </span>
+  )
+}
+
 function ChannelIcon({ channel }: { channel: MobileConvRow['lastChannel'] }) {
-  const cls = 'h-3.5 w-3.5 shrink-0 text-primary'
-  if (channel === 'text') return <MessageSquare className={cls} aria-label="Text" />
-  if (channel === 'call') return <Phone className={cls} aria-label="Call" />
-  if (channel === 'email') return <Mail className={cls} aria-label="Email" />
+  const cls = 'h-3.5 w-3.5 shrink-0'
+  const style = { color: 'var(--a-accent)' }
+  if (channel === 'text') return <MessageSquare className={cls} style={style} aria-label="Text" />
+  if (channel === 'call') return <Phone className={cls} style={style} aria-label="Call" />
+  if (channel === 'email') return <Mail className={cls} style={style} aria-label="Email" />
   return null
 }
 
@@ -98,36 +143,31 @@ export default function MobileInboxRow({
   }
 
   return (
-    <div className="relative overflow-hidden bg-card">
+    <div className="relative overflow-hidden" style={{ borderBottom: '1px solid var(--a-border)' }}>
       {/* Behind-left: Close / Reopen (revealed by left swipe) */}
-      <button
-        type="button"
+      <Button
+        variant={closedFolder ? 'quiet' : 'danger'}
         disabled={pending}
         onClick={() => runTriage(closedFolder ? onReopen : onClose)}
-        className={cn(
-          'absolute inset-y-0 right-0 flex items-center justify-center text-sm font-semibold',
-          closedFolder
-            ? 'bg-muted text-foreground'
-            : 'bg-destructive text-destructive-foreground',
-        )}
-        style={{ width: ACTION_W }}
+        className="absolute inset-y-0 right-0"
+        style={{ width: ACTION_W, height: '100%', borderRadius: 0, border: 'none' }}
       >
         {closedFolder ? 'Reopen' : 'Close'}
-      </button>
+      </Button>
       {/* Behind-right: Assign (revealed by right swipe) */}
       {canAssign && !closedFolder ? (
-        <button
-          type="button"
+        <Button
+          variant="primary"
           disabled={pending}
           onClick={() => {
             setDx(0)
             onAssign(row.personId)
           }}
-          className="absolute inset-y-0 left-0 flex items-center justify-center bg-primary text-sm font-semibold text-primary-foreground"
-          style={{ width: ACTION_W }}
+          className="absolute inset-y-0 left-0"
+          style={{ width: ACTION_W, height: '100%', borderRadius: 0 }}
         >
           Assign
-        </button>
+        </Button>
       ) : null}
 
       <div
@@ -146,44 +186,60 @@ export default function MobileInboxRow({
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        className="relative flex min-h-[76px] cursor-pointer items-center gap-3 bg-card py-2.5 pl-2 pr-3 transition-transform active:bg-accent/50"
-        style={{ transform: `translateX(${dx}px)`, transitionDuration: start.current ? '0ms' : '200ms' }}
+        className="relative flex min-h-[76px] cursor-pointer items-center gap-3 py-2.5 pl-2 pr-3 transition-transform"
+        style={{
+          transform: `translateX(${dx}px)`,
+          transitionDuration: start.current ? '0ms' : '200ms',
+          background: 'var(--a-bg)',
+        }}
       >
         {/* Unread dot (8pt, left edge) */}
         <span
           aria-hidden
-          className={cn('h-2 w-2 shrink-0 rounded-full', row.unread ? 'bg-primary' : 'bg-transparent')}
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ background: row.unread ? 'var(--a-accent)' : 'transparent' }}
         />
         <span className="relative shrink-0">
-          <CrmAvatar name={row.name} src={row.pictureUrl} size={40} />
+          <MobileAvatar name={row.name} src={row.pictureUrl} size={40} />
           {/* Reply-sent indicator — broker sent the most recent message [OBSERVED mob-07 row 7] */}
           {row.outboundLast ? (
-            <span className="absolute -bottom-0.5 -left-1 flex h-4 w-4 items-center justify-center rounded-full bg-muted ring-2 ring-card">
-              <CornerUpLeft className="h-2.5 w-2.5 text-muted-foreground" aria-label="Replied" />
+            <span
+              className="absolute -bottom-0.5 -left-1 flex h-4 w-4 items-center justify-center rounded-full"
+              style={{ background: 'var(--a-inset)', boxShadow: '0 0 0 2px var(--a-bg)' }}
+            >
+              <CornerUpLeft className="h-2.5 w-2.5" style={{ color: 'var(--a-text-2)' }} aria-label="Replied" />
             </span>
           ) : null}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <span className="min-w-0 truncate">
-              <span className="text-[15px] font-semibold text-foreground">{row.name}</span>
+              <span className="font-semibold" style={{ fontSize: 'var(--a-text-lg)', color: 'var(--a-text)' }}>
+                {row.name}
+              </span>
               {row.messageCount > 1 ? (
-                <span className="ml-1 text-[13px] text-muted-foreground">{row.messageCount}</span>
+                <span className="ml-1" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                  {row.messageCount}
+                </span>
               ) : null}
             </span>
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{row.tsLabel}</span>
+            <span className="a-num shrink-0" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+              {row.tsLabel}
+            </span>
           </div>
           <div className="mt-0.5 flex items-center gap-1.5">
             <ChannelIcon channel={row.lastChannel} />
-            <span className="truncate text-sm text-foreground">
+            <span className="truncate" style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>
               {row.subject ?? row.snippet ?? ''}
             </span>
           </div>
           {row.subject && row.snippet ? (
-            <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted-foreground">{row.snippet}</p>
+            <p className="mt-0.5 line-clamp-2 leading-snug" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              {row.snippet}
+            </p>
           ) : null}
         </div>
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" aria-hidden />
+        <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--a-text-2)' }} aria-hidden />
       </div>
     </div>
   )

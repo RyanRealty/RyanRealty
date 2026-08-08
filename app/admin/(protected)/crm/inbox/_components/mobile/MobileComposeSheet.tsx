@@ -23,13 +23,9 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronsUpDown, Pencil, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Input } from '@/components/ui/input'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Button, FilterChip, IconButton, SearchField, Sheet } from '@/components/admin/v2'
 import { EmailComposer } from '@/components/admin/crm/EmailComposer'
 import { SmsComposer } from '@/components/admin/crm/SmsComposer'
-import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
 import MobileAiPills from './MobileAiPills'
 import type { AiDraftKind } from '@/app/actions/crm-inbox'
 
@@ -39,6 +35,44 @@ export type ComposeRecipient = { id: number; name: string }
 type SendResult = { ok: boolean; error?: string }
 
 const GROUP_LIMIT = 10
+
+/**
+ * Contact-search-hit avatar — initials on a token-driven fill. The one
+ * CrmAvatar usage in this file traded for a local render so the file carries
+ * no legacy components/admin import beyond the two G50 compose chokepoints
+ * (SmsComposer/EmailComposer — sanctioned, see the send-path notes below).
+ */
+function SearchHitAvatar({ name }: { name: string }) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  const initials =
+    parts.length === 0 ? '?' : parts.length === 1 ? parts[0].slice(0, 2).toUpperCase() : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  return (
+    <span
+      aria-hidden
+      className="flex shrink-0 items-center justify-center rounded-full"
+      style={{
+        width: 32,
+        height: 32,
+        background: 'var(--a-btn-bg)',
+        color: 'var(--a-btn-fg)',
+        fontSize: 'var(--a-text-xs)',
+        fontWeight: 600,
+      }}
+    >
+      {initials}
+    </span>
+  )
+}
+
+/**
+ * Bottom sheet — native <dialog> mechanics (focus trap, Esc via the platform
+ * `cancel` event, top-layer stacking), the same pattern the admin v2 Dialog
+ * primitive uses, styled here as a slide-to-bottom sheet instead of Dialog's
+ * centered card. There is no av2 bottom-sheet primitive yet, and this whole
+ * file's job is the phone-native sheet feel (CrmMobileKit directive, Matt
+ * 2026-06-26) — Dialog's fixed-width centered modal would regress that, so
+ * this stays a local, unexported helper instead of forcing the wrong one.
+ */
 
 export default function MobileComposeSheet({
   trigger = 'fab',
@@ -147,244 +181,363 @@ export default function MobileComposeSheet({
   return (
     <>
       {trigger === 'fab' ? (
-        <button
-          type="button"
-          aria-label="Compose new message"
+        <IconButton
+          label="Compose new message"
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden [[data-kb-open]_&]:hidden"
-          style={{ boxShadow: '0 4px 12px rgba(16,39,66,0.30)' }}
+          className="fixed bottom-20 right-4 z-40 rounded-full md:hidden [[data-kb-open]_&]:hidden"
+          style={{
+            width: 56,
+            height: 56,
+            background: 'var(--a-btn-bg)',
+            color: 'var(--a-btn-fg)',
+            boxShadow: 'var(--a-shadow-overlay)',
+          }}
         >
           <Pencil className="h-6 w-6" aria-hidden />
-        </button>
+        </IconButton>
       ) : null}
 
       <Sheet
         open={open}
-        onOpenChange={(v) => {
-          setOpen(v)
-          if (!v) reset()
+        onClose={() => {
+          setOpen(false)
+          reset()
         }}
+        title={primary ? 'New message' : 'Select Recipients'}
       >
-        <SheetContent aria-describedby={undefined} side="bottom" className="max-h-[92dvh] overflow-y-auto rounded-t-xl">
-          <SheetHeader>
-            <SheetTitle>{primary ? 'New message' : 'Select Recipients'}</SheetTitle>
-          </SheetHeader>
-
-          {/* To: recipient token row (S2) */}
-          <div className="mt-3 flex flex-wrap items-center gap-1.5 border-b border-border pb-2">
-            <span className="text-[15px] font-medium text-muted-foreground">To:</span>
-            {recipients.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRecipients((prev) => prev.filter((p) => p.id !== r.id))}
-                className="flex h-8 items-center gap-1 rounded-full border-[1.5px] border-border px-3 text-[15px] font-medium text-primary"
-              >
-                {r.name}
-                <X className="h-3 w-3" aria-hidden />
-              </button>
-            ))}
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={recipients.length === 0 ? 'Search contacts' : ''}
-              className="h-8 min-w-28 flex-1 border-0 px-1 shadow-none focus-visible:ring-0"
-            />
-          </div>
-
-          {/* Contact search results */}
-          {hits.length > 0 ? (
-            <div className="divide-y divide-border">
-              {hits.slice(0, 8).map((h) => (
-                <button
-                  key={h.id}
-                  type="button"
-                  onClick={() => {
-                    if (channel === 'text' && recipients.length >= GROUP_LIMIT) {
-                      setError('Group texts support up to 10 participants')
-                      return
-                    }
-                    setRecipients((prev) => [...prev, h])
-                    setQ('')
-                    setHits([])
-                  }}
-                  className="flex w-full items-center gap-3 py-2.5 text-left"
-                >
-                  <CrmAvatar name={h.name} size={32} />
-                  <span className="text-[15px] text-foreground">{h.name}</span>
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {/* Channel segmented control (26-J) */}
-          <div className="mt-3 flex rounded-lg bg-muted p-0.5">
-            {(
-              [
-                { key: 'email' as const, label: 'Email' },
-                { key: 'text' as const, label: 'Text' },
-              ]
-            ).map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => setChannel(c.key)}
-                className={cn(
-                  'flex-1 rounded-md py-1.5 text-sm font-medium transition-colors',
-                  channel === c.key ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground',
-                )}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-
-          {error ? (
-            <Alert variant="destructive" className="mt-3">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          {/* Template selector row (S1 Templates bar / S5 element 3) */}
-          {primary && templates.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setTplOpen(true)}
-              className="mt-3 flex h-11 w-full items-center justify-between rounded-lg border border-border bg-muted px-3 text-[15px] text-foreground"
+        {/* To: recipient token row (S2) */}
+        <div
+          className="mt-3 flex flex-wrap items-center gap-1.5 pb-2"
+          style={{ borderBottom: '1px solid var(--a-border)' }}
+        >
+          <span style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text-2)' }}>To:</span>
+          {recipients.map((r) => (
+            <Button
+              key={r.id}
+              variant="quiet"
+              onClick={() => setRecipients((prev) => prev.filter((p) => p.id !== r.id))}
+              style={{
+                height: 32,
+                minHeight: 0,
+                gap: 4,
+                borderRadius: 9999,
+                padding: '0 12px',
+                border: '1.5px solid var(--a-border)',
+                fontSize: 'var(--a-text-md)',
+                fontWeight: 500,
+                color: 'var(--a-accent)',
+                background: 'none',
+              }}
             >
-              {channel === 'email' ? (emailTpl?.name ?? 'Blank email') : 'Use a template'}
-              <ChevronsUpDown className="h-4 w-4 text-muted-foreground" aria-hidden />
-            </button>
-          ) : null}
+              {r.name}
+              <X className="h-3 w-3" aria-hidden />
+            </Button>
+          ))}
+          <SearchField
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={recipients.length === 0 ? 'Search contacts' : ''}
+            aria-label="Search contacts"
+            className="flex-1"
+            style={{
+              height: 32,
+              minHeight: 0,
+              minWidth: 112,
+              maxWidth: 'none',
+              padding: '0 4px',
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              borderRadius: 0,
+              color: 'var(--a-text)',
+              fontFamily: 'var(--a-font)',
+              fontSize: 'var(--a-text-md)',
+            }}
+          />
+        </div>
 
-          {/* ── Text compose (S2/S3) — the canonical SmsComposer, same chat bar
-                 as the thread view and the person Comms tab. AI pills + the
-                 template row above inject via initialBody + key-remount. ── */}
-          {primary && channel === 'text' ? (
-            smsAllowed ? (
-              <div className="mt-3">
-                <MobileAiPills
-                  aiDraftAction={(kind, custom) => aiDraftAction(primary.id, kind, custom)}
-                  onDraft={(text) => {
-                    setSmsBody(text)
-                    setSmsBodyV((v) => v + 1)
-                  }}
-                />
-                <SmsComposer
-                  key={smsBodyV}
-                  initialBody={smsBody}
-                  personId={primary.id}
-                  primaryPersonId={primary.id}
-                  sendAction={sendSmsFromComposer}
-                />
-                {recipients.length > 1 ? (
-                  <p className="mt-1 px-1 text-xs text-muted-foreground">
-                    Group text · {recipients.length} people share one thread
-                  </p>
-                ) : null}
-              </div>
-            ) : (
-              <p className="mt-3 rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-                Texting is unavailable until A2P 10DLC business registration is Fully Registered.
-              </p>
-            )
-          ) : null}
+        {/* Contact search results */}
+        {hits.length > 0 ? (
+          <div>
+            {hits.slice(0, 8).map((h, idx) => (
+              <Button
+                key={h.id}
+                variant="quiet"
+                onClick={() => {
+                  if (channel === 'text' && recipients.length >= GROUP_LIMIT) {
+                    setError('Group texts support up to 10 participants')
+                    return
+                  }
+                  setRecipients((prev) => [...prev, h])
+                  setQ('')
+                  setHits([])
+                }}
+                className="w-full"
+                style={{
+                  justifyContent: 'flex-start',
+                  gap: 12,
+                  minHeight: 0,
+                  borderRadius: 0,
+                  padding: '10px 0',
+                  fontWeight: 400,
+                  textAlign: 'left',
+                  background: 'none',
+                  border: 'none',
+                  borderTop: idx === 0 ? 'none' : '1px solid var(--a-border)',
+                }}
+              >
+                <SearchHitAvatar name={h.name} />
+                <span style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>{h.name}</span>
+              </Button>
+            ))}
+          </div>
+        ) : null}
 
-          {/* ── Email compose (S1) ───────────────────────────────────────── */}
-          {primary && channel === 'email' ? (
-            recipients.length > 1 ? (
-              <p className="mt-3 rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-                Email sends to one contact at a time. Remove extra recipients, or use Text for a
-                group thread.
-              </p>
-            ) : (
-              <div className="mt-3">
-                <EmailComposer
-                  key={emailKey}
-                  initialSubject={emailTpl?.subject ?? ''}
-                  initialBody={emailTpl?.body ?? ''}
-                  signatureHtml={signatureHtml}
-                  toLabel={primary.name}
-                  personId={primary.id}
-                  tplKey={emailTpl?.key ?? null}
-                  sendAction={async (fd: FormData) => {
-                    const res = await sendEmailAction(primary.id, fd)
-                    if (res.ok) finish(primary.id)
-                    else setError(res.error ?? 'Email not sent')
-                  }}
-                />
-              </div>
-            )
-          ) : null}
+        {/* Channel segmented control (26-J) */}
+        <div className="mt-3 flex rounded-lg p-0.5" style={{ background: 'var(--a-inset)' }}>
+          {(
+            [
+              { key: 'email' as const, label: 'Email' },
+              { key: 'text' as const, label: 'Text' },
+            ]
+          ).map((c) => (
+            <FilterChip
+              key={c.key}
+              pressed={channel === c.key}
+              onClick={() => setChannel(c.key)}
+              className="flex-1"
+              style={{
+                borderRadius: 'var(--a-r-md)',
+                padding: '6px 0',
+                border: 'none',
+                fontSize: 'var(--a-text-sm)',
+                fontWeight: 500,
+                transition: 'background-color var(--a-t-fast), color var(--a-t-fast)',
+                background: channel === c.key ? 'var(--a-bg)' : 'transparent',
+                color: channel === c.key ? 'var(--a-text)' : 'var(--a-text-2)',
+              }}
+            >
+              {c.label}
+            </FilterChip>
+          ))}
+        </div>
 
-          {!primary ? (
-            <p className="mt-6 pb-4 text-center text-sm text-muted-foreground">
-              Search for a contact to start a message.
+        {error ? (
+          <p
+            role="alert"
+            className="mt-3"
+            style={{
+              borderRadius: 'var(--a-r-md)',
+              border: '1px solid var(--a-danger)',
+              background: 'var(--a-danger-wash)',
+              color: 'var(--a-danger)',
+              padding: 'var(--a-s2) var(--a-s3)',
+              fontSize: 'var(--a-text-sm)',
+              fontWeight: 500,
+            }}
+          >
+            {error}
+          </p>
+        ) : null}
+
+        {/* Template selector row (S1 Templates bar / S5 element 3) */}
+        {primary && templates.length > 0 ? (
+          <Button
+            variant="quiet"
+            onClick={() => setTplOpen(true)}
+            className="mt-3 w-full"
+            style={{
+              height: 44,
+              minHeight: 0,
+              justifyContent: 'space-between',
+              borderRadius: 'var(--a-r-lg)',
+              padding: '0 12px',
+              fontWeight: 400,
+              border: '1px solid var(--a-border)',
+              background: 'var(--a-inset)',
+              fontSize: 'var(--a-text-md)',
+              color: 'var(--a-text)',
+            }}
+          >
+            {channel === 'email' ? (emailTpl?.name ?? 'Blank email') : 'Use a template'}
+            <ChevronsUpDown className="h-4 w-4" style={{ color: 'var(--a-text-2)' }} aria-hidden />
+          </Button>
+        ) : null}
+
+        {/* ── Text compose (S2/S3) — the canonical SmsComposer, same chat bar
+               as the thread view and the person Comms tab. AI pills + the
+               template row above inject via initialBody + key-remount. ── */}
+        {primary && channel === 'text' ? (
+          smsAllowed ? (
+            <div className="mt-3">
+              <MobileAiPills
+                aiDraftAction={(kind, custom) => aiDraftAction(primary.id, kind, custom)}
+                onDraft={(text) => {
+                  setSmsBody(text)
+                  setSmsBodyV((v) => v + 1)
+                }}
+              />
+              <SmsComposer
+                key={smsBodyV}
+                initialBody={smsBody}
+                personId={primary.id}
+                primaryPersonId={primary.id}
+                sendAction={sendSmsFromComposer}
+              />
+              {recipients.length > 1 ? (
+                <p className="mt-1 px-1" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                  Group text · {recipients.length} people share one thread
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p
+              className="av2-composer__warn mt-3"
+              style={{
+                borderRadius: 'var(--a-r-lg)',
+                border: '1px solid var(--a-warn)',
+                background: 'var(--a-warn-wash)',
+                padding: 'var(--a-s3)',
+                fontSize: 'var(--a-text-sm)',
+              }}
+            >
+              Texting is unavailable until A2P 10DLC business registration is Fully Registered.
             </p>
-          ) : null}
-        </SheetContent>
+          )
+        ) : null}
+
+        {/* ── Email compose (S1) ───────────────────────────────────────── */}
+        {primary && channel === 'email' ? (
+          recipients.length > 1 ? (
+            <p
+              className="av2-composer__warn mt-3"
+              style={{
+                borderRadius: 'var(--a-r-lg)',
+                border: '1px solid var(--a-warn)',
+                background: 'var(--a-warn-wash)',
+                padding: 'var(--a-s3)',
+                fontSize: 'var(--a-text-sm)',
+              }}
+            >
+              Email sends to one contact at a time. Remove extra recipients, or use Text for a
+              group thread.
+            </p>
+          ) : (
+            <div className="mt-3">
+              <EmailComposer
+                key={emailKey}
+                initialSubject={emailTpl?.subject ?? ''}
+                initialBody={emailTpl?.body ?? ''}
+                signatureHtml={signatureHtml}
+                toLabel={primary.name}
+                personId={primary.id}
+                tplKey={emailTpl?.key ?? null}
+                sendAction={async (fd: FormData) => {
+                  const res = await sendEmailAction(primary.id, fd)
+                  if (res.ok) finish(primary.id)
+                  else setError(res.error ?? 'Email not sent')
+                }}
+              />
+            </div>
+          )
+        ) : null}
+
+        {!primary ? (
+          <p className="mt-6 pb-4 text-center" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+            Search for a contact to start a message.
+          </p>
+        ) : null}
       </Sheet>
 
       {/* Template picker sheet (S1 step 7 / S4 "Use template") */}
-      <Sheet open={tplOpen} onOpenChange={setTplOpen}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="max-h-[70dvh] overflow-y-auto rounded-t-xl">
-          <SheetHeader>
-            <SheetTitle>{channel === 'email' ? 'Email templates' : 'Text templates'}</SheetTitle>
-          </SheetHeader>
-          <div className="mt-2 divide-y divide-border">
-            {channel === 'email' ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setEmailTpl(null)
+      <Sheet
+        open={tplOpen}
+        onClose={() => setTplOpen(false)}
+        title={channel === 'email' ? 'Email templates' : 'Text templates'}
+      >
+        <div className="mt-2">
+          {channel === 'email' ? (
+            <Button
+              variant="quiet"
+              onClick={() => {
+                setEmailTpl(null)
+                setEmailKey((k) => k + 1)
+                setTplOpen(false)
+              }}
+              className="w-full"
+              style={{
+                justifyContent: 'flex-start',
+                minHeight: 0,
+                borderRadius: 0,
+                padding: '12px 0',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                fontSize: 'var(--a-text-md)',
+                fontWeight: 500,
+                color: 'var(--a-text)',
+              }}
+            >
+              Blank email
+            </Button>
+          ) : null}
+          {templates.map((t, idx) => (
+            <Button
+              key={t.key}
+              variant="quiet"
+              onClick={() => {
+                if (channel === 'email') {
+                  setEmailTpl(t)
                   setEmailKey((k) => k + 1)
-                  setTplOpen(false)
-                }}
-                className="block w-full py-3 text-left text-[15px] font-medium text-foreground"
-              >
-                Blank email
-              </button>
-            ) : null}
-            {templates.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => {
-                  if (channel === 'email') {
-                    setEmailTpl(t)
-                    setEmailKey((k) => k + 1)
-                  } else if (renderTemplateAction && primary) {
-                    // Resolve merge tokens server-side BEFORE the body lands in
-                    // the composer — the broker sees what will send; anything
-                    // still %literal% is genuinely unresolved (SmsComposer warns).
-                    setSmsBody(t.body)
-                    setSmsBodyV((v) => v + 1)
-                    startTransition(async () => {
-                      const res = await renderTemplateAction(primary.id, t.body)
-                      if (res.ok) {
-                        setSmsBody(res.body)
-                        setSmsBodyV((v) => v + 1)
-                      }
-                    })
-                  } else {
-                    setSmsBody(t.body)
-                    setSmsBodyV((v) => v + 1)
-                  }
-                  setTplOpen(false)
-                }}
-                className="block w-full py-3 text-left"
-              >
-                <span className="block text-[15px] font-medium text-foreground">{t.name}</span>
-                <span className="mt-0.5 line-clamp-1 block text-xs text-muted-foreground">
-                  {t.subject ?? t.body}
-                </span>
-              </button>
-            ))}
-            {templates.length === 0 ? (
-              <p className="py-4 text-sm text-muted-foreground">No templates yet.</p>
-            ) : null}
-          </div>
-        </SheetContent>
+                } else if (renderTemplateAction && primary) {
+                  // Resolve merge tokens server-side BEFORE the body lands in
+                  // the composer — the broker sees what will send; anything
+                  // still %literal% is genuinely unresolved (SmsComposer warns).
+                  setSmsBody(t.body)
+                  setSmsBodyV((v) => v + 1)
+                  startTransition(async () => {
+                    const res = await renderTemplateAction(primary.id, t.body)
+                    if (res.ok) {
+                      setSmsBody(res.body)
+                      setSmsBodyV((v) => v + 1)
+                    }
+                  })
+                } else {
+                  setSmsBody(t.body)
+                  setSmsBodyV((v) => v + 1)
+                }
+                setTplOpen(false)
+              }}
+              className="w-full"
+              style={{
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                gap: 0,
+                minHeight: 0,
+                borderRadius: 0,
+                padding: '12px 0',
+                textAlign: 'left',
+                background: 'none',
+                border: 'none',
+                borderTop: channel === 'email' || idx > 0 ? '1px solid var(--a-border)' : 'none',
+              }}
+            >
+              <span className="block" style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>
+                {t.name}
+              </span>
+              <span className="mt-0.5 line-clamp-1 block" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                {t.subject ?? t.body}
+              </span>
+            </Button>
+          ))}
+          {templates.length === 0 ? (
+            <p className="py-4" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              No templates yet.
+            </p>
+          ) : null}
+        </div>
       </Sheet>
     </>
   )

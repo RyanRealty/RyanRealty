@@ -13,9 +13,9 @@
  * Server component — timestamps pre-formatted by the page (no client Date).
  */
 
+import '@/components/admin/v2/admin-v2.css'
 import { Download, Users, Check, CheckCheck, Clock3, TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { sanitizeHtml } from '@/lib/sanitize'
 import type { DeliveryTone } from '@/lib/crm/sms-delivery'
 import type { InboxThreadItemData } from '@/lib/data/crm/getInboxThread'
@@ -24,14 +24,14 @@ import type { InboxThreadItemData } from '@/lib/data/crm/getInboxThread'
 function DeliveryChip({ delivery }: { delivery: { label: string; tone: DeliveryTone } }) {
   const Icon =
     delivery.tone === 'delivered' ? CheckCheck : delivery.tone === 'sent' ? Check : delivery.tone === 'failed' ? TriangleAlert : Clock3
-  const tone =
+  const color =
     delivery.tone === 'delivered'
-      ? 'text-success'
+      ? 'var(--a-ok)'
       : delivery.tone === 'failed'
-        ? 'text-destructive'
-        : 'text-muted-foreground'
+        ? 'var(--a-danger)'
+        : 'var(--a-text-2)'
   return (
-    <span className={cn('inline-flex items-center gap-1', tone)}>
+    <span className="inline-flex items-center gap-1" style={{ color }}>
       <Icon className="h-3 w-3" aria-hidden />
       {delivery.label}
     </span>
@@ -55,33 +55,42 @@ function EmailItem({ item, personName }: { item: InboxThreadViewItem; personName
   const out = item.direction === 'out'
   const body = item.fullBody ?? ''
   return (
-    <div className="rounded-xl border border-border bg-card">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-border px-4 py-2">
+    <div className="rounded-xl" style={{ border: '1px solid var(--a-border)', background: 'var(--a-bg)' }}>
+      <div
+        className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-4 py-2"
+        style={{ borderBottom: '1px solid var(--a-border)' }}
+      >
         <div className="min-w-0">
-          <span className="text-sm font-medium text-foreground">
+          <span className="font-medium" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
             {out ? item.broker ?? 'Ryan Realty' : personName}
           </span>
           {item.subject ? (
-            <span className="ml-2 truncate text-sm text-muted-foreground">{item.subject}</span>
+            <span className="ml-2 truncate" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              {item.subject}
+            </span>
           ) : null}
         </div>
-        <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+        <span className="shrink-0 tabular-nums" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
           {item.label} · {item.tsLabel}
         </span>
       </div>
       <div className="px-4 py-3">
         {item.contentHidden ? (
-          <p className="text-sm italic text-muted-foreground">
+          <p className="italic" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             Message content is unavailable (redacted by the legacy CRM export).
           </p>
         ) : body && looksLikeHtml(body) ? (
           <div
-            className="no-scrollbar overflow-x-auto text-sm leading-relaxed text-foreground [&_a]:text-primary [&_a]:underline [&_img]:h-auto [&_img]:max-w-full [&_table]:max-w-full"
+            className="no-scrollbar overflow-x-auto [&_a]:underline [&_a]:[color:var(--a-accent)] [&_img]:h-auto [&_img]:[max-width:100%] [&_table]:[max-width:100%]"
+            style={{ fontSize: 'var(--a-text-sm)', lineHeight: 'var(--a-leading)', color: 'var(--a-text)' }}
             // Sanitized above — scripts/styles/iframes/event handlers stripped.
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(body) }}
           />
         ) : (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+          <p
+            className="whitespace-pre-wrap"
+            style={{ fontSize: 'var(--a-text-sm)', lineHeight: 'var(--a-leading)', color: 'var(--a-text)' }}
+          >
             {body || item.snippet || '(no content)'}
           </p>
         )}
@@ -94,18 +103,26 @@ function CallItem({ item }: { item: InboxThreadViewItem }) {
   const isVoicemail = item.kind === 'voicemail'
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full bg-muted px-4 py-1 text-xs text-muted-foreground">
-        <span className="font-medium text-foreground">{isVoicemail ? 'Voicemail' : item.label}</span>
+      <div
+        className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1"
+        style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+      >
+        <span className="font-medium" style={{ color: 'var(--a-text)' }}>
+          {isVoicemail ? 'Voicemail' : item.label}
+        </span>
         <span className="tabular-nums">{item.tsLabel}</span>
         {item.recordingDurationSec != null ? (
-          <span className="font-mono tabular-nums">{mmss(item.recordingDurationSec)}</span>
+          <span className="tabular-nums" style={{ fontFamily: 'var(--a-font-mono)' }}>
+            {mmss(item.recordingDurationSec)}
+          </span>
         ) : null}
         {item.snippet ? <span>· {item.snippet.slice(0, 80)}</span> : null}
         {item.recordingSid ? (
           <a
             href={`/api/admin/crm/recording/${item.recordingSid}`}
             download
-            className="inline-flex items-center gap-0.5 text-primary hover:underline"
+            className="inline-flex items-center gap-0.5 hover:underline"
+            style={{ color: 'var(--a-accent)' }}
             aria-label="Download recording"
           >
             <Download className="h-3 w-3" aria-hidden />
@@ -117,7 +134,8 @@ function CallItem({ item }: { item: InboxThreadViewItem }) {
           controls
           preload="none"
           src={`/api/admin/crm/recording/${item.recordingSid}`}
-          className="h-8 w-full max-w-sm"
+          className="h-8 w-full"
+          style={{ maxWidth: 384 }}
         >
           <track kind="captions" />
         </audio>
@@ -128,14 +146,24 @@ function CallItem({ item }: { item: InboxThreadViewItem }) {
 
 function NoteItem({ item }: { item: InboxThreadViewItem }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/40 px-4 py-2.5">
+    <div
+      className="rounded-xl px-4 py-2.5"
+      style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)' }}
+    >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <span
+          className="font-semibold uppercase tracking-wide"
+          style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+        >
           Note · {item.broker ?? 'team'}
         </span>
-        <span className="text-xs text-muted-foreground tabular-nums">{item.tsLabel}</span>
+        <span className="tabular-nums" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {item.tsLabel}
+        </span>
       </div>
-      <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{item.fullBody ?? item.snippet}</p>
+      <p className="mt-1 whitespace-pre-wrap" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
+        {item.fullBody ?? item.snippet}
+      </p>
     </div>
   )
 }
@@ -149,7 +177,9 @@ export default function InboxThreadView({
 }) {
   if (items.length === 0) {
     return (
-      <p className="py-16 text-center text-sm text-muted-foreground">No communication yet</p>
+      <p className="py-16 text-center" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+        No communication yet
+      </p>
     )
   }
 
@@ -166,25 +196,30 @@ export default function InboxThreadView({
           return (
             <div key={e.id} className={cn('flex flex-col', out ? 'items-end' : 'items-start')}>
               {e.group ? (
-                <Badge
-                  variant="secondary"
-                  className="mb-0.5 gap-1 font-medium"
+                <span
+                  className="mb-0.5 inline-flex items-center gap-1 font-medium"
+                  style={{
+                    border: '1px solid var(--a-border)',
+                    borderRadius: 'var(--a-r-sm)',
+                    padding: '2px 8px',
+                    fontSize: 'var(--a-text-xs)',
+                    color: 'var(--a-text-2)',
+                    background: 'var(--a-surface)',
+                  }}
                   title={`Group text · ${e.group.participants.join(', ')}`}
                 >
                   <Users className="h-3 w-3" aria-hidden /> Group · {e.group.count} people
-                </Badge>
+                </span>
               ) : null}
-              <div
-                className={cn(
-                  'max-w-xs whitespace-pre-wrap rounded-2xl px-4 py-2 text-sm leading-relaxed sm:max-w-md',
-                  out
-                    ? 'rounded-br-sm bg-primary text-primary-foreground'
-                    : 'rounded-bl-sm bg-muted text-foreground',
-                )}
-              >
-                {e.contentHidden ? <em>Content unavailable</em> : e.fullBody ?? e.snippet ?? e.label}
+              <div className={cn('av2-bubble', out ? 'av2-bubble--out' : 'av2-bubble--in')}>
+                <div className="av2-bubble__txt whitespace-pre-wrap" style={{ lineHeight: 'var(--a-leading)' }}>
+                  {e.contentHidden ? <em>Content unavailable</em> : e.fullBody ?? e.snippet ?? e.label}
+                </div>
               </div>
-              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <div
+                className="mt-0.5 flex items-center gap-1.5"
+                style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+              >
                 <span>
                   {out ? e.broker ?? 'us' : personName} · {e.tsLabel}
                 </span>
@@ -200,11 +235,9 @@ export default function InboxThreadView({
         }
         // system / milestone / web / other — centered marker
         return (
-          <div key={e.id} className="flex justify-center">
-            <div className="rounded-full bg-muted px-4 py-1 text-xs text-muted-foreground">
-              {e.label}
-              {e.snippet ? ` · ${e.snippet.slice(0, 80)}` : ''} · {e.tsLabel}
-            </div>
+          <div key={e.id} className="av2-sysnote">
+            {e.label}
+            {e.snippet ? ` · ${e.snippet.slice(0, 80)}` : ''} · {e.tsLabel}
           </div>
         )
       })}

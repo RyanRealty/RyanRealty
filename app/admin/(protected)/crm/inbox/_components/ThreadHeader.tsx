@@ -3,28 +3,27 @@
 /**
  * ThreadHeader — the persistent action bar at the top of the reading pane
  * (spec §08 §5.1, §8). Contact name (or raw number for unknown callers), the
- * assignee dropdown (Me ▾ / Company ▾ → agent list, AC-12), and the mutually
+ * assignee picker (Me / Company → agent list, AC-12), and the mutually
  * exclusive Close (destructive) / Reopen (outline) buttons (AC-11).
  *
  * Also implements AC-07 auto-read: when the open thread is still 'unread', it
  * fires the state action once to flip it to read — the folder-rail unread count
  * decrements on the refresh. State only — never a send path.
+ *
+ * Admin v2 language (design_system/admin/ADMIN_UI.md): no DropdownMenu
+ * primitive exists yet, so the assignee menu — which had no current-selection
+ * indicator even in the old DropdownMenu — is a ToolbarSelect: pick a name and
+ * it fires the same assignAction immediately.
  */
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronDown } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Button, SectionHead, ToolbarSelect } from '@/components/admin/v2'
 import type { ConversationStatus } from '@/lib/data/crm/getInboxQueue'
+
+/** Sentinel <option> value for "Company (unassigned)" — never collides with a real broker slug. */
+const COMPANY_VALUE = '__company__'
 
 export default function ThreadHeader({
   personId,
@@ -39,7 +38,7 @@ export default function ThreadHeader({
   personId: number
   name: string
   status: ConversationStatus
-  /** 'Me' | 'Company' | broker display name — the assignee dropdown trigger. */
+  /** 'Me' | 'Company' | broker display name — the assignee control's current-state text. */
   assigneeLabel: string
   /** Superuser only — re-assigning a conversation is an owner action. */
   canAssign: boolean
@@ -87,53 +86,72 @@ export default function ThreadHeader({
   }
 
   return (
-    <div className="flex flex-col gap-1 border-b border-border px-4 py-3">
+    <div className="flex flex-col gap-1 px-4 py-3" style={{ borderBottom: '1px solid var(--a-border)' }}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="min-w-0 truncate text-lg font-medium text-foreground">
-          <Link href={`/admin/people/${personId}`} className="hover:underline">
-            {name}
-          </Link>
-        </h2>
+        <div className="min-w-0" style={{ marginTop: 'calc(var(--a-s5) * -1)', marginBottom: 'calc(var(--a-s2) * -1)' }}>
+          <SectionHead>
+            <Link
+              href={`/admin/people/${personId}`}
+              className="block truncate hover:underline"
+              style={{
+                fontSize: 'var(--a-text-lg)',
+                fontWeight: 500,
+                color: 'var(--a-text)',
+                textTransform: 'none',
+                letterSpacing: 'normal',
+              }}
+            >
+              {name}
+            </Link>
+          </SectionHead>
+        </div>
         <div className="flex shrink-0 items-center gap-2">
-          {/* Assignee dropdown (spec §8.1) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="secondary" className="h-7 gap-1 px-2.5 text-xs" disabled={pending}>
+          {/* Assignee (spec §8.1) */}
+          {canAssign ? (
+            <ToolbarSelect
+              aria-label="Assign conversation"
+              disabled={pending}
+              value=""
+              onChange={(e) => {
+                const v = e.target.value
+                if (!v) return
+                assign(v === COMPANY_VALUE ? null : v)
+              }}
+            >
+              <option value="" disabled>
                 {assigneeLabel}
-                <ChevronDown className="h-3 w-3" aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel className="text-xs">Assign conversation</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {canAssign ? (
-                <>
-                  {brokers.map((b) => (
-                    <DropdownMenuItem key={b.slug} onSelect={() => assign(b.slug)}>
-                      {b.name}
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuItem onSelect={() => assign(null)}>Company (unassigned)</DropdownMenuItem>
-                </>
-              ) : (
-                <DropdownMenuItem disabled>Only an owner can re-assign</DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </option>
+              {brokers.map((b) => (
+                <option key={b.slug} value={b.slug}>
+                  {b.name}
+                </option>
+              ))}
+              <option value={COMPANY_VALUE}>Company (unassigned)</option>
+            </ToolbarSelect>
+          ) : (
+            <span
+              title="Only an owner can re-assign"
+              style={{ fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text-2)' }}
+            >
+              {assigneeLabel}
+            </span>
+          )}
 
           {/* Close / Reopen — mutually exclusive (AC-11) */}
           {status === 'closed' ? (
-            <Button size="sm" variant="outline" className="h-7 px-3 text-xs" disabled={pending} onClick={() => run('open')}>
+            <Button variant="quiet" disabled={pending} onClick={() => run('open')}>
               Reopen
             </Button>
           ) : (
-            <Button size="sm" variant="destructive" className="h-7 px-3 text-xs" disabled={pending} onClick={() => run('closed')}>
+            <Button variant="danger" disabled={pending} onClick={() => run('closed')}>
               Close
             </Button>
           )}
         </div>
       </div>
-      {error ? <p className="text-xs font-medium text-destructive">{error}</p> : null}
+      {error ? (
+        <p style={{ fontSize: 'var(--a-text-xs)', fontWeight: 500, color: 'var(--a-danger)' }}>{error}</p>
+      ) : null}
     </div>
   )
 }

@@ -11,9 +11,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/admin/v2'
 
 export default function NoteTray({
   brokers,
@@ -73,44 +71,65 @@ export default function NoteTray({
   }
 
   return (
-    <div className="relative border-t border-border bg-muted/30 px-4 py-2">
+    <div className="av2-composer relative">
       {pickerOpen ? (
-        <Card className="absolute bottom-full left-4 mb-1 w-56 p-1 shadow-md">
-          <p className="px-2 py-1 text-xs font-medium text-muted-foreground">Mention an agent</p>
+        <div
+          className="absolute bottom-full left-4 mb-1 w-56 p-1"
+          style={{
+            borderRadius: 'var(--a-r-lg)',
+            border: '1px solid var(--a-border)',
+            background: 'var(--a-bg)',
+            boxShadow: 'var(--a-shadow-overlay)',
+          }}
+        >
+          <p className="px-2 py-1 font-medium" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            Mention an agent
+          </p>
           {brokers.map((b) => (
             <Button
               key={b.slug}
               type="button"
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start font-normal"
+              variant="quiet"
+              className="w-full"
+              style={{ justifyContent: 'flex-start', fontWeight: 400 }}
               onClick={() => insertMention(b)}
             >
               @{b.name}
             </Button>
           ))}
-        </Card>
+        </div>
       ) : null}
-      <div className="flex items-end gap-2">
-        <Textarea
+      <div className="av2-composer__box">
+        <textarea
           ref={ref}
           rows={1}
           value={body}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Write a note or @mention someone"
-          className="max-h-24 min-h-9 flex-1 resize-none bg-background py-1.5 text-sm"
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit()
           }}
         />
-        <Button type="button" size="sm" disabled={pending || !body.trim()} onClick={submit}>
+        <Button type="button" disabled={pending || !body.trim()} onClick={submit}>
           Create Note
         </Button>
-        <kbd className="hidden rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground lg:inline-block">
+        <kbd
+          className="hidden px-1.5 py-0.5 lg:inline-block"
+          style={{
+            borderRadius: 'var(--a-r-sm)',
+            background: 'var(--a-inset)',
+            fontSize: 'var(--a-text-xs)',
+            color: 'var(--a-text-2)',
+          }}
+        >
           N
         </kbd>
       </div>
-      {error ? <p className="mt-1 text-xs font-medium text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="mt-1 font-medium" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

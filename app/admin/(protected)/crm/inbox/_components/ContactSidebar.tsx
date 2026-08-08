@@ -13,9 +13,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { PanelRightClose, PanelRightOpen } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { IconButton } from '@/components/admin/v2'
 
 const LS_KEY = 'crm-inbox-sidebar-collapsed'
 
@@ -23,16 +21,21 @@ export type SidebarRecentItem = { id: number; label: string; tsLabel: string; sn
 export type SidebarActivityItem = { id: number; label: string; tsLabel: string }
 
 function SectionHeading({ children }: { children: ReactNode }) {
-  return (
-    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{children}</div>
-  )
+  return <div className="av2-context__h">{children}</div>
+}
+
+/** Hairline section divider (Separator equivalent — decorative, no ARIA role). */
+function Divider() {
+  return <div style={{ borderTop: '1px solid var(--a-border)' }} />
 }
 
 function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-2 py-0.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="min-w-0 truncate text-right text-sm text-foreground">{value ?? '—'}</span>
+      <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{label}</span>
+      <span className="min-w-0 truncate text-right" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
+        {value ?? '—'}
+      </span>
     </div>
   )
 }
@@ -98,28 +101,36 @@ export default function ContactSidebar({
 
   if (collapsed) {
     return (
-      <div className="flex h-full w-8 shrink-0 flex-col items-center border-l border-border py-3">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={toggle} aria-label="Expand contact sidebar">
+      <div
+        className="flex h-full w-8 shrink-0 flex-col items-center py-3"
+        style={{ borderLeft: '1px solid var(--a-border)' }}
+      >
+        <IconButton label="Expand contact sidebar" onClick={toggle}>
           <PanelRightOpen className="h-4 w-4" aria-hidden />
-        </Button>
+        </IconButton>
       </div>
     )
   }
 
   return (
-    <div className="relative flex h-full w-64 shrink-0 flex-col overflow-y-auto border-l border-border">
+    <div
+      className="relative flex h-full w-64 shrink-0 flex-col overflow-y-auto"
+      style={{ borderLeft: '1px solid var(--a-border)' }}
+    >
       <div className="flex items-start justify-between gap-1 px-4 pt-3">
         <div className="min-w-0">
-          <Link href={`/admin/people/${personId}`} className="block truncate text-sm font-semibold text-foreground hover:underline">
+          <Link href={`/admin/people/${personId}`} className="av2-context__name block truncate hover:underline">
             {name}
           </Link>
           {lastCommunicationLabel ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">Last Communication {lastCommunicationLabel}</p>
+            <p className="mt-0.5" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+              Last Communication {lastCommunicationLabel}
+            </p>
           ) : null}
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={toggle} aria-label="Collapse contact sidebar">
+        <IconButton label="Collapse contact sidebar" className="shrink-0" onClick={toggle}>
           <PanelRightClose className="h-4 w-4" aria-hidden />
-        </Button>
+        </IconButton>
       </div>
 
       <div className="space-y-4 px-4 py-3">
@@ -131,21 +142,30 @@ export default function ContactSidebar({
             {phone ? (
               <a
                 href={`tel:${phone}`}
-                className={`block truncate text-sm hover:underline ${phoneOptedOut ? 'text-warning' : 'text-primary'}`}
+                className="block truncate hover:underline"
+                style={{
+                  fontSize: 'var(--a-text-sm)',
+                  fontFamily: 'var(--a-font-mono)',
+                  color: phoneOptedOut ? 'var(--a-warn)' : 'var(--a-accent)',
+                }}
                 title={phoneOptedOut ? 'This number opted out of texting' : undefined}
               >
                 {phone}
               </a>
             ) : null}
             {email ? (
-              <a href={`mailto:${email}`} className="block truncate text-sm text-primary hover:underline">
+              <a
+                href={`mailto:${email}`}
+                className="block truncate hover:underline"
+                style={{ fontSize: 'var(--a-text-sm)', fontFamily: 'var(--a-font-mono)', color: 'var(--a-accent)' }}
+              >
                 {email}
               </a>
             ) : null}
           </div>
         ) : null}
 
-        <Separator />
+        <Divider />
 
         <div>
           <SectionHeading>Details</SectionHeading>
@@ -160,31 +180,50 @@ export default function ContactSidebar({
           {tags.length > 0 ? (
             <div className="mt-1.5 flex flex-wrap gap-1">
               {tags.slice(0, 8).map((t) => (
-                <Badge key={t} variant="secondary" className="px-1.5 py-0 text-xs font-normal">
+                <span
+                  key={t}
+                  className="px-1.5 py-0"
+                  style={{
+                    fontSize: 'var(--a-text-xs)',
+                    color: 'var(--a-text-2)',
+                    background: 'var(--a-surface)',
+                    border: '1px solid var(--a-border)',
+                    borderRadius: 'var(--a-r-sm)',
+                  }}
+                >
                   {t}
-                </Badge>
+                </span>
               ))}
               {tags.length > 8 ? (
-                <span className="text-xs text-muted-foreground">+{tags.length - 8} more</span>
+                <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                  +{tags.length - 8} more
+                </span>
               ) : null}
             </div>
           ) : null}
         </div>
 
-        <Separator />
+        <Divider />
 
         <div>
           <SectionHeading>Recent Conversations</SectionHeading>
           <div className="mt-1.5 space-y-1.5">
             {recent.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No prior conversations.</p>
+              <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>No prior conversations.</p>
             ) : (
               recent.map((r) => (
-                <div key={r.id} className="text-xs">
-                  <span className="font-medium text-foreground">{r.label}</span>
-                  <span className="text-muted-foreground tabular-nums"> · {r.tsLabel}</span>
+                <div key={r.id} style={{ fontSize: 'var(--a-text-xs)' }}>
+                  <span className="font-medium" style={{ color: 'var(--a-text)' }}>
+                    {r.label}
+                  </span>
+                  <span className="tabular-nums" style={{ color: 'var(--a-text-2)' }}>
+                    {' '}
+                    · {r.tsLabel}
+                  </span>
                   {r.snippet ? (
-                    <p className="truncate text-muted-foreground">{r.snippet}</p>
+                    <p className="truncate" style={{ color: 'var(--a-text-2)' }}>
+                      {r.snippet}
+                    </p>
                   ) : null}
                 </div>
               ))
@@ -192,27 +231,39 @@ export default function ContactSidebar({
           </div>
         </div>
 
-        <Separator />
+        <Divider />
 
         <div>
           <SectionHeading>Activity</SectionHeading>
           <div className="mt-1.5 space-y-1">
             {activity.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No recent activity.</p>
+              <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>No recent activity.</p>
             ) : (
               activity.map((a) => (
-                <div key={a.id} className="flex items-baseline justify-between gap-2 text-xs">
-                  <span className="min-w-0 truncate text-foreground">{a.label}</span>
-                  <span className="shrink-0 text-muted-foreground tabular-nums">{a.tsLabel}</span>
+                <div
+                  key={a.id}
+                  className="flex items-baseline justify-between gap-2"
+                  style={{ fontSize: 'var(--a-text-xs)' }}
+                >
+                  <span className="min-w-0 truncate" style={{ color: 'var(--a-text)' }}>
+                    {a.label}
+                  </span>
+                  <span className="shrink-0 tabular-nums" style={{ color: 'var(--a-text-2)' }}>
+                    {a.tsLabel}
+                  </span>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        <Separator />
+        <Divider />
 
-        <Link href={`/admin/people/${personId}`} className="block text-xs text-primary hover:underline">
+        <Link
+          href={`/admin/people/${personId}`}
+          className="block hover:underline"
+          style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-accent)' }}
+        >
           Open full contact record →
         </Link>
       </div>

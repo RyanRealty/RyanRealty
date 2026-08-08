@@ -13,10 +13,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Button, SearchField, SectionHead, TextField } from '@/components/admin/v2'
 
 type ExistingHit = { id: number; name: string | null; email: string | null; phone: string | null }
 
@@ -97,34 +94,38 @@ export default function AddPersonForm({
   }
 
   return (
-    <Card>
-      <CardContent className="space-y-3 p-3">
-      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Add person</div>
-      <p className="text-xs text-muted-foreground">
+    <div className="av2-pane">
+      <SectionHead>Add person</SectionHead>
+      <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
         This conversation is from an unrecognized {phone ? 'number' : 'contact'}. Name it to add a contact record.
       </p>
 
-      <div className="space-y-1">
-        <Label htmlFor="ap-first" className="text-xs">First name</Label>
-        <Input id="ap-first" value={first} onChange={(e) => setFirst(e.target.value)} autoComplete="off" />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="ap-last" className="text-xs">Last name</Label>
-        <Input id="ap-last" value={last} onChange={(e) => setLast(e.target.value)} autoComplete="off" />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="ap-email" className="text-xs">Email</Label>
-        <Input id="ap-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" placeholder="Optional" />
-      </div>
+      <TextField label="First name" value={first} onChange={(e) => setFirst(e.target.value)} autoComplete="off" />
+      <TextField label="Last name" value={last} onChange={(e) => setLast(e.target.value)} autoComplete="off" />
+      <TextField
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        autoComplete="off"
+        placeholder="Optional"
+      />
 
-      {error ? <p className="text-sm font-medium text-destructive">{error}</p> : null}
+      {error ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-danger)' }}>{error}</p>
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-        <Button type="button" size="sm" onClick={submit} disabled={pending}>
+        <Button onClick={submit} disabled={pending}>
           {pending ? 'Adding…' : 'Add person'}
         </Button>
         {googleHref ? (
-          <a href={googleHref} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">
+          <a
+            href={googleHref}
+            target="_blank"
+            rel="noreferrer"
+            style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-accent)', textDecoration: 'underline' }}
+          >
             Search Google
           </a>
         ) : null}
@@ -135,49 +136,88 @@ export default function AddPersonForm({
         <div className="pt-1">
           {searchOpen ? (
             <div className="space-y-1.5">
-              <Input
+              <SearchField
                 autoFocus
+                type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search existing contacts"
-                className="h-8 text-sm"
+                aria-label="Search existing contacts"
+                className="w-full"
+                style={{ maxWidth: 'none', minHeight: 32, padding: '4px 8px', fontSize: 'var(--a-text-sm)' }}
               />
               <div className="max-h-40 overflow-y-auto">
                 {hits.map((h) => (
                   <Button
                     key={h.id}
-                    type="button"
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     disabled={pending}
-                    className="w-full justify-start font-normal"
                     onClick={() => link(h.id)}
+                    className="w-full"
+                    style={{
+                      justifyContent: 'flex-start',
+                      minHeight: 0,
+                      fontWeight: 400,
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      borderRadius: 'var(--a-r-md)',
+                      padding: 'var(--a-s2)',
+                      fontFamily: 'var(--a-font)',
+                      cursor: pending ? 'not-allowed' : 'pointer',
+                      opacity: pending ? 0.6 : 1,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--a-inset)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none'
+                    }}
                   >
-                    <span className="truncate font-medium">{h.name ?? `Contact #${h.id}`}</span>
+                    <span
+                      className="truncate"
+                      style={{ fontWeight: 600, fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}
+                    >
+                      {h.name ?? `Contact #${h.id}`}
+                    </span>
                     {h.email || h.phone ? (
-                      <span className="ml-1.5 truncate text-xs text-muted-foreground">{h.email ?? h.phone}</span>
+                      <span
+                        className="ml-1.5 truncate"
+                        style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+                      >
+                        {h.email ?? h.phone}
+                      </span>
                     ) : null}
                   </Button>
                 ))}
                 {query.trim().length >= 2 && hits.length === 0 ? (
-                  <p className="px-2 py-1 text-xs text-muted-foreground">No matches.</p>
+                  <p style={{ padding: '4px 8px', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                    No matches.
+                  </p>
                 ) : null}
               </div>
             </div>
           ) : (
             <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-xs"
+              variant="quiet"
               onClick={() => setSearchOpen(true)}
+              style={{
+                minHeight: 0,
+                fontSize: 'var(--a-text-xs)',
+                fontWeight: 400,
+                color: 'var(--a-accent)',
+                textDecoration: 'underline',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                fontFamily: 'var(--a-font)',
+              }}
             >
               or update an existing person
             </Button>
           )}
         </div>
       ) : null}
-      </CardContent>
-    </Card>
+    </div>
   )
 }
