@@ -113,7 +113,7 @@ export default async function AdminAuditLogPage({
   const filtered = Boolean(adminEmail || actionType)
 
   // Fetch one extra row to know whether a next page exists, without a count query.
-  const fetched = await getAdminActions({
+  const { rows: fetched, error: readError } = await getAdminActions({
     limit: PAGE_SIZE + 1,
     offset: pageNum * PAGE_SIZE,
     adminEmail,
@@ -140,8 +140,12 @@ export default async function AdminAuditLogPage({
   return (
     <div className="av2-scope" style={{ maxWidth: 1024, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
-        <VerdictLine tone={rows.length === 0 ? 'attention' : 'ok'}>
-          {rows.length === 0 ? (
+        <VerdictLine tone={readError || rows.length === 0 ? 'attention' : 'ok'}>
+          {/* An empty log and an unreadable log are different facts, and this
+              screen used to render both as "nothing has been recorded". */}
+          {readError ? (
+            <b>The action log could not be read. This is not an empty history — {readError}</b>
+          ) : rows.length === 0 ? (
             <b>
               {filtered
                 ? 'No admin action matches this filter.'
@@ -238,7 +242,9 @@ export default async function AdminAuditLogPage({
           ],
         }))}
         empty={
-          filtered ? (
+          readError ? (
+            'The log could not be read, so this table is empty for a reason that has nothing to do with what your team has done.'
+          ) : filtered ? (
             <>
               No matching actions. Try a different admin email or action type, or{' '}
               <Link href="/admin/audit-log" style={{ color: 'var(--a-accent)' }}>
