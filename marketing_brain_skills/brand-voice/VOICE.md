@@ -170,31 +170,55 @@ congratulating ourselves on the analysis.
 
 ## Banned constructions
 
-Every example below was real Ryan Realty copy on 2026-08-05. These shapes must not
-ship again.
+Every example below was real Ryan Realty copy on 2026-08-05.
+
+---
+
+### Retired 2026-08-06 — WRITING GUIDANCE, NOT RULES
+
+**The four shapes in this block are no longer banned and no longer gated.** They
+are kept because the examples are instructive, not because the shape is illegal.
+Read them as "here is how this goes wrong," never as "cut on sight."
+
+They were banned, mechanically, and enforcing them rewrote the entire site into
+government-service prose in a single day. Buffett uses all four constantly.
+Interpreting a number for the reader is not a violation — it is the Berkshire
+letter. A canon anchored on those letters cannot ban the moves that make them
+work.
+
+If you are an agent doing a voice pass: do not sweep for these. The homepage H1
+that came out of the last sweep was "Every home for sale in Central Oregon,"
+sitting under an eyebrow already reading "Central Oregon Real Estate." Clean by
+every rule, and worse than the line it replaced.
 
 **The aphorism pair.** Two balanced clauses coining a maxim.
-> Killed: "Pricing sets the number. Competition decides how it lands."
-> Killed: "This number is a starting point, not a verdict."
+> Was killed: "Pricing sets the number. Competition decides how it lands."
+> Was killed: "This number is a starting point, not a verdict."
 
-**The meaning-narration.** Any sentence explaining the sentence before it.
-Triggers: "this tells you," "what this means," "in other words," "put simply,"
-"this is history, not a forecast."
-> Killed: "This is history, not a forecast: it tells you when Bend buyers have been
-> most active."
+**The meaning-narration.** A sentence explaining the sentence before it.
+> Was killed: "This is history, not a forecast: it tells you when Bend buyers have
+> been most active."
 
 **The sermon clause.** A trailing clause that moralizes the fact.
-Triggers: "which is one more reason," "and that matters because," "which is why it
-is so important."
-> Killed: "...which is one more reason the list price has to be right on day one."
-> Killed: "...it is fully in your control before the next listing goes live."
+> Was killed: "...which is one more reason the list price has to be right on day one."
+
+**The obvious restatement.** Explaining a chart, a label, or a word.
+> Was killed: "Lower is faster." "Real homes, really sold."
+
+The judgment that survives all four: does it sound like a person who knows the
+market talking to one homeowner, or like a page that has been through a filter?
+That question has no regex, which is the point.
+
+---
+
+### Still banned, still gated
+
+These are conduct and truth, not taste. Every one is enforced by
+`scripts/voice-constructions.cjs`.
 
 **The drama header.** A heading that narrates instead of stating.
 > Killed: "The market gave its answer. Here is what it was worth hearing."
 > Replaced with: "Your last listing."
-
-**The obvious restatement.** Explaining a chart, a label, or a word.
-> Killed: "Lower is faster." "Real homes, really sold."
 
 **The data-speaks headline.** Numbers do not speak, say, tell, reveal, or prove.
 > Killed: "450 sales say the calendar matters."
