@@ -1,47 +1,7 @@
 'use client'
 
 // @no-parity — internal admin surface, no public mockup contract
-//
-// 11F: taken off shadcn and onto the LOCKED admin v2 language
-// (design_system/admin/ADMIN_UI.md). Presentation only, and deliberately so —
-// every figure this screen prints is market data a broker publishes from (§0),
-// so nothing about how one is produced, filtered or formatted moved.
-//
-// Carried over verbatim: filtersForSegment and the three segment flags, the
-// validation order and all five error strings, the trackEvent payload, the
-// `Math.min(60, Math.max(1, timeSeriesMonths))` clamp, the breakdown fan-out and
-// its null-drop, every getReport* / getMarketReportDataForLocation call and
-// argument, the slice(0, 6) / slice(0, 12) / slice(0, 25) windows, the "… and N
-// more" tails, the toLocaleString options on every number, and every label.
-//
-// Substitutions, and why each one:
-//   raw <select> x3    -> SelectField, which owns the label-above pairing
-//                         (pattern 6) and generates its own id. The
-//                         subdivision's "Loading…" moves into the field's own
-//                         hint slot — same word, same condition.
-//   Input (date/check) -> TextField / ToolbarCheck. ToolbarCheck's <label> wraps
-//                         its own input, which is what the shadcn Label pairs
-//                         were doing by hand.
-//   Input type=number  -> SearchField, the unlabelled compact input. The visible
-//                         "months" text stays exactly where it was and now also
-//                         names the control for assistive tech, which the bare
-//                         input never did. No aria was dropped to get there.
-//   Button             -> the v2 Button. "Generate report" is this file's ONE
-//                         primary (ci:admin-ui rule C).
-//   Badge / PropertyTypeBadge -> .av2-chip, never StateWord: .av2-state
-//                         uppercases, and a segment label and a property type
-//                         are DATA. PropertyTypeBadge is a components/ui
-//                         island, so the label comes straight from
-//                         getPropertyTypeLabel — the same function that badge
-//                         calls, so the printed word is identical.
-//   Table x4           -> ReportGrid, the admin's one tabular reader, so each
-//                         table scrolls inside its own box instead of the page.
-//   raw <h2> x5        -> SectionHead, which owns the heading element.
-//
-// Surface stack, checked both ways in design_system/admin/tokens.css: the five
-// sections are --a-bg behind a hairline (§2 puts shadows on overlays only), the
-// per-segment wells inside the result are --a-inset, and the chips are
-// --a-surface with their own border. Nothing is painted onto its own parent.
+// 11F: v2 language only; report math and labels unchanged (§0 published figures).
 
 import { useState, useCallback } from 'react'
 import {

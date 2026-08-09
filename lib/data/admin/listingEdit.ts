@@ -259,3 +259,45 @@ export async function reorderListingPhotos(input: {
   }
   return { ok: true }
 }
+
+
+/** Load existing admin_overrides for a batch of ListNumbers and merge onto Spark rows. */
+export async function mergeListingRowsWithAdminOverrides(
+  rows: Array<Record<string, unknown>>,
+): Promise<{ ok: true; rows: Array<Record<string, unknown>> } | { ok: false; error: string }> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Supabase not configured' }
+  if (rows.length === 0) return { ok: true, rows }
+  const listNumbers = [
+    ...new Set(
+      rows
+        .map((r) => (typeof r.ListNumber === 'string' ? r.ListNumber : null))
+        .filter((n): n is string => Boolean(n)),
+    ),
+  ]
+  if (listNumbers.length === 0) return { ok: true, rows }
+  const existingByNumber = new Map<string, ListingDetailsJson | null>()
+  const CHUNK = 200
+  for (let i = 0; i < listNumbers.length; i += CHUNK) {
+    const slice = listNumbers.slice(i, i + CHUNK)
+    const { data, error: readErr } = await sb
+      .from('listings')
+      .select('ListNumber, details')
+      .in('ListNumber', slice)
+    if (readErr) return { ok: false, error: `admin_overrides merge read failed: ${readErr.message}` }
+    for (const row of data ?? []) {
+      const ln = (row as { ListNumber?: string }).ListNumber
+      if (ln) existingByNumber.set(ln, ((row as { details?: ListingDetailsJson | null }).details) ?? null)
+    }
+  }
+  return {
+    ok: true,
+    rows: rows.map((r) => {
+      const ln = typeof r.ListNumber === 'string' ? r.ListNumber : null
+      if (!ln) return r
+      const existing = existingByNumber.get(ln)
+      if (existing === undefined) return r
+      return applyAdminOverridesToListingRow(r, existing)
+    }),
+  }
+}

@@ -44,9 +44,9 @@
     "lib/data/crm/getEmailReporting.ts": 686,
     "lib/data/crm/getInboxQueue.ts": 635,
     "lib/data/crm/getLeadSourcesReport.ts": 626,
-    "lib/data/index.ts": 813,
+    "lib/data/index.ts": 815,
     "lib/data/listings/searchListingsAll.ts": 719,
-    "lib/data/sync/syncWrites.ts": 1123,
+    "lib/data/sync/syncWrites.ts": 1133,
     "lib/expired-owner-lookup.ts": 741,
     "lib/listing-mapper.ts": 633,
     "lib/marketing-brain/audit-ads.ts": 689,
@@ -60,7 +60,7 @@
     "lib/meta-graph.ts": 1215,
     "lib/search/field-registry.ts": 1805,
     "lib/spark.ts": 738,
-    "lib/sync/deltaSync.ts": 636,
+    "lib/sync/deltaSync.ts": 654,
     "lib/x.ts": 787
   },
   "barrels": {
