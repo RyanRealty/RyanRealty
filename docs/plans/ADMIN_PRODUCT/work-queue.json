@@ -17,12 +17,7 @@
   {
     "id": "12-full-sync-never-completes",
     "phase": "P12",
-    "note": "OPERATIONS. sync_history holds 19 rows, ALL dated 2026-03-16, zero in the last 30 days \u2014 while sync_cursor.updated_at and max(listings.ModificationTimestamp) were both TODAY when checked 2026-08-08. recordSyncRun() has exactly one call site (app/actions/sync-full-cron.ts:387) and fires only when a FULL run COMPLETES with history done; /api/cron/sync-full is scheduled `0 2 * * 0` (weekly, Sun 02:00). So either no full run has completed in ~5 months, or it completes without recording. The delta sync (/api/cron/sync-delta, every 15 min, runDeltaSync) is what actually keeps listings fresh and never writes here at all. The admin panel heading was corrected to 'Completed full syncs (last 10)' so it no longer reads as all sync activity, but the underlying question is untouched: does the weekly full sync still finish? Check the cursor phase history and whether the run is timing out mid-cycle. Related: nothing anywhere logs delta-sync runs, so there is no operational record of the job that does the real work."
-  },
-  {
-    "id": "12-published-figures",
-    "phase": "P12",
-    "note": "RESOLVED 2026-08-08 (2f7732db) for the admin surfaces, with one follow-on below. (a) getTotalListingsCount() summed geo_snapshot_mv.active_sfr_count over the TOP 50 CITIES and rendered under the heading 'Active' \u2014 measured 2,915 against an active bucket of 7,658. Root cause was not only the cap: it and totalListings were the ONLY two counts routing through an inner unstable_cache nested inside the operations page's outer unstable_cache, and they were the only two wrong. Both now call getActiveBucketCount() / getAllListingsCount() \u2014 the same DAL family every sibling on that panel uses, and the same one the panel's OWN status breakdown was already using eight rows below. getTotalListingsCount had no other caller and is deleted. Verified in a browser after the 180s cache turned over: 7,659 and 617,326. 'Active listings' is restored to the operations strip. (b) The market/reports _fetchAllCitySnapshots .limit(50) is UNTOUCHED and still caps the public-site city grid at 50 of 136 qualifying cities \u2014 that half of this item is still open."
+    "note": "PARTIALLY CLOSED 2026-08-09. Delta execute now records sync_history run_type=delta (migration widens CHECK). Full-run completion still only stamps when history phase finishes \u2014 ops can now see the 15-min keep-fresh job. Remaining: confirm weekly full cron finishes (cursor phase history). OPERATIONS. sync_history holds 19 rows, ALL dated 2026-03-16, zero in the last 3"
   },
   {
     "id": "12-person-scope-class",

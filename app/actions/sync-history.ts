@@ -2,7 +2,7 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 
-export type SyncRunType = 'listings' | 'history' | 'photos' | 'full'
+export type SyncRunType = 'listings' | 'history' | 'photos' | 'full' | 'delta'
 
 export type SyncHistoryRow = {
   id: string

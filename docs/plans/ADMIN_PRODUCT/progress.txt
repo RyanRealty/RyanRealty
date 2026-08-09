@@ -487,3 +487,7 @@ NOT IN SCOPE
    · getCmaAdminRowBySlug / getTaskQueue / getAppointments / getAppointmentsForPerson / getGlobalActivityFeed throw on transport error (null/empty reserved for genuine empty).
   TESTS: lib/alerts/engine.adversarial (30) + listingEdit.overrides (2) green.
   REMAINING P12: measurement stamps, full-sync ops diagnosis, public city grid .limit(50), assigned_broker rule, dupe queue, gate-drop for push, Matt audit-trail policy, chrome/dark-mode.
+
+2026-08-09T19:23:34Z P12 continued — published figures + delta ops record.
+  · getAllCitySnapshots: removed .limit(50), paged full city set, cache key -v4.
+  · deltaSync execute: recordSyncRun(runType=delta); migration allows delta run_type.

@@ -8,6 +8,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -165,10 +166,11 @@ export type ListingPhotoRow = {
 export async function getListingPhotosForKey(listingKey: string): Promise<ListingPhotoRow[]> {
   const sb = client()
   if (!sb) return []
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const { data } = await sb
     .from('listing_photos')
     .select('id, listing_key, photo_url, cdn_url, sort_order, caption, is_hero')
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .order('sort_order', { ascending: true })
   return (data ?? []) as ListingPhotoRow[]
 }
@@ -181,16 +183,17 @@ export async function appendListingPhoto(input: {
 }): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const canonicalKey = await resolveCanonicalListingKey(input.listingKey)
   const { data: existing } = await sb
     .from('listing_photos')
     .select('sort_order')
-    .eq('listing_key', input.listingKey)
+    .eq('listing_key', canonicalKey)
     .order('sort_order', { ascending: false })
     .limit(1)
     .maybeSingle()
   const nextSort = ((existing as { sort_order?: number } | null)?.sort_order ?? -1) + 1
   const { error } = await sb.from('listing_photos').insert({
-    listing_key: input.listingKey,
+    listing_key: canonicalKey,
     photo_url: input.photoUrl,
     sort_order: nextSort,
     caption: input.caption?.trim() || null,
@@ -207,10 +210,11 @@ export async function deleteListingPhoto(input: {
 }): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const canonicalKey = await resolveCanonicalListingKey(input.listingKey)
   const { error } = await sb
     .from('listing_photos')
     .delete()
-    .eq('listing_key', input.listingKey)
+    .eq('listing_key', canonicalKey)
     .eq('id', input.photoId)
   return error ? { ok: false, error: error.message } : { ok: true }
 }
@@ -222,15 +226,16 @@ export async function setListingHeroPhoto(input: {
 }): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const canonicalKey = await resolveCanonicalListingKey(input.listingKey)
   const reset = await sb
     .from('listing_photos')
     .update({ is_hero: false })
-    .eq('listing_key', input.listingKey)
+    .eq('listing_key', canonicalKey)
   if (reset.error) return { ok: false, error: reset.error.message }
   const set = await sb
     .from('listing_photos')
     .update({ is_hero: true })
-    .eq('listing_key', input.listingKey)
+    .eq('listing_key', canonicalKey)
     .eq('id', input.photoId)
   return set.error ? { ok: false, error: set.error.message } : { ok: true }
 }
@@ -242,12 +247,13 @@ export async function reorderListingPhotos(input: {
 }): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
+  const canonicalKey = await resolveCanonicalListingKey(input.listingKey)
   for (let i = 0; i < input.orderedPhotoIds.length; i += 1) {
     const id = input.orderedPhotoIds[i]
     const { error } = await sb
       .from('listing_photos')
       .update({ sort_order: i })
-      .eq('listing_key', input.listingKey)
+      .eq('listing_key', canonicalKey)
       .eq('id', id)
     if (error) return { ok: false, error: error.message }
   }

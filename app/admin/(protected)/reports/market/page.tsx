@@ -26,13 +26,9 @@
 //      error, so a failed snapshot read rendered as "there are no cities".
 //      A failed read now says it failed.
 //
-// One claim deliberately NOT made: this list is capped. _fetchAllCitySnapshots
-// orders by active_sfr_count descending and takes .limit(50), while 135 cities
-// in geo_snapshot_mv currently carry an active single-family listing (counted
-// 2026-08-07 against dwvlophlbvvygjfxcrhm). So the page reports how many cities
-// it can offer, never how many cities have inventory — the second sentence
-// would have read "50 cities have an active single-family listing", which is
-// false by 85.
+// P12 (2026-08-09): _fetchAllCitySnapshots no longer caps at 50 — it pages the
+// full geo_snapshot_mv city set, so a count of cities here means cities with
+// active single-family inventory, not "the first fifty by count".
 import Link from 'next/link'
 import { getReportCities } from '@/app/actions/reports'
 import { SectionHead, VerdictLine, ReportError } from '@/components/admin/v2'

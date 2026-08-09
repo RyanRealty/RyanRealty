@@ -613,6 +613,24 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
     console.error('[deltaSync] processNewExpiredListings failed (non-fatal).', err instanceof Error ? err.message : err)
   }
 
+  // P12: record every execute tick in sync_history so operations can see the
+  // job that actually keeps listings fresh (full runs can go months without
+  // completing). Best-effort — never fail the delta for a history write.
+  try {
+    const { recordSyncRun } = await import('@/app/actions/sync-history')
+    await recordSyncRun({
+      runType: 'delta',
+      startedAt: new Date(runStartedAt).getTime(),
+      completedAt: Date.now(),
+      listingsUpserted: totalUpserted,
+      historyRowsUpserted: historyRowsInserted,
+      photosUpdated: photosFixed,
+      error: upsertFailed ? 'upsert_failed' : truncated ? 'truncated' : null,
+    })
+  } catch (err) {
+    console.warn('[deltaSync] recordSyncRun failed (non-fatal).', err instanceof Error ? err.message : err)
+  }
+
   return {
     ok: !upsertFailed,
     partial: upsertFailed || truncated,

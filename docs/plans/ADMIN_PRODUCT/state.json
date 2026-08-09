@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "2026-08-09T19:21:08Z \u2014 P12 send-integrity + correctness units shipping. listing-alert claim-before-send; crm_send_block_events ledger; admin listing overrides survive sync; readers throw on transport error (CMA slug, task queue, appointments, activity feed). Still open: 12-measurement, 12-full-sync ops, published-figures public grid, person-scope dataflow, chrome-debt hydration, dark mode, audit-trail policy (Matt), third analytics reader, primitive audit, FUB renames.",
+  "current_process": "2026-08-09T19:23:34Z \u2014 P12 progress continued: city snapshots uncapped, delta sync_history recording. Remaining: measurement stamps, assigned_broker rule, dupe queue, push gate-drops, Matt audit policy, chrome/dark-mode, third analytics reader.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-09T19:21:08Z"
+  "updated_at": "2026-08-09T19:23:34Z"
 }

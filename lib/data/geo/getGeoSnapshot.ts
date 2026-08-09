@@ -229,19 +229,24 @@ export const getGeoSnapshot = (input: GeoSnapshotInput): Promise<GeoSnapshot | n
 async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
   const supabase = supabaseAnon()
   if (!supabase) return []
-  const [{ data, error }, pulse] = await Promise.all([
-    supabase
-      .from('geo_snapshot_mv')
-      .select('*')
-      .eq('geo_type', 'city')
-      .gt('active_sfr_count', 0)
-      .order('active_sfr_count', { ascending: false })
-      .limit(50),
+  // P12: was .limit(50) while 130+ cities carry active SFR inventory — the public
+  // city grid and admin market list under-counted Central Oregon by ~85 cities.
+  // Page through the MV (same pattern as communities) so the count matches reality.
+  const [{ rows, error }, pulse] = await Promise.all([
+    fetchPagedRows<GeoSnapshotMvRow>((from, to) =>
+      supabase
+        .from('geo_snapshot_mv')
+        .select('*')
+        .eq('geo_type', 'city')
+        .gt('active_sfr_count', 0)
+        .order('active_sfr_count', { ascending: false })
+        .range(from, to),
+    ),
     fetchPulseCityMap(),
   ])
   if (error) throw new Error(`[getAllCitySnapshots] ${error.message ?? JSON.stringify(error)}`)
-  if (!data) return []
-  return (data as GeoSnapshotMvRow[])
+  if (!rows.length) return []
+  return rows
     .map((row) => withPulseOverride(rowToSnapshot(row), pulse.get(row.geo_key.toLowerCase().trim())))
     .sort((a, b) => b.activeSfrCount - a.activeSfrCount)
 }
@@ -252,7 +257,7 @@ async function _fetchAllCitySnapshots(): Promise<GeoSnapshot[]> {
  */
 export const getAllCitySnapshots = makeResilientCached(
   _fetchAllCitySnapshots,
-  ['geo-snapshot-all-cities-v3'],
+  ['geo-snapshot-all-cities-v4'],
   { revalidate: CACHE_WINDOWS.geoCity, tags: ['cities-index'] },
   [],
 )
