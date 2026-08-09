@@ -54,7 +54,6 @@ import {
 } from '@/app/admin/(protected)/crm/[id]/person-view-model'
 import { getCrmSources } from '@/lib/data/crm/getCrmSources'
 import { listActiveSequences } from '@/lib/crm/enroll'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { PersonHomesRegion } from './PersonHomesRegion'
 import { PersonEngagementRegion } from './PersonEngagementRegion'
 import { PersonMobileHomesRegion } from './PersonMobileHomesRegion'
@@ -79,10 +78,45 @@ export type PersonWorkspaceIdentity = {
 }
 
 /**
+ * Notice band for the three page-level alerts (flash, send failure, contact
+ * restrictions). 11F: the shadcn Alert is gone, so the band is drawn from the
+ * locked admin tokens. `role="alert"` is what shadcn's Alert carried and what
+ * a screen reader needs, so it stays.
+ */
+function NoticeBand({
+  tone,
+  title,
+  children,
+}: {
+  tone: 'quiet' | 'danger'
+  title?: string
+  children: React.ReactNode
+}) {
+  const danger = tone === 'danger'
+  return (
+    <div
+      role="alert"
+      className="rounded-lg px-4 py-3 text-sm"
+      style={{
+        border: `1px solid ${danger ? 'var(--a-danger)' : 'var(--a-border)'}`,
+        background: danger ? 'var(--a-danger-wash)' : 'var(--a-surface)',
+        color: danger ? 'var(--a-danger)' : 'var(--a-text)',
+      }}
+    >
+      {title ? <p className="font-semibold">{title}</p> : null}
+      <p>{children}</p>
+    </div>
+  )
+}
+
+/**
  * Critical-path assembly for send + conversation + identity chrome.
  * Heavy secondary panels (homes, engagement, mobile calendar) stream under
  * nested Suspense — uncached request-scoped reads (no revalidateTag) so a
  * CRM surface never serves cross-contact cache.
+ *
+ * 11F: on the LOCKED admin v2 language. PRESENTATION ONLY — the same reads,
+ * the same Suspense boundaries, the same region props.
  */
 export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
   const {
@@ -271,12 +305,14 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
         customFields={composerCustomFields}
       />
     ) : (
-      <p className="px-1 py-2 text-center text-[13px] text-muted-foreground">
+      <p className="px-1 py-2 text-center text-[13px]" style={{ color: 'var(--a-text-2)' }}>
         Texting is paused — A2P status is {twilioStatus.a2p ?? 'unknown'}.
       </p>
     )
   ) : (
-    <p className="px-1 py-2 text-center text-[13px] text-muted-foreground">No phone number on file.</p>
+    <p className="px-1 py-2 text-center text-[13px]" style={{ color: 'var(--a-text-2)' }}>
+      No phone number on file.
+    </p>
   )
 
   const sendCenterNode = (
@@ -381,44 +417,46 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
     <>
       {hasAlerts ? (
         <div className="mx-auto mb-3 w-full max-w-6xl space-y-3">
-          {flash ? (
-            <Alert>
-              <AlertDescription>{flash}</AlertDescription>
-            </Alert>
-          ) : null}
+          {flash ? <NoticeBand tone="quiet">{flash}</NoticeBand> : null}
           {sendError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Couldn&apos;t send</AlertTitle>
-              <AlertDescription>{sendError}</AlertDescription>
-            </Alert>
+            <NoticeBand tone="danger" title="Couldn't send">
+              {sendError}
+            </NoticeBand>
           ) : null}
           {full.suppressions.length > 0 ? (
-            <Alert variant="destructive">
-              <AlertTitle>Contact restrictions active</AlertTitle>
-              <AlertDescription>
-                {full.suppressions.map((s) => `${s.channel}: ${s.reason}`).join(' · ')}. Automated
-                outreach is blocked.
-              </AlertDescription>
-            </Alert>
+            <NoticeBand tone="danger" title="Contact restrictions active">
+              {full.suppressions.map((s) => `${s.channel}: ${s.reason}`).join(' · ')}. Automated
+              outreach is blocked.
+            </NoticeBand>
           ) : null}
         </div>
       ) : null}
 
       <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-5 sm:-mt-7 -mb-24 lg:-mb-8 grid h-[calc(100dvh-3.5rem)] grid-cols-[minmax(230px,24%)_1fr_minmax(290px,28%)] overflow-hidden lg:h-dvh">
-        <div data-slot="person-profile" className="overflow-y-auto border-r border-border px-3 py-3">
+        <div
+          data-slot="person-profile"
+          className="overflow-y-auto px-3 py-3"
+          style={{ borderRight: '1px solid var(--a-border)' }}
+        >
           <PersonSidebar
             data={sidebarData}
             customFieldsNode={
               Object.keys((person.custom as Record<string, unknown> | null) ?? {}).length > 0 ? (
                 <CustomFieldsPanel personId={person.id} custom={person.custom} defs={fieldDefs} />
               ) : (
-                <p className="px-1 text-sm text-muted-foreground">No custom fields.</p>
+                <p className="px-1 text-sm" style={{ color: 'var(--a-text-2)' }}>
+                  No custom fields.
+                </p>
               )
             }
           />
         </div>
 
-        <div data-slot="person-timeline" className="min-w-0 overflow-hidden border-r border-border">
+        <div
+          data-slot="person-timeline"
+          className="min-w-0 overflow-hidden"
+          style={{ borderRight: '1px solid var(--a-border)' }}
+        >
           <PersonCenterColumn
             personId={person.id}
             personName={displayName}
@@ -453,7 +491,9 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
                   />
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No email address on file.</p>
+                <p className="text-sm" style={{ color: 'var(--a-text-2)' }}>
+                  No email address on file.
+                </p>
               )
             }
             smsComposer={
@@ -476,7 +516,9 @@ export async function PersonWorkspaceBody(props: PersonWorkspaceIdentity) {
                   />
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No phone number on file.</p>
+                <p className="text-sm" style={{ color: 'var(--a-text-2)' }}>
+                  No phone number on file.
+                </p>
               )
             }
           />

@@ -8,6 +8,10 @@
  * editor does not expose (keywords, map polygon, extra cities, ...) are
  * preserved untouched on save — the server action merges + re-normalizes
  * through the canonical filter model and keeps filters_hash in sync.
+ *
+ * P11F: on the LOCKED admin v2 language — the shadcn Dialog/Input/Label/Button
+ * became the v2 Dialog, TextField (which owns its own label + htmlFor) and v2
+ * Buttons. "Save changes" is this file's one primary; Cancel is quiet.
  */
 
 import { useState, useTransition } from 'react'
@@ -16,12 +20,7 @@ import { updateAlertSubscriptionAction } from '@/app/actions/subscriptions-admin
 import type { AdminAlertSubscriptionRow } from '@/lib/data/crm/subscriptionsAdmin'
 import type { SavedSearchFilters } from '@/lib/search-filters'
 import { AlertCriteriaEditor, type AlertFrequency } from '@/components/admin/crm/criteria'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
+import { Button, Dialog, TextField } from '@/components/admin/v2'
 
 function normalizeAlertFrequency(f: string): AlertFrequency {
   const v = f.trim().toLowerCase()
@@ -70,48 +69,49 @@ export default function AlertEditDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit {noun}</DialogTitle>
-          <DialogDescription>
-            {row.email ? `Alerts for ${row.email}. ` : ''}Filters you do not change here are kept as they are.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4">
-          <div className="grid gap-1.5">
-            <Label htmlFor="alert-edit-name">Name</Label>
-            <Input
-              id="alert-edit-name"
-              value={draftName}
-              maxLength={120}
-              onChange={(e) => setDraftName(e.target.value)}
-            />
-          </div>
-
-          <AlertCriteriaEditor
-            value={draftFilters}
-            onChange={setDraftFilters}
-            frequency={draftFrequency}
-            onFrequencyChange={setDraftFrequency}
-            disabled={pending}
-          />
-
-          {dialogError && (
-            <p className="text-sm text-destructive" role="alert">{dialogError}</p>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
+    <Dialog
+      open
+      onClose={onClose}
+      title={`Edit ${noun}`}
+      size="work"
+      description={
+        <>
+          {row.email ? `Alerts for ${row.email}. ` : ''}Filters you do not change here are kept as they are.
+        </>
+      }
+      footer={
+        <>
+          <Button variant="quiet" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave} disabled={pending}>
+          <Button onClick={handleSave} disabled={pending}>
             {pending ? 'Saving...' : 'Save changes'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        {/* No `id` prop: TextField mints its own and points its <label> at it,
+            so passing one would break the htmlFor pairing. */}
+        <TextField
+          label="Name"
+          value={draftName}
+          maxLength={120}
+          onChange={(e) => setDraftName(e.target.value)}
+        />
+
+        <AlertCriteriaEditor
+          value={draftFilters}
+          onChange={setDraftFilters}
+          frequency={draftFrequency}
+          onFrequencyChange={setDraftFrequency}
+          disabled={pending}
+        />
+
+        {dialogError && (
+          <p className="text-sm" style={{ color: 'var(--a-danger)' }} role="alert">{dialogError}</p>
+        )}
+      </div>
     </Dialog>
   )
 }

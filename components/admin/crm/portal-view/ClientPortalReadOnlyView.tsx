@@ -16,16 +16,24 @@
  * NOT imported here. The one shared piece is activeRegistryFilters, reused
  * (never forked) through PortalFilterChips so the chip labels a broker reads
  * are the labels the client sees.
+ *
+ * Admin v2 (11F): off shadcn and onto the locked admin language. Alert ->
+ * a role="alert" panel on the tokens, Badge -> token spans (the v2 FilterChip
+ * is a button and StateWord uppercases — neither belongs on a read-only mirror
+ * of the client's own words), Separator -> a 1px rule, and the two
+ * `Button asChild` link wrappers -> anchors wearing the av2-btn classes, which
+ * is what keeps middle-click and Cmd/Ctrl-click on a NAVIGATION control. The
+ * ConsoleSection panels and StatusPill stay: they are the console kit the
+ * admin shell (app/admin/(protected)/layout.tsx -> ConsoleShell) still mounts,
+ * not shadcn, and swapping them is a different unit's decision.
  */
 
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
 import { ConsoleSection } from '@/components/console/ConsoleSection'
 import { StatusPill } from '@/components/console/StatusPill'
 import { PortalFilterChips } from '@/components/admin/crm/portal-view/PortalFilterChips'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import '@/components/admin/v2/admin-v2.css'
 import type {
   ClientPortalActivityEvent,
   ClientPortalAlert,
@@ -63,6 +71,65 @@ const CADENCE_LABELS: Record<string, string> = {
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+/** A bordered block on the panel's own background — never a surface fill on a
+ *  surface, which is an invisible element. */
+const BORDERED_CARD: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  padding: 'var(--a-s3)',
+}
+
+const BORDERED_ROW: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-md)',
+  padding: '8px var(--a-s3)',
+}
+
+/** Was <Alert>: a bordered notice that names itself to assistive tech. */
+const NOTICE: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-md)',
+  padding: '8px 10px',
+  fontSize: 'var(--a-text-sm)',
+}
+
+/** Was the shadcn Separator: a 1px hairline, never a raw rule element. */
+const RULE: CSSProperties = {
+  height: 1,
+  background: 'var(--a-border)',
+  margin: 'var(--a-s3) 0',
+}
+
+const LABEL_META: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  textTransform: 'uppercase',
+  letterSpacing: '.025em',
+  color: 'var(--a-text-2)',
+}
+
+/** Was <Badge>: an event pill. Strikethrough (not color) carries "off". */
+const EVENT_PILL: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  borderRadius: 999,
+  padding: '2px 8px',
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 500,
+  whiteSpace: 'nowrap',
+  border: '1px solid transparent',
+}
+const EVENT_PILL_ON: CSSProperties = {
+  ...EVENT_PILL,
+  background: 'var(--a-accent-wash)',
+  color: 'var(--a-accent)',
+}
+const EVENT_PILL_OFF: CSSProperties = {
+  ...EVENT_PILL,
+  borderColor: 'var(--a-border)',
+  color: 'var(--a-text-2)',
+  textDecoration: 'line-through',
+}
+
 function cadenceLine(alert: ClientPortalAlert): string {
   const base = CADENCE_LABELS[alert.cadence] ?? `Sent ${alert.cadence}`
   if (!alert.scheduleDays || alert.scheduleDays.length === 0) return base
@@ -76,59 +143,68 @@ function cadenceLine(alert: ClientPortalAlert): string {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="truncate text-sm tabular-nums text-foreground">{value}</p>
+      <p style={LABEL_META}>{label}</p>
+      <p className="truncate tabular-nums" style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>
+        {value}
+      </p>
     </div>
   )
 }
 
 function EmptyRow({ children }: { children: React.ReactNode }) {
-  return <p className="text-sm text-muted-foreground">{children}</p>
+  return <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>{children}</p>
 }
 
 function AlertCard({ alert }: { alert: ClientPortalAlert }) {
   return (
-    <div className="rounded-xl border border-border p-3">
+    <div style={BORDERED_CARD}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className="truncate text-sm font-semibold text-foreground">{alert.name}</span>
+          <span
+            className="truncate"
+            style={{ fontSize: 'var(--a-text-md)', fontWeight: 600, color: 'var(--a-text)' }}
+          >
+            {alert.name}
+          </span>
           <StatusPill tone={alert.active ? 'success' : 'neutral'} label={alert.active ? 'Active' : 'Paused'} />
           {alert.origin !== 'user' ? (
             <StatusPill tone={alert.origin === 'broker' ? 'info' : 'warning'} label={alert.origin} />
           ) : null}
           {alert.previewMode ? <StatusPill tone="warning" label="Held for approval" /> : null}
         </div>
-        <Button asChild variant="ghost" size="sm">
-          <Link href={alert.searchUrl} target="_blank" rel="noreferrer">
-            Open this search
-          </Link>
-        </Button>
+        <Link
+          href={alert.searchUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="av2-btn av2-btn--quiet"
+          style={{ textDecoration: 'none' }}
+        >
+          Open this search
+        </Link>
       </div>
 
-      <p className="mt-1 text-sm text-muted-foreground">{alert.criteria}</p>
+      <p className="mt-1" style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>
+        {alert.criteria}
+      </p>
 
       <div className="mt-2.5">
         <PortalFilterChips registryParams={alert.registryParams} otherChips={alert.otherChips} />
       </div>
 
-      <Separator className="my-3" />
+      <div style={RULE} />
 
       <div>
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">Alerts on</p>
+        <p style={LABEL_META}>Alerts on</p>
         <div className="mt-1 flex flex-wrap gap-1.5">
           {EVENT_ORDER.map((type) => {
             const on = alert.events[type] === true
             return (
-              <Badge
-                key={type}
-                variant={on ? 'default' : 'outline'}
-                className={on ? 'rounded-full' : 'rounded-full text-muted-foreground line-through'}
-              >
+              <span key={type} style={on ? EVENT_PILL_ON : EVENT_PILL_OFF}>
                 {EVENT_LABELS[type]}
                 {/* Strikethrough is the visual signal. State is never color or
                     decoration alone, so the on/off word ships for assistive tech. */}
                 <span className="sr-only">{on ? ' on' : ' off'}</span>
-              </Badge>
+              </span>
             )
           })}
         </div>
@@ -155,14 +231,16 @@ function AlertCard({ alert }: { alert: ClientPortalAlert }) {
 
 function NamedAreaRow({ area }: { area: ClientPortalNamedArea }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+    <div className="flex flex-wrap items-center justify-between gap-2" style={BORDERED_ROW}>
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-foreground">{area.name}</p>
-        <p className="text-xs text-muted-foreground">{area.shapeSummary}</p>
+        <p className="truncate" style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>
+          {area.name}
+        </p>
+        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{area.shapeSummary}</p>
       </div>
       <div className="flex items-center gap-2">
         {area.isPublic ? <StatusPill tone="info" label="Shared publicly" /> : null}
-        <span className="text-xs tabular-nums text-muted-foreground">
+        <span className="tabular-nums" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
           {area.updatedAt ? `Updated ${fmtAgoLong(area.updatedAt)}` : 'Updated date unknown'}
         </span>
       </div>
@@ -187,17 +265,18 @@ function HomeRow({
 }) {
   const label = [address, city].filter(Boolean).join(', ')
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2">
+    <div className="flex flex-wrap items-center justify-between gap-2" style={BORDERED_ROW}>
       <div className="min-w-0">
         <Link
           href={`/listing/${listingKey}`}
           target="_blank"
           rel="noreferrer"
-          className="truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
+          className="truncate underline-offset-4 hover:underline"
+          style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}
         >
           {label}
         </Link>
-        <p className="text-xs tabular-nums text-muted-foreground">
+        <p className="tabular-nums" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
           {[usd(price), status, meta].filter(Boolean).join(' · ')}
         </p>
       </div>
@@ -207,9 +286,12 @@ function HomeRow({
 
 function ActivityRow({ event }: { event: ClientPortalActivityEvent }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border py-1.5 last:border-b-0">
-      <span className="text-sm text-foreground">{event.label}</span>
-      <span className="truncate text-xs tabular-nums text-muted-foreground">
+    <div
+      className="flex flex-wrap items-baseline justify-between gap-2 border-b py-1.5 last:border-b-0"
+      style={{ borderBottomColor: 'var(--a-border)' }}
+    >
+      <span style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>{event.label}</span>
+      <span className="truncate tabular-nums" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
         {[event.pagePath, fmtAgoLong(event.eventAt)].filter(Boolean).join(' · ')}
       </span>
     </div>
@@ -233,36 +315,39 @@ export function ClientPortalReadOnlyView({
     <div className="mx-auto w-full max-w-4xl space-y-3 pb-10">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold text-foreground">
+          <h1
+            className="truncate"
+            style={{ fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' }}
+          >
             {displayName}, portal view
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>
             {view.emails.length > 0 ? view.emails.join(', ') : 'No email on file'}
           </p>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link href={personHref}>Back to the contact</Link>
-        </Button>
+        <Link href={personHref} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+          Back to the contact
+        </Link>
       </div>
 
-      <Alert>
-        <AlertTitle>Read only</AlertTitle>
-        <AlertDescription>
+      <div role="alert" style={NOTICE}>
+        <div style={{ fontWeight: 500, color: 'var(--a-text)' }}>Read only</div>
+        <div style={{ color: 'var(--a-text-2)' }}>
           This is what {displayName} sees when signed in. Nothing on this page can change their
           alerts, saved homes, hidden homes, or areas, and opening it does not sign you in as them.
           Make changes from the contact page or ask them to make the change.
-        </AlertDescription>
-      </Alert>
+        </div>
+      </div>
 
       {!view.hasSiteAccount ? (
-        <Alert>
-          <AlertTitle>No site account linked</AlertTitle>
-          <AlertDescription>
+        <div role="alert" style={NOTICE}>
+          <div style={{ fontWeight: 500, color: 'var(--a-text)' }}>No site account linked</div>
+          <div style={{ color: 'var(--a-text-2)' }}>
             No signed-in account is linked to this contact yet, so saved homes, hidden homes, named
             areas, and site activity are empty. Alerts created by email or by a broker still show
             below.
-          </AlertDescription>
-        </Alert>
+          </div>
+        </div>
       ) : null}
 
       <ConsoleSection title="Alerts and saved searches" count={`(${alerts.length})`}>
@@ -275,7 +360,7 @@ export function ClientPortalReadOnlyView({
             ))}
           </div>
         )}
-        <p className="mt-3 text-xs text-muted-foreground">
+        <p className="mt-3" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
           A saved search and an alert are one record here, so every saved search appears in this
           list with the events it fires on.
         </p>

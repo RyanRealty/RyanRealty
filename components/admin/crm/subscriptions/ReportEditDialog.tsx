@@ -7,6 +7,10 @@
  * live plain-English restatement. Area options load once from the
  * crm_report_areas registry; writes go through updateReportSubscriptionAction,
  * which validates every area key against the registry server-side.
+ *
+ * P11F: on the LOCKED admin v2 language — the v2 Dialog, av2-rskel rows for
+ * the area-registry load, and v2 Buttons. "Save changes" is this file's one
+ * primary; Cancel is quiet.
  */
 
 import { useEffect, useState, useTransition } from 'react'
@@ -21,11 +25,8 @@ import {
   type GeoOption,
   type ReportFrequency,
 } from '@/components/admin/crm/criteria'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
+import { Button, Dialog } from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 
 function normalizeFrequency(f: string): ReportFrequency {
   const v = f.trim().toLowerCase()
@@ -91,47 +92,45 @@ export default function ReportEditDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Edit market report subscription</DialogTitle>
-          <DialogDescription>
-            {row.personName?.trim() || `Contact #${row.personId}`} gets a report for each selected area.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4">
-          {loadState === 'loading' ? (
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-2/3" />
-            </div>
-          ) : loadState === 'error' ? (
-            <p className="text-sm text-destructive" role="alert">Could not load the area list.</p>
-          ) : (
-            <ReportCriteriaEditor
-              areas={criteria.areas}
-              frequency={criteria.frequency}
-              areaOptions={areaOptions}
-              onChange={setCriteria}
-              disabled={pending}
-            />
-          )}
-
-          {dialogError && (
-            <p className="text-sm text-destructive" role="alert">{dialogError}</p>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
+    <Dialog
+      open
+      onClose={onClose}
+      title="Edit market report subscription"
+      size="work"
+      description={`${row.personName?.trim() || `Contact #${row.personId}`} gets a report for each selected area.`}
+      footer={
+        <>
+          <Button variant="quiet" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave} disabled={pending || loadState !== 'ready'}>
+          <Button onClick={handleSave} disabled={pending || loadState !== 'ready'}>
             {pending ? 'Saving...' : 'Save changes'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        {loadState === 'loading' ? (
+          <div className="space-y-2" aria-hidden="true">
+            <div className="av2-rskel__row" style={{ height: 32, margin: 0 }} />
+            <div className="av2-rskel__row w-2/3" style={{ height: 32, margin: 0 }} />
+          </div>
+        ) : loadState === 'error' ? (
+          <p className="text-sm" style={{ color: 'var(--a-danger)' }} role="alert">Could not load the area list.</p>
+        ) : (
+          <ReportCriteriaEditor
+            areas={criteria.areas}
+            frequency={criteria.frequency}
+            areaOptions={areaOptions}
+            onChange={setCriteria}
+            disabled={pending}
+          />
+        )}
+
+        {dialogError && (
+          <p className="text-sm" style={{ color: 'var(--a-danger)' }} role="alert">{dialogError}</p>
+        )}
+      </div>
     </Dialog>
   )
 }

@@ -5,6 +5,11 @@
  * broker. Subscription rows carry no broker column; attribution and the report
  * send engine resolve from crm_people.assigned_broker, so that is the write.
  * Disabled state (no linked contact) is handled by the caller.
+ *
+ * P11F: on the LOCKED admin v2 language — the v2 Dialog, SelectField (which
+ * owns the "Broker" label and its htmlFor, replacing the shadcn Label +
+ * aria-label pair), an av2-rskel row for the roster load, and v2 Buttons.
+ * "Assign" is this file's one primary.
  */
 
 import { useEffect, useState, useTransition } from 'react'
@@ -13,15 +18,8 @@ import {
   assignSubscriptionBrokerAction,
   getSubscriptionEditOptionsAction,
 } from '@/app/actions/subscriptions-admin'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
+import { Button, Dialog, SelectField } from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 
 export default function AssignBrokerDialog({
   personId,
@@ -78,47 +76,49 @@ export default function AssignBrokerDialog({
   }
 
   return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Assign broker</DialogTitle>
-          <DialogDescription>
-            Future emails for {contactLabel} attribute to the assigned broker.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-1.5">
-          <Label>Broker</Label>
-          {loadState === 'loading' ? (
-            <Skeleton className="h-9 w-full" />
-          ) : loadState === 'error' ? (
-            <p className="text-sm text-destructive" role="alert">Could not load the broker roster.</p>
-          ) : (
-            <Select value={selected} onValueChange={setSelected} disabled={pending}>
-              <SelectTrigger className="w-full" aria-label="Broker">
-                <SelectValue placeholder="Pick a broker" />
-              </SelectTrigger>
-              <SelectContent>
-                {brokers.map((b) => (
-                  <SelectItem key={b.slug} value={b.slug}>{b.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {dialogError && (
-            <p className="text-sm text-destructive" role="alert">{dialogError}</p>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
+    <Dialog
+      open
+      onClose={onClose}
+      title="Assign broker"
+      description={`Future emails for ${contactLabel} attribute to the assigned broker.`}
+      footer={
+        <>
+          <Button variant="quiet" onClick={onClose} disabled={pending}>
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave} disabled={pending || loadState !== 'ready'}>
+          <Button onClick={handleSave} disabled={pending || loadState !== 'ready'}>
             {pending ? 'Assigning...' : 'Assign'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </>
+      }
+    >
+      <div className="grid gap-1.5">
+        {loadState === 'ready' ? (
+          <SelectField
+            label="Broker"
+            value={selected}
+            disabled={pending}
+            onChange={(e) => setSelected(e.target.value)}
+          >
+            <option value="" disabled>Pick a broker</option>
+            {brokers.map((b) => (
+              <option key={b.slug} value={b.slug}>{b.name}</option>
+            ))}
+          </SelectField>
+        ) : (
+          <>
+            <span className="av2-field__label">Broker</span>
+            {loadState === 'loading' ? (
+              <div className="av2-rskel__row" style={{ height: 36, margin: 0 }} aria-hidden="true" />
+            ) : (
+              <p className="text-sm" style={{ color: 'var(--a-danger)' }} role="alert">Could not load the broker roster.</p>
+            )}
+          </>
+        )}
+        {dialogError && (
+          <p className="text-sm" style={{ color: 'var(--a-danger)' }} role="alert">{dialogError}</p>
+        )}
+      </div>
     </Dialog>
   )
 }

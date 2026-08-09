@@ -9,6 +9,10 @@
  * `mediaSid`, never a `path`, so the two renderers never double-draw.
  */
 
+// The admin v2 tokens (--a-*) this file's colours read from. Imported directly
+// because nothing here mounts a v2 component: the strip is plain anchors.
+import '@/components/admin/v2/admin-v2.css'
+
 export type StoredAttachment = { path: string; name: string; contentType: string }
 
 const PATH_RE = /^(email|mms)\/person-\d+\/\d+-[\w.\-]+$/
@@ -44,6 +48,12 @@ export function twilioMediaOf(payload: Record<string, unknown> | null | undefine
   })
 }
 
+// The non-image chip's hover wash stays a CLASS, never an inline background: an
+// inline style wins over the hover rule and would leave the chip dead on hover.
+const CHIP_CLASS =
+  'rounded-lg border px-3 py-2 text-xs text-[color:var(--a-text)] hover:bg-[var(--a-inset)]'
+const CHIP_BORDER = { borderColor: 'var(--a-border)' }
+
 /**
  * Every attachment a timeline event carries — Twilio-sid media AND stored
  * outbound files — as one strip. For surfaces that don't already render
@@ -60,10 +70,10 @@ export function TimelineMediaStrip(props: { payload: Record<string, unknown> | n
         return m.contentType.startsWith('image/') ? (
           // eslint-disable-next-line @next/next/no-img-element
           <a key={m.mediaSid} href={src} target="_blank" rel="noopener noreferrer">
-            <img src={src} alt="MMS attachment" className="h-28 w-28 rounded-lg border border-border object-cover" loading="lazy" />
+            <img src={src} alt="MMS attachment" className="h-28 w-28 rounded-lg border object-cover" style={CHIP_BORDER} loading="lazy" />
           </a>
         ) : (
-          <a key={m.mediaSid} href={src} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border px-3 py-2 text-xs text-foreground hover:bg-muted">
+          <a key={m.mediaSid} href={src} target="_blank" rel="noopener noreferrer" className={CHIP_CLASS} style={CHIP_BORDER}>
             📎 attachment
           </a>
         )
@@ -73,10 +83,10 @@ export function TimelineMediaStrip(props: { payload: Record<string, unknown> | n
         return a.contentType.startsWith('image/') ? (
           // eslint-disable-next-line @next/next/no-img-element
           <a key={a.path} href={src} target="_blank" rel="noopener noreferrer">
-            <img src={src} alt={a.name} className="h-28 w-28 rounded-lg border border-border object-cover" loading="lazy" />
+            <img src={src} alt={a.name} className="h-28 w-28 rounded-lg border object-cover" style={CHIP_BORDER} loading="lazy" />
           </a>
         ) : (
-          <a key={a.path} href={src} target="_blank" rel="noopener noreferrer" className="max-w-56 truncate rounded-lg border border-border px-3 py-2 text-xs text-foreground hover:bg-muted">
+          <a key={a.path} href={src} target="_blank" rel="noopener noreferrer" className={`max-w-56 truncate ${CHIP_CLASS}`} style={CHIP_BORDER}>
             📎 {a.name}
           </a>
         )
@@ -98,7 +108,7 @@ export function StoredAttachmentStrip(props: {
         return a.contentType.startsWith('image/') ? (
           // eslint-disable-next-line @next/next/no-img-element
           <a key={a.path} href={src} target="_blank" rel="noopener noreferrer">
-            <img src={src} alt={a.name} className="h-28 w-28 rounded-lg border border-border object-cover" loading="lazy" />
+            <img src={src} alt={a.name} className="h-28 w-28 rounded-lg border object-cover" style={CHIP_BORDER} loading="lazy" />
           </a>
         ) : (
           <a
@@ -106,7 +116,8 @@ export function StoredAttachmentStrip(props: {
             href={src}
             target="_blank"
             rel="noopener noreferrer"
-            className="max-w-56 truncate rounded-lg border border-border px-3 py-2 text-xs text-foreground hover:bg-muted"
+            className={`max-w-56 truncate ${CHIP_CLASS}`}
+            style={CHIP_BORDER}
           >
             📎 {a.name}
           </a>

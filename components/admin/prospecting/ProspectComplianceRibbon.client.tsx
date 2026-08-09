@@ -16,9 +16,17 @@
  * 2026-07-28). Only `allChannelsBlocked` is destructive now; a single closed
  * channel is a warning that names the reason, and the open channels are stated
  * positively so the next action is obvious.
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md). The
+ * shadcn Badge trio became StateWord, which already carries the "status is text
+ * + color, never color alone" rule (av2-state--*) — destructive → `down`,
+ * success → `ok`, warning → `slow`. Every word, every per-channel decision and
+ * the fail-closed read underneath are unchanged; only the paint moved. The
+ * blocked REASON stays plain text, not a StateWord: it is a sentence the
+ * suppression source wrote, not one of the language's status words.
  */
 
-import { Badge } from '@/components/ui/badge'
+import { StateWord } from '@/components/admin/v2'
 import {
   openChannels,
   PROSPECT_CHANNELS,
@@ -38,28 +46,30 @@ export function ProspectComplianceRibbon({ compliance }: { compliance: ProspectC
   return (
     <div className="flex flex-wrap items-center gap-1.5" role="status">
       {compliance.allChannelsBlocked ? (
-        <Badge variant="destructive">Do not contact</Badge>
+        <StateWord state="down">Do not contact</StateWord>
       ) : (
         <>
           {open.map((c) => (
-            <Badge key={`open-${c}`} variant="success">
+            <StateWord key={`open-${c}`} state="ok">
               {CHANNEL_LABEL[c]} OK
-            </Badge>
+            </StateWord>
           ))}
           {blocked.map((c) => (
-            <Badge key={`blocked-${c}`} variant="warning">
+            <StateWord key={`blocked-${c}`} state="slow">
               No {CHANNEL_LABEL[c].toLowerCase()}
-            </Badge>
+            </StateWord>
           ))}
         </>
       )}
-      {compliance.relisted ? <Badge variant="warning">Relisted</Badge> : null}
-      {compliance.offMarket ? <Badge variant="warning">Off market</Badge> : null}
+      {compliance.relisted ? <StateWord state="slow">Relisted</StateWord> : null}
+      {compliance.offMarket ? <StateWord state="slow">Off market</StateWord> : null}
 
       {/* The single most important reason, spelled out. The full list lives on
           the detail page — a card ribbon that wraps to three lines is noise. */}
       {blocked.length > 0 && compliance.channels[blocked[0]].reason ? (
-        <span className="text-xs text-muted-foreground">{compliance.channels[blocked[0]].reason}</span>
+        <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {compliance.channels[blocked[0]].reason}
+        </span>
       ) : null}
     </div>
   )

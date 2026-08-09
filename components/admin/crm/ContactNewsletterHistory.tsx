@@ -7,44 +7,56 @@
  *
  * Server component. Sits next to the newsletter membership chip in the
  * website-activity rail, matching the ContactEmailEngagement card pattern.
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Card -> av2-pane, Badge -> StateWord, every shadcn semantic class -> its
+ * var(--a-*) token. The per-issue badge kept its three tiers rather than
+ * collapsing to one grey: clicked is the accent wash, opened is the ok wash
+ * (a delivered-and-read issue is a healthy outcome, and v2 has no outline
+ * state to hold the old outline/secondary split), queued/sending/sent are the
+ * neutral waiting state, and a bounce/complaint/failure is danger.
  */
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StateWord } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
 import type { NewsletterHistoryForPerson, NewsletterIssueForPerson } from '@/lib/data/newsletter/perLead'
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border px-3 py-2">
-      <div className="text-lg font-semibold tabular-nums text-foreground">{value}</div>
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+    <div className="rounded-lg px-3 py-2" style={{ border: '1px solid var(--a-border)' }}>
+      <div className="tabular-nums" style={{ fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' }}>
+        {value}
+      </div>
+      <div
+        className="font-medium uppercase tracking-wide"
+        style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+      >
+        {label}
+      </div>
     </div>
   )
 }
 
 function issueBadge(issue: NewsletterIssueForPerson) {
   if (issue.recipientStatus === 'bounced' || issue.recipientStatus === 'complained' || issue.recipientStatus === 'failed') {
-    return <Badge variant="destructive" className="text-xs capitalize">{issue.recipientStatus}</Badge>
+    return <StateWord state="down">{issue.recipientStatus}</StateWord>
   }
-  if (issue.clicked) return <Badge className="text-xs">Clicked</Badge>
-  if (issue.opened) return <Badge variant="secondary" className="text-xs">Opened</Badge>
+  if (issue.clicked) return <StateWord state="accent">Clicked</StateWord>
+  if (issue.opened) return <StateWord state="ok">Opened</StateWord>
   if (issue.recipientStatus === 'queued' || issue.recipientStatus === 'sending') {
-    return <Badge variant="outline" className="text-xs capitalize">{issue.recipientStatus}</Badge>
+    return <StateWord state="waiting">{issue.recipientStatus}</StateWord>
   }
-  return <Badge variant="outline" className="text-xs">Sent</Badge>
+  return <StateWord state="waiting">Sent</StateWord>
 }
 
 export function ContactNewsletterHistory({ history }: { history: NewsletterHistoryForPerson }) {
   const { issues, totals } = history
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Newsletter history</CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+    <div className="av2-pane">
+      <div style={{ fontSize: 'var(--a-text-lg)', fontWeight: 500, color: 'var(--a-text)' }}>Newsletter history</div>
+      <div>
         {issues.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No newsletter issues received yet.</p>
+          <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>No newsletter issues received yet.</p>
         ) : (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -55,10 +67,16 @@ export function ContactNewsletterHistory({ history }: { history: NewsletterHisto
 
             <ul className="space-y-1.5">
               {issues.map((issue) => (
-                <li key={issue.newsletterId} className="flex items-center justify-between gap-2 rounded-lg border border-border px-2.5 py-2">
+                <li
+                  key={issue.newsletterId}
+                  className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2"
+                  style={{ border: '1px solid var(--a-border)' }}
+                >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">{issue.subject}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="truncate" style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>
+                      {issue.subject}
+                    </p>
+                    <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                       {issue.sentAt ? <span className="tabular-nums">{formatDate(issue.sentAt)}</span> : 'Not sent yet'}
                       {issue.clicked && issue.clickCount > 0 ? (
                         <span className="tabular-nums"> · {issue.clickCount} {issue.clickCount === 1 ? 'click' : 'clicks'}</span>
@@ -67,13 +85,16 @@ export function ContactNewsletterHistory({ history }: { history: NewsletterHisto
                       ) : null}
                     </p>
                   </div>
-                  {issueBadge(issue)}
+                  {/* shrink-0 lived on the shadcn Badge base class; StateWord takes
+                      no className, so the guard moves to the flex item itself —
+                      without it a long subject squeezes the state word. */}
+                  <span className="shrink-0">{issueBadge(issue)}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

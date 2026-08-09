@@ -11,10 +11,12 @@
  *
  * P11F: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md)
  * and moved into the route's own _components/ (was
- * components/admin/prospecting/ProspectDetailPage.client.tsx). ProspectDetailPanel
- * and ProspectSendDialog stay mounted legacy islands (still shadcn) — out of
- * scope for this unit, same deferred-child pattern already recorded in
- * scripts/check-admin-v2-tokens.mjs for this exact component.
+ * components/admin/prospecting/ProspectDetailPage.client.tsx). The final 11F
+ * unit took the rest of the sub-family with it: ProspectDetailPanel,
+ * ProspectSendDialog, ProspectComplianceRibbon, ProspectDocPill, ProspectMap and
+ * ProspectPriceHistory are all on the v2 language now, so nothing under this
+ * route mounts a shadcn island any more. This file itself is unchanged below
+ * the comment — it never carried colour.
  */
 
 import { useCallback, useState, useTransition } from 'react'

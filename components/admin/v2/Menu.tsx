@@ -51,6 +51,8 @@ export function Menu({
   items,
   trigger,
   align = 'end',
+  tooltip = false,
+  triggerClassName,
 }: {
   /** Accessible name for the trigger, e.g. "Conversation actions". */
   label: string
@@ -58,6 +60,14 @@ export function Menu({
   /** Trigger contents — usually an icon. */
   trigger: React.ReactNode
   align?: 'start' | 'end'
+  /** Native hover tooltip on the trigger. The controls flattened onto Menu often
+   *  carried title=; the hand-rolled trigger dropped it while keeping the
+   *  accessible name, so the tooltip silently disappeared. */
+  tooltip?: boolean
+  /** Extra classes for the trigger. It was hardcoded to `av2-iconbtn`, so a
+   *  caller whose control had its own chrome — the solid circular add "+" that
+   *  every other rail section still uses — could not keep it. */
+  triggerClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -123,8 +133,9 @@ export function Menu({
       <button
         ref={triggerRef}
         type="button"
-        className="av2-iconbtn"
+        className={['av2-iconbtn', triggerClassName ?? ''].filter(Boolean).join(' ')}
         aria-label={label}
+        title={tooltip ? label : undefined}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => {

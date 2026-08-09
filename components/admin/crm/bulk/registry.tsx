@@ -32,13 +32,8 @@ import { adminBulkAssignNewsletterAction } from '@/app/actions/newsletter'
 import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
 import { getFiltersSummary } from '@/lib/search-filters'
 import { PROPERTY_TYPES } from '@/lib/property-type'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { FormSelect } from './FormSelect'
 import {
   defineBulkAction,
@@ -47,6 +42,15 @@ import {
   type BulkFieldsProps,
   type BulkPickerOption,
 } from './types'
+
+/**
+ * `.av2-check` is inline-flex — the shadcn rows it replaces were `flex`, i.e.
+ * block-level, so without this each option would flow onto the same line as the
+ * next. ToolbarCheck's own `labelStyle` hook carries it; a className would not
+ * reach the wrapping <label>.
+ */
+const CHECK_ROW = { display: 'flex' } as const
+const QUIET_LABEL = { color: 'var(--a-text-2)' }
 
 const NEWSLETTER_SEGMENTS: BulkPickerOption[] = [
   { key: 'general', label: 'General' },
@@ -171,20 +175,29 @@ function SetReportSubscriptionFields({ value, onChange, ctx }: BulkFieldsProps<R
   }
   return (
     <>
-      <Label className="flex items-center gap-2 text-sm">
-        <Checkbox checked={value.active} onCheckedChange={(v) => onChange({ ...value, active: v === true })} />
-        Turn the subscription on
-      </Label>
+      <ToolbarCheck
+        label="Turn the subscription on"
+        labelStyle={CHECK_ROW}
+        checked={value.active}
+        onChange={(e) => onChange({ ...value, active: e.target.checked })}
+      />
       {value.active ? (
         <>
           <div>
-            <Label className="mb-1.5 block text-xs text-muted-foreground">Areas</Label>
-            <div className="max-h-40 space-y-1.5 overflow-y-auto no-scrollbar rounded-md border border-border p-2">
+            {/* A group caption, not a control label — it never carried htmlFor. */}
+            <span className="mb-1.5 block text-xs" style={QUIET_LABEL}>Areas</span>
+            <div
+              className="max-h-40 space-y-1.5 overflow-y-auto no-scrollbar rounded-md border p-2"
+              style={{ borderColor: 'var(--a-border)' }}
+            >
               {ctx.reportAreas.map((a) => (
-                <Label key={a.key} className="flex items-center gap-2 text-sm font-normal">
-                  <Checkbox checked={value.areaKeys.has(a.key)} onCheckedChange={() => toggleArea(a.key)} />
-                  {a.label}
-                </Label>
+                <ToolbarCheck
+                  key={a.key}
+                  label={a.label}
+                  labelStyle={CHECK_ROW}
+                  checked={value.areaKeys.has(a.key)}
+                  onChange={() => toggleArea(a.key)}
+                />
               ))}
             </div>
           </div>
@@ -334,41 +347,36 @@ function buildSavedSearchFilters(v: SavedSearchValue): Record<string, unknown> {
 function SavedSearchFields({ value, onChange }: BulkFieldsProps<SavedSearchValue>) {
   return (
     <>
-      <div>
-        <Label htmlFor="bulk-ss-name" className="mb-1.5 block text-xs text-muted-foreground">Search name (optional)</Label>
-        <Input
-          id="bulk-ss-name" value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })}
-          placeholder="Bend under 600k" className="h-10 md:h-9"
-        />
-      </div>
+      {/* TextField owns the label<->input association (useId + htmlFor), so the
+          hand-written ids these fields carried are no longer needed; nothing
+          referenced them. */}
+      <TextField
+        label="Search name (optional)"
+        value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })}
+        placeholder="Bend under 600k"
+      />
       <FormSelect
         label="Alert frequency" value={value.frequency} onChange={(v) => onChange({ ...value, frequency: v })}
         placeholder="Frequency" options={[{ key: 'daily', label: 'Daily' }, { key: 'weekly', label: 'Weekly' }]}
       />
-      <div>
-        <Label htmlFor="bulk-ss-city" className="mb-1.5 block text-xs text-muted-foreground">City</Label>
-        <Input
-          id="bulk-ss-city" value={value.city} onChange={(e) => onChange({ ...value, city: e.target.value })}
-          placeholder="Bend" className="h-10 md:h-9"
-        />
-      </div>
+      <TextField
+        label="City"
+        value={value.city} onChange={(e) => onChange({ ...value, city: e.target.value })}
+        placeholder="Bend"
+      />
       <div className="grid grid-cols-2 gap-2">
-        <div>
-          <Label htmlFor="bulk-ss-min-price" className="mb-1.5 block text-xs text-muted-foreground">Min price</Label>
-          <Input
-            id="bulk-ss-min-price" type="number" inputMode="numeric" min={0}
-            value={value.minPrice} onChange={(e) => onChange({ ...value, minPrice: e.target.value })}
-            placeholder="500000" className="h-10 md:h-9"
-          />
-        </div>
-        <div>
-          <Label htmlFor="bulk-ss-max-price" className="mb-1.5 block text-xs text-muted-foreground">Max price</Label>
-          <Input
-            id="bulk-ss-max-price" type="number" inputMode="numeric" min={0}
-            value={value.maxPrice} onChange={(e) => onChange({ ...value, maxPrice: e.target.value })}
-            placeholder="900000" className="h-10 md:h-9"
-          />
-        </div>
+        <TextField
+          label="Min price"
+          type="number" inputMode="numeric" min={0}
+          value={value.minPrice} onChange={(e) => onChange({ ...value, minPrice: e.target.value })}
+          placeholder="500000"
+        />
+        <TextField
+          label="Max price"
+          type="number" inputMode="numeric" min={0}
+          value={value.maxPrice} onChange={(e) => onChange({ ...value, maxPrice: e.target.value })}
+          placeholder="900000"
+        />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <FormSelect
@@ -403,7 +411,7 @@ function SavedSearchFields({ value, onChange }: BulkFieldsProps<SavedSearchValue
           ...PROPERTY_TYPES.filter((t) => t.value !== '').map((t) => ({ key: t.value, label: t.label })),
         ]}
       />
-      <p className="text-xs text-muted-foreground" aria-live="polite">
+      <p className="text-xs" style={QUIET_LABEL} aria-live="polite">
         Alerts will match {getFiltersSummary(buildSavedSearchFilters(value))}
       </p>
     </>
@@ -452,13 +460,11 @@ function SetSourceFields({ value, onChange, ctx }: BulkFieldsProps<SourceValue>)
       placeholder="Pick a source" options={ctx.sources}
     />
   ) : (
-    <div>
-      <Label htmlFor="bulk-source" className="mb-1.5 block text-xs text-muted-foreground">Lead source</Label>
-      <Input
-        id="bulk-source" value={value.source} onChange={(e) => onChange({ source: e.target.value })}
-        placeholder="Referral" className="h-10 md:h-9"
-      />
-    </div>
+    <TextField
+      label="Lead source"
+      value={value.source} onChange={(e) => onChange({ source: e.target.value })}
+      placeholder="Referral"
+    />
   )
 }
 
@@ -501,13 +507,11 @@ type LenderValue = { lender: string }
 
 function SetLenderFields({ value, onChange }: BulkFieldsProps<LenderValue>) {
   return (
-    <div>
-      <Label htmlFor="bulk-lender" className="mb-1.5 block text-xs text-muted-foreground">Lender name</Label>
-      <Input
-        id="bulk-lender" value={value.lender} onChange={(e) => onChange({ lender: e.target.value })}
-        placeholder="Lender or loan officer" className="h-10 md:h-9"
-      />
-    </div>
+    <TextField
+      label="Lender name"
+      value={value.lender} onChange={(e) => onChange({ lender: e.target.value })}
+      placeholder="Lender or loan officer"
+    />
   )
 }
 
@@ -587,23 +591,18 @@ function MergePeopleFields({ value, onChange, ctx }: BulkFieldsProps<MergePeople
   if (ctx.legacyResult) return null
   const idCount = ctx.selectedIds.length
   return (
-    <div>
-      <Label className="mb-1.5 block text-xs text-muted-foreground">
-        Surviving contact (the {idCount - 1} other {idCount === 2 ? 'contact keeps' : 'contacts keep'} nothing. Timeline, tasks and workflows move to the survivor, duplicates are archived to Trash)
-      </Label>
-      <Select value={value.survivorId} onValueChange={(v) => onChange({ survivorId: v })}>
-        <SelectTrigger className="h-10 md:h-9">
-          <SelectValue placeholder="Pick the survivor" />
-        </SelectTrigger>
-        <SelectContent>
-          {ctx.selectedRows
-            .filter((r) => ctx.selectedIds.includes(r.id))
-            .map((r) => (
-              <SelectItem key={r.id} value={String(r.id)}>{r.name ?? `Contact #${r.id}`}</SelectItem>
-            ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <SelectField
+      label={`Surviving contact (the ${idCount - 1} other ${idCount === 2 ? 'contact keeps' : 'contacts keep'} nothing. Timeline, tasks and workflows move to the survivor, duplicates are archived to Trash)`}
+      value={value.survivorId}
+      onChange={(e) => onChange({ survivorId: e.target.value })}
+    >
+      <option value="" disabled>Pick the survivor</option>
+      {ctx.selectedRows
+        .filter((r) => ctx.selectedIds.includes(r.id))
+        .map((r) => (
+          <option key={r.id} value={String(r.id)}>{r.name ?? `Contact #${r.id}`}</option>
+        ))}
+    </SelectField>
   )
 }
 

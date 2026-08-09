@@ -6,13 +6,17 @@
  * HTML). The parent passes a loader that calls the matching preview server
  * action (previewAlertEmailAction / previewReportEmailAction), which runs the
  * same builder functions the send path uses on the subscription's current data.
+ *
+ * P11F: on the LOCKED admin v2 language — the shadcn Dialog became the v2
+ * Dialog (the platform's <dialog>, so the focus trap, Esc and top-layer
+ * stacking come from the browser), at the 'work' width because a rendered
+ * email needs the room. The shadcn Skeletons became report-grid.css's
+ * av2-rskel rows.
  */
 
 import { useEffect, useState } from 'react'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog } from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 
 export type EmailPreviewResult = {
   data: { subject: string, html: string, note: string | null } | null
@@ -62,39 +66,42 @@ export default function EmailPreviewDialog({
   }, [open])
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="flex flex-col sm:max-w-3xl" style={{ maxHeight: '90vh' }}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>
-            {state === 'ready'
-              ? <>Subject: <span className="font-medium text-foreground">{subject}</span></>
-              : 'Rendered exactly as the recipient receives it.'}
-          </DialogDescription>
-        </DialogHeader>
-        {note && state === 'ready' ? (
-          <p className="text-xs text-muted-foreground">{note}</p>
-        ) : null}
-        <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
-          {state === 'loading' ? (
-            <div className="space-y-3 p-4">
-              <Skeleton className="h-8 w-2/3" />
-              <Skeleton className="h-40 w-full" />
-              <Skeleton className="h-40 w-full" />
-            </div>
-          ) : state === 'error' ? (
-            <p className="p-4 text-sm text-destructive" role="alert">{error}</p>
-          ) : (
-            <iframe
-              title={`${title} preview`}
-              srcDoc={html}
-              sandbox=""
-              style={{ height: '65vh' }}
-              className="w-full bg-background"
-            />
-          )}
-        </div>
-      </DialogContent>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={title}
+      size="work"
+      description={
+        state === 'ready'
+          ? <>Subject: <span className="font-medium" style={{ color: 'var(--a-text)' }}>{subject}</span></>
+          : 'Rendered exactly as the recipient receives it.'
+      }
+    >
+      {note && state === 'ready' ? (
+        <p className="text-xs" style={{ color: 'var(--a-text-2)' }}>{note}</p>
+      ) : null}
+      <div
+        className="min-h-0 flex-1 overflow-hidden rounded-lg"
+        style={{ border: '1px solid var(--a-border)' }}
+      >
+        {state === 'loading' ? (
+          <div className="space-y-3 p-4" aria-hidden="true">
+            <div className="av2-rskel__row w-2/3" style={{ height: 32, margin: 0 }} />
+            <div className="av2-rskel__row" style={{ height: 160, margin: 0 }} />
+            <div className="av2-rskel__row" style={{ height: 160, margin: 0 }} />
+          </div>
+        ) : state === 'error' ? (
+          <p className="p-4 text-sm" style={{ color: 'var(--a-danger)' }} role="alert">{error}</p>
+        ) : (
+          <iframe
+            title={`${title} preview`}
+            srcDoc={html}
+            sandbox=""
+            className="w-full"
+            style={{ height: '65vh', background: 'var(--a-bg)' }}
+          />
+        )}
+      </div>
     </Dialog>
   )
 }

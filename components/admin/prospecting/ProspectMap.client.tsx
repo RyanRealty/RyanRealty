@@ -8,6 +8,17 @@
  * ready-gated so it never touches `google.maps.*` before the loader script
  * (mounted via <GoogleMapsBootstrap /> here, same as PropertiesMap — the
  * admin console tree does not mount the global one) resolves.
+ *
+ * 11F: on the LOCKED admin v2 language. The marker was a hardcoded public-brand
+ * navy/cream pair; it now resolves --a-accent / --a-btn-fg from the applied
+ * stylesheet inside the ready-gated effect, exactly as PropertiesMap does, so
+ * the pin follows the admin theme including dark mode. Google Maps JS takes
+ * literal colour strings — it cannot consume var(...).
+ *
+ * Also fixed here: both containers carry min-width:0. A map box is a flex/grid
+ * ITEM whose default min-width:auto refuses to shrink below its content, which
+ * is how this panel pushed the page sideways at 375px (same class of defect the
+ * .av2-pane comment records).
  */
 
 import { useEffect, useRef } from 'react'
@@ -40,6 +51,13 @@ export function ProspectMap({
     if (!ready || !hasPoint || !containerRef.current) return
     const position = { lat: lat as number, lng: lng as number }
 
+    // Google Maps JS takes literal colour strings, so the admin tokens are
+    // resolved from the applied stylesheet at runtime (safe here: this effect
+    // only runs client-side, after mount, once `ready` is true).
+    const s = getComputedStyle(document.documentElement)
+    const accent = s.getPropertyValue('--a-accent').trim()
+    const btnFg = s.getPropertyValue('--a-btn-fg').trim()
+
     if (!mapRef.current) {
       mapRef.current = new google.maps.Map(containerRef.current, {
         ...getBaseMapOptions(),
@@ -59,12 +77,13 @@ export function ProspectMap({
       map: mapRef.current,
       title: address ?? undefined,
       icon: {
-        // Navy filled circle — matches brand navy #102742 (same treatment as PropertiesMap).
+        // Admin-accent filled circle, drawn from --a-accent so it follows the
+        // admin theme (including dark mode) — same treatment as PropertiesMap.
         path: google.maps.SymbolPath.CIRCLE,
         scale: 9,
-        fillColor: '#102742',
+        fillColor: accent,
         fillOpacity: 1,
-        strokeColor: '#faf8f4',
+        strokeColor: btnFg,
         strokeWeight: 1.5,
       },
     })
@@ -72,22 +91,29 @@ export function ProspectMap({
 
   if (!hasPoint) {
     return (
-      <div className={cn('flex h-full min-h-40 items-center justify-center rounded-lg bg-muted/30', className)}>
-        <p className="text-sm text-muted-foreground">No map location</p>
+      <div
+        className={cn('flex h-full min-h-40 items-center justify-center rounded-lg', className)}
+        style={{ minWidth: 0, background: 'var(--a-inset)' }}
+      >
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>No map location</p>
       </div>
     )
   }
 
   return (
-    <div className={cn('relative h-full min-h-40 overflow-hidden rounded-lg', className)}>
+    <div className={cn('relative h-full min-h-40 overflow-hidden rounded-lg', className)} style={{ minWidth: 0 }}>
       <GoogleMapsBootstrap />
       {error ? (
-        <div className="flex h-full items-center justify-center bg-muted/30">
-          <p className="text-sm text-muted-foreground">Map unavailable</p>
+        <div className="flex h-full items-center justify-center" style={{ background: 'var(--a-inset)' }}>
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Map unavailable</p>
         </div>
       ) : !ready ? (
-        <div className="flex h-full items-center justify-center bg-muted/30">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-hidden />
+        <div className="flex h-full items-center justify-center" style={{ background: 'var(--a-inset)' }}>
+          <div
+            className="h-5 w-5 animate-spin rounded-full border-2"
+            style={{ borderColor: 'var(--a-accent)', borderTopColor: 'transparent' }}
+            aria-hidden
+          />
         </div>
       ) : (
         <div ref={containerRef} className="h-full w-full" />

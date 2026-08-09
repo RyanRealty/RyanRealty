@@ -23,6 +23,29 @@
  *     composer-preload.ts)
  * Every compose gets "Save as template" (createTemplateAction, explicit save
  * only) and the "Cc me" switch (adds the broker's own sending mailbox to Cc).
+ *
+ * ── Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY. This is the G50 email chokepoint ci:composer-discipline
+ * requires of every email-send surface, so the props, the submit guard, the
+ * idempotency-key rotation, the Cc-me derivation and every posted field name
+ * are byte-for-byte what they were.
+ *
+ * Three notes on HOW the swap was done, because each one is a trap:
+ *  - The AI draft pills were raw button elements that filled with the accent
+ *    while their draft was in flight. They are FilterChips now, so the state is
+ *    ANNOUNCED (aria-pressed) instead of implied by fill, and the hover the
+ *    unfilled pills carried is a utility rather than an inline value — an
+ *    inline value would outrank any stylesheet hover rule.
+ *  - The Send ▾ split button became the v2 Menu. The two halves no longer share
+ *    a border radius, because `.av2-btn` sets radius unlayered and a Tailwind
+ *    `rounded-r-none` on it is silently dead. What the menu gains is the
+ *    keyboard behaviour the shadcn trigger had and a hand-rolled one loses:
+ *    arrow keys, Home/End, Escape-returns-focus, and a lit trigger while its
+ *    panel is up.
+ *  - The hidden compound-submit button is hidden by an INLINE display, not by
+ *    `className="hidden"`. `.av2-btn` declares `display:inline-flex` unlayered,
+ *    so the utility loses and the button would have been VISIBLE. It still
+ *    responds to .click() — display:none does not block programmatic clicks.
  */
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useFormStatus } from 'react-dom'
@@ -41,15 +64,7 @@ import {
   AttachmentControl,
   useComposerAttachments,
 } from '@/components/admin/crm/ComposerAttachments'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
+import { Button, FilterChip, Menu, SearchField, Switch } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 
 /**
@@ -71,7 +86,7 @@ function EmailSendButton(props: {
     wasPending.current = pending
   }, [pending, props])
   return (
-    <Button type="submit" size="sm" disabled={props.disabled || pending} aria-busy={pending} className={props.className}>
+    <Button type="submit" disabled={props.disabled || pending} aria-busy={pending} className={props.className}>
       {pending ? (
         <span className="flex items-center gap-1.5"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Sending…</span>
       ) : props.uploading ? (
@@ -124,17 +139,14 @@ function EmailAiDrafts(props: {
         {EMAIL_AI_PILLS.map((p) => {
           const isActive = pending && active === p.kind
           return (
-            <button
+            <FilterChip
               key={p.kind}
-              type="button"
+              pressed={isActive}
               disabled={pending}
               onClick={() => run(p.kind)}
-              className={cn(
-                'flex h-7 shrink-0 items-center gap-1 rounded-full border px-3 text-xs font-medium transition-colors',
-                isActive
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border bg-background text-muted-foreground hover:text-foreground',
-              )}
+              // No dimming under the pointer while a draft is in flight — the
+              // pills are disabled then, and a hover on a dead control lies.
+              className={cn('inline-flex shrink-0 items-center gap-1', !pending && 'hover:opacity-80')}
             >
               {isActive ? (
                 <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -142,26 +154,29 @@ function EmailAiDrafts(props: {
                 <Sparkles className="h-3 w-3" aria-hidden />
               )}
               {p.label}
-            </button>
+            </FilterChip>
           )
         })}
-        <button
-          type="button"
+        {/* The Custom pill DISCLOSES the prompt row, so its pressed state is the
+            row's open state — aria-pressed now says what the row already shows. */}
+        <FilterChip
+          pressed={customOpen}
           disabled={pending}
           onClick={() => setCustomOpen((v) => !v)}
-          className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-border bg-background px-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className={cn('inline-flex shrink-0 items-center gap-1', !pending && 'hover:opacity-80')}
         >
           <Plus className="h-3 w-3" aria-hidden />
           Custom
-        </button>
+        </FilterChip>
       </div>
       {customOpen ? (
         <div className="flex items-center gap-1.5">
-          <Input
+          <SearchField
+            type="text"
+            aria-label="Custom draft instructions"
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
             placeholder="What should the email say?"
-            className="h-8 text-sm"
             onKeyDown={(e) => {
               // Enter drafts — never submit (and never SEND) the outer form.
               if (e.key === 'Enter') {
@@ -169,11 +184,11 @@ function EmailAiDrafts(props: {
                 if (customPrompt.trim()) run('custom', customPrompt.trim())
               }
             }}
+            style={{ width: '100%', maxWidth: 'none', fontSize: 'var(--a-text-md)' }}
           />
           <Button
             type="button"
-            size="sm"
-            variant="outline"
+            variant="quiet"
             disabled={pending || !customPrompt.trim()}
             onClick={() => run('custom', customPrompt.trim())}
           >
@@ -181,7 +196,7 @@ function EmailAiDrafts(props: {
           </Button>
         </div>
       ) : null}
-      {error ? <p className="text-xs text-muted-foreground">{error}</p> : null}
+      {error ? <p className="text-xs" style={{ color: 'var(--a-text-2)' }}>{error}</p> : null}
     </div>
   )
 }
@@ -308,24 +323,24 @@ export function EmailComposer(props: {
               placeholder={props.toLabel ?? 'Recipient email'}
             />
           </div>
-          <div className="mt-1.5 flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
+          <div className="mt-1.5 flex shrink-0 items-center gap-2">
             {!showCc ? (
-              <button type="button" onClick={() => setShowCc(true)} className="hover:text-foreground">Cc</button>
+              <Button type="button" variant="quiet" className="av2-textlink" onClick={() => setShowCc(true)}>Cc</Button>
             ) : null}
             {!showBcc ? (
-              <button type="button" onClick={() => setShowBcc(true)} className="hover:text-foreground">Bcc</button>
+              <Button type="button" variant="quiet" className="av2-textlink" onClick={() => setShowBcc(true)}>Bcc</Button>
             ) : null}
-            {/* Cc me — copies the send to the broker's own mailbox. */}
-            <label className="flex cursor-pointer items-center gap-1.5">
-              <Switch
-                checked={ccMeOn}
-                onCheckedChange={toggleCcMe}
-                disabled={ccSelfPending}
-                aria-label="Cc me on this email"
-                className="scale-75"
-              />
-              Cc me
-            </label>
+            {/* Cc me — copies the send to the broker's own mailbox. The primitive
+                owns the wrapping label element, so the visible caption and the
+                accessible name both survive the swap. */}
+            <Switch
+              label="Cc me on this email"
+              stateText="Cc me"
+              labelHidden
+              checked={ccMeOn}
+              onChange={(e) => toggleCcMe(e.target.checked)}
+              disabled={ccSelfPending}
+            />
           </div>
         </div>
         {showCc ? (
@@ -363,11 +378,7 @@ export function EmailComposer(props: {
         customFields={props.customFields}
         toolbarExtra={
           !props.hideAttachments ? (
-            <AttachmentControl
-              attachments={attachments}
-              ariaLabel="Attach files"
-              className="h-8 w-8 shrink-0 rounded-full"
-            />
+            <AttachmentControl attachments={attachments} ariaLabel="Attach files" />
           ) : null
         }
       />
@@ -375,7 +386,7 @@ export function EmailComposer(props: {
 
       <div className="flex items-center justify-between gap-4">
         {props.footnote !== null ? (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>
             {props.footnote ?? 'Your signature and the Oregon agency disclosure link are added to every send.'}
           </span>
         ) : (
@@ -387,16 +398,15 @@ export function EmailComposer(props: {
             <SaveAsTemplateButton channel="email" subject={subject} body={body} />
           ) : null}
           {props.saveDraftAction ? (
-            <Button type="submit" formAction={props.saveDraftAction} data-composer-draft="" variant="ghost" size="sm" disabled={!subject.trim() && !body.trim()}>
+            <Button type="submit" formAction={props.saveDraftAction} data-composer-draft="" variant="quiet" disabled={!subject.trim() && !body.trim()}>
               Save draft
             </Button>
           ) : null}
-          <div className="flex items-center">
+          <div className="flex items-center gap-1">
             <EmailSendButton
               disabled={Boolean(attachments.uploading || props.sendDisabled)}
               uploading={attachments.uploading}
               label={props.submitLabel ?? 'Send email'}
-              className={props.sendAndCloseAction ? 'rounded-r-none' : undefined}
               onSettled={() => {
                 submitGuard.settle()
                 setIdempotencyKey(newIdempotencyKey())
@@ -416,19 +426,20 @@ export function EmailComposer(props: {
             {props.sendAndCloseAction ? (
               <>
                 {/* Hidden submit carries the compound formAction; the menu clicks it. */}
-                <button type="submit" formAction={props.sendAndCloseAction} ref={sendCloseRef} className="hidden" aria-hidden tabIndex={-1} />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button type="button" size="sm" className="rounded-l-none border-l border-primary-foreground/20 px-1.5" aria-label="More send options">
-                      <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => sendCloseRef.current?.click()}>
-                      Send and Close
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  type="submit"
+                  formAction={props.sendAndCloseAction}
+                  ref={sendCloseRef}
+                  variant="quiet"
+                  aria-hidden
+                  tabIndex={-1}
+                  style={{ display: 'none' }}
+                />
+                <Menu
+                  label="More send options"
+                  trigger={<ChevronDown className="h-3.5 w-3.5" aria-hidden />}
+                  items={[{ label: 'Send and Close', onSelect: () => sendCloseRef.current?.click() }]}
+                />
               </>
             ) : null}
           </div>

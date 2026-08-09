@@ -55,17 +55,9 @@ import type {
   BulkEnqueueResult,
 } from '@/lib/crm/bulk-helpers'
 import type { LegacyFilters } from '@/lib/crm/segment-ast'
-import { Button } from '@/components/ui/button'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
-  DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  Button, Dialog, IconButton, Menu, ToolbarSelect, type AdminMenuItem,
+} from '@/components/admin/v2'
 import BulkProgress from '@/components/admin/crm/BulkProgress'
 import { BULK_ACTION_REGISTRY } from '@/components/admin/crm/bulk/registry'
 import type { ActionId, BulkCtx } from '@/components/admin/crm/bulk/types'
@@ -286,27 +278,72 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
   const isLegacy = currentSpec ? !currentSpec.jobKind : false
   const isDelete = currentSpec?.dangerous === true
 
+  // §14.3 main bulk-action list — the 11 items, exact order. The v2 Menu takes
+  // its items as data rather than as children, and it has no non-interactive
+  // header row, so the shadcn DropdownMenuLabel keeps its exact words as a
+  // permanently-disabled first item: same string, still unclickable, and
+  // arrow-key navigation skips it. The Menu's trigger has no `disabled` of its
+  // own either, so `isPending` rides on every item — the guarantee that mattered
+  // (no action fires mid-transition) is unchanged.
+  const bulkMenuItems: AdminMenuItem[] = [
+    { label: `Apply to ${actingCount.toLocaleString('en-US')} contacts`, disabled: true },
+    { label: 'Update Stage', onSelect: () => openAction('set_stage'), disabled: isPending },
+    { label: 'Update Source', onSelect: () => openAction('set_source'), disabled: isPending },
+    ...(canAssignBroker
+      ? [{ label: 'Assign Agent', onSelect: () => openAction('assign_broker'), disabled: isPending }]
+      : []),
+    { label: 'Assign Ponds', onSelect: () => openAction('assign_pond'), disabled: isPending },
+    { label: 'Assign Lender', onSelect: () => openAction('set_lender'), disabled: isPending },
+    { label: 'Add Collaborators', onSelect: () => openAction('add_collaborator'), disabled: isPending },
+    { label: 'Remove Collaborators', onSelect: () => openAction('remove_collaborator'), disabled: isPending },
+    {
+      label: 'Merge People',
+      onSelect: () => openAction('merge_people'),
+      disabled: isPending || idCount < 2 || idCount > 10,
+    },
+    { label: 'Update Timeframe', onSelect: () => openAction('set_timeframe'), disabled: isPending },
+    { label: 'Apply Automation', onSelect: () => openAction('enroll_workflow'), disabled: isPending },
+    {
+      label: 'Market report subscription',
+      onSelect: () => openAction('set_report_subscription'),
+      disabled: isPending,
+    },
+    { label: 'Add to newsletter', onSelect: () => openAction('newsletter'), disabled: isPending || !hasIds },
+    { label: 'Assign a saved search', onSelect: () => openAction('saved_search'), disabled: isPending },
+  ]
+
   return (
     <>
     {/* §14.1: the bar appears when rows are selected (or a job is running). The
         dialogs stay mounted outside so the §5 icon strip can open them with an
         empty selection (they then default to the whole matching cohort). */}
     {hasIds || jobId ? (
-    <div className={`fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 sm:px-6 ${barClassName ?? ''}`}>
+    // The bar was `bg-card/95` + backdrop-blur, then `bg-card/80` where
+    // backdrop-filter is supported. The locked tokens carry no translucent
+    // surface and color-mix() is banned here, so the bar is now the opaque
+    // --a-surface with the overlay shadow the language reserves for exactly
+    // this — a layer floating over the page.
+    <div
+      className={`fixed inset-x-0 bottom-0 z-40 border-t px-4 py-3 sm:px-6 ${barClassName ?? ''}`}
+      style={{
+        background: 'var(--a-surface)',
+        borderColor: 'var(--a-border)',
+        boxShadow: 'var(--a-shadow-overlay)',
+      }}
+    >
       {/* pr clears the global quick-action FAB (bottom-right) so the §14 icons stay clickable */}
       <div className="mx-auto max-w-screen-2xl md:pr-24">
         {hasIds ? (
         <div className="flex flex-wrap items-center gap-2">
           {/* §14.1: "Selected N people — Deselect all" + scope toggle */}
-          <span className="text-sm tabular-nums text-foreground">
+          <span className="text-sm tabular-nums" style={{ color: 'var(--a-text)' }}>
             Selected <span className="font-semibold">{(scope === 'ids' ? idCount : matchingTotal).toLocaleString('en-US')}</span>{' '}
             {actingCount === 1 ? 'person' : 'people'}
           </span>
           {hasIds ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+              variant="quiet"
+              className="h-8 px-2 text-xs"
               onClick={() => { onClear(); setJobId(null) }}
               disabled={isPending}
             >
@@ -316,10 +353,9 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
           ) : null}
           {/* In-house extra: act on the page's checkbox set or on ALL matching the filter/view */}
           {hasMatching ? (
-            <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+            <div className="flex items-center gap-1 rounded-md border p-0.5" style={{ borderColor: 'var(--a-border)' }}>
               <Button
-                size="sm"
-                variant={scope === 'ids' ? 'default' : 'ghost'}
+                variant={scope === 'ids' ? 'primary' : 'quiet'}
                 className="h-7 px-2 text-xs tabular-nums"
                 onClick={() => switchScope('ids')}
                 disabled={!hasIds || isPending}
@@ -327,8 +363,7 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
                 Checked ({idCount})
               </Button>
               <Button
-                size="sm"
-                variant={scope === 'matching' ? 'default' : 'ghost'}
+                variant={scope === 'matching' ? 'primary' : 'quiet'}
                 className="h-7 px-2 text-xs tabular-nums"
                 onClick={() => switchScope('matching')}
                 disabled={isPending}
@@ -340,85 +375,62 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
 
           <div className="ml-auto flex flex-wrap items-center gap-1">
             {/* §14.5 bar icons: Batch Email · Import · Delete · Export */}
-            <Button
-              size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground"
-              aria-label="Batch Email" title="Batch Email"
+            <IconButton
+              label="Batch Email"
               onClick={() => openAction('email_cohort')} disabled={isPending}
             >
               <Mail className="h-4 w-4" aria-hidden />
-            </Button>
+            </IconButton>
             <Link
               href="/admin/crm/import"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="av2-iconbtn"
               aria-label="Import" title="Import"
             >
               <Upload className="h-4 w-4" aria-hidden />
             </Link>
             {canAssignBroker ? (
-              <Button
-                size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground"
-                aria-label="Delete" title="Delete"
+              <IconButton
+                label="Delete"
                 onClick={() => openAction('delete_contacts')} disabled={isPending}
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
-              </Button>
+              </IconButton>
             ) : null}
             {onExport ? (
-              <Button
-                size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground"
-                aria-label="Export Selected People" title="Export Selected People"
+              <IconButton
+                label="Export Selected People"
                 onClick={onExport} disabled={isPending}
               >
                 <Download className="h-4 w-4" aria-hidden />
-              </Button>
+              </IconButton>
             ) : null}
 
-            {/* §14.4 tag icon sub-dropdown: Add Tags / Remove Tags */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" aria-label="Tag actions" title="Tags" disabled={isPending}>
-                  <Tag className="h-4 w-4" aria-hidden />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem onSelect={() => openAction('add_tag')}>Add Tags</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('remove_tag')}>Remove Tags</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* §14.4 tag icon sub-dropdown: Add Tags / Remove Tags.
+                title on the WRAPPER: Menu owns its trigger button, so the hover
+                tooltip every other icon in this strip shows is attached to the
+                ancestor the browser walks up to. The accessible name stays the
+                trigger's aria-label. */}
+            <span title="Tags" className="inline-flex">
+              <Menu
+                label="Tag actions"
+                align="end"
+                trigger={<Tag className="h-4 w-4" aria-hidden />}
+                items={[
+                  { label: 'Add Tags', onSelect: () => openAction('add_tag'), disabled: isPending },
+                  { label: 'Remove Tags', onSelect: () => openAction('remove_tag'), disabled: isPending },
+                ]}
+              />
+            </span>
 
-            {/* §14.3 main bulk-action dropdown — the 11 items, exact order */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground" aria-label="Bulk actions" title="Bulk actions" disabled={isPending}>
-                  <MoreHorizontal className="h-4 w-4" aria-hidden />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Apply to {actingCount.toLocaleString('en-US')} contacts</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => openAction('set_stage')}>Update Stage</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('set_source')}>Update Source</DropdownMenuItem>
-                {canAssignBroker ? (
-                  <DropdownMenuItem onSelect={() => openAction('assign_broker')}>Assign Agent</DropdownMenuItem>
-                ) : null}
-                <DropdownMenuItem onSelect={() => openAction('assign_pond')}>Assign Ponds</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('set_lender')}>Assign Lender</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('add_collaborator')}>Add Collaborators</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('remove_collaborator')}>Remove Collaborators</DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={idCount < 2 || idCount > 10}
-                  onSelect={() => openAction('merge_people')}
-                >
-                  Merge People
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('set_timeframe')}>Update Timeframe</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('enroll_workflow')}>Apply Automation</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => openAction('set_report_subscription')}>Market report subscription</DropdownMenuItem>
-                <DropdownMenuItem disabled={!hasIds} onSelect={() => openAction('newsletter')}>Add to newsletter</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => openAction('saved_search')}>Assign a saved search</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* §14.3 main bulk-action dropdown — items built above */}
+            <span title="Bulk actions" className="inline-flex">
+              <Menu
+                label="Bulk actions"
+                align="end"
+                trigger={<MoreHorizontal className="h-4 w-4" aria-hidden />}
+                items={bulkMenuItems}
+              />
+            </span>
           </div>
         </div>
         ) : null}
@@ -430,70 +442,70 @@ const BulkActions = forwardRef<BulkActionsHandle, BulkActionsProps>(function Bul
     ) : null}
 
       {/* Confirm + form dialog */}
-      <Dialog open={open !== null} onOpenChange={(o) => { if (!o) closeDialog() }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{currentSpec?.title ?? ''}</DialogTitle>
-            <DialogDescription>
-              {legacyResult
-                ? `Done. ${legacyResult.assigned} ${open === 'merge_people' ? 'merged' : 'added'}, ${legacyResult.skipped} skipped.`
-                : isDelete
-                  ? `This will soft-delete the selected contacts — they will disappear from all lists. This cannot be undone in bulk.`
-                  : isLegacy
-                    ? `Acts on the ${idCount} selected ${idCount === 1 ? 'contact' : 'contacts'}.`
-                    : preflightLoading
-                      ? 'Counting the cohort'
-                      : preflight
-                        ? `${preflight.total.toLocaleString('en-US')} ${preflight.total === 1 ? 'contact' : 'contacts'}${preflight.skip > 0 ? `, ${preflight.skip.toLocaleString('en-US')} will be skipped (suppressed)` : ''}.`
-                        : `Acts on ${actingCount.toLocaleString('en-US')} ${actingCount === 1 ? 'contact' : 'contacts'}.`}
-            </DialogDescription>
-          </DialogHeader>
+      <Dialog
+        open={open !== null}
+        onClose={closeDialog}
+        title={currentSpec?.title ?? ''}
+        description={
+          legacyResult
+            ? `Done. ${legacyResult.assigned} ${open === 'merge_people' ? 'merged' : 'added'}, ${legacyResult.skipped} skipped.`
+            : isDelete
+              ? `This will soft-delete the selected contacts — they will disappear from all lists. This cannot be undone in bulk.`
+              : isLegacy
+                ? `Acts on the ${idCount} selected ${idCount === 1 ? 'contact' : 'contacts'}.`
+                : preflightLoading
+                  ? 'Counting the cohort'
+                  : preflight
+                    ? `${preflight.total.toLocaleString('en-US')} ${preflight.total === 1 ? 'contact' : 'contacts'}${preflight.skip > 0 ? `, ${preflight.skip.toLocaleString('en-US')} will be skipped (suppressed)` : ''}.`
+                    : `Acts on ${actingCount.toLocaleString('en-US')} ${actingCount === 1 ? 'contact' : 'contacts'}.`
+        }
+        footer={
+          legacyResult ? (
+            <Button variant="quiet" onClick={closeDialog}>Close</Button>
+          ) : (
+            <>
+              <Button variant="quiet" onClick={closeDialog} disabled={isPending}>Cancel</Button>
+              <Button
+                variant={isDelete ? 'danger' : 'primary'}
+                onClick={run}
+                disabled={isPending}
+              >
+                {isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
+                {isDelete ? 'Delete' : 'Run'}
+              </Button>
+            </>
+          )
+        }
+      >
+        {/* Scope chooser inside the dialog for the non-legacy actions */}
+        {!isLegacy && hasIds && hasMatching ? (
+          <div className="flex items-center gap-2 text-xs">
+            <span style={{ color: 'var(--a-text-2)' }}>Apply to</span>
+            {/* The visible caption sits beside the control rather than above it,
+                so this is the toolbar select — and its aria-label repeats the
+                caption so the accessible name is never lost. */}
+            <ToolbarSelect
+              aria-label="Apply to"
+              value={scope}
+              onChange={(e) => switchScope(e.target.value as 'ids' | 'matching')}
+            >
+              <option value="ids">{idCount} selected</option>
+              <option value="matching">
+                {activeViewId != null ? 'Whole view' : 'All'} {matchingTotal.toLocaleString('en-US')}
+              </option>
+            </ToolbarSelect>
+          </div>
+        ) : null}
 
-          {/* Scope chooser inside the dialog for the non-legacy actions */}
-          {!isLegacy && hasIds && hasMatching ? (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Apply to</span>
-              <Select value={scope} onValueChange={(v) => switchScope(v as 'ids' | 'matching')}>
-                <SelectTrigger className="h-8 w-auto">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ids">{idCount} selected</SelectItem>
-                  <SelectItem value="matching">{activeViewId != null ? 'Whole view' : 'All'} {matchingTotal.toLocaleString('en-US')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Per-action form body — one small colocated spec per action, see
+            bulk/registry.tsx. */}
+        <div className="space-y-3">
+          {currentSpec?.Fields ? (
+            <currentSpec.Fields value={values} onChange={setValues} ctx={ctx} />
           ) : null}
 
-          {/* Per-action form body — one small colocated spec per action, see
-              bulk/registry.tsx. */}
-          <div className="space-y-3">
-            {currentSpec?.Fields ? (
-              <currentSpec.Fields value={values} onChange={setValues} ctx={ctx} />
-            ) : null}
-
-            {error ? <p className="text-xs text-destructive" role="alert">{error}</p> : null}
-          </div>
-
-          <DialogFooter>
-            {legacyResult ? (
-              <Button variant="outline" size="sm" onClick={closeDialog}>Close</Button>
-            ) : (
-              <>
-                <Button variant="outline" size="sm" onClick={closeDialog} disabled={isPending}>Cancel</Button>
-                <Button
-                  size="sm"
-                  variant={isDelete ? 'destructive' : 'default'}
-                  onClick={run}
-                  disabled={isPending}
-                >
-                  {isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
-                  {isDelete ? 'Delete' : 'Run'}
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
+          {error ? <p className="text-xs" style={{ color: 'var(--a-danger)' }} role="alert">{error}</p> : null}
+        </div>
       </Dialog>
     </>
   )

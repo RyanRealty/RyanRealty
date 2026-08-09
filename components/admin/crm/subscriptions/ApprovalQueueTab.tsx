@@ -3,14 +3,19 @@
 /**
  * ApprovalQueueTab — the "Listings to approve" tab of the Alerts & reports
  * hub. Pending listing_alert_queue rows (typed events held by preview-mode
- * alerts) grouped by alert: alert name + contact, event type badge, listing
- * card snippet from the queued payload, per-item + per-group + page-wide
+ * alerts) grouped by alert: alert name + contact, event type state word,
+ * listing card snippet from the queued payload, per-item + per-group + page-wide
  * selection, and approve / reject wired to approveAlertQueueItems /
  * rejectAlertQueueItems (app/actions/saved-search-alerts.ts — approval sends
  * immediately through the same compliance-gated path the cron uses).
  *
  * Optimistic refresh: a decision removes the decided items from local state,
  * then a refetch reconciles.
+ *
+ * P11F: on the LOCKED admin v2 language. shadcn Badge/Button/Card/Checkbox are
+ * gone — StateWord, v2 Button, the av2-pane surface and ToolbarCheck take their
+ * places, and colour comes only from var(--a-*). "Approve and send" keeps the
+ * file's ONE primary Button; everything else is quiet.
  */
 
 import { useState, useTransition } from 'react'
@@ -22,10 +27,7 @@ import {
 } from '@/app/actions/saved-search-alerts'
 import { listPendingAlertApprovalsAction } from '@/app/actions/alert-admin'
 import type { PendingApprovalGroup } from '@/lib/data/leads/listingAlertApprovals'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button, StateWord, ToolbarCheck } from '@/components/admin/v2'
 import { formatSubscriptionDate } from '@/components/admin/crm/subscriptions/subscriptions-shared'
 import AlertEngineSettingsDialog from '@/components/admin/crm/subscriptions/AlertEngineSettingsDialog'
 
@@ -128,38 +130,42 @@ export default function ApprovalQueueTab({ initial }: { initial: PendingApproval
 
   if (groups.length === 0) {
     return (
-      <Card className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-        <p className="text-sm font-medium text-foreground">Nothing waiting for approval.</p>
-        <p className="max-w-md text-sm text-muted-foreground">
+      // av2-pane owns the surface; padding is inline because the class sets it
+      // un-layered and would win over px-4/py-10.
+      <div className="av2-pane text-center" style={{ alignItems: 'center', gap: 8, padding: '40px 16px' }}>
+        <p className="text-sm font-medium" style={{ color: 'var(--a-text)' }}>Nothing waiting for approval.</p>
+        <p className="max-w-md text-sm" style={{ color: 'var(--a-text-2)' }}>
           When an alert is in preview mode, its matches hold here until you approve or reject
           them. Turn preview mode on from an alert&apos;s settings.
         </p>
-      </Card>
+      </div>
     )
   }
 
   return (
     <div className="space-y-3">
       {/* Page-wide toolbar */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
-        <Checkbox
+      <div
+        className="flex flex-wrap items-center gap-2 rounded-lg px-3 py-2"
+        style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)' }}
+      >
+        <ToolbarCheck
+          label=""
           checked={allSelected}
-          onCheckedChange={toggleAll}
+          onChange={toggleAll}
           aria-label="Select every pending listing"
         />
-        <span className="text-sm tabular-nums text-foreground">
+        <span className="text-sm tabular-nums" style={{ color: 'var(--a-text)' }}>
           {selected.size.toLocaleString('en-US')} of {allItemIds.length.toLocaleString('en-US')} selected
         </span>
         <Button
-          size="sm"
           disabled={isPending || selected.size === 0}
           onClick={() => decide('approve')}
         >
           Approve and send
         </Button>
         <Button
-          size="sm"
-          variant="outline"
+          variant="quiet"
           disabled={isPending || selected.size === 0}
           onClick={() => decide('reject')}
         >
@@ -171,31 +177,30 @@ export default function ApprovalQueueTab({ initial }: { initial: PendingApproval
         const groupIds = group.items.map((i) => i.id)
         const groupAllSelected = groupIds.length > 0 && groupIds.every((id) => selected.has(id))
         return (
-          <Card key={group.alert.id} className="p-4">
+          <div key={group.alert.id} className="av2-pane">
             {/* Group header: alert + contact + settings */}
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 items-start gap-3">
-                <Checkbox
+                <ToolbarCheck
+                  label=""
                   checked={groupAllSelected}
-                  onCheckedChange={() => toggleGroup(group)}
+                  onChange={() => toggleGroup(group)}
                   aria-label={`Select every listing for ${group.alert.name}`}
-                  className="mt-1"
+                  labelStyle={{ marginTop: 4 }}
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{group.alert.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">
+                  <p className="truncate text-sm font-medium" style={{ color: 'var(--a-text)' }}>{group.alert.name}</p>
+                  <p className="truncate text-xs" style={{ color: 'var(--a-text-2)' }}>
                     {group.alert.email}
                     {group.alert.filtersSummary ? ` · ${group.alert.filtersSummary}` : ''}
                   </p>
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                {group.alert.previewMode ? <Badge variant="secondary">Preview mode</Badge> : null}
-                {!group.alert.isActive ? <Badge variant="outline">Paused</Badge> : null}
+                {group.alert.previewMode ? <StateWord state="waiting">Preview mode</StateWord> : null}
+                {!group.alert.isActive ? <StateWord state="waiting">Paused</StateWord> : null}
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-muted-foreground"
+                  variant="quiet"
                   onClick={() => setSettingsAlertId(group.alert.id)}
                 >
                   <Settings2 className="mr-1 size-4" />
@@ -209,12 +214,17 @@ export default function ApprovalQueueTab({ initial }: { initial: PendingApproval
               {group.items.map((item) => (
                 <li
                   key={item.id}
-                  className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2"
+                  style={{
+                    border: '1px solid var(--a-border)',
+                    background: selected.has(item.id) ? 'var(--a-accent-wash)' : undefined,
+                  }}
                   data-state={selected.has(item.id) ? 'selected' : undefined}
                 >
-                  <Checkbox
+                  <ToolbarCheck
+                    label=""
                     checked={selected.has(item.id)}
-                    onCheckedChange={() => toggleOne(item.id)}
+                    onChange={() => toggleOne(item.id)}
                     aria-label={`Select ${item.card?.address ?? item.listingKey}`}
                   />
                   {item.card?.photoUrl ? (
@@ -225,7 +235,11 @@ export default function ApprovalQueueTab({ initial }: { initial: PendingApproval
                       className="size-12 shrink-0 rounded-md object-cover"
                     />
                   ) : (
-                    <div className="size-12 shrink-0 rounded-md bg-muted" aria-hidden="true" />
+                    <div
+                      className="size-12 shrink-0 rounded-md"
+                      style={{ background: 'var(--a-inset)' }}
+                      aria-hidden="true"
+                    />
                   )}
                   <div className="min-w-0 flex-1">
                     {item.card ? (
@@ -233,17 +247,18 @@ export default function ApprovalQueueTab({ initial }: { initial: PendingApproval
                         href={item.card.detailUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="block truncate text-sm font-medium text-foreground underline-offset-2 hover:underline"
+                        className="block truncate text-sm font-medium underline-offset-2 hover:underline"
+                        style={{ color: 'var(--a-text)' }}
                       >
                         {item.card.address}
                         {item.card.city ? `, ${item.card.city}` : ''}
                       </a>
                     ) : (
-                      <p className="truncate text-sm font-medium text-foreground">
+                      <p className="truncate text-sm font-medium" style={{ color: 'var(--a-text)' }}>
                         MLS #{item.listingKey}
                       </p>
                     )}
-                    <p className="truncate text-xs tabular-nums text-muted-foreground">
+                    <p className="truncate text-xs tabular-nums" style={{ color: 'var(--a-text-2)' }}>
                       {item.card ? formatPrice(item.card.price) : 'No card snapshot'}
                       {item.card?.beds != null ? ` · ${item.card.beds} bd` : ''}
                       {item.card?.baths != null ? ` · ${item.card.baths} ba` : ''}
@@ -252,16 +267,16 @@ export default function ApprovalQueueTab({ initial }: { initial: PendingApproval
                         : ''}
                     </p>
                   </div>
-                  <Badge variant="outline" className="shrink-0">
-                    {eventBadgeLabel(item.eventType)}
-                  </Badge>
-                  <span className="hidden shrink-0 text-xs tabular-nums text-muted-foreground sm:block">
+                  <span className="shrink-0">
+                    <StateWord state="waiting">{eventBadgeLabel(item.eventType)}</StateWord>
+                  </span>
+                  <span className="hidden shrink-0 text-xs tabular-nums sm:block" style={{ color: 'var(--a-text-2)' }}>
                     {formatSubscriptionDate(item.createdAt)}
                   </span>
                 </li>
               ))}
             </ul>
-          </Card>
+          </div>
         )
       })}
 

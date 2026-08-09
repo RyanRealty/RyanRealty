@@ -3,21 +3,22 @@
 /**
  * ProspectPriceHistory — the prior-MLS-cycle list for the review detail
  * (spec 07 §2 detail content). Mobile renders stacked mini-rows; desktop
- * renders a compact <Table> inside its own overflow-x-auto box — per CLAUDE.md
- * this is the ONE place a small table may scroll internally; the page body
- * itself never scrolls horizontally.
+ * renders the admin's ONE tabular reader inside its own scroll box — per
+ * CLAUDE.md this is the ONE place a small table may scroll internally; the page
+ * body itself never scrolls horizontally.
+ *
+ * 11F: on the LOCKED admin v2 language. The shadcn <Table> became <ReportGrid>
+ * (the admin's one tabular reader) and the shadcn <Card> became a hairline
+ * surface; every figure, every string and underContractStory's rules are
+ * untouched. ONE shape change, and it is the one ReportGrid cannot express: the
+ * fall-through story used to be its own colSpan={7} row under its cycle, and a
+ * ReportGrid row carries one cell per column with no span. It is now the second
+ * line of that cycle's Status cell, which is where it belongs anyway — it
+ * qualifies the status ("Expired · went pending after 45 days, fell through").
+ * Nothing is dropped and no row moved to a different cycle.
  */
 
-import * as React from 'react'
-import { Card } from '@/components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { ReportGrid, type ReportColumn } from '@/components/admin/v2'
 import type { ProspectPriceCycle } from '@/lib/data/prospecting/types'
 import { formatDate, formatPrice } from './format'
 
@@ -51,9 +52,25 @@ export function underContractStory(cycle: ProspectPriceCycle): string | null {
   return boms > 1 ? `${base} (back on market ${boms} times)` : base
 }
 
+const COLUMNS: ReportColumn[] = [
+  { key: 'listDate', label: 'List date' },
+  { key: 'status', label: 'Status' },
+  { key: 'originalList', label: 'Original list', numeric: true },
+  { key: 'finalList', label: 'Final list', numeric: true },
+  { key: 'close', label: 'Close', numeric: true },
+  { key: 'dom', label: 'DOM', numeric: true },
+  { key: 'drops', label: 'Drops', numeric: true },
+]
+
+const storyStyle = { fontSize: 'var(--a-text-xs)', fontWeight: 500, color: 'var(--a-warn)' } as const
+
 export function ProspectPriceHistory({ cycles }: { cycles: ProspectPriceCycle[] }) {
   if (cycles.length === 0) {
-    return <p className="text-sm text-muted-foreground">No prior MLS listing history on file.</p>
+    return (
+      <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+        No prior MLS listing history on file.
+      </p>
+    )
   }
 
   return (
@@ -63,14 +80,28 @@ export function ProspectPriceHistory({ cycles }: { cycles: ProspectPriceCycle[] 
         {cycles.map((cycle, i) => {
           const story = underContractStory(cycle)
           return (
-          <Card key={`${cycle.listDate ?? 'cycle'}-${i}`} className="p-3 text-sm">
+          <div
+            key={`${cycle.listDate ?? 'cycle'}-${i}`}
+            style={{
+              minWidth: 0,
+              padding: 'var(--a-s3)',
+              fontSize: 'var(--a-text-sm)',
+              border: '1px solid var(--a-border)',
+              borderRadius: 'var(--a-r-lg)',
+              background: 'var(--a-surface)',
+              color: 'var(--a-text)',
+            }}
+          >
             <div className="flex items-center justify-between gap-2">
-              <span className="font-medium text-foreground">{formatDate(cycle.listDate)}</span>
-              <span className="text-xs text-muted-foreground">{cycle.status ?? '—'}</span>
+              <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>{formatDate(cycle.listDate)}</span>
+              <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{cycle.status ?? '—'}</span>
             </div>
-            <div className="mt-1.5 flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+            <div
+              className="mt-1.5 flex items-baseline justify-between gap-2"
+              style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+            >
               <span>List</span>
-              <span className="tabular-nums text-foreground">
+              <span className="a-num" style={{ color: 'var(--a-text)' }}>
                 {formatPrice(cycle.originalListPrice)}
                 {cycle.finalListPrice != null && cycle.finalListPrice !== cycle.originalListPrice
                   ? ` → ${formatPrice(cycle.finalListPrice)}`
@@ -78,63 +109,62 @@ export function ProspectPriceHistory({ cycles }: { cycles: ProspectPriceCycle[] 
               </span>
             </div>
             {cycle.closePrice != null ? (
-              <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+              <div
+                className="flex items-baseline justify-between gap-2"
+                style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+              >
                 <span>Closed</span>
-                <span className="tabular-nums text-foreground">{formatPrice(cycle.closePrice)}</span>
+                <span className="a-num" style={{ color: 'var(--a-text)' }}>
+                  {formatPrice(cycle.closePrice)}
+                </span>
               </div>
             ) : null}
-            <div className="mt-1 flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
+            <div
+              className="mt-1 flex items-baseline justify-between gap-2"
+              style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+            >
               <span>Days on market · Price drops</span>
-              <span className="tabular-nums">
+              <span className="a-num">
                 {cycle.daysOnMarket ?? '—'} · {cycle.priceDropCount ?? 0}
               </span>
             </div>
-            {story ? <p className="mt-1 text-xs font-medium text-warning">{story}</p> : null}
-          </Card>
+            {story ? (
+              <p className="mt-1" style={storyStyle}>
+                {story}
+              </p>
+            ) : null}
+          </div>
           )
         })}
       </div>
 
-      {/* Desktop — compact table, scrolls inside its own box only. */}
-      <div className="no-scrollbar hidden overflow-x-auto rounded-lg border border-border sm:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>List date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Original list</TableHead>
-              <TableHead className="text-right">Final list</TableHead>
-              <TableHead className="text-right">Close</TableHead>
-              <TableHead className="text-right">DOM</TableHead>
-              <TableHead className="text-right">Drops</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {cycles.map((cycle, i) => {
-              const story = underContractStory(cycle)
-              return (
-                <React.Fragment key={`${cycle.listDate ?? 'cycle'}-${i}`}>
-                  <TableRow className={story ? 'border-b-0' : undefined}>
-                    <TableCell className="text-sm">{formatDate(cycle.listDate)}</TableCell>
-                    <TableCell className="text-sm">{cycle.status ?? '—'}</TableCell>
-                    <TableCell className="text-right text-sm tabular-nums">{formatPrice(cycle.originalListPrice)}</TableCell>
-                    <TableCell className="text-right text-sm tabular-nums">{formatPrice(cycle.finalListPrice)}</TableCell>
-                    <TableCell className="text-right text-sm tabular-nums">{formatPrice(cycle.closePrice)}</TableCell>
-                    <TableCell className="text-right text-sm tabular-nums">{cycle.daysOnMarket ?? '—'}</TableCell>
-                    <TableCell className="text-right text-sm tabular-nums">{cycle.priceDropCount ?? 0}</TableCell>
-                  </TableRow>
-                  {story ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="pt-0 text-xs font-medium text-warning">
-                        {story}
-                      </TableCell>
-                    </TableRow>
-                  ) : null}
-                </React.Fragment>
-              )
-            })}
-          </TableBody>
-        </Table>
+      {/* Desktop — the one tabular reader, scrolling inside its own box only. */}
+      <div className="hidden sm:block" style={{ minWidth: 0 }}>
+        <ReportGrid
+          label="Price history"
+          columns={COLUMNS}
+          template="minmax(96px, 1fr) minmax(180px, 1.9fr) repeat(3, minmax(92px, 1fr)) minmax(60px, 0.7fr) minmax(60px, 0.7fr)"
+          minWidth={720}
+          empty="No prior MLS listing history on file."
+          rows={cycles.map((cycle, i) => {
+            const story = underContractStory(cycle)
+            return {
+              key: `${cycle.listDate ?? 'cycle'}-${i}`,
+              cells: [
+                formatDate(cycle.listDate),
+                <span key="status">
+                  {cycle.status ?? '—'}
+                  {story ? <span style={{ ...storyStyle, display: 'block' }}>{story}</span> : null}
+                </span>,
+                formatPrice(cycle.originalListPrice),
+                formatPrice(cycle.finalListPrice),
+                formatPrice(cycle.closePrice),
+                cycle.daysOnMarket ?? '—',
+                cycle.priceDropCount ?? 0,
+              ],
+            }
+          })}
+        />
       </div>
     </div>
   )

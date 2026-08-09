@@ -5,20 +5,28 @@
  * opinions), right-rail card. Lists each opinion (address, opinion of value,
  * confidence, status) with a Review link, and a "New price opinion" button that
  * runs the deterministic builder against the contact's home on file.
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Card -> av2-pane, Badge -> StateWord (the three labels are system states,
+ * never broker-typed text), Button -> the v2 Button, and the `asChild` anchor ->
+ * a real <a> carrying av2-btn so the stylesheet's hover/pressed/focus states
+ * come with it instead of being hand-rolled.
  */
 import { useTransition } from 'react'
 import { Gauge } from 'lucide-react'
 import { formatDate } from '@/lib/format/date'
 import type { ContactBpo } from '@/lib/data/crm/getContactBpos'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { Button, StateWord, type AdminState } from '@/components/admin/v2'
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Draft',
   final: 'Final',
   archived: 'Archived',
+}
+
+/** final reads as the settled/healthy state; draft + archived stay neutral. */
+function statusTone(status: string): AdminState {
+  return status === 'final' ? 'ok' : 'waiting'
 }
 
 export function ContactBpoCard(props: {
@@ -35,53 +43,60 @@ export function ContactBpoCard(props: {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="flex items-center gap-1.5 text-sm">
-          <Gauge className="h-4 w-4 text-primary" aria-hidden />
+    <div className="av2-pane">
+      <div className="flex flex-row items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5" style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>
+          <Gauge className="h-4 w-4" style={{ color: 'var(--a-accent)' }} aria-hidden />
           Broker price opinions
-        </CardTitle>
-        <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" disabled={pending} onClick={generate}>
+        </div>
+        <Button type="button" variant="quiet" disabled={pending} onClick={generate}>
           {pending ? 'Building…' : 'New opinion'}
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-2.5">
+      </div>
+      <div className="space-y-2.5">
         {props.bpos.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
             No price opinion yet. Build one from the home on file.
           </p>
         ) : (
           props.bpos.map((b) => (
-            <div key={b.slug} className="rounded-lg border border-border p-2.5">
+            <div key={b.slug} className="rounded-lg p-2.5" style={{ border: '1px solid var(--a-border)' }}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground" title={b.subjectAddress}>
+                  <p
+                    className="truncate"
+                    style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}
+                    title={b.subjectAddress}
+                  >
                     {b.subjectAddress}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                     {b.opinionLine ? `${b.opinionLine} · ` : ''}
                     {b.confidence ? `${b.confidence} · ` : ''}
                     {formatDate(b.createdAt, { month: 'short', day: 'numeric' })}
                   </p>
                 </div>
-                <Badge
-                  variant={b.status === 'final' ? 'secondary' : 'outline'}
-                  className={cn('shrink-0 text-xs', b.status === 'final' && 'border-success text-success')}
-                >
-                  {STATUS_LABEL[b.status] ?? b.status}
-                </Badge>
+                {/* shrink-0 lived on the shadcn Badge base class; StateWord takes
+                    no className, so the guard moves to the flex item itself. */}
+                <span className="shrink-0">
+                  <StateWord state={statusTone(b.status)}>{STATUS_LABEL[b.status] ?? b.status}</StateWord>
+                </span>
               </div>
               <div className="mt-2">
-                <Button asChild type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                  <a href={b.previewUrl} target="_blank" rel="noopener noreferrer">
-                    Review
-                  </a>
-                </Button>
+                <a
+                  href={b.previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="av2-btn av2-btn--quiet"
+                  style={{ textDecoration: 'none' }}
+                >
+                  Review
+                </a>
               </div>
             </div>
           ))
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

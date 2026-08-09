@@ -13,28 +13,30 @@
  * Phones open the Edit Phone Numbers modal (§7c.6). Collapse state persists
  * per user via localStorage (AC-COLL-2). Drag-reorder of sections (AC-COLL-3)
  * is a logged deferral in CRM_BUILD_MISSION.
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY — every export, prop, handler, action and user-visible
+ * string is unchanged. Four notes on the swap:
+ *  - Radix Collapsible is gone. Each section owns the same `open` state it
+ *    already owned and simply does not render its body when closed, which is
+ *    what CollapsibleContent did; the trigger keeps aria-expanded.
+ *  - Radix AlertDialog is gone. Delete person is the barrel's ConfirmDialog,
+ *    whose confirm button carries the verb. It lives in its own local component
+ *    so the dialog's state hooks stay out of PersonSidebar's conditional tail.
+ *  - The avatar is CrmAvatar, the CRM's one avatar (identity reads by initials
+ *    on a neutral fill — §1 reserves colour for action and status).
+ *  - Full-row toggles and full-row option rows stay raw <button>s carrying
+ *    token classes. The barrel's Button is a centred, chromed control; a
+ *    section header and a suggestion row are neither. Same call, same reason,
+ *    as MobileEditSheet / MobileNotesTab in components/admin/shared.
  */
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, Plus, Users, X, AlertTriangle } from 'lucide-react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Button, ConfirmDialog, IconButton, SearchField } from '@/components/admin/v2'
+import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
 import { cn } from '@/lib/utils'
 import { InlineEditText, InlineEditSelect, type InlineOption } from './InlineEditField'
 import { EditPhonesDialog, AddRelationshipDialog } from './PersonDialogs'
@@ -89,6 +91,9 @@ export type SidebarData = {
 
 const TIMEFRAME_OPTIONS = ['0-3 Months', '3-6 Months', '6-12 Months', '12+ Months', 'No Plans']
 
+const MUTED: React.CSSProperties = { color: 'var(--a-text-2)' }
+const HAIRLINE_TOP: React.CSSProperties = { borderTop: '1px solid var(--a-border)' }
+
 function usd(n: number | null): string | null {
   if (typeof n !== 'number' || !Number.isFinite(n)) return null
   return `$${Math.round(n).toLocaleString('en-US')}`
@@ -119,25 +124,36 @@ function SidebarSection({
     window.localStorage.setItem(storageKey, next ? '1' : '0')
   }
   return (
-    <Collapsible open={open} onOpenChange={toggle} className="border-t border-border">
+    <div style={HAIRLINE_TOP}>
       <div className="flex items-center justify-between py-2 pr-1">
-        <CollapsibleTrigger asChild>
-          <button type="button" className="flex flex-1 items-center justify-between gap-2 text-left">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</span>
-            {open ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-          </button>
-        </CollapsibleTrigger>
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => toggle(!open)}
+          className="flex flex-1 items-center justify-between gap-2 text-left"
+        >
+          <span className="text-xs font-semibold uppercase tracking-wide" style={MUTED}>
+            {title}
+          </span>
+          {open ? (
+            <ChevronUp className="h-3.5 w-3.5" style={MUTED} />
+          ) : (
+            <ChevronDown className="h-3.5 w-3.5" style={MUTED} />
+          )}
+        </button>
         {headerExtra}
       </div>
-      <CollapsibleContent className="space-y-2 pb-3">{children}</CollapsibleContent>
-    </Collapsible>
+      {open ? <div className="space-y-2 pb-3">{children}</div> : null}
+    </div>
   )
 }
 
 function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[92px_1fr] items-start gap-2">
-      <span className="pt-1 text-xs text-muted-foreground">{label}</span>
+      <span className="pt-1 text-xs" style={MUTED}>
+        {label}
+      </span>
       <div className="min-w-0">{children}</div>
     </div>
   )
@@ -153,13 +169,19 @@ function EmailRows({ personId, emails }: { personId: number; emails: SidebarEmai
       {emails.map((e) => (
         <div key={e.value} className="flex items-center gap-1.5">
           {e.status === 'bounced' || e.status === 'unsubscribed' ? (
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning" aria-label={e.status} />
+            <AlertTriangle
+              className="h-3.5 w-3.5 shrink-0"
+              style={{ color: 'var(--a-warn)' }}
+              aria-label={e.status}
+            />
           ) : null}
           <InlineEditText
             value={e.value}
             placeholder="Add email"
             display={e.value}
-            className="flex-1 truncate text-[color:var(--console-info-strong,theme(colors.primary.DEFAULT))]"
+            // A colour CLASS, not a style prop: InlineEditText takes className
+            // only, and widening its signature would change an exported API.
+            className="flex-1 truncate text-[color:var(--a-accent)]"
             onSave={async (next) => {
               const r = await saveEmailRowAction(personId, e.value, next)
               if (r.ok) router.refresh()
@@ -183,7 +205,7 @@ function EmailRows({ personId, emails }: { personId: number; emails: SidebarEmai
           }}
         />
       ) : (
-        <Button type="button" variant="link" size="sm" className="h-auto p-1 text-xs" onClick={() => setAdding(true)}>
+        <Button variant="quiet" className="av2-textlink" onClick={() => setAdding(true)}>
           + add another email
         </Button>
       )}
@@ -213,25 +235,60 @@ function AddressRow({ personId, address }: { personId: number; address: SidebarA
           setEditing(true)
         }}
         onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
-        className="cursor-pointer rounded px-1 py-0.5 text-sm hover:bg-muted/40"
+        className="cursor-pointer rounded px-1 py-0.5 text-sm hover:bg-[var(--a-inset)]"
       >
-        {displayLine || <span className="text-muted-foreground">Add address</span>}
+        {displayLine || <span style={MUTED}>Add address</span>}
       </div>
     )
   }
   return (
-    <div className="space-y-1.5 rounded-md bg-muted/30 p-1.5" onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}>
-      <Input autoFocus value={draft.street} onChange={(e) => setDraft({ ...draft, street: e.target.value })} placeholder="Street" className="h-8 text-sm" />
+    <div
+      className="space-y-1.5 rounded-md p-1.5"
+      style={{ background: 'var(--a-inset)' }}
+      onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}
+    >
+      <SearchField
+        aria-label="Street"
+        type="text"
+        autoFocus
+        value={draft.street}
+        onChange={(e) => setDraft({ ...draft, street: e.target.value })}
+        placeholder="Street"
+        className="w-full"
+        style={{ maxWidth: 'none' }}
+      />
       <div className="grid grid-cols-[1fr_56px_72px] gap-1.5">
-        <Input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} placeholder="City" className="h-8 text-sm" />
-        <Input value={draft.state} onChange={(e) => setDraft({ ...draft, state: e.target.value })} placeholder="State" className="h-8 text-sm" />
-        <Input value={draft.zip} onChange={(e) => setDraft({ ...draft, zip: e.target.value })} placeholder="Zip" className="h-8 text-sm" />
+        <SearchField
+          aria-label="City"
+          type="text"
+          value={draft.city}
+          onChange={(e) => setDraft({ ...draft, city: e.target.value })}
+          placeholder="City"
+          className="w-full"
+          style={{ maxWidth: 'none' }}
+        />
+        <SearchField
+          aria-label="State"
+          type="text"
+          value={draft.state}
+          onChange={(e) => setDraft({ ...draft, state: e.target.value })}
+          placeholder="State"
+          className="w-full"
+          style={{ maxWidth: 'none' }}
+        />
+        <SearchField
+          aria-label="Zip"
+          type="text"
+          value={draft.zip}
+          onChange={(e) => setDraft({ ...draft, zip: e.target.value })}
+          placeholder="Zip"
+          className="w-full"
+          style={{ maxWidth: 'none' }}
+        />
       </div>
       <div className="flex justify-end gap-1">
         <Button
-          size="sm"
           disabled={pending}
-          className="h-7 bg-success text-success-foreground hover:bg-success/90"
           onClick={() =>
             start(async () => {
               const r = await saveAddressRowAction(personId, draft)
@@ -244,11 +301,15 @@ function AddressRow({ personId, address }: { personId: number; address: SidebarA
         >
           Save
         </Button>
-        <Button size="sm" variant="destructive" className="h-7" onClick={() => setEditing(false)}>
+        <Button variant="quiet" onClick={() => setEditing(false)}>
           Cancel
         </Button>
       </div>
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="text-xs" style={{ color: 'var(--a-danger)' }}>
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }
@@ -307,25 +368,41 @@ function TagChips({ personId, tags, tagOptions }: { personId: number; tags: stri
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center gap-1">
         {shown.map((t) => (
-          <Badge key={t} variant="outline" className="gap-1 pr-1 text-xs font-normal">
+          // A tag is broker-typed data, so it is NOT a StateWord: .av2-state
+          // uppercases, and "Audience - buyer" must read back as it was written.
+          <span
+            key={t}
+            className="inline-flex items-center gap-1 rounded-full py-0.5 pl-2 pr-1 text-xs"
+            style={{ border: '1px solid var(--a-border)', color: 'var(--a-text)' }}
+          >
             {labelByKey.get(t) ?? t}
-            <button type="button" aria-label={`Remove ${labelByKey.get(t) ?? t}`} disabled={pending} onClick={() => removeTag(t)} className="rounded px-0.5 text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              aria-label={`Remove ${labelByKey.get(t) ?? t}`}
+              disabled={pending}
+              onClick={() => removeTag(t)}
+              // Both tones are CLASSES. An inline colour would outrank the
+              // :hover rule and leave the control dead on hover.
+              className="rounded px-0.5 text-[color:var(--a-text-2)] hover:text-[color:var(--a-text)]"
+            >
               <X className="h-3 w-3" />
             </button>
-          </Badge>
+          </span>
         ))}
         {overflow > 0 ? (
-          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setExpanded(true)}>
+          <Button variant="quiet" className="av2-textlink" onClick={() => setExpanded(true)}>
             +{overflow} more
           </Button>
         ) : null}
-        <Button type="button" size="icon" variant="outline" aria-label="Add tag" className="h-5 w-5 rounded-full" onClick={() => setAdding((a) => !a)}>
+        <IconButton label="Add tag" onClick={() => setAdding((a) => !a)}>
           <Plus className="h-3 w-3" />
-        </Button>
+        </IconButton>
       </div>
       {adding ? (
         <div className="space-y-1">
-          <Input
+          <SearchField
+            aria-label="Search or create tag"
+            type="text"
             autoFocus
             value={query}
             maxLength={64}
@@ -335,15 +412,25 @@ function TagChips({ personId, tags, tagOptions }: { personId: number; tags: stri
               if (e.key === 'Escape') setAdding(false)
             }}
             placeholder="Search or create tag"
-            className="h-8 text-sm"
+            className="w-full"
+            style={{ maxWidth: 'none' }}
           />
           {suggestions.map((s) => (
-            <button key={s.key} type="button" onClick={() => addTag(s.key)} className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-secondary">
+            <button
+              key={s.key}
+              type="button"
+              onClick={() => addTag(s.key)}
+              className="block w-full rounded px-2 py-1 text-left text-sm hover:bg-[var(--a-inset)]"
+            >
               {s.label}
             </button>
           ))}
           {query.trim() && !isKnown ? (
-            <button type="button" onClick={() => addTag(query)} className="block w-full rounded px-2 py-1 text-left text-sm font-medium hover:bg-secondary">
+            <button
+              type="button"
+              onClick={() => addTag(query)}
+              className="block w-full rounded px-2 py-1 text-left text-sm font-medium hover:bg-[var(--a-inset)]"
+            >
               Create New Tag: {query.trim()}
             </button>
           ) : null}
@@ -353,12 +440,47 @@ function TagChips({ personId, tags, tagOptions }: { personId: number; tags: stri
   )
 }
 
+// ── Delete person (§07a 11) ──────────────────────────────────────────────────
+
+/**
+ * Own component so the confirm dialog's state hooks are not inside
+ * PersonSidebar's `canDelete` branch. The delete itself still runs through the
+ * server-action form; the dialog's confirm just submits it.
+ */
+function DeletePersonBlock({ personId }: { personId: number }) {
+  const [open, setOpen] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+  return (
+    <div className="pt-3 pb-1" style={HAIRLINE_TOP}>
+      <Button
+        variant="quiet"
+        className="av2-textlink"
+        style={{ color: 'var(--a-danger)' }}
+        onClick={() => setOpen(true)}
+      >
+        Delete person
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Delete this person?"
+        description="This cannot be undone. This contact and their timeline are removed from every list and report. Deals linked to this contact remain but lose the association."
+        confirmLabel="Delete person"
+        onConfirm={() => formRef.current?.requestSubmit()}
+      >
+        <form ref={formRef} action={deleteCrmPersonAction}>
+          <input type="hidden" name="personId" value={personId} />
+        </form>
+      </ConfirmDialog>
+    </div>
+  )
+}
+
 // ── The sidebar ──────────────────────────────────────────────────────────────
 
 export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; customFieldsNode?: React.ReactNode }) {
   const router = useRouter()
   const p = data
-  const initials = `${(p.firstName ?? p.name ?? '?')[0] ?? '?'}${(p.lastName ?? '')[0] ?? ''}`.toUpperCase()
 
   const assignOptions: InlineOption[] = [
     ...(p.actingBroker ? [{ value: p.actingBroker, label: 'Me', group: '' }] : []),
@@ -376,13 +498,14 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
     <div className="space-y-3 text-sm">
       {/* Avatar / header (§07a 2) */}
       <div className="flex flex-col items-center gap-2 pt-1 text-center">
-        <Avatar className="h-16 w-16">
-          {p.pictureUrl ? <AvatarImage src={p.pictureUrl} alt={p.name} /> : null}
-          <AvatarFallback className="bg-primary text-lg font-semibold text-primary-foreground">{initials}</AvatarFallback>
-        </Avatar>
+        <CrmAvatar name={p.name} src={p.pictureUrl} size={64} />
         <div>
-          <h2 className="text-lg font-semibold leading-tight text-foreground">{p.name}</h2>
-          <p className="text-xs text-muted-foreground">{p.lastCommunicationLabel ?? 'No communication yet'}</p>
+          <h2 className="text-lg font-semibold leading-tight" style={{ color: 'var(--a-text)' }}>
+            {p.name}
+          </h2>
+          <p className="text-xs" style={MUTED}>
+            {p.lastCommunicationLabel ?? 'No communication yet'}
+          </p>
         </div>
       </div>
 
@@ -396,12 +519,23 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
                 personId={p.personId}
                 phones={p.phones}
                 trigger={
-                  <button type="button" className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-muted/40">
-                    <span className={cn('text-sm', ph.bad && 'text-warning line-through')}>{ph.display}</span>
-                    <span className="text-xs text-muted-foreground">{ph.label.toLowerCase()}</span>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-[var(--a-inset)]"
+                  >
+                    <span className={cn('text-sm', ph.bad && 'line-through')} style={ph.bad ? { color: 'var(--a-warn)' } : undefined}>
+                      {ph.display}
+                    </span>
+                    <span className="text-xs" style={MUTED}>
+                      {ph.label.toLowerCase()}
+                    </span>
                     {ph.isPrimary ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <span className="inline-block h-2 w-2 rounded-full bg-primary" /> best
+                      <span className="inline-flex items-center gap-1 text-xs" style={MUTED}>
+                        <span
+                          className="inline-block h-2 w-2 rounded-full"
+                          style={{ background: 'var(--a-accent)' }}
+                        />{' '}
+                        best
                       </span>
                     ) : null}
                   </button>
@@ -413,7 +547,11 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
               personId={p.personId}
               phones={[]}
               trigger={
-                <button type="button" className="rounded px-1 py-0.5 text-sm text-muted-foreground hover:bg-muted/40">
+                <button
+                  type="button"
+                  className="rounded px-1 py-0.5 text-sm hover:bg-[var(--a-inset)]"
+                  style={MUTED}
+                >
                   Add phone
                 </button>
               }
@@ -430,42 +568,51 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
       <PortalViewLink personId={p.personId} />
 
       {/* Relationships (§07a 4) */}
-      <div className="border-t border-border pt-2">
+      <div className="pt-2" style={HAIRLINE_TOP}>
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Relationships</span>
+          <span className="text-xs font-semibold uppercase tracking-wide" style={MUTED}>
+            Relationships
+          </span>
           <div className="flex items-center gap-1">
             <AddRelationshipDialog
               personId={p.personId}
               trigger={
-                <Button type="button" size="icon" variant="ghost" aria-label="Add relationship" className="h-6 w-6 text-primary">
+                <IconButton label="Add relationship">
                   <Users className="h-4 w-4" />
-                </Button>
+                </IconButton>
               }
             />
             <MergeContactDialog
               survivorId={p.personId}
               trigger={
-                <Button type="button" size="icon" variant="ghost" aria-label="Merge existing person" className="h-6 w-6 text-primary">
+                <IconButton label="Merge existing person">
                   <Plus className="h-4 w-4" />
-                </Button>
+                </IconButton>
               }
             />
           </div>
         </div>
         {p.relationships.length === 0 ? (
-          <p className="py-1 text-sm text-muted-foreground">No relationships</p>
+          <p className="py-1 text-sm" style={MUTED}>
+            No relationships
+          </p>
         ) : (
           <div className="space-y-1 py-1">
             {p.relationships.map((r, i) => (
               <div key={i} className="flex items-baseline justify-between gap-2">
                 {r.relatedPersonId ? (
-                  <Link href={`/admin/people/${r.relatedPersonId}`} className="truncate text-sm text-[color:var(--console-info-strong,inherit)] hover:underline">
+                  <Link
+                    href={`/admin/people/${r.relatedPersonId}`}
+                    className="truncate text-sm text-[color:var(--a-accent)] hover:underline"
+                  >
                     {r.name}
                   </Link>
                 ) : (
                   <span className="truncate text-sm">{r.name}</span>
                 )}
-                <span className="shrink-0 text-xs text-muted-foreground">{r.label}</span>
+                <span className="shrink-0 text-xs" style={MUTED}>
+                  {r.label}
+                </span>
               </div>
             ))}
           </div>
@@ -537,7 +684,7 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
         </FieldRow>
         {p.campaigns.length > 0 ? (
           <FieldRow label="Campaigns">
-            <p className="px-1 py-0.5 text-sm text-muted-foreground">
+            <p className="px-1 py-0.5 text-sm" style={MUTED}>
               {p.campaigns[0]}
               {p.campaigns.length > 1 ? ` | ${p.campaigns.length - 1} more` : ''}
             </p>
@@ -586,7 +733,9 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
       {/* Groups (§07a 10) — default collapsed */}
       <SidebarSection id="groups" title="Groups" defaultOpen={false}>
         {p.groups.length === 0 ? (
-          <p className="px-1 text-sm text-muted-foreground">No groups</p>
+          <p className="px-1 text-sm" style={MUTED}>
+            No groups
+          </p>
         ) : (
           p.groups.map((g) => (
             <p key={g} className="px-1 py-0.5 text-sm">
@@ -597,35 +746,7 @@ export function PersonSidebar({ data, customFieldsNode }: { data: SidebarData; c
       </SidebarSection>
 
       {/* Delete person (§07a 11) — owner/admin only */}
-      {p.canDelete ? (
-        <div className="border-t border-border pt-3 pb-1">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button type="button" className="text-sm text-destructive hover:underline">
-                Delete person
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete this person?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This cannot be undone. This contact and their timeline are removed from every list and report. Deals linked to this contact remain but
-                  lose the association.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <form action={deleteCrmPersonAction}>
-                  <input type="hidden" name="personId" value={p.personId} />
-                  <AlertDialogAction type="submit" className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Delete person
-                  </AlertDialogAction>
-                </form>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      ) : null}
+      {p.canDelete ? <DeletePersonBlock personId={p.personId} /> : null}
     </div>
   )
 }

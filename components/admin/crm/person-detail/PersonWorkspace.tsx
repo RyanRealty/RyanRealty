@@ -5,6 +5,9 @@
  * page is an identity shell + Suspense; this component is the single tree that
  * adapts by viewport. SendPanel mounts in both branches (via the nodes the
  * loader passes in).
+ *
+ * 11F: on the LOCKED admin v2 language — the 390px frame's hairline and fill
+ * now come from var(--a-*). No structural or behavioural change.
  */
 
 import type { ReactNode } from 'react'
@@ -23,7 +26,10 @@ export function PersonWorkspace({
 }) {
   if (forceMobile) {
     return (
-      <div className="mx-auto w-[390px] max-w-full overflow-hidden border-x border-border bg-secondary">
+      <div
+        className="mx-auto w-[390px] max-w-full overflow-hidden border-x"
+        style={{ borderColor: 'var(--a-border)', background: 'var(--a-inset)' }}
+      >
         {mobile}
         {kickoff}
       </div>

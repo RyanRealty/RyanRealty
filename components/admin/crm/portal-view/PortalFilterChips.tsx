@@ -14,11 +14,45 @@
  * READ-ONLY: props in, badges out. No state, no handlers, no remove control.
  * RegistryFilterChip is deliberately NOT used here because it carries a remove
  * button, and nothing on this surface may change the client's data.
+ *
+ * Admin v2 (11F): the shadcn Badge is gone. NOT the v2 FilterChip — that
+ * primitive is a button element carrying aria-pressed, and a control here is
+ * exactly what the read-only invariant (lib/data/crm/clientPortalView.test.ts)
+ * forbids. NOT StateWord either: .av2-state UPPERCASES, and these carry the
+ * client's own filter values. So a plain span wearing the locked tokens — the
+ * shadcn Badge was equally non-interactive, and its hover rules only applied
+ * inside an anchor, so nothing interactive is lost.
  */
 
 import { activeRegistryFilters } from '@/components/search/AllFiltersSheet'
-import { Badge } from '@/components/ui/badge'
+import type { CSSProperties } from 'react'
 import type { PortalChip } from '@/lib/data/crm/getClientPortalView'
+
+/** Shared pill geometry; the two variants differ only in fill vs hairline. */
+const CHIP_BASE: CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  borderRadius: 999,
+  padding: '2px 8px',
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 500,
+  whiteSpace: 'nowrap',
+  border: '1px solid transparent',
+}
+
+/** Was Badge variant="secondary": a filled chip. */
+const CHIP_FILLED: CSSProperties = {
+  ...CHIP_BASE,
+  background: 'var(--a-inset)',
+  color: 'var(--a-text)',
+}
+
+/** Was Badge variant="outline": a hairline chip on the card's own background. */
+const CHIP_OUTLINE: CSSProperties = {
+  ...CHIP_BASE,
+  borderColor: 'var(--a-border)',
+  color: 'var(--a-text)',
+}
 
 export function PortalFilterChips({
   registryParams,
@@ -33,24 +67,28 @@ export function PortalFilterChips({
   const registryChips = activeRegistryFilters(params)
 
   if (registryChips.length === 0 && otherChips.length === 0) {
-    return <p className="text-sm text-muted-foreground">No filters. This alert matches every home.</p>
+    return (
+      <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>
+        No filters. This alert matches every home.
+      </p>
+    )
   }
 
   return (
     <div className="flex flex-wrap gap-1.5">
       {otherChips.map((chip) => (
-        <Badge
+        <span
           key={`${chip.label}-${chip.detail ?? ''}`}
-          variant="secondary"
-          className="rounded-full font-medium tabular-nums"
+          className="tabular-nums"
+          style={CHIP_FILLED}
         >
           {chip.detail ? `${chip.label}: ${chip.detail}` : chip.label}
-        </Badge>
+        </span>
       ))}
       {registryChips.map((chip) => (
-        <Badge key={chip.key} variant="outline" className="rounded-full font-medium tabular-nums">
+        <span key={chip.key} className="tabular-nums" style={CHIP_OUTLINE}>
           {chip.label}
-        </Badge>
+        </span>
       ))}
     </div>
   )

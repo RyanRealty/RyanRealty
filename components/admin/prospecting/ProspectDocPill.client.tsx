@@ -5,42 +5,55 @@
  * (spec 07 §9 "every state"). Renders straight off ProspectDocState so the
  * worklist card and the detail panel can never disagree about what "built"
  * means (that disagreement was Defect 4 in the audit this spec fixes).
+ *
+ * 11F: on the LOCKED admin v2 language.
+ *
+ * StateWord ONLY where the content is a status WORD. `.av2-state` applies
+ * text-transform:uppercase, which is right for "BUILD FAILED" and wrong for
+ * anything carrying data — the two pills that interpolate a price or a date use
+ * `.av2-chip`, so "Sent Aug 5" does not render as "SENT AUG 5".
  */
 
 import { Loader2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { StateWord } from '@/components/admin/v2'
 import type { ProspectDocState } from '@/lib/data/prospecting/types'
 import { formatPrice, formatShortDate } from './format'
 
 export function ProspectDocPill({ doc }: { doc: ProspectDocState }) {
   switch (doc.state) {
     case 'none':
-      return <Badge variant="outline">No audit yet</Badge>
+      return <StateWord state="waiting">No audit yet</StateWord>
     case 'building':
       return (
-        <Badge variant="secondary" className="gap-1">
+        <span className="av2-chip inline-flex items-center gap-1">
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
           Building…
-        </Badge>
+        </span>
       )
     case 'failed':
       return (
-        <Badge variant="destructive" title={doc.reason ?? undefined}>
-          Build failed
-        </Badge>
+        <span title={doc.reason ?? undefined}>
+          <StateWord state="down">Build failed</StateWord>
+        </span>
       )
     case 'ready':
       return (
-        <Badge variant="default" className="gap-1 tabular-nums">
+        <span
+          className="av2-chip inline-flex items-center gap-1 tabular-nums"
+          style={{ background: 'var(--a-accent-wash)', color: 'var(--a-accent)' }}
+        >
           Audit ready
           {doc.recommendedList != null ? <span>· {formatPrice(doc.recommendedList)}</span> : null}
-        </Badge>
+        </span>
       )
     case 'sent':
       return (
-        <Badge variant="success" className="gap-1 tabular-nums">
+        <span
+          className="av2-chip inline-flex items-center gap-1 tabular-nums"
+          style={{ background: 'var(--a-ok-wash)', color: 'var(--a-ok)' }}
+        >
           Sent {formatShortDate(doc.sentAt)}
-        </Badge>
+        </span>
       )
     default:
       return null

@@ -1,46 +1,45 @@
 'use client'
 
 /**
- * TemplatePicker — searchable command-palette template selector.
+ * TemplatePicker — searchable template selector.
  *
- * Replaces the flat <Select> in the lead-composer panel. On selection it
- * calls onSelect(key) — callers push the key into the page URL (?tpl= or
- * ?smsTpl=) so the server re-renders with the resolved template body, exactly
- * as the old <Select name="tpl"> + Load-button form did.
+ * On selection it calls onSelect(key) — callers push the key into the page URL
+ * (?tpl= or ?smsTpl=) so the server re-renders with the resolved template body,
+ * exactly as the old <Select name="tpl"> + Load-button form did.
  *
- * Templates are grouped by category inside <CommandGroup>. A blank/null
- * category falls under "Uncategorized". The blank option ("Blank <channel>")
- * always appears first.
+ * The blank option ("Blank <channel>") always appears first, then every
+ * template in category order (a blank/null category falls under
+ * "Uncategorized", which sorts last).
  *
  * Props:
  *   templates   — flat list from getCrmEmailTemplates / getCrmSmsTemplates +
  *                 an optional `category` field (provided when the component is
  *                 used from the admin settings page; on the lead console the
  *                 picker receives the lightweight composer shape which may not
- *                 have category — it just shows all in one group in that case)
+ *                 have category — everything then falls in one group)
  *   channel     — 'email' | 'sms' (used only for the "Blank" label)
  *   currentKey  — the currently selected key ('blank' or a template key)
  *   onSelect    — called with the chosen key
- *   className   — forwarded to the trigger button container
+ *   className   — forwarded to the picker's container
+ *
+ * ── Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY: the exported name, every prop, the blank-first ordering,
+ * the category sort and the onSelect contract are what they were.
+ *
+ * The cmdk Command palette inside a Popover became the barrel's Combobox, which
+ * is the primitive built for exactly this ("a searchable single-select", and
+ * its own docstring names a template picker as the case that motivated it). Two
+ * consequences, both deliberate:
+ *  - cmdk's <CommandGroup heading> rows are gone, because Combobox's option
+ *    list is flat. The GROUPING is not: options are emitted in the same
+ *    category order, and each option's hint line carries `subject · category`,
+ *    so the category still reads on the row AND still matches the search the
+ *    way cmdk's concatenated value did (name + subject + category).
+ *  - the trigger button that displayed the loaded template is now the input's
+ *    placeholder. One control replaces two, and the loaded template is what it
+ *    shows; the old "Search N templates…" hint has no second slot to live in.
  */
-import { useState } from 'react'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { Combobox, type ComboboxOption } from '@/components/admin/v2'
 
 export type PickerTemplate = {
   key: string
@@ -68,8 +67,6 @@ export function TemplatePicker({
   onSelect: (key: string) => void
   className?: string
 }) {
-  const [open, setOpen] = useState(false)
-
   const active =
     currentKey === BLANK_KEY || !currentKey
       ? null
@@ -86,88 +83,33 @@ export function TemplatePicker({
     a === 'Uncategorized' ? 1 : b === 'Uncategorized' ? -1 : a.localeCompare(b),
   )
 
-  function choose(key: string) {
-    setOpen(false)
-    onSelect(key)
-  }
+  // Blank option always first, then the categories in order — the same
+  // sequence the CommandGroups rendered in.
+  const options: ComboboxOption[] = [
+    { value: BLANK_KEY, label: `Blank ${channel}` },
+    ...categories.flatMap((cat) =>
+      (grouped.get(cat) ?? []).map((t) => ({
+        value: t.key,
+        label: t.name,
+        // Fed to the local filter as well as shown — the cmdk filter matched on
+        // name + subject + category, and so does this.
+        hint: [(t.subject ?? '').trim(), cat].filter(Boolean).join(' · '),
+      })),
+    ),
+  ]
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn('h-9 flex-1 justify-between text-sm font-normal', className)}
-        >
-          <span className="truncate text-left">
-            {active ? active.name : `Blank ${channel}`}
-          </span>
-          {active?.category ? (
-            <Badge variant="outline" className="ml-2 shrink-0 text-[10px]">
-              {active.category}
-            </Badge>
-          ) : null}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4M8 15l4 4 4-4" />
-          </svg>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[340px] p-0" align="start">
-        <Command filter={(value, search) => {
-          // cmdk's value is lowercased name+subject+category concatenated below.
-          if (!search.trim()) return 1
-          return value.includes(search.toLowerCase()) ? 1 : 0
-        }}>
-          <CommandInput placeholder={`Search ${templates.length} templates…`} />
-          <CommandList>
-            <CommandEmpty>No templates match.</CommandEmpty>
-
-            {/* Blank option always first */}
-            <CommandGroup>
-              <CommandItem
-                value={`blank ${channel}`}
-                onSelect={() => choose(BLANK_KEY)}
-                data-checked={!active || undefined}
-              >
-                <span className="text-muted-foreground">Blank {channel}</span>
-              </CommandItem>
-            </CommandGroup>
-
-            {categories.length > 0 ? <CommandSeparator /> : null}
-
-            {categories.map((cat) => (
-              <CommandGroup key={cat} heading={cat}>
-                {(grouped.get(cat) ?? []).map((t) => (
-                  <CommandItem
-                    key={t.key}
-                    // value fed into the filter — include name, subject, category
-                    value={[t.name, t.subject ?? '', cat].join(' ').toLowerCase()}
-                    onSelect={() => choose(t.key)}
-                    data-checked={t.key === currentKey || undefined}
-                  >
-                    <span className="flex-1 truncate">{t.name}</span>
-                    {t.subject ? (
-                      <span className="ml-2 max-w-[100px] truncate text-[11px] text-muted-foreground">
-                        {t.subject}
-                      </span>
-                    ) : null}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            ))}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <div className={className}>
+      <Combobox
+        label="Template"
+        options={options}
+        value={currentKey ?? BLANK_KEY}
+        onSelect={onSelect}
+        placeholder={active ? active.name : `Blank ${channel}`}
+        emptyText="No templates match."
+        // Every template stays reachable; the old palette had no cap either.
+        maxVisible={options.length}
+      />
+    </div>
   )
 }

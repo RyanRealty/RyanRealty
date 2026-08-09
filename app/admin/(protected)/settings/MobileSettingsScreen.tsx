@@ -2,12 +2,12 @@
 
 /**
  * MobileSettingsScreen — the < md Settings surface (mob-06 fub-ios Settings
- * modal, re-skinned to Ryan Realty tokens per the in-house rebuild notes in
+ * modal, re-skinned to the admin tokens per the in-house rebuild notes in
  * docs/fub-crm-spec/mobile-screens/screen-06.md).
  *
  * Structure (390×844 reference):
  *   - Full-screen modal (fixed inset-0, occludes tab bar + FAB — no shell
- *     chrome behind), navy header with left "Close" + centered "Settings".
+ *     chrome behind), accent header with left "Close" + centered "Settings".
  *   - Profile card: 52pt avatar + name + role.
  *   - Feature settings section: icon-circle rows (app version informational,
  *     three notification prefs with Enabled/Disabled status labels that toggle
@@ -19,6 +19,24 @@
  * FUB-specific rows (Zillow, FUB support emails, app-store version) are
  * replaced with the Ryan Realty equivalents per the spec's own rebuild notes.
  * Desktop (md+) keeps MySettingsForm unchanged.
+ *
+ * 11F: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only — every handler, save call, optimistic rollback, conditional
+ * and visible string is unchanged. Three notes:
+ *   - the page/card pairing is the folder's phone idiom: the screen sits on
+ *     var(--a-inset) and its sections lift to var(--a-surface), the same two
+ *     steps MobileCalendarTab and MobileEditSheet use.
+ *   - the header is the accent solid + its paired foreground (var(--a-btn-bg) /
+ *     var(--a-btn-fg)), which flip together under [data-theme="dark"] — the
+ *     MobileEditSheet header precedent.
+ *   - the four icon circles keep four DISTINCT fills, because the fill is what
+ *     tells the rows apart at a glance; collapsing them onto one solid would
+ *     make IconCircle's `bg` argument inert. Each is a token paired with
+ *     var(--a-btn-fg), the pairing every solid control in the language uses.
+ *   - the signature box in the sheet stays a raw control on `av2-input` with an
+ *     aria-label: the labelled TextAreaField prints a visible heading the sheet
+ *     never had (its own title names it), and dropping the visible label never
+ *     drops the accessible one (MobileNotesTab precedent).
  */
 
 import { useState, useTransition } from 'react'
@@ -26,10 +44,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Smartphone, MessageSquare, Layers, Phone } from 'lucide-react'
 import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
-import { Switch } from '@/components/ui/switch'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Button, Sheet, Switch } from '@/components/admin/v2'
 import { saveBrokerSettingsAction, type BrokerSettingsPayload } from '@/app/actions/broker-settings'
 import { CONTACT, BRAND } from '@/lib/brand/contact'
 
@@ -43,17 +58,20 @@ type Broker = {
   emailSignature: string
 }
 
+/** Section surface — lifted one step off the screen's inset background. */
+const SECTION_STYLE = { background: 'var(--a-surface)' } as const
+
 /** 1pt hairline divider, inset past the icon column (mob-06 spacing spec). */
 function RowDivider({ inset = true }: { inset?: boolean }) {
-  return <div className={inset ? 'ml-16 border-t border-border' : 'border-t border-border'} />
+  return <div className={inset ? 'ml-16' : ''} style={{ borderTop: '1px solid var(--a-border)' }} />
 }
 
-/** 36pt filled icon circle with a white glyph (mob-06 feature-row anatomy). */
+/** 36pt filled icon circle with a paired-foreground glyph (mob-06 row anatomy). */
 function IconCircle({ bg, children }: { bg: string; children: React.ReactNode }) {
   return (
     <span
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white"
-      style={{ backgroundColor: bg }}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+      style={{ backgroundColor: bg, color: 'var(--a-btn-fg)' }}
     >
       {children}
     </span>
@@ -118,43 +136,53 @@ export default function MobileSettingsScreen({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-muted md:hidden">
-      {/* ── Navy header: Close (left) · Settings (center) — mob-06 nav bar ── */}
-      <div className="relative flex h-[50px] shrink-0 items-center bg-primary px-4">
+    <div
+      className="fixed inset-0 z-50 flex flex-col md:hidden"
+      style={{ background: 'var(--a-inset)', color: 'var(--a-text)', fontFamily: 'var(--a-font)' }}
+    >
+      {/* ── Accent header: Close (left) · Settings (center) — mob-06 nav bar ── */}
+      <div
+        className="relative flex h-[50px] shrink-0 items-center px-4"
+        style={{ background: 'var(--a-btn-bg)' }}
+      >
         <button
           type="button"
           onClick={close}
-          className="relative z-10 py-2 pr-4 text-[17px] text-primary-foreground"
+          className="relative z-10 py-2 pr-4 text-[17px]"
+          style={{ color: 'var(--a-btn-fg)' }}
         >
           Close
         </button>
-        <span className="absolute inset-x-0 text-center text-[17px] font-semibold text-primary-foreground">
+        <span
+          className="absolute inset-x-0 text-center text-[17px] font-semibold"
+          style={{ color: 'var(--a-btn-fg)' }}
+        >
           Settings
         </span>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* ── Profile card ── */}
-        <div className="flex items-center gap-3 bg-card px-4 py-3">
-          <CrmAvatar name={displayName} src={avatarUrl} size={52} className="border border-border" />
+        <div className="flex items-center gap-3 px-4 py-3" style={SECTION_STYLE}>
+          <CrmAvatar name={displayName} src={avatarUrl} size={52} className="border border-[var(--a-border)]" />
           <div className="min-w-0">
-            <p className="truncate text-[17px] font-semibold text-foreground">{displayName}</p>
-            <p className="text-sm text-muted-foreground">{roleLabel}</p>
+            <p className="truncate text-[17px] font-semibold" style={{ color: 'var(--a-text)' }}>{displayName}</p>
+            <p className="text-sm" style={{ color: 'var(--a-text-2)' }}>{roleLabel}</p>
           </div>
         </div>
 
         <div className="h-4" />
 
         {/* ── Feature settings section ── */}
-        <div className="bg-card">
-          {/* App version — informational (orange circle, smartphone glyph) */}
+        <div style={SECTION_STYLE}>
+          {/* App version — informational (warn circle, smartphone glyph) */}
           <div className="flex min-h-16 items-center gap-3 px-4 py-2.5">
-            <IconCircle bg="#F5943C">
+            <IconCircle bg="var(--a-warn)">
               <Smartphone className="h-5 w-5" aria-hidden />
             </IconCircle>
             <div className="min-w-0">
-              <p className="text-base font-semibold text-foreground">Your app is up to date</p>
-              <p className="text-[13px] text-muted-foreground">Currently using version {appVersion}</p>
+              <p className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>Your app is up to date</p>
+              <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>Currently using version {appVersion}</p>
             </div>
           </div>
 
@@ -167,14 +195,14 @@ export default function MobileSettingsScreen({
                 onClick={() => save({ ...prefs, newLeads: !prefs.newLeads }, { notify_new_leads: !prefs.newLeads })}
                 className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left"
               >
-                <IconCircle bg="#9B59B6">
+                <IconCircle bg="var(--a-accent-strong)">
                   <MessageSquare className="h-5 w-5" aria-hidden />
                 </IconCircle>
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-semibold text-foreground">New lead alerts</p>
-                  <p className="text-[13px] text-muted-foreground">Get notified when a lead is assigned to you</p>
+                  <p className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>New lead alerts</p>
+                  <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>Get notified when a lead is assigned to you</p>
                 </div>
-                <span className="shrink-0 text-[15px] text-muted-foreground">{prefs.newLeads ? 'Enabled' : 'Disabled'}</span>
+                <span className="shrink-0 text-[15px]" style={{ color: 'var(--a-text-2)' }}>{prefs.newLeads ? 'Enabled' : 'Disabled'}</span>
               </button>
               <RowDivider />
               <button
@@ -182,14 +210,14 @@ export default function MobileSettingsScreen({
                 onClick={() => save({ ...prefs, dealActivity: !prefs.dealActivity }, { notify_deal_activity: !prefs.dealActivity })}
                 className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left"
               >
-                <IconCircle bg="#2B7CD3">
+                <IconCircle bg="var(--a-btn-bg)">
                   <Layers className="h-5 w-5" aria-hidden />
                 </IconCircle>
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-semibold text-foreground">Deal activity alerts</p>
-                  <p className="text-[13px] text-muted-foreground">Alert when a deal you own is updated</p>
+                  <p className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>Deal activity alerts</p>
+                  <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>Alert when a deal you own is updated</p>
                 </div>
-                <span className="shrink-0 text-[15px] text-muted-foreground">{prefs.dealActivity ? 'Enabled' : 'Disabled'}</span>
+                <span className="shrink-0 text-[15px]" style={{ color: 'var(--a-text-2)' }}>{prefs.dealActivity ? 'Enabled' : 'Disabled'}</span>
               </button>
               <RowDivider />
               <button
@@ -197,33 +225,34 @@ export default function MobileSettingsScreen({
                 onClick={() => save({ ...prefs, taskDue: !prefs.taskDue }, { notify_task_due: !prefs.taskDue })}
                 className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5 text-left"
               >
-                <IconCircle bg="#27AE60">
+                <IconCircle bg="var(--a-ok)">
                   <Phone className="h-5 w-5" aria-hidden />
                 </IconCircle>
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-semibold text-foreground">Task due alerts</p>
-                  <p className="text-[13px] text-muted-foreground">Alert when a task assigned to you is due</p>
+                  <p className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>Task due alerts</p>
+                  <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>Alert when a task assigned to you is due</p>
                 </div>
-                <span className="shrink-0 text-[15px] text-muted-foreground">{prefs.taskDue ? 'Enabled' : 'Disabled'}</span>
+                <span className="shrink-0 text-[15px]" style={{ color: 'var(--a-text-2)' }}>{prefs.taskDue ? 'Enabled' : 'Disabled'}</span>
               </button>
               <RowDivider inset={false} />
               {/* SMS alerts — the switch row (mob-06 row 5 anatomy: no icon) */}
               <div className="flex min-h-16 items-center gap-3 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <p className="text-base font-semibold text-foreground">Text me these alerts</p>
-                  <p className="text-[13px] text-muted-foreground">Also send alerts to your cell by SMS</p>
+                  <p className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>Text me these alerts</p>
+                  <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>Also send alerts to your cell by SMS</p>
                 </div>
                 <Switch
+                  label="Text me these alerts"
+                  labelHidden
                   checked={prefs.sms}
-                  onCheckedChange={(v) => save({ ...prefs, sms: v }, { notify_sms: v })}
-                  aria-label="Text me these alerts"
+                  onChange={(e) => save({ ...prefs, sms: e.target.checked }, { notify_sms: e.target.checked })}
                 />
               </div>
             </>
           ) : (
             <>
               <RowDivider inset={false} />
-              <p className="px-4 py-4 text-[13px] text-muted-foreground">
+              <p className="px-4 py-4 text-[13px]" style={{ color: 'var(--a-text-2)' }}>
                 No broker profile found for {email}. Notification settings are only available for active brokers.
               </p>
             </>
@@ -233,15 +262,15 @@ export default function MobileSettingsScreen({
         <div className="h-4" />
 
         {/* ── Support / links section ── */}
-        <div className="bg-card">
+        <div style={SECTION_STYLE}>
           <a href={`mailto:${CONTACT.email.primary}?subject=CRM%20bug%20report`} className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-2">
-            <span className="text-base text-foreground">Report a bug</span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="text-base" style={{ color: 'var(--a-text)' }}>Report a bug</span>
+            <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--a-text-2)' }} aria-hidden />
           </a>
           <RowDivider inset={false} />
           <a href={`mailto:${CONTACT.email.primary}`} className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-2">
-            <span className="text-base text-foreground">Support</span>
-            <span className="shrink-0 text-[13px]" style={{ color: 'var(--console-info)' }}>{CONTACT.email.primary}</span>
+            <span className="text-base" style={{ color: 'var(--a-text)' }}>Support</span>
+            <span className="shrink-0 text-[13px]" style={{ color: 'var(--a-accent)' }}>{CONTACT.email.primary}</span>
           </a>
           {broker ? (
             <>
@@ -251,54 +280,58 @@ export default function MobileSettingsScreen({
                 onClick={() => setSigOpen(true)}
                 className="flex min-h-[52px] w-full items-center justify-between gap-3 px-4 py-2 text-left"
               >
-                <span className="text-base text-foreground">Email signature</span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="text-base" style={{ color: 'var(--a-text)' }}>Email signature</span>
+                <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--a-text-2)' }} aria-hidden />
               </button>
             </>
           ) : null}
           <RowDivider inset={false} />
           <Link href="/admin/crm/settings" className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-2">
-            <span className="text-base text-foreground">CRM settings</span>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="text-base" style={{ color: 'var(--a-text)' }}>CRM settings</span>
+            <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--a-text-2)' }} aria-hidden />
           </Link>
           {role === 'superuser' ? (
             <>
               <RowDivider inset={false} />
               <Link href="/admin/crm/settings/company" className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-2">
-                <span className="text-base text-foreground">Company settings</span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="text-base" style={{ color: 'var(--a-text)' }}>Company settings</span>
+                <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--a-text-2)' }} aria-hidden />
               </Link>
             </>
           ) : null}
         </div>
 
-        {error ? <p className="px-4 py-3 text-[13px] text-destructive">{error}</p> : null}
+        {error ? <p className="px-4 py-3 text-[13px]" style={{ color: 'var(--a-danger)' }}>{error}</p> : null}
 
         {/* Bottom safe-area gap */}
         <div className="h-21 pb-[env(safe-area-inset-bottom)]" />
       </div>
 
       {/* ── Email signature editor sheet ── */}
-      <Sheet open={sigOpen} onOpenChange={setSigOpen}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 rounded-t-2xl px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
-          <SheetTitle className="text-base">Email signature</SheetTitle>
-          <p className="mt-1 text-[13px] text-muted-foreground">
-            Used as your signature on emails you send from the CRM. Leave blank to use
-            the standard Ryan Realty signature. Plain text only.
-          </p>
-          <Textarea
-            value={signature}
-            onChange={(e) => setSignature(e.target.value)}
-            placeholder={`${displayName}\nRyan Realty · ${CONTACT.phoneDirect} · ${BRAND.domain}`}
-            rows={5}
-            maxLength={4000}
-            className="mt-3 resize-y font-mono text-sm"
-          />
-          <p className="mt-1 text-right text-xs text-muted-foreground">{signature.length}/4,000</p>
-          <Button type="button" onClick={saveSignature} className="mt-3 w-full">
+      <Sheet
+        open={sigOpen}
+        onClose={() => setSigOpen(false)}
+        title="Email signature"
+        description="Used as your signature on emails you send from the CRM. Leave blank to use the standard Ryan Realty signature. Plain text only."
+      >
+        <textarea
+          className="av2-input w-full"
+          aria-label="Email signature"
+          value={signature}
+          onChange={(e) => setSignature(e.target.value)}
+          placeholder={`${displayName}\nRyan Realty · ${CONTACT.phoneDirect} · ${BRAND.domain}`}
+          rows={5}
+          maxLength={4000}
+          style={{ fontFamily: 'var(--a-font-mono)' }}
+        />
+        <p className="text-right text-xs" style={{ color: 'var(--a-text-2)' }}>{signature.length}/4,000</p>
+        {/* The sheet's own padding stops at the viewport edge; the old bottom
+            sheet reserved the home-indicator inset, so keep that reserve here. */}
+        <div className="pb-[env(safe-area-inset-bottom)]">
+          <Button type="button" onClick={saveSignature} className="w-full">
             Save signature
           </Button>
-        </SheetContent>
+        </div>
       </Sheet>
     </div>
   )

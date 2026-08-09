@@ -4,6 +4,10 @@
  * Owned by PersonWorkspace (spec-03 RC3). Renders at < md and under
  * ?view=mobile (390px verification frame). Server module — receives already-
  * fetched data + bound server actions; no data fetching of its own.
+ *
+ * 11F: on the LOCKED admin v2 language. This file is data mapping, so the only
+ * presentation it owns is the SendPanel band above the Info tab — its fill is
+ * var(--a-surface) now instead of the shadcn semantic class.
  */
 
 import { formatDate } from '@/lib/format/date'
@@ -246,7 +250,11 @@ export function MobileLeadDetail({
       activityTab={<MobileActivityTab rows={activityRows} />}
       infoTab={
         <>
-          {sendCenter ? <div className="bg-card px-4 pb-1 pt-3">{sendCenter}</div> : null}
+          {sendCenter ? (
+            <div className="px-4 pb-1 pt-3" style={{ background: 'var(--a-surface)' }}>
+              {sendCenter}
+            </div>
+          ) : null}
           <MobileInfoTab
           personId={person.id}
           personName={displayName}

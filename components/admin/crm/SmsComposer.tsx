@@ -7,6 +7,32 @@
  *
  * MergeFieldInserter: click a token in the dropdown to insert it at the cursor
  * position in the body textarea.
+ *
+ * ── Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY. This is the G50 SMS chokepoint ci:composer-discipline
+ * requires of every text-send surface, so the props, the submit guard, the
+ * idempotency-key rotation, the recipient split, the segment maths and every
+ * posted field name are byte-for-byte what they were.
+ *
+ * Three notes on HOW the swap was done, because each one is a trap:
+ *  - The chat-bar textarea is a RAW control carrying tokens inline, not
+ *    `av2-input` and not TextAreaField. It sits INSIDE the bar, which owns the
+ *    border and the background; painting `av2-input` on it would draw a second
+ *    frame and put `var(--a-bg)` on `var(--a-bg)`. The font SIZE stays a pair
+ *    of utilities (`text-base md:text-sm`) because it is responsive — iOS
+ *    Safari zooms the page for a focused control under 16px — and an inline
+ *    fontSize would outrank the breakpoint. Same call, same reasons, as the
+ *    body box in EmailBodyEditor.
+ *  - The recipient toggles were shadcn Buttons whose ON member carried the
+ *    primary variant. They are FilterChips now, so the state is ANNOUNCED
+ *    (aria-pressed) rather than implied by fill — the call already recorded in
+ *    EmailBodyEditor. The unselected members had a hover, so the chips carry
+ *    one; it is a utility, never an inline value, which would outrank any
+ *    stylesheet hover rule.
+ *  - The round send arrow keeps its 36px circle through INLINE GEOMETRY only.
+ *    `.av2-btn` sets radius and padding unlayered, so Tailwind shape utilities
+ *    would be silently dead; setting nothing but width/height/padding/radius
+ *    leaves the button's hover, pressed and focus states to the stylesheet.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFormStatus } from 'react-dom'
@@ -23,9 +49,7 @@ import {
   useComposerAttachments,
 } from '@/components/admin/crm/ComposerAttachments'
 import { MMS_ACCEPT_ATTR } from '@/lib/crm/attachment-limits'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
+import { Button, FilterChip, ToolbarCheck } from '@/components/admin/v2'
 
 function segmentInfo(text: string): { chars: number; segments: number } {
   const gsm = /^[A-Za-z0-9 @£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!"#%&'()*+,\-./:;<=>?¡ÄÖÑܧ¿äöñüà\n\r^{}\\[~\]|€]*$/.test(text)
@@ -64,11 +88,11 @@ function SmsSendButton({ disabled, onSettled }: { disabled: boolean; onSettled: 
   return (
     <Button
       type="submit"
-      size="icon"
       disabled={disabled || pending}
       aria-busy={pending}
       aria-label={pending ? 'Sending' : 'Send text'}
-      className="h-9 w-9 shrink-0 rounded-full"
+      className="shrink-0"
+      style={{ width: 36, height: 36, minHeight: 36, padding: 0, borderRadius: '50%' }}
     >
       {pending ? (
         <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
@@ -183,35 +207,38 @@ export function SmsComposer(props: {
           add them to the same text. No typing needed. */}
       {recipients.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-0.5 text-xs font-medium text-muted-foreground">To</span>
+          <span className="mr-0.5 text-xs font-medium" style={{ color: 'var(--a-text-2)' }}>To</span>
           {recipients.map((r) => {
             const isPrimary = r.personId === props.primaryPersonId
             const key = recipKey(r)
             const on = isPrimary || selectedExtra.has(key)
             return (
-              <Button
+              <FilterChip
                 key={key}
-                type="button"
-                size="sm"
-                variant={on ? 'default' : 'outline'}
+                pressed={on}
                 disabled={isPrimary}
                 onClick={() => toggleExtra(key)}
-                className="h-7 rounded-full px-3 text-xs disabled:opacity-100"
+                // The lead's own chip is disabled and must not dim under the
+                // pointer — the shadcn original spent `disabled:opacity-100` on
+                // the same problem.
+                className={isPrimary ? undefined : 'hover:opacity-80'}
                 title={r.phone}
               >
                 {on && !isPrimary ? '✓ ' : ''}{r.name}{r.relation !== 'Primary' ? ` · ${r.relation}` : ''}
-              </Button>
+              </FilterChip>
             )
           })}
           <input type="hidden" name="recipientIds" value={extraIds} />
           <input type="hidden" name="recipientPhones" value={extraPhones} />
           {selectedRecips.length > 0 ? (
-            <span className="basis-full text-[11px] text-muted-foreground">Replies to {selectedRecips.length + 1} people</span>
+            <span className="basis-full text-[11px]" style={{ color: 'var(--a-text-2)' }}>
+              Replies to {selectedRecips.length + 1} people
+            </span>
           ) : null}
         </div>
       ) : null}
       {unresolved.length > 0 ? (
-        <p className="px-1 text-xs font-medium text-warning">
+        <p className="px-1 text-xs font-medium" style={{ color: 'var(--a-warn)' }}>
           Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
         </p>
       ) : null}
@@ -219,7 +246,10 @@ export function SmsComposer(props: {
       <AttachmentChips items={attachments.items} onRemove={attachments.remove} />
 
       {/* FUB chat input bar: insert-field · paperclip · message · round send arrow. */}
-      <div className="flex items-end gap-1.5 rounded-3xl border border-input bg-background py-1.5 pl-1.5 pr-1.5">
+      <div
+        className="flex items-end gap-1.5 rounded-3xl py-1.5 pl-1.5 pr-1.5"
+        style={{ border: '1px solid var(--a-border)', background: 'var(--a-bg)' }}
+      >
         {/* Merge fields — dropdown behind the braces icon so the bar stays clean. */}
         {!props.hideMergeFields ? (
           <MergeFieldInserter channel="sms" customFields={props.customFields} onInsert={handleInsertToken} iconOnly />
@@ -229,13 +259,13 @@ export function SmsComposer(props: {
             attachments={attachments}
             accept={MMS_ACCEPT_ATTR}
             ariaLabel="Attach images or PDFs"
-            className="h-9 w-9 shrink-0 rounded-full"
             iconClassName="h-5 w-5"
           />
         ) : null}
-        <Textarea
+        <textarea
           ref={bodyRef}
           name="body"
+          aria-label="Text message"
           rows={1}
           placeholder="Text message · SMS"
           value={body}
@@ -243,7 +273,10 @@ export function SmsComposer(props: {
           // text-base below md: iOS Safari auto-zooms the whole page when a
           // focused input's font is under 16px — the 2026-07-15 mobile audit's
           // "everything huge with the keyboard open" screenshot.
-          className="max-h-32 min-h-9 flex-1 resize-none self-center border-0 bg-transparent px-1 py-1.5 text-base shadow-none focus-visible:ring-0 md:text-sm"
+          // outline-none keeps the pre-migration look: the BAR is the frame, and
+          // a text box announces focus with its caret.
+          className="max-h-32 min-h-9 flex-1 resize-none self-center border-0 px-1 py-1.5 text-base focus-visible:outline-none md:text-sm"
+          style={{ background: 'transparent', color: 'var(--a-text)', fontFamily: 'var(--a-font)' }}
         />
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
         <SmsSendButton
@@ -267,27 +300,25 @@ export function SmsComposer(props: {
       {/* Quiet-hours override + live segment count, quiet under the bar. */}
       <div className="flex items-center justify-between gap-3 px-1">
         {!props.hideQuietHours ? (
-          <label className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
-            <Checkbox id="overrideQuietHours" name="overrideQuietHours" value="1" />
-            Send anyway (quiet hours)
-          </label>
+          <ToolbarCheck
+            id="overrideQuietHours"
+            name="overrideQuietHours"
+            value="1"
+            label="Send anyway (quiet hours)"
+          />
         ) : (
           <span />
         )}
         <div className="flex shrink-0 items-center gap-3">
           {/* Low-prominence: keep a broker-tweaked text without leaving the flow. */}
-          {body.trim() ? (
-            <SaveAsTemplateButton channel="sms" body={body} className="h-7 px-2 text-xs" />
-          ) : null}
+          {body.trim() ? <SaveAsTemplateButton channel="sms" body={body} /> : null}
           {props.saveDraftAction ? (
             <Button
               type="submit"
               formAction={props.saveDraftAction}
               data-composer-draft=""
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               disabled={!body.trim()}
-              className="h-7 px-2 text-xs"
             >
               Save draft
             </Button>
@@ -296,16 +327,14 @@ export function SmsComposer(props: {
             <Button
               type="submit"
               formAction={props.sendAndCloseAction}
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               disabled={!body.trim()}
-              className="h-7 px-2 text-xs"
             >
               Send &amp; Close
             </Button>
           ) : null}
           {body.trim() ? (
-            <span className="text-xs tabular-nums text-muted-foreground">
+            <span className="text-xs tabular-nums" style={{ color: 'var(--a-text-2)' }}>
               {chars} · {segments} {segments === 1 ? 'segment' : 'segments'}
             </span>
           ) : null}

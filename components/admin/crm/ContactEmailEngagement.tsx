@@ -6,17 +6,27 @@
  * email_events row for this contact (CLAUDE.md §0).
  *
  * Server component. Empty state when no email events exist yet. Mobile-first.
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Card -> av2-pane, Badge -> StateWord (deliverability flags are system states,
+ * not broker-typed data), every shadcn semantic class -> its var(--a-*) token.
  */
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StateWord } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
 import type { ContactEmailEngagement as Engagement } from '@/lib/data/crm/getContactEmailEngagement'
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-border px-3 py-2">
-      <div className="text-lg font-semibold tabular-nums text-foreground">{value}</div>
-      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+    <div className="rounded-lg px-3 py-2" style={{ border: '1px solid var(--a-border)' }}>
+      <div className="tabular-nums" style={{ fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' }}>
+        {value}
+      </div>
+      <div
+        className="font-medium uppercase tracking-wide"
+        style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+      >
+        {label}
+      </div>
     </div>
   )
 }
@@ -25,13 +35,11 @@ export default function ContactEmailEngagement({ engagement }: { engagement: Eng
   const { sent, opens, clicks, bounces, complaints, unsubscribes, lastOpenAt, lastClickAt, hasAny } = engagement
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Email engagement</CardTitle>
-      </CardHeader>
-      <CardContent className="p-4 pt-0 sm:p-5 sm:pt-0">
+    <div className="av2-pane">
+      <div style={{ fontSize: 'var(--a-text-lg)', fontWeight: 500, color: 'var(--a-text)' }}>Email engagement</div>
+      <div>
         {!hasAny ? (
-          <p className="text-sm text-muted-foreground">No email activity recorded yet.</p>
+          <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>No email activity recorded yet.</p>
         ) : (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -42,15 +50,18 @@ export default function ContactEmailEngagement({ engagement }: { engagement: Eng
 
             {/* Most-recent engagement timestamps */}
             {(lastOpenAt || lastClickAt) ? (
-              <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
+              <div
+                className="flex flex-wrap gap-x-5 gap-y-1"
+                style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+              >
                 {lastOpenAt ? (
                   <span>
-                    Last open <span className="tabular-nums text-foreground">{formatDate(lastOpenAt)}</span>
+                    Last open <span className="tabular-nums" style={{ color: 'var(--a-text)' }}>{formatDate(lastOpenAt)}</span>
                   </span>
                 ) : null}
                 {lastClickAt ? (
                   <span>
-                    Last click <span className="tabular-nums text-foreground">{formatDate(lastClickAt)}</span>
+                    Last click <span className="tabular-nums" style={{ color: 'var(--a-text)' }}>{formatDate(lastClickAt)}</span>
                   </span>
                 ) : null}
               </div>
@@ -60,25 +71,25 @@ export default function ContactEmailEngagement({ engagement }: { engagement: Eng
             {(bounces > 0 || complaints > 0 || unsubscribes > 0) ? (
               <div className="flex flex-wrap gap-1.5">
                 {bounces > 0 ? (
-                  <Badge variant="destructive" className="text-xs">
+                  <StateWord state="down">
                     {bounces} {bounces === 1 ? 'bounce' : 'bounces'}
-                  </Badge>
+                  </StateWord>
                 ) : null}
                 {complaints > 0 ? (
-                  <Badge variant="destructive" className="text-xs">
+                  <StateWord state="down">
                     {complaints} {complaints === 1 ? 'complaint' : 'complaints'}
-                  </Badge>
+                  </StateWord>
                 ) : null}
                 {unsubscribes > 0 ? (
-                  <Badge variant="outline" className="text-xs">
+                  <StateWord state="waiting">
                     {unsubscribes === 1 ? 'unsubscribed' : `${unsubscribes} unsubscribes`}
-                  </Badge>
+                  </StateWord>
                 ) : null}
               </div>
             ) : null}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

@@ -3,11 +3,11 @@
 /**
  * MobileCalendarScreen — the §29 Screen A mobile Calendar (mob-08), < md.
  *
- * Regions top → bottom per A.2: navy header (broker avatar · month title +
- * caret · bell · search), the navy monthly grid (MobileMonthGrid), the white
+ * Regions top → bottom per A.2: the accent header (broker avatar · month title
+ * + caret · bell · search), the accent monthly grid (MobileMonthGrid), the
  * scrollable task list (sticky date section headers + CalendarTaskRow /
- * CalendarReminderRow), the navy FAB, and the global CrmMobileTabBar (§23
- * shell — rendered by ConsoleShell, not here).
+ * CalendarReminderRow), the FAB, and the global CrmMobileTabBar (§23 shell —
+ * rendered by ConsoleShell, not here).
  *
  * Data: the same unified CalEvent window the desktop §09 CalendarView renders
  * (appointments + open tasks + deal closings — all real crm_* rows). Tapping
@@ -18,16 +18,18 @@
  * FAB → Screen D.2 type picker ("Appointment" / "Task") → the existing
  * AppointmentSheet (full §2.6 field set) or MobileTaskCreateSheet (D.3).
  * Tapping a reminder row for an appointment opens it for edit.
+ *
+ * Admin v2 (11F): the navy/white phone chrome becomes var(--a-accent) filled
+ * with var(--a-btn-fg) — the pairing every solid control in the language uses,
+ * and the only one that survives [data-theme="dark"] — and the shadcn Sheet,
+ * Button, Input and Label give way to the v2 barrel.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Bell, Calendar as CalendarIcon, CheckSquare, ChevronDown, ChevronUp, Plus, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Button, IconButton, Sheet, TextField } from '@/components/admin/v2'
 import { MONTH_FULL, eventsByDate, shiftMonths, type CalEvent } from '@/lib/crm/calendar'
 import { BROKER_HEADSHOTS } from '@/components/admin/shared/mobile/task-type-icons'
 import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
@@ -39,6 +41,39 @@ import type { AppointmentRow, AppointmentType, AppointmentOutcome } from '@/lib/
 import type { CrmTaskType } from '@/lib/data/crm/getTaskQueue'
 
 type Result = { ok: boolean; error?: string }
+
+const HAIRLINE = '1px solid var(--a-border)'
+
+/** A control sitting ON the accent header. `background: transparent` is
+ *  deliberate: none of these had a hover state before, and .av2-iconbtn's
+ *  default hover paints var(--a-inset) — a pale grey that has no business on
+ *  the accent fill. Everything else is geometry .av2-iconbtn would otherwise
+ *  impose (admin-v2.css is UNLAYERED, so it outranks Tailwind utilities). */
+const HEADER_CONTROL: CSSProperties = {
+  width: 'auto',
+  height: 'auto',
+  background: 'transparent',
+  color: 'var(--a-btn-fg)',
+}
+
+/** One D.2 type-picker row: full width, left-aligned, hairline-separated. */
+const PICKER_ROW: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-start',
+  gap: 12,
+  width: '100%',
+  height: 52,
+  minHeight: 52,
+  border: 'none',
+  borderBottom: HAIRLINE,
+  borderRadius: 0,
+  padding: '0 4px',
+  textAlign: 'left',
+  fontSize: 16,
+  fontWeight: 400,
+  color: 'var(--a-text)',
+}
 
 /** "June 22nd" ordinal per the A.5 section-header format. */
 function ordinal(n: number): string {
@@ -167,40 +202,40 @@ export default function MobileCalendarScreen({
   }
 
   return (
-    <div ref={rootRef} className="flex min-h-[calc(100dvh-3.5rem)] flex-col bg-card">
-      {/* ── A.3 nav / header bar (navy) ── */}
-      <div className="flex h-[56px] shrink-0 items-center bg-primary px-3">
+    <div ref={rootRef} className="flex min-h-[calc(100dvh-3.5rem)] flex-col" style={{ background: 'var(--a-surface)' }}>
+      {/* ── A.3 nav / header bar (accent) ── */}
+      <div className="flex h-[56px] shrink-0 items-center px-3" style={{ background: 'var(--a-accent)' }}>
         <Link href="/admin/settings" aria-label="Your settings" className="shrink-0">
-          <CrmAvatar name={brokerName} src={BROKER_HEADSHOTS[currentBrokerSlug] ?? null} size={36} className="bg-white/20" />
+          <CrmAvatar name={brokerName} src={BROKER_HEADSHOTS[currentBrokerSlug] ?? null} size={36} />
         </Link>
-        <button
-          type="button"
-          className="flex flex-1 items-center justify-center gap-1"
+        <IconButton
+          label="Toggle month view"
+          className="flex-1"
+          style={{ ...HEADER_CONTROL, gap: 4 }}
           onClick={() => setCollapsed((v) => !v)}
-          aria-label="Toggle month view"
         >
-          <span className="text-[20px] font-semibold text-white">{monthLabelName}</span>
+          <span className="text-[20px] font-semibold" style={{ color: 'var(--a-btn-fg)' }}>{monthLabelName}</span>
           {collapsed
-            ? <ChevronDown className="h-[14px] w-[14px] text-white" aria-hidden />
-            : <ChevronUp className="h-[14px] w-[14px] text-white" aria-hidden />}
-        </button>
+            ? <ChevronDown className="h-[14px] w-[14px]" style={{ color: 'var(--a-btn-fg)' }} aria-hidden />
+            : <ChevronUp className="h-[14px] w-[14px]" style={{ color: 'var(--a-btn-fg)' }} aria-hidden />}
+        </IconButton>
         <div className="flex shrink-0 items-center gap-4">
           <Link href="/admin/crm/activity" aria-label="Notifications">
-            <Bell className="h-[22px] w-[22px] text-white" strokeWidth={1.8} />
+            <Bell className="h-[22px] w-[22px]" style={{ color: 'var(--a-btn-fg)' }} strokeWidth={1.8} />
           </Link>
           <Link href="/admin/crm" aria-label="Search">
-            <Search className="h-[22px] w-[22px] text-white" strokeWidth={1.8} />
+            <Search className="h-[22px] w-[22px]" style={{ color: 'var(--a-btn-fg)' }} strokeWidth={1.8} />
           </Link>
         </div>
       </div>
 
       {/* sr-only month nav for keyboard/AT users (touch users swipe per A.4) */}
       <div className="sr-only">
-        <button type="button" onClick={() => swipeMonth(-1)}>Previous month</button>
-        <button type="button" onClick={() => swipeMonth(1)}>Next month</button>
+        <Button variant="quiet" onClick={() => swipeMonth(-1)}>Previous month</Button>
+        <Button variant="quiet" onClick={() => swipeMonth(1)}>Next month</Button>
       </div>
 
-      {/* ── A.4 monthly grid (navy) ── */}
+      {/* ── A.4 monthly grid (accent) ── */}
       <MobileMonthGrid
         monthKey={monthKey}
         selectedDate={selectedDate}
@@ -210,10 +245,10 @@ export default function MobileCalendarScreen({
         onSwipeMonth={swipeMonth}
       />
 
-      {/* ── A.5 scrollable task list (white) ── */}
-      <div className="flex-1 bg-card pb-28">
+      {/* ── A.5 scrollable task list ── */}
+      <div className="flex-1 pb-28" style={{ background: 'var(--a-surface)' }}>
         {dayKeys.length === 0 ? (
-          <p className="px-4 py-8 text-center text-[14px] text-muted-foreground">
+          <p className="px-4 py-8 text-center text-[14px]" style={{ color: 'var(--a-text-2)' }}>
             Nothing scheduled this month.
           </p>
         ) : (
@@ -259,42 +294,50 @@ export default function MobileCalendarScreen({
       </div>
 
       {/* ── A.7 FAB → D.2 type picker ── */}
-      <button
-        type="button"
-        aria-label="Add appointment or task"
+      <IconButton
+        label="Add appointment or task"
         onClick={() => setTypePickerOpen(true)}
-        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
-        style={{ boxShadow: '0 4px 8px rgba(16,39,66,0.30)' }}
+        className="fixed bottom-20 right-4 z-40 md:hidden"
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 999,
+          background: 'var(--a-accent)',
+          color: 'var(--a-btn-fg)',
+          boxShadow: 'var(--a-shadow-overlay)',
+        }}
       >
         <Plus className="h-6 w-6" />
-      </button>
+      </IconButton>
 
       {/* D.2 type picker sheet */}
-      <Sheet open={typePickerOpen} onOpenChange={setTypePickerOpen}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 rounded-t-2xl p-0">
-          <SheetTitle className="px-4 pb-2 pt-4 text-[16px] font-semibold text-foreground">
-            What would you like to add?
-          </SheetTitle>
-          <button
-            type="button"
-            className="flex h-[52px] w-full items-center gap-3 border-b border-border px-4 text-left active:bg-secondary"
-            onClick={() => { setTypePickerOpen(false); setEditAppt(null); setApptSheetOpen(true) }}
-          >
-            <CalendarIcon className="h-5 w-5 text-primary" aria-hidden />
-            <span className="text-[16px] text-foreground">Appointment</span>
-          </button>
-          <button
-            type="button"
-            className="flex h-[52px] w-full items-center gap-3 border-b border-border px-4 text-left active:bg-secondary"
-            onClick={() => { setTypePickerOpen(false); setTaskSheetOpen(true) }}
-          >
-            <CheckSquare className="h-5 w-5 text-primary" aria-hidden />
-            <span className="text-[16px] text-foreground">Task</span>
-          </button>
-          <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <Button variant="ghost" className="w-full" onClick={() => setTypePickerOpen(false)}>Cancel</Button>
-          </div>
-        </SheetContent>
+      <Sheet
+        open={typePickerOpen}
+        onClose={() => setTypePickerOpen(false)}
+        title="What would you like to add?"
+      >
+        {/* No inline background on either row: .av2-btn--quiet supplies the
+            surface, its :hover the tint and its :active the press the shadcn
+            `active:bg-secondary` used to carry. */}
+        <Button
+          variant="quiet"
+          style={PICKER_ROW}
+          onClick={() => { setTypePickerOpen(false); setEditAppt(null); setApptSheetOpen(true) }}
+        >
+          <CalendarIcon className="h-5 w-5" style={{ color: 'var(--a-accent)' }} aria-hidden />
+          <span className="text-[16px]">Appointment</span>
+        </Button>
+        <Button
+          variant="quiet"
+          style={PICKER_ROW}
+          onClick={() => { setTypePickerOpen(false); setTaskSheetOpen(true) }}
+        >
+          <CheckSquare className="h-5 w-5" style={{ color: 'var(--a-accent)' }} aria-hidden />
+          <span className="text-[16px]">Task</span>
+        </Button>
+        <div className="pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button variant="quiet" className="w-full" onClick={() => setTypePickerOpen(false)}>Cancel</Button>
+        </div>
       </Sheet>
 
       {/* Create / edit appointment — the existing full-field sheet */}
@@ -324,16 +367,23 @@ export default function MobileCalendarScreen({
       />
 
       {/* Reschedule sheet (A.5 swipe quick action) */}
-      <Sheet open={reschedId != null} onOpenChange={(v) => { if (!v) { setReschedId(null); setReschedAt('') } }}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="gap-3 rounded-t-2xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <SheetTitle className="text-[16px] font-semibold text-foreground">Reschedule task</SheetTitle>
-          <Label className="text-[12px] font-medium text-muted-foreground">New due date & time</Label>
-          <Input type="datetime-local" value={reschedAt} onChange={(e) => setReschedAt(e.target.value)} className="h-11" />
-          {reschedErr ? <p className="text-[13px] text-destructive">{reschedErr}</p> : null}
-          <Button type="button" className="h-11 w-full" disabled={!reschedAt} onClick={submitReschedule}>
+      <Sheet
+        open={reschedId != null}
+        onClose={() => { setReschedId(null); setReschedAt('') }}
+        title="Reschedule task"
+      >
+        <TextField
+          label="New due date & time"
+          type="datetime-local"
+          value={reschedAt}
+          onChange={(e) => setReschedAt(e.target.value)}
+        />
+        {reschedErr ? <p className="text-[13px]" style={{ color: 'var(--a-danger)' }}>{reschedErr}</p> : null}
+        <div className="pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Button className="h-11 w-full" disabled={!reschedAt} onClick={submitReschedule}>
             Save
           </Button>
-        </SheetContent>
+        </div>
       </Sheet>
     </div>
   )

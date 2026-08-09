@@ -4,6 +4,11 @@
  * Uncached per-request reads (no revalidateTag). Isolates viewed/saved homes,
  * behavior, email engagement, newsletter history, and saved-search lists from
  * the critical send + conversation path.
+ *
+ * 11F: on the LOCKED admin v2 language. PRESENTATION ONLY — same reads, same
+ * actions, same strings. The "Liked" marker is a plain token-styled span rather
+ * than StateWord: .av2-state uppercases, and this marker sits on a listing card
+ * where the surrounding words are sentence case.
  */
 
 import { deleteSavedSearchForm, setReportSubsForm } from '@/app/admin/(protected)/crm/[id]/form-actions'
@@ -15,7 +20,7 @@ import ContactDeliveryPanel from '@/components/admin/crm/ContactDeliveryPanel'
 import { ContactListingAlertsPanel } from '@/components/admin/crm/ContactListingAlertsPanel'
 import ViewedHomeCard from '@/components/admin/crm/ViewedHomeCard'
 import { StatusPill } from '@/components/console/StatusPill'
-import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/admin/v2'
 import { getListingAlertsForLead, getViewedListingsForLead } from '@/lib/data'
 import { getContactSavedHomes, buildHomesPanelUnion } from '@/lib/data/crm/getContactSavedHomes'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
@@ -84,16 +89,26 @@ export async function PersonEngagementRegion({
       <ContactBehaviorPanel summary={behaviorSummary} />
       {homesPanel.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          <p
+            className="text-xs font-semibold uppercase tracking-wide"
+            style={{ color: 'var(--a-text-2)' }}
+          >
             Homes viewed &amp; saved ({homesPanel.length})
           </p>
           {homesPanel.slice(0, 4).map((l) => (
             <div key={l.listingKey} className="relative">
               <ViewedHomeCard home={l} />
               {l.consumerSources?.includes('liked') ? (
-                <Badge variant="secondary" className="absolute right-2 top-2">
+                <span
+                  className="absolute right-2 top-2 rounded-md px-2 py-0.5 text-xs font-medium"
+                  style={{
+                    background: 'var(--a-inset)',
+                    color: 'var(--a-text)',
+                    border: '1px solid var(--a-border)',
+                  }}
+                >
                   Liked
-                </Badge>
+                </span>
               ) : null}
             </div>
           ))}
@@ -104,20 +119,24 @@ export async function PersonEngagementRegion({
       <ContactDeliveryPanel personId={personId} email={primaryEmail} />
       <ContactListingAlertsPanel alerts={contactAlerts} />
       <div className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <p
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: 'var(--a-text-2)' }}
+        >
           Saved searches ({savedSearches.length})
         </p>
         {savedSearches.slice(0, 4).map((s) => {
           const origin = s.origin ?? 'user'
           const originTone = origin === 'broker' ? 'info' : origin === 'system' ? 'warning' : 'neutral'
           return (
-            <div key={s.id} className="rounded-lg border border-border px-2.5 py-2">
+            <div
+              key={s.id}
+              className="rounded-lg px-2.5 py-2"
+              style={{ border: '1px solid var(--a-border)' }}
+            >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <span
-                    className="truncate text-sm font-medium"
-                    style={{ color: 'var(--console-info-strong)' }}
-                  >
+                  <span className="truncate text-sm font-medium" style={{ color: 'var(--a-accent)' }}>
                     {describeSearch(s.filters)}
                   </span>
                   <StatusPill tone={originTone} label={origin} />
@@ -125,12 +144,12 @@ export async function PersonEngagementRegion({
                 <form action={deleteSavedSearchForm}>
                   <input type="hidden" name="personId" value={personId} />
                   <input type="hidden" name="id" value={s.id} />
-                  <button
-                    type="submit"
-                    className="rounded px-1 py-0.5 text-xs text-muted-foreground hover:text-destructive"
-                  >
+                  {/* av2-textlink is the barrel's stripped-Button treatment for an
+                      inline text action; it keeps this row compact and carries its
+                      own hover (underline) plus the quiet button's focus ring. */}
+                  <Button variant="quiet" className="av2-textlink" type="submit">
                     Remove
-                  </button>
+                  </Button>
                 </form>
               </div>
             </div>

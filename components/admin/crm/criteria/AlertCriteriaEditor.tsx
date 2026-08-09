@@ -17,6 +17,16 @@
  * extra cities, ...) are preserved untouched — the sentence acknowledges them
  * as "plus N more filters". The parent owns persistence; this component never
  * writes anywhere.
+ *
+ * Admin v2 (11F): off shadcn and onto the locked admin language. Each Select
+ * -> ToolbarSelect (a native select with its groups as <optgroup>, which the
+ * platform makes accessible for free); each Input+Label pair -> TextField,
+ * whose own label element carries the htmlFor association the explicit ids
+ * used to; each Checkbox -> ToolbarCheck, which owns the wrapping label; the two
+ * disclosures (the price Popover, the "More filters" Collapsible) -> native
+ * <details>, the shape the locked language uses wherever a panel hangs off a
+ * trigger. Triggers wear the av2-btn CLASSES rather than an inline background
+ * so their :hover and [aria-expanded] states still fire.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -30,19 +40,7 @@ import { PROPERTY_TYPES } from '@/lib/property-type'
 import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
 import { countMatchingListings } from '@/app/actions/criteria-count'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Collapsible, CollapsibleContent, CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-  Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { TextField, ToolbarCheck, ToolbarSelect } from '@/components/admin/v2'
 import {
   alertFrequencyPhrase,
   listNeighborhoodOptions,
@@ -79,8 +77,29 @@ const FREQUENCY_OPTIONS: ReadonlyArray<{ value: AlertFrequency; label: string }>
 
 const MIN_COUNT_OPTIONS = ['any', '1', '2', '3', '4', '5'] as const
 
-/** Layout-only sizing so every inline control clears 44 px on touch screens. */
-const TOUCH_TRIGGER = 'min-h-11 sm:min-h-8'
+/**
+ * Layout-only sizing so every inline control clears 44 px on touch screens. An
+ * inline style rather than a `min-h-11` class: admin-v2.css is UNLAYERED, so
+ * .av2-input--bar's 32px min-height outranks any Tailwind utility no matter its
+ * specificity (the @layer lesson recorded in admin-v2.css itself).
+ */
+const TOUCH_TRIGGER = { minHeight: 'var(--a-touch)' } as const
+
+/** A panel hanging off a <details> summary (was PopoverContent). */
+const DISCLOSURE_PANEL = {
+  position: 'absolute',
+  left: 0,
+  top: '100%',
+  marginTop: 4,
+  zIndex: 30,
+  width: 288,
+  maxWidth: '90vw',
+  background: 'var(--a-bg)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-md)',
+  boxShadow: 'var(--a-shadow-overlay)',
+  padding: 'var(--a-s3)',
+} as const
 
 const AMENITY_TOGGLES: ReadonlyArray<{ key: string; label: string }> = [
   { key: 'hasPool', label: 'Pool' },
@@ -119,6 +138,11 @@ export function AlertCriteriaEditor({
     () => neighborhoodOptions ?? listNeighborhoodOptions(),
     [neighborhoodOptions],
   )
+
+  // A disabled disclosure cannot be a disabled <summary> — the element takes no
+  // such attribute — so it stops taking pointer events and dims, which is what
+  // .av2-btn:disabled does for a real button.
+  const disclosureDisabled = disabled ? { pointerEvents: 'none' as const, opacity: 0.5 } : null
 
   // ---- controlled-update helper: merge a patch over the raw value so every
   // key the editor does not touch survives the edit.
@@ -219,272 +243,257 @@ export function AlertCriteriaEditor({
   return (
     <div className={cn('space-y-3', className)}>
       {/* The sentence */}
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 text-sm text-foreground">
+      <div
+        className="flex flex-wrap items-center gap-x-1.5 gap-y-2"
+        style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}
+      >
         <span>Email me</span>
 
         {frequency !== undefined && onFrequencyChange ? (
-          <Select
+          <ToolbarSelect
+            aria-label="How often to email"
             value={frequency}
-            onValueChange={(v) => onFrequencyChange(v as AlertFrequency)}
+            onChange={(e) => onFrequencyChange(e.target.value as AlertFrequency)}
             disabled={disabled}
+            style={TOUCH_TRIGGER}
           >
-            <SelectTrigger size="sm" className={TOUCH_TRIGGER} aria-label="How often to email">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FREQUENCY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {FREQUENCY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </ToolbarSelect>
         ) : frequency !== undefined ? (
-          <span className="font-medium">{alertFrequencyPhrase(frequency)}</span>
+          <span style={{ fontWeight: 500 }}>{alertFrequencyPhrase(frequency)}</span>
         ) : null}
 
         <span>with</span>
 
-        <Select
+        <ToolbarSelect
+          aria-label="Property type"
           value={propertyType}
-          onValueChange={(v) => update({ propertyType: v === 'all' ? undefined : v })}
+          onChange={(e) => update({ propertyType: e.target.value === 'all' ? undefined : e.target.value })}
           disabled={disabled}
+          style={TOUCH_TRIGGER}
         >
-          <SelectTrigger size="sm" className={TOUCH_TRIGGER} aria-label="Property type">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PROPERTY_TYPES.map(({ value: optionValue, label }) => (
-              <SelectItem key={optionValue || 'all'} value={optionValue || 'all'}>
-                {optionValue ? `${label.toLowerCase()} listings` : 'new listings'}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {PROPERTY_TYPES.map(({ value: optionValue, label }) => (
+            <option key={optionValue || 'all'} value={optionValue || 'all'}>
+              {optionValue ? `${label.toLowerCase()} listings` : 'new listings'}
+            </option>
+          ))}
+        </ToolbarSelect>
 
         <span>in</span>
 
-        <Select value={placeValue} onValueChange={handlePlaceChange} disabled={disabled}>
-          <SelectTrigger size="sm" className={TOUCH_TRIGGER} aria-label="Place">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="anywhere">all of Central Oregon</SelectItem>
-            <SelectGroup>
-              <SelectLabel>Cities</SelectLabel>
-              {cityList.map((name) => (
-                <SelectItem key={`city:${name}`} value={`city:${name}`}>{name}</SelectItem>
-              ))}
-            </SelectGroup>
-            <SelectGroup>
-              <SelectLabel>Neighborhoods and communities</SelectLabel>
-              {neighborhoodList.map((option) => (
-                <SelectItem key={`nbhd:${option.slug}`} value={`nbhd:${option.slug}`}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <ToolbarSelect
+          aria-label="Place"
+          value={placeValue}
+          onChange={(e) => handlePlaceChange(e.target.value)}
+          disabled={disabled}
+          style={TOUCH_TRIGGER}
+        >
+          <option value="anywhere">all of Central Oregon</option>
+          <optgroup label="Cities">
+            {cityList.map((name) => (
+              <option key={`city:${name}`} value={`city:${name}`}>{name}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Neighborhoods and communities">
+            {neighborhoodList.map((option) => (
+              <option key={`nbhd:${option.slug}`} value={`nbhd:${option.slug}`}>
+                {option.label}
+              </option>
+            ))}
+          </optgroup>
+        </ToolbarSelect>
 
         <span>priced</span>
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button size="sm" variant="outline" disabled={disabled} className={TOUCH_TRIGGER}>
-              {priceLabel}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-72">
+        <details style={{ position: 'relative' }}>
+          <summary
+            className="av2-btn av2-btn--quiet"
+            aria-disabled={disabled || undefined}
+            tabIndex={disabled ? -1 : undefined}
+            style={{ ...TOUCH_TRIGGER, ...disclosureDisabled }}
+          >
+            {priceLabel}
+          </summary>
+          <div style={DISCLOSURE_PANEL}>
             <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-1.5">
-                <Label htmlFor="criteria-min-price">Min price</Label>
-                <Input
-                  id="criteria-min-price"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  placeholder="No minimum"
-                  value={numberInputValue(minPrice)}
-                  onChange={(e) => handleNumberChange('minPrice', e.target.value)}
-                  disabled={disabled}
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="criteria-max-price">Max price</Label>
-                <Input
-                  id="criteria-max-price"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  placeholder="No maximum"
-                  value={numberInputValue(maxPrice)}
-                  onChange={(e) => handleNumberChange('maxPrice', e.target.value)}
-                  disabled={disabled}
-                />
-              </div>
+              <TextField
+                label="Min price"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                placeholder="No minimum"
+                value={numberInputValue(minPrice)}
+                onChange={(e) => handleNumberChange('minPrice', e.target.value)}
+                disabled={disabled}
+              />
+              <TextField
+                label="Max price"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                placeholder="No maximum"
+                value={numberInputValue(maxPrice)}
+                onChange={(e) => handleNumberChange('maxPrice', e.target.value)}
+                disabled={disabled}
+              />
             </div>
-          </PopoverContent>
-        </Popover>
+          </div>
+        </details>
 
         <span>with</span>
 
-        <Select
+        <ToolbarSelect
+          aria-label="Minimum beds"
           value={beds}
-          onValueChange={(v) => update({ beds: v === 'any' ? undefined : Number(v) })}
+          onChange={(e) => update({ beds: e.target.value === 'any' ? undefined : Number(e.target.value) })}
           disabled={disabled}
+          style={TOUCH_TRIGGER}
         >
-          <SelectTrigger size="sm" className={TOUCH_TRIGGER} aria-label="Minimum beds">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {MIN_COUNT_OPTIONS.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option === 'any' ? 'any' : `${option}+`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {MIN_COUNT_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option === 'any' ? 'any' : `${option}+`}
+            </option>
+          ))}
+        </ToolbarSelect>
 
         <span>beds and</span>
 
-        <Select
+        <ToolbarSelect
+          aria-label="Minimum baths"
           value={baths}
-          onValueChange={(v) => update({ baths: v === 'any' ? undefined : Number(v) })}
+          onChange={(e) => update({ baths: e.target.value === 'any' ? undefined : Number(e.target.value) })}
           disabled={disabled}
+          style={TOUCH_TRIGGER}
         >
-          <SelectTrigger size="sm" className={TOUCH_TRIGGER} aria-label="Minimum baths">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {MIN_COUNT_OPTIONS.map((option) => (
-              <SelectItem key={option} value={option}>
-                {option === 'any' ? 'any' : `${option}+`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {MIN_COUNT_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option === 'any' ? 'any' : `${option}+`}
+            </option>
+          ))}
+        </ToolbarSelect>
 
         <span>baths</span>
       </div>
 
       {/* More filters */}
-      <Collapsible open={moreOpen} onOpenChange={setMoreOpen}>
-        <CollapsibleTrigger asChild>
-          <Button size="sm" variant="ghost" className="min-h-11 sm:min-h-8" disabled={disabled}>
-            {moreOpen ? 'Hide more filters' : 'More filters'}
-            {moreCount > 0 ? (
-              <span className="tabular-nums text-muted-foreground">({moreCount} set)</span>
-            ) : null}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="mt-2 grid gap-4 rounded-lg border border-border p-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <Label htmlFor="criteria-min-sqft">Square feet, at least</Label>
-              <Input
-                id="criteria-min-sqft"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                placeholder="Any"
-                value={numberInputValue(normalized.minSqFt)}
-                onChange={(e) => handleNumberChange('minSqFt', e.target.value)}
-                disabled={disabled}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="criteria-max-sqft">Square feet, at most</Label>
-              <Input
-                id="criteria-max-sqft"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                placeholder="Any"
-                value={numberInputValue(normalized.maxSqFt)}
-                onChange={(e) => handleNumberChange('maxSqFt', e.target.value)}
-                disabled={disabled}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="criteria-year-min">Built after</Label>
-              <Input
-                id="criteria-year-min"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                placeholder="Any year"
-                value={numberInputValue(normalized.yearBuiltMin)}
-                onChange={(e) => handleNumberChange('yearBuiltMin', e.target.value)}
-                disabled={disabled}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="criteria-year-max">Built before</Label>
-              <Input
-                id="criteria-year-max"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                placeholder="Any year"
-                value={numberInputValue(normalized.yearBuiltMax)}
-                onChange={(e) => handleNumberChange('yearBuiltMax', e.target.value)}
-                disabled={disabled}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="criteria-lot-min">Lot size, at least (acres)</Label>
-              <Input
-                id="criteria-lot-min"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="0.1"
-                placeholder="Any"
-                value={numberInputValue(normalized.lotAcresMin)}
-                onChange={(e) => handleNumberChange('lotAcresMin', e.target.value)}
-                disabled={disabled}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="criteria-lot-max">Lot size, at most (acres)</Label>
-              <Input
-                id="criteria-lot-max"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="0.1"
-                placeholder="Any"
-                value={numberInputValue(normalized.lotAcresMax)}
-                onChange={(e) => handleNumberChange('lotAcresMax', e.target.value)}
-                disabled={disabled}
-              />
-            </div>
-            <div className="grid gap-2 sm:col-span-2">
-              <p className="text-sm font-medium text-foreground">Must have</p>
-              <div className="grid gap-1 sm:grid-cols-2">
-                {AMENITY_TOGGLES.map(({ key, label }) => (
-                  <Label
-                    key={key}
-                    className="flex min-h-11 cursor-pointer items-center gap-2 font-normal"
-                  >
-                    <Checkbox
-                      checked={normalized[key] === true}
-                      onCheckedChange={(checked) => update({ [key]: checked === true ? true : undefined })}
-                      disabled={disabled}
-                      aria-label={label}
-                    />
-                    {label}
-                  </Label>
-                ))}
-              </div>
+      <details open={moreOpen} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
+        <summary
+          className="av2-btn av2-btn--quiet"
+          aria-disabled={disabled || undefined}
+          tabIndex={disabled ? -1 : undefined}
+          style={{ ...TOUCH_TRIGGER, ...disclosureDisabled }}
+        >
+          {moreOpen ? 'Hide more filters' : 'More filters'}
+          {moreCount > 0 ? (
+            <span className="tabular-nums" style={{ color: 'var(--a-text-2)' }}>({moreCount} set)</span>
+          ) : null}
+        </summary>
+        <div
+          className="mt-2 grid gap-4 sm:grid-cols-2"
+          style={{
+            border: '1px solid var(--a-border)',
+            borderRadius: 'var(--a-r-lg)',
+            padding: 'var(--a-s3)',
+          }}
+        >
+          <TextField
+            label="Square feet, at least"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="Any"
+            value={numberInputValue(normalized.minSqFt)}
+            onChange={(e) => handleNumberChange('minSqFt', e.target.value)}
+            disabled={disabled}
+          />
+          <TextField
+            label="Square feet, at most"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="Any"
+            value={numberInputValue(normalized.maxSqFt)}
+            onChange={(e) => handleNumberChange('maxSqFt', e.target.value)}
+            disabled={disabled}
+          />
+          <TextField
+            label="Built after"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="Any year"
+            value={numberInputValue(normalized.yearBuiltMin)}
+            onChange={(e) => handleNumberChange('yearBuiltMin', e.target.value)}
+            disabled={disabled}
+          />
+          <TextField
+            label="Built before"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="Any year"
+            value={numberInputValue(normalized.yearBuiltMax)}
+            onChange={(e) => handleNumberChange('yearBuiltMax', e.target.value)}
+            disabled={disabled}
+          />
+          <TextField
+            label="Lot size, at least (acres)"
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.1"
+            placeholder="Any"
+            value={numberInputValue(normalized.lotAcresMin)}
+            onChange={(e) => handleNumberChange('lotAcresMin', e.target.value)}
+            disabled={disabled}
+          />
+          <TextField
+            label="Lot size, at most (acres)"
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.1"
+            placeholder="Any"
+            value={numberInputValue(normalized.lotAcresMax)}
+            onChange={(e) => handleNumberChange('lotAcresMax', e.target.value)}
+            disabled={disabled}
+          />
+          <div className="grid gap-2 sm:col-span-2">
+            <p style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>Must have</p>
+            <div className="grid gap-1 sm:grid-cols-2">
+              {AMENITY_TOGGLES.map(({ key, label }) => (
+                <ToolbarCheck
+                  key={key}
+                  label={label}
+                  checked={normalized[key] === true}
+                  onChange={(e) => update({ [key]: e.target.checked ? true : undefined })}
+                  disabled={disabled}
+                  aria-label={label}
+                  labelStyle={{ minHeight: 'var(--a-touch)' }}
+                />
+              ))}
             </div>
           </div>
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+      </details>
 
       {/* Live summary + count */}
-      <div className="rounded-lg border border-border bg-muted/50 px-3 py-2">
-        <p className="text-sm text-foreground">{summary}</p>
-        <p className="mt-0.5 text-xs tabular-nums text-muted-foreground" aria-live="polite">
+      <div
+        style={{
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-md)',
+          background: 'var(--a-inset)',
+          padding: '8px var(--a-s3)',
+        }}
+      >
+        <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>{summary}</p>
+        <p
+          className="mt-0.5 tabular-nums"
+          style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+          aria-live="polite"
+        >
           {countState === 'loading'
             ? 'Counting matching listings'
             : countState === 'error'

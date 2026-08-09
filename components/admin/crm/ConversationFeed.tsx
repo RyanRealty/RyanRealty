@@ -11,7 +11,7 @@
 import { useState, useTransition } from 'react'
 import { EyeOff, Mail, MailOpen, MessageSquare, Phone, ShieldAlert, Users, Voicemail } from 'lucide-react'
 import { groupInfoFromPayload } from '@/lib/crm/group-message'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/admin/v2'
 import { blockCrmNumber } from '@/app/actions/crm-block'
 import { timelineEmailBody } from '@/lib/crm/email-body'
 import { StoredAttachmentStrip } from '@/components/admin/crm/StoredAttachments'
@@ -49,6 +49,16 @@ function mediaOf(payload: ConversationEvent['payload']): Array<{ messageSid: str
     return [{ messageSid: sid, mediaSid, contentType: typeof mm.contentType === 'string' ? mm.contentType : 'application/octet-stream' }]
   })
 }
+
+// Row colours, named once. The feed reads mostly in the secondary token; the
+// pills use the wash/text token PAIRS the language already proves at AA
+// (ADMIN_UI §4) rather than an alpha of the solid, which the tokens cannot
+// express without color-mix.
+const QUIET = { color: 'var(--a-text-2)' }
+const STRONG = { color: 'var(--a-text)' }
+const PILL_WARN = { background: 'var(--a-warn-wash)', color: 'var(--a-warn)' }
+const PILL_ACCENT = { background: 'var(--a-accent-wash)', color: 'var(--a-accent)' }
+const HAIRLINE = { borderColor: 'var(--a-border)' }
 
 function fmtDate(iso: string): string {
   return formatDate(iso, { month: 'short', day: 'numeric' })
@@ -124,7 +134,7 @@ export default function ConversationFeed({
 
   if (items.length === 0) {
     return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
+      <p className="py-10 text-center text-sm" style={QUIET}>
         No texts or emails with {personName} yet. Start one below.
       </p>
     )
@@ -132,7 +142,7 @@ export default function ConversationFeed({
 
   return (
     <>
-    <ul className="divide-y divide-border">
+    <ul className="divide-y divide-[color:var(--a-border)]">
       {items.map((e) => {
         const { Icon, title, participant } = rowMeta(e, personName)
         const preview = (e.body ? timelineEmailBody(e.body) : '') || ''
@@ -162,42 +172,45 @@ export default function ConversationFeed({
               type="button"
               onClick={() => setOpenId(expanded ? null : e.id)}
               aria-expanded={expanded}
-              className="flex w-full gap-3 py-3 text-left transition-colors hover:bg-muted/40"
+              // The hover wash stays a CLASS — an inline background would win
+              // over it and leave the row dead under the pointer.
+              className="flex w-full gap-3 py-3 text-left transition-colors hover:bg-[var(--a-inset)]"
             >
-              <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+              <Icon className="mt-0.5 h-5 w-5 shrink-0" style={{ color: 'var(--a-accent)' }} aria-hidden />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold" style={STRONG}>
                     {title}
                     {spamSuspected ? (
-                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 align-middle text-[11px] font-medium text-warning">
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-[11px] font-medium" style={PILL_WARN}>
                         <ShieldAlert className="h-3 w-3" aria-hidden /> Possible spam
                       </span>
                     ) : null}
                     {group ? (
                       <span
-                        className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 align-middle text-[11px] font-medium text-primary"
+                        className="ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-[11px] font-medium"
+                        style={PILL_ACCENT}
                         title={`Group text · ${group.participants.join(', ')}`}
                       >
                         <Users className="h-3 w-3" aria-hidden /> Group · {group.count}
                       </span>
                     ) : null}
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{fmtDate(e.ts)}</span>
+                  <span className="shrink-0 text-xs" style={QUIET}>{fmtDate(e.ts)}</span>
                 </div>
-                {participant ? <div className="truncate text-sm text-foreground">{participant}</div> : null}
+                {participant ? <div className="truncate text-sm" style={STRONG}>{participant}</div> : null}
                 {preview ? (
-                  <div className={expanded ? 'mt-0.5 whitespace-pre-wrap break-words text-sm text-muted-foreground' : 'mt-0.5 line-clamp-2 text-sm text-muted-foreground'}>
+                  <div className={expanded ? 'mt-0.5 whitespace-pre-wrap break-words text-sm' : 'mt-0.5 line-clamp-2 text-sm'} style={QUIET}>
                     {preview}
                   </div>
                 ) : contentHidden ? (
-                  <div className="mt-0.5 inline-flex items-center gap-1 text-xs italic text-muted-foreground">
+                  <div className="mt-0.5 inline-flex items-center gap-1 text-xs italic" style={QUIET}>
                     <EyeOff className="h-3 w-3" aria-hidden />
                     Content not synced from Follow Up Boss
                   </div>
                 ) : null}
                 {opened ? (
-                  <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-success">
+                  <div className="mt-1 flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--a-ok)' }}>
                     <MailOpen className="h-3.5 w-3.5" aria-hidden />
                     {eng!.opens} open{eng!.opens > 1 ? 's' : ''}
                     {eng!.lastOpen ? ` · Last opened ${fmtDate(eng!.lastOpen)}` : ''}
@@ -216,10 +229,17 @@ export default function ConversationFeed({
                       return m.contentType.startsWith('image/') ? (
                         <a key={m.mediaSid} href={src} target="_blank" rel="noopener noreferrer">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={src} alt="MMS attachment" className="h-28 w-28 rounded-lg border border-border object-cover" loading="lazy" />
+                          <img src={src} alt="MMS attachment" className="h-28 w-28 rounded-lg border object-cover" style={HAIRLINE} loading="lazy" />
                         </a>
                       ) : (
-                        <a key={m.mediaSid} href={src} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border px-3 py-2 text-xs text-foreground hover:bg-muted">
+                        <a
+                          key={m.mediaSid}
+                          href={src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-lg border px-3 py-2 text-xs text-[color:var(--a-text)] hover:bg-[var(--a-inset)]"
+                          style={HAIRLINE}
+                        >
                           Attachment
                         </a>
                       )
@@ -236,8 +256,7 @@ export default function ConversationFeed({
                 {callerNumber && (e.kind === 'call' || e.kind === 'voicemail') ? (
                   <Button
                     type="button"
-                    variant={spamSuspected ? 'destructive' : 'outline'}
-                    size="sm"
+                    variant={spamSuspected ? 'danger' : 'quiet'}
                     disabled={blockPending === callerNumber || blocked.has(callerNumber)}
                     onClick={(ev) => { ev.stopPropagation(); blockNumber(callerNumber) }}
                     className="h-8 gap-1.5"
@@ -246,7 +265,7 @@ export default function ConversationFeed({
                     {blocked.has(callerNumber) ? 'Blocked' : blockPending === callerNumber ? 'Blocking…' : 'Block this number'}
                   </Button>
                 ) : null}
-                <div className="text-xs text-muted-foreground">{fmtDateTime(e.ts)}</div>
+                <div className="text-xs" style={QUIET}>{fmtDateTime(e.ts)}</div>
               </div>
             ) : null}
           </li>
@@ -255,7 +274,7 @@ export default function ConversationFeed({
     </ul>
     {cursor ? (
       <div className="pt-2 text-center">
-        <Button variant="outline" size="sm" onClick={loadOlder} disabled={pending}>
+        <Button variant="quiet" onClick={loadOlder} disabled={pending}>
           {pending ? 'Loading…' : 'Load older messages'}
         </Button>
       </div>

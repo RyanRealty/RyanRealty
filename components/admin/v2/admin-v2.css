@@ -35,16 +35,25 @@
 .av2-btn--danger:hover:not(:disabled) { opacity:.9; }
 /* Geometric press works for every variant without needing a darker token. */
 .av2-btn:active:not(:disabled) { transform:translateY(1px); }
-/* OPEN state for a button that owns a popup. Radix set aria-expanded on its
-   triggers and shadcn styled it; the v2 Menu/Combobox set the same attribute, so
-   a trigger now stays lit while its panel is up instead of going flat the moment
-   the pointer moves into the panel it opened. */
-.av2-btn[aria-expanded="true"]:not(:disabled),
-.av2-iconbtn[aria-expanded="true"]:not(:disabled) { background:var(--a-inset); color:var(--a-text); }
+/* OPEN state for a button that owns a POPUP — gated on aria-haspopup, which is
+   the whole point. The first version keyed on aria-expanded alone and lit every
+   COLLAPSIBLE too: each open rail section chevron and every expanded filter chip
+   rendered permanently pressed, and two collapsibles on the same screen disagreed
+   because only one had been flattened onto IconButton. aria-expanded means "this
+   thing is open"; aria-haspopup means "and it is a popup". Only the pair earns
+   the lit trigger. */
+.av2-btn[aria-haspopup][aria-expanded="true"]:not(:disabled),
+.av2-iconbtn[aria-haspopup][aria-expanded="true"]:not(:disabled) { background:var(--a-inset); color:var(--a-text); }
 
 /* ---- StateWord (status = text + color, never color alone) ---- */
+/* A hairline so the pill survives a row that shares its fill. --a-state--accent
+   is --a-accent-wash and --waiting is --a-inset, which are EXACTLY the selected-row
+   and hover-row fills used by every migrated grid — so selecting or hovering a row
+   made the pill's background vanish into it and the status read as bare text. The
+   shadcn Badges it replaced had variant borders that never collided. */
 .av2-state { display:inline-block; font-size:var(--a-text-xs); font-weight:700;
-  letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:var(--a-r-sm); }
+  letter-spacing:.05em; text-transform:uppercase; padding:2px 8px; border-radius:var(--a-r-sm);
+  border:1px solid var(--a-border); }
 .av2-state--down    { background:var(--a-danger-wash); color:var(--a-danger); }
 .av2-state--slow    { background:var(--a-warn-wash);   color:var(--a-warn); }
 .av2-state--waiting { background:var(--a-inset);       color:var(--a-text-2); }
@@ -195,8 +204,12 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-check input { accent-color:var(--a-accent); width:15px; height:15px; margin:0; }
 .av2-check input:focus-visible { outline:none; box-shadow:var(--a-focus); border-radius:2px; }
 /* Row feedback. A checkbox/radio row inside a menu had no hover at all once the
-   Radix menuitem wrappers went away, so option lists read as inert. */
-.av2-check:hover { color:var(--a-text); }
+   Radix menuitem wrappers went away, so option lists read as inert. The label is
+   the row, so it takes the full-width fill the Radix menuitem used to paint —
+   a text-colour change alone is not a row-shaped hit indication in a 40px list. */
+.av2-check { border-radius:var(--a-r-sm); padding:2px 4px; margin:-2px -4px; }
+.av2-check:hover { color:var(--a-text); background:var(--a-inset); }
+.av2-check:has(input:focus-visible) { background:var(--a-inset); }
 
 /* ---- Entity fold (pattern 5: stacked context sections on a person page) ---- */
 /* min-width:0 because a grid/flex ITEM defaults to min-width:auto and therefore

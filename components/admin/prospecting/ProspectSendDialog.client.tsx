@@ -3,10 +3,10 @@
 /**
  * ProspectSendDialog — the compliance-gated cold-intro compose dialog (spec 07
  * §5, Matt's #1 ask for this surface). Recipient (owner name + masked
- * phone/email) is pre-populated at top; SMS/Email live as Tabs; the default
- * template body is editable with a live preview + merge-token warning; an
- * inline already-sent + engagement block shows when this owner was already
- * texted. NO native confirm() anywhere in this flow.
+ * phone/email) is pre-populated at top; SMS/Email live as a two-way channel
+ * switch; the default template body is editable with a live preview + merge-token
+ * warning; an inline already-sent + engagement block shows when this owner was
+ * already texted. NO native confirm() anywhere in this flow.
  *
  * `sendIntroAction`'s `bodyOverride` IS honored: editing the SMS body below
  * sends your edited text, verbatim, through the same server-side compliance
@@ -22,23 +22,63 @@
  * (controlled) — its own header comment documents exactly this use case:
  * "bulk surfaces with their own audience + dispatch flow... embed it
  * directly as a controlled component."
+ *
+ * 11F: outer chrome on the LOCKED admin v2 language. This is a SEND surface —
+ * every handler, idempotency key, guard, disabled rule and string is
+ * byte-for-byte what it was; only the paint and the primitives moved. Four
+ * notes, because each was a trap:
+ *  - The EmailBodyEditor / MergeFieldInserter imports STAY pointed at
+ *    components/admin/crm: those are the G50 compose chokepoints
+ *    ci:composer-discipline requires, and forking them to satisfy a colour gate
+ *    would defeat the gate that matters more. Same sanctioned call recorded for
+ *    BpoSendDialog, CmaSendDialog, DscrEmailDialog and crm/inbox.
+ *  - The shadcn Tabs became two FilterChips, so the selected channel is
+ *    ANNOUNCED (aria-pressed) rather than implied by fill — the call already
+ *    recorded in EmailBodyEditor. .av2-chip carries no :hover, so the chips
+ *    carry one as a utility class (an inline style would outrank a stylesheet
+ *    hover and kill it).
+ *  - The SMS box is a raw control + `av2-input` + aria-label, this folder's
+ *    pattern for an unlabelled field: TextAreaField forwards no ref (this file
+ *    needs one for insertAtCursor) and prints a visible heading of its own.
+ *    Dropping the visible label never drops the accessible one.
+ *  - Dialog owns its own width, so `max-w-xl` is gone; `size="work"` is the
+ *    detail-surface width, this being a compose surface rather than a question.
+ *    The native <dialog> scrolls its own overflow, which is what
+ *    max-h-[90dvh]/overflow-y-auto were doing by hand.
+ *  - .av2-dialog__body carries an UNLAYERED `p { margin:0 }`, and an unlayered
+ *    rule outranks the whole Tailwind utilities layer whatever its specificity
+ *    (the same fact admin-v2.css records above its own @layer base block). So
+ *    every mt-* / space-y-* gap on a <p> inside this dialog would have silently
+ *    become zero. Those paragraphs carry their gap as an inline marginTop, the
+ *    one thing that outranks it. Only <p> is affected; div children keep their
+ *    space-y.
  */
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
+import type { CSSProperties } from 'react'
+import { Button, Dialog, FilterChip } from '@/components/admin/v2'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import { MergeFieldInserter, insertAtCursor } from '@/components/admin/crm/MergeFieldInserter'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { sendProspectingEmailIntro } from '@/app/actions/prospecting'
 import type { ProspectEngagement, ProspectKind, SendEmailIntroResult, SendIntroResult } from '@/lib/data/prospecting/types'
 import { formatDate, maskEmail, maskPhone } from './format'
+
+const badgeStyle: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-sm)',
+  padding: '1px 6px',
+}
+const quietTextStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
+const warnTextStyle: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 500,
+  color: 'var(--a-warn)',
+}
 
 /** The compose context for one prospect's cold-intro dialog. Owned by the
  *  parent (prepared alongside the guarded send action so the preview always
@@ -117,47 +157,41 @@ export function ProspectSendDialog({
   onApprove?: (kind: ProspectKind, id: string, slug: string) => Promise<boolean>
 }) {
   // Tracks the child's in-flight send state so the Dialog can refuse to close
-  // (Escape, overlay click, the built-in X button) mid-send — a ref, not
-  // state, because only the onOpenChange closure below needs the latest
-  // value; it doesn't need to trigger a re-render of this wrapper.
+  // (Escape, overlay click, the built-in Close button) mid-send — a ref, not
+  // state, because only the close callback below needs the latest value; it
+  // doesn't need to trigger a re-render of this wrapper.
   const sendPendingRef = useRef(false)
 
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          if (sendPendingRef.current) return
-          onClose()
-        }
+      onClose={() => {
+        if (sendPendingRef.current) return
+        onClose()
       }}
+      title={`Send to ${context?.ownerName ?? 'owner'}`}
+      size="work"
     >
-      <DialogContent className="max-h-[90dvh] max-w-xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Send to {context?.ownerName ?? 'owner'}</DialogTitle>
-        </DialogHeader>
-
-        {context ? (
-          // Keyed by prospect id: React remounts fresh local edit state (body
-          // text, channel, error) whenever the dialog is handed a new
-          // prospect, instead of syncing props into state via an effect.
-          <ProspectSendDialogBody
-            // Re-key on clientReady too: when an in-dialog approve flips a draft
-            // to client-ready, the body remounts and re-initializes its editable
-            // body from the fresh context (now carrying the live document link).
-            key={`${context.id}:${context.clientReady ? 'ready' : 'draft'}`}
-            context={context}
-            onClose={onClose}
-            sendIntroAction={sendIntroAction}
-            sendTestAction={sendTestAction}
-            sendEmailIntroAction={sendEmailIntroAction}
-            onApprove={onApprove}
-            onSendPendingChange={(pending) => {
-              sendPendingRef.current = pending
-            }}
-          />
-        ) : null}
-      </DialogContent>
+      {context ? (
+        // Keyed by prospect id: React remounts fresh local edit state (body
+        // text, channel, error) whenever the dialog is handed a new
+        // prospect, instead of syncing props into state via an effect.
+        <ProspectSendDialogBody
+          // Re-key on clientReady too: when an in-dialog approve flips a draft
+          // to client-ready, the body remounts and re-initializes its editable
+          // body from the fresh context (now carrying the live document link).
+          key={`${context.id}:${context.clientReady ? 'ready' : 'draft'}`}
+          context={context}
+          onClose={onClose}
+          sendIntroAction={sendIntroAction}
+          sendTestAction={sendTestAction}
+          sendEmailIntroAction={sendEmailIntroAction}
+          onApprove={onApprove}
+          onSendPendingChange={(pending) => {
+            sendPendingRef.current = pending
+          }}
+        />
+      ) : null}
     </Dialog>
   )
 }
@@ -203,7 +237,7 @@ function ProspectSendDialogBody({
   }
 
   // Let the parent Dialog know whether a production send is in flight, so it
-  // can refuse to close (Escape/overlay/X) until it settles.
+  // can refuse to close (Escape/overlay/Close) until it settles.
   useEffect(() => {
     onSendPendingChange(sendPending)
   }, [sendPending, onSendPendingChange])
@@ -324,20 +358,33 @@ function ProspectSendDialogBody({
   return (
     <div className="space-y-3">
       {/* Pre-populated recipient */}
-      <div className="rounded-lg bg-muted/50 px-3 py-2">
-        <p className="text-sm font-medium text-foreground">{context.ownerName ?? 'Owner unknown'}</p>
-        <p className="text-xs tabular-nums text-muted-foreground">{recipientLine}</p>
+      <div style={{ borderRadius: 'var(--a-r-md)', background: 'var(--a-inset)', padding: '8px 12px' }}>
+        <p style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+          {context.ownerName ?? 'Owner unknown'}
+        </p>
+        <p className="a-num" style={quietTextStyle}>
+          {recipientLine}
+        </p>
       </div>
 
       {/* Draft → approve gate (the only approve affordance in the hub) */}
       {needsApproval ? (
-        <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2.5">
-          <p className="text-sm font-medium text-foreground">This audit is still a draft.</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+        <div
+          style={{
+            borderRadius: 'var(--a-r-md)',
+            border: '1px solid var(--a-warn)',
+            background: 'var(--a-warn-wash)',
+            padding: '10px 12px',
+          }}
+        >
+          <p style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+            This audit is still a draft.
+          </p>
+          <p style={{ ...quietTextStyle, marginTop: 2 }}>
             Approve it to make the link live, then send. The link would 404 until it is approved.
           </p>
           {onApprove && context.docSlug ? (
-            <Button className="mt-2 h-9" disabled={approvePending} onClick={handleApprove}>
+            <Button variant="quiet" className="mt-2" disabled={approvePending} onClick={handleApprove}>
               {approvePending ? (
                 <span className="flex items-center gap-1.5">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Approving…
@@ -353,13 +400,22 @@ function ProspectSendDialogBody({
       {/* Already-sent + engagement (per-channel chips — one channel sent does
           not block the other; the un-sent tab stays live) */}
       {context.alreadySent ? (
-        <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
+        <div
+          style={{
+            borderRadius: 'var(--a-r-md)',
+            border: '1px solid var(--a-border)',
+            background: 'var(--a-inset)',
+            padding: '8px 12px',
+          }}
+        >
           <div className="flex flex-wrap items-center gap-1.5">
-            <p className="text-sm font-medium text-foreground">Intro already sent</p>
-            {sentSms ? <Badge variant="secondary">Text · {formatDate(sentSms.at)}</Badge> : null}
-            {sentEmail ? <Badge variant="secondary">Email · {formatDate(sentEmail.at)}</Badge> : null}
+            <p style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+              Intro already sent
+            </p>
+            {sentSms ? <span style={badgeStyle}>Text · {formatDate(sentSms.at)}</span> : null}
+            {sentEmail ? <span style={badgeStyle}>Email · {formatDate(sentEmail.at)}</span> : null}
           </div>
-          <p className="mt-1 text-xs tabular-nums text-muted-foreground">
+          <p className="a-num" style={{ ...quietTextStyle, marginTop: 4 }}>
             {context.engagement.reportViews} views · {context.engagement.linkTaps} taps ·{' '}
             {context.engagement.emailOpens} opens · {context.engagement.emailClicks} clicks
             {context.engagement.lastActivityAt ? ` · last ${formatDate(context.engagement.lastActivityAt)}` : ''}
@@ -367,33 +423,42 @@ function ProspectSendDialogBody({
         </div>
       ) : null}
 
-      <Tabs value={channel} onValueChange={(v) => setChannel(v as Channel)}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="sms" disabled={!context.toPhone}>
-            Text{context.toPhone ? '' : ' (no phone)'}
-          </TabsTrigger>
-          <TabsTrigger value="email" disabled={!context.toEmail}>
-            Email{context.toEmail ? '' : ' (no address)'}
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="grid w-full grid-cols-2 gap-2" role="group" aria-label="Channel">
+        <FilterChip
+          pressed={channel === 'sms'}
+          disabled={!context.toPhone}
+          onClick={() => setChannel('sms')}
+          className="hover:opacity-80"
+        >
+          Text{context.toPhone ? '' : ' (no phone)'}
+        </FilterChip>
+        <FilterChip
+          pressed={channel === 'email'}
+          disabled={!context.toEmail}
+          onClick={() => setChannel('email')}
+          className="hover:opacity-80"
+        >
+          Email{context.toEmail ? '' : ' (no address)'}
+        </FilterChip>
+      </div>
 
       {channel === 'sms' ? (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <Label className="text-xs text-muted-foreground">Message</Label>
+            <label style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Message</label>
             <MergeFieldInserter channel="sms" onInsert={insertSmsToken} iconOnly />
           </div>
-          <Textarea
+          <textarea
             ref={smsRef}
+            aria-label="Message"
             value={smsBody}
             onChange={(e) => setSmsBody(e.target.value)}
             rows={5}
-            className="text-sm"
+            className="av2-input w-full"
             placeholder="Message · SMS"
           />
           {smsUnresolved.length > 0 ? (
-            <p className="text-xs font-medium text-warning">
+            <p style={{ ...warnTextStyle, marginTop: 6 }}>
               Unfilled merge fields: {smsUnresolved.join(', ')}. This is a preview warning. The live send resolves
               these tokens for real.
             </p>
@@ -409,9 +474,9 @@ function ProspectSendDialogBody({
             signatureHtml={null}
           />
           {emailUnresolved.length > 0 ? (
-            <p className="text-xs font-medium text-warning">Unfilled merge fields: {emailUnresolved.join(', ')}.</p>
+            <p style={{ ...warnTextStyle, marginTop: 6 }}>Unfilled merge fields: {emailUnresolved.join(', ')}.</p>
           ) : null}
-          <p className="text-xs text-muted-foreground">
+          <p style={{ ...quietTextStyle, marginTop: 6 }}>
             Sends from the broker mailbox with the audit PDF attached and a tracked link to the live report.
           </p>
         </div>
@@ -422,19 +487,30 @@ function ProspectSendDialogBody({
           href={`/admin/cmas/${context.docSlug}`}
           target="_blank"
           rel="noreferrer"
-          className="inline-block text-xs text-muted-foreground underline underline-offset-2"
+          style={{
+            display: 'inline-block',
+            fontSize: 'var(--a-text-xs)',
+            color: 'var(--a-text-2)',
+            textDecoration: 'underline',
+            textUnderlineOffset: 2,
+          }}
         >
           Open the document
         </a>
       ) : null}
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', marginTop: 12 }}>{error}</p>
+      ) : null}
 
-      <div className="flex flex-col gap-2 border-t border-border pt-3">
+      <div
+        className="flex flex-col gap-2 pt-3"
+        style={{ borderTop: '1px solid var(--a-border)' }}
+      >
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
-            className="h-11"
+            variant="quiet"
+            touch
             disabled={testPending || sendPending || channelMissing}
             onClick={handleSendTest}
           >
@@ -446,7 +522,7 @@ function ProspectSendDialogBody({
               'Send test to myself'
             )}
           </Button>
-          <Button className="h-11 flex-1" disabled={sendDisabled} onClick={handleSendIntro}>
+          <Button className="flex-1" touch disabled={sendDisabled} onClick={handleSendIntro}>
             {sendPending ? (
               <span className="flex items-center gap-1.5">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Sending…
@@ -462,7 +538,7 @@ function ProspectSendDialogBody({
             )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p style={quietTextStyle}>
           Sends to {context.ownerName ?? 'this owner'}. Your edits above are what sends. Every send re-checks hard-stop,
           do-not-call, suppression, and for texts quiet hours before it leaves.
         </p>

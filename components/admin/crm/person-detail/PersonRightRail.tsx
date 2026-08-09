@@ -13,6 +13,20 @@
  * Collapse state persists per user (localStorage). Drag-reorder of widgets is
  * a logged deferral. The AgentFire FUB Widget section is FUB-specific
  * third-party embed and is intentionally not reproduced (logged decision).
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY — every export, prop, handler, action and user-visible
+ * string is unchanged. Four notes on the swap:
+ *  - Radix Collapsible is gone: each RailSection already owned its `open`
+ *    state, so it now simply does not render its body when closed — which is
+ *    what CollapsibleContent did — and the chevron keeps aria-expanded.
+ *  - Radix DropdownMenu is gone: the Files "+" is the barrel's Menu, which
+ *    owns click-outside, Escape, focus return and arrow-key roving.
+ *  - Counts and statuses are plain token-styled chips, not StateWord.
+ *    .av2-state uppercases, and an enrollment status and a deal stage are
+ *    broker-facing data that must read back the way it was written.
+ *  - The rail sits on var(--a-inset) and its cards on var(--a-surface): two
+ *    different tokens, so a card still reads as a card on the well.
  */
 
 import { useEffect, useRef, useState, useTransition } from 'react'
@@ -35,27 +49,15 @@ import {
   Square,
   Download,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
+  Button,
   Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { cn } from '@/lib/utils'
+  IconButton,
+  Menu,
+  SearchField,
+  TextField,
+  ToolbarCheck,
+} from '@/components/admin/v2'
 import { ApplyAutomationDialog } from './PersonDialogs'
 import {
   addPersonFileLinkAction,
@@ -83,6 +85,8 @@ export type RailEnrollment = {
 }
 export type RailTask = { id: number; name: string; type: string | null; dueAt: string | null; assignedBroker: string | null }
 export type RailCollaborator = { brokerSlug: string; name: string }
+
+const MUTED: React.CSSProperties = { color: 'var(--a-text-2)' }
 
 /**
  * Client-only clock read (hydration-safe per gate #418): null on the server and
@@ -115,6 +119,22 @@ function usd(n: number | null): string | null {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
+/** Count / status chip. Sentence case on purpose — see the header note. */
+function RailChip({ tone = 'neutral', children }: { tone?: 'neutral' | 'ok'; children: React.ReactNode }) {
+  const ok = tone === 'ok'
+  return (
+    <span
+      className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium tabular-nums"
+      style={{
+        background: ok ? 'var(--a-ok-wash)' : 'var(--a-inset)',
+        color: ok ? 'var(--a-ok)' : 'var(--a-text-2)',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
 function RailSection({
   id,
   icon,
@@ -143,28 +163,47 @@ function RailSection({
     window.localStorage.setItem(storageKey, next ? '1' : '0')
   }
   return (
-    <Collapsible open={open} onOpenChange={toggle} className="rounded-lg border border-border bg-card">
+    <div
+      className="rounded-lg"
+      style={{ border: '1px solid var(--a-border)', background: 'var(--a-surface)' }}
+    >
       <div className="flex items-center gap-2 px-3 py-2">
-        <span className="text-muted-foreground">{icon}</span>
-        <span className="flex-1 text-sm font-semibold text-foreground">{title}</span>
+        <span style={MUTED}>{icon}</span>
+        <span className="flex-1 text-sm font-semibold" style={{ color: 'var(--a-text)' }}>
+          {title}
+        </span>
         {!open ? collapsedIndicator : null}
         {headerRight}
-        <CollapsibleTrigger asChild>
-          <button type="button" aria-label={open ? `Collapse ${title}` : `Expand ${title}`} className="rounded p-0.5 text-muted-foreground hover:text-foreground">
-            {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </button>
-        </CollapsibleTrigger>
+        <IconButton
+          label={open ? `Collapse ${title}` : `Expand ${title}`}
+          aria-expanded={open}
+          onClick={() => toggle(!open)}
+        >
+          {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </IconButton>
       </div>
-      <CollapsibleContent className="border-t border-border px-3 py-2">{children}</CollapsibleContent>
-    </Collapsible>
+      {open ? (
+        <div className="px-3 py-2" style={{ borderTop: '1px solid var(--a-border)' }}>
+          {children}
+        </div>
+      ) : null}
+    </div>
   )
 }
 
-function AddButton(props: React.ComponentProps<typeof Button>) {
+/**
+ * The rail's solid circular "+" trigger. av2-addbtn is the barrel's class for
+ * exactly this (an IconButton painted as a solid add control) — a class rather
+ * than an inline style so :hover survives.
+ */
+function AddButton({
+  label,
+  ...rest
+}: { label: string } & Omit<React.ComponentProps<'button'>, 'aria-label'>) {
   return (
-    <Button type="button" size="icon" variant="default" className="h-6 w-6 rounded-full" {...props}>
+    <IconButton label={label} className="av2-addbtn" {...rest}>
       <Plus className="h-3.5 w-3.5" />
-    </Button>
+    </IconButton>
   )
 }
 
@@ -208,44 +247,58 @@ function CollaboratorsDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={openDialog}>
-      <DialogTrigger asChild>
-        <AddButton aria-label="Add collaborator" />
-      </DialogTrigger>
-      <DialogContent aria-describedby={undefined} className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Collaborators</DialogTitle>
-        </DialogHeader>
-        <Input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search for a collaborator" className="h-9 text-sm" />
+    <>
+      <AddButton label="Add collaborator" onClick={() => openDialog(true)} />
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Collaborators"
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={save} disabled={pending}>
+              Save
+            </Button>
+          </>
+        }
+      >
+        <SearchField
+          aria-label="Search for a collaborator"
+          type="text"
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search for a collaborator"
+          className="w-full"
+          style={{ maxWidth: 'none' }}
+        />
         <div className="space-y-1">
           {visible.map((c) => (
-            <label key={c.value} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1.5 text-sm hover:bg-secondary">
-              <Checkbox
-                checked={checked.has(c.value)}
-                onCheckedChange={(v) =>
-                  setChecked((prev) => {
-                    const next = new Set(prev)
-                    if (v === true) next.add(c.value)
-                    else next.delete(c.value)
-                    return next
-                  })
-                }
-              />
-              {c.label}
-            </label>
+            <ToolbarCheck
+              key={c.value}
+              label={c.label}
+              checked={checked.has(c.value)}
+              onChange={(e) =>
+                setChecked((prev) => {
+                  const next = new Set(prev)
+                  if (e.target.checked) next.add(c.value)
+                  else next.delete(c.value)
+                  return next
+                })
+              }
+              labelStyle={{ display: 'flex', padding: '6px 4px', borderRadius: 'var(--a-r-sm)' }}
+            />
           ))}
-          {visible.length === 0 ? <p className="py-3 text-center text-sm text-muted-foreground">No team members found.</p> : null}
+          {visible.length === 0 ? (
+            <p className="py-3 text-center text-sm" style={MUTED}>
+              No team members found.
+            </p>
+          ) : null}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={save} disabled={pending}>
-            Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   )
 }
 
@@ -286,15 +339,15 @@ function FilesSection({ personId, files }: { personId: number; files: PersonFile
       icon={<Paperclip className="h-4 w-4" />}
       title="Files"
       headerRight={
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <AddButton aria-label="Add file" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => fileInput.current?.click()}>Upload File(s)</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setLinkOpen(true)}>Add Link</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Menu
+          label="Add file"
+          align="end"
+          trigger={<Plus className="h-3.5 w-3.5" />}
+          items={[
+            { label: 'Upload File(s)', onSelect: () => fileInput.current?.click() },
+            { label: 'Add Link', onSelect: () => setLinkOpen(true) },
+          ]}
+        />
       }
     >
       <input ref={fileInput} type="file" multiple hidden onChange={(e) => upload(e.target.files)} />
@@ -309,10 +362,14 @@ function FilesSection({ personId, files }: { personId: number; files: PersonFile
           setDragOver(false)
           upload(e.dataTransfer.files)
         }}
-        className={cn('space-y-1.5 rounded-md', dragOver && 'border-2 border-dashed border-primary bg-primary/5 p-2')}
+        className={dragOver ? 'space-y-1.5 rounded-md p-2' : 'space-y-1.5 rounded-md'}
+        // Drop-target highlight has no :hover to fight, so it stays inline.
+        style={dragOver ? { border: '2px dashed var(--a-accent)', background: 'var(--a-accent-wash)' } : undefined}
       >
         {files.length === 0 ? (
-          <p className="py-1 text-sm text-muted-foreground">No files yet, drag some here</p>
+          <p className="py-1 text-sm" style={MUTED}>
+            No files yet, drag some here
+          </p>
         ) : (
           files.map((f) => (
             <div key={f.id} className="group flex items-center gap-2">
@@ -324,18 +381,24 @@ function FilesSection({ personId, files }: { personId: number; files: PersonFile
                 ) : (
                   <span className="block truncate text-sm">{f.name}</span>
                 )}
-                <span className="text-xs text-muted-foreground" title={f.uploadedBy ?? undefined}>
+                <span className="text-xs" style={MUTED} title={f.uploadedBy ?? undefined}>
                   {f.kind === 'link' ? 'Link' : 'File'} · {fmtAgo(f.createdAt, nowMs)}
                 </span>
               </div>
               {f.url ? (
-                <a href={f.url} target="_blank" rel="noreferrer" aria-label={`Download ${f.name}`} className="rounded p-1 text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100">
+                <a
+                  href={f.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Download ${f.name}`}
+                  className="rounded p-1 text-[color:var(--a-text-2)] opacity-0 hover:text-[color:var(--a-text)] group-hover:opacity-100"
+                >
                   <Download className="h-3.5 w-3.5" />
                 </a>
               ) : null}
-              <button
-                type="button"
-                aria-label={`Delete ${f.name}`}
+              <IconButton
+                label={`Delete ${f.name}`}
+                tone="danger"
                 disabled={pending}
                 onClick={() =>
                   start(async () => {
@@ -343,35 +406,32 @@ function FilesSection({ personId, files }: { personId: number; files: PersonFile
                     router.refresh()
                   })
                 }
-                className="rounded p-1 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100"
+                className="opacity-0 group-hover:opacity-100"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              </IconButton>
             </div>
           ))
         )}
-        {pending ? <p className="text-xs text-muted-foreground">Working…</p> : null}
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {pending ? (
+          <p className="text-xs" style={MUTED}>
+            Working…
+          </p>
+        ) : null}
+        {error ? (
+          <p className="text-xs" style={{ color: 'var(--a-danger)' }}>
+            {error}
+          </p>
+        ) : null}
       </div>
 
-      <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
-        <DialogContent aria-describedby={undefined} className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Add Link</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <div className="space-y-1">
-              <Label className="text-xs">Title</Label>
-              <Input value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} className="h-9 text-sm" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">URL</Label>
-              <Input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://" className="h-9 text-sm" />
-            </div>
-            {error ? <p className="text-xs text-destructive">{error}</p> : null}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLinkOpen(false)}>
+      <Dialog
+        open={linkOpen}
+        onClose={() => setLinkOpen(false)}
+        title="Add Link"
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setLinkOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -391,8 +451,18 @@ function FilesSection({ personId, files }: { personId: number; files: PersonFile
             >
               Save
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <div className="space-y-2">
+          <TextField label="Title" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} />
+          <TextField label="URL" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="https://" />
+          {error ? (
+            <p className="text-xs" style={{ color: 'var(--a-danger)' }}>
+              {error}
+            </p>
+          ) : null}
+        </div>
       </Dialog>
     </RailSection>
   )
@@ -453,11 +523,19 @@ export function PersonRightRail({
   }
 
   return (
-    <div data-tour="person-right-rail" className="flex h-full flex-col overflow-y-auto bg-muted/40 px-3 py-3">
+    <div
+      data-tour="person-right-rail"
+      className="flex h-full flex-col overflow-y-auto px-3 py-3"
+      style={{ background: 'var(--a-inset)' }}
+    >
       {/* Last-lead metadata strip (§07b 13) */}
       {(metaAddress || metaCreatedAt || metaAssignedName) && (
-        <div className="mb-3 space-y-0.5 px-1 text-xs text-muted-foreground">
-          {metaAddress ? <p className="font-medium text-foreground">{metaAddress}</p> : null}
+        <div className="mb-3 space-y-0.5 px-1 text-xs" style={MUTED}>
+          {metaAddress ? (
+            <p className="font-medium" style={{ color: 'var(--a-text)' }}>
+              {metaAddress}
+            </p>
+          ) : null}
           {metaCreatedAt ? <p>{fmtDate(metaCreatedAt)}</p> : null}
           {metaAssignedName ? <p>Assigned: {metaAssignedName}</p> : null}
         </div>
@@ -470,61 +548,61 @@ export function PersonRightRail({
           id="action-plans"
           icon={<Play className="h-4 w-4" />}
           title="Action Plans"
-          collapsedIndicator={runningPlans.length > 0 ? <Badge className="bg-success text-[10px] text-success-foreground">{runningPlans.length}</Badge> : null}
+          collapsedIndicator={runningPlans.length > 0 ? <RailChip tone="ok">{runningPlans.length}</RailChip> : null}
           headerRight={
-            <ApplyAutomationDialog personId={personId} automations={automationOptions} trigger={<AddButton aria-label="Apply automation" />} />
+            <ApplyAutomationDialog
+              personId={personId}
+              automations={automationOptions}
+              trigger={<AddButton label="Apply automation" />}
+            />
           }
         >
           {enrollments.length === 0 ? (
-            <p className="py-1 text-sm text-muted-foreground">No action plans running</p>
+            <p className="py-1 text-sm" style={MUTED}>
+              No action plans running
+            </p>
           ) : (
             <div className="space-y-2">
               {enrollments.map((e) => (
                 <div key={e.enrollmentId} className="space-y-0.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-medium">{e.sequenceName}</span>
-                    <Badge
-                      variant={e.status === 'running' ? 'default' : 'secondary'}
-                      className={cn('text-[10px] capitalize', e.status === 'running' && 'bg-success text-success-foreground')}
-                    >
-                      {e.status.replace(/_/g, ' ')}
-                    </Badge>
+                    <span className="capitalize">
+                      <RailChip tone={e.status === 'running' ? 'ok' : 'neutral'}>
+                        {e.status.replace(/_/g, ' ')}
+                      </RailChip>
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between gap-2 text-xs" style={MUTED}>
                     <span>
                       {Math.min(e.stepIndex, e.totalSteps)} of {e.totalSteps} steps complete · Started {fmtAgo(e.enrolledAt, nowMs)}
                     </span>
                     <span className="flex gap-0.5">
                       {e.status === 'running' ? (
-                        <button
-                          type="button"
-                          aria-label="Pause plan"
+                        <IconButton
+                          label="Pause plan"
                           disabled={pending}
                           onClick={() => start(async () => (await pauseEnrollmentAction(e.enrollmentId), refresh()))}
-                          className="rounded p-0.5 hover:text-foreground"
                         >
                           <Pause className="h-3.5 w-3.5" />
-                        </button>
+                        </IconButton>
                       ) : (
-                        <button
-                          type="button"
-                          aria-label="Resume plan"
+                        <IconButton
+                          label="Resume plan"
                           disabled={pending}
                           onClick={() => start(async () => (await resumeEnrollmentAction(e.enrollmentId), refresh()))}
-                          className="rounded p-0.5 hover:text-foreground"
                         >
                           <Play className="h-3.5 w-3.5" />
-                        </button>
+                        </IconButton>
                       )}
-                      <button
-                        type="button"
-                        aria-label="Stop plan"
+                      <IconButton
+                        label="Stop plan"
+                        tone="danger"
                         disabled={pending}
                         onClick={() => start(async () => (await dismissEnrollmentAction(e.enrollmentId), refresh()))}
-                        className="rounded p-0.5 hover:text-destructive"
                       >
                         <Square className="h-3.5 w-3.5" />
-                      </button>
+                      </IconButton>
                     </span>
                   </div>
                 </div>
@@ -538,12 +616,18 @@ export function PersonRightRail({
           id="activity"
           icon={<Footprints className="h-4 w-4" />}
           title="Activity"
-          headerRight={lastSeenAt ? <span className="text-xs text-muted-foreground">Seen {fmtAgo(lastSeenAt, nowMs)}</span> : null}
+          headerRight={
+            lastSeenAt ? (
+              <span className="text-xs" style={MUTED}>
+                Seen {fmtAgo(lastSeenAt, nowMs)}
+              </span>
+            ) : null
+          }
         >
           <dl className="space-y-1">
             {activitySummary.map((s) => (
               <div key={s.label} className="flex items-center justify-between text-sm">
-                <dt className="text-muted-foreground">{s.label}</dt>
+                <dt style={MUTED}>{s.label}</dt>
                 <dd className="tabular-nums">{s.value}</dd>
               </div>
             ))}
@@ -555,23 +639,18 @@ export function PersonRightRail({
           id="tasks"
           icon={<ListChecks className="h-4 w-4" />}
           title={`Tasks (${openTasks.length})`}
-          collapsedIndicator={openTasks.length > 0 ? <Badge variant="secondary" className="text-[10px] tabular-nums">{openTasks.length}</Badge> : null}
+          collapsedIndicator={openTasks.length > 0 ? <RailChip>{openTasks.length}</RailChip> : null}
           headerRight={
             <>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                aria-label="Quick follow-up tomorrow"
-                title="Quick follow-up tomorrow"
+              <IconButton
+                label="Quick follow-up tomorrow"
                 disabled={pending}
                 onClick={() => start(async () => (await quickFollowUpAction(personId, 1), refresh()))}
-                className="h-6 w-6 text-primary"
               >
                 <Zap className="h-3.5 w-3.5" />
-              </Button>
+              </IconButton>
               <AddButton
-                aria-label="Add task"
+                label="Add task"
                 onClick={() => {
                   const el = document.getElementById(`rail-new-task-${personId}`)
                   el?.focus()
@@ -581,15 +660,20 @@ export function PersonRightRail({
           }
         >
           <div className="space-y-1.5">
-            {openTasks.length === 0 ? <p className="py-1 text-sm text-muted-foreground">No upcoming tasks</p> : null}
+            {openTasks.length === 0 ? (
+              <p className="py-1 text-sm" style={MUTED}>
+                No upcoming tasks
+              </p>
+            ) : null}
             {openTasks.slice(0, 8).map((t) => {
               const overdue = nowMs != null && t.dueAt ? new Date(t.dueAt).getTime() < nowMs : false
               return (
                 <div key={t.id} className="flex items-start gap-2">
-                  <Checkbox
+                  <ToolbarCheck
+                    label={null}
                     aria-label={`Complete ${t.name}`}
                     disabled={pending}
-                    onCheckedChange={() =>
+                    onChange={() =>
                       start(async () => {
                         const fd = new FormData()
                         fd.set('taskId', String(t.id))
@@ -598,16 +682,18 @@ export function PersonRightRail({
                         refresh()
                       })
                     }
-                    className="mt-0.5"
+                    labelStyle={{ marginTop: 2 }}
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs" style={MUTED}>
                       {t.type ?? 'Task'}
                       {t.dueAt ? (
                         <>
                           {' · '}
-                          <span className={cn(overdue && 'font-medium text-destructive')}>{fmtDate(t.dueAt)}</span>
+                          <span style={overdue ? { fontWeight: 500, color: 'var(--a-danger)' } : undefined}>
+                            {fmtDate(t.dueAt)}
+                          </span>
                         </>
                       ) : null}
                     </p>
@@ -616,12 +702,15 @@ export function PersonRightRail({
               )
             })}
             <div className="flex gap-1.5 pt-1">
-              <Input
+              <SearchField
                 id={`rail-new-task-${personId}`}
+                aria-label="New task"
+                type="text"
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
                 placeholder="New task"
-                className="h-8 flex-1 text-sm"
+                className="flex-1"
+                style={{ maxWidth: 'none' }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newTask.trim()) {
                     start(async () => {
@@ -646,21 +735,23 @@ export function PersonRightRail({
           id="appointments"
           icon={<Calendar className="h-4 w-4" />}
           title="Appointments"
-          collapsedIndicator={upcomingAppts.length > 0 ? <Badge variant="secondary" className="text-[10px] tabular-nums">{upcomingAppts.length}</Badge> : null}
+          collapsedIndicator={upcomingAppts.length > 0 ? <RailChip>{upcomingAppts.length}</RailChip> : null}
           headerRight={
             <a href={`/admin/crm/calendar?person=${personId}`} aria-label="Add appointment">
-              <AddButton />
+              <AddButton label="Add appointment" />
             </a>
           }
         >
           {appointments.length === 0 ? (
-            <p className="py-1 text-sm text-muted-foreground">No upcoming appointments</p>
+            <p className="py-1 text-sm" style={MUTED}>
+              No upcoming appointments
+            </p>
           ) : (
             <div className="space-y-1.5">
               {appointments.slice(0, 5).map((a) => (
                 <div key={a.id} className="text-sm">
                   <p className="truncate font-medium">{a.title}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs" style={MUTED}>
                     {fmtDate(a.startAt)}
                     {a.typeName ? ` · ${a.typeName}` : ''}
                     {a.outcomeName ? ` · ${a.outcomeName}` : ''}
@@ -688,25 +779,23 @@ export function PersonRightRail({
           title="Deals"
           headerRight={
             <Link href="/admin/crm/deals" aria-label="Add deal">
-              <AddButton />
+              <AddButton label="Add deal" />
             </Link>
           }
         >
           {deals.length === 0 ? (
-            <p className="py-1 text-sm text-muted-foreground">No deals yet</p>
+            <p className="py-1 text-sm" style={MUTED}>
+              No deals yet
+            </p>
           ) : (
             <div className="space-y-1.5">
               {deals.slice(0, 5).map((d) => (
                 <div key={d.id} className="text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate font-medium">{d.name ?? d.propertyAddress ?? `Deal #${d.id}`}</span>
-                    {d.stage ? (
-                      <Badge variant="secondary" className="text-[10px]">
-                        {d.stage}
-                      </Badge>
-                    ) : null}
+                    {d.stage ? <RailChip>{d.stage}</RailChip> : null}
                   </div>
-                  <p className="text-xs tabular-nums text-muted-foreground">
+                  <p className="text-xs tabular-nums" style={MUTED}>
                     {usd(d.value) ?? ''}
                     {d.closeDate ? `${d.value ? ' · ' : ''}closes ${fmtDate(d.closeDate)}` : ''}
                   </p>
@@ -719,14 +808,20 @@ export function PersonRightRail({
         {/* Automations (§7c.8.7) — merged with action plans post-FUB-2.0; shows the same enrollments */}
         <RailSection id="automations" icon={<Play className="h-4 w-4" />} title="Automations" defaultOpen={false}>
           {runningPlans.length === 0 ? (
-            <p className="py-1 text-sm text-muted-foreground">No automations running</p>
+            <p className="py-1 text-sm" style={MUTED}>
+              No automations running
+            </p>
           ) : (
             <div className="space-y-1">
               {runningPlans.map((e) => (
                 <div key={e.enrollmentId} className="flex items-center justify-between gap-2 text-sm">
                   <span className="truncate">{e.sequenceName}</span>
-                  <span className="flex items-center gap-1 text-xs text-success">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" /> Running
+                  <span className="flex items-center gap-1 text-xs" style={{ color: 'var(--a-ok)' }}>
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full"
+                      style={{ background: 'var(--a-ok)' }}
+                    />{' '}
+                    Running
                   </span>
                 </div>
               ))}
@@ -747,15 +842,17 @@ export function PersonRightRail({
           }
         >
           {collaborators.length === 0 ? (
-            <p className="py-1 text-sm text-muted-foreground">No collaborators added</p>
+            <p className="py-1 text-sm" style={MUTED}>
+              No collaborators added
+            </p>
           ) : (
             <div className="space-y-1">
               {collaborators.map((c) => (
                 <div key={c.brokerSlug} className="group flex items-center justify-between gap-2 text-sm">
                   <span>{c.name}</span>
-                  <button
-                    type="button"
-                    aria-label={`Remove ${c.name}`}
+                  <IconButton
+                    label={`Remove ${c.name}`}
+                    tone="danger"
                     disabled={pending}
                     onClick={() =>
                       start(async () => {
@@ -763,10 +860,10 @@ export function PersonRightRail({
                         refresh()
                       })
                     }
-                    className="rounded p-1 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100"
+                    className="opacity-0 group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  </IconButton>
                 </div>
               ))}
             </div>
@@ -775,9 +872,16 @@ export function PersonRightRail({
       </div>
 
       {/* Keyboard shortcut hint (§7c.8.10) */}
-      <p className="mt-auto pt-4 text-center text-xs text-muted-foreground">
-        Press <kbd className="rounded border border-border bg-card px-1">→</kbd> to view next lead or{' '}
-        <kbd className="rounded border border-border bg-card px-1">←</kbd> to view previous lead
+      <p className="mt-auto pt-4 text-center text-xs" style={MUTED}>
+        Press{' '}
+        <kbd className="rounded px-1" style={{ border: '1px solid var(--a-border)', background: 'var(--a-surface)' }}>
+          →
+        </kbd>{' '}
+        to view next lead or{' '}
+        <kbd className="rounded px-1" style={{ border: '1px solid var(--a-border)', background: 'var(--a-surface)' }}>
+          ←
+        </kbd>{' '}
+        to view previous lead
       </p>
     </div>
   )

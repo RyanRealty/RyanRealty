@@ -13,18 +13,24 @@ import type { ButtonHTMLAttributes } from 'react'
  * Never a page's primary action — those carry visible text (ci:admin-ui rule C
  * counts primary Buttons, and an icon is not a label).
  */
+/** Show the label as a native hover tooltip. OFF by default: IconButton used to
+ *  force one on every instance, which put a tooltip on controls that never had
+ *  one — CalendarGrids renders one IconButton per hour per day column, so a
+ *  grid of ~168 cells all sprouted OS tooltips. Opt in where the old control
+ *  actually carried title=. */
 export interface AdminIconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> {
   label: string
+  tooltip?: boolean
   tone?: 'quiet' | 'danger'
   children: React.ReactNode
 }
 
-export function IconButton({ label, tone = 'quiet', className, children, ...rest }: AdminIconButtonProps) {
+export function IconButton({ label, tooltip = false, tone = 'quiet', className, children, ...rest }: AdminIconButtonProps) {
   return (
     <button
       type="button"
       aria-label={label}
-      title={label}
+      title={tooltip ? label : undefined}
       className={['av2-iconbtn', tone === 'danger' ? 'av2-iconbtn--danger' : '', className ?? '']
         .filter(Boolean)
         .join(' ')}

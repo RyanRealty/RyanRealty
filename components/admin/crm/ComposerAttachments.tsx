@@ -8,6 +8,23 @@
  * raw PUT) — form POSTs are capped at ~4.5MB on Vercel, so files can never
  * ride the send action itself. The form posts only an `attachments` JSON
  * field of storage paths; the send action re-validates ownership + caps.
+ *
+ * ── Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY. useComposerAttachments, its returned shape, every limit,
+ * error string and upload step are untouched; this is mounted by both G50
+ * compose chokepoints.
+ *
+ * Two notes on HOW, because each is a trap:
+ *  - The file picker is a TextField whose whole FIELD is hidden, not a raw
+ *    input element. The primitive is what forwards the ref the paperclip
+ *    clicks (see Button.tsx on why a primitive that swallows refs pushes
+ *    callers to document.getElementById), and hiding the field rather than the
+ *    control keeps the primitive's own visible label off the screen.
+ *  - The "has attachments" wash is an INLINE background and deliberately so:
+ *    `.av2-iconbtn` declares `background:none` unlayered, so a Tailwind
+ *    utility for it would be silently dead. Only `background` is set inline,
+ *    so the iconbtn's hover — which also brightens the icon colour — still
+ *    fires on a lit button.
  */
 import { useRef, useState } from 'react'
 import { Loader2, Paperclip, X } from 'lucide-react'
@@ -18,8 +35,7 @@ import {
   type CrmAttachmentChannel,
   type CrmAttachmentRef,
 } from '@/lib/crm/attachment-limits'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { IconButton, SearchField, TextField } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 
 // Stable per-session chip keys without a clock read (hydration-safety gate —
@@ -129,30 +145,35 @@ export function AttachmentChips(props: {
       {props.items.map((item) => (
         <div
           key={item.key}
-          className={cn(
-            'flex items-center gap-2 rounded-full border border-input bg-muted/40 px-3 py-1 text-xs',
-            item.status === 'error' && 'border-destructive/50 text-destructive',
-          )}
+          className="flex items-center gap-2 rounded-full px-3 py-1 text-xs"
+          style={
+            item.status === 'error'
+              ? { border: '1px solid var(--a-danger)', background: 'var(--a-danger-wash)', color: 'var(--a-danger)' }
+              : { border: '1px solid var(--a-border)', background: 'var(--a-inset)', color: 'var(--a-text)' }
+          }
         >
           {item.status === 'uploading' ? (
-            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden />
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" style={{ color: 'var(--a-text-2)' }} aria-hidden />
           ) : (
-            <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            <Paperclip className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--a-text-2)' }} aria-hidden />
           )}
           <span className="max-w-40 truncate" title={item.error ?? item.name}>{item.name}</span>
-          <span className="shrink-0 text-muted-foreground">
+          <span
+            className="shrink-0"
+            style={{ color: item.status === 'error' ? 'var(--a-danger)' : 'var(--a-text-2)' }}
+          >
             {item.status === 'error' ? (item.error ?? 'failed') : `${Math.max(1, Math.round(item.sizeBytes / 1024))}KB`}
           </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
+          {/* 16px keeps the chip's metric; nothing here paints colour, so the
+              iconbtn hover (full-strength text + inset wash) still fires. */}
+          <IconButton
+            label={`Remove ${item.name}`}
             onClick={() => props.onRemove(item.key)}
-            aria-label={`Remove ${item.name}`}
-            className="ml-1 h-4 w-4 shrink-0 text-muted-foreground hover:text-foreground"
+            className="ml-1 shrink-0"
+            style={{ width: 16, height: 16 }}
           >
             <X className="h-3.5 w-3.5" aria-hidden />
-          </Button>
+          </IconButton>
         </div>
       ))}
     </div>
@@ -169,39 +190,45 @@ export function AttachmentControl(props: {
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { attachments } = props
+  const lit = attachments.items.length > 0
   if (!attachments.enabled) return null
   return (
     <>
-      <Input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept={props.accept}
-        onChange={(e) => {
-          if (e.target.files?.length) void attachments.addFiles(e.target.files)
-          e.target.value = ''
-        }}
-        className="hidden"
-      />
+      {/* The whole field is hidden, label included — the paperclip below opens
+          it through the ref the primitive forwards. */}
+      <div className="hidden">
+        <TextField
+          ref={fileInputRef}
+          label="Attachment files"
+          type="file"
+          multiple
+          accept={props.accept}
+          onChange={(e) => {
+            if (e.target.files?.length) void attachments.addFiles(e.target.files)
+            e.target.value = ''
+          }}
+        />
+      </div>
       {/* Only fully-uploaded files post; the send action re-validates. */}
-      <Input
+      <SearchField
         type="hidden"
+        aria-label="Attachment payload"
         name="attachments"
         value={attachments.ready.length ? JSON.stringify(attachments.ready) : ''}
         readOnly
-        className="hidden"
       />
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
+      <IconButton
+        label={props.ariaLabel ?? 'Attach files'}
+        aria-pressed={lit}
         onClick={() => fileInputRef.current?.click()}
-        aria-label={props.ariaLabel ?? 'Attach files'}
-        aria-pressed={attachments.items.length > 0}
-        className={cn(props.className, attachments.items.length > 0 && 'bg-muted text-foreground')}
+        className={cn('shrink-0', props.className)}
+        // The 36px circle is the composer bar's own metric — it sits beside the
+        // 36px round merge-field button. Only `background` is conditional, so
+        // the iconbtn hover still brightens a lit button (see the header note).
+        style={{ width: 36, height: 36, borderRadius: '50%', background: lit ? 'var(--a-inset)' : undefined }}
       >
         <Paperclip className={props.iconClassName ?? 'h-4 w-4'} aria-hidden />
-      </Button>
+      </IconButton>
     </>
   )
 }

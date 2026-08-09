@@ -8,12 +8,18 @@
  * areas/cadence, rendered email preview, assign broker, pause/resume, delete
  * with confirm), and a selection toolbar for bulk pause / resume / frequency
  * changes via app/actions/subscriptions-admin.ts.
+ *
+ * P11F: on the LOCKED admin v2 language — same conversion as its sibling
+ * AlertSubscriptionsTab: shadcn Input/Select/Checkbox/Table/Dialog/
+ * DropdownMenu/Button out, the av2-rgrid div/role reader in, colour from
+ * var(--a-*) only. Every filter, mutation and string is carried over verbatim.
  */
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { MoreHorizontal } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import {
   listReportSubscriptionsAdminAction,
   bulkUpdateReportSubscriptionsAction,
@@ -21,21 +27,15 @@ import {
   previewReportEmailAction,
 } from '@/app/actions/subscriptions-admin'
 import type { AdminReportSubscriptionRow } from '@/lib/data/crm/subscriptionsAdmin'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  Button,
+  ConfirmDialog,
+  Menu,
+  SearchField,
+  ToolbarCheck,
+  ToolbarSelect,
+} from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 import {
   PAGE_SIZE,
   formatSubscriptionDate,
@@ -168,81 +168,100 @@ export default function ReportSubscriptionsTab({
     })
   }
 
+  // Desktop column template — the custom property report-grid.css reads at
+  // >=720px. Below that the same markup stacks into one block per row.
+  //
+  // NO --rgrid-min and NO .av2-rgrid__scroll wrapper, deliberately — same call
+  // as the sibling AlertSubscriptionsTab: the row actions are a v2 <Menu> whose
+  // panel is position:absolute inside the row and is NOT portaled the way the
+  // shadcn DropdownMenu it replaces was, so a scroll container would clip it
+  // shut on the last rows (i.e. on every row of a short list). The tracks fit
+  // the narrowest container the grid renders in (640px; minimums 542 + 8×12px
+  // gaps = 638), and the fr units expand them on a real desktop. The actions
+  // track is 44px because .av2-iconbtn is --a-touch wide on a coarse pointer.
+  const gridStyle = {
+    '--rgrid-cols':
+      '20px minmax(68px,1.4fr) minmax(64px,0.8fr) minmax(74px,1.3fr) 58px 62px minmax(84px,1.2fr) 68px 44px',
+  } as CSSProperties
+
   return (
     <div className="space-y-3">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
-        <Input
+        <SearchField
           value={qInput}
           onChange={(e) => {
             setQInput(e.target.value)
             resetToFirstPage()
           }}
           placeholder="Search by name or email"
-          className="h-9 w-full sm:w-64"
+          className="w-full sm:w-64"
+          // Releases .av2-input--bar's 200px cap so the width classes decide.
+          style={{ maxWidth: '100%' }}
           aria-label="Search market report subscriptions"
         />
-        <Select
+        <ToolbarSelect
+          className="w-32"
+          aria-label="Status filter"
           value={status}
-          onValueChange={(v) => {
-            setStatus(v as StatusFilter)
+          onChange={(e) => {
+            setStatus(e.target.value as StatusFilter)
             resetToFirstPage()
           }}
         >
-          <SelectTrigger className="h-9 w-32" aria-label="Status filter">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+        </ToolbarSelect>
+        <ToolbarSelect
+          className="w-40"
+          aria-label="Frequency filter"
           value={frequency}
-          onValueChange={(v) => {
-            setFrequency(v as FrequencyFilter)
+          onChange={(e) => {
+            setFrequency(e.target.value as FrequencyFilter)
             resetToFirstPage()
           }}
         >
-          <SelectTrigger className="h-9 w-40" aria-label="Frequency filter">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All frequencies</SelectItem>
-            <SelectItem value="weekly">Weekly</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
-            <SelectItem value="quarterly">Quarterly</SelectItem>
-          </SelectContent>
-        </Select>
+          <option value="all">All frequencies</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+        </ToolbarSelect>
       </div>
 
       {/* Selection toolbar */}
       {selected.size > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
-          <span className="text-sm tabular-nums text-foreground">
+        <div
+          className="flex flex-wrap items-center gap-2 rounded-lg px-3 py-2"
+          style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)' }}
+        >
+          <span className="text-sm tabular-nums" style={{ color: 'var(--a-text)' }}>
             {selected.size.toLocaleString('en-US')} selected
           </span>
-          <Button size="sm" variant="outline" disabled={isPending} onClick={() => runUpdate(personIds, { active: false }, 'Paused')}>
+          <Button variant="quiet" disabled={isPending} onClick={() => runUpdate(personIds, { active: false }, 'Paused')}>
             Pause
           </Button>
-          <Button size="sm" variant="outline" disabled={isPending} onClick={() => runUpdate(personIds, { active: true }, 'Resumed')}>
+          <Button variant="quiet" disabled={isPending} onClick={() => runUpdate(personIds, { active: true }, 'Resumed')}>
             Resume
           </Button>
-          <Select value="" onValueChange={(v) => runUpdate(personIds, { frequency: v as ReportFrequency }, 'Updated frequency for')}>
-            <SelectTrigger className="h-8 w-36" aria-label="Set frequency" disabled={isPending}>
-              <SelectValue placeholder="Set frequency" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="quarterly">Quarterly</SelectItem>
-            </SelectContent>
-          </Select>
+          <ToolbarSelect
+            className="w-36"
+            aria-label="Set frequency"
+            value=""
+            disabled={isPending}
+            onChange={(e) => {
+              if (!e.target.value) return
+              runUpdate(personIds, { frequency: e.target.value as ReportFrequency }, 'Updated frequency for')
+            }}
+          >
+            <option value="" disabled>Set frequency</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+          </ToolbarSelect>
           <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto text-muted-foreground"
+            variant="quiet"
+            className="ml-auto"
             disabled={isPending}
             onClick={() => setSelected(new Set())}
           >
@@ -255,122 +274,143 @@ export default function ReportSubscriptionsTab({
       {isPending ? (
         <TableSkeleton />
       ) : (
-        <div className="no-scrollbar overflow-x-auto rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={allOnPageSelected}
-                    onCheckedChange={toggleAll}
-                    aria-label="Select all rows on this page"
-                  />
-                </TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Broker</TableHead>
-                <TableHead>Areas</TableHead>
-                <TableHead>Frequency</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Engagement</TableHead>
-                <TableHead>Last sent</TableHead>
-                <TableHead className="w-10" aria-label="Row actions" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
-                    No market report subscriptions match these filters.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((row) => (
-                  <TableRow key={row.personId} data-state={selected.has(row.personId) ? 'selected' : undefined}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selected.has(row.personId)}
-                        onCheckedChange={() => toggleOne(row.personId)}
-                        aria-label={`Select ${contactLabel(row)}`}
-                      />
-                    </TableCell>
-                    <TableCell className="max-w-56">
-                      <Link
-                        href={`/admin/people/${row.personId}`}
-                        className="block truncate text-sm font-medium text-foreground underline-offset-2 hover:underline"
-                      >
-                        {row.personName?.trim() || `Contact #${row.personId}`}
-                      </Link>
-                      <p className="truncate text-xs text-muted-foreground">{row.personEmail ?? '—'}</p>
-                    </TableCell>
-                    <TableCell className="text-sm text-foreground">{row.assignedBroker ?? '—'}</TableCell>
-                    <TableCell className="max-w-64">
-                      <p className="truncate text-sm text-foreground">
-                        {row.areas.length > 0 ? row.areas.join(', ') : '—'}
-                      </p>
-                    </TableCell>
-                    <TableCell className="text-sm text-foreground">{frequencyLabel(row.frequency)}</TableCell>
-                    <TableCell><StatusBadge active={row.active} /></TableCell>
-                    <TableCell><EngagementCell engagement={row.engagement} /></TableCell>
-                    <TableCell className="text-sm tabular-nums text-muted-foreground">
-                      {formatSubscriptionDate(row.lastSentAt)}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="size-8 text-muted-foreground"
-                            aria-label={`Actions for ${contactLabel(row)}`}
-                          >
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => setEditRow(row)}>Edit areas &amp; cadence</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setPreviewRow(row)}>Preview email</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setAssignRow(row)}>Assign broker</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onSelect={() => runUpdate([row.personId], { active: !row.active }, row.active ? 'Paused' : 'Resumed')}
-                          >
-                            {row.active ? 'Pause' : 'Resume'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem variant="destructive" onSelect={() => setDeleteRow(row)}>
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+        <div>
+          {/* Select-all, phone only — report-grid.css hides .av2-rgrid__head
+              below 720px and the header's select-all with it. Exactly one of
+              the two is in the accessibility tree at any width. */}
+          <div className="hidden items-center gap-2 pb-2 max-[719.98px]:flex">
+            <ToolbarCheck
+              label="Select all"
+              checked={allOnPageSelected}
+              onChange={toggleAll}
+              aria-label="Select all rows on this page"
+            />
+          </div>
+          <div
+            className="av2-rgrid"
+            role="table"
+            aria-label="Market report subscriptions"
+            style={gridStyle}
+          >
+            <div className="av2-rgrid__head" role="row">
+              <span role="columnheader" className="av2-rgrid__h">
+                <ToolbarCheck
+                  label=""
+                  checked={allOnPageSelected}
+                  onChange={toggleAll}
+                  aria-label="Select all rows on this page"
+                />
+              </span>
+              <span role="columnheader" className="av2-rgrid__h">Contact</span>
+              <span role="columnheader" className="av2-rgrid__h">Broker</span>
+              <span role="columnheader" className="av2-rgrid__h">Areas</span>
+              <span role="columnheader" className="av2-rgrid__h">Frequency</span>
+              <span role="columnheader" className="av2-rgrid__h">Status</span>
+              <span role="columnheader" className="av2-rgrid__h">Engagement</span>
+              <span role="columnheader" className="av2-rgrid__h">Last sent</span>
+              <span role="columnheader" className="av2-rgrid__h" aria-label="Row actions" />
+            </div>
+
+            {rows.length === 0 ? (
+              <div className="av2-rgrid__empty" role="row">
+                <span role="cell">No market report subscriptions match these filters.</span>
+              </div>
+            ) : (
+              rows.map((row) => (
+                <div
+                  key={row.personId}
+                  role="row"
+                  data-state={selected.has(row.personId) ? 'selected' : undefined}
+                  className={
+                    selected.has(row.personId)
+                      ? 'av2-rgrid__row bg-[var(--a-accent-wash)] hover:bg-[var(--a-inset)]'
+                      : 'av2-rgrid__row hover:bg-[var(--a-inset)]'
+                  }
+                >
+                  <span role="cell" className="av2-rgrid__c">
+                    <ToolbarCheck
+                      label=""
+                      checked={selected.has(row.personId)}
+                      onChange={() => toggleOne(row.personId)}
+                      aria-label={`Select ${contactLabel(row)}`}
+                    />
+                  </span>
+                  <span role="cell" data-label="Contact" className="av2-rgrid__c">
+                    {/* Spans, not <p>: the cell is a <span>, so a block element
+                        here would be invalid nesting. */}
+                    <Link
+                      href={`/admin/people/${row.personId}`}
+                      className="block truncate text-sm font-medium underline-offset-2 hover:underline"
+                      style={{ color: 'var(--a-text)' }}
+                    >
+                      {row.personName?.trim() || `Contact #${row.personId}`}
+                    </Link>
+                    <span className="block truncate text-xs" style={{ color: 'var(--a-text-2)' }}>
+                      {row.personEmail ?? '—'}
+                    </span>
+                  </span>
+                  <span role="cell" data-label="Broker" className="av2-rgrid__c text-sm" style={{ color: 'var(--a-text)' }}>
+                    {row.assignedBroker ?? '—'}
+                  </span>
+                  <span role="cell" data-label="Areas" className="av2-rgrid__c">
+                    <span className="block truncate text-sm" style={{ color: 'var(--a-text)' }}>
+                      {row.areas.length > 0 ? row.areas.join(', ') : '—'}
+                    </span>
+                  </span>
+                  <span role="cell" data-label="Frequency" className="av2-rgrid__c text-sm" style={{ color: 'var(--a-text)' }}>
+                    {frequencyLabel(row.frequency)}
+                  </span>
+                  <span role="cell" data-label="Status" className="av2-rgrid__c">
+                    <StatusBadge active={row.active} />
+                  </span>
+                  <span role="cell" data-label="Engagement" className="av2-rgrid__c">
+                    <EngagementCell engagement={row.engagement} />
+                  </span>
+                  <span
+                    role="cell"
+                    data-label="Last sent"
+                    className="av2-rgrid__c text-sm tabular-nums"
+                    style={{ color: 'var(--a-text-2)' }}
+                  >
+                    {formatSubscriptionDate(row.lastSentAt)}
+                  </span>
+                  <span role="cell" className="av2-rgrid__c">
+                    <Menu
+                      label={`Actions for ${contactLabel(row)}`}
+                      align="end"
+                      trigger={<MoreHorizontal className="size-4" />}
+                      items={[
+                        { label: 'Edit areas & cadence', onSelect: () => setEditRow(row) },
+                        { label: 'Preview email', onSelect: () => setPreviewRow(row) },
+                        { label: 'Assign broker', onSelect: () => setAssignRow(row) },
+                        {
+                          label: row.active ? 'Pause' : 'Resume',
+                          onSelect: () =>
+                            runUpdate([row.personId], { active: !row.active }, row.active ? 'Paused' : 'Resumed'),
+                        },
+                        { label: 'Delete', danger: true, onSelect: () => setDeleteRow(row) },
+                      ]}
+                    />
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 
       <PaginationBar page={page} total={total} isPending={isPending} onPage={setPage} />
 
       {/* Delete confirm */}
-      <Dialog open={deleteRow !== null} onOpenChange={(o) => { if (!o) setDeleteRow(null) }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete this subscription</DialogTitle>
-            <DialogDescription>
-              {deleteRow ? contactLabel(deleteRow) : 'This contact'} stops getting market report emails and the subscription record is removed. The CRM contact is kept. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button size="sm" variant="outline" disabled={isPending} onClick={() => setDeleteRow(null)}>
-              Cancel
-            </Button>
-            <Button size="sm" variant="destructive" disabled={isPending} onClick={runDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={deleteRow !== null}
+        onClose={() => setDeleteRow(null)}
+        title="Delete this subscription"
+        description={`${deleteRow ? contactLabel(deleteRow) : 'This contact'} stops getting market report emails and the subscription record is removed. The CRM contact is kept. This cannot be undone.`}
+        confirmLabel="Delete"
+        busy={isPending}
+        onConfirm={runDelete}
+      />
 
       {editRow ? (
         <ReportEditDialog row={editRow} onClose={() => setEditRow(null)} onSaved={reload} />

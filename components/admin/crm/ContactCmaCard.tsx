@@ -6,15 +6,22 @@
  * action that matches its state — review a draft, send a finalized one, or
  * re-send a delivered one (all through sendCmaForContactAction via the bound
  * form action, which guards status + suppression server-side).
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Card -> av2-pane, Badge -> StateWord (build + delivery states are system
+ * words), Button -> the v2 Button, and the `asChild` Review anchor -> a real
+ * <a> carrying av2-btn so hover/pressed/focus come from the stylesheet.
+ *
+ * Gate note (ci:admin-ui rule C): "Send to contact" is this card's one primary
+ * action. "Re-send" on an already-delivered CMA is deliberately quiet — it was
+ * variant="outline" before — so a row that has already gone out never competes
+ * with a row that still needs sending.
  */
 import { useState, useTransition } from 'react'
 import { FileText } from 'lucide-react'
 import { formatDate } from '@/lib/format/date'
 import type { ContactCma } from '@/lib/data/crm/getContactCmas'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
+import { Button, StateWord, type AdminState } from '@/components/admin/v2'
 
 function fmtDate(iso: string): string {
   return formatDate(iso, { month: 'short', day: 'numeric' })
@@ -32,6 +39,14 @@ const BUILD_LABEL: Record<string, string> = {
   building: 'Building',
   ready: 'Ready',
   failed: 'Build failed',
+}
+
+/** delivered = done; finalized (and not still building) = ready to act on. */
+function statusTone(status: string, building: boolean): AdminState {
+  if (building) return 'waiting'
+  if (status === 'delivered') return 'ok'
+  if (status === 'finalized') return 'accent'
+  return 'waiting'
 }
 
 export function ContactCmaCard(props: {
@@ -54,14 +69,12 @@ export function ContactCmaCard(props: {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-1.5 text-sm">
-          <FileText className="h-4 w-4 text-primary" aria-hidden />
-          CMAs
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2.5">
+    <div className="av2-pane">
+      <div className="flex items-center gap-1.5" style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>
+        <FileText className="h-4 w-4" style={{ color: 'var(--a-accent)' }} aria-hidden />
+        CMAs
+      </div>
+      <div className="space-y-2.5">
         {props.cmas.map((c) => {
           const sendable = c.status === 'finalized' || c.status === 'delivered'
           const building = c.buildState === 'queued' || c.buildState === 'building'
@@ -69,32 +82,38 @@ export function ContactCmaCard(props: {
             ? (BUILD_LABEL[c.buildState] ?? c.buildState)
             : (STATUS_LABEL[c.status] ?? c.status)
           return (
-            <div key={c.slug} className="rounded-lg border border-border p-2.5">
+            <div key={c.slug} className="rounded-lg p-2.5" style={{ border: '1px solid var(--a-border)' }}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground" title={c.subjectAddress}>{c.subjectAddress}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p
+                    className="truncate"
+                    style={{ fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}
+                    title={c.subjectAddress}
+                  >
+                    {c.subjectAddress}
+                  </p>
+                  <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                     {c.valueLine ? `${c.valueLine} · ` : ''}{fmtDate(c.createdAt)}
                   </p>
                 </div>
-                <Badge variant={c.status === 'delivered' ? 'secondary' : 'outline'} className={cn('shrink-0 text-xs', c.status === 'finalized' && !building && 'border-success text-success')}>
-                  {badgeLabel}
-                </Badge>
+                {/* shrink-0 lived on the shadcn Badge base class; StateWord takes
+                    no className, so the guard moves to the flex item itself. */}
+                <span className="shrink-0">
+                  <StateWord state={statusTone(c.status, building)}>{badgeLabel}</StateWord>
+                </span>
               </div>
               <div className="mt-2 flex items-center gap-2">
                 {!building ? (
-                  <Button asChild type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                    <a href={c.reviewUrl}>Review</a>
-                  </Button>
+                  <a href={c.reviewUrl} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                    Review
+                  </a>
                 ) : null}
                 {sendable && !building ? (
                   <Button
                     type="button"
-                    size="sm"
-                    variant={c.status === 'delivered' ? 'outline' : 'default'}
+                    variant={c.status === 'delivered' ? 'quiet' : 'primary'}
                     disabled={pending}
                     onClick={() => send(c.slug)}
-                    className="h-7 px-2.5 text-xs"
                   >
                     {sendingSlug === c.slug ? 'Sending…' : c.status === 'delivered' ? 'Re-send' : 'Send to contact'}
                   </Button>
@@ -103,7 +122,7 @@ export function ContactCmaCard(props: {
             </div>
           )
         })}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

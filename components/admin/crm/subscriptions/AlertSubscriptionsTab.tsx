@@ -10,12 +10,24 @@
  * per-row actions menu (edit criteria, rendered email preview, assign
  * broker, pause/resume, delete), and a selection toolbar for bulk pause /
  * resume / re-cadence / delete via app/actions/subscriptions-admin.ts.
+ *
+ * P11F: on the LOCKED admin v2 language. shadcn Input/Select/Checkbox/Table/
+ * Dialog/DropdownMenu/Button are gone. The reader is the div/role grid that
+ * reuses ReportGrid's classes + roles (av2-rgrid*, report-grid.css) — the same
+ * shape ConfigTableEditor and BlockListManager use, rather than the
+ * <ReportGrid> component itself, because this grid's header and cells are
+ * interactive (select-all, per-row checkbox, actions menu) and that component
+ * is documented stateless. The tracks are sized to fit instead of being wrapped
+ * in .av2-rgrid__scroll — see the note on gridStyle, the row menu cannot live
+ * inside a scroll container. Every filter, mutation and string is carried over
+ * verbatim.
  */
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { MoreHorizontal } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import {
   listAlertSubscriptionsAction,
   bulkUpdateAlertSubscriptionsAction,
@@ -28,21 +40,15 @@ import type {
   AlertSubscriptionKind,
 } from '@/lib/data/crm/subscriptionsAdmin'
 import { getFiltersSummary } from '@/lib/search-filters'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
-import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  Button,
+  ConfirmDialog,
+  Menu,
+  SearchField,
+  ToolbarCheck,
+  ToolbarSelect,
+} from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 import {
   PAGE_SIZE,
   formatSubscriptionDate,
@@ -190,103 +196,122 @@ export default function AlertSubscriptionsTab({
 
   const deleteCount = deleteTarget === 'selection' ? selected.size : deleteTarget ? 1 : 0
 
+  // Desktop column template — the custom property report-grid.css reads at
+  // >=720px. Below that the same markup stacks into one block per row.
+  //
+  // NO --rgrid-min and NO .av2-rgrid__scroll wrapper, deliberately. The row
+  // actions are a v2 <Menu>, whose panel is position:absolute inside the row —
+  // it is NOT portaled the way the shadcn DropdownMenu it replaces was. Any
+  // scroll container (.av2-rgrid__scroll is overflow-x:auto + overflow-y:hidden)
+  // clips its descendants, so a menu on any of the last few rows — i.e. EVERY
+  // row on a short list — would open into a clipped box and be unreachable.
+  // The tracks are therefore sized to fit the narrowest container the grid ever
+  // renders in (720px viewport − the shell's px-6 − the page's 16px = 640px;
+  // minimums total 540 + 8×12px gaps = 636), so nothing overflows sideways and
+  // the fr units let every column breathe on a real desktop. The actions track
+  // is 44px because .av2-iconbtn is --a-touch wide on a coarse pointer.
+  const gridStyle = {
+    '--rgrid-cols':
+      '20px minmax(68px,1.4fr) minmax(74px,1.7fr) 62px 58px 62px minmax(84px,1.2fr) 68px 44px',
+  } as CSSProperties
+
   return (
     <div className="space-y-3">
       {/* Filters */}
       <div data-tour="subs-filters" className="flex flex-wrap items-center gap-2">
-        <Input
+        <SearchField
           value={qInput}
           onChange={(e) => {
             setQInput(e.target.value)
             resetToFirstPage()
           }}
           placeholder={kind === 'guest' ? 'Search by email or name' : 'Search by name'}
-          className="h-9 w-full sm:w-64"
+          className="w-full sm:w-64"
+          // Releases .av2-input--bar's 200px cap so the width classes decide.
+          style={{ maxWidth: '100%' }}
           aria-label={`Search ${nounPlural}`}
         />
-        <Select
+        <ToolbarSelect
+          className="w-32"
+          aria-label="Status filter"
           value={status}
-          onValueChange={(v) => {
-            setStatus(v as StatusFilter)
+          onChange={(e) => {
+            setStatus(e.target.value as StatusFilter)
             resetToFirstPage()
           }}
         >
-          <SelectTrigger className="h-9 w-32" aria-label="Status filter">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+        </ToolbarSelect>
+        <ToolbarSelect
+          className="w-36"
+          aria-label="Frequency filter"
           value={frequency}
-          onValueChange={(v) => {
-            setFrequency(v as FrequencyFilter)
+          onChange={(e) => {
+            setFrequency(e.target.value as FrequencyFilter)
             resetToFirstPage()
           }}
         >
-          <SelectTrigger className="h-9 w-36" aria-label="Frequency filter">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All frequencies</SelectItem>
-            <SelectItem value="instant">Instant</SelectItem>
-            <SelectItem value="daily">Daily</SelectItem>
-            <SelectItem value="weekly">Weekly</SelectItem>
-          </SelectContent>
-        </Select>
+          <option value="all">All frequencies</option>
+          <option value="instant">Instant</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </ToolbarSelect>
         {kind === 'guest' ? (
-          <Select
+          <ToolbarSelect
+            className="w-36"
+            aria-label="Origin filter"
             value={origin}
-            onValueChange={(v) => {
-              setOrigin(v as OriginFilter)
+            onChange={(e) => {
+              setOrigin(e.target.value as OriginFilter)
               resetToFirstPage()
             }}
           >
-            <SelectTrigger className="h-9 w-36" aria-label="Origin filter">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All origins</SelectItem>
-              <SelectItem value="user">User</SelectItem>
-              <SelectItem value="broker">Broker</SelectItem>
-              <SelectItem value="system">System</SelectItem>
-            </SelectContent>
-          </Select>
+            <option value="all">All origins</option>
+            <option value="user">User</option>
+            <option value="broker">Broker</option>
+            <option value="system">System</option>
+          </ToolbarSelect>
         ) : null}
       </div>
 
       {/* Selection toolbar */}
       {selected.size > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2">
-          <span className="text-sm tabular-nums text-foreground">
+        <div
+          className="flex flex-wrap items-center gap-2 rounded-lg px-3 py-2"
+          style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)' }}
+        >
+          <span className="text-sm tabular-nums" style={{ color: 'var(--a-text)' }}>
             {selected.size.toLocaleString('en-US')} selected
           </span>
-          <Button size="sm" variant="outline" disabled={isPending} onClick={() => runUpdate(ids, { active: false }, 'Paused')}>
+          <Button variant="quiet" disabled={isPending} onClick={() => runUpdate(ids, { active: false }, 'Paused')}>
             Pause
           </Button>
-          <Button size="sm" variant="outline" disabled={isPending} onClick={() => runUpdate(ids, { active: true }, 'Resumed')}>
+          <Button variant="quiet" disabled={isPending} onClick={() => runUpdate(ids, { active: true }, 'Resumed')}>
             Resume
           </Button>
-          <Select value="" onValueChange={(v) => runUpdate(ids, { frequency: v as 'instant' | 'daily' | 'weekly' }, 'Updated frequency for')}>
-            <SelectTrigger className="h-8 w-36" aria-label="Set frequency" disabled={isPending}>
-              <SelectValue placeholder="Set frequency" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="instant">Instant</SelectItem>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button size="sm" variant="destructive" disabled={isPending} onClick={() => setDeleteTarget('selection')}>
+          <ToolbarSelect
+            className="w-36"
+            aria-label="Set frequency"
+            value=""
+            disabled={isPending}
+            onChange={(e) => {
+              if (!e.target.value) return
+              runUpdate(ids, { frequency: e.target.value as 'instant' | 'daily' | 'weekly' }, 'Updated frequency for')
+            }}
+          >
+            <option value="" disabled>Set frequency</option>
+            <option value="instant">Instant</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+          </ToolbarSelect>
+          <Button variant="danger" disabled={isPending} onClick={() => setDeleteTarget('selection')}>
             Delete
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto text-muted-foreground"
+            variant="quiet"
+            className="ml-auto"
             disabled={isPending}
             onClick={() => setSelected(new Set())}
           >
@@ -299,133 +324,148 @@ export default function AlertSubscriptionsTab({
       {isPending ? (
         <TableSkeleton />
       ) : (
-        <div data-tour="subs-table" className="no-scrollbar overflow-x-auto rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={allOnPageSelected}
-                    onCheckedChange={toggleAll}
-                    aria-label="Select all rows on this page"
-                  />
-                </TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Search</TableHead>
-                <TableHead>Origin</TableHead>
-                <TableHead>Frequency</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Engagement</TableHead>
-                <TableHead>Last notified</TableHead>
-                <TableHead className="w-10" aria-label="Row actions" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
-                    No {nounPlural} match these filters.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((row) => (
-                  <TableRow key={row.id} data-state={selected.has(row.id) ? 'selected' : undefined}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selected.has(row.id)}
-                        onCheckedChange={() => toggleOne(row.id)}
-                        aria-label={`Select ${row.email ?? row.name ?? noun}`}
-                      />
-                    </TableCell>
-                    <TableCell className="max-w-56">
-                      <p className="truncate text-sm text-foreground">{row.email ?? '—'}</p>
-                      {row.crmPersonId ? (
-                        <Link
-                          href={`/admin/people/${row.crmPersonId}`}
-                          className="text-xs text-primary underline-offset-2 hover:underline"
-                        >
-                          Open contact
-                        </Link>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="max-w-72">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {row.name?.trim() || 'Saved search'}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {getFiltersSummary(row.filters ?? {})}
-                      </p>
-                    </TableCell>
-                    <TableCell><OriginBadge origin={row.origin} /></TableCell>
-                    <TableCell className="text-sm text-foreground">{frequencyLabel(row.frequency)}</TableCell>
-                    <TableCell><StatusBadge active={row.active} /></TableCell>
-                    <TableCell><EngagementCell engagement={row.engagement} /></TableCell>
-                    <TableCell className="text-sm tabular-nums text-muted-foreground">
-                      {formatSubscriptionDate(row.lastNotifiedAt)}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="size-8 text-muted-foreground"
-                            aria-label={`Actions for ${row.email ?? row.name ?? noun}`}
-                          >
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => setEditRow(row)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setSettingsRow(row)}>Alert settings</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => setPreviewRow(row)}>Preview email</DropdownMenuItem>
-                          <DropdownMenuItem
-                            disabled={!row.crmPersonId}
-                            onSelect={() => setAssignRow(row)}
-                          >
-                            Assign broker
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onSelect={() => runUpdate([row.id], { active: !row.active }, row.active ? 'Paused' : 'Resumed')}
-                          >
-                            {row.active ? 'Pause' : 'Resume'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem variant="destructive" onSelect={() => setDeleteTarget(row)}>
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+        <div data-tour="subs-table">
+          {/* Select-all, phone only. report-grid.css hides .av2-rgrid__head
+              below 720px (the row becomes one stacked block), which would take
+              the header's select-all with it — and it is reachable on a phone
+              today, first column of the scrolling table. Exactly one of the two
+              is in the accessibility tree at any width; the other is display:none. */}
+          <div className="hidden items-center gap-2 pb-2 max-[719.98px]:flex">
+            <ToolbarCheck
+              label="Select all"
+              checked={allOnPageSelected}
+              onChange={toggleAll}
+              aria-label="Select all rows on this page"
+            />
+          </div>
+          <div className="av2-rgrid" role="table" aria-label={nounPlural} style={gridStyle}>
+            <div className="av2-rgrid__head" role="row">
+              <span role="columnheader" className="av2-rgrid__h">
+                <ToolbarCheck
+                  label=""
+                  checked={allOnPageSelected}
+                  onChange={toggleAll}
+                  aria-label="Select all rows on this page"
+                />
+              </span>
+              <span role="columnheader" className="av2-rgrid__h">Contact</span>
+              <span role="columnheader" className="av2-rgrid__h">Search</span>
+              <span role="columnheader" className="av2-rgrid__h">Origin</span>
+              <span role="columnheader" className="av2-rgrid__h">Frequency</span>
+              <span role="columnheader" className="av2-rgrid__h">Status</span>
+              <span role="columnheader" className="av2-rgrid__h">Engagement</span>
+              <span role="columnheader" className="av2-rgrid__h">Last notified</span>
+              <span role="columnheader" className="av2-rgrid__h" aria-label="Row actions" />
+            </div>
+
+            {rows.length === 0 ? (
+              <div className="av2-rgrid__empty" role="row">
+                <span role="cell">No {nounPlural} match these filters.</span>
+              </div>
+            ) : (
+              rows.map((row) => (
+                <div
+                  key={row.id}
+                  role="row"
+                  data-state={selected.has(row.id) ? 'selected' : undefined}
+                  className={
+                    selected.has(row.id)
+                      ? 'av2-rgrid__row bg-[var(--a-accent-wash)] hover:bg-[var(--a-inset)]'
+                      : 'av2-rgrid__row hover:bg-[var(--a-inset)]'
+                  }
+                >
+                  <span role="cell" className="av2-rgrid__c">
+                    <ToolbarCheck
+                      label=""
+                      checked={selected.has(row.id)}
+                      onChange={() => toggleOne(row.id)}
+                      aria-label={`Select ${row.email ?? row.name ?? noun}`}
+                    />
+                  </span>
+                  <span role="cell" data-label="Contact" className="av2-rgrid__c">
+                    {/* Spans, not <p>: the cell is a <span>, so a block element
+                        here would be invalid nesting. */}
+                    <span className="block truncate text-sm" style={{ color: 'var(--a-text)' }}>{row.email ?? '—'}</span>
+                    {row.crmPersonId ? (
+                      <Link
+                        href={`/admin/people/${row.crmPersonId}`}
+                        className="text-xs underline-offset-2 hover:underline"
+                        style={{ color: 'var(--a-accent)' }}
+                      >
+                        Open contact
+                      </Link>
+                    ) : null}
+                  </span>
+                  <span role="cell" data-label="Search" className="av2-rgrid__c">
+                    <span className="block truncate text-sm font-medium" style={{ color: 'var(--a-text)' }}>
+                      {row.name?.trim() || 'Saved search'}
+                    </span>
+                    <span className="block truncate text-xs" style={{ color: 'var(--a-text-2)' }}>
+                      {getFiltersSummary(row.filters ?? {})}
+                    </span>
+                  </span>
+                  <span role="cell" data-label="Origin" className="av2-rgrid__c">
+                    <OriginBadge origin={row.origin} />
+                  </span>
+                  <span role="cell" data-label="Frequency" className="av2-rgrid__c text-sm" style={{ color: 'var(--a-text)' }}>
+                    {frequencyLabel(row.frequency)}
+                  </span>
+                  <span role="cell" data-label="Status" className="av2-rgrid__c">
+                    <StatusBadge active={row.active} />
+                  </span>
+                  <span role="cell" data-label="Engagement" className="av2-rgrid__c">
+                    <EngagementCell engagement={row.engagement} />
+                  </span>
+                  <span
+                    role="cell"
+                    data-label="Last notified"
+                    className="av2-rgrid__c text-sm tabular-nums"
+                    style={{ color: 'var(--a-text-2)' }}
+                  >
+                    {formatSubscriptionDate(row.lastNotifiedAt)}
+                  </span>
+                  <span role="cell" className="av2-rgrid__c">
+                    <Menu
+                      label={`Actions for ${row.email ?? row.name ?? noun}`}
+                      align="end"
+                      trigger={<MoreHorizontal className="size-4" />}
+                      items={[
+                        { label: 'Edit', onSelect: () => setEditRow(row) },
+                        { label: 'Alert settings', onSelect: () => setSettingsRow(row) },
+                        { label: 'Preview email', onSelect: () => setPreviewRow(row) },
+                        {
+                          label: 'Assign broker',
+                          disabled: !row.crmPersonId,
+                          onSelect: () => setAssignRow(row),
+                        },
+                        {
+                          label: row.active ? 'Pause' : 'Resume',
+                          onSelect: () =>
+                            runUpdate([row.id], { active: !row.active }, row.active ? 'Paused' : 'Resumed'),
+                        },
+                        { label: 'Delete', danger: true, onSelect: () => setDeleteTarget(row) },
+                      ]}
+                    />
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 
       <PaginationBar page={page} total={total} isPending={isPending} onPage={setPage} />
 
       {/* Delete confirm (selection or a single row) */}
-      <Dialog open={deleteTarget !== null} onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete {deleteCount.toLocaleString('en-US')} {deleteCount === 1 ? noun : nounPlural}</DialogTitle>
-            <DialogDescription>
-              The selected {deleteCount === 1 ? `${noun} stops` : `${nounPlural} stop`} sending and the {deleteCount === 1 ? 'record is' : 'records are'} removed. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button size="sm" variant="outline" disabled={isPending} onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
-            <Button size="sm" variant="destructive" disabled={isPending} onClick={runDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title={`Delete ${deleteCount.toLocaleString('en-US')} ${deleteCount === 1 ? noun : nounPlural}`}
+        description={`The selected ${deleteCount === 1 ? `${noun} stops` : `${nounPlural} stop`} sending and the ${deleteCount === 1 ? 'record is' : 'records are'} removed. This cannot be undone.`}
+        confirmLabel="Delete"
+        busy={isPending}
+        onConfirm={runDelete}
+      />
 
       {editRow ? (
         <AlertEditDialog row={editRow} onClose={() => setEditRow(null)} onSaved={reload} />

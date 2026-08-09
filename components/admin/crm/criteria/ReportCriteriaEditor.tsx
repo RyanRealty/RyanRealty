@@ -17,22 +17,21 @@
  *
  * Fully controlled: every edit calls onChange with the next
  * { areas, frequency } pair. The parent owns persistence.
+ *
+ * Admin v2 (11F): off shadcn and onto the locked admin language. The cadence
+ * Select -> ToolbarSelect (a native select, which the platform makes
+ * accessible for free). The areas Popover+cmdk -> a native <details>
+ * disclosure holding a SearchField and one ToolbarCheck per area — the same
+ * anchored-panel shape InboxThreadList uses. NOT Combobox: that primitive is
+ * single-select and closes its panel on every choice, so picking three areas
+ * would mean opening it three times. Checkboxes keep multi-select, keep the
+ * selected/unselected state visible without a tick glyph, and stay
+ * Tab-and-Space operable from the keyboard.
  */
 
 import { useMemo, useState } from 'react'
-import { HugeiconsIcon } from '@hugeicons/react'
-import { Tick02Icon } from '@hugeicons/core-free-icons'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import {
-  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
-} from '@/components/ui/command'
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { SearchField, ToolbarCheck, ToolbarSelect } from '@/components/admin/v2'
 import {
   reportCriteriaSentence,
   resolveAreaLabels,
@@ -59,8 +58,32 @@ const FREQUENCY_OPTIONS: ReadonlyArray<{ value: ReportFrequency; label: string }
   { value: 'quarterly', label: 'quarterly' },
 ]
 
-/** Layout-only sizing so inline controls clear 44 px on touch screens. */
-const TOUCH_TRIGGER = 'min-h-11 sm:min-h-8'
+/**
+ * Layout-only sizing so inline controls clear 44 px on touch screens. An inline
+ * style rather than a `min-h-11` class: admin-v2.css is UNLAYERED, so
+ * .av2-input--bar's 32px min-height outranks any Tailwind utility no matter its
+ * specificity (the @layer lesson recorded in admin-v2.css itself).
+ */
+const TOUCH_TRIGGER = { minHeight: 'var(--a-touch)' } as const
+
+/** The areas panel, anchored under its summary. */
+const AREAS_PANEL = {
+  position: 'absolute',
+  left: 0,
+  top: '100%',
+  marginTop: 4,
+  zIndex: 30,
+  width: 288,
+  maxWidth: '90vw',
+  background: 'var(--a-bg)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-md)',
+  boxShadow: 'var(--a-shadow-overlay)',
+  padding: 'var(--a-s2)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 'var(--a-s2)',
+} as const
 
 export function ReportCriteriaEditor({
   areas,
@@ -71,6 +94,7 @@ export function ReportCriteriaEditor({
   className,
 }: ReportCriteriaEditorProps) {
   const [areasOpen, setAreasOpen] = useState(false)
+  const [areaQuery, setAreaQuery] = useState('')
 
   // Keep already-subscribed areas visible even when the registry no longer
   // offers them, so editing never silently drops a subscription.
@@ -84,6 +108,10 @@ export function ReportCriteriaEditor({
 
   const labels = resolveAreaLabels(areas, options)
   const sentence = reportCriteriaSentence(areas, frequency, options)
+  const query = areaQuery.trim().toLowerCase()
+  const visibleOptions = query
+    ? options.filter((o) => o.label.toLowerCase().includes(query))
+    : options
 
   function toggleArea(slug: string) {
     const next = areas.includes(slug) ? areas.filter((a) => a !== slug) : [...areas, slug]
@@ -93,75 +121,98 @@ export function ReportCriteriaEditor({
   return (
     <div className={cn('space-y-3', className)}>
       {/* The sentence */}
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 text-sm text-foreground">
+      <div
+        className="flex flex-wrap items-center gap-x-1.5 gap-y-2"
+        style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}
+      >
         <span>Send a</span>
 
-        <Select
+        <ToolbarSelect
+          aria-label="Report cadence"
           value={frequency}
-          onValueChange={(v) => onChange({ areas, frequency: v as ReportFrequency })}
+          onChange={(e) => onChange({ areas, frequency: e.target.value as ReportFrequency })}
           disabled={disabled}
+          style={TOUCH_TRIGGER}
         >
-          <SelectTrigger size="sm" className={TOUCH_TRIGGER} aria-label="Report cadence">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {FREQUENCY_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {FREQUENCY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </ToolbarSelect>
 
         <span>market report for</span>
 
-        <Popover open={areasOpen} onOpenChange={setAreasOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
+        <details
+          open={areasOpen}
+          onToggle={(e) => setAreasOpen(e.currentTarget.open)}
+          style={{ position: 'relative', maxWidth: '100%' }}
+        >
+          <summary
+            className="av2-btn av2-btn--quiet"
+            aria-expanded={areasOpen}
+            aria-label="Report areas"
+            aria-disabled={disabled || undefined}
+            tabIndex={disabled ? -1 : undefined}
+            style={{
+              ...TOUCH_TRIGGER,
+              maxWidth: '100%',
+              ...(disabled ? { pointerEvents: 'none' as const, opacity: 0.5 } : null),
+            }}
+          >
+            <span className="truncate">{summarizeAreaLabels(labels)}</span>
+          </summary>
+          <div style={AREAS_PANEL}>
+            <SearchField
+              aria-label="Search areas"
+              placeholder="Search areas"
+              value={areaQuery}
+              onChange={(e) => setAreaQuery(e.target.value)}
               disabled={disabled}
-              className={cn(TOUCH_TRIGGER, 'max-w-full')}
-              aria-expanded={areasOpen}
+              style={{ maxWidth: '100%' }}
+            />
+            <div
+              role="group"
               aria-label="Report areas"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                maxHeight: 260,
+                overflowY: 'auto',
+              }}
             >
-              <span className="truncate">{summarizeAreaLabels(labels)}</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-72 p-0">
-            <Command>
-              <CommandInput placeholder="Search areas" />
-              <CommandList>
-                <CommandEmpty>No area matches that search.</CommandEmpty>
-                <CommandGroup>
-                  {options.map((option) => {
-                    const selected = areas.includes(option.slug)
-                    return (
-                      <CommandItem
-                        key={option.slug}
-                        value={option.label}
-                        onSelect={() => toggleArea(option.slug)}
-                        className="min-h-11 sm:min-h-8"
-                        aria-selected={selected}
-                      >
-                        <HugeiconsIcon
-                          icon={Tick02Icon}
-                          strokeWidth={2}
-                          className={cn('size-4', selected ? 'opacity-100' : 'opacity-0')}
-                          aria-hidden
-                        />
-                        {option.label}
-                      </CommandItem>
-                    )
-                  })}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+              {visibleOptions.length === 0 ? (
+                <p style={{ margin: 0, padding: 'var(--a-s2)', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                  No area matches that search.
+                </p>
+              ) : (
+                visibleOptions.map((option) => (
+                  <ToolbarCheck
+                    key={option.slug}
+                    label={option.label}
+                    checked={areas.includes(option.slug)}
+                    onChange={() => toggleArea(option.slug)}
+                    disabled={disabled}
+                    labelStyle={{ minHeight: 'var(--a-touch)', padding: '0 var(--a-s1)' }}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </details>
       </div>
 
       {/* Live plain-English restatement */}
-      <div className="rounded-lg border border-border bg-muted/50 px-3 py-2">
-        <p className="text-sm text-foreground" aria-live="polite">{sentence}</p>
+      <div
+        style={{
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-md)',
+          background: 'var(--a-inset)',
+          padding: '8px var(--a-s3)',
+        }}
+      >
+        <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }} aria-live="polite">
+          {sentence}
+        </p>
       </div>
     </div>
   )

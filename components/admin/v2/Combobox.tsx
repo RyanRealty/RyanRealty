@@ -44,6 +44,7 @@ export function Combobox({
   onQueryChange,
   loading = false,
   idleText,
+  className,
 }: {
   /** Accessible name for the input. Required — a nameless combobox is unusable. */
   label: string
@@ -65,6 +66,9 @@ export function Combobox({
   loading?: boolean
   /** Async searches only: what to say before the user has typed anything. */
   idleText?: string
+  /** Extra classes for the input. The class list was hardcoded, so a picker that
+   *  used to fill its composer column was capped at the bar width. */
+  className?: string
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -154,7 +158,7 @@ export function Combobox({
         ref={inputRef}
         type="text"
         role="combobox"
-        className="av2-input av2-input--bar"
+        className={['av2-input', 'av2-input--bar', className ?? ''].filter(Boolean).join(' ')}
         aria-label={label}
         aria-expanded={open}
         aria-controls={listId}

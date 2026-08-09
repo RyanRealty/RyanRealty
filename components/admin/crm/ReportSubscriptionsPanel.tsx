@@ -6,25 +6,29 @@
  * state and posts changes to the `setAction` server action (which owns the DB
  * write + any consent gating). This island never queries the database.
  *
- * Radix controls (Switch, Checkbox, Select) are not native form elements, so
- * each one mirrors its value into a hidden <input> the FormData picks up:
+ * The controls carry no `name`, so each one mirrors its value into a hidden
+ * input the FormData picks up:
  *   - active  -> "on" | "off"
  *   - areas   -> repeated "areas" entries (one per selected slug)
  *   - frequency -> "weekly" | "monthly" | "quarterly"
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY — every export, prop, handler, action and user-visible
+ * string is unchanged. Four notes on the swap:
+ *  - The Card shell becomes `av2-pane`, the barrel's stacked context section.
+ *  - Switch / ToolbarCheck / SelectField are native inputs rather than Radix
+ *    ones, but they are still UNNAMED, so the hidden mirrors above remain the
+ *    only fields the FormData sees. Adding a `name` to any of them would post a
+ *    second, duplicate value — do not.
+ *  - The Checkbox + Label pair becomes ToolbarCheck, whose label element WRAPS
+ *    its input; the id/htmlFor association is replaced by a stronger one, not
+ *    dropped. Same for the Frequency Label + SelectTrigger id, which SelectField
+ *    now owns end to end (its own useId pair, so passing an id would break it).
+ *  - Only the Save button is primary; "Send report now" is quiet, per the
+ *    one-primary-action rule.
  */
 import { useState, useTransition } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, SelectField, Switch, ToolbarCheck } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 
 export type ReportFrequency = 'weekly' | 'monthly' | 'quarterly'
@@ -34,6 +38,8 @@ const FREQUENCY_OPTIONS: { value: ReportFrequency; label: string }[] = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'quarterly', label: 'Quarterly' },
 ]
+
+const MUTED_STYLE: React.CSSProperties = { color: 'var(--a-text-2)' }
 
 export type ReportSubscriptionsPanelProps = {
   current: {
@@ -88,13 +94,11 @@ export default function ReportSubscriptionsPanel({
   }
 
   return (
-    <Card className={cn(className)}>
-      <CardHeader>
-        <CardTitle className="text-base">Market reports</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className={cn('av2-pane', className)}>
+      <div className="text-base font-medium" style={{ color: 'var(--a-text)' }}>Market reports</div>
+      <div>
         <form action={onSubmit} className="space-y-5">
-          {/* hidden mirrors for the radix controls */}
+          {/* hidden mirrors for the unnamed controls */}
           <input type="hidden" name="active" value={isActive ? 'on' : 'off'} />
           <input type="hidden" name="frequency" value={frequency} />
           {[...areas].map((slug) => (
@@ -103,16 +107,17 @@ export default function ReportSubscriptionsPanel({
 
           <div className="flex items-center justify-between gap-3 min-h-11">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-foreground">Receiving reports</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm font-medium" style={{ color: 'var(--a-text)' }}>Receiving reports</p>
+              <p className="text-xs" style={MUTED_STYLE}>
                 {isActive ? 'On' : 'Off'}
               </p>
             </div>
             <Switch
+              label="Receiving market reports"
+              labelHidden
               checked={isActive}
               disabled={pending}
-              onCheckedChange={setIsActive}
-              aria-label="Receiving market reports"
+              onChange={(e) => setIsActive(e.target.checked)}
             />
           </div>
 
@@ -121,26 +126,24 @@ export default function ReportSubscriptionsPanel({
             disabled={pending || !isActive}
             aria-disabled={pending || !isActive}
           >
-            <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">
+            <legend className="text-xs font-semibold uppercase tracking-wide mb-1" style={MUTED_STYLE}>
               Areas
             </legend>
             {areaOptions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No areas available.</p>
+              <p className="text-sm" style={MUTED_STYLE}>No areas available.</p>
             ) : (
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {areaOptions.map((opt) => {
                   const id = `report-area-${opt.slug}`
                   return (
                     <div key={opt.slug} className="flex items-center gap-2 min-h-11">
-                      <Checkbox
+                      <ToolbarCheck
                         id={id}
+                        label={opt.label}
                         checked={areas.has(opt.slug)}
                         disabled={pending || !isActive}
-                        onCheckedChange={(v) => toggleArea(opt.slug, v === true)}
+                        onChange={(e) => toggleArea(opt.slug, e.target.checked)}
                       />
-                      <Label htmlFor={id} className="text-sm font-normal">
-                        {opt.label}
-                      </Label>
                     </div>
                   )
                 })}
@@ -149,38 +152,32 @@ export default function ReportSubscriptionsPanel({
           </fieldset>
 
           <div className="space-y-1.5">
-            <Label htmlFor="report-frequency" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Frequency
-            </Label>
-            <Select
+            <SelectField
+              label="Frequency"
               value={frequency}
               disabled={pending || !isActive}
-              onValueChange={(v) => setFrequency(v as ReportFrequency)}
+              onChange={(e) => setFrequency(e.target.value as ReportFrequency)}
             >
-              <SelectTrigger id="report-frequency" className="h-11 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FREQUENCY_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {FREQUENCY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </SelectField>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button type="submit" disabled={pending} className="min-h-11 w-full sm:w-auto">
+            <Button type="submit" touch disabled={pending} className="w-full sm:w-auto">
               {pending ? 'Saving' : 'Save report settings'}
             </Button>
             {sendNowAction ? (
               <Button
                 type="button"
-                variant="outline"
+                variant="quiet"
+                touch
                 disabled={pending || areas.size === 0}
                 onClick={onSendNow}
-                className="min-h-11 w-full sm:w-auto"
+                className="w-full sm:w-auto"
                 title={areas.size === 0 ? 'Pick at least one area first' : undefined}
               >
                 Send report now
@@ -188,12 +185,16 @@ export default function ReportSubscriptionsPanel({
             ) : null}
           </div>
           {sendNote ? (
-            <p className={cn('text-sm', sendNote.ok ? 'text-success' : 'text-destructive')} role="status">
+            <p
+              className="text-sm"
+              style={{ color: sendNote.ok ? 'var(--a-ok)' : 'var(--a-danger)' }}
+              role="status"
+            >
               {sendNote.text}
             </p>
           ) : null}
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

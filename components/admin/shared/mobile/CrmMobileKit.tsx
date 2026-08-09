@@ -22,6 +22,7 @@
  * existing console tables/panels keep rendering at the larger breakpoints.
  */
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -46,7 +47,14 @@ export function CrmAvatar({
   className?: string
 }) {
   const dim = { width: size, height: size }
-  if (src) {
+  // A rotted photo URL must fall back to initials. Radix <Avatar> rendered its
+  // fallback whenever the image was not 'loaded' — including a 404 — so a stale
+  // FUB/Gravatar/social URL still showed initials. A bare <img> shows the
+  // browser's broken-image glyph instead, and this component is now the avatar
+  // on the person workspace and the people table.
+  const [failed, setFailed] = useState(false)
+  useEffect(() => setFailed(false), [src])
+  if (src && !failed) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -54,6 +62,7 @@ export function CrmAvatar({
         alt=""
         style={dim}
         referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
         // object-top: portrait sources (2:3 broker headshots) center-crop to
         // the torso without it. No effect on square/landscape photos.
         className={cn('shrink-0 rounded-full object-cover object-top', className)}
@@ -65,7 +74,9 @@ export function CrmAvatar({
       style={{ ...dim, background: 'var(--a-inset)', color: 'var(--a-text)' }}
       className={cn('flex shrink-0 items-center justify-center rounded-full font-semibold', className)}
     >
-      <span style={{ fontSize: Math.round(size * 0.36) }}>{crmInitials(name)}</span>
+      {/* Floored at the smallest type token: at size 20 the 0.36 ratio computes
+          to 7px, under --a-text-xs (11px). */}
+      <span style={{ fontSize: Math.max(11, Math.round(size * 0.36)) }}>{crmInitials(name)}</span>
     </span>
   )
 }

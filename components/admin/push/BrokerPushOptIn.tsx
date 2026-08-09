@@ -17,9 +17,10 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
+
+const QUIET = { color: 'var(--a-text-2)' }
 
 interface Device {
   endpoint: string
@@ -164,34 +165,36 @@ export default function BrokerPushOptIn() {
 
   return (
     <div className="mt-8">
-      <Separator className="mb-8" />
-      <h2 className="text-base font-semibold text-foreground">Push alerts on this device</h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      {/* The shadcn <Separator> was a radix decorative rule; a hairline in the
+          border token is the same thing in this language. */}
+      <div className="mb-8 h-px w-full" style={{ background: 'var(--a-border)' }} role="none" />
+      <h2 className="text-base font-semibold" style={{ color: 'var(--a-text)' }}>Push alerts on this device</h2>
+      <p className="mt-1 text-sm" style={QUIET}>
         A lead alert arrives as a phone notification, from the same queue that sends the text. It keeps working when the
         text channel is off.
       </p>
 
       {!supported ? (
-        <p className="mt-4 text-sm text-muted-foreground">
+        <p className="mt-4 text-sm" style={QUIET}>
           This browser does not support push notifications. On iPhone, add the site to your Home Screen first.
         </p>
       ) : !state ? (
-        <p className="mt-4 text-sm text-muted-foreground">Checking this device.</p>
+        <p className="mt-4 text-sm" style={QUIET}>Checking this device.</p>
       ) : !state.broker ? (
-        <p className="mt-4 text-sm text-muted-foreground">
+        <p className="mt-4 text-sm" style={QUIET}>
           Alerts are routed per broker and this account has no broker profile.
         </p>
       ) : !state.configured ? (
-        <p className="mt-4 text-sm text-muted-foreground">{state.reason}</p>
+        <p className="mt-4 text-sm" style={QUIET}>{state.reason}</p>
       ) : (
         <div className="mt-4 space-y-3">
           <div className="flex flex-wrap items-center gap-3">
             {enabledHere ? (
               <>
-                <Button type="button" variant="outline" onClick={disable} disabled={busy}>
+                <Button type="button" variant="quiet" onClick={disable} disabled={busy}>
                   Turn off on this device
                 </Button>
-                <Button type="button" variant="secondary" onClick={sendTest} disabled={busy}>
+                <Button type="button" variant="quiet" onClick={sendTest} disabled={busy}>
                   Send a test
                 </Button>
               </>
@@ -202,7 +205,7 @@ export default function BrokerPushOptIn() {
             )}
           </div>
           {state.devices.length > 0 && (
-            <ul className="text-sm text-muted-foreground">
+            <ul className="text-sm" style={QUIET}>
               {state.devices.map((d) => (
                 <li key={d.endpoint} className="tabular-nums">
                   {d.label ?? 'Device'}
@@ -216,7 +219,7 @@ export default function BrokerPushOptIn() {
       )}
 
       {message && (
-        <p className={`mt-3 text-sm ${message.ok ? 'text-success' : 'text-destructive'}`}>{message.text}</p>
+        <p className="mt-3 text-sm" style={{ color: message.ok ? 'var(--a-ok)' : 'var(--a-danger)' }}>{message.text}</p>
       )}
     </div>
   )

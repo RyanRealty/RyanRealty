@@ -10,10 +10,16 @@
  * readOnly + isProtected fields remain display-only (<dd> only, no editor).
  *
  * Server component — grouping/formatting via groupAndFormat (pure). The client
- * editor island (CustomFieldEditor.tsx) owns the mutation layer. Design-system
- * only — all output is Card/CardContent/CardHeader primitives.
+ * editor island (CustomFieldEditor.tsx) owns the mutation layer.
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md). The
+ * Card/CardHeader/CardContent shell becomes `av2-pane`, the barrel's stacked
+ * context section (ADMIN_UI §3 pattern 5); every export, prop and user-visible
+ * string is unchanged. The stylesheet is imported directly because this file
+ * uses the pane CLASS rather than a component from the barrel — the same
+ * side-effect import the migrated route files carry.
  */
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import '@/components/admin/v2/admin-v2.css'
 import type { CrmFieldDefinition } from '@/lib/data/crm/getCrmFieldDefinitions'
 import { groupAndFormat } from '@/lib/crm/custom-field-display'
 import { cn } from '@/lib/utils'
@@ -27,6 +33,8 @@ export type CustomFieldsPanelProps = {
   className?: string
 }
 
+const GROUP_LABEL_STYLE: React.CSSProperties = { color: 'var(--a-text-2)' }
+
 export default function CustomFieldsPanel({ personId, custom, defs, className }: CustomFieldsPanelProps) {
   const groups = groupAndFormat(custom, defs)
   if (groups.length === 0) return null
@@ -35,15 +43,13 @@ export default function CustomFieldsPanel({ personId, custom, defs, className }:
   const defMap = new Map(defs.map((d) => [d.key, d]))
 
   return (
-    <Card className={cn(className)}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Custom fields</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
+    <div className={cn('av2-pane', className)}>
+      <div className="text-base font-medium" style={{ color: 'var(--a-text)' }}>Custom fields</div>
+      <div className="space-y-4 text-sm">
         {groups.map((g) => (
           <div key={g.group ?? '__ungrouped__'} className="space-y-2">
             {g.group ? (
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="text-xs font-semibold uppercase tracking-wide" style={GROUP_LABEL_STYLE}>
                 {g.group}
               </div>
             ) : null}
@@ -64,7 +70,7 @@ export default function CustomFieldsPanel({ personId, custom, defs, className }:
                 return (
                   <div key={row.key} className="space-y-1">
                     <div className="flex items-baseline justify-between gap-3">
-                      <dt className="shrink-0 text-muted-foreground">{row.label}</dt>
+                      <dt className="shrink-0" style={GROUP_LABEL_STYLE}>{row.label}</dt>
                       {editorDef ? (
                         <CustomFieldEditor
                           personId={personId}
@@ -74,10 +80,8 @@ export default function CustomFieldsPanel({ personId, custom, defs, className }:
                         />
                       ) : (
                         <dd
-                          className={cn(
-                            'truncate text-right text-foreground',
-                            row.tabular && 'tabular-nums',
-                          )}
+                          className={cn('truncate text-right', row.tabular && 'tabular-nums')}
+                          style={{ color: 'var(--a-text)' }}
                         >
                           {row.display}
                         </dd>
@@ -89,7 +93,7 @@ export default function CustomFieldsPanel({ personId, custom, defs, className }:
             </dl>
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

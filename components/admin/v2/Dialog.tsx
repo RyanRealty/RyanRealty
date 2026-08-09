@@ -61,8 +61,20 @@ export function Dialog({
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (open && !el.open) el.showModal()
-    else if (!open && el.open) el.close()
+    if (open && !el.open) {
+      el.showModal()
+      // showModal() focuses the first focusable descendant — which is the head's
+      // own Close button — so every dialog opened to be typed in landed the
+      // broker on "dismiss". React's autoFocus cannot cover it: this <dialog>
+      // is mounted while CLOSED, so autoFocus fires once against a hidden node
+      // and never again. Radix mounted its content per open, which is why the
+      // attribute worked before. Prefer the first field in the body.
+      const body = el.querySelector('.av2-dialog__body')
+      const target = body?.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [autofocus]',
+      )
+      target?.focus()
+    } else if (!open && el.open) el.close()
   }, [open])
 
   return (
@@ -71,8 +83,21 @@ export function Dialog({
       className={size === 'work' ? 'av2-dialog av2-dialog--work' : 'av2-dialog'}
       aria-labelledby={titleId}
       aria-describedby={description ? descId : undefined}
-      // Native close covers Esc, the backdrop and form method="dialog".
+      // Native close covers Esc and form method="dialog" — NOT the backdrop.
+      // A <dialog> receives the click on itself when the backdrop is pressed and
+      // fires nothing, so every Radix dialog that dismissed on outside-click
+      // stopped doing so. Sheet already handled this; Dialog did not.
       onClose={onClose}
+      onClick={(e) => {
+        // detail === 0 is a KEYBOARD-activated click (Enter/Space), which reports
+        // clientX/clientY of 0 and would read as a point outside the box.
+        if (e.detail === 0) return
+        if (e.target !== e.currentTarget) return
+        const r = e.currentTarget.getBoundingClientRect()
+        const inside =
+          e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+        if (!inside) onClose()
+      }}
       onCancel={(e) => {
         e.preventDefault()
         onClose()

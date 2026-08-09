@@ -6,15 +6,20 @@
  * Server component. Renders the typed output of getContactBehaviorSummary as
  * props (the page fetches; this component only renders):
  *   - a header with last-seen (relative) + sessions in the last 30 days
- *   - intentSignals as Badge chips
+ *   - intentSignals as StateWord chips
  *   - topListingsViewed as a compact list (address + view count, linked to the
  *     public listing when an MLS key is present)
  *   - topSearches as labeled rows with counts
  *
  * Empty state when there is no behavior yet. Mobile-first stack.
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Badge variant="soft-hot" (accent wash + accent text) -> StateWord
+ * state="accent", the same pair drawn from var(--a-accent-wash)/var(--a-accent);
+ * every shadcn semantic class -> its var(--a-*) token.
  */
 import { ConsoleSection } from '@/components/console/ConsoleSection'
-import { Badge } from '@/components/ui/badge'
+import { StateWord } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 import type { ContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
 
@@ -47,13 +52,15 @@ export default function ContactBehaviorPanel({
   return (
     <ConsoleSection title="On the website" count={lastSeenLabel(lastSeenAt)}>
       {!hasAnything ? (
-        <p className="text-sm text-muted-foreground">No website activity captured yet.</p>
+        <p style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>No website activity captured yet.</p>
       ) : (
         <div className="space-y-4">
           {/* Sessions in the last 30 days */}
-          <div className="flex items-baseline gap-2 text-sm">
-            <span className="text-lg font-semibold tabular-nums text-foreground">{sessions30d}</span>
-            <span className="text-muted-foreground">
+          <div className="flex items-baseline gap-2" style={{ fontSize: 'var(--a-text-md)' }}>
+            <span className="tabular-nums" style={{ fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' }}>
+              {sessions30d}
+            </span>
+            <span style={{ color: 'var(--a-text-2)' }}>
               {sessions30d === 1 ? 'session' : 'sessions'} in the last 30 days
             </span>
           </div>
@@ -61,10 +68,16 @@ export default function ContactBehaviorPanel({
           {/* Intent signals as chips */}
           {intentSignals.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
+              {/* NOT StateWord: .av2-state uppercases, and these are derived PROSE
+                  from deriveIntentSignals, not status words. */}
               {intentSignals.map((signal) => (
-                <Badge key={signal} variant="soft-hot" className="text-xs">
+                <span
+                  key={signal}
+                  className="av2-chip"
+                  style={{ background: 'var(--a-accent-wash)', color: 'var(--a-accent)' }}
+                >
                   {signal}
-                </Badge>
+                </span>
               ))}
             </div>
           ) : null}
@@ -75,7 +88,10 @@ export default function ContactBehaviorPanel({
           {/* Searches they ran */}
           {topSearches.length > 0 ? (
             <div className="space-y-2">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <div
+                className="font-semibold uppercase tracking-wide"
+                style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+              >
                 Searches
               </div>
               <ul className="space-y-1.5">
@@ -84,11 +100,14 @@ export default function ContactBehaviorPanel({
                     key={s.label}
                     className={cn(
                       'flex min-h-11 items-center justify-between gap-3',
-                      'rounded-lg border border-border px-3 py-2 sm:min-h-0',
+                      'rounded-lg px-3 py-2 sm:min-h-0',
                     )}
+                    style={{ border: '1px solid var(--a-border)' }}
                   >
-                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">{s.label}</span>
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    <span className="min-w-0 flex-1 truncate" style={{ fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>
+                      {s.label}
+                    </span>
+                    <span className="shrink-0 tabular-nums" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                       {s.count} {s.count === 1 ? 'time' : 'times'}
                     </span>
                   </li>

@@ -3,10 +3,7 @@
 /** A small labeled select used by most action forms. Verbatim move from
  *  BulkActions.tsx (was a private, unexported function there). */
 
-import { Label } from '@/components/ui/label'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { SelectField } from '@/components/admin/v2'
 import type { BulkPickerOption } from './types'
 
 export function FormSelect({
@@ -19,23 +16,19 @@ export function FormSelect({
   options: BulkPickerOption[]
 }) {
   return (
-    <div>
-      <Label className="mb-1.5 block text-xs text-muted-foreground">{label}</Label>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="h-10 md:h-9">
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.length === 0 ? (
-            <SelectItem value="__none" disabled>None available</SelectItem>
-          ) : (
-            options.map((o) => (
-              <SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>
-            ))
-          )}
-        </SelectContent>
-      </Select>
-    </div>
+    <SelectField label={label} value={value} onChange={(e) => onChange(e.target.value)}>
+      {/* The placeholder was shadcn's SelectValue fallback, which is not an
+          option. A native select needs a real one to render an unset value, so
+          it is here and DISABLED — same words, still unpickable. */}
+      <option value="" disabled>{placeholder}</option>
+      {options.length === 0 ? (
+        <option value="__none" disabled>None available</option>
+      ) : (
+        options.map((o) => (
+          <option key={o.key} value={o.key}>{o.label}</option>
+        ))
+      )}
+    </SelectField>
   )
 }
 

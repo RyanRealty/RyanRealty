@@ -15,6 +15,25 @@
  * Email/SMS composers are passed in as slots (they carry bound server actions
  * from the server page). Counts come from getPersonDetailExtras (exact,
  * count:'exact' — never rows.length).
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY — every export, prop, handler, action, filter and
+ * user-visible string is unchanged. Five notes on the swap:
+ *  - The four compose tabs are v2 Buttons (primary when active, quiet
+ *    otherwise). The barrel carries their hover, pressed and focus states, so
+ *    nothing is hand-rolled; they lose the pill radius the old chips had.
+ *  - The Quick Follow Up dropdown is the barrel's Menu, which owns
+ *    click-outside, Escape, focus return and arrow-key roving.
+ *  - Timeline chips are plain token-styled spans, not StateWord: .av2-state
+ *    uppercases, and "3 opens" / "Group · 4 people" / a delivery receipt read
+ *    as sentence-case facts.
+ *  - The timeline filter row and the compose textareas stay raw controls
+ *    carrying token classes. A full-width underline tab and an unlabelled
+ *    composer are neither a centred Button nor a labelled TextAreaField —
+ *    same call, same reason, as MobileNotesTab in components/admin/shared.
+ *  - One primary Button per compose PANEL. The panels are mutually exclusive
+ *    views, and demoting the commit action in one of them would leave that
+ *    panel with no primary action.
  */
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
@@ -45,18 +64,7 @@ import {
   Users,
 } from 'lucide-react'
 import { groupInfoFromPayload } from '@/lib/crm/group-message'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Button, IconButton, Menu, SearchField, ToolbarSelect } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 import { TimelineMediaStrip } from '@/components/admin/crm/StoredAttachments'
 import { partitionNotes } from '@/lib/crm/note-classify'
@@ -78,6 +86,40 @@ export type TimelineItem = {
 }
 
 type ComposeMode = 'note' | 'email' | 'text' | 'call' | null
+
+const MUTED: React.CSSProperties = { color: 'var(--a-text-2)' }
+const DANGER: React.CSSProperties = { color: 'var(--a-danger)' }
+
+/** Small sentence-case chip. See the header note on StateWord. */
+function TimelineChip({
+  tone = 'neutral',
+  className,
+  title,
+  children,
+}: {
+  tone?: 'neutral' | 'ok' | 'warn' | 'danger' | 'accent'
+  className?: string
+  title?: string
+  children: React.ReactNode
+}) {
+  const TONES: Record<string, { bg: string; fg: string }> = {
+    neutral: { bg: 'var(--a-inset)', fg: 'var(--a-text-2)' },
+    ok: { bg: 'var(--a-ok-wash)', fg: 'var(--a-ok)' },
+    warn: { bg: 'var(--a-warn-wash)', fg: 'var(--a-warn)' },
+    danger: { bg: 'var(--a-danger-wash)', fg: 'var(--a-danger)' },
+    accent: { bg: 'var(--a-accent-wash)', fg: 'var(--a-accent)' },
+  }
+  const t = TONES[tone]
+  return (
+    <span
+      title={title}
+      className={cn('inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium', className)}
+      style={{ background: t.bg, color: t.fg }}
+    >
+      {children}
+    </span>
+  )
+}
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -111,17 +153,21 @@ const QUICK_FOLLOW_UPS: Array<{ label: string; days: number }> = [
 
 const CALL_OUTCOMES = ['Spoke with lead', 'Left voicemail', 'No answer', 'Wrong number', 'Do not contact', 'Other']
 
-function kindIcon(kind: string, source: string): { icon: React.ReactNode; className: string } {
-  if (kind.startsWith('email')) return { icon: <Mail className="h-3.5 w-3.5" />, className: 'bg-primary/10 text-primary' }
-  if (kind.startsWith('text') || kind.startsWith('sms')) return { icon: <MessageSquare className="h-3.5 w-3.5" />, className: 'bg-secondary text-foreground' }
-  if (kind === 'call' || kind === 'voicemail') return { icon: <Phone className="h-3.5 w-3.5" />, className: 'bg-success/15 text-success' }
-  if (kind === 'note') return { icon: <StickyNote className="h-3.5 w-3.5" />, className: 'bg-muted text-muted-foreground' }
-  if (kind === 'web_event') return { icon: <Globe className="h-3.5 w-3.5" />, className: 'bg-warning/15 text-warning' }
-  if (kind === 'lead_created') return { icon: <CircleAlert className="h-3.5 w-3.5" />, className: 'bg-warning/15 text-warning' }
-  if (kind === 'task') return { icon: <ListChecks className="h-3.5 w-3.5" />, className: 'bg-muted text-muted-foreground' }
-  if (kind === 'stage_change' || kind === 'system') return { icon: <Settings className="h-3.5 w-3.5" />, className: 'bg-warning/15 text-warning' }
+/** Kind glyph + its token pair. Colour is status vocabulary, never decoration. */
+function kindIcon(kind: string, source: string): { icon: React.ReactNode; style: React.CSSProperties } {
+  const tint = (bg: string, fg: string): React.CSSProperties => ({ background: bg, color: fg })
+  const NEUTRAL = tint('var(--a-inset)', 'var(--a-text-2)')
+  const WARN = tint('var(--a-warn-wash)', 'var(--a-warn)')
+  if (kind.startsWith('email')) return { icon: <Mail className="h-3.5 w-3.5" />, style: tint('var(--a-accent-wash)', 'var(--a-accent)') }
+  if (kind.startsWith('text') || kind.startsWith('sms')) return { icon: <MessageSquare className="h-3.5 w-3.5" />, style: tint('var(--a-inset)', 'var(--a-text)') }
+  if (kind === 'call' || kind === 'voicemail') return { icon: <Phone className="h-3.5 w-3.5" />, style: tint('var(--a-ok-wash)', 'var(--a-ok)') }
+  if (kind === 'note') return { icon: <StickyNote className="h-3.5 w-3.5" />, style: NEUTRAL }
+  if (kind === 'web_event') return { icon: <Globe className="h-3.5 w-3.5" />, style: WARN }
+  if (kind === 'lead_created') return { icon: <CircleAlert className="h-3.5 w-3.5" />, style: WARN }
+  if (kind === 'task') return { icon: <ListChecks className="h-3.5 w-3.5" />, style: NEUTRAL }
+  if (kind === 'stage_change' || kind === 'system') return { icon: <Settings className="h-3.5 w-3.5" />, style: WARN }
   void source
-  return { icon: <Info className="h-3.5 w-3.5" />, className: 'bg-muted text-muted-foreground' }
+  return { icon: <Info className="h-3.5 w-3.5" />, style: NEUTRAL }
 }
 
 function dateGroupLabel(iso: string): string {
@@ -240,11 +286,11 @@ function SmsDeliveryBadge({ item }: { item: TimelineItem }) {
     Icon = Clock3
   }
 
-  const styles: Record<typeof variant, string> = {
-    delivered: 'bg-success/15 text-success',
-    sent: 'bg-secondary text-foreground',
-    pending: 'bg-warning/15 text-warning',
-    failed: 'bg-destructive/15 text-destructive',
+  const tones: Record<typeof variant, 'ok' | 'neutral' | 'warn' | 'danger'> = {
+    delivered: 'ok',
+    sent: 'neutral',
+    pending: 'warn',
+    failed: 'danger',
   }
 
   function refresh() {
@@ -263,22 +309,21 @@ function SmsDeliveryBadge({ item }: { item: TimelineItem }) {
 
   return (
     <span className="ml-2 inline-flex items-center gap-1 align-middle">
-      <Badge className={cn('gap-1 text-[10px]', styles[variant])} title={err ?? undefined}>
+      <TimelineChip tone={tones[variant]} title={err ?? undefined}>
         <Icon className={cn('h-3 w-3', pending && 'animate-spin')} aria-hidden />
         {label}
-      </Badge>
+      </TimelineChip>
       {/* Reconcile the pending / non-terminal case against Twilio live. Terminal
           delivered/undelivered/failed states are final — no refresh needed. */}
       {!terminal || isFailure ? (
-        <button
-          type="button"
+        <IconButton
+          label="Refresh delivery status"
           onClick={refresh}
           disabled={pending}
-          aria-label="Refresh delivery status"
-          className="rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-50"
+          style={{ width: 20, height: 20 }}
         >
           <RefreshCw className={cn('h-3 w-3', pending && 'animate-spin')} />
-        </button>
+        </IconButton>
       ) : null}
     </span>
   )
@@ -291,7 +336,7 @@ function EventCard({ item }: { item: TimelineItem }) {
   const [expanded, setExpanded] = useState(false)
   const [starred, setStarred] = useState(item.starred)
   const [, start] = useTransition()
-  const { icon, className } = kindIcon(item.kind, item.source)
+  const { icon, style: kindStyle } = kindIcon(item.kind, item.source)
   const isAutomationEmail = item.kind === 'email_out' && item.source === 'sequence'
   const isLeadOrigin = item.kind === 'lead_created'
   const preview = (item.body ?? '').trim()
@@ -320,46 +365,52 @@ function EventCard({ item }: { item: TimelineItem }) {
 
   return (
     <div className="group flex gap-3">
-      <div className={cn('mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full', className)}>{icon}</div>
-      <div className="min-w-0 flex-1 rounded-lg border border-border bg-card px-3 py-2.5">
+      <div
+        className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+        style={kindStyle}
+      >
+        {icon}
+      </div>
+      <div
+        className="min-w-0 flex-1 rounded-lg px-3 py-2.5"
+        style={{ border: '1px solid var(--a-border)', background: 'var(--a-surface)' }}
+      >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <span className="text-sm font-medium text-foreground">{item.title ?? (isLeadOrigin ? 'Lead Origin' : item.kind.replace(/_/g, ' '))}</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--a-text)' }}>
+              {item.title ?? (isLeadOrigin ? 'Lead Origin' : item.kind.replace(/_/g, ' '))}
+            </span>
             {isAutomationEmail ? (
-              <Badge variant="secondary" className="ml-2 text-[10px] uppercase">
-                Archived
-              </Badge>
+              <TimelineChip className="ml-2 uppercase">Archived</TimelineChip>
             ) : null}
             {typeof item.opens === 'number' && item.opens > 0 ? (
-              <Badge className="ml-2 bg-success text-[10px] text-success-foreground">{item.opens} opens</Badge>
+              <TimelineChip tone="ok" className="ml-2">
+                {item.opens} opens
+              </TimelineChip>
             ) : null}
             {typeof item.clicks === 'number' && item.clicks > 0 ? (
-              <Badge variant="secondary" className="ml-1 text-[10px]">
-                {item.clicks} clicks
-              </Badge>
+              <TimelineChip className="ml-1">{item.clicks} clicks</TimelineChip>
             ) : null}
             {item.kind === 'sms_out' ? <SmsDeliveryBadge item={item} /> : null}
             {group ? (
-              <Badge
-                variant="secondary"
-                className="ml-2 gap-1 text-[10px]"
-                title={`Group text · ${group.participants.join(', ')}`}
-              >
+              <TimelineChip className="ml-2" title={`Group text · ${group.participants.join(', ')}`}>
                 <Users className="h-3 w-3" aria-hidden />
                 Group · {group.count} people
-              </Badge>
+              </TimelineChip>
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="text-xs tabular-nums text-muted-foreground">{cardTimestamp(item.ts, now)}</span>
-            <button
-              type="button"
+            <span className="text-xs tabular-nums" style={MUTED}>
+              {cardTimestamp(item.ts, now)}
+            </span>
+            <IconButton
+              label={starred ? 'Unstar' : 'Star'}
               onClick={toggleStar}
-              aria-label={starred ? 'Unstar' : 'Star'}
-              className={cn('rounded p-0.5', starred ? 'text-warning' : 'text-muted-foreground opacity-0 group-hover:opacity-100')}
+              className={cn(!starred && 'opacity-0 group-hover:opacity-100')}
+              style={{ width: 22, height: 22, color: starred ? 'var(--a-warn)' : undefined }}
             >
               <Star className={cn('h-3.5 w-3.5', starred && 'fill-current')} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -367,18 +418,29 @@ function EventCard({ item }: { item: TimelineItem }) {
           <dl className="mt-2 space-y-0.5">
             {payloadEntries.slice(0, 12).map(([k, v]) => (
               <div key={k} className="grid grid-cols-[120px_1fr] gap-2 text-xs">
-                <dt className="text-muted-foreground">{k.replace(/_/g, ' ')}</dt>
-                <dd className="truncate text-foreground">{String(v)}</dd>
+                <dt style={MUTED}>{k.replace(/_/g, ' ')}</dt>
+                <dd className="truncate" style={{ color: 'var(--a-text)' }}>
+                  {String(v)}
+                </dd>
               </div>
             ))}
           </dl>
         ) : preview ? (
           <button type="button" onClick={() => long && setExpanded((e) => !e)} className={cn('mt-1 block w-full text-left', long && 'cursor-pointer')}>
-            <p className={cn('whitespace-pre-wrap break-words text-sm text-muted-foreground [overflow-wrap:anywhere]', !expanded && 'line-clamp-2')}>{preview}</p>
-            {long ? <span className="mt-0.5 text-xs font-medium text-primary">{expanded ? 'Show less' : 'Show more'}</span> : null}
+            <p
+              className={cn('whitespace-pre-wrap break-words text-sm [overflow-wrap:anywhere]', !expanded && 'line-clamp-2')}
+              style={MUTED}
+            >
+              {preview}
+            </p>
+            {long ? (
+              <span className="mt-0.5 text-xs font-medium" style={{ color: 'var(--a-accent)' }}>
+                {expanded ? 'Show less' : 'Show more'}
+              </span>
+            ) : null}
           </button>
         ) : contentHidden ? (
-          <p className="mt-1 inline-flex items-center gap-1 text-xs italic text-muted-foreground">
+          <p className="mt-1 inline-flex items-center gap-1 text-xs italic" style={MUTED}>
             <EyeOff className="h-3 w-3" aria-hidden />
             Content not synced from Follow Up Boss
           </p>
@@ -399,11 +461,24 @@ function NoteCompose({ personId }: { personId: number }) {
   const router = useRouter()
   return (
     <div className="space-y-2">
-      <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3} placeholder="Add notes or type @name to notify" className="text-sm" />
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {/* Placeholder-only by contract: TextAreaField prints a visible label this
+          composer never had. Raw control + av2-input + aria-label is the
+          folder's pattern for an unlabelled field. */}
+      <textarea
+        className="av2-input w-full"
+        aria-label="Note"
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        rows={3}
+        placeholder="Add notes or type @name to notify"
+      />
+      {error ? (
+        <p className="text-xs" style={DANGER}>
+          {error}
+        </p>
+      ) : null}
       <div className="flex justify-end">
         <Button
-          size="sm"
           disabled={!body.trim() || pending}
           onClick={() =>
             start(async () => {
@@ -436,26 +511,46 @@ function LogCallCompose({ personId }: { personId: number }) {
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <Select value={outcome} onValueChange={setOutcome}>
-          <SelectTrigger className="h-9 flex-1 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {CALL_OUTCOMES.map((o) => (
-              <SelectItem key={o} value={o}>
-                {o}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input value={minutes} onChange={(e) => setMinutes(e.target.value)} type="number" inputMode="numeric" placeholder="Minutes" className="h-9 w-28 text-sm" />
+        <ToolbarSelect
+          aria-label="Call outcome"
+          value={outcome}
+          onChange={(e) => setOutcome(e.target.value)}
+          className="flex-1"
+          style={{ maxWidth: 'none' }}
+        >
+          {CALL_OUTCOMES.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </ToolbarSelect>
+        <SearchField
+          aria-label="Minutes"
+          value={minutes}
+          onChange={(e) => setMinutes(e.target.value)}
+          type="number"
+          inputMode="numeric"
+          placeholder="Minutes"
+          className="w-28"
+          style={{ maxWidth: 'none' }}
+        />
       </div>
-      <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Call notes" className="text-sm" />
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      <textarea
+        className="av2-input w-full"
+        aria-label="Call notes"
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={2}
+        placeholder="Call notes"
+      />
+      {error ? (
+        <p className="text-xs" style={DANGER}>
+          {error}
+        </p>
+      ) : null}
       <div className="flex items-center justify-between gap-2">
         <Button
-          size="sm"
-          variant="outline"
+          variant="quiet"
           disabled={pending}
           onClick={() =>
             start(async () => {
@@ -469,7 +564,6 @@ function LogCallCompose({ personId }: { personId: number }) {
           <Phone className="mr-1 h-3.5 w-3.5" /> Call now
         </Button>
         <Button
-          size="sm"
           disabled={pending}
           onClick={() =>
             start(async () => {
@@ -576,56 +670,51 @@ export function PersonCenterColumn({
       className="relative h-full overflow-y-auto"
     >
       {/* Person navigation strip (§07b 3) — counter hidden (direct-URL arrival) */}
-      <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
+      <div
+        className="sticky top-0 z-10 backdrop-blur"
+        style={{ borderBottom: '1px solid var(--a-border)', background: 'var(--a-bg)' }}
+      >
         <div className="flex items-center gap-2 px-4 py-2">
-          <Link href={backHref} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+          <Link
+            href={backHref}
+            className="flex items-center gap-1.5 text-sm text-[color:var(--a-text-2)] hover:text-[color:var(--a-text)]"
+          >
             <ArrowLeft className="h-4 w-4" />
-            <span className="font-medium text-foreground">{personName}</span>
+            <span className="font-medium" style={{ color: 'var(--a-text)' }}>
+              {personName}
+            </span>
           </Link>
         </div>
 
         {/* Action bar (§07b 4) */}
         <div className="flex items-center gap-1.5 px-4 pb-2">
           {ACTIONS.map((a) => (
-            <button
+            <Button
               key={a.key}
-              type="button"
+              variant={mode === a.key ? 'primary' : 'quiet'}
               onClick={() => setMode((m) => (m === a.key ? null : a.key))}
-              className={cn(
-                'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm',
-                mode === a.key ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:bg-secondary hover:text-foreground',
-              )}
             >
               {a.icon}
               {a.label}
-            </button>
+            </Button>
           ))}
           <div className="ml-auto flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" size="icon" variant="ghost" aria-label="Add Quick Follow Up" title="Add Quick Follow Up" className="h-8 w-8 text-primary">
-                  <Zap className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {QUICK_FOLLOW_UPS.map((q) => (
-                  <DropdownMenuItem
-                    key={q.days}
-                    disabled={quickPending}
-                    onSelect={() =>
-                      startQuick(async () => {
-                        const r = await quickFollowUpAction(personId, q.days)
-                        setQuickNote(r.ok ? `Follow-up task added: ${q.label}` : ('error' in r ? r.error : 'Could not add task'))
-                        if (r.ok) router.refresh()
-                      })
-                    }
-                  >
-                    {q.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <span className="hidden items-center gap-1 text-xs text-muted-foreground lg:flex">
+            <Menu
+              label="Add Quick Follow Up"
+              align="end"
+              trigger={<Zap className="h-4 w-4" />}
+              items={QUICK_FOLLOW_UPS.map((q) => ({
+                label: q.label,
+                disabled: quickPending,
+                onSelect: () =>
+                  startQuick(async () => {
+                    const r = await quickFollowUpAction(personId, q.days)
+                    setQuickNote(r.ok ? `Follow-up task added: ${q.label}` : ('error' in r ? r.error : 'Could not add task'))
+                    if (r.ok) router.refresh()
+                  }),
+              }))}
+            />
+            <span className="hidden items-center gap-1 text-xs lg:flex" style={MUTED}>
               <Info className="h-3.5 w-3.5" /> How it works
             </span>
           </div>
@@ -633,15 +722,26 @@ export function PersonCenterColumn({
 
         {/* Compose panel */}
         {mode ? (
-          <div className="border-t border-border bg-card px-4 py-3">
+          <div
+            className="px-4 py-3"
+            style={{ borderTop: '1px solid var(--a-border)', background: 'var(--a-surface)' }}
+          >
             {mode === 'note' ? <NoteCompose personId={personId} /> : null}
             {mode === 'email' ? emailComposer : null}
             {mode === 'text' ? (
               smsBlockedReason ? (
-                <Alert>
-                  <AlertTitle className="text-sm">Texting not available yet</AlertTitle>
-                  <AlertDescription className="text-sm">{smsBlockedReason}</AlertDescription>
-                </Alert>
+                <div
+                  role="alert"
+                  className="rounded-lg px-4 py-3"
+                  style={{ border: '1px solid var(--a-border)', background: 'var(--a-inset)' }}
+                >
+                  <p className="text-sm font-semibold" style={{ color: 'var(--a-text)' }}>
+                    Texting not available yet
+                  </p>
+                  <p className="text-sm" style={MUTED}>
+                    {smsBlockedReason}
+                  </p>
+                </div>
               ) : (
                 smsComposer
               )
@@ -649,7 +749,11 @@ export function PersonCenterColumn({
             {mode === 'call' ? <LogCallCompose personId={personId} /> : null}
           </div>
         ) : null}
-        {quickNote ? <p className="px-4 pb-2 text-xs text-muted-foreground">{quickNote}</p> : null}
+        {quickNote ? (
+          <p className="px-4 pb-2 text-xs" style={MUTED}>
+            {quickNote}
+          </p>
+        ) : null}
 
         {/* Filter tabs (§07b 5) */}
         <div className="flex gap-0.5 overflow-x-auto px-4">
@@ -662,14 +766,14 @@ export function PersonCenterColumn({
                 onClick={() => setTab(t.key)}
                 className={cn(
                   'flex shrink-0 items-center gap-1.5 border-b-2 px-2.5 py-2 text-sm',
-                  tab === t.key ? 'border-primary font-semibold text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+                  tab === t.key
+                    ? 'border-b-[color:var(--a-accent)] font-semibold text-[color:var(--a-text)]'
+                    : 'border-b-transparent text-[color:var(--a-text-2)] hover:text-[color:var(--a-text)]',
                 )}
               >
                 {t.label}
                 {count !== null && count > 0 ? (
-                  <Badge variant="secondary" className="px-1.5 text-[10px] tabular-nums">
-                    {count}
-                  </Badge>
+                  <TimelineChip className="tabular-nums">{count}</TimelineChip>
                 ) : null}
               </button>
             )
@@ -680,20 +784,33 @@ export function PersonCenterColumn({
       {/* Timeline (§07b 6) */}
       <div className="space-y-4 px-4 py-4">
         {tab === 'marketing' && (counts.marketing ?? 0) > 75 ? (
-          <p className="text-xs text-muted-foreground">Showing 75 most recent marketing emails.</p>
+          <p className="text-xs" style={MUTED}>
+            Showing 75 most recent marketing emails.
+          </p>
         ) : null}
         {noteSplit ? (
           /* Notes tab: broker-written notes first, auto-generated below (§07b). */
           noteSplit.humanCount === 0 && noteSplit.systemCount === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No notes yet.</p>
+            <p className="py-8 text-center text-sm" style={MUTED}>
+              No notes yet.
+            </p>
           ) : (
             <>
               {noteSplit.humanCount > 0 ? (
                 noteSplit.humanGroups.map((g) => (
                   <div key={`h-${g.label}`} className="space-y-3">
                     <div className="relative text-center">
-                      <span className="absolute inset-x-0 top-1/2 border-t border-border" aria-hidden />
-                      <span className="relative bg-background px-3 text-xs font-medium text-muted-foreground">{g.label}</span>
+                      <span
+                        className="absolute inset-x-0 top-1/2"
+                        style={{ borderTop: '1px solid var(--a-border)' }}
+                        aria-hidden
+                      />
+                      <span
+                        className="relative px-3 text-xs font-medium"
+                        style={{ background: 'var(--a-bg)', color: 'var(--a-text-2)' }}
+                      >
+                        {g.label}
+                      </span>
                     </div>
                     {g.items.map((item) => (
                       <EventCard key={item.id} item={item} />
@@ -701,7 +818,9 @@ export function PersonCenterColumn({
                   </div>
                 ))
               ) : (
-                <p className="py-6 text-center text-sm text-muted-foreground">No notes from your team yet.</p>
+                <p className="py-6 text-center text-sm" style={MUTED}>
+                  No notes from your team yet.
+                </p>
               )}
 
               {noteSplit.systemCount > 0 ? (
@@ -710,20 +829,28 @@ export function PersonCenterColumn({
                     type="button"
                     onClick={() => setShowSystemNotes((v) => !v)}
                     aria-expanded={showSystemNotes}
-                    className="flex w-full items-center gap-1.5 border-t border-border pt-3 text-xs font-medium text-muted-foreground hover:text-foreground"
+                    className="flex w-full items-center gap-1.5 pt-3 text-xs font-medium text-[color:var(--a-text-2)] hover:text-[color:var(--a-text)]"
+                    style={{ borderTop: '1px solid var(--a-border)' }}
                   >
                     {showSystemNotes ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                     Automated activity
-                    <Badge variant="secondary" className="px-1.5 text-[10px] tabular-nums">
-                      {noteSplit.systemCount}
-                    </Badge>
+                    <TimelineChip className="tabular-nums">{noteSplit.systemCount}</TimelineChip>
                   </button>
                   {showSystemNotes
                     ? noteSplit.systemGroups.map((g) => (
                         <div key={`s-${g.label}`} className="space-y-3 opacity-70">
                           <div className="relative text-center">
-                            <span className="absolute inset-x-0 top-1/2 border-t border-border" aria-hidden />
-                            <span className="relative bg-background px-3 text-xs font-medium text-muted-foreground">{g.label}</span>
+                            <span
+                              className="absolute inset-x-0 top-1/2"
+                              style={{ borderTop: '1px solid var(--a-border)' }}
+                              aria-hidden
+                            />
+                            <span
+                              className="relative px-3 text-xs font-medium"
+                              style={{ background: 'var(--a-bg)', color: 'var(--a-text-2)' }}
+                            >
+                              {g.label}
+                            </span>
                           </div>
                           {g.items.map((item) => (
                             <EventCard key={item.id} item={item} />
@@ -736,13 +863,24 @@ export function PersonCenterColumn({
             </>
           )
         ) : groups.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No activity in this view yet.</p>
+          <p className="py-8 text-center text-sm" style={MUTED}>
+            No activity in this view yet.
+          </p>
         ) : (
           groups.map((g) => (
             <div key={g.label} className="space-y-3">
               <div className="relative text-center">
-                <span className="absolute inset-x-0 top-1/2 border-t border-border" aria-hidden />
-                <span className="relative bg-background px-3 text-xs font-medium text-muted-foreground">{g.label}</span>
+                <span
+                  className="absolute inset-x-0 top-1/2"
+                  style={{ borderTop: '1px solid var(--a-border)' }}
+                  aria-hidden
+                />
+                <span
+                  className="relative px-3 text-xs font-medium"
+                  style={{ background: 'var(--a-bg)', color: 'var(--a-text-2)' }}
+                >
+                  {g.label}
+                </span>
               </div>
               {g.items.map((item) => (
                 <EventCard key={item.id} item={item} />
@@ -756,9 +894,11 @@ export function PersonCenterColumn({
       {showFab ? (
         <div className="sticky bottom-4 flex justify-center">
           <Button
-            size="sm"
-            variant="secondary"
-            className="rounded-full shadow-md"
+            variant="quiet"
+            // Radius and shadow are inline because .av2-btn declares its own
+            // radius UNLAYERED; the hover/pressed states live on background and
+            // transform, so nothing here overrides them.
+            style={{ borderRadius: 999, boxShadow: 'var(--a-shadow-overlay)' }}
             onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
           >
             <ArrowUp className="mr-1 h-3.5 w-3.5" /> Scroll to top

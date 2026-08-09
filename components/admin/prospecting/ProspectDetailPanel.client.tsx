@@ -9,26 +9,33 @@
  * "Send" always opens the compose dialog (onOpenSend) rather than firing a
  * send directly — the dialog is where the broker reviews/edits the merged
  * body before a compliance-sensitive cold send goes out (spec §5.1/§5.3).
+ *
+ * 11F: on the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md). Badge
+ * → the tenure chip recipe, Separator → a hairline div, AlertDialog → the base
+ * v2 <Dialog> (not <ConfirmDialog>: enrolling is not a destructive act and the
+ * language reserves red for danger), and "Review audit"/"Open in CRM" are real
+ * <Link>s carrying the av2-btn classes because the v2 Button has no `asChild` —
+ * the same call recorded in the sibling BpoDetailPanel.
+ *
+ * ONE primary Button per file (the locked "exactly one primary action per
+ * view"), and it is the drip confirm: every button in the action row is a
+ * TRIGGER — Send opens the compose dialog, Enroll opens this confirm, Build
+ * queues a background build — while the confirm is the only place this file
+ * commits an act. Same resolution already recorded in NewsletterDraftActions.
+ * Quiet buttons still carry accent text, a border, hover and press, so no
+ * affordance was deleted; only the fill moved.
+ *
+ * Everything else is byte-for-byte: the same server action, the same
+ * display-only gating, the same strings, the same disabled/title logic.
  */
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import type { CSSProperties } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import { Button, Dialog } from '@/components/admin/v2'
 import { enrollProspectInDripAction } from '@/app/actions/prospecting'
 import { PROSPECT_CHANNELS, type ProspectDetail } from '@/lib/data/prospecting/types'
 import { ProspectComplianceRibbon } from './ProspectComplianceRibbon.client'
@@ -37,15 +44,39 @@ import { ProspectMap } from './ProspectMap.client'
 import { ProspectPriceHistory } from './ProspectPriceHistory.client'
 import { formatDate, formatInt, formatPrice } from './format'
 
+const dividerStyle: CSSProperties = { borderTop: '1px solid var(--a-border)' }
+const badgeStyle: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-sm)',
+  padding: '1px 6px',
+}
+const quietTextStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{children}</h3>
+  return (
+    <h3
+      style={{
+        fontSize: 'var(--a-text-xs)',
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '.05em',
+        color: 'var(--a-text-2)',
+      }}
+    >
+      {children}
+    </h3>
+  )
 }
 
 function Spec({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-sm font-medium tabular-nums text-foreground">{value}</div>
+      <div style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{label}</div>
+      <div className="a-num" style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+        {value}
+      </div>
     </div>
   )
 }
@@ -120,7 +151,10 @@ export function ProspectDetailPanel({
     <div className="space-y-5">
       {/* Hero photo + map */}
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="aspect-[4/3] overflow-hidden rounded-lg bg-muted">
+        <div
+          className="aspect-[4/3] overflow-hidden rounded-lg"
+          style={{ minWidth: 0, background: 'var(--a-inset)' }}
+        >
           {detail.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- MLS/CDN photo hosts vary per listing; plain <img> avoids next/image remote-domain allowlisting for this admin-only surface.
             <img
@@ -131,11 +165,11 @@ export function ProspectDetailPanel({
             />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <p className="text-sm text-muted-foreground">No photo</p>
+              <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>No photo</p>
             </div>
           )}
         </div>
-        <div className="aspect-[4/3] overflow-hidden rounded-lg">
+        <div className="aspect-[4/3] overflow-hidden rounded-lg" style={{ minWidth: 0 }}>
           <ProspectMap lat={detail.latitude} lng={detail.longitude} address={detail.fullAddress} className="h-full" />
         </div>
       </div>
@@ -146,19 +180,22 @@ export function ProspectDetailPanel({
         {detail.personId ? (
           <Link
             href={`/admin/people/${detail.personId}`}
-            className="text-lg font-semibold text-foreground underline-offset-4 hover:underline"
+            className="underline-offset-4 hover:underline"
+            style={{ fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' }}
           >
             {detail.ownerName ?? 'Owner unknown'}
           </Link>
         ) : (
-          <h2 className="text-lg font-semibold text-foreground">{detail.ownerName ?? 'Owner unknown'}</h2>
+          <h2 style={{ fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' }}>
+            {detail.ownerName ?? 'Owner unknown'}
+          </h2>
         )}
-        <p className="text-sm text-muted-foreground">
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           {/* fullAddress already includes city + zip; only compose from parts when it is absent. */}
           {detail.fullAddress ??
             ([detail.streetAddress, detail.city, detail.postalCode].filter(Boolean).join(', ') || '—')}
         </p>
-        <p className="text-xs tabular-nums text-muted-foreground">
+        <p className="a-num" style={quietTextStyle}>
           {detail.listPrice != null ? `Was ${formatPrice(detail.listPrice)}` : null}
           {dateValue ? ` · ${dateLabel} ${formatDate(dateValue)}` : ''}
         </p>
@@ -171,22 +208,26 @@ export function ProspectDetailPanel({
         {/* Direct door to the audit itself (Matt 2026-08-05: "no way for me to
             immediately see the audits") — admin review page for the built doc. */}
         {detail.doc.state === 'ready' || detail.doc.state === 'sent' ? (
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/admin/cmas/${detail.doc.slug}`}>Review audit</Link>
-          </Button>
+          <Link
+            href={`/admin/cmas/${detail.doc.slug}`}
+            className="av2-btn av2-btn--quiet"
+            style={{ textDecoration: 'none' }}
+          >
+            Review audit
+          </Link>
         ) : null}
         {/* Tenure chip — shown only when a source proves the date (DAL
             deriveOwnershipSince). 0 = proven but under a year. */}
         {detail.ownershipYears != null ? (
-          <Badge variant="secondary" className="tabular-nums">
+          <span className="a-num" style={badgeStyle}>
             {detail.ownershipYears >= 1
               ? `Owned ${detail.ownershipYears} ${detail.ownershipYears === 1 ? 'year' : 'years'}`
               : 'Owned under a year'}
-          </Badge>
+          </span>
         ) : null}
       </div>
 
-      <Separator />
+      <div style={dividerStyle} />
 
       {/* Specs */}
       <div className="space-y-2">
@@ -199,11 +240,13 @@ export function ProspectDetailPanel({
           <Spec label="Lot (acres)" value={detail.lotAcres != null ? detail.lotAcres.toFixed(2) : '—'} />
           <Spec label="Garage" value={detail.garageSpaces != null ? String(detail.garageSpaces) : '—'} />
         </div>
-        {detail.subdivision ? <p className="text-xs text-muted-foreground">{detail.subdivision}</p> : null}
-        {detail.viewDescription ? <p className="text-xs text-muted-foreground">View: {detail.viewDescription}</p> : null}
+        {detail.subdivision ? <p style={quietTextStyle}>{detail.subdivision}</p> : null}
+        {detail.viewDescription ? (
+          <p style={quietTextStyle}>View: {detail.viewDescription}</p>
+        ) : null}
       </div>
 
-      <Separator />
+      <div style={dividerStyle} />
 
       {/* Price history */}
       <div className="space-y-2">
@@ -214,15 +257,17 @@ export function ProspectDetailPanel({
       {/* Engagement */}
       {hasEngagement ? (
         <>
-          <Separator />
+          <div style={dividerStyle} />
           <div className="space-y-2">
             <SectionLabel>Engagement</SectionLabel>
-            <p className="text-sm tabular-nums text-foreground">
+            <p className="a-num" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
               {detail.engagement.reportViews} report views · {detail.engagement.linkTaps} link taps ·{' '}
               {detail.engagement.emailOpens} email opens · {detail.engagement.emailClicks} email clicks
             </p>
             {detail.engagement.lastActivityAt ? (
-              <p className="text-xs text-muted-foreground">Last activity {formatDate(detail.engagement.lastActivityAt)}</p>
+              <p style={quietTextStyle}>
+                Last activity {formatDate(detail.engagement.lastActivityAt)}
+              </p>
             ) : null}
           </div>
         </>
@@ -232,39 +277,40 @@ export function ProspectDetailPanel({
       {detail.priorListAgentName || detail.priorListOfficeName ? (
         <div className="space-y-1">
           <SectionLabel>Prior listing</SectionLabel>
-          <p className="text-sm text-foreground">
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
             {detail.priorListAgentName ?? '—'}
             {detail.priorListOfficeName ? ` · ${detail.priorListOfficeName}` : ''}
           </p>
         </div>
       ) : null}
 
-      <Separator />
+      <div style={dividerStyle} />
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
         {detail.doc.state === 'none' ? (
-          <Button className="h-11 flex-1" onClick={() => onBuild(detail.id)}>
+          <Button variant="quiet" touch className="flex-1" onClick={() => onBuild(detail.id)}>
             Build audit
           </Button>
         ) : detail.doc.state === 'building' ? (
-          <Button className="h-11 flex-1" disabled aria-busy>
+          <Button variant="quiet" touch className="flex-1" disabled aria-busy>
             <span className="flex items-center gap-1.5">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Building…
             </span>
           </Button>
         ) : detail.doc.state === 'failed' ? (
-          <Button variant="outline" className="h-11 flex-1" onClick={() => onBuild(detail.id)}>
+          <Button variant="quiet" touch className="flex-1" onClick={() => onBuild(detail.id)}>
             Retry build
           </Button>
         ) : detail.doc.state === 'ready' && canOpenSend ? (
-          <Button className="h-11 flex-1" onClick={onOpenSend}>
+          <Button variant="quiet" touch className="flex-1" onClick={onOpenSend}>
             Send intro
           </Button>
         ) : null}
         <Button
-          variant="outline"
-          className="h-11 flex-1"
+          variant="quiet"
+          touch
+          className="flex-1"
           disabled={Boolean(dripBlockedReason) || enrolling}
           title={dripBlockedReason ?? undefined}
           onClick={() => setConfirmEnroll(true)}
@@ -280,31 +326,44 @@ export function ProspectDetailPanel({
           )}
         </Button>
         {crmHref ? (
-          <Button variant="outline" className="h-11 flex-1" asChild>
-            <Link href={crmHref}>Open in CRM</Link>
-          </Button>
+          <Link
+            href={crmHref}
+            className="av2-btn av2-btn--quiet av2-btn--touch"
+            style={{ flex: 1, textDecoration: 'none' }}
+          >
+            Open in CRM
+          </Link>
         ) : null}
       </div>
-      {dripBlockedReason ? <p className="text-xs text-muted-foreground">{dripBlockedReason}</p> : null}
+      {dripBlockedReason ? <p style={quietTextStyle}>{dripBlockedReason}</p> : null}
 
-      <AlertDialog open={confirmEnroll} onOpenChange={setConfirmEnroll}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Enroll in the {detail.kind === 'expired' ? 'expired-listing' : 'FSBO'} drip?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Starts the {detail.drip.sequenceName ? `"${detail.drip.sequenceName}"` : 'drip'} workflow for{' '}
-              {detail.ownerName ?? 'this owner'}. The first touch sends automatically and every step is
-              suppression-gated at send time. The enrollment is noted on the contact timeline.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={runEnroll}>Enroll</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Dialog
+        open={confirmEnroll}
+        onClose={() => setConfirmEnroll(false)}
+        title={`Enroll in the ${detail.kind === 'expired' ? 'expired-listing' : 'FSBO'} drip?`}
+        description={
+          <>
+            Starts the {detail.drip.sequenceName ? `"${detail.drip.sequenceName}"` : 'drip'} workflow for{' '}
+            {detail.ownerName ?? 'this owner'}. The first touch sends automatically and every step is
+            suppression-gated at send time. The enrollment is noted on the contact timeline.
+          </>
+        }
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setConfirmEnroll(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmEnroll(false)
+                runEnroll()
+              }}
+            >
+              Enroll
+            </Button>
+          </>
+        }
+      />
     </div>
   )
 }

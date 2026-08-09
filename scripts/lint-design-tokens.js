@@ -282,9 +282,42 @@ function hasHorizontalScrollbarWithoutGuardrail(content) {
   return false;
 }
 
+/**
+ * Comments are not code. These rules are lexical scans over the file text, so a
+ * comment EXPLAINING a migration — "Label + Input -> TextField", "the old
+ * bg-muted", "#0D74CE became a token" — was reported as the very violation it
+ * documented. That penalises the one thing this codebase wants most from a
+ * migration: a written reason. Fourth gate this class has been found in
+ * (ci:admin-v2-tokens, ci:admin-ui rule D and ci:server-type-reexport were all
+ * fixed the same way).
+ *
+ * Whole-line comments, block-comment interiors and JSX {\/* … *\/} blocks are
+ * blanked but the LINE COUNT is preserved, so any line-based reporting still
+ * points at the right place. A trailing comment after real code is left alone —
+ * the code on that line is code.
+ */
+function stripComments(text) {
+  let inBlock = false;
+  return text
+    .split("\n")
+    .map((line) => {
+      const t = line.trim();
+      const wasInBlock = inBlock;
+      if (inBlock) {
+        if (t.includes("*/")) inBlock = false;
+      } else if ((t.startsWith("/*") || t.startsWith("{/*")) && !t.includes("*/")) {
+        inBlock = true;
+      }
+      const isComment =
+        wasInBlock || inBlock || t.startsWith("//") || t.startsWith("*") || t.startsWith("/*") || t.startsWith("{/*");
+      return isComment ? "" : line;
+    })
+    .join("\n");
+}
+
 function lintFile(filePath) {
   const relative = normalizePath(path.relative(ROOT, filePath));
-  const content = fs.readFileSync(filePath, "utf8");
+  const content = stripComments(fs.readFileSync(filePath, "utf8"));
   const issues = [];
 
   const badClasses = findAll(DISALLOWED_CLASSES, content);

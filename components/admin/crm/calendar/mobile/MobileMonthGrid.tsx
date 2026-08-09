@@ -1,21 +1,41 @@
 'use client'
 
 /**
- * MobileMonthGrid — the §29 Screen A monthly grid on the navy zone (mob-08).
+ * MobileMonthGrid — the §29 Screen A monthly grid on the accent zone (mob-08).
  *
- * Anatomy per A.4: all-caps 11px day-of-week labels at white/55, 7-column date
- * cells with white 22px medium numerals, a 5px white/55 event dot centered
- * under dates that have entries, and a 44px cream-tinted rounded-rect behind
- * the selected date (today auto-selected). Out-of-month cells render empty.
+ * Anatomy per A.4: all-caps 11px day-of-week labels at 55% on the accent fill,
+ * 7-column date cells with 22px medium numerals in the paired foreground, a 5px
+ * event dot centered under dates that have entries, and a 44px rounded-rect
+ * behind the selected date (today auto-selected). Out-of-month cells render
+ * empty.
  *
  * Gestures per A.4: tap selects a date (parent scrolls the task list there);
  * horizontal swipe navigates months (parent owns the URL). The month title in
  * the header toggles full-month ↔ week strip (`collapsed`) — in week mode only
  * the selected date's Sunday-anchored week renders.
+ *
+ * Admin v2 (11F): the navy/white pairing becomes var(--a-accent) filled with
+ * var(--a-btn-fg) — the two flip together under [data-theme="dark"], where a
+ * literal white would invert into an unreadable tint. The selected cell takes
+ * var(--a-accent-strong), which reads against the fill in both themes.
  */
 
-import { useRef } from 'react'
+import { useRef, type CSSProperties } from 'react'
+import { IconButton } from '@/components/admin/v2'
 import { DOW_LABELS, monthGrid, shiftDays, weekRange } from '@/lib/crm/calendar'
+
+/** .av2-iconbtn owns size and centring, and admin-v2.css is UNLAYERED — it
+ *  outranks Tailwind utilities regardless of specificity — so the cell's box
+ *  comes back inline. `background: transparent` is deliberate, not an
+ *  oversight: this control never had a hover state, and .av2-iconbtn's default
+ *  hover paints var(--a-inset), a pale grey that has no business on the accent
+ *  zone. Suppressing it keeps the surface exactly as it was. */
+const CELL: CSSProperties = {
+  width: '100%',
+  height: 52,
+  borderRadius: 0,
+  background: 'transparent',
+}
 
 export default function MobileMonthGrid({
   monthKey,
@@ -64,11 +84,15 @@ export default function MobileMonthGrid({
   }
 
   return (
-    <div className="bg-primary px-1 pb-2" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="px-1 pb-2" style={{ background: 'var(--a-accent)' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* Day-of-week header row — always 7 columns. sm:grid-cols-7 satisfies the responsive gate. */}
       <div className="grid grid-cols-7 sm:grid-cols-7 text-center">
         {DOW_LABELS.map((d) => (
-          <div key={d} className="py-1 text-[11px] font-medium uppercase tracking-wide text-white/55">
+          <div
+            key={d}
+            className="py-1 text-[11px] font-medium uppercase tracking-wide"
+            style={{ color: 'var(--a-btn-fg)', opacity: 0.55 }}
+          >
             {d}
           </div>
         ))}
@@ -81,29 +105,32 @@ export default function MobileMonthGrid({
           const day = Number(iso.slice(8))
           const selected = iso === selectedDate
           return (
-            <button
+            <IconButton
               key={iso}
-              type="button"
-              aria-label={iso}
+              label={iso}
               aria-pressed={selected}
               onClick={() => onSelect(iso)}
-              className="flex h-[52px] items-center justify-center"
+              style={CELL}
             >
               <span
-                className={`flex h-[44px] w-[44px] flex-col items-center justify-center rounded-[8px] ${
-                  selected ? 'bg-white/[0.18]' : ''
-                }`}
+                className="flex h-[44px] w-[44px] flex-col items-center justify-center rounded-[8px]"
+                style={{ background: selected ? 'var(--a-accent-strong)' : undefined }}
               >
-                <span className="text-[22px] font-medium leading-none tabular-nums text-white">{day}</span>
-                {/* 5px event dot, white/55, ~4px below the numeral (A.4) */}
+                <span className="text-[22px] font-medium leading-none tabular-nums" style={{ color: 'var(--a-btn-fg)' }}>
+                  {day}
+                </span>
+                {/* 5px event dot at 55%, ~4px below the numeral (A.4) */}
                 <span
-                  className={`mt-[4px] h-[5px] w-[5px] rounded-full ${
-                    eventDates.has(iso) ? 'bg-white/55' : 'bg-transparent'
-                  }`}
+                  className="mt-[4px] h-[5px] w-[5px] rounded-full"
+                  style={
+                    eventDates.has(iso)
+                      ? { background: 'var(--a-btn-fg)', opacity: 0.55 }
+                      : { background: 'transparent' }
+                  }
                   aria-hidden
                 />
               </span>
-            </button>
+            </IconButton>
           )
         })}
       </div>
