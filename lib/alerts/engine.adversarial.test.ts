@@ -270,7 +270,7 @@ describe('H2 DOUBLE-SEND', () => {
     getActiveListingAlertsDue.mockResolvedValue([row])
     getCachedSearchListings.mockResolvedValue({ listings: [tile('220299999')], totalCount: 1, cacheKey: 'k' })
     claimListingAlertSend.mockResolvedValue({ ok: true, error: undefined })
-    sendEmail.mockResolvedValue({ id: undefined, error: 'resend down' })
+    sendEmail.mockResolvedValue({ id: '', error: 'resend down' })
 
     const res = await runListingAlerts()
     expect(res.sent).toBe(0)
