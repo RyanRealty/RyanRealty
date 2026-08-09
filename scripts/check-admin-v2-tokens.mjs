@@ -358,6 +358,97 @@ const SCAN_DIRS = [
   // CommsSection.tsx / SendSection.tsx. Add the two islands here only if they
   // stop mounting those.
   'app/admin/(protected)/email/compose/page.tsx',
+
+  // ── components/admin/shared (11F decision 1) ────────────────────────────
+  // Held to the same token rules as v2, in FILE form rather than the bare dir
+  // because three files still import legacy components/admin/* and would fail
+  // rule 3. They are named in the exclusion note below and in that directory's
+  // README; the gate covers the other 24.
+
+  'components/admin/shared/mobile/CrmMobileKit.tsx',
+  'components/admin/shared/mobile/MobileActivityTab.tsx',
+  'components/admin/shared/mobile/MobileAssignToSheet.tsx',
+  'components/admin/shared/mobile/MobileContactDetail.tsx',
+  'components/admin/shared/mobile/MobileContactPointsSection.tsx',
+  'components/admin/shared/mobile/MobileDetailsSection.tsx',
+  'components/admin/shared/mobile/MobileEditSheet.tsx',
+  'components/admin/shared/mobile/MobileHomesTab.tsx',
+  'components/admin/shared/mobile/MobileInfoTab.tsx',
+  'components/admin/shared/mobile/MobileNotesTab.tsx',
+  'components/admin/shared/mobile/MobilePeopleRoot.tsx',
+  'components/admin/shared/mobile/MobilePickerSheet.tsx',
+  'components/admin/shared/mobile/MobileTaskCreateSheet.tsx',
+  'components/admin/shared/mobile/task-type-icons.tsx',
+  'components/admin/shared/people-list/AddPersonDialog.tsx',
+  'components/admin/shared/people-list/ColumnChooser.tsx',
+  'components/admin/shared/people-list/ExportPeopleDialog.tsx',
+  'components/admin/shared/people-list/FilterPanel.tsx',
+  'components/admin/shared/people-list/PeopleSidebar.tsx',
+  'components/admin/shared/people-list/ScopeDropdown.tsx',
+  'components/admin/shared/people-list/people-list-utils.test.ts',
+  'components/admin/shared/people-list/people-list-utils.ts',
+  'components/admin/shared/people-list/saved-view-grouping.test.ts',
+  'components/admin/shared/people-list/saved-view-grouping.ts',
+
+  // NOT SCANNED, and each for a reason that is not 'we gave up':
+  //   mobile/MobileCalendarTab.tsx  -> crm/calendar/AppointmentSheet
+  //   mobile/MobileCommsTab.tsx     -> crm/ConversationFeed
+  //   people-list/PeopleListView.tsx-> crm/BulkActions
+  // Each imports a legacy component that has not been migrated. BulkActions is
+  // the hard one: it drags bulk/registry -> EmailBodyEditor -> MergeFieldInserter,
+  // and ci:composer-discipline hard-codes those PATHS in a regex, so relocating
+  // them silently disarms G50. Migrate the three legacy components, then move
+  // these three lines up into the list above.
+
+  // ── 11F FINAL SWEEP (2026-08-09) ────────────────────────────────────────
+  // Unblocked by decision 1: components/admin/shared is now a sanctioned import
+  // source, so pages that mount the shared CRM machinery stop tripping rule 3.
+  //
+  // EVERY entry below was chosen by checking the page's WHOLE TRANSITIVE RENDER
+  // TREE — not just its page.tsx. That distinction is why /admin/crm is NOT
+  // here: its own file is clean, but PeopleListView still reaches BulkActions
+  // and MobileCommsTab still reaches ConversationFeed. A page whose file passes
+  // while its islands render shadcn is the 'green for the wrong reason' failure
+  // this phase exists to avoid, and newsletters was un-gated for exactly that.
+  //
+  // Bare dir wherever the whole subtree is clean AND holds no nested page.tsx,
+  // so a new file under it is covered the day it lands.
+
+  'app/admin/(protected)/banners',
+  'app/admin/(protected)/bpo/[slug]',
+  'app/admin/(protected)/bpo/new',
+  'app/admin/(protected)/broker-dashboard',
+  'app/admin/(protected)/cmas/[slug]',
+  'app/admin/(protected)/cmas/new',
+  'app/admin/(protected)/crm/[id]/portal',
+  'app/admin/(protected)/crm/automations',
+  'app/admin/(protected)/crm/deals/pipelines',
+  'app/admin/(protected)/crm/sequences/[id]/edit',
+  'app/admin/(protected)/crm/tasks',
+  'app/admin/(protected)/expired-listings/[key]',
+  'app/admin/(protected)/expired-outreach',
+  'app/admin/(protected)/expireds',
+  'app/admin/(protected)/fsbos',
+  'app/admin/(protected)/inbox',
+  'app/admin/(protected)/operations',
+  'app/admin/(protected)/performance',
+  'app/admin/(protected)/photos',
+  'app/admin/(protected)/query-builder',
+  'app/admin/(protected)/resort-communities',
+  'app/admin/(protected)/search',
+  'app/admin/(protected)/spark-status',
+  'app/admin/(protected)/stock-photos',
+  'app/admin/(protected)/transactions',
+
+  // File form: the route has a nested page or a sibling still carrying debt.
+
+  'app/admin/(protected)/crm/[id]/page.tsx',
+  'app/admin/(protected)/crm/sequences/page.tsx',
+  'app/admin/(protected)/deals/page.tsx',
+  'app/admin/(protected)/email/page.tsx',
+  'app/admin/(protected)/expired-listings/page.tsx',
+  'app/admin/(protected)/page.tsx',
+  'app/admin/(protected)/visitors/page.tsx',
 ]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 
@@ -381,7 +472,14 @@ const COLOR_FN = /\b(?:rgb|rgba|hsl|hsla|oklch|color-mix)\s*\(/g
 const TW_PALETTE =
   /\b(?:bg|text|border|from|to|via)-(?:white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\d{1,3})?(?:\/\d{1,3})?\b/g
 const BRAND_LEAK = /--rr-|Amboqia|AmboqiaBoriango|\bGeist\b/g
-const LEGACY_IMPORT = /from\s+['"](?:@\/)?components\/(?:admin\/(?!v2(?:\/|['"]))|ui\/)/g
+// `shared` joins `v2` as a sanctioned import source (Matt 2026-08-08, 11F
+// blocker decision 1). components/admin/shared holds the CRM machinery that
+// more than one route mounts — infrastructure, not one route's islands — and it
+// is held to these same token rules rather than exempted from them: its files
+// are listed in SCAN_DIRS below. Two directories with one rule each, instead of
+// one directory with two jobs; the rejected alternative was per-page holes in
+// this blacklist.
+const LEGACY_IMPORT = /from\s+['"](?:@\/)?components\/(?:admin\/(?!(?:v2|shared)(?:\/|['"]))|ui\/)/g
 
 function walk(dir) {
   const out = []
@@ -407,7 +505,35 @@ for (const dir of SCAN_DIRS) {
   for (const file of files) {
     const isTokens = file === COPY
     const lines = readFileSync(file, 'utf8').split('\n')
+    // COMMENTS ARE NOT CODE. These rules are regexes over raw lines, so a
+    // comment EXPLAINING a colour decision — "paired with --a-btn-fg, #FFFFFF
+    // in light", "an earlier fix reached for color-mix()", "instead of a
+    // hardcoded text-white" — tripped the very rule it was documenting. That
+    // punishes the one thing this codebase wants most from a migration: a
+    // written reason. Third occurrence of the class (ci:admin-ui rule D and
+    // ci:server-type-reexport both matched their own worked examples and were
+    // rewritten AST-based); this gate stays line-based but skips comment text.
+    //
+    // Deliberately conservative: only whole-line comments and block-comment
+    // interiors are skipped. A trailing comment after real code still counts,
+    // because the code on that line is code.
+    let inBlockComment = false
     lines.forEach((line, i) => {
+      const trimmed = line.trim()
+      const wasInBlock = inBlockComment
+      if (inBlockComment) {
+        if (trimmed.includes('*/')) inBlockComment = false
+      } else if (trimmed.startsWith('/*') && !trimmed.includes('*/')) {
+        inBlockComment = true
+      }
+      const isCommentLine =
+        wasInBlock ||
+        inBlockComment ||
+        trimmed.startsWith('//') ||
+        trimmed.startsWith('*') ||
+        trimmed.startsWith('/*')
+      if (isCommentLine) return
+
       if (!isTokens) {
         if (HEX.test(line)) report(file, i, 'raw hex (use var(--a-*))', line)
         HEX.lastIndex = 0

@@ -158,8 +158,13 @@ export function CalendarTaskRow({
 
         {/* Assignee badge — 32px circle, deterministic broker color */}
         <span
-          className="ml-2 flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white"
-          style={{ backgroundColor: brokerBadgeColor(broker) }}
+          // Foreground comes from the token, not a hardcoded white: every
+          // --a-* colour flips lightness under [data-theme="dark"], so a fill
+          // paired with literal white inverts to a pale tint and the initials
+          // disappear. --a-btn-fg flips WITH the fill, the same pairing every
+          // solid button in the language uses.
+          className="ml-2 flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full text-[13px] font-semibold"
+          style={{ backgroundColor: brokerBadgeColor(broker), color: 'var(--a-btn-fg)' }}
           aria-label={broker ?? undefined}
         >
           {brokerInitialsFor(broker)}

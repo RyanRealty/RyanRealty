@@ -54,7 +54,7 @@ import {
   groupSavedViews,
   groupSystemByCollection,
   type SavedViewItem,
-} from '@/components/admin/crm/saved-view-grouping'
+} from '@/components/admin/shared/people-list/saved-view-grouping'
 import { fmtSidebarCount } from './people-list-utils'
 
 export type SidebarStage = { key: string; label: string; count: number }

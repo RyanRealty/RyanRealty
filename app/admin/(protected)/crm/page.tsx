@@ -71,7 +71,7 @@ import { getCrmStageCounts } from '@/lib/data/crm/getCrmStageCounts'
 import PeopleListView, { type PeopleRow } from '@/components/admin/shared/people-list/PeopleListView'
 import {
   groupSavedViews, groupSystemByCollection, type SavedViewItem,
-} from '@/components/admin/crm/saved-view-grouping'
+} from '@/components/admin/shared/people-list/saved-view-grouping'
 import {
   fmtFubDate, activityIconKind, LEAD_SOURCE_OPTIONS,
 } from '@/components/admin/shared/people-list/people-list-utils'

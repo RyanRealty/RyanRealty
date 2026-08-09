@@ -21,14 +21,27 @@ Matt's words: two directories with one rule each beats one directory with two
 jobs. The rejected alternative was per-page exemptions in the gate, which turns
 the blacklist into a list of holes nobody can reason about.
 
-## The gate contract — NOT YET IN FORCE
+## The gate contract — IN FORCE for 24 of 27 files
 
 The end state Matt approved is that `ci:admin-v2-tokens`
 (`scripts/check-admin-v2-tokens.mjs`) treats this directory exactly like `v2`:
 it satisfies the same token rules, and a gated page may import from it without
 tripping rule 3 (the `LEGACY_IMPORT` blacklist).
 
-**That change has not landed yet, and the reason is now Condition 2 alone.**
+**LANDED 2026-08-09, partially.** `components/admin/shared` is now a sanctioned
+import source: `LEGACY_IMPORT` in the gate exempts it alongside `v2`, so a gated
+page may import from here without tripping rule 3. The directory is held to the
+same token rules in return — 24 of its 27 files are listed in `SCAN_DIRS`.
+
+THREE FILES ARE NOT SCANNED, and each is named in the gate beside the reason:
+`mobile/MobileCalendarTab.tsx` (-> `crm/calendar/AppointmentSheet`),
+`mobile/MobileCommsTab.tsx` (-> `crm/ConversationFeed`) and
+`people-list/PeopleListView.tsx` (-> `crm/BulkActions`). Each imports a legacy
+component that has not been migrated. Migrate those three legacy components and
+the exclusions go away — see Condition 2.
+
+`saved-view-grouping.ts` moved in with this change (108 LOC, its only import is
+a type), which is what unblocked `PeopleSidebar`.
 
 ### Condition 1 — the files are on v2 — MET
 

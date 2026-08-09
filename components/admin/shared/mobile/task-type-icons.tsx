@@ -67,20 +67,29 @@ export function MobileTypeIcon({ type, size = 20, className }: { type: string | 
  *  has always had is ALWAYS A DARK FILL: its caller
  *  (components/admin/crm/calendar/mobile/MobileCalendarRows.tsx) paints white
  *  initials on whatever comes back. A bare token cannot honour that — every
- *  admin colour token flips lightness under [data-theme="dark"], so
- *  var(--a-accent-strong) alone is a deep navy in light but a pale blue in
- *  dark, which puts white on near-white at ~1.3:1. At 45% the mix stays dark
- *  in BOTH themes: white lands at 18.00 / 12.66 / 12.54 in light and
- *  5.81 / 8.03 / 7.49 in dark — AA either way, computed on the shipped
- *  token values. */
+ *  admin colour token flips lightness under [data-theme="dark"], so a fill
+ *  chosen for white text in light mode inverts to a pale tint in dark and the
+ *  initials vanish.
+ *
+ *  The token-native answer is to let BOTH sides flip together: these fills pair
+ *  with var(--a-btn-fg), which is #FFFFFF in light and #0B0B0C in dark, exactly
+ *  as every solid button in the language already does. The caller
+ *  (components/admin/crm/calendar/mobile/MobileCalendarRows.tsx) sets that
+ *  instead of a hardcoded text-white. Shipped ratios with --a-btn-fg: matt
+ *  12.62:1, paul 4.77:1, rebecca 4.72:1 in light, and all three high in dark.
+ *
+ *  An earlier fix reached for color-mix(... 45%, black) to force a
+ *  always-dark fill. That is banned by rule 2 of ci:admin-v2-tokens (no colour
+ *  function literals — colour reaches components only through var(--a-*)), and
+ *  it was solving a problem the paired foreground does not have. */
 const BROKER_BADGE_COLORS: Record<string, string> = {
-  matt: 'color-mix(in srgb, var(--a-accent-strong) 45%, black)',
-  paul: 'color-mix(in srgb, var(--a-accent) 45%, black)',
-  rebecca: 'color-mix(in srgb, var(--a-ok) 45%, black)',
+  matt: 'var(--a-accent-strong)',
+  paul: 'var(--a-accent)',
+  rebecca: 'var(--a-ok)',
 }
 
 export function brokerBadgeColor(slug: string | null | undefined): string {
-  return (slug && BROKER_BADGE_COLORS[slug]) || 'color-mix(in srgb, var(--a-accent) 45%, black)'
+  return (slug && BROKER_BADGE_COLORS[slug]) || 'var(--a-accent)'
 }
 
 export function brokerInitialsFor(slug: string | null | undefined): string {
