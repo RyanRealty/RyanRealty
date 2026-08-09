@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "11F UNIT 8 COMPLETE 2026-08-08 \u2014 crm/sequences + crm/tasks migrated (289 source / 3,226 rendered shadcn classes to ZERO); barrel gained Combobox, Menu keyboard nav, and forwardRef on Button/TextField, each because a migration lost real behaviour. ALSO fixed the bundle blocker: package.json now declares sideEffects, measured 9.73 -> 8.84 MB (-889 KB) across two production builds. Token-gated admin pages 126 of 170, 18 real pages left. Shipped 4eba838d + 28c0a08c + 4d6b1c0b, deployed READY. NEXT: crm root 8 islands, crm/deals 5, then the pairs and singles.",
+  "current_process": "11F UNIT 9 COMPLETE 2026-08-08 \u2014 the valuations family (bpo + cmas) migrated: 21 files, 6 pages, 97 source / 414 rendered shadcn classes to ZERO, under \u00a70 discipline (no figure or formatter touched, proven by diff). Menu gained href + target so navigating items are real anchors; .av2-pane gained min-width:0 after a 2px viewport overflow. Token-gated admin pages 132 of 170 \u2014 TWELVE real pages left. Shipped d3dfc87f + b23c471a, deployed READY. NEXT: crm root 8 islands (tangled), crm/deals 5, then the pairs.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-08T17:30:00Z"
+  "updated_at": "2026-08-08T20:10:00Z"
 }
