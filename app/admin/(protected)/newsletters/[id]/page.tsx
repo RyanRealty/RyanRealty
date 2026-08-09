@@ -47,8 +47,8 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
-import NewsletterPreviewPanel from '@/components/admin/newsletter/NewsletterPreviewPanel'
-import NewsletterScheduleControls from '@/components/admin/newsletter/NewsletterScheduleControls'
+import NewsletterPreviewPanel from '@/app/admin/(protected)/newsletters/_components/NewsletterPreviewPanel'
+import NewsletterScheduleControls from '@/app/admin/(protected)/newsletters/_components/NewsletterScheduleControls'
 import NewsletterComposeForm from '../NewsletterComposeForm'
 import NewsletterDraftActions from '../NewsletterDraftActions'
 import BulkOneOffForm from '../BulkOneOffForm'

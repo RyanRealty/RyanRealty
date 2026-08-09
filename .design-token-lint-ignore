@@ -16,7 +16,7 @@ app/api/email/unsubscribe/route.ts
 components/admin/crm/mobile/CrmMobileKit.tsx
 # avatar-utils — same FUB avatar hex palette, extracted to a non-client module so
 # server components can compute the color too (the kit is 'use client').
-components/admin/crm/mobile/avatar-utils.ts
+lib/admin/crm-avatar.ts
 # §25 Mobile Contact Detail (M1, 2026-07-01): the FUB-iOS mobile screens are
 # pt-precise references (docs/fub-crm-spec/25-mobile-contact-detail.md) — text
 # sizes, row heights, and the pixel-verified SMS/Call/Email action-circle hexes
@@ -372,7 +372,7 @@ app/admin/(protected)/crm/reporting/call-logs/page.tsx
 # accent palette mirrored from docs/fub-crm-spec/api-export/pipelines.json — 7
 # FUB stage hex colors (amber/salmon/periwinkle/gold/green/red) with no 2-color
 # brand-token equivalent, applied to Kanban column top-borders via inline style.
-# Same exception class as components/admin/crm/mobile/avatar-utils.ts.
+# Same exception class as lib/admin/crm-avatar.ts.
 lib/crm/deal-pipelines.ts
 components/admin/crm/person-detail/InlineEditField.tsx
 components/admin/crm/person-detail/PersonDialogs.tsx

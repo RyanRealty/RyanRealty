@@ -16,7 +16,7 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { crmAvatarColor, crmInitials } from '@/components/admin/crm/mobile/avatar-utils'
+import { crmAvatarColor, crmInitials } from '@/lib/admin/crm-avatar'
 
 /* ── Avatars ─────────────────────────────────────────────────────────────── */
 

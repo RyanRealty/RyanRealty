@@ -29,7 +29,7 @@ import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getDealPipelines } from '@/lib/data/crm/getDealPipelines'
 import { VerdictLine } from '@/components/admin/v2'
-import { ManagePipelines } from '@/components/admin/crm/deals/ManagePipelines'
+import { ManagePipelines } from '@/app/admin/(protected)/crm/deals/_components/ManagePipelines'
 
 export const metadata = { title: 'Manage Pipelines | CRM | Admin' }
 export const dynamic = 'force-dynamic'

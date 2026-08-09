@@ -49,9 +49,9 @@ import { listDealsBoard, type DealBoardStatusFilter } from '@/lib/data/crm/listD
 import { getCrmDeal } from '@/lib/data/crm/getCrmDeal'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { VerdictLine } from '@/components/admin/v2'
-import { DealsSubBar } from '@/components/admin/crm/deals/DealsSubBar'
-import { DealsBoard } from '@/components/admin/crm/deals/DealsBoard'
-import { DealDetailModal } from '@/components/admin/crm/deals/DealDetailModal'
+import { DealsSubBar } from '@/app/admin/(protected)/crm/deals/_components/DealsSubBar'
+import { DealsBoard } from '@/app/admin/(protected)/crm/deals/_components/DealsBoard'
+import { DealDetailModal } from '@/app/admin/(protected)/crm/deals/_components/DealDetailModal'
 import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
 import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 

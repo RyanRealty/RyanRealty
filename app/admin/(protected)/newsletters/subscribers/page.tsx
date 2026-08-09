@@ -34,8 +34,8 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
-import SubscriberFilters from '@/components/admin/newsletter/SubscriberFilters'
-import SubscriberRowActions from '@/components/admin/newsletter/SubscriberRowActions'
+import SubscriberFilters from '@/app/admin/(protected)/newsletters/_components/SubscriberFilters'
+import SubscriberRowActions from '@/app/admin/(protected)/newsletters/_components/SubscriberRowActions'
 import { AddSubscriberForm } from '../SubscriberForms'
 import { BulkEnrollForm } from '../BulkEnrollForm'
 

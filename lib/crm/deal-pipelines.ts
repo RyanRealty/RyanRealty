@@ -13,7 +13,7 @@
  * The hex accent colors are the FUB stage palette (no 2-color brand-token
  * equivalent); they are applied via inline `style` and this file is listed on
  * .design-token-lint-ignore for that reason — same exception class as
- * components/admin/crm/mobile/avatar-utils.ts.
+ * lib/admin/crm-avatar.ts.
  *
  * A PLAIN module (NOT 'use server' / 'use client') so both the server page and
  * the client board can import it. No side effects, no runtime fs read.

@@ -42,7 +42,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/format/date'
-import { crmAvatarColor, crmInitials } from '@/components/admin/crm/mobile/avatar-utils'
+import { crmAvatarColor, crmInitials } from '@/lib/admin/crm-avatar'
 import type { CrmDealDetail } from '@/lib/data/crm/getCrmDeal'
 import type { BoardPipeline } from '@/lib/data/crm/getDealPipelines'
 import {
