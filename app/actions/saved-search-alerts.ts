@@ -10,6 +10,8 @@ import {
   getActiveListingAlertsDue,
   getListingAlertById,
   markListingAlertNotified,
+  claimListingAlertSend,
+  restoreListingAlertCursor,
   type ListingAlertRow,
 } from '@/lib/data/leads/listingAlerts'
 import {
@@ -358,6 +360,29 @@ export async function runListingAlerts(options?: {
       }
       const deliverEmails = new Set(plan.deliverTo.map((r) => r.email))
       const deliverTo = recipients.filter((r) => deliverEmails.has(r.email))
+
+      // Claim-before-send (P12): stamp the cursor BEFORE Resend so a successful
+      // delivery can never re-blast when a post-send mark fails. On total
+      // failure we restore the previous cursor so a true retry remains due.
+      const claimIso = now.toISOString()
+      const prevNotifiedAt = row.last_notified_at
+      const prevKeys = row.notified_listing_keys
+      if (!dryRun) {
+        const claimed = await claimListingAlertSend(
+          row.id,
+          prevNotifiedAt,
+          claimIso,
+          detection.nextState,
+        )
+        if (!claimed.ok) {
+          summary.errors.push({
+            searchId: row.id,
+            error: claimed.error ?? 'claim failed',
+          })
+          continue
+        }
+      }
+
       const sendResult = await sendAlertEmailToRecipients({
         row,
         deliverTo,
@@ -371,28 +396,22 @@ export async function runListingAlerts(options?: {
         summary.errors.push({ searchId: row.id, error })
       }
       if (sendResult.sent === 0) {
-        // Every Resend call failed — leave the row due so the next run retries.
-        continue
-      }
-
-      if (!dryRun) {
-        const marked = await markListingAlertNotified(
-          row.id,
-          now.toISOString(),
-          detection.nextState,
-        )
-        if (!marked.ok) {
-          // The email already went out. If we cannot stamp last_notified_at the
-          // row stays due and would re-blast the SAME email next tick. We cannot
-          // repair the DB from here, but we log loudly, record the error, and
-          // still advance the in-run counter so this run does not compound the
-          // duplicate risk.
-          console.error('[runListingAlerts] markListingAlertNotified failed AFTER a successful send (duplicate risk next run)', {
-            searchId: row.id,
-            error: marked.error ?? 'mark failed',
-          })
-          summary.errors.push({ searchId: row.id, error: marked.error ?? 'mark failed' })
+        // Every Resend call failed — restore the prior cursor so the next run
+        // can retry (claim already advanced last_notified_at).
+        if (!dryRun) {
+          const restored = await restoreListingAlertCursor(row.id, prevNotifiedAt, prevKeys)
+          if (!restored.ok) {
+            console.error('[runListingAlerts] failed to restore cursor after send failure', {
+              searchId: row.id,
+              error: restored.error,
+            })
+            summary.errors.push({
+              searchId: row.id,
+              error: restored.error ?? 'restore after send failure failed',
+            })
+          }
         }
+        continue
       }
 
       summary.sent += sendResult.sent

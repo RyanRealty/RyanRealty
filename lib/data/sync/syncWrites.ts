@@ -109,9 +109,55 @@ export async function upsertListingRows(
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
   if (rows.length === 0) return { ok: true }
+
+  // P12: merge broker-owned admin_overrides from existing rows before upsert so
+  // Spark cannot wipe ListPrice / StandardStatus / PublicRemarks the admin set.
+  // ignoreDuplicates paths skip the merge (they never overwrite existing cells).
+  let merged = rows
+  if (options.ignoreDuplicates !== true) {
+    const { applyAdminOverridesToListingRow } = await import('@/lib/data/admin/listingEdit')
+    const listNumbers = [
+      ...new Set(
+        rows
+          .map((r) => (typeof r.ListNumber === 'string' ? r.ListNumber : null))
+          .filter((n): n is string => Boolean(n)),
+      ),
+    ]
+    if (listNumbers.length > 0) {
+      const existingByNumber = new Map<string, { details: unknown }>()
+      // Chunk IN() filters — PostgREST URL limits.
+      const CHUNK = 200
+      for (let i = 0; i < listNumbers.length; i += CHUNK) {
+        const slice = listNumbers.slice(i, i + CHUNK)
+        const { data, error: readErr } = await sb
+          .from('listings')
+          .select('ListNumber, details')
+          .in('ListNumber', slice)
+        if (readErr) {
+          // Fail open on the merge read would re-introduce silent revert; fail closed.
+          return { ok: false, error: `admin_overrides merge read failed: ${readErr.message}` }
+        }
+        for (const row of data ?? []) {
+          const ln = (row as { ListNumber?: string }).ListNumber
+          if (ln) existingByNumber.set(ln, { details: (row as { details?: unknown }).details })
+        }
+      }
+      merged = rows.map((r) => {
+        const ln = typeof r.ListNumber === 'string' ? r.ListNumber : null
+        if (!ln) return r
+        const existing = existingByNumber.get(ln)
+        if (!existing) return r
+        return applyAdminOverridesToListingRow(
+          r,
+          (existing.details ?? null) as import('@/lib/data/admin/listingEdit').ListingDetailsJson | null,
+        )
+      })
+    }
+  }
+
   const { error } = await sb
     .from('listings')
-    .upsert(rows, { onConflict: 'ListNumber', ignoreDuplicates: options.ignoreDuplicates === true })
+    .upsert(merged, { onConflict: 'ListNumber', ignoreDuplicates: options.ignoreDuplicates === true })
   return error ? { ok: false, error: error.message } : { ok: true }
 }
 

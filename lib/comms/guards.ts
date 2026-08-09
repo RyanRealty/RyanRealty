@@ -17,6 +17,7 @@
 import 'server-only'
 import { isSuppressed, type SendChannel } from '@/lib/crm/suppressions'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
+import { recordSendBlockEvent } from '@/lib/data/crm/recordSendBlockEvent'
 import type { GovernedFailure } from './types'
 
 /** The quiet-hours refusal shown to brokers (kept byte-identical to the composer's). */
@@ -28,7 +29,7 @@ const HARD_STOP_REASON = 'tag:compliance:hard-stop'
 export async function checkSendGuards(
   personId: number,
   channel: SendChannel,
-  opts?: { overrideQuietHours?: boolean },
+  opts?: { overrideQuietHours?: boolean; source?: string },
 ): Promise<GovernedFailure | null> {
   // 1 + 2. Hard-stop tags, then channel suppression. One isSuppressed call is
   // the authoritative source for both (fail-closed on any read error).
@@ -36,12 +37,28 @@ export async function checkSendGuards(
   if (gate.suppressed) {
     const error = `Blocked by suppression (${gate.reasons.join(', ')})`
     const hardStop = gate.reasons.some((r) => r.toLowerCase() === HARD_STOP_REASON)
-    return { ok: false, error, stage: hardStop ? 'hard-stop' : 'suppression' }
+    const stage = hardStop ? 'hard-stop' : 'suppression'
+    // Best-effort ledger — never blocks the refusal path.
+    void recordSendBlockEvent({
+      personId,
+      channel,
+      stage,
+      reasons: gate.reasons,
+      source: opts?.source,
+    })
+    return { ok: false, error, stage }
   }
 
   // 3. Quiet hours — SMS only. A6: only a manual, human-typed 1:1 reply passes
   // overrideQuietHours; automated/system callers never set it.
   if (channel === 'sms' && !opts?.overrideQuietHours && inSmsQuietHours()) {
+    void recordSendBlockEvent({
+      personId,
+      channel,
+      stage: 'quiet-hours',
+      reasons: ['quiet-hours'],
+      source: opts?.source,
+    })
     return { ok: false, error: QUIET_HOURS_ERROR, stage: 'quiet-hours' }
   }
 

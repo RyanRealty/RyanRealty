@@ -356,6 +356,60 @@ export async function markListingAlertNotified(
   return { ok: true }
 }
 
+/**
+ * Claim-before-send for listing alerts (P12 send-integrity).
+ *
+ * Stamps last_notified_at + nextState BEFORE the email leaves, so a successful
+ * Resend call can never leave the row due and re-blast next tick when the
+ * post-send mark fails. Compare-and-set on the prior last_notified_at so two
+ * concurrent runners cannot both claim the same due window.
+ *
+ * On total send failure the caller MUST restore via restoreListingAlertCursor.
+ */
+export async function claimListingAlertSend(
+  id: string,
+  expectedLastNotifiedAt: string | null,
+  isoTime: string,
+  notifiedKeys: Array<string | Record<string, unknown>>,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createServiceClient()
+  const update: Record<string, unknown> = {
+    last_notified_at: isoTime,
+    updated_at: isoTime,
+    notified_listing_keys: notifiedKeys.slice(0, 1000),
+  }
+  let q = supabase.from(TABLE).update(update).eq('id', id)
+  // PostgREST: null expected → .is('last_notified_at', null); else equality.
+  q = expectedLastNotifiedAt == null
+    ? q.is('last_notified_at', null)
+    : q.eq('last_notified_at', expectedLastNotifiedAt)
+  const { data, error } = await q.select('id')
+  if (error) return { ok: false, error: error.message }
+  if (!data || data.length === 0) {
+    return { ok: false, error: 'claim_lost' }
+  }
+  return { ok: true }
+}
+
+/** Undo a claim after every Resend call failed so the alert stays due. */
+export async function restoreListingAlertCursor(
+  id: string,
+  previousLastNotifiedAt: string | null,
+  previousKeys: Array<string | Record<string, unknown>> | null | undefined,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createServiceClient()
+  const update: Record<string, unknown> = {
+    last_notified_at: previousLastNotifiedAt,
+    updated_at: new Date().toISOString(),
+  }
+  if (previousKeys !== undefined) {
+    update.notified_listing_keys = previousKeys == null ? null : previousKeys.slice(0, 1000)
+  }
+  const { error } = await supabase.from(TABLE).update(update).eq('id', id)
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
 /** One alert row by id (queue release path). Null when missing. */
 export async function getListingAlertById(id: string): Promise<ListingAlertRow | null> {
   const trimmed = (id ?? '').trim()

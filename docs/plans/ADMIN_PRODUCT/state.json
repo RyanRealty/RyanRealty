@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "2026-08-09T19:16:16Z \u2014 11F CLOSED (Grok endtoend recovery). Relative-import rule 3 closure: route-local islands + residual 11 (sync/approval-queue/analytics) migrated; ci:admin-v2-tokens green; ci:admin-ui green and baseline re-seeded 76/0/6. Prior claim 164/164 was true for pages; onion peel found relative islands \u2014 now gated. NEXT: P12 send-integrity remaining (listing-alert claim-before-send, block ledger), then 12-correctness (reader ok:false, listing overlay).",
+  "current_process": "2026-08-09T19:21:08Z \u2014 P12 send-integrity + correctness units shipping. listing-alert claim-before-send; crm_send_block_events ledger; admin listing overrides survive sync; readers throw on transport error (CMA slug, task queue, appointments, activity feed). Still open: 12-measurement, 12-full-sync ops, published-figures public grid, person-scope dataflow, chrome-debt hydration, dark mode, audit-trail policy (Matt), third analytics reader, primitive audit, FUB renames.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-09T19:16:16Z"
+  "updated_at": "2026-08-09T19:21:08Z"
 }

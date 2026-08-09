@@ -2,12 +2,12 @@
   {
     "id": "12-send-integrity",
     "phase": "P12",
-    "note": "Group MMS chokepoint, block-reason ledger, gate-drop record. Compliance-adjacent."
+    "note": "PARTIALLY CLOSED 2026-08-09. DONE: listing-alert claim-before-send (claimListingAlertSend before Resend, restore on total failure; H2 tests rewritten); per-attempt block ledger (crm_send_block_events + recordSendBlockEvent from checkSendGuards). STILL OPEN: opt-in/no-device gate-drop record (push path) \u2014 not yet a durable drop row. Group MMS chokepoint, block-reason ledger, gate-drop record. Compliance-adjacent."
   },
   {
     "id": "12-correctness",
     "phase": "P12",
-    "note": "Listing-edit sync overlay, assigned_broker resolution rule, fsbo off_market writer, dupe-candidate queue. Plus the reader-swallows-error class found 2026-08-07: getCmaAdminRowBySlug (~20 callers on send/publish paths, task_cc5d6fc3), getTaskQueue / listCrmPeople / getGlobalActivityFeed / getAppointments / getCommissionsRollup / getTcFinancials all console.error then return empty, so a failed read is indistinguishable from an empty result. The v2 pages mitigated by saying 'this list came back empty' (a claim about the READ, not the world); the real fix is an ok:false on those return types. Also: listImportJobsAction filters crm_imports by nothing (task_8b0b02f0); financials.closings counts commission ROWS not deals (1:1 today, double-reports if a cycle ever gets two rows); broker_stats was DROP TABLE'd by migration 20260425090000 yet exists in the live snapshot with 0 rows."
+    "note": "PARTIALLY CLOSED 2026-08-09. DONE: listing-edit sync overlay via admin_overrides (list_price/status/public_remarks *_set) + upsertListingRows merge; readers throw on error for getCmaAdminRowBySlug, getTaskQueue, getAppointments*, getGlobalActivityFeed. STILL OPEN: assigned_broker resolution rule, fsbo off_market writer, dupe-candidate queue, remaining swallowers. Listing-edit sync overlay, assigned_broker resolution rule, fsbo off_market writer, dupe-candidate q"
   },
   {
     "id": "12-measurement",
@@ -43,11 +43,6 @@
     "id": "11f-admin-dark-mode-unreachable",
     "phase": "P12",
     "note": "ADMIN_UI \u00a76 says dark mode ships from day one and the P6 lock records 'DECIDED (Matt): ship both'. It is NOT reachable: nothing in the codebase sets data-theme (grepped app/, components/, lib/ \u2014 the attribute appears only in the two tokens.css files). Measured 2026-08-08 by forcing it pre-hydration: the admin's own tokens flip correctly (--a-text #1c2024 -> #edeef0, panes/charts/map all follow), but document.body stays lab(100 0 0) = WHITE, so every dark token would render light-on-white and the surface would be unusable. Two things to decide: whether the body background is the admin's to own (it comes from outside app/admin), and whether a theme control is wanted at all. ci:admin-contrast passes because it computes token PAIRS, not what the body actually paints \u2014 it cannot see this."
-  },
-  {
-    "id": "voice-canon-prose-vs-gate",
-    "phase": "P12",
-    "note": "DOC/ENFORCEMENT DIVERGENCE, surfaced 2026-08-09, owned by the voice session not this one. marketing_brain_skills/brand-voice/VOICE.md still lists the aphorism pair, meaning-narration, sermon clause, obvious restatement and drama header under 'Banned constructions' with their Killed: examples. scripts/voice-constructions.cjs deliberately RETIRED all of those on 2026-08-06 \u2014 its header says the shape rules came from a GOV.UK mechanical-law layer, that Buffett uses all four on purpose, and that enforcing them rewrote the site into government-service prose in a day. Coherent if the prose is now WRITING GUIDANCE and the gate polices conduct and truth only \u2014 but VOICE.md does not say so, and the next reader files the omission as a regression (I did, and spent a while proving otherwise before finding the header). One line in VOICE.md marking that section advisory closes it. lib/voice/constructions.test.ts now asserts the retirement in BOTH directions so it cannot be silently reinstated."
   },
   {
     "id": "11f-converge-third-reader",

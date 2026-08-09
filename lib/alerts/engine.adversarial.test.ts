@@ -19,6 +19,8 @@ const sendEmail = vi.fn(async () => ({ id: 'msg_1', error: undefined as string |
 vi.mock('@/lib/resend', () => ({ sendEmail: (...a: unknown[]) => sendEmail(...(a as [])) }))
 
 const markListingAlertNotified = vi.fn(async () => ({ ok: true as boolean, error: undefined as string | undefined }))
+const claimListingAlertSend = vi.fn(async () => ({ ok: true as boolean, error: undefined as string | undefined }))
+const restoreListingAlertCursor = vi.fn(async () => ({ ok: true as boolean, error: undefined as string | undefined }))
 const getActiveListingAlertsDue = vi.fn(async () => [] as unknown[])
 const updateListingAlertRecipients = vi.fn(async () => ({ ok: true }))
 const getListingAlertById = vi.fn(async () => null as unknown)
@@ -26,6 +28,8 @@ vi.mock('@/lib/data/leads/listingAlerts', () => ({
   getActiveListingAlertsDue: (...a: unknown[]) => getActiveListingAlertsDue(...(a as [])),
   getListingAlertById: (...a: unknown[]) => getListingAlertById(...(a as [])),
   markListingAlertNotified: (...a: unknown[]) => markListingAlertNotified(...(a as [])),
+  claimListingAlertSend: (...a: unknown[]) => claimListingAlertSend(...(a as [])),
+  restoreListingAlertCursor: (...a: unknown[]) => restoreListingAlertCursor(...(a as [])),
   updateListingAlertRecipients: (...a: unknown[]) => updateListingAlertRecipients(...(a as [])),
 }))
 
@@ -249,38 +253,46 @@ describe('H1 MASS-BLAST on the first typed run', () => {
 // ── H2: double-send ─────────────────────────────────────────────────────────
 
 describe('H2 DOUBLE-SEND', () => {
-  it('re-sends the identical email next run when the notified stamp fails', async () => {
+  it('does NOT send when the pre-send claim fails (no duplicate window)', async () => {
     const row = prodRow()
     getActiveListingAlertsDue.mockResolvedValue([row])
     getCachedSearchListings.mockResolvedValue({ listings: [tile('220299999')], totalCount: 1, cacheKey: 'k' })
-    markListingAlertNotified.mockResolvedValue({ ok: false, error: 'timeout' })
+    claimListingAlertSend.mockResolvedValue({ ok: false, error: 'timeout' })
 
     const run1 = await runListingAlerts()
-    expect(run1.sent).toBe(1)
+    expect(run1.sent).toBe(0)
+    expect(sendEmail).not.toHaveBeenCalled()
     expect(run1.errors[0]?.error).toBe('timeout')
-
-    // The row is untouched in the DB → the next tick re-detects the same event.
-    vi.clearAllMocks()
-    getActiveListingAlertsDue.mockResolvedValue([row])
-    getCachedSearchListings.mockResolvedValue({ listings: [tile('220299999')], totalCount: 1, cacheKey: 'k' })
-    markListingAlertNotified.mockResolvedValue({ ok: false, error: 'timeout' })
-    isSuppressedByEmail.mockResolvedValue({ suppressed: false, reasons: [] })
-    isHardStopped.mockResolvedValue(false)
-    getListingEventStatesByKeys.mockResolvedValue(new Map())
-    resolvePersonForTracking.mockResolvedValue({
-      personId: 13168, fubPersonId: null, assignedBroker: 'matt', resolvedBy: 'id',
-    })
-    sendEmail.mockResolvedValue({ id: 'msg_2', error: undefined })
-    const run2 = await runListingAlerts()
-    expect(run2.sent).toBe(1)
   })
 
-  it('does NOT re-send when the notified stamp succeeds', async () => {
+  it('restores the cursor when every Resend call fails after a successful claim', async () => {
+    const row = prodRow()
+    getActiveListingAlertsDue.mockResolvedValue([row])
+    getCachedSearchListings.mockResolvedValue({ listings: [tile('220299999')], totalCount: 1, cacheKey: 'k' })
+    claimListingAlertSend.mockResolvedValue({ ok: true, error: undefined })
+    sendEmail.mockResolvedValue({ id: undefined, error: 'resend down' })
+
+    const res = await runListingAlerts()
+    expect(res.sent).toBe(0)
+    expect(claimListingAlertSend).toHaveBeenCalled()
+    expect(restoreListingAlertCursor).toHaveBeenCalledWith(
+      row.id,
+      row.last_notified_at,
+      row.notified_listing_keys,
+    )
+  })
+
+  it('claims nextState BEFORE send so a successful delivery cannot re-blast', async () => {
     getActiveListingAlertsDue.mockResolvedValue([prodRow()])
     getCachedSearchListings.mockResolvedValue({ listings: [tile('220299999')], totalCount: 1, cacheKey: 'k' })
     await runListingAlerts()
-    const state = (markListingAlertNotified.mock.calls[0] as unknown as [string, string, Array<{ key: string }>])[2]
+    expect(claimListingAlertSend).toHaveBeenCalled()
+    const state = (claimListingAlertSend.mock.calls[0] as unknown as [string, string | null, string, Array<{ key: string }>])[3]
     expect(state.map((e) => e.key)).toContain('220299999')
+    // Claim happens before Resend — order is load-bearing for at-most-once.
+    const claimOrder = claimListingAlertSend.mock.invocationCallOrder[0]
+    const sendOrder = sendEmail.mock.invocationCallOrder[0]
+    expect(claimOrder).toBeLessThan(sendOrder)
   })
 
   it('the preview/approve path does not double-count: the cursor advances at QUEUE time', async () => {

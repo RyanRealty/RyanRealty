@@ -88,7 +88,12 @@ export async function getGlobalActivityFeed(opts: {
   if (opts.before) q = q.lt('ts', opts.before)
 
   const { data, error } = await q
-  if (error || !data) return { items: [], nextCursor: null }
+  if (error) {
+    // P12: failed read ≠ empty activity feed.
+    console.error('[getGlobalActivityFeed]', error.message)
+    throw new Error(`getGlobalActivityFeed failed: ${error.message}`)
+  }
+  if (!data) return { items: [], nextCursor: null }
 
   const rows = data as unknown as Array<Record<string, unknown>>
   const hasMore = rows.length > limit

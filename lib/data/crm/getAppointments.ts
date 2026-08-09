@@ -149,8 +149,9 @@ export async function getAppointments({
   const { data, error } = await q
 
   if (error) {
+    // P12: failed read ≠ empty calendar.
     console.error('[getAppointments]', error.message)
-    return []
+    throw new Error(`getAppointments failed: ${error.message}`)
   }
 
   return ((data ?? []) as unknown as RawAppointment[]).map(mapRow)
@@ -179,8 +180,9 @@ export async function getAppointmentsForPerson(personId: number): Promise<Appoin
     .limit(100)
 
   if (error) {
+    // P12: failed read ≠ empty contact calendar.
     console.error('[getAppointmentsForPerson]', error.message)
-    return []
+    throw new Error(`getAppointmentsForPerson failed: ${error.message}`)
   }
   return ((data ?? []) as unknown as RawAppointment[]).map(mapRow)
 }

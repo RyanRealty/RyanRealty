@@ -16,13 +16,29 @@ function client() {
   return createServiceClient()
 }
 
+/**
+ * Broker-owned fields that MUST survive a Spark re-sync. Written by the admin
+ * editor; merged back onto the row by upsertListingRows (P12). Flat Spark
+ * upserts rebuild `details` without these keys — that was the silent revert.
+ */
+export type AdminListingOverrides = {
+  admin_notes?: string | null
+  marketing_headline?: string | null
+  featured?: boolean
+  /** When true, ListPrice on the row is broker-owned and re-applied after sync. */
+  list_price_set?: boolean
+  list_price?: number | null
+  /** When true, StandardStatus on the row is broker-owned. */
+  standard_status_set?: boolean
+  standard_status?: string | null
+  /** When true, details.PublicRemarks is broker-owned. */
+  public_remarks_set?: boolean
+  public_remarks?: string | null
+}
+
 export type ListingDetailsJson = {
   PublicRemarks?: string
-  admin_overrides?: {
-    admin_notes?: string | null
-    marketing_headline?: string | null
-    featured?: boolean
-  }
+  admin_overrides?: AdminListingOverrides
   [k: string]: unknown
 }
 
@@ -70,16 +86,69 @@ export async function updateAdminEditableListingRow(
 ): Promise<{ ok: boolean; error?: string }> {
   const sb = client()
   if (!sb) return { ok: false, error: 'Supabase not configured' }
+
+  // Stamp sync-proof overrides so the next delta cannot silently wipe the edit
+  // (P12 / data-atlas chain 10). PublicRemarks lives in details; price/status
+  // are top-level columns — both are recorded under admin_overrides with *_set.
+  const prev = (patch.details?.admin_overrides ?? {}) as AdminListingOverrides
+  const publicRemarks =
+    typeof patch.details?.PublicRemarks === 'string' ? patch.details.PublicRemarks : null
+  const admin_overrides: AdminListingOverrides = {
+    ...prev,
+    list_price_set: true,
+    list_price: patch.ListPrice,
+    standard_status_set: true,
+    standard_status: patch.StandardStatus?.trim() || null,
+    public_remarks_set: true,
+    public_remarks: publicRemarks,
+  }
+  const details: ListingDetailsJson = {
+    ...(patch.details ?? {}),
+    admin_overrides,
+  }
+
   const { error } = await sb
     .from('listings')
     .update({
       ListPrice: patch.ListPrice,
       StandardStatus: patch.StandardStatus?.trim() || null,
-      details: patch.details,
+      details,
       ModificationTimestamp: new Date().toISOString(),
     })
     .eq('ListingKey', listingKey)
   return error ? { ok: false, error: error.message } : { ok: true }
+}
+
+/**
+ * Re-apply broker-owned admin_overrides onto a Spark-built listing row.
+ * Pure. Used by the sync upsert path so admin edits survive re-sync.
+ */
+export function applyAdminOverridesToListingRow(
+  row: Record<string, unknown>,
+  existingDetails: ListingDetailsJson | null | undefined,
+): Record<string, unknown> {
+  const overrides = existingDetails?.admin_overrides
+  if (!overrides) return row
+
+  const nextDetails: ListingDetailsJson = {
+    ...((row.details as ListingDetailsJson | null | undefined) ?? {}),
+    admin_overrides: {
+      ...(((row.details as ListingDetailsJson | null | undefined)?.admin_overrides) ?? {}),
+      ...overrides,
+    },
+  }
+  if (overrides.public_remarks_set) {
+    nextDetails.PublicRemarks = overrides.public_remarks ?? undefined
+  }
+
+  const out: Record<string, unknown> = { ...row, details: nextDetails }
+  if (overrides.list_price_set) {
+    out.ListPrice = overrides.list_price ?? null
+  }
+  if (overrides.standard_status_set) {
+    out.StandardStatus = overrides.standard_status ?? null
+  }
+  return out
 }
 
 export type ListingPhotoRow = {

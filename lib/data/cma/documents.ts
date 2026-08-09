@@ -16,11 +16,25 @@ function client() {
 
 export type CmaAdminRow = Record<string, unknown>
 
-/** Full cmas row (including html_content + citations) by slug. */
+/**
+ * Full cmas row (including html_content + citations) by slug.
+ *
+ * P12: a failed read is NOT returned as null. Null means the slug is missing;
+ * a transport/RLS/schema error throws so send/publish paths cannot treat a
+ * broken read as "no document" and silently skip or mis-route.
+ */
 export async function getCmaAdminRowBySlug(slug: string): Promise<CmaAdminRow | null> {
   const sb = client()
-  if (!sb) return null
-  const { data } = await sb.from('cmas').select('*').eq('slug', slug.trim().toLowerCase()).maybeSingle()
+  if (!sb) throw new Error('getCmaAdminRowBySlug: Supabase not configured')
+  const { data, error } = await sb
+    .from('cmas')
+    .select('*')
+    .eq('slug', slug.trim().toLowerCase())
+    .maybeSingle()
+  if (error) {
+    console.error('[getCmaAdminRowBySlug]', error.message)
+    throw new Error(`getCmaAdminRowBySlug failed: ${error.message}`)
+  }
   return (data ?? null) as CmaAdminRow | null
 }
 

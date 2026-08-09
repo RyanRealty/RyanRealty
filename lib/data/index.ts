@@ -706,6 +706,8 @@ export {
   setListingAlertActive,
   deleteListingAlertById,
   markListingAlertNotified,
+  claimListingAlertSend,
+  restoreListingAlertCursor,
   deactivateListingAlertByToken,
   claimListingAlertsForUser,
   getListingAlertsForUser,

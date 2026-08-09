@@ -477,3 +477,13 @@ NOT IN SCOPE
   ORPHANS NOT IN SCOPE (unused, ungated): SyncHistoryTest, SyncHistoryTable, SyncButton, SyncDataRefreshButton, SyncRunLog; loading.tsx shells.
   QUEUE: closed 11f-final-eight, 11f-mounted-islands, 11f-route-root-blind-spot, 11f-prospecting-subfamily. Kept 11f-converge-third-reader + v2-primitive-audit as non-blocking.
   NEXT: 12-send-integrity (listing-alert claim-before-send · per-attempt block ledger · gate-drop record).
+
+2026-08-09T19:21:08Z P12 UNIT — send-integrity + correctness substrate (Grok /endtoend autonomous).
+  SEND-INTEGRITY:
+   · listing-alert: claim-before-send (claimListingAlertSend CAS on last_notified_at; restoreListingAlertCursor on zero sends). H2 adversarial tests rewritten — claim failure never hits Resend; successful claim stamps nextState before send.
+   · block ledger: migration 20260809190000_crm_send_block_events + lib/data/crm/recordSendBlockEvent; checkSendGuards records suppression/hard-stop/quiet-hours best-effort.
+  CORRECTNESS:
+   · listing admin edits stamp admin_overrides.*_set; upsertListingRows merges before Spark overwrite (fail-closed on merge read error).
+   · getCmaAdminRowBySlug / getTaskQueue / getAppointments / getAppointmentsForPerson / getGlobalActivityFeed throw on transport error (null/empty reserved for genuine empty).
+  TESTS: lib/alerts/engine.adversarial (30) + listingEdit.overrides (2) green.
+  REMAINING P12: measurement stamps, full-sync ops diagnosis, public city grid .limit(50), assigned_broker rule, dupe queue, gate-drop for push, Matt audit-trail policy, chrome/dark-mode.

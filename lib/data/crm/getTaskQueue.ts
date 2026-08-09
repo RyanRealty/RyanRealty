@@ -256,8 +256,10 @@ export async function getTaskQueue(params: {
   ])
 
   if (rowsRes.error) {
+    // P12: a failed read is not an empty queue — callers must not show
+    // "you're clear" when the table was unreachable.
     console.error('[getTaskQueue]', rowsRes.error.message)
-    return { rows: [], counts: { today: 0, overdue: 0, upcoming: 0, completed: 0 }, view }
+    throw new Error(`getTaskQueue failed: ${rowsRes.error.message}`)
   }
 
   return {
