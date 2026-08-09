@@ -132,7 +132,7 @@ describe('sendGovernedSms — guard order', () => {
     expect(h.getSendTarget).not.toHaveBeenCalled()
     expect(h.sendSms).not.toHaveBeenCalled()
     expect(h.sendSmsViaMessagingService).not.toHaveBeenCalled()
-    expect(h.inserts.filter((i) => i.table !== 'crm_send_block_events')).toHaveLength(0)
+    expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
   })
 
   it('a suppressed person NEVER reaches quiet hours, idempotency, the provider, or the timeline', async () => {
@@ -146,7 +146,7 @@ describe('sendGovernedSms — guard order', () => {
     expect(h.inSmsQuietHours).not.toHaveBeenCalled()
     expect(h.withSendIdempotency).not.toHaveBeenCalled()
     expect(h.sendSms).not.toHaveBeenCalled()
-    expect(h.inserts.filter((i) => i.table !== 'crm_send_block_events')).toHaveLength(0)
+    expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
   })
 
   it('fails CLOSED when the suppression read errors (reason string propagated)', async () => {
@@ -165,7 +165,7 @@ describe('sendGovernedSms — guard order', () => {
     expect(h.withSendIdempotency).not.toHaveBeenCalled()
     expect(h.getSendTarget).not.toHaveBeenCalled()
     expect(h.sendSms).not.toHaveBeenCalled()
-    expect(h.inserts.filter((i) => i.table !== 'crm_send_block_events')).toHaveLength(0)
+    expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
   })
 
   it('a manual 1:1 override passes quiet hours (A6) and sends', async () => {
@@ -211,7 +211,7 @@ describe('sendGovernedSms — guard order', () => {
     const res = await sendGovernedSms(baseReq)
     expect(res).toEqual({ ok: false, stage: 'recipient', error: 'No phone number on file' })
     expect(h.sendSms).not.toHaveBeenCalled()
-    expect(h.inserts.filter((i) => i.table !== 'crm_send_block_events')).toHaveLength(0)
+    expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
   })
 
   it('wraps the send in the existing idempotency key pattern sms:{personId}:{key}', async () => {
@@ -232,7 +232,7 @@ describe('sendGovernedSms — guard order', () => {
     h.sendSms.mockResolvedValue({ ok: false, error: 'twilio down' })
     const res = await sendGovernedSms(baseReq)
     expect(res).toEqual({ ok: false, stage: 'provider', error: 'twilio down' })
-    expect(h.inserts.filter((i) => i.table !== 'crm_send_block_events')).toHaveLength(0)
+    expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
   })
 })
 
@@ -263,7 +263,7 @@ describe('sendGovernedEmail — guard order', () => {
     })
     expect(h.withSendIdempotency).not.toHaveBeenCalled()
     expect(h.sendCrmEmail).not.toHaveBeenCalled()
-    expect(h.inserts.filter((i) => i.table !== 'crm_send_block_events')).toHaveLength(0)
+    expect(h.inserts.filter((i) => i.table !== 'admin_actions')).toHaveLength(0)
   })
 
   it('hard-stop reports as its own stage on email too', async () => {

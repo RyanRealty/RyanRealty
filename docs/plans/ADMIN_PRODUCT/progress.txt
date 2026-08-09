@@ -491,3 +491,5 @@ NOT IN SCOPE
 2026-08-09T19:23:34Z P12 continued — published figures + delta ops record.
   · getAllCitySnapshots: removed .limit(50), paged full city set, cache key -v4.
   · deltaSync execute: recordSyncRun(runType=delta); migration allows delta run_type.
+
+2026-08-09T19:29:29Z P12 block ledger: write to admin_actions (action_type=send_blocked) instead of a new table — prod has no unapplied create; drift gate requires applied migrations.
