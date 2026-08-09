@@ -6,32 +6,29 @@
  * the CRM — a real email from the signing broker's own mailbox, tracked and
  * logged on the contact's timeline. Sending requires the explicit button
  * click plus a confirmation dialog — nothing fires automatically.
+ *
+ * 11F: on the LOCKED admin v2 language. Label+Input+Select ->
+ * TextField/SelectField, Separator -> a hairline div, the send-confirmation
+ * Dialog stays a plain <Dialog> (mirrors CmaPublishControl and the BPO
+ * family's send flow — sending is consequential but not destructive in
+ * ConfirmDialog's sense), and the delete confirmation -> <ConfirmDialog>
+ * (genuinely destructive + irreversible, exactly what it exists for).
+ *
+ * Gate note (ci:admin-ui rule C, at most one primary-variant Button per
+ * file): this file carries three CTA-shaped moments (Approve, the "Send to
+ * lead" trigger, and its dialog's "Send now" confirm) plus Save-and-rebuild
+ * and Archive. "Send to lead" keeps the one primary accent — the highest-
+ * stakes single click on this page (a real email leaving to a real client).
+ * Approve, Save-and-rebuild and Archive are quiet; "Send now" is quiet too,
+ * matching the confirm-is-never-primary idiom ConfirmDialog itself already
+ * bakes in for Delete.
  */
 
 import { useState, useTransition } from 'react'
-import { formatPriceExact } from '@/lib/format/money'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, ConfirmDialog, Dialog, SelectField, TextField } from '@/components/admin/v2'
+import { formatPriceExact } from '@/lib/format/money'
 import {
   rebuildCmaAction,
   rebrandCmaAction,
@@ -164,135 +161,106 @@ export function CmaReviewActions(props: CmaReviewActionsProps) {
   return (
     <div className="space-y-5">
       <div className="space-y-4">
+        <TextField label="Client name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+        <TextField label="Client email" type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
+        <TextField label="Client phone" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
+
         <div className="space-y-1.5">
-          <Label htmlFor="rv-client-name">Client name</Label>
-          <Input id="rv-client-name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="rv-client-email">Client email</Label>
-          <Input id="rv-client-email" type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="rv-client-phone">Client phone</Label>
-          <Input id="rv-client-phone" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="rv-broker">Signing broker</Label>
-          <Select value={brokerSlug} onValueChange={setBrokerSlug}>
-            <SelectTrigger id="rv-broker" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {props.brokers.map((b) => (
-                <SelectItem key={b.slug} value={b.slug}>
-                  {b.displayName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SelectField label="Signing broker" value={brokerSlug} onChange={(e) => setBrokerSlug(e.target.value)}>
+            {props.brokers.map((b) => (
+              <option key={b.slug} value={b.slug}>
+                {b.displayName}
+              </option>
+            ))}
+          </SelectField>
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant="quiet"
             className="mt-2"
             disabled={isPending || !isDraft || brokerSlug === (props.brokerSlug ?? '')}
             onClick={rebrand}
           >
             Re-brand for this broker
           </Button>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
             Re-renders the signature block. Pricing, comparables and citations stay exactly as built.
           </p>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="rv-price">Adjust recommended list price</Label>
-          <Input
-            id="rv-price"
-            placeholder={props.recommendedList != null ? String(props.recommendedList) : 'e.g. 725000'}
-            value={priceOverride}
-            onChange={(e) => setPriceOverride(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Data-supported recommendation: {usd(props.recommendedList)}. Setting a number here re-anchors the
-            tier grid on your price and notes the adjustment in the document. Leave blank to keep the computed value.
-          </p>
-        </div>
-        <Button onClick={rebuild} disabled={isPending} className="w-full min-h-11" variant="secondary">
+
+        <TextField
+          label="Adjust recommended list price"
+          placeholder={props.recommendedList != null ? String(props.recommendedList) : 'e.g. 725000'}
+          value={priceOverride}
+          onChange={(e) => setPriceOverride(e.target.value)}
+          hint={`Data-supported recommendation: ${usd(props.recommendedList)}. Setting a number here re-anchors the tier grid on your price and notes the adjustment in the document. Leave blank to keep the computed value.`}
+        />
+
+        <Button onClick={rebuild} disabled={isPending} variant="quiet" touch className="w-full">
           {isPending ? 'Working…' : 'Save and rebuild'}
         </Button>
       </div>
 
-      <Separator />
+      <div style={{ borderTop: '1px solid var(--a-border)' }} />
 
       <div className="space-y-2">
         {isDraft ? (
-          <Button onClick={approve} disabled={isPending || !props.hasDocument} className="w-full min-h-11">
+          <Button onClick={approve} disabled={isPending || !props.hasDocument} variant="quiet" touch className="w-full">
             Approve (draft to final)
           </Button>
         ) : null}
 
-        <Dialog open={sendOpen} onOpenChange={setSendOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full min-h-11" disabled={isPending || !isSendable}>
-              Send to lead
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Send this CMA to the lead?</DialogTitle>
-              <DialogDescription>
-                A tracked email goes to {clientEmail.trim() || 'the client'} through the CRM, sent from the
-                signing broker&apos;s own mailbox with the PDF attached and a link to the online report.
-                Opens, clicks, and replies land on the contact record.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setSendOpen(false)}>
+        <Button onClick={() => setSendOpen(true)} touch className="w-full" disabled={isPending || !isSendable}>
+          Send to lead
+        </Button>
+
+        <Dialog
+          open={sendOpen}
+          onClose={() => setSendOpen(false)}
+          title="Send this CMA to the lead?"
+          description={
+            <>
+              A tracked email goes to {clientEmail.trim() || 'the client'} through the CRM, sent from the signing
+              broker&apos;s own mailbox with the PDF attached and a link to the online report. Opens, clicks, and
+              replies land on the contact record.
+            </>
+          }
+          footer={
+            <>
+              <Button variant="quiet" onClick={() => setSendOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={sendToLead} disabled={isPending}>
+              <Button variant="quiet" onClick={sendToLead} disabled={isPending}>
                 Send now
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </>
+          }
+        />
         {!isSendable && props.status === 'draft' ? (
-          <p className="text-xs text-muted-foreground">Approve the draft before sending.</p>
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Approve the draft before sending.</p>
         ) : null}
         {!clientEmail.trim() ? (
-          <p className="text-xs text-muted-foreground">Add a client email (and rebuild) to enable sending.</p>
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>Add a client email (and rebuild) to enable sending.</p>
         ) : null}
       </div>
 
-      <Separator />
+      <div style={{ borderTop: '1px solid var(--a-border)' }} />
 
-      <Button onClick={toggleArchive} variant="outline" className="w-full min-h-11" disabled={isPending}>
+      <Button onClick={toggleArchive} variant="quiet" touch className="w-full" disabled={isPending}>
         {isArchived ? 'Restore from archive' : 'Archive CMA'}
       </Button>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogTrigger asChild>
-          <Button variant="destructive" className="w-full min-h-11" disabled={isPending}>
-            Delete CMA
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete this CMA?</DialogTitle>
-            <DialogDescription>
-              The stored document, pricing, and comp set are removed. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={remove} disabled={isPending}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Button onClick={() => setDeleteOpen(true)} variant="danger" touch className="w-full" disabled={isPending}>
+        Delete CMA
+      </Button>
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete this CMA?"
+        description="The stored document, pricing, and comp set are removed. This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={remove}
+        busy={isPending}
+      />
     </div>
   )
 }

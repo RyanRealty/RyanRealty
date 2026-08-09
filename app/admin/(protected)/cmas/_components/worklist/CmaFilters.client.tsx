@@ -3,26 +3,28 @@
 /**
  * CmaFilters — URL-searchParams-driven filter bar for the CMA worklist,
  * copying the ProspectFilters idiom (components/admin/prospecting/
- * ProspectFilters.client.tsx): pill <Link>s for the status facet, a GET form
- * for free text, and a client-navigated Select for city (Radix Select has no
- * native form submit, so it drives the same URL via router.push). Every
+ * ProspectFilters.client.tsx): pill <Link>s for the status facet, a search
+ * submit for free text, and a client-navigated select for city. Every
  * control's value is read straight off `filters` (the URL-derived contract).
  * Unlike prospecting, there is no kind toggle (Expired/FSBO) — this worklist
  * is seller CMAs only.
+ *
+ * 11F: on the LOCKED admin v2 language (mirrors the BPO family's BpoFilters,
+ * whose docblock this note follows). City keeps its router.push-driven
+ * select, now a ToolbarSelect. The free-text field moved off the native
+ * `method="get"` form: it relied on `<input type="hidden">` to carry the
+ * other facets across the submit, and a raw <input> is banned in a migrated
+ * file (ci:admin-ui rule A). It is now a client submit that calls the exact
+ * same buildHref(...) with the exact same params — the resulting URL is
+ * identical, only the transport (native GET vs. router.push) changed, which
+ * this component already does for the City select.
  */
 
+import { useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import type { CSSProperties } from 'react'
+import { Button, TextField, ToolbarSelect } from '@/components/admin/v2'
 import type { CmaStatusFilter, CmaWorklistFilters } from './types'
 
 const STATUS_OPTIONS: { value: CmaStatusFilter; label: string }[] = [
@@ -47,13 +49,21 @@ function buildHref(basePath: string, params: ParamMap): string {
   return qs ? `${basePath}?${qs}` : basePath
 }
 
-/** The current filter set flattened to a param map — the single source both the hidden inputs and the href builders read from. */
+/** The current filter set flattened to a param map — the single source both the client submit and the href builders read from. */
 function filtersToParams(filters: CmaWorklistFilters): ParamMap {
   return {
     q: filters.q ?? undefined,
     city: filters.city ?? undefined,
     status: filters.status && filters.status !== 'all' ? filters.status : undefined,
   }
+}
+
+const facetLabelStyle: CSSProperties = {
+  width: 64,
+  flexShrink: 0,
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 500,
+  color: 'var(--a-text-2)',
 }
 
 export function CmaFilters({
@@ -66,6 +76,7 @@ export function CmaFilters({
   basePath: string
 }) {
   const router = useRouter()
+  const qRef = useRef<HTMLInputElement>(null)
   const params = filtersToParams(filters)
   const filtersActive = Boolean(params.q || params.city || params.status)
 
@@ -73,67 +84,63 @@ export function CmaFilters({
     router.push(buildHref(basePath, { ...params, city: next === ALL_CITIES ? undefined : next }))
   }
 
+  function submitSearch(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    router.push(buildHref(basePath, { ...params, q: qRef.current?.value.trim() || undefined }))
+  }
+
   return (
     <div className="space-y-4">
-      {/* Free text — one GET form. */}
-      <form method="get" action={basePath} className="flex flex-wrap items-end gap-2">
-        {/* Preserve the non-form facets (city/status) across this submit. */}
-        {params.city ? <Input type="hidden" name="city" value={params.city} /> : null}
-        {params.status ? <Input type="hidden" name="status" value={params.status} /> : null}
-
+      {/* Free text — address or client. */}
+      <form onSubmit={submitSearch} className="flex flex-wrap items-end gap-2">
         <div className="w-full flex-1 sm:min-w-56">
-          <Label htmlFor="cma-q" className="text-xs font-medium text-muted-foreground">
-            Address or client
-          </Label>
-          <Input id="cma-q" name="q" defaultValue={filters.q ?? ''} placeholder="20889 SE Caldera Dr" />
+          <TextField
+            ref={qRef}
+            label="Address or client"
+            name="q"
+            defaultValue={filters.q ?? ''}
+            placeholder="20889 SE Caldera Dr"
+          />
         </div>
-        <Button type="submit" className="h-11 min-h-11">
+        <Button type="submit" touch>
           Search
         </Button>
         {filtersActive ? (
-          <Button asChild variant="outline" className="h-11 min-h-11">
-            <Link href={basePath}>Clear all</Link>
-          </Button>
+          <Link href={basePath} className="av2-btn av2-btn--quiet av2-btn--touch" style={{ textDecoration: 'none' }}>
+            Clear all
+          </Link>
         ) : null}
       </form>
 
-      {/* City — Radix Select has no native form submit; drive the URL via router.push. */}
+      {/* City — a client-navigated select drives the URL via router.push. */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">City</span>
-        <Select value={params.city ?? ALL_CITIES} onValueChange={setCity}>
-          <SelectTrigger className="h-9 w-full sm:w-56" aria-label="City">
-            <SelectValue placeholder="All cities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_CITIES}>All cities</SelectItem>
-            {cities.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <span style={facetLabelStyle}>City</span>
+        <ToolbarSelect
+          aria-label="City"
+          value={params.city ?? ALL_CITIES}
+          onChange={(e) => setCity(e.target.value)}
+          style={{ width: '100%', maxWidth: 224 }}
+        >
+          <option value={ALL_CITIES}>All cities</option>
+          {cities.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </ToolbarSelect>
       </div>
 
       {/* Status pills. */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">Status</span>
+        <span style={facetLabelStyle}>Status</span>
         <div className="flex flex-wrap gap-1.5">
           {STATUS_OPTIONS.map((opt) => {
             const active = (filters.status ?? 'all') === opt.value
             const nextParams = { ...params, status: opt.value === 'all' ? undefined : opt.value }
             return (
-              <Button
-                key={opt.value}
-                asChild
-                size="sm"
-                variant={active ? 'default' : 'outline'}
-                className="h-8 rounded-full px-3 text-xs"
-              >
-                <Link href={buildHref(basePath, nextParams)} aria-pressed={active}>
-                  {opt.label}
-                </Link>
-              </Button>
+              <Link key={opt.value} href={buildHref(basePath, nextParams)} className="av2-chip" aria-pressed={active}>
+                {opt.label}
+              </Link>
             )
           })}
         </div>

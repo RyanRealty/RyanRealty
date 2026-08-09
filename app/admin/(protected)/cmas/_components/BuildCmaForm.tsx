@@ -3,21 +3,16 @@
 /**
  * Manual "Build CMA" form — address or MLS lookup + client + broker, then the
  * deterministic builder runs and the browser lands on the review page.
+ *
+ * 11F: on the LOCKED admin v2 language (mirrors the BPO family's
+ * BuildBpoForm.tsx). Label+Input+Select -> TextField/SelectField, pattern 6
+ * (single column, label-above), same field names and same submit logic.
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, SelectField, TextField } from '@/components/admin/v2'
 import { buildCmaAdminAction } from '@/app/actions/cma-admin'
 
 export interface BrokerOption {
@@ -61,82 +56,45 @@ export function BuildCmaForm({ brokers }: { brokers: BrokerOption[] }) {
   return (
     <div className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="cma-address">Property address</Label>
-          <Input
-            id="cma-address"
-            placeholder="16111 Lava Dr, La Pine, OR 97739"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Street number, street, city. The subject resolves from the MLS record.
-          </p>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="cma-mls">Or MLS number</Label>
-          <Input
-            id="cma-mls"
-            placeholder="220213342"
-            value={mlsNumber}
-            onChange={(e) => setMlsNumber(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Used when provided. Address is optional in that case.
-          </p>
-        </div>
+        <TextField
+          label="Property address"
+          placeholder="16111 Lava Dr, La Pine, OR 97739"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          hint="Street number, street, city. The subject resolves from the MLS record."
+        />
+        <TextField
+          label="Or MLS number"
+          placeholder="220213342"
+          value={mlsNumber}
+          onChange={(e) => setMlsNumber(e.target.value)}
+          hint="Used when provided. Address is optional in that case."
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="cma-client-name">Client name</Label>
-          <Input
-            id="cma-client-name"
-            placeholder="Jane Homeowner"
-            value={clientName}
-            onChange={(e) => setClientName(e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="cma-client-email">Client email</Label>
-          <Input
-            id="cma-client-email"
-            type="email"
-            placeholder="jane@example.com"
-            value={clientEmail}
-            onChange={(e) => setClientEmail(e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="cma-client-phone">Client phone</Label>
-          <Input
-            id="cma-client-phone"
-            placeholder="541.555.0100"
-            value={clientPhone}
-            onChange={(e) => setClientPhone(e.target.value)}
-          />
-        </div>
+        <TextField label="Client name" placeholder="Jane Homeowner" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+        <TextField
+          label="Client email"
+          type="email"
+          placeholder="jane@example.com"
+          value={clientEmail}
+          onChange={(e) => setClientEmail(e.target.value)}
+        />
+        <TextField label="Client phone" placeholder="541.555.0100" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="cma-broker">Signing broker</Label>
-          <Select value={brokerSlug} onValueChange={setBrokerSlug}>
-            <SelectTrigger id="cma-broker" className="w-full">
-              <SelectValue placeholder="Select a broker" />
-            </SelectTrigger>
-            <SelectContent>
-              {brokers.map((b) => (
-                <SelectItem key={b.slug} value={b.slug}>
-                  {b.displayName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <SelectField label="Signing broker" value={brokerSlug} onChange={(e) => setBrokerSlug(e.target.value)}>
+          {brokers.map((b) => (
+            <option key={b.slug} value={b.slug}>
+              {b.displayName}
+            </option>
+          ))}
+        </SelectField>
       </div>
 
-      <Button onClick={submit} disabled={isPending} className="min-h-11">
+      <Button onClick={submit} disabled={isPending} touch>
         {isPending ? 'Building (30 to 60 seconds)…' : 'Build CMA'}
       </Button>
     </div>

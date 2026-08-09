@@ -13,21 +13,20 @@
  *
  * ONE responsive tree: the card grid reflows and the detail becomes a bottom
  * Sheet on phones / an in-flow side panel on desktop — no md:hidden twin.
+ *
+ * 11F: on the LOCKED admin v2 language. Card -> av2-pane, the shadcn
+ * Pagination kit -> a hand-rolled <nav> of plain <a> page links (matching
+ * exactly what PaginationLink rendered under the hood — a real anchor, not a
+ * next/link Link, so this keeps the original's full-navigation transport),
+ * and the KpiStrip (components/console — a public-brand-token component, not
+ * an admin v2 primitive) -> ReportNumbers, the same "numbers strip" the
+ * sibling /admin/bpo/page.tsx docblock already names this as.
  */
 
 import { useCallback, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import { Card } from '@/components/ui/card'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import { KpiStrip } from '@/components/console/KpiStrip'
+import { ReportNumbers } from '@/components/admin/v2'
 import type { BpoWorklistFilters, BpoWorklistRow, BpoWorklistSummary } from '@/lib/data/bpo/reads'
 import type { BpoSendContext } from '@/app/actions/contact-bpo'
 import { BpoFilters } from './BpoFilters.client'
@@ -165,12 +164,12 @@ export function BpoBoard({
 
   return (
     <div className="space-y-4">
-      <KpiStrip
+      <ReportNumbers
         items={[
-          { label: 'Total', value: summary.total },
-          { label: 'Drafts', value: summary.drafts },
-          { label: 'Final', value: summary.final },
-          { label: 'Sent', value: summary.sent },
+          { key: 'total', label: 'Total', value: String(summary.total) },
+          { key: 'drafts', label: 'Drafts', value: String(summary.drafts) },
+          { key: 'final', label: 'Final', value: String(summary.final) },
+          { key: 'sent', label: 'Sent', value: String(summary.sent) },
         ]}
       />
 
@@ -179,9 +178,18 @@ export function BpoBoard({
       <div className="lg:flex lg:items-start lg:gap-4">
         <div className="min-w-0 flex-1">
           {rows.length === 0 ? (
-            <Card className="border border-dashed border-border px-4 py-12 text-center">
-              <p className="text-sm text-muted-foreground">No {postureLabel} opinions match these filters.</p>
-            </Card>
+            <div
+              style={{
+                border: '1px dashed var(--a-border)',
+                borderRadius: 'var(--a-r-lg)',
+                padding: '48px 16px',
+                textAlign: 'center',
+              }}
+            >
+              <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                No {postureLabel} opinions match these filters.
+              </p>
+            </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {rows.map((row) => (
@@ -199,27 +207,52 @@ export function BpoBoard({
           )}
 
           {totalPages > 1 ? (
-            <Pagination className="mt-4">
-              <PaginationContent>
-                {page > 1 ? (
-                  <PaginationItem>
-                    <PaginationPrevious href={pageHref(pathname, searchParams, page - 1)} />
-                  </PaginationItem>
-                ) : null}
-                {pageWindow(page, totalPages).map((n) => (
-                  <PaginationItem key={n}>
-                    <PaginationLink href={pageHref(pathname, searchParams, n)} isActive={n === page}>
-                      {n}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                {page < totalPages ? (
-                  <PaginationItem>
-                    <PaginationNext href={pageHref(pathname, searchParams, page + 1)} />
-                  </PaginationItem>
-                ) : null}
-              </PaginationContent>
-            </Pagination>
+            <nav
+              aria-label="Pages"
+              style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 16 }}
+            >
+              {page > 1 ? (
+                <a
+                  href={pageHref(pathname, searchParams, page - 1)}
+                  className="av2-btn av2-btn--quiet"
+                  style={{ textDecoration: 'none' }}
+                >
+                  Previous
+                </a>
+              ) : null}
+              {pageWindow(page, totalPages).map((n) => (
+                <a
+                  key={n}
+                  href={pageHref(pathname, searchParams, n)}
+                  aria-current={n === page ? 'page' : undefined}
+                  className="a-num"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 32,
+                    height: 32,
+                    borderRadius: 'var(--a-r-md)',
+                    fontSize: 'var(--a-text-sm)',
+                    textDecoration: 'none',
+                    color: n === page ? 'var(--a-accent)' : 'var(--a-text-2)',
+                    background: n === page ? 'var(--a-accent-wash)' : 'transparent',
+                    fontWeight: n === page ? 600 : 400,
+                  }}
+                >
+                  {n}
+                </a>
+              ))}
+              {page < totalPages ? (
+                <a
+                  href={pageHref(pathname, searchParams, page + 1)}
+                  className="av2-btn av2-btn--quiet"
+                  style={{ textDecoration: 'none' }}
+                >
+                  Next
+                </a>
+              ) : null}
+            </nav>
           ) : null}
         </div>
 

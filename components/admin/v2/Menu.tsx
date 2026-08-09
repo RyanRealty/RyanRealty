@@ -1,6 +1,7 @@
 'use client'
 
 import './admin-v2.css'
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 
 /**
@@ -22,7 +23,24 @@ import { useEffect, useRef, useState } from 'react'
  */
 export interface AdminMenuItem {
   label: string
-  onSelect: () => void
+  /**
+   * Where this item NAVIGATES. Supply it whenever the item's job is "go here" —
+   * the item then renders a real <a>, so middle-click and Cmd/Ctrl-click open a
+   * new tab. A button that calls router.push() looks identical and silently
+   * takes that away, which is how the BPO card's "Open in CRM" lost it during
+   * the 11F migration. Opening a record in a background tab is ordinary broker
+   * workflow, not a power-user trick.
+   */
+  href?: string
+  /**
+   * Opens the href in a new tab. Set this instead of calling window.open from
+   * onSelect: window.open only reacts to a LEFT click, so it silently drops
+   * middle-click, Cmd/Ctrl-click and the right-click "open in new tab" menu —
+   * the CMA card's "Open report" lost all three that way during 11F.
+   */
+  target?: '_blank'
+  /** What this item DOES. Omit when the item only navigates via `href`. */
+  onSelect?: () => void
   /** Destructive actions render in the danger token. */
   danger?: boolean
   disabled?: boolean
@@ -49,9 +67,11 @@ export function Menu({
   // 'last' for ArrowUp. Null means "do not move focus" (mouse click).
   const [landOn, setLandOn] = useState<'first' | 'last' | null>(null)
 
+  // Items are <button> when they act and <a> when they navigate, so query the
+  // shared role rather than a tag, and read `disabled` off the buttons only.
   const enabledItems = () =>
-    Array.from(panelRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []).filter(
-      (el) => !el.disabled,
+    Array.from(panelRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []).filter(
+      (el) => !(el instanceof HTMLButtonElement && el.disabled),
     )
 
   // Move focus into the panel once it exists in the DOM.
@@ -66,7 +86,7 @@ export function Menu({
   function moveFocus(dir: 1 | -1) {
     const items = enabledItems()
     if (!items.length) return
-    const i = items.indexOf(document.activeElement as HTMLButtonElement)
+    const i = items.indexOf(document.activeElement as HTMLElement)
     // From the trigger (i === -1) ArrowDown enters at the top, ArrowUp at the end.
     const next = i === -1 ? (dir === 1 ? 0 : items.length - 1) : (i + dir + items.length) % items.length
     items[next].focus()
@@ -127,21 +147,43 @@ export function Menu({
           data-align={align}
           onKeyDown={onPanelKeyDown}
         >
-          {items.map((it) => (
-            <button
-              key={it.label}
-              type="button"
-              role="menuitem"
-              className={it.danger ? 'av2-menu__item av2-menu__item--danger' : 'av2-menu__item'}
-              disabled={it.disabled}
-              onClick={() => {
-                setOpen(false)
-                it.onSelect()
-              }}
-            >
-              {it.label}
-            </button>
-          ))}
+          {items.map((it) => {
+            const cls = it.danger ? 'av2-menu__item av2-menu__item--danger' : 'av2-menu__item'
+            // A navigating item is an ANCHOR so the browser's own open-in-new-tab
+            // affordances keep working; only an acting item is a button.
+            return it.href && !it.disabled ? (
+              <Link
+                key={it.label}
+                href={it.href}
+                role="menuitem"
+                className={cls}
+                target={it.target}
+                // noopener/noreferrer on every new-tab link: the opened page
+                // must never get a handle back to the admin via window.opener.
+                rel={it.target === '_blank' ? 'noopener noreferrer' : undefined}
+                onClick={() => {
+                  setOpen(false)
+                  it.onSelect?.()
+                }}
+              >
+                {it.label}
+              </Link>
+            ) : (
+              <button
+                key={it.label}
+                type="button"
+                role="menuitem"
+                className={cls}
+                disabled={it.disabled}
+                onClick={() => {
+                  setOpen(false)
+                  it.onSelect?.()
+                }}
+              >
+                {it.label}
+              </button>
+            )
+          })}
         </div>
       ) : null}
     </div>

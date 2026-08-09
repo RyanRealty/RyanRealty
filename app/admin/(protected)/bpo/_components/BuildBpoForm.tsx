@@ -4,21 +4,17 @@
  * Manual "Build Broker Price Opinion" form — address or MLS lookup, signing
  * broker, and an optional purpose label. The deterministic builder runs on
  * submit and the browser lands on the review page.
+ *
+ * 11F: on the LOCKED admin v2 language (this island's page,
+ * /admin/bpo/new/page.tsx, already migrated — this brings the mounted form to
+ * match). Label+Input+Select -> TextField/SelectField, pattern 6 (single
+ * column, label-above), same field names and same submit logic.
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, SelectField, TextField } from '@/components/admin/v2'
 import { buildBpoAdminAction } from '@/app/actions/bpo-admin'
 
 export interface BrokerOption {
@@ -66,64 +62,40 @@ export function BuildBpoForm({ brokers }: { brokers: BrokerOption[] }) {
   return (
     <div className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="bpo-address">Property address</Label>
-          <Input
-            id="bpo-address"
-            placeholder="3124 NW Lynch Ave, Redmond, OR 97756"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Street number, street, city. The subject resolves from the MLS record, including its full listing history.
-          </p>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bpo-mls">Or MLS number</Label>
-          <Input
-            id="bpo-mls"
-            placeholder="220219617"
-            value={mlsNumber}
-            onChange={(e) => setMlsNumber(e.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">Used when provided. Address is optional in that case.</p>
-        </div>
+        <TextField
+          label="Property address"
+          placeholder="3124 NW Lynch Ave, Redmond, OR 97756"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          hint="Street number, street, city. The subject resolves from the MLS record, including its full listing history."
+        />
+        <TextField
+          label="Or MLS number"
+          placeholder="220219617"
+          value={mlsNumber}
+          onChange={(e) => setMlsNumber(e.target.value)}
+          hint="Used when provided. Address is optional in that case."
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="bpo-purpose">Purpose</Label>
-          <Select value={purpose} onValueChange={setPurpose}>
-            <SelectTrigger id="bpo-purpose" className="w-full">
-              <SelectValue placeholder="Select a purpose" />
-            </SelectTrigger>
-            <SelectContent>
-              {PURPOSES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="bpo-broker">Signing broker</Label>
-          <Select value={brokerSlug} onValueChange={setBrokerSlug}>
-            <SelectTrigger id="bpo-broker" className="w-full">
-              <SelectValue placeholder="Select a broker" />
-            </SelectTrigger>
-            <SelectContent>
-              {brokers.map((b) => (
-                <SelectItem key={b.slug} value={b.slug}>
-                  {b.displayName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <SelectField label="Purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
+          {PURPOSES.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </SelectField>
+        <SelectField label="Signing broker" value={brokerSlug} onChange={(e) => setBrokerSlug(e.target.value)}>
+          {brokers.map((b) => (
+            <option key={b.slug} value={b.slug}>
+              {b.displayName}
+            </option>
+          ))}
+        </SelectField>
       </div>
 
-      <Button onClick={submit} disabled={isPending} className="min-h-11">
+      <Button onClick={submit} disabled={isPending} touch>
         {isPending ? 'Building (15 to 40 seconds)…' : 'Build broker price opinion'}
       </Button>
     </div>

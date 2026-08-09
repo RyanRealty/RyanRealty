@@ -3,7 +3,7 @@
  * check-cma-rebrand-integrity.mjs — ci:cma-rebrand-integrity (W10.3).
  *
  * THE DEFECT (verified in code 2026-07-24, before this gate existed):
- * The "Signing broker" select in components/admin/cma/CmaReviewActions.tsx was
+ * The "Signing broker" select in app/admin/(protected)/cmas/_components/CmaReviewActions.tsx was
  * wired to rebuildCmaAction, which calls buildCma WITHOUT forwarding comp keys.
  * buildCma re-selects comparables from scratch and re-runs two Anthropic passes
  * (judgeComps at lib/cma/build.ts:158, auditCma at 233 and 272). So changing
@@ -33,7 +33,7 @@ import { join } from 'node:path'
 import ts from 'typescript'
 
 const REBRAND = 'lib/cma/rebrand.ts'
-const COMPONENT = 'components/admin/cma/CmaReviewActions.tsx'
+const COMPONENT = 'app/admin/(protected)/cmas/_components/CmaReviewActions.tsx'
 
 /** Anything that recomputes a figure. None of it belongs in a re-brand. */
 const RECOMPUTE = ['buildCma', 'buildBpo', 'judgeComps', 'auditCma', 'selectComps', 'computePricing']

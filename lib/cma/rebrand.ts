@@ -3,7 +3,7 @@
  * recomputing a single number (W10.3).
  *
  * THE DEFECT THIS REPLACES
- * The "Signing broker" select in components/admin/cma/CmaReviewActions.tsx was
+ * The "Signing broker" select in app/admin/(protected)/cmas/_components/CmaReviewActions.tsx was
  * wired to rebuildCmaAction, which calls buildCma without forwarding comp keys.
  * buildCma re-selects comparables from scratch and re-runs two Anthropic passes
  * (judgeComps, auditCma). So changing WHO SIGNS a client-facing pricing document

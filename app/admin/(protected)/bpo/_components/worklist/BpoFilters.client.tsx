@@ -3,28 +3,32 @@
 /**
  * BpoFilters — URL-searchParams-driven filter bar for the BPO worklist,
  * copying the ProspectFilters idiom (components/admin/prospecting/
- * ProspectFilters.client.tsx): pill <Link>s for binary/enum facets, a GET
- * form for free text, and a client-navigated Select for city (Radix Select
- * has no native form submit, so it drives the URL via router.push). Every
- * control's value is read straight off `filters` (the URL-derived contract).
+ * ProspectFilters.client.tsx): pill <Link>s for binary/enum facets and a
+ * client-navigated select for city. Every control's value is read straight
+ * off `filters` (the URL-derived contract).
  *
  * `posture` is a hard binary toggle (Buyer · Seller, no "all" state) —
  * mirrors ProspectFilters' expired/fsbo `kind` toggle exactly. Any filter
  * change drops `?page` implicitly, resetting pagination to page 1.
+ *
+ * 11F: on the LOCKED admin v2 language. Posture/status pills keep their real
+ * <Link> navigation (av2-chip classes applied directly, same idiom as the
+ * entity Links in app/admin/(protected)/prospecting/page.tsx) — no behavior
+ * change. City keeps its router.push-driven select, now a ToolbarSelect.
+ * The free-text field moved off the native `method="get"` form: it relied on
+ * `<input type="hidden">` to carry the other facets across the submit, and a
+ * raw <input> is banned in a migrated file (ci:admin-ui rule A, baseline 0
+ * here). It is now a client submit that calls the exact same buildHref(...)
+ * with the exact same params — the resulting URL is identical, only the
+ * transport (native GET vs. router.push) changed, which this component
+ * already does for the City select.
  */
 
+import { useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import type { CSSProperties } from 'react'
+import { Button, TextField, ToolbarSelect } from '@/components/admin/v2'
 import type { BpoPosture, BpoStatusFilter, BpoWorklistFilters } from '@/lib/data/bpo/reads'
 
 const POSTURE_OPTIONS: { value: BpoPosture; label: string }[] = [
@@ -63,6 +67,14 @@ function filtersToParams(filters: BpoWorklistFilters): ParamMap {
   }
 }
 
+const facetLabelStyle: CSSProperties = {
+  width: 64,
+  flexShrink: 0,
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 500,
+  color: 'var(--a-text-2)',
+}
+
 export function BpoFilters({
   filters,
   cities,
@@ -73,6 +85,7 @@ export function BpoFilters({
   basePath: string
 }) {
   const router = useRouter()
+  const qRef = useRef<HTMLInputElement>(null)
   const params = filtersToParams(filters)
   const filtersActive = Boolean(params.status || params.city || params.q)
 
@@ -80,91 +93,87 @@ export function BpoFilters({
     router.push(buildHref(basePath, { ...params, city: next === ALL_CITIES ? undefined : next }))
   }
 
+  function submitSearch(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    router.push(buildHref(basePath, { ...params, q: qRef.current?.value.trim() || undefined }))
+  }
+
   return (
     <div className="space-y-4">
       {/* Posture toggle — Buyer · Seller (offer_strategy.mode), no "all" state. */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">Posture</span>
+        <span style={facetLabelStyle}>Posture</span>
         <div className="flex gap-1.5">
           {POSTURE_OPTIONS.map((opt) => {
             const active = params.posture === opt.value
             return (
-              <Button
+              <Link
                 key={opt.value}
-                asChild
-                size="sm"
-                variant={active ? 'default' : 'outline'}
-                className="h-9 rounded-full px-4 text-xs"
+                href={buildHref(basePath, { ...params, posture: opt.value })}
+                className="av2-chip"
+                aria-pressed={active}
               >
-                <Link href={buildHref(basePath, { ...params, posture: opt.value })} aria-pressed={active}>
-                  {opt.label}
-                </Link>
-              </Button>
+                {opt.label}
+              </Link>
             )
           })}
         </div>
       </div>
 
       {/* Free text — address / subdivision. */}
-      <form method="get" action={basePath} className="flex flex-wrap items-end gap-2">
-        {/* Preserve the non-form facets (posture/city/status) across this submit. */}
-        <Input type="hidden" name="posture" value={params.posture} />
-        {params.city ? <Input type="hidden" name="city" value={params.city} /> : null}
-        {params.status ? <Input type="hidden" name="status" value={params.status} /> : null}
-
+      <form onSubmit={submitSearch} className="flex flex-wrap items-end gap-2">
         <div className="w-full flex-1 sm:min-w-56">
-          <Label htmlFor="bpo-q" className="text-xs font-medium text-muted-foreground">
-            Address or subdivision
-          </Label>
-          <Input id="bpo-q" name="q" defaultValue={filters.q ?? ''} placeholder="20889 SE Caldera Dr" />
+          <TextField
+            ref={qRef}
+            label="Address or subdivision"
+            name="q"
+            defaultValue={filters.q ?? ''}
+            placeholder="20889 SE Caldera Dr"
+          />
         </div>
-        <Button type="submit" className="h-11 min-h-11">
+        <Button type="submit" touch>
           Search
         </Button>
         {filtersActive ? (
-          <Button asChild variant="outline" className="h-11 min-h-11">
-            <Link href={buildHref(basePath, { posture: params.posture })}>Clear all</Link>
-          </Button>
+          <Link
+            href={buildHref(basePath, { posture: params.posture })}
+            className="av2-btn av2-btn--quiet av2-btn--touch"
+            style={{ textDecoration: 'none' }}
+          >
+            Clear all
+          </Link>
         ) : null}
       </form>
 
-      {/* City — Radix Select has no native form submit; drive the URL via router.push. */}
+      {/* City — a client-navigated select drives the URL via router.push. */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">City</span>
-        <Select value={params.city ?? ALL_CITIES} onValueChange={setCity}>
-          <SelectTrigger className="h-9 w-full sm:w-56" aria-label="City">
-            <SelectValue placeholder="All cities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_CITIES}>All cities</SelectItem>
-            {cities.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <span style={facetLabelStyle}>City</span>
+        <ToolbarSelect
+          aria-label="City"
+          value={params.city ?? ALL_CITIES}
+          onChange={(e) => setCity(e.target.value)}
+          style={{ width: '100%', maxWidth: 224 }}
+        >
+          <option value={ALL_CITIES}>All cities</option>
+          {cities.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </ToolbarSelect>
       </div>
 
       {/* Status pills. */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="w-16 shrink-0 text-xs font-medium text-muted-foreground">Status</span>
+        <span style={facetLabelStyle}>Status</span>
         <div className="flex flex-wrap gap-1.5">
           {STATUS_OPTIONS.map((opt) => {
             const active = (filters.status ?? 'all') === opt.value
             const nextParams = { ...params, status: opt.value === 'all' ? undefined : opt.value }
             return (
-              <Button
-                key={opt.value}
-                asChild
-                size="sm"
-                variant={active ? 'default' : 'outline'}
-                className="h-8 rounded-full px-3 text-xs"
-              >
-                <Link href={buildHref(basePath, nextParams)} aria-pressed={active}>
-                  {opt.label}
-                </Link>
-              </Button>
+              <Link key={opt.value} href={buildHref(basePath, nextParams)} className="av2-chip" aria-pressed={active}>
+                {opt.label}
+              </Link>
             )
           })}
         </div>

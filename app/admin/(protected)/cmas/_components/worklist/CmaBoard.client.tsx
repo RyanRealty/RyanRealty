@@ -14,23 +14,29 @@
  * separate ProspectDetailDrawer-style file (one fewer file for a worklist
  * this size — CmaDetailPanel is still the single shared detail CONTENT tree
  * both breakpoints mount).
+ *
+ * 11F: on the LOCKED admin v2 language. Card -> av2-pane, the shadcn
+ * Pagination kit -> a hand-rolled <nav> of plain <a> page links (matching
+ * exactly what PaginationLink rendered under the hood — a real anchor, not a
+ * next/link Link, so this keeps the original's full-navigation transport),
+ * and the KpiStrip (components/console — a public-brand-token component, not
+ * an admin v2 primitive) -> ReportNumbers, the same "numbers strip" the
+ * sibling /admin/bpo/page.tsx docblock already names this as.
+ *
+ * The old shadcn Sheet (Radix) mounted BOTH the bottom-sheet content and the
+ * desktop aside whenever `detail` was set, picking the visible one with
+ * `lg:hidden` / `hidden lg:block` — safe under Radix, which is
+ * CSS-visibility-driven. The v2 Sheet wraps a native <dialog>: calling
+ * showModal() while the element (or an ancestor) computes `display:none`
+ * throws, so the same trick cannot carry over. This tracks the >=1024px
+ * breakpoint in JS (mirrors BpoDetailDrawer.client.tsx) and mounts only the
+ * variant that applies.
  */
 
-import { useCallback, useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
-import { Card } from '@/components/ui/card'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
-import { KpiStrip } from '@/components/console/KpiStrip'
+import { ReportNumbers, Sheet } from '@/components/admin/v2'
 import type { CmaWorklistFilters, CmaWorklistRow, CmaWorklistSummary } from './types'
 import { CmaFilters } from './CmaFilters.client'
 import { CmaCard } from './CmaCard.client'
@@ -52,6 +58,38 @@ type Actions = {
     subject: string
     body: string
   }) => Promise<{ ok: boolean; error?: string; message?: string }>
+}
+
+const DESKTOP_QUERY = '(min-width: 1024px)'
+
+/** Tracks the lg breakpoint. Defaults to false (mobile) for the first paint
+ *  on both server and client, so there is no hydration mismatch — it flips
+ *  right after mount via the media query listener. */
+function useIsDesktop(): boolean {
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_QUERY)
+    const update = () => setIsDesktop(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  return isDesktop
+}
+
+function skeletonBlock(height: number, width: string) {
+  return <div style={{ height, width, borderRadius: 'var(--a-r-sm)', background: 'var(--a-inset)' }} aria-hidden="true" />
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="space-y-3" role="status" aria-label="Loading CMA">
+      {skeletonBlock(24, '66%')}
+      {skeletonBlock(16, '50%')}
+      {skeletonBlock(96, '100%')}
+      {skeletonBlock(96, '100%')}
+    </div>
+  )
 }
 
 export function CmaBoard({
@@ -80,6 +118,7 @@ export function CmaBoard({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const isDesktop = useIsDesktop()
 
   const [dialog, setDialog] = useState<{ open: boolean; context: CmaSendContext | null }>({ open: false, context: null })
   const [busyApprove, setBusyApprove] = useState<string | null>(null)
@@ -161,16 +200,33 @@ export function CmaBoard({
     router.refresh()
   }, [router])
 
+  // `open` mirrors BpoDetailDrawer.client.tsx: derived from `detail` itself
+  // (the page resolves `?id=` server-side before this component ever
+  // mounts), so the sheet/aside and the panel-vs-skeleton choice share one
+  // source of truth.
+  const open = Boolean(detail)
+  const panel = detail ? (
+    <CmaDetailPanel
+      detail={detail}
+      onApprove={handleApprove}
+      onSend={openSend}
+      pendingApprove={busyApprove === detail.slug}
+      pendingSend={busySendPrep === detail.slug}
+    />
+  ) : open ? (
+    <DetailSkeleton />
+  ) : null
+
   return (
     <div className="space-y-4">
-      <KpiStrip
+      <ReportNumbers
         items={[
-          { label: 'Total', value: summary.total },
-          { label: 'Drafts', value: summary.drafts },
-          { label: 'Finalized', value: summary.finalized },
-          { label: 'Delivered', value: summary.delivered },
-          { label: 'Sent', value: summary.sent },
-          { label: 'Live on listings', value: summary.published },
+          { key: 'total', label: 'Total', value: String(summary.total) },
+          { key: 'drafts', label: 'Drafts', value: String(summary.drafts) },
+          { key: 'finalized', label: 'Finalized', value: String(summary.finalized) },
+          { key: 'delivered', label: 'Delivered', value: String(summary.delivered) },
+          { key: 'sent', label: 'Sent', value: String(summary.sent) },
+          { key: 'published', label: 'Live on listings', value: String(summary.published) },
         ]}
       />
 
@@ -179,9 +235,9 @@ export function CmaBoard({
       <div className="lg:flex lg:items-start lg:gap-4">
         <div className="min-w-0 flex-1">
           {rows.length === 0 ? (
-            <Card className="border border-dashed border-border px-4 py-12 text-center">
-              <p className="text-sm text-muted-foreground">No CMAs match these filters.</p>
-            </Card>
+            <div style={{ border: '1px dashed var(--a-border)', borderRadius: 'var(--a-r-lg)', padding: '48px 16px', textAlign: 'center' }}>
+              <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>No CMAs match these filters.</p>
+            </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {rows.map((row) => (
@@ -199,84 +255,60 @@ export function CmaBoard({
           )}
 
           {totalPages > 1 ? (
-            <Pagination className="mt-4">
-              <PaginationContent>
-                {page > 1 ? (
-                  <PaginationItem>
-                    <PaginationPrevious href={pageHref(pathname, searchParams, page - 1)} />
-                  </PaginationItem>
-                ) : null}
-                {pageWindow(page, totalPages).map((n) => (
-                  <PaginationItem key={n}>
-                    <PaginationLink href={pageHref(pathname, searchParams, n)} isActive={n === page}>
-                      {n}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                {page < totalPages ? (
-                  <PaginationItem>
-                    <PaginationNext href={pageHref(pathname, searchParams, page + 1)} />
-                  </PaginationItem>
-                ) : null}
-              </PaginationContent>
-            </Pagination>
+            <nav aria-label="Pages" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', marginTop: 16 }}>
+              {page > 1 ? (
+                <a href={pageHref(pathname, searchParams, page - 1)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                  Previous
+                </a>
+              ) : null}
+              {pageWindow(page, totalPages).map((n) => (
+                <a
+                  key={n}
+                  href={pageHref(pathname, searchParams, n)}
+                  aria-current={n === page ? 'page' : undefined}
+                  className="a-num"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 32,
+                    height: 32,
+                    borderRadius: 'var(--a-r-md)',
+                    fontSize: 'var(--a-text-sm)',
+                    textDecoration: 'none',
+                    color: n === page ? 'var(--a-accent)' : 'var(--a-text-2)',
+                    background: n === page ? 'var(--a-accent-wash)' : 'transparent',
+                    fontWeight: n === page ? 600 : 400,
+                  }}
+                >
+                  {n}
+                </a>
+              ))}
+              {page < totalPages ? (
+                <a href={pageHref(pathname, searchParams, page + 1)} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+                  Next
+                </a>
+              ) : null}
+            </nav>
           ) : null}
         </div>
 
         {/* < lg — bottom sheet */}
-        <Sheet
-          open={Boolean(detail)}
-          onOpenChange={(next) => {
-            if (!next) closeDetail()
-          }}
-        >
-          <SheetContent side="bottom" className="h-[90vh] overflow-y-auto lg:hidden">
-            <SheetHeader>
-              <SheetTitle>{detail?.subjectAddress ?? (detail ? 'Loading…' : 'CMA')}</SheetTitle>
-            </SheetHeader>
-            <div className="px-4 pb-6">
-              {detail ? (
-                <CmaDetailPanel
-                  detail={detail}
-                  onApprove={handleApprove}
-                  onSend={openSend}
-                  pendingApprove={busyApprove === detail.slug}
-                  pendingSend={busySendPrep === detail.slug}
-                />
-              ) : (
-                <DetailSkeleton />
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+        {!isDesktop ? (
+          <Sheet open={open} onClose={closeDetail} title={detail?.subjectAddress ?? (open ? 'Loading…' : 'CMA')}>
+            {panel}
+          </Sheet>
+        ) : null}
 
         {/* >= lg — non-modal in-flow aside; sits beside the worklist grid. */}
-        {detail ? (
-          <aside className="hidden w-[380px] shrink-0 lg:block">
-            <div className="sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto rounded-xl bg-card p-5 ring-1 ring-foreground/10">
-              <CmaDetailPanel
-                detail={detail}
-                onApprove={handleApprove}
-                onSend={openSend}
-                pendingApprove={busyApprove === detail.slug}
-                pendingSend={busySendPrep === detail.slug}
-              />
-            </div>
+        {isDesktop && open ? (
+          <aside className="w-[380px] shrink-0" style={{ position: 'sticky', top: 24, maxHeight: 'calc(100vh - 3rem)', overflowY: 'auto' }}>
+            <div className="av2-pane">{panel}</div>
           </aside>
         ) : null}
       </div>
 
       <CmaSendDialog open={dialog.open} onClose={closeSend} context={dialog.context} sendAction={sendAction} testSendAction={testSendAction} />
-    </div>
-  )
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="space-y-3">
-      <Skeleton className="h-4 w-2/3" />
-      <Skeleton className="h-4 w-1/2" />
-      <Skeleton className="h-24 w-full" />
     </div>
   )
 }

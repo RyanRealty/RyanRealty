@@ -5,22 +5,18 @@
  * Rebuild (with an optional broker opinion-of-value override + purpose),
  * finalize the draft, or delete. Every mutation runs through a gated server
  * action; the page revalidates on success.
+ *
+ * 11F: on the LOCKED admin v2 language (this island's page,
+ * /admin/bpo/[slug]/page.tsx, already migrated — this brings the mounted
+ * control panel to match). Label+Input+Select -> TextField/SelectField,
+ * Separator -> a hairline div. confirm() calls are untouched (not a send
+ * surface — that restriction is BpoSendDialog's).
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
+import { Button, SelectField, TextField } from '@/components/admin/v2'
 import { rebuildBpoAction, finalizeBpoAction, deleteBpoAction } from '@/app/actions/bpo-admin'
 
 export interface BrokerOption {
@@ -102,64 +98,42 @@ export function BpoReviewActions(props: {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="bpo-override">Opinion of value override</Label>
-        <Input
-          id="bpo-override"
-          inputMode="numeric"
-          placeholder={props.opinionValue ? props.opinionValue.toLocaleString('en-US') : 'e.g. 1200000'}
-          value={override}
-          onChange={(e) => setOverride(e.target.value)}
-        />
-        <p className="text-xs text-muted-foreground">
-          Leave blank to keep the data-derived opinion. A number re-anchors the opinion and range on your figure and
-          notes the adjustment in the rationale.
-        </p>
-      </div>
+      <TextField
+        label="Opinion of value override"
+        inputMode="numeric"
+        placeholder={props.opinionValue ? props.opinionValue.toLocaleString('en-US') : 'e.g. 1200000'}
+        value={override}
+        onChange={(e) => setOverride(e.target.value)}
+        hint="Leave blank to keep the data-derived opinion. A number re-anchors the opinion and range on your figure and notes the adjustment in the rationale."
+      />
 
-      <div className="space-y-1.5">
-        <Label htmlFor="bpo-purpose-edit">Purpose</Label>
-        <Input
-          id="bpo-purpose-edit"
-          placeholder="pre-listing"
-          value={purpose}
-          onChange={(e) => setPurpose(e.target.value)}
-        />
-      </div>
+      <TextField label="Purpose" placeholder="pre-listing" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
 
-      <div className="space-y-1.5">
-        <Label htmlFor="bpo-broker-edit">Signing broker</Label>
-        <Select value={brokerSlug} onValueChange={setBrokerSlug}>
-          <SelectTrigger id="bpo-broker-edit" className="w-full">
-            <SelectValue placeholder="Select a broker" />
-          </SelectTrigger>
-          <SelectContent>
-            {props.brokers.map((b) => (
-              <SelectItem key={b.slug} value={b.slug}>
-                {b.displayName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <SelectField label="Signing broker" value={brokerSlug} onChange={(e) => setBrokerSlug(e.target.value)}>
+        {props.brokers.map((b) => (
+          <option key={b.slug} value={b.slug}>
+            {b.displayName}
+          </option>
+        ))}
+      </SelectField>
 
-      <Button onClick={rebuild} disabled={isPending} variant="outline" className="w-full min-h-11">
+      <Button onClick={rebuild} disabled={isPending} variant="quiet" touch className="w-full">
         {isPending ? 'Working…' : 'Save and rebuild'}
       </Button>
 
-      <Separator />
+      <div style={{ borderTop: '1px solid var(--a-border)' }} />
 
       {props.status !== 'final' ? (
-        <Button onClick={finalize} disabled={isPending || !props.hasDocument} className="w-full min-h-11">
+        <Button onClick={finalize} disabled={isPending || !props.hasDocument} touch className="w-full">
           Finalize opinion
         </Button>
       ) : (
-        <p className="text-sm text-muted-foreground">
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           This opinion is finalized. Rebuild to return it to a draft for edits.
         </p>
       )}
 
-      <Button onClick={remove} disabled={isPending} variant="ghost" className="w-full text-destructive">
+      <Button onClick={remove} disabled={isPending} variant="danger" touch className="w-full">
         Delete
       </Button>
     </div>

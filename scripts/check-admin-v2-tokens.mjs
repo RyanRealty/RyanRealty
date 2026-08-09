@@ -152,6 +152,35 @@ const SCAN_DIRS = [
   // bare crm/settings dir: eleven sibling pages still mount legacy editors
   // (CustomFieldEditor, TagTaxonomyEditor, the company + templates islands).
   // Each joins this list as its island migrates.
+  // 11F (2026-08-08) — the valuations family (bpo + cmas). FILE-FORM: the two
+  // Send dialogs mount EmailBodyEditor, the G50 compose chokepoint
+  // ci:composer-discipline requires. Everything else in both families is listed,
+  // so a new file under either is a deliberate decision rather than a silent gap.
+  'app/admin/(protected)/bpo/_components/BpoReviewActions.tsx',
+  'app/admin/(protected)/bpo/_components/BuildBpoForm.tsx',
+  'app/admin/(protected)/bpo/_components/worklist/BpoBoard.client.tsx',
+  'app/admin/(protected)/bpo/_components/worklist/BpoCard.client.tsx',
+  'app/admin/(protected)/bpo/_components/worklist/BpoDetailDrawer.client.tsx',
+  'app/admin/(protected)/bpo/_components/worklist/BpoDetailPanel.client.tsx',
+  'app/admin/(protected)/bpo/_components/worklist/BpoFilters.client.tsx',
+  'app/admin/(protected)/bpo/_components/worklist/BpoStatusPill.client.tsx',
+  'app/admin/(protected)/bpo/_components/worklist/format.ts',
+  'app/admin/(protected)/cmas/_components/BuildCmaForm.tsx',
+  'app/admin/(protected)/cmas/_components/CmaPublishControl.tsx',
+  'app/admin/(protected)/cmas/_components/CmaReviewActions.tsx',
+  'app/admin/(protected)/cmas/_components/worklist/CmaBoard.client.tsx',
+  'app/admin/(protected)/cmas/_components/worklist/CmaCard.client.tsx',
+  'app/admin/(protected)/cmas/_components/worklist/CmaDetailPanel.client.tsx',
+  'app/admin/(protected)/cmas/_components/worklist/CmaFilters.client.tsx',
+  'app/admin/(protected)/cmas/_components/worklist/CmaStatusPill.client.tsx',
+  'app/admin/(protected)/cmas/_components/worklist/format.ts',
+  'app/admin/(protected)/cmas/_components/worklist/types.ts',
+  'app/admin/(protected)/bpo/page.tsx',
+  'app/admin/(protected)/bpo/new/page.tsx',
+  'app/admin/(protected)/bpo/[slug]/page.tsx',
+  'app/admin/(protected)/cmas/page.tsx',
+  'app/admin/(protected)/cmas/new/page.tsx',
+  'app/admin/(protected)/cmas/[slug]/page.tsx',
   // 11F (2026-08-08) — crm/sequences + crm/tasks. FILE-FORM: MobileTasksScreen
   // mounts CrmAvatar and MobileTaskCreateSheet from components/admin/crm/mobile,
   // which are genuinely cross-cutting — CrmMobileKit has EIGHT importers

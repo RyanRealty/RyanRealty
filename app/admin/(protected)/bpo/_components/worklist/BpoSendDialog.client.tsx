@@ -14,13 +14,20 @@
  * the merge-field dropdown accordingly.
  *
  * NO native confirm() anywhere in this flow.
+ *
+ * 11F: outer chrome on the LOCKED admin v2 language (Dialog, Button). This is
+ * a SEND surface — the send handler, recipient handling and every guard are
+ * byte-for-byte unchanged. The EmailBodyEditor import STAYS pointed at
+ * components/admin/crm — that is the G50 compose chokepoint
+ * ci:composer-discipline requires, and forking it to satisfy a color gate
+ * would defeat the gate that matters more. Same sanctioned call already
+ * recorded for DscrEmailDialog, people/[id]'s CommsSection, and crm/inbox.
  */
 
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button, Dialog } from '@/components/admin/v2'
 import { EmailBodyEditor } from '@/components/admin/crm/EmailBodyEditor'
 import type { BpoSendContext } from '@/app/actions/contact-bpo'
 
@@ -61,29 +68,22 @@ export function BpoSendDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (!next) onClose()
-      }}
+      onClose={onClose}
+      title={`Send price opinion${context?.recipientName ? ` to ${context.recipientName}` : ''}`}
     >
-      <DialogContent className="max-h-[90dvh] max-w-xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Send price opinion{context?.recipientName ? ` to ${context.recipientName}` : ''}</DialogTitle>
-        </DialogHeader>
-
-        {context && slug ? (
-          // Keyed by slug: React remounts fresh local edit state whenever the
-          // dialog is handed a new opinion, instead of syncing props into
-          // state via an effect.
-          <BpoSendDialogBody
-            key={slug}
-            slug={slug}
-            context={context}
-            onClose={onClose}
-            sendAction={sendAction}
-            sendTestAction={sendTestAction}
-          />
-        ) : null}
-      </DialogContent>
+      {context && slug ? (
+        // Keyed by slug: React remounts fresh local edit state whenever the
+        // dialog is handed a new opinion, instead of syncing props into
+        // state via an effect.
+        <BpoSendDialogBody
+          key={slug}
+          slug={slug}
+          context={context}
+          onClose={onClose}
+          sendAction={sendAction}
+          sendTestAction={sendTestAction}
+        />
+      ) : null}
     </Dialog>
   )
 }
@@ -132,29 +132,54 @@ function BpoSendDialogBody({
   const sendDisabled = sendPending || testPending || context.personId == null || !context.recipientEmail
 
   return (
-    <div className="space-y-3">
+    <>
       {/* Pre-populated recipient */}
-      <div className="rounded-lg bg-muted/50 px-3 py-2">
-        <p className="text-sm font-medium text-foreground">{context.recipientName ?? 'Recipient unknown'}</p>
-        <p className="text-xs tabular-nums text-muted-foreground">{context.recipientEmail ?? 'No email on file for this contact.'}</p>
+      <div style={{ borderRadius: 'var(--a-r-md)', background: 'var(--a-inset)', padding: '8px 12px' }}>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+          {context.recipientName ?? 'Recipient unknown'}
+        </p>
+        <p className="a-num" style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {context.recipientEmail ?? 'No email on file for this contact.'}
+        </p>
       </div>
 
-      <EmailBodyEditor subject={subject} onSubjectChange={setSubject} body={bodyText} onBodyChange={setBodyText} signatureHtml={null} hideMergeFields />
+      <EmailBodyEditor
+        subject={subject}
+        onSubjectChange={setSubject}
+        body={bodyText}
+        onBodyChange={setBodyText}
+        signatureHtml={null}
+        hideMergeFields
+      />
 
       <a
         href={context.docUrl}
         target="_blank"
         rel="noreferrer"
-        className="inline-block text-xs text-muted-foreground underline underline-offset-2"
+        style={{
+          display: 'inline-block',
+          fontSize: 'var(--a-text-xs)',
+          color: 'var(--a-text-2)',
+          textDecoration: 'underline',
+          textUnderlineOffset: 2,
+        }}
       >
         Open the opinion
       </a>
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>{error}</p> : null}
 
-      <div className="flex flex-col gap-2 border-t border-border pt-3">
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="h-11" disabled={testPending || sendPending} onClick={handleSendTest}>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          borderTop: '1px solid var(--a-border)',
+          paddingTop: 12,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Button variant="quiet" touch disabled={testPending || sendPending} onClick={handleSendTest}>
             {testPending ? (
               <span className="flex items-center gap-1.5">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Sending test…
@@ -163,7 +188,7 @@ function BpoSendDialogBody({
               'Send test to myself'
             )}
           </Button>
-          <Button className="h-11 flex-1" disabled={sendDisabled} onClick={handleSend}>
+          <Button className="flex-1" touch disabled={sendDisabled} onClick={handleSend}>
             {sendPending ? (
               <span className="flex items-center gap-1.5">
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Sending…
@@ -173,11 +198,11 @@ function BpoSendDialogBody({
             )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
           Sends to the contact linked on this opinion only. The internal offer strategy stays out of this send. Every
           send re-checks suppression before it leaves.
         </p>
       </div>
-    </div>
+    </>
   )
 }

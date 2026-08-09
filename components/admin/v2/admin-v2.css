@@ -178,7 +178,14 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-check input:focus-visible { outline:none; box-shadow:var(--a-focus); border-radius:2px; }
 
 /* ---- Entity fold (pattern 5: stacked context sections on a person page) ---- */
-.av2-pane { display:flex; flex-direction:column; gap:var(--a-s3); border:1px solid var(--a-border);
+/* min-width:0 because a grid/flex ITEM defaults to min-width:auto and therefore
+   refuses to shrink below its content. /admin/cmas measured a 361px pane inside
+   a 343px track at 375px — a long unbreakable address pushed the page 2px wide
+   and gave the whole board a horizontal scrollbar. A pane must yield to its
+   container and let its own content wrap or truncate; it is a surface, not a
+   ruler. Same class as the av2-quiet flex-wrap fix above. */
+.av2-pane { display:flex; flex-direction:column; gap:var(--a-s3); min-width:0;
+  border:1px solid var(--a-border);
   border-radius:var(--a-r-lg); padding:var(--a-s4); background:var(--a-bg); }
 .av2-pane--thread { flex-direction:column-reverse; max-height:440px; overflow-y:auto; }
 .av2-inline-form { display:flex; gap:var(--a-s3); align-items:flex-end; flex-wrap:wrap; }
