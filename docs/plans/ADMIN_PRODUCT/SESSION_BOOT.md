@@ -119,6 +119,21 @@ history in the order it happened, and each names the phase it closed; a phrase l
   SmsComposer / EmailComposer that `ci:composer-discipline` requires; those files
   stay file-form in SCAN_DIRS with the reason at the entry. Forking the one send
   interface to satisfy a colour gate defeats the gate that matters more.
+- **A relocation unit only sees `components/admin/<family>`.** Files ALREADY in
+  the route directory are invisible to it — newsletters had SIX such files and
+  both its pages still rendered shadcn classes after the "family" was migrated.
+  Check the route directory itself, not just what moves into it.
+- **Never gate a page whose RENDERED output still has shadcn classes.** Trace the
+  remainder to source before deciding; if it is real, leave the page ungated and
+  say why. A gated page that still looks wrong is the failure this phase exists
+  to prevent.
+- **When a migration says "I had to change the layout to fit the primitive", the
+  PRIMITIVE is wrong.** Six barrel gaps came out this way: Combobox, Menu
+  keyboard nav, Menu href/target, forwardRef on Button/TextField, Dialog
+  size="work", and min-width:0 on av2-pane.
+- **Pure logic inside a `components/` folder is a dependency trap.** Twice a
+  migration was blocked until helpers moved to `lib/` (config-editor-helpers,
+  crm-avatar) — and both times `lib/` already imported them, which was the tell.
 - **Wiring the gate is part of the unit.** Twice now a migration finished and the
   pages were never added to SCAN_DIRS — work done, invisible to CI, and absent
   from the coverage count. Check `TOKEN-GATED n of 170` before calling a unit

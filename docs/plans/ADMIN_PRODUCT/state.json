@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "11F UNIT 9 COMPLETE 2026-08-08 \u2014 the valuations family (bpo + cmas) migrated: 21 files, 6 pages, 97 source / 414 rendered shadcn classes to ZERO, under \u00a70 discipline (no figure or formatter touched, proven by diff). Menu gained href + target so navigating items are real anchors; .av2-pane gained min-width:0 after a 2px viewport overflow. Token-gated admin pages 132 of 170 \u2014 TWELVE real pages left. Shipped d3dfc87f + b23c471a, deployed READY. NEXT: crm root 8 islands (tangled), crm/deals 5, then the pairs.",
+  "current_process": "11F UNIT 10 COMPLETE 2026-08-08 \u2014 crm/deals + newsletter islands migrated (126 source shadcn classes to 0); Dialog gained size='work' after a detail modal had to collapse its layout to fit the confirm width; crmAvatarColor moved to lib/admin/crm-avatar. Token-gated admin pages 133 of 170, 11 real pages left. Shipped 46de4bac + 7382628a. TWO BLOCKERS NAMED: (1) the crm root cannot be relocated \u2014 crm/mobile and people-list are shared by 5 pages plus lib, so it needs a decision about where shared CRM machinery lives; (2) newsletters has SIX un-migrated files at the ROUTE ROOT that no relocation-driven unit could see. Highest-leverage next step: delete MobileCrmHeader (already proven redundant) \u2014 it gates crm/deals and helps crm/activity and the crm root.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-08T20:10:00Z"
+  "updated_at": "2026-08-08T23:15:00Z"
 }
