@@ -11,11 +11,11 @@
  * (`commission_dollars`, `commission_percent`), and BROKER_SLUGS, the 0–100
  * split validation and every error string are untouched.
  *
- * The splits <Table> becomes <ReportGrid> — the admin's one tabular reader.
+ * The splits Table becomes ReportGrid — the admin's one tabular reader.
  * ReportGrid is stateless and takes ReactNode cells, so the per-row remove
  * control (now an IconButton, which keeps the muted→danger hover the ghost
  * button had) lives in the last cell, whose header label stays empty exactly as
- * the old `<TableHead className="w-8" />` was.
+ * the old TableHead w-8 column was.
  *
  * The literal ids (`comm-dollars`, `comm-pct`) are gone because TextField owns
  * the label→input association through its own useId; a repo-wide grep finds

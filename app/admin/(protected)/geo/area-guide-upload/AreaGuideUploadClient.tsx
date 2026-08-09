@@ -20,7 +20,7 @@
 //                         focus trap, Esc and top-layer stacking come from the
 //                         browser. Esc is gated on `uploading` so it cannot
 //                         dismiss mid-upload, which the old div could not be.
-//   raw <table>        -> ReportGrid, the admin's one tabular reader, so the
+//   raw HTML table     -> ReportGrid, the admin's one tabular reader, so the
 //                         mapping scrolls inside its own box and reads as rows
 //                         at 375px.
 //   raw <button> x3    -> the v2 Button. ONE primary per file (ci:admin-ui rule
