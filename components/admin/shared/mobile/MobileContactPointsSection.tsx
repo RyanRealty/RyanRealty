@@ -20,10 +20,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Mail, MessageSquare, Phone, Plus, Smartphone } from 'lucide-react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button, SearchField, Sheet, ToolbarSelect } from '@/components/admin/v2'
 import { startCrmCallAction } from '@/app/actions/crm'
 
 export interface MobilePhoneEntry {
@@ -42,25 +39,34 @@ export interface MobileEmailEntry {
 
 function SectionHeader({ label }: { label: string }) {
   return (
-    <div className="flex items-center justify-between bg-secondary px-4 py-2.5">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.8px] text-muted-foreground">{label}</span>
+    <div className="flex items-center justify-between px-4 py-2.5" style={{ background: 'var(--a-bg)' }}>
+      <span
+        className="text-[11px] font-semibold uppercase tracking-[0.8px]"
+        style={{ color: 'var(--a-text-2)' }}
+      >
+        {label}
+      </span>
     </div>
   )
 }
 
 const CIRCLE_CLS =
-  'flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform active:scale-95'
+  'flex h-10 w-10 items-center justify-center rounded-full transition-transform active:scale-95'
+
+/** ADMIN_UI §1: ONE action accent — the three FUB circle colours collapse to it,
+ *  and the icon + accessible name carry the difference between them. */
+const CIRCLE_STYLE = { backgroundColor: 'var(--a-btn-bg)', color: 'var(--a-btn-fg)' } as const
 
 function AddRow({ label, onTap }: { label: string; onTap: () => void }) {
   return (
     <button type="button" onClick={onTap} className="flex w-full items-center gap-2.5 px-4 py-3 text-left">
       <span
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-        style={{ backgroundColor: 'var(--console-info)' }}
+        style={CIRCLE_STYLE}
       >
-        <Plus size={14} className="text-white" strokeWidth={3} />
+        <Plus size={14} strokeWidth={3} />
       </span>
-      <span className="text-[15px]" style={{ color: 'var(--console-info)' }}>{label}</span>
+      <span className="text-[15px]" style={{ color: 'var(--a-accent)' }}>{label}</span>
     </button>
   )
 }
@@ -118,28 +124,43 @@ export function MobileContactPointsSection({
     <>
       {/* ── §25.5.4 PHONE NUMBERS ─────────────────────────────────────────── */}
       <SectionHeader label="Phone Numbers" />
-      <div className="bg-card shadow-sm">
+      <div
+        style={{
+          background: 'var(--a-surface)',
+          borderTop: '1px solid var(--a-border)',
+          borderBottom: '1px solid var(--a-border)',
+        }}
+      >
         {callNote ? (
-          <p className="border-b border-border px-4 py-2 text-[13px] text-muted-foreground">{callNote}</p>
+          <p
+            className="px-4 py-2 text-[13px]"
+            style={{ borderBottom: '1px solid var(--a-border)', color: 'var(--a-text-2)' }}
+          >
+            {callNote}
+          </p>
         ) : null}
         {phones.map((p) => (
           <div
             key={p.id}
-            className="flex items-center justify-between gap-3 border-b border-border px-4 py-3"
-            style={{ minHeight: 52 }}
+            className="flex items-center justify-between gap-3 px-4 py-3"
+            style={{ minHeight: 52, borderBottom: '1px solid var(--a-border)' }}
           >
             <div className="min-w-0 flex-1">
-              {p.label ? <p className="text-[12px] text-muted-foreground">{p.label}</p> : null}
-              <p className="text-[14px] font-medium tabular-nums text-foreground">{p.display}</p>
+              {p.label ? (
+                <p className="text-[12px]" style={{ color: 'var(--a-text-2)' }}>{p.label}</p>
+              ) : null}
+              <p className="text-[14px] font-medium tabular-nums" style={{ color: 'var(--a-text)' }}>
+                {p.display}
+              </p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Link
                 href={`/admin/crm/inbox?c=${personId}&m=sms`}
                 aria-label="Send text"
                 className={CIRCLE_CLS}
-                style={{ backgroundColor: '#7595e8' }}
+                style={CIRCLE_STYLE}
               >
-                <MessageSquare size={18} className="text-white" strokeWidth={2} aria-hidden />
+                <MessageSquare size={18} strokeWidth={2} aria-hidden />
               </Link>
               <button
                 type="button"
@@ -147,9 +168,9 @@ export function MobileContactPointsSection({
                 disabled={callPending}
                 onClick={() => setCallOpen(true)}
                 className={CIRCLE_CLS}
-                style={{ backgroundColor: '#4ad09f' }}
+                style={CIRCLE_STYLE}
               >
-                <Phone size={18} className="text-white" strokeWidth={2} aria-hidden />
+                <Phone size={18} strokeWidth={2} aria-hidden />
               </button>
             </div>
           </div>
@@ -159,24 +180,34 @@ export function MobileContactPointsSection({
 
       {/* ── §25.5.5 EMAILS ────────────────────────────────────────────────── */}
       <SectionHeader label="Emails" />
-      <div className="bg-card shadow-sm">
+      <div
+        style={{
+          background: 'var(--a-surface)',
+          borderTop: '1px solid var(--a-border)',
+          borderBottom: '1px solid var(--a-border)',
+        }}
+      >
         {emails.map((e) => (
           <div
             key={e.id}
-            className="flex items-center justify-between gap-3 border-b border-border px-4 py-3"
-            style={{ minHeight: 52 }}
+            className="flex items-center justify-between gap-3 px-4 py-3"
+            style={{ minHeight: 52, borderBottom: '1px solid var(--a-border)' }}
           >
             <div className="min-w-0 flex-1">
-              {e.label ? <p className="text-[12px] text-muted-foreground">{e.label}</p> : null}
-              <p className="truncate text-[14px] font-medium text-foreground">{e.value}</p>
+              {e.label ? (
+                <p className="text-[12px]" style={{ color: 'var(--a-text-2)' }}>{e.label}</p>
+              ) : null}
+              <p className="truncate text-[14px] font-medium" style={{ color: 'var(--a-text)' }}>
+                {e.value}
+              </p>
             </div>
             <Link
               href={`/admin/crm/inbox?c=${personId}&m=email`}
               aria-label="Email"
               className={CIRCLE_CLS}
-              style={{ backgroundColor: '#4ab8e8' }}
+              style={CIRCLE_STYLE}
             >
-              <Mail size={18} className="text-white" strokeWidth={2} aria-hidden />
+              <Mail size={18} strokeWidth={2} aria-hidden />
             </Link>
           </div>
         ))}
@@ -184,81 +215,98 @@ export function MobileContactPointsSection({
       </div>
 
       {/* ── S8 calling-method sheet (same anatomy as the inbox thread's) ─── */}
-      <Sheet open={callOpen} onOpenChange={setCallOpen}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="rounded-t-xl">
-          <SheetHeader>
-            <SheetTitle>Call {personName}</SheetTitle>
-            {phones[0] ? <p className="text-sm text-muted-foreground">{phones[0].display}</p> : null}
-          </SheetHeader>
-          <div className="mt-2 divide-y divide-border pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <button type="button" className="flex w-full items-center gap-3 py-3.5 text-left" onClick={startBridgeCall}>
-              <Phone className="h-5 w-5 text-foreground" aria-hidden />
+      <Sheet
+        open={callOpen}
+        onClose={() => setCallOpen(false)}
+        title={`Call ${personName}`}
+        description={phones[0] ? phones[0].display : undefined}
+      >
+        <div className="mt-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Button
+            variant="quiet"
+            className="w-full"
+            style={{
+              justifyContent: 'flex-start',
+              gap: 12,
+              minHeight: 0,
+              borderRadius: 0,
+              padding: '14px 0',
+              fontWeight: 400,
+              textAlign: 'left',
+              background: 'none',
+              border: 'none',
+            }}
+            onClick={startBridgeCall}
+          >
+            <Phone className="h-5 w-5" style={{ color: 'var(--a-text)' }} aria-hidden />
+            <span>
+              <span className="block text-[15px] font-medium" style={{ color: 'var(--a-text)' }}>
+                Call via Ryan Realty line
+              </span>
+              <span className="block text-xs" style={{ color: 'var(--a-text-2)' }}>
+                Rings your cell, bridges to the contact, recorded + logged
+              </span>
+            </span>
+          </Button>
+          {phones[0] ? (
+            <a
+              href={phones[0].tel}
+              className="flex w-full items-center gap-3 py-3.5"
+              style={{ borderTop: '1px solid var(--a-border)' }}
+            >
+              <Smartphone className="h-5 w-5" style={{ color: 'var(--a-text)' }} aria-hidden />
               <span>
-                <span className="block text-[15px] font-medium text-foreground">Call via Ryan Realty line</span>
-                <span className="block text-xs text-muted-foreground">
-                  Rings your cell, bridges to the contact, recorded + logged
+                <span className="block text-[15px] font-medium" style={{ color: 'var(--a-text)' }}>
+                  Call direct from this phone
+                </span>
+                <span className="block text-xs" style={{ color: 'var(--a-text-2)' }}>
+                  Uses your phone dialer — not tracked in the CRM
                 </span>
               </span>
-            </button>
-            {phones[0] ? (
-              <a href={phones[0].tel} className="flex w-full items-center gap-3 py-3.5">
-                <Smartphone className="h-5 w-5 text-foreground" aria-hidden />
-                <span>
-                  <span className="block text-[15px] font-medium text-foreground">Call direct from this phone</span>
-                  <span className="block text-xs text-muted-foreground">
-                    Uses your phone dialer — not tracked in the CRM
-                  </span>
-                </span>
-              </a>
-            ) : null}
-          </div>
-        </SheetContent>
+            </a>
+          ) : null}
+        </div>
       </Sheet>
 
       {/* Add sheet — label picker + value input */}
-      <Sheet open={addKind !== null} onOpenChange={(v) => { if (!v) { setAddKind(null); setValue('') } }}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0">
-          <div className="flex h-[50px] shrink-0 items-center justify-between bg-primary px-4">
-            <button type="button" className="text-[17px] text-primary-foreground" onClick={() => setAddKind(null)}>
+      <Sheet
+        open={addKind !== null}
+        onClose={() => { setAddKind(null); setValue('') }}
+        title={addKind === 'phone' ? 'Add phone' : 'Add email'}
+      >
+        <div className="space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="flex items-center justify-between gap-3">
+            <Button variant="quiet" onClick={() => setAddKind(null)}>
               Cancel
-            </button>
-            <SheetTitle className="text-[17px] font-semibold text-primary-foreground">
-              {addKind === 'phone' ? 'Add phone' : 'Add email'}
-            </SheetTitle>
-            <button
-              type="button"
-              disabled={pending || !value.trim()}
-              className="text-[17px] text-primary-foreground disabled:opacity-60"
-              onClick={save}
-            >
+            </Button>
+            <Button variant="quiet" disabled={pending || !value.trim()} onClick={save}>
               {pending ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-          <div className="space-y-3 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <Select value={label} onValueChange={setLabel}>
-              <SelectTrigger className="h-11 text-[16px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(addKind === 'phone' ? ['Mobile', 'Home', 'Work', 'Other'] : ['Home', 'Work', 'Other']).map((l) => (
-                  <SelectItem key={l} value={l}>{l}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              autoFocus
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              type={addKind === 'phone' ? 'tel' : 'email'}
-              inputMode={addKind === 'phone' ? 'tel' : 'email'}
-              placeholder={addKind === 'phone' ? '541-555-0123' : 'name@example.com'}
-              className="h-11 text-[16px]"
-            />
-            <Button onClick={save} disabled={pending || !value.trim()} className="h-11 w-full">
-              {pending ? 'Saving…' : addKind === 'phone' ? 'Add phone number' : 'Add email'}
             </Button>
           </div>
-        </SheetContent>
+          <ToolbarSelect
+            aria-label="Label"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            style={{ width: '100%', maxWidth: 'none', minHeight: 44, fontSize: 16 }}
+          >
+            {(addKind === 'phone' ? ['Mobile', 'Home', 'Work', 'Other'] : ['Home', 'Work', 'Other']).map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </ToolbarSelect>
+          <SearchField
+            autoFocus
+            aria-label={addKind === 'phone' ? 'Phone number' : 'Email address'}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            type={addKind === 'phone' ? 'tel' : 'email'}
+            inputMode={addKind === 'phone' ? 'tel' : 'email'}
+            placeholder={addKind === 'phone' ? '541-555-0123' : 'name@example.com'}
+            style={{ width: '100%', maxWidth: 'none', minHeight: 44, fontSize: 16 }}
+          />
+          <Button onClick={save} disabled={pending || !value.trim()} touch className="w-full">
+            {pending ? 'Saving…' : addKind === 'phone' ? 'Add phone number' : 'Add email'}
+          </Button>
+        </div>
       </Sheet>
     </>
   )

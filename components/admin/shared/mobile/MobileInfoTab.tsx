@@ -16,9 +16,10 @@
  * Server component — no 'use client' needed; action buttons delegate to the
  * existing server-action forms in the page.
  *
- * Token mapping follows §25.1:
- *   content area bg-secondary, card bg-card, section headers bg-secondary with
- *   muted uppercase labels, accent-colored action circles per §25.5.4/25.5.5.
+ * Token mapping follows §25.1 on the LOCKED admin language
+ * (design_system/admin/ADMIN_UI.md): content area --a-inset, cards --a-surface,
+ * section headers --a-inset with --a-text-2 uppercase labels, --a-accent action
+ * colour per §25.5.4/25.5.5.
  */
 
 import { ChevronRight, MessageSquare } from 'lucide-react'
@@ -124,22 +125,28 @@ function SectionHeader({
   rightLabel?: string
 }) {
   return (
-    <div className="flex items-center justify-between bg-secondary px-4 py-2.5">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.8px] text-muted-foreground">
+    <div
+      className="flex items-center justify-between px-4 py-2.5"
+      style={{ background: 'var(--a-inset)' }}
+    >
+      <span
+        className="text-[11px] font-semibold uppercase tracking-[0.8px]"
+        style={{ color: 'var(--a-text-2)' }}
+      >
         {label}
       </span>
       {rightLabel ? (
-        <span className="text-[13px]" style={{ color: 'var(--console-info)' }}>{rightLabel}</span>
+        <span className="text-[13px]" style={{ color: 'var(--a-accent)' }}>{rightLabel}</span>
       ) : null}
     </div>
   )
 }
 
-/* ── Card wrapper (white, shadow-sm) ───────────────────────────────────────── */
+/* ── Card wrapper (surface, shadow-sm) ─────────────────────────────────────── */
 
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('bg-card shadow-sm', className)}>
+    <div className={cn('shadow-sm', className)} style={{ background: 'var(--a-surface)' }}>
       {children}
     </div>
   )
@@ -159,17 +166,19 @@ function DetailRow({
   href?: string
 }) {
   const inner = (
-    <div className="flex min-h-[44px] items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-0">
-      <span className="shrink-0 text-[13px] text-muted-foreground">{label}</span>
+    <div
+      className="flex min-h-[44px] items-center justify-between gap-3 border-b px-4 py-2.5 last:border-0"
+      style={{ borderColor: 'var(--a-border)' }}
+    >
+      <span className="shrink-0 text-[13px]" style={{ color: 'var(--a-text-2)' }}>{label}</span>
       <span
-        className={cn(
-          'flex min-w-0 items-center gap-1 text-right text-[13px]',
-          isAction ? 'font-medium' : 'font-medium text-foreground',
-        )}
-        style={isAction ? { color: 'var(--console-info)' } : undefined}
+        className="flex min-w-0 items-center gap-1 text-right text-[13px] font-medium"
+        style={{ color: isAction ? 'var(--a-accent)' : 'var(--a-text)' }}
       >
         <span className="truncate">{value}</span>
-        {href ? <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" /> : null}
+        {href ? (
+          <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--a-text-2)', opacity: 0.6 }} />
+        ) : null}
       </span>
     </div>
   )
@@ -212,7 +221,7 @@ export function MobileInfoTab({
   addresses,
 }: MobileInfoTabProps) {
   return (
-    <div className="flex flex-col gap-0 bg-secondary pb-24">
+    <div className="flex flex-col gap-0 pb-24" style={{ background: 'var(--a-inset)' }}>
 
       {/* ── §25.5.3 RECENT MESSAGES (conditional) ──────────────────────────── */}
       {recentMessages.length > 0 && (
@@ -222,18 +231,22 @@ export function MobileInfoTab({
             {recentMessages.map((msg) => (
               <div
                 key={msg.id}
-                className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-0"
+                className="flex items-center gap-3 border-b px-4 py-3 last:border-0"
+                style={{ borderColor: 'var(--a-border)' }}
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-[13px] font-semibold text-muted-foreground">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold"
+                  style={{ background: 'var(--a-inset)', color: 'var(--a-text-2)' }}
+                >
                   {msg.participants.charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-medium text-foreground">
+                  <p className="truncate text-[14px] font-medium" style={{ color: 'var(--a-text)' }}>
                     {msg.participants}
                   </p>
-                  <p className="truncate text-[13px] text-muted-foreground">{msg.preview}</p>
+                  <p className="truncate text-[13px]" style={{ color: 'var(--a-text-2)' }}>{msg.preview}</p>
                 </div>
-                <span className="shrink-0 text-[12px] text-muted-foreground">{msg.date}</span>
+                <span className="shrink-0 text-[12px]" style={{ color: 'var(--a-text-2)' }}>{msg.date}</span>
               </div>
             ))}
           </Card>
@@ -257,28 +270,29 @@ export function MobileInfoTab({
         <SectionHeader label="Relationships" />
         <Card>
           {relationships.length === 0 ? (
-            <div className="px-4 py-3 text-[14px] text-muted-foreground">No relationships</div>
+            <div className="px-4 py-3 text-[14px]" style={{ color: 'var(--a-text-2)' }}>No relationships</div>
           ) : (
             relationships.map((r) => {
               const inner = (
                 <>
                   <div>
-                    <p className="text-[14px] font-medium text-foreground">{r.name}</p>
-                    <p className="text-[12px] text-muted-foreground">({r.label})</p>
+                    <p className="text-[14px] font-medium" style={{ color: 'var(--a-text)' }}>{r.name}</p>
+                    <p className="text-[12px]" style={{ color: 'var(--a-text-2)' }}>({r.label})</p>
                   </div>
                   {r.relatedPersonId != null ? (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--a-text-2)' }} />
                   ) : null}
                 </>
               )
               const cls =
-                'flex min-h-[48px] items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-0'
+                'flex min-h-[48px] items-center justify-between gap-3 border-b px-4 py-2.5 last:border-0'
+              const rowStyle = { borderColor: 'var(--a-border)' }
               return r.relatedPersonId != null ? (
-                <a key={r.id} href={`/admin/people/${r.relatedPersonId}`} className={cls}>
+                <a key={r.id} href={`/admin/people/${r.relatedPersonId}`} className={cls} style={rowStyle}>
                   {inner}
                 </a>
               ) : (
-                <div key={r.id} className={cls}>{inner}</div>
+                <div key={r.id} className={cls} style={rowStyle}>{inner}</div>
               )
             })
           )}
@@ -323,11 +337,14 @@ export function MobileInfoTab({
         <SectionHeader label="Background" />
         <Card>
           {background ? (
-            <p className="whitespace-pre-line px-4 py-3 text-[14px] leading-5 text-foreground">
+            <p
+              className="whitespace-pre-line px-4 py-3 text-[14px] leading-5"
+              style={{ color: 'var(--a-text)' }}
+            >
               {background}
             </p>
           ) : (
-            <div className="px-4 py-3 text-[14px] text-muted-foreground">No background</div>
+            <div className="px-4 py-3 text-[14px]" style={{ color: 'var(--a-text-2)' }}>No background</div>
           )}
         </Card>
       </>
@@ -340,23 +357,26 @@ export function MobileInfoTab({
             {inquiries.map((inq, idx) => (
               <div
                 key={idx}
-                className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-0"
-                style={{ minHeight: 56 }}
+                className="flex items-start gap-3 border-b px-4 py-3 last:border-0"
+                style={{ minHeight: 56, borderColor: 'var(--a-border)' }}
               >
-                {/* §25.5.10: speech-bubble icon, color text-success */}
-                <div className="mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center text-success">
+                {/* §25.5.10: speech-bubble icon, the ok status token */}
+                <div
+                  className="mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center"
+                  style={{ color: 'var(--a-ok)' }}
+                >
                   <MessageSquare size={16} strokeWidth={1.75} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-medium text-foreground">{inq.type}</p>
-                  <p className="text-[13px] text-muted-foreground">
+                  <p className="text-[14px] font-medium" style={{ color: 'var(--a-text)' }}>{inq.type}</p>
+                  <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>
                     via: {inq.source ?? 'unspecified'}
                   </p>
                   {inq.address ? (
-                    <p className="text-[13px] text-muted-foreground">{inq.address}</p>
+                    <p className="text-[13px]" style={{ color: 'var(--a-text-2)' }}>{inq.address}</p>
                   ) : null}
                 </div>
-                <span className="shrink-0 text-[12px] text-muted-foreground">{inq.date}</span>
+                <span className="shrink-0 text-[12px]" style={{ color: 'var(--a-text-2)' }}>{inq.date}</span>
               </div>
             ))}
           </Card>
@@ -370,17 +390,24 @@ export function MobileInfoTab({
         <SectionHeader label="Custom Fields" />
         <Card>
           {customFields.length === 0 ? (
-            <div className="px-4 py-3 text-[14px] text-muted-foreground">No custom fields</div>
+            <div className="px-4 py-3 text-[14px]" style={{ color: 'var(--a-text-2)' }}>No custom fields</div>
           ) : (
             customFields.map((f) => (
               <div
                 key={f.key}
-                className="flex min-h-[44px] items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-0"
+                className="flex min-h-[44px] items-center justify-between gap-3 border-b px-4 py-2.5 last:border-0"
+                style={{ borderColor: 'var(--a-border)' }}
               >
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <span
+                  className="text-[11px] font-semibold uppercase tracking-wide"
+                  style={{ color: 'var(--a-text-2)' }}
+                >
                   {f.label}
                 </span>
-                <span className="truncate text-right text-[13px] font-medium text-foreground">
+                <span
+                  className="truncate text-right text-[13px] font-medium"
+                  style={{ color: 'var(--a-text)' }}
+                >
                   {f.value}
                 </span>
               </div>
@@ -406,18 +433,19 @@ export function MobileInfoTab({
                   href={`https://maps.apple.com/?q=${q}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex min-h-[56px] items-start justify-between gap-3 border-b border-border px-4 py-3 last:border-0"
+                  className="flex min-h-[56px] items-start justify-between gap-3 border-b px-4 py-3 last:border-0"
+                  style={{ borderColor: 'var(--a-border)' }}
                 >
                   <div>
-                    <p className="text-[12px] uppercase text-muted-foreground">{addr.type}</p>
+                    <p className="text-[12px] uppercase" style={{ color: 'var(--a-text-2)' }}>{addr.type}</p>
                     {/* §25.5.12: address text is accent-colored link */}
-                    <p className="text-[14px]" style={{ color: 'var(--console-info)' }}>{addr.street}</p>
-                    <p className="text-[14px]" style={{ color: 'var(--console-info)' }}>
+                    <p className="text-[14px]" style={{ color: 'var(--a-accent)' }}>{addr.street}</p>
+                    <p className="text-[14px]" style={{ color: 'var(--a-accent)' }}>
                       {[addr.city, addr.state, addr.zip].filter(Boolean).join(', ')}
                     </p>
                   </div>
                   {/* §25.5.12: diamond/compass nav icon */}
-                  <span className="mt-1 shrink-0 text-[16px]" style={{ color: 'var(--console-info)' }}>◇</span>
+                  <span className="mt-1 shrink-0 text-[16px]" style={{ color: 'var(--a-accent)' }}>◇</span>
                 </a>
               )
             })}

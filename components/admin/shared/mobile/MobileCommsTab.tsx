@@ -60,13 +60,13 @@ export function MobileCommsTab({
       <div className="flex-1">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
-            <p className="text-[16px] font-medium text-muted-foreground">No messages yet</p>
-            <p className="mt-1 text-[14px] text-muted-foreground">
+            <p className="text-[16px] font-medium" style={{ color: 'var(--a-text-2)' }}>No messages yet</p>
+            <p className="mt-1 text-[14px]" style={{ color: 'var(--a-text-2)' }}>
               Start the conversation below. Emails, texts, and calls show up here.
             </p>
           </div>
         ) : (
-          // §25.6.1: bg-secondary content area; ConversationFeed renders on bg-card
+          // §25.6.1: inset content area; ConversationFeed renders on its own surface
           <div className="pb-3">
             <ConversationFeed
               events={items}
@@ -81,8 +81,12 @@ export function MobileCommsTab({
 
       {composer ? (
         <div
-          className="sticky z-30 border-t border-border bg-card px-3 pb-2 pt-2"
-          style={{ bottom: 'var(--crm-dock-offset, 0px)' }}
+          className="sticky z-30 border-t px-3 pb-2 pt-2"
+          style={{
+            bottom: 'var(--crm-dock-offset, 0px)',
+            borderColor: 'var(--a-border)',
+            background: 'var(--a-surface)',
+          }}
         >
           {composer}
         </div>

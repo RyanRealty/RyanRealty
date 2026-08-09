@@ -10,7 +10,7 @@
  *     Appointment uses the same full-field AppointmentSheet as /admin/crm/
  *     calendar, pre-linked to this contact.
  *   - Empty state: compound calendar+clock icon + text (§25.9.2)
- *   - Rows (§25.9.3): the contact's appointments (navy date badge) +
+ *   - Rows (§25.9.3): the contact's appointments (accent-strong date badge) +
  *     open tasks (accent date badge), chronological.
  *
  * Client component for the sheet open states.
@@ -18,10 +18,7 @@
 
 import { useState } from 'react'
 import { CalendarDays, CheckSquare, Clock, Plus, Calendar as CalendarIcon } from 'lucide-react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button, Sheet, ToolbarSelect } from '@/components/admin/v2'
 import AppointmentSheet from '@/components/admin/crm/calendar/AppointmentSheet'
 import type { AppointmentRow, AppointmentType, AppointmentOutcome } from '@/lib/data/crm/getAppointments'
 import { formatDate } from '@/lib/format/date'
@@ -71,8 +68,11 @@ function apptTimeLabel(a: AppointmentRow): string {
 function DateBadge({ iso, tone }: { iso: string | null; tone: 'appt' | 'task' }) {
   return (
     <div
-      className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg text-white"
-      style={{ backgroundColor: tone === 'appt' ? 'var(--primary)' : 'var(--console-info)' }}
+      className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg"
+      style={{
+        backgroundColor: tone === 'appt' ? 'var(--a-accent-strong)' : 'var(--a-btn-bg)',
+        color: 'var(--a-btn-fg)',
+      }}
     >
       <span className="text-[10px] font-semibold uppercase">
         {iso ? new Date(iso).toLocaleString('en-US', { month: 'short', timeZone: 'America/Los_Angeles' }) : '?'}
@@ -100,22 +100,22 @@ export function MobileCalendarTab({
   const apptRows = appointments.rows
 
   return (
-    <div className="bg-secondary pb-24">
+    <div className="pb-24" style={{ background: 'var(--a-inset)' }}>
       {/* §25.9.1 "Add Appointment or Task" inline row */}
       <button
         type="button"
         onClick={() => setChooserOpen(true)}
-        className="flex w-full items-center gap-3 bg-secondary px-4 py-3"
-        style={{ minHeight: 44 }}
+        className="flex w-full items-center gap-3 px-4 py-3"
+        style={{ minHeight: 44, background: 'var(--a-inset)' }}
       >
-        {/* Filled accent circle + glyph (console link accent, see MobileNotesTab) */}
+        {/* Filled accent circle + glyph (see MobileNotesTab) */}
         <span
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-          style={{ backgroundColor: 'var(--console-info)' }}
+          style={{ backgroundColor: 'var(--a-btn-bg)' }}
         >
-          <Plus size={14} className="text-white" strokeWidth={3} />
+          <Plus size={14} strokeWidth={3} style={{ color: 'var(--a-btn-fg)' }} />
         </span>
-        <span className="text-[16px]" style={{ color: 'var(--console-info)' }}>Add Appointment or Task</span>
+        <span className="text-[16px]" style={{ color: 'var(--a-accent)' }}>Add Appointment or Task</span>
       </button>
 
       {/* §25.9.2 Empty state */}
@@ -123,18 +123,18 @@ export function MobileCalendarTab({
         <div className="flex flex-col items-center justify-center px-8 pt-16 pb-8 text-center">
           {/* §25.9.2: compound calendar+clock icon (overlay) */}
           <div className="relative mb-4">
-            <CalendarDays className="text-muted-foreground" size={56} strokeWidth={1.5} />
+            <CalendarDays style={{ color: 'var(--a-text-2)' }} size={56} strokeWidth={1.5} />
             <Clock
-              className="absolute -bottom-1 -right-1 rounded-full bg-secondary text-muted-foreground"
+              className="absolute -bottom-1 -right-1 rounded-full"
               size={24}
               strokeWidth={1.5}
-              style={{ padding: 2 }}
+              style={{ padding: 2, background: 'var(--a-inset)', color: 'var(--a-text-2)' }}
             />
           </div>
-          <p className="text-[17px] font-semibold text-muted-foreground">
+          <p className="text-[17px] font-semibold" style={{ color: 'var(--a-text-2)' }}>
             No Scheduled Appointments
           </p>
-          <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">
+          <p className="mt-1 text-[14px] leading-relaxed" style={{ color: 'var(--a-text-2)' }}>
             Tasks and Appointments will show up here
           </p>
         </div>
@@ -142,16 +142,18 @@ export function MobileCalendarTab({
 
       {/* §25.9.3 Appointment rows (P2-4: the contact's real appointments) */}
       {apptRows.length > 0 && (
-        <div className="bg-card">
-          {apptRows.map((a) => (
+        <div style={{ background: 'var(--a-surface)' }}>
+          {apptRows.map((a, i) => (
             <div
               key={`appt-${a.id}`}
-              className="flex min-h-[56px] items-center gap-3 border-b border-border px-4 py-3 last:border-0"
+              className="flex min-h-[56px] items-center gap-3 px-4 py-3"
+              // inline wins over `last:border-0`, so the last-row rule is explicit
+              style={{ borderBottom: i === apptRows.length - 1 ? undefined : '1px solid var(--a-border)' }}
             >
               <DateBadge iso={a.startAt} tone="appt" />
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-medium text-foreground">{a.title}</p>
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-[14px] font-medium" style={{ color: 'var(--a-text)' }}>{a.title}</p>
+                <p className="text-[12px]" style={{ color: 'var(--a-text-2)' }}>
                   {[a.typeName ?? 'Appointment', apptTimeLabel(a), a.location].filter(Boolean).join(' · ')}
                 </p>
               </div>
@@ -162,16 +164,18 @@ export function MobileCalendarTab({
 
       {/* §25.9.3 Task rows */}
       {openTasks.length > 0 && (
-        <div className="mt-px bg-card">
-          {openTasks.map((t) => (
+        <div className="mt-px" style={{ background: 'var(--a-surface)' }}>
+          {openTasks.map((t, i) => (
             <div
               key={t.id}
-              className="flex min-h-[56px] items-center gap-3 border-b border-border px-4 py-3 last:border-0"
+              className="flex min-h-[56px] items-center gap-3 px-4 py-3"
+              // inline wins over `last:border-0`, so the last-row rule is explicit
+              style={{ borderBottom: i === openTasks.length - 1 ? undefined : '1px solid var(--a-border)' }}
             >
               <DateBadge iso={t.due_at} tone="task" />
               <div className="min-w-0 flex-1">
-                <p className="text-[14px] font-medium text-foreground">{t.name}</p>
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-[14px] font-medium" style={{ color: 'var(--a-text)' }}>{t.name}</p>
+                <p className="text-[12px]" style={{ color: 'var(--a-text-2)' }}>
                   {t.type ?? 'Task'} · due {fmtDue(t.due_at)}
                 </p>
               </div>
@@ -181,31 +185,41 @@ export function MobileCalendarTab({
       )}
 
       {/* D.2-style chooser — Appointment or Task (both real, P2-4) */}
-      <Sheet open={chooserOpen} onOpenChange={setChooserOpen}>
-        <SheetContent side="bottom" className="gap-0 rounded-t-2xl p-0" aria-describedby={undefined}>
-          <SheetTitle className="px-4 pb-2 pt-4 text-[16px] font-semibold text-foreground">
-            What would you like to add?
-          </SheetTitle>
+      <Sheet
+        open={chooserOpen}
+        onClose={() => setChooserOpen(false)}
+        title="What would you like to add?"
+      >
+        {/* One flex child: av2-sheet__body gaps its children, and the rows
+            stack flush (the shadcn original set gap-0). The question is the
+            sheet's `title` rather than an <h2> in here — rendered both ways it
+            printed twice, once under the head's own dismiss control.
+            active:opacity-70 restores the phone pressed state the migration
+            dropped — an opacity, not a background, because the rows paint
+            inline and an inline style outranks any :active background rule. */}
+        <div>
           <button
             type="button"
-            className="flex h-[52px] w-full items-center gap-3 border-b border-border px-4 text-left active:bg-secondary"
+            className="flex h-[52px] w-full items-center gap-3 text-left active:opacity-70"
+            style={{ borderBottom: '1px solid var(--a-border)' }}
             onClick={() => { setChooserOpen(false); setApptSheetOpen(true) }}
           >
-            <CalendarIcon className="h-5 w-5 text-primary" aria-hidden />
-            <span className="text-[16px] text-foreground">Appointment</span>
+            <CalendarIcon className="h-5 w-5" style={{ color: 'var(--a-accent)' }} aria-hidden />
+            <span className="text-[16px]" style={{ color: 'var(--a-text)' }}>Appointment</span>
           </button>
           <button
             type="button"
-            className="flex h-[52px] w-full items-center gap-3 border-b border-border px-4 text-left active:bg-secondary"
+            className="flex h-[52px] w-full items-center gap-3 text-left active:opacity-70"
+            style={{ borderBottom: '1px solid var(--a-border)' }}
             onClick={() => { setChooserOpen(false); setTaskSheetOpen(true) }}
           >
-            <CheckSquare className="h-5 w-5 text-primary" aria-hidden />
-            <span className="text-[16px] text-foreground">Task</span>
+            <CheckSquare className="h-5 w-5" style={{ color: 'var(--a-accent)' }} aria-hidden />
+            <span className="text-[16px]" style={{ color: 'var(--a-text)' }}>Task</span>
           </button>
           <div className="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-            <Button variant="ghost" className="w-full" onClick={() => setChooserOpen(false)}>Cancel</Button>
+            <Button variant="quiet" className="w-full" onClick={() => setChooserOpen(false)}>Cancel</Button>
           </div>
-        </SheetContent>
+        </div>
       </Sheet>
 
       {/* Appointment branch — the same full-field sheet as /admin/crm/calendar,
@@ -226,50 +240,61 @@ export function MobileCalendarTab({
       />
 
       {/* §25.9.4 Task create sheet */}
-      <Sheet open={taskSheetOpen} onOpenChange={setTaskSheetOpen}>
-        <SheetContent side="bottom" className="h-auto" aria-describedby={undefined}>
-          <SheetHeader>
-            <SheetTitle>Add Task</SheetTitle>
-          </SheetHeader>
-          <form
-            action={addTaskAction}
-            className="flex flex-col gap-3 pt-3"
-            onSubmit={() => setTaskSheetOpen(false)}
-          >
-            <input type="hidden" name="personId" value={personId} />
-            <Input name="name" placeholder="Task name" className="h-10" required />
-            <div className="grid grid-cols-2 gap-2">
-              <Select name="type" defaultValue="Follow Up">
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {['Follow Up', 'Call', 'Text', 'Email'].map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select name="dueHours" defaultValue="24">
-                <SelectTrigger className="h-10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">In 1 hour</SelectItem>
-                  <SelectItem value="4">In 4 hours</SelectItem>
-                  <SelectItem value="24">Tomorrow</SelectItem>
-                  <SelectItem value="72">In 3 days</SelectItem>
-                  <SelectItem value="168">In a week</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" type="button" onClick={() => setTaskSheetOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Add Task</Button>
-            </div>
-          </form>
-        </SheetContent>
+      <Sheet
+        open={taskSheetOpen}
+        onClose={() => setTaskSheetOpen(false)}
+        title="Add Task"
+      >
+        {/* ONE child of av2-sheet__body, which is a flex column with a gap: the
+            title moved to the sheet's `title` prop (it was printing twice, once
+            under the head's own dismiss control), so the form is the only child
+            and the gap has nothing to open up — the same shape every sibling
+            sheet in this folder uses. */}
+        <form
+          action={addTaskAction}
+          className="flex flex-col gap-3"
+          onSubmit={() => setTaskSheetOpen(false)}
+        >
+          <input type="hidden" name="personId" value={personId} />
+          <input
+            className="av2-input w-full"
+            name="name"
+            aria-label="Task name"
+            placeholder="Task name"
+            style={{ minHeight: 40 }}
+            required
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <ToolbarSelect
+              name="type"
+              aria-label="Task type"
+              defaultValue="Follow Up"
+              style={{ width: '100%', maxWidth: 'none', minHeight: 40 }}
+            >
+              {['Follow Up', 'Call', 'Text', 'Email'].map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </ToolbarSelect>
+            <ToolbarSelect
+              name="dueHours"
+              aria-label="Due"
+              defaultValue="24"
+              style={{ width: '100%', maxWidth: 'none', minHeight: 40 }}
+            >
+              <option value="1">In 1 hour</option>
+              <option value="4">In 4 hours</option>
+              <option value="24">Tomorrow</option>
+              <option value="72">In 3 days</option>
+              <option value="168">In a week</option>
+            </ToolbarSelect>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="quiet" type="button" onClick={() => setTaskSheetOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit">Add Task</Button>
+          </div>
+        </form>
       </Sheet>
     </div>
   )

@@ -5,7 +5,7 @@
  *
  *  DIRECTORY (no filter params) — mob-09 "All Lists": light sub-tab strip
  *  (All Lists | Stages, 2pt primary indicator), then 58pt smart-list rows
- *  (name + live scoped count right-aligned in text-primary, no chevron) or
+ *  (name + live scoped count right-aligned in the accent, no chevron) or
  *  stage rows on the Stages tab. Counts ≥1000 abbreviate to "1.2k"; 0 renders.
  *
  *  LIST (?view= / ?stage= / ?q= / explicit broker) — mob-10 smart-list detail:
@@ -13,6 +13,12 @@
  *  (44pt avatar · name 17pt · source sub-label 13pt · trailing ›), paginated.
  *
  * Desktop (md+) is untouched — the page renders this inside md:hidden.
+ *
+ * 11F: migrated to the admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY — same props, same URLs, same row order, same strings.
+ * The shadcn semantic surface/text/primary classes are replaced with
+ * var(--a-*): they resolved to the PUBLIC brand palette, which ADMIN_UI
+ * blacklists as design input for the admin.
  */
 
 import Link from 'next/link'
@@ -51,8 +57,11 @@ function SubTabStrip({ active, carryBroker }: { active: 'lists' | 'stages'; carr
     { key: 'lists' as const, label: 'All Lists', href: carryBroker ? `/admin/crm?broker=${encodeURIComponent(carryBroker)}` : '/admin/crm' },
     { key: 'stages' as const, label: 'Stages', href: `/admin/crm${base}ptab=stages` },
   ]
+  // --a-inset, not --a-surface: the strip sits ON the --a-surface page body
+  // below it, and surface-on-surface paints the band invisible. Same source
+  // class (bg-muted) and same mapping as the LIST-mode count bar.
   return (
-    <div className="flex border-b border-border bg-muted">
+    <div className="flex border-b" style={{ borderColor: 'var(--a-border)', background: 'var(--a-inset)' }}>
       {tabs.map((t) => {
         const isActive = active === t.key
         return (
@@ -61,11 +70,12 @@ function SubTabStrip({ active, carryBroker }: { active: 'lists' | 'stages'; carr
             href={t.href}
             className={cn(
               'relative flex-1 py-2.5 text-center text-[14px]',
-              isActive ? 'font-semibold text-foreground' : 'font-normal text-muted-foreground',
+              isActive ? 'font-semibold' : 'font-normal',
             )}
+            style={{ color: isActive ? 'var(--a-text)' : 'var(--a-text-2)' }}
           >
             {t.label}
-            {isActive ? <span className="absolute inset-x-0 bottom-0 h-[2px] bg-primary" /> : null}
+            {isActive ? <span className="absolute inset-x-0 bottom-0 h-[2px]" style={{ background: 'var(--a-accent)' }} /> : null}
           </Link>
         )
       })}
@@ -104,7 +114,7 @@ export function MobilePeopleRoot({
 }) {
   if (mode === 'directory') {
     return (
-      <div className="bg-card">
+      <div style={{ background: 'var(--a-surface)' }}>
         <SubTabStrip active={ptab} carryBroker={carryBroker} />
         {ptab === 'lists' ? (
           <div>
@@ -112,14 +122,15 @@ export function MobilePeopleRoot({
               <Link
                 key={v.id}
                 href={`/admin/crm?view=${v.id}`}
-                className="flex h-[58px] items-center justify-between border-b border-border px-4 active:bg-secondary"
+                className="flex h-[58px] items-center justify-between border-b px-4 active:opacity-70"
+                style={{ borderColor: 'var(--a-border)' }}
               >
-                <span className="min-w-0 truncate text-[16px] text-foreground">{v.name}</span>
-                <span className="shrink-0 pl-3 text-[16px] tabular-nums text-primary">{formatCount(v.count)}</span>
+                <span className="min-w-0 truncate text-[16px]" style={{ color: 'var(--a-text)' }}>{v.name}</span>
+                <span className="shrink-0 pl-3 text-[16px] tabular-nums" style={{ color: 'var(--a-accent)' }}>{formatCount(v.count)}</span>
               </Link>
             ))}
             {views.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">No smart lists yet.</p>
+              <p className="px-4 py-8 text-center text-sm" style={{ color: 'var(--a-text-2)' }}>No smart lists yet.</p>
             ) : null}
           </div>
         ) : (
@@ -128,10 +139,11 @@ export function MobilePeopleRoot({
               <Link
                 key={s.key}
                 href={`/admin/crm?stage=${encodeURIComponent(s.key)}`}
-                className="flex h-[58px] items-center justify-between border-b border-border px-4 active:bg-secondary"
+                className="flex h-[58px] items-center justify-between border-b px-4 active:opacity-70"
+                style={{ borderColor: 'var(--a-border)' }}
               >
-                <span className="min-w-0 truncate text-[16px] text-foreground">{s.label}</span>
-                <span className="shrink-0 pl-3 text-muted-foreground">›</span>
+                <span className="min-w-0 truncate text-[16px]" style={{ color: 'var(--a-text)' }}>{s.label}</span>
+                <span className="shrink-0 pl-3" style={{ color: 'var(--a-text-2)' }}>›</span>
               </Link>
             ))}
           </div>
@@ -142,19 +154,19 @@ export function MobilePeopleRoot({
 
   /* ── LIST mode (mob-10) ────────────────────────────────────────────────── */
   return (
-    <div className="bg-card">
+    <div style={{ background: 'var(--a-surface)' }}>
       {/* Back row + title (stands in for the pushed-screen nav bar) */}
-      <div className="flex items-center gap-1 border-b border-border px-2 py-2.5">
-        <Link href="/admin/crm" aria-label="All lists" className="flex items-center p-1 text-foreground">
+      <div className="flex items-center gap-1 border-b px-2 py-2.5" style={{ borderColor: 'var(--a-border)' }}>
+        <Link href="/admin/crm" aria-label="All lists" className="flex items-center p-1" style={{ color: 'var(--a-text)' }}>
           <ChevronLeft size={20} />
         </Link>
-        <span className="min-w-0 flex-1 truncate text-center text-[17px] font-semibold text-foreground">{listTitle}</span>
+        <span className="min-w-0 flex-1 truncate text-center text-[17px] font-semibold" style={{ color: 'var(--a-text)' }}>{listTitle}</span>
         <span className="w-7" />
       </div>
 
       {/* §24 §5.4 count bar */}
-      <div className="flex h-6 items-center bg-muted px-4">
-        <span className="text-[13px] tabular-nums text-muted-foreground">
+      <div className="flex h-6 items-center px-4" style={{ background: 'var(--a-inset)' }}>
+        <span className="text-[13px] tabular-nums" style={{ color: 'var(--a-text-2)' }}>
           {total.toLocaleString('en-US')} people
         </span>
       </div>
@@ -172,16 +184,19 @@ export function MobilePeopleRoot({
         ))}
       </CrmList>
       {rows.length === 0 ? (
-        <p className="px-4 py-10 text-center text-sm text-muted-foreground">No people found.</p>
+        <p className="px-4 py-10 text-center text-sm" style={{ color: 'var(--a-text-2)' }}>No people found.</p>
       ) : null}
 
       {/* Pagination */}
       {lastPage > 1 ? (
-        <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm text-muted-foreground">
+        <div
+          className="flex items-center justify-between border-t px-4 py-3 text-sm"
+          style={{ borderColor: 'var(--a-border)', color: 'var(--a-text-2)' }}
+        >
           <span className="tabular-nums">Page {page} of {lastPage}</span>
           <div className="flex gap-4">
-            {pageHrefPrev ? <Link href={pageHrefPrev} className="font-medium text-foreground">Previous</Link> : null}
-            {pageHrefNext ? <Link href={pageHrefNext} className="font-medium text-foreground">Next</Link> : null}
+            {pageHrefPrev ? <Link href={pageHrefPrev} className="font-medium" style={{ color: 'var(--a-text)' }}>Previous</Link> : null}
+            {pageHrefNext ? <Link href={pageHrefNext} className="font-medium" style={{ color: 'var(--a-text)' }}>Next</Link> : null}
           </div>
         </div>
       ) : null}

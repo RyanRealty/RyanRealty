@@ -1,7 +1,7 @@
 'use client'
 
 import './admin-v2.css'
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { Button } from './Button'
 
 /**
@@ -50,6 +50,13 @@ export function Dialog({
   size = 'ask',
 }: AdminDialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
+  // Per-instance ids. These were the literal strings "av2-dlg-title" and
+  // "av2-dlg-desc", and a <dialog> stays in the DOM open or not, so a surface
+  // mounting more than one Dialog published duplicate ids and aria-labelledby
+  // resolved to whichever came first. PeopleListView mounts three.
+  const uid = useId()
+  const titleId = `av2-dlg-title-${uid}`
+  const descId = `av2-dlg-desc-${uid}`
 
   useEffect(() => {
     const el = ref.current
@@ -62,8 +69,8 @@ export function Dialog({
     <dialog
       ref={ref}
       className={size === 'work' ? 'av2-dialog av2-dialog--work' : 'av2-dialog'}
-      aria-labelledby="av2-dlg-title"
-      aria-describedby={description ? 'av2-dlg-desc' : undefined}
+      aria-labelledby={titleId}
+      aria-describedby={description ? descId : undefined}
       // Native close covers Esc, the backdrop and form method="dialog".
       onClose={onClose}
       onCancel={(e) => {
@@ -72,7 +79,7 @@ export function Dialog({
       }}
     >
       <div className="av2-dialog__head">
-        <h2 className="av2-dialog__title" id="av2-dlg-title">
+        <h2 className="av2-dialog__title" id={titleId}>
           {title}
         </h2>
         <Button variant="quiet" onClick={onClose} aria-label="Close">
@@ -80,7 +87,7 @@ export function Dialog({
         </Button>
       </div>
       {description ? (
-        <p className="av2-dialog__quiet" id="av2-dlg-desc" style={{ marginTop: 0 }}>
+        <p className="av2-dialog__quiet" id={descId} style={{ marginTop: 0 }}>
           {description}
         </p>
       ) : null}

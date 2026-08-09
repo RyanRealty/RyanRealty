@@ -8,21 +8,28 @@
  * dropdown. "Add person" (lowercase p, §16.5 label correction) is disabled
  * until a first name is entered; submit routes through createCrmContactAction
  * (FUB event + local mirror + dedupe) and navigates to the new Person Detail.
+ *
+ * 11F: migrated off shadcn onto the admin v2 language (Dialog / TextField /
+ * SelectField / Button, design_system/admin/ADMIN_UI.md). Presentation only —
+ * the create path, the disabled rule and every user-facing string are
+ * unchanged. The v2 Dialog labels itself from a plain `title` string, so the
+ * decorative UserRoundPlus glyph that sat beside the heading is gone; it was
+ * aria-hidden and carried no meaning.
+ *
+ * WHEN THE DRAFT IS CLEARED. Radix fired its root onOpenChange only when the
+ * USER dismissed the dialog, never when the parent flipped `open` — so Cancel
+ * (which just calls the prop) kept whatever had been typed, and only Esc / the
+ * close control wiped it. The v2 Dialog routes every close through one
+ * onClose, so the two are told apart by the `open` prop as the handler runs:
+ * still true = the user dismissed it, already false = the parent closed it.
+ * Without that test Cancel destroyed a half-typed person.
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, UserRoundPlus } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { createCrmContactAction } from '@/app/actions/crm'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Button, Dialog, SelectField, TextField } from '@/components/admin/v2'
 
 export type AddPersonDialogProps = {
   open: boolean
@@ -64,57 +71,53 @@ export default function AddPersonDialog({ open, onOpenChange, sources }: AddPers
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o) }}>
-      <DialogContent aria-describedby={undefined} className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserRoundPlus className="h-4 w-4" aria-hidden />
-            Add Person
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="ap-first" className="mb-1.5 block text-xs text-muted-foreground">First Name</Label>
-              <Input id="ap-first" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="off" className="h-9" />
-            </div>
-            <div>
-              <Label htmlFor="ap-last" className="mb-1.5 block text-xs text-muted-foreground">Last Name</Label>
-              <Input id="ap-last" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="off" className="h-9" />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="ap-email" className="mb-1.5 block text-xs text-muted-foreground">Email</Label>
-            <Input id="ap-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" className="h-9" />
-          </div>
-          <div>
-            <Label htmlFor="ap-phone" className="mb-1.5 block text-xs text-muted-foreground">Phone</Label>
-            <Input id="ap-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="off" className="h-9" />
-          </div>
-          <div>
-            <Label className="mb-1.5 block text-xs text-muted-foreground">Lead source</Label>
-            <Select value={source} onValueChange={setSource}>
-              <SelectTrigger className="h-9"><SelectValue placeholder="Select a lead source" /></SelectTrigger>
-              <SelectContent>
-                {sources.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            An email or a phone number is required. If the person already exists, this updates them instead of creating a duplicate.
-          </p>
-          {error ? <p className="text-xs text-destructive" role="alert">{error}</p> : null}
-        </div>
-
-        <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={isPending}>Cancel</Button>
-          <Button size="sm" onClick={submit} disabled={isPending || !firstName.trim()}>
+    <Dialog
+      open={open}
+      // `open` is still true when the user dismisses the dialog (Esc, the
+      // header Close control) and already false when the close came from the
+      // prop — Cancel and a successful submit. Only the first case clears the
+      // draft, which is the Radix behaviour this replaced.
+      onClose={() => { if (open) reset(); onOpenChange(false) }}
+      title="Add Person"
+      footer={
+        <>
+          <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={isPending}>Cancel</Button>
+          <Button onClick={submit} disabled={isPending || !firstName.trim()}>
             {isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
             Add person
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <TextField label="First Name" value={firstName} onChange={(e) => setFirstName(e.target.value)} autoComplete="off" />
+          </div>
+          <div>
+            <TextField label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} autoComplete="off" />
+          </div>
+        </div>
+        <div>
+          <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="off" />
+        </div>
+        <div>
+          <TextField label="Phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="off" />
+        </div>
+        <div>
+          <SelectField label="Lead source" value={source} onChange={(e) => setSource(e.target.value)}>
+            {/* The Radix original showed this as a PLACEHOLDER, not a choice.
+                disabled+hidden keeps it as the resting label of an unset
+                select without offering "" back as a selectable option. */}
+            <option value="" disabled hidden>Select a lead source</option>
+            {sources.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+          </SelectField>
+        </div>
+        <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          An email or a phone number is required. If the person already exists, this updates them instead of creating a duplicate.
+        </p>
+        {error ? <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }} role="alert">{error}</p> : null}
+      </div>
     </Dialog>
   )
 }

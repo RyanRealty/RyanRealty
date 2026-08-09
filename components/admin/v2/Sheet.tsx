@@ -1,7 +1,7 @@
 'use client'
 
 import './admin-v2.css'
-import { useEffect, useRef } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { Button } from './Button'
 
 /**
@@ -44,12 +44,32 @@ export function Sheet({
   children,
 }: AdminSheetProps) {
   const ref = useRef<HTMLDialogElement>(null)
+  // Per-instance ids. These used to be the literal strings "av2-sheet-title" and
+  // "av2-sheet-desc", and a <dialog> stays in the DOM whether it is open or not,
+  // so any surface mounting two sheets published two elements with the same id
+  // and aria-labelledby resolved to whichever came first. MobileContactPointsSection
+  // mounts two; PeopleListView mounts three Dialogs on the same bug.
+  const uid = useId()
+  const titleId = `av2-sheet-title-${uid}`
+  const descId = `av2-sheet-desc-${uid}`
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    if (open && !el.open) el.showModal()
-    else if (!open && el.open) el.close()
+    if (open && !el.open) {
+      el.showModal()
+      // showModal() puts focus on the first focusable descendant, which is the
+      // header's own Close button — so a sheet opened to be typed in landed the
+      // broker on "dismiss" and the phone keyboard never rose. React's autoFocus
+      // cannot cover this: it fires once at MOUNT, and this element is mounted
+      // while closed. Prefer the first field in the BODY, and fall back to the
+      // platform default when the sheet holds nothing to type into.
+      const body = el.querySelector('.av2-sheet__body')
+      const target = body?.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [autofocus]',
+      )
+      target?.focus()
+    } else if (!open && el.open) el.close()
   }, [open])
 
   return (
@@ -57,14 +77,20 @@ export function Sheet({
       ref={ref}
       className="av2-sheet"
       aria-label={titleHidden ? title : undefined}
-      aria-labelledby={titleHidden ? undefined : 'av2-sheet-title'}
-      aria-describedby={description ? 'av2-sheet-desc' : undefined}
+      aria-labelledby={titleHidden ? undefined : titleId}
+      aria-describedby={description ? descId : undefined}
       onClose={onClose}
       onCancel={(e) => {
         e.preventDefault()
         onClose()
       }}
       onClick={(e) => {
+        // A click activated from the KEYBOARD (Enter or Space on a button)
+        // reports detail === 0 and clientX/clientY === 0, which the box test
+        // below reads as a point outside the sheet — so operating any control
+        // by keyboard dismissed the whole surface. Only a real pointer press
+        // carries a detail count.
+        if (e.detail === 0) return
         // Backdrop click. The native element reports the click on the <dialog>
         // itself, so compare against its own box rather than the event target —
         // a click on a child would otherwise read as "outside".
@@ -79,7 +105,7 @@ export function Sheet({
         {titleHidden ? (
           <span />
         ) : (
-          <h2 className="av2-dialog__title" id="av2-sheet-title">
+          <h2 className="av2-dialog__title" id={titleId}>
             {title}
           </h2>
         )}
@@ -88,7 +114,7 @@ export function Sheet({
         </Button>
       </div>
       {description ? (
-        <p className="av2-dialog__quiet" id="av2-sheet-desc" style={{ margin: '0 0 var(--a-s3)' }}>
+        <p className="av2-dialog__quiet" id={descId} style={{ margin: '0 0 var(--a-s3)' }}>
           {description}
         </p>
       ) : null}

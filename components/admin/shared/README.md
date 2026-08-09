@@ -28,25 +28,41 @@ The end state Matt approved is that `ci:admin-v2-tokens`
 it satisfies the same token rules, and a gated page may import from it without
 tripping rule 3 (the `LEGACY_IMPORT` blacklist).
 
-**That change has not landed, and must not land until the two conditions below
-are met.** Relocation and presentation are separate commits in 11F — moving
-files does not migrate them, and a gate flipped early would go green for the
-wrong reason: rule 3 reads IMPORTS, and `TW_PALETTE` catches `bg-gray-500` but
-NOT `bg-card` / `text-muted-foreground`, which resolve to the PUBLIC brand
-palette. Measured at the time of the move:
+**That change has not landed yet, and the reason is now Condition 2 alone.**
 
-| | count |
-|---|---|
-| files here | 25 |
-| files importing `@/components/ui/*` | 14 |
-| shadcn semantic-class occurrences | 351 |
-| total LOC | 5,323 |
+### Condition 1 — the files are on v2 — MET
 
-### Condition 1 — the files must actually be on v2
+All 25 files were migrated off shadcn (2026-08-09). Zero `@/components/ui/*`
+imports, zero shadcn semantic classes, zero raw hex, zero colour functions:
+every colour reaches these components through `var(--a-*)`.
 
-Every `@/components/ui/*` import gone, and every semantic class replaced with a
-`var(--a-*)` token. Heaviest first: `PeopleListView.tsx` (793 LOC, 12 shadcn
-imports, 64 semantic classes), `MobileInfoTab.tsx`, `MobilePeopleRoot.tsx`.
+| | before | after |
+|---|---|---|
+| files importing `@/components/ui/*` | 14 | 0 |
+| shadcn semantic-class occurrences | 351 | 0 |
+| total LOC | 5,323 | ~5,300 |
+
+The migration was done by parallel agents and then **adversarially verified**,
+which is the part worth keeping: the first pass produced token-pure code that
+typechecked with zero API drift, and the verify pass still found **46
+behavioural regressions** — an invisible sub-tab band (`var(--a-surface)`
+painted on `var(--a-surface)`), hover and press states silently dropped from
+phone tap targets, a select-all checkbox that lost its indeterminate dash,
+stage values rendering UPPERCASED through `.av2-state`, and a popover that
+became a focus-trapping modal. A second pass fixed them and was re-verified.
+
+Three of those were defects in the PRIMITIVES, not the migration, and were
+fixed at the source — they had been live for every admin surface already on v2:
+`Dialog`/`Sheet` hardcoded their title/description ids (duplicate DOM ids
+whenever two mounted), `Sheet` dismissed itself on keyboard-activated clicks
+(`clientX/clientY` are 0 for Enter/Space), and `Sheet` is a permanently-mounted
+`<dialog>` so React's `autoFocus` fired once while it was hidden and never
+again.
+
+**Known and accepted:** `Dialog` and `Sheet` always render a visible "Close"
+text button in the header, where the shadcn originals used an icon with an
+sr-only label. That is the v2 language and 81+ call sites already ship it; it
+is recorded here so the next reader does not re-file it as a regression.
 
 ### Condition 2 — the dependency closure has to close
 

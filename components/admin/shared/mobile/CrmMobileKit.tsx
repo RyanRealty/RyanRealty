@@ -5,9 +5,18 @@
  *
  * Matt directive 2026-06-26: the CRM must look + behave like the FUB iOS app on
  * phones. Every CRM list/detail screen composes these so the look lives in ONE
- * place and can't drift screen-by-screen. Token-pure classNames (inherits the
- * neutral .console-root scope); the ONLY literal colors are the deterministic
- * avatar fills, applied via inline style so the design-token linter stays green.
+ * place and can't drift screen-by-screen.
+ *
+ * 11F: migrated to the admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY — every export, prop and handler is unchanged. Colour now
+ * comes from var(--a-*) instead of the shadcn semantic classes, which resolve
+ * to the PUBLIC brand palette the admin blacklists (§5 amnesia). One canon
+ * consequence, precedent (thread-bits.tsx ThreadAvatar, DealsBoard): the
+ * per-person avatar hue is gone. ADMIN_UI §1 reserves colour for action/status,
+ * so identity reads by initials on a neutral fill. crmAvatarColor is still
+ * re-exported (callers import it from here) — it is simply no longer this kit's
+ * own design input. CrmActionCircle keeps three distinct tones: those ARE
+ * actions, which is what §1 reserves colour for.
  *
  * Desktop is untouched — wrap each usage in `md:hidden` / `lg:hidden` so the
  * existing console tables/panels keep rendering at the larger breakpoints.
@@ -17,6 +26,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { crmAvatarColor, crmInitials } from '@/lib/admin/crm-avatar'
+import '@/components/admin/v2/admin-v2.css'
 
 /* ── Avatars ─────────────────────────────────────────────────────────────── */
 
@@ -52,8 +62,8 @@ export function CrmAvatar({
   }
   return (
     <span
-      style={{ ...dim, backgroundColor: crmAvatarColor(name) }}
-      className={cn('flex shrink-0 items-center justify-center rounded-full font-semibold text-white', className)}
+      style={{ ...dim, background: 'var(--a-inset)', color: 'var(--a-text)' }}
+      className={cn('flex shrink-0 items-center justify-center rounded-full font-semibold', className)}
     >
       <span style={{ fontSize: Math.round(size * 0.36) }}>{crmInitials(name)}</span>
     </span>
@@ -95,30 +105,35 @@ export function CrmListRow({
       <CrmAvatar name={name} src={src} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-[15px] font-semibold text-foreground">{title}</span>
+          <span className="truncate text-[15px] font-semibold" style={{ color: 'var(--a-text)' }}>{title}</span>
           {badge}
         </div>
         {subtitle ? (
-          <div className="mt-0.5 truncate text-[13px] text-muted-foreground">{subtitle}</div>
+          <div className="mt-0.5 truncate text-[13px]" style={{ color: 'var(--a-text-2)' }}>{subtitle}</div>
         ) : null}
       </div>
       {trailing ? (
         <div className="flex shrink-0 items-center gap-2">{trailing}</div>
       ) : (
         <div className="flex shrink-0 flex-col items-end gap-1">
-          {meta ? <span className="text-xs text-muted-foreground">{meta}</span> : null}
-          {href ? <ChevronRight className="h-4 w-4 text-muted-foreground/60" /> : null}
+          {meta ? <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>{meta}</span> : null}
+          {href ? <ChevronRight className="h-4 w-4 opacity-60" style={{ color: 'var(--a-text-2)' }} /> : null}
         </div>
       )}
     </>
   )
+  // The pressed/hover tint was a shadcn `accent` wash. A pseudo-class cannot
+  // live in an inline style and admin-v2.css is not this unit's file, so the
+  // feedback rides on the opacity dip the kit already uses on its buttons —
+  // BOTH states, the way the source had both: active on every row, hover on
+  // the linked row only.
   const cls = cn(
-    'flex items-center gap-3 px-4 py-3 min-h-16 active:bg-accent/60',
+    'flex items-center gap-3 px-4 py-3 min-h-16 active:opacity-70',
     className,
   )
   if (href) {
     return (
-      <Link href={href} className={cn(cls, 'transition-colors hover:bg-accent/50')}>
+      <Link href={href} className={cn(cls, 'transition-opacity hover:opacity-80')}>
         {body}
       </Link>
     )
@@ -128,7 +143,9 @@ export function CrmListRow({
 
 /** Hairline-divided container for a stack of CrmListRow. */
 export function CrmList({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('divide-y divide-border', className)}>{children}</div>
+  // divide-* paints the CHILDREN's border, which an inline style on this
+  // wrapper cannot reach — so the token rides in as the divide colour itself.
+  return <div className={cn('divide-y divide-[color:var(--a-border)]', className)}>{children}</div>
 }
 
 /* ── Segmented sub-tabs (New Leads | Emails | Website) ───────────────────── */
@@ -145,7 +162,7 @@ export function CrmSegmented<T extends string>({
   className?: string
 }) {
   return (
-    <div className={cn('flex border-b border-border', className)}>
+    <div className={cn('flex border-b', className)} style={{ borderColor: 'var(--a-border)' }}>
       {options.map((o) => {
         const active = o.value === value
         return (
@@ -153,14 +170,15 @@ export function CrmSegmented<T extends string>({
             key={o.value}
             type="button"
             onClick={() => onChange(o.value)}
-            className={cn(
-              'relative flex-1 px-2 py-3 text-center text-[13px] font-medium transition-colors',
-              active ? 'text-foreground' : 'text-muted-foreground',
-            )}
+            className="relative flex-1 px-2 py-3 text-center text-[13px] font-medium transition-colors"
+            style={{ color: active ? 'var(--a-text)' : 'var(--a-text-2)' }}
           >
             {o.label}
             {active ? (
-              <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-primary" />
+              <span
+                className="absolute inset-x-3 -bottom-px h-0.5 rounded-full"
+                style={{ background: 'var(--a-accent)' }}
+              />
             ) : null}
           </button>
         )
@@ -173,8 +191,8 @@ export function CrmSegmented<T extends string>({
 
 export function CrmSectionLabel({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between bg-muted/40 px-4 py-2">
-      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{children}</span>
+    <div className="flex items-center justify-between px-4 py-2" style={{ background: 'var(--a-surface)' }}>
+      <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'var(--a-text-2)' }}>{children}</span>
       {action}
     </div>
   )
@@ -194,16 +212,16 @@ export function CrmDetailRow({
 }) {
   const inner = (
     <>
-      <span className="shrink-0 text-[14px] text-muted-foreground">{label}</span>
-      <span className="flex min-w-0 items-center gap-1 text-right text-[14px] font-medium text-foreground">
+      <span className="shrink-0 text-[14px]" style={{ color: 'var(--a-text-2)' }}>{label}</span>
+      <span className="flex min-w-0 items-center gap-1 text-right text-[14px] font-medium" style={{ color: 'var(--a-text)' }}>
         <span className="truncate">{value}</span>
-        {(href || onClick) ? <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" /> : null}
+        {(href || onClick) ? <ChevronRight className="h-4 w-4 shrink-0 opacity-60" style={{ color: 'var(--a-text-2)' }} /> : null}
       </span>
     </>
   )
   const cls = 'flex items-center justify-between gap-3 px-4 py-3.5 min-h-12'
-  if (href) return <Link href={href} className={cn(cls, 'active:bg-accent/60')}>{inner}</Link>
-  if (onClick) return <button type="button" onClick={onClick} className={cn(cls, 'w-full active:bg-accent/60')}>{inner}</button>
+  if (href) return <Link href={href} className={cn(cls, 'active:opacity-70')}>{inner}</Link>
+  if (onClick) return <button type="button" onClick={onClick} className={cn(cls, 'w-full active:opacity-70')}>{inner}</button>
   return <div className={cls}>{inner}</div>
 }
 
@@ -222,18 +240,26 @@ export function CrmActionCircle({
   href?: string
   onClick?: () => void
 }) {
-  const bg = { chat: '#6366f1', call: '#22c55e', email: '#38bdf8' }[tone]
-  const inner = <Icon className="h-[18px] w-[18px] text-white" />
+  // `tone` discriminates the fill, as it did before the migration (chat
+  // indigo / call green / email sky). Collapsing all three onto one solid left
+  // the prop inert — a required discriminator that could not reach the render.
+  // Each of these three carries --a-btn-fg at AA in BOTH themes: light
+  // 12.62 / 4.72 / 4.77 against white, dark 15.04 / 10.49 / 6.03 against the
+  // dark foreground the dark scale flips solids to (ADMIN_UI §4).
+  const bg = { chat: 'var(--a-accent-strong)', call: 'var(--a-ok)', email: 'var(--a-btn-bg)' }[tone]
+  // lucide strokes with currentColor, so the button's own colour dresses it.
+  const inner = <Icon className="h-[18px] w-[18px]" />
+  const style = { backgroundColor: bg, color: 'var(--a-btn-fg)' }
   const cls = 'flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-95'
   if (href) {
     return (
-      <a href={href} aria-label={label} style={{ backgroundColor: bg }} className={cls}>
+      <a href={href} aria-label={label} style={style} className={cls}>
         {inner}
       </a>
     )
   }
   return (
-    <button type="button" aria-label={label} onClick={onClick} style={{ backgroundColor: bg }} className={cls}>
+    <button type="button" aria-label={label} onClick={onClick} style={style} className={cls}>
       {inner}
     </button>
   )

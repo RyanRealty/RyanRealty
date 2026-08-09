@@ -16,9 +16,7 @@
 
 import { useMemo, useState } from 'react'
 import { Plus, StickyNote, ChevronDown, ChevronRight } from 'lucide-react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
+import { Button, Sheet } from '@/components/admin/v2'
 import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
 import { partitionNotes } from '@/lib/crm/note-classify'
 import { cn } from '@/lib/utils'
@@ -83,7 +81,8 @@ export function MobileNotesTab({
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') toggleExpanded(note.id)
         }}
-        className="mx-4 mb-2 cursor-pointer overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+        className="mx-4 mb-2 cursor-pointer overflow-hidden rounded-xl border shadow-sm"
+        style={{ borderColor: 'var(--a-border)', background: 'var(--a-surface)' }}
       >
         <div className="p-3">
           <div className="flex items-start gap-3">
@@ -91,15 +90,16 @@ export function MobileNotesTab({
             <CrmAvatar name={authorName} src={note.avatarUrl} size={36} className="mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex items-baseline justify-between gap-2">
-                <span className="text-[14px] font-semibold text-foreground">{authorName}</span>
-                <span className="shrink-0 text-[12px] text-muted-foreground">{note.dateLabel}</span>
+                <span className="text-[14px] font-semibold" style={{ color: 'var(--a-text)' }}>{authorName}</span>
+                <span className="shrink-0 text-[12px]" style={{ color: 'var(--a-text-2)' }}>{note.dateLabel}</span>
               </div>
               {/* Body — 5-line clamp (§25.8.3), tap the card to read it all */}
               <p
                 className={cn(
-                  'whitespace-pre-line text-[13px] leading-5 text-foreground',
+                  'whitespace-pre-line text-[13px] leading-5',
                   !expanded.has(note.id) && 'line-clamp-5',
                 )}
+                style={{ color: 'var(--a-text)' }}
               >
                 {note.body}
               </p>
@@ -111,7 +111,7 @@ export function MobileNotesTab({
   }
 
   return (
-    <div className="bg-secondary pb-24">
+    <div className="pb-24" style={{ background: 'var(--a-inset)' }}>
       {/* §25.8.2 "Add note" inline action row — always at top */}
       <button
         type="button"
@@ -119,30 +119,30 @@ export function MobileNotesTab({
         className="flex w-full items-center gap-3 px-4 py-3"
         style={{ minHeight: 44 }}
       >
-        {/* Filled accent circle with + glyph (console link accent — console-root's
-            --accent is a near-white neutral, unusable as a fill on bg-secondary) */}
+        {/* Filled accent circle with + glyph — the solid-button pair, which is the
+            one token pair proven legible as a fill (ADMIN_UI §4) */}
         <span
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-          style={{ backgroundColor: 'var(--console-info)' }}
+          style={{ backgroundColor: 'var(--a-btn-bg)' }}
         >
-          <Plus size={14} className="text-white" strokeWidth={3} />
+          <Plus size={14} style={{ color: 'var(--a-btn-fg)' }} strokeWidth={3} />
         </span>
-        <span className="text-[16px]" style={{ color: 'var(--console-info)' }}>Add note</span>
+        <span className="text-[16px]" style={{ color: 'var(--a-accent)' }}>Add note</span>
       </button>
 
       {/* §25.8.4 Empty state */}
       {notes.length === 0 && (
         <div className="flex flex-col items-center justify-center px-8 py-16 text-center">
-          <StickyNote className="mb-3 text-muted-foreground" size={48} strokeWidth={1.5} />
-          <p className="text-[16px] font-medium text-muted-foreground">No notes yet</p>
-          <p className="mt-1 text-[14px] text-muted-foreground">Tap + to add the first note</p>
+          <StickyNote className="mb-3" style={{ color: 'var(--a-text-2)' }} size={48} strokeWidth={1.5} />
+          <p className="text-[16px] font-medium" style={{ color: 'var(--a-text-2)' }}>No notes yet</p>
+          <p className="mt-1 text-[14px]" style={{ color: 'var(--a-text-2)' }}>Tap + to add the first note</p>
         </div>
       )}
 
       {/* §25.8.3 Broker-written notes first */}
       {human.map(renderNoteCard)}
       {notes.length > 0 && human.length === 0 && (
-        <p className="px-4 py-6 text-center text-[14px] text-muted-foreground">No notes from your team yet.</p>
+        <p className="px-4 py-6 text-center text-[14px]" style={{ color: 'var(--a-text-2)' }}>No notes from your team yet.</p>
       )}
 
       {/* Auto-generated notes, collapsed below (display-only de-emphasis) */}
@@ -152,11 +152,21 @@ export function MobileNotesTab({
             type="button"
             onClick={() => setShowSystem((v) => !v)}
             aria-expanded={showSystem}
-            className="mx-4 mt-1 flex w-[calc(100%-2rem)] items-center gap-1.5 border-t border-border py-3 text-[13px] font-medium text-muted-foreground"
+            className="mx-4 mt-1 flex w-[calc(100%-2rem)] items-center gap-1.5 border-t py-3 text-[13px] font-medium"
+            style={{ borderColor: 'var(--a-border)', color: 'var(--a-text-2)' }}
           >
             {showSystem ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
             Automated activity
-            <span className="ml-0.5 rounded-full bg-secondary px-1.5 text-[11px] tabular-nums text-muted-foreground">
+            {/* The count carries the WELL'S OWN fill — the same token as the tab
+                container above, which is what the pre-migration pair was: one
+                class on both, so the number read as padded text and never as a
+                filled badge. The two must stay the same token. A step off the
+                well here is a badge nobody asked for, and --a-surface over
+                --a-inset is a ~1.05 step that only reads as a smudge. */}
+            <span
+              className="ml-0.5 rounded-full px-1.5 text-[11px] tabular-nums"
+              style={{ background: 'var(--a-inset)', color: 'var(--a-text-2)' }}
+            >
               {system.length}
             </span>
           </button>
@@ -164,39 +174,60 @@ export function MobileNotesTab({
         </>
       )}
 
-      {/* §25.8.6 Note composer sheet */}
-      <Sheet open={composerOpen} onOpenChange={setComposerOpen}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="h-[60vh]">
-          <SheetHeader>
-            <SheetTitle>Add note</SheetTitle>
-          </SheetHeader>
-          <form
-            action={async (fd: FormData) => {
-              fd.set('personId', String(personId))
-              fd.set('body', noteBody)
-              await addNoteAction(fd)
-              setNoteBody('')
-              setComposerOpen(false)
-            }}
-            className="flex flex-1 flex-col gap-3 pt-3"
-          >
-            <Textarea
-              autoFocus
-              placeholder="Add notes or type @name to notify"
-              className="min-h-[120px] flex-1 resize-none"
-              value={noteBody}
-              onChange={(e) => setNoteBody(e.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" type="button" onClick={() => setComposerOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={!noteBody.trim()}>
-                Create Note
-              </Button>
-            </div>
-          </form>
-        </SheetContent>
+      {/* §25.8.6 Note composer sheet. The title belongs to the Sheet, which draws
+          the head row (title + Close) itself — a title inside the children would
+          print the heading twice. */}
+      <Sheet open={composerOpen} onClose={() => setComposerOpen(false)} title="Add note">
+        <form
+          action={async (fd: FormData) => {
+            fd.set('personId', String(personId))
+            fd.set('body', noteBody)
+            await addNoteAction(fd)
+            setNoteBody('')
+            setComposerOpen(false)
+          }}
+          // The composer is a FIXED panel, not a sheet that hugs its content: it
+          // opens at a known height and the input fills it, so a long note has
+          // room and the panel never re-flows as you type. That used to ride on
+          // SheetContent's h-[60vh]; .av2-sheet is auto-height, so the height
+          // lives here and the textarea flexes inside it. 96px is the sheet's own
+          // chrome (12 pad-top + 4/12 grip + 36/12 head + 20 pad-bottom) — the
+          // same arithmetic MobileDetailsSection uses to clamp its tags sheet.
+          // (MobileAssignToSheet used to be the example; its clamp was removed
+          // when the sheet stopped double-constraining its own height.)
+          className="flex flex-col gap-3 pt-3"
+          style={{ height: 'calc(60dvh - 96px)' }}
+        >
+          {/* Placeholder-only by contract: the labelled TextAreaField prints a
+              visible "Note" heading above the box that this composer never had.
+              Raw control + av2-input + aria-label is the folder's pattern for an
+              unlabelled field (MobileEditSheet, MobileCalendarTab) — dropping the
+              visible label never drops the accessible one. It is also a DIRECT
+              flex child here, which the field wrapper's own auto-height column
+              would have swallowed. */}
+          <textarea
+            className="av2-input"
+            aria-label="Note"
+            autoFocus
+            placeholder="Add notes or type @name to notify"
+            // 16px because iOS Safari zooms the page on focusing any control
+            // under 16px, and this composer only ever runs on a phone. The old
+            // control carried text-base for the same reason (md:text-sm above
+            // the fold); av2-input is 14px everywhere. Folder precedent:
+            // MobileEditSheet, MobileAssignToSheet.
+            style={{ flex: 1, minHeight: 120, resize: 'none', fontSize: 16 }}
+            value={noteBody}
+            onChange={(e) => setNoteBody(e.target.value)}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="quiet" type="button" onClick={() => setComposerOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!noteBody.trim()}>
+              Create Note
+            </Button>
+          </div>
+        </form>
       </Sheet>
     </div>
   )

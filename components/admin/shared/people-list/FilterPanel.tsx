@@ -20,12 +20,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, SlidersHorizontal, X } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Button, SearchField, ToolbarSelect } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 
 export type FilterOption = { key: string; label: string }
@@ -114,17 +109,25 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, neighbo
 
   return (
     <div data-testid="filter-panel">
-      <Input
+      <SearchField
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Add a filter"
-        className="h-9 text-sm"
+        // type=text, not SearchField's default type=search: the browser's own
+        // clear affordance was never part of this control.
+        type="text"
         aria-label="Add a filter"
+        style={{ width: '100%', maxWidth: 'none', minHeight: 36 }}
       />
       {search.trim() || (candidates.length > 0 && rows.length > 0) ? (
         <div className="mt-1.5 flex flex-wrap gap-1.5">
           {candidates.map((f) => (
-            <Button key={f} size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => addDraft(f)}>
+            <Button
+              key={f}
+              variant="quiet"
+              onClick={() => addDraft(f)}
+              style={{ minHeight: 28, padding: '0 8px', fontSize: 'var(--a-text-xs)' }}
+            >
               + {FIELD_LABEL[f]}
             </Button>
           ))}
@@ -134,12 +137,17 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, neighbo
       {rows.length === 0 ? (
         /* §9.1 empty state */
         <div className="mt-10 flex flex-col items-center gap-2 text-center">
-          <SlidersHorizontal className="h-8 w-8 text-muted-foreground/50" aria-hidden />
-          <p className="text-sm text-muted-foreground">No filters added yet</p>
+          <SlidersHorizontal className="h-8 w-8" style={{ color: 'var(--a-text-2)', opacity: 0.5 }} aria-hidden />
+          <p className="text-sm" style={{ color: 'var(--a-text-2)' }}>No filters added yet</p>
           {candidates.length > 0 && !search.trim() ? (
             <div className="mt-2 flex flex-wrap justify-center gap-1.5">
               {candidates.map((f) => (
-                <Button key={f} size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => addDraft(f)}>
+                <Button
+                  key={f}
+                  variant="quiet"
+                  onClick={() => addDraft(f)}
+                  style={{ minHeight: 28, padding: '0 8px', fontSize: 'var(--a-text-xs)' }}
+                >
                   + {FIELD_LABEL[f]}
                 </Button>
               ))}
@@ -147,55 +155,67 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, neighbo
           ) : null}
         </div>
       ) : (
-        <div className="mt-3 divide-y divide-border rounded-md border border-border bg-card">
-          {rows.map(({ field, summary, isDraft }) => {
+        <div
+          className="mt-3"
+          style={{
+            border: '1px solid var(--a-border)',
+            borderRadius: 'var(--a-r-md)',
+            background: 'var(--a-surface)',
+          }}
+        >
+          {rows.map(({ field, summary, isDraft }, i) => {
             const isOpen = expanded.has(field) || isDraft
             return (
-              <div key={field}>
+              <div key={field} style={i > 0 ? { borderTop: '1px solid var(--a-border)' } : undefined}>
                 <button
                   type="button"
                   onClick={() => toggleExpand(field)}
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs text-foreground hover:bg-muted/40"
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs hover:bg-[var(--a-inset)]"
+                  style={{ color: 'var(--a-text)' }}
                   aria-expanded={isOpen}
                 >
                   <span className="min-w-0 truncate">{summary}</span>
-                  <ChevronDown className={cn('h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform', isOpen ? 'rotate-180' : '')} aria-hidden />
+                  <ChevronDown className={cn('h-3.5 w-3.5 shrink-0 transition-transform', isOpen ? 'rotate-180' : '')} style={{ color: 'var(--a-text-2)' }} aria-hidden />
                 </button>
                 {isOpen ? (
                   <div className="space-y-2 px-3 pb-3">
-                    <p className="text-[11px] font-medium text-muted-foreground">include any</p>
+                    <p className="font-medium" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>include any</p>
                     {field === 'stage' ? (
-                      <Select
+                      <ToolbarSelect
+                        aria-label="Pick a stage"
                         value={filters.stage ?? ''}
-                        onValueChange={(v) => navigate({ ...filters, stage: v })}
+                        onChange={(e) => navigate({ ...filters, stage: e.target.value })}
+                        style={{ width: '100%', maxWidth: 'none' }}
                       >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick a stage" /></SelectTrigger>
-                        <SelectContent>
-                          {stageOptions.map((s) => <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                        {/* `hidden` as well as `disabled`: the Radix Select this
+                            replaced showed its placeholder on the TRIGGER only.
+                            Without it the placeholder becomes a real (greyed)
+                            row in the open list that was never there. */}
+                        <option value="" disabled hidden>Pick a stage</option>
+                        {stageOptions.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+                      </ToolbarSelect>
                     ) : null}
                     {field === 'tag' ? (
-                      <Select
+                      <ToolbarSelect
+                        aria-label="Pick a tag"
                         value={filters.tagsAny?.[0] ?? ''}
-                        onValueChange={(v) => navigate({ ...filters, tagsAny: [v] })}
+                        onChange={(e) => navigate({ ...filters, tagsAny: [e.target.value] })}
+                        style={{ width: '100%', maxWidth: 'none' }}
                       >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick a tag" /></SelectTrigger>
-                        <SelectContent>
-                          {tagOptions.map((t) => <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                        <option value="" disabled hidden>Pick a tag</option>
+                        {tagOptions.map((t) => <option key={t.key} value={t.key}>{t.label}</option>)}
+                      </ToolbarSelect>
                     ) : null}
                     {field === 'neighborhood' ? (
-                      <Select
+                      <ToolbarSelect
+                        aria-label="Pick a neighborhood"
                         value={filters.neighborhood ?? ''}
-                        onValueChange={(v) => navigate({ ...filters, neighborhood: v })}
+                        onChange={(e) => navigate({ ...filters, neighborhood: e.target.value })}
+                        style={{ width: '100%', maxWidth: 'none' }}
                       >
-                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick a neighborhood" /></SelectTrigger>
-                        <SelectContent>
-                          {neighborhoodOptions.map((n) => <SelectItem key={n.key} value={n.key}>{n.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                        <option value="" disabled hidden>Pick a neighborhood</option>
+                        {neighborhoodOptions.map((n) => <option key={n.key} value={n.key}>{n.label}</option>)}
+                      </ToolbarSelect>
                     ) : null}
                     {field === 'q' ? (
                       <form
@@ -205,18 +225,29 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, neighbo
                           navigate({ ...filters, q: v || undefined })
                         }}
                       >
-                        <Input name="qv" defaultValue={filters.q ?? ''} placeholder="Name contains" className="h-8 text-xs" />
+                        <SearchField
+                          name="qv"
+                          type="text"
+                          defaultValue={filters.q ?? ''}
+                          placeholder="Name contains"
+                          aria-label="Name contains"
+                          style={{ width: '100%', maxWidth: 'none' }}
+                        />
                       </form>
                     ) : null}
                     {!isDraft ? (
                       <div className="flex flex-wrap items-center gap-1.5">
                         {(field === 'stage' ? [filters.stage!] : field === 'tag' ? filters.tagsAny ?? [] : field === 'neighborhood' ? [neighborhoodOptions.find((n) => n.key === filters.neighborhood)?.label ?? filters.neighborhood!] : [filters.q!]).map((v) => (
-                          <Badge key={v} variant="secondary" className="gap-1 pr-1 text-[11px]">
+                          <span
+                            key={v}
+                            className="inline-flex items-center gap-1 rounded-full py-0.5 pl-2.5 pr-1"
+                            style={{ background: 'var(--a-inset)', color: 'var(--a-text)', fontSize: 'var(--a-text-xs)' }}
+                          >
                             {v}
-                            <button type="button" onClick={() => removeFilter(field)} aria-label={`Remove ${v}`} className="rounded-full p-0.5 hover:bg-muted">
+                            <button type="button" onClick={() => removeFilter(field)} aria-label={`Remove ${v}`} className="rounded-full p-0.5 hover:bg-[var(--a-inset)]" style={{ color: 'var(--a-text-2)' }}>
                               <X className="h-3 w-3" aria-hidden />
                             </button>
-                          </Badge>
+                          </span>
                         ))}
                       </div>
                     ) : null}
@@ -233,7 +264,8 @@ export default function FilterPanel({ filters, stageOptions, tagOptions, neighbo
         <button
           type="button"
           onClick={() => { setDraftFields(new Set()); navigate({}) }}
-          className="mt-3 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          className="mt-3 text-xs underline-offset-2 hover:underline"
+          style={{ color: 'var(--a-text-2)' }}
         >
           Clear filters
         </button>

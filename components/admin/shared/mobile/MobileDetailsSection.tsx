@@ -25,9 +25,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Minus, Plus } from 'lucide-react'
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button, SearchField, Sheet } from '@/components/admin/v2'
 import { MobilePickerSheet, type PickerOption } from '@/components/admin/shared/mobile/MobilePickerSheet'
 import { MobileAssignToSheet } from '@/components/admin/shared/mobile/MobileAssignToSheet'
 import {
@@ -82,22 +80,39 @@ function Row({
 }) {
   const inner = (
     <>
-      <span className="shrink-0 text-[13px] text-muted-foreground">{label}</span>
-      <span className="flex min-w-0 items-center gap-1 text-right text-[13px] font-medium text-foreground">
+      <span className="shrink-0 text-[13px]" style={{ color: 'var(--a-text-2)' }}>{label}</span>
+      <span
+        className="flex min-w-0 items-center gap-1 text-right text-[13px] font-medium"
+        style={{ color: 'var(--a-text)' }}
+      >
         <span className="truncate">{value}</span>
-        {onTap ? <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/60" /> : null}
+        {onTap ? (
+          <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--a-text-2)' }} />
+        ) : null}
       </span>
     </>
   )
-  const cls = 'flex min-h-[44px] w-full items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-0'
+  const cls = 'flex min-h-[44px] w-full items-center justify-between gap-3 border-b px-4 py-2.5 last:border-0'
+  const borderStyle = { borderColor: 'var(--a-border)' }
   if (onTap) {
     return (
-      <button type="button" onClick={onTap} className={cn(cls, 'text-left active:bg-secondary')}>
+      // The pressed wash is the only feedback this row gives — a phone has no
+      // hover, so without it a tap reads as nothing happening until the sheet
+      // animates. --a-inset is this language's press/hover surface (tokens.css:
+      // "wells, input bg, hover"; .av2-rail__item, .av2-conv and .av2-menu__item
+      // all press to it) and it reads against the --a-surface this card sits on.
+      // It stays a CLASS: an inline background would beat the :active rule.
+      <button
+        type="button"
+        onClick={onTap}
+        className={cn(cls, 'text-left active:bg-[var(--a-inset)]')}
+        style={borderStyle}
+      >
         {inner}
       </button>
     )
   }
-  return <div className={cls}>{inner}</div>
+  return <div className={cls} style={borderStyle}>{inner}</div>
 }
 
 export function MobileDetailsSection({
@@ -153,7 +168,7 @@ export function MobileDetailsSection({
   ]
 
   return (
-    <div className="bg-card shadow-sm">
+    <div style={{ background: 'var(--a-surface)', borderTop: '1px solid var(--a-border)' }}>
       <Row label="Assigned to" value={assignedTo ?? '—'} onTap={() => setOpenPicker('assigned')} />
       <Row label="Stage" value={stage || '—'} onTap={() => setOpenPicker('stage')} />
       <Row label="Source" value={source || '—'} onTap={() => setOpenPicker('source')} />
@@ -236,18 +251,24 @@ export function MobileDetailsSection({
       />
 
       {/* Tags editor (§25.10: Add tags row + alphabetical rows + remove) */}
-      <Sheet open={openPicker === 'tags'} onOpenChange={(v) => setOpenPicker(v ? 'tags' : null)}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0" style={{ maxHeight: '85dvh' }}>
-          <div className="flex h-[50px] shrink-0 items-center justify-between bg-primary px-4">
-            <span className="w-14" />
-            <SheetTitle className="text-[17px] font-semibold text-primary-foreground">Tags</SheetTitle>
-            <button type="button" className="w-14 text-right text-[17px] text-primary-foreground" onClick={() => setOpenPicker(null)}>
-              Done
-            </button>
-          </div>
+      <Sheet open={openPicker === 'tags'} onClose={() => setOpenPicker(null)} title="Tags">
+        {/*
+          One bounded column: add-row and Done pinned, ONLY the tag list scrolls.
+          .av2-sheet is itself the scroller (overflow-y:auto, max-height 92dvh
+          phone / 85dvh desktop), so an unbounded child stack pushes past that
+          height and the whole surface scrolls — carrying the add row, the sheet
+          header and Done away with the list. That is what the pre-migration
+          SheetContent's `maxHeight: 85dvh` + overflow-hidden prevented.
+          96px = the sheet's own chrome at its tallest (12 padding-top + 4 grip
+          + 12 grip margin + 36 header button + 12 header margin + 20
+          padding-bottom), so the whole sheet stays inside its own max-height in
+          both the phone and the ≥768px centred layout.
+        */}
+        <div className="flex min-h-0 flex-col overflow-hidden" style={{ maxHeight: 'calc(85dvh - 96px)' }}>
           {/* §25.10.3 Add tags row */}
           <form
-            className="flex items-center gap-2 border-b border-border bg-secondary px-4 py-2.5"
+            className="flex shrink-0 items-center gap-2 px-4 py-2.5"
+            style={{ borderBottom: '1px solid var(--a-border)', background: 'var(--a-bg)' }}
             onSubmit={(e) => {
               e.preventDefault()
               const t = newTag.trim().toLowerCase()
@@ -258,83 +279,103 @@ export function MobileDetailsSection({
               })
             }}
           >
-            <Input
+            <SearchField
+              type="text"
+              aria-label="Add tags"
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               placeholder="Add tags"
-              className="h-9 flex-1 bg-card text-[15px]"
+              className="h-9 flex-1 text-[15px]"
+              style={{ maxWidth: 'none', minHeight: 32, background: 'var(--a-surface)' }}
             />
-            <Button type="submit" size="sm" disabled={pending || !newTag.trim()} className="h-9">
+            <Button type="submit" disabled={pending || !newTag.trim()} className="h-9">
               <Plus className="h-4 w-4" /> Add
             </Button>
           </form>
           {/* §25.10.4 tag rows — alphabetical, remove circle */}
-          <div className="overflow-y-auto pb-[env(safe-area-inset-bottom)]" style={{ maxHeight: 'calc(85dvh - 100px)' }}>
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {tags.length === 0 ? (
-              <p className="px-4 py-6 text-center text-[14px] text-muted-foreground">No tags yet.</p>
+              <p className="px-4 py-6 text-center text-[14px]" style={{ color: 'var(--a-text-2)' }}>
+                No tags yet.
+              </p>
             ) : (
               [...tags]
                 .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
                 .map((t) => (
-                  <div key={t} className="flex h-[52px] items-center gap-3 border-b border-border bg-card px-4">
+                  <div
+                    key={t}
+                    className="flex h-[52px] items-center gap-3 px-4"
+                    style={{ borderBottom: '1px solid var(--a-border)', background: 'var(--a-surface)' }}
+                  >
                     <button
                       type="button"
                       aria-label={`Remove ${t}`}
                       disabled={pending}
                       onClick={() => startTransition(async () => { await submit(removeTagAction, { tag: t }) })}
-                      className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-destructive text-white"
+                      className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full"
+                      style={{ background: 'var(--a-danger)', color: 'var(--a-bg)' }}
                     >
                       <Minus className="h-3.5 w-3.5" />
                     </button>
-                    <span className="truncate text-[16px] text-foreground">{t}</span>
+                    <span className="truncate text-[16px]" style={{ color: 'var(--a-text)' }}>{t}</span>
                   </div>
                 ))
             )}
           </div>
-        </SheetContent>
+          {/* Pinned Done — the pre-migration sheet kept it fixed above the list;
+              it stays reachable however long the list grows. The padding floor
+              is not decoration: the column clips (overflow-hidden), and a bare
+              safe-area inset is 0px on desktop, which would shave the button's
+              4px focus ring off the bottom edge. */}
+          <div
+            className="flex shrink-0 justify-end pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+            style={{ borderTop: '1px solid var(--a-border)' }}
+          >
+            <Button variant="quiet" onClick={() => setOpenPicker(null)}>
+              Done
+            </Button>
+          </div>
+        </div>
       </Sheet>
 
       {/* Collaborators toggle sheet — tap a broker to add/remove */}
-      <Sheet open={openPicker === 'collab'} onOpenChange={(v) => setOpenPicker(v ? 'collab' : null)}>
-        <SheetContent aria-describedby={undefined} side="bottom" className="gap-0 overflow-hidden rounded-t-xl p-0">
-          <div className="flex h-[50px] shrink-0 items-center justify-between bg-primary px-4">
-            <span className="w-14" />
-            <SheetTitle className="text-[17px] font-semibold text-primary-foreground">Collaborators</SheetTitle>
-            <button type="button" className="w-14 text-right text-[17px] text-primary-foreground" onClick={() => setOpenPicker(null)}>
-              Done
-            </button>
-          </div>
-          <div className="pb-[env(safe-area-inset-bottom)]">
-            {brokerOptions
-              .filter((b) => b.value !== assignedToSlug)
-              .map((b) => {
-                const isCollab = collabSlugs.has(b.value)
-                return (
-                  <button
-                    key={b.value}
-                    type="button"
-                    disabled={pending}
-                    onClick={() =>
-                      startTransition(async () => {
-                        const fd = new FormData()
-                        fd.set('brokerSlug', b.value)
-                        await (isCollab ? removeCollaboratorAction(fd) : addCollaboratorAction(fd))
-                      })
-                    }
-                    className={cn(
-                      'flex min-h-[52px] w-full items-center justify-between border-b border-border px-4 text-left',
-                      isCollab ? 'bg-primary/5' : 'bg-card',
-                    )}
-                  >
-                    <span className="text-[17px] text-foreground">{b.label}</span>
-                    <span className="text-[13px]" style={{ color: 'var(--console-info)' }}>
-                      {isCollab ? 'Remove' : 'Add'}
-                    </span>
-                  </button>
-                )
-              })}
-          </div>
-        </SheetContent>
+      <Sheet open={openPicker === 'collab'} onClose={() => setOpenPicker(null)} title="Collaborators">
+        <div className="pb-[env(safe-area-inset-bottom)]">
+          {brokerOptions
+            .filter((b) => b.value !== assignedToSlug)
+            .map((b) => {
+              const isCollab = collabSlugs.has(b.value)
+              return (
+                <button
+                  key={b.value}
+                  type="button"
+                  disabled={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      const fd = new FormData()
+                      fd.set('brokerSlug', b.value)
+                      await (isCollab ? removeCollaboratorAction(fd) : addCollaboratorAction(fd))
+                    })
+                  }
+                  className="flex min-h-[52px] w-full items-center justify-between border-b px-4 text-left"
+                  style={{
+                    borderColor: 'var(--a-border)',
+                    background: isCollab ? 'var(--a-accent-wash)' : 'var(--a-surface)',
+                  }}
+                >
+                  <span className="text-[17px]" style={{ color: 'var(--a-text)' }}>{b.label}</span>
+                  <span className="text-[13px]" style={{ color: 'var(--a-accent)' }}>
+                    {isCollab ? 'Remove' : 'Add'}
+                  </span>
+                </button>
+              )
+            })}
+        </div>
+        <div className="flex justify-end">
+          <Button variant="quiet" onClick={() => setOpenPicker(null)}>
+            Done
+          </Button>
+        </div>
       </Sheet>
     </div>
   )

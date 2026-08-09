@@ -29,10 +29,10 @@ export function MobileHomesTab({ listings }: MobileHomesTabProps) {
   if (listings.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-8 py-20 text-center">
-        {/* §25.7.1: outline house, ~80 pt, text-muted-foreground */}
-        <Home className="mb-4 text-muted-foreground" size={80} strokeWidth={1.5} />
-        <p className="text-[18px] font-semibold text-muted-foreground">No Home Searches</p>
-        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+        {/* §25.7.1: outline house, ~80 pt, secondary text token */}
+        <Home className="mb-4" style={{ color: 'var(--a-text-2)' }} size={80} strokeWidth={1.5} />
+        <p className="text-[18px] font-semibold" style={{ color: 'var(--a-text-2)' }}>No Home Searches</p>
+        <p className="mt-2 text-[14px] leading-relaxed" style={{ color: 'var(--a-text-2)' }}>
           When your client views or saves properties, you&apos;ll see them here
         </p>
       </div>
@@ -41,13 +41,19 @@ export function MobileHomesTab({ listings }: MobileHomesTabProps) {
 
   /* §25.7.2 Populated state */
   return (
-    <div className="bg-secondary pb-24">
+    <div className="pb-24" style={{ background: 'var(--a-inset)' }}>
       {/* §25.7.2 Section header + SEE ALL */}
-      <div className="flex items-center justify-between bg-secondary px-4 py-2.5">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.8px] text-muted-foreground">
+      <div
+        className="flex items-center justify-between px-4 py-2.5"
+        style={{ background: 'var(--a-inset)' }}
+      >
+        <span
+          className="text-[11px] font-semibold uppercase tracking-[0.8px]"
+          style={{ color: 'var(--a-text-2)' }}
+        >
           Activity
         </span>
-        <span className="text-[13px]" style={{ color: 'var(--console-info)' }}>SEE ALL</span>
+        <span className="text-[13px]" style={{ color: 'var(--a-accent)' }}>SEE ALL</span>
       </div>
 
       {/* §25.7.2 Horizontal card carousel */}
@@ -55,10 +61,11 @@ export function MobileHomesTab({ listings }: MobileHomesTabProps) {
         {listings.map((l) => (
           <div
             key={l.listingKey}
-            className="w-[180px] shrink-0 overflow-hidden rounded-xl bg-card shadow-sm"
+            className="w-[180px] shrink-0 overflow-hidden rounded-xl shadow-sm"
+            style={{ background: 'var(--a-surface)' }}
           >
             {/* Photo zone */}
-            <div className="relative h-[120px] bg-secondary">
+            <div className="relative h-[120px]" style={{ background: 'var(--a-inset)' }}>
               {l.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -68,12 +75,15 @@ export function MobileHomesTab({ listings }: MobileHomesTabProps) {
                 />
               ) : (
                 <div className="flex h-full items-center justify-center">
-                  <Home className="text-muted-foreground" size={40} strokeWidth={1.5} />
+                  <Home style={{ color: 'var(--a-text-2)' }} size={40} strokeWidth={1.5} />
                 </div>
               )}
-              {/* §25.7.2: badge — black pill, white text (inquiry type / "Viewed") */}
+              {/* §25.7.2: badge — inverted pill (text token on the bg token) */}
               <div className="absolute left-2 top-2">
-                <span className="rounded-xl bg-foreground px-2 py-0.5 text-[10px] font-semibold text-white">
+                <span
+                  className="rounded-xl px-2 py-0.5 text-[10px] font-semibold"
+                  style={{ background: 'var(--a-text)', color: 'var(--a-bg)' }}
+                >
                   {l.saved ? 'Saved' : 'Viewed'}
                 </span>
               </div>
@@ -82,19 +92,19 @@ export function MobileHomesTab({ listings }: MobileHomesTabProps) {
             {/* Card body */}
             <div className="px-2.5 py-2">
               {/* Price */}
-              <p className="text-[13px] font-semibold text-foreground">
+              <p className="text-[13px] font-semibold" style={{ color: 'var(--a-text)' }}>
                 {formatListingPrice(l.listPrice)}
               </p>
               {/* Address — truncated */}
-              <p className="truncate text-[12px] text-muted-foreground">{l.address}</p>
+              <p className="truncate text-[12px]" style={{ color: 'var(--a-text-2)' }}>{l.address}</p>
               {/* MLS */}
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[11px]" style={{ color: 'var(--a-text-2)' }}>
                 {l.listingKey ? `MLS #${l.listingKey}` : 'MLS ID unavailable'}
               </p>
               {/* View count */}
               <div className="mt-1 flex items-center gap-1">
-                <Eye size={12} className="text-muted-foreground" strokeWidth={1.75} />
-                <span className="text-[11px] text-muted-foreground">
+                <Eye size={12} style={{ color: 'var(--a-text-2)' }} strokeWidth={1.75} />
+                <span className="text-[11px]" style={{ color: 'var(--a-text-2)' }}>
                   {l.views} view{l.views !== 1 ? 's' : ''}
                 </span>
               </div>

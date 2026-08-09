@@ -5,7 +5,7 @@
  * detail (Matt punch list #2, 2026-07-02: "I cannot edit leads").
  *
  * Full-screen fixed z-50 sheet (occludes tab bar + FAB — the mob-06 modal
- * pattern): navy Cancel · Edit Contact · Save header over three cards:
+ * pattern): accent-bar Cancel · Edit Contact · Save header over three cards:
  *   NAME           — first / last inputs → updatePersonNameAction
  *   PHONE NUMBERS  — per-row label select + number input + primary + remove,
  *                    add row → savePhoneNumbersAction (atomic replace, §07a)
@@ -18,8 +18,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Plus, X } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { IconButton, ToolbarSelect } from '@/components/admin/v2'
 import {
   savePhoneNumbersAction,
   saveEmailRowAction,
@@ -38,8 +37,13 @@ const PHONE_LABELS = ['Mobile', 'Home', 'Work', 'Other', 'Fax']
 
 function SectionHeader({ label }: { label: string }) {
   return (
-    <div className="bg-secondary px-4 py-2.5">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.8px] text-muted-foreground">{label}</span>
+    <div className="px-4 py-2.5" style={{ background: 'var(--a-inset)' }}>
+      <span
+        className="text-[11px] font-semibold uppercase tracking-[0.8px]"
+        style={{ color: 'var(--a-text-2)' }}
+      >
+        {label}
+      </span>
     </div>
   )
 }
@@ -112,17 +116,26 @@ export default function MobileEditSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-secondary md:hidden" role="dialog" aria-label="Edit contact">
-      {/* ── Navy header ──────────────────────────────────────────────────── */}
-      <div className="flex h-14 shrink-0 items-center justify-between bg-primary px-4" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <button type="button" className="text-[16px] text-primary-foreground" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex flex-col md:hidden"
+      role="dialog"
+      aria-label="Edit contact"
+      style={{ background: 'var(--a-inset)', color: 'var(--a-text)', fontFamily: 'var(--a-font)' }}
+    >
+      {/* ── Accent header ────────────────────────────────────────────────── */}
+      <div
+        className="flex h-14 shrink-0 items-center justify-between px-4"
+        style={{ paddingTop: 'env(safe-area-inset-top)', background: 'var(--a-btn-bg)' }}
+      >
+        <button type="button" className="text-[16px]" style={{ color: 'var(--a-btn-fg)' }} onClick={onClose}>
           Cancel
         </button>
-        <span className="text-[17px] font-semibold text-primary-foreground">Edit Contact</span>
+        <span className="text-[17px] font-semibold" style={{ color: 'var(--a-btn-fg)' }}>Edit Contact</span>
         <button
           type="button"
           disabled={pending || !dirty}
-          className="text-[16px] font-semibold text-primary-foreground disabled:opacity-50"
+          className="text-[16px] font-semibold disabled:opacity-50"
+          style={{ color: 'var(--a-btn-fg)' }}
           onClick={save}
         >
           {pending ? 'Saving…' : 'Save'}
@@ -130,65 +143,76 @@ export default function MobileEditSheet({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-10">
-        {error ? <p className="bg-destructive/10 px-4 py-2.5 text-[13px] text-destructive">{error}</p> : null}
+        {error ? (
+          <p
+            className="px-4 py-2.5 text-[13px]"
+            style={{ background: 'var(--a-danger-wash)', color: 'var(--a-danger)' }}
+          >
+            {error}
+          </p>
+        ) : null}
 
         {/* ── NAME ─────────────────────────────────────────────────────────── */}
         <SectionHeader label="Name" />
-        <div className="space-y-3 bg-card p-4 shadow-sm">
-          <Input
+        <div className="space-y-3 p-4" style={{ background: 'var(--a-surface)' }}>
+          <input
+            className="av2-input w-full"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             placeholder="First name"
             aria-label="First name"
-            className="h-11 text-[16px]"
+            style={{ fontSize: 16 }}
           />
-          <Input
+          <input
+            className="av2-input w-full"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             placeholder="Last name"
             aria-label="Last name"
-            className="h-11 text-[16px]"
+            style={{ fontSize: 16 }}
           />
         </div>
 
         {/* ── PHONE NUMBERS ───────────────────────────────────────────────── */}
         <SectionHeader label="Phone Numbers" />
-        <div className="bg-card shadow-sm">
+        <div style={{ background: 'var(--a-surface)' }}>
           {phones.map((p, i) => (
-            <div key={i} className="space-y-2 border-b border-border p-4">
+            <div key={i} className="space-y-2 p-4" style={{ borderBottom: '1px solid var(--a-border)' }}>
               <div className="flex items-center gap-2">
-                <Select value={p.label} onValueChange={(v) => setPhone(i, { label: v })}>
-                  <SelectTrigger className="h-10 w-28 shrink-0 text-[14px]" aria-label="Phone label">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PHONE_LABELS.map((l) => (
-                      <SelectItem key={l} value={l}>{l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
+                <ToolbarSelect
+                  aria-label="Phone label"
+                  value={p.label}
+                  onChange={(e) => setPhone(i, { label: e.target.value })}
+                  className="w-28 shrink-0"
+                  style={{ minHeight: 40, fontSize: 14 }}
+                >
+                  {PHONE_LABELS.map((l) => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+                </ToolbarSelect>
+                <input
+                  className="av2-input min-w-0 flex-1"
                   value={p.value}
                   onChange={(e) => setPhone(i, { value: e.target.value })}
                   type="tel"
                   inputMode="tel"
                   placeholder="541-555-0123"
                   aria-label="Phone number"
-                  className="h-10 flex-1 text-[15px]"
+                  style={{ fontSize: 15 }}
                 />
-                <button
-                  type="button"
-                  aria-label="Remove phone"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-destructive"
+                <IconButton
+                  label="Remove phone"
+                  tone="danger"
+                  className="shrink-0"
                   onClick={() => setPhones((rows) => rows.filter((_, idx) => idx !== i))}
                 >
                   <X className="h-4 w-4" aria-hidden />
-                </button>
+                </IconButton>
               </div>
               <button
                 type="button"
                 className="flex items-center gap-1.5 text-[13px]"
-                style={{ color: p.isPrimary ? 'var(--console-info)' : undefined }}
+                style={{ color: p.isPrimary ? 'var(--a-accent)' : undefined }}
                 onClick={() => setPrimary(i)}
               >
                 <Check className={p.isPrimary ? 'h-3.5 w-3.5' : 'h-3.5 w-3.5 opacity-30'} aria-hidden />
@@ -201,31 +225,32 @@ export default function MobileEditSheet({
             className="flex w-full items-center gap-2.5 px-4 py-3 text-left"
             onClick={() => setPhones((rows) => [...rows, { value: '', label: 'Mobile', bad: false, isPrimary: rows.length === 0 }])}
           >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: 'var(--console-info)' }}>
-              <Plus size={14} className="text-white" strokeWidth={3} aria-hidden />
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: 'var(--a-btn-bg)' }}>
+              <Plus size={14} strokeWidth={3} aria-hidden style={{ color: 'var(--a-btn-fg)' }} />
             </span>
-            <span className="text-[15px]" style={{ color: 'var(--console-info)' }}>Add phone number</span>
+            <span className="text-[15px]" style={{ color: 'var(--a-accent)' }}>Add phone number</span>
           </button>
         </div>
 
         {/* ── EMAILS ──────────────────────────────────────────────────────── */}
         <SectionHeader label="Emails" />
-        <div className="bg-card shadow-sm">
+        <div style={{ background: 'var(--a-surface)' }}>
           {emails.map((e, i) => (
-            <div key={i} className="flex items-center gap-2 border-b border-border p-4">
-              <Input
+            <div key={i} className="flex items-center gap-2 p-4" style={{ borderBottom: '1px solid var(--a-border)' }}>
+              <input
+                className="av2-input min-w-0 flex-1"
                 value={e.value}
                 onChange={(ev) => setEmails((rows) => rows.map((r, idx) => (idx === i ? { ...r, value: ev.target.value } : r)))}
                 type="email"
                 inputMode="email"
                 placeholder="name@example.com"
                 aria-label="Email address"
-                className="h-10 flex-1 text-[15px]"
+                style={{ fontSize: 15 }}
               />
-              <button
-                type="button"
-                aria-label="Remove email"
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-destructive"
+              <IconButton
+                label="Remove email"
+                tone="danger"
+                className="shrink-0"
                 onClick={() => {
                   const row = emails[i]
                   if (row?.prev) setRemovedEmails((rm) => [...rm, row.prev!])
@@ -233,7 +258,7 @@ export default function MobileEditSheet({
                 }}
               >
                 <X className="h-4 w-4" aria-hidden />
-              </button>
+              </IconButton>
             </div>
           ))}
           <button
@@ -241,10 +266,10 @@ export default function MobileEditSheet({
             className="flex w-full items-center gap-2.5 px-4 py-3 text-left"
             onClick={() => setEmails((rows) => [...rows, { prev: null, value: '' }])}
           >
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: 'var(--console-info)' }}>
-              <Plus size={14} className="text-white" strokeWidth={3} aria-hidden />
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: 'var(--a-btn-bg)' }}>
+              <Plus size={14} strokeWidth={3} aria-hidden style={{ color: 'var(--a-btn-fg)' }} />
             </span>
-            <span className="text-[15px]" style={{ color: 'var(--console-info)' }}>Add email</span>
+            <span className="text-[15px]" style={{ color: 'var(--a-accent)' }}>Add email</span>
           </button>
         </div>
       </div>

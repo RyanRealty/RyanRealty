@@ -14,15 +14,14 @@
 
 import { useState } from 'react'
 import { Type, Phone, Mail, Tag, Info, CalendarDays, UserRound, Globe, X } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
+import { IconButton, SearchField, ToolbarCheck } from '@/components/admin/v2'
 import {
   PEOPLE_COLUMNS, DEFAULT_PEOPLE_COLUMNS, type PeopleColumnKey,
 } from './people-list-utils'
 
-const COLUMN_ICON: Record<PeopleColumnKey, React.ComponentType<{ className?: string }>> = {
+// `style` is in the type so the icon can take var(--a-text-2) directly — the
+// shadcn original carried that colour as a semantic utility class instead.
+const COLUMN_ICON: Record<PeopleColumnKey, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   leadScore: Info,
   agent: UserRound,
   lastVisit: Globe,
@@ -54,37 +53,54 @@ export default function ColumnChooser({ visible, onToggle, onReset, onClose }: C
   return (
     <div data-testid="column-chooser">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Columns</p>
-        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onClose} aria-label="Close column chooser">
+        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--a-text-2)' }}>Columns</p>
+        {/* title={undefined} beats IconButton's default title={label}: the
+            shadcn ghost button this replaced had no title, so a native OS
+            tooltip on hover is new chrome, not restored behaviour. The
+            accessible name still comes from aria-label. */}
+        <IconButton label="Close column chooser" title={undefined} onClick={onClose}>
           <X className="h-3.5 w-3.5" aria-hidden />
-        </Button>
+        </IconButton>
       </div>
-      <Input
+      <SearchField
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Find a field"
-        className="mt-2 h-9 text-sm"
+        // type=text, not SearchField's default type=search: the browser's own
+        // clear affordance was never part of this control.
+        type="text"
         aria-label="Find a field"
+        className="mt-2"
+        style={{ width: '100%', maxWidth: 'none', minHeight: 36 }}
       />
 
       <div className="mt-3 space-y-4">
         {sections.map((section) => (
           <div key={section}>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{section}</p>
+            <p className="font-semibold uppercase tracking-widest" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>{section}</p>
             <ul className="mt-1 space-y-0.5">
               {fields.filter((f) => f.section === section).map((f) => {
                 const Icon = COLUMN_ICON[f.key]
                 return (
-                  <li key={f.key}>
-                    <Label className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 text-sm font-normal hover:bg-muted/60">
-                      <Checkbox
-                        checked={visibleSet.has(f.key)}
-                        onCheckedChange={() => onToggle(f.key)}
-                        aria-label={`Toggle ${f.label} column`}
-                      />
-                      <Icon className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
-                      {f.label}
-                    </Label>
+                  <li key={f.key} className="rounded-md hover:bg-[var(--a-inset)]">
+                    <ToolbarCheck
+                      checked={visibleSet.has(f.key)}
+                      onChange={() => onToggle(f.key)}
+                      aria-label={`Toggle ${f.label} column`}
+                      labelStyle={{
+                        width: '100%',
+                        padding: '6px',
+                        color: 'var(--a-text)',
+                        fontSize: 'var(--a-text-md)',
+                        fontWeight: 400,
+                      }}
+                      label={
+                        <>
+                          <Icon className="h-3.5 w-3.5" style={{ color: 'var(--a-text-2)' }} aria-hidden />
+                          {f.label}
+                        </>
+                      }
+                    />
                   </li>
                 )
               })}
@@ -96,7 +112,8 @@ export default function ColumnChooser({ visible, onToggle, onReset, onClose }: C
       <button
         type="button"
         onClick={onReset}
-        className="mt-4 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        className="mt-4 text-xs underline-offset-2 hover:underline"
+        style={{ color: 'var(--a-text-2)' }}
       >
         Reset to default ({DEFAULT_PEOPLE_COLUMNS.length + 1} columns)
       </button>
