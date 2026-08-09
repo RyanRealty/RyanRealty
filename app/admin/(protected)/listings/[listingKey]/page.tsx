@@ -143,7 +143,7 @@ export default async function AdminListingDetailPage({ params }: Props) {
       <SectionHead>Feed totals — not this listing</SectionHead>
       <p style={quiet}>Active listings, every property type: {counts.activeCount}</p>
       <p style={quiet}>
-        Listing rows, every status (estimated, runs ~4% high): {counts.totalListings}
+        Listing rows, every status (estimated): {counts.totalListings}
       </p>
 
       <div style={{ marginTop: 24 }}>

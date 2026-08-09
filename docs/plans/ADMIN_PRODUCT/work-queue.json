@@ -20,16 +20,6 @@
     "note": "RESOLVED 2026-08-08 (2f7732db) for the admin surfaces, with one follow-on below. (a) getTotalListingsCount() summed geo_snapshot_mv.active_sfr_count over the TOP 50 CITIES and rendered under the heading 'Active' \u2014 measured 2,915 against an active bucket of 7,658. Root cause was not only the cap: it and totalListings were the ONLY two counts routing through an inner unstable_cache nested inside the operations page's outer unstable_cache, and they were the only two wrong. Both now call getActiveBucketCount() / getAllListingsCount() \u2014 the same DAL family every sibling on that panel uses, and the same one the panel's OWN status breakdown was already using eight rows below. getTotalListingsCount had no other caller and is deleted. Verified in a browser after the 180s cache turned over: 7,659 and 617,326. 'Active listings' is restored to the operations strip. (b) The market/reports _fetchAllCitySnapshots .limit(50) is UNTOUCHED and still caps the public-site city grid at 50 of 136 qualifying cities \u2014 that half of this item is still open."
   },
   {
-    "id": "12-blog-publish-risk",
-    "phase": "P12",
-    "note": "DATA RISK, filed as task_16114f83. /admin/blog openEdit prefills `status: post.published_at ? 'published' : 'draft'` \u2014 it reads the wrong column, and all 87 posts have published_at set. Opening any of the 28 archived_stats_unverified posts and saving silently publishes it to the public site. getAdminBlogPosts never selects `status` at all, so fix that first. Check whether any were ALREADY flipped by a past edit."
-  },
-  {
-    "id": "12-audit-log-blind",
-    "phase": "P12",
-    "note": "COMPLIANCE, filed as task_ff0a4e2c. /admin/audit-log renders ZERO rows though admin_actions holds one \u2014 getAdminActions (app/actions/admin-audit.ts) reads through the cookie-scoped anon client and RLS hides it from a superuser. An audit log that silently renders empty is indistinguishable from one with nothing in it. While there: one row total across the whole table is suspiciously low \u2014 check whether the WRITE path is wired everywhere it should be."
-  },
-  {
     "id": "12-measurement",
     "phase": "P12",
     "note": "first-broker-action stamp, reply-latency interval, CMA SLA reader."
@@ -65,11 +55,6 @@
     "note": "ADMIN_UI \u00a76 says dark mode ships from day one and the P6 lock records 'DECIDED (Matt): ship both'. It is NOT reachable: nothing in the codebase sets data-theme (grepped app/, components/, lib/ \u2014 the attribute appears only in the two tokens.css files). Measured 2026-08-08 by forcing it pre-hydration: the admin's own tokens flip correctly (--a-text #1c2024 -> #edeef0, panes/charts/map all follow), but document.body stays lab(100 0 0) = WHITE, so every dark token would render light-on-white and the surface would be unusable. Two things to decide: whether the body background is the admin's to own (it comes from outside app/admin), and whether a theme control is wanted at all. ci:admin-contrast passes because it computes token PAIRS, not what the body actually paints \u2014 it cannot see this."
   },
   {
-    "id": "12-listings-never-analyzed",
-    "phase": "P12",
-    "note": "DATA ACCURACY. `listings` has NEVER been analyzed: pg_stat_user_tables.last_analyze AND last_autoanalyze are both NULL (checked 2026-08-08), so pg_class.reltuples is whatever the last index build left behind. Measured drift: reltuples 617,326 vs exact count 594,608 = 3.82% HIGH. This is published \u2014 getAllListingsCount() uses count:'estimated' because an exact count times out, and it feeds the admin 'Listings (total)' card and the listing-detail database summary. Both are now LABELLED as estimates and the DAL comment carries the measured drift, so nothing claims false exactness; but the actual repair is an ANALYZE on that table, which also gives the query planner honest statistics for every other query against a 594k-row table \u2014 worth checking whether any slow query is a bad plan from these stats. Not run mid-unit because it is a production maintenance operation that deserves its own decision. Check autovacuum settings on the table while there: never-autoanalyzed on a table this size is itself the finding."
-  },
-  {
     "id": "12-full-sync-never-completes",
     "phase": "P12",
     "note": "OPERATIONS. sync_history holds 19 rows, ALL dated 2026-03-16, zero in the last 30 days \u2014 while sync_cursor.updated_at and max(listings.ModificationTimestamp) were both TODAY when checked 2026-08-08. recordSyncRun() has exactly one call site (app/actions/sync-full-cron.ts:387) and fires only when a FULL run COMPLETES with history done; /api/cron/sync-full is scheduled `0 2 * * 0` (weekly, Sun 02:00). So either no full run has completed in ~5 months, or it completes without recording. The delta sync (/api/cron/sync-delta, every 15 min, runDeltaSync) is what actually keeps listings fresh and never writes here at all. The admin panel heading was corrected to 'Completed full syncs (last 10)' so it no longer reads as all sync activity, but the underlying question is untouched: does the weekly full sync still finish? Check the cursor phase history and whether the run is timing out mid-cycle. Related: nothing anywhere logs delta-sync runs, so there is no operational record of the job that does the real work."
@@ -83,5 +68,10 @@
     "id": "11f-newsletters-route-root",
     "phase": "P11_TAIL",
     "note": "Six un-migrated files sit at the newsletters ROUTE ROOT, invisible to the relocation-driven units because they were never under components/admin/newsletter: NewsletterComposeForm, NewsletterDraftActions, BulkOneOffForm, SubscriberForms, BulkEnrollForm, GenerateDraftButton. /admin/newsletters/subscribers still renders 10 shadcn classes from components/ui/input via SubscriberForms + BulkEnrollForm \u2014 traced to source, not assumed. BOTH newsletter pages are therefore deliberately NOT in ci:admin-v2-tokens SCAN_DIRS; gating them would be green for the wrong reason. The four newsletter _components ARE migrated and gated. These files are small (114L and 118L measured) and route-local already, so it is presentation-only work \u2014 but the pages SEND EMAIL, so the compose/draft/bulk forms carry CLAUDE.md section 1 per-action approval semantics."
+  },
+  {
+    "id": "11f-route-root-blind-spot",
+    "phase": "P11F",
+    "note": "Matt 2026-08-08 decision 3: audit every admin route ROOT, not just components/admin/<family>. Relocation units only ever looked at components/admin/ and app/.../_components/, so files sitting DIRECTLY in a route directory were never scoped. MEASURED 2026-08-09 across app/admin/(protected): 38 route-root files import @/components/ui/*, 47 carry shadcn SEMANTIC classes (bg-card, text-muted-foreground, border-border, border-input, text-primary, bg-background, bg-muted, text-foreground), 29 are in both sets, and 18 carry semantic classes with NO ui import at all \u2014 that last group is invisible to ci:admin-v2-tokens, which reads IMPORTS, so nothing flags them. 56 distinct files total. Heaviest clusters: sync/ (11), newsletters/ (8), deals/[key] (7), site-pages/ (5), media/ (4), crm/deals/[id] (4). Regenerate the list with: grep -rln \"from '@/components/ui/\" 'app/admin/(protected)' | grep -v /_components/ and the semantic-class variant. Relocate into _components/, migrate to v2, then add the family to SCAN_DIRS."
   }
 ]

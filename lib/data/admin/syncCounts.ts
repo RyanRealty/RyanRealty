@@ -189,15 +189,24 @@ export async function getAllListingsCount(): Promise<CountResult> {
   // {count: 0}, so the dashboard's "Listings (total)" card showed 0 next to
   // sibling cards proving ~585k.
   //
-  // MEASURED 2026-08-08, correcting this comment's earlier claim of "within a
-  // fraction of a percent": the estimate reads 617,326 against an exact 594,608,
-  // which is 3.82% HIGH. The cause is that `listings` has never been analyzed —
-  // pg_stat_user_tables.last_analyze AND last_autoanalyze are both NULL — so
-  // reltuples is whatever the last index build left behind. Two consequences:
-  // every caller must LABEL this figure as an estimate (a bare "Listings
-  // (total)" is a claim of exactness this cannot keep), and the real repair is
-  // an ANALYZE on that table, which also gives the query planner honest
-  // statistics for every other query against it. Filed with the P12 queue.
+  // MEASURED 2026-08-08: the estimate read 617,326 against an exact 594,608 —
+  // 3.82% HIGH — because pg_class.reltuples was whatever the last index build
+  // left behind. REPAIRED 2026-08-09 by an ANALYZE on public.listings: the
+  // estimate now reads 594,656 against an exact 594,635, which is 0.004% and
+  // inside ANALYZE's own sampling error.
+  //
+  // The label stays regardless. This is still reltuples, it still drifts as the
+  // sync writes, and no ANALYZE is scheduled to hold it there — so every caller
+  // LABELS this figure as an estimate. A bare "Listings (total)" is a claim of
+  // exactness that a planner statistic cannot keep on any day but the one it
+  // was refreshed.
+  //
+  // (The earlier note that the table had "never been analyzed" read too much
+  // into NULL last_analyze/last_autoanalyze: those are stats-collector counters
+  // and 257 of 286 tables showed the same NULLs, alongside an absurd
+  // n_live_tup of 174. The counters had been reset. pg_stats did hold
+  // statistics for all 157 columns, so the planner was never blind — the
+  // reltuples drift was the whole defect.)
   return withRetry(async () =>
     sb.from('listings').select('ListingKey', { count: 'estimated', head: true })
   )

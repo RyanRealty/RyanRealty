@@ -78,8 +78,10 @@ export default function DashboardSyncPanel(props: Props) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div style={tileStyle}>
           {/* "estimated" is not hedging — getAllListingsCount() reads planner
-              reltuples, measured 3.82% high on 2026-08-08. A bare "total" would
-              claim an exactness this number does not have. */}
+              reltuples. It measured 3.82% high on 2026-08-08 and an ANALYZE on
+              2026-08-09 brought it to 0.004%, but nothing holds it there as the
+              sync writes, so a bare "total" would still claim an exactness this
+              number cannot keep. */}
           <p style={tileLabelStyle}>Listings (total, estimated)</p>
           <p className="a-num" style={tileValueStyle('var(--a-text)')}>{counts.totalListings.toLocaleString()}</p>
         </div>
