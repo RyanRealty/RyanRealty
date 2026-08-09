@@ -298,3 +298,45 @@ what separated the three real fixes from four pages that merely looked wrong.
 Mechanically enforced from here by **G66 `ci:entity-scope`** (shrink-only): a new
 `page.tsx` in a dynamic route segment under `app/admin` must call a scope
 decision, be a pure redirect bridge, or be added to the baseline deliberately.
+
+## 11F BLOCKER RESOLUTIONS — Matt, 2026-08-08
+
+Four decisions taken to unblock the 11F tail. All four were Matt's calls, asked
+because each one changes what gets built rather than how.
+
+**1. Shared CRM machinery gets its own sanctioned directory: `components/admin/shared/`.**
+`components/admin/crm/mobile` (18 files) and `people-list` (9 files) are imported
+by five admin pages plus `lib/` — infrastructure, not one route's islands. They
+move to `components/admin/shared/`, and `ci:admin-v2-tokens` treats that
+directory exactly like `v2`: it must satisfy the same token rules, and pages may
+import from it without tripping rule 3.
+RATIONALE (Matt's choice over folding them into `v2/`): `components/admin/v2` is
+20 files of pure design system, and burying 27 app-specific CRM components in it
+would cost the barrel its meaning. Two directories with one rule each beats one
+directory with two jobs. Rejected alternative: per-page exemptions in the gate —
+that turns the blacklist into a list of holes nobody can reason about.
+
+**2. `MobileCrmHeader` is DELETED, not migrated.**
+Mounted by crm root, crm/activity and crm/deals. It carries no root-tab nav
+(ConsoleShell's tab bar owns the five tabs), its scope control and search are
+duplicated by TopBarScope and the ⌘K palette, and it contains exactly two links —
+an avatar to /admin/settings and a search href, both reachable elsewhere on
+phone. It is also a navy bar inside an admin whose §5 amnesia blacklists the
+public brand. Deleting it gates crm/deals and helps two more pages.
+
+**3. The route-root blind spot gets a SYSTEMATIC audit, not a point fix.**
+Newsletters had six un-migrated files sitting in the route directory that no
+relocation-driven unit could see, because those units only look under
+`components/admin/<family>`. Every admin route gets checked for files outside
+`_components/` that still import `components/ui` or carry shadcn semantic
+classes, and the result goes in the work queue as one table.
+RATIONALE: the coverage number is only worth what its method is worth. Finding
+this family by family would leave the count quietly overstated until the last
+one.
+
+**4. P12 correctness debt comes BEFORE the rest of 11F.**
+The remaining 11F work is a styling ratchet. The P12 queue holds verified
+defects that change what a person actually sees: /admin/blog can silently
+publish archived posts to the public site on any edit, /admin/audit-log renders
+zero rows so a compliance log is indistinguishable from an empty one, and
+`listings` has never been ANALYZEd. Those first; 11F resumes after.
