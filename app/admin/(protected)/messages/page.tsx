@@ -56,8 +56,13 @@ export default async function MessagesPage({
 
   const quiet = inSmsQuietHours()
 
+  // A DIV, not <main>: ConsoleShell already renders this page's one <main>
+  // landmark, and a nested second one hands assistive tech two "main content"
+  // regions to choose between. Thirty files were de-nested for exactly this in
+  // 11C-11E; messages was missed and shipped two until 2026-08-08. av2-scope is
+  // styling, never a landmark.
   return (
-    <main className={`av2-scope av2-msgs ${selectedId ? 'av2-msgs--thread' : 'av2-msgs--list'}`}>
+    <div className={`av2-scope av2-msgs ${selectedId ? 'av2-msgs--thread' : 'av2-msgs--list'}`}>
       <nav className="av2-convlist" aria-label="Conversations">
         {queue.conversations.map((c) => (
           <Link
@@ -178,6 +183,6 @@ export default async function MessagesPage({
           </>
         ) : null}
       </aside>
-    </main>
+    </div>
   )
 }

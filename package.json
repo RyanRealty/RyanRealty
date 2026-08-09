@@ -1,6 +1,12 @@
 {
   "name": "nextjs",
   "version": "0.1.0",
+  "//sideEffects": "Only these modules do something merely by being imported. Everything else may be tree-shaken, which lets webpack drop unused re-exports from barrels — components/admin/v2/index.ts re-exports 18 primitives and ~126 admin pages import it, so without this every page shipped all of them. lib/crm/bulk-handlers IS listed because importing it REGISTERS every CRM bulk mutation handler (registerBulkHandler); dropping it would make bulk jobs silently no-op, including the tag handlers that refuse protected compliance tags.",
+  "sideEffects": [
+    "**/*.css",
+    "**/*.scss",
+    "lib/crm/bulk-handlers/**"
+  ],
   "private": true,
   "scripts": {
     "dev": "powershell -ExecutionPolicy Bypass -File scripts/run-dev.ps1",
