@@ -23,7 +23,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { listActiveBrokersForCma } from '@/lib/data'
 import { SectionHead } from '@/components/admin/v2'
-import { BuildBpoForm } from '@/components/admin/bpo/BuildBpoForm'
+import { BuildBpoForm } from '@/app/admin/(protected)/bpo/_components/BuildBpoForm'
 
 export const dynamic = 'force-dynamic'
 

@@ -26,7 +26,7 @@ import { finalizeBpoAction } from '@/app/actions/bpo-admin'
 import { prepareBpoSendPreviewAction, sendBpoTestAction } from '@/app/actions/contact-bpo'
 import { sendBpoDeliverable } from '@/app/actions/send-deliverable'
 import { VerdictLine } from '@/components/admin/v2'
-import { BpoBoard } from '@/components/admin/bpo/worklist/BpoBoard.client'
+import { BpoBoard } from '@/app/admin/(protected)/bpo/_components/worklist/BpoBoard.client'
 
 export const dynamic = 'force-dynamic'
 

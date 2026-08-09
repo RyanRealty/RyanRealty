@@ -51,8 +51,8 @@ import {
   StateWord,
   type AdminState,
 } from '@/components/admin/v2'
-import { CmaReviewActions } from '@/components/admin/cma/CmaReviewActions'
-import { CmaPublishControl } from '@/components/admin/cma/CmaPublishControl'
+import { CmaReviewActions } from '@/app/admin/(protected)/cmas/_components/CmaReviewActions'
+import { CmaPublishControl } from '@/app/admin/(protected)/cmas/_components/CmaPublishControl'
 import { cmaPublishConcerns, cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'

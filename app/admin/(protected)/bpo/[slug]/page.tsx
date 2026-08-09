@@ -50,7 +50,7 @@ import {
   StateWord,
   type AdminState,
 } from '@/components/admin/v2'
-import { BpoReviewActions } from '@/components/admin/bpo/BpoReviewActions'
+import { BpoReviewActions } from '@/app/admin/(protected)/bpo/_components/BpoReviewActions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 

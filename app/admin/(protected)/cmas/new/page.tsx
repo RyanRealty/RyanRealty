@@ -24,7 +24,7 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { listActiveBrokersForCma } from '@/lib/data'
 import { SectionHead } from '@/components/admin/v2'
-import { BuildCmaForm } from '@/components/admin/cma/BuildCmaForm'
+import { BuildCmaForm } from '@/app/admin/(protected)/cmas/_components/BuildCmaForm'
 
 export const dynamic = 'force-dynamic'
 

@@ -36,14 +36,14 @@ import { listCmasForAdmin } from '@/lib/data'
 import { approveCmaAction, prepareCmaSendAction, sendCmaToLeadAction } from '@/app/actions/cma-admin'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
 import { VerdictLine } from '@/components/admin/v2'
-import { CmaBoard } from '@/components/admin/cma/worklist/CmaBoard.client'
+import { CmaBoard } from '@/app/admin/(protected)/cmas/_components/worklist/CmaBoard.client'
 import type {
   CmaStatusFilter,
   CmaWorklistFilters,
   CmaWorklistRow,
   CmaWorklistStatus,
   CmaWorklistSummary,
-} from '@/components/admin/cma/worklist/types'
+} from '@/app/admin/(protected)/cmas/_components/worklist/types'
 
 export const dynamic = 'force-dynamic'
 
