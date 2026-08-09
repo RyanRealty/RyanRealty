@@ -78,7 +78,7 @@ export function DataList<T>({
     key: String(rowKey(row, i)),
     cells: columns.map((c) =>
       c.mono ? (
-        <span style={{ fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-xs)' }}>
+        <span key={c.key} style={{ fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-xs)' }}>
           {c.cell(row, i)}
         </span>
       ) : (
