@@ -29,9 +29,26 @@ export interface AdminDialogProps {
   children?: React.ReactNode
   /** Rendered right-aligned at the bottom. Omit for a message-only dialog. */
   footer?: React.ReactNode
+  /**
+   * How much room the content needs. 'ask' (default) is the confirm/short-form
+   * width; 'work' is for a detail surface with real content in it.
+   *
+   * This exists because the width was hard-fixed at the 'ask' size, and a deals
+   * DETAIL modal migrating onto it had to collapse its two-column layout to one
+   * to fit — a primitive sized for one job silently reshaping another surface.
+   */
+  size?: 'ask' | 'work'
 }
 
-export function Dialog({ open, onClose, title, description, children, footer }: AdminDialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  description,
+  children,
+  footer,
+  size = 'ask',
+}: AdminDialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -44,7 +61,7 @@ export function Dialog({ open, onClose, title, description, children, footer }: 
   return (
     <dialog
       ref={ref}
-      className="av2-dialog"
+      className={size === 'work' ? 'av2-dialog av2-dialog--work' : 'av2-dialog'}
       aria-labelledby="av2-dlg-title"
       aria-describedby={description ? 'av2-dlg-desc' : undefined}
       // Native close covers Esc, the backdrop and form method="dialog".

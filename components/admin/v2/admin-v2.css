@@ -287,6 +287,10 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 .av2-dialog__body { display:flex; flex-direction:column; gap:var(--a-s3); }
 .av2-dialog__body p { margin:0; }
 .av2-dialog__quiet { color:var(--a-text-2); }
+/* A detail surface, not a question. Wide enough for the two-column field grids
+   a deal or a record page actually has; still capped so a 27" monitor does not
+   get a full-width modal. */
+.av2-dialog--work { max-width:720px; }
 .av2-dialog__foot { display:flex; justify-content:flex-end; gap:var(--a-s2);
   margin-top:var(--a-s5); }
 /* Phone: full-width stacked actions, primary last (thumb reach). */
@@ -423,3 +427,25 @@ textarea.av2-input { min-height:88px; resize:vertical; }
    one doesn't silently retint the other. ---- */
 .av2-automation-foldercard:hover { border-color:var(--a-accent); }
 .av2-automation-sortbtn:hover { color:var(--a-text); }
+
+/* ---- Deals (crm/deals) hover/focus affordances the inline-style conversion
+   can't express (11F). Reused across DealsBoard, DealDetailModal and the
+   stage dialogs, so named for the PATTERN rather than one screen:
+   - av2-textlink: a v2 Button stripped to look like inline text (the shadcn
+     originals used variant="link" or a raw text-primary button for
+     click-to-edit triggers, "Add X" toggles and remove-chip actions). Stack
+     it alongside "av2-btn" so the class only overrides cosmetics — the
+     focus-visible ring in .av2-btn:focus-visible still applies.
+   - av2-dealcard: hover/focus treatment for the draggable card wrapper (a
+     div, not a button — dnd-kit's listeners are bound to that node, so it
+     cannot become a <button> without risking the drag handle; see
+     DealsBoard.tsx). ---- */
+.av2-textlink { background:none; border:none; padding:0; min-height:auto; color:var(--a-accent); font-weight:500; }
+.av2-textlink:hover { text-decoration:underline; }
+.av2-dealcard:hover { box-shadow:var(--a-shadow-overlay); }
+.av2-dealcard:focus-visible { outline:none; box-shadow:var(--a-focus); }
+/* Solid circular "add" trigger (a column's + button) — an IconButton override
+   (inline style would win over .av2-iconbtn:hover and leave it dead on
+   hover, the same reason av2-textlink/av2-dealcard exist as classes). */
+.av2-addbtn { background:var(--a-btn-bg); color:var(--a-btn-fg); border-radius:50%; }
+.av2-addbtn:hover:not(:disabled) { background:var(--a-accent-strong); color:var(--a-btn-fg); }

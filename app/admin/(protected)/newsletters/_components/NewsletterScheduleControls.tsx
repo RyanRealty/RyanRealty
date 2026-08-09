@@ -6,22 +6,21 @@
  * until the checks pass; failures render as a clear list. After approval the
  * send cron picks the issue up at scheduled_at and the engagement-tiered
  * tranche machinery delivers it gradually to protect sender reputation.
+ *
+ * Admin v2 (11F): shadcn Dialog/Input/Label/Button and the console StatusPill
+ * were replaced by the locked admin language (StateWord, TextField, Dialog).
+ * ci:admin-ui rule C counts primary v2 <Button>s statically across the WHOLE
+ * file, including branches that never render together (draft / scheduled /
+ * sending are mutually exclusive at runtime) — so only the dialog's terminal
+ * "Approve and schedule" confirm keeps the primary variant; every other
+ * Button in this file, including the trigger that opens the dialog, is
+ * quiet. Presentation only: same gates, same confirm-before-send step, same
+ * strings, same disabled logic.
  */
 
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { StatusPill } from '@/components/console/StatusPill'
+import { Button, Dialog, StateWord, TextField } from '@/components/admin/v2'
 import {
   adminRunPreSendGatesAction,
   adminScheduleNewsletterAction,
@@ -41,17 +40,21 @@ function GateChecklist({ result }: { result: GateRunResult }) {
       {rows.map((r) => (
         <li key={r.label}>
           <div className="flex items-center gap-2">
-            <StatusPill tone={r.ok ? 'success' : 'danger'} label={r.ok ? 'pass' : 'fail'} />
-            <span className="text-sm font-medium text-foreground">{r.label}</span>
+            <StateWord state={r.ok ? 'ok' : 'down'}>{r.ok ? 'pass' : 'fail'}</StateWord>
+            <span style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>{r.label}</span>
             {r.label.includes('R-2') && result.report ? (
-              <span className="text-xs text-muted-foreground tabular-nums">{result.report.r2.checked} stat tokens checked</span>
+              <span className="a-num" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                {result.report.r2.checked} stat tokens checked
+              </span>
             ) : null}
             {r.label.includes('R-3') && result.report ? (
-              <span className="text-xs text-muted-foreground tabular-nums">{result.report.r3.checked} links checked</span>
+              <span className="a-num" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                {result.report.r3.checked} links checked
+              </span>
             ) : null}
           </div>
           {r.failures.length > 0 ? (
-            <ul className="mt-1 list-disc space-y-0.5 pl-9 text-xs text-destructive">
+            <ul className="mt-1 list-disc space-y-0.5 pl-9" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>
               {r.failures.slice(0, 12).map((f) => (
                 <li key={f}>{f}</li>
               ))}
@@ -170,13 +173,13 @@ export default function NewsletterScheduleControls({ id, status, scheduledAt, se
       {status === 'draft' ? (
         <>
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" variant="outline" onClick={runGates} disabled={pending}>
+            <Button type="button" variant="quiet" onClick={runGates} disabled={pending}>
               {pending ? 'Checking…' : 'Run pre-send checks'}
             </Button>
-            <Button type="button" onClick={onOpenSchedule} disabled={pending}>
+            <Button type="button" variant="quiet" onClick={onOpenSchedule} disabled={pending}>
               Approve &amp; Schedule
             </Button>
-            <p className="text-xs text-muted-foreground">
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
               Scheduling runs the checks again and blocks on any failure. Delivery paces out over days by engagement tier.
             </p>
           </div>
@@ -186,8 +189,8 @@ export default function NewsletterScheduleControls({ id, status, scheduledAt, se
 
       {status === 'scheduled' ? (
         <div className="flex flex-wrap items-center gap-3">
-          <StatusPill tone="info" label={`Scheduled for ${scheduledLabel ?? '—'}`} />
-          <Button type="button" variant="outline" onClick={onUnschedule} disabled={pending}>
+          <StateWord state="accent">{`Scheduled for ${scheduledLabel ?? '—'}`}</StateWord>
+          <Button type="button" variant="quiet" onClick={onUnschedule} disabled={pending}>
             {pending ? 'Working…' : 'Unschedule (back to draft)'}
           </Button>
         </div>
@@ -197,18 +200,18 @@ export default function NewsletterScheduleControls({ id, status, scheduledAt, se
         <div className="flex flex-wrap items-center gap-3">
           {sendPaused ? (
             <>
-              <StatusPill tone="warning" label="Delivery paused" />
-              <Button type="button" onClick={() => onSetPause(false)} disabled={pending}>
+              <StateWord state="slow">Delivery paused</StateWord>
+              <Button type="button" variant="quiet" onClick={() => onSetPause(false)} disabled={pending}>
                 {pending ? 'Working…' : 'Resume delivery'}
               </Button>
-              <p className="text-xs text-muted-foreground">
+              <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                 Paused by you or by the deliverability circuit breaker (bounce or complaint spike). Resuming needs your ok.
               </p>
             </>
           ) : (
             <>
-              <StatusPill tone="info" label="Delivering in tranches" pulse />
-              <Button type="button" variant="outline" onClick={() => onSetPause(true)} disabled={pending}>
+              <StateWord state="accent">Delivering in tranches</StateWord>
+              <Button type="button" variant="quiet" onClick={() => onSetPause(true)} disabled={pending}>
                 {pending ? 'Working…' : 'Pause delivery'}
               </Button>
             </>
@@ -217,40 +220,35 @@ export default function NewsletterScheduleControls({ id, status, scheduledAt, se
       ) : null}
 
       {message ? (
-        <p className={message.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'} role="alert">
+        <p role="alert" style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)' }}>
           {message.text}
         </p>
       ) : null}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve and schedule this issue?</DialogTitle>
-            <DialogDescription>
-              Pre-send checks run first and block on any failure. From the start time, delivery goes out gradually over
-              several days, most engaged readers first, to protect sender reputation.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-1.5 py-2">
-            <Label htmlFor="nl-schedule-at">Delivery starts</Label>
-            <Input
-              id="nl-schedule-at"
-              type="datetime-local"
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
-              className="w-full sm:w-64"
-            />
-            <p className="text-xs text-muted-foreground">Defaults to the 3rd at 9:00 AM, after the prior month fully closes.</p>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={pending}>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title="Approve and schedule this issue?"
+        description="Pre-send checks run first and block on any failure. From the start time, delivery goes out gradually over several days, most engaged readers first, to protect sender reputation."
+        footer={
+          <>
+            <Button type="button" variant="quiet" onClick={() => setDialogOpen(false)} disabled={pending}>
               Cancel
             </Button>
             <Button type="button" onClick={onConfirmSchedule} disabled={pending || !when}>
               {pending ? 'Scheduling…' : 'Approve and schedule'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextField
+          label="Delivery starts"
+          hint="Defaults to the 3rd at 9:00 AM, after the prior month fully closes."
+          type="datetime-local"
+          value={when}
+          onChange={(e) => setWhen(e.target.value)}
+          style={{ maxWidth: 280 }}
+        />
       </Dialog>
     </div>
   )

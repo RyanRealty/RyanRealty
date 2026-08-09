@@ -26,6 +26,19 @@
  * Stage accent hex comes from stage.color (data, never a literal here); the
  * palette + config live in lib/crm/deal-pipelines.ts / the crm_deal_stages table.
  * Desktop = draggable kanban; mobile (< md) = stacked read-only list.
+ *
+ * 11F: migrated to the admin v2 language (design_system/admin/ADMIN_UI.md).
+ * Presentation only. shadcn Card/Avatar/Button are replaced by hand-styled
+ * elements on admin tokens; contact-initials circles drop the old per-person
+ * hue palette for the neutral token fill thread-bits.tsx's ThreadAvatar
+ * established (admin v2 reserves color for action/status, ADMIN_UI §1 — the
+ * old FUB-style per-contact hue is out of canon here). The draggable card
+ * wrapper and the mobile row wrapper stay a <div role="button"> (not a real
+ * <button> / v2 Button): dnd-kit's useDraggable binds its listeners + ref to
+ * that exact node, and a real button risks the drag handle and nested-
+ * interactive-element semantics — left raw per this migration's own hard
+ * rule. Their hover/focus treatment moves to the shared .av2-dealcard rule in
+ * admin-v2.css since a CSS pseudo-class can't live in an inline style.
  */
 
 import { useCallback, useMemo, useState, useTransition } from 'react'
@@ -42,15 +55,15 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { Home, Banknote, Pencil, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Button, IconButton } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
-import { crmAvatarColor, crmInitials } from '@/lib/admin/crm-avatar'
+import { crmInitials } from '@/lib/admin/crm-avatar'
 import type { BoardPipeline, BoardStage } from '@/lib/data/crm/getDealPipelines'
 import type { DealBoardRow } from '@/lib/data/crm/listDealsBoard'
 import { restageCrmDeal } from '@/app/actions/crm-deals'
-import { AddDealDialog, AddStageDialog, StageEditDialog } from './DealsDialogs'
+import { AddDealDialog } from './DealsDialogs'
+import { AddStageDialog } from './AddStageDialog'
+import { StageEditDialog } from './StageEditDialog'
 
 // ── formatting helpers ───────────────────────────────────────────────────────
 
@@ -97,6 +110,43 @@ export const BROKER_LABEL: Record<string, string> = {
 
 const UNSORTED = '__unsorted__'
 
+// ── avatars (shared: card cluster here, DealDetailModal's Team section) ─────
+// Hand-rolled — @/components/ui/avatar is banned. A plain <img>, same as the
+// Radix AvatarImage it replaces (no lazy-loading behavior change).
+
+/** Deterministic-initials circle for a linked contact. Neutral token fill —
+ *  see the file header note on dropping per-contact hue. */
+export function ContactAvatar({ name, id, size = 24 }: { name: string | null; id: number; size?: number }) {
+  return (
+    <span
+      key={id}
+      title={name ?? `Contact #${id}`}
+      className="inline-flex shrink-0 items-center justify-center rounded-full font-semibold"
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.42), background: 'var(--a-inset)', color: 'var(--a-text)' }}
+    >
+      {crmInitials(name ?? '?')}
+    </span>
+  )
+}
+
+/** Broker photo circle, initials fallback when there is no photo. */
+export function BrokerAvatar({ src, label, size = 24 }: { src?: string; label: string; size?: number }) {
+  return (
+    <span
+      title={label}
+      className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold"
+      style={{ width: size, height: size, background: 'var(--a-inset)', color: 'var(--a-text)', fontSize: Math.round(size * 0.42) }}
+    >
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt={label} className="h-full w-full object-cover" />
+      ) : (
+        crmInitials(label)
+      )}
+    </span>
+  )
+}
+
 // ── card body (§8 — shared by column card, drag overlay, and mobile rows) ─────
 
 export function DealCardBody({ deal, pipeline, stage }: {
@@ -118,20 +168,22 @@ export function DealCardBody({ deal, pipeline, stage }: {
   const brokerLabel = broker ? (BROKER_LABEL[broker] ?? broker) : null
 
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2.5">
+    <div className="rounded-lg px-3 py-2.5" style={{ border: '1px solid var(--a-border)', background: 'var(--a-bg)' }}>
       {/* Row 1 — address / deal name */}
-      <p className="truncate text-sm font-semibold text-foreground">{label}</p>
+      <p className="truncate font-semibold" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
+        {label}
+      </p>
 
       {/* Row 2 — sale price (green bold) + commission icon + stored commission (gray) */}
       {(deal.value != null || deal.commission_dollars != null) ? (
-        <div className="mt-1 flex items-center gap-2 text-sm">
+        <div className="mt-1 flex items-center gap-2" style={{ fontSize: 'var(--a-text-sm)' }}>
           {deal.value != null ? (
-            <span className="font-bold tabular-nums text-success">{dealMoney(deal.value)}</span>
+            <span className="a-num font-bold" style={{ color: 'var(--a-ok)' }}>{dealMoney(deal.value)}</span>
           ) : null}
           {deal.commission_dollars != null ? (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
               <CommissionIcon className="h-3.5 w-3.5" aria-hidden />
-              <span className="tabular-nums">{dealMoney(deal.commission_dollars)}</span>
+              <span className="a-num">{dealMoney(deal.commission_dollars)}</span>
             </span>
           ) : null}
         </div>
@@ -139,8 +191,8 @@ export function DealCardBody({ deal, pipeline, stage }: {
 
       {/* Row 3 — date row (hidden when no date) */}
       {dateStr ? (
-        <p className="mt-1 text-xs text-muted-foreground">
-          {dateLabel}: <span className="tabular-nums">{dateStr}</span>
+        <p className="mt-1" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {dateLabel}: <span className="a-num">{dateStr}</span>
         </p>
       ) : null}
 
@@ -148,23 +200,9 @@ export function DealCardBody({ deal, pipeline, stage }: {
       {(deal.people.length > 0 || brokerPhoto) ? (
         <div className="mt-2 flex items-center gap-1">
           {deal.people.map((p) => (
-            <span
-              key={p.id}
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
-              style={{ backgroundColor: crmAvatarColor(p.name ?? String(p.id)), color: 'rgb(255 255 255)' }}
-              title={p.name ?? `Contact #${p.id}`}
-            >
-              {crmInitials(p.name ?? '?')}
-            </span>
+            <ContactAvatar key={p.id} id={p.id} name={p.name} />
           ))}
-          {brokerPhoto ? (
-            <Avatar className="h-6 w-6" title={brokerLabel ?? undefined}>
-              <AvatarImage src={brokerPhoto} alt={brokerLabel ?? 'Agent'} />
-              <AvatarFallback className="text-xs">
-                {brokerLabel ? crmInitials(brokerLabel) : 'RR'}
-              </AvatarFallback>
-            </Avatar>
-          ) : null}
+          {brokerPhoto ? <BrokerAvatar src={brokerPhoto} label={brokerLabel ?? 'Agent'} /> : null}
         </div>
       ) : null}
     </div>
@@ -201,7 +239,7 @@ function DraggableDealCard({ deal, pipeline, stage, onOpen }: {
         }
       }}
       className={cn(
-        'cursor-grab touch-none rounded-lg transition-shadow hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+        'av2-dealcard cursor-grab touch-none rounded-lg transition-shadow focus:outline-none',
         isDragging && 'cursor-grabbing',
       )}
     >
@@ -226,12 +264,14 @@ function StageColumn({ stage, pipeline, deals, droppable, canManage, onOpen, onA
   const total = deals.reduce((s, d) => s + (d.value ?? 0), 0)
 
   return (
-    <Card
+    <div
       ref={droppable ? setNodeRef : undefined}
-      className={cn(
-        'flex w-60 shrink-0 flex-col self-start overflow-hidden transition-colors',
-        isOver && 'ring-2 ring-primary/50',
-      )}
+      className="flex w-60 shrink-0 flex-col self-start overflow-hidden rounded-lg transition-colors"
+      style={{
+        border: '1px solid var(--a-border)',
+        background: 'var(--a-bg)',
+        boxShadow: isOver ? '0 0 0 2px var(--a-accent)' : undefined,
+      }}
     >
       {/* Accent bar — full-width, stage color (§7) */}
       <div className="h-1.5 w-full" style={{ backgroundColor: stage.color }} aria-hidden />
@@ -239,50 +279,48 @@ function StageColumn({ stage, pipeline, deals, droppable, canManage, onOpen, onA
       {/* Column header */}
       <div className="group flex items-start justify-between gap-2 px-3 pb-2 pt-2.5">
         <div className="min-w-0">
-          <p className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
+          <p className="flex items-center gap-1 truncate font-semibold" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
             {stage.name}
             {canManage && onEditStage ? (
-              <button
-                type="button"
+              <IconButton
+                label={`Edit stage ${stage.name}`}
+                tone="quiet"
                 onClick={() => onEditStage(stage)}
-                aria-label={`Edit stage ${stage.name}`}
-                className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 group-hover:opacity-100"
+                className="opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+                style={{ width: 22, height: 22 }}
               >
                 <Pencil className="h-3 w-3" aria-hidden />
-              </button>
+              </IconButton>
             ) : null}
           </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            <span className="tabular-nums">{deals.length}</span> {deals.length === 1 ? 'deal' : 'deals'}
-            {' '}
-            <span className="font-semibold tabular-nums text-success">{dealMoney(total)}</span>
-            {stage.isClosedStage ? <span className="ml-1 font-medium text-success">Closed</span> : null}
+          <p className="mt-0.5 flex items-center gap-1" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            <span className="a-num">{deals.length}</span> {deals.length === 1 ? 'deal' : 'deals'}
+            <span className="a-num font-semibold" style={{ color: 'var(--a-ok)' }}>{dealMoney(total)}</span>
+            {stage.isClosedStage ? <span className="font-medium" style={{ color: 'var(--a-ok)' }}>Closed</span> : null}
           </p>
         </div>
         {onAdd ? (
-          <Button
-            type="button"
-            size="icon-xs"
+          <IconButton
+            label={`Add a deal to ${stage.name}`}
             onClick={() => onAdd(stage)}
-            aria-label={`Add a deal to ${stage.name}`}
-            className="shrink-0 rounded-full"
+            className="av2-addbtn shrink-0"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
-          </Button>
+          </IconButton>
         ) : null}
       </div>
 
       {/* Card stack — independently vertically scrollable (§2) */}
       <div className="flex max-h-[calc(100vh-20rem)] min-h-16 flex-col gap-2 overflow-y-auto p-2 pt-0">
         {deals.length === 0 ? (
-          <p className="px-1 py-4 text-center text-xs text-muted-foreground">
+          <p className="px-1 py-4 text-center" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
             No deals,{' '}
             {onAdd ? (
               <Button
-                type="button"
-                variant="link"
+                variant="quiet"
                 onClick={() => onAdd(stage)}
-                className="h-auto p-0 align-baseline text-xs font-medium"
+                className="av2-textlink align-baseline"
+                style={{ fontSize: 'var(--a-text-xs)', display: 'inline' }}
               >
                 add deal
               </Button>
@@ -294,7 +332,7 @@ function StageColumn({ stage, pipeline, deals, droppable, canManage, onOpen, onA
           ))
         )}
       </div>
-    </Card>
+    </div>
   )
 }
 
@@ -398,7 +436,10 @@ export function DealsBoard({ pipeline, deals, brokers, isOwner, brokerSlug }: {
   return (
     <div>
       {error ? (
-        <p className="mx-4 mb-3 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <p
+          className="mx-4 mb-3 rounded-md px-3 py-2"
+          style={{ background: 'var(--a-danger-wash)', color: 'var(--a-danger)', fontSize: 'var(--a-text-xs)' }}
+        >
           Could not move the deal: {error}
         </p>
       ) : null}
@@ -433,7 +474,7 @@ export function DealsBoard({ pipeline, deals, brokers, isOwner, brokerSlug }: {
                   stage={{
                     id: -1,
                     name: name === UNSORTED ? 'Unsorted' : name,
-                    color: 'var(--border)',
+                    color: 'var(--a-border)',
                     orderWeight: 0,
                     isClosedStage: false,
                   }}
@@ -447,10 +488,10 @@ export function DealsBoard({ pipeline, deals, brokers, isOwner, brokerSlug }: {
               {/* §10 "Add a stage" — past the last column, owner only */}
               {isOwner ? (
                 <Button
-                  type="button"
-                  variant="link"
+                  variant="quiet"
                   onClick={() => setAddStageOpen(true)}
-                  className="mt-2 shrink-0 text-sm font-medium"
+                  className="av2-textlink mt-2 shrink-0"
+                  style={{ fontSize: 'var(--a-text-sm)' }}
                 >
                   Add a stage
                 </Button>
@@ -460,7 +501,7 @@ export function DealsBoard({ pipeline, deals, brokers, isOwner, brokerSlug }: {
 
           <DragOverlay>
             {activeDragDeal ? (
-              <div className="w-60 cursor-grabbing opacity-95 shadow-lg">
+              <div className="w-60 cursor-grabbing opacity-95" style={{ boxShadow: 'var(--a-shadow-overlay)' }}>
                 <DealCardBody deal={activeDragDeal} pipeline={pipeline} stage={activeDragStage} />
               </div>
             ) : null}
@@ -476,19 +517,22 @@ export function DealsBoard({ pipeline, deals, brokers, isOwner, brokerSlug }: {
             <section key={stage.id}>
               <div
                 className="flex items-center justify-between rounded-t-lg px-3 py-2"
-                style={{ borderTop: `3px solid ${stage.color}`, backgroundColor: 'var(--muted)' }}
+                style={{ borderTop: `3px solid ${stage.color}`, backgroundColor: 'var(--a-inset)' }}
               >
-                <span className="text-sm font-semibold text-foreground">{stage.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  <span className="tabular-nums">{colDeals.length}</span>
+                <span className="font-semibold" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>{stage.name}</span>
+                <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                  <span className="a-num">{colDeals.length}</span>
                   {' · '}
-                  <span className="tabular-nums text-success">{dealMoney(total)}</span>
-                  {stage.isClosedStage ? <span className="ml-1 font-medium text-success">Closed</span> : null}
+                  <span className="a-num" style={{ color: 'var(--a-ok)' }}>{dealMoney(total)}</span>
+                  {stage.isClosedStage ? <span className="font-medium" style={{ color: 'var(--a-ok)' }}> Closed</span> : null}
                 </span>
               </div>
-              <div className="space-y-2 rounded-b-lg border border-t-0 border-border bg-card p-2">
+              <div
+                className="space-y-2 rounded-b-lg p-2"
+                style={{ border: '1px solid var(--a-border)', borderTop: 'none', background: 'var(--a-bg)' }}
+              >
                 {colDeals.length === 0 ? (
-                  <p className="py-3 text-center text-xs text-muted-foreground">No deals</p>
+                  <p className="py-3 text-center" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>No deals</p>
                 ) : (
                   colDeals.map((d) => (
                     <div
@@ -502,7 +546,7 @@ export function DealsBoard({ pipeline, deals, brokers, isOwner, brokerSlug }: {
                           openDeal(d.id)
                         }
                       }}
-                      className="block w-full cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                      className="av2-dealcard block w-full cursor-pointer rounded-lg text-left focus:outline-none"
                     >
                       <DealCardBody deal={d} pipeline={pipeline} stage={stage} />
                     </div>

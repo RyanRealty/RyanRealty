@@ -7,21 +7,18 @@
  * sandboxed iframe at desktop (640px email) or mobile (375px) width, with a
  * per-broker switcher that visibly swaps the close card. The raw HTML source
  * sits behind a secondary tab.
+ *
+ * Admin v2 (11F): shadcn Tabs/ToggleGroup/Select/Button/Label were replaced by
+ * the locked admin language. The tab pair is a FilterChip segmented control —
+ * the same pattern already shipped for the Body/Preview toggle in
+ * crm/settings/_components/templates/EmailTemplateModal.tsx — which keeps the
+ * original's mount behavior exactly: the inactive pane unmounts, as Radix
+ * Tabs also did. The width toggle is the same segmented pattern. Presentation
+ * only: same server actions, same states, same strings.
  */
 
 import { useState, useTransition } from 'react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, FilterChip, SelectField } from '@/components/admin/v2'
 import { adminPreviewNewsletterAction, adminTestSendNewsletterAction } from '@/app/actions/newsletter'
 
 const BROKERS: { value: string; label: string }[] = [
@@ -41,6 +38,7 @@ export default function NewsletterPreviewPanel({ id, initialHtml, initialBroker 
   const [broker, setBroker] = useState(initialBroker)
   const [html, setHtml] = useState<string | null>(initialHtml)
   const [width, setWidth] = useState<'desktop' | 'mobile'>('desktop')
+  const [tab, setTab] = useState<'preview' | 'source'>('preview')
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [testMsg, setTestMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
@@ -84,83 +82,142 @@ export default function NewsletterPreviewPanel({ id, initialHtml, initialBroker 
   const frameWidth = width === 'mobile' ? 375 : 680
 
   return (
-    <Tabs defaultValue="preview" className="space-y-4">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <TabsList>
-          <TabsTrigger value="preview">Rendered preview</TabsTrigger>
-          <TabsTrigger value="source">HTML source</TabsTrigger>
-        </TabsList>
+        <div
+          className="flex"
+          style={{ gap: 2, padding: 2, background: 'var(--a-inset)', borderRadius: 'var(--a-r-md)', width: 'fit-content' }}
+        >
+          {(
+            [
+              { key: 'preview' as const, label: 'Rendered preview' },
+              { key: 'source' as const, label: 'HTML source' },
+            ]
+          ).map((t) => (
+            <FilterChip
+              key={t.key}
+              pressed={tab === t.key}
+              onClick={() => setTab(t.key)}
+              style={{
+                border: 'none',
+                borderRadius: 'var(--a-r-sm)',
+                padding: '6px 14px',
+                fontWeight: 500,
+                background: tab === t.key ? 'var(--a-bg)' : 'transparent',
+                color: tab === t.key ? 'var(--a-text)' : 'var(--a-text-2)',
+              }}
+            >
+              {t.label}
+            </FilterChip>
+          ))}
+        </div>
+
         <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="nl-preview-broker">Recipient&rsquo;s broker</Label>
-            <Select value={broker} onValueChange={onBrokerChange}>
-              <SelectTrigger id="nl-preview-broker" className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {BROKERS.map((b) => (
-                  <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            value={width}
-            onValueChange={(v) => v && setWidth(v as 'desktop' | 'mobile')}
-            aria-label="Preview width"
+          <SelectField
+            label="Recipient's broker"
+            value={broker}
+            onChange={(e) => onBrokerChange(e.target.value)}
+            style={{ width: 144 }}
           >
-            <ToggleGroupItem value="desktop">Desktop</ToggleGroupItem>
-            <ToggleGroupItem value="mobile">Mobile</ToggleGroupItem>
-          </ToggleGroup>
-          <Button type="button" variant="outline" onClick={() => loadPreview(broker)} disabled={pending}>
+            {BROKERS.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
+              </option>
+            ))}
+          </SelectField>
+
+          <div role="group" aria-label="Preview width" className="flex" style={{ gap: 2 }}>
+            <FilterChip pressed={width === 'desktop'} onClick={() => setWidth('desktop')}>
+              Desktop
+            </FilterChip>
+            <FilterChip pressed={width === 'mobile'} onClick={() => setWidth('mobile')}>
+              Mobile
+            </FilterChip>
+          </div>
+
+          <Button type="button" variant="quiet" onClick={() => loadPreview(broker)} disabled={pending}>
             {pending ? 'Rendering…' : 'Refresh'}
           </Button>
-          <Button type="button" variant="outline" onClick={onTestSend} disabled={pending}>
+          <Button type="button" variant="quiet" onClick={onTestSend} disabled={pending}>
             Send test to me
           </Button>
         </div>
       </div>
 
       {testMsg ? (
-        <p className={testMsg.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'} role="alert">
+        <p
+          role="alert"
+          style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: testMsg.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)' }}
+        >
           {testMsg.text}
         </p>
       ) : null}
       {error ? (
-        <p className="text-sm text-destructive" role="alert">{error}</p>
+        <p role="alert" style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+          {error}
+        </p>
       ) : null}
 
-      <TabsContent value="preview">
-        {html ? (
-          <div className="flex justify-center rounded-xl border border-border bg-muted/40 p-4">
+      {tab === 'preview' ? (
+        html ? (
+          <div
+            className="flex justify-center"
+            style={{ borderRadius: 'var(--a-r-lg)', border: '1px solid var(--a-border)', background: 'var(--a-inset)', padding: 16 }}
+          >
             <iframe
               title="Newsletter rendered preview"
               srcDoc={html}
               // Fully-restricted sandbox: the body is authored content. Static
               // HTML, CSS, and images still render under sandbox="".
               sandbox=""
-              style={{ width: frameWidth, height: 900 }}
-              className={cn('rounded-lg border border-border bg-background', width === 'mobile' && 'shadow-sm')}
+              style={{
+                width: frameWidth,
+                height: 900,
+                borderRadius: 'var(--a-r-md)',
+                border: '1px solid var(--a-border)',
+                background: 'var(--a-bg)',
+                boxShadow: width === 'mobile' ? 'var(--a-shadow-overlay)' : undefined,
+              }}
             />
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground">
+          <div
+            style={{
+              borderRadius: 'var(--a-r-lg)',
+              border: '1px dashed var(--a-border)',
+              background: 'var(--a-inset)',
+              padding: 32,
+              textAlign: 'center',
+              fontSize: 'var(--a-text-sm)',
+              color: 'var(--a-text-2)',
+            }}
+          >
             No preview yet. Add an HTML body in the Edit section and save, then refresh.
           </div>
-        )}
-      </TabsContent>
+        )
+      ) : null}
 
-      <TabsContent value="source">
-        {html ? (
-          <pre style={{ maxHeight: 720 }} className="overflow-auto rounded-xl border border-border bg-muted/40 p-4 text-xs leading-relaxed text-foreground">
+      {tab === 'source' ? (
+        html ? (
+          <pre
+            style={{
+              maxHeight: 720,
+              overflow: 'auto',
+              borderRadius: 'var(--a-r-lg)',
+              border: '1px solid var(--a-border)',
+              background: 'var(--a-inset)',
+              padding: 16,
+              fontSize: 'var(--a-text-xs)',
+              lineHeight: 1.6,
+              color: 'var(--a-text)',
+            }}
+          >
             {html}
           </pre>
         ) : (
-          <p className="text-sm text-muted-foreground">Nothing rendered yet.</p>
-        )}
-      </TabsContent>
-    </Tabs>
+          <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Nothing rendered yet.</p>
+        )
+      ) : null}
+    </div>
   )
 }

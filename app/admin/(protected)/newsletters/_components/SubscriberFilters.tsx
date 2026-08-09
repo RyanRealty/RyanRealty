@@ -4,20 +4,19 @@
  * Subscriber list controls: search by email/name, status + segment + broker
  * filters, and CSV export of the current filtered view. Filters live in the
  * URL (server component re-queries), so views are shareable and paging works.
+ *
+ * Admin v2 (11F): shadcn Input/Label/Select/Button replaced by the locked
+ * admin language. "Export CSV" stays a real anchor (download href), styled
+ * with the av2-btn classes directly rather than wrapped in <Button> — the v2
+ * Button always renders a <button> with no asChild escape hatch, and turning
+ * a download link into a button-with-onClick would silently drop middle-click
+ * and Cmd/Ctrl-click. Presentation only: same URL params, same query
+ * building, same export href.
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, SelectField, TextField } from '@/components/admin/v2'
 
 const ALL = 'all'
 
@@ -83,60 +82,42 @@ export default function SubscriberFilters() {
       }}
       className="flex flex-wrap items-end gap-3"
     >
-      <div className="min-w-56 flex-1 space-y-1.5">
-        <Label htmlFor="sub-search">Search</Label>
-        <Input
-          id="sub-search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Email or name"
-        />
+      <div style={{ minWidth: 224, flex: 1 }}>
+        <TextField label="Search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Email or name" />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="sub-filter-status">Status</Label>
-        <Select value={status} onValueChange={(v) => apply({ status: v })}>
-          <SelectTrigger id="sub-filter-status" className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUSES.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div style={{ width: 160 }}>
+        <SelectField label="Status" value={status} onChange={(e) => apply({ status: e.target.value })}>
+          {STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </SelectField>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="sub-filter-segment">Segment</Label>
-        <Select value={segment} onValueChange={(v) => apply({ segment: v })}>
-          <SelectTrigger id="sub-filter-segment" className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SEGMENTS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div style={{ width: 160 }}>
+        <SelectField label="Segment" value={segment} onChange={(e) => apply({ segment: e.target.value })}>
+          {SEGMENTS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </SelectField>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="sub-filter-broker">Broker</Label>
-        <Select value={broker} onValueChange={(v) => apply({ broker: v })}>
-          <SelectTrigger id="sub-filter-broker" className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {BROKERS.map((b) => (
-              <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div style={{ width: 160 }}>
+        <SelectField label="Broker" value={broker} onChange={(e) => apply({ broker: e.target.value })}>
+          {BROKERS.map((b) => (
+            <option key={b.value} value={b.value}>
+              {b.label}
+            </option>
+          ))}
+        </SelectField>
       </div>
-      <Button type="submit" variant="outline" disabled={pending}>
+      <Button type="submit" variant="quiet" disabled={pending}>
         {pending ? 'Filtering…' : 'Apply'}
       </Button>
-      <Button asChild variant="outline">
-        <a href={exportHref} download>Export CSV</a>
-      </Button>
+      <a href={exportHref} download className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+        Export CSV
+      </a>
     </form>
   )
 }

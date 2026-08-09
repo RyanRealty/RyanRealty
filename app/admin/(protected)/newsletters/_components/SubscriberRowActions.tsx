@@ -6,29 +6,22 @@
  * the next issue re-brands to the new broker; past-issue analytics stay
  * frozen). Delete confirms in a Dialog; deleting a non-active row additionally
  * requires acknowledging that it erases the opt-out record (S-10).
+ *
+ * Admin v2 (11F): shadcn Dialog/Select/Input/Label/Checkbox/Button replaced by
+ * the locked admin language. The delete confirm keeps its custom disabled
+ * logic (blocked until the opt-out is acknowledged) so it uses the base
+ * <Dialog>, not <ConfirmDialog> — ConfirmDialog's confirm button only accepts
+ * a `busy` flag, which would also disable Cancel while the checkbox is
+ * unchecked. ci:admin-ui rule C allows one primary Button per file; "Save
+ * changes" keeps it, "Edit" is quiet and "Delete" / "Delete subscriber" are
+ * danger — the honest read for a destructive, compliance-sensitive action.
+ * Presentation only: same actions, same FormData fields, same status/segment/
+ * broker mapping, same opt-out acknowledgment gate, same strings.
  */
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, Dialog, SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { adminDeleteSubscriberAction, adminEditSubscriberAction } from '@/app/admin/(protected)/newsletters/actions'
 
 const SEGMENTS = [
@@ -113,113 +106,115 @@ export default function SubscriberRowActions({ id, email, name, segment, status,
 
   return (
     <div className="flex items-center justify-end gap-2">
-      <Button type="button" size="sm" variant="outline" onClick={() => { setError(null); setEditOpen(true) }}>
+      <Button type="button" variant="quiet" onClick={() => { setError(null); setEditOpen(true) }}>
         Edit
       </Button>
-      <Button type="button" size="sm" variant="destructive" onClick={() => { setError(null); setAckOptOut(false); setDeleteOpen(true) }}>
+      <Button type="button" variant="danger" onClick={() => { setError(null); setAckOptOut(false); setDeleteOpen(true) }}>
         Delete
       </Button>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit subscriber</DialogTitle>
-            <DialogDescription>{email}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor={`edit-name-${id}`}>Name</Label>
-              <Input id={`edit-name-${id}`} value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Optional" />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-1.5">
-                <Label htmlFor={`edit-segment-${id}`}>Segment</Label>
-                <Select value={editSegment} onValueChange={setEditSegment}>
-                  <SelectTrigger id={`edit-segment-${id}`} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SEGMENTS.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={`edit-status-${id}`}>Status</Label>
-                <Select value={editStatus} onValueChange={setEditStatus}>
-                  <SelectTrigger id={`edit-status-${id}`} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                    {status !== 'active' && status !== 'unsubscribed' ? (
-                      <SelectItem value={status} disabled>{status}</SelectItem>
-                    ) : null}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor={`edit-broker-${id}`}>Broker</Label>
-                <Select value={editBroker} onValueChange={setEditBroker} disabled={!hasCrmPerson}>
-                  <SelectTrigger id={`edit-broker-${id}`} className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BROKERS.map((b) => (
-                      <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!hasCrmPerson ? (
-                  <p className="text-xs text-muted-foreground">Not linked to a CRM contact, so broker follows the default (Matt).</p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Reassigning moves the linked CRM contact to this broker. Their next issue re-brands.</p>
-                )}
-              </div>
-            </div>
-            {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setEditOpen(false)} disabled={pending}>
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Edit subscriber"
+        description={email}
+        size="work"
+        footer={
+          <>
+            <Button type="button" variant="quiet" onClick={() => setEditOpen(false)} disabled={pending}>
               Cancel
             </Button>
             <Button type="button" onClick={onSave} disabled={pending}>
               {pending ? 'Saving…' : 'Save changes'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextField label="Name" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Optional" />
+        <div className="av2-editgrid">
+          <SelectField label="Segment" value={editSegment} onChange={(e) => setEditSegment(e.target.value)}>
+            {SEGMENTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </SelectField>
+          <SelectField label="Status" value={editStatus} onChange={(e) => setEditStatus(e.target.value)}>
+            {STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+            {status !== 'active' && status !== 'unsubscribed' ? (
+              <option value={status} disabled>
+                {status}
+              </option>
+            ) : null}
+          </SelectField>
+          <div>
+            <SelectField
+              label="Broker"
+              value={editBroker}
+              onChange={(e) => setEditBroker(e.target.value)}
+              disabled={!hasCrmPerson}
+            >
+              {BROKERS.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
+                </option>
+              ))}
+            </SelectField>
+            {!hasCrmPerson ? (
+              <p style={{ margin: '4px 0 0', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                Not linked to a CRM contact, so broker follows the default (Matt).
+              </p>
+            ) : (
+              <p style={{ margin: '4px 0 0', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                Reassigning moves the linked CRM contact to this broker. Their next issue re-brands.
+              </p>
+            )}
+          </div>
+        </div>
+        {error ? (
+          <p role="alert" style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+            {error}
+          </p>
+        ) : null}
       </Dialog>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete this subscriber?</DialogTitle>
-            <DialogDescription>
-              {email} is removed from the list entirely. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          {isOptOutRecord ? (
-            <div className="flex items-start gap-2 py-2">
-              <Checkbox id={`ack-${id}`} checked={ackOptOut} onCheckedChange={(v) => setAckOptOut(v === true)} />
-              <Label htmlFor={`ack-${id}`} className="text-sm font-normal leading-snug text-muted-foreground">
-                I understand this row records an opt-out ({status}) and deleting it erases that record. If this address is
-                enrolled again later, the system will treat it as new.
-              </Label>
-            </div>
-          ) : null}
-          {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDeleteOpen(false)} disabled={pending}>
+      <Dialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete this subscriber?"
+        description={<>{email} is removed from the list entirely. This cannot be undone.</>}
+        footer={
+          <>
+            <Button type="button" variant="quiet" onClick={() => setDeleteOpen(false)} disabled={pending}>
               Cancel
             </Button>
-            <Button type="button" variant="destructive" onClick={onDelete} disabled={pending || (isOptOutRecord && !ackOptOut)}>
+            <Button type="button" variant="danger" onClick={onDelete} disabled={pending || (isOptOutRecord && !ackOptOut)}>
               {pending ? 'Deleting…' : 'Delete subscriber'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        {isOptOutRecord ? (
+          <ToolbarCheck
+            checked={ackOptOut}
+            onChange={(e) => setAckOptOut(e.target.checked)}
+            label={
+              <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                I understand this row records an opt-out ({status}) and deleting it erases that record. If this address is
+                enrolled again later, the system will treat it as new.
+              </span>
+            }
+          />
+        ) : null}
+        {error ? (
+          <p role="alert" style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+            {error}
+          </p>
+        ) : null}
       </Dialog>
     </div>
   )

@@ -152,6 +152,41 @@ const SCAN_DIRS = [
   // bare crm/settings dir: eleven sibling pages still mount legacy editors
   // (CustomFieldEditor, TagTaxonomyEditor, the company + templates islands).
   // Each joins this list as its island migrates.
+  // 11F (2026-08-08) — crm/deals + newsletters islands. NEITHER newsletter PAGE
+  // is listed, and that is the honest state: both mount components that live at
+  // the ROUTE ROOT (NewsletterComposeForm, NewsletterDraftActions, BulkOneOffForm,
+  // SubscriberForms, BulkEnrollForm, GenerateDraftButton) which were never in
+  // components/admin/newsletter and so were never in this migration's scope.
+  // /admin/newsletters/subscribers still renders 10 shadcn classes from them.
+  // Gating those pages now would be green for the wrong reason. The ISLANDS
+  // below are clean and gated; the six route-root files are queued.
+  //
+  // THE SCOPING LESSON: a relocation-driven unit only sees files under
+  // components/admin/<family>. Files ALREADY sitting in the route were invisible
+  // to it. Check the route directory itself, not just what moves into it. crm/deals/page.tsx itself is NOT listed: it still mounts
+  // MobileCrmHeader from components/admin/crm/mobile, the phone header the
+  // work queue already proves carries no root-tab nav (ConsoleShell's
+  // CrmMobileTabBar owns the five tabs, and its scope control and search are
+  // duplicated by TopBarScope and the command palette). Deleting that header —
+  // 12-admin-chrome-debt — gates this page and helps crm/activity and the crm
+  // root at the same time. The deals ISLANDS below are clean and gated now.
+  // Both are fully self-contained after crmAvatarColor/crmInitials
+  // moved to lib/admin/crm-avatar (32 lines of pure logic that lib already
+  // imported), so nothing here reaches back into components/admin/crm.
+  'app/admin/(protected)/crm/deals/_components/AddStageDialog.tsx',
+  'app/admin/(protected)/crm/deals/_components/DealDetailModal.tsx',
+  'app/admin/(protected)/crm/deals/_components/DealsBoard.tsx',
+  'app/admin/(protected)/crm/deals/_components/DealsDialogs.tsx',
+  'app/admin/(protected)/crm/deals/_components/DealsSubBar.tsx',
+  'app/admin/(protected)/crm/deals/_components/ManagePipelines.tsx',
+  'app/admin/(protected)/crm/deals/_components/PipelineFormDialog.tsx',
+  'app/admin/(protected)/crm/deals/_components/StageEditDialog.tsx',
+  'app/admin/(protected)/crm/deals/_components/deal-detail-bits.tsx',
+  'app/admin/(protected)/newsletters/_components/NewsletterPreviewPanel.tsx',
+  'app/admin/(protected)/newsletters/_components/NewsletterScheduleControls.tsx',
+  'app/admin/(protected)/newsletters/_components/SubscriberFilters.tsx',
+  'app/admin/(protected)/newsletters/_components/SubscriberRowActions.tsx',
+  'app/admin/(protected)/crm/deals/pipelines/page.tsx',
   // 11F (2026-08-08) — the valuations family (bpo + cmas). FILE-FORM: the two
   // Send dialogs mount EmailBodyEditor, the G50 compose chokepoint
   // ci:composer-discipline requires. Everything else in both families is listed,
