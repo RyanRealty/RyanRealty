@@ -25,7 +25,7 @@
  *   raw <h2>              -> SectionHead
  *   public-brand semantic palette classes -> var(--a-*) tokens only
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   getReportMetrics,
   getReportPriceBands,
@@ -152,13 +152,19 @@ function PriceBandList({
 }
 
 export default function CityReportSection({ cities }: { cities: string[] }) {
-  const now = new Date()
   const [city, setCity] = useState('')
   const [subdivision, setSubdivision] = useState('')
   const [periodType, setPeriodType] = useState<'month' | 'quarter'>('month')
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
-  const [quarter, setQuarter] = useState(Math.floor(now.getMonth() / 3) + 1)
+  // Calendar defaults after mount — wall clock in the initial render is #418.
+  const [year, setYear] = useState(2026)
+  const [month, setMonth] = useState(1)
+  const [quarter, setQuarter] = useState(1)
+  useEffect(() => {
+    const now = new Date()
+    setYear(now.getFullYear())
+    setMonth(now.getMonth() + 1)
+    setQuarter(Math.floor(now.getMonth() / 3) + 1)
+  }, [])
   const [includeCondoTown, setIncludeCondoTown] = useState(false)
   const [includeManufactured, setIncludeManufactured] = useState(false)
   const [includeAcreage, setIncludeAcreage] = useState(false)

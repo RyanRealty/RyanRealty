@@ -82,9 +82,9 @@ const dangerTextStyle: CSSProperties = {
   color: 'var(--a-danger)',
 }
 
-function formatElapsed(isoStart: string): string {
+function formatElapsed(isoStart: string, nowMs: number): string {
   const start = new Date(isoStart).getTime()
-  const s = Math.floor((Date.now() - start) / 1000)
+  const s = Math.floor((nowMs - start) / 1000)
   const m = Math.floor(s / 60)
   const h = Math.floor(m / 60)
   if (h > 0) return `${h}h ${m % 60}m ${s % 60}s`
@@ -117,7 +117,13 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
   const [error, setError] = useState<string | null>(null)
   const [controlPending, setControlPending] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [nowMs, setNowMs] = useState<number | null>(null)
   const [etaLabel, setEtaLabel] = useState<string | null>(null)
+  useEffect(() => {
+    setNowMs(Date.now())
+    const id = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -324,7 +330,7 @@ export default function SyncSmart({ initialStatus, sparkConfigured = true, compa
                 : 'Sync in progress'}
             </span>
             <span suppressHydrationWarning>
-              Elapsed: {mounted && status?.cursor?.runStartedAt ? formatElapsed(status.cursor.runStartedAt) : syncing ? '…' : '—'}
+              Elapsed: {mounted && nowMs != null && status?.cursor?.runStartedAt ? formatElapsed(status.cursor.runStartedAt, nowMs) : syncing ? '…' : '—'}
             </span>
             <span title={status?.cursor?.phase === 'refresh_active_pending' ? 'Listings refreshed so far (active & pending only).' : 'Listings upserted in this run (Listings phase only).'}>
               {status?.cursor?.phase === 'refresh_active_pending' ? 'Listings refreshed: ' : 'Listings this run: '}

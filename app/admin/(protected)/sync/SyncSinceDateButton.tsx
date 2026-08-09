@@ -10,7 +10,7 @@
  * plain label + v2 Button. Success/error map to var(--a-ok) / var(--a-danger).
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { runDeltaSyncSince } from '@/app/actions/sync-full-cron'
 import { useRouter } from 'next/navigation'
 import { Button, SearchField } from '@/components/admin/v2'
@@ -34,8 +34,13 @@ export default function SyncSinceDateButton() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const defaultDate = toLocalDateString(new Date(Date.now() - DEFAULT_DAYS_AGO * 24 * 60 * 60 * 1000))
-  const [dateValue, setDateValue] = useState(defaultDate)
+  // Default is "two days ago" — must not read the wall clock during SSR.
+  const [dateValue, setDateValue] = useState('')
+  useEffect(() => {
+    setDateValue(
+      toLocalDateString(new Date(Date.now() - DEFAULT_DAYS_AGO * 24 * 60 * 60 * 1000)),
+    )
+  }, [])
 
   async function handleClick() {
     const sinceIso = dateToStartOfDayIso(dateValue)

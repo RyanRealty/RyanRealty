@@ -98,7 +98,7 @@ export default function SyncHistoryButtons({ compact = false }: Props) {
     setListingsProcessed(0)
     setHistoryRowsUpserted(0)
     setTotalListings(null)
-    startRef.current = Date.now()
+    startRef.current = Date.now() // hydration-safe — click handler, not render
     setElapsedMs(0)
     abortedRef.current = false
 

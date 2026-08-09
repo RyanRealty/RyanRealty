@@ -107,17 +107,21 @@ function formatDateTime(iso?: string | null) {
   if (!iso) return '—'
   try {
     const d = new Date(iso)
-    return d.toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })
+    return d.toLocaleString('en-US', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      timeZone: 'America/Los_Angeles',
+    })
   } catch {
     return iso
   }
 }
 
-function relativeTime(iso?: string | null): string {
-  if (!iso) return '—'
+function relativeTime(iso: string | null | undefined, nowMs: number | null): string {
+  if (!iso || nowMs == null) return '—'
   try {
     const d = new Date(iso).getTime()
-    const diff = Date.now() - d
+    const diff = nowMs - d
     const m = Math.floor(diff / 60000)
     const h = Math.floor(m / 60)
     const day = Math.floor(h / 24)
@@ -130,10 +134,10 @@ function relativeTime(iso?: string | null): string {
   }
 }
 
-function formatElapsedFrom(startIso?: string | null): string {
-  if (!startIso) return '—'
+function formatElapsedFrom(startIso: string | null | undefined, nowMs: number | null): string {
+  if (!startIso || nowMs == null) return '—'
   try {
-    const elapsed = Math.max(0, Date.now() - new Date(startIso).getTime())
+    const elapsed = Math.max(0, nowMs - new Date(startIso).getTime())
     const s = Math.floor(elapsed / 1000)
     const m = Math.floor(s / 60)
     const h = Math.floor(m / 60)
@@ -145,14 +149,21 @@ function formatElapsedFrom(startIso?: string | null): string {
   }
 }
 
-function isRecentlyActive(updatedAtIso?: string | null): boolean {
-  if (!updatedAtIso) return false
+function isRecentlyActive(updatedAtIso: string | null | undefined, nowMs: number | null): boolean {
+  if (!updatedAtIso || nowMs == null) return false
   const updatedAtMs = new Date(updatedAtIso).getTime()
   if (!Number.isFinite(updatedAtMs)) return false
-  return Date.now() - updatedAtMs <= RUN_ACTIVE_HEARTBEAT_MS
+  return nowMs - updatedAtMs <= RUN_ACTIVE_HEARTBEAT_MS
 }
 
 export default function SyncLiveStatusAndTerminal({ initialCursor, initialTerminal, embedded = false }: Props) {
+  // Wall clock for relative labels — null on SSR so server/client first paint match.
+  const [nowMs, setNowMs] = useState<number | null>(null)
+  useEffect(() => {
+    setNowMs(Date.now())
+    const id = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
   const [livePayload, setLivePayload] = useState<LivePayload | null>(null)
   const [yieldPayload, setYieldPayload] = useState<YieldPayload | null>(null)
   const [liveError, setLiveError] = useState<string | null>(null)
@@ -279,7 +290,7 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
     }
   }, [finalizedCounts, fixedTotals])
   const hasRunMarker = !!cursor?.runStartedAt
-  const recentlyActive = isRecentlyActive(cursor?.updatedAt)
+  const recentlyActive = isRecentlyActive(cursor?.updatedAt, nowMs)
   const liveRunInProgress = hasRunMarker && recentlyActive && (cursor?.phase === 'history' || cursor?.phase === 'listings')
   const staleRunMarker = hasRunMarker && !recentlyActive
   const serverTick = livePayload?.serverTime ?? null
@@ -346,12 +357,12 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
               </div>
               <div>
                 <p style={labelStyle}>Elapsed</p>
-                <p className="mt-0.5" style={figureStyle}>{cursor.runStartedAt ? formatElapsedFrom(cursor.runStartedAt) : '—'}</p>
+                <p className="mt-0.5" style={figureStyle}>{cursor.runStartedAt ? formatElapsedFrom(cursor.runStartedAt, nowMs) : '—'}</p>
               </div>
               <div>
                 <p style={labelStyle}>Last activity</p>
                 <p className="mt-0.5" style={figureStyle}>
-                  {cursor.updatedAt ? `${formatDateTime(cursor.updatedAt)} (${relativeTime(cursor.updatedAt)})` : '—'}
+                  {cursor.updatedAt ? `${formatDateTime(cursor.updatedAt)} (${relativeTime(cursor.updatedAt, nowMs)})` : '—'}
                 </p>
               </div>
               <div>
@@ -364,7 +375,7 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
               </div>
               <div>
                 <p style={labelStyle}>Server tick</p>
-                <p className="mt-0.5" style={figureStyle}>{serverTick ? `${formatDateTime(serverTick)} (${relativeTime(serverTick)})` : '—'}</p>
+                <p className="mt-0.5" style={figureStyle}>{serverTick ? `${formatDateTime(serverTick)} (${relativeTime(serverTick, nowMs)})` : '—'}</p>
               </div>
               <div>
                 <p style={labelStyle}>Run state</p>
@@ -436,7 +447,7 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
           <div>
             <p style={labelStyle}>Last checked</p>
             <p className="mt-0.5" style={figureStyle}>
-              {yieldPayload?.checkedAt ? `${formatDateTime(yieldPayload.checkedAt)} (${relativeTime(yieldPayload.checkedAt)})` : '—'}
+              {yieldPayload?.checkedAt ? `${formatDateTime(yieldPayload.checkedAt)} (${relativeTime(yieldPayload.checkedAt, nowMs)})` : '—'}
             </p>
           </div>
         </div>

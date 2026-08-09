@@ -93,6 +93,7 @@ export function DealFiles({ dealId, files }: Props) {
                     {new Date(f.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
+                      timeZone: 'America/Los_Angeles',
                     })}
                   </p>
                 ) : null}
