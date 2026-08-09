@@ -14,15 +14,35 @@
  * The subject/body inputs carry name="subject"/name="body" (+ hidden
  * bodyFormat) so a host <form> posts them unchanged — controlled and
  * form-postable at once.
+ *
+ * ── Migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
+ * PRESENTATION ONLY. This is the G50 compose chokepoint ci:composer-discipline
+ * requires of every bulk send host, mounted by at least eight surfaces, so the
+ * props, the tab/format state, the merge-token insertion, the preview build and
+ * every posted field name are byte-for-byte what they were.
+ *
+ * Three notes on HOW the swap was done, because each one is a trap:
+ *  - The two "pick one of N" rows (Preview/Edit, Text/HTML) were shadcn Buttons
+ *    whose selected member carried the primary variant. They are FilterChips
+ *    now, so the state is ANNOUNCED (aria-pressed) instead of implied by fill —
+ *    the same call recorded in RoutingEditor. The unselected members carried a
+ *    hover, so the chips carry one too; it is a Tailwind utility rather than an
+ *    inline style, because an inline value would outrank any stylesheet hover.
+ *  - The body box is a raw control + `av2-input` + aria-label, the folder's
+ *    pattern for an unlabelled field (MobileEditSheet, MobileNotesTab):
+ *    TextAreaField prints a visible heading this composer never had, and its
+ *    wrapper would stay on screen while the box itself is hidden on the preview
+ *    tab. Dropping the visible label never drops the accessible one.
+ *  - `av2-input` sets font-family and font-size unlayered, so the old
+ *    `font-mono text-xs` HTML-mode utilities would have been silently dead.
+ *    They are inline styles now, and HTML bodies still read as code.
  */
 
 import { useMemo, useRef, useState } from 'react'
 import { buildEmailPreviewDoc, looksLikeHtml, type EmailBodyFormat } from '@/lib/crm/email-body'
 import { findUnresolvedMergeTokens } from '@/lib/crm/merge'
 import { MergeFieldInserter, insertAtCursor, type CustomFieldToken } from '@/components/admin/crm/MergeFieldInserter'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { FilterChip, SearchField } from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 
 export function EmailBodyEditor(props: {
@@ -76,55 +96,58 @@ export function EmailBodyEditor(props: {
   return (
     <div className="space-y-2">
       <input type="hidden" name="bodyFormat" value={format} />
-      <Input
+      {/* The subject row has no visible label and never had one, so it is the
+          unlabelled SearchField rather than the labelled TextField. The toolbar
+          variant it carries is capped at 200px and drops to the small type
+          size; both are overridden inline, since a subject line is a full-width
+          body-size field. Neither property has a hover state. */}
+      <SearchField
+        type="text"
+        aria-label="Subject"
         name="subject"
         placeholder={props.subjectPlaceholder ?? 'Subject'}
         value={props.subject}
         onChange={(e) => props.onSubjectChange(e.target.value)}
+        style={{ width: '100%', maxWidth: 'none', fontSize: 'var(--a-text-md)' }}
       />
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Button type="button" size="sm" variant={tab === 'preview' ? 'default' : 'ghost'} onClick={() => setTab('preview')}>
+          <FilterChip pressed={tab === 'preview'} onClick={() => setTab('preview')} className="hover:opacity-80">
             Preview, what sends
-          </Button>
-          <Button type="button" size="sm" variant={tab === 'edit' ? 'default' : 'ghost'} onClick={() => setTab('edit')}>
+          </FilterChip>
+          <FilterChip pressed={tab === 'edit'} onClick={() => setTab('edit')} className="hover:opacity-80">
             Edit
-          </Button>
+          </FilterChip>
         </div>
         <div className="flex items-center gap-1">
           {tab === 'edit' && !props.hideMergeFields ? (
             <MergeFieldInserter channel="email" customFields={props.customFields} onInsert={handleInsertToken} />
           ) : null}
           {/* Text | HTML body-mode toggle. */}
-          <div className="flex items-center overflow-hidden rounded-full border border-input text-xs">
-            <Button
-              type="button"
-              size="sm"
-              variant={format === 'text' ? 'default' : 'ghost'}
+          <div className="flex items-center gap-1">
+            <FilterChip
+              pressed={format === 'text'}
               onClick={() => setFormat('text')}
-              aria-pressed={format === 'text'}
-              className={cn('h-auto rounded-none px-2.5 py-1 text-xs', format === 'text' ? '' : 'text-muted-foreground hover:text-foreground')}
+              className="hover:opacity-80"
             >
               Text
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={format === 'html' ? 'default' : 'ghost'}
+            </FilterChip>
+            <FilterChip
+              pressed={format === 'html'}
               onClick={() => setFormat('html')}
-              aria-pressed={format === 'html'}
-              className={cn('h-auto rounded-none px-2.5 py-1 text-xs', format === 'html' ? '' : 'text-muted-foreground hover:text-foreground')}
+              className="hover:opacity-80"
             >
               HTML
-            </Button>
+            </FilterChip>
           </div>
           {props.toolbarExtra}
         </div>
       </div>
       {/* The textarea stays mounted (hidden) so a host form always posts `body`. */}
-      <Textarea
+      <textarea
         ref={bodyRef}
         name="body"
+        aria-label="Message"
         rows={10}
         placeholder={
           props.bodyPlaceholder ??
@@ -132,18 +155,20 @@ export function EmailBodyEditor(props: {
         }
         value={props.body}
         onChange={(e) => props.onBodyChange(e.target.value)}
-        className={cn(tab === 'edit' ? '' : 'hidden', format === 'html' && 'font-mono text-xs')}
+        className={cn('av2-input field-sizing-content w-full', tab === 'edit' ? '' : 'hidden')}
+        style={format === 'html' ? { fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-sm)' } : undefined}
       />
       {tab === 'preview' ? (
         <iframe
           title="Email preview"
           sandbox=""
           srcDoc={previewDoc}
-          className="h-96 w-full rounded-xl border border-border bg-card"
+          className="h-96 w-full rounded-xl"
+          style={{ border: '1px solid var(--a-border)', background: 'var(--a-surface)' }}
         />
       ) : null}
       {unresolved.length > 0 ? (
-        <p className="text-xs font-medium text-warning">
+        <p className="text-xs font-medium" style={{ color: 'var(--a-warn)' }}>
           Unfilled merge fields, this contact has no value for: {unresolved.join(', ')}. Edit before sending.
         </p>
       ) : null}

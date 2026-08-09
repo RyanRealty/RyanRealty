@@ -2,16 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, SelectField, TextField } from '@/components/admin/v2'
 import {
   adminAddSubscriberAction,
   adminSetSubscriberStatusAction,
@@ -24,6 +15,16 @@ const SEGMENTS: { value: string; label: string }[] = [
   { value: 'seller', label: 'Seller' },
   { value: 'past-client', label: 'Past client' },
 ]
+
+/**
+ * Admin v2 (11F): shadcn Input/Label/Select/Button replaced by the locked admin
+ * language. The Label + control pairs collapse into the field primitives, which
+ * own the <label htmlFor> wiring themselves (FieldShell), so the visible label
+ * and the programmatic association both survive the swap. The status toggle's
+ * destructive/outline variants map to danger/quiet; v2 Button has no `size`, so
+ * the sm sizing goes to the primitive's own 36px metric. Presentation only: same
+ * server actions, same FormData fields, same validation, same strings.
+ */
 
 /** Add a subscriber by email + segment. */
 export function AddSubscriberForm() {
@@ -61,30 +62,35 @@ export function AddSubscriberForm() {
 
   return (
     <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
-      <div className="space-y-1.5">
-        <Label htmlFor="sub-email">Email</Label>
-        <Input id="sub-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" required />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="sub-name">Name</Label>
-        <Input id="sub-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Optional" />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="sub-segment">Segment</Label>
-        <Select value={segment} onValueChange={setSegment}>
-          <SelectTrigger id="sub-segment" className="w-full sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SEGMENTS.map((s) => (
-              <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <TextField
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="name@example.com"
+        required
+      />
+      <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Optional" />
+      <div className="w-full sm:w-40">
+        <SelectField label="Segment" value={segment} onChange={(e) => setSegment(e.target.value)}>
+          {SEGMENTS.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </SelectField>
       </div>
       <Button type="submit" disabled={pending}>{pending ? 'Adding…' : 'Add subscriber'}</Button>
       {message ? (
-        <p className={message.type === 'ok' ? 'text-sm text-success sm:col-span-4' : 'text-sm text-destructive sm:col-span-4'} role="alert">
+        <p
+          className="sm:col-span-4"
+          role="alert"
+          style={{
+            margin: 0,
+            fontSize: 'var(--a-text-sm)',
+            color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+          }}
+        >
           {message.text}
         </p>
       ) : null}
@@ -107,7 +113,7 @@ export function SubscriberStatusToggle({ id, status }: { id: string; status: Sub
   }
 
   return (
-    <Button type="button" size="sm" variant={isActive ? 'destructive' : 'outline'} onClick={onToggle} disabled={pending}>
+    <Button type="button" variant={isActive ? 'danger' : 'quiet'} onClick={onToggle} disabled={pending}>
       {pending ? '…' : isActive ? 'Remove' : 'Re-add'}
     </Button>
   )

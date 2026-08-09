@@ -23,6 +23,24 @@
 .av2-btn--touch { min-height:var(--a-touch); }
 .av2-btn:focus-visible { outline:none; box-shadow:var(--a-focus); }
 .av2-btn:disabled { opacity:.5; cursor:not-allowed; }
+/* Interaction states. These did not exist: .av2-btn declared transition:background
+   and then never changed background on any state, so EVERY v2 button in the admin
+   had no hover and no pressed feedback. Three independent 11F migrations each
+   reported "the shadcn hover was lost" — shadcn's variants carried
+   hover:bg-accent and aria-expanded:bg-muted, and there was nothing here to
+   receive them. Variant rules follow the base rule so source order resolves the
+   tie at equal specificity. */
+.av2-btn:hover:not(:disabled) { background:var(--a-accent-strong); }
+.av2-btn--quiet:hover:not(:disabled) { background:var(--a-inset); }
+.av2-btn--danger:hover:not(:disabled) { opacity:.9; }
+/* Geometric press works for every variant without needing a darker token. */
+.av2-btn:active:not(:disabled) { transform:translateY(1px); }
+/* OPEN state for a button that owns a popup. Radix set aria-expanded on its
+   triggers and shadcn styled it; the v2 Menu/Combobox set the same attribute, so
+   a trigger now stays lit while its panel is up instead of going flat the moment
+   the pointer moves into the panel it opened. */
+.av2-btn[aria-expanded="true"]:not(:disabled),
+.av2-iconbtn[aria-expanded="true"]:not(:disabled) { background:var(--a-inset); color:var(--a-text); }
 
 /* ---- StateWord (status = text + color, never color alone) ---- */
 .av2-state { display:inline-block; font-size:var(--a-text-xs); font-weight:700;
@@ -176,6 +194,9 @@ textarea.av2-input { min-height:88px; resize:vertical; }
   font-size:var(--a-text-sm); color:var(--a-text-2); cursor:pointer; }
 .av2-check input { accent-color:var(--a-accent); width:15px; height:15px; margin:0; }
 .av2-check input:focus-visible { outline:none; box-shadow:var(--a-focus); border-radius:2px; }
+/* Row feedback. A checkbox/radio row inside a menu had no hover at all once the
+   Radix menuitem wrappers went away, so option lists read as inert. */
+.av2-check:hover { color:var(--a-text); }
 
 /* ---- Entity fold (pattern 5: stacked context sections on a person page) ---- */
 /* min-width:0 because a grid/flex ITEM defaults to min-width:auto and therefore
@@ -348,6 +369,14 @@ textarea.av2-input { min-height:88px; resize:vertical; }
 @media (pointer:fine) { .av2-menu__item { min-height:32px; } }
 .av2-menu__item:hover:not(:disabled) { background:var(--a-inset); }
 .av2-menu__item:focus-visible { outline:none; box-shadow:var(--a-focus); }
+/* One highlight at a time. CSS :hover is geometric and does not clear when focus
+   moves, so a pointer resting on one row while the user arrows to another lit
+   BOTH and the broker could not tell which row Enter would take. Radix drove
+   mouse and keyboard through a single :focus. While anything inside the panel
+   holds focus — i.e. the keyboard is in use — hover on a non-focused row is
+   suppressed. With the mouse alone, focus stays on the trigger and hover works
+   normally. */
+.av2-menu__panel:focus-within .av2-menu__item:hover:not(:focus) { background:transparent; }
 .av2-menu__item--danger { color:var(--a-danger); }
 .av2-menu__item:disabled { opacity:.4; cursor:not-allowed; }
 

@@ -2,15 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Button, Dialog } from '@/components/admin/v2'
 import {
   adminSendNewsletterAction,
   adminDeleteNewsletterAction,
@@ -22,6 +14,16 @@ import {
  * Dialog that first resolves the audience size + per-broker split (so the admin
  * sees exactly who it reaches before approving), then on confirm enqueues the
  * send and refreshes into the stats view. Delete returns to the management home.
+ *
+ * Admin v2 (11F): shadcn Dialog/Button replaced by the locked admin language.
+ * The confirm keeps the base <Dialog> rather than <ConfirmDialog> because the
+ * confirm button carries its own disabled logic (blocked until an audience
+ * resolves and is non-empty) while Cancel is only blocked while pending —
+ * ConfirmDialog's single `busy` flag would disable both. ci:admin-ui rule C
+ * counts primary v2 <Button>s across the whole file, so the terminal "Confirm
+ * and send" keeps the primary variant and the trigger that opens the dialog is
+ * quiet, matching the sibling NewsletterScheduleControls. Presentation only:
+ * same server actions, same confirm step, same disabled logic, same strings.
  */
 export default function NewsletterDraftActions({ id }: { id: string }) {
   const router = useRouter()
@@ -97,46 +99,49 @@ export default function NewsletterDraftActions({ id }: { id: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button type="button" onClick={openConfirm} disabled={pending}>
+      {/* NEITHER ROW BUTTON IS SOLID, on purpose. The migration left "Delete
+          draft" as variant="danger" (solid red) while "Send now" was quiet, so
+          the only filled control on a newsletter draft was the destructive one
+          and the eye landed on Delete where the intended action is Send.
+          Promoting Send to primary would fix the optics and break rule C —
+          ci:admin-ui counts primaries across the WHOLE file, and the terminal
+          "Confirm" inside the dialog below is the one that should hold it, since
+          that is the button that actually sends. So Send stays quiet and Delete
+          becomes quiet-with-danger-colour: the inversion is gone, the single
+          primary still belongs to the irreversible step. */}
+      <Button type="button" variant="quiet" onClick={openConfirm} disabled={pending}>
         {pending ? 'Working…' : 'Send now'}
       </Button>
-      <Button type="button" variant="destructive" onClick={onDelete} disabled={pending}>
+      <Button
+        type="button"
+        variant="quiet"
+        onClick={onDelete}
+        disabled={pending}
+        style={{ color: 'var(--a-danger)' }}
+      >
         Delete draft
       </Button>
       {message ? (
-        <p className={message.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'} role="alert">
+        <p
+          role="alert"
+          style={{
+            margin: 0,
+            fontSize: 'var(--a-text-sm)',
+            color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+          }}
+        >
           {message.text}
         </p>
       ) : null}
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve and send this newsletter?</DialogTitle>
-            <DialogDescription>
-              It enqueues immediately. The send queue delivers to active subscribers, skipping any suppressed contacts.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-2">
-            {audienceError ? (
-              <p className="text-sm text-destructive" role="alert">{audienceError}</p>
-            ) : audience ? (
-              <div>
-                <p className="text-lg font-semibold text-foreground tabular-nums">
-                  {audience.total.toLocaleString('en-US')} recipient{audience.total === 1 ? '' : 's'}
-                </p>
-                {splitLine ? (
-                  <p className="mt-1 text-sm text-muted-foreground tabular-nums">{splitLine}</p>
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Resolving the audience…</p>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={pending}>
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Approve and send this newsletter?"
+        description="It enqueues immediately. The send queue delivers to active subscribers, skipping any suppressed contacts."
+        footer={
+          <>
+            <Button type="button" variant="quiet" onClick={() => setConfirmOpen(false)} disabled={pending}>
               Cancel
             </Button>
             <Button
@@ -146,8 +151,35 @@ export default function NewsletterDraftActions({ id }: { id: string }) {
             >
               {pending ? 'Sending…' : 'Confirm and send'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <div className="py-2">
+          {audienceError ? (
+            <p role="alert" style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+              {audienceError}
+            </p>
+          ) : audience ? (
+            <div>
+              <p
+                className="tabular-nums"
+                style={{ margin: 0, fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' }}
+              >
+                {audience.total.toLocaleString('en-US')} recipient{audience.total === 1 ? '' : 's'}
+              </p>
+              {splitLine ? (
+                <p
+                  className="tabular-nums"
+                  style={{ margin: '4px 0 0', fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}
+                >
+                  {splitLine}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>Resolving the audience…</p>
+          )}
+        </div>
       </Dialog>
     </div>
   )

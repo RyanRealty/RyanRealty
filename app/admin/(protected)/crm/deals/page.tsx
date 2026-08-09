@@ -145,7 +145,7 @@ export default async function CrmDealsPage({
         isOwner={isSuperuser}
       />
 
-      <div className="flex-1 bg-muted/30 pt-4">
+      <div className="flex-1 pt-4" style={{ background: 'var(--a-inset)' }}>
         {activePipeline ? (
           <DealsBoard
             pipeline={activePipeline}

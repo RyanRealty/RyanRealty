@@ -2,17 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, SelectField, TextAreaField, TextField } from '@/components/admin/v2'
 import { adminBulkEnrollNewsletterAction } from '@/app/actions/newsletter'
 import type { NewsletterSegment } from '@/lib/data'
 
@@ -28,6 +18,12 @@ const SEGMENTS: { value: NewsletterSegment; label: string }[] = [
  * the unique(lower(email)) index de-dupes, so pasting a name already on the list is
  * a no-op. Addresses that previously unsubscribed are never re-added — they count as
  * skipped, not resurrected (S-10).
+ *
+ * Admin v2 (11F): shadcn Textarea/Input/Label/Select/Button replaced by the locked
+ * admin language. The helper lines stay BELOW their control rather than moving into
+ * the field primitive's `hint` slot, which renders above the input — the swap is a
+ * primitive swap, not a re-ordering of the form. Presentation only: same server
+ * action, same parsing, same result breakdown, same strings.
  */
 export function BulkEnrollForm() {
   const router = useRouter()
@@ -72,44 +68,57 @@ export function BulkEnrollForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div className="space-y-1.5">
-        <Label htmlFor="bulk-emails">Emails</Label>
-        <Textarea
-          id="bulk-emails"
+        <TextAreaField
+          label="Emails"
           value={emails}
           onChange={(e) => setEmails(e.target.value)}
           placeholder="Paste emails — one per line, or comma / semicolon separated."
           rows={6}
         />
-        <p className="text-xs text-muted-foreground">Invalid and duplicate addresses are dropped automatically. Cap 5,000 per batch.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Invalid and duplicate addresses are dropped automatically. Cap 5,000 per batch.
+        </p>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="bulk-tag">CRM tag (optional)</Label>
-        <Input
-          id="bulk-tag"
+        <TextField
+          label="CRM tag (optional)"
           value={crmTag}
           onChange={(e) => setCrmTag(e.target.value)}
           placeholder="e.g. past-client — enrolls everyone carrying that exact tag"
         />
-        <p className="text-xs text-muted-foreground">Realtors and already-suppressed contacts are excluded automatically. The tag must match exactly.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Realtors and already-suppressed contacts are excluded automatically. The tag must match exactly.
+        </p>
       </div>
       <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="bulk-segment">Segment</Label>
-          <Select value={segment} onValueChange={(v) => setSegment(v as NewsletterSegment)}>
-            <SelectTrigger id="bulk-segment" className="w-full sm:w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SEGMENTS.map((s) => (
-                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Not w-full: as a direct child of `flex flex-wrap`, width:100% makes
+            this select consume the whole row on phones and pushes the submit
+            onto its own line. The old w-full sat on the trigger INSIDE this
+            wrapper, so the wrapper stayed shrink-to-fit. */}
+        <div className="sm:w-40">
+          <SelectField
+            label="Segment"
+            value={segment}
+            onChange={(e) => setSegment(e.target.value as NewsletterSegment)}
+          >
+            {SEGMENTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </SelectField>
         </div>
         <Button type="submit" disabled={pending}>{pending ? 'Enrolling…' : 'Add subscribers'}</Button>
       </div>
       {message ? (
-        <p className={message.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'} role="alert">
+        <p
+          role="alert"
+          style={{
+            margin: 0,
+            fontSize: 'var(--a-text-sm)',
+            color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+          }}
+        >
           {message.text}
         </p>
       ) : null}

@@ -2,18 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Button, Dialog, TextAreaField, TextField } from '@/components/admin/v2'
 import { adminBulkOneOffSendAction } from '@/app/actions/newsletter'
 import { parseEmailList } from '@/lib/newsletter/parse-emails'
 
@@ -23,6 +12,16 @@ import { parseEmailList } from '@/lib/newsletter/parse-emails'
  * anything sends. On confirm the server action runs the brand-voice gate, creates
  * a subscriber row per recipient (for the unsubscribe token), and enqueues through
  * the same suppression-checked drain as the audience send.
+ *
+ * Admin v2 (11F): shadcn Dialog/Textarea/Input/Label/Button replaced by the locked
+ * admin language. The confirm keeps the base <Dialog> rather than <ConfirmDialog>
+ * because the confirm button carries its own disabled logic (no pasted address and
+ * no CRM tag) while Cancel is only blocked while pending — ConfirmDialog's single
+ * `busy` flag would disable both. ci:admin-ui rule C counts primary v2 <Button>s
+ * across the whole file, so the terminal "Confirm and send" keeps the primary
+ * variant and the trigger that opens the dialog is quiet, matching the sibling
+ * NewsletterScheduleControls. Presentation only: same server action, same parsed
+ * count, same confirm step, same disabled logic, same strings.
  */
 export default function BulkOneOffForm({ id }: { id: string }) {
   const router = useRouter()
@@ -71,66 +70,78 @@ export default function BulkOneOffForm({ id }: { id: string }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
+      <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
         Sends this issue to a specific list, once. Each recipient gets a one-click unsubscribe rail, and anyone suppressed or
         opted-out is skipped automatically. It does not change your recurring subscriber list.
       </p>
       <div className="space-y-1.5">
-        <Label htmlFor="oneoff-emails">Emails</Label>
-        <Textarea
-          id="oneoff-emails"
+        <TextAreaField
+          label="Emails"
           value={emails}
           onChange={(e) => setEmails(e.target.value)}
           placeholder="Paste emails — one per line, or comma / semicolon separated."
           rows={5}
         />
-        <p className="text-xs text-muted-foreground tabular-nums">
+        <p
+          className="tabular-nums"
+          style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+        >
           {parsed.length.toLocaleString('en-US')} valid recipient{parsed.length === 1 ? '' : 's'} parsed.
         </p>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="oneoff-tag">CRM tag (optional)</Label>
-        <Input
-          id="oneoff-tag"
+        <TextField
+          label="CRM tag (optional)"
           value={crmTag}
           onChange={(e) => setCrmTag(e.target.value)}
           placeholder="e.g. past-client — also sends to everyone carrying that exact tag"
         />
       </div>
-      <Button type="button" onClick={openConfirm} disabled={pending}>
+      <Button type="button" variant="quiet" onClick={openConfirm} disabled={pending}>
         {pending ? 'Working…' : 'Send this issue to the list'}
       </Button>
       {message ? (
-        <p className={message.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'} role="alert">
+        <p
+          role="alert"
+          style={{
+            margin: 0,
+            fontSize: 'var(--a-text-sm)',
+            color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+          }}
+        >
           {message.text}
         </p>
       ) : null}
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send this issue to the list?</DialogTitle>
-            <DialogDescription>
-              A one-time send. The queue delivers to these recipients, skipping any suppressed or opted-out contacts.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2">
-            <p className="text-lg font-semibold text-foreground tabular-nums">
-              {parsed.length.toLocaleString('en-US')} pasted recipient{parsed.length === 1 ? '' : 's'}
-            </p>
-            {crmTag.trim() ? (
-              <p className="text-sm text-muted-foreground">plus everyone tagged &ldquo;{crmTag.trim()}&rdquo; (realtors and suppressed excluded)</p>
-            ) : null}
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={pending}>
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Send this issue to the list?"
+        description="A one-time send. The queue delivers to these recipients, skipping any suppressed or opted-out contacts."
+        footer={
+          <>
+            <Button type="button" variant="quiet" onClick={() => setConfirmOpen(false)} disabled={pending}>
               Cancel
             </Button>
             <Button type="button" onClick={onConfirm} disabled={pending || (parsed.length === 0 && !crmTag.trim())}>
               {pending ? 'Sending…' : 'Confirm and send'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <div className="py-2">
+          <p
+            className="tabular-nums"
+            style={{ margin: 0, fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' }}
+          >
+            {parsed.length.toLocaleString('en-US')} pasted recipient{parsed.length === 1 ? '' : 's'}
+          </p>
+          {crmTag.trim() ? (
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              plus everyone tagged &ldquo;{crmTag.trim()}&rdquo; (realtors and suppressed excluded)
+            </p>
+          ) : null}
+        </div>
       </Dialog>
     </div>
   )

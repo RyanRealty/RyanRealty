@@ -2,18 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button, SelectField, TextAreaField, TextField } from '@/components/admin/v2'
 import {
   adminCreateNewsletterAction,
   adminUpdateNewsletterAction,
@@ -60,6 +49,17 @@ type Props = {
  * When editing an existing draft (id set), a "Preview" tab renders the draft
  * through the REAL send pipeline for a chosen broker — proving the per-broker
  * identity swap — and a "Send test to me" control sends one copy to the admin.
+ *
+ * Admin v2 (11F): shadcn Input/Textarea/Select/Label/Tabs/Button replaced by the
+ * locked admin language. The tab pair is a real ARIA tablist (role=tab /
+ * shipped for the sibling NewsletterPreviewPanel, which keeps Radix Tabs' mount
+ * behaviour exactly — the inactive pane unmounts. Label + control pairs collapse
+ * into the field primitives, which own the <label htmlFor> wiring themselves, so
+ * the visible label and the programmatic association both survive. ci:admin-ui
+ * rule C counts primary v2 <Button>s across the whole file, so the draft's Save /
+ * Create submit keeps the primary variant and both preview-pane actions are
+ * quiet, matching NewsletterPreviewPanel. Presentation only: same server actions,
+ * same FormData fields, same routing, same strings.
  */
 export default function NewsletterComposeForm({ id, initial, editOnly }: Props) {
   const router = useRouter()
@@ -70,6 +70,9 @@ export default function NewsletterComposeForm({ id, initial, editOnly }: Props) 
   const [body, setBody] = useState(initial?.body_html ?? '')
   const [bodyText, setBodyText] = useState(initial?.body_text ?? '')
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  // Replaces <Tabs defaultValue="compose"> — same uncontrolled-from-the-caller
+  // default, declared above the early return so hook order never varies.
+  const [tab, setTab] = useState<'compose' | 'preview'>('compose')
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -106,66 +109,65 @@ export default function NewsletterComposeForm({ id, initial, editOnly }: Props) 
 
   const fields = (
     <>
-      <div className="space-y-1.5">
-        <Label htmlFor="nl-subject">Subject</Label>
-        <Input
-          id="nl-subject"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="What's happening in the Bend market"
-          required
-        />
-      </div>
+      <TextField
+        label="Subject"
+        value={subject}
+        onChange={(e) => setSubject(e.target.value)}
+        placeholder="What's happening in the Bend market"
+        required
+      />
 
       <div className="space-y-1.5">
-        <Label htmlFor="nl-preview">Preview text</Label>
-        <Input
-          id="nl-preview"
+        <TextField
+          label="Preview text"
           value={previewText}
           onChange={(e) => setPreviewText(e.target.value)}
           placeholder="The one line inbox preview shown next to the subject."
         />
-        <p className="text-xs text-muted-foreground">Optional. The short line inboxes show after the subject.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Optional. The short line inboxes show after the subject.
+        </p>
+      </div>
+
+      <div className="w-full sm:w-72">
+        <SelectField label="Audience" value={audience} onChange={(e) => setAudience(e.target.value)}>
+          {AUDIENCES.map((a) => (
+            <option key={a.value} value={a.value}>
+              {a.label}
+            </option>
+          ))}
+        </SelectField>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="nl-audience">Audience</Label>
-        <Select value={audience} onValueChange={setAudience}>
-          <SelectTrigger id="nl-audience" className="w-full sm:w-72">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {AUDIENCES.map((a) => (
-              <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="nl-body">Body (HTML)</Label>
-        <Textarea
-          id="nl-body"
+        <TextAreaField
+          label="Body (HTML)"
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={14}
           placeholder="Write the newsletter here."
-          className="font-mono text-sm"
+          // style, not className: the field primitives hard-set className to
+          // av2-input and spread rest AFTER it, so a className prop would
+          // replace the primitive's own styling rather than add to it.
+          style={{ fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-sm)' }}
         />
-        <p className="text-xs text-muted-foreground">HTML renders inside the branded newsletter shell.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          HTML renders inside the branded newsletter shell.
+        </p>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="nl-body-text">Body (plain text)</Label>
-        <Textarea
-          id="nl-body-text"
+        <TextAreaField
+          label="Body (plain text)"
           value={bodyText}
           onChange={(e) => setBodyText(e.target.value)}
           rows={8}
           placeholder="Plain-text version for clients that can't render HTML."
-          className="font-mono text-sm"
+          style={{ fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-sm)' }}
         />
-        <p className="text-xs text-muted-foreground">Optional. Auto-generated from the HTML at send if left blank.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Optional. Auto-generated from the HTML at send if left blank.
+        </p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -173,7 +175,14 @@ export default function NewsletterComposeForm({ id, initial, editOnly }: Props) 
           {pending ? 'Saving…' : id ? 'Save draft' : 'Create draft'}
         </Button>
         {message ? (
-          <p className={message.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'} role="alert">
+          <p
+            role="alert"
+            style={{
+              margin: 0,
+              fontSize: 'var(--a-text-sm)',
+              color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+            }}
+          >
             {message.text}
           </p>
         ) : null}
@@ -192,22 +201,90 @@ export default function NewsletterComposeForm({ id, initial, editOnly }: Props) 
   }
 
   return (
-    <Tabs defaultValue="compose" className="space-y-5">
-      <TabsList>
-        <TabsTrigger value="compose">Compose</TabsTrigger>
-        <TabsTrigger value="preview">Preview as broker</TabsTrigger>
-      </TabsList>
+    <div className="space-y-5">
+      {/* A real tablist. The migration replaced Radix <Tabs> with a role="group"
+          of toggle chips, which drops role=tablist/tab/tabpanel, aria-selected,
+          the aria-controls pairing and Left/Right/Home/End roving — a screen
+          reader stopped hearing "tab 1 of 2" and the keyboard user had to Tab
+          through each chip. v2's TabBar is a <nav> of links for page-level
+          navigation, so it is the wrong primitive here; the pattern is wired
+          directly instead. */}
+      <div
+        className="flex"
+        role="tablist"
+        aria-label="Draft view"
+        onKeyDown={(e) => {
+          const order = ['compose', 'preview'] as const
+          const i = order.indexOf(tab)
+          let next: (typeof order)[number] | null = null
+          if (e.key === 'ArrowRight') next = order[(i + 1) % order.length]
+          else if (e.key === 'ArrowLeft') next = order[(i - 1 + order.length) % order.length]
+          else if (e.key === 'Home') next = order[0]
+          else if (e.key === 'End') next = order[order.length - 1]
+          if (!next) return
+          e.preventDefault()
+          setTab(next)
+          document.getElementById(`newsletter-tab-${next}`)?.focus()
+        }}
+        style={{
+          gap: 2,
+          padding: 2,
+          background: 'var(--a-inset)',
+          borderRadius: 'var(--a-r-md)',
+          width: 'fit-content',
+        }}
+      >
+        {(
+          [
+            { key: 'compose' as const, label: 'Compose' },
+            { key: 'preview' as const, label: 'Preview as broker' },
+          ]
+        ).map((t) => (
+          <Button
+            key={t.key}
+            id={`newsletter-tab-${t.key}`}
+            type="button"
+            variant="quiet"
+            role="tab"
+            aria-selected={tab === t.key}
+            aria-controls={`newsletter-panel-${t.key}`}
+            // Roving tabindex: only the selected tab is in the tab order, which
+            // is what makes Left/Right the way you move between them.
+            tabIndex={tab === t.key ? 0 : -1}
+            onClick={() => setTab(t.key)}
+            style={{
+              border: 'none',
+              borderRadius: 'var(--a-r-sm)',
+              minHeight: 0,
+              padding: '6px 14px',
+              fontWeight: 500,
+              background: tab === t.key ? 'var(--a-bg)' : 'transparent',
+              color: tab === t.key ? 'var(--a-text)' : 'var(--a-text-2)',
+            }}
+          >
+            {t.label}
+          </Button>
+        ))}
+      </div>
 
-      <TabsContent value="compose">
-        <form onSubmit={onSubmit} className="space-y-5">
+      {tab === 'compose' ? (
+        <form
+          id="newsletter-panel-compose"
+          role="tabpanel"
+          aria-labelledby="newsletter-tab-compose"
+          onSubmit={onSubmit}
+          className="space-y-5"
+        >
           {fields}
         </form>
-      </TabsContent>
+      ) : null}
 
-      <TabsContent value="preview">
-        <NewsletterPreviewPane id={id} />
-      </TabsContent>
-    </Tabs>
+      {tab === 'preview' ? (
+        <div id="newsletter-panel-preview" role="tabpanel" aria-labelledby="newsletter-tab-preview">
+          <NewsletterPreviewPane id={id} />
+        </div>
+      ) : null}
+    </div>
   )
 }
 
@@ -264,39 +341,44 @@ function NewsletterPreviewPane({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="nl-preview-broker">Render as</Label>
-          <Select value={broker} onValueChange={onBrokerChange}>
-            <SelectTrigger id="nl-preview-broker" className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {BROKERS.map((b) => (
-                <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="w-40">
+          <SelectField label="Render as" value={broker} onChange={(e) => onBrokerChange(e.target.value)}>
+            {BROKERS.map((b) => (
+              <option key={b.value} value={b.value}>
+                {b.label}
+              </option>
+            ))}
+          </SelectField>
         </div>
-        <Button type="button" variant="outline" onClick={() => loadPreview(broker)} disabled={pending}>
+        <Button type="button" variant="quiet" onClick={() => loadPreview(broker)} disabled={pending}>
           {pending ? 'Rendering…' : html ? 'Refresh preview' : 'Load preview'}
         </Button>
-        <Button type="button" onClick={onTestSend} disabled={pending}>
+        <Button type="button" variant="quiet" onClick={onTestSend} disabled={pending}>
           Send test to me
         </Button>
         {testMsg ? (
-          <p className={testMsg.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'} role="alert">
+          <p
+            role="alert"
+            style={{
+              margin: 0,
+              fontSize: 'var(--a-text-sm)',
+              color: testMsg.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+            }}
+          >
             {testMsg.text}
           </p>
         ) : null}
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
         Previews the saved draft. Save the Compose tab first to see the latest edits. The close block below the body
         swaps to the selected broker&rsquo;s identity.
       </p>
 
       {error ? (
-        <p className="text-sm text-destructive" role="alert">{error}</p>
+        <p role="alert" style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }}>
+          {error}
+        </p>
       ) : null}
 
       {html ? (
@@ -308,11 +390,28 @@ function NewsletterPreviewPane({ id }: { id: string }) {
           // in the admin's session (stored XSS). An email never needs script, so block
           // all of it — static HTML, CSS, and images still render under sandbox="".
           sandbox=""
-          style={{ height: 720 }}
-          className="w-full rounded-xl border border-border bg-background"
+          className="w-full"
+          style={{
+            height: 720,
+            borderRadius: 'var(--a-r-lg)',
+            border: '1px solid var(--a-border)',
+            // --a-surface, not --a-bg: the page behind this pane is --a-bg, and a
+            // panel painted its own parent's colour is an invisible panel.
+            background: 'var(--a-surface)',
+          }}
         />
       ) : !error ? (
-        <div className="rounded-xl border border-dashed border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground">
+        <div
+          style={{
+            borderRadius: 'var(--a-r-lg)',
+            border: '1px dashed var(--a-border)',
+            background: 'var(--a-inset)',
+            padding: 32,
+            textAlign: 'center',
+            fontSize: 'var(--a-text-sm)',
+            color: 'var(--a-text-2)',
+          }}
+        >
           Load the preview to see how this newsletter renders for the selected broker.
         </div>
       ) : null}

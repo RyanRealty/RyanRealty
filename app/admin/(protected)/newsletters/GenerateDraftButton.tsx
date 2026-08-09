@@ -2,12 +2,18 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/admin/v2'
 import { adminGenerateNewsletterDraftAction } from '@/app/actions/newsletter'
 
 /**
  * "Generate draft from live data" — runs the curation producer, then routes to
  * the new draft for review. Draft-first: this only WRITES a draft, it never sends.
+ *
+ * Admin v2 (11F): the shadcn Button was replaced by the locked admin language —
+ * variant="outline" maps to "quiet", the same bordered secondary weight — and
+ * the error line's shadcn destructive colour to var(--a-danger). Presentation
+ * only: same
+ * server action, same routing, same strings.
  */
 export function GenerateDraftButton() {
   const router = useRouter()
@@ -30,10 +36,12 @@ export function GenerateDraftButton() {
 
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button variant="outline" onClick={onClick} disabled={pending}>
+      <Button variant="quiet" onClick={onClick} disabled={pending}>
         {pending ? 'Generating…' : 'Generate draft from live data'}
       </Button>
-      {error ? <span className="text-xs text-destructive">{error}</span> : null}
+      {error ? (
+        <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>{error}</span>
+      ) : null}
     </div>
   )
 }

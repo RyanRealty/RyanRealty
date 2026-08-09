@@ -449,6 +449,32 @@ const SCAN_DIRS = [
   'app/admin/(protected)/expired-listings/page.tsx',
   'app/admin/(protected)/page.tsx',
   'app/admin/(protected)/visitors/page.tsx',
+
+  // Zero-blocker pages under the content-based rule 3: every component in their
+  // render closure is already scanned, so they are proven, not assumed.
+  'app/admin/(protected)/content-library/page.tsx',
+  'app/admin/(protected)/crm/deals/page.tsx',
+
+  // Unblocked 2026-08-09 by migrating the 9 files these pages reached into:
+  // EmailBodyEditor + MergeFieldInserter (the G50 composer chokepoints, taken
+  // off shadcn IN PLACE — nothing moved and ci:composer-discipline is untouched),
+  // GlobalActivityFeed.client, and the six newsletters ROUTE-ROOT forms that no
+  // relocation-driven unit could see.
+  'components/admin/crm/EmailBodyEditor.tsx',
+  'components/admin/crm/MergeFieldInserter.tsx',
+  'components/admin/crm/GlobalActivityFeed.client.tsx',
+  'app/admin/(protected)/newsletters/SubscriberForms.tsx',
+  'app/admin/(protected)/newsletters/BulkEnrollForm.tsx',
+  'app/admin/(protected)/newsletters/NewsletterComposeForm.tsx',
+  'app/admin/(protected)/newsletters/NewsletterDraftActions.tsx',
+  'app/admin/(protected)/newsletters/BulkOneOffForm.tsx',
+  'app/admin/(protected)/newsletters/GenerateDraftButton.tsx',
+  'app/admin/(protected)/crm/activity/page.tsx',
+  'app/admin/(protected)/newsletters/subscribers/page.tsx',
+  'app/admin/(protected)/newsletters/[id]/page.tsx',
+  'app/admin/(protected)/bpo/page.tsx',
+  'app/admin/(protected)/cmas/page.tsx',
+  'app/admin/(protected)/dscr/page.tsx',
 ]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 
