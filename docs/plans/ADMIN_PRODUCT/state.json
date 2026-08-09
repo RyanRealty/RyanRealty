@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "11F UNIT 7 COMPLETE 2026-08-08 \u2014 crm/settings migrated (24 files, 11 pages): 312 shadcn semantic classes and 1,156 rendered to ZERO, gated file-form around the three MergeFieldInserter files. Token-gated admin pages 123 of 170, 21 real pages left. Also fixed a LIVE 500 on /admin/crm/subscriptions (a 'use server' module re-exporting imported types) and landed gate G63 for that class. Shipped 723d424c + 45b64103 + b6d07c95, deployed READY. NEXT: crm 8 islands, crm/deals 5, crm/sequences 5, crm/tasks 3, people/[id] 3.",
+  "current_process": "11F UNIT 8 COMPLETE 2026-08-08 \u2014 crm/sequences + crm/tasks migrated (289 source / 3,226 rendered shadcn classes to ZERO); barrel gained Combobox, Menu keyboard nav, and forwardRef on Button/TextField, each because a migration lost real behaviour. ALSO fixed the bundle blocker: package.json now declares sideEffects, measured 9.73 -> 8.84 MB (-889 KB) across two production builds. Token-gated admin pages 126 of 170, 18 real pages left. Shipped 4eba838d + 28c0a08c + 4d6b1c0b, deployed READY. NEXT: crm root 8 islands, crm/deals 5, then the pairs and singles.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-08T14:40:00Z"
+  "updated_at": "2026-08-08T17:30:00Z"
 }
