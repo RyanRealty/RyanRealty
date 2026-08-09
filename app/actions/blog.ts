@@ -40,6 +40,17 @@ export type BlogPostWithAuthor = BlogPostRow & {
   author_photo_url: string | null
   content?: string | null
   tags?: string[] | null
+  /**
+   * Present only on reads that ask for it — the public readers below do not,
+   * because they filter on it server-side instead. Optional here rather than on
+   * BlogPostRow so a reader that omits the column cannot claim to have it.
+   *
+   * `blog_posts.status` is free text with a 'draft' default, NOT a Postgres
+   * enum, so this is a string. Four values are live (measured 2026-08-08 via
+   * the audit query in this commit): published 55, archived_stats_unverified
+   * 28, draft 3, pending_pilot_review 1.
+   */
+  status?: string | null
 }
 
 const PAGE_SIZE = 12
@@ -202,9 +213,15 @@ export async function getAdminBlogPosts(): Promise<BlogPostWithAuthor[]> {
   const supabase = getServiceSupabase()
   if (!supabase) return []
   // P1-1 fix: include content and tags so the edit form can pre-populate them.
+  // P12 fix: include `status`. Without it the edit form had no way to read the
+  // column the public blog actually filters on, so it inferred the value from
+  // published_at — and every one of the 87 posts carries a publish date. Opening
+  // any of the 32 non-published posts and saving therefore wrote
+  // status:'published' and put it on the public site. Nothing had been flipped
+  // when this was found; the column was simply never fetched.
   const { data } = await supabase
     .from('blog_posts')
-    .select('id, title, slug, content, excerpt, category, tags, hero_image_url, published_at, author_broker_id, seo_title, seo_description')
+    .select('id, title, slug, content, excerpt, category, tags, hero_image_url, published_at, author_broker_id, seo_title, seo_description, status')
     .order('published_at', { ascending: false, nullsFirst: true })
     .limit(500)
   return ((data ?? []) as (BlogPostRow & { content?: string | null; tags?: string[] | null })[]).map((p) => ({
@@ -226,7 +243,15 @@ export async function saveBlogPost(input: {
   heroImageUrl?: string
   seoTitle?: string
   seoDescription?: string
-  status: 'draft' | 'published'
+  /**
+   * Written through verbatim. A closed 'draft' | 'published' union used to sit
+   * here, which meant the editor could not round-trip the two non-editorial
+   * states the table actually holds (archived_stats_unverified,
+   * pending_pilot_review) — saving an archived post would have collapsed it to
+   * one of the two even once the prefill was reading the right column. The
+   * column is free text; the caller preserves what it read.
+   */
+  status: string
   publishedAt?: string
   authorBrokerId?: string
 }): Promise<{ ok: boolean; error?: string; voiceReview?: VoiceReview | null }> {

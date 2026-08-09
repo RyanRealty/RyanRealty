@@ -13,8 +13,8 @@
  * a WP REST API integration would be needed in blog.ts. Based on the codebase,
  * /blog is the canonical public route — this is the correct architecture.
  *
- * Carried over verbatim: EMPTY_FORM, PREVIEW_COUNT, openCreate/openEdit and the
- * `post.published_at ? 'published' : 'draft'` prefill, the #blog-form-anchor
+ * Carried over verbatim: EMPTY_FORM, PREVIEW_COUNT, openCreate/openEdit, the
+ * #blog-form-anchor
  * scrollIntoView, the comma-split tag parse, the saveBlogPost payload field for
  * field (id · slug · title · content · excerpt · category · tags ·
  * heroImageUrl · seoTitle · seoDescription · status · publishedAt), the
@@ -28,21 +28,38 @@
  * controls became the v2 Field primitives, and a thrown read now says so
  * instead of rendering as an empty library.
  *
- * TWO LABELS CHANGED BECAUSE THEY WERE NOT TRUE. The page derives its state
- * from `published_at`, but the public blog serves a post only when
- * `status = 'published'` (app/actions/blog.ts getPublishedBlogPosts /
- * getBlogPostBySlug), and getAdminBlogPosts does not select `status`. Measured
- * 2026-08-07: 87 posts, all 87 with a publish date, so the old strip read
- * "Published 87 · Drafts 0" — while the status column holds published 55,
- * archived_stats_unverified 28, draft 3, pending_pilot_review 1. The figures
- * are now named for the column they actually sum, and the footnote says which
- * column the site reads.
+ * P12 — THE SCREEN NOW READS THE COLUMN THE PUBLIC BLOG READS. P11D noticed
+ * that this page derived its state from `published_at` while the site serves a
+ * post only when `status = 'published'` (app/actions/blog.ts
+ * getPublishedBlogPosts / getBlogPostBySlug), and renamed the labels to match
+ * what was actually being summed. It left the cause in place: getAdminBlogPosts
+ * did not select `status`, so the edit form had nothing else to prefill from
+ * and used `post.published_at ? 'published' : 'draft'`.
+ *
+ * That was a live publish hazard, not a labelling one. All 87 posts carry a
+ * publish date, so the expression returned 'published' for every row — opening
+ * any of the 32 that are not published (archived_stats_unverified 28, draft 3,
+ * pending_pilot_review 1) and pressing Save wrote status:'published' and put it
+ * on the public site. Audited 2026-08-08 against live Supabase before the fix:
+ * the distribution still matched the 2026-08-07 measurement exactly and no
+ * non-published row had been touched since 2026-05-07, so nothing had fired.
+ *
+ * The read now selects `status`, the prefill reads it (lib/blog/admin-form.ts,
+ * pure and unit-tested), the Status control offers the row's own state so a
+ * save cannot collapse it, and the strip counts what is live rather than what
+ * is dated.
  */
 
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { getAdminBlogPosts, saveBlogPost, deleteBlogPost } from '@/app/actions/blog'
 import type { BlogPostWithAuthor } from '@/app/actions/blog'
+import {
+  EMPTY_BLOG_FORM as EMPTY_FORM,
+  blogFormFromPost,
+  statusOptions,
+  type BlogFormState,
+} from '@/lib/blog/admin-form'
 import {
   Button,
   ReportError,
@@ -65,35 +82,7 @@ const COLUMNS: ReportColumn[] = [
   { key: 'actions', label: 'Actions' },
 ]
 
-type FormState = {
-  id?: string
-  slug: string
-  title: string
-  content: string
-  excerpt: string
-  category: string
-  tags: string
-  heroImageUrl: string
-  seoTitle: string
-  seoDescription: string
-  status: 'draft' | 'published'
-  publishedAt: string
-}
-
-const EMPTY_FORM: FormState = {
-  id: undefined,
-  slug: '',
-  title: '',
-  content: '',
-  excerpt: '',
-  category: '',
-  tags: '',
-  heroImageUrl: '',
-  seoTitle: '',
-  seoDescription: '',
-  status: 'draft',
-  publishedAt: '',
-}
+type FormState = BlogFormState
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<BlogPostWithAuthor[]>([])
@@ -122,20 +111,7 @@ export default function AdminBlogPage() {
   useEffect(() => { loadPosts() }, [])
 
   function openEdit(post: BlogPostWithAuthor) {
-    setForm({
-      id: post.id,
-      slug: post.slug,
-      title: post.title,
-      content: post.content ?? '',
-      excerpt: post.excerpt ?? '',
-      category: post.category ?? '',
-      tags: (post.tags ?? []).join(', '),
-      heroImageUrl: post.hero_image_url ?? '',
-      seoTitle: post.seo_title ?? '',
-      seoDescription: post.seo_description ?? '',
-      status: post.published_at ? 'published' : 'draft',
-      publishedAt: post.published_at ?? '',
-    })
+    setForm(blogFormFromPost(post))
     setFormError(null)
     setFormSuccess(null)
     setFormOpen(true)
@@ -189,8 +165,12 @@ export default function AdminBlogPage() {
     })
   }
 
+  // The number that matters is the one the public blog serves, which is a
+  // status filter and not a date. `datedCount` stays because a post published
+  // with no date sorts oddly, but it is no longer presented as the live count.
+  const liveCount = posts.filter((p) => p.status === 'published').length
   const datedCount = posts.filter((p) => p.published_at).length
-  const undatedCount = posts.length - datedCount
+  const notLiveCount = posts.length - liveCount
   const categories = [...new Set(posts.map((p) => p.category).filter(Boolean))]
   const visiblePosts = showAll ? posts : posts.slice(0, PREVIEW_COUNT)
 
@@ -207,8 +187,8 @@ export default function AdminBlogPage() {
           ) : (
             <>
               <b>
-                {posts.length} {posts.length === 1 ? 'post' : 'posts'}, {datedCount} carrying a
-                publish date.
+                {posts.length} {posts.length === 1 ? 'post' : 'posts'}, {liveCount} live on the
+                public blog.
               </b>{' '}
               Undated first, then newest publish date.
             </>
@@ -222,8 +202,9 @@ export default function AdminBlogPage() {
         <ReportNumbers
           items={[
             { key: 'total', label: 'Posts', value: String(posts.length) },
+            { key: 'live', label: 'Live on the blog', value: String(liveCount) },
+            { key: 'notlive', label: 'Not live', value: String(notLiveCount) },
             { key: 'dated', label: 'With a publish date', value: String(datedCount) },
-            { key: 'undated', label: 'No publish date', value: String(undatedCount) },
             { key: 'cats', label: 'Categories', value: String(categories.length) },
           ]}
         />
@@ -274,14 +255,20 @@ export default function AdminBlogPage() {
               onChange={(e) => handleField('tags', e.target.value)}
               placeholder="market update, spring 2026, central oregon"
             />
-            {/* P2-8 fix: replace free-text Input with Select for status */}
+            {/* P2-8 fix: replace free-text Input with Select for status.
+                P12 fix: the options come from the row's own status, so a post
+                sitting in a non-editorial state keeps it instead of being
+                re-pointed to draft or published by the act of saving. */}
             <SelectField
               label="Status"
               value={form.status}
-              onChange={(e) => handleField('status', e.target.value as 'draft' | 'published')}
+              onChange={(e) => handleField('status', e.target.value)}
             >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
+              {statusOptions(form.status).map((s) => (
+                <option key={s} value={s}>
+                  {s === 'draft' ? 'Draft' : s === 'published' ? 'Published' : s}
+                </option>
+              ))}
             </SelectField>
           </div>
 
@@ -418,8 +405,9 @@ export default function AdminBlogPage() {
 
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
         The date column is the post&rsquo;s <code>published_at</code> value. The public blog serves a
-        post only when its <code>status</code> is <code>published</code>, and this list does not read
-        that column — a date here is not proof the post is live.
+        post only when its <code>status</code> is <code>published</code>, which is the column
+        &ldquo;Live on the blog&rdquo; counts and the Status field edits. A date is not a publish
+        state: every post here carries one.
       </p>
     </div>
   )
