@@ -493,3 +493,9 @@ NOT IN SCOPE
   · deltaSync execute: recordSyncRun(runType=delta); migration allows delta run_type.
 
 2026-08-09T19:29:29Z P12 block ledger: write to admin_actions (action_type=send_blocked) instead of a new table — prod has no unapplied create; drift gate requires applied migrations.
+
+2026-08-09T19:54:27Z /ENDTOEND MISSION COMPLETE (push OK 341929f7).
+  11F closed + gated + on origin/main. P12: claim-before-send, block ledger (admin_actions),
+  listing admin_overrides survive sync, readers throw on transport error, city snapshots
+  uncapped, delta sync_history recording. Migrations: delta run_type only (apply when able).
+  Remaining P12 items left on queue for next firing (measurement, policy, chrome, dark mode).
