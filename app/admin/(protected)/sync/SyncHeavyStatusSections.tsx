@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import type { CSSProperties } from 'react'
+import { ReportGrid } from '@/components/admin/v2'
 import SyncPageAdvanced from './SyncPageAdvanced'
 import type { SyncStatus } from '@/app/actions/sync-full-cron'
 import type { ListingSyncStatusBreakdown } from '@/app/actions/listings'
@@ -24,6 +25,62 @@ type Props = {
   totalListings: number
   syncStatus: SyncStatus
   runInProgress: boolean
+}
+
+/* ── admin v2 surface tokens (design_system/admin/ADMIN_UI.md) ──────────────
+   The page sits on --a-bg, so a panel on it takes --a-surface plus a hairline;
+   "elevation: borders first" retires the shadow the shadcn card carried. */
+const panelStyle: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  color: 'var(--a-text)',
+}
+const sectionHeadingStyle: CSSProperties = {
+  fontSize: 'var(--a-text-sm)',
+  fontWeight: 600,
+  letterSpacing: '0.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+}
+const subHeadingStyle: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  letterSpacing: '0.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+}
+const labelStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
+const bigFigureStyle: CSSProperties = {
+  fontFamily: 'var(--a-font-mono)',
+  fontSize: 'var(--a-text-lg)',
+  fontWeight: 600,
+  color: 'var(--a-text)',
+}
+const bigFigureWarnStyle: CSSProperties = { ...bigFigureStyle, color: 'var(--a-warn)' }
+const warnBodyStyle: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-warn)' }
+const quietBodyStyle: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }
+const quietMetaStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
+const warnMetaStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-warn)' }
+/* Figures inside a grid cell: the cell owns alignment, the span owns the face. */
+const cellFigureStyle: CSSProperties = { fontFamily: 'var(--a-font-mono)', color: 'var(--a-text-2)' }
+const cellFigureStrongStyle: CSSProperties = { fontFamily: 'var(--a-font-mono)', color: 'var(--a-text)' }
+const cellFigureOkStyle: CSSProperties = { fontFamily: 'var(--a-font-mono)', color: 'var(--a-ok)' }
+const cellFigureWarnStyle: CSSProperties = { fontFamily: 'var(--a-font-mono)', color: 'var(--a-warn)' }
+/* The by-city grid is hand-assembled from the same report-grid shape ReportGrid
+   renders, for ONE reason: its header is sticky inside a 320px-tall scroller.
+   Sticky resolves against the nearest scroll container, and ReportGrid owns its
+   own `.av2-rgrid__scroll`, which would become that container and pin the header
+   to a box that scrolls away with the rows. */
+const cityGridStyle = {
+  '--rgrid-cols': 'minmax(120px,1.4fr) repeat(9, minmax(56px,1fr))',
+  '--rgrid-min': '720px',
+} as CSSProperties
+const cityHeadStyle: CSSProperties = {
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  background: 'var(--a-surface)',
 }
 
 export default function SyncHeavyStatusSections({ totalListings, syncStatus, runInProgress }: Props) {
@@ -76,37 +133,37 @@ export default function SyncHeavyStatusSections({ totalListings, syncStatus, run
 
   return (
     <>
-      <section className="mt-6 rounded-lg border border-border bg-card p-5 shadow-sm" aria-labelledby="spark-db-heading">
-        <h2 id="spark-db-heading" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Spark API vs database</h2>
+      <section className="mt-6 p-5" style={panelStyle} aria-labelledby="spark-db-heading">
+        <h2 id="spark-db-heading" style={sectionHeadingStyle}>Spark API vs database</h2>
         <div className="mt-3 grid grid-cols-1 gap-4 text-center sm:grid-cols-3 sm:text-left">
           <div>
-            <p className="text-xs text-muted-foreground">Spark (source)</p>
-            <p className="mt-0.5 font-mono text-lg font-semibold text-foreground">
+            <p style={labelStyle}>Spark (source)</p>
+            <p className="mt-0.5" style={bigFigureStyle}>
               {sparkTotal != null ? sparkTotal.toLocaleString() : sparkSyncCount?.error ?? (loading ? 'Loading...' : '—')}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">In database</p>
-            <p className="mt-0.5 font-mono text-lg font-semibold text-foreground">{totalListings.toLocaleString()}</p>
+            <p style={labelStyle}>In database</p>
+            <p className="mt-0.5" style={bigFigureStyle}>{totalListings.toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Gap (missing)</p>
-            <p className={`mt-0.5 font-mono text-lg font-semibold ${gap != null && gap > 0 ? 'text-warning' : 'text-foreground'}`}>
+            <p style={labelStyle}>Gap (missing)</p>
+            <p className="mt-0.5" style={gap != null && gap > 0 ? bigFigureWarnStyle : bigFigureStyle}>
               {gap != null ? gap.toLocaleString() : '—'}
             </p>
           </div>
         </div>
         {gap != null && gap > 0 && (
-          <p className="mt-2 text-sm text-warning">{gap.toLocaleString()} listings missing in DB. Background full sync will backfill; gap should shrink over the next runs.</p>
+          <p className="mt-2" style={warnBodyStyle}>{gap.toLocaleString()} listings missing in DB. Background full sync will backfill; gap should shrink over the next runs.</p>
         )}
         {error && (
-          <p className="mt-2 text-xs text-muted-foreground">{error}</p>
+          <p className="mt-2" style={quietMetaStyle}>{error}</p>
         )}
         {loading && (
-          <p className="mt-2 text-xs text-muted-foreground">Extended diagnostics are loading...</p>
+          <p className="mt-2" style={quietMetaStyle}>Extended diagnostics are loading...</p>
         )}
         {!loading && statusBreakdown && (statusBreakdown.total > 0 || totalListings > 0) && (
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4">
             {(() => {
               const dbTotal = statusBreakdown.total > 0 ? statusBreakdown.total : totalListings
               const sparkStatusesOk =
@@ -128,37 +185,38 @@ export default function SyncHeavyStatusSections({ totalListings, syncStatus, run
               ]
               return (
                 <>
-                  <Table className="min-w-full border-collapse text-sm">
-                    <TableHeader>
-                      <TableRow className="border-b border-border">
-                        <TableHead className="py-1.5 pr-2 text-left font-medium text-muted-foreground">Status</TableHead>
-                        <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Spark</TableHead>
-                        <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">DB</TableHead>
-                        <TableHead className="py-1.5 pl-2 text-right font-medium text-muted-foreground">Gap</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rows.map(({ key, label, spark, db }) => {
-                        const gapVal = spark != null ? Math.max(0, spark - db) : null
-                        return (
-                          <TableRow key={key} className="border-b border-border">
-                            <TableCell className="py-1.5 pr-2 text-foreground">{label}</TableCell>
-                            <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{spark != null ? spark.toLocaleString() : '—'}</TableCell>
-                            <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{db.toLocaleString()}</TableCell>
-                            <TableCell className={`py-1.5 pl-2 text-right font-mono ${gapVal != null && gapVal > 0 ? 'text-warning' : 'text-muted-foreground'}`}>
-                              {gapVal != null && gapVal > 0 ? gapVal.toLocaleString() : '—'}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                  <p className="mt-1.5 text-xs text-muted-foreground">Gap = Spark − DB (listings in Spark not yet in database).</p>
+                  <ReportGrid
+                    label="Spark versus database by status"
+                    columns={[
+                      { key: 'status', label: 'Status' },
+                      { key: 'spark', label: 'Spark', numeric: true },
+                      { key: 'db', label: 'DB', numeric: true },
+                      { key: 'gap', label: 'Gap', numeric: true },
+                    ]}
+                    template="minmax(120px,1fr) 100px 100px 100px"
+                    minWidth={440}
+                    empty="No status rows to compare."
+                    rows={rows.map(({ key, label, spark, db }) => {
+                      const gapVal = spark != null ? Math.max(0, spark - db) : null
+                      return {
+                        key,
+                        cells: [
+                          label,
+                          <span key="spark" style={cellFigureStyle}>{spark != null ? spark.toLocaleString() : '—'}</span>,
+                          <span key="db" style={cellFigureStyle}>{db.toLocaleString()}</span>,
+                          <span key="gap" style={gapVal != null && gapVal > 0 ? cellFigureWarnStyle : cellFigureStyle}>
+                            {gapVal != null && gapVal > 0 ? gapVal.toLocaleString() : '—'}
+                          </span>,
+                        ],
+                      }
+                    })}
+                  />
+                  <p className="mt-1.5" style={quietMetaStyle}>Gap = Spark − DB (listings in Spark not yet in database).</p>
                   {sparkCountsByStatus && !sparkCountsByStatus.error && !sparkStatusesOk && sparkCountsByStatus.total > 0 && (
-                    <p className="mt-1 text-xs text-muted-foreground">Spark per-status not available for this MLS. Total Spark vs DB still shown.</p>
+                    <p className="mt-1" style={quietMetaStyle}>Spark per-status not available for this MLS. Total Spark vs DB still shown.</p>
                   )}
                   {sparkCountsByStatus?.error && (
-                    <p className="mt-1 text-xs text-warning">Spark: {sparkCountsByStatus.error}</p>
+                    <p className="mt-1" style={warnMetaStyle}>Spark: {sparkCountsByStatus.error}</p>
                   )}
                 </>
               )
@@ -170,87 +228,93 @@ export default function SyncHeavyStatusSections({ totalListings, syncStatus, run
         </div>
       </section>
 
-      <section className="mt-6 rounded-lg border border-border bg-card p-5 shadow-sm" aria-labelledby="status-heading">
-        <h2 id="status-heading" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Listing status (DB)</h2>
+      <section className="mt-6 p-5" style={panelStyle} aria-labelledby="status-heading">
+        <h2 id="status-heading" style={sectionHeadingStyle}>Listing status (DB)</h2>
         {loading && (
-          <p className="mt-2 text-sm text-muted-foreground">Loading listing status breakdown...</p>
+          <p className="mt-2" style={quietBodyStyle}>Loading listing status breakdown...</p>
         )}
         {!loading && statusBreakdown && statusBreakdown.total === 0 && totalListings > 0 && (
-          <p className="mt-2 text-sm text-warning">DB breakdown RPC not available. Apply migrations: npx supabase db push</p>
+          <p className="mt-2" style={warnBodyStyle}>DB breakdown RPC not available. Apply migrations: npx supabase db push</p>
         )}
         {!loading && statusBreakdown?.error ? (
-          <p className="mt-2 text-sm text-warning">{statusBreakdown.error}</p>
+          <p className="mt-2" style={warnBodyStyle}>{statusBreakdown.error}</p>
         ) : !loading && statusBreakdown ? (
           <>
-            <div className="mt-3 overflow-x-auto">
-              <Table className="min-w-full border-collapse text-sm">
-                <TableHeader>
-                  <TableRow className="border-b border-border">
-                    <TableHead className="py-1.5 pr-2 text-left font-medium text-muted-foreground">Total</TableHead>
-                    <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Active</TableHead>
-                    <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Pending</TableHead>
-                    <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Contingent</TableHead>
-                    <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Closed</TableHead>
-                    <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Finalized</TableHead>
-                    <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Expired</TableHead>
-                    <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Withdrawn</TableHead>
-                    <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Cancelled</TableHead>
-                    <TableHead className="py-1.5 pl-2 text-right font-medium text-muted-foreground">Other</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow className="border-b border-border">
-                    <TableCell className="py-1.5 pr-2 font-mono text-foreground">{statusBreakdown.total.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{statusBreakdown.active.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{statusBreakdown.pending.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{statusBreakdown.contingent.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{statusBreakdown.closed.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-right font-mono text-success" title="Closed with full history; no re-fetch">{statusBreakdown.closed_finalized.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{statusBreakdown.expired.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{statusBreakdown.withdrawn.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 px-2 text-right font-mono text-muted-foreground">{statusBreakdown.cancelled.toLocaleString()}</TableCell>
-                    <TableCell className="py-1.5 pl-2 text-right font-mono text-muted-foreground">{statusBreakdown.other.toLocaleString()}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+            <div className="mt-3">
+              <ReportGrid
+                label="Listing status counts in the database"
+                columns={[
+                  { key: 'total', label: 'Total' },
+                  { key: 'active', label: 'Active', numeric: true },
+                  { key: 'pending', label: 'Pending', numeric: true },
+                  { key: 'contingent', label: 'Contingent', numeric: true },
+                  { key: 'closed', label: 'Closed', numeric: true },
+                  { key: 'finalized', label: 'Finalized', numeric: true },
+                  { key: 'expired', label: 'Expired', numeric: true },
+                  { key: 'withdrawn', label: 'Withdrawn', numeric: true },
+                  { key: 'cancelled', label: 'Cancelled', numeric: true },
+                  { key: 'other', label: 'Other', numeric: true },
+                ]}
+                template="repeat(10, minmax(72px,1fr))"
+                minWidth={820}
+                empty="No listing status breakdown to show."
+                rows={[
+                  {
+                    key: 'db-breakdown',
+                    cells: [
+                      <span key="total" style={cellFigureStrongStyle}>{statusBreakdown.total.toLocaleString()}</span>,
+                      <span key="active" style={cellFigureStyle}>{statusBreakdown.active.toLocaleString()}</span>,
+                      <span key="pending" style={cellFigureStyle}>{statusBreakdown.pending.toLocaleString()}</span>,
+                      <span key="contingent" style={cellFigureStyle}>{statusBreakdown.contingent.toLocaleString()}</span>,
+                      <span key="closed" style={cellFigureStyle}>{statusBreakdown.closed.toLocaleString()}</span>,
+                      <span key="finalized" style={cellFigureOkStyle} title="Closed with full history; no re-fetch">{statusBreakdown.closed_finalized.toLocaleString()}</span>,
+                      <span key="expired" style={cellFigureStyle}>{statusBreakdown.expired.toLocaleString()}</span>,
+                      <span key="withdrawn" style={cellFigureStyle}>{statusBreakdown.withdrawn.toLocaleString()}</span>,
+                      <span key="cancelled" style={cellFigureStyle}>{statusBreakdown.cancelled.toLocaleString()}</span>,
+                      <span key="other" style={cellFigureStyle}>{statusBreakdown.other.toLocaleString()}</span>,
+                    ],
+                  },
+                ]}
+              />
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Finalized = closed with full history; excluded from future sync.</p>
+            <p className="mt-2" style={quietMetaStyle}>Finalized = closed with full history; excluded from future sync.</p>
             {statusBreakdown.by_city.length > 0 && (
               <>
-                <h3 className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">By city (A–Z)</h3>
-                <div className="mt-2 max-h-[320px] overflow-auto overflow-x-auto">
-                  <Table className="min-w-full border-collapse text-sm">
-                    <TableHeader className="sticky top-0 bg-card">
-                      <TableRow className="border-b border-border">
-                        <TableHead className="py-1 pr-2 text-left font-medium text-muted-foreground">City</TableHead>
-                        <TableHead className="py-1 px-1 text-right font-medium text-muted-foreground">Active</TableHead>
-                        <TableHead className="py-1 px-1 text-right font-medium text-muted-foreground">Pending</TableHead>
-                        <TableHead className="py-1 px-1 text-right font-medium text-muted-foreground">Cont.</TableHead>
-                        <TableHead className="py-1 px-1 text-right font-medium text-muted-foreground">Closed</TableHead>
-                        <TableHead className="py-1 px-1 text-right font-medium text-muted-foreground">Fin.</TableHead>
-                        <TableHead className="py-1 px-1 text-right font-medium text-muted-foreground">Exp.</TableHead>
-                        <TableHead className="py-1 px-1 text-right font-medium text-muted-foreground">W/d</TableHead>
-                        <TableHead className="py-1 px-1 text-right font-medium text-muted-foreground">Can.</TableHead>
-                        <TableHead className="py-1 pl-1 text-right font-medium text-muted-foreground">Other</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {statusBreakdown.by_city.map((row) => (
-                        <TableRow key={row.city} className="border-b border-border">
-                          <TableCell className="py-1 pr-2 text-foreground">{row.city}</TableCell>
-                          <TableCell className="py-1 px-1 text-right font-mono text-muted-foreground">{row.active}</TableCell>
-                          <TableCell className="py-1 px-1 text-right font-mono text-muted-foreground">{row.pending}</TableCell>
-                          <TableCell className="py-1 px-1 text-right font-mono text-muted-foreground">{row.contingent}</TableCell>
-                          <TableCell className="py-1 px-1 text-right font-mono text-muted-foreground">{row.closed}</TableCell>
-                          <TableCell className="py-1 px-1 text-right font-mono text-success">{row.closed_finalized}</TableCell>
-                          <TableCell className="py-1 px-1 text-right font-mono text-muted-foreground">{row.expired}</TableCell>
-                          <TableCell className="py-1 px-1 text-right font-mono text-muted-foreground">{row.withdrawn}</TableCell>
-                          <TableCell className="py-1 px-1 text-right font-mono text-muted-foreground">{row.cancelled}</TableCell>
-                          <TableCell className="py-1 pl-1 text-right font-mono text-muted-foreground">{row.other}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <h3 className="mt-4" style={subHeadingStyle}>By city (A–Z)</h3>
+                <div
+                  className="mt-2 max-h-[320px] overflow-auto"
+                  role="group"
+                  tabIndex={0}
+                  aria-label="Listing status by city"
+                >
+                  <div className="av2-rgrid" role="table" aria-label="Listing status by city" style={cityGridStyle}>
+                    <div className="av2-rgrid__head" role="row" style={cityHeadStyle}>
+                      <span role="columnheader" className="av2-rgrid__h">City</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Active</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Pending</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Cont.</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Closed</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Fin.</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Exp.</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">W/d</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Can.</span>
+                      <span role="columnheader" className="av2-rgrid__h av2-rgrid__h--n">Other</span>
+                    </div>
+                    {statusBreakdown.by_city.map((row) => (
+                      <div key={row.city} role="row" className="av2-rgrid__row">
+                        <span role="cell" data-label="City" className="av2-rgrid__c">{row.city}</span>
+                        <span role="cell" data-label="Active" className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureStyle}>{row.active}</span>
+                        <span role="cell" data-label="Pending" className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureStyle}>{row.pending}</span>
+                        <span role="cell" data-label="Cont." className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureStyle}>{row.contingent}</span>
+                        <span role="cell" data-label="Closed" className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureStyle}>{row.closed}</span>
+                        <span role="cell" data-label="Fin." className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureOkStyle}>{row.closed_finalized}</span>
+                        <span role="cell" data-label="Exp." className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureStyle}>{row.expired}</span>
+                        <span role="cell" data-label="W/d" className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureStyle}>{row.withdrawn}</span>
+                        <span role="cell" data-label="Can." className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureStyle}>{row.cancelled}</span>
+                        <span role="cell" data-label="Other" className="av2-rgrid__c av2-rgrid__c--n" style={cellFigureStyle}>{row.other}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             )}

@@ -1,5 +1,33 @@
 'use client'
 
+/**
+ * EnrollClient — the two-step cohort-enrollment runner mounted by ./page.tsx.
+ *
+ * 11F: taken off shadcn (Button/Input/Label/Badge/Alert/Table) and onto the
+ * LOCKED admin v2 language (design_system/admin/ADMIN_UI.md). Presentation
+ * only: runCohortEnrollment, the dry-run-then-typed-confirmation flow, the
+ * ENROLL comparison, every count, every error string and router.refresh() are
+ * unchanged. The page around it was already on v2.
+ *
+ * Notes on the swaps, since each one had a choice in it:
+ *  - The two alerts become bordered wash blocks on the danger / ok tokens and
+ *    keep role="alert", which is what shadcn's Alert carried. Text-plus-colour,
+ *    never colour alone (WCAG 1.4.1, ADMIN_UI §3).
+ *  - Label + Input become one TextField: the primitive owns the input element
+ *    and generates the id its own <label htmlFor> points at, so the explicit
+ *    id="enroll-confirm" is gone with the hand-written label. Nothing under
+ *    __tests__/ or scripts/ pinned that id — checked before deleting it.
+ *  - The sample table becomes ReportGrid, the admin's one tabular reader: it
+ *    owns the sideways scroll and the hairlines the wrapper div used to draw.
+ *    Read-only cells with no per-row state, so the component itself applies
+ *    here rather than ConfigTableEditor's hand-rolled grid.
+ *  - A cohort name is DATA, so it renders as an av2-chip, never a StateWord
+ *    (which uppercases and is reserved for status words).
+ *  - Exactly one primary button is on screen at a time, as before: the dry-run
+ *    button de-emphasizes to quiet once a dry run has landed, which is the
+ *    moment the real-run button appears.
+ */
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -9,12 +37,7 @@ import {
   type CohortSizes,
   type CohortSample,
 } from '@/app/actions/newsletter-enrollment'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button, ReportGrid, TextField } from '@/components/admin/v2'
 
 const ERROR_COPY: Record<string, string> = {
   unauthorized: 'Only the account owner can run cohort enrollment.',
@@ -28,11 +51,55 @@ type DryRunState = { counts: CohortEnrollmentCounts; cohortSizes: CohortSizes; s
 
 function CountRow({ label, value, tone }: { label: string; value: number; tone?: 'ok' | 'skip' }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={tone === 'ok' ? 'text-sm font-semibold tabular-nums text-success' : 'text-sm font-semibold tabular-nums text-foreground'}>
+    <div
+      className="flex items-center justify-between rounded-lg px-3 py-2"
+      style={{ border: '1px solid var(--a-border)' }}
+    >
+      <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>{label}</span>
+      <span
+        className="tabular-nums"
+        style={{
+          fontSize: 'var(--a-text-sm)',
+          fontWeight: 600,
+          // 'skip' reads as ordinary text, exactly as it did before — only the
+          // eligible count is lifted to the ok token.
+          color: tone === 'ok' ? 'var(--a-ok)' : 'var(--a-text)',
+        }}
+      >
         {value.toLocaleString('en-US')}
       </span>
+    </div>
+  )
+}
+
+/** Shared shell for the two result banners. Wash + hairline, never colour alone. */
+function Banner({
+  tone,
+  title,
+  children,
+}: {
+  tone: 'ok' | 'danger'
+  title: string
+  children: React.ReactNode
+}) {
+  const line = tone === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)'
+  const wash = tone === 'ok' ? 'var(--a-ok-wash)' : 'var(--a-danger-wash)'
+  return (
+    <div
+      role="alert"
+      style={{
+        border: `1px solid ${line}`,
+        background: wash,
+        borderRadius: 'var(--a-r-md)',
+        padding: '10px 12px',
+      }}
+    >
+      <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 600, color: line }}>
+        {title}
+      </p>
+      <p style={{ margin: '2px 0 0', fontSize: 'var(--a-text-sm)', color: 'var(--a-text)' }}>
+        {children}
+      </p>
     </div>
   )
 }
@@ -85,33 +152,33 @@ export function EnrollClient() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={runDry} disabled={pending} variant={dryRun ? 'outline' : 'default'}>
+        <Button onClick={runDry} disabled={pending} variant={dryRun ? 'quiet' : 'primary'}>
           {pending && dryRun === null ? 'Running dry run…' : 'Run dry run'}
         </Button>
-        <p className="text-xs text-muted-foreground">A dry run reads the audience and writes nothing.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          A dry run reads the audience and writes nothing.
+        </p>
       </div>
 
       {error ? (
-        <Alert variant="destructive">
-          <AlertTitle>Enrollment stopped</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <Banner tone="danger" title="Enrollment stopped">
+          {error}
+        </Banner>
       ) : null}
 
       {enrolledCount !== null ? (
-        <Alert>
-          <AlertTitle>Enrollment complete</AlertTitle>
-          <AlertDescription>
-            <span className="tabular-nums">{enrolledCount.toLocaleString('en-US')}</span> people were added as
-            active subscribers. No issue was sent. They will receive the next issue you approve.
-          </AlertDescription>
-        </Alert>
+        <Banner tone="ok" title="Enrollment complete">
+          <span className="tabular-nums">{enrolledCount.toLocaleString('en-US')}</span> people were added as
+          active subscribers. No issue was sent. They will receive the next issue you approve.
+        </Banner>
       ) : null}
 
       {dryRun ? (
         <div className="space-y-4">
           <div>
-            <p className="mb-2 text-sm font-semibold text-foreground">Cohorts found</p>
+            <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text)' }}>
+              Cohorts found
+            </p>
             <div className="grid gap-2 sm:grid-cols-3">
               <CountRow label="Past clients" value={dryRun.cohortSizes.pastClient} />
               <CountRow label="Engaged (180 days)" value={dryRun.cohortSizes.engaged} />
@@ -120,7 +187,9 @@ export function EnrollClient() {
           </div>
 
           <div>
-            <p className="mb-2 text-sm font-semibold text-foreground">After the four filters</p>
+            <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text)' }}>
+              After the four filters
+            </p>
             <div className="grid gap-2 sm:grid-cols-2">
               <CountRow label="Unique candidates" value={dryRun.counts.candidates} />
               <CountRow label="Would enroll" value={dryRun.counts.eligible} tone="ok" />
@@ -137,56 +206,68 @@ export function EnrollClient() {
 
           {dryRun.sample.length > 0 ? (
             <div>
-              <p className="mb-2 text-sm font-semibold text-foreground">
-                Sample of who would enroll <span className="font-normal text-muted-foreground">(first 25)</span>
+              <p style={{ margin: '0 0 8px', fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text)' }}>
+                Sample of who would enroll{' '}
+                <span style={{ fontWeight: 400, color: 'var(--a-text-2)' }}>(first 25)</span>
               </p>
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Cohorts</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dryRun.sample.map((s) => (
-                      <TableRow key={s.email}>
-                        <TableCell className="font-medium">{s.email}</TableCell>
-                        <TableCell className="text-muted-foreground">{s.name ?? '—'}</TableCell>
-                        <TableCell>
-                          <span className="flex flex-wrap gap-1">
-                            {s.cohorts.map((c) => (
-                              <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>
-                            ))}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <ReportGrid
+                label="Sample of who would enroll"
+                columns={[
+                  { key: 'email', label: 'Email' },
+                  { key: 'name', label: 'Name' },
+                  { key: 'cohorts', label: 'Cohorts' },
+                ]}
+                template="minmax(200px, 1.6fr) minmax(120px, 1fr) minmax(140px, 1.2fr)"
+                minWidth={520}
+                rows={dryRun.sample.map((s) => ({
+                  key: s.email,
+                  cells: [
+                    s.email,
+                    s.name ?? '—',
+                    <span key="cohorts" className="flex flex-wrap gap-1">
+                      {s.cohorts.map((c) => (
+                        <span
+                          key={c}
+                          className="av2-chip"
+                          style={{ cursor: 'default', fontSize: 'var(--a-text-xs)' }}
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </span>,
+                  ],
+                }))}
+                // Unreachable: the branch above owns the empty state so the
+                // heading does not render over an empty grid. Kept honest
+                // rather than blank, since the prop is required.
+                empty="Nobody new to enroll. Everyone eligible is already on the list."
+              />
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Nobody new to enroll. Everyone eligible is already on the list.</p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              Nobody new to enroll. Everyone eligible is already on the list.
+            </p>
           )}
 
           {dryRun.counts.eligible > 0 ? (
-            <div className="space-y-2 rounded-lg border border-border p-4">
-              <p className="text-sm font-semibold text-foreground">Real run</p>
-              <p className="text-xs text-muted-foreground">
-                This adds <span className="tabular-nums font-medium text-foreground">{dryRun.counts.eligible.toLocaleString('en-US')}</span> people
-                as active subscribers. It sends nothing. Type ENROLL to confirm.
+            <div className="space-y-2 rounded-lg p-4" style={{ border: '1px solid var(--a-border)' }}>
+              <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text)' }}>
+                Real run
+              </p>
+              <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                This adds{' '}
+                <span className="tabular-nums" style={{ fontWeight: 500, color: 'var(--a-text)' }}>
+                  {dryRun.counts.eligible.toLocaleString('en-US')}
+                </span>{' '}
+                people as active subscribers. It sends nothing. Type ENROLL to confirm.
               </p>
               <div className="flex flex-wrap items-end gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="enroll-confirm">Confirmation</Label>
-                  <Input
-                    id="enroll-confirm"
+                <div className="w-40">
+                  <TextField
+                    label="Confirmation"
                     value={confirmText}
                     onChange={(e) => setConfirmText(e.target.value)}
                     placeholder="ENROLL"
-                    className="w-40"
                     autoComplete="off"
                   />
                 </div>

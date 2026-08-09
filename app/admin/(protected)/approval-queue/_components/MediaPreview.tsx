@@ -1,5 +1,15 @@
 'use client'
 
+/**
+ * MediaPreview — draft deliverable preview for one approval-queue card.
+ *
+ * 11F residual: no shadcn imports, but the empty/iframe/link shells still used
+ * public-site semantic classes (bg-muted, border-border, bg-card, text-primary).
+ * Those are swapped to var(--a-*) so the card sits in the same token surface as
+ * ActionCard. Behaviour is unchanged — same URL/media_type inference, same
+ * video/image/carousel/iframe/link branches.
+ */
+
 import Image from 'next/image'
 
 interface MediaPreviewProps {
@@ -21,7 +31,15 @@ export function MediaPreview({ actionType, executorResponse }: MediaPreviewProps
 
   if (!previewUrl) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground">
+      <div
+        className="flex h-40 items-center justify-center"
+        style={{
+          borderRadius: 'var(--a-r-lg)',
+          background: 'var(--a-inset)',
+          fontSize: 'var(--a-text-sm)',
+          color: 'var(--a-text-2)',
+        }}
+      >
         No preview available
       </div>
     )
@@ -32,8 +50,8 @@ export function MediaPreview({ actionType, executorResponse }: MediaPreviewProps
       <video
         src={previewUrl}
         controls
-        className="w-full rounded-lg"
-        style={{ maxHeight: 420 }}
+        className="w-full"
+        style={{ maxHeight: 420, borderRadius: 'var(--a-r-lg)' }}
       />
     )
   }
@@ -44,7 +62,14 @@ export function MediaPreview({ actionType, executorResponse }: MediaPreviewProps
     return (
       <div className="flex gap-2 overflow-x-auto pb-1">
         {images.map((src, i) => (
-          <div key={i} className="relative h-52 w-40 shrink-0 overflow-hidden rounded-lg bg-muted">
+          <div
+            key={i}
+            className="relative h-52 w-40 shrink-0 overflow-hidden"
+            style={{
+              borderRadius: 'var(--a-r-lg)',
+              background: 'var(--a-inset)',
+            }}
+          >
             <Image
               src={src}
               alt={`Preview ${i + 1}`}
@@ -62,7 +87,12 @@ export function MediaPreview({ actionType, executorResponse }: MediaPreviewProps
     return (
       <iframe
         src={previewUrl}
-        className="h-80 w-full rounded-lg border border-border bg-card"
+        className="h-80 w-full"
+        style={{
+          borderRadius: 'var(--a-r-lg)',
+          border: '1px solid var(--a-border)',
+          background: 'var(--a-surface)',
+        }}
         sandbox="allow-same-origin allow-scripts"
         title="Draft preview"
       />
@@ -75,7 +105,15 @@ export function MediaPreview({ actionType, executorResponse }: MediaPreviewProps
       href={previewUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="block truncate rounded-lg border border-border bg-muted px-4 py-3 text-sm text-primary underline"
+      className="block truncate px-4 py-3"
+      style={{
+        borderRadius: 'var(--a-r-lg)',
+        border: '1px solid var(--a-border)',
+        background: 'var(--a-inset)',
+        fontSize: 'var(--a-text-sm)',
+        color: 'var(--a-accent)',
+        textDecoration: 'underline',
+      }}
     >
       View draft: {previewUrl}
     </a>
@@ -93,7 +131,8 @@ function inferMediaType(actionType: string, url: string): string {
     actionType.includes('reel') ||
     actionType.includes('clip') ||
     actionType.includes('tour')
-  ) return 'video'
+  )
+    return 'video'
   if (actionType.includes('flyer') || actionType.includes('meme') || actionType.includes('post')) {
     return 'image'
   }

@@ -1,5 +1,48 @@
 'use client'
 
+// @no-parity — internal admin surface, no public mockup contract
+//
+// 11F: taken off shadcn and onto the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only, and deliberately so —
+// every figure this screen prints is market data a broker publishes from (§0),
+// so nothing about how one is produced, filtered or formatted moved.
+//
+// Carried over verbatim: filtersForSegment and the three segment flags, the
+// validation order and all five error strings, the trackEvent payload, the
+// `Math.min(60, Math.max(1, timeSeriesMonths))` clamp, the breakdown fan-out and
+// its null-drop, every getReport* / getMarketReportDataForLocation call and
+// argument, the slice(0, 6) / slice(0, 12) / slice(0, 25) windows, the "… and N
+// more" tails, the toLocaleString options on every number, and every label.
+//
+// Substitutions, and why each one:
+//   raw <select> x3    -> SelectField, which owns the label-above pairing
+//                         (pattern 6) and generates its own id. The
+//                         subdivision's "Loading…" moves into the field's own
+//                         hint slot — same word, same condition.
+//   Input (date/check) -> TextField / ToolbarCheck. ToolbarCheck's <label> wraps
+//                         its own input, which is what the shadcn Label pairs
+//                         were doing by hand.
+//   Input type=number  -> SearchField, the unlabelled compact input. The visible
+//                         "months" text stays exactly where it was and now also
+//                         names the control for assistive tech, which the bare
+//                         input never did. No aria was dropped to get there.
+//   Button             -> the v2 Button. "Generate report" is this file's ONE
+//                         primary (ci:admin-ui rule C).
+//   Badge / PropertyTypeBadge -> .av2-chip, never StateWord: .av2-state
+//                         uppercases, and a segment label and a property type
+//                         are DATA. PropertyTypeBadge is a components/ui
+//                         island, so the label comes straight from
+//                         getPropertyTypeLabel — the same function that badge
+//                         calls, so the printed word is identical.
+//   Table x4           -> ReportGrid, the admin's one tabular reader, so each
+//                         table scrolls inside its own box instead of the page.
+//   raw <h2> x5        -> SectionHead, which owns the heading element.
+//
+// Surface stack, checked both ways in design_system/admin/tokens.css: the five
+// sections are --a-bg behind a hairline (§2 puts shadows on overlays only), the
+// per-segment wells inside the result are --a-inset, and the chips are
+// --a-surface with their own border. Nothing is painted onto its own parent.
+
 import { useState, useCallback } from 'react'
 import {
   getReportMetrics,
@@ -17,14 +60,20 @@ import { trackEvent } from '@/lib/tracking'
 import {
   REPORT_PROPERTY_TYPE_SEGMENTS,
   REPORT_PROPERTY_TYPE_FILTER_OPTIONS,
+  getPropertyTypeLabel,
   type ReportPropertyTypeSegmentKey,
 } from '@/lib/property-type'
-import { Badge } from '@/components/ui/badge'
-import PropertyTypeBadge from '@/components/ui/PropertyTypeBadge'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Button,
+  ReportGrid,
+  SearchField,
+  SectionHead,
+  SelectField,
+  TextField,
+  ToolbarCheck,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 
 type Props = { cities: string[] }
 
@@ -45,6 +94,68 @@ type ReportResult = {
   closed: ReportListing[]
   periodLabel: string
   locationLabel: string
+}
+
+const SECTION_STYLE = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  padding: 'var(--a-s6)',
+} as const
+
+const HINT_STYLE = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '4px 0 0' } as const
+const NOTE_STYLE = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '4px 0 0' } as const
+const SUBHEAD_STYLE = { fontSize: 'var(--a-text-lg)', fontWeight: 600, color: 'var(--a-text)' } as const
+
+const METRIC_COLUMNS: ReportColumn[] = [
+  { key: 'metric', label: 'Metric' },
+  { key: 'value', label: 'Value', numeric: true },
+]
+
+const SERIES_COLUMNS: ReportColumn[] = [
+  { key: 'month', label: 'Month' },
+  { key: 'sold', label: 'Sold', numeric: true },
+  { key: 'median', label: 'Median price', numeric: true },
+]
+
+/** A word that labels DATA — a chip, never a state word (.av2-state uppercases). */
+function DataChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="av2-chip" style={{ cursor: 'default' }}>
+      {children}
+    </span>
+  )
+}
+
+/** The seven summary figures, in the order the page has always printed them. */
+function metricRows(m: ReportMetrics): ReportGridRow[] {
+  return [
+    { key: 'sold', cells: ['# Sales (period)', m.sold_count] },
+    {
+      key: 'median',
+      cells: ['Median price', `$${Number(m.median_price).toLocaleString('en-US', { maximumFractionDigits: 0 })}`],
+    },
+    { key: 'dom', cells: ['Median DOM', `${m.median_dom} days`] },
+    {
+      key: 'ppsf',
+      cells: ['Median $/sqft', `$${Number(m.median_ppsf).toLocaleString('en-US', { maximumFractionDigits: 2 })}`],
+    },
+    { key: 'active', cells: ['Current listings', m.current_listings] },
+    { key: 'sales12', cells: ['Sales (prior 12 mo)', m.sales_12mo] },
+    { key: 'inventory', cells: ['Inventory (months)', m.inventory_months ?? '—'] },
+  ]
+}
+
+function seriesRows(points: ReportMetricsTimeSeriesPoint[]): ReportGridRow[] {
+  return points.map((row) => ({
+    key: row.period_start,
+    cells: [
+      row.month_label,
+      row.sold_count,
+      row.median_price != null
+        ? `$${Number(row.median_price).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+        : '—',
+    ],
+  }))
 }
 
 function filtersForSegment(segmentKey: ReportPropertyTypeSegmentKey | ''): ReportFilters {
@@ -203,219 +314,204 @@ export default function CustomReportBuilder({ cities }: Props) {
 
   return (
     <div className="mt-8 space-y-8">
-      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-primary">Location</h2>
+      <section style={SECTION_STYLE}>
+        <SectionHead>Location</SectionHead>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-muted-foreground">City (required)</span>
-            <select
-              value={city}
-              onChange={(e) => onCityChange(e.target.value)}
-              className="rounded-lg border border-primary/20 bg-card px-3 py-2 text-primary"
-              aria-required
-            >
-              <option value="">Select city</option>
-              {cities.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </Label>
-          <Label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-muted-foreground">Subdivision (optional)</span>
-            <select
-              value={subdivision}
-              onChange={(e) => setSubdivision(e.target.value)}
-              disabled={loadingSubdivisions || !city}
-              className="rounded-lg border border-primary/20 bg-card px-3 py-2 text-primary disabled:opacity-60"
-            >
-              <option value="">All</option>
-              {subdivisions.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            {loadingSubdivisions && <span className="text-xs text-muted-foreground">Loading…</span>}
-          </Label>
+          <SelectField
+            label="City (required)"
+            value={city}
+            onChange={(e) => onCityChange(e.target.value)}
+            aria-required
+          >
+            <option value="">Select city</option>
+            {cities.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </SelectField>
+          <SelectField
+            label="Subdivision (optional)"
+            hint={loadingSubdivisions ? 'Loading…' : undefined}
+            value={subdivision}
+            onChange={(e) => setSubdivision(e.target.value)}
+            disabled={loadingSubdivisions || !city}
+            // .av2-input carries no :disabled rule and sets an explicit colour,
+            // so the shadcn `disabled:opacity-60` dimming would have been lost.
+            // Inline because SelectField spreads rest AFTER its own className —
+            // a className here would replace av2-input outright. Opacity has no
+            // :hover partner, so this cannot kill a stylesheet state.
+            style={{ opacity: loadingSubdivisions || !city ? 0.6 : undefined }}
+          >
+            <option value="">All</option>
+            {subdivisions.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </SelectField>
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-primary">Date range</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Exact start and end date for the report period. No presets.</p>
+      <section style={SECTION_STYLE}>
+        <SectionHead>Date range</SectionHead>
+        <p style={HINT_STYLE}>Exact start and end date for the report period. No presets.</p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-muted-foreground">From (required)</span>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-lg border border-primary/20 bg-card px-3 py-2 text-primary"
-              aria-required
-            />
-          </Label>
-          <Label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-muted-foreground">To (required)</span>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-lg border border-primary/20 bg-card px-3 py-2 text-primary"
-              aria-required
-            />
-          </Label>
+          <TextField
+            label="From (required)"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            aria-required
+          />
+          <TextField
+            label="To (required)"
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            aria-required
+          />
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-primary">Property type</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Filter by one type or break out metrics by property type.</p>
+      <section style={SECTION_STYLE}>
+        <SectionHead>Property type</SectionHead>
+        <p style={HINT_STYLE}>Filter by one type or break out metrics by property type.</p>
         <div className="mt-4 flex flex-wrap items-end gap-4">
-          <Label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-muted-foreground">Type</span>
-            <select
-              value={propertyTypeFilter}
-              onChange={(e) => setPropertyTypeFilter((e.target.value || '') as ReportPropertyTypeSegmentKey | '')}
-              className="min-w-[180px] rounded-lg border border-primary/20 bg-card px-3 py-2 text-primary"
-            >
-              {REPORT_PROPERTY_TYPE_FILTER_OPTIONS.map((opt) => (
-                <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </Label>
+          <SelectField
+            label="Type"
+            value={propertyTypeFilter}
+            onChange={(e) => setPropertyTypeFilter((e.target.value || '') as ReportPropertyTypeSegmentKey | '')}
+          >
+            {REPORT_PROPERTY_TYPE_FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value || 'all'} value={opt.value}>{opt.label}</option>
+            ))}
+          </SelectField>
           {propertyTypeFilter === '' && (
-            <Label className="flex items-center gap-2">
-              <Input
-                type="checkbox"
-                checked={breakDownByPropertyType}
-                onChange={(e) => setBreakDownByPropertyType(e.target.checked)}
-                className="h-4 w-4 rounded border-primary/20 text-primary"
-              />
-              <span className="text-sm text-muted-foreground">Break out by property type</span>
-            </Label>
+            <ToolbarCheck
+              checked={breakDownByPropertyType}
+              onChange={(e) => setBreakDownByPropertyType(e.target.checked)}
+              label="Break out by property type"
+            />
           )}
         </div>
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-primary">Data to include</h2>
+      <section style={SECTION_STYLE}>
+        <SectionHead>Data to include</SectionHead>
         <div className="mt-4 space-y-4">
-          <Label className="flex items-center gap-3">
-            <Input
-              type="checkbox"
-              checked={includeMetrics}
-              onChange={(e) => setIncludeMetrics(e.target.checked)}
-              className="h-4 w-4 rounded border-primary/20 text-primary"
-            />
-            <span className="text-sm font-medium text-primary">Summary metrics</span>
-          </Label>
-          <p className="ml-7 text-xs text-muted-foreground">Sold count, median price, median DOM, median $/sqft, current listings, 12mo sales, inventory (months).</p>
-          <Label className="flex items-center gap-3">
-            <Input
-              type="checkbox"
-              checked={includePriceBands}
-              onChange={(e) => setIncludePriceBands(e.target.checked)}
-              className="h-4 w-4 rounded border-primary/20 text-primary"
-            />
-            <span className="text-sm font-medium text-primary">Price bands</span>
-          </Label>
-          <p className="ml-7 text-xs text-muted-foreground">Sales and current listings by price range.</p>
-          <Label className="flex items-center gap-3">
-            <Input
-              type="checkbox"
-              checked={includeTimeSeries}
-              onChange={(e) => setIncludeTimeSeries(e.target.checked)}
-              className="h-4 w-4 rounded border-primary/20 text-primary"
-            />
-            <span className="text-sm font-medium text-primary">Time series</span>
-          </Label>
+          <ToolbarCheck
+            checked={includeMetrics}
+            onChange={(e) => setIncludeMetrics(e.target.checked)}
+            label="Summary metrics"
+          />
+          <p className="ml-7" style={NOTE_STYLE}>Sold count, median price, median DOM, median $/sqft, current listings, 12mo sales, inventory (months).</p>
+          <ToolbarCheck
+            checked={includePriceBands}
+            onChange={(e) => setIncludePriceBands(e.target.checked)}
+            label="Price bands"
+          />
+          <p className="ml-7" style={NOTE_STYLE}>Sales and current listings by price range.</p>
+          <ToolbarCheck
+            checked={includeTimeSeries}
+            onChange={(e) => setIncludeTimeSeries(e.target.checked)}
+            label="Time series"
+          />
           <div className="ml-7 flex items-center gap-2">
-            <Input
+            <SearchField
+              aria-label="months"
               type="number"
               min={1}
               max={60}
               value={timeSeriesMonths}
               onChange={(e) => setTimeSeriesMonths(Number(e.target.value) || 12)}
-              className="w-20 rounded-lg border border-primary/20 px-2 py-1 text-sm"
+              className="w-20"
             />
-            <span className="text-sm text-muted-foreground">months</span>
+            <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>months</span>
           </div>
-          <p className="ml-7 text-xs text-muted-foreground">Monthly sold count and median price trend.</p>
-          <Label className="flex items-center gap-3">
-            <Input
-              type="checkbox"
-              checked={includePendingClosed}
-              onChange={(e) => setIncludePendingClosed(e.target.checked)}
-              className="h-4 w-4 rounded border-primary/20 text-primary"
-            />
-            <span className="text-sm font-medium text-primary">Pending & closed list</span>
-          </Label>
-          <p className="ml-7 text-xs text-muted-foreground">Listing history events (went pending / closed) in the date range.</p>
+          <p className="ml-7" style={NOTE_STYLE}>Monthly sold count and median price trend.</p>
+          <ToolbarCheck
+            checked={includePendingClosed}
+            onChange={(e) => setIncludePendingClosed(e.target.checked)}
+            label="Pending & closed list"
+          />
+          <p className="ml-7" style={NOTE_STYLE}>Listing history events (went pending / closed) in the date range.</p>
         </div>
       </section>
 
       <div>
-        <Button
-          type="button"
-          onClick={handleGenerate}
-          disabled={loading}
-          className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
+        <Button type="button" onClick={handleGenerate} disabled={loading} touch>
           {loading ? 'Generating…' : 'Generate report'}
         </Button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div
+          style={{
+            border: '1px solid var(--a-danger)',
+            borderRadius: 'var(--a-r-lg)',
+            background: 'var(--a-danger-wash)',
+            color: 'var(--a-danger)',
+            fontSize: 'var(--a-text-sm)',
+            padding: '12px 16px',
+          }}
+        >
           {error}
         </div>
       )}
 
       {result && (
-        <section className="rounded-lg border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-primary">Report: {result.locationLabel}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{result.periodLabel}</p>
+        <section style={SECTION_STYLE}>
+          {/* A raw h3, NOT SectionHead: .av2-lane-head uppercases, and
+              locationLabel is a place NAME — data never goes through a
+              case-transforming class. Size and weight carry the hierarchy
+              instead (ADMIN_UI §1.1). */}
+          <h3 style={{ fontSize: 'var(--a-text-xl)', fontWeight: 600, color: 'var(--a-text)' }}>
+            Report: {result.locationLabel}
+          </h3>
+          <p style={HINT_STYLE}>{result.periodLabel}</p>
 
           {result.breakdown != null && result.breakdown.length > 0 ? (
             <div className="mt-6 space-y-8">
               {result.breakdown.map((seg) => (
-                <div key={seg.key} className="rounded-lg border border-border bg-muted p-4">
-                  <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-primary">
-                    <Badge variant="outline">{seg.label}</Badge>
+                <div
+                  key={seg.key}
+                  style={{
+                    border: '1px solid var(--a-border)',
+                    borderRadius: 'var(--a-r-lg)',
+                    background: 'var(--a-inset)',
+                    padding: 'var(--a-s4)',
+                  }}
+                >
+                  <h3 className="mb-3 flex items-center gap-2">
+                    <DataChip>{seg.label}</DataChip>
                   </h3>
                   {includeMetrics && (
-                    <div className="overflow-x-auto">
-                      <Table className="min-w-[280px] border border-border text-sm">
-                        <TableBody>
-                          <TableRow><TableCell className="border border-border bg-card px-3 py-2 font-medium"># Sales (period)</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.sold_count}</TableCell></TableRow>
-                          <TableRow><TableCell className="border border-border bg-card px-3 py-2 font-medium">Median price</TableCell><TableCell className="border border-border px-3 py-2">${Number(seg.metrics.median_price).toLocaleString('en-US', { maximumFractionDigits: 0 })}</TableCell></TableRow>
-                          <TableRow><TableCell className="border border-border bg-card px-3 py-2 font-medium">Median DOM</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.median_dom} days</TableCell></TableRow>
-                          <TableRow><TableCell className="border border-border bg-card px-3 py-2 font-medium">Median $/sqft</TableCell><TableCell className="border border-border px-3 py-2">${Number(seg.metrics.median_ppsf).toLocaleString('en-US', { maximumFractionDigits: 2 })}</TableCell></TableRow>
-                          <TableRow><TableCell className="border border-border bg-card px-3 py-2 font-medium">Current listings</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.current_listings}</TableCell></TableRow>
-                          <TableRow><TableCell className="border border-border bg-card px-3 py-2 font-medium">Sales (prior 12 mo)</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.sales_12mo}</TableCell></TableRow>
-                          <TableRow><TableCell className="border border-border bg-card px-3 py-2 font-medium">Inventory (months)</TableCell><TableCell className="border border-border px-3 py-2">{seg.metrics.inventory_months ?? '—'}</TableCell></TableRow>
-                        </TableBody>
-                      </Table>
-                    </div>
+                    <ReportGrid
+                      label={`${seg.label} summary metrics`}
+                      columns={METRIC_COLUMNS}
+                      template="minmax(160px, 1.4fr) minmax(120px, 1fr)"
+                      minWidth={300}
+                      rows={metricRows(seg.metrics)}
+                      empty={<>No summary metric came back for this segment.</>}
+                    />
                   )}
                   {includePriceBands && (seg.priceBands.sales_by_band?.length > 0 || seg.priceBands.current_listings_by_band?.length > 0) && (
                     <div className="mt-4 grid gap-4 sm:grid-cols-2">
                       <div>
-                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sales by price band</h4>
-                        <ul className="mt-2 space-y-1 text-sm">
+                        <h4 className="uppercase tracking-wider" style={{ fontSize: 'var(--a-text-xs)', fontWeight: 600, color: 'var(--a-text-2)' }}>Sales by price band</h4>
+                        <ul className="mt-2 space-y-1">
                           {(seg.priceBands.sales_by_band ?? []).slice(0, 6).map((b) => (
-                            <li key={b.band} className="flex justify-between gap-2">
-                              <span className="text-muted-foreground">{b.band}</span>
-                              <span className="font-medium">{b.cnt}</span>
+                            <li key={b.band} className="flex justify-between gap-2" style={{ fontSize: 'var(--a-text-sm)' }}>
+                              <span style={{ color: 'var(--a-text-2)' }}>{b.band}</span>
+                              <span style={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: 'var(--a-text)' }}>{b.cnt}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Listings by price band</h4>
-                        <ul className="mt-2 space-y-1 text-sm">
+                        <h4 className="uppercase tracking-wider" style={{ fontSize: 'var(--a-text-xs)', fontWeight: 600, color: 'var(--a-text-2)' }}>Listings by price band</h4>
+                        <ul className="mt-2 space-y-1">
                           {(seg.priceBands.current_listings_by_band ?? []).slice(0, 6).map((b) => (
-                            <li key={b.band} className="flex justify-between gap-2">
-                              <span className="text-muted-foreground">{b.band}</span>
-                              <span className="font-medium">{b.cnt}</span>
+                            <li key={b.band} className="flex justify-between gap-2" style={{ fontSize: 'var(--a-text-sm)' }}>
+                              <span style={{ color: 'var(--a-text-2)' }}>{b.band}</span>
+                              <span style={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: 'var(--a-text)' }}>{b.cnt}</span>
                             </li>
                           ))}
                         </ul>
@@ -423,27 +519,15 @@ export default function CustomReportBuilder({ cities }: Props) {
                     </div>
                   )}
                   {includeTimeSeries && seg.timeSeries != null && seg.timeSeries.length > 0 && (
-                    <div className="mt-4 overflow-x-auto">
-                      <Table className="min-w-[280px] border border-border text-sm">
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="border border-border bg-card px-3 py-2 text-left font-medium">Month</TableHead>
-                            <TableHead className="border border-border bg-card px-3 py-2 text-right font-medium">Sold</TableHead>
-                            <TableHead className="border border-border bg-card px-3 py-2 text-right font-medium">Median price</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {seg.timeSeries.slice(0, 12).map((row) => (
-                            <TableRow key={row.period_start}>
-                              <TableCell className="border border-border px-3 py-2">{row.month_label}</TableCell>
-                              <TableCell className="border border-border px-3 py-2 text-right">{row.sold_count}</TableCell>
-                              <TableCell className="border border-border px-3 py-2 text-right">
-                                {row.median_price != null ? `$${Number(row.median_price).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—'}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                    <div className="mt-4">
+                      <ReportGrid
+                        label={`${seg.label} monthly time series`}
+                        columns={SERIES_COLUMNS}
+                        template="minmax(120px, 1.2fr) minmax(80px, 0.6fr) minmax(120px, 1fr)"
+                        minWidth={300}
+                        rows={seriesRows(seg.timeSeries.slice(0, 12))}
+                        empty={<>No month came back for this segment.</>}
+                      />
                     </div>
                   )}
                 </div>
@@ -451,19 +535,16 @@ export default function CustomReportBuilder({ cities }: Props) {
             </div>
           ) : result.metrics !== null && (
             <div className="mt-6">
-              <h3 className="text-base font-semibold text-primary">Summary metrics</h3>
-              <div className="mt-2 overflow-x-auto">
-                <Table className="min-w-[320px] border border-border text-sm">
-                  <TableBody>
-                    <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium"># Sales (period)</TableCell><TableCell className="border border-border px-3 py-2">{result.metrics.sold_count}</TableCell></TableRow>
-                    <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Median price</TableCell><TableCell className="border border-border px-3 py-2">${Number(result.metrics.median_price).toLocaleString('en-US', { maximumFractionDigits: 0 })}</TableCell></TableRow>
-                    <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Median DOM</TableCell><TableCell className="border border-border px-3 py-2">{result.metrics.median_dom} days</TableCell></TableRow>
-                    <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Median $/sqft</TableCell><TableCell className="border border-border px-3 py-2">${Number(result.metrics.median_ppsf).toLocaleString('en-US', { maximumFractionDigits: 2 })}</TableCell></TableRow>
-                    <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Current listings</TableCell><TableCell className="border border-border px-3 py-2">{result.metrics.current_listings}</TableCell></TableRow>
-                    <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Sales (prior 12 mo)</TableCell><TableCell className="border border-border px-3 py-2">{result.metrics.sales_12mo}</TableCell></TableRow>
-                    <TableRow><TableCell className="border border-border bg-muted px-3 py-2 font-medium">Inventory (months)</TableCell><TableCell className="border border-border px-3 py-2">{result.metrics.inventory_months ?? '—'}</TableCell></TableRow>
-                  </TableBody>
-                </Table>
+              <h3 style={SUBHEAD_STYLE}>Summary metrics</h3>
+              <div className="mt-2">
+                <ReportGrid
+                  label="Summary metrics"
+                  columns={METRIC_COLUMNS}
+                  template="minmax(180px, 1.4fr) minmax(140px, 1fr)"
+                  minWidth={340}
+                  rows={metricRows(result.metrics)}
+                  empty={<>No summary metric came back for this period.</>}
+                />
               </div>
             </div>
           )}
@@ -471,23 +552,23 @@ export default function CustomReportBuilder({ cities }: Props) {
           {result.priceBands != null && (result.priceBands.sales_by_band?.length > 0 || result.priceBands.current_listings_by_band?.length > 0) && (
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
               <div>
-                <h3 className="text-base font-semibold text-primary">Sales by price band</h3>
-                <ul className="mt-2 space-y-1 text-sm">
+                <h3 style={SUBHEAD_STYLE}>Sales by price band</h3>
+                <ul className="mt-2 space-y-1">
                   {(result.priceBands.sales_by_band ?? []).map((b) => (
-                    <li key={b.band} className="flex justify-between gap-4">
-                      <span className="text-muted-foreground">{b.band}</span>
-                      <span className="font-medium">{b.cnt}</span>
+                    <li key={b.band} className="flex justify-between gap-4" style={{ fontSize: 'var(--a-text-sm)' }}>
+                      <span style={{ color: 'var(--a-text-2)' }}>{b.band}</span>
+                      <span style={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: 'var(--a-text)' }}>{b.cnt}</span>
                     </li>
                   ))}
                 </ul>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-primary">Current listings by price band</h3>
-                <ul className="mt-2 space-y-1 text-sm">
+                <h3 style={SUBHEAD_STYLE}>Current listings by price band</h3>
+                <ul className="mt-2 space-y-1">
                   {(result.priceBands.current_listings_by_band ?? []).map((b) => (
-                    <li key={b.band} className="flex justify-between gap-4">
-                      <span className="text-muted-foreground">{b.band}</span>
-                      <span className="font-medium">{b.cnt}</span>
+                    <li key={b.band} className="flex justify-between gap-4" style={{ fontSize: 'var(--a-text-sm)' }}>
+                      <span style={{ color: 'var(--a-text-2)' }}>{b.band}</span>
+                      <span style={{ fontWeight: 500, fontVariantNumeric: 'tabular-nums', color: 'var(--a-text)' }}>{b.cnt}</span>
                     </li>
                   ))}
                 </ul>
@@ -497,28 +578,16 @@ export default function CustomReportBuilder({ cities }: Props) {
 
           {result.timeSeries != null && result.timeSeries.length > 0 && (
             <div className="mt-8">
-              <h3 className="text-base font-semibold text-primary">Time series (monthly)</h3>
-              <div className="mt-2 overflow-x-auto">
-                <Table className="min-w-[320px] border border-border text-sm">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="border border-border bg-muted px-3 py-2 text-left font-medium">Month</TableHead>
-                      <TableHead className="border border-border bg-muted px-3 py-2 text-right font-medium">Sold</TableHead>
-                      <TableHead className="border border-border bg-muted px-3 py-2 text-right font-medium">Median price</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {result.timeSeries.map((row) => (
-                      <TableRow key={row.period_start}>
-                        <TableCell className="border border-border px-3 py-2">{row.month_label}</TableCell>
-                        <TableCell className="border border-border px-3 py-2 text-right">{row.sold_count}</TableCell>
-                        <TableCell className="border border-border px-3 py-2 text-right">
-                          {row.median_price != null ? `$${Number(row.median_price).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <h3 style={SUBHEAD_STYLE}>Time series (monthly)</h3>
+              <div className="mt-2">
+                <ReportGrid
+                  label="Time series (monthly)"
+                  columns={SERIES_COLUMNS}
+                  template="minmax(140px, 1.2fr) minmax(90px, 0.6fr) minmax(140px, 1fr)"
+                  minWidth={340}
+                  rows={seriesRows(result.timeSeries)}
+                  empty={<>No month came back for this period.</>}
+                />
               </div>
             </div>
           )}
@@ -527,11 +596,11 @@ export default function CustomReportBuilder({ cities }: Props) {
             <div className="mt-8 grid gap-6 sm:grid-cols-2">
               {result.pending.length > 0 && (
                 <div>
-                  <h3 className="text-base font-semibold text-primary">Went pending ({result.pending.length})</h3>
-                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                  <h3 style={SUBHEAD_STYLE}>Went pending ({result.pending.length})</h3>
+                  <ul className="mt-2 space-y-1.5" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
                     {result.pending.slice(0, 25).map((item) => (
                       <li key={item.listing_key} className="flex flex-wrap items-center gap-2">
-                        <PropertyTypeBadge value={item.property_type} />
+                        <DataChip>{getPropertyTypeLabel(item.property_type)}</DataChip>
                         {item.price != null ? `$${Number(item.price).toLocaleString()}` : ''} {(item.description ?? '').slice(0, 50)}
                       </li>
                     ))}
@@ -541,11 +610,11 @@ export default function CustomReportBuilder({ cities }: Props) {
               )}
               {result.closed.length > 0 && (
                 <div>
-                  <h3 className="text-base font-semibold text-primary">Closed ({result.closed.length})</h3>
-                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+                  <h3 style={SUBHEAD_STYLE}>Closed ({result.closed.length})</h3>
+                  <ul className="mt-2 space-y-1.5" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
                     {result.closed.slice(0, 25).map((item) => (
                       <li key={item.listing_key} className="flex flex-wrap items-center gap-2">
-                        <PropertyTypeBadge value={item.property_type} />
+                        <DataChip>{getPropertyTypeLabel(item.property_type)}</DataChip>
                         {item.price != null ? `$${Number(item.price).toLocaleString()}` : ''} {(item.description ?? '').slice(0, 50)}
                       </li>
                     ))}

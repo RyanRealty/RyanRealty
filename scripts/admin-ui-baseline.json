@@ -1,9 +1,5 @@
 {
   "rawElements": {
-    "app/admin/(protected)/analytics/_components/CityReportSection.tsx": {
-      "h2": 1,
-      "select": 5
-    },
     "app/admin/(protected)/approval-queue/_components/FilterSidebar.tsx": {
       "h2": 1
     },
@@ -22,24 +18,8 @@
     "app/admin/(protected)/crm/workflows/page.tsx": {
       "input": 2
     },
-    "app/admin/(protected)/financials/ExpenseLedger.tsx": {
-      "h2": 1
-    },
-    "app/admin/(protected)/geo/area-guide-upload/AreaGuideUploadClient.tsx": {
-      "h2": 2,
-      "input": 1,
-      "button": 3,
-      "table": 1
-    },
     "app/admin/(protected)/listings/page.tsx": {
       "input": 1
-    },
-    "app/admin/(protected)/media/photos/PhotoCurationBoard.tsx": {
-      "h1": 1,
-      "button": 4
-    },
-    "app/admin/(protected)/media/stock-photos/StockPhotosPicker.tsx": {
-      "h1": 1
     },
     "app/admin/(protected)/messages/page.tsx": {
       "input": 1
@@ -61,10 +41,6 @@
     },
     "app/admin/(protected)/prospecting/page.tsx": {
       "input": 5
-    },
-    "app/admin/(protected)/reports/custom/CustomReportBuilder.tsx": {
-      "h2": 5,
-      "select": 3
     },
     "app/admin/(protected)/reports/page.tsx": {
       "h2": 1
@@ -127,5 +103,5 @@
     "app/admin/(protected)/people/[id]/page.tsx": 1,
     "app/admin/(protected)/today/page.tsx": 2
   },
-  "distinctWidths": 9
+  "distinctWidths": 6
 }

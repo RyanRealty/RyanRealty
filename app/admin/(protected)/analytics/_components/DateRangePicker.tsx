@@ -1,10 +1,18 @@
 'use client'
 
+/**
+ * DateRangePicker — the shared analytics/report date-range control.
+ *
+ * 11F: taken off shadcn and onto the LOCKED admin v2 field primitives
+ * (design_system/admin/ADMIN_UI.md). Nothing about the contract moved: the same
+ * five range values, the same `range` / `startDate` / `endDate` search params,
+ * the same router.push on every change, the same custom-range reveal, and the
+ * same three field labels. Its v2 sibling _components/v2/RangeControl renders
+ * the identical shape for the pages migrated in 11C — one language, one control.
+ */
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback } from 'react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { SelectField, TextField } from '@/components/admin/v2'
 
 const RANGE_OPTIONS = [
   { value: 'today',  label: 'Today' },
@@ -29,40 +37,26 @@ export function DateRangePicker({ current, currentStart, currentEnd }: { current
   }, [router, params, pathname])
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="space-y-1">
-        <Label className="text-xs uppercase tracking-wide text-muted-foreground">Date range</Label>
-        <Select value={current} onValueChange={(v) => update({ range: v })}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {RANGE_OPTIONS.map((o) => (
-              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="av2-inline-form">
+      <SelectField label="Date range" value={current} onChange={(e) => update({ range: e.target.value })}>
+        {RANGE_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </SelectField>
       {current === 'custom' && (
         <>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Start</Label>
-            <Input
-              type="date"
-              defaultValue={currentStart ?? ''}
-              onChange={(e) => update({ startDate: e.target.value })}
-              className="w-44"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">End</Label>
-            <Input
-              type="date"
-              defaultValue={currentEnd ?? ''}
-              onChange={(e) => update({ endDate: e.target.value })}
-              className="w-44"
-            />
-          </div>
+          <TextField
+            label="Start"
+            type="date"
+            defaultValue={currentStart ?? ''}
+            onChange={(e) => update({ startDate: e.target.value })}
+          />
+          <TextField
+            label="End"
+            type="date"
+            defaultValue={currentEnd ?? ''}
+            onChange={(e) => update({ endDate: e.target.value })}
+          />
         </>
       )}
     </div>

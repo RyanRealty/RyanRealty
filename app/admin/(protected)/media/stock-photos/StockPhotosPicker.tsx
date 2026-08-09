@@ -1,13 +1,39 @@
 'use client'
 
+/**
+ * StockPhotosPicker — the /admin/media/stock-photos search.
+ *
+ * 11F: taken off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — the three parallel
+ * fetches, the per-source error latches, the CAP/showAll expansion, the blob
+ * review sheet and its 120s revoke, and every user-visible string are untouched.
+ *
+ * Substitutions, and why each one:
+ *   Card/CardContent -> .av2-pane and hairline boxes (elevation is borders here).
+ *   Input + Label    -> TextField, which owns the label-above pairing. No
+ *                       className is passed to it on purpose: TextField spreads
+ *                       props AFTER its own className, so one would replace
+ *                       .av2-input outright. .av2-input already carries the
+ *                       44px touch height the h-11 class was there for.
+ *   Tabs             -> quiet Buttons carrying aria-pressed, with the panel
+ *                       rendered conditionally. Radix unmounts an inactive
+ *                       TabsContent, so this is the same mount behaviour.
+ *   Badge (count)    -> a plain count chip. A count is DATA and .av2-state
+ *                       uppercases, so StateWord is wrong for it.
+ *   Skeleton         -> a local Shimmer on --a-inset that keeps animate-pulse.
+ *
+ * THE REVIEW SHEET (buildStockReviewHtml) is a standalone blob document with no
+ * access to the admin stylesheet, so it cannot reach var(--a-*). It used to be
+ * typeset in the PUBLIC brand — the display face and the navy/cream literals —
+ * which is exactly what the admin's amnesia rule blacklists, and what the gate
+ * reads as a brand leak. It now draws on CSS system colors (Canvas / CanvasText
+ * / GrayText / ButtonFace / ButtonBorder / LinkText / Mark), which need no
+ * palette, follow the reader's OS theme via color-scheme, and invent nothing.
+ * Its markup, data and strings are unchanged.
+ */
+
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Button, EntityTitle, TextField } from '@/components/admin/v2'
 
 type UnsplashRow = {
   id: string | null
@@ -116,23 +142,23 @@ function buildStockReviewHtml(args: {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Stock review — ${escHtml(query)}</title>
 <style>
-  :root { font-family: Geist, sans-serif; color: rgb(16, 39, 66); background: rgb(250, 248, 244); }
+  :root { font-family: system-ui, -apple-system, sans-serif; color: CanvasText; background: Canvas; color-scheme: light dark; }
   body { margin: 0; padding: 12px max(12px, env(safe-area-inset-right)) 24px max(12px, env(safe-area-inset-left)); max-width: 1200px; margin-inline: auto; }
   h1 { font-size: 1.35rem; margin: 0 0 8px; }
   @media (min-width: 640px) { h1 { font-size: 1.5rem; } }
-  .meta { color: rgb(16 39 66 / 0.6); font-size: 0.875rem; margin-bottom: 24px; }
+  .meta { color: GrayText; font-size: 0.875rem; margin-bottom: 24px; }
   section { margin-bottom: 40px; }
-  h2 { font-size: 1.15rem; border-bottom: 1px solid rgb(16 39 66 / 0.12); padding-bottom: 6px; }
+  h2 { font-size: 1.15rem; border-bottom: 1px solid ButtonBorder; padding-bottom: 6px; }
   .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
   @media (min-width: 640px) { .grid { gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); } }
-  .card { border: 1px solid rgb(16 39 66 / 0.1); border-radius: 10px; overflow: hidden; background: rgb(255, 255, 255); box-shadow: 0 1px 2px rgb(16 39 66 / 0.08); }
-  .code { font-size: 12px; font-weight: 600; padding: 6px 10px; background: rgb(16 39 66 / 0.05); color: rgb(16 39 66 / 0.7); }
+  .card { border: 1px solid ButtonBorder; border-radius: 10px; overflow: hidden; background: Canvas; }
+  .code { font-size: 12px; font-weight: 600; padding: 6px 10px; background: ButtonFace; color: GrayText; }
   .card img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
-  .noimg { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; background: rgb(16 39 66 / 0.05); font-size: 12px; color: rgb(16 39 66 / 0.6); }
-  .cap { padding: 10px; font-size: 12px; color: rgb(16 39 66 / 0.7); line-height: 1.45; }
-  .cap a { color: rgb(16, 39, 66); }
-  .err { color: rgb(185, 28, 28); font-size: 13px; }
-  @media print { body { background: rgb(255, 255, 255); } .card { break-inside: avoid; } }
+  .noimg { aspect-ratio: 16 / 9; display: flex; align-items: center; justify-content: center; background: ButtonFace; font-size: 12px; color: GrayText; }
+  .cap { padding: 10px; font-size: 12px; color: GrayText; line-height: 1.45; }
+  .cap a { color: LinkText; }
+  .err { font-size: 13px; font-weight: 700; background: Mark; color: MarkText; padding: 4px 8px; border-radius: 6px; }
+  @media print { .card { break-inside: avoid; } }
 </style>
 </head>
 <body>
@@ -155,6 +181,35 @@ function buildStockReviewHtml(args: {
   </section>
 </body>
 </html>`
+}
+
+/** Loading placeholder — the shadcn Skeleton's shape and pulse, on admin tokens. */
+function Shimmer({ className }: { className?: string }) {
+  return (
+    <div
+      className={className ? `animate-pulse rounded-md ${className}` : 'animate-pulse rounded-md'}
+      style={{ background: 'var(--a-inset)' }}
+    />
+  )
+}
+
+/** A per-source result count (or "!"): DATA, so never StateWord. */
+function CountChip({ children, tone }: { children: ReactNode; tone: 'neutral' | 'danger' }) {
+  return (
+    <span
+      className="a-num"
+      style={{
+        fontSize: 'var(--a-text-xs)',
+        fontWeight: 600,
+        borderRadius: 'var(--a-r-sm)',
+        padding: '1px 6px',
+        background: tone === 'danger' ? 'var(--a-danger-wash)' : 'var(--a-inset)',
+        color: tone === 'danger' ? 'var(--a-danger)' : 'var(--a-text-2)',
+      }}
+    >
+      {children}
+    </span>
+  )
 }
 
 export default function StockPhotosPicker() {
@@ -219,7 +274,7 @@ export default function StockPhotosPicker() {
   const openHtmlReview = () => {
     const html = buildStockReviewHtml({
       query: query.trim() || DEFAULT_QUERY,
-      generatedAt: new Date().toISOString(),
+      generatedAt: new Date().toISOString(), // hydration-safe: click handler, never a render body
       shutter,
       pexels,
       unsplash,
@@ -250,66 +305,65 @@ export default function StockPhotosPicker() {
     <div className="space-y-5 sm:space-y-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Stock photos</h1>
-        <p className="text-sm text-muted-foreground">
+        <EntityTitle>Stock photos</EntityTitle>
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           One search across <strong>Shutterstock</strong>, <strong>Pexels</strong>, and <strong>Unsplash</strong>. Pick by code
           (<strong>S-…</strong>, <strong>P1</strong>, <strong>U1</strong>). Shutterstock still needs per-image licensing before publish.
         </p>
       </div>
 
       {/* Search bar */}
-      <Card>
-        <CardContent className="p-4">
-          <form
-            className="flex flex-col gap-3 sm:flex-row sm:items-end"
-            onSubmit={(e) => {
-              e.preventDefault()
-              runSearch()
-            }}
-          >
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label htmlFor="stock-query">Search query</Label>
-              <Input
-                id="stock-query"
-                className="h-11 text-base sm:h-9 sm:text-sm"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="e.g. Sunriver Oregon mountain"
-                enterKeyHint="search"
-              />
-            </div>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:shrink-0">
-              <Button type="submit" size="lg" disabled={loading} className="h-11 w-full sm:w-auto">
-                {loading ? 'Searching…' : 'Search'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={openHtmlReview}
-                disabled={loading || !hasAnyResult}
-                className="h-11 w-full sm:w-auto"
-              >
-                HTML review
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="av2-pane">
+        <form
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          onSubmit={(e) => {
+            e.preventDefault()
+            runSearch()
+          }}
+        >
+          <div className="min-w-0 flex-1">
+            <TextField
+              label="Search query"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g. Sunriver Oregon mountain"
+              enterKeyHint="search"
+            />
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:shrink-0">
+            <Button type="submit" touch disabled={loading} className="w-full sm:w-auto">
+              {loading ? 'Searching…' : 'Search'}
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              touch
+              onClick={openHtmlReview}
+              disabled={loading || !hasAnyResult}
+              className="w-full sm:w-auto"
+            >
+              HTML review
+            </Button>
+          </div>
+        </form>
+      </div>
 
       {/* Glanceable summary */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+      <div
+        className="flex flex-wrap items-center gap-x-3 gap-y-1"
+        style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}
+      >
         {loading ? (
           <span>Searching all sources…</span>
         ) : hasAnyResult ? (
           <>
-            <span className="font-medium text-foreground tabular-nums">{totalResults} results</span>
+            <span className="a-num" style={{ fontWeight: 500, color: 'var(--a-text)' }}>{totalResults} results</span>
             <span aria-hidden>·</span>
-            <span className="tabular-nums">{shutter.length} Shutterstock</span>
+            <span className="a-num">{shutter.length} Shutterstock</span>
             <span aria-hidden>·</span>
-            <span className="tabular-nums">{pexels.length} Pexels</span>
+            <span className="a-num">{pexels.length} Pexels</span>
             <span aria-hidden>·</span>
-            <span className="tabular-nums">{unsplash.length} Unsplash</span>
+            <span className="a-num">{unsplash.length} Unsplash</span>
           </>
         ) : (
           <span>No results yet. Run a search above.</span>
@@ -317,21 +371,34 @@ export default function StockPhotosPicker() {
       </div>
 
       {/* Source tabs — one list at a time, each capped + expandable */}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="gap-4">
-        <TabsList className="h-auto w-full justify-start gap-1 p-1">
-          {sources.map((s) => (
-            <TabsTrigger key={s.key} value={s.key} className="h-9 gap-1.5">
-              {s.label}
-              {!loading && (
-                <Badge variant={s.err ? 'destructive' : 'soft-neutral'} className="tabular-nums">
-                  {s.err ? '!' : s.count}
-                </Badge>
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <div className="flex flex-col gap-4">
+        <div className="flex w-full flex-wrap justify-start gap-1" role="group" aria-label="Stock source">
+          {sources.map((s) => {
+            const active = tab === s.key
+            return (
+              <Button
+                key={s.key}
+                variant="quiet"
+                type="button"
+                aria-pressed={active}
+                onClick={() => setTab(s.key)}
+                className="h-9 gap-1.5"
+                // The pressed look comes from
+                // .av2-btn--quiet[aria-pressed="true"] in admin-v2.css, NOT from
+                // an inline style: inline outranks the :hover rule, which froze
+                // the selected tab while every inactive sibling still responded.
+                style={active ? { fontWeight: 600 } : { color: 'var(--a-text-2)' }}
+              >
+                {s.label}
+                {!loading && (
+                  <CountChip tone={s.err ? 'danger' : 'neutral'}>{s.err ? '!' : s.count}</CountChip>
+                )}
+              </Button>
+            )
+          })}
+        </div>
 
-        <TabsContent value="shutterstock">
+        {tab === 'shutterstock' && (
           <SourceGrid
             empty="No results, or Shutterstock keys are missing. Check SHUTTERSTOCK_* env vars, then search again."
             error={errS}
@@ -347,13 +414,15 @@ export default function StockPhotosPicker() {
                 imgSrc={row.previewUrl || row.thumbUrl}
                 alt={row.description ?? ''}
               >
-                <p className="line-clamp-3 text-xs text-muted-foreground">{row.description ?? '—'}</p>
+                <p className="line-clamp-3" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+                  {row.description ?? '—'}
+                </p>
               </PhotoCard>
             ))}
           </SourceGrid>
-        </TabsContent>
+        )}
 
-        <TabsContent value="pexels">
+        {tab === 'pexels' && (
           <SourceGrid
             empty="No results, or PEXELS_API_KEY is not set. Add it to the env, then search again."
             error={errP}
@@ -364,13 +433,20 @@ export default function StockPhotosPicker() {
           >
             {pexels.slice(0, showAll.pexels ? pexels.length : CAP).map((row, i) => (
               <PhotoCard key={row.id} code={`P${i + 1}`} imgSrc={row.thumbUrl || row.url} alt="">
-                <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="space-y-1" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                   <p>
-                    <span className="font-medium text-foreground">id</span> <span className="tabular-nums">{row.id}</span>
+                    <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>id</span>{' '}
+                    <span className="a-num">{row.id}</span>
                   </p>
                   <p>
                     Photo by{' '}
-                    <a href={row.photographerUrl} className="text-primary underline" target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={row.photographerUrl}
+                      className="underline"
+                      style={{ color: 'var(--a-accent)' }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {row.photographer}
                     </a>{' '}
                     on Pexels
@@ -379,9 +455,9 @@ export default function StockPhotosPicker() {
               </PhotoCard>
             ))}
           </SourceGrid>
-        </TabsContent>
+        )}
 
-        <TabsContent value="unsplash">
+        {tab === 'unsplash' && (
           <SourceGrid
             empty="No results, or the Unsplash key needs attention. Check UNSPLASH_ACCESS_KEY, then search again."
             error={errU}
@@ -392,15 +468,21 @@ export default function StockPhotosPicker() {
           >
             {unsplash.slice(0, showAll.unsplash ? unsplash.length : CAP).map((row, i) => (
               <PhotoCard key={`${row.url}-${i}`} code={`U${i + 1}`} imgSrc={row.thumbUrl || row.url} alt="">
-                <div className="space-y-1 text-xs text-muted-foreground">
+                <div className="space-y-1" style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
                   {row.id && (
                     <p>
-                      <span className="font-medium text-foreground">id</span> {row.id}
+                      <span style={{ fontWeight: 500, color: 'var(--a-text)' }}>id</span> {row.id}
                     </p>
                   )}
                   <p>{row.attribution}</p>
                   {row.sourceUrl && (
-                    <a href={row.sourceUrl} className="text-primary underline" target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={row.sourceUrl}
+                      className="underline"
+                      style={{ color: 'var(--a-accent)' }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       Profile ↗
                     </a>
                   )}
@@ -408,8 +490,8 @@ export default function StockPhotosPicker() {
               </PhotoCard>
             ))}
           </SourceGrid>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   )
 }
@@ -429,20 +511,35 @@ function PhotoCard({
 }) {
   return (
     <li>
-      <Card size="sm" className="h-full gap-0">
-        <div className="flex items-center justify-between gap-2 bg-muted px-3 py-1.5">
-          <span className="text-xs font-semibold text-muted-foreground">{code}</span>
+      <div
+        className="flex h-full flex-col overflow-hidden"
+        style={{
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          background: 'var(--a-bg)',
+        }}
+      >
+        <div
+          className="flex items-center justify-between gap-2 px-3 py-1.5"
+          style={{ background: 'var(--a-inset)' }}
+        >
+          <span style={{ fontSize: 'var(--a-text-xs)', fontWeight: 600, color: 'var(--a-text-2)' }}>
+            {code}
+          </span>
         </div>
         {imgSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imgSrc} alt={alt} className="aspect-video w-full object-cover" loading="lazy" />
         ) : (
-          <div className="flex aspect-video items-center justify-center bg-muted text-xs text-muted-foreground">
+          <div
+            className="flex aspect-video items-center justify-center"
+            style={{ background: 'var(--a-inset)', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+          >
             No preview
           </div>
         )}
-        <CardContent className="p-3">{children}</CardContent>
-      </Card>
+        <div className="p-3">{children}</div>
+      </div>
     </li>
   )
 }
@@ -469,14 +566,21 @@ function SourceGrid({
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <li key={i}>
-            <Card size="sm" className="gap-0">
-              <Skeleton className="h-6 w-full rounded-none" />
-              <Skeleton className="aspect-video w-full rounded-none" />
-              <CardContent className="space-y-2 p-3">
-                <Skeleton className="h-3 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </CardContent>
-            </Card>
+            <div
+              className="flex flex-col overflow-hidden"
+              style={{
+                border: '1px solid var(--a-border)',
+                borderRadius: 'var(--a-r-lg)',
+                background: 'var(--a-bg)',
+              }}
+            >
+              <Shimmer className="h-6 w-full rounded-none" />
+              <Shimmer className="aspect-video w-full rounded-none" />
+              <div className="space-y-2 p-3">
+                <Shimmer className="h-3 w-3/4" />
+                <Shimmer className="h-3 w-1/2" />
+              </div>
+            </div>
           </li>
         ))}
       </ul>
@@ -485,22 +589,32 @@ function SourceGrid({
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="space-y-1 py-8 text-center">
-          <p className="text-sm font-medium text-destructive">Couldn&apos;t load this source</p>
-          <p className="mx-auto max-w-md text-sm text-muted-foreground">{error}</p>
-        </CardContent>
-      </Card>
+      <div className="av2-pane">
+        <div className="space-y-1 py-8 text-center">
+          <p style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-danger)' }}>
+            Couldn&apos;t load this source
+          </p>
+          <p
+            className="mx-auto max-w-md"
+            style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}
+          >
+            {error}
+          </p>
+        </div>
+      </div>
     )
   }
 
   if (count === 0) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center text-sm text-muted-foreground">
+      <div className="av2-pane">
+        <div
+          className="py-10 text-center"
+          style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}
+        >
           <p className="mx-auto max-w-md">{empty}</p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
@@ -509,7 +623,7 @@ function SourceGrid({
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">{children}</ul>
       {count > CAP && (
         <div className="flex justify-center">
-          <Button variant="outline" size="lg" className="h-11" onClick={onToggle}>
+          <Button variant="quiet" touch onClick={onToggle}>
             {showAll ? 'Show fewer' : `See all ${count} →`}
           </Button>
         </div>

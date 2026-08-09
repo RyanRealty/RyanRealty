@@ -21,7 +21,7 @@
  * add those paths to SCAN_DIRS.
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, relative, dirname } from 'node:path'
 
 const ROOT = process.cwd()
 const SPEC = join(ROOT, 'design_system/admin/tokens.css')
@@ -591,6 +591,87 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/tools/page.tsx',
   'app/admin/(protected)/prospecting/[kind]/[id]/page.tsx',
   'app/admin/(protected)/settings/account/page.tsx',
+
+  // ── 11F: the route-local islands (2026-08-09) ─────────────────────────
+  // Rule 3 now resolves RELATIVE specifiers, which is what finally made these
+  // visible: a page in scope importing './_components/X' was never checked, so
+  // 59 islands rendered shadcn behind a page the gate called clean. That is the
+  // 'green for the wrong reason' failure this phase exists to prevent, found by
+  // asking what the rule could NOT see rather than trusting that it passed.
+
+  'app/admin/(protected)/analytics/_components/DateRangePicker.tsx',
+  'app/admin/(protected)/analytics/_components/ReportCatalog.tsx',
+  'app/admin/(protected)/analytics/_components/charts.tsx',
+  'app/admin/(protected)/analytics/_components/v2/DataGrid.tsx',
+  'app/admin/(protected)/analytics/_components/v2/RangeControl.tsx',
+  'app/admin/(protected)/analytics/_components/v2/VariantControl.tsx',
+  'app/admin/(protected)/analytics/_components/v2/kit.tsx',
+  'app/admin/(protected)/approval-queue/_components/ActionCard.tsx',
+  'app/admin/(protected)/approval-queue/_components/BulkSelection.tsx',
+  'app/admin/(protected)/approval-queue/_components/FilterSidebar.tsx',
+  'app/admin/(protected)/bpo/_components/worklist/BpoSendDialog.client.tsx',
+  'app/admin/(protected)/cmas/_components/worklist/CmaSendDialog.client.tsx',
+  'app/admin/(protected)/crm/deals/[id]/DealCommission.tsx',
+  'app/admin/(protected)/crm/deals/[id]/DealFiles.tsx',
+  'app/admin/(protected)/crm/deals/[id]/DealHeader.tsx',
+  'app/admin/(protected)/crm/deals/[id]/DealMilestones.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/EmailTemplateModal.tsx',
+  'app/admin/(protected)/crm/settings/_components/templates/TextTemplateModal.tsx',
+  'app/admin/(protected)/crm/settings/appointments/AppointmentSettingsClient.tsx',
+  'app/admin/(protected)/crm/settings/market-reports/BulkSendForm.tsx',
+  'app/admin/(protected)/crm/settings/team/TeamAccess.tsx',
+  'app/admin/(protected)/deals/[key]/ChecklistControls.tsx',
+  'app/admin/(protected)/deals/[key]/CommissionControls.tsx',
+  'app/admin/(protected)/deals/[key]/DealContacts.tsx',
+  'app/admin/(protected)/deals/[key]/DealEnvelopes.tsx',
+  'app/admin/(protected)/deals/[key]/DocumentName.tsx',
+  'app/admin/(protected)/deals/[key]/DocumentRowActions.tsx',
+  'app/admin/(protected)/deals/[key]/DocumentUpload.tsx',
+  'app/admin/(protected)/dscr/_components/DscrEmailDialog.client.tsx',
+  'app/admin/(protected)/email/compose/_components/AdminEmailCompose.tsx',
+  'app/admin/(protected)/email/compose/_components/ComposeToCohort.tsx',
+  'app/admin/(protected)/financials/ExpenseControls.tsx',
+  'app/admin/(protected)/financials/ExpenseLedger.tsx',
+  'app/admin/(protected)/geo/AssignCommunity.tsx',
+  'app/admin/(protected)/geo/EnsureGeoButton.tsx',
+  'app/admin/(protected)/geo/NeighborhoodForm.tsx',
+  'app/admin/(protected)/geo/area-guide-upload/AreaGuideUploadClient.tsx',
+  'app/admin/(protected)/geo/resort-communities/ResortCommunityToggle.tsx',
+  'app/admin/(protected)/geo/resort-communities/SeedResortButton.tsx',
+  'app/admin/(protected)/listings/ListingsCsvExport.tsx',
+  'app/admin/(protected)/listings/[listingKey]/AdminListingEditor.tsx',
+  'app/admin/(protected)/media/AdminMediaManager.tsx',
+  'app/admin/(protected)/media/banners/GenerateBannersButton.tsx',
+  'app/admin/(protected)/media/photos/PhotoCurationBoard.tsx',
+  'app/admin/(protected)/media/stock-photos/StockPhotosPicker.tsx',
+  'app/admin/(protected)/newsletters/analytics/BrokerFilterSelect.tsx',
+  'app/admin/(protected)/newsletters/enroll/EnrollClient.tsx',
+  'app/admin/(protected)/people/[id]/CommsSection.tsx',
+  'app/admin/(protected)/people/[id]/SendSection.tsx',
+  'app/admin/(protected)/reports/custom/CustomReportBuilder.tsx',
+  'app/admin/(protected)/reports/emails/EmailLogCsvButton.tsx',
+  'app/admin/(protected)/sign-off/SignOffControls.tsx',
+  'app/admin/(protected)/site-pages/HeroMediaForm.tsx',
+  'app/admin/(protected)/site-pages/SiteLogoForm.tsx',
+  'app/admin/(protected)/site-pages/SitePagesList.tsx',
+  'app/admin/(protected)/site-pages/TeamImageForm.tsx',
+  'app/admin/(protected)/sync/BackfillHealthPanel.tsx',
+  'app/admin/(protected)/sync/SyncHeavyStatusSections.tsx',
+  'app/admin/(protected)/sync/SyncLiveStatusAndTerminal.tsx',
+
+  'app/admin/(protected)/analytics/_components/CityReportSection.tsx',
+  'app/admin/(protected)/analytics/_components/GenerateReportButton.tsx',
+  'app/admin/(protected)/approval-queue/_components/ActionButtons.tsx',
+  'app/admin/(protected)/approval-queue/_components/CommentsThread.tsx',
+  'app/admin/(protected)/approval-queue/_components/MediaPreview.tsx',
+  'app/admin/(protected)/site-pages/SitePageEditor.tsx',
+  'app/admin/(protected)/sync/SyncPageAdvanced.tsx',
+
+  'app/admin/(protected)/sync/RefreshActivePendingButton.tsx',
+  'app/admin/(protected)/sync/SyncHistoryButtons.tsx',
+  'app/admin/(protected)/sync/SyncSinceDateButton.tsx',
+  'app/admin/(protected)/sync/SyncSmart.tsx',
+  'app/admin/(protected)/sync/TriggerDeltaSyncButton.tsx',
 ]
 const EXT = new Set(['.ts', '.tsx', '.css'])
 
@@ -655,6 +736,13 @@ const SEMANTIC_CLASS =
 // ShareButton, icons/*, tc/*) were never in scope and are not now: widening the
 // rule to them would be a different, unreviewed decision.
 const COMPONENT_IMPORT = /from\s+['"]((?:@\/)?components\/(?:admin|ui)\/[^'"]+)['"]/g
+// RELATIVE imports count too. The rule above only matches a `components/...`
+// specifier, so a route-local island imported as './_components/ActionCard' was
+// invisible — 67 such files were reachable from a scanned page while carrying
+// shadcn, which is precisely the "gated but still renders the public brand"
+// failure this phase exists to prevent. Only .tsx targets are required to be
+// scanned: a .ts module has no JSX and cannot paint anything.
+const RELATIVE_IMPORT = /from\s+['"](\.[^'"]*)['"]/g
 
 function walk(dir) {
   const out = []
@@ -679,6 +767,24 @@ for (const entry of SCAN_DIRS) {
   if (!existsSync(abs)) continue
   if (statSync(abs).isDirectory()) for (const f of walk(abs)) SCANNED.add(f)
   else SCANNED.add(abs)
+}
+
+/**
+ * Resolve a RELATIVE specifier against the importing file. Returns null unless
+ * the target is a .tsx under app/admin or components — a .ts helper renders
+ * nothing, and anything outside those trees is not this gate's business.
+ */
+function resolveRelativeImport(spec, fromFile) {
+  const base = join(dirname(fromFile), spec)
+  for (const ext of ['.tsx', '/index.tsx', '']) {
+    const p = base + ext
+    if (existsSync(p) && statSync(p).isFile() && p.endsWith('.tsx')) {
+      const rel = relative(ROOT, p)
+      if (rel.startsWith('app/admin/') || rel.startsWith('components/')) return p
+      return null
+    }
+  }
+  return null
 }
 
 /** Resolve a `components/...` or `@/components/...` specifier to a real file. */
@@ -750,8 +856,11 @@ for (const dir of SCAN_DIRS) {
       if (BRAND_LEAK.test(line)) report(file, i, 'public-brand leak (amnesia: no --rr-*/Amboqia/Geist in admin v2)', line)
       BRAND_LEAK.lastIndex = 0
       // Rule 3 — the imported module must itself be in scope for this gate.
-      for (const m of line.matchAll(COMPONENT_IMPORT)) {
-        const target = resolveComponentImport(m[1])
+      const rule3 = [
+        ...[...line.matchAll(COMPONENT_IMPORT)].map((m) => resolveComponentImport(m[1])),
+        ...[...line.matchAll(RELATIVE_IMPORT)].map((m) => resolveRelativeImport(m[1], file)),
+      ]
+      for (const target of rule3) {
         // Unresolvable (a type-only path alias, a barrel that does not exist on
         // disk) is not evidence of a violation — do not guess.
         if (!target) continue

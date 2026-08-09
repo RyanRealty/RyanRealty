@@ -1,22 +1,28 @@
 /**
- * DataGrid — the v2 language's tabular reader (11C, analytics family).
+ * DataGrid — the analytics family's tabular reader.
  *
- * The LOCKED admin language (design_system/admin/ADMIN_UI.md) has no <table>
- * primitive and bans raw <table> on migrated surfaces, so a data page renders
- * its rows as an ARIA grid built from the same tokens as everything else:
- *   - numbers are tabular (§1.4 "data is typographic"), units stay attached
- *     by the caller's own formatter
- *   - the ONLY horizontal scroll lives inside this component's own scroller,
- *     never on the page (a page that scrolls sideways is a failed design)
- *   - hairlines carry the structure; no shadows, no zebra fill
- *   - the four states each have a designed shape: GridSkeleton (loading),
- *     StatePanel (empty — says why + offers the next move; error — says the
- *     failure + the recovery), and Stamp (stale — carries its timestamp)
+ * 11F CONVERGED: the grid itself is now <ReportGrid> from @/components/admin/v2,
+ * the admin's ONE tabular reader. This file kept its own copy of that shape
+ * through 11C, which meant two readers for one family — the drift the barrel
+ * exists to stop. Everything a caller passes is unchanged (label, rows,
+ * columns, getRowKey, cap, empty, minWidth), and the four designed states stay
+ * here because ReportGrid does not carry them: StatePanel (empty/error),
+ * GridSkeleton (loading), Stamp (stale/provenance), LaneNote, NumberStrip.
+ *
+ * What the convergence preserves, deliberately:
+ *   - ARIA table roles — ReportGrid renders role="table"/"row"/"columnheader"/
+ *     "cell" from the same markup this file did.
+ *   - the keyboard-reachable scroll region — role="group" + tabIndex={0} +
+ *     aria-label, with the ONLY horizontal scroll living inside it, never on
+ *     the page.
+ *   - phone stacking — report-grid.css turns each row into a titled block below
+ *     720px, so a wide grid never scrolls sideways on a phone.
  *
  * Presentation only. Every figure, sort order, and cap is supplied by the
  * page; this file never computes a number.
  */
 import type { ReactNode } from 'react'
+import { ReportGrid, type ReportColumn, type ReportGridRow } from '@/components/admin/v2'
 
 export type GridColumn<T> = {
   key: string
@@ -26,15 +32,6 @@ export type GridColumn<T> = {
   /** Right-aligned + tabular numerals — every numeric column sets this. */
   numeric?: boolean
   cell: (row: T, index: number) => ReactNode
-}
-
-const HEAD_STYLE: React.CSSProperties = {
-  fontSize: 'var(--a-text-xs)',
-  fontWeight: 600,
-  letterSpacing: '.05em',
-  textTransform: 'uppercase',
-  color: 'var(--a-text-2)',
-  whiteSpace: 'nowrap',
 }
 
 export function DataGrid<T>({
@@ -64,90 +61,30 @@ export function DataGrid<T>({
   const overflow = rows.length - shown.length
   const template = columns.map((c) => c.width ?? 'minmax(84px, auto)').join(' ')
 
+  const gridColumns: ReportColumn[] = columns.map((c) => ({
+    key: c.key,
+    label: c.header,
+    numeric: c.numeric,
+  }))
+  const gridRows: ReportGridRow[] = shown.map((row, i) => ({
+    key: String(getRowKey(row, i)),
+    cells: columns.map((c) => c.cell(row, i)),
+  }))
+
   return (
     <div>
-      <div
-        tabIndex={0}
-        role="group"
-        aria-label={`${label} (scrolls sideways)`}
-        // The class is what ci:admin-responsive can SEE (it scans class strings,
-        // not inline styles); overflowX below is what actually applies. Keep
-        // both — a grid that scrolls only by inline style reads to the gate as
-        // a table with no mobile fallback, which is the #1 phone failure.
-        className="overflow-x-auto"
-        style={{
-          width: '100%',
-          overflowX: 'auto',
-          border: '1px solid var(--a-border)',
-          borderRadius: 'var(--a-r-lg)',
-          background: 'var(--a-surface)',
-        }}
-      >
-        <div role="table" aria-label={label} style={{ minWidth }}>
-          <div
-            role="row"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: template,
-              gap: 'var(--a-s3)',
-              padding: '9px var(--a-s4)',
-              borderBottom: '1px solid var(--a-border)',
-            }}
-          >
-            {columns.map((c) => (
-              <div
-                key={c.key}
-                role="columnheader"
-                style={{ ...HEAD_STYLE, textAlign: c.numeric ? 'right' : 'left' }}
-              >
-                {c.header}
-              </div>
-            ))}
-          </div>
-          {shown.map((row, i) => (
-            <div
-              key={getRowKey(row, i)}
-              role="row"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: template,
-                gap: 'var(--a-s3)',
-                padding: '10px var(--a-s4)',
-                alignItems: 'baseline',
-                borderBottom: i === shown.length - 1 ? 'none' : '1px solid var(--a-border)',
-                fontSize: 'var(--a-text-sm)',
-                color: 'var(--a-text)',
-              }}
-            >
-              {columns.map((c) => (
-                <div
-                  key={c.key}
-                  role="cell"
-                  style={{
-                    minWidth: 0,
-                    overflowWrap: 'anywhere',
-                    textAlign: c.numeric ? 'right' : 'left',
-                    fontVariantNumeric: c.numeric ? 'tabular-nums' : undefined,
-                  }}
-                >
-                  {c.cell(row, i)}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+      <ReportGrid
+        label={label}
+        columns={gridColumns}
+        template={template}
+        minWidth={minWidth}
+        rows={gridRows}
+        empty={empty}
+      />
       {overflow > 0 ? (
-        <p
-          style={{
-            fontSize: 'var(--a-text-xs)',
-            color: 'var(--a-text-2)',
-            fontVariantNumeric: 'tabular-nums',
-            margin: 'var(--a-s2) 0 0',
-          }}
-        >
+        <Stamp>
           Showing {shown.length} of {rows.length}.
-        </p>
+        </Stamp>
       ) : null}
     </div>
   )

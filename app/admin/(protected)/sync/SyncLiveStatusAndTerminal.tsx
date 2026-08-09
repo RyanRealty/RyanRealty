@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from '@/components/ui/button'
+import type { CSSProperties } from 'react'
+import { Button, ReportGrid } from '@/components/admin/v2'
 import type { SyncCursor } from '@/app/actions/sync-full-cron'
-import { cn } from '@/lib/utils'
 
 type TerminalSnapshot = {
   closedTotalInDb: number
@@ -61,6 +60,48 @@ type Props = {
 const LIVE_POLL_MS = 5000
 const YIELD_POLL_MS = 180000
 const RUN_ACTIVE_HEARTBEAT_MS = 120000
+
+/* ── admin v2 surface tokens (design_system/admin/ADMIN_UI.md) ──────────────
+   The page sits on --a-bg, so each panel takes --a-surface plus a hairline;
+   "elevation: borders first" retires the shadow the shadcn card carried. When
+   `embedded` is set the host owns the chrome, so the first panel keeps none. */
+const panelStyle: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  color: 'var(--a-text)',
+}
+const sectionHeadingStyle: CSSProperties = {
+  fontSize: 'var(--a-text-sm)',
+  fontWeight: 600,
+  letterSpacing: '0.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+}
+const labelStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
+const figureStyle: CSSProperties = {
+  fontFamily: 'var(--a-font-mono)',
+  fontSize: 'var(--a-text-sm)',
+  fontWeight: 500,
+  color: 'var(--a-text)',
+}
+const figureOkStyle: CSSProperties = { ...figureStyle, color: 'var(--a-ok)' }
+const figureWarnStyle: CSSProperties = { ...figureStyle, color: 'var(--a-warn)' }
+const figureQuietStyle: CSSProperties = { ...figureStyle, color: 'var(--a-text-2)' }
+const bodyOkStyle: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-ok)' }
+const bodyWarnStyle: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-warn)' }
+const bodyDangerStyle: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)' }
+const bodyQuietStyle: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }
+const metaQuietStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
+const metaWarnStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-warn)' }
+/* Figures inside a grid cell: the cell owns alignment, the span owns the face. */
+const cellFigureStyle: CSSProperties = { fontFamily: 'var(--a-font-mono)', color: 'var(--a-text)' }
+const cellFigureOkStyle: CSSProperties = { fontFamily: 'var(--a-font-mono)', color: 'var(--a-ok)' }
+const cellFigureWarnStyle: CSSProperties = { fontFamily: 'var(--a-font-mono)', color: 'var(--a-warn)' }
+/* Progress track and fill: --a-inset under --a-ok, both distinct from the
+   --a-surface panel they sit on. */
+const meterTrackStyle: CSSProperties = { background: 'var(--a-inset)' }
+const meterFillStyle = (pct: number): CSSProperties => ({ width: `${pct}%`, background: 'var(--a-ok)' })
 
 function formatDateTime(iso?: string | null) {
   if (!iso) return '—'
@@ -246,7 +287,7 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
     ? `${livePayload.scope.fromYear}-${livePayload.scope.toYear} (${livePayload.scope.mode})`
     : 'Unavailable'
   const runStateLabel = liveRunInProgress ? 'Running' : staleRunMarker ? 'Stale marker' : 'Idle'
-  const runStateClass = liveRunInProgress ? 'text-success' : staleRunMarker ? 'text-warning' : 'text-muted-foreground'
+  const runStateStyle = liveRunInProgress ? figureOkStyle : staleRunMarker ? figureWarnStyle : figureQuietStyle
   const pollStatus = useMemo(
     () => (liveError ? `Live polling error: ${liveError}` : `Live polling every ${Math.round(LIVE_POLL_MS / 1000)}s`),
     [liveError]
@@ -277,64 +318,61 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
   return (
     <>
       <section
-        className={cn(
-          "rounded-lg border border-border bg-card p-5 shadow-sm",
-          !embedded && "mt-6",
-          embedded && "mt-0 border-0 bg-transparent p-0 shadow-none"
-        )}
+        className={embedded ? 'mt-0' : 'mt-6 p-5'}
+        style={embedded ? undefined : panelStyle}
         aria-labelledby="live-sync-heading"
       >
-        <h2 id="live-sync-heading" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Live sync status</h2>
+        <h2 id="live-sync-heading" style={sectionHeadingStyle}>Live sync status</h2>
         {!cursor ? (
-          <p className="mt-2 text-sm text-warning">Sync cursor unavailable.</p>
+          <p className="mt-2" style={bodyWarnStyle}>Sync cursor unavailable.</p>
         ) : (
           <>
             <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <p className="text-xs text-muted-foreground">Cron enabled</p>
-                <p className={`mt-0.5 font-mono text-sm font-medium ${cursor.cronEnabled ? 'text-success' : 'text-warning'}`}>
+                <p style={labelStyle}>Cron enabled</p>
+                <p className="mt-0.5" style={cursor.cronEnabled ? figureOkStyle : figureWarnStyle}>
                   {cursor.cronEnabled ? 'Yes' : 'No'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Phase</p>
-                <p className="mt-0.5 font-mono text-sm font-medium text-foreground">
+                <p style={labelStyle}>Phase</p>
+                <p className="mt-0.5" style={figureStyle}>
                   {cursor.phase === 'listings' ? 'Listings' : cursor.phase === 'history' ? 'History' : cursor.phase === 'refresh_active_pending' ? 'Refresh active & pending' : 'Idle'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Run started</p>
-                <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{cursor.runStartedAt ? formatDateTime(cursor.runStartedAt) : '—'}</p>
+                <p style={labelStyle}>Run started</p>
+                <p className="mt-0.5" style={figureStyle}>{cursor.runStartedAt ? formatDateTime(cursor.runStartedAt) : '—'}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Elapsed</p>
-                <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{cursor.runStartedAt ? formatElapsedFrom(cursor.runStartedAt) : '—'}</p>
+                <p style={labelStyle}>Elapsed</p>
+                <p className="mt-0.5" style={figureStyle}>{cursor.runStartedAt ? formatElapsedFrom(cursor.runStartedAt) : '—'}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Last activity</p>
-                <p className="mt-0.5 font-mono text-sm font-medium text-foreground">
+                <p style={labelStyle}>Last activity</p>
+                <p className="mt-0.5" style={figureStyle}>
                   {cursor.updatedAt ? `${formatDateTime(cursor.updatedAt)} (${relativeTime(cursor.updatedAt)})` : '—'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">History rows this run</p>
-                <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{cursor.runHistoryRows.toLocaleString()}</p>
+                <p style={labelStyle}>History rows this run</p>
+                <p className="mt-0.5" style={figureStyle}>{cursor.runHistoryRows.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Listings this run</p>
-                <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{cursor.runListingsUpserted.toLocaleString()}</p>
+                <p style={labelStyle}>Listings this run</p>
+                <p className="mt-0.5" style={figureStyle}>{cursor.runListingsUpserted.toLocaleString()}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Server tick</p>
-                <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{serverTick ? `${formatDateTime(serverTick)} (${relativeTime(serverTick)})` : '—'}</p>
+                <p style={labelStyle}>Server tick</p>
+                <p className="mt-0.5" style={figureStyle}>{serverTick ? `${formatDateTime(serverTick)} (${relativeTime(serverTick)})` : '—'}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Run state</p>
-                <p className={`mt-0.5 font-mono text-sm font-medium ${runStateClass}`}>{runStateLabel}</p>
+                <p style={labelStyle}>Run state</p>
+                <p className="mt-0.5" style={runStateStyle}>{runStateLabel}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Effective terminal scope</p>
-                <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{scopeLabel}</p>
+                <p style={labelStyle}>Effective terminal scope</p>
+                <p className="mt-0.5" style={figureStyle}>{scopeLabel}</p>
               </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -347,127 +385,124 @@ export default function SyncLiveStatusAndTerminal({ initialCursor, initialTermin
               </Button>
               <Button
                 type="button"
-                variant="outline"
+                variant="quiet"
                 onClick={() => void updateTerminalRun('stop')}
                 disabled={controlBusy || !liveRunInProgress}
               >
                 Stop terminal history
               </Button>
             </div>
-            {cursor.error && <p className="mt-3 text-sm text-destructive">{cursor.error}</p>}
-            {!cursor.error && liveRunInProgress && <p className="mt-3 text-sm text-success">Sync is currently running.</p>}
+            {cursor.error && <p className="mt-3" style={bodyDangerStyle}>{cursor.error}</p>}
+            {!cursor.error && liveRunInProgress && <p className="mt-3" style={bodyOkStyle}>Sync is currently running.</p>}
             {!cursor.error && staleRunMarker && (
-              <p className="mt-3 text-sm text-warning">
+              <p className="mt-3" style={bodyWarnStyle}>
                 Run marker is stale. Last activity is older than {Math.round(RUN_ACTIVE_HEARTBEAT_MS / 60000)} minutes.
               </p>
             )}
             {!cursor.error && !liveRunInProgress && !staleRunMarker && (
-              <p className="mt-3 text-sm text-muted-foreground">No run active right now.</p>
+              <p className="mt-3" style={bodyQuietStyle}>No run active right now.</p>
             )}
-            <p className={`mt-2 text-xs ${liveError ? 'text-warning' : 'text-muted-foreground'}`}>{pollStatus}</p>
+            <p className="mt-2" style={liveError ? metaWarnStyle : metaQuietStyle}>{pollStatus}</p>
             {livePayload?.warnings?.listingsCountError && (
-              <p className="mt-1 text-xs text-warning">{livePayload.warnings.listingsCountError}</p>
+              <p className="mt-1" style={metaWarnStyle}>{livePayload.warnings.listingsCountError}</p>
             )}
           </>
         )}
       </section>
 
       <section
-        className={cn(
-          "rounded-lg border border-border bg-card p-5 shadow-sm",
-          embedded ? "mt-4" : "mt-6"
-        )}
+        className={embedded ? 'mt-4 p-5' : 'mt-6 p-5'}
+        style={panelStyle}
         aria-labelledby="history-yield-heading"
       >
-        <h2 id="history-yield-heading" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Live history yield</h2>
+        <h2 id="history-yield-heading" style={sectionHeadingStyle}>Live history yield</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="text-xs text-muted-foreground">Sampled listings</p>
-            <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{yieldPayload?.sampled?.toLocaleString?.() ?? '—'}</p>
+            <p style={labelStyle}>Sampled listings</p>
+            <p className="mt-0.5" style={figureStyle}>{yieldPayload?.sampled?.toLocaleString?.() ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Spark reachable</p>
-            <p className="mt-0.5 font-mono text-sm font-medium text-foreground">
+            <p style={labelStyle}>Spark reachable</p>
+            <p className="mt-0.5" style={figureStyle}>
               {yieldPayload ? `${yieldPayload.reachableCount.toLocaleString()} (${yieldPayload.reachablePct.toFixed(1)}%)` : '—'}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Listings with history</p>
-            <p className="mt-0.5 font-mono text-sm font-medium text-foreground">
+            <p style={labelStyle}>Listings with history</p>
+            <p className="mt-0.5" style={figureStyle}>
               {yieldPayload ? `${yieldPayload.withHistoryCount.toLocaleString()} (${yieldPayload.yieldPct.toFixed(1)}%)` : '—'}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Last checked</p>
-            <p className="mt-0.5 font-mono text-sm font-medium text-foreground">
+            <p style={labelStyle}>Last checked</p>
+            <p className="mt-0.5" style={figureStyle}>
               {yieldPayload?.checkedAt ? `${formatDateTime(yieldPayload.checkedAt)} (${relativeTime(yieldPayload.checkedAt)})` : '—'}
             </p>
           </div>
         </div>
-        {yieldPayload?.note && <p className="mt-2 text-xs text-warning">{yieldPayload.note}</p>}
-        {yieldError && <p className="mt-2 text-xs text-warning">History yield probe error: {yieldError}</p>}
-        {!yieldError && <p className="mt-2 text-xs text-muted-foreground">Spark probe runs every {Math.round(YIELD_POLL_MS / 1000)}s.</p>}
+        {yieldPayload?.note && <p className="mt-2" style={metaWarnStyle}>{yieldPayload.note}</p>}
+        {yieldError && <p className="mt-2" style={metaWarnStyle}>History yield probe error: {yieldError}</p>}
+        {!yieldError && <p className="mt-2" style={metaQuietStyle}>Spark probe runs every {Math.round(YIELD_POLL_MS / 1000)}s.</p>}
       </section>
 
       <section
-        className={cn(
-          "rounded-lg border border-border bg-card p-5 shadow-sm",
-          embedded ? "mt-4" : "mt-6"
-        )}
+        className={embedded ? 'mt-4 p-5' : 'mt-6 p-5'}
+        style={panelStyle}
         aria-labelledby="terminal-finalization-heading"
       >
-        <h2 id="terminal-finalization-heading" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Terminal history finalization</h2>
+        <h2 id="terminal-finalization-heading" style={sectionHeadingStyle}>Terminal history finalization</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <p className="text-xs text-muted-foreground">Terminal in DB</p>
-            <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{terminal.terminalTotalInDb.toLocaleString()}</p>
+            <p style={labelStyle}>Terminal in DB</p>
+            <p className="mt-0.5" style={figureStyle}>{terminal.terminalTotalInDb.toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Terminal finalized</p>
-            <p className="mt-0.5 font-mono text-sm font-medium text-success">{terminal.terminalFinalizedInDb.toLocaleString()}</p>
+            <p style={labelStyle}>Terminal finalized</p>
+            <p className="mt-0.5" style={figureOkStyle}>{terminal.terminalFinalizedInDb.toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Terminal remaining</p>
-            <p className={`mt-0.5 font-mono text-sm font-medium ${terminal.terminalRemainingInDb > 0 ? 'text-warning' : 'text-success'}`}>
+            <p style={labelStyle}>Terminal remaining</p>
+            <p className="mt-0.5" style={terminal.terminalRemainingInDb > 0 ? figureWarnStyle : figureOkStyle}>
               {terminal.terminalRemainingInDb.toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Finalized %</p>
-            <p className="mt-0.5 font-mono text-sm font-medium text-foreground">{terminal.terminalFinalizedPct.toFixed(1)}%</p>
+            <p style={labelStyle}>Finalized %</p>
+            <p className="mt-0.5" style={figureStyle}>{terminal.terminalFinalizedPct.toFixed(1)}%</p>
           </div>
         </div>
-        <div className="mt-3 overflow-x-auto">
-          <Table className="min-w-full border-collapse text-sm">
-            <TableHeader>
-              <TableRow className="border-b border-border">
-                <TableHead className="py-1.5 pr-2 text-left font-medium text-muted-foreground">Status</TableHead>
-                <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Total</TableHead>
-                <TableHead className="py-1.5 px-2 text-right font-medium text-muted-foreground">Finalized</TableHead>
-                <TableHead className="py-1.5 pl-2 text-right font-medium text-muted-foreground">Remaining</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[
-                { label: 'Closed', total: terminal.closedTotalInDb, finalized: terminal.closedFinalizedCount, remaining: terminal.closedNotFinalizedCount },
-                { label: 'Expired', total: terminal.expiredTotalInDb, finalized: terminal.expiredFinalizedCount, remaining: terminal.expiredNotFinalizedCount },
-                { label: 'Withdrawn', total: terminal.withdrawnTotalInDb, finalized: terminal.withdrawnFinalizedCount, remaining: terminal.withdrawnNotFinalizedCount },
-                { label: 'Canceled', total: terminal.canceledTotalInDb, finalized: terminal.canceledFinalizedCount, remaining: terminal.canceledNotFinalizedCount },
-              ].map((row) => (
-                <TableRow key={row.label} className="border-b border-border">
-                  <TableCell className="py-1.5 pr-2 text-foreground">{row.label}</TableCell>
-                  <TableCell className="py-1.5 px-2 text-right font-mono text-foreground">{row.total.toLocaleString()}</TableCell>
-                  <TableCell className="py-1.5 px-2 text-right font-mono text-success">{row.finalized.toLocaleString()}</TableCell>
-                  <TableCell className={`py-1.5 pl-2 text-right font-mono ${row.remaining > 0 ? 'text-warning' : 'text-success'}`}>{row.remaining.toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="mt-3">
+          <ReportGrid
+            label="Terminal history finalization by status"
+            columns={[
+              { key: 'status', label: 'Status' },
+              { key: 'total', label: 'Total', numeric: true },
+              { key: 'finalized', label: 'Finalized', numeric: true },
+              { key: 'remaining', label: 'Remaining', numeric: true },
+            ]}
+            template="minmax(120px,1fr) 100px 100px 100px"
+            minWidth={440}
+            empty="No terminal statuses to show."
+            rows={[
+              { label: 'Closed', total: terminal.closedTotalInDb, finalized: terminal.closedFinalizedCount, remaining: terminal.closedNotFinalizedCount },
+              { label: 'Expired', total: terminal.expiredTotalInDb, finalized: terminal.expiredFinalizedCount, remaining: terminal.expiredNotFinalizedCount },
+              { label: 'Withdrawn', total: terminal.withdrawnTotalInDb, finalized: terminal.withdrawnFinalizedCount, remaining: terminal.withdrawnNotFinalizedCount },
+              { label: 'Canceled', total: terminal.canceledTotalInDb, finalized: terminal.canceledFinalizedCount, remaining: terminal.canceledNotFinalizedCount },
+            ].map((row) => ({
+              key: row.label,
+              cells: [
+                row.label,
+                <span key="total" style={cellFigureStyle}>{row.total.toLocaleString()}</span>,
+                <span key="finalized" style={cellFigureOkStyle}>{row.finalized.toLocaleString()}</span>,
+                <span key="remaining" style={row.remaining > 0 ? cellFigureWarnStyle : cellFigureOkStyle}>{row.remaining.toLocaleString()}</span>,
+              ],
+            }))}
+          />
         </div>
-        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-success transition-all" style={{ width: `${terminal.terminalFinalizedPct}%` }} aria-label="Terminal finalization progress" />
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full" style={meterTrackStyle}>
+          <div className="h-full transition-all" style={meterFillStyle(terminal.terminalFinalizedPct)} aria-label="Terminal finalization progress" />
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2" style={metaQuietStyle}>
           Totals, finalized, and remaining update with each live poll.
         </p>
       </section>

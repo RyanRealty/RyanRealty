@@ -1,15 +1,25 @@
 'use client'
 
+// @no-parity — internal admin tool (TC document row actions)
+//
+// 11F: off shadcn, onto the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only — every server action,
+// prompt string, alert, reload and disabled condition is carried over byte for
+// byte.
+//
+// Both controls are `quiet`. shadcn's `outline` and `secondary` are two shades
+// of "secondary control" and v2 has one such variant, so the archive/unarchive
+// distinction is carried where it always actually lived: in the LABEL, which
+// flips between "Archive" and "Unarchive". Status is text, never fill alone.
 import { useState, useTransition } from 'react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/admin/v2'
 import { getTcDocumentUrl, setTcDocumentArchived } from '@/app/actions/tc'
 
 export function DownloadButton({ documentId, disabled }: { documentId: string; disabled?: boolean }) {
   const [busy, setBusy] = useState(false)
   return (
     <Button
-      variant="outline"
-      size="sm"
+      variant="quiet"
       disabled={disabled || busy}
       onClick={async () => {
         setBusy(true)
@@ -39,8 +49,7 @@ export function ArchiveToggle({
   const [pending, startTransition] = useTransition()
   return (
     <Button
-      variant={archived ? 'secondary' : 'outline'}
-      size="sm"
+      variant="quiet"
       disabled={pending}
       onClick={() => {
         let reason: string | null = null

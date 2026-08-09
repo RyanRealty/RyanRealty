@@ -1,15 +1,21 @@
 'use client'
 
+// @no-parity — internal admin tool (TC envelopes & signing)
+//
+// 11F: off shadcn, onto the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only —
+// createEnvelopeFromDocuments, the picked-document set, the "Pick at least one
+// document" guard, the error strings and the router.push to the composer are
+// carried over unchanged.
+//
+// The five Badge fills became StateWords: an envelope status IS a status, which
+// is what .av2-state is for (text plus colour, never colour alone). The
+// signed/recipient count beside it stays plain tabular text — a count is data,
+// and data never goes in a state word.
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+import { Button, Dialog, StateWord, TextField, ToolbarCheck, type AdminState } from '@/components/admin/v2'
 import { createEnvelopeFromDocuments, type EnvelopeSummary } from '@/app/actions/tc-envelopes'
 import { ENVELOPE_STATUS_LABEL, type EnvelopeStatus } from '@/lib/tc/signing'
 
@@ -20,52 +26,78 @@ export type DealEnvelopesCycle = {
   envelopes: EnvelopeSummary[]
 }
 
-const STATUS_STYLE: Record<EnvelopeStatus, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'bg-primary/15 text-primary',
-  partially_signed: 'bg-warning/20 text-warning-foreground',
-  completed: 'bg-success/20 text-success-foreground',
-  voided: 'bg-destructive/15 text-destructive',
+/** One for one with the shadcn fills it replaces: muted → waiting, primary →
+ *  accent, warning → slow, success → ok, destructive → down. */
+const STATUS_STATE: Record<EnvelopeStatus, AdminState> = {
+  draft: 'waiting',
+  sent: 'accent',
+  partially_signed: 'slow',
+  completed: 'ok',
+  voided: 'down',
 }
 
 export function DealEnvelopes({ cycles }: { cycles: DealEnvelopesCycle[] }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Envelopes &amp; signing</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {cycles.map((c) => (
-          <CycleEnvelopes key={c.cycleId} cycle={c} />
-        ))}
-      </CardContent>
-    </Card>
+    <div className="av2-pane">
+      <p style={{ margin: 0, fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>
+        Envelopes &amp; signing
+      </p>
+      {cycles.map((c) => (
+        <CycleEnvelopes key={c.cycleId} cycle={c} />
+      ))}
+    </div>
   )
 }
 
 function CycleEnvelopes({ cycle }: { cycle: DealEnvelopesCycle }) {
   return (
-    <div className="rounded-md border border-border p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{cycle.label}</p>
+    <div
+      style={{
+        border: '1px solid var(--a-border)',
+        borderRadius: 'var(--a-r-md)',
+        padding: 'var(--a-s3)',
+      }}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ margin: 0, color: 'var(--a-text-2)' }}
+        >
+          {cycle.label}
+        </p>
         <NewEnvelopeDialog cycle={cycle} />
       </div>
       {cycle.envelopes.length ? (
-        <ul className="space-y-1.5">
+        <ul className="space-y-1.5" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {cycle.envelopes.map((e) => (
-            <li key={e.id} className="flex items-center justify-between gap-2 text-sm">
-              <Link href={`/admin/signing/${e.id}`} className="min-w-0 flex-1 truncate text-foreground hover:underline">
+            <li
+              key={e.id}
+              className="flex items-center justify-between gap-2"
+              style={{ fontSize: 'var(--a-text-md)' }}
+            >
+              <Link
+                href={`/admin/signing/${e.id}`}
+                className="min-w-0 flex-1 truncate hover:underline"
+                style={{ color: 'var(--a-text)' }}
+              >
                 {e.name}
               </Link>
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+              <span
+                className="shrink-0"
+                style={{
+                  fontSize: 'var(--a-text-xs)',
+                  fontVariantNumeric: 'tabular-nums',
+                  color: 'var(--a-text-2)',
+                }}
+              >
                 {e.signedCount}/{e.recipientCount}
               </span>
-              <Badge className={STATUS_STYLE[e.status]}>{ENVELOPE_STATUS_LABEL[e.status]}</Badge>
+              <StateWord state={STATUS_STATE[e.status]}>{ENVELOPE_STATUS_LABEL[e.status]}</StateWord>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-muted-foreground">No envelopes yet.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>No envelopes yet.</p>
       )}
     </div>
   )
@@ -106,40 +138,73 @@ function NewEnvelopeDialog({ cycle }: { cycle: DealEnvelopesCycle }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" disabled={!cycle.documents.length}>
-          New envelope
-        </Button>
-      </DialogTrigger>
-      <DialogContent aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle>New envelope · {cycle.label}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Input placeholder="Envelope name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
-          <p className="text-xs text-muted-foreground">Pick the PDF documents to send for signature.</p>
-          <div className="max-h-64 space-y-1.5 overflow-y-auto">
-            {cycle.documents.length ? (
-              cycle.documents.map((d) => (
-                <Label key={d.id} className="flex items-start gap-2 rounded-md border border-border p-2 text-sm font-normal">
-                  <Checkbox checked={picked.has(d.id)} onCheckedChange={() => toggle(d.id)} className="mt-0.5" />
-                  <span className="min-w-0 break-words text-foreground">{d.name}</span>
-                </Label>
-              ))
-            ) : (
-              <p className="text-xs text-muted-foreground">No documents on this cycle yet. Upload one first.</p>
-            )}
-          </div>
-          {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    <>
+      <Button variant="quiet" disabled={!cycle.documents.length} onClick={() => setOpen(true)}>
+        New envelope
+      </Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title={`New envelope · ${cycle.label}`}
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={create} disabled={busy || !picked.size}>
+              {busy ? 'Creating…' : 'Create &amp; compose'}
+            </Button>
+          </>
+        }
+      >
+        <TextField
+          label="Envelope name (optional)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          Pick the PDF documents to send for signature.
+        </p>
+        <div className="max-h-64 space-y-1.5 overflow-y-auto">
+          {cycle.documents.length ? (
+            cycle.documents.map((d) => (
+              <ToolbarCheck
+                key={d.id}
+                checked={picked.has(d.id)}
+                onChange={() => toggle(d.id)}
+                style={{ marginTop: 2 }}
+                // The label element IS the row, so the box lives on it. No
+                // background here on purpose: .av2-check:hover paints one, and
+                // an inline background would outrank the stylesheet and leave
+                // the row dead under the pointer.
+                labelStyle={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 'var(--a-s2)',
+                  margin: 0,
+                  padding: 'var(--a-s2)',
+                  border: '1px solid var(--a-border)',
+                  borderRadius: 'var(--a-r-md)',
+                  fontSize: 'var(--a-text-md)',
+                  fontWeight: 400,
+                }}
+                label={
+                  <span className="min-w-0 break-words" style={{ color: 'var(--a-text)' }}>
+                    {d.name}
+                  </span>
+                }
+              />
+            ))
+          ) : (
+            <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+              No documents on this cycle yet. Upload one first.
+            </p>
+          )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={create} disabled={busy || !picked.size}>
-            {busy ? 'Creating…' : 'Create &amp; compose'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        {error ? (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>{error}</p>
+        ) : null}
+      </Dialog>
+    </>
   )
 }

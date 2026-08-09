@@ -1,8 +1,27 @@
 'use client'
 
+/**
+ * Milestone dates for /admin/crm/deals/[id]. 11F: taken off shadcn onto the
+ * locked admin v2 language (ADMIN_UI.md pattern 6 — label above, inline
+ * validation).
+ *
+ * Presentation only. The MILESTONES list, its five keys and five labels, the
+ * per-field `pendingKey` (D7) rather than a shared boolean, the save-on-blur
+ * call and the per-key error map are all carried over unchanged.
+ *
+ * Two slots move into the primitive rather than being hand-drawn beside it:
+ *   - "saving…" is now the field's `hint`, so it sits under the label and is
+ *     wired into aria-describedby instead of being a decorative span inside
+ *     the <label>. Same word, announced instead of silent.
+ *   - the per-key error is now the field's `error`, which also sets
+ *     aria-invalid and aria-describedby. Same string, same position.
+ * The `ms-<key>` ids are gone because TextField owns the label→input
+ * association through its own useId; a repo-wide grep finds no test, script or
+ * sibling component referencing them.
+ */
+
 import { useTransition, useState } from 'react'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
+import { TextField } from '@/components/admin/v2'
 import { updateCrmDeal } from '@/app/actions/crm-deals'
 
 type MilestoneKey =
@@ -61,28 +80,17 @@ export function DealMilestones({ dealId, initial }: Props) {
       {MILESTONES.map((m) => {
         const isSaving = pendingKey === m.key
         return (
-          <div key={m.key} className="flex flex-col gap-1">
-            <Label htmlFor={`ms-${m.key}`} className="text-xs text-muted-foreground">
-              {m.label}
-              {isSaving && (
-                <span className="ml-1.5 text-xs text-muted-foreground/60">saving…</span>
-              )}
-            </Label>
-            <Input
-              id={`ms-${m.key}`}
-              type="date"
-              value={values[m.key]}
-              disabled={isSaving}
-              onChange={(e) =>
-                setValues((v) => ({ ...v, [m.key]: e.target.value }))
-              }
-              onBlur={() => handleBlur(m.key)}
-              className="h-8 text-sm"
-            />
-            {errors[m.key] ? (
-              <p className="text-xs text-destructive">{errors[m.key]}</p>
-            ) : null}
-          </div>
+          <TextField
+            key={m.key}
+            label={m.label}
+            hint={isSaving ? 'saving…' : undefined}
+            error={errors[m.key]}
+            type="date"
+            value={values[m.key]}
+            disabled={isSaving}
+            onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
+            onBlur={() => handleBlur(m.key)}
+          />
         )
       })}
     </div>

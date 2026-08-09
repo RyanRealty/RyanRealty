@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ToolbarSelect } from '@/components/admin/v2'
 
 /**
  * Superuser-only broker filter for the newsletter analytics console (spec
@@ -9,6 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
  * sees this control (the page only renders it when scopeBroker() returned
  * null), so there is no client input path that can widen a restricted
  * broker's scope (G-NL-12).
+ *
+ * 11F: off shadcn and onto the locked v2 toolbar control. The navigation, the
+ * option set and the option labels are unchanged; the control gains the
+ * accessible name the Radix trigger never carried.
  */
 export function BrokerFilterSelect({
   brokers,
@@ -19,21 +23,17 @@ export function BrokerFilterSelect({
 }) {
   const router = useRouter()
   return (
-    <Select
+    <ToolbarSelect
+      aria-label="Filter by broker"
       value={value}
-      onValueChange={(next) => router.push(`/admin/newsletters/analytics?broker=${next}`)}
+      onChange={(e) => router.push(`/admin/newsletters/analytics?broker=${e.target.value}`)}
     >
-      <SelectTrigger className="w-48">
-        <SelectValue placeholder="All brokers" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All brokers</SelectItem>
-        {brokers.map((b) => (
-          <SelectItem key={b.slug} value={b.slug}>
-            {b.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      <option value="all">All brokers</option>
+      {brokers.map((b) => (
+        <option key={b.slug} value={b.slug}>
+          {b.name}
+        </option>
+      ))}
+    </ToolbarSelect>
   )
 }

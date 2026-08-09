@@ -1,26 +1,36 @@
 'use client'
 
 // @no-parity — internal admin tool (brokerage expense entry)
+//
+// 11F: taken off shadcn and onto the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only — addTcExpense's payload
+// (category, description, Number(amount), incurred_on, `vendor || null`,
+// `dealPropertyKey: dealKey || null`), the archiveTcExpense(id, reason) call and
+// its window.prompt/window.alert copy, both window.location.reload() calls, the
+// busy latch, the disabled rule and every user-visible string are untouched.
+//
+// Substitutions, and why each one:
+//   Dialog/DialogTrigger/… -> the v2 Dialog, which drives the platform <dialog>
+//                         (focus trap, Esc, top-layer) instead of Radix. The
+//                         trigger becomes a plain Button owning `open`.
+//   Select + SelectValue -> SelectField. Radix's placeholder is not an option,
+//                         so "Pick one" becomes the empty-value option — the
+//                         same '' the Save button already tested for.
+//   Input + Label      -> TextField, which owns the label-above pairing
+//                         (pattern 6) and generates its own id. No test or
+//                         script pins an id here — checked before relying on
+//                         the generated ones.
+//
+// ONE primary Button per file (ci:admin-ui rule C): the dialog's "Save expense"
+// keeps it, because it is the action that writes, and next to a quiet "Cancel"
+// it is the only thing distinguishing commit from dismiss. The trigger goes
+// quiet — the same call AddStageDialog recorded.
+//
+// Surface stack, checked both ways in design_system/admin/tokens.css: the
+// dialog is --a-bg, its inputs are --a-bg inside a hairline, the quiet trigger
+// and archive buttons are --a-surface. Nothing is painted onto its own parent.
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, Dialog, SelectField, TextField } from '@/components/admin/v2'
 import { addTcExpense, archiveTcExpense } from '@/app/actions/tc-financials'
 import { TC_EXPENSE_CATEGORIES } from '@/lib/tc/expense-categories'
 
@@ -55,69 +65,84 @@ export function AddExpense() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Add expense</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Record an expense</DialogTitle>
-          <DialogDescription>
-            Lands in the P&L for the year it was incurred. Tie it to a deal with the deal key (the part
-            after /admin/deals/ in the URL) or leave blank for overhead.
-          </DialogDescription>
-        </DialogHeader>
-
+    <>
+      <Button variant="quiet" onClick={() => setOpen(true)}>
+        Add expense
+      </Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Record an expense"
+        description="Lands in the P&L for the year it was incurred. Tie it to a deal with the deal key (the part after /admin/deals/ in the URL) or leave blank for overhead."
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              onClick={save}
+              disabled={busy || !category || !amount || !incurredOn || !description.trim()}
+            >
+              {busy ? 'Saving…' : 'Save expense'}
+            </Button>
+          </>
+        }
+      >
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label>Category</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pick one" />
-              </SelectTrigger>
-              <SelectContent>
-                {TC_EXPENSE_CATEGORIES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <SelectField
+            label="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Pick one</option>
+            {TC_EXPENSE_CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </SelectField>
+          <TextField
+            label="Amount $"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          />
+          <TextField
+            label="Incurred on"
+            type="date"
+            value={incurredOn}
+            onChange={(e) => setIncurredOn(e.target.value)}
+          />
+          <TextField
+            label="Vendor (optional)"
+            value={vendor}
+            onChange={(e) => setVendor(e.target.value)}
+          />
+          <div className="col-span-2">
+            <TextField
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
           </div>
-          <div className="space-y-1.5">
-            <Label>Amount $</Label>
-            <Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} className="tabular-nums" />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Incurred on</Label>
-            <Input type="date" value={incurredOn} onChange={(e) => setIncurredOn(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Vendor (optional)</Label>
-            <Input value={vendor} onChange={(e) => setVendor(e.target.value)} />
-          </div>
-          <div className="col-span-2 space-y-1.5">
-            <Label>Description</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="col-span-2 space-y-1.5">
-            <Label>Deal key (optional)</Label>
-            <Input value={dealKey} onChange={(e) => setDealKey(e.target.value)} placeholder="e.g. 20373-saghali" />
+          <div className="col-span-2">
+            <TextField
+              label="Deal key (optional)"
+              value={dealKey}
+              onChange={(e) => setDealKey(e.target.value)}
+              placeholder="e.g. 20373-saghali"
+            />
           </div>
         </div>
 
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>
-            Cancel
-          </Button>
-          <Button onClick={save} disabled={busy || !category || !amount || !incurredOn || !description.trim()}>
-            {busy ? 'Saving…' : 'Save expense'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        {error ? (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: 0 }}>
+            {error}
+          </p>
+        ) : null}
+      </Dialog>
+    </>
   )
 }
 
@@ -125,8 +150,7 @@ export function ArchiveExpense({ id, description }: { id: string; description: s
   const [busy, setBusy] = useState(false)
   return (
     <Button
-      variant="outline"
-      size="sm"
+      variant="quiet"
       disabled={busy}
       onClick={async () => {
         const reason = window.prompt(`Archive expense:\n${description}\n\nReason?`, 'entered in error')

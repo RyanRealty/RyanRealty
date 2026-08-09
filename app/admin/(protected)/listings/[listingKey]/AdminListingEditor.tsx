@@ -1,6 +1,30 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+/**
+ * AdminListingEditor — the MLS-adjacent override island on a listing's admin
+ * page: manual price/status/remarks overrides, the media-suppression gate, and
+ * photo management (add, reorder, set hero, delete).
+ *
+ * 11F admin-v2: migrated to the LOCKED admin language
+ * (design_system/admin/ADMIN_UI.md). The shadcn Card/Table/Input/Textarea/
+ * Label/Checkbox/Button are gone, and so is every shadcn semantic color class —
+ * those resolve to the PUBLIC brand palette the admin's amnesia blacklists, so
+ * swapping only the imports would have left a broker's override screen wearing
+ * the marketing site's colors. Color and type now come from var(--a-*).
+ *
+ * NOTHING about what this writes changed: same server actions, same field set,
+ * same parsePrice/trim normalization, same confirm gates, same strings, same
+ * optimistic reorder. The photo table is <ReportGrid> (the admin's one tabular
+ * reader) with an av2-cardlist phone fallback carrying the same four actions —
+ * the card list owns its breakpoint in the CLASS, never `md:hidden` plus an
+ * inline display.
+ *
+ * ci:admin-ui rule C allows ONE primary v2 <Button> per file. "Save listing" —
+ * the click that actually writes the overrides — keeps it. Add photo, the
+ * suppression toggles and the per-row photo actions are quiet or danger.
+ */
+
+import { useMemo, useState, useTransition, type CSSProperties } from 'react'
 import {
   addAdminListingPhoto,
   deleteAdminListingPhoto,
@@ -11,19 +35,36 @@ import {
   updateAdminListingMediaSuppressed,
   type AdminListingEditable,
 } from '@/app/actions/admin-listing-detail'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
+import {
+  Button,
+  ReportGrid,
+  SectionHead,
+  TextAreaField,
+  TextField,
+  ToolbarCheck,
+  type ReportColumn,
+} from '@/components/admin/v2'
+import '@/components/admin/v2/report-grid.css'
 
 type Props = {
   initialData: AdminListingEditable
 }
 
 type Message = { type: 'ok' | 'err'; text: string } | null
+
+const DESCRIPTION: CSSProperties = {
+  margin: '2px 0 0',
+  fontSize: 'var(--a-text-sm)',
+  color: 'var(--a-text-2)',
+}
+
+const PHOTO_COLUMNS: ReportColumn[] = [
+  { key: 'preview', label: 'Preview' },
+  { key: 'caption', label: 'Caption' },
+  { key: 'order', label: 'Order', numeric: true },
+  { key: 'hero', label: 'Hero' },
+  { key: 'actions', label: 'Actions' },
+]
 
 export default function AdminListingEditor({ initialData }: Props) {
   const [listPrice, setListPrice] = useState(initialData.listPrice?.toString() ?? '')
@@ -177,340 +218,278 @@ export default function AdminListingEditor({ initialData }: Props) {
     })
   }
 
+  /** The four per-photo actions, identical on the phone card and the grid row. */
+  function photoActions(photoId: string, index: number, isHero: boolean | null | undefined) {
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <Button
+          variant="quiet"
+          onClick={() => movePhoto(photoId, 'up')}
+          disabled={index === 0 || isPending}
+        >
+          Up
+        </Button>
+        <Button
+          variant="quiet"
+          onClick={() => movePhoto(photoId, 'down')}
+          disabled={index === photos.length - 1 || isPending}
+        >
+          Down
+        </Button>
+        <Button variant="quiet" onClick={() => setHero(photoId)} disabled={isHero || isPending}>
+          Set hero
+        </Button>
+        <Button variant="danger" onClick={() => deletePhoto(photoId)} disabled={isPending}>
+          Delete
+        </Button>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Admin listing controls</CardTitle>
-          <CardDescription>
-            Manage manual listing overrides, remarks, and display preferences.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="list-price">List price</Label>
-              <Input
-                id="list-price"
-                value={listPrice}
-                onChange={(event) => setListPrice(event.target.value)}
-                placeholder="e.g. 675000"
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="standard-status">Standard status</Label>
-              <Input
-                id="standard-status"
-                value={standardStatus}
-                onChange={(event) => setStandardStatus(event.target.value)}
-                placeholder="Active, Pending, Closed..."
-                className="mt-2"
-              />
-            </div>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <section>
+        <SectionHead>Admin listing controls</SectionHead>
+        <p style={DESCRIPTION}>
+          Manage manual listing overrides, remarks, and display preferences.
+        </p>
 
-          <div>
-            <Label htmlFor="marketing-headline">Marketing headline</Label>
-            <Input
-              id="marketing-headline"
-              value={marketingHeadline}
-              onChange={(event) => setMarketingHeadline(event.target.value)}
-              placeholder="Optional headline override"
-              className="mt-2"
+        <div className="av2-pane" style={{ marginTop: 12, gap: 16 }}>
+          <div className="av2-editgrid">
+            <TextField
+              label="List price"
+              value={listPrice}
+              onChange={(event) => setListPrice(event.target.value)}
+              placeholder="e.g. 675000"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            />
+            <TextField
+              label="Standard status"
+              value={standardStatus}
+              onChange={(event) => setStandardStatus(event.target.value)}
+              placeholder="Active, Pending, Closed..."
             />
           </div>
 
-          <div>
-            <Label htmlFor="public-remarks">Public remarks</Label>
-            <Textarea
-              id="public-remarks"
-              value={publicRemarks}
-              onChange={(event) => setPublicRemarks(event.target.value)}
-              rows={6}
-              className="mt-2"
-            />
-          </div>
+          <TextField
+            label="Marketing headline"
+            value={marketingHeadline}
+            onChange={(event) => setMarketingHeadline(event.target.value)}
+            placeholder="Optional headline override"
+          />
 
-          <div>
-            <Label htmlFor="admin-notes">Admin notes (internal)</Label>
-            <Textarea
-              id="admin-notes"
-              value={adminNotes}
-              onChange={(event) => setAdminNotes(event.target.value)}
-              rows={4}
-              className="mt-2"
-            />
-          </div>
+          <TextAreaField
+            label="Public remarks"
+            value={publicRemarks}
+            onChange={(event) => setPublicRemarks(event.target.value)}
+            rows={6}
+          />
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="featured-flag"
-              checked={featured}
-              onCheckedChange={(checked) => setFeatured(checked === true)}
-            />
-            <Label htmlFor="featured-flag">Featured listing override</Label>
-          </div>
+          <TextAreaField
+            label="Admin notes (internal)"
+            value={adminNotes}
+            onChange={(event) => setAdminNotes(event.target.value)}
+            rows={4}
+          />
 
-          <div className="flex gap-3">
-            <Button type="button" onClick={saveListingEdits} disabled={isPending}>
+          <ToolbarCheck
+            label="Featured listing override"
+            labelStyle={{ minHeight: 44, alignSelf: 'flex-start' }}
+            checked={featured}
+            onChange={(event) => setFeatured(event.target.checked)}
+          />
+
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Button onClick={saveListingEdits} disabled={isPending}>
               {isPending ? 'Saving…' : 'Save listing'}
             </Button>
           </div>
           {message && (
-            <p className={message.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 'var(--a-text-sm)',
+                color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+              }}
+            >
               {message.text}
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {/* P1-4: Media suppression toggle — owner photo-removal mechanism */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Media suppression</CardTitle>
-          <CardDescription>
-            When enabled, all owner photos are removed from the public site immediately. This is the durable, sync-proof gate described in the listing media suppression reference.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-start gap-4 rounded-lg border border-border p-4">
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <p className="text-sm font-medium text-foreground">
-                {mediaSuppressed ? 'Photos suppressed — hidden from public site' : 'Photos visible on public site'}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {mediaSuppressed
-                  ? 'Owner requested removal. The listing still appears in search but all photos return empty.'
-                  : 'No suppression active. Photos display normally.'}
-              </p>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              {mediaSuppressed ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isPending}
-                  onClick={() => toggleMediaSuppressed(false)}
-                >
-                  {isPending ? 'Updating…' : 'Remove suppression'}
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  disabled={isPending}
-                  onClick={() => {
-                    if (window.confirm('Suppress all media for this listing? Photos will be hidden from the public site immediately.')) {
-                      toggleMediaSuppressed(true)
-                    }
-                  }}
-                >
-                  {isPending ? 'Updating…' : 'Suppress media'}
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <section>
+        <SectionHead>Media suppression</SectionHead>
+        <p style={DESCRIPTION}>
+          When enabled, all owner photos are removed from the public site immediately. This is the durable, sync-proof gate described in the listing media suppression reference.
+        </p>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Photo management</CardTitle>
-          <CardDescription>
-            Add, reorder, set hero, and remove listing photos.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="new-photo-url">Photo URL</Label>
-              <Input
-                id="new-photo-url"
-                value={newPhotoUrl}
-                onChange={(event) => setNewPhotoUrl(event.target.value)}
-                placeholder="https://..."
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <Label htmlFor="new-photo-caption">Caption</Label>
-              <Input
-                id="new-photo-caption"
-                value={newPhotoCaption}
-                onChange={(event) => setNewPhotoCaption(event.target.value)}
-                placeholder="Optional caption"
-                className="mt-2"
-              />
-            </div>
+        <div
+          className="av2-pane"
+          style={{
+            marginTop: 12,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            alignItems: 'flex-start',
+            gap: 16,
+          }}
+        >
+          <div style={{ display: 'flex', minWidth: 0, flex: 1, flexDirection: 'column', gap: 4 }}>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}>
+              {mediaSuppressed ? 'Photos suppressed — hidden from public site' : 'Photos visible on public site'}
+            </p>
+            <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+              {mediaSuppressed
+                ? 'Owner requested removal. The listing still appears in search but all photos return empty.'
+                : 'No suppression active. Photos display normally.'}
+            </p>
           </div>
-          <Button type="button" variant="outline" onClick={addPhoto} disabled={isPending || !newPhotoUrl.trim()}>
-            Add photo
-          </Button>
-
-          {/* Photo cards — phones (stacked, thumb-friendly actions) */}
-          <div className="space-y-2 md:hidden">
-            {photos.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  No listing photos found.
-                </CardContent>
-              </Card>
+          <div style={{ display: 'flex', flexShrink: 0, gap: 8 }}>
+            {mediaSuppressed ? (
+              <Button
+                variant="quiet"
+                disabled={isPending}
+                onClick={() => toggleMediaSuppressed(false)}
+              >
+                {isPending ? 'Updating…' : 'Remove suppression'}
+              </Button>
             ) : (
-              photos.map((photo, index) => (
-                <Card key={photo.id}>
-                  <CardContent className="space-y-3 p-3">
-                    <div className="flex items-start gap-3">
-                      <a
-                        href={photo.cdn_url || photo.photo_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="shrink-0"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo.cdn_url || photo.photo_url}
-                          alt="Listing photo"
-                          className="h-16 w-24 rounded object-cover"
-                        />
-                      </a>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm text-foreground">{photo.caption ?? '—'}</p>
-                        <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-                          Order {index + 1} · {heroPhotoId === photo.id ? 'Hero' : 'Not hero'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => movePhoto(photo.id, 'up')}
-                        disabled={index === 0 || isPending}
-                      >
-                        Up
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => movePhoto(photo.id, 'down')}
-                        disabled={index === photos.length - 1 || isPending}
-                      >
-                        Down
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setHero(photo.id)}
-                        disabled={photo.is_hero || isPending}
-                      >
-                        Set hero
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deletePhoto(photo.id)}
-                        disabled={isPending}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              <Button
+                variant="danger"
+                disabled={isPending}
+                onClick={() => {
+                  if (window.confirm('Suppress all media for this listing? Photos will be hidden from the public site immediately.')) {
+                    toggleMediaSuppressed(true)
+                  }
+                }}
+              >
+                {isPending ? 'Updating…' : 'Suppress media'}
+              </Button>
             )}
           </div>
+        </div>
+      </section>
 
-          {/* Photo table — desktop */}
-          <div className="hidden overflow-hidden rounded-lg border border-border md:block">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Preview</TableHead>
-                <TableHead>Caption</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead>Hero</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {photos.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground">
-                    No listing photos found.
-                  </TableCell>
-                </TableRow>
-              )}
-              {photos.map((photo, index) => (
-                <TableRow key={photo.id}>
-                  <TableCell>
-                    <a href={photo.cdn_url || photo.photo_url} target="_blank" rel="noreferrer">
+      <section>
+        <SectionHead>Photo management</SectionHead>
+        <p style={DESCRIPTION}>Add, reorder, set hero, and remove listing photos.</p>
+
+        <div className="av2-pane" style={{ marginTop: 12, gap: 16 }}>
+          <div className="av2-editgrid">
+            <TextField
+              label="Photo URL"
+              value={newPhotoUrl}
+              onChange={(event) => setNewPhotoUrl(event.target.value)}
+              placeholder="https://..."
+            />
+            <TextField
+              label="Caption"
+              value={newPhotoCaption}
+              onChange={(event) => setNewPhotoCaption(event.target.value)}
+              placeholder="Optional caption"
+            />
+          </div>
+          <div style={{ display: 'flex' }}>
+            <Button variant="quiet" onClick={addPhoto} disabled={isPending || !newPhotoUrl.trim()}>
+              Add photo
+            </Button>
+          </div>
+
+          {/* Photo cards — phones (stacked, thumb-friendly actions). The layout
+              lives in av2-cardlist, never md:hidden plus an inline display. */}
+          <div className="av2-cardlist">
+            {photos.length === 0 ? (
+              <p
+                style={{
+                  margin: 0,
+                  padding: '32px 0',
+                  textAlign: 'center',
+                  fontSize: 'var(--a-text-sm)',
+                  color: 'var(--a-text-2)',
+                }}
+              >
+                No listing photos found.
+              </p>
+            ) : (
+              photos.map((photo, index) => (
+                <div key={photo.id} className="av2-pane" style={{ gap: 12, padding: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <a
+                      href={photo.cdn_url || photo.photo_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ flexShrink: 0 }}
+                    >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={photo.cdn_url || photo.photo_url}
                         alt="Listing photo"
-                        className="h-14 w-20 rounded object-cover"
+                        className="h-16 w-24 rounded object-cover"
                       />
                     </a>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{photo.caption ?? '—'}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{index + 1}</TableCell>
-                  <TableCell>
-                    {heroPhotoId === photo.id ? 'Yes' : 'No'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => movePhoto(photo.id, 'up')}
-                        disabled={index === 0 || isPending}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          fontSize: 'var(--a-text-sm)',
+                          color: 'var(--a-text)',
+                        }}
                       >
-                        Up
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => movePhoto(photo.id, 'down')}
-                        disabled={index === photos.length - 1 || isPending}
+                        {photo.caption ?? '—'}
+                      </p>
+                      <p
+                        className="a-num"
+                        style={{ margin: '4px 0 0', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
                       >
-                        Down
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setHero(photo.id)}
-                        disabled={photo.is_hero || isPending}
-                      >
-                        Set hero
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => deletePhoto(photo.id)}
-                        disabled={isPending}
-                      >
-                        Delete
-                      </Button>
+                        Order {index + 1} · {heroPhotoId === photo.id ? 'Hero' : 'Not hero'}
+                      </p>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+                  {photoActions(photo.id, index, photo.is_hero)}
+                </div>
+              ))
+            )}
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Photo grid — desktop; hidden below md, where the card list takes over */}
+          <div className="hidden md:block">
+            <ReportGrid
+              label="Listing photos"
+              columns={PHOTO_COLUMNS}
+              template="112px minmax(160px, 1.6fr) 72px 72px minmax(260px, 1.2fr)"
+              minWidth={820}
+              rows={photos.map((photo, index) => ({
+                key: photo.id,
+                cells: [
+                  <a key="preview" href={photo.cdn_url || photo.photo_url} target="_blank" rel="noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.cdn_url || photo.photo_url}
+                      alt="Listing photo"
+                      className="h-14 w-20 rounded object-cover"
+                    />
+                  </a>,
+                  <span key="caption" style={{ color: 'var(--a-text-2)' }}>
+                    {photo.caption ?? '—'}
+                  </span>,
+                  <span key="order" style={{ color: 'var(--a-text-2)' }}>
+                    {index + 1}
+                  </span>,
+                  <span key="hero" style={{ color: 'var(--a-text)' }}>
+                    {heroPhotoId === photo.id ? 'Yes' : 'No'}
+                  </span>,
+                  <span key="actions">{photoActions(photo.id, index, photo.is_hero)}</span>,
+                ],
+              }))}
+              empty="No listing photos found."
+            />
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

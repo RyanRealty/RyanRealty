@@ -1,5 +1,38 @@
 'use client'
 
+/**
+ * AdminMediaManager — the /admin/media library island.
+ *
+ * 11F: taken off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — every server action,
+ * every piece of state, the PAGE_SIZE window, the scope labels, the upload
+ * FormData contract (`name="file"`), the window.confirm before a delete and
+ * every user-visible string are untouched.
+ *
+ * Substitutions, and why each one:
+ *   Card/CardHeader/…  -> .av2-pane (the language's bordered surface) + SectionHead.
+ *   Tabs               -> quiet Buttons carrying aria-pressed. A dropdown would
+ *                         have been fewer pixels but a different interaction,
+ *                         and this unit does not change behaviour.
+ *   Input + Label      -> TextField / SearchField, which own the label-above
+ *                         pairing (pattern 6) and generate their own ids. No
+ *                         test or script pins media-search / upload-prefix /
+ *                         upload-file / force-unlink — checked before dropping
+ *                         them, per the id-is-a-gate-handle rule.
+ *   Checkbox + Label   -> ToolbarCheck (the <label> wraps its own input).
+ *   Badge              -> StateWord for the "Unused" STATE, .av2-chip for the
+ *                         linked COUNT and the bucket NAME — .av2-state
+ *                         uppercases, so data never goes through it.
+ *   Table              -> ReportGrid, the admin's one tabular reader.
+ *   Skeleton           -> a local Shimmer on --a-inset, keeping animate-pulse
+ *                         (a non-colour utility) so the loading motion survives.
+ *
+ * Surface stack, checked both ways in design_system/admin/tokens.css so nothing
+ * is painted onto its own parent: the panes are --a-bg with a hairline, the
+ * stat wells and shimmers are --a-inset, the quiet buttons and chips are
+ * --a-surface.
+ */
+
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import {
   deleteAdminMediaAsset,
@@ -8,22 +41,16 @@ import {
   type AdminMediaAsset,
   type AdminMediaScope,
 } from '@/app/actions/admin-media'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Button,
+  ReportGrid,
+  SectionHead,
+  StateWord,
+  TextField,
+  ToolbarCheck,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 
 const PAGE_SIZE = 6
 
@@ -35,6 +62,14 @@ const SCOPE_LABELS: Record<AdminMediaScope, string> = {
 }
 
 const ALL_SCOPES = Object.keys(SCOPE_LABELS) as AdminMediaScope[]
+
+const ASSET_COLUMNS: ReportColumn[] = [
+  { key: 'file', label: 'File' },
+  { key: 'size', label: 'Size' },
+  { key: 'updated', label: 'Updated' },
+  { key: 'usage', label: 'Usage' },
+  { key: 'actions', label: 'Actions' },
+]
 
 function formatFileSize(sizeBytes: number | null) {
   if (sizeBytes == null || sizeBytes <= 0) return '—'
@@ -55,6 +90,45 @@ function formatDate(value: string | null) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
   return date.toLocaleString()
+}
+
+/** Loading placeholder — the shadcn Skeleton's shape and pulse, on admin tokens. */
+function Shimmer({ className }: { className?: string }) {
+  return (
+    <div
+      className={className ? `animate-pulse rounded-md ${className}` : 'animate-pulse rounded-md'}
+      style={{ background: 'var(--a-inset)' }}
+    />
+  )
+}
+
+/** A DATA chip (a count, a bucket name). Never StateWord — that uppercases. */
+function DataChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="av2-chip" style={{ cursor: 'default' }}>
+      {children}
+    </span>
+  )
+}
+
+function UsageCell({ asset }: { asset: AdminMediaAsset }) {
+  if (asset.usages.length === 0) return <StateWord state="waiting">Unused</StateWord>
+  return (
+    <span style={{ display: 'block' }}>
+      <DataChip>{asset.usages.length} linked</DataChip>
+      <span
+        style={{
+          display: 'block',
+          marginTop: 4,
+          fontSize: 'var(--a-text-xs)',
+          color: 'var(--a-text-2)',
+        }}
+      >
+        {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
+        {asset.usages.length > 2 ? ' • …' : ''}
+      </span>
+    </span>
+  )
 }
 
 export default function AdminMediaManager() {
@@ -149,140 +223,204 @@ export default function AdminMediaManager() {
     })
   }
 
+  const assetRows: ReportGridRow[] = visibleAssets.map((asset) => ({
+    key: `${asset.bucket}:${asset.path}`,
+    cells: [
+      <span key="file" style={{ display: 'block' }}>
+        <span style={{ display: 'block', fontWeight: 600, color: 'var(--a-text)' }}>{asset.name}</span>
+        <span
+          style={{
+            display: 'block',
+            marginTop: 2,
+            fontSize: 'var(--a-text-xs)',
+            color: 'var(--a-text-2)',
+          }}
+        >
+          {asset.path}
+        </span>
+      </span>,
+      <span key="size" className="a-num">
+        {formatFileSize(asset.sizeBytes)}
+      </span>,
+      <span key="updated" className="a-num">
+        {formatDate(asset.updatedAt)}
+      </span>,
+      <UsageCell key="usage" asset={asset} />,
+      <span key="actions" className="flex flex-wrap gap-2">
+        <Button
+          variant="quiet"
+          type="button"
+          onClick={async () => {
+            await navigator.clipboard.writeText(asset.publicUrl)
+            setMessage({ type: 'ok', text: 'Copied asset URL.' })
+          }}
+        >
+          Copy URL
+        </Button>
+        <Button
+          variant="danger"
+          type="button"
+          onClick={() => handleDelete(asset)}
+          disabled={isMutating}
+        >
+          Delete
+        </Button>
+      </span>,
+    ],
+  }))
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Media library</CardTitle>
-          <CardDescription>
+      <section className="av2-pane">
+        <div>
+          <SectionHead>Media library</SectionHead>
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
             Centralized file management across storage buckets with usage references. Delete supports optional unlinking from related records.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Tabs value={scope} onValueChange={(value) => setScope(value as AdminMediaScope)}>
-            <TabsList>
-              {ALL_SCOPES.map((s) => (
-                <TabsTrigger key={s} value={s}>
-                  {SCOPE_LABELS[s]}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-border bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground">Files</p>
+        {/* role=group + a name: the Radix Tabs this replaced announced a
+            tablist, and the sibling migrations in the same unit (StockPhotosPicker,
+            PhotoCurationBoard) both added the grouping. Without it a screen
+            reader hears four unrelated toggle buttons. */}
+        <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Media scope">
+          {ALL_SCOPES.map((s) => {
+            const active = s === scope
+            return (
+              <Button
+                key={s}
+                variant="quiet"
+                type="button"
+                aria-pressed={active}
+                onClick={() => setScope(s)}
+                // The pressed look comes from
+                // .av2-btn--quiet[aria-pressed="true"] in admin-v2.css, NOT from
+                // an inline style: inline outranks the :hover rule, which froze
+                // the selected tab while every inactive sibling still responded.
+                style={active ? { fontWeight: 600 } : { color: 'var(--a-text-2)' }}
+              >
+                {SCOPE_LABELS[s]}
+              </Button>
+            )
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {(
+            [
+              { key: 'total', label: 'Files', value: summary.total, warn: false },
+              { key: 'linked', label: 'Linked', value: summary.linked, warn: false },
+              { key: 'unused', label: 'Unused', value: summary.unused, warn: summary.unused > 0 },
+            ] as const
+          ).map((tile) => (
+            <div
+              key={tile.key}
+              className="p-3"
+              style={{
+                border: '1px solid var(--a-border)',
+                borderRadius: 'var(--a-r-lg)',
+                background: 'var(--a-inset)',
+              }}
+            >
+              <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: 0 }}>
+                {tile.label}
+              </p>
               {loading ? (
-                <Skeleton className="mt-1 h-7 w-10" />
-              ) : (
-                <p className="text-2xl font-semibold tabular-nums text-foreground">{summary.total.toLocaleString()}</p>
-              )}
-            </div>
-            <div className="rounded-xl border border-border bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground">Linked</p>
-              {loading ? (
-                <Skeleton className="mt-1 h-7 w-10" />
-              ) : (
-                <p className="text-2xl font-semibold tabular-nums text-foreground">{summary.linked.toLocaleString()}</p>
-              )}
-            </div>
-            <div className="rounded-xl border border-border bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground">Unused</p>
-              {loading ? (
-                <Skeleton className="mt-1 h-7 w-10" />
+                <Shimmer className="mt-1 h-7 w-10" />
               ) : (
                 <p
-                  className={
-                    summary.unused > 0
-                      ? 'text-2xl font-semibold tabular-nums text-warning'
-                      : 'text-2xl font-semibold tabular-nums text-foreground'
-                  }
+                  className="a-num"
+                  style={{
+                    fontSize: 'var(--a-text-num)',
+                    fontWeight: 600,
+                    margin: 0,
+                    color: tile.warn ? 'var(--a-warn)' : 'var(--a-text)',
+                  }}
                 >
-                  {summary.unused.toLocaleString()}
+                  {tile.value.toLocaleString()}
                 </p>
               )}
             </div>
-          </div>
+          ))}
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span>Bucket</span>
-            <Badge variant="secondary">{bucket || '—'}</Badge>
-            {!loading && summary.totalBytes > 0 && (
-              <>
-                <span aria-hidden>•</span>
-                <span className="tabular-nums">{formatTotalSize(summary.totalBytes)} total</span>
-              </>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="media-search">Search in {SCOPE_LABELS[scope]}</Label>
-            <Input
-              id="media-search"
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by file path or usage label"
-              className="mt-2"
-            />
-          </div>
-
-          <form action={handleUpload} className="grid gap-3 rounded-lg border border-border p-4">
-            <p className="text-sm font-medium text-foreground">Upload media</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
-                <Label htmlFor="upload-prefix">Optional folder path</Label>
-                <Input
-                  id="upload-prefix"
-                  value={uploadPathPrefix}
-                  onChange={(event) => setUploadPathPrefix(event.target.value)}
-                  placeholder={scope === 'brokers' ? 'broker-id' : 'optional/subfolder'}
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="upload-file">File</Label>
-                <Input id="upload-file" name="file" type="file" required className="mt-2" />
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button type="submit" disabled={isMutating}>
-                {isMutating ? 'Working…' : 'Upload file'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => refreshData(scope, search)}
-                disabled={loading || isMutating}
-              >
-                Refresh
-              </Button>
-            </div>
-          </form>
-
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="force-unlink"
-              checked={forceUnlinkOnDelete}
-              onCheckedChange={(checked) => setForceUnlinkOnDelete(checked === true)}
-            />
-            <Label htmlFor="force-unlink">
-              Force unlink references before delete
-            </Label>
-          </div>
-
-          {message && (
-            <p className={message.type === 'ok' ? 'text-sm text-success' : 'text-sm text-destructive'}>
-              {message.text}
-            </p>
+        <div
+          className="flex flex-wrap items-center gap-2"
+          style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+        >
+          <span>Bucket</span>
+          <DataChip>{bucket || '—'}</DataChip>
+          {!loading && summary.totalBytes > 0 && (
+            <>
+              <span aria-hidden>•</span>
+              <span className="a-num">{formatTotalSize(summary.totalBytes)} total</span>
+            </>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Assets</CardTitle>
-          <CardDescription>
+        <TextField
+          label={`Search in ${SCOPE_LABELS[scope]}`}
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search by file path or usage label"
+        />
+
+        <form
+          action={handleUpload}
+          className="grid gap-3 p-4"
+          style={{ border: '1px solid var(--a-border)', borderRadius: 'var(--a-r-md)' }}
+        >
+          <p style={{ fontSize: 'var(--a-text-md)', fontWeight: 600, color: 'var(--a-text)', margin: 0 }}>
+            Upload media
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <TextField
+              label="Optional folder path"
+              value={uploadPathPrefix}
+              onChange={(event) => setUploadPathPrefix(event.target.value)}
+              placeholder={scope === 'brokers' ? 'broker-id' : 'optional/subfolder'}
+            />
+            <TextField label="File" name="file" type="file" required />
+          </div>
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={isMutating}>
+              {isMutating ? 'Working…' : 'Upload file'}
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              onClick={() => refreshData(scope, search)}
+              disabled={loading || isMutating}
+            >
+              Refresh
+            </Button>
+          </div>
+        </form>
+
+        <ToolbarCheck
+          label="Force unlink references before delete"
+          checked={forceUnlinkOnDelete}
+          onChange={(event) => setForceUnlinkOnDelete(event.target.checked)}
+        />
+
+        {message && (
+          <p
+            style={{
+              fontSize: 'var(--a-text-sm)',
+              margin: 0,
+              color: message.type === 'ok' ? 'var(--a-ok)' : 'var(--a-danger)',
+            }}
+          >
+            {message.text}
+          </p>
+        )}
+      </section>
+
+      <section className="av2-pane">
+        <div>
+          <SectionHead>Assets</SectionHead>
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
             {loading
               ? 'Loading assets…'
               : assets.length === 0
@@ -290,19 +428,24 @@ export default function AdminMediaManager() {
                 : hasMore
                   ? `Showing ${visibleAssets.length} of ${assets.length.toLocaleString()}`
                   : `${assets.length.toLocaleString()} file${assets.length === 1 ? '' : 's'}`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
+        </div>
+
+        <div>
           {/* Loading state */}
           {loading && (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="rounded-lg border border-border p-4">
-                  <Skeleton className="h-4 w-2/3" />
-                  <Skeleton className="mt-2 h-3 w-1/2" />
+                <div
+                  key={index}
+                  className="p-4"
+                  style={{ border: '1px solid var(--a-border)', borderRadius: 'var(--a-r-md)' }}
+                >
+                  <Shimmer className="h-4 w-2/3" />
+                  <Shimmer className="mt-2 h-3 w-1/2" />
                   <div className="mt-3 flex gap-2">
-                    <Skeleton className="h-11 flex-1" />
-                    <Skeleton className="h-11 flex-1" />
+                    <Shimmer className="h-11 flex-1" />
+                    <Shimmer className="h-11 flex-1" />
                   </div>
                 </div>
               ))}
@@ -311,11 +454,17 @@ export default function AdminMediaManager() {
 
           {/* Empty state */}
           {!loading && assets.length === 0 && (
-            <div className="flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-10 text-center">
-              <p className="text-sm font-medium text-foreground">
+            <div
+              className="flex flex-col items-center px-6 py-10 text-center"
+              style={{ border: '1px dashed var(--a-border)', borderRadius: 'var(--a-r-md)' }}
+            >
+              <p style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)', margin: 0 }}>
                 {search ? 'No matches found' : `No media in ${SCOPE_LABELS[scope]} yet`}
               </p>
-              <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+              <p
+                className="mt-1 max-w-xs"
+                style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}
+              >
                 {search
                   ? 'Try a different file path or usage label.'
                   : 'Use the upload form above to add the first file to this bucket.'}
@@ -325,40 +474,44 @@ export default function AdminMediaManager() {
 
           {/* Asset cards — phones (one tap-target per file) */}
           {!loading && assets.length > 0 && (
-            <div className="space-y-2 md:hidden">
+            <div className="av2-cardlist">
               {visibleAssets.map((asset) => (
                 <div
                   key={`${asset.bucket}:${asset.path}`}
-                  className="rounded-lg border border-border bg-card p-4"
+                  className="p-4"
+                  style={{ border: '1px solid var(--a-border)', borderRadius: 'var(--a-r-md)' }}
                 >
                   <div className="min-w-0 space-y-1">
-                    <p className="truncate text-sm font-medium text-foreground">{asset.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{asset.path}</p>
+                    <p
+                      className="truncate"
+                      style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)', margin: 0 }}
+                    >
+                      {asset.name}
+                    </p>
+                    <p
+                      className="truncate"
+                      style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: 0 }}
+                    >
+                      {asset.path}
+                    </p>
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="tabular-nums">{formatFileSize(asset.sizeBytes)}</span>
+                  <div
+                    className="mt-2 flex flex-wrap items-center gap-2"
+                    style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+                  >
+                    <span className="a-num">{formatFileSize(asset.sizeBytes)}</span>
                     <span aria-hidden>•</span>
-                    <span className="tabular-nums">{formatDate(asset.updatedAt)}</span>
+                    <span className="a-num">{formatDate(asset.updatedAt)}</span>
                   </div>
                   <div className="mt-2">
-                    {asset.usages.length === 0 ? (
-                      <Badge variant="outline">Unused</Badge>
-                    ) : (
-                      <div className="space-y-1">
-                        <Badge variant="secondary">{asset.usages.length} linked</Badge>
-                        <p className="text-xs text-muted-foreground">
-                          {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
-                          {asset.usages.length > 2 ? ' • …' : ''}
-                        </p>
-                      </div>
-                    )}
+                    <UsageCell asset={asset} />
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-11 flex-1"
+                      variant="quiet"
+                      touch
+                      className="flex-1"
                       onClick={async () => {
                         await navigator.clipboard.writeText(asset.publicUrl)
                         setMessage({ type: 'ok', text: 'Copied asset URL.' })
@@ -368,9 +521,9 @@ export default function AdminMediaManager() {
                     </Button>
                     <Button
                       type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="h-11 flex-1"
+                      variant="danger"
+                      touch
+                      className="flex-1"
                       onClick={() => handleDelete(asset)}
                       disabled={isMutating}
                     >
@@ -384,69 +537,15 @@ export default function AdminMediaManager() {
 
           {/* Asset table — desktop */}
           {!loading && assets.length > 0 && (
-            <div className="hidden overflow-hidden rounded-lg border border-border md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>File</TableHead>
-                    <TableHead>Size</TableHead>
-                    <TableHead>Updated</TableHead>
-                    <TableHead>Usage</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {visibleAssets.map((asset) => (
-                    <TableRow key={`${asset.bucket}:${asset.path}`}>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-foreground">{asset.name}</p>
-                          <p className="text-xs text-muted-foreground">{asset.path}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm tabular-nums text-muted-foreground">{formatFileSize(asset.sizeBytes)}</TableCell>
-                      <TableCell className="text-sm tabular-nums text-muted-foreground">{formatDate(asset.updatedAt)}</TableCell>
-                      <TableCell>
-                        {asset.usages.length === 0 ? (
-                          <Badge variant="outline">Unused</Badge>
-                        ) : (
-                          <div className="space-y-1">
-                            <Badge variant="secondary">{asset.usages.length} linked</Badge>
-                            <p className="text-xs text-muted-foreground">
-                              {asset.usages.slice(0, 2).map((usage) => usage.label).join(' • ')}
-                              {asset.usages.length > 2 ? ' • …' : ''}
-                            </p>
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              await navigator.clipboard.writeText(asset.publicUrl)
-                              setMessage({ type: 'ok', text: 'Copied asset URL.' })
-                            }}
-                          >
-                            Copy URL
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(asset)}
-                            disabled={isMutating}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="hidden md:block">
+              <ReportGrid
+                label="Media assets"
+                columns={ASSET_COLUMNS}
+                template="minmax(200px, 2fr) minmax(72px, 0.5fr) minmax(150px, 1fr) minmax(150px, 1.1fr) minmax(190px, 0.9fr)"
+                minWidth={880}
+                rows={assetRows}
+                empty={<>No files in {SCOPE_LABELS[scope]}</>}
+              />
             </div>
           )}
 
@@ -455,16 +554,17 @@ export default function AdminMediaManager() {
             <div className="mt-4 flex justify-center">
               <Button
                 type="button"
-                variant="outline"
-                className="h-11 w-full sm:w-auto"
+                variant="quiet"
+                touch
+                className="w-full sm:w-auto"
                 onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
               >
                 Show more ({(assets.length - visibleAssets.length).toLocaleString()} more)
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   )
 }

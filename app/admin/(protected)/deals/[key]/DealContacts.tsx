@@ -1,12 +1,22 @@
 'use client'
 
+// @no-parity — internal admin tool (TC deal team & contacts)
+//
+// 11F: off shadcn, onto the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only — saveDealContact,
+// deleteDealContact, the confirm/alert strings, the reloads and the edit-vs-add
+// form shape are carried over unchanged.
+//
+// Two shape notes:
+//   - The role badge is `av2-chip`, NOT a StateWord. A role ("Lender",
+//     "Escrow") is DATA about the person, and .av2-state uppercases and reads
+//     as a status word — states are for states.
+//   - The four placeholder-only inputs became labelled TextFields. v2's form
+//     pattern is label-above (ADMIN_UI §3 pattern 6) and TextField requires a
+//     label, so the word moved from placeholder to label; nothing a broker
+//     reads was added or removed.
 import { useState, useTransition } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button, SelectField, TextField } from '@/components/admin/v2'
 import { saveDealContact, deleteDealContact } from '@/app/actions/tc-contacts'
 import { TC_CONTACT_ROLES, TC_CONTACT_ROLE_LABEL, type TcContact } from '@/lib/tc/contact-roles'
 
@@ -53,43 +63,60 @@ export function DealContacts({ dealId, contacts }: { dealId: string; contacts: T
   const set = (k: keyof FormState, v: string) => setForm((f) => (f ? { ...f, [k]: v } : f))
 
   return (
-    <Card className="p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-medium text-foreground">Deal team &amp; contacts</p>
+    <div className="av2-pane">
+      <div className="flex items-center justify-between gap-3">
+        <p style={{ margin: 0, fontSize: 'var(--a-text-md)', fontWeight: 500, color: 'var(--a-text)' }}>
+          Deal team &amp; contacts
+        </p>
         {!form ? (
-          <Button size="sm" variant="outline" onClick={() => open()}>
+          <Button variant="quiet" onClick={() => open()}>
             + Add contact
           </Button>
         ) : null}
       </div>
 
       {contacts.length === 0 && !form ? (
-        <p className="text-sm text-muted-foreground">No contacts yet. Add the lender, title, escrow, co-agents…</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-md)', color: 'var(--a-text-2)' }}>
+          No contacts yet. Add the lender, title, escrow, co-agents…
+        </p>
       ) : null}
 
-      <ul className="divide-y divide-border">
-        {contacts.map((c) => (
-          <li key={c.id} className="flex items-start justify-between gap-3 py-2">
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        {contacts.map((c, i) => (
+          <li
+            key={c.id}
+            className="flex items-start justify-between gap-3 py-2"
+            style={{ borderTop: i ? '1px solid var(--a-border)' : undefined }}
+          >
             <div className="min-w-0">
-              <p className="text-sm text-foreground">
+              <p style={{ margin: 0, fontSize: 'var(--a-text-md)', color: 'var(--a-text)' }}>
                 {c.name || c.company || c.email}
-                <Badge variant="outline" className="ml-2 align-middle text-xs">
+                <span className="av2-chip ml-2 align-middle" style={{ cursor: 'default' }}>
                   {TC_CONTACT_ROLE_LABEL[c.role] ?? c.role}
-                </Badge>
+                </span>
               </p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p
+                className="truncate"
+                style={{ margin: '2px 0 0', fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+              >
                 {[c.company && c.name ? c.company : null, c.email, c.phone].filter(Boolean).join(' · ') || '—'}
               </p>
             </div>
             <div className="flex shrink-0 gap-1">
-              <Button size="sm" variant="ghost" disabled={pending} onClick={() => open(c)}>
+              <Button variant="quiet" disabled={pending} onClick={() => open(c)}>
                 Edit
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 disabled={pending}
-                className="text-destructive hover:text-destructive"
+                // The shadcn control was a GHOST button in the destructive
+                // colour, not a solid red one; v2 has no quiet-danger variant,
+                // and `danger` is a filled button that would shout from every
+                // contact row. Only the text colour is inline, so
+                // .av2-btn--quiet:hover (which paints the background) still
+                // fires — an inline background is what kills a hover, a colour
+                // is not.
+                style={{ color: 'var(--a-danger)' }}
                 onClick={() => remove(c.id, c.name || c.company || 'this contact')}
               >
                 Remove
@@ -100,38 +127,37 @@ export function DealContacts({ dealId, contacts }: { dealId: string; contacts: T
       </ul>
 
       {form ? (
-        <div className="mt-3 space-y-2 rounded-md bg-muted/50 p-3">
+        <div
+          className="space-y-2"
+          style={{
+            background: 'var(--a-inset)',
+            borderRadius: 'var(--a-r-md)',
+            padding: 'var(--a-s3)',
+          }}
+        >
           <div className="grid gap-2 sm:grid-cols-2">
-            <div>
-              <Label className="text-xs text-muted-foreground">Role</Label>
-              <Select value={form.role} onValueChange={(v) => set('role', v)}>
-                <SelectTrigger className="mt-1 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TC_CONTACT_ROLES.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {TC_CONTACT_ROLE_LABEL[r]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Input placeholder="Name" value={form.name} onChange={(e) => set('name', e.target.value)} />
-            <Input placeholder="Company" value={form.company} onChange={(e) => set('company', e.target.value)} />
-            <Input placeholder="Email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
-            <Input placeholder="Phone" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+            <SelectField label="Role" value={form.role} onChange={(e) => set('role', e.target.value)}>
+              {TC_CONTACT_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {TC_CONTACT_ROLE_LABEL[r]}
+                </option>
+              ))}
+            </SelectField>
+            <TextField label="Name" value={form.name} onChange={(e) => set('name', e.target.value)} />
+            <TextField label="Company" value={form.company} onChange={(e) => set('company', e.target.value)} />
+            <TextField label="Email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
+            <TextField label="Phone" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
           </div>
           <div className="flex gap-2">
-            <Button size="sm" disabled={pending} onClick={save}>
+            <Button disabled={pending} onClick={save}>
               {pending ? 'Saving…' : form.id ? 'Save' : 'Add'}
             </Button>
-            <Button size="sm" variant="ghost" disabled={pending} onClick={() => setForm(null)}>
+            <Button variant="quiet" disabled={pending} onClick={() => setForm(null)}>
               Cancel
             </Button>
           </div>
         </div>
       ) : null}
-    </Card>
+    </div>
   )
 }

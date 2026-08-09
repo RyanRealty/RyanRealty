@@ -14,23 +14,26 @@
  *
  * The bar never mutates a card's local status — a refresh re-derives the queue from
  * the server, so the truth stays server-side.
+ *
+ * 11F: off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — the same context, the
+ * same fetch body, the same router.refresh(), the same toast timings and the
+ * same visible strings. ci:bulk-approval-wired still reads all three exports.
+ *
+ * Mapping: Checkbox -> ToolbarCheck (native input, so onCheckedChange becomes
+ * onChange with the same toggle); Card -> a var(--a-bg) panel with the overlay
+ * shadow the other v2 overlays use (bg, not surface, so the quiet buttons
+ * sitting on it keep a visible fill); Textarea + Label -> TextAreaField;
+ * Dialog -> the v2 Dialog, whose footer keeps the exact
+ * `busy || !rejectReason.trim()` disable that ConfirmDialog cannot express;
+ * Alert -> a token-styled role="alert" box.
+ *
+ * Exactly one primary Button in the file (Approve) — ci:admin-ui rule C.
  */
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button, Dialog, TextAreaField, ToolbarCheck } from '@/components/admin/v2'
 
 interface BulkSelectionValue {
   selected: ReadonlySet<string>
@@ -101,11 +104,12 @@ export function BulkSelectionProvider({
 export function BulkSelectCheckbox({ actionId }: { actionId: string }) {
   const { isSelected, toggle } = useBulkSelection()
   return (
-    <Checkbox
+    <ToolbarCheck
+      label={null}
       checked={isSelected(actionId)}
-      onCheckedChange={() => toggle(actionId)}
+      onChange={() => toggle(actionId)}
       aria-label="Select for bulk action"
-      className="mt-1"
+      labelStyle={{ marginTop: 4 }}
     />
   )
 }
@@ -177,81 +181,91 @@ export function BulkActionBar() {
     <>
       {toast && (
         <div className="fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
-          <Alert variant={toastError ? 'destructive' : 'default'} className="max-w-md shadow-lg">
-            <AlertDescription>{toast}</AlertDescription>
-          </Alert>
+          <div
+            role="alert"
+            className="max-w-md px-2.5 py-2"
+            style={{
+              background: 'var(--a-bg)',
+              border: `1px solid ${toastError ? 'var(--a-danger)' : 'var(--a-border)'}`,
+              borderRadius: 'var(--a-r-lg)',
+              boxShadow: 'var(--a-shadow-overlay)',
+              fontSize: 'var(--a-text-sm)',
+              color: toastError ? 'var(--a-danger)' : 'var(--a-text)',
+            }}
+          >
+            {toast}
+          </div>
         </div>
       )}
 
       <div className="fixed inset-x-0 bottom-6 z-40 flex justify-center px-4">
-        <Card className="flex flex-row flex-wrap items-center gap-3 px-4 py-3 shadow-lg">
-          <span className="text-sm font-semibold text-foreground">
+        <div
+          className="flex flex-row flex-wrap items-center gap-3 px-4 py-3"
+          style={{
+            background: 'var(--a-bg)',
+            border: '1px solid var(--a-border)',
+            borderRadius: 'var(--a-r-lg)',
+            boxShadow: 'var(--a-shadow-overlay)',
+          }}
+        >
+          <span style={{ fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text)' }}>
             {count} selected
           </span>
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={allSelected ? clear : selectAll}
             disabled={busy}
-            className="text-xs"
+            style={{ fontSize: 'var(--a-text-xs)' }}
           >
             {allSelected ? 'Deselect all' : `Select all ${allIds.length}`}
           </Button>
-          <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-          <Button
-            size="sm"
-            onClick={approveAll}
-            disabled={busy}
-            className="bg-success text-success-foreground hover:bg-success/90"
-          >
+          <div
+            aria-hidden
+            className="mx-1 h-5 w-px"
+            style={{ background: 'var(--a-border)' }}
+          />
+          <Button onClick={approveAll} disabled={busy}>
             {busy ? 'Working...' : `Approve ${count}`}
           </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => setRejectOpen(true)}
-            disabled={busy}
-          >
+          <Button variant="danger" onClick={() => setRejectOpen(true)} disabled={busy}>
             Reject {count}
           </Button>
-          <Button size="sm" variant="outline" onClick={clear} disabled={busy}>
+          <Button variant="quiet" onClick={clear} disabled={busy}>
             Clear
           </Button>
-        </Card>
+        </div>
       </div>
 
-      <Dialog open={rejectOpen} onOpenChange={(o) => !o && setRejectOpen(false)}>
-        <DialogContent aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Reject {count} selected action{count === 1 ? '' : 's'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label htmlFor="bulk-reject-reason">Reason (required, applied to all)</Label>
-            <Textarea
-              id="bulk-reject-reason"
-              placeholder="e.g. Batch superseded by a fresh brain cycle."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              rows={3}
-              required
-            />
-            <p className="text-xs text-destructive">
-              This is permanent. All {count} selected actions move to killed status.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectOpen(false)} disabled={busy}>
+      <Dialog
+        open={rejectOpen}
+        onClose={() => setRejectOpen(false)}
+        title={`Reject ${count} selected action${count === 1 ? '' : 's'}`}
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setRejectOpen(false)} disabled={busy}>
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={rejectAll}
               disabled={busy || !rejectReason.trim()}
             >
               {busy ? 'Rejecting...' : `Confirm reject ${count}`}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextAreaField
+          label="Reason (required, applied to all)"
+          placeholder="e.g. Batch superseded by a fresh brain cycle."
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          rows={3}
+          required
+        />
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>
+          This is permanent. All {count} selected actions move to killed status.
+        </p>
       </Dialog>
     </>
   )

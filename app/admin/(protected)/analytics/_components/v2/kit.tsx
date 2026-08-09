@@ -7,17 +7,24 @@
  * Everything here is presentation — no data reads, no formatting decisions:
  * callers pass already-formatted strings so the migration cannot move a number.
  *
- * CONVERGE ME: ./DataGrid.tsx landed in the same folder in the same 11C pass
- * and covers the same ground for the other six analytics pages
- * (DataGrid≈DataList, NumberStrip≈Figures, StatePanel≈empty/Trouble,
- * GridSkeleton≈Loading, LaneNote≈.av2-note, Stamp≈.av2-stamp). Two readers for
- * one family is drift. The merge worth keeping takes the stacking behaviour
- * here (a nine-column list must not scroll sideways on a phone — that is the
- * rule the retired TableWithMobileCards existed to enforce) plus the ARIA roles and
- * the keyboard-reachable scroll region from there.
+ * 11F CONVERGED: DataList and ./DataGrid both drew their own tabular reader in
+ * the same 11C pass — two readers for one family, which is the drift the v2
+ * barrel exists to stop. Both now render <ReportGrid> from
+ * @/components/admin/v2, the admin's ONE grid, so the analytics family reads
+ * exactly like the reporting family. Nothing about DataList's contract moved
+ * (rows, columns, rowKey, cap, empty, label; the `cap` + "Showing N of M" line
+ * still carry the legacy table's contract verbatim), and the three properties
+ * worth keeping came along with it:
+ *   - phone stacking — report-grid.css makes each row a titled block below
+ *     720px, so a nine-column list still never scrolls sideways on a phone;
+ *     that is the rule the retired TableWithMobileCards existed to enforce.
+ *   - ARIA table roles — role="table"/"row"/"columnheader"/"cell".
+ *   - a keyboard-reachable scroll region — role="group" + tabIndex, owning the
+ *     ONLY horizontal scroll on the page.
  */
 import './analytics-v2.css'
 import '@/components/admin/v2/admin-v2.css'
+import { ReportGrid, type ReportColumn, type ReportGridRow } from '@/components/admin/v2'
 
 export type DataCol<T> = {
   key: string
@@ -34,10 +41,10 @@ export type DataCol<T> = {
 }
 
 /**
- * Data list — one grid line per row on desktop, a stacked labelled block on
- * phone. A wide list scrolls inside .av2-dlwrap, never at page level.
- * `cap` + the "Showing N of M" line carry over the legacy table's contract
- * verbatim so a migrated page shows the same rows it showed before.
+ * Data list — one grid line per row on desktop, a stacked titled block on
+ * phone. A wide list scrolls inside the grid's own scroll region, never at
+ * page level. The FIRST column is the phone title line, which is where `lead`
+ * has always been set.
  */
 export function DataList<T>({
   rows,
@@ -61,33 +68,35 @@ export function DataList<T>({
   const shown = rows.slice(0, cap)
   const overflow = rows.length - shown.length
   const template = columns.map((c) => c.width ?? (c.lead ? 'minmax(0, 1.6fr)' : 'auto')).join(' ')
-  const cls = (c: DataCol<T>) =>
-    ['av2-dl__c', c.num ? 'av2-dl__c--num' : '', c.mono ? 'av2-dl__c--mono' : '', c.lead ? 'av2-dl__c--lead' : '']
-      .filter(Boolean)
-      .join(' ')
+
+  const gridColumns: ReportColumn[] = columns.map((c) => ({
+    key: c.key,
+    label: c.header,
+    numeric: c.num,
+  }))
+  const gridRows: ReportGridRow[] = shown.map((row, i) => ({
+    key: String(rowKey(row, i)),
+    cells: columns.map((c) =>
+      c.mono ? (
+        <span style={{ fontFamily: 'var(--a-font-mono)', fontSize: 'var(--a-text-xs)' }}>
+          {c.cell(row, i)}
+        </span>
+      ) : (
+        c.cell(row, i)
+      ),
+    ),
+  }))
 
   return (
     <>
-      <div className="av2-dlwrap">
-        <ul className="av2-dl" aria-label={label}>
-          <li className="av2-dl__head" style={{ gridTemplateColumns: template }} aria-hidden="true">
-            {columns.map((c) => (
-              <span key={c.key} className={c.num ? 'av2-dl__h--num' : undefined}>
-                {c.header}
-              </span>
-            ))}
-          </li>
-          {shown.map((row, i) => (
-            <li key={rowKey(row, i)} className="av2-dl__row" style={{ gridTemplateColumns: template }}>
-              {columns.map((c) => (
-                <span key={c.key} className={cls(c)} data-label={c.header}>
-                  {c.cell(row, i)}
-                </span>
-              ))}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ReportGrid
+        label={label}
+        columns={gridColumns}
+        template={template}
+        minWidth={0}
+        rows={gridRows}
+        empty={empty}
+      />
       {overflow > 0 ? (
         <p className="av2-stamp">
           Showing {shown.length} of {rows.length}.

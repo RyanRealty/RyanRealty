@@ -1,11 +1,30 @@
 'use client'
 
+/**
+ * FilterSidebar — the approval queue's URL-backed filter set.
+ *
+ * 11F: off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — the URL params, the
+ * append/remove logic in updateParam, the checked test and clearAll are
+ * carried over verbatim, and every visible string is unchanged.
+ *
+ * Mapping: Checkbox + Label -> ToolbarCheck (the primitive's own <label> wraps
+ * its <input>, so the control keeps a real accessible name without a separate
+ * htmlFor); Separator -> a 1px var(--a-border) rule; Button -> the v2 Button in
+ * the quiet variant, which carries the hover the shadcn ghost had.
+ *
+ * The Button's size overrides are INLINE, not Tailwind classes: admin-v2.css is
+ * un-layered, so `.av2-btn { padding:0 14px; min-height:36px }` outranks the
+ * whole Tailwind utilities layer and a `px-2 py-0.5` would have rendered as
+ * nothing at all.
+ *
+ * The per-option `id`s are kept even though the wrapping label no longer needs
+ * them: an id is a handle, and dropping one costs nothing to keep.
+ */
+
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCallback } from 'react'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Separator } from '@/components/ui/separator'
-import { Button } from '@/components/ui/button'
+import { Button, ToolbarCheck } from '@/components/admin/v2'
 
 interface FilterSidebarProps {
   categories: string[]
@@ -17,6 +36,19 @@ const URGENCY_OPTIONS = [
   { value: 'medium', label: 'Medium (40-79)' },
   { value: 'low', label: 'Low (0-39)' },
 ]
+
+/** Section caption above each filter group. */
+const GROUP_LABEL_STYLE = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 600,
+  letterSpacing: '.05em',
+  textTransform: 'uppercase',
+  color: 'var(--a-text-2)',
+} as const
+
+function Rule() {
+  return <div aria-hidden style={{ height: 1, background: 'var(--a-border)' }} />
+}
 
 export function FilterSidebar({ categories, actionTypePrefixes }: FilterSidebarProps) {
   const router = useRouter()
@@ -53,13 +85,14 @@ export function FilterSidebar({ categories, actionTypePrefixes }: FilterSidebarP
   return (
     <aside className="w-52 shrink-0 space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-foreground">Filters</h2>
+        <h2 style={{ fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text)' }}>
+          Filters
+        </h2>
         {hasAnyFilter && (
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={clearAll}
-            className="h-auto px-2 py-0.5 text-xs text-muted-foreground"
+            style={{ minHeight: 0, padding: '2px 8px', fontSize: 'var(--a-text-xs)' }}
           >
             Clear
           </Button>
@@ -68,60 +101,48 @@ export function FilterSidebar({ categories, actionTypePrefixes }: FilterSidebarP
 
       {categories.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Producer category
-          </p>
+          <p style={GROUP_LABEL_STYLE}>Producer category</p>
           {categories.map((cat) => (
             <div key={cat} className="flex items-center gap-2">
-              <Checkbox
+              <ToolbarCheck
                 id={`cat-${cat}`}
+                label={cat}
                 checked={isChecked('cat', cat)}
-                onCheckedChange={(v) => updateParam('cat', cat, Boolean(v))}
+                onChange={(e) => updateParam('cat', cat, e.target.checked)}
               />
-              <Label htmlFor={`cat-${cat}`} className="cursor-pointer text-xs">
-                {cat}
-              </Label>
             </div>
           ))}
         </div>
       )}
 
-      <Separator />
+      <Rule />
 
       <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Action type
-        </p>
+        <p style={GROUP_LABEL_STYLE}>Action type</p>
         {actionTypePrefixes.map((prefix) => (
           <div key={prefix} className="flex items-center gap-2">
-            <Checkbox
+            <ToolbarCheck
               id={`prefix-${prefix}`}
+              label={`${prefix}:*`}
               checked={isChecked('prefix', prefix)}
-              onCheckedChange={(v) => updateParam('prefix', prefix, Boolean(v))}
+              onChange={(e) => updateParam('prefix', prefix, e.target.checked)}
             />
-            <Label htmlFor={`prefix-${prefix}`} className="cursor-pointer text-xs">
-              {prefix}:*
-            </Label>
           </div>
         ))}
       </div>
 
-      <Separator />
+      <Rule />
 
       <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Urgency
-        </p>
+        <p style={GROUP_LABEL_STYLE}>Urgency</p>
         {URGENCY_OPTIONS.map((opt) => (
           <div key={opt.value} className="flex items-center gap-2">
-            <Checkbox
+            <ToolbarCheck
               id={`urgency-${opt.value}`}
+              label={opt.label}
               checked={isChecked('urgency', opt.value)}
-              onCheckedChange={(v) => updateParam('urgency', opt.value, Boolean(v))}
+              onChange={(e) => updateParam('urgency', opt.value, e.target.checked)}
             />
-            <Label htmlFor={`urgency-${opt.value}`} className="cursor-pointer text-xs">
-              {opt.label}
-            </Label>
           </div>
         ))}
       </div>

@@ -1,25 +1,29 @@
 'use client'
 
+/**
+ * ActionButtons — approve / schedule / request-changes / reject / duplicate / run-producer
+ * controls for one marketing_brain_actions row.
+ *
+ * 11F: off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — the same fetch bodies,
+ * the same status hand-offs to onStatusChange, the same toast timings and every
+ * visible string are carried over verbatim. Approving still hits the publisher
+ * sweep path (CLAUDE.md §1); nothing here changes what each action does.
+ *
+ * Mapping: Button outline/ghost -> quiet; destructive -> danger; success-green
+ * "Approve and ship now" -> the one primary (ADMIN_UI: green is status, not CTA);
+ * Dialog/DialogContent/… -> the v2 Dialog (platform <dialog>); Input+Label ->
+ * TextField; Textarea+Label -> TextAreaField; Select+… -> SelectField (native
+ * <select>, empty-value options keep the same values); Alert -> a token-styled
+ * role="alert" box (same call BulkSelection recorded).
+ *
+ * Exactly one primary Button in the file ("Approve and ship now") — ci:admin-ui
+ * rule C. Dialog confirms that are not destructive stay quiet next to a quiet
+ * Cancel; reject confirm is danger.
+ */
+
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button, Dialog, SelectField, TextAreaField, TextField } from '@/components/admin/v2'
 
 interface ActionButtonsProps {
   actionId: string
@@ -174,216 +178,183 @@ export function ActionButtons({ actionId, producerSlug, status, onStatusChange }
     }
   }
 
+  function closeDialog() {
+    setDialog(null)
+  }
+
   return (
     <>
-      {/* Toast */}
       {toast && (
-        <Alert variant={toastError ? 'destructive' : 'default'} className="mb-3">
-          <AlertDescription>{toast}</AlertDescription>
-        </Alert>
+        <div
+          role="alert"
+          className="mb-3 px-2.5 py-2"
+          style={{
+            background: 'var(--a-bg)',
+            border: `1px solid ${toastError ? 'var(--a-danger)' : 'var(--a-border)'}`,
+            borderRadius: 'var(--a-r-lg)',
+            fontSize: 'var(--a-text-sm)',
+            color: toastError ? 'var(--a-danger)' : 'var(--a-text)',
+          }}
+        >
+          {toast}
+        </div>
       )}
 
-      {/* Primary buttons */}
       <div className="flex flex-wrap gap-2">
         {(status === 'pending' || status === 'in_production') && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={runProducer}
-            disabled={busy}
-            className="border-primary text-primary hover:bg-primary/10"
-          >
+          <Button variant="quiet" onClick={runProducer} disabled={busy}>
             Run producer now
           </Button>
         )}
-        <Button
-          size="sm"
-          onClick={approveNow}
-          disabled={busy}
-          className="bg-success text-success-foreground hover:bg-success/90"
-        >
+        {/* The one primary in this file — ci:admin-ui rule C */}
+        <Button onClick={approveNow} disabled={busy}>
           Approve and ship now
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setDialog('schedule')}
-          disabled={busy}
-        >
+        <Button variant="quiet" onClick={() => setDialog('schedule')} disabled={busy}>
           Approve and schedule
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setDialog('request_changes')}
-          disabled={busy}
-        >
+        <Button variant="quiet" onClick={() => setDialog('request_changes')} disabled={busy}>
           Request changes
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setDialog('duplicate')}
-          disabled={busy}
-        >
+        <Button variant="quiet" onClick={() => setDialog('duplicate')} disabled={busy}>
           Duplicate as new variant
         </Button>
-        <Button
-          size="sm"
-          variant="destructive"
-          onClick={() => setDialog('reject')}
-          disabled={busy}
-        >
+        <Button variant="danger" onClick={() => setDialog('reject')} disabled={busy}>
           Reject
         </Button>
       </div>
 
-      {/* Approve and schedule dialog */}
-      <Dialog open={dialog === 'schedule'} onOpenChange={(o) => !o && setDialog(null)}>
-        <DialogContent aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Schedule this post</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label htmlFor="sched-dt">Date and time (Mountain Time)</Label>
-            <Input
-              id="sched-dt"
-              type="datetime-local"
-              value={scheduledFor}
-              onChange={(e) => setScheduledFor(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              The post_scheduler skill publishes at this time. Confirm your timezone is set
-              to Mountain Time in your OS, or adjust accordingly.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)}>
+      <Dialog
+        open={dialog === 'schedule'}
+        onClose={closeDialog}
+        title="Schedule this post"
+        footer={
+          <>
+            <Button variant="quiet" onClick={closeDialog} disabled={busy}>
               Cancel
             </Button>
-            <Button onClick={approveScheduled} disabled={busy || !scheduledFor}>
+            <Button variant="quiet" onClick={approveScheduled} disabled={busy || !scheduledFor}>
               {busy ? 'Scheduling...' : 'Schedule'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextField
+          label="Date and time (Mountain Time)"
+          type="datetime-local"
+          value={scheduledFor}
+          onChange={(e) => setScheduledFor(e.target.value)}
+        />
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          The post_scheduler skill publishes at this time. Confirm your timezone is set to
+          Mountain Time in your OS, or adjust accordingly.
+        </p>
       </Dialog>
 
-      {/* Request changes dialog */}
-      <Dialog open={dialog === 'request_changes'} onOpenChange={(o) => !o && setDialog(null)}>
-        <DialogContent aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Request changes</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label htmlFor="change-body">Describe what needs to change</Label>
-            <Textarea
-              id="change-body"
-              placeholder="e.g. Caption is too long. Trim to under 150 characters and remove the third bullet."
-              value={changeBody}
-              onChange={(e) => setChangeBody(e.target.value)}
-              rows={4}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              This will flip status to needs_changes and notify the producer.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)}>
-              Cancel
-            </Button>
-            <Button onClick={requestChanges} disabled={busy || !changeBody.trim()}>
-              {busy ? 'Submitting...' : 'Send change request'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Reject dialog */}
-      <Dialog open={dialog === 'reject'} onOpenChange={(o) => !o && setDialog(null)}>
-        <DialogContent aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Reject this action</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Label htmlFor="reject-reason">Reason (required)</Label>
-            <Textarea
-              id="reject-reason"
-              placeholder="e.g. Market conditions changed. This listing is now off-market."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              rows={3}
-              required
-            />
-            <p className="text-xs text-destructive">
-              This is permanent. The action will be moved to killed status.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)}>
+      <Dialog
+        open={dialog === 'request_changes'}
+        onClose={closeDialog}
+        title="Request changes"
+        footer={
+          <>
+            <Button variant="quiet" onClick={closeDialog} disabled={busy}>
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="quiet"
+              onClick={requestChanges}
+              disabled={busy || !changeBody.trim()}
+            >
+              {busy ? 'Submitting...' : 'Send change request'}
+            </Button>
+          </>
+        }
+      >
+        <TextAreaField
+          label="Describe what needs to change"
+          placeholder="e.g. Caption is too long. Trim to under 150 characters and remove the third bullet."
+          value={changeBody}
+          onChange={(e) => setChangeBody(e.target.value)}
+          rows={4}
+          required
+        />
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          This will flip status to needs_changes and notify the producer.
+        </p>
+      </Dialog>
+
+      <Dialog
+        open={dialog === 'reject'}
+        onClose={closeDialog}
+        title="Reject this action"
+        footer={
+          <>
+            <Button variant="quiet" onClick={closeDialog} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
               onClick={reject}
               disabled={busy || !rejectReason.trim()}
             >
               {busy ? 'Rejecting...' : 'Confirm reject'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <TextAreaField
+          label="Reason (required)"
+          placeholder="e.g. Market conditions changed. This listing is now off-market."
+          value={rejectReason}
+          onChange={(e) => setRejectReason(e.target.value)}
+          rows={3}
+          required
+        />
+        <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>
+          This is permanent. The action will be moved to killed status.
+        </p>
       </Dialog>
 
-      {/* Duplicate dialog */}
-      <Dialog open={dialog === 'duplicate'} onOpenChange={(o) => !o && setDialog(null)}>
-        <DialogContent aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Duplicate as new variant</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="dup-mode">Mode</Label>
-              <Select
-                value={duplicateMode}
-                onValueChange={(v) => setDuplicateMode(v as typeof duplicateMode)}
-              >
-                <SelectTrigger id="dup-mode">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="same_producer">Same producer, new payload tweaks</SelectItem>
-                  <SelectItem value="new_producer">Spin off as new producer</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="dup-notes">
-                {duplicateMode === 'new_producer'
-                  ? 'Describe the new producer you want'
-                  : 'Describe the payload changes'}
-              </Label>
-              <Textarea
-                id="dup-notes"
-                placeholder={
-                  duplicateMode === 'new_producer'
-                    ? 'e.g. Same as listing_reveal but for coming-soon listings with exterior-only photos.'
-                    : 'e.g. Same video but for Sunriver instead of Bend. Change city filter and music bed.'
-                }
-                value={duplicatePayloadNotes}
-                onChange={(e) => setDuplicatePayloadNotes(e.target.value)}
-                rows={4}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialog(null)}>
+      <Dialog
+        open={dialog === 'duplicate'}
+        onClose={closeDialog}
+        title="Duplicate as new variant"
+        footer={
+          <>
+            <Button variant="quiet" onClick={closeDialog} disabled={busy}>
               Cancel
             </Button>
-            <Button onClick={duplicate} disabled={busy}>
+            <Button variant="quiet" onClick={duplicate} disabled={busy}>
               {busy ? 'Creating...' : 'Create duplicate'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <SelectField
+            label="Mode"
+            value={duplicateMode}
+            onChange={(e) => setDuplicateMode(e.target.value as typeof duplicateMode)}
+          >
+            <option value="same_producer">Same producer, new payload tweaks</option>
+            <option value="new_producer">Spin off as new producer</option>
+          </SelectField>
+          <TextAreaField
+            label={
+              duplicateMode === 'new_producer'
+                ? 'Describe the new producer you want'
+                : 'Describe the payload changes'
+            }
+            placeholder={
+              duplicateMode === 'new_producer'
+                ? 'e.g. Same as listing_reveal but for coming-soon listings with exterior-only photos.'
+                : 'e.g. Same video but for Sunriver instead of Bend. Change city filter and music bed.'
+            }
+            value={duplicatePayloadNotes}
+            onChange={(e) => setDuplicatePayloadNotes(e.target.value)}
+            rows={4}
+          />
+        </div>
       </Dialog>
     </>
   )

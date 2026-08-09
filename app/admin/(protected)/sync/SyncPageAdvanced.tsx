@@ -1,12 +1,21 @@
 'use client'
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
-import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+/**
+ * SyncPageAdvanced — disclosure housing the manual / override sync controls.
+ *
+ * 11F: taken off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — the open state, the
+ * children (SyncSmart, RefreshActivePendingButton, TriggerDeltaSyncButton,
+ * SyncSinceDateButton, SyncHistoryButtons), and every string are untouched.
+ *
+ * Collapsible/CollapsibleTrigger/CollapsibleContent are gone: the v2 barrel has
+ * no Collapsible primitive. Same pattern as ListingsCsvExport / ActionCard —
+ * React state + a quiet Button carrying aria-expanded/aria-controls, content
+ * rendered when open. Card shell → .av2-pane with var(--a-*) tokens.
+ */
+
+import { useId, useState } from 'react'
+import { Button } from '@/components/admin/v2'
 import SyncSmart from './SyncSmart'
 import SyncHistoryButtons from './SyncHistoryButtons'
 import TriggerDeltaSyncButton from './TriggerDeltaSyncButton'
@@ -26,18 +35,45 @@ export default function SyncPageAdvanced({
   sparkConfigured,
 }: Props) {
   const [open, setOpen] = useState(false)
+  const panelId = useId()
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen} className="rounded-lg border border-border bg-muted/30">
-      <CollapsibleTrigger asChild>
-        <Button variant="ghost" size="sm" className="w-full justify-between px-4 py-3 text-muted-foreground">
-          <span className="font-medium">Advanced / override</span>
-          <span className="text-xs">{open ? 'Hide' : 'Show'} manual sync controls</span>
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="border-t border-border px-4 pb-4 pt-2 space-y-4">
-          <p className="text-xs text-muted-foreground">
+    <div
+      className="av2-pane"
+      style={{
+        gap: 0,
+        background: 'var(--a-inset)',
+      }}
+    >
+      <Button
+        type="button"
+        variant="quiet"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+        className="w-full"
+        style={{
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          color: 'var(--a-text-2)',
+          fontWeight: 500,
+        }}
+      >
+        <span style={{ fontWeight: 600, color: 'var(--a-text)' }}>Advanced / override</span>
+        <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+          {open ? 'Hide' : 'Show'} manual sync controls
+        </span>
+      </Button>
+      {open ? (
+        <div
+          id={panelId}
+          className="space-y-4"
+          style={{
+            borderTop: '1px solid var(--a-border)',
+            padding: '8px 16px 16px',
+          }}
+        >
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: 0 }}>
             Use only to pause, resume, or run one-off sync chunks. Background sync runs automatically.
           </p>
           <div className="flex flex-wrap items-center gap-3">
@@ -50,7 +86,7 @@ export default function SyncPageAdvanced({
           <SyncSinceDateButton />
           <SyncHistoryButtons compact />
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      ) : null}
+    </div>
   )
 }

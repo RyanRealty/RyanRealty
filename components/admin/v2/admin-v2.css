@@ -33,6 +33,14 @@
 .av2-btn:hover:not(:disabled) { background:var(--a-accent-strong); }
 .av2-btn--quiet:hover:not(:disabled) { background:var(--a-inset); }
 .av2-btn--danger:hover:not(:disabled) { opacity:.9; }
+/* PRESSED state for a quiet button used as a tab/toggle. Callers were doing this
+   with an inline background, which outranks the :hover rule above and froze the
+   selected tab while every inactive sibling still responded — the strip read as
+   partially disabled. Owning it here keeps hover composable. */
+.av2-btn--quiet[aria-pressed="true"] { background:var(--a-accent-wash);
+  border-color:var(--a-accent); color:var(--a-accent); }
+.av2-btn--quiet[aria-pressed="true"]:hover:not(:disabled) { background:var(--a-accent-wash);
+  border-color:var(--a-accent-strong); color:var(--a-accent-strong); }
 /* Geometric press works for every variant without needing a darker token. */
 .av2-btn:active:not(:disabled) { transform:translateY(1px); }
 /* OPEN state for a button that owns a POPUP — gated on aria-haspopup, which is
@@ -66,6 +74,16 @@
   white-space:nowrap; cursor:pointer; }
 .av2-chip[aria-pressed="true"] { background:var(--a-accent-wash); border-color:var(--a-accent);
   color:var(--a-accent); font-weight:500; }
+/* Hover, missing for the same reason .av2-btn's was: the chip declared a
+   pressed state and a focus ring and nothing in between, so an UNPRESSED filter
+   pill was indistinguishable from inert text. Every control flattened onto
+   FilterChip had one — shadcn's ToggleGroupItem carried hover:bg-accent and the
+   hand-rolled sets carried hover:text-foreground. Pressed chips darken their
+   wash rather than swapping to the neutral fill, so the pressed state survives
+   the pointer. */
+.av2-chip:hover:not(:disabled) { background:var(--a-inset); color:var(--a-text); }
+.av2-chip[aria-pressed="true"]:hover:not(:disabled) { background:var(--a-accent-wash);
+  border-color:var(--a-accent-strong); color:var(--a-accent-strong); }
 .av2-chip:focus-visible { outline:none; box-shadow:var(--a-focus); }
 
 /* ---- QueueRow (pattern 1: phone-first stack, desktop single line) ---- */

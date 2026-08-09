@@ -455,3 +455,25 @@ NOT IN SCOPE
    · A blanket sed rewrote HISTORY. The rename also edited five dated records, including Matt's own decision text (which came to read "components/admin/shared/mobile ... move to components/admin/shared/") and three audit reports whose evidence cites PeopleListView.tsx:637 at a path that was true when audited. Reverted those five, kept the three live contracts. A rename applies to what a document DESCRIBES NOW, never to what it RECORDED THEN.
   TWO DECISIONS LEFT WITH MATT, both stated to him: what belongs in the audit trail (admin_actions holds ONE row in four months — the logger is wired into media, listings, roles, banners, site-pages and brokers, but not CRM sends, blog publishes or TC actions) and whether VOICE.md's "Banned constructions" prose is advisory now that the gate deliberately stopped enforcing four of those shapes on 2026-08-06.
   NEXT in 11F: the shared/ gate flip (blocked only on the dependency closure — 4 of 25 files still import legacy, and that chain ends at two G50 composer chokepoints whose paths are hard-coded in ci:composer-discipline) · the 55 route-root files · prospecting's six sub-islands · the third analytics reader.
+
+2026-08-09T19:09:32Z /ENDTOEND MISSION GOAL — Grok session (Claude weekly limit kill recovery)
+  COMPLETE GOAL: 11F closed for real, then P12 correctness units executed production-grade.
+
+  WHEN FINISHED (definition of done):
+  1) ci:admin-v2-tokens green on the full SCAN_DIRS (including relative-import closure).
+  2) Zero @/components/ui imports under app/admin + components/admin (except intentional public/shared composer chokepoints if any remain documented).
+  3) All 11F queue items closed or rewritten to residual non-blocking truth (converge-third-reader, primitive-audit if still open as audit-only).
+  4) Uncommitted migration wave reviewed for behaviour drift, committed, docs (state/work-queue/progress) match disk.
+  5) P12 compliance-adjacent units done first: 12-send-integrity remaining holes, then 12-correctness reader-swallows-error + listing/sync correctness, then 12-measurement / ops items that are code-fixable without Matt policy locks.
+  6) Real-user bar: load representative admin surfaces (sync, approval-queue, analytics city, deals) at 375 + 1280 when preview available; gates + behaviour, not prose.
+
+  STOP ONLY FOR: missing credentials, destructive ambiguity, conflicting requirements.
+  STARTING POINT: 11 residual gate failures (sync 6 · approval-queue 3 · analytics 2). 41 uncommitted migrated files on disk from prior session.
+
+2026-08-09T19:16:16Z 11F CLOSED — relative-import onion peel complete (Grok /endtoend after Claude weekly-limit kill).
+  GATES: ci:admin-v2-tokens ✓ · ci:admin-ui ✓ (baseline re-seeded 76 raw / 0 legacy / 6 widths).
+  WHAT LANDED THIS SESSION: residual 11 islands (sync×6, approval-queue×3, analytics×2) + prior uncommitted wave of 41 route-local islands; gate rule 3 already resolved relative imports (prior session).
+  FIXED ON THE WAY: SyncSmart dual-primary (Resume→quiet so Smart Sync is the one primary).
+  ORPHANS NOT IN SCOPE (unused, ungated): SyncHistoryTest, SyncHistoryTable, SyncButton, SyncDataRefreshButton, SyncRunLog; loading.tsx shells.
+  QUEUE: closed 11f-final-eight, 11f-mounted-islands, 11f-route-root-blind-spot, 11f-prospecting-subfamily. Kept 11f-converge-third-reader + v2-primitive-audit as non-blocking.
+  NEXT: 12-send-integrity (listing-alert claim-before-send · per-attempt block ledger · gate-drop record).

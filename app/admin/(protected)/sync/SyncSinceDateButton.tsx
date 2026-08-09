@@ -1,11 +1,19 @@
 'use client'
 
+/**
+ * SyncSinceDateButton — date-bounded delta sync on the advanced panel.
+ *
+ * 11F: taken off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — runDeltaSyncSince,
+ * date→ISO conversion, the loading latch, router.refresh() and every string
+ * are untouched. Input/Label/Button → SearchField (compact toolbar date) +
+ * plain label + v2 Button. Success/error map to var(--a-ok) / var(--a-danger).
+ */
+
 import { useState } from 'react'
 import { runDeltaSyncSince } from '@/app/actions/sync-full-cron'
 import { useRouter } from 'next/navigation'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { Button, SearchField } from '@/components/admin/v2'
 
 function toLocalDateString(d: Date): string {
   const y = d.getFullYear()
@@ -54,26 +62,26 @@ export default function SyncSinceDateButton() {
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-3">
-      <Label className="flex items-center gap-2 text-sm text-muted-foreground">
+      <label className="flex items-center gap-2" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
         <span>Sync changes since:</span>
-        <Input
+        <SearchField
           type="date"
+          aria-label="Sync changes since date"
           value={dateValue}
           onChange={(e) => setDateValue(e.target.value)}
           disabled={loading}
-          className="rounded border border-border px-2 py-1.5 text-sm disabled:opacity-50"
         />
-      </Label>
-      <Button
-        type="button"
-        onClick={handleClick}
-        disabled={loading}
-        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
-      >
+      </label>
+      <Button type="button" onClick={handleClick} disabled={loading}>
         {loading ? 'Syncing…' : 'Sync since this date'}
       </Button>
       {message && (
-        <span className={message.type === 'success' ? 'text-sm text-success' : 'text-sm text-destructive'}>
+        <span
+          style={{
+            fontSize: 'var(--a-text-sm)',
+            color: message.type === 'success' ? 'var(--a-ok)' : 'var(--a-danger)',
+          }}
+        >
           {message.text}
         </span>
       )}

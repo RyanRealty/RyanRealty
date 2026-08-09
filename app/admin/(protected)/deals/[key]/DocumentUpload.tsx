@@ -1,26 +1,28 @@
 'use client'
 
 // @no-parity — internal admin tool (TC deal document upload)
+//
+// 11F: off shadcn, onto the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only — createTcUploadUrl, the
+// signed-URL PUT with its exact headers, finalizeTcUpload, every busy caption
+// ('Preparing…', 'Uploading…', 'Filing…'), every error string and the reload
+// are carried over unchanged.
+//
+// ONE behaviour convergence, stated rather than hidden: the shadcn Cancel
+// button called setOpen(false) directly, which bypassed onOpenChange and so was
+// the ONE close path that did NOT reset the staged file — Esc, the backdrop and
+// the X all reset. The v2 Dialog routes every dismissal through onClose, so all
+// four now reset. That is the majority behaviour, and the alternative it
+// removes is a broker cancelling, reopening, and finding a document still
+// staged against a transaction folder.
+//
+// The file input's explicit id="tc-upload-file" is gone because TextField owns
+// the label/control pairing (useId + htmlFor); passing an id through would
+// override the input's generated id while the label kept pointing at the old
+// one, silently breaking the association. Verified first that nothing under
+// __tests__/ or scripts/ pins that id.
 import { useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button, Dialog, SelectField, TextField } from '@/components/admin/v2'
 import { createTcUploadUrl, finalizeTcUpload } from '@/app/actions/tc'
 
 const ACCEPT = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png'
@@ -47,6 +49,11 @@ export function DocumentUpload({
     setBusy(null)
     setError(null)
     if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const close = () => {
+    setOpen(false)
+    reset()
   }
 
   const upload = async () => {
@@ -97,73 +104,63 @@ export function DocumentUpload({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (!next) reset()
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          Upload document
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Upload a document</DialogTitle>
-          <DialogDescription>
-            PDF, JPG, or PNG up to 50 MB. The file lands on this cycle and in the audit trail.
-          </DialogDescription>
-        </DialogHeader>
-
+    <>
+      <Button variant="quiet" onClick={() => setOpen(true)}>
+        Upload document
+      </Button>
+      <Dialog
+        open={open}
+        onClose={close}
+        title="Upload a document"
+        description="PDF, JPG, or PNG up to 50 MB. The file lands on this cycle and in the audit trail."
+        footer={
+          <>
+            <Button variant="quiet" onClick={close} disabled={!!busy}>
+              Cancel
+            </Button>
+            <Button onClick={upload} disabled={!file || !!busy}>
+              {busy ?? 'Upload'}
+            </Button>
+          </>
+        }
+      >
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="tc-upload-file">File</Label>
-            <Input
-              ref={inputRef}
-              id="tc-upload-file"
-              type="file"
-              accept={ACCEPT}
-              className="cursor-pointer file:mr-3 file:text-sm"
-              onChange={(e) => {
-                setFile(e.target.files?.[0] ?? null)
-                setError(null)
-              }}
-            />
-          </div>
+          <TextField
+            ref={inputRef}
+            label="File"
+            type="file"
+            accept={ACCEPT}
+            // av2-input is restated on purpose: TextField spreads rest AFTER
+            // its own className, so passing only the file-button utilities
+            // would strip the control's entire skin. Every class here is
+            // non-colour.
+            className="av2-input cursor-pointer file:mr-3 file:text-sm"
+            onChange={(e) => {
+              setFile(e.target.files?.[0] ?? null)
+              setError(null)
+            }}
+          />
 
           {checklistItems.length > 0 ? (
-            <div className="space-y-1.5">
-              <Label>Checklist item (optional)</Label>
-              <Select value={itemId} onValueChange={setItemId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Not assigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not assigned</SelectItem>
-                  {checklistItems.map((it) => (
-                    <SelectItem key={it.id} value={it.id}>
-                      {it.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <SelectField
+              label="Checklist item (optional)"
+              value={itemId}
+              onChange={(e) => setItemId(e.target.value)}
+            >
+              <option value="none">Not assigned</option>
+              {checklistItems.map((it) => (
+                <option key={it.id} value={it.id}>
+                  {it.name}
+                </option>
+              ))}
+            </SelectField>
           ) : null}
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {error ? (
+            <p style={{ margin: 0, fontSize: 'var(--a-text-md)', color: 'var(--a-danger)' }}>{error}</p>
+          ) : null}
         </div>
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)} disabled={!!busy}>
-            Cancel
-          </Button>
-          <Button onClick={upload} disabled={!file || !!busy}>
-            {busy ?? 'Upload'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </Dialog>
+    </>
   )
 }

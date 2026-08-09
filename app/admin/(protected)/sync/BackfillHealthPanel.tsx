@@ -1,10 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
+import type { CSSProperties } from 'react'
+import { StateWord, type AdminState } from '@/components/admin/v2'
 
 type BackfillHealthPayload = {
   ok: boolean
@@ -80,15 +78,70 @@ type BackfillHealthPayload = {
 
 const POLL_MS = 15000
 
+/* ── admin v2 surface tokens (design_system/admin/ADMIN_UI.md) ──────────────
+   Declared once because this panel repeats the same label/figure pair fifteen
+   times, and because a surface painted with its own parent's token is
+   invisible: the page sits on --a-bg, this panel takes --a-surface, the card
+   NESTED inside it drops back to --a-bg + a hairline, and the notes take
+   --a-inset. Three levels, three fills, every boundary readable. */
+const panelStyle: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  color: 'var(--a-text)',
+  fontSize: 'var(--a-text-sm)',
+}
+const innerPanelStyle: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-bg)',
+  color: 'var(--a-text)',
+  fontSize: 'var(--a-text-sm)',
+}
+const titleStyle: CSSProperties = {
+  fontSize: 'var(--a-text-lg)',
+  fontWeight: 500,
+  color: 'var(--a-text)',
+}
+const noteStyle: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-md)',
+  background: 'var(--a-inset)',
+  padding: '8px 10px',
+  fontSize: 'var(--a-text-sm)',
+  color: 'var(--a-text)',
+}
+const dangerNoteStyle: CSSProperties = {
+  ...noteStyle,
+  borderColor: 'var(--a-danger)',
+  background: 'var(--a-danger-wash)',
+  color: 'var(--a-danger)',
+}
+const noteTitleStyle: CSSProperties = { fontWeight: 500 }
+const noteBodyStyle: CSSProperties = { color: 'var(--a-text-2)' }
+const dangerNoteBodyStyle: CSSProperties = { color: 'var(--a-danger)' }
+const labelStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
+const figureStyle: CSSProperties = {
+  fontFamily: 'var(--a-font-mono)',
+  fontSize: 'var(--a-text-sm)',
+  color: 'var(--a-text)',
+}
+const inlineFigureStyle: CSSProperties = {
+  fontFamily: 'var(--a-font-mono)',
+  color: 'var(--a-text)',
+}
+const quietBodyStyle: CSSProperties = { fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }
+const quietMetaStyle: CSSProperties = { fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }
+
 function formatNumber(value: number | null | undefined): string {
   if (typeof value !== 'number') return '—'
   return value.toLocaleString()
 }
 
-function toBadgeVariant(state: BackfillHealthPayload['status']['state']): 'default' | 'secondary' | 'destructive' {
-  if (state === 'running' || state === 'complete') return 'default'
-  if (state === 'stalled') return 'destructive'
-  return 'secondary'
+function toStateTone(state: BackfillHealthPayload['status']['state']): AdminState {
+  if (state === 'running' || state === 'complete') return 'ok'
+  if (state === 'stalled') return 'down'
+  return 'waiting'
 }
 
 function stateLabel(state: BackfillHealthPayload['status']['state']): string {
@@ -98,12 +151,12 @@ function stateLabel(state: BackfillHealthPayload['status']['state']): string {
   return 'Idle'
 }
 
-function strictCronBadgeVariant(
+function strictCronStateTone(
   status: NonNullable<BackfillHealthPayload['strictVerifyTelemetry']['health']>['status']
-): 'default' | 'secondary' | 'destructive' {
-  if (status === 'healthy') return 'default'
-  if (status === 'stalled' || status === 'degraded') return 'destructive'
-  return 'secondary'
+): AdminState {
+  if (status === 'healthy') return 'ok'
+  if (status === 'stalled' || status === 'degraded') return 'down'
+  return 'waiting'
 }
 
 function strictCronLabel(
@@ -237,50 +290,50 @@ export default function BackfillHealthPanel() {
   }, [strictActivity])
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Backfill health</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Alert>
-          <AlertTitle>Goal</AlertTitle>
-          <AlertDescription>
+    <section style={panelStyle}>
+      <div className="p-4">
+        <div style={titleStyle}>Backfill health</div>
+      </div>
+      <div className="space-y-4 p-4">
+        <div role="alert" style={noteStyle}>
+          <div style={noteTitleStyle}>Goal</div>
+          <div style={noteBodyStyle}>
             Two lanes run together: fresh sync keeps current listings updated, and historical backfill processes newest year first then moves down through older years until terminal listings are finalized with complete Spark history.
-          </AlertDescription>
-        </Alert>
+          </div>
+        </div>
 
         {payload && strictActivity && (
-          <Card>
-            <CardHeader className="space-y-1 pb-2">
+          <section style={innerPanelStyle}>
+            <div className="space-y-1 p-4 pb-2">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle>Strict verification</CardTitle>
-                <Badge variant={strictMakingProgress ? 'default' : 'secondary'}>
+                <div style={titleStyle}>Strict verification</div>
+                <StateWord state={strictMakingProgress ? 'accent' : 'waiting'}>
                   {strictMakingProgress ? 'Moving' : 'Flat'}
-                </Badge>
+                </StateWord>
                 {payload.strictVerifyTelemetry.health && (
-                  <Badge variant={strictCronBadgeVariant(payload.strictVerifyTelemetry.health.status)}>
+                  <StateWord state={strictCronStateTone(payload.strictVerifyTelemetry.health.status)}>
                     {strictCronLabel(payload.strictVerifyTelemetry.health.status)}
-                  </Badge>
+                  </StateWord>
                 )}
               </div>
-              <p className="text-sm font-normal text-muted-foreground">
-                Cron <span className="font-mono text-foreground">sync-verify-full-history</span> raises strict verified
+              <p style={{ fontSize: 'var(--a-text-sm)', fontWeight: 400, color: 'var(--a-text-2)' }}>
+                Cron <span style={inlineFigureStyle}>sync-verify-full-history</span> raises strict verified
                 counts for terminal listings. This page refreshes every {POLL_MS / 1000} seconds so you can see numbers
                 change.
               </p>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
+            </div>
+            <div className="space-y-3 p-4 pt-0">
               {!payload.strictVerifyTelemetry.tableReady && (
-                <Alert variant="destructive">
-                  <AlertTitle>Strict verify telemetry missing</AlertTitle>
-                  <AlertDescription>
+                <div role="alert" style={dangerNoteStyle}>
+                  <div style={noteTitleStyle}>Strict verify telemetry missing</div>
+                  <div style={dangerNoteBodyStyle}>
                     {payload.strictVerifyTelemetry.tableError ?? 'Could not read strict_verify_runs.'}{' '}
                     {payload.strictVerifyTelemetry.etaNote}
-                  </AlertDescription>
-                </Alert>
+                  </div>
+                </div>
               )}
               {payload.strictVerifyTelemetry.tableReady && payload.strictVerifyTelemetry.health && (
-                <p className="text-sm text-muted-foreground">
+                <p style={quietBodyStyle}>
                   {payload.strictVerifyTelemetry.health.summary}
                   {payload.strictVerifyTelemetry.health.minutesSinceLastRun != null
                     ? ` Last logged run about ${Math.round(payload.strictVerifyTelemetry.health.minutesSinceLastRun)} min ago.`
@@ -292,29 +345,29 @@ export default function BackfillHealthPanel() {
               )}
               {payload.strictVerifyTelemetry.tableReady &&
                 payload.strictVerifyTelemetry.etaMinutesRough != null && (
-                  <p className="text-xs text-muted-foreground">
+                  <p style={quietMetaStyle}>
                     Rough ETA to clear terminal strict queue about {payload.strictVerifyTelemetry.etaMinutesRough} min.{' '}
                     {payload.strictVerifyTelemetry.etaNote}
                   </p>
                 )}
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Terminal strict queue</p>
-                  <p className="font-mono text-sm text-foreground">
+                  <p style={labelStyle}>Terminal strict queue</p>
+                  <p style={figureStyle}>
                     {formatNumber(
                       payload.totals.terminalStrictVerifyBacklogListings ?? payload.totals.finalizedUnverifiedListings
                     )}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Strict verified (all listings)</p>
-                  <p className="font-mono text-sm text-foreground">
+                  <p style={labelStyle}>Strict verified (all listings)</p>
+                  <p style={figureStyle}>
                     {formatNumber(payload.totals.verifiedFullHistoryListings)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Last refresh delta</p>
-                  <p className="font-mono text-sm text-foreground">
+                  <p style={labelStyle}>Last refresh delta</p>
+                  <p style={figureStyle}>
                     {strictActivity.lastPoll == null
                       ? '—'
                       : strictActivity.lastPoll.verified === 0 &&
@@ -327,122 +380,122 @@ export default function BackfillHealthPanel() {
                   </p>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p style={quietMetaStyle}>
                 Since this page loaded:{' '}
-                <span className="font-mono text-foreground">
+                <span style={inlineFigureStyle}>
                   {strictActivity.sinceLoad.verified >= 0 ? '+' : ''}
                   {strictActivity.sinceLoad.verified.toLocaleString()} verified
                 </span>
                 , terminal queue{' '}
-                <span className="font-mono text-foreground">
+                <span style={inlineFigureStyle}>
                   {strictActivity.sinceLoad.backlogTerminal >= 0 ? '−' : '+'}
                   {Math.abs(strictActivity.sinceLoad.backlogTerminal).toLocaleString()}
                 </span>
                 . If deltas stay flat for several minutes while the queue is large, check Vercel cron logs for 504 or 401
                 on that path.
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
         )}
 
         {rateLimitMessage && (
-          <Alert>
-            <AlertTitle>Dashboard request rate limit</AlertTitle>
-            <AlertDescription>{rateLimitMessage}</AlertDescription>
-          </Alert>
+          <div role="alert" style={noteStyle}>
+            <div style={noteTitleStyle}>Dashboard request rate limit</div>
+            <div style={noteBodyStyle}>{rateLimitMessage}</div>
+          </div>
         )}
 
         {error && (
-          <Alert variant="destructive">
-            <AlertTitle>Health check unavailable</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div role="alert" style={dangerNoteStyle}>
+            <div style={noteTitleStyle}>Health check unavailable</div>
+            <div style={dangerNoteBodyStyle}>{error}</div>
+          </div>
         )}
 
         {!error && !payload && (
-          <p className="text-sm text-muted-foreground">Loading live backfill health...</p>
+          <p style={quietBodyStyle}>Loading live backfill health...</p>
         )}
 
         {payload && (
           <>
             <div className="flex items-center gap-3">
-              <Badge variant={toBadgeVariant(payload.status.state)}>{stateLabel(payload.status.state)}</Badge>
-              <p className="text-sm text-muted-foreground">
+              <StateWord state={toStateTone(payload.status.state)}>{stateLabel(payload.status.state)}</StateWord>
+              <p style={quietBodyStyle}>
                 Last check {new Date(payload.checkedAt).toLocaleString()}
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <p className="text-xs text-muted-foreground">Still needs finalization</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.totals.terminalRemainingListings)}</p>
+                <p style={labelStyle}>Still needs finalization</p>
+                <p style={figureStyle}>{formatNumber(payload.totals.terminalRemainingListings)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">History finalized</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.totals.finalizedTerminalListings)}</p>
+                <p style={labelStyle}>History finalized</p>
+                <p style={figureStyle}>{formatNumber(payload.totals.finalizedTerminalListings)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Strict verified full history</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.totals.verifiedFullHistoryListings)}</p>
+                <p style={labelStyle}>Strict verified full history</p>
+                <p style={figureStyle}>{formatNumber(payload.totals.verifiedFullHistoryListings)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Legacy year cursor (lane removed)</p>
-                <p className="font-mono text-sm text-foreground">
+                <p style={labelStyle}>Legacy year cursor (lane removed)</p>
+                <p style={figureStyle}>
                   {payload.yearCursor.currentYear ?? '—'} {payload.yearCursor.nextHistoryOffset ?? 0}/{payload.yearCursor.totalListings ?? '—'}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Last sync heartbeat</p>
-                <p className="font-mono text-sm text-foreground">
+                <p style={labelStyle}>Last sync heartbeat</p>
+                <p style={figureStyle}>
                   {payload.cursor.minutesSinceUpdate != null ? `${Math.round(payload.cursor.minutesSinceUpdate)} min ago` : '—'}
                 </p>
               </div>
             </div>
 
             {progressSummary && (
-              <p className="text-sm text-muted-foreground">
+              <p style={quietBodyStyle}>
                 Finalization progress: {progressSummary.pct}% ({formatNumber(payload.totals.finalizedTerminalListings)} of {formatNumber(progressSummary.total)} terminal listings).
               </p>
             )}
 
-            <Separator />
+            <div aria-hidden="true" style={{ height: 1, width: '100%', background: 'var(--a-border)' }} />
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <p className="text-xs text-muted-foreground">Photos synced rows</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.listingPhotosRows)}</p>
+                <p style={labelStyle}>Photos synced rows</p>
+                <p style={figureStyle}>{formatNumber(payload.mediaCoverage.listingPhotosRows)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Videos synced rows</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.listingVideosRows)}</p>
+                <p style={labelStyle}>Videos synced rows</p>
+                <p style={figureStyle}>{formatNumber(payload.mediaCoverage.listingVideosRows)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Agents synced rows</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.listingAgentsRows)}</p>
+                <p style={labelStyle}>Agents synced rows</p>
+                <p style={figureStyle}>{formatNumber(payload.mediaCoverage.listingAgentsRows)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Open houses synced rows</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.openHousesRows)}</p>
+                <p style={labelStyle}>Open houses synced rows</p>
+                <p style={figureStyle}>{formatNumber(payload.mediaCoverage.openHousesRows)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Status history rows</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.statusHistoryRows)}</p>
+                <p style={labelStyle}>Status history rows</p>
+                <p style={figureStyle}>{formatNumber(payload.mediaCoverage.statusHistoryRows)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Price history rows</p>
-                <p className="font-mono text-sm text-foreground">{formatNumber(payload.mediaCoverage.priceHistoryRows)}</p>
+                <p style={labelStyle}>Price history rows</p>
+                <p style={figureStyle}>{formatNumber(payload.mediaCoverage.priceHistoryRows)}</p>
               </div>
             </div>
 
             {warningMessages.length > 0 && (
-              <Alert>
-                <AlertTitle>Attention needed</AlertTitle>
-                <AlertDescription>{warningMessages.join(' ')}</AlertDescription>
-              </Alert>
+              <div role="alert" style={noteStyle}>
+                <div style={noteTitleStyle}>Attention needed</div>
+                <div style={noteBodyStyle}>{warningMessages.join(' ')}</div>
+              </div>
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   )
 }

@@ -1,6 +1,47 @@
 'use client'
 
+// @no-parity — internal admin surface, no public mockup contract
+//
+// 11F: taken off raw markup and onto the LOCKED admin v2 language
+// (design_system/admin/ADMIN_UI.md). Presentation only — groupFilesByFolder and
+// both of its path shapes, the SKIP_FOLDERS filter, the PHOTO_EXT/VIDEO_EXT
+// sets, the getAreaGuideEntityMapping call, the per-folder FormData contract
+// (`file:<relativePath>`, entityType/entitySlug/entityName/entityId), the
+// sequential upload loop with its early return on the first failure, the
+// `e.target.value = ''` reset and every user-visible string are untouched.
+//
+// Substitutions, and why each one:
+//   raw <h2>           -> SectionHead, which owns the heading element.
+//   raw file <input>   -> TextField, the one v2 field that forwards a ref (the
+//                         picker is driven by inputRef.current.click()). It
+//                         keeps the original's sr-only + aria-hidden wrapper, so
+//                         the control is exactly as hidden as it was.
+//   hand-rolled modal  -> the v2 Dialog, which drives the platform <dialog>:
+//                         focus trap, Esc and top-layer stacking come from the
+//                         browser. Esc is gated on `uploading` so it cannot
+//                         dismiss mid-upload, which the old div could not be.
+//   raw <table>        -> ReportGrid, the admin's one tabular reader, so the
+//                         mapping scrolls inside its own box and reads as rows
+//                         at 375px.
+//   raw <button> x3    -> the v2 Button. ONE primary per file (ci:admin-ui rule
+//                         C): the dialog's "Upload all" keeps it, because it is
+//                         the action that writes; the picker trigger goes quiet.
+//
+// Surface stack, checked both ways in design_system/admin/tokens.css: the intro
+// section is --a-bg behind a hairline (it was bg-muted holding bg-muted <code>
+// chips — a token painted onto its own parent, so the chips were invisible), and
+// the <code> chips are now --a-inset against it.
+
 import { useRef, useState } from 'react'
+import {
+  Button,
+  Dialog,
+  ReportGrid,
+  SectionHead,
+  TextField,
+  type ReportColumn,
+  type ReportGridRow,
+} from '@/components/admin/v2'
 import {
   getAreaGuideEntityMapping,
   uploadAreaGuideFolder,
@@ -14,6 +55,17 @@ const VIDEO_EXT = new Set(['.mp4', '.mov', '.avi', '.webm', '.mkv'])
 
 /** Top-level folder names that are media containers; the next segment is the place name. */
 const MEDIA_CONTAINER_NAMES = new Set(['photos', 'videos', 'Photos', 'Videos', 'photo', 'video', 'Photo', 'Video'])
+
+const MAPPING_COLUMNS: ReportColumn[] = [
+  { key: 'folder', label: 'Folder' },
+  { key: 'type', label: 'Type' },
+  { key: 'matched', label: 'Matched to' },
+  { key: 'status', label: 'Status' },
+  { key: 'photos', label: 'Photos', numeric: true },
+  { key: 'videos', label: 'Videos', numeric: true },
+]
+
+const CODE_STYLE = { background: 'var(--a-inset)', padding: '0 4px' } as const
 
 function isPhoto(name: string): boolean {
   return PHOTO_EXT.has(name.slice(name.lastIndexOf('.')).toLowerCase())
@@ -132,98 +184,99 @@ export default function AreaGuideUploadClient() {
     setDialogOpen(false)
   }
 
+  /** Cancel — and the dialog's own Esc / outside-click path. Inert while a
+   *  batch is in flight, which is what the old hand-rolled div enforced by
+   *  disabling its only close button. */
+  function closeMapping() {
+    if (uploading) return
+    setDialogOpen(false)
+    setMapping(null)
+    setFolderFiles(new Map())
+  }
+
   const typeLabel = (t: AreaGuideEntityType) => (t === 'city' ? 'City' : t === 'neighborhood' ? 'Neighborhood' : 'Subdivision')
+
+  const mappingRows: ReportGridRow[] = (mapping ?? []).map((row) => ({
+    key: row.folderName,
+    cells: [
+      row.folderName,
+      typeLabel(row.entityType),
+      row.entityName,
+      row.status === 'matched' ? 'Matched' : 'Will create',
+      row.photoCount,
+      row.videoCount,
+    ],
+  }))
 
   return (
     <div className="mt-8">
-      <section className="rounded-lg border border-border bg-muted p-4">
-        <h2 className="font-semibold text-foreground">Area Guide media upload</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <section
+        style={{
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          padding: 'var(--a-s4)',
+        }}
+      >
+        <SectionHead>Area Guide media upload</SectionHead>
+        <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '4px 0 0' }}>
           Select the root folder (e.g. Area Guides). The system will browse inside and find every place by name.
-          Supports any structure: place folders with files at root, or nested <code className="rounded bg-muted px-1">photos/</code> / <code className="rounded bg-muted px-1">videos/</code> folders, or top-level <code className="rounded bg-muted px-1">photos/PlaceName/</code> and <code className="rounded bg-muted px-1">videos/PlaceName/</code>. Each place is mapped to the correct city, neighborhood, or subdivision.
+          Supports any structure: place folders with files at root, or nested <code className="rounded" style={CODE_STYLE}>photos/</code> / <code className="rounded" style={CODE_STYLE}>videos/</code> folders, or top-level <code className="rounded" style={CODE_STYLE}>photos/PlaceName/</code> and <code className="rounded" style={CODE_STYLE}>videos/PlaceName/</code>. Each place is mapped to the correct city, neighborhood, or subdivision.
         </p>
-        <input
-          ref={inputRef}
-          type="file"
-          // @ts-expect-error webkitdirectory is non-standard but supported in Chrome/Edge/Safari
-          webkitdirectory=""
-          multiple
-          className="sr-only"
-          aria-hidden
-          onChange={handleDirectoryChange}
-        />
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="mt-3 rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
+        <div className="sr-only" aria-hidden>
+          <TextField
+            ref={inputRef}
+            label="Area Guides folder"
+            type="file"
+            // @ts-expect-error webkitdirectory is non-standard but supported in Chrome/Edge/Safari
+            webkitdirectory=""
+            multiple
+            onChange={handleDirectoryChange}
+          />
+        </div>
+        <Button variant="quiet" className="mt-3" onClick={() => inputRef.current?.click()}>
           Select Area Guides folder…
-        </button>
-        {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
-        {success && <p className="mt-2 text-sm text-green-600">{success}</p>}
+        </Button>
+        {error && (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-danger)', margin: '8px 0 0' }}>{error}</p>
+        )}
+        {success && (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-ok)', margin: '8px 0 0' }}>{success}</p>
+        )}
       </section>
 
-      {dialogOpen && mapping && mapping.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4" role="dialog" aria-modal aria-labelledby="area-guide-dialog-title">
-          <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-lg border border-border bg-background p-6 shadow-lg">
-            <h2 id="area-guide-dialog-title" className="text-lg font-semibold text-foreground">
-              Confirm folder mapping
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Each subfolder is classified as City, Neighborhood, or Subdivision. Matched = existing record; Create = new record will be created.
-            </p>
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="pb-2 pr-4 font-medium">Folder</th>
-                    <th className="pb-2 pr-4 font-medium">Type</th>
-                    <th className="pb-2 pr-4 font-medium">Matched to</th>
-                    <th className="pb-2 pr-4 font-medium">Status</th>
-                    <th className="pb-2 pr-4 font-medium">Photos</th>
-                    <th className="pb-2 font-medium">Videos</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mapping.map((row) => (
-                    <tr key={row.folderName} className="border-b border-border/70">
-                      <td className="py-2 pr-4 font-medium">{row.folderName}</td>
-                      <td className="py-2 pr-4">{typeLabel(row.entityType)}</td>
-                      <td className="py-2 pr-4">{row.entityName}</td>
-                      <td className="py-2 pr-4">{row.status === 'matched' ? 'Matched' : 'Will create'}</td>
-                      <td className="py-2 pr-4">{row.photoCount}</td>
-                      <td className="py-2">{row.videoCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={handleUploadAll}
-                disabled={uploading}
-                className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-              >
-                {uploading ? 'Uploading…' : 'Upload all'}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setDialogOpen(false); setMapping(null); setFolderFiles(new Map()) }}
-                disabled={uploading}
-                className="rounded border border-border px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </div>
-            {uploadProgress && (
-              <p className="mt-3 text-sm text-muted-foreground">
-                Uploading {uploadProgress.current}… ({uploadProgress.done}/{uploadProgress.total})
-              </p>
-            )}
-          </div>
+      <Dialog
+        open={dialogOpen && mapping != null && mapping.length > 0}
+        onClose={closeMapping}
+        title="Confirm folder mapping"
+        description="Each subfolder is classified as City, Neighborhood, or Subdivision. Matched = existing record; Create = new record will be created."
+        size="work"
+        footer={
+          <>
+            <Button variant="quiet" onClick={closeMapping} disabled={uploading}>
+              Cancel
+            </Button>
+            <Button onClick={handleUploadAll} disabled={uploading}>
+              {uploading ? 'Uploading…' : 'Upload all'}
+            </Button>
+          </>
+        }
+      >
+        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          <ReportGrid
+            label="Folder mapping"
+            columns={MAPPING_COLUMNS}
+            template="minmax(140px, 1.2fr) minmax(112px, 0.8fr) minmax(160px, 1.4fr) minmax(96px, 0.8fr) minmax(72px, 0.5fr) minmax(72px, 0.5fr)"
+            minWidth={700}
+            rows={mappingRows}
+            empty={<>No folder came back from the scan.</>}
+          />
         </div>
-      )}
+        {uploadProgress && (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
+            Uploading {uploadProgress.current}… ({uploadProgress.done}/{uploadProgress.total})
+          </p>
+        )}
+      </Dialog>
     </div>
   )
 }

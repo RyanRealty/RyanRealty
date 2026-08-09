@@ -1,7 +1,18 @@
 'use client'
 
+/**
+ * TriggerDeltaSyncButton — one-shot "Run ingest now" on the sync advanced panel.
+ *
+ * 11F: taken off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — the POST to
+ * /api/admin/sync/delta, the loading latch, the success/error message shape and
+ * every string are untouched. The shadcn success-green Button becomes the v2
+ * primary Button (color is reserved for status, not chrome); message colours
+ * map to var(--a-ok) / var(--a-danger).
+ */
+
 import { useState } from 'react'
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/admin/v2'
 
 export default function TriggerDeltaSyncButton() {
   const [loading, setLoading] = useState(false)
@@ -27,16 +38,16 @@ export default function TriggerDeltaSyncButton() {
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-3">
-      <Button
-        type="button"
-        onClick={handleClick}
-        disabled={loading}
-        className="rounded-lg bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success/85 disabled:opacity-50"
-      >
+      <Button type="button" onClick={handleClick} disabled={loading}>
         {loading ? 'Starting…' : 'Run ingest now'}
       </Button>
       {message && (
-        <span className={message.type === 'success' ? 'text-sm text-success' : 'text-sm text-destructive'}>
+        <span
+          style={{
+            fontSize: 'var(--a-text-sm)',
+            color: message.type === 'success' ? 'var(--a-ok)' : 'var(--a-danger)',
+          }}
+        >
           {message.text}
         </span>
       )}

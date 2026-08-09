@@ -1,14 +1,62 @@
 'use client'
 
+/**
+ * SyncHistoryButtons — listing history backfill controls on /admin/sync.
+ *
+ * 11F residual: taken off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — run loop, year
+ * scoping, abort, compact mode, and all props stay.
+ */
+
 import { useState, useRef, useEffect } from 'react'
+import type { CSSProperties } from 'react'
 import { syncListingHistory } from '@/app/actions/sync-spark'
 import type { SyncHistoryResult } from '@/app/actions/sync-spark'
 import { useRouter } from 'next/navigation'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button, TextField } from '@/components/admin/v2'
 
 const BATCH_LIMIT = 50
+
+const panelStyle: CSSProperties = {
+  border: '1px solid var(--a-border)',
+  borderRadius: 'var(--a-r-lg)',
+  background: 'var(--a-surface)',
+  color: 'var(--a-text)',
+  fontSize: 'var(--a-text-sm)',
+}
+const titleStyle: CSSProperties = {
+  fontSize: 'var(--a-text-lg)',
+  fontWeight: 500,
+  color: 'var(--a-text)',
+}
+const quietBodyStyle: CSSProperties = {
+  fontSize: 'var(--a-text-sm)',
+  color: 'var(--a-text-2)',
+}
+const quietMetaStyle: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  color: 'var(--a-text-2)',
+}
+const statCellStyle: CSSProperties = {
+  borderRadius: 'var(--a-r-md)',
+  background: 'var(--a-inset)',
+  padding: 8,
+}
+const labelStyle: CSSProperties = {
+  fontSize: 'var(--a-text-xs)',
+  fontWeight: 500,
+  color: 'var(--a-text-2)',
+}
+const figureStyle: CSSProperties = {
+  fontFamily: 'var(--a-font-mono)',
+  fontSize: 'var(--a-text-sm)',
+  fontWeight: 600,
+  color: 'var(--a-text)',
+}
+const dangerTextStyle: CSSProperties = {
+  fontSize: 'var(--a-text-sm)',
+  color: 'var(--a-danger)',
+}
 
 function formatElapsed(ms: number): string {
   const s = Math.floor(ms / 1000)
@@ -104,11 +152,14 @@ export default function SyncHistoryButtons({ compact = false }: Props) {
   }
 
   return (
-    <div className={compact ? 'flex flex-wrap items-center gap-3' : 'mt-6 rounded-lg border border-border bg-card p-6 shadow-sm'}>
+    <div
+      className={compact ? 'flex flex-wrap items-center gap-3' : 'mt-6 p-6'}
+      style={compact ? undefined : panelStyle}
+    >
       {!compact && (
         <>
-          <h2 className="text-lg font-semibold text-foreground">Listing history sync</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 style={titleStyle}>Listing history sync</h2>
+          <p className="mt-1" style={quietBodyStyle}>
             Backfill price/status history from Spark. Active & pending runs first; backfill closed/expired/withdrawn/canceled when you have time.
           </p>
         </>
@@ -118,23 +169,22 @@ export default function SyncHistoryButtons({ compact = false }: Props) {
           type="button"
           onClick={() => runLoop(true)}
           disabled={running !== null}
-          className="rounded-lg bg-success px-4 py-2.5 text-sm font-medium text-success-foreground hover:bg-success/75 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {running === 'active' ? 'Running…' : 'Run all active listing histories'}
         </Button>
         <Button
           type="button"
+          variant="quiet"
           onClick={() => runLoop(false)}
           disabled={running !== null}
-          className="rounded-lg border-2 border-border bg-muted px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           {running === 'closed' ? 'Running…' : 'Backfill closed / expired / withdrawn / canceled'}
         </Button>
         {running !== null && (
           <Button
             type="button"
+            variant="danger"
             onClick={handleStop}
-            className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/15"
           >
             Stop
           </Button>
@@ -142,63 +192,55 @@ export default function SyncHistoryButtons({ compact = false }: Props) {
       </div>
       {(running === null || running === 'closed') && (
         <div className={compact ? 'w-full grid grid-cols-1 sm:grid-cols-2 gap-2' : 'mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3'}>
-          <div>
-            <Label htmlFor="terminal-from-year" className="text-xs text-muted-foreground">From year</Label>
-            <Input
-              id="terminal-from-year"
-              type="number"
-              placeholder="e.g. 2020"
-              value={fromYear}
-              onChange={(e) => setFromYear(e.target.value)}
-              disabled={running !== null}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="terminal-to-year" className="text-xs text-muted-foreground">To year</Label>
-            <Input
-              id="terminal-to-year"
-              type="number"
-              placeholder="e.g. 2025"
-              value={toYear}
-              onChange={(e) => setToYear(e.target.value)}
-              disabled={running !== null}
-              className="mt-1"
-            />
-          </div>
+          <TextField
+            label="From year"
+            type="number"
+            placeholder="e.g. 2020"
+            value={fromYear}
+            onChange={(e) => setFromYear(e.target.value)}
+            disabled={running !== null}
+          />
+          <TextField
+            label="To year"
+            type="number"
+            placeholder="e.g. 2025"
+            value={toYear}
+            onChange={(e) => setToYear(e.target.value)}
+            disabled={running !== null}
+          />
         </div>
       )}
       {!compact && (
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2" style={quietMetaStyle}>
           <strong>Active & pending:</strong> only listings that are active or pending. <strong>Backfill closed:</strong> includes closed, expired, withdrawn, and canceled listings. If you set years, terminal backfill is scoped to that year range.
         </p>
       )}
       {running !== null && (
         <div className="mt-4 grid gap-2 sm:grid-cols-4">
-          <div className="rounded-lg bg-muted p-2">
-            <p className="text-xs font-medium text-muted-foreground">Elapsed</p>
-            <p className="font-mono text-sm font-semibold text-foreground">{formatElapsed(elapsedMs)}</p>
+          <div style={statCellStyle}>
+            <p style={labelStyle}>Elapsed</p>
+            <p style={figureStyle}>{formatElapsed(elapsedMs)}</p>
           </div>
-          <div className="rounded-lg bg-muted p-2">
-            <p className="text-xs font-medium text-muted-foreground">Listings processed</p>
-            <p className="font-mono text-sm font-semibold text-foreground">{listingsProcessed.toLocaleString()}</p>
+          <div style={statCellStyle}>
+            <p style={labelStyle}>Listings processed</p>
+            <p style={figureStyle}>{listingsProcessed.toLocaleString()}</p>
           </div>
-          <div className="rounded-lg bg-muted p-2">
-            <p className="text-xs font-medium text-muted-foreground">History rows stored</p>
-            <p className="font-mono text-sm font-semibold text-foreground">{historyRowsUpserted.toLocaleString()}</p>
+          <div style={statCellStyle}>
+            <p style={labelStyle}>History rows stored</p>
+            <p style={figureStyle}>{historyRowsUpserted.toLocaleString()}</p>
           </div>
           {totalListings != null && (
-            <div className="rounded-lg bg-muted p-2">
-              <p className="text-xs font-medium text-muted-foreground">Total in scope</p>
-              <p className="font-mono text-sm font-semibold text-foreground">{totalListings.toLocaleString()}</p>
+            <div style={statCellStyle}>
+              <p style={labelStyle}>Total in scope</p>
+              <p style={figureStyle}>{totalListings.toLocaleString()}</p>
             </div>
           )}
         </div>
       )}
       {message && (
-        <p className={`mt-3 text-sm ${error ? 'text-destructive' : 'text-muted-foreground'}`}>{message}</p>
+        <p className="mt-3" style={error ? dangerTextStyle : quietBodyStyle}>{message}</p>
       )}
-      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
+      {error && <p className="mt-1" style={dangerTextStyle}>{error}</p>}
     </div>
   )
 }

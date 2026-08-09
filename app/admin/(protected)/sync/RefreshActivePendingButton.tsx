@@ -1,10 +1,22 @@
 'use client'
 
+/**
+ * RefreshActivePendingButton — chunked active+pending refresh on the advanced panel.
+ *
+ * 11F: taken off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — startRefreshActivePending,
+ * runOneSyncChunk, getSyncStatus, setSyncAbortRequested, the stop ref, the
+ * chunk delay, router.refresh(), the "running elsewhere" latch and every string
+ * are untouched. Primary action stays the default Button; Stop maps to
+ * variant="danger" (the v2 solid for abort/destructive). Message/progress
+ * colours map to var(--a-ok) / var(--a-danger) / var(--a-text-2).
+ */
+
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { startRefreshActivePending, runOneSyncChunk, getSyncStatus, setSyncAbortRequested } from '@/app/actions/sync-full-cron'
 import type { SyncCursor } from '@/app/actions/sync-full-cron'
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/admin/v2'
 
 const CHUNK_DELAY_MS = 200
 
@@ -98,33 +110,30 @@ export default function RefreshActivePendingButton({ runInProgress = false, sync
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          onClick={handleClick}
-          disabled={buttonDisabled}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary disabled:opacity-50"
-        >
+        <Button type="button" onClick={handleClick} disabled={buttonDisabled}>
           {loading ? 'Refreshing…' : refreshRunningElsewhere ? 'Refresh in progress' : 'Refresh active & pending'}
         </Button>
         {loading && (
-          <Button
-            type="button"
-            onClick={handleStop}
-            disabled={stopPending}
-            className="rounded-lg border-2 border-destructive bg-destructive/10 px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/15 disabled:opacity-50"
-          >
+          <Button type="button" variant="danger" onClick={handleStop} disabled={stopPending}>
             {stopPending ? 'Stopping…' : 'Stop'}
           </Button>
         )}
         {refreshRunningElsewhere && (
-          <span className="text-xs text-muted-foreground">Use Pause/Stop above to cancel.</span>
+          <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}>
+            Use Pause/Stop above to cancel.
+          </span>
         )}
         {progress && loading && (
-          <span className="text-sm text-muted-foreground">{progress}</span>
+          <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>{progress}</span>
         )}
       </div>
       {message && (
-        <span className={message.type === 'success' ? 'text-sm text-success' : 'text-sm text-destructive'}>
+        <span
+          style={{
+            fontSize: 'var(--a-text-sm)',
+            color: message.type === 'success' ? 'var(--a-ok)' : 'var(--a-danger)',
+          }}
+        >
           {message.text}
         </span>
       )}

@@ -1,26 +1,49 @@
 'use client'
 
+/**
+ * PhotoCurationBoard — the /admin/media/photos curation gallery.
+ *
+ * 11F: taken off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — curateAssets, the
+ * selection set, the URL-param navigation (href/go), the page arithmetic, the
+ * Supabase render-endpoint thumb() fallback and every user-visible string are
+ * untouched.
+ *
+ * Substitutions, and why each one:
+ *   ToggleGroup / geo pills -> FilterChip. These ARE filters, and FilterChip is
+ *                        the language's one pill: it owns aria-pressed, the
+ *                        pressed wash and the focus ring, so none of that has
+ *                        to be hand-rolled inline.
+ *   Select (phone geo)  -> ToolbarSelect (the compact native control).
+ *   Badge (approval)    -> StateWord — an artifact STATE, which is what
+ *                        .av2-state is for. The geo tags stay .av2-chip: they
+ *                        are DATA and .av2-state uppercases.
+ *   Pagination          -> the same prev/label/next shape built from Link, so
+ *                        middle-click and open-in-new-tab keep working; the
+ *                        onClick still preventDefaults into go(), unchanged.
+ *   Skeleton            -> a local Shimmer on --a-inset that keeps animate-pulse
+ *                        (a non-colour utility), so the loading motion survives.
+ *   h1                  -> EntityTitle, the language's only sanctioned h1.
+ *
+ * Surface stack, checked both ways in design_system/admin/tokens.css so nothing
+ * is painted onto its own parent: cards and the sticky bar are --a-bg with a
+ * hairline, media wells are --a-inset, chips and quiet buttons are --a-surface.
+ * hover:shadow-md stays on the card — it is the only hover that card has, and
+ * dropping it would be a lost affordance rather than a migrated one.
+ */
+
 import { useState, useTransition, useCallback } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
+  Button,
+  EntityTitle,
+  FilterChip,
+  StateWord,
+  ToolbarSelect,
+  type AdminState,
+} from '@/components/admin/v2'
 import { cn } from '@/lib/utils'
 import { curateAssets, type CurationPatch } from '@/app/actions/asset-curation'
 
@@ -59,6 +82,13 @@ const GEO_FILTERS = [
 
 const ALL_GEOS = '__all__'
 
+/** approval -> the language's state vocabulary (text + colour, never colour alone). */
+function approvalState(approval: string): AdminState {
+  if (approval === 'approved') return 'ok'
+  if (approval === 'rejected') return 'down'
+  return 'waiting'
+}
+
 // Supabase image transform for a light thumbnail; falls back to the raw object
 // URL via onError if the render endpoint isn't enabled on the project.
 function thumb(url: string): string {
@@ -69,6 +99,36 @@ function fileName(notes: string | null): string {
   if (!notes) return ''
   const m = notes.match(/\(([^)]+\.(?:mp4|mov|webm|m4v|jpe?g|png))\)/i)
   return m ? m[1] : ''
+}
+
+/** Loading placeholder — the shadcn Skeleton's shape and pulse, on admin tokens. */
+function Shimmer({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn('animate-pulse rounded-md', className)}
+      style={{ background: 'var(--a-inset)' }}
+    />
+  )
+}
+
+/** A DATA chip (a geo tag). Never StateWord — that uppercases. */
+function DataChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="av2-chip" style={{ cursor: 'default', fontSize: 'var(--a-text-xs)' }}>
+      {children}
+    </span>
+  )
+}
+
+/** The thin vertical rule between button groups in the bulk bar. */
+function BarDivider({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn('h-6 w-px', className)}
+      style={{ background: 'var(--a-border)' }}
+    />
+  )
 }
 
 export function PhotoCurationBoard({
@@ -124,8 +184,8 @@ export function PhotoCurationBoard({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Photo curation</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <EntityTitle>Photo curation</EntityTitle>
+        <p className="mt-1" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
           Review the library and choose what is approved, and where it shows. Approving flips the live
           site imagery. Watermarked and off-brand shots are rejected (reversible). The vision screen
           pre-tags each clean photo with a proposed hero/card surface.
@@ -134,138 +194,149 @@ export function PhotoCurationBoard({
 
       {/* Approval + type filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <ToggleGroup
-          type="single"
-          value={approval}
-          spacing={6}
-          onValueChange={(v) => v && go({ approval: v, page: 0 })}
-          aria-label="Approval status"
-          className="w-full sm:w-auto"
-        >
+        <div className="flex w-full gap-1.5 sm:w-auto" role="group" aria-label="Approval status">
           {(['intake', 'approved', 'rejected'] as const).map((a) => (
-            <ToggleGroupItem
+            <FilterChip
               key={a}
-              value={a}
-              variant="outline"
+              pressed={approval === a}
+              onClick={() => go({ approval: a, page: 0 })}
               className="h-11 flex-1 px-4 capitalize sm:h-9 sm:flex-none"
             >
               {a}{' '}
-              <span className="tabular-nums text-muted-foreground">{counts[a]}</span>
-            </ToggleGroupItem>
+              <span className="a-num" style={{ color: 'var(--a-text-2)' }}>{counts[a]}</span>
+            </FilterChip>
           ))}
-        </ToggleGroup>
+        </div>
 
-        <div className="hidden h-6 w-px bg-border sm:block" />
+        <BarDivider className="hidden sm:block" />
 
-        <ToggleGroup
-          type="single"
-          value={type}
-          spacing={6}
-          onValueChange={(v) => v && go({ type: v, page: 0 })}
-          aria-label="Media type"
-          className="w-full sm:w-auto"
-        >
-          <ToggleGroupItem value="photo" variant="outline" className="h-11 flex-1 px-4 sm:h-9 sm:flex-none">
+        <div className="flex w-full gap-1.5 sm:w-auto" role="group" aria-label="Media type">
+          <FilterChip
+            pressed={type === 'photo'}
+            onClick={() => go({ type: 'photo', page: 0 })}
+            className="h-11 flex-1 px-4 sm:h-9 sm:flex-none"
+          >
             Photos
-          </ToggleGroupItem>
-          <ToggleGroupItem value="video" variant="outline" className="h-11 flex-1 px-4 sm:h-9 sm:flex-none">
+          </FilterChip>
+          <FilterChip
+            pressed={type === 'video'}
+            onClick={() => go({ type: 'video', page: 0 })}
+            className="h-11 flex-1 px-4 sm:h-9 sm:flex-none"
+          >
             Videos
-          </ToggleGroupItem>
-        </ToggleGroup>
+          </FilterChip>
+        </div>
       </div>
 
-      {/* Geo filter — Select on mobile (one clean control), chips on desktop */}
+      {/* Geo filter — one compact control on mobile, chips on desktop */}
       <div>
         <div className="sm:hidden">
-          <Select value={geo || ALL_GEOS} onValueChange={(v) => go({ geo: v === ALL_GEOS ? '' : v, page: 0 })}>
-            <SelectTrigger className="h-11 w-full" aria-label="Filter by geo">
-              <SelectValue placeholder="All geos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_GEOS}>All geos</SelectItem>
-              {GEO_FILTERS.map((g) => (
-                <SelectItem key={g} value={g}>{g}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ToolbarSelect
+            aria-label="Filter by geo"
+            className="h-11 w-full"
+            style={{ maxWidth: 'none' }}
+            value={geo || ALL_GEOS}
+            onChange={(e) => go({ geo: e.target.value === ALL_GEOS ? '' : e.target.value, page: 0 })}
+          >
+            <option value={ALL_GEOS}>All geos</option>
+            {GEO_FILTERS.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+          </ToolbarSelect>
         </div>
         <div className="hidden flex-wrap items-center gap-1.5 sm:flex">
-          <button
-            type="button"
-            onClick={() => go({ geo: '', page: 0 })}
-            className={cn(
-              'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-              !geo ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:text-foreground',
-            )}
-          >
+          <FilterChip pressed={!geo} onClick={() => go({ geo: '', page: 0 })}>
             all geos
-          </button>
+          </FilterChip>
           {GEO_FILTERS.map((g) => (
-            <button
-              key={g}
-              type="button"
-              onClick={() => go({ geo: g, page: 0 })}
-              className={cn(
-                'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                geo === g ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:text-foreground',
-              )}
-            >
+            <FilterChip key={g} pressed={geo === g} onClick={() => go({ geo: g, page: 0 })}>
               {g}
-            </button>
+            </FilterChip>
           ))}
         </div>
       </div>
 
       {/* Bulk action bar */}
-      <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm">
-        <span className="px-1 text-sm font-medium text-foreground tabular-nums">
+      <div
+        className="sticky top-2 z-10 flex flex-wrap items-center gap-2 p-2"
+        style={{
+          border: '1px solid var(--a-border)',
+          borderRadius: 'var(--a-r-lg)',
+          background: 'var(--a-bg)',
+        }}
+      >
+        <span
+          className="a-num px-1"
+          style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)' }}
+        >
           {selected.size > 0 ? `${selected.size} selected` : `${totalForView} ${type}${totalForView === 1 ? '' : 's'} · ${approval}`}
         </span>
-        <Button size="sm" variant="outline" className="h-11 sm:h-8" onClick={selectAll} disabled={busy || assets.length === 0}>Select page</Button>
+        <Button variant="quiet" className="h-11 sm:h-8" onClick={selectAll} disabled={busy || assets.length === 0}>Select page</Button>
         {selected.size > 0 && (
           <>
-            <Button size="sm" variant="outline" className="h-11 sm:h-8" onClick={() => setSelected(new Set())} disabled={busy}>Clear</Button>
-            <span className="mx-1 h-6 w-px bg-border" />
-            <Button size="sm" className="h-11 sm:h-8" onClick={() => apply(selIds, { approval: 'approved' })} disabled={busy}>Approve</Button>
-            <Button size="sm" variant="destructive" className="h-11 sm:h-8" onClick={() => apply(selIds, { approval: 'rejected' })} disabled={busy}>Reject</Button>
-            <Button size="sm" variant="outline" className="h-11 sm:h-8" onClick={() => apply(selIds, { approval: 'intake' })} disabled={busy}>Intake</Button>
+            <Button variant="quiet" className="h-11 sm:h-8" onClick={() => setSelected(new Set())} disabled={busy}>Clear</Button>
+            <BarDivider className="mx-1" />
+            <Button className="h-11 sm:h-8" onClick={() => apply(selIds, { approval: 'approved' })} disabled={busy}>Approve</Button>
+            <Button variant="danger" className="h-11 sm:h-8" onClick={() => apply(selIds, { approval: 'rejected' })} disabled={busy}>Reject</Button>
+            <Button variant="quiet" className="h-11 sm:h-8" onClick={() => apply(selIds, { approval: 'intake' })} disabled={busy}>Intake</Button>
             {type === 'photo' && (
               <>
-                <span className="mx-1 h-6 w-px bg-border" />
-                <Button size="sm" variant="outline" className="h-11 sm:h-8" onClick={() => apply(selIds, { surfaceTags: ['hero', 'card'] })} disabled={busy}>hero+card</Button>
-                <Button size="sm" variant="outline" className="h-11 sm:h-8" onClick={() => apply(selIds, { surfaceTags: ['card'] })} disabled={busy}>card only</Button>
-                <Button size="sm" variant="outline" className="h-11 sm:h-8" onClick={() => apply(selIds, { surfaceTags: [] })} disabled={busy}>clear surface</Button>
+                <BarDivider className="mx-1" />
+                <Button variant="quiet" className="h-11 sm:h-8" onClick={() => apply(selIds, { surfaceTags: ['hero', 'card'] })} disabled={busy}>hero+card</Button>
+                <Button variant="quiet" className="h-11 sm:h-8" onClick={() => apply(selIds, { surfaceTags: ['card'] })} disabled={busy}>card only</Button>
+                <Button variant="quiet" className="h-11 sm:h-8" onClick={() => apply(selIds, { surfaceTags: [] })} disabled={busy}>clear surface</Button>
               </>
             )}
           </>
         )}
-        {busy && <span className="text-sm text-muted-foreground" role="status">saving…</span>}
+        {busy && (
+          <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }} role="status">
+            saving…
+          </span>
+        )}
       </div>
 
       {/* Grid */}
       {isNavigating ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
-              <Skeleton className="aspect-video w-full rounded-none" />
+            <div
+              key={i}
+              className="overflow-hidden"
+              style={{
+                border: '1px solid var(--a-border)',
+                borderRadius: 'var(--a-r-lg)',
+                background: 'var(--a-bg)',
+              }}
+            >
+              <Shimmer className="aspect-video w-full rounded-none" />
               <div className="space-y-2 p-2.5">
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-9 w-full" />
+                <Shimmer className="h-4 w-2/3" />
+                <Shimmer className="h-4 w-1/2" />
+                <Shimmer className="h-9 w-full" />
               </div>
             </div>
           ))}
         </div>
       ) : assets.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card px-6 py-20 text-center">
-          <p className="text-sm font-medium text-foreground">No {type}s in {approval}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+        <div
+          className="px-6 py-20 text-center"
+          style={{
+            border: '1px dashed var(--a-border)',
+            borderRadius: 'var(--a-r-lg)',
+            background: 'var(--a-bg)',
+          }}
+        >
+          <p style={{ fontSize: 'var(--a-text-sm)', fontWeight: 500, color: 'var(--a-text)', margin: 0 }}>
+            No {type}s in {approval}
+          </p>
+          <p className="mt-1" style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
             {geo
               ? `Nothing tagged ${geo} here. Clear the geo filter or try another tab.`
               : 'Try another tab or media type, or run the ingest sweep to bring in new assets.'}
           </p>
           {geo && (
-            <Button variant="outline" className="mt-4 h-11" onClick={() => go({ geo: '', page: 0 })}>
+            <Button variant="quiet" touch className="mt-4" onClick={() => go({ geo: '', page: 0 })}>
               Clear geo filter
             </Button>
           )}
@@ -287,37 +358,70 @@ export function PhotoCurationBoard({
 
       {/* Pagination */}
       {totalPages > 1 && !isNavigating && (
-        <Pagination className="pt-2">
-          <PaginationContent className="gap-2">
-            <PaginationItem>
-              <PaginationPrevious
-                href={page > 0 ? href({ page: page - 1 }) : undefined}
-                aria-disabled={page === 0}
-                className={cn('h-11 sm:h-9', page === 0 && 'pointer-events-none opacity-50')}
+        <nav
+          role="navigation"
+          aria-label="pagination"
+          className="mx-auto flex w-full justify-center pt-2"
+        >
+          <div className="flex flex-row items-center gap-2">
+            {page > 0 ? (
+              <Link
+                href={href({ page: page - 1 })}
+                aria-label="Go to previous page"
+                className="av2-btn av2-btn--quiet h-11 sm:h-9"
+                style={{ textDecoration: 'none' }}
                 onClick={(e) => {
                   e.preventDefault()
-                  if (page > 0) go({ page: page - 1 })
+                  go({ page: page - 1 })
                 }}
-              />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#" isActive className="pointer-events-none h-11 w-auto px-3 text-sm tabular-nums sm:h-9">
-                {page + 1} / {totalPages}
-              </PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext
-                href={page < totalPages - 1 ? href({ page: page + 1 }) : undefined}
-                aria-disabled={page >= totalPages - 1}
-                className={cn('h-11 sm:h-9', page >= totalPages - 1 && 'pointer-events-none opacity-50')}
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+                <span className="hidden sm:block">Previous</span>
+              </Link>
+            ) : (
+              <span
+                aria-label="Go to previous page"
+                aria-disabled="true"
+                className="av2-btn av2-btn--quiet pointer-events-none h-11 opacity-50 sm:h-9"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+                <span className="hidden sm:block">Previous</span>
+              </span>
+            )}
+
+            <span
+              aria-current="page"
+              className="av2-btn av2-btn--quiet a-num pointer-events-none h-11 w-auto px-3 sm:h-9"
+            >
+              {page + 1} / {totalPages}
+            </span>
+
+            {page < totalPages - 1 ? (
+              <Link
+                href={href({ page: page + 1 })}
+                aria-label="Go to next page"
+                className="av2-btn av2-btn--quiet h-11 sm:h-9"
+                style={{ textDecoration: 'none' }}
                 onClick={(e) => {
                   e.preventDefault()
-                  if (page < totalPages - 1) go({ page: page + 1 })
+                  go({ page: page + 1 })
                 }}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+              >
+                <span className="hidden sm:block">Next</span>
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </Link>
+            ) : (
+              <span
+                aria-label="Go to next page"
+                aria-disabled="true"
+                className="av2-btn av2-btn--quiet pointer-events-none h-11 opacity-50 sm:h-9"
+              >
+                <span className="hidden sm:block">Next</span>
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </span>
+            )}
+          </div>
+        </nav>
       )}
     </div>
   )
@@ -345,17 +449,46 @@ function AssetCard({
   }
 
   return (
-    <div className={cn('group overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md', selected ? 'border-primary ring-2 ring-primary' : 'border-border')}>
+    <div
+      className="group overflow-hidden transition-shadow hover:shadow-md"
+      style={{
+        border: '1px solid',
+        borderColor: selected ? 'var(--a-accent)' : 'var(--a-border)',
+        borderRadius: 'var(--a-r-lg)',
+        background: 'var(--a-bg)',
+        // outline, not boxShadow: an inline box-shadow OUTRANKS the
+        // `hover:shadow-md` class on the same element, so a selected card
+        // stopped lifting on hover while its neighbours still did. outline
+        // draws the same 2px ring on a different property, so both compose.
+        ...(selected ? { outline: '2px solid var(--a-accent)', outlineOffset: '-2px' } : null),
+      }}
+    >
       <div className="relative">
-        <button
-          type="button"
+        <Button
+          variant="quiet"
           onClick={onToggle}
           aria-pressed={selected}
           aria-label={selected ? 'Deselect asset' : 'Select asset'}
-          className="block w-full"
+          className="w-full"
+          style={{
+            display: 'block',
+            width: '100%',
+            background: 'transparent',
+            border: 'none',
+            borderRadius: 0,
+            padding: 0,
+            minHeight: 'auto',
+          }}
         >
           {isVideo && asset.file_url ? (
-            <video src={asset.file_url} preload="metadata" muted playsInline className="aspect-video w-full bg-muted object-cover" />
+            <video
+              src={asset.file_url}
+              preload="metadata"
+              muted
+              playsInline
+              className="aspect-video w-full object-cover"
+              style={{ background: 'var(--a-inset)' }}
+            />
           ) : imgSrc ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -363,67 +496,85 @@ function AssetCard({
               alt={asset.notes ?? ''}
               loading="lazy"
               onError={() => asset.file_url && imgSrc !== asset.file_url && setImgSrc(asset.file_url)}
-              className="aspect-video w-full bg-muted object-cover"
+              className="aspect-video w-full object-cover"
+              style={{ background: 'var(--a-inset)' }}
             />
           ) : (
-            <div className="aspect-video w-full bg-muted" />
+            <div className="aspect-video w-full" style={{ background: 'var(--a-inset)' }} />
           )}
-        </button>
-        <span className={cn('absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-md border text-xs', selected ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card/80')}>
+        </Button>
+        <span
+          className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center"
+          style={{
+            border: '1px solid',
+            borderColor: selected ? 'var(--a-accent)' : 'var(--a-border)',
+            borderRadius: 'var(--a-r-sm)',
+            fontSize: 'var(--a-text-xs)',
+            background: selected ? 'var(--a-btn-bg)' : 'var(--a-surface)',
+            color: selected ? 'var(--a-btn-fg)' : 'var(--a-text-2)',
+          }}
+        >
           {selected ? '✓' : ''}
         </span>
-        <Badge
-          variant={asset.approval === 'approved' ? 'default' : asset.approval === 'rejected' ? 'destructive' : 'secondary'}
-          className="absolute right-2 top-2 capitalize"
-        >
-          {asset.approval}
-        </Badge>
+        <span className="absolute right-2 top-2">
+          <StateWord state={approvalState(asset.approval)}>{asset.approval}</StateWord>
+        </span>
       </div>
 
       <div className="space-y-2 p-2.5">
         <div className="flex flex-wrap gap-1">
           {(asset.geo_tags ?? []).slice(0, 4).map((g) => (
-            <Badge key={g} variant="outline" className="text-xs font-normal">{g}</Badge>
+            <DataChip key={g}>{g}</DataChip>
           ))}
         </div>
 
         {!isVideo && (
           <div className="flex gap-1.5">
             {(['hero', 'card'] as const).map((s) => (
-              <button
+              <FilterChip
                 key={s}
-                type="button"
+                pressed={surfaces.has(s)}
                 onClick={() => toggleSurface(s)}
                 disabled={disabled}
-                aria-pressed={surfaces.has(s)}
-                className={cn('flex-1 rounded-md border px-2 py-1.5 text-xs font-medium transition-colors disabled:opacity-50',
-                  surfaces.has(s) ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground hover:text-foreground')}
+                className="flex-1 px-2 py-1.5 disabled:opacity-50"
+                style={{ fontSize: 'var(--a-text-xs)' }}
               >
                 {s}
-              </button>
+              </FilterChip>
             ))}
           </div>
         )}
 
         {isVideo && (
-          <p className="truncate text-xs text-muted-foreground" title={name}>
+          <p
+            className="truncate"
+            title={name}
+            style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+          >
             {name || (asset.subject_tags ?? []).join(', ')}
             {asset.duration_sec ? ` · ${Math.round(Number(asset.duration_sec))}s` : ''}
             {asset.width && asset.height ? ` · ${asset.width > asset.height ? 'landscape' : '9:16'}` : ''}
           </p>
         )}
 
-        {asset.notes && <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">{asset.notes}</p>}
+        {asset.notes && (
+          <p
+            className="line-clamp-2"
+            style={{ fontSize: 'var(--a-text-xs)', lineHeight: 1.375, color: 'var(--a-text-2)' }}
+          >
+            {asset.notes}
+          </p>
+        )}
 
         <div className="flex gap-1.5 pt-0.5">
           {asset.approval !== 'approved' && (
-            <Button size="sm" variant="outline" className="h-9 flex-1 px-2 text-xs" onClick={() => onPatch({ approval: 'approved' })} disabled={disabled}>Approve</Button>
+            <Button variant="quiet" className="h-9 flex-1 px-2" onClick={() => onPatch({ approval: 'approved' })} disabled={disabled}>Approve</Button>
           )}
           {asset.approval !== 'rejected' && (
-            <Button size="sm" variant="outline" className="h-9 flex-1 px-2 text-xs" onClick={() => onPatch({ approval: 'rejected' })} disabled={disabled}>Reject</Button>
+            <Button variant="quiet" className="h-9 flex-1 px-2" onClick={() => onPatch({ approval: 'rejected' })} disabled={disabled}>Reject</Button>
           )}
           {asset.approval !== 'intake' && (
-            <Button size="sm" variant="ghost" className="h-9 px-2.5 text-xs" onClick={() => onPatch({ approval: 'intake' })} disabled={disabled} aria-label="Move back to intake">↺</Button>
+            <Button variant="quiet" className="h-9 px-2.5" onClick={() => onPatch({ approval: 'intake' })} disabled={disabled} aria-label="Move back to intake">↺</Button>
           )}
         </div>
       </div>

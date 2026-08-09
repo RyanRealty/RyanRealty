@@ -1,17 +1,23 @@
 'use client'
 
+/**
+ * CommentsThread — notes / change requests / approval notes on one action row.
+ *
+ * 11F: off shadcn and onto the LOCKED admin v2 language
+ * (design_system/admin/ADMIN_UI.md). Presentation only — the same POST body
+ * ({ body, type }), the same optimistic setComments + onCommentPosted, and every
+ * visible string are carried over verbatim. A change_request type still flips
+ * status server-side; this file does not invent a client status transition.
+ *
+ * Mapping: Textarea -> TextAreaField; Button -> the one primary (Post comment);
+ * Select+… -> SelectField (native <select>); Badge + semantic border/bg washes
+ * -> av2-chip + var(--a-*) washes. StateWord is NOT used for the type label:
+ * .av2-state uppercases, and "Change request" is DATA the broker typed a
+ * meaning for — same call ActionCard recorded for action_type.
+ */
+
 import { useState } from 'react'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import { Button, SelectField, TextAreaField } from '@/components/admin/v2'
 
 export interface Comment {
   id: string
@@ -33,13 +39,41 @@ const TYPE_LABELS: Record<Comment['type'], string> = {
   approval_note: 'Approval note',
 }
 
-const TYPE_BADGE_CLASSES: Record<Comment['type'], string> = {
-  note: 'bg-secondary text-secondary-foreground',
-  change_request: 'bg-destructive/10 text-destructive border-destructive/20',
-  approval_note: 'bg-success/10 text-success border-success/20',
+/** Per-type wash. Color is status semantics only (ADMIN_UI §1). */
+const TYPE_SHELL: Record<Comment['type'], React.CSSProperties> = {
+  note: {
+    border: '1px solid var(--a-border)',
+    background: 'var(--a-surface)',
+  },
+  change_request: {
+    border: '1px solid var(--a-danger)',
+    background: 'var(--a-danger-wash)',
+  },
+  approval_note: {
+    border: '1px solid var(--a-ok)',
+    background: 'var(--a-ok-wash)',
+  },
 }
 
-export function CommentsThread({ actionId, comments: initialComments, onCommentPosted }: CommentsThreadProps) {
+const TYPE_CHIP: Record<Comment['type'], React.CSSProperties> = {
+  note: {},
+  change_request: {
+    borderColor: 'var(--a-danger)',
+    color: 'var(--a-danger)',
+    background: 'var(--a-danger-wash)',
+  },
+  approval_note: {
+    borderColor: 'var(--a-ok)',
+    color: 'var(--a-ok)',
+    background: 'var(--a-ok-wash)',
+  },
+}
+
+export function CommentsThread({
+  actionId,
+  comments: initialComments,
+  onCommentPosted,
+}: CommentsThreadProps) {
   const [comments, setComments] = useState<Comment[]>(initialComments)
   const [body, setBody] = useState('')
   const [type, setType] = useState<Comment['type']>('note')
@@ -75,58 +109,62 @@ export function CommentsThread({ actionId, comments: initialComments, onCommentP
 
   return (
     <div className="space-y-4">
-      <h4 className="text-sm font-semibold text-foreground">Comments</h4>
+      <h4 style={{ margin: 0, fontSize: 'var(--a-text-sm)', fontWeight: 600, color: 'var(--a-text)' }}>
+        Comments
+      </h4>
 
-      {/* Existing comments */}
       {comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No comments yet.</p>
+        <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+          No comments yet.
+        </p>
       ) : (
         <div className="space-y-3">
           {comments.map((c) => (
             <div
               key={c.id}
-              className={cn(
-                'rounded-lg border p-3',
-                c.type === 'change_request'
-                  ? 'border-destructive/20 bg-destructive/5'
-                  : c.type === 'approval_note'
-                  ? 'border-success/20 bg-success/5'
-                  : 'border-border bg-card',
-              )}
+              className="p-3"
+              style={{
+                borderRadius: 'var(--a-r-lg)',
+                ...TYPE_SHELL[c.type],
+              }}
             >
               <div className="mb-1 flex items-center gap-2">
-                <span className="text-xs font-medium text-foreground">{c.author}</span>
-                <Badge
-                  variant="outline"
-                  className={cn('text-xs', TYPE_BADGE_CLASSES[c.type])}
+                <span style={{ fontSize: 'var(--a-text-xs)', fontWeight: 500, color: 'var(--a-text)' }}>
+                  {c.author}
+                </span>
+                <span
+                  className="av2-chip"
+                  style={{ cursor: 'default', fontSize: 'var(--a-text-xs)', ...TYPE_CHIP[c.type] }}
                 >
                   {TYPE_LABELS[c.type]}
-                </Badge>
-                <span className="ml-auto text-xs text-muted-foreground">
+                </span>
+                <span
+                  className="ml-auto"
+                  style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)' }}
+                >
                   {new Date(c.posted_at).toLocaleString()}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">{c.body}</p>
+              <p style={{ margin: 0, fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
+                {c.body}
+              </p>
             </div>
           ))}
         </div>
       )}
 
-      {/* New comment form */}
       <form onSubmit={handlePost} className="space-y-2">
-        <div className="flex gap-2">
-          <Select value={type} onValueChange={(v) => setType(v as Comment['type'])}>
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="note">Note</SelectItem>
-              <SelectItem value="change_request">Change request</SelectItem>
-              <SelectItem value="approval_note">Approval note</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Textarea
+        <SelectField
+          label="Comment type"
+          value={type}
+          onChange={(e) => setType(e.target.value as Comment['type'])}
+        >
+          <option value="note">Note</option>
+          <option value="change_request">Change request</option>
+          <option value="approval_note">Approval note</option>
+        </SelectField>
+        <TextAreaField
+          label="Comment"
           placeholder={
             type === 'change_request'
               ? 'Describe what needs to change (this will flip status to needs_changes).'
@@ -136,8 +174,12 @@ export function CommentsThread({ actionId, comments: initialComments, onCommentP
           onChange={(e) => setBody(e.target.value)}
           rows={3}
         />
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        <Button type="submit" size="sm" disabled={submitting || !body.trim()}>
+        {error && (
+          <p style={{ margin: 0, fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>
+            {error}
+          </p>
+        )}
+        <Button type="submit" disabled={submitting || !body.trim()}>
           {submitting ? 'Posting...' : 'Post comment'}
         </Button>
       </form>
