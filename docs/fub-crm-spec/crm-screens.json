@@ -93,7 +93,11 @@
       "getCrmSavedViews",
       "getCrmPonds"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-contacts-list.png"
+    "verify": "docs/fub-crm-spec/_verify/screen-contacts-list.png",
+    "alsoRoutes": [
+      "components/console/TopBarScope.tsx"
+    ],
+    "note": "BrokerScopeSheet is mounted by the SHELL, not the route: ConsoleShell renders TopBarScope whenever the path is exactly /admin/crm, and TopBarScope is what imports BrokerScopeSheet. It moved there when MobileCrmHeader was deleted (Matt 2026-08-08) \u2014 the control the spec requires is still on screen, so the requirement points at its real provider rather than being dropped."
   },
   {
     "id": "deals-desktop",
@@ -231,10 +235,13 @@
       "MobilePeopleRoot",
       "BrokerScopeSheet",
       "ContactsSearch",
-      "getPeopleListSignals",
-      "MobileCrmHeader"
+      "getPeopleListSignals"
     ],
-    "verify": "docs/fub-crm-spec/_verify/mob-activity-people.png"
+    "verify": "docs/fub-crm-spec/_verify/mob-activity-people.png",
+    "alsoRoutes": [
+      "components/console/TopBarScope.tsx"
+    ],
+    "note": "MobileCrmHeader was DELETED (Matt 2026-08-08): a public-brand navy bar whose scope control duplicated TopBarScope and whose avatar link duplicated the account menu. BrokerScopeSheet now reaches this route through ConsoleShell \u2192 TopBarScope. ContactsSearch survived the deletion and mounts directly."
   },
   {
     "id": "mobile-calendar-tasks",

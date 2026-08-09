@@ -8,9 +8,10 @@
 // all-types default, scopeBroker → resolveActivityScope and the restricted-
 // broker lock, the ?broker= default (the caller's OWN leads), the limit-50
 // getGlobalActivityFeed read, the typeChips list, the owner-only brokerOptions,
-// every prop handed to GlobalActivityFeed, and MobileCrmHeader mounted
-// unchanged (pinned by ci:crm-screen-parity on the People root; its navy
-// bg-primary bar is a known §5 violation filed cross-family, not fixed here).
+// and every prop handed to GlobalActivityFeed. The mobile navy header is GONE
+// (Matt 2026-08-08) — with it went BROKER_HEADSHOT, which nothing else here
+// used; its §5 bg-primary violation is resolved by deletion rather than by a
+// migration.
 //
 // Shape changed, data did not: the page's own <main> is GONE — ConsoleShell
 // owns the single landmark and this page rendered a second one; the desktop
@@ -40,14 +41,6 @@ import {
 } from '@/lib/data/crm/getGlobalActivityFeed'
 import { VerdictLine } from '@/components/admin/v2'
 import GlobalActivityFeed from '@/components/admin/crm/GlobalActivityFeed.client'
-import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
-
-/** Broker slug → web headshot (transparent PNG mirror in public/images/brokers). */
-const BROKER_HEADSHOT: Record<string, string> = {
-  matt: '/images/brokers/ryan-matt.png',
-  rebecca: '/images/brokers/peterson-rebecca.png',
-  paul: '/images/brokers/stevenson-paul.png',
-}
 
 export const metadata = { title: 'Activity | Admin' }
 export const dynamic = 'force-dynamic'
@@ -86,16 +79,9 @@ export default async function CrmActivityPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 768, margin: '0 auto' }}>
-      {/* ── MOBILE (< md): §24 navy header — same language as People/Calendar/
-             Inbox (Matt punch list #3). Full-bleed cancels the shell padding. */}
-      <div className="-mx-4 -mt-5 mb-3 md:hidden sm:-mx-6 sm:-mt-7">
-        <MobileCrmHeader
-          brokerName={access.brokerSlug ? CRM_BROKER_DISPLAY[access.brokerSlug as keyof typeof CRM_BROKER_DISPLAY] ?? access.brokerSlug : 'Broker'}
-          brokerHeadshot={access.brokerSlug ? BROKER_HEADSHOT[access.brokerSlug] ?? null : null}
-          center={<span className="truncate text-lg font-medium text-primary-foreground">Activity</span>}
-          searchHref="/admin/crm"
-        />
-      </div>
+      {/* The mobile navy header was deleted in 11F (Matt 2026-08-08) — see the
+          note on crm/deals. Title and search link both live in ConsoleShell's
+          compact top bar at this width. */}
 
       {/* Restricted broker only — see the header note. resolveActivityScope
           returns callerScope unconditionally when it is non-null, and the feed

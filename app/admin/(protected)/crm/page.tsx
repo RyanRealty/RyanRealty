@@ -12,8 +12,7 @@
 //
 // 11C: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md).
 // Presentation only — every island (PeopleSidebar, PeopleListView,
-// MobilePeopleRoot, BrokerScopeSheet, ContactsSearch, MobileCrmHeader) is
-// mounted unchanged with the same props.
+// MobilePeopleRoot, ContactsSearch) is mounted unchanged with the same props.
 //
 // Carried over verbatim: requireAdminPage('people.view'), the getCrmAccess
 // guard + redirect, scopeBroker and the ?broker=all → undefined rule feeding
@@ -39,11 +38,18 @@
 // are `total` (the count listCrmPeople returned for the rows it is drawing) and
 // `effectiveBroker` (the slug that read was scoped to).
 //
-// MobileCrmHeader is mounted UNCHANGED and is pinned here by
-// ci:crm-screen-parity (mobile-activity-people). It renders a 56px navy
+// MobileCrmHeader IS GONE (Matt 2026-08-08). It rendered a 56px navy
 // bg-primary bar — the public brand as admin design input, which ADMIN_UI §5
-// blacklists. That is a cross-family decision (its other callers), filed
-// separately; it is not touched here.
+// blacklists — and everything it carried is already on screen at this width:
+// ConsoleShell's compact top bar renders TopBarScope whenever the path is
+// exactly /admin/crm, plus the palette trigger that runs consoleSearchLeads,
+// and the account menu already links to /admin/settings.
+//
+// ContactsSearch did NOT go with it. It lived in that bar's searchSlot, but it
+// is the only control on any width that sets ?q= on the people list, and it
+// filters on name, email OR phone where the palette matches a name and
+// navigates away. It now mounts directly, migrated to the v2 SearchField, at
+// ./_components/ContactsSearch.
 import { redirect } from 'next/navigation'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getCrmAccess, getCrmOverview, listCrmPeople, listCrmSequences } from '@/app/actions/crm'
@@ -58,9 +64,7 @@ import { getCrmReportAreas } from '@/lib/data/crm/getCrmReportAreas'
 import { getCrmNeighborhoodOptions } from '@/lib/data/crm/getCrmNeighborhoodOptions'
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { VerdictLine } from '@/components/admin/v2'
-import ContactsSearch from '@/components/admin/crm/ContactsSearch'
-import BrokerScopeSheet from '@/components/admin/crm/BrokerScopeSheet'
-import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
+import ContactsSearch from './_components/ContactsSearch'
 import { MobilePeopleRoot } from '@/components/admin/crm/mobile/MobilePeopleRoot'
 import PeopleSidebar from '@/components/admin/crm/people-list/PeopleSidebar'
 import { getCrmStageCounts } from '@/lib/data/crm/getCrmStageCounts'
@@ -258,28 +262,23 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
 
   return (
     <div className="av2-scope" style={{ maxWidth: 1600, margin: '0 auto' }}>
-      {/* ── MOBILE (< md): §24 People root — navy §1.3 header (avatar ·
-             "Everyone ▾" scope · search) over All Lists / Stages / filtered
-             list (mob-09 / mob-10). Full-bleed: cancels the ConsoleShell main
-             padding (px-4 pt-5 / sm:px-6 sm:pt-7). Matt punch list #3
-             (2026-07-02): one CRM, one style — same navy header language as
-             calendar/inbox. */}
+      {/* ── MOBILE (< md): §24 People root — All Lists / Stages / filtered list
+             (mob-09 / mob-10). Full-bleed: cancels the ConsoleShell main
+             padding (px-4 pt-5 / sm:px-6 sm:pt-7).
+
+             The navy §1.3 header above this was deleted in 11F (Matt
+             2026-08-08). Both controls it carried are already on screen at this
+             width from ConsoleShell's compact top bar: TopBarScope renders the
+             "Everyone ▾" scope switcher whenever the path is exactly /admin/crm,
+             and the palette trigger next to it runs consoleSearchLeads, so a
+             contact is still findable by name on a phone. What the bar added
+             beyond those was an avatar link to /admin/settings — which the
+             account menu already offers — and a public-brand navy bar inside an
+             admin whose §5 amnesia blacklists that palette. */}
       <div className="-mx-4 -mt-5 md:hidden sm:-mx-6 sm:-mt-7">
-        <MobileCrmHeader
-          brokerName={access.brokerSlug ? CRM_BROKER_DISPLAY[access.brokerSlug as keyof typeof CRM_BROKER_DISPLAY] ?? access.brokerSlug : 'Broker'}
-          brokerHeadshot={access.brokerSlug ? BROKER_HEADSHOT[access.brokerSlug] ?? null : null}
-          center={
-            <BrokerScopeSheet
-              variant="header"
-              brokers={scopeBrokers}
-              current={effectiveBroker ?? 'all'}
-              myBrokerSlug={access.brokerSlug ?? null}
-              carry={{ q: sp.q, stage: sp.stage, tag: sp.tag, view: sp.view }}
-            />
-          }
-          searchSlot={<ContactsSearch initial={sp.q ?? ''} />}
-          searchOpenInitially={Boolean(sp.q)}
-        />
+        <div style={{ padding: '10px 16px 0' }}>
+          <ContactsSearch initial={sp.q ?? ''} />
+        </div>
         {(() => {
           const mode: 'directory' | 'list' = sp.q || sp.stage || sp.tag || sp.view ? 'list' : 'directory'
           const listTitle =

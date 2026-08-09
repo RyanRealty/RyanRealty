@@ -27,9 +27,11 @@
  * parallel reads, the crmActive broker filter and its {slug,name} shape,
  * ?pipeline= resolved by id-or-name with the first-tab default, the activeDeals
  * filter (a pipeline-less deal rides the first tab), ?deal= parsing +
- * getCrmDeal + the dealInScope visibility rule, BROKER_HEADSHOT, every prop
- * handed to MobileCrmHeader / DealsSubBar / DealsBoard / DealDetailModal, and
- * the "No pipelines configured." empty state.
+ * getCrmDeal + the dealInScope visibility rule, and every prop handed to
+ * DealsSubBar / DealsBoard / DealDetailModal, and the "No pipelines
+ * configured." empty state. BROKER_HEADSHOT and CRM_BROKER_DISPLAY went with
+ * the mobile navy header (Matt 2026-08-08) — nothing else on the page read
+ * either.
  *
  * Shape changed, data did not: the page's own <main> is GONE — ConsoleShell
  * owns the single landmark and this page was rendering a second one (two <main>
@@ -52,15 +54,6 @@ import { VerdictLine } from '@/components/admin/v2'
 import { DealsSubBar } from '@/app/admin/(protected)/crm/deals/_components/DealsSubBar'
 import { DealsBoard } from '@/app/admin/(protected)/crm/deals/_components/DealsBoard'
 import { DealDetailModal } from '@/app/admin/(protected)/crm/deals/_components/DealDetailModal'
-import MobileCrmHeader from '@/components/admin/crm/mobile/MobileCrmHeader'
-import { CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
-
-/** Broker slug → web headshot (transparent PNG mirror in public/images/brokers). */
-const BROKER_HEADSHOT: Record<string, string> = {
-  matt: '/images/brokers/ryan-matt.png',
-  rebecca: '/images/brokers/peterson-rebecca.png',
-  paul: '/images/brokers/stevenson-paul.png',
-}
 
 export const metadata = { title: 'Deal Tracking | CRM | Admin' }
 export const dynamic = 'force-dynamic'
@@ -124,19 +117,11 @@ export default async function CrmDealsPage({
       className="av2-scope"
       style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 4rem)' }}
     >
-      {/* ── MOBILE (< md): §23 root-tab navy header — the same language every
-             other CRM root wears (People/Activity/Inbox/Calendar). Deals was
-             the one root without it (2026-07-02 mobile audit, "one CRM one
-             style"). Full-bleed cancels the ConsoleShell main padding. */}
-      <div className="-mx-4 -mt-5 mb-3 md:hidden sm:-mx-6 sm:-mt-7">
-        <MobileCrmHeader
-          brokerName={access.brokerSlug ? CRM_BROKER_DISPLAY[access.brokerSlug as keyof typeof CRM_BROKER_DISPLAY] ?? access.brokerSlug : 'Broker'}
-          brokerHeadshot={access.brokerSlug ? BROKER_HEADSHOT[access.brokerSlug] ?? null : null}
-          center={<span className="truncate text-lg font-medium text-primary-foreground">Deals</span>}
-          searchHref="/admin/crm"
-        />
-      </div>
-
+      {/* The mobile navy header was deleted in 11F (Matt 2026-08-08). It carried
+          a title and a link to /admin/crm; ConsoleShell's compact top bar
+          already provides navigation and the ⌘K lead search on this width, and
+          the bar itself was public-brand navy inside an admin whose §5 amnesia
+          blacklists that palette. */}
       {/* The only claim here is the card count the board is about to draw:
           activeDeals IS the array handed to DealsBoard. */}
       {activePipeline ? (
