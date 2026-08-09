@@ -65,16 +65,16 @@ import { getCrmNeighborhoodOptions } from '@/lib/data/crm/getCrmNeighborhoodOpti
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
 import { VerdictLine } from '@/components/admin/v2'
 import ContactsSearch from './_components/ContactsSearch'
-import { MobilePeopleRoot } from '@/components/admin/crm/mobile/MobilePeopleRoot'
-import PeopleSidebar from '@/components/admin/crm/people-list/PeopleSidebar'
+import { MobilePeopleRoot } from '@/components/admin/shared/mobile/MobilePeopleRoot'
+import PeopleSidebar from '@/components/admin/shared/people-list/PeopleSidebar'
 import { getCrmStageCounts } from '@/lib/data/crm/getCrmStageCounts'
-import PeopleListView, { type PeopleRow } from '@/components/admin/crm/people-list/PeopleListView'
+import PeopleListView, { type PeopleRow } from '@/components/admin/shared/people-list/PeopleListView'
 import {
   groupSavedViews, groupSystemByCollection, type SavedViewItem,
 } from '@/components/admin/crm/saved-view-grouping'
 import {
   fmtFubDate, activityIconKind, LEAD_SOURCE_OPTIONS,
-} from '@/components/admin/crm/people-list/people-list-utils'
+} from '@/components/admin/shared/people-list/people-list-utils'
 
 export const metadata = { title: 'People | CRM | Admin' }
 export const dynamic = 'force-dynamic'

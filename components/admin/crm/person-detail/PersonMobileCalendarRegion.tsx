@@ -4,8 +4,8 @@
  * are secondary and stream independently.
  */
 
-import { MobileCalendarTab } from '@/components/admin/crm/mobile/MobileCalendarTab'
-import type { MobileTask } from '@/components/admin/crm/mobile/MobileCalendarTab'
+import { MobileCalendarTab } from '@/components/admin/shared/mobile/MobileCalendarTab'
+import type { MobileTask } from '@/components/admin/shared/mobile/MobileCalendarTab'
 import {
   getAppointmentsForPerson,
   getAppointmentTypes,

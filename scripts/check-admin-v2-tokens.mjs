@@ -164,7 +164,7 @@ const SCAN_DIRS = [
   // THE SCOPING LESSON: a relocation-driven unit only sees files under
   // components/admin/<family>. Files ALREADY sitting in the route were invisible
   // to it. Check the route directory itself, not just what moves into it. crm/deals/page.tsx itself is NOT listed: it still mounts
-  // MobileCrmHeader from components/admin/crm/mobile, the phone header the
+  // MobileCrmHeader from components/admin/shared/mobile, the phone header the
   // work queue already proves carries no root-tab nav (ConsoleShell's
   // CrmMobileTabBar owns the five tabs, and its scope control and search are
   // duplicated by TopBarScope and the command palette). Deleting that header —
@@ -217,7 +217,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/cmas/new/page.tsx',
   'app/admin/(protected)/cmas/[slug]/page.tsx',
   // 11F (2026-08-08) — crm/sequences + crm/tasks. FILE-FORM: MobileTasksScreen
-  // mounts CrmAvatar and MobileTaskCreateSheet from components/admin/crm/mobile,
+  // mounts CrmAvatar and MobileTaskCreateSheet from components/admin/shared/mobile,
   // which are genuinely cross-cutting — CrmMobileKit has EIGHT importers
   // (settings, inbox, tasks, BrokerScopeSheet, MobilePeopleRoot,
   // MobileContactDetail, calendar) and MobileTaskCreateSheet is shared with the

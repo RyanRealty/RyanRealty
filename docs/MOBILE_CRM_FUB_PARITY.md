@@ -72,7 +72,7 @@ hamburger. Fixed:
   match (lead detail + /admin/people light the People tab). The "+" FAB lifts to
   `bottom-20` above it. Shell gate (`check-admin-mobile-shell`) still holds — the
   rail + Sheet + AdminNavList are untouched.
-- ✅ **Shared FUB mobile kit** — `components/admin/crm/mobile/CrmMobileKit.tsx`:
+- ✅ **Shared FUB mobile kit** — `components/admin/shared/mobile/CrmMobileKit.tsx`:
   `CrmAvatar` (12 deterministic colorful fills), `CrmList`/`CrmListRow`,
   `CrmSegmented`, `CrmSectionLabel`, `CrmDetailRow`, `CrmActionCircle`. One place
   for the FUB look so screens can't drift. Token-pure except the brand-external

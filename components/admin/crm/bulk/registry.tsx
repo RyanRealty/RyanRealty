@@ -29,7 +29,7 @@ import {
 } from '@/app/actions/crm-bulk'
 import { bulkMergePeopleAction } from '@/app/actions/crm-person-gaps'
 import { adminBulkAssignNewsletterAction } from '@/app/actions/newsletter'
-import { TIMEFRAME_OPTIONS } from '@/components/admin/crm/people-list/people-list-utils'
+import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
 import { getFiltersSummary } from '@/lib/search-filters'
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import { Input } from '@/components/ui/input'

@@ -3,7 +3,7 @@
  * Uncached request-scoped reads (force-dynamic parent; no shared cache tags).
  */
 
-import { MobileHomesTab } from '@/components/admin/crm/mobile/MobileHomesTab'
+import { MobileHomesTab } from '@/components/admin/shared/mobile/MobileHomesTab'
 import { PortalViewLink } from '@/components/admin/crm/portal-view/PortalViewLink'
 import { getViewedListingsForLead } from '@/lib/data'
 import { getContactSavedHomes, buildHomesPanelUnion } from '@/lib/data/crm/getContactSavedHomes'

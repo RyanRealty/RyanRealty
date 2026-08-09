@@ -4,9 +4,19 @@
  * The machine-readable form of the "Banned constructions" section of
  * marketing_brain_skills/brand-voice/VOICE.md.
  *
- * A word list cannot catch the thing Matt actually objected to. "Pricing sets
- * the number. Competition decides how it lands." contains no banned word. It
- * is banned because of its SHAPE: a coined maxim. These are the shapes.
+ * SHAPE RULES WERE REMOVED 2026-08-06. This file used to ban coined maxims,
+ * sermon clauses, meaning-narration and obvious restatement. Those came from the
+ * GOV.UK "mechanical law" layer that is no longer part of the canon, and Buffett
+ * uses all four constantly — interpreting a number for the reader IS the
+ * Berkshire letter. Enforcing them rewrote the whole site into government-service
+ * prose in a single day.
+ *
+ * What remains polices CONDUCT and TRUTH, not style: invented quotations,
+ * self-praise, pandering, manufactured urgency, forecasts stated as fact,
+ * numbers made to talk. None of those is a taste question.
+ *
+ * The test for adding anything here: if a good writer would ever do it on
+ * purpose, it does not belong in a gate.
  *
  * Each rule carries the canon rule it enforces, a human label, a regex, and a
  * fix instruction that tells the rewriter what to do instead. Consumed by
@@ -21,24 +31,8 @@
 /** @type {Array<{id:string,rule:number,label:string,source:string,fix:string,example:string}>} */
 const CONSTRUCTIONS = [
   // ── Rule 2: state the fact, then stop ──────────────────────────────────
-  {
-    id: 'meaning-narration',
-    rule: 2,
-    label: 'explains the sentence before it',
-    source:
-      "\\b(this|that|which|it)\\s+(tells|shows|means)\\s+you\\b|\\bwhat\\s+(this|that)\\s+means\\b|\\bin\\s+other\\s+words\\b|\\bput\\s+simply\\b|\\bthink\\s+of\\s+(it|this|that)\\s+as\\b|\\bis\\s+history,\\s*not\\s+a\\s+forecast\\b",
-    fix: 'Delete the sentence. The fact before it already carries the meaning.',
-    example: 'This is history, not a forecast: it tells you when buyers have been most active.',
-  },
-  {
-    id: 'obvious-restatement',
-    rule: 2,
-    label: 'explains a label, chart, or word the reader can read',
-    source:
-      "\\b(lower|higher|faster|slower|shorter|longer)\\s+is\\s+(better|worse|faster|slower|higher|lower)\\b|\\bas\\s+you\\s+can\\s+see\\b|\\bnotice\\s+(that|how)\\b|\\bkeep\\s+in\\s+mind\\b|\\bit\\s+is\\s+(important|worth)\\s+(to\\s+note|noting|remembering)\\b|\\bit'?s\\s+(important|worth)\\s+(to\\s+note|noting|remembering)\\b",
-    fix: 'Delete. The chart, label, or number states this already.',
-    example: 'Lower is faster.',
-  },
+
+
   {
     id: 'takeaway-framing',
     rule: 2,
@@ -50,15 +44,7 @@ const CONSTRUCTIONS = [
   },
 
   // ── Rule 8: never be pleased with yourself ─────────────────────────────
-  {
-    id: 'sermon-clause',
-    rule: 8,
-    label: 'trailing clause that moralizes the fact',
-    source:
-      "\\bwhich\\s+is\\s+(one\\s+more\\s+reason|exactly\\s+why|why\\s+it\\s+(is|'?s)\\s+so\\s+important)\\b|\\band\\s+that\\s+matters\\s+because\\b|\\ball\\s+the\\s+more\\s+reason\\b|\\bwhich\\s+is\\s+precisely\\s+why\\b",
-    fix: 'End the sentence at the fact. Cut everything from the clause onward.',
-    example: 'which is one more reason the list price has to be right on day one.',
-  },
+
   // ── Rule 2: state the fact, then stop ──────────────────────────────────
   //
   // Added 2026-08-06 after the repo-wide pass. Both shapes below were live on
@@ -111,15 +97,7 @@ const CONSTRUCTIONS = [
     fix: 'State it plainly in the brokerage voice, or cut it. Never attach a name to a sentence nobody said.',
     example: '"This is the most room buyers have had in years," said Matt Ryan, principal broker.',
   },
-  {
-    id: 'coined-maxim',
-    rule: 8,
-    label: 'coins a maxim (the "X, not Y" shape)',
-    source:
-      "\\bis\\s+(a|an|the)\\s+[a-z][a-z\\s]{2,28},\\s*not\\s+(a|an|the)\\s+[a-z][a-z\\s]{2,28}\\b|\\bnot\\s+(a|an)\\s+[a-z]+,\\s*(but\\s+)?(a|an)\\s+[a-z]+\\b",
-    fix: 'State the thing plainly. A maxim is us being pleased with ourselves.',
-    example: 'This number is a starting point, not a verdict.',
-  },
+
   {
     id: 'data-speaks',
     rule: 8,

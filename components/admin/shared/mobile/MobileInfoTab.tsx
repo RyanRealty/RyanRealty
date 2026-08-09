@@ -29,9 +29,9 @@ import {
   MobileContactPointsSection,
   type MobilePhoneEntry,
   type MobileEmailEntry,
-} from '@/components/admin/crm/mobile/MobileContactPointsSection'
-import { MobileDetailsSection, type MobilePickersData } from '@/components/admin/crm/mobile/MobileDetailsSection'
-import type { PickerOption } from '@/components/admin/crm/mobile/MobilePickerSheet'
+} from '@/components/admin/shared/mobile/MobileContactPointsSection'
+import { MobileDetailsSection, type MobilePickersData } from '@/components/admin/shared/mobile/MobileDetailsSection'
+import type { PickerOption } from '@/components/admin/shared/mobile/MobilePickerSheet'
 
 export type { MobilePickersData }
 

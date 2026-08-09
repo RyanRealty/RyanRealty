@@ -21,7 +21,7 @@ import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { MobileTypeIcon, brokerBadgeColor, brokerInitialsFor } from '@/components/admin/crm/mobile/task-type-icons'
+import { MobileTypeIcon, brokerBadgeColor, brokerInitialsFor } from '@/components/admin/shared/mobile/task-type-icons'
 
 const ACTIONS_W = 216 // 3 × 72px quick actions
 

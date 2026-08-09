@@ -19,32 +19,11 @@ export type VoiceConstruction = {
 
 export const VOICE_CONSTRUCTIONS: readonly VoiceConstruction[] = [
   {
-    "id": "meaning-narration",
-    "rule": 2,
-    "label": "explains the sentence before it",
-    "source": "\\b(this|that|which|it)\\s+(tells|shows|means)\\s+you\\b|\\bwhat\\s+(this|that)\\s+means\\b|\\bin\\s+other\\s+words\\b|\\bput\\s+simply\\b|\\bthink\\s+of\\s+(it|this|that)\\s+as\\b|\\bis\\s+history,\\s*not\\s+a\\s+forecast\\b",
-    "fix": "Delete the sentence. The fact before it already carries the meaning."
-  },
-  {
-    "id": "obvious-restatement",
-    "rule": 2,
-    "label": "explains a label, chart, or word the reader can read",
-    "source": "\\b(lower|higher|faster|slower|shorter|longer)\\s+is\\s+(better|worse|faster|slower|higher|lower)\\b|\\bas\\s+you\\s+can\\s+see\\b|\\bnotice\\s+(that|how)\\b|\\bkeep\\s+in\\s+mind\\b|\\bit\\s+is\\s+(important|worth)\\s+(to\\s+note|noting|remembering)\\b|\\bit'?s\\s+(important|worth)\\s+(to\\s+note|noting|remembering)\\b",
-    "fix": "Delete. The chart, label, or number states this already."
-  },
-  {
     "id": "takeaway-framing",
     "rule": 2,
     "label": "announces the conclusion instead of stating the fact",
     "source": "\\bthe\\s+(takeaway|bottom\\s+line|upshot)\\s+(is|here)\\b|\\bwhat\\s+this\\s+all\\s+means\\b|\\bhere\\s+is\\s+what\\s+(that|this)\\s+means\\b",
     "fix": "Lead with the fact itself. Cut the announcement."
-  },
-  {
-    "id": "sermon-clause",
-    "rule": 8,
-    "label": "trailing clause that moralizes the fact",
-    "source": "\\bwhich\\s+is\\s+(one\\s+more\\s+reason|exactly\\s+why|why\\s+it\\s+(is|'?s)\\s+so\\s+important)\\b|\\band\\s+that\\s+matters\\s+because\\b|\\ball\\s+the\\s+more\\s+reason\\b|\\bwhich\\s+is\\s+precisely\\s+why\\b",
-    "fix": "End the sentence at the fact. Cut everything from the clause onward."
   },
   {
     "id": "affordance-instruction",
@@ -66,13 +45,6 @@ export const VOICE_CONSTRUCTIONS: readonly VoiceConstruction[] = [
     "label": "puts words in a named person's mouth",
     "source": "[\"\\u201d\\u2019']\\s*,?\\s*(said|says)\\s+[A-Z][a-z]+\\s+[A-Z][a-z]+|[A-Z][a-z]+\\s+[A-Z][a-z]+,\\s*(principal\\s+)?broker\\s*:\\s*[a-z]",
     "fix": "State it plainly in the brokerage voice, or cut it. Never attach a name to a sentence nobody said."
-  },
-  {
-    "id": "coined-maxim",
-    "rule": 8,
-    "label": "coins a maxim (the \"X, not Y\" shape)",
-    "source": "\\bis\\s+(a|an|the)\\s+[a-z][a-z\\s]{2,28},\\s*not\\s+(a|an|the)\\s+[a-z][a-z\\s]{2,28}\\b|\\bnot\\s+(a|an)\\s+[a-z]+,\\s*(but\\s+)?(a|an)\\s+[a-z]+\\b",
-    "fix": "State the thing plainly. A maxim is us being pleased with ourselves."
   },
   {
     "id": "data-speaks",

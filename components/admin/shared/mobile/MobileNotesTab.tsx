@@ -19,7 +19,7 @@ import { Plus, StickyNote, ChevronDown, ChevronRight } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
+import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
 import { partitionNotes } from '@/lib/crm/note-classify'
 import { cn } from '@/lib/utils'
 

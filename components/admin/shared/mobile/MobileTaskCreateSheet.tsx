@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { MobileTypeIcon } from '@/components/admin/crm/mobile/task-type-icons'
+import { MobileTypeIcon } from '@/components/admin/shared/mobile/task-type-icons'
 import type { CrmTaskType } from '@/lib/data/crm/getTaskQueue'
 
 export type TaskSheetContact = { id: number; name: string }

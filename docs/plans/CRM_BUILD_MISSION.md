@@ -1041,7 +1041,7 @@ DB verify and reverted net-zero. **9 findings (3 P0, 3 P1, 3 P2); 6 fixed, 3 ope
   tap-to-select scroll-syncs the list via a data-datekey effect lookup, touch-swipe month
   nav + sr-only prev/next for AT), white list (sticky ordinal headers "Wednesday, July
   1st" at top-14 under the shell header; 60px CalendarTaskRow: 18px warning checkbox +
-  A.6 type icon (shared components/admin/crm/mobile/task-type-icons.tsx w/ the
+  A.6 type icon (shared components/admin/shared/mobile/task-type-icons.tsx w/ the
   deterministic broker badge palette matt navy / paul indigo / rebecca teal) + 15px title
   + 13px time + 32px broker badge; CalendarReminderRow (10px success dot) for
   appointments (tap → edit AppointmentSheet) + deal closings (tap → /deals); optimistic

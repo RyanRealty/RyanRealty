@@ -14,7 +14,7 @@ import Link from 'next/link'
 import { ChevronDown, Check, Users } from 'lucide-react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
-import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
+import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
 import { cn } from '@/lib/utils'
 
 export type ScopeBroker = { slug: string; label: string; headshot: string | null }

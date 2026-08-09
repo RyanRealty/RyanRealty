@@ -23,10 +23,10 @@
  * Tailwind color class replaced with var(--a-*) tokens or av2 CSS classes.
  * The type-icon map and broker-display-name helper are inlined below (both
  * were pure, token-safe re-implementations of the shared
- * components/admin/crm/mobile/task-type-icons.tsx, which lives outside this
+ * components/admin/shared/mobile/task-type-icons.tsx, which lives outside this
  * migration's scope) so this file carries no legacy components/admin import
  * for them. CrmAvatar and MobileTaskCreateSheet stay on their shared
- * components/admin/crm/mobile/* imports by design — CrmAvatar's per-contact
+ * components/admin/shared/mobile/* imports by design — CrmAvatar's per-contact
  * fill palette is an intentionally brand-external hex set with no token
  * equivalent (documented in avatar-utils.ts, exempted from the design-token
  * lint there), and MobileTaskCreateSheet is the same create-task sheet the
@@ -44,8 +44,8 @@ import { cn } from '@/lib/utils'
 import { Button, ConfirmDialog, IconButton, Sheet, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { taskGroupLabel, time12 } from '@/lib/crm/calendar'
 import { zonedDateKey, zonedMinutes } from '@/lib/format/date'
-import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
-import MobileTaskCreateSheet from '@/components/admin/crm/mobile/MobileTaskCreateSheet'
+import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
+import MobileTaskCreateSheet from '@/components/admin/shared/mobile/MobileTaskCreateSheet'
 import type { TaskQueueRow, TaskQueueCounts, CrmTaskType } from '@/lib/data/crm/getTaskQueue'
 import type { TaskActions } from '../TasksView'
 import {

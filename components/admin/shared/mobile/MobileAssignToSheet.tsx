@@ -18,8 +18,8 @@ import { useState, useTransition } from 'react'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
-import { BROKER_HEADSHOTS } from '@/components/admin/crm/mobile/task-type-icons'
+import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
+import { BROKER_HEADSHOTS } from '@/components/admin/shared/mobile/task-type-icons'
 
 function SectionHeader({ label }: { label: string }) {
   return (

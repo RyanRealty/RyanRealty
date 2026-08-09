@@ -24,8 +24,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { CrmAvatar } from '@/components/admin/crm/mobile/CrmMobileKit'
-import MobileEditSheet, { type MobileEditData } from '@/components/admin/crm/mobile/MobileEditSheet'
+import { CrmAvatar } from '@/components/admin/shared/mobile/CrmMobileKit'
+import MobileEditSheet, { type MobileEditData } from '@/components/admin/shared/mobile/MobileEditSheet'
 
 /* ── §25.4 Tab definitions ─────────────────────────────────────────────────── */
 

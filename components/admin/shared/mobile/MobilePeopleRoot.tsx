@@ -18,7 +18,7 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { CrmList, CrmListRow } from '@/components/admin/crm/mobile/CrmMobileKit'
+import { CrmList, CrmListRow } from '@/components/admin/shared/mobile/CrmMobileKit'
 
 export interface MobileViewRow {
   id: number

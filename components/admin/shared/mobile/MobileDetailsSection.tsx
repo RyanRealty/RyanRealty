@@ -28,14 +28,14 @@ import { ChevronRight, Minus, Plus } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MobilePickerSheet, type PickerOption } from '@/components/admin/crm/mobile/MobilePickerSheet'
-import { MobileAssignToSheet } from '@/components/admin/crm/mobile/MobileAssignToSheet'
+import { MobilePickerSheet, type PickerOption } from '@/components/admin/shared/mobile/MobilePickerSheet'
+import { MobileAssignToSheet } from '@/components/admin/shared/mobile/MobileAssignToSheet'
 import {
   updatePersonFieldAction,
   assignPondAction,
   applyAutomationAction,
 } from '@/app/actions/crm-person-detail'
-import { TIMEFRAME_OPTIONS } from '@/components/admin/crm/people-list/people-list-utils'
+import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
 import { cn } from '@/lib/utils'
 
 /** §28 picker data bundle — assembled by the route (mobile-detail.tsx). */

@@ -18,7 +18,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
-import { TIMEFRAME_OPTIONS } from '@/components/admin/crm/people-list/people-list-utils'
+import { TIMEFRAME_OPTIONS } from '@/components/admin/shared/people-list/people-list-utils'
 
 type FieldSpec = {
   /** The crm_people column the handler writes. */

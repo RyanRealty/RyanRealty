@@ -144,7 +144,41 @@ Fifty years of financial writing for one imagined non-expert reader.
 
 ---
 
-## Recommendation
+## SUPERSEDED 2026-08-06 — the recommendation below was wrong
+
+Matt picked Berkshire. He said so plainly: *"you had 30 years of berkshire
+letters, that was what the voice was built off of."* What got built instead was
+the three-layer stack below, with GOV.UK as the enforcing "law" and Buffett
+demoted to "register."
+
+That ordering decided the outcome, because only one of the three layers can be
+mechanized. Adjective counts and sentence length are regexable; a paragraph that
+sounds like a person is not. So the gates enforced GOV.UK and cited Buffett, and
+the whole site was rewritten in a day into government-service prose. The
+homepage H1 came out of that pass as "Every home for sale in Central Oregon" —
+sitting directly under an eyebrow already reading "Central Oregon Real Estate."
+Correct by every rule here, and worse than the line it replaced.
+
+Two specific errors in what follows:
+
+- **"Law: GOV.UK."** A standard for writing benefits pages cannot be the law
+  over a voice anchored on shareholder letters. It is removed entirely.
+- **"Filter out: his homespun one-liners. Borrow the discipline, not the
+  folksiness."** This is the sentence that produced the beige. The discipline is
+  not what makes Buffett readable; what rides on top of it is.
+
+Also wrong: the "What dies under this anchor" list — aphorism pairs,
+meaning-narration, sermon clauses — became `coined-maxim`, `sermon-clause` and
+`meaning-narration` in `scripts/voice-constructions.cjs`. Buffett uses all three
+constantly. Interpreting the number for the reader IS the Berkshire letter.
+Those rules are removed from the gate.
+
+`VOICE.md` is the canon. This file is kept for the source links and the
+before/after passages only. **Do not adopt the recommendation below.**
+
+---
+
+## Recommendation (SUPERSEDED — see above)
 
 Adopt a three-layer anchor, each layer from a documented source:
 

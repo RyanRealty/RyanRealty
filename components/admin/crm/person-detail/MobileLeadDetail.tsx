@@ -14,11 +14,11 @@ import type { EmailEngagement } from '@/components/admin/crm/ConversationFeed'
 import type { ContactRelationship } from '@/lib/data/crm/getContactRelationships'
 import type { ContactCollaborator } from '@/lib/data/crm/getContactCollaborators'
 import type { ReactNode } from 'react'
-import { MobileContactDetail } from '@/components/admin/crm/mobile/MobileContactDetail'
-import { MobileInfoTab, type MobilePickersData } from '@/components/admin/crm/mobile/MobileInfoTab'
-import { MobileActivityTab, type MobileActivityRow } from '@/components/admin/crm/mobile/MobileActivityTab'
-import { MobileCommsTab } from '@/components/admin/crm/mobile/MobileCommsTab'
-import { MobileNotesTab } from '@/components/admin/crm/mobile/MobileNotesTab'
+import { MobileContactDetail } from '@/components/admin/shared/mobile/MobileContactDetail'
+import { MobileInfoTab, type MobilePickersData } from '@/components/admin/shared/mobile/MobileInfoTab'
+import { MobileActivityTab, type MobileActivityRow } from '@/components/admin/shared/mobile/MobileActivityTab'
+import { MobileCommsTab } from '@/components/admin/shared/mobile/MobileCommsTab'
+import { MobileNotesTab } from '@/components/admin/shared/mobile/MobileNotesTab'
 import type {
   MobilePhoneEntry,
   MobileEmailEntry,
@@ -26,8 +26,8 @@ import type {
   MobileCustomField,
   MobileAddress,
   MobileRecentMessage,
-} from '@/components/admin/crm/mobile/MobileInfoTab'
-import type { MobileNote } from '@/components/admin/crm/mobile/MobileNotesTab'
+} from '@/components/admin/shared/mobile/MobileInfoTab'
+import type { MobileNote } from '@/components/admin/shared/mobile/MobileNotesTab'
 
 function fmtPhone(d: string): string {
   return d.length === 10 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}` : d

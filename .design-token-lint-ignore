@@ -13,7 +13,7 @@ app/api/email/unsubscribe/route.ts
 # needs 12 distinct colorful avatar fills + colored chat/call/email action circles
 # with white glyphs, plus custom pill/circle button primitives — none expressible
 # in the 2-color brand token system. Same class of exception as the charts below.
-components/admin/crm/mobile/CrmMobileKit.tsx
+components/admin/shared/mobile/CrmMobileKit.tsx
 # avatar-utils — same FUB avatar hex palette, extracted to a non-client module so
 # server components can compute the color too (the kit is 'use client').
 lib/admin/crm-avatar.ts
@@ -23,10 +23,10 @@ lib/admin/crm-avatar.ts
 # (#7595e8/#4ad09f/#4ab8e8, §25.1 "inline (no token)") are part of the visual
 # contract. Raw <button>s are full-row/circular tap targets the <Button>
 # primitive can't express. Same exception class as CrmMobileKit above.
-components/admin/crm/mobile/MobileContactDetail.tsx
-components/admin/crm/mobile/MobileInfoTab.tsx
-components/admin/crm/mobile/MobilePickerSheet.tsx
-components/admin/crm/mobile/MobilePeopleRoot.tsx
+components/admin/shared/mobile/MobileContactDetail.tsx
+components/admin/shared/mobile/MobileInfoTab.tsx
+components/admin/shared/mobile/MobilePickerSheet.tsx
+components/admin/shared/mobile/MobilePeopleRoot.tsx
 # §26 Mobile Inbox + §27 Mobile Compose (M3/M4, 2026-07-02): same FUB-iOS
 # pt-precise reference class as the §25 files above — the documented row
 # heights (76pt rows, 60pt header, 34pt pills), 15/17/22pt text sizes, and
@@ -34,28 +34,21 @@ components/admin/crm/mobile/MobilePeopleRoot.tsx
 # (docs/fub-crm-spec/26-*.md + 27-*.md). Raw <button>s are full-bleed rows,
 # segmented pills, and circular icon targets the <Button> primitive can't
 # express.
-components/admin/crm/inbox/mobile/MobileBranch.tsx
-components/admin/crm/inbox/mobile/MobileInbox.tsx
-components/admin/crm/inbox/mobile/MobileInboxRow.tsx
-components/admin/crm/inbox/mobile/MobileThread.tsx
-components/admin/crm/inbox/mobile/MobileComposeSheet.tsx
-components/admin/crm/inbox/mobile/MobileAiPills.tsx
 # GlobalActivityFeed — the §24 mobile sub-tab strip (full-cell tap targets +
 # 2px indicator + FUB pt sizes) rides the existing feed client; same exception
 # class as the mobile components above.
 components/admin/crm/GlobalActivityFeed.client.tsx
-components/admin/crm/mobile/MobileDetailsSection.tsx
-components/admin/crm/mobile/MobileContactPointsSection.tsx
-components/admin/crm/mobile/MobileCommsTab.tsx
-components/admin/crm/mobile/MobileHomesTab.tsx
-components/admin/crm/mobile/MobileNotesTab.tsx
-components/admin/crm/mobile/MobileCalendarTab.tsx
+components/admin/shared/mobile/MobileDetailsSection.tsx
+components/admin/shared/mobile/MobileContactPointsSection.tsx
+components/admin/shared/mobile/MobileCommsTab.tsx
+components/admin/shared/mobile/MobileHomesTab.tsx
+components/admin/shared/mobile/MobileNotesTab.tsx
+components/admin/shared/mobile/MobileCalendarTab.tsx
 # Mobile punch-list additions (2026-07-02, Matt phone feedback): same §24/§25
 # FUB-iOS pt-precise exception class as the files above — navy header (§24
 # §1.3), edit sheet (§25.3.2), per-kind activity icon tints.
-components/admin/crm/mobile/MobileCrmHeader.tsx
-components/admin/crm/mobile/MobileEditSheet.tsx
-components/admin/crm/mobile/MobileActivityTab.tsx
+components/admin/shared/mobile/MobileEditSheet.tsx
+components/admin/shared/mobile/MobileActivityTab.tsx
 # Comms feed (FUB-parity contact-360, 2026-06-29): clones the Follow Up Boss
 # Comms tab as a full-bleed, multi-line, left-aligned expandable message-row
 # list. Each row is a raw <button> so the whole row is the tap target with
@@ -72,7 +65,6 @@ components/admin/crm/SmsComposer.tsx
 components/admin/crm/OwnedHomeCard.tsx
 # Contact Info tab (2026-06-30): hidden <input name="personId"> in the Assigned /
 # Stage row forms — no shadcn equivalent for a hidden field.
-components/admin/crm/ContactInfoTab.tsx
 # §07 parity gaps (2026-07-01): CollaboratorsPanel, ActionPlanProgressPanel, MergeContactDialog.
 # Hidden <input type="hidden"> fields carry person/enrollment/broker ids into server-action
 # forms -- no shadcn equivalent for hidden fields (same exception class as SmsComposer /
@@ -81,8 +73,6 @@ components/admin/crm/ContactInfoTab.tsx
 # can't be expressed with the inline-flex centered <Button> primitive.
 # text-[10px]/text-[11px]: Badge label sizing inside small chips -- matches the existing
 # locked usage in ConversationFeed / ContactInfoTab.
-components/admin/crm/CollaboratorsPanel.tsx
-components/admin/crm/ActionPlanProgressPanel.tsx
 components/admin/crm/MergeContactDialog.tsx
 # Deals/Pipeline Kanban (FUB-parity desktop, 2026-06-26): the FUB kanban board
 # uses a 6-color stage-indicator palette for column top borders (amber/blue/violet/
@@ -111,8 +101,6 @@ app/admin/(protected)/geo/AssignCommunity.tsx
 app/admin/(protected)/geo/NeighborhoodForm.tsx
 app/admin/(protected)/geo/area-guide-upload/AreaGuideUploadClient.tsx
 app/admin/(protected)/listings/page.tsx
-app/admin/(protected)/query-builder/AdminQueryBuilderForm.tsx
-app/admin/(protected)/reports/CityReportSection.tsx
 app/admin/(protected)/reports/brokers/page.tsx
 app/admin/(protected)/reports/custom/CustomReportBuilder.tsx
 app/admin/(protected)/resort-communities/page.tsx
@@ -139,7 +127,6 @@ app/reports/sales/[city]/[period]/page.tsx
 components/ListingMapGoogle.tsx
 components/SearchFilterBar.tsx
 components/activity/ActivityFeedSection.tsx
-components/admin/DashboardSyncPanel.tsx
 components/compare/CompareClient.tsx
 components/listing/ListingGallery.tsx
 components/listing/showcase/ShowcaseHero.tsx
@@ -172,7 +159,6 @@ app/admin/(protected)/analytics/action-required/page.tsx
 # Admin producers spec viewer — renders SKILL.md markdown to HTML.
 # The <hr> reference is inside a runtime markdown replacer
 # (`.replace(/^---$/gm, '<hr>')`), not JSX. Internal-only page.
-app/admin/(protected)/producers/[slug]/page.tsx
 
 # Seller home-value LP — uses Google brand hex (#4285F4, #34A853,
 # #FBBC05, #EA4335) for the official Google sign-in button. Google's
@@ -231,10 +217,6 @@ app/admin/(protected)/deals/page.tsx
 # pixel-level sizing (w-[7px] for the live-dot, min-h-[580px] for the hero
 # viewport height) with no locked-ladder equivalent. Experience System
 # modules are tracked exceptions, not unbounded; each new module is listed.
-components/site/experience/FlyoverHero.tsx
-components/site/experience/LiveMarketBand.tsx
-components/site/experience/SectionNav.tsx
-components/site/experience/InlineValuationHook.tsx
 # v3.1 de-tiling modules -- same class of exceptions:
 # ListingLedger: white text on photo scrim (featured listing overlay), pixel-level
 #   thumb height, tracking overrides for badge label, hand-rolled badge span
@@ -249,11 +231,6 @@ components/site/experience/InlineValuationHook.tsx
 # PaymentSlider: range input with inline gradient for track fill (no token equivalent
 #   for a slider track), hex for the gradient stops, label+input primitives
 #   (no shadcn slider component that matches this inline pattern).
-components/site/experience/ListingLedger.tsx
-components/site/experience/CommunityMapLedgerPane.tsx
-components/site/experience/PriceHistoryScrubber.tsx
-components/site/experience/PriceHistoryScrubber.client.tsx
-components/site/experience/PaymentSlider.tsx
 # Homepage v3 Experience Rollout components (2026-06-10, Family 2):
 #   - text-white/* variants required on photo/dark backgrounds (hero, ticker, mosaic,
 #     market band) — no cream/navy token alternative works on a dark image scrim.
@@ -281,11 +258,9 @@ app/admin/(protected)/reports/emails/page.tsx
 # Admin sidebar: sticky-below-61px-header needs h-[calc(100vh-61px)] — no
 # locked-ladder step for viewport-minus-header heights (same exception class
 # as the admin report/chart pages above).
-app/components/admin/AdminSidebar.tsx
 # Mobile bottom tab bar: iOS safe-area inset requires pb-[env(safe-area-inset-bottom)]
 # — no locked-ladder step can express env() (same exception class as the
 # sticky-header calc heights above).
-app/components/admin/AdminMobileTabBar.tsx
 # Recharts LP performance charts need literal SVG fill/stroke colors (navy + mid-navy),
 # same exception class as the rental EquityProjectionChart.
 
@@ -297,7 +272,6 @@ app/components/admin/AdminMobileTabBar.tsx
 # Raw hero search input/button + full-bleed navy/cream sections — same exception
 # class as the V3 hero search above. Each KB island is listed as added.
 components/site/kb/
-app/concept/kb/
 # Listing-detail price strip (2026-07-08): renders inside .kb-root and uses the
 # KB .btn chip chrome for Save/Share — wrapping those in the shadcn <Button>
 # would stack two competing chrome systems on one control. Same KB exception
@@ -329,10 +303,6 @@ app/luxury-homes-bend/page.tsx
 # the <Button> primitive's inline-flex centering breaks text-flow / the
 # compact grid here. Same exception class as the deleted TemplateEditor and
 # the §12 automations canvas/palette tiles below.
-components/admin/crm/settings/templates/EmailTemplateList.tsx
-components/admin/crm/settings/templates/TextTemplateList.tsx
-components/admin/crm/settings/templates/TextTemplateModal.tsx
-components/admin/crm/settings/templates/EmojiPickerButton.tsx
 
 # §12 Automations visual editor + list (admin-only FUB-parity surfaces, 2026-07-01,
 # docs/fub-crm-spec/12-action-plans-and-automations.md):
@@ -345,10 +315,6 @@ components/admin/crm/settings/templates/EmojiPickerButton.tsx
 #   <Button> primitive's inline-flex centering breaks the card layout (same
 #   exception class as TemplateEditor's inline table-cell trigger). The canvas
 #   step cards are buttons, so they cannot be <Card> (hand-rolled-card rule).
-components/admin/crm/automations/AutomationEditor.tsx
-components/admin/crm/automations/EditorCanvas.tsx
-components/admin/crm/automations/EditorPalette.tsx
-components/admin/crm/automations/AutomationsListView.tsx
 
 # Properties report map (CRM reporting, 2026-07-01):
 # PropertiesMap.tsx: Google Maps API configuration (map styles + Marker icon/label
@@ -387,12 +353,12 @@ components/admin/crm/person-detail/PersonRightRail.tsx
 # accordion/filter chips where <Button> padding breaks the dense layout.
 # Same exception class as components/admin/crm/person-detail/*.
 app/admin/(protected)/crm/loading.tsx
-components/admin/crm/people-list/PeopleSidebar.tsx
-components/admin/crm/people-list/PeopleListView.tsx
-components/admin/crm/people-list/FilterPanel.tsx
-components/admin/crm/people-list/ColumnChooser.tsx
-components/admin/crm/people-list/ExportPeopleDialog.tsx
-components/admin/crm/people-list/ScopeDropdown.tsx
+components/admin/shared/people-list/PeopleSidebar.tsx
+components/admin/shared/people-list/PeopleListView.tsx
+components/admin/shared/people-list/FilterPanel.tsx
+components/admin/shared/people-list/ColumnChooser.tsx
+components/admin/shared/people-list/ExportPeopleDialog.tsx
+components/admin/shared/people-list/ScopeDropdown.tsx
 
 # §08 Inbox rebuild (inbox-desktop, ci:crm-screen-parity, 2026-07-01): the FUB
 # three-panel workspace is a viewport-bounded pane (h-[calc(100vh-...)]) so the
@@ -406,10 +372,6 @@ app/admin/(protected)/crm/inbox/page.tsx
 # click-to-edit teal links + color swatches + tab strip where <Button> padding
 # breaks the FUB layout, modal max-h-[85vh], micro chip type. Same exception
 # class as the §05/§07/§08 rebuild surfaces above.
-components/admin/crm/deals/DealsBoard.tsx
-components/admin/crm/deals/DealsSubBar.tsx
-components/admin/crm/deals/DealsDialogs.tsx
-components/admin/crm/deals/DealDetailModal.tsx
 
 # §09 Tasks + Calendar rebuild (tasks-calendar-desktop, ci:crm-screen-parity,
 # 2026-07-01): dense FUB-parity scheduling surfaces — month-grid event rows and
@@ -421,7 +383,6 @@ components/admin/crm/deals/DealDetailModal.tsx
 components/admin/crm/calendar/AppointmentModal.tsx
 components/admin/crm/calendar/CalendarGrids.tsx
 components/admin/crm/calendar/CalendarView.tsx
-components/admin/crm/tasks/TasksView.tsx
 
 # §29 Mobile Calendar & Tasks rebuild (mobile-calendar-tasks, ci:crm-screen-parity,
 # 2026-07-02): FUB-iOS-parity mobile surfaces at documented pt precision — navy
@@ -429,18 +390,17 @@ components/admin/crm/tasks/TasksView.tsx
 # micro type (12/13/15px), deterministic broker badge hex palette (§29 spec
 # table), warning-border checkboxes. Same exception class as the §25/§26 mobile
 # surfaces above.
-components/admin/crm/mobile/task-type-icons.tsx
-components/admin/crm/mobile/MobileTaskCreateSheet.tsx
+components/admin/shared/mobile/task-type-icons.tsx
+components/admin/shared/mobile/MobileTaskCreateSheet.tsx
 components/admin/crm/calendar/mobile/MobileMonthGrid.tsx
 components/admin/crm/calendar/mobile/MobileCalendarScreen.tsx
 components/admin/crm/calendar/mobile/MobileCalendarRows.tsx
-components/admin/crm/tasks/mobile/MobileTasksScreen.tsx
 
 # §28 mobile pickers (mobile-pickers, ci:crm-screen-parity, 2026-07-02): the
 # mob-34 Assign-To sheet anatomy is pt-precise (60px rows, 12/13/16px labels,
 # bare tap-row buttons). Same exception class as the §25/§26/§29 mobile
 # surfaces above.
-components/admin/crm/mobile/MobileAssignToSheet.tsx
+components/admin/shared/mobile/MobileAssignToSheet.tsx
 
 # mob-06 Settings modal (mobile-settings, ci:crm-screen-parity, 2026-07-02):
 # the documented feature-row anatomy carries pixel-verified icon-circle hexes
@@ -455,7 +415,6 @@ app/admin/(protected)/settings/MobileSettingsScreen.tsx
 # are the visual contract (screen-44.md §2a/§2b). Mobile-only component (the
 # desktop dashboard renders DashboardActivityTable instead). Same exception
 # class as the §25/§26/§28/§29 mobile surfaces above.
-components/admin/DashboardActivityFeed.tsx
 # Content-engine map pins (events/venues/golf/trails detail maps, 2026-07-03):
 # priced home markers + the venue/trailhead dot render as HTML overlays ON a
 # Google Maps AdvancedMarkerElement, outside the normal KB cascade. They need
@@ -474,7 +433,6 @@ app/api/email/market-chart/route.tsx
 # iframe sizes to the viewport (max-h-[75vh] / h-[52vh]) so the broker sees
 # the whole email without the dialog overflowing the screen. The locked ladder
 # has no viewport-relative sizes. Same class as the chart/report exceptions.
-components/admin/crm/settings/MarketReportPreviewDialog.tsx
 # Photo curation board (moved photos/ -> media/photos/ in the media-library
 # merge, 2026-07-07): content unchanged since before the move — the path move
 # dropped its grandfathered baseline. Raw buttons are the photo-tile tap
@@ -503,7 +461,6 @@ components/admin/SendDocDialog.client.tsx
 # config (a JS object handed to the Maps SDK, not a Tailwind class or CSS
 # var context) — same exception class as PropertiesMap.tsx / lib/maps/markers.ts;
 # the brand hexes #102742/#faf8f4 are the only way to color a Maps SDK marker.
-components/admin/prospecting/ProspectDetailDrawer.client.tsx
 components/admin/prospecting/ProspectSendDialog.client.tsx
 components/admin/prospecting/ProspectMap.client.tsx
 # BPO worklist (/admin/bpo rebuild): same fixed side-panel width / viewport-
@@ -511,16 +468,12 @@ components/admin/prospecting/ProspectMap.client.tsx
 # ProspectSendDialog above — no locked-ladder step covers a `w-[380px]`
 # in-flow aside, a `h-[90vh]` bottom sheet, or a `max-h-[90dvh]` compose
 # dialog clamp.
-components/admin/bpo/worklist/BpoDetailDrawer.client.tsx
-components/admin/bpo/worklist/BpoSendDialog.client.tsx
 # CMA worklist (/admin/cmas rebuild, 2026-07-18): same fixed side-panel width /
 # viewport-relative sheet + dialog height exception class as ProspectDetailDrawer /
 # ProspectSendDialog above — no locked-ladder step covers a `w-[380px]` in-flow
 # aside, a `h-[90vh]` bottom sheet, or a `max-h-[90dvh]` compose dialog clamp.
 # CmaBoard hosts the detail-drawer chrome inline (no separate CmaDetailDrawer
 # file for a worklist this size), so the exception lands on CmaBoard itself.
-components/admin/cma/worklist/CmaBoard.client.tsx
-components/admin/cma/worklist/CmaSendDialog.client.tsx
 
 # Wave C shadcn burn-down migrations (2026-07-22): G47 requires site + account
 # surfaces to be shadcn-free, so these two components hand-roll their controls

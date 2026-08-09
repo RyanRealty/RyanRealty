@@ -57,13 +57,27 @@ good, and letting a number sit by itself.
 Further codified in Lawrence Cunningham's *The Essays of Warren Buffett*, and in
 Buffett's own foreword to the SEC's Plain English Handbook.
 
-Two supporting standards, adopted for mechanics only:
+**The letters are the law here, not a register note.** When anything in this file
+disagrees with how Buffett actually writes, the letters win and this file is
+wrong. Calibrate against the source, not against a paraphrase of it.
 
-- **GOV.UK** (https://guidance.publishing.service.gov.uk/writing-to-gov-uk-standards/writing-guidelines/)
-  for sentence discipline. Their position on adjectives is ours: they are
-  subjective and make text read like spin.
-- **Redfin's market reports** (https://www.redfin.com/news/) for report structure,
-  and for rule 3 below.
+**GOV.UK was removed as a standard on 2026-08-06, and this is why.** It was
+adopted "for mechanics only" and it quietly became the thing that governed,
+because it is the only layer a regex can enforce. Buffett sat third, as
+"register," which is the layer no machine can check. So every gate built off
+this file enforced GOV.UK and cited Buffett, and the site drifted to
+government-service prose: correct, stripped, and dead. GOV.UK is a standard for
+writing benefits pages. It is not this.
+
+The line that did the most damage, from the research that produced this file:
+*"Borrow the discipline, not the folksiness."* That is deleted. The discipline
+without the personality is exactly the beige that resulted. Buffett is readable
+because of what rides on top of the plainness — the aside, the analogy, the
+willingness to sound like a person with a view. Keep it.
+
+**Redfin's market reports** (https://www.redfin.com/news/) remain, for report
+STRUCTURE only: key facts first, methodology before interpretation, receipts
+under the claim. Structure, never sentences.
 
 ---
 

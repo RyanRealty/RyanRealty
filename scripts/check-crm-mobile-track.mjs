@@ -54,7 +54,7 @@ const SHIPPED = [
   },
   {
     id: 'M1 interactivity — pickers + add contact point (§23.8/§25.5)',
-    file: 'components/admin/crm/mobile/MobileInfoTab.tsx',
+    file: 'components/admin/shared/mobile/MobileInfoTab.tsx',
     must: [/MobileDetailsSection/, /MobileContactPointsSection/],
   },
   {
@@ -95,7 +95,7 @@ const SHIPPED = [
   },
   {
     id: 'M5 people root — directory/list modes + count bar',
-    file: 'components/admin/crm/mobile/MobilePeopleRoot.tsx',
+    file: 'components/admin/shared/mobile/MobilePeopleRoot.tsx',
     must: [/All Lists/, /Stages/, /people\b/, /formatCount/],
   },
   {

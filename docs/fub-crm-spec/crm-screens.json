@@ -262,7 +262,7 @@
   {
     "id": "mobile-pickers",
     "specRef": "docs/fub-crm-spec/28-mobile-pickers-modals-and-action-sheets.md",
-    "route": "components/admin/crm/mobile/MobileDetailsSection.tsx",
+    "route": "components/admin/shared/mobile/MobileDetailsSection.tsx",
     "status": "done",
     "requiredComponents": [
       "MobileAssignToSheet",
