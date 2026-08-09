@@ -23,22 +23,39 @@ the blacklist into a list of holes nobody can reason about.
 
 ## The gate contract — IN FORCE for 24 of 27 files
 
-The end state Matt approved is that `ci:admin-v2-tokens`
-(`scripts/check-admin-v2-tokens.mjs`) treats this directory exactly like `v2`:
-it satisfies the same token rules, and a gated page may import from it without
-tripping rule 3 (the `LEGACY_IMPORT` blacklist).
+**LANDED 2026-08-09, and the mechanism changed on the way in.** 24 of this
+directory's 27 files are in `SCAN_DIRS` and satisfy the same token rules as
+`v2`. But `shared` is no longer a *named exception* in the import rule, because
+that turned out to be the wrong shape.
 
-**LANDED 2026-08-09, partially.** `components/admin/shared` is now a sanctioned
-import source: `LEGACY_IMPORT` in the gate exempts it alongside `v2`, so a gated
-page may import from here without tripping rule 3. The directory is held to the
-same token rules in return — 24 of its 27 files are listed in `SCAN_DIRS`.
+Rule 3 used to be a LOCATION allowlist — "importing is fine if the target sits
+in `v2` or `shared`". It now asks whether **the target is itself scanned by this
+gate**. The rule means "do not import something that renders public-brand
+colour"; asking where a file sits was a proxy for that, correct only while `v2`
+was the one clean directory.
 
-THREE FILES ARE NOT SCANNED, and each is named in the gate beside the reason:
-`mobile/MobileCalendarTab.tsx` (-> `crm/calendar/AppointmentSheet`),
+The cost of the proxy was concrete and nearly paid: `BulkActions`,
+`ConversationFeed` and `AppointmentSheet` have ONE, two and two importers
+respectively, and satisfying a path check would have meant relocating them into
+this directory — which is defined as MULTI-ROUTE infrastructure — and dragging
+the G50 composer chokepoints (`EmailBodyEditor`, `MergeFieldInserter`) along
+behind them, for no rendered difference. Membership in `SCAN_DIRS` is
+self-proving: a file added there carrying raw colour, a palette class, a
+semantic class, a brand leak or its own illegal import makes the gate FAIL. You
+cannot open a hole by adding to the list.
+
+`SEMANTIC_CLASS` was turned on in the same change, at zero cost (0 occurrences
+across the 250 files then in scope). That closes the blind spot which forced
+newsletters to be un-gated, made these 27 files need hand-verification, and left
+17 route-root files invisible — the gate now reads what RENDERS, not only what
+is imported.
+
+THREE FILES HERE ARE STILL NOT SCANNED, each named in the gate beside its
+reason: `mobile/MobileCalendarTab.tsx` (-> `crm/calendar/AppointmentSheet`),
 `mobile/MobileCommsTab.tsx` (-> `crm/ConversationFeed`) and
-`people-list/PeopleListView.tsx` (-> `crm/BulkActions`). Each imports a legacy
-component that has not been migrated. Migrate those three legacy components and
-the exclusions go away — see Condition 2.
+`people-list/PeopleListView.tsx` (-> `crm/BulkActions`). All three RENDER those
+components, so the imports are real. The remedy is to migrate those three and
+add them to `SCAN_DIRS` — **in place. Nothing needs to move.**
 
 `saved-view-grouping.ts` moved in with this change (108 LOC, its only import is
 a type), which is what unblocked `PeopleSidebar`.

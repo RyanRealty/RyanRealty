@@ -473,13 +473,46 @@ const TW_PALETTE =
   /\b(?:bg|text|border|from|to|via)-(?:white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\d{1,3})?(?:\/\d{1,3})?\b/g
 const BRAND_LEAK = /--rr-|Amboqia|AmboqiaBoriango|\bGeist\b/g
 // `shared` joins `v2` as a sanctioned import source (Matt 2026-08-08, 11F
+
+// Rule 2b — SHADCN SEMANTIC CLASSES. These carry no palette name, so TW_PALETTE
+// never saw them, and they were the blind spot this phase kept falling into: a
+// file could pass every rule while rendering bg-card and text-muted-foreground,
+// which resolve to the PUBLIC brand palette the admin's §5 amnesia blacklists.
+// It is what forced newsletters to be un-gated in unit 10, what made the 27
+// shared/ files need hand-verification, and what left 17 route-root files
+// invisible. Turned on 2026-08-09 at ZERO cost: measured 0 occurrences across
+// all 250 files already in scope, so "scanned by this gate" now means what it
+// always claimed to mean.
+const SEMANTIC_CLASS =
+  /\b(?:bg-card|bg-background|bg-muted|bg-accent|bg-secondary|bg-popover|text-foreground|text-muted-foreground|text-primary|bg-primary|text-primary-foreground|text-secondary-foreground|text-accent-foreground|text-destructive|bg-destructive|text-card-foreground|border-border|border-input|divide-border|ring-ring)\b/g
 // blocker decision 1). components/admin/shared holds the CRM machinery that
 // more than one route mounts — infrastructure, not one route's islands — and it
 // is held to these same token rules rather than exempted from them: its files
 // are listed in SCAN_DIRS below. Two directories with one rule each, instead of
 // one directory with two jobs; the rejected alternative was per-page holes in
 // this blacklist.
-const LEGACY_IMPORT = /from\s+['"](?:@\/)?components\/(?:admin\/(?!(?:v2|shared)(?:\/|['"]))|ui\/)/g
+// Rule 3 — IMPORTS, judged by whether the TARGET IS ITSELF SCANNED by this gate
+// (isScanned below), not by where it happens to live.
+//
+// This was a location allowlist: components/admin/v2, and later
+// components/admin/shared. That was the right proxy when v2 was the only clean
+// directory and the wrong one afterwards — it asks WHERE a file sits when the
+// rule means "does this render public-brand colour". The cost was concrete: it
+// would have forced BulkActions, ConversationFeed and AppointmentSheet (one,
+// two and two importers) to be relocated into a directory explicitly defined as
+// MULTI-ROUTE infrastructure purely to satisfy a path check, dragging the G50
+// composer chokepoints along with them.
+//
+// SCAN_DIRS membership is SELF-PROVING: a file added there carrying raw colour,
+// a palette class, a semantic class, a brand leak or its own illegal import
+// makes this gate FAIL. You cannot open a hole by adding to the list, which is
+// what separates this from the per-page exemptions Matt rejected (decisions.md,
+// 11F blocker 1). One rule, no per-case entries.
+// Scoped to the SAME universe the location rule policed — components/admin/*
+// and components/ui/*. Shared app components outside that (GoogleMapsBootstrap,
+// ShareButton, icons/*, tc/*) were never in scope and are not now: widening the
+// rule to them would be a different, unreviewed decision.
+const COMPONENT_IMPORT = /from\s+['"]((?:@\/)?components\/(?:admin|ui)\/[^'"]+)['"]/g
 
 function walk(dir) {
   const out = []
@@ -493,6 +526,28 @@ function walk(dir) {
 
 function report(file, lineIdx, rule, snippet) {
   failures.push(`${relative(ROOT, file)}:${lineIdx + 1} — ${rule}: ${snippet.trim().slice(0, 90)}`)
+}
+
+// The set of files this gate actually inspects, resolved once. Rule 3 asks
+// membership of this set, so "legal to import" and "proven clean" are the same
+// statement rather than two lists that can drift apart.
+const SCANNED = new Set()
+for (const entry of SCAN_DIRS) {
+  const abs = join(ROOT, entry)
+  if (!existsSync(abs)) continue
+  if (statSync(abs).isDirectory()) for (const f of walk(abs)) SCANNED.add(f)
+  else SCANNED.add(abs)
+}
+
+/** Resolve a `components/...` or `@/components/...` specifier to a real file. */
+function resolveComponentImport(spec) {
+  const rel = spec.startsWith('@/') ? spec.slice(2) : spec
+  const base = join(ROOT, rel)
+  for (const ext of ['', '.tsx', '.ts', '/index.tsx', '/index.ts']) {
+    const p = base + ext
+    if (existsSync(p) && statSync(p).isFile()) return p
+  }
+  return null
 }
 
 for (const dir of SCAN_DIRS) {
@@ -523,7 +578,13 @@ for (const dir of SCAN_DIRS) {
       const wasInBlock = inBlockComment
       if (inBlockComment) {
         if (trimmed.includes('*/')) inBlockComment = false
-      } else if (trimmed.startsWith('/*') && !trimmed.includes('*/')) {
+      } else if (
+        (trimmed.startsWith('/*') || trimmed.startsWith('{/*')) &&
+        !trimmed.includes('*/')
+      ) {
+        // {/* … */} spans lines in JSX and its continuation lines start with
+        // ordinary prose, so without this the closing line of a multi-line JSX
+        // comment is read as code.
         inBlockComment = true
       }
       const isCommentLine =
@@ -541,11 +602,27 @@ for (const dir of SCAN_DIRS) {
         COLOR_FN.lastIndex = 0
         if (TW_PALETTE.test(line)) report(file, i, 'Tailwind palette class (admin v2 does not use Tailwind color)', line)
         TW_PALETTE.lastIndex = 0
+        if (SEMANTIC_CLASS.test(line)) report(file, i, 'shadcn semantic class (resolves to the PUBLIC brand palette — use var(--a-*))', line)
+        SEMANTIC_CLASS.lastIndex = 0
       }
       if (BRAND_LEAK.test(line)) report(file, i, 'public-brand leak (amnesia: no --rr-*/Amboqia/Geist in admin v2)', line)
       BRAND_LEAK.lastIndex = 0
-      if (LEGACY_IMPORT.test(line)) report(file, i, 'import from legacy components/admin or components/ui (blacklisted)', line)
-      LEGACY_IMPORT.lastIndex = 0
+      // Rule 3 — the imported module must itself be in scope for this gate.
+      for (const m of line.matchAll(COMPONENT_IMPORT)) {
+        const target = resolveComponentImport(m[1])
+        // Unresolvable (a type-only path alias, a barrel that does not exist on
+        // disk) is not evidence of a violation — do not guess.
+        if (!target) continue
+        if (!SCANNED.has(target)) {
+          report(
+            file,
+            i,
+            `imports ${relative(ROOT, target)}, which this gate does not scan — ` +
+              'migrate it and add it to SCAN_DIRS, or do not import it here',
+            line,
+          )
+        }
+      }
       // Rule 4 — chrome ban (ADMIN_UI §3 acceptance bar, Matt 2026-08-05):
       // filter sets are ONE compact control, never pill rows.
       if (line.includes('av2-chiprow')) {
