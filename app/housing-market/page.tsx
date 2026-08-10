@@ -49,8 +49,9 @@ import {
   getMarketPulseCitySnapshots,
   getRecentBlogPosts,
 } from '@/lib/data'
-import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
+import { getCoMarketAnnual, getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
 import { CoMarketSizeStrip } from '@/components/site/analytics/CoMarketSizeStrip'
+import { CoMarketComposition } from '@/components/site/analytics/CoMarketComposition'
 import { getSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -138,7 +139,7 @@ export default async function HousingMarketHubPage() {
   //                   property_type='A'. ONE call replaces legacy per-city fan-out.
   //   blogPosts     — blog_posts, status='published', newest first. Up to 3.
   // -------------------------------------------------------------------------
-  const [regionPulse, citySnapshots, blogPosts, heroPhoto, coMarketSeries] = await Promise.all([
+  const [regionPulse, citySnapshots, blogPosts, heroPhoto, coMarketSeries, co2024] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getMarketPulseCitySnapshots(CITY_LABELS).catch(() => []),
     getRecentBlogPosts({ limit: 3 }).catch(() => []),
@@ -147,6 +148,7 @@ export default async function HousingMarketHubPage() {
     getSurfaceImage('hero', { geoTags: ['central-oregon'], seed: 'housing-market-hub' }).catch(() => null),
     // Analytics: CO closed-sales size from marts (2016–2024). Fast after mart rebuild.
     getCoMarketAnnualSeries({ fromYear: 2016, toYear: 2024, typeScope: 'all' }).catch(() => []),
+    getCoMarketAnnual({ year: 2024, typeScope: 'all' }).catch(() => null),
   ])
 
   // -------------------------------------------------------------------------
@@ -323,6 +325,8 @@ export default async function HousingMarketHubPage() {
           <CoMarketSizeStrip series={coMarketSeries} highlightYear={2024} />
         ) : null}
 
+        {co2024 ? <CoMarketComposition row={co2024} /> : null}
+
         {/* City tiles — per-city active counts from ONE getMarketPulseCitySnapshots
             call (§0). Each tile links to that city's full market report. */}
         {cityTowns.length > 0 ? (
@@ -375,6 +379,7 @@ export default async function HousingMarketHubPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
+              { href: '/housing-market/history', label: 'Closed sales explorer' },
               { href: '/housing-market/reports', label: 'Market report index' },
               { href: '/cities', label: 'All Central Oregon cities' },
               { href: '/communities', label: 'Communities and neighborhoods' },

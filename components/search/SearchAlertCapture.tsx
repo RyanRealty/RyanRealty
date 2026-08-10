@@ -184,12 +184,12 @@ export function SearchAlertCapture({
   }
 
   return (
-    <div className="w-full border-b border-border bg-card">
+    <div className="sticky top-0 z-30 w-full border-b border-border bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/90">
       <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-start gap-2 sm:items-center">
           <BellAlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground">Get new listings by email</p>
+            <p className="text-sm font-medium text-foreground">Stay on this search. Get new listings by email.</p>
             {/* "for $90M, Bend" read as nonsense (matches FOR a price?) — "matching"
                 works grammatically no matter what the filter-shorthand contains
                 (design-audit P3). */}

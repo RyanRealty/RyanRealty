@@ -31,6 +31,7 @@ import { NeighborhoodMarketContext } from '@/components/site/listing-detail/Neig
 import { SchoolsBlock } from '@/components/site/listing-detail/SchoolsBlock'
 import { ParksNearbyBlock } from '@/components/site/listing-detail/ParksNearbyBlock'
 import { MortgageCalculator } from '@/components/site/listing-detail/MortgageCalculator'
+import { RoomRestyle } from '@/components/site/listing-detail/RoomRestyle.client'
 import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
@@ -418,6 +419,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
           remarks. Reordered 2026-07-30 to the buyer decision sequence. */}
       <PropertySpecs listing={listingWithPhotos} />
       <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
+      {photos[0]?.url ? (
+        <RoomRestyle photoUrl={photos[0].url} listingKey={listing.listingKey} />
+      ) : null}
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       <ListingLocationMap
         lat={listing.lat}
