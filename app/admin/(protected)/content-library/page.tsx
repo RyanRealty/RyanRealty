@@ -35,13 +35,14 @@
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getBrokerSelfRecordByEmail } from '@/lib/data'
 import { formatDate } from '@/lib/format/date'
-import { listBrokerDeliverables, signDeliverableDownload } from '@/lib/marketing-brain/deliverable-library'
+import { listBrokerDeliverables } from '@/lib/marketing-brain/deliverable-library'
 import {
   isShareableToSocial,
   captionFor,
   shareableTypeLabel,
 } from '@/lib/marketing-brain/deliverable-share'
 import { DeliverableShareBar } from './_components/DeliverableShareBar'
+import { DownloadDeliverableButton } from './_components/DownloadDeliverableButton'
 import { ReportError, SectionHead, VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
@@ -72,22 +73,25 @@ export default async function ContentLibraryPage() {
   // this migration removes.
   const items = brokerSlug ? await listBrokerDeliverables(brokerSlug).catch(() => null) : []
 
-  // Sign each row for THIS broker. The action takes the PARTS, never a path —
-  // the object key is rebuilt server-side from the session's broker slug, so
-  // there is no path string in play for a caller to tamper with.
+  // P12: do NOT sign every row at render (that was 28–44s on a full library).
+  // Download buttons sign on click via signDeliverableForDownload. Share bars
+  // still need a URL — only sign shareable rows (usually a small minority).
   //
   // shareable/caption are computed DEFAULT-DENY from the filename (which encodes
   // the action type): a CMA, a BPO, or an internal summary is never shareable,
   // so the share bar cannot expose a client's private pricing document to a
   // public feed (ci:deliverable-share-safety).
+  const { signDeliverableDownload } = await import('@/lib/marketing-brain/deliverable-library')
   const rows = await Promise.all(
     (items ?? []).map(async (item) => {
       const shareable = isShareableToSocial(item.filename)
+      const shareUrl =
+        shareable && brokerSlug
+          ? await signDeliverableDownload(brokerSlug, item.actionId, item.filename).catch(() => null)
+          : null
       return {
         ...item,
-        url: brokerSlug
-          ? await signDeliverableDownload(brokerSlug, item.actionId, item.filename).catch(() => null)
-          : null,
+        shareUrl,
         shareable,
         caption: shareable ? captionFor(item.filename) : '',
         typeLabel: shareable ? shareableTypeLabel(item.filename) : '',
@@ -109,7 +113,7 @@ export default async function ContentLibraryPage() {
                 {rows.length} {rows.length === 1 ? 'deliverable' : 'deliverables'} for{' '}
                 {displayName ?? brokerSlug}.
               </b>{' '}
-              Download links expire five minutes after this page loads.
+              Download signs on click (links expire five minutes after you request them).
             </>
           )}
         </VerdictLine>
@@ -145,15 +149,8 @@ export default async function ContentLibraryPage() {
                   </div>
 
                   <div className="av2-wordrow">
-                    {row.url ? (
-                      <a
-                        href={row.url}
-                        download
-                        className="av2-btn av2-btn--quiet"
-                        style={{ textDecoration: 'none' }}
-                      >
-                        Download
-                      </a>
+                    {brokerSlug ? (
+                      <DownloadDeliverableButton actionId={row.actionId} filename={row.filename} />
                     ) : (
                       <span style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)' }}>
                         Unavailable
@@ -165,7 +162,7 @@ export default async function ContentLibraryPage() {
                     <DeliverableShareBar
                       caption={row.caption}
                       typeLabel={row.typeLabel}
-                      downloadUrl={row.url}
+                      downloadUrl={row.shareUrl}
                     />
                   )}
                 </li>

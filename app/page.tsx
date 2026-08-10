@@ -45,12 +45,12 @@ export const revalidate = 60
 export const metadata: Metadata = {
   title: 'Ryan Realty. Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
   description:
-    'Every home for sale on the Central Oregon MLS: Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live prices, days on market, and closed comps by town.',
+    'Live MLS inventory for Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne — list prices, days on market, and what closed on your street.',
   alternates: { canonical: siteUrl },
   openGraph: {
     title: 'Ryan Realty. Central Oregon Real Estate',
     description:
-      'Every home for sale on the Central Oregon MLS. Live prices, days on market, and closed comps for Bend, Redmond, Sisters, and Sunriver.',
+      'Live MLS inventory for Bend, Redmond, Sisters, and Sunriver — list prices, days on market, and closed comps.',
     url: siteUrl,
     siteName: 'Ryan Realty',
     type: 'website',
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Ryan Realty. Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
-    description: 'Every home for sale on the Central Oregon MLS, with live prices and days on market.',
+    description: 'Live Central Oregon MLS inventory — list prices and days on market, town by town.',
   },
 }
 
@@ -192,29 +192,25 @@ export default async function Home() {
       <KbNav />
       <KbSectionTracker pageType="homepage" />
       <SmoothScrollProvider>
-        {/* Hero lead: regional scope (the count is region-wide, not six cities)
-            plus the honest source qualifier for the headline above it. It
-            renders as "<n> homes for sale on the MLS, from La Pine to
-            Terrebonne. Median list $X. Pending in N days." — four facts, no
-            adjectives. The old tail, "Real numbers, direct from the brokers who
-            close deals here," named a virtue with no receipt and any Bend
-            brokerage could have pasted it (VOICE.md review test #4 and #5). */}
+        {/* Hero: defaults restored to Buffett voice (VOICE.md 2026-08-06).
+            titleTop/titleBottom/lead live on KbHero — "The MLS list, and what
+            it sold for." plus the live count + median in the sub-line. Do not
+            re-pass a stripped lead here. */}
         <KbHero
           data={{
             activeCount: pulse?.activeCount ?? null,
             medianListPrice: pulse?.medianListPrice ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
-          lead="on the MLS, from La Pine to Terrebonne."
         />
         {/* C-07: the homepage was the only one of four callers omitting `title`, so
             it inherited the placeholder default and rendered a naked verb, "EXPLORE".
             The eyebrow had been given scent copy to compensate for a heading that said
             nothing — the fix belongs one line down. "The six towns" also went: it reads
             as a claim about the region, and the site carries Prineville and Madras too. */}
-        <KbExploreTowns towns={towns} eyebrow="Central Oregon" title={'Where people\nare buying'} />
-        <KbCommunities communities={communityItems} eyebrow="Resort & master-planned" />
-        <KbFeatured items={featuredItems} eyebrow="On the market now" />
+        <KbExploreTowns towns={towns} eyebrow="By town" title={'Where the sales\nare happening'} />
+        <KbCommunities communities={communityItems} eyebrow="Resorts and planned communities" />
+        <KbFeatured items={featuredItems} eyebrow="Listed right now" />
         {/* fitToFeatures frames the actual inventory — the REGION box in this
             wide container padded half the visible map out to the Willamette
             Valley with zero pins (design-audit). */}

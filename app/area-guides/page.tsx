@@ -120,10 +120,10 @@ export default async function AreaGuidesPage() {
             below so both destinations stay one tap away. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Explore by area"
-          titleTop="Discover"
-          titleBottom="Central Oregon"
-          lead="Bend, Redmond, Sisters, Sunriver, and the smaller towns around them. Neighborhoods, market trends, and homes for sale in each one."
+          eyebrow="Central Oregon · by area"
+          titleTop="Towns, neighborhoods,"
+          titleBottom="and what is selling."
+          lead="Bend, Redmond, Sisters, Sunriver, and the smaller towns around them. Market numbers and homes for sale in each one."
           videoSrc={null}
           posterSrc="/images/trails/green-lakes.jpg"
         />

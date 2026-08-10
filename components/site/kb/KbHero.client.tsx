@@ -76,16 +76,15 @@ type KbHeroProps = {
 export function KbHero({
   data,
   eyebrow = 'Central Oregon Real Estate',
-  // "Welcome to the High Desert" was pure atmosphere — a first-time visitor
-  // learned nothing about the product until the small eyebrow line
-  // (design-audit P3). "Find your home in the High Desert" replaced it and was
-  // no better: every brokerage in Bend could paste it verbatim (VOICE.md review
-  // test #4). The headline now states the page's actual scope, and the live
-  // count + MLS qualifier land in the sub-line directly beneath it.
-  // Only app/page.tsx uses this default; every other KbHero caller passes its own.
-  titleTop = 'Every home for sale',
-  titleBottom = 'in Central Oregon.',
-  lead = 'on the MLS, from La Pine to Terrebonne.',
+  // VOICE.md 2026-08-06: the GOV.UK-style strip produced "Every home for sale
+  // in Central Oregon" under an eyebrow that already said Central Oregon Real
+  // Estate — correct, stripped, and dead. Buffett is the law again: plain
+  // words, one person, and a little personality on top of the facts. The live
+  // count and median still sit in the sub-line. Only app/page.tsx uses these
+  // defaults; every other KbHero caller passes its own.
+  titleTop = 'The MLS list,',
+  titleBottom = 'and what it sold for.',
+  lead = 'from La Pine to Terrebonne. Prices and days on market, pulled live.',
   videoSrc = '/videos/hero-optimized.mp4',
   posterSrc = '/images/hero/hero-old-mill-master-4k.jpg',
   posterAlt,

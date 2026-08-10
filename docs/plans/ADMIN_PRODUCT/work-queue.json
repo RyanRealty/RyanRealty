@@ -2,16 +2,16 @@
   {
     "id": "12-admin-chrome-debt",
     "phase": "P12",
-    "note": "PARTIALLY CLOSED 2026-08-10. MobileCrmHeader gone; DSCR/users use en-US number formatters (not date locale). SiteHeader/HideChrome intermittent hydration still open as lower priority (task_af3d76b5). content-library 28-44s still perf follow-on. Close as residual chrome, not correctness."
+    "note": "PARTIALLY CLOSED 2026-08-10 (Grok). MobileCrmHeader gone; number formatters fixed; content-library now signs on click (28-44s SSR sign removed). SiteHeader/HideChrome intermittent hydration still open lower priority (display:none CSS gate already shipped). Close as residual chrome, not correctness."
   },
   {
     "id": "3b-fub-identifiers",
     "phase": "TRACK3",
-    "note": "ACTIVE TRACK3 2026-08-10. Ratchet scripts/check-fub-identifiers-ratchet.mjs + baseline (801 hits / 144 files) prevents NEW surface. Full rename (~171 files) is multi-session vocabulary work \u2014 not blocking P12 DoD. NEXT: rename wave by module with CRM-native names + expand ci:no-fub allowlist later."
+    "note": "ACTIVE TRACK3 2026-08-10. Ratchet scripts/check-fub-identifiers-ratchet.mjs + baseline (801 hits / 144 files) prevents NEW surface. Full rename (~171 files) is multi-session vocabulary work — not blocking P12 DoD. NEXT: rename wave by module with CRM-native names + expand ci:no-fub allowlist later."
   },
   {
     "id": "pricing-depth-followons",
     "phase": "BACKLOG",
-    "note": "BACKLOG 2026-08-10. Parked CMA pricing ideas \u2014 re-run scripts/cma-backtest.mjs quarterly. Not P12."
+    "note": "BACKLOG 2026-08-10. Parked CMA pricing ideas — re-run scripts/cma-backtest.mjs quarterly. Not P12."
   }
 ]

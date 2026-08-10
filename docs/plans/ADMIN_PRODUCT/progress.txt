@@ -529,3 +529,28 @@ NOT IN SCOPE
   REMAINING (non-P12 or residual chrome): 3b-fub-identifiers (TRACK3 + ratchet), pricing-depth-followons (BACKLOG),
     12-admin-chrome-debt residual (hydration SiteHeader, content-library perf).
   CLOSED THIS PASS: 12-correctness, 12-person-scope-class, p12-audit-trail-coverage, 12-measurement, 12-full-sync-never-completes, 11f-converge-third-reader, v2-primitive-audit
+
+2026-08-10T06:30:00Z /ENDTOEND — Buffett voice restore + chrome residual (Grok).
+  GOAL: apply VOICE.md 2026-08-06 (GOV.UK removed; four shapes guidance-only) to
+  public pages that the over-strip left government-service flat; finish content-
+  library perf; do not re-sweep retired shape rules.
+  SHIPPED:
+    · Homepage hero defaults: "The MLS list, / and what it sold for." + lead with
+      facts and personality (period, not em-dash — brand-voice still gates —).
+      Removed the page-level lead override that re-imposed the stripped line.
+    · Meta descriptions restored to live-inventory framing (em-dashes allowed in
+      metadata only).
+    · Section labels: By town / Where the sales are happening; Resorts and planned
+      communities; Listed right now.
+    · KbSell body: free + no listing agreement + useful whether you list next
+      month or next year (interpretation allowed again).
+    · KbMarketHud ask: region numbers vs your street; CTA "Get a price range…"
+    · KbTeam: Brokers / Who you would talk to.
+    · /area-guides hero: dropped "Discover" (competitor-test empty); towns,
+      neighborhoods, and what is selling.
+    · content-library: sign on click (new server action + DownloadDeliverableButton);
+      SSR only signs shareable rows for the share bar.
+  GATES: ci:brand-voice 0 · ci:voice-constructions 0 · tsc clean.
+  REMAINING residual (not correctness): SiteHeader/HideChrome intermittent
+  hydration (CSS gate already in place); FUB rename waves (ratchet 801/144);
+  pricing backlog.

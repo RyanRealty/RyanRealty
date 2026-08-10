@@ -42,8 +42,8 @@ export function KbTeam() {
     <section className="section workwith" id="team" ref={root}>
       <div className="wrap">
         <div className="sec-head">
-          <span className="sec-index">The team</span>
-          <h2 className="sec-title display">Work with us</h2>
+          <span className="sec-index">Brokers</span>
+          <h2 className="sec-title display">Who you would talk to</h2>
         </div>
         <div className="ww-grid">
           {BROKERS.map((b) => (

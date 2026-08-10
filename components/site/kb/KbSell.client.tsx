@@ -67,14 +67,12 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
             <br />
             home worth?
           </h2>
-          {/* Rewritten 2026-08-06. The prior line ("A real number, not a
-              guess. Built from what your street actually trades for...") coined
-              a maxim (VOICE.md rule 8), used "trades" for a home sale (rule 4),
-              and claimed a comp window ("closed this quarter") the CMA does not
-              commit to. This states the deliverable and its price. */}
+          {/* Buffett restore 2026-08-10: keep every fact (3+3 comps, free, no
+              listing agreement). Allow the short interpretation the 2026-08-06
+              GOV.UK pass stripped — that is how Berkshire letters work. */}
           <p className="sell-p">
             A broker pulls three closed comps and three active comps near you, then writes the price range
-            they support. It is free, and no listing agreement is required to get it.
+            they support. Free, with no listing agreement. Useful whether you list next month or next year.
           </p>
           <form className="sell-form" onSubmit={submit}>
             <input

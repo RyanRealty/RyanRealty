@@ -285,10 +285,10 @@ export function KbMarketHud({
             secondary. from=<pathname> carries the true originating surface
             into the valuation lead (same mechanism as KbSell). */}
         <div className="mkt-ask">
-          <p className="mkt-ask-q">What does this market mean for your home?</p>
+          <p className="mkt-ask-q">Those are the region&rsquo;s numbers. Yours come from your street.</p>
           <div className="mkt-ask-row">
             <a href={`${valuationPath()}?from=${encodeURIComponent(pathname || '/')}`} className="btn">
-              Get your number <span className="arr">→</span>
+              Get a price range for your home <span className="arr">→</span>
             </a>
             {/* design-audit #118: was hardcoded to /housing-market, the summary
                 hub this HUD is often embedded IN (self-referential on the
