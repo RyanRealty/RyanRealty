@@ -53,7 +53,7 @@ export function CoMarketSizeStrip({ series, highlightYear }: Props) {
           <strong>{highlight.soldCount.toLocaleString('en-US')}</strong> closes
           {highlight.medianClose != null ? (
             <>
-              ; median close <strong>{moneyPrice(highlight.medianClose)}</strong>
+              . Median close <strong>{moneyPrice(highlight.medianClose)}</strong>
             </>
           ) : null}
           .
