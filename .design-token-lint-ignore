@@ -278,6 +278,10 @@ components/site/kb/
 # class as components/site/kb/ above; scope is the two .btn buttons only (text
 # sizes were cleaned to the ladder in the design-audit remediation).
 components/site/listing-detail/PriceCtaStrip.tsx
+# F4 soft next-step coach (2026-08-10): dismiss is a quiet text control matching
+# PriceCtaStrip KB register; shadcn Button would trip ci:shadcn-burndown on a new
+# site surface, so raw <button> + navy/cream vars (same exception class as strip).
+components/site/listing-detail/ListingAlertCoach.client.tsx
 
 # Agent Activity area chart + KPI sparklines (CRM reporting, 2026-07-01): recharts SVG
 # linearGradient stopColor + Area stroke/fill/dot props require literal hex. Same

@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
 
 const STORAGE_KEY = 'rr-listing-alert-coach-dismissed'
 const DWELL_MS = 5000
@@ -17,6 +16,9 @@ const DWELL_MS = 5000
  * - Dismiss once per session (sessionStorage)
  * - Hide when the real capture strip is already in view
  * - Only render when city is known (same gate as ListingLikeThisAlerts)
+ *
+ * No shadcn (ci:shadcn-burndown). Dismiss control is a raw button like
+ * PriceCtaStrip / RoomRestyle (design-token ignore list).
  */
 export function ListingAlertCoach({ city }: { city: string | null | undefined }) {
   const [visible, setVisible] = useState(false)
@@ -83,7 +85,7 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
     <div
       role="region"
       aria-label="Suggested next step"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-4 sm:pb-4"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 sm:px-4"
       style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
     >
       <div
@@ -92,24 +94,19 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
       >
         <p className="min-w-0 flex-1 text-sm leading-snug">
           <span className="font-semibold">Next step:</span>{' '}
-          <a
-            href="#listing-like-alerts"
-            className="font-semibold underline underline-offset-2"
-          >
+          <a href="#listing-like-alerts" className="font-semibold underline underline-offset-2">
             get alerts for homes like this
           </a>
           <span className="text-muted-foreground">. Free, no account required.</span>
         </p>
-        <Button
+        <button
           type="button"
-          variant="ghost"
-          size="sm"
           onClick={dismiss}
-          className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+          className="shrink-0 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
           aria-label="Dismiss next step suggestion"
         >
           Not now
-        </Button>
+        </button>
       </div>
     </div>
   )
