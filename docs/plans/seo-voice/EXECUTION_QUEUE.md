@@ -57,7 +57,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 1. [x] **A1 Baseline scoreboard** — FP sessions, engaged, alerts, saves, CO mart into VERIFY_LOG via `scoreboard-snapshot.mjs` (2026-08-10). GSC/GA4 still optional ops (access).
 2. [~] **A2 F00 chrome systems** — dual chrome kill + PublicNav + menu CSS shipped; **prod browser V** still open
-3. [ ] **A3 Sitemap / GSC health** — child sitemaps resolvable; no thinning; ops triage
+3. [~] **A3 Sitemap / GSC health** — `ci:sitemap-resolvable` + `ci:sitemap-inventory-gate` on every push; GSC console ops still human
 
 ### Block B — Conversion 10× (G4) — primary lead lever
 
@@ -75,19 +75,19 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block D — Exhaustive feature verify (G2–G3) — you rejected skip lists
 
-12. [ ] **D1 F00** chrome/systems → **V** in VERIFY_LOG (browser proof)
-13. [ ] **D2 F01** Homepage
-14. [ ] **D3 F02** Search + listing money path
-15. [ ] **D4 F03** Areas / geo (city, nbhd, community)
-16. [ ] **D5 F04** Lifestyle under Areas
-17. [ ] **D6 F05** Market surfaces (incl. size/composition honesty)
-18. [ ] **D7 F06** Tools
-19. [ ] **D8 F07** Sell / valuation
-20. [ ] **D9 F08** Content / AEO
-21. [ ] **D10 F09** Trust / brokerage
-22. [ ] **D11 F10** Paid LPs
-23. [ ] **D12 F11** Account / saved
-24. [ ] **D13 F12** Auth & compliance public
+12. [~] **D1 F00** chrome — code V (PublicNav); browser V **blocked L1 403**
+13. [~] **D2 F01** Homepage — static I (seo-shell + structure); browser open
+14. [~] **D3 F02** Search + listing — static I (capture/save/restyle wired); outcome cold
+15. [~] **D4 F03** Areas — static I (city/community/nbhd capture)
+16. [ ] **D5 F04** Lifestyle under Areas — not deep-audited
+17. [~] **D6 F05** Market — static I (size/composition/explorer)
+18. [ ] **D7 F06** Tools — not deep-audited
+19. [~] **D8 F07** Sell / valuation — static I (B3 path verified)
+20. [ ] **D9 F08** Content / AEO — not deep-audited
+21. [ ] **D10 F09** Trust / brokerage — not deep-audited
+22. [~] **D11 F10** Paid LPs — static I (B5 aligned)
+23. [~] **D12 F11** Account / saved — portal + ActivityFeed exist; volume cold
+24. [ ] **D13 F12** Auth & compliance public — not deep-audited
 25. [ ] **D14 Close all B / high I tickets** from D1–D13 (G3)
 
 ### Block E — Design / UI craft (G7 / P5) — **was in plan; now on spine**
@@ -104,15 +104,15 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 ### Block F — Engagement habit product (U4 + G10)
 
 33. [~] **F1 Sticky / mid-browse capture** — bar shipped; not full habit system
-34. [ ] **F2 Personal feed / return loop** (D1-style engagement)
-35. [ ] **F3 Save + alert as default product behavior**
+34. [~] **F2 Personal feed / return loop** — **signed-in** `/account` ActivityFeed + “new since” insights exist; guest habit feed not built
+35. [~] **F3 Save + alert as default product behavior** — surfaces default on search/listing (B1/B2); not yet product-default identity for all guests
 36. [ ] **F4 Demand signals / next-step coach** (as product allows without creepy overreach)
 
 ### Block G — Measurement maturity (G6)
 
 37. [~] **G1 Dual-source docs + MP page_view** — prior ship
 38. [x] **G2 Weekly scoreboard ritual** — `SCOREBOARD_RITUAL.md` + script; MEASUREMENT_DUAL_SOURCE §3 updated
-39. [ ] **G3 GA4 ops** — Tag Assistant; Advanced Consent Modeling; Reporting identity Blended (Matt UI click where required)
+39. [ ] **G3 GA4 ops** — **BLOCKED Matt UI:** Tag Assistant; Advanced Consent Modeling; Reporting identity Blended
 40. [x] **G4 Prove or document** — **2026-08-10 FP-primary permanent** (MEASUREMENT_DUAL_SOURCE §7b): FP+GSC primary forever; GA4 supplementary; not waiting for GA4 parity
 
 ### Block H — Market analytics residual (G9 / SI) — foundation ≠ full platform
@@ -134,14 +134,14 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 52. [x] **I3 Brand aliases / entity resolution** — `data/analytics/office-brand-aliases.json` + bootstrap; methodology `DIM_OFFICE_ENTITY_RESOLUTION.md` (share mart still string-level until office_id join)
 53. [ ] **I4 Ryan buy-side + alias truth** (strategy-grade share)
 54. [x] **I5 Per-office agent drill + CSV export** — `?office=` + `/admin/analytics/competition/export`
-55. [ ] **I6 Public competitor naming** — only after Matt lock (policy)
+55. [ ] **I6 Public competitor naming** — **BLOCKED Matt lock** (policy)
 
 ### Block J — Next-gen AI (U2)
 
 56. [x] **J1 Room restyle API + listing UI**
 57. [x] **J2 Interior photo pick + rate/cost caps** — default interior heuristic + picker; strict RL notes UI+API
 58. [x] **J3 Conversion path after restyle** — city alert (listing_alerts) + contact CTA
-59. [ ] **J4 Prod browser E2E proof** on a live listing
+59. [ ] **J4 Prod browser E2E proof** — **BLOCKED** same as L1 (host 403)
 
 ### Block K — Voice residual (Layer B only)
 
@@ -152,7 +152,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 62. [ ] **L1 Prod browser proof pack** — size, composition, history, competition admin, restyle, chrome on 8 URLs · **BLOCKED this host 2026-08-10:** public site returns **403** (WAF/bot); needs Matt browser or non-blocked egress
 63. [x] **L2 Gates green path** — `npm run push` discipline (ongoing)
-64. [ ] **L3 VERIFY_LOG current** after every family / unit
+64. [~] **L3 VERIFY_LOG current** — updated this grind; keep current after each unit
 
 ### Block M — Authority flywheel (G8) — still part of 10× plan
 
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **A3 Sitemap / GSC health** (or D1 F00 browser proof if egress) |
-| **THEN** | D2–D3 money-path verify · C3 hub residual · Block E UI craft · F2 habit · rest of A–M |
-| **NOTE** | B3/B5/G4/H7/H8~/M1/K2 shipped this grind; L1 still host 403; B1/B2/B4 outcome counts still cold |
+| **NOW** | **E1 UI craft chrome polish** (or H6 feature cubes / I4 Ryan buy-side / D5–D13 residual) |
+| **THEN** | E2–E7 UI craft · F4 · M2–M3 · H6 full cubes · K1 body inventory · Matt: G3 + L1 browser |
+| **NOTE** | Large batch shipped this /endtoend; **not 10×** (alerts still 6). Blockers: L1/J4 host 403, G3 Matt UI, I6 Matt lock. |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 

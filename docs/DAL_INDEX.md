@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-08-10T16:44:49.137Z
+**Generated:** 2026-08-10T19:23:18.879Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -150,6 +150,20 @@ Companion files:
 
 ---
 
+### `lib/data/analytics/analyzeClosedSales.ts`
+
+**Exports:** `analyzeClosedSales`
+
+**Tables:** `analytics_result_cache`, `analytics_mart_market_annual`
+
+**Selected columns:** `sold_count`, `total_volume`, `median_close`, `mean_close`, `methodology`, `computed_at`, `expires_at`
+
+**TTL windows:** `CACHE_WINDOWS.marketStats`
+
+**Cache tags:** `cacheTag.market, 'analytics-analyze-closed'`
+
+---
+
 ### `lib/data/analytics/co-cities.ts`
 
 **Exports:** `ANALYTICS_CO_CITIES_PROPER`, `ANALYTICS_METHODOLOGY_V1`
@@ -195,6 +209,12 @@ Companion files:
 **TTL windows:** `CACHE_WINDOWS.marketStats`
 
 **Cache tags:** `cacheTag.market, 'analytics-co-office-share'`
+
+---
+
+### `lib/data/analytics/property-type-labels.ts`
+
+**Exports:** `PROPERTY_TYPE_LABELS`, `labelPropertyType`
 
 ---
 
@@ -3200,8 +3220,9 @@ Companion files:
 |---|---|
 | `activity_events` | `tileAndEventToDrop()`, `getPriceDrops()`, `getPriceDropDigest()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/listings/getPriceDrops.ts` · `lib/data/sync/syncWrites.ts` |
 | `admin_actions` | `recordSendBlockEvent()` <br /> `lib/data/crm/recordSendBlockEvent.ts` |
-| `analytics_mart_market_annual` | `getCoMarketAnnual()`, `getCoMarketAnnualSeries()` <br /> `lib/data/analytics/getCoMarketAnnual.ts` |
+| `analytics_mart_market_annual` | `analyzeClosedSales()`, `getCoMarketAnnual()`, `getCoMarketAnnualSeries()` <br /> `lib/data/analytics/analyzeClosedSales.ts` · `lib/data/analytics/getCoMarketAnnual.ts` |
 | `analytics_mart_office_share_annual` | `getCoOfficeShare()` <br /> `lib/data/analytics/getCoOfficeShare.ts` |
+| `analytics_result_cache` | `analyzeClosedSales()` <br /> `lib/data/analytics/analyzeClosedSales.ts` |
 | `app_config` | `getCalculatorDefaults()` <br /> `lib/data/config.ts` |
 | `asset_library` | `PROPERTY_SHOOTS_BUCKET()`, `ensureShootsBucket()`, `uploadShootAsset()`, `findAssetBySourceId()`, `upsertAssetLibraryRow()`, `resolveListingLatLng()`, `getAreaGuideVideos()`, `getAreaGuideVideo()`, `getGeoTileImages()`, `getGolfImages()`, `pickGolfImage()`, `getLifestyleImages()`, `getSurfaceImages()`, `pickSurfaceImage()`, `getSurfaceImage()` <br /> `lib/data/agent/asset-registry.ts` · `lib/data/media/getAreaGuideVideos.ts` · `lib/data/media/getGeoTileImages.ts` · `lib/data/media/getGolfImages.ts` · `lib/data/media/getLifestyleImages.ts` · `lib/data/media/getSurfaceImages.ts` |
 | `blog_posts` | `getBlogPostBySlug()`, `getBlogPostsBySlugs()`, `getPopularBlogSlugs()`, `getPublishedBlogPosts()`, `getRecentBlogPosts()`, `getRelatedBlogPosts()`, `getMattBrokerRecord()`, `getBrokerSelfRecord()`, `getBrokerSelfRecordByEmail()`, `updateBrokerById()`, `getBrokerBySlug()`, `getBrokerForOgBySlug()`, `getBlogPostForOgBySlug()`, `searchBrokersByDisplayName()`, `getBrokers()`, `searchSiteContentTitles()` <br /> `lib/data/blog/getBlogPostBySlug.ts` · `lib/data/blog/getBlogPostsBySlugs.ts` · `lib/data/blog/getPopularBlogSlugs.ts` · `lib/data/blog/getPublishedBlogPosts.ts` · `lib/data/blog/getRecentBlogPosts.ts` · `lib/data/blog/getRelatedBlogPosts.ts` · `lib/data/brokers/getBrokers.ts` · `lib/data/search/searchSiteContentTitles.ts` |

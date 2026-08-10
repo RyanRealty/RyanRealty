@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-10T16:44:49.091Z
+**Generated:** 2026-08-10T19:23:18.830Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -594,7 +594,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 272**
+### `cmas` · **rows ≈ 273**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -683,7 +683,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 251**
+### `expired_listings` · **rows ≈ 252**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -742,7 +742,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 669**
+### `marketing_brain_actions` · **rows ≈ 670**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -989,6 +989,21 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `rank_volume` | integer | yes |  |
 | `methodology` | text | no | 'closed_cte+service_area_v1'::text |
 | `computed_at` | timestamp with time zone | no | now() |
+
+### `analytics_result_cache`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `filter_hash` | text | no |  |
+| `filters` | jsonb | no |  |
+| `sold_count` | integer | no | 0 |
+| `total_volume` | numeric | no | 0 |
+| `median_close` | numeric | yes |  |
+| `mean_close` | numeric | yes |  |
+| `methodology` | text | no | 'closed_cte+service_area_v1'::text |
+| `source` | text | no | 'rpc'::text |
+| `computed_at` | timestamp with time zone | no | now() |
+| `expires_at` | timestamp with time zone | no |  |
 
 ### `analytics_service_area_cities`
 
