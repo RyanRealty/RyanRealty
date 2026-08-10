@@ -44,7 +44,8 @@
 - No inventing §0 numbers.  
 - No request-path TOAST/`details` scans (G62).  
 - No multi-week “roadmap theater.”  
-- Don’t thin sitemap; don’t rebrand.
+- Don’t thin sitemap; don’t rebrand.  
+- **K2 policy locked:** never re-sweep the **four retired shape rules** (aphorism pair, meaning-narration, sermon clause, obvious restatement) — retired 2026-08-06 in `VOICE.md`; they are writing guidance only, not gates (`voice-constructions.cjs`).
 
 ### Done means (from EXECUTION_QUEUE — U32)
 **All** plan blocks execute: conversion, F-family verify, **design/UI craft (G7)**, engagement, measurement ops, analytics residual, competitive truth, AI restyle polish, voice residual, authority flywheel.  

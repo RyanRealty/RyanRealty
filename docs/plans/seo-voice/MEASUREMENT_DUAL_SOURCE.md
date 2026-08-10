@@ -33,6 +33,13 @@
 **Google / Ads / external reporting truth (partial, consent-gated)**  
 → GA4 property `527333348` / stream `G-ST40W4WM6T` via GTM `GTM-WV6R4NZ5` + client gtag, after Accept (or modeled cookieless pings when denied).
 
+### G4 permanent decision (2026-08-10)
+
+**First-party + GSC are primary** for “is traffic dead?” and product/SEO decisions.  
+**GA4 is supplementary** (Ads, Signals, Google ecosystem) until it is within ~2× engaged FP — and even then FP remains the honest daily scoreboard.  
+**Do not block shipping** on GA4 parity. Weekly ritual: `node scripts/analytics/scoreboard-snapshot.mjs` (`SCOREBOARD_RITUAL.md`).  
+G3 (Advanced Consent Modeling / Blended reporting identity) remains optional Matt UI work.
+
 ---
 
 ## 1. Ops scoreboard — which source answers which question
@@ -203,6 +210,30 @@ One-line UI notes (where cheap) point back here and to first-party visitors.
 | Weekly ritual defined | Any TRACKING_POLICY default change |
 | Admin honesty notes on worst GA4-only labels | Full GA4 ≈ first-party parity |
 | MP conversion path documented (exists, secret-gated) | — |
+| **G4 FP-primary permanent** (below) | Waiting on GA4 ≈ FP parity — **not required** |
+
+---
+
+## 7b. G4 permanent dual-source decision (2026-08-10) — LOCKED
+
+**Decision: first-party + GSC are permanent primary traffic truth. GA4 is supplementary until (if ever) engaged GA4 is within ~2× of engaged first-party — and even then FP stays primary for product ops.**
+
+| Layer | Role | When to trust it alone |
+|-------|------|------------------------|
+| **First-party** (`visitor_sessions` / `visitor_events`, scoreboard-snapshot) | **Primary product truth** — sessions, engagement, funnels | Always for “is the site working / who engaged” |
+| **GSC** | **Primary discovery truth** — clicks, impressions, money queries | Always for organic SEO health |
+| **GA4** (client + MP conversions) | **Supplementary** Google/Ads view (consent + ad-block gated) | Paid optimization cross-check; never sole traffic numerator |
+
+### Why permanent (not “until GA4 catches up”)
+
+1. **Consent Mode v2 denied-by-default is LOCKED** (`ci:tracking-policy`). GA4 undercount vs FP is structural, not a bug to “fix” by auto-granting analytics.
+2. Observed scale (2026-08): FP **thousands/day**; undiagnosed GA4 windows often **~1–2 users**. Ratio ≫ 2× is expected under policy + blockers.
+3. **Do not wait for GA4 parity** to declare traffic healthy, ship conversion work, or run the weekly scoreboard. G4 queue unit is **closed as FP-primary permanent**, not deferred on GA4 ops (G3 Tag Assistant / modeling remain useful but are not blockers for product truth).
+4. GA4 remains valuable for Ads linkage, Signals, and consented behavior — **compare, never sum** with FP; never use GA4-only to claim “traffic is dead.”
+
+### Ops one-liner
+
+> Scoreboard = **FP sessions + engaged + GSC** for truth · **GA4** as consented Google slice · CRM for leads.
 
 ---
 

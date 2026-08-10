@@ -85,7 +85,9 @@ export default function SellValuationPage() {
           titleBottom="the comps behind it."
           lead="We send a comparative market analysis built from closed sales near you and the homes yours would compete against. It costs nothing. It is not a listing agreement."
           showSearch={false}
-          cta={{ href: '#home_valuation', label: 'Get the written valuation' }}
+          // B3: hero primary scrolls to the form section (not a second page).
+          // Form element also keeps id=home_valuation for legacy anchors.
+          cta={{ href: '#valuation-form', label: 'Get the written valuation' }}
           ctaSecondary={null}
           videoSrc={null}
           posterSrc={VALUATION_HERO}
@@ -96,7 +98,7 @@ export default function SellValuationPage() {
             section is restyled into the KB cream surface. */}
         <section
           id="valuation-form"
-          className="section border-b border-border bg-card px-4 py-12 sm:px-6 sm:py-16"
+          className="section scroll-mt-24 border-b border-border bg-card px-4 py-12 sm:px-6 sm:py-16"
           aria-labelledby="form-heading"
         >
           <div className="wrap mx-auto max-w-xl">

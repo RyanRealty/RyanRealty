@@ -221,7 +221,9 @@ export default async function SellPage() {
               <SellerLPForm knownVisitor={false} heroVariant pagePath={ROUTE_PATH} />
               <p className="hero-form-note">
                 Prefer to talk first? Call{' '}
-                <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>.
+                <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
+                . Dedicated written valuation page:{' '}
+                <a href="/sell/valuation">What&apos;s my home worth</a>.
               </p>
             </>
           }

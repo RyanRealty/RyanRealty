@@ -26,15 +26,21 @@
 
 | Family | Status | Notes |
 |--------|--------|-------|
-| F00 chrome | I | agent host cannot fetch prod (network); code path PublicNav shipped earlier |
-| F14 analytics | V | marts 2016–2025, admin competition+agents, public size, cron |
-| F01–F04 | O | |
-| F05 Market | I | size strip shipped; composition next |
-| F06–F09 | O | |
-| F10 LPs | O | alerts LP exists |
-| F11 Account | O | saved_searches=2 |
-| F12 | O | |
+| F00 chrome | I | code: `PublicNav.client` + site-nav; prod HTML proof blocked (403 host) |
+| F01 home | I | static: page + KbSell + Layer A H1 locked by ci:seo-shell |
+| F02 search | I | SearchAlertCapture + SaveSearchButton wired; outcome cold |
+| F03 areas | I | city + community + nbhd capture; browser V open |
+| F04 lifestyle | O | under Areas; not deep-audited this grind |
+| F05 Market | I | size + composition + history explorer mart/RPC path |
+| F06 Tools | O | not deep-audited this grind |
+| F07 sell | I | /sell + /sell/valuation ValuationForm present |
+| F08 content | O | not deep-audited this grind |
+| F09 trust | O | not deep-audited this grind |
+| F10 LPs | I | buyer-listing-alerts + seller LPs exist |
+| F11 Account | I | portal ActivityFeed + saved searches insights exist; volume cold |
+| F12 auth | O | not deep-audited this grind |
 | F13 | X | |
+| F14 analytics | V | marts, competition desk, aliases, explorer cache path |
 ## Conversion
 
 | Metric | Value | Ticket |
@@ -46,6 +52,16 @@
 | CO closed 2024 (mart) | 5707 / $3.931B | analytics_mart_market_annual region all |
 
 ## Session notes (newest first)
+
+### 2026-08-10 B3 B5 G4 H7 H8 M1 K2 batch
+- **B3:** Code-verified ValuationForm path: `insertValuationRequest` + FUB/CRM + `trackEvent('generate_lead')` + Meta CAPI + `fireLeadGenerated`. Hero CTA → `#valuation-form` + `scroll-mt-24`; SmoothScrollProvider Lenis hash scroll; `/sell` form-first + prominent link to `/sell/valuation`. No invented numbers.
+- **B5:** Buyer LP band + FAQ: same free `listing_alerts` product as `/search` and `/cities/bend`.
+- **G4:** MEASUREMENT_DUAL_SOURCE §7b — FP+GSC primary permanent; GA4 supplementary; not waiting for parity.
+- **H7:** `docs/plans/seo-voice/REPORT_FACTORY_REGISTRY.md` R01–R15 status table.
+- **H8:** Skeleton `scripts/analytics/snapshot-active-inventory.mjs` (JSON by city; no table yet).
+- **M1:** `/housing-market` FAQ appends mart size + composition from `getCoMarketAnnual(2024)` when present.
+- **K2:** SESSION_INTENT_SSOT — never re-sweep four retired shape rules (VOICE.md 2026-08-06).
+- **Pointer next:** A3 or D1 (prod 403 may block browser V).
 
 ### 2026-08-10 B2 + B4 surface ship
 - **B2:** Navy `SaveSearchButton` mid-browse on `/search` + `/homes-for-sale/[...slug]`; guest success panel (no silent close); trigger becomes "Search saved". Map/split keep SaveSearchButton; sticky `SearchAlertCapture` stays list-only (layout).

@@ -50,6 +50,7 @@ import {
   getRecentBlogPosts,
 } from '@/lib/data'
 import { getCoMarketAnnual, getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
+import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { CoMarketSizeStrip } from '@/components/site/analytics/CoMarketSizeStrip'
 import { CoMarketComposition } from '@/components/site/analytics/CoMarketComposition'
 import { getSurfaceImage } from '@/lib/data/media/getSurfaceImages'
@@ -167,10 +168,42 @@ export default async function HousingMarketHubPage() {
   // missing region market row instead of vanishing. Same pattern as the child
   // /housing-market/central-oregon page.
   const pulse = regionPulse
-  const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
+  const marketFaq = buildMarketFaq(
     'Central Oregon',
     pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null },
   )
+  // M1 AEO: append mart-backed size + composition Qs when closed-sales row
+  // exists (§0 — numbers only from getCoMarketAnnual, never invented).
+  const faqs = [...marketFaq.faqs]
+  if (co2024 && co2024.soldCount > 0 && co2024.totalVolume > 0) {
+    const vol =
+      co2024.totalVolume >= 1e9
+        ? `$${(co2024.totalVolume / 1e9).toFixed(2)} billion`
+        : co2024.totalVolume >= 1e6
+          ? `$${Math.round(co2024.totalVolume / 1e6)} million`
+          : `$${Math.round(co2024.totalVolume).toLocaleString('en-US')}`
+    const medianBit =
+      co2024.medianClose != null && co2024.medianClose > 0
+        ? ` Median close price was $${Math.round(co2024.medianClose).toLocaleString('en-US')}.`
+        : ''
+    faqs.push({
+      question: `How large was the Central Oregon housing market in ${co2024.year}?`,
+      answer: `In ${co2024.year}, closed sales across Central Oregon service-area cities totaled ${vol} across ${co2024.soldCount.toLocaleString('en-US')} transactions (all property types).${medianBit} Figures come from closed MLS sales, not active list inventory.`,
+    })
+    const entries = Object.entries(co2024.propertyTypeBreakdown || {})
+      .map(([code, n]) => ({ code, n: Number(n) || 0 }))
+      .filter((e) => e.n > 0)
+      .sort((a, b) => b.n - a.n)
+    if (entries.length > 0) {
+      const top = entries[0]
+      const pct = ((100 * top.n) / co2024.soldCount).toFixed(1)
+      faqs.push({
+        question: `What property types made up Central Oregon sales in ${co2024.year}?`,
+        answer: `Of ${co2024.soldCount.toLocaleString('en-US')} closed sales in ${co2024.year}, ${labelPropertyType(top.code)} led at ${top.n.toLocaleString('en-US')} closes (${pct}% of units). Composition is by closed units, not active inventory.`,
+      })
+    }
+  }
+  const { datasetVariables, asOfIso, asOfLabel } = marketFaq
 
   // -------------------------------------------------------------------------
   // KbHero lede — data-driven from the region pulse (§0).

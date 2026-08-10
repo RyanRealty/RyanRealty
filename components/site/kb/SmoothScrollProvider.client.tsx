@@ -46,7 +46,44 @@ export function SmoothScrollProvider({ children }: { children: ReactNode }) {
     gsap.ticker.lagSmoothing(0)
     document.documentElement.classList.add('lenis')
 
+    // In-page hash anchors (hero CTA → #valuation-form, #get-value, etc.).
+    // Lenis can swallow native hash scroll; route same-document hashes through
+    // lenis.scrollTo so conversion CTAs land on the form every time.
+    const onHashClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href^="#"]') as HTMLAnchorElement | null
+      if (!a) return
+      const href = a.getAttribute('href')
+      if (!href || href === '#' || href.length < 2) return
+      let el: Element | null = null
+      try {
+        el = document.querySelector(href)
+      } catch {
+        return
+      }
+      if (!el) return
+      e.preventDefault()
+      lenis.scrollTo(el as HTMLElement, { offset: -16 })
+      if (history.replaceState) {
+        history.replaceState(null, '', href)
+      }
+    }
+    document.addEventListener('click', onHashClick)
+
+    // Deep-link on load: /sell/valuation#valuation-form
+    if (window.location.hash.length > 1) {
+      const hash = window.location.hash
+      try {
+        const target = document.querySelector(hash)
+        if (target) {
+          requestAnimationFrame(() => lenis.scrollTo(target as HTMLElement, { offset: -16 }))
+        }
+      } catch {
+        /* invalid hash selector */
+      }
+    }
+
     return () => {
+      document.removeEventListener('click', onHashClick)
       lenis.destroy()
       gsap.ticker.remove(raf)
       gsap.ticker.lagSmoothing(500, 33)

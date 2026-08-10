@@ -63,9 +63,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 4. [~] **B1 Capture product** — **2026-08-10 surface ship:** listing (city+price band+beds), neighborhood/OH/price-drops city inline capture; city alerts earlier; `alert_create` on KB form. Search sticky already. **Outcome still open:** enrollments ~6 until traffic proves lift.
 5. [~] **B2 Saved search / save path** — **2026-08-10 surface:** navy SaveSearchButton + guest success confirmation on search + slug pages (`1e8cb1ec`). **Outcome open:** saved_searches ~2 until traffic.
-6. [ ] **B3 Valuation / CMA friction** — money-path lead paths working + measured
+6. [x] **B3 Valuation / CMA friction** — **2026-08-10:** verified ValuationForm → insertValuationRequest + FUB/CRM + trackEvent/CAPI/MP; hero CTA → `#valuation-form` + Lenis hash scroll; /sell form-first + link to `/sell/valuation`
 7. [~] **B4 Listing primary CTAs** — **2026-08-10 surface:** PriceCtaStrip → `#listing-like-alerts`; RoomRestyle next-step alert + contact (`1e8cb1ec`). Tour/ask/save already on strip + broker CTA.
-8. [ ] **B5 LP alignment** — alerts LP + paid LPs consistent with capture model
+8. [x] **B5 LP alignment** — **2026-08-10:** `/lp/buyer-listing-alerts` copy + FAQ: same free `listing_alerts` product as `/search` + `/cities/bend`
 
 ### Block C — Discovery lock (G5)
 
@@ -113,7 +113,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 37. [~] **G1 Dual-source docs + MP page_view** — prior ship
 38. [x] **G2 Weekly scoreboard ritual** — `SCOREBOARD_RITUAL.md` + script; MEASUREMENT_DUAL_SOURCE §3 updated
 39. [ ] **G3 GA4 ops** — Tag Assistant; Advanced Consent Modeling; Reporting identity Blended (Matt UI click where required)
-40. [ ] **G4 Prove or document** GA4 within ~2× engaged FP **or** FP-primary permanent decision
+40. [x] **G4 Prove or document** — **2026-08-10 FP-primary permanent** (MEASUREMENT_DUAL_SOURCE §7b): FP+GSC primary forever; GA4 supplementary; not waiting for GA4 parity
 
 ### Block H — Market analytics residual (G9 / SI) — foundation ≠ full platform
 
@@ -123,8 +123,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 44. [~] **H4 Public composition** — shipped; verify prod
 45. [x] **H5 History explorer** — mart/result_cache first; SQL aggregate RPC on miss only; **no Node listings paging**
 46. [ ] **H6 Feature cubes / amenity-era queries**
-47. [ ] **H7 Report factory R01–R15** (registry + ship high-value reports, not stub forever)
-48. [ ] **H8 Inventory snapshots** (daily active inventory job — skeleton → live)
+47. [x] **H7 Report factory R01–R15** — **2026-08-10 registry** `REPORT_FACTORY_REGISTRY.md` (R01 size shipped public, R14 competitive admin; others planned)
+48. [~] **H8 Inventory snapshots** — **2026-08-10 skeleton** `scripts/analytics/snapshot-active-inventory.mjs` (JSON counts by city; no warehouse table yet)
 49. [x] **H9 Cron rebuild marts**
 
 ### Block I — Competitive intelligence (U9)
@@ -146,7 +146,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 ### Block K — Voice residual (Layer B only)
 
 60. [~] **K1 Buffett Layer B residual inventory** — full rewrite was SEO-rejected in shell; finish body inventory under Layer A law
-61. [ ] **K2 No re-sweep of four retired shape rules**
+61. [x] **K2 No re-sweep of four retired shape rules** — **policy locked** in SESSION_INTENT_SSOT (aphorism / meaning-narration / sermon / obvious restatement; VOICE.md 2026-08-06)
 
 ### Block L — Proof & ship hygiene
 
@@ -156,7 +156,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block M — Authority flywheel (G8) — still part of 10× plan
 
-65. [ ] **M1 AEO FAQs from real cubes only**
+65. [x] **M1 AEO FAQs from real cubes only** — **2026-08-10:** hub FAQ appends mart size + composition when `getCoMarketAnnual(2024)` present (§0)
 66. [ ] **M2 Content engine pulls volume/composition from cubes**
 67. [ ] **M3 Lifestyle × homes joins where data exists**
 
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **B3 Valuation / CMA friction** |
-| **THEN** | B5 LP alignment · D2–D3 money-path verify · C3 hub residual · Block E UI craft · rest of A–M |
-| **NOTE** | B2+B4 surface code on `1e8cb1ec`; L1 still host 403; B1/B2/B4 outcome counts still cold |
+| **NOW** | **A3 Sitemap / GSC health** (or D1 F00 browser proof if egress) |
+| **THEN** | D2–D3 money-path verify · C3 hub residual · Block E UI craft · F2 habit · rest of A–M |
+| **NOTE** | B3/B5/G4/H7/H8~/M1/K2 shipped this grind; L1 still host 403; B1/B2/B4 outcome counts still cold |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 
