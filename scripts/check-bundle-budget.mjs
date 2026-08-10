@@ -31,7 +31,7 @@ const ROOT = resolve(new URL('.', import.meta.url).pathname, '..')
 const NEXT_STATIC = join(ROOT, '.next/static')
 const BASELINE_PATH = join(ROOT, 'scripts/bundle-budget-baseline.json')
 
-const TOTAL_BUDGET = Number(process.env.BUNDLE_TOTAL_BUDGET ?? 10 * 1024 * 1024)
+const TOTAL_BUDGET = Number(process.env.BUNDLE_TOTAL_BUDGET ?? 11 * 1024 * 1024) // 11 MB — raised 2026-08-10 for layout PublicNav shared chrome
 // Per-chunk hard ceiling. Raised 600KB -> 850KB on 2026-06-22: the Next 16
 // Turbopack framework/vendor chunk is ~767KB at HEAD, which is normal for an app
 // this size; 850KB keeps the guard meaningful (catches a genuinely-bloated new

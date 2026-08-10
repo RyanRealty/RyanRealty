@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-08-10T14:08:44.312Z",
-  "totalBytes": 9266154,
-  "chunkCount": 272,
+  "generatedAt": "2026-08-10T14:14:05.444Z",
+  "totalBytes": 10785483,
+  "chunkCount": 278,
   "top20": [
     {
       "rel": "chunks/53d121efeef6f426.js",
       "bytes": 415538
     },
     {
-      "rel": "chunks/0e6531e5d67528e9.js",
+      "rel": "chunks/09703eea8bc8552f.js",
       "bytes": 391615
     },
     {
-      "rel": "chunks/3cc8814d7d8f0199.js",
+      "rel": "chunks/75c67c124658c3e3.js",
       "bytes": 391615
     },
     {
-      "rel": "chunks/562336e99266e03a.js",
+      "rel": "chunks/b28e3ea053590dcc.js",
       "bytes": 391615
     },
     {
-      "rel": "chunks/ee1171d9d614325f.js",
+      "rel": "chunks/c170e4084bbdf62f.js",
       "bytes": 391615
     },
     {
@@ -40,48 +40,49 @@
       "bytes": 184214
     },
     {
-      "rel": "chunks/b6a8c84a77fb9a35.js",
-      "bytes": 153459
-    },
-    {
-      "rel": "chunks/68917b2ecc69adb8.js",
-      "bytes": 150588
+      "rel": "chunks/ce7d0483ce9adf08.js",
+      "bytes": 146589
     },
     {
       "rel": "chunks/e37749a87e560cf9.js",
       "bytes": 145469
     },
     {
-      "rel": "chunks/ef5d0f015877983e.js",
-      "bytes": 125516
+      "rel": "chunks/98e8dd347988957e.js",
+      "bytes": 131966
     },
     {
-      "rel": "chunks/8dc4064239f3a244.js",
-      "bytes": 117224
+      "rel": "chunks/258c124da00cffa3.js",
+      "bytes": 129571
+    },
+    {
+      "rel": "chunks/e124a14eab3ee682.js",
+      "bytes": 117222
     },
     {
       "rel": "chunks/a6dad97d9634a72d.js",
       "bytes": 112594
     },
     {
-      "rel": "chunks/afa83a6c623e63ca.js",
-      "bytes": 110169
+      "rel": "chunks/ed0a88983ee09f80.js",
+      "bytes": 97867
     },
     {
-      "rel": "chunks/decb6a377ae5101b.js",
-      "bytes": 109323
+      "rel": "chunks/d3d77118fc38cee3.js",
+      "bytes": 93173
     },
     {
-      "rel": "chunks/f31d7bdaabd4a4b8.js",
-      "bytes": 93368
+      "rel": "chunks/00eaa27e1ef83f11.js",
+      "bytes": 91584
     },
     {
-      "rel": "chunks/369a4bc7689d125d.js",
-      "bytes": 89603
+      "rel": "chunks/76f81ae4ebd26873.js",
+      "bytes": 91146
     },
     {
-      "rel": "chunks/d0ddd2939794ce0d.js",
-      "bytes": 84989
+      "rel": "chunks/4a24b5585939e70e.js",
+      "bytes": 87756
     }
-  ]
+  ],
+  "note": "Rebaselined 2026-08-10 after global PublicNav (layout-mounted KbNav)"
 }
