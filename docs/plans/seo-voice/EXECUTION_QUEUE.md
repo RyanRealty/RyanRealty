@@ -150,7 +150,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block L — Proof & ship hygiene
 
-62. [ ] **L1 Prod browser proof pack** — size, composition, history, competition admin, restyle, chrome on 8 URLs
+62. [ ] **L1 Prod browser proof pack** — size, composition, history, competition admin, restyle, chrome on 8 URLs · **BLOCKED this host 2026-08-10:** public site returns **403** (WAF/bot); needs Matt browser or non-blocked egress
 63. [x] **L2 Gates green path** — `npm run push` discipline (ongoing)
 64. [ ] **L3 VERIFY_LOG current** after every family / unit
 
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **L1 Prod browser proof** (size / composition / history / restyle / chrome + new listing alert strip) |
-| **THEN** | B1 outcome watch + B2 saved-search path · D2–D3 money-path verify · C2 seo-shell · rest of A–M |
-| **NOTE** | B1 surface ship done; enrollment volume remains the real B1 exit (snapshot in VERIFY_LOG) |
+| **NOW** | **B2 Saved search / save path** (L1 prod HTML blocked: site 403 from agent host) |
+| **THEN** | D2–D3 money-path verify · C2 seo-shell · B3–B5 · Block E UI craft · rest of A–M |
+| **NOTE** | B1 surface ship on main `48a72b74`; enrollment volume still the B1 outcome exit |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 

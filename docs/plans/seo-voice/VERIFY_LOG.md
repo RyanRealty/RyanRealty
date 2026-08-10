@@ -43,6 +43,9 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 L1 blocked (host 403)
+- curl `https://ryan-realty.com/cities/bend` → **403** from agent host (WAF/bot). Prod browser proof needs Matt or alternate egress. Queue advances past L1 without abandoning the unit.
+
 ### 2026-08-10 B1 capture surface ship (grind start)
 - **Unit:** EXECUTION_QUEUE B1 (partial — surfaces, not enrollment volume).
 - **Shipped:** Inline `KbCommunityAlerts` on listing detail (city + price band + beds), neighborhood pages (city-scoped), open-houses/[city], price-drops/[city]; city page alerts moved earlier (after open houses); `extraFilters` + `alert_create` event; `lib/search/price-band.ts` + unit test.
