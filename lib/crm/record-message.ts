@@ -240,6 +240,27 @@ export async function recordConversationMessage(input: RecordMessageInput): Prom
       if (isUniqueViolation(error)) return { ok: true, conversationId: conv.conversationId, messageId: null, deduped: true }
       return { ok: false, error: error.message }
     }
+    // P12 measurement: first outbound human-touch stamps person.custom.
+    if (input.direction === 'out' && input.primaryPersonId) {
+      const kind =
+        input.channel === 'sms' || input.channel === 'mms'
+          ? input.channel === 'mms'
+            ? 'mms_out'
+            : 'sms_out'
+          : input.channel === 'email'
+            ? 'email_out'
+            : input.channel === 'call'
+              ? 'call'
+              : 'sms_out'
+      void import('@/lib/crm/first-broker-action')
+        .then(({ stampFirstBrokerActionIfEmpty }) =>
+          stampFirstBrokerActionIfEmpty(input.sb, input.primaryPersonId!, {
+            kind,
+            broker: input.sentBy ?? input.assignedBroker ?? null,
+          }),
+        )
+        .catch(() => {})
+    }
     return { ok: true, conversationId: conv.conversationId, messageId: msg?.id ?? null, deduped: false }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }

@@ -1,43 +1,33 @@
 [
   {
-    "id": "12-send-integrity",
-    "phase": "P12",
-    "note": "PARTIALLY CLOSED 2026-08-09. DONE: listing-alert claim-before-send (claimListingAlertSend before Resend, restore on total failure; H2 tests rewritten); per-attempt block ledger (crm_send_block_events + recordSendBlockEvent from checkSendGuards). STILL OPEN: opt-in/no-device gate-drop record (push path) \u2014 not yet a durable drop row. Group MMS chokepoint, block-reason ledger, gate-drop record. Compliance-adjacent."
-  },
-  {
     "id": "12-correctness",
     "phase": "P12",
-    "note": "PARTIALLY CLOSED 2026-08-09. DONE: listing-edit sync overlay via admin_overrides (list_price/status/public_remarks *_set) + upsertListingRows merge; readers throw on error for getCmaAdminRowBySlug, getTaskQueue, getAppointments*, getGlobalActivityFeed. STILL OPEN: assigned_broker resolution rule, fsbo off_market writer, dupe-candidate queue, remaining swallowers. Listing-edit sync overlay, assigned_broker resolution rule, fsbo off_market writer, dupe-candidate q"
-  },
-  {
-    "id": "12-measurement",
-    "phase": "P12",
-    "note": "first-broker-action stamp, reply-latency interval, CMA SLA reader."
-  },
-  {
-    "id": "12-full-sync-never-completes",
-    "phase": "P12",
-    "note": "PARTIALLY CLOSED 2026-08-09. Delta execute now records sync_history run_type=delta (migration widens CHECK). Full-run completion still only stamps when history phase finishes \u2014 ops can now see the 15-min keep-fresh job. Remaining: confirm weekly full cron finishes (cursor phase history). OPERATIONS. sync_history holds 19 rows, ALL dated 2026-03-16, zero in the last 3"
+    "note": "PARTIALLY CLOSED 2026-08-10. DONE this grind: assigned_broker SoT cascade (setPersonAssignedBroker + assign paths + createNativeTask); FSBO off_market after 7d unseen; high-confidence auto-merge on email/phone conflict in ensureNativeLead; first-broker-action stamp. STILL OPEN: remaining reader swallowers beyond the throw set, dupe UI, fuller deal broker cascade edge cases. | LOCK 2026-08-10: assigned_broker SoT = crm_people; auto-merge high-confidence dupes. DONE earlier: admin_overrides sync "
   },
   {
     "id": "12-person-scope-class",
     "phase": "P12",
-    "note": "SECURITY, filed as task_84b647c1. RE-READ 2026-08-08: this note predated P12 units 2-3 and its two OPEN items are now CLOSED \u2014 people/[id]/portal runs scopeBroker + isPersonInScope (92701b66) and /admin/deals/[key] guards on requireAdminPage('transactions.view') (c13bb7ce), both verified on disk. crm/deals/[id] was fixed in 4aa3de68 and people/[id] in d4786a77. What remains is the KNOWN LIMIT stated in the ci:entity-scope gate header: it proves a scope decision HAPPENED, not that it GATES THE RENDER \u2014 crm/sequences/[id]/edit calls scopeBroker only to scope a funnel query. Closing that needs dataflow analysis, not a call-site check. Also still true: people/[id]/tools is safe only INDIRECTLY via getCrmPersonFull's self-guard, which the gate cannot see and which would silently lose the page its scope if that reader changed. See progress.txt 2026-08-07T17:15Z for the design/defect test that separated the three real fixes from the four brokerage-wide-by-design pages."
+    "note": "ALIGNED 2026-08-10 with person-as-SoT cascade. Residual gate limit (call vs render) still engineering-only. | LOCK 2026-08-10: person.assigned_broker is SoT (aligns with 12-correctness). Residual gate limit (scope called vs gates "
+  },
+  {
+    "id": "p12-audit-trail-coverage",
+    "phase": "P12",
+    "note": "PARTIALLY CLOSED 2026-08-10. logAdminAction no longer swallows; blog_publish/blog_save logged; send_blocked + gate-drops. STILL: bulk ops, TC envelopes, approval-queue need call-site wiring. | LOCK 2026-08-10: compliance + content publishes (sends, blog publish/unpublish, approval-queue, bulk ops, TC envelopes)."
+  },
+  {
+    "id": "12-measurement",
+    "phase": "P12",
+    "note": "PARTIALLY CLOSED 2026-08-10. first_broker_action_at on custom via conversation outbound; replyLatencySeconds; getMeasurementSnapshot + Oversight surface. STILL: CMA SLA reader surface, backfill historical stamps. | LOCK 2026-08-10: FULL \u2014 stamps + admin surfaces (first-broker-action, reply-latency, CMA SLA). Not stamps-only. After co"
+  },
+  {
+    "id": "12-full-sync-never-completes",
+    "phase": "P12",
+    "note": "PARTIALLY CLOSED earlier (delta history). STILL: confirm weekly full completes. | PARTIALLY CLOSED 2026-08-09. Delta execute now records sync_history run_type=delta (migration widens CHECK). Full-run co"
   },
   {
     "id": "12-admin-chrome-debt",
     "phase": "P12",
     "note": "MobileCrmHeader RESOLVED 2026-08-09 (2d089d6c): deleted outright per Matt's 11F decision 2. Its scope control was already duplicated by TopBarScope (which ConsoleShell renders on this exact path) and its search by the \u2318K palette; the avatar's /admin/settings link is in the account menu. ContactsSearch did NOT go with it \u2014 it was the only control on any width setting ?q= on the people list, so it was migrated to the v2 SearchField and mounted directly. Intermittent hydration mismatch TRACED to SiteHeader under HideChrome, firing on already-v2 untouched surfaces (task_af3d76b5) \u2014 re-measured 2026-08-08 at ~1 in 3 loads on /admin/crm/settings/* including brokers (no island, untouched), 0 in 3 on /admin/people and /admin/crm/reporting/calls, so it is route-family-correlated rather than universal; that asymmetry is the lead worth pulling. Client-component locale formatters in AdminUsersList + DscrScreen.client (task_00b9af6e). /admin/crm/subscriptions RESOLVED 2026-08-08 (45b64103): not a tab island and not acceptable-pre-existing \u2014 app/actions/alert-admin.ts carried 'use server' and re-exported three types it had only IMPORTED, which Next emits as a runtime binding, so the erased type threw ReferenceError at module evaluation behind a GREEN tsc. Gate G63 (ci:server-type-reexport) now blocks the class. /admin/content-library takes 28-44s to render because signDeliverableDownload runs once per row across 402 deliverables. /admin/bpo/new and /admin/crm/deals/[id] have no inbound link anywhere in the repo. STILL OPEN HERE: the SiteHeader/HideChrome hydration mismatch, the two client-component locale formatters, the content-library 28-44s render, and the two unlinked routes."
-  },
-  {
-    "id": "p12-audit-trail-coverage",
-    "phase": "P12",
-    "note": "DECISION FOR MATT, not a bug. Now that /admin/audit-log can actually be read (42P17 fixed 2026-08-09), the trail it shows is nearly empty for a second reason: admin_actions holds ONE row, dated 2026-03-31. logAdminAction() uses a service client so writes were never blocked; it is simply wired into app/actions/{admin-media,admin-listing-detail,admin-roles,banners,site-pages,brokerage,brokers}.ts and nowhere else. NOT logged: CRM sends (SMS/email), blog publish/unpublish, TC envelope actions, approval-queue decisions, bulk operations. For a licensed brokerage what belongs in an audit trail is a policy call, so this is queued rather than guessed. Note logAdminAction also DISCARDS its insert error \u2014 whatever the policy turns out to be, that swallow should go with it (same class as 12-correctness)."
-  },
-  {
-    "id": "11f-admin-dark-mode-unreachable",
-    "phase": "P12",
-    "note": "ADMIN_UI \u00a76 says dark mode ships from day one and the P6 lock records 'DECIDED (Matt): ship both'. It is NOT reachable: nothing in the codebase sets data-theme (grepped app/, components/, lib/ \u2014 the attribute appears only in the two tokens.css files). Measured 2026-08-08 by forcing it pre-hydration: the admin's own tokens flip correctly (--a-text #1c2024 -> #edeef0, panes/charts/map all follow), but document.body stays lab(100 0 0) = WHITE, so every dark token would render light-on-white and the surface would be unusable. Two things to decide: whether the body background is the admin's to own (it comes from outside app/admin), and whether a theme control is wanted at all. ci:admin-contrast passes because it computes token PAIRS, not what the body actually paints \u2014 it cannot see this."
   },
   {
     "id": "11f-converge-third-reader",

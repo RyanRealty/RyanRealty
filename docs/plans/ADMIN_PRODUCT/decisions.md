@@ -340,3 +340,57 @@ defects that change what a person actually sees: /admin/blog can silently
 publish archived posts to the public site on any edit, /admin/audit-log renders
 zero rows so a compliance log is indistinguishable from an empty one, and
 `listings` has never been ANALYZEd. Those first; 11F resumes after.
+
+
+---
+
+## 2026-08-10 — P12 remaining-item decisions (Matt, Q&A lock)
+
+Locked in chat when asked about remaining P12 items. Append-only; these bind the next grind.
+
+### 1. Gate-drops (last 12-send-integrity hole)
+
+**DECIDED:** Store opt-in / no-device / suppression **gate-drops on `admin_actions` only** (same family as governed-send `send_blocked` rows). No new drop ledger table. Not "logs only"; not skip.
+
+### 2. `assigned_broker` resolution (12-correctness)
+
+**DECIDED:** **`crm_people.assigned_broker` is the source of truth.** Other tables (conversation, tasks, deals, alerts) copy or derive from person on write; scope readers join/resolve through person. Conversation does **not** win for messaging over person.
+
+### 3. Dupe candidates (email→A, phone→B)
+
+**DECIDED:** **Auto-merge when high confidence.** Requires explicit confidence rules in implementation (not silent merge of weak matches). Manual merge path remains for low-confidence / ambiguous cases. Higher compliance risk if rules are wrong — implement fail-closed: only merge when rules fire cleanly.
+
+### 4. Audit trail coverage (p12-audit-trail-coverage)
+
+**DECIDED:** Log **compliance + content publishes** into `admin_actions`:
+- CRM SMS/email sends (and suppressions / send blocks already starting)
+- Blog publish / unpublish
+- Approval-queue decisions
+- Bulk operations
+- TC envelope actions  
+
+Skip pure navigation/reads. Also: `logAdminAction` must **not** discard insert errors (same class as reader honesty).
+
+### 5. Admin dark mode (11f-admin-dark-mode-unreachable)
+
+**DECIDED:** **Ship light-only for now.** Amend P6 intent: light is the live product; dark tokens may remain in the stylesheet for a later phase. No theme toggle this round. Close the unreachable-dark-mode item as **deferred product**, not a bug to ship.
+
+### 6. Measurement (12-measurement)
+
+**DECIDED:** **Full including admin surfaces** — first-broker-action stamp, reply-latency interval, CMA SLA reader, **and** visible admin/ops surfaces — not stamps-only.
+
+### 7. Next grind priority
+
+**DECIDED:** **Correctness residual first**, then the rest in this order unless a compliance hole is discovered mid-grind:
+1. assigned_broker person-as-SoT wiring  
+2. FSBO `off_market` writer (if still dead)  
+3. remaining reader swallowers  
+4. high-confidence auto-merge  
+5. gate-drops on `admin_actions`  
+6. audit-trail wiring for the matrix above  
+7. measurement (full)  
+8. full-sync ops confirmation  
+9. chrome debt / ReportGrid converge / primitive audit as capacity allows  
+
+FUB renames (3b) and CMA pricing backlog stay parked.
+

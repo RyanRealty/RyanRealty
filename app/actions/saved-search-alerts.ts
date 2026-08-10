@@ -299,6 +299,25 @@ export async function runListingAlerts(options?: {
       })
 
       if (plan.action === 'skip') {
+        // P12: durable gate-drop on admin_actions (Matt lock: no new table).
+        if (!dryRun) {
+          void import('@/app/actions/log-admin-action')
+            .then(({ logAdminAction }) =>
+              logAdminAction({
+                adminEmail: 'system:listing-alerts',
+                role: 'system',
+                actionType: 'alert_gate_drop',
+                resourceType: 'listing_alert',
+                resourceId: row.id,
+                details: {
+                  reason: plan.reason ?? 'skip',
+                  action: 'skip',
+                  events: plan.events?.length ?? 0,
+                },
+              }),
+            )
+            .catch(() => {})
+        }
         // A compliance stop is not proof the subscriber SAW these listings.
         // isSuppressedByEmail fails CLOSED, so one transient DB blip would
         // otherwise persist nextState and permanently absorb those events —

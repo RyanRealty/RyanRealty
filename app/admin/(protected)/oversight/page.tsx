@@ -16,8 +16,9 @@ import { getSpeedToLeadReport } from '@/lib/data/crm/getSpeedToLeadReport'
 import { getTaskQueue } from '@/lib/data/crm/getTaskQueue'
 import { getBrokerActionQueue } from '@/lib/data/crm/getBrokerActionQueue'
 import { getCrmSignalFreshness } from '@/lib/data/crm/getCrmSignalFreshness'
+import { getMeasurementSnapshot } from '@/lib/data/crm/getMeasurementSnapshot'
 import { mirrorHealthStatus } from '@/lib/crm/mirror-health'
-import { QueueRow, QuietRow, VerdictLine } from '@/components/admin/v2'
+import { QueueRow, QuietRow, VerdictLine, SectionHead } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,7 +53,7 @@ export default async function OversightPage() {
   const brokerScope = isSuper ? null : ctx.brokerSlug
   const nowMs = Date.now()
 
-  const [sync, alerts, signoff, workflows, s2l, tasks, parked, signals] = await Promise.all([
+  const [sync, alerts, signoff, workflows, s2l, tasks, parked, signals, measurement] = await Promise.all([
     isSuper ? getSyncFreshness() : null,
     isSuper ? getAlertQueueHealth() : null,
     isSuper ? getSignoffWaits() : null,
@@ -61,6 +62,7 @@ export default async function OversightPage() {
     getTaskQueue({ brokerScope, view: 'overdue' }),
     getBrokerActionQueue({ brokerSlug: brokerScope }),
     isSuper ? getCrmSignalFreshness() : null,
+    isSuper ? getMeasurementSnapshot({ limit: 12 }) : null,
   ])
   const mirror = isSuper ? mirrorHealthStatus({ CRM_MIRROR_ENABLED: process.env.CRM_MIRROR_ENABLED }) : null
 
@@ -239,6 +241,32 @@ export default async function OversightPage() {
           )}
         </VerdictLine>
       </div>
+
+      {measurement && (
+        <section aria-label="Speed to first broker action" style={{ marginBottom: 18 }}>
+          <SectionHead>First broker action (7 days)</SectionHead>
+          <ul className="av2-quietlist" style={{ marginTop: 8 }}>
+            <QuietRow
+              name="Leads with a first-touch stamp"
+              figure={`${measurement.stampedLast7d} stamped · ${measurement.unstampedLeadsLast7d} still open`}
+            />
+            <QuietRow
+              name="Median reply latency"
+              figure={
+                measurement.medianLatencySeconds == null
+                  ? 'no stamps yet'
+                  : measurement.medianLatencySeconds < 60
+                    ? `${measurement.medianLatencySeconds}s`
+                    : `${Math.round(measurement.medianLatencySeconds / 60)}m`
+              }
+            />
+          </ul>
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 6 }}>
+            Stamp lands on the first outbound SMS/email/call (conversation shadow). Speed-to-lead report remains the
+            full source breakdown.
+          </p>
+        </section>
+      )}
 
       {attention.length > 0 && (
         <section aria-label="Needs you">

@@ -24,7 +24,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_BROKERS, FUB_USER_ID_BY_BROKER, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import type { BulkHandler, BulkResult } from '@/lib/crm/bulk-jobs'
 
 export const assignBrokerHandler: BulkHandler = async (ids, params, ctx): Promise<Partial<BulkResult>> => {
@@ -49,8 +49,6 @@ export const assignBrokerHandler: BulkHandler = async (ids, params, ctx): Promis
     bump('invalid_broker', ids.length)
     return result
   }
-  const fubUserId = FUB_USER_ID_BY_BROKER[brokerSlug]
-
   const sb = createServiceClient()
   const { data: people, error } = await sb
     .from('crm_people')
@@ -73,33 +71,17 @@ export const assignBrokerHandler: BulkHandler = async (ids, params, ctx): Promis
     })
   }
 
+  const { setPersonAssignedBroker } = await import('@/lib/crm/assigned-broker')
   for (const id of ids) {
     const person = byId.get(id)
     if (!person) { result.skipped++; bump('not_found'); continue }
     if (person.assigned_broker === brokerSlug) { result.skipped++; bump('already_assigned'); continue }
 
-    const newTags = [
-      ...person.tags.filter((t) => !t.startsWith('broker:')),
-      `broker:${brokerSlug}`,
-    ]
-    const { error: upErr } = await sb
-      .from('crm_people')
-      .update({
-        assigned_broker: brokerSlug,
-        assigned_fub_user_id: fubUserId,
-        tags: newTags,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-    if (upErr) { result.skipped++; bump('update_failed'); continue }
-
-    await sb.from('crm_timeline').insert({
-      person_id: id,
-      kind: 'system',
-      title: `Assigned to ${brokerSlug}${person.assigned_broker ? ` (was ${person.assigned_broker})` : ''} (bulk)`,
-      source: 'app',
-      broker: brokerSlug,
+    // P12: person is SoT — cascade open tasks/deals on reassignment.
+    const res = await setPersonAssignedBroker(sb, id, brokerSlug, {
+      source: 'bulk',
     })
+    if (!res.ok) { result.skipped++; bump('update_failed'); continue }
     result.processed++
     bump('reassigned')
   }

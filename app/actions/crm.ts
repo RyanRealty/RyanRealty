@@ -1118,32 +1118,13 @@ export async function assignCrmBrokerAction(formData: FormData): Promise<CrmActi
     return { ok: false, error: 'Broker required' }
   }
   const sb = createServiceClient()
-  const { data: person } = await sb
-    .from('crm_people')
-    .select('id,tags,assigned_broker')
-    .eq('id', personId)
-    .maybeSingle()
-  if (!person) return { ok: false, error: 'Person not found' }
-  if (person.assigned_broker === brokerSlug) return { ok: true }
-
-  const newTags = [
-    ...(person.tags as string[]).filter((t) => !t.startsWith('broker:')),
-    `broker:${brokerSlug}`,
-  ]
-  const { error } = await sb.from('crm_people').update({
-    assigned_broker: brokerSlug,
-    assigned_fub_user_id: FUB_USER_ID_BY_BROKER[brokerSlug],
-    tags: newTags,
-    updated_at: new Date().toISOString(),
-  }).eq('id', personId)
-  if (error) return { ok: false, error: error.message }
-  await sb.from('crm_timeline').insert({
-    person_id: personId,
-    kind: 'system',
-    title: `Assigned to ${brokerSlug}${person.assigned_broker ? ` (was ${person.assigned_broker})` : ''}`,
+  // P12: person is SoT — cascade open tasks/deals via setPersonAssignedBroker.
+  const { setPersonAssignedBroker } = await import('@/lib/crm/assigned-broker')
+  const result = await setPersonAssignedBroker(sb, personId, brokerSlug, {
+    actorEmail: access.access.email ?? null,
     source: 'app',
-    broker: access.access.brokerSlug,
   })
+  if (!result.ok) return { ok: false, error: result.error ?? 'Assign failed' }
   revalidateCrm(personId)
   return { ok: true }
 }

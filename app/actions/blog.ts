@@ -304,6 +304,16 @@ export async function saveBlogPost(input: {
     console.error('[saveBlogPost]', error)
     return { ok: false, error: error.message, voiceReview }
   }
+  // P12 audit trail: content publishes / status transitions.
+  const { logAdminAction } = await import('@/app/actions/log-admin-action')
+  await logAdminAction({
+    adminEmail: gate.ctx.email,
+    role: gate.ctx.role,
+    actionType: input.status === 'published' ? 'blog_publish' : 'blog_save',
+    resourceType: 'blog_post',
+    resourceId: String(payload.slug),
+    details: { status: input.status, id: input.id ?? null, title: input.title },
+  })
   // Revalidate public and admin blog routes after save/update
   const { revalidatePath } = await import('next/cache')
   revalidatePath('/blog')

@@ -44,7 +44,7 @@ function makeSb() {
           }
           return Promise.resolve({ data: [], error: null })
         }
-        q.eq = () => {
+        q.eq = (col: string, val: unknown) => {
           // Awaitable for single-eq reads (crm_stages), AND chainable for the
           // listing_alerts resurrection pre-check
           // (.select('is_active').eq(email).eq(filters_hash).maybeSingle()).
@@ -56,22 +56,37 @@ function makeSb() {
             return { data: [], error: null }
           }
           const preCheck = () => Promise.resolve({ data: alertPreCheckRow, error: null })
+          const maybePerson = () => {
+            if (table === 'crm_people' && col === 'id') {
+              const row = people.find((p) => p.id === Number(val)) ?? null
+              return Promise.resolve({ data: row, error: null })
+            }
+            return preCheck()
+          }
           return {
             // listing_alerts pre-check: .eq(email).eq(filters_hash).limit(1).maybeSingle()
             eq: () => ({ limit: () => ({ maybeSingle: preCheck }), maybeSingle: preCheck }),
             limit: () => ({ maybeSingle: preCheck }),
-            maybeSingle: preCheck,
+            maybeSingle: maybePerson,
             then: (resolve: (v: unknown) => void) => resolve(settle()),
           }
         }
         return q
       }
-      chain.update = (patch: Record<string, unknown>) => ({
-        eq: (_col: string, id: number) => {
+      chain.update = (patch: Record<string, unknown>) => {
+        const finish = (id: number) => {
           updates.push({ table, id, patch })
           return Promise.resolve({ error: null })
-        },
-      })
+        }
+        return {
+          eq: (_col: string, id: number) => {
+            // Support .eq().is() cascade filters (tasks/deals) and plain .eq().
+            const p = finish(id) as Promise<{ error: null }> & { is: () => Promise<{ error: null }> }
+            p.is = () => finish(id)
+            return p
+          },
+        }
+      }
       chain.insert = (row: Record<string, unknown>) => {
         inserts.push({ table, row })
         return Promise.resolve({ error: null })

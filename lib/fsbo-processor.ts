@@ -90,6 +90,20 @@ export async function processNewFsboListings(supabase: SupabaseClient): Promise<
       .in('fsbo_url', Array.from(seen))
   }
 
+  // P12: off_market writer — active rows not refreshed for 7+ days leave the
+  // live FSBO book. (Previously last_seen only advanced; status never flipped.)
+  const offCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { error: offErr, count: offCount } = await supabase
+    .from('fsbo_listings')
+    .update({ status: 'off_market', updated_at: new Date().toISOString() }, { count: 'exact' })
+    .eq('status', 'active')
+    .lt('last_seen_at', offCutoff)
+  if (offErr) {
+    console.warn('[fsbo-processor] off_market mark failed:', offErr.message)
+  } else if (offCount && offCount > 0) {
+    console.info(`[fsbo-processor] marked ${offCount} FSBO row(s) off_market (last_seen < 7d)`)
+  }
+
   const unseen = listings.filter((l) => !seen.has(l.fsboUrl)).slice(0, MAX_PER_RUN)
 
   for (const l of unseen) {

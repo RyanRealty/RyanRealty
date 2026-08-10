@@ -113,6 +113,26 @@ export async function drainWebPush(limit = 20): Promise<WebPushDrainSummary> {
 
     const pending = await listPushCandidates(PUSH_LOOKBACK_MINUTES, limit)
     const candidates = pending.filter((a) => (byBroker.get(a.broker) ?? []).length > 0)
+    // P12: durable gate-drop when an alert is due but the broker has no device.
+    const noDevice = pending.filter((a) => (byBroker.get(a.broker) ?? []).length === 0)
+    if (noDevice.length > 0) {
+      void import('@/app/actions/log-admin-action')
+        .then(({ logAdminAction }) =>
+          Promise.all(
+            noDevice.slice(0, 50).map((a) =>
+              logAdminAction({
+                adminEmail: 'system:web-push',
+                role: 'system',
+                actionType: 'push_gate_drop',
+                resourceType: 'broker_alert',
+                resourceId: String(a.id),
+                details: { reason: 'no_device', broker: a.broker },
+              }),
+            ),
+          ),
+        )
+        .catch(() => {})
+    }
     const summary: WebPushDrainSummary = { ...empty, subscriptions: subs.length, candidates: candidates.length }
 
     // Degrade BEFORE claiming: unconfigured keys must never consume the queue.

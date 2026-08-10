@@ -162,17 +162,49 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   const sb = createServiceClient()
 
   // Email-first lookup, then phone — the FUB-independent join keys.
+  // P12: when BOTH resolve and disagree, try high-confidence auto-merge first
+  // (Matt lock) so we don't create a third person.
   const emailMatchPersonId = normalizedEmail
     ? await lookupPersonIdByContactPoint(sb, 'email', normalizedEmail)
     : null
-  const phoneMatchPersonId =
-    emailMatchPersonId === null && normalizedPhone
-      ? await lookupPersonIdByContactPoint(sb, 'phone', normalizedPhone)
-      : null
+  const phoneMatchPersonId = normalizedPhone
+    ? await lookupPersonIdByContactPoint(sb, 'phone', normalizedPhone)
+    : null
+
+  if (
+    emailMatchPersonId != null &&
+    phoneMatchPersonId != null &&
+    emailMatchPersonId !== phoneMatchPersonId
+  ) {
+    try {
+      const { maybeAutoMergeEmailPhoneConflict } = await import('@/lib/crm/high-confidence-merge')
+      const mergeRes = await maybeAutoMergeEmailPhoneConflict(sb, {
+        email: normalizedEmail,
+        phone: normalizedPhone,
+      })
+      if (mergeRes.merged) {
+        await mergeReuseEnrichment(sb, mergeRes.survivorId, {
+          tags: input.tags,
+          source: input.source,
+          assignedBroker: input.assignedBroker,
+        })
+        return { personId: mergeRes.survivorId, created: false }
+      }
+    } catch (e) {
+      console.warn(
+        '[ensureNativeLead] high-confidence merge skipped:',
+        e instanceof Error ? e.message : e,
+      )
+    }
+  }
+
+  // After conflict handling, phone reuse only when email did not match (email-first).
+  const phoneForDecision =
+    emailMatchPersonId === null ? phoneMatchPersonId : null
 
   const decision = decideNativeLeadAction({
     emailMatchPersonId,
-    phoneMatchPersonId,
+    phoneMatchPersonId: phoneForDecision,
     normalizedEmail,
     normalizedPhone,
   })
@@ -423,12 +455,18 @@ export async function createNativeTask(input: CreateNativeTaskInput): Promise<vo
   const dueAt = new Date(Date.now() + dueInMinutes * 60 * 1000).toISOString()
   try {
     const sb = createServiceClient()
+    // P12: person is SoT — task broker defaults from person, not the caller's guess.
+    const { resolveBrokerFromPerson } = await import('@/lib/crm/assigned-broker')
+    const broker =
+      (await resolveBrokerFromPerson(sb, input.personId, input.assignedBroker ?? null)) ??
+      input.assignedBroker ??
+      null
     const { error } = await sb.from('crm_tasks').insert({
       person_id: input.personId,
       name: name.slice(0, 190),
       type: input.type?.trim() || 'Call',
       due_at: dueAt,
-      assigned_broker: input.assignedBroker ?? null,
+      assigned_broker: broker,
       origin: 'lp-form',
     })
     if (error) console.warn('[createNativeTask] insert failed:', error.message)

@@ -7,7 +7,7 @@
     "litmus": "2026-08-07 (re-timed after 11B: 4.4s broker-action, 1 tap, idempotent)"
   },
   "awaiting_lock": null,
-  "current_process": "2026-08-09T19:54:27Z \u2014 11F CLOSED and shipped; P12 major units shipped. Open residual: 12-measurement (stamps), assigned_broker resolution, dupe-candidate queue, push gate-drops, Matt audit-trail policy, chrome hydration/locale, dark mode, third analytics reader, v2 primitive audit.",
+  "current_process": "2026-08-10T04:15:14Z \u2014 P12 residual grind shipped: person-as-SoT cascade, FSBO off_market writer, high-confidence auto-merge on ensureNativeLead, first-broker-action stamp + oversight surface, gate-drops (alerts+push) and blog_publish on admin_actions, logAdminAction never swallows.",
   "plan_of_record": "docs/plans/ADMIN_PRODUCT/PHASE-11-PLAN.md",
-  "updated_at": "2026-08-09T19:54:27Z"
+  "updated_at": "2026-08-10T04:15:14Z"
 }
