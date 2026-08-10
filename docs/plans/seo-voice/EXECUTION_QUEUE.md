@@ -1,18 +1,23 @@
 # 10× + Market Analytics — Execution Queue
 
-**Status:** ACTIVE /endtoend  
-**Mission:** `ENDTOEND_10X_ANALYTICS.md`
+**Status:** Analytics MVP **SHIPPED to main** (`e0e15833`) via `/endtoend`  
+**Mission doc:** `ENDTOEND_10X_ANALYTICS.md`
 
-## MVP DONE checklist
+## MVP DONE
 
-- [x] A1–A10 analytics foundation, marts 2016–2025, competition, size strip, cron  
+- [x] A1–A10 analytics foundation, marts 2016–2025, competition desk, size strip, cron  
 - [x] B1 baseline  
-- [x] Docs **committed** `d876b9a9` (+ central-oregon strip follow-up)  
-- [x] B8 inventory: `submitSearchAlertSignup` + SearchAlertCapture on search; **5 active / 6 total** alerts — path works, capture rate cold (product stretch, not wire break)  
-- [x] Live mart verify: 2024 5707 / $3.931B; Cascade #1 list 17.93%  
-- [ ] **Push to origin** — requires `npm run push` (local gate stamp); pre-push blocked without gates  
-- [ ] B2–B7 family grind (stretch beyond analytics MVP)
+- [x] Docs + code **on origin/main**  
+- [x] Live mart parity 2024: 5707 / $3.931B  
+- [x] Alerts path inventory (wire works; enrollment cold = stretch)  
+
+## Remaining (program stretch — next grind)
+
+- [ ] B2–B7 full family verify/improve  
+- [ ] B8 alert capture rate product work  
+- [ ] C1–C0 engagement / Grok restyle  
+- [ ] A11+ unique search / feature cubes  
 
 ## Pointer
 
-Run `npm run push` to land on origin. Continue B2–B8 product conversion stretch after push.
+**Next autonomous unit: B3 homepage verify or B8 alert UX lift.**

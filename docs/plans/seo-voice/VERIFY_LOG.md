@@ -43,7 +43,11 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 /endtoend complete (analytics MVP)
+- **Shipped main:** `e0e15833` (stack from `d876b9a9`).
+- Surfaces: `/housing-market`, `/housing-market/central-oregon`, `/admin/analytics/competition`.
+- Gates: design-tokens, migration-drift, admin-ui, admin-responsive, file-size, eslint, full push green.
+- Stretch remains: family grind B2–B7, alert conversion lift, engagement/AI.
+
 ### 2026-08-10 autonomous continue (2)
-- Marts **2016–2025** full rebuild; dim_office **280**; agents on competition page; A10 cron; B1 baseline; hub series 2016–2024.
-- Prod fetch smoke blocked on agent network — not a product stop.
-- Continuing B3+ without asking.
+- Marts **2016–2025**; dim_office **280**; agents; A10 cron; B1.
