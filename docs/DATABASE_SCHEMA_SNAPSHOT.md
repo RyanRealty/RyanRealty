@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-10T19:23:18.830Z
+**Generated:** 2026-08-10T20:12:27.221Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -954,6 +954,38 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `aliases` | ARRAY | no | '{}'::text[] |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `analytics_inventory_snapshot`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `as_of` | date | no |  |
+| `city` | text | no |  |
+| `city_slug` | text | no |  |
+| `active_count` | integer | no | 0 |
+| `geo_scope` | text | no | 'central-oregon-service-area'::text |
+| `methodology` | text | no | 'active_ilike+service_area_v1'::text |
+| `computed_at` | timestamp with time zone | no | now() |
+
+### `analytics_mart_feature_annual`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `year` | integer | no |  |
+| `type_scope` | text | no | 'all'::text |
+| `feature_key` | text | no |  |
+| `sold_count` | integer | no | 0 |
+| `total_volume` | numeric | no | 0 |
+| `median_close` | numeric | yes |  |
+| `mean_close` | numeric | yes |  |
+| `market_sold_count` | integer | yes |  |
+| `market_volume` | numeric | yes |  |
+| `unit_share_pct` | numeric | yes |  |
+| `volume_share_pct` | numeric | yes |  |
+| `methodology` | text | no | 'closed_cte+service_area_v1+feature_typed_v1'::text |
+| `computed_at` | timestamp with time zone | no | now() |
 
 ### `analytics_mart_market_annual`
 
