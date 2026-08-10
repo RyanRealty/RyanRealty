@@ -76,15 +76,13 @@ type KbHeroProps = {
 export function KbHero({
   data,
   eyebrow = 'Central Oregon Real Estate',
-  // VOICE.md 2026-08-06: the GOV.UK-style strip produced "Every home for sale
-  // in Central Oregon" under an eyebrow that already said Central Oregon Real
-  // Estate — correct, stripped, and dead. Buffett is the law again: plain
-  // words, one person, and a little personality on top of the facts. The live
-  // count and median still sit in the sub-line. Only app/page.tsx uses these
-  // defaults; every other KbHero caller passes its own.
-  titleTop = 'The MLS list,',
-  titleBottom = 'and what it sold for.',
-  lead = 'from La Pine to Terrebonne. Prices and days on market, pulled live.',
+  // Layer A forever (ci:seo-shell): defaults MUST be query language so a caller
+  // that omits title props cannot reintroduce poetry H1s. Buffett voice lives
+  // under the H1 (Layer B). Live count + median still sit in the sub-line.
+  // Money pages pass their own place/type; these match the homepage contract.
+  titleTop = 'Central Oregon',
+  titleBottom = 'Homes for Sale',
+  lead = 'in Bend, Redmond, Sisters, Sunriver, and nearby towns. List prices and days on market, pulled live.',
   videoSrc = '/videos/hero-optimized.mp4',
   posterSrc = '/images/hero/hero-old-mill-master-4k.jpg',
   posterAlt,

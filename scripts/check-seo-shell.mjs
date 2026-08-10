@@ -1,0 +1,331 @@
+#!/usr/bin/env node
+/**
+ * ci:seo-shell — Layer A forever-gate.
+ *
+ * Money-route discovery shells (title + H1 + lead + KbHero defaults) must stay
+ * query language: place + type + head terms. Buffett personality lives under
+ * the H1 (Layer B) only.
+ *
+ * Law (TOP_SITE_GOAL_SYSTEM / VOICE Layer A):
+ *   if someone would type it into Google, it stays Layer A — never poetry-ized.
+ *
+ * Checks:
+ *   1. Banned poetry / personality patterns in Layer A shells on money routes
+ *   2. Required exact-match head terms per money family (cannot drift)
+ *   3. KbHero component defaults are Layer A safe (no poetry footgun)
+ *
+ * Usage:
+ *   node scripts/check-seo-shell.mjs
+ *   npm run ci:seo-shell
+ */
+
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { join, relative } from 'node:path'
+
+const ROOT = process.cwd()
+
+// ── Banned poetry / personality in Layer A ──────────────────────────────────
+// Closed list of patterns that previously (or could) land in title/H1 shells.
+// Expand only with known regressions — do not invent fuzzy "sounds poetic" rules.
+const BANNED = [
+  { id: 'mls-list', re: /\bthe\s+mls\s+list\b/i, hint: 'Use place + "Homes for Sale"' },
+  { id: 'what-sold-for', re: /\bwhat\s+it\s+sold\s+for\b/i, hint: 'Sold facts belong in Layer B body, not H1' },
+  { id: 'on-the-market-now', re: /\bon\s+the\s+market\s+now\b/i, hint: 'Use "Homes for Sale" / inventory count' },
+  { id: 'payment-be', re: /\bwhat\s+will\s+the\s+payment\s+be\b/i, hint: 'Payment questions are body/FAQ, not H1' },
+  { id: 'the-list-comma', re: /\bthe\s+list\s*,/i, hint: 'Drop "the list," metaphor H1s' },
+  { id: 'we-show-the-work', re: /\bwe\s+show\s+the\s+work\b/i, hint: 'Personality → Layer B' },
+  { id: 'plain-facts-only', re: /\bplain\s+facts\s+only\b/i, hint: 'Personality → Layer B' },
+  { id: 'market-does-not-care', re: /\bthe\s+market\s+does\s+not\s+care\b/i, hint: 'Personality → Layer B' },
+  { id: 'still-have-a-story', re: /\bhomes\s+that\s+still\s+have\s+a\s+story\b/i, hint: 'Personality → Layer B' },
+  { id: 'desert-meets', re: /\bwhere\s+the\s+desert\s+meets\b/i, hint: 'Metaphor → Layer B' },
+  { id: 'broker-you-get', re: /\bthe\s+broker\s+you\s+call\b.*\bthe\s+broker\s+you\s+get\b/i, hint: 'Team personality H1 not money-shell' },
+]
+
+// ── Money routes (page.tsx trees) ───────────────────────────────────────────
+// Task C2 families: home, cities, search/homes-for-sale, housing-market, sell,
+// open-houses, price-drops. Buy hub included as money-path shell.
+const MONEY_PATHS = [
+  'app/page.tsx',
+  'app/buy/page.tsx',
+  'app/sell/page.tsx',
+  'app/cities',
+  'app/search',
+  'app/housing-market',
+  'app/open-houses',
+  'app/price-drops',
+]
+
+// Exact-match contracts: head terms that must remain on specific money shells.
+// Patterns match source as authored (literals + template literal static parts).
+const REQUIRED = [
+  {
+    file: 'app/page.tsx',
+    checks: [
+      { re: /titleTop\s*=\s*["']Central Oregon["']/, msg: 'H1 titleTop must be exact "Central Oregon"' },
+      { re: /titleBottom\s*=\s*["']Homes for Sale["']/, msg: 'H1 titleBottom must be exact "Homes for Sale"' },
+      { re: /title:\s*['"]Homes for Sale/i, msg: 'metadata title must lead with "Homes for Sale"' },
+    ],
+  },
+  {
+    file: 'app/cities/[slug]/page.tsx',
+    checks: [
+      { re: /titleBottom\s*=\s*["']Homes for Sale["']/, msg: 'city H1 titleBottom must be exact "Homes for Sale"' },
+      { re: /title:\s*[`'"]Homes for Sale in \$\{/i, msg: 'city metadata title must be "Homes for Sale in ${city}…"' },
+    ],
+  },
+  {
+    file: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+    checks: [
+      { re: /titleBottom\s*=\s*["']Homes for Sale["']/, msg: 'neighborhood H1 titleBottom must be exact "Homes for Sale"' },
+    ],
+  },
+  {
+    file: 'app/housing-market/page.tsx',
+    checks: [
+      { re: /titleBottom\s*=\s*["']Housing Market["']/, msg: 'market hub H1 titleBottom must be exact "Housing Market"' },
+      { re: /title:\s*['"]Central Oregon Housing Market['"]/i, msg: 'market hub title must be "Central Oregon Housing Market"' },
+    ],
+  },
+  {
+    file: 'app/sell/page.tsx',
+    checks: [
+      { re: /titleTop\s*=\s*["']Sell your home in["']/i, msg: 'sell H1 titleTop must be "Sell your home in"' },
+      { re: /title:\s*['"]Sell Your Home/i, msg: 'sell metadata title must lead with "Sell Your Home"' },
+    ],
+  },
+  {
+    file: 'app/open-houses/page.tsx',
+    checks: [
+      { re: /titleTop\s*=\s*["']Open houses in["']/i, msg: 'open-houses H1 titleTop must be "Open houses in"' },
+      { re: /title:\s*['"]Open Houses/i, msg: 'open-houses metadata title must lead with "Open Houses"' },
+    ],
+  },
+  {
+    file: 'app/open-houses/[city]/page.tsx',
+    checks: [
+      { re: /titleTop\s*=\s*["']Open houses in["']/i, msg: 'city open-houses H1 titleTop must be "Open houses in"' },
+      { re: /title:\s*[`'"]Open Houses in/i, msg: 'city open-houses title must lead with "Open Houses in"' },
+    ],
+  },
+  {
+    file: 'app/price-drops/page.tsx',
+    checks: [
+      { re: /titleTop\s*=\s*["']Price Drops["']/, msg: 'price-drops H1 titleTop must be exact "Price Drops"' },
+      { re: /title:\s*['"]Price Drops/i, msg: 'price-drops metadata title must lead with "Price Drops"' },
+    ],
+  },
+  {
+    file: 'app/price-drops/[city]/page.tsx',
+    checks: [
+      { re: /titleTop\s*=\s*["']Price Drops["']/, msg: 'city price-drops H1 titleTop must be exact "Price Drops"' },
+      { re: /title:\s*[`'"]Price Drops in/i, msg: 'city price-drops title must lead with "Price Drops in"' },
+    ],
+  },
+  {
+    file: 'app/search/page.tsx',
+    checks: [
+      { re: /Homes for Sale/, msg: 'search index title/H1 builders must use "Homes for Sale"' },
+      { re: /return ['"]Homes for Sale['"]/, msg: 'empty-filter title must be exact "Homes for Sale"' },
+    ],
+  },
+  {
+    file: 'app/search/[...slug]/page.tsx',
+    checks: [
+      {
+        re: /Homes for sale in \$\{placeName\}/i,
+        msg: 'default search H1 must be "Homes for sale in ${placeName}" (query language)',
+      },
+    ],
+  },
+]
+
+// ── File collection ─────────────────────────────────────────────────────────
+function walkPageTsx(dir, out = []) {
+  let entries
+  try {
+    entries = readdirSync(dir)
+  } catch {
+    return out
+  }
+  for (const e of entries) {
+    if (e === 'node_modules' || e === '.next' || e === '__tests__') continue
+    const p = join(dir, e)
+    let st
+    try {
+      st = statSync(p)
+    } catch {
+      continue
+    }
+    if (st.isDirectory()) walkPageTsx(p, out)
+    else if (e === 'page.tsx') out.push(p)
+  }
+  return out
+}
+
+function collectMoneyPages() {
+  const files = []
+  for (const g of MONEY_PATHS) {
+    const abs = join(ROOT, g)
+    if (!existsSync(abs)) continue
+    const st = statSync(abs)
+    if (st.isFile()) files.push(abs)
+    else if (st.isDirectory()) walkPageTsx(abs, files)
+  }
+  return [...new Set(files)].sort()
+}
+
+function rel(p) {
+  return relative(ROOT, p).replace(/\\/g, '/')
+}
+
+/**
+ * Extract Layer A shell snippets from a page source.
+ * We intentionally do NOT scan the whole file (body copy may be Layer B).
+ */
+function extractLayerAShell(src) {
+  const chunks = []
+
+  /** Push last capture group (or full match) from every hit. */
+  const pushAll = (re, groupIndex = 1) => {
+    re.lastIndex = 0
+    let m
+    while ((m = re.exec(src)) !== null) {
+      chunks.push(m[groupIndex] ?? m[0])
+    }
+  }
+
+  // titleTop / titleBottom / lead — string or template literal (optionally wrapped in {})
+  // group 2 = content between matching quotes
+  pushAll(/\btitleTop\s*=\s*\{?\s*(["'`])([\s\S]*?)\1\s*\}?/g, 2)
+  pushAll(/\btitleBottom\s*=\s*\{?\s*(["'`])([\s\S]*?)\1\s*\}?/g, 2)
+  pushAll(/\blead\s*=\s*\{?\s*(["'`])([\s\S]*?)\1\s*\}?/g, 2)
+  // metadata title: '…' / title: `…`
+  pushAll(/\btitle\s*:\s*(["'`])([\s\S]*?)\1/g, 2)
+  // <h1>…</h1> and <H1>…</H1> (may span lines / nested spans)
+  pushAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi, 1)
+  pushAll(/<H1\b[^>]*>([\s\S]*?)<\/H1>/g, 1)
+  // aria-label="…"
+  pushAll(/\baria-label\s*=\s*(["'`])([\s\S]*?)\1/g, 2)
+  // headerTitle assignment blob (search routes)
+  pushAll(/\bheaderTitle\s*=[\s\S]{0,500}?(?=\n\s*(?:const|return|\/\/|\/\*|<))/g, 0)
+  // buildSearchTitle / similar return literals
+  pushAll(/return\s+(["'`])([^"'`]*Homes for [Ss]ale[^"'`]*)\1/g, 2)
+  pushAll(/return\s+`([^`]*Homes for [Ss]ale[^`]*)`/g, 1)
+
+  // Normalize JSX text: strip tags, collapse whitespace
+  return chunks
+    .map((c) =>
+      String(c)
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\$\{[^}]+\}/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
+    )
+    .filter(Boolean)
+    .join('\n')
+}
+
+// ── Run ─────────────────────────────────────────────────────────────────────
+const violations = []
+const files = collectMoneyPages()
+
+// (1) Banned poetry on money-route shells
+for (const file of files) {
+  const src = readFileSync(file, 'utf8')
+  const shell = extractLayerAShell(src)
+  if (!shell) continue
+  for (const ban of BANNED) {
+    if (ban.re.test(shell)) {
+      violations.push({
+        file: rel(file),
+        kind: 'banned',
+        id: ban.id,
+        msg: `Layer A shell matches banned poetry /${ban.re.source}/i — ${ban.hint}`,
+      })
+    }
+  }
+}
+
+// (2) Required exact-match contracts
+for (const req of REQUIRED) {
+  const abs = join(ROOT, req.file)
+  if (!existsSync(abs)) {
+    violations.push({
+      file: req.file,
+      kind: 'missing',
+      id: 'file-missing',
+      msg: `required money route missing — cannot enforce Layer A contract`,
+    })
+    continue
+  }
+  const src = readFileSync(abs, 'utf8')
+  for (const check of req.checks) {
+    if (!check.re.test(src)) {
+      violations.push({
+        file: req.file,
+        kind: 'required',
+        id: check.re.source.slice(0, 40),
+        msg: check.msg,
+      })
+    }
+  }
+}
+
+// (3) KbHero defaults must not reintroduce poetry when a caller omits props
+const HERO = join(ROOT, 'components/site/kb/KbHero.client.tsx')
+if (existsSync(HERO)) {
+  const heroSrc = readFileSync(HERO, 'utf8')
+  // Defaults are parameter defaults: titleTop = '…', titleBottom = '…'
+  const topM = heroSrc.match(/\btitleTop\s*=\s*(['"])([^'"]*)\1/)
+  const botM = heroSrc.match(/\btitleBottom\s*=\s*(['"])([^'"]*)\1/)
+  const top = topM?.[2] ?? ''
+  const bot = botM?.[2] ?? ''
+  const defaultShell = `${top}\n${bot}`
+  for (const ban of BANNED) {
+    if (ban.re.test(defaultShell)) {
+      violations.push({
+        file: 'components/site/kb/KbHero.client.tsx',
+        kind: 'hero-default',
+        id: ban.id,
+        msg: `KbHero default H1 is poetry (${JSON.stringify(top)} / ${JSON.stringify(bot)}) — ${ban.hint}`,
+      })
+    }
+  }
+  // Positive lock: defaults must be the homepage Layer A pattern
+  if (top !== 'Central Oregon' || bot !== 'Homes for Sale') {
+    violations.push({
+      file: 'components/site/kb/KbHero.client.tsx',
+      kind: 'hero-default',
+      id: 'safe-defaults',
+      msg: `KbHero defaults must be titleTop="Central Oregon" titleBottom="Homes for Sale" (got ${JSON.stringify(top)} / ${JSON.stringify(bot)})`,
+    })
+  }
+} else {
+  violations.push({
+    file: 'components/site/kb/KbHero.client.tsx',
+    kind: 'missing',
+    id: 'hero-missing',
+    msg: 'KbHero component missing — cannot lock Layer A defaults',
+  })
+}
+
+// ── Report ──────────────────────────────────────────────────────────────────
+console.log('seo-shell gate (ci:seo-shell) — Layer A forever')
+console.log('==============================================')
+console.log(`Scanned ${files.length} money-route page.tsx files + KbHero defaults`)
+console.log('Banned patterns:', BANNED.length)
+console.log('Required contracts:', REQUIRED.length)
+
+if (violations.length === 0) {
+  console.log('\n✓ OK — money shells are query language; poetry cannot return via H1/title/defaults.')
+  process.exit(0)
+}
+
+console.error(`\n✗ ${violations.length} Layer A violation(s):\n`)
+for (const v of violations) {
+  console.error(`  ${v.file}`)
+  console.error(`    [${v.kind}${v.id ? `:${v.id}` : ''}] ${v.msg}`)
+}
+console.error('\nLayer A = place + type + head terms (Homes for Sale / Housing Market / Price Drops / Open Houses / Sell Your Home).')
+console.error('Buffett voice belongs under the H1 (Layer B). See docs/plans/seo-voice/TOP_SITE_GOAL_SYSTEM.md §2.1.')
+process.exit(1)

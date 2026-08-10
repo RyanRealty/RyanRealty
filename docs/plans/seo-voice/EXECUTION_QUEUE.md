@@ -39,7 +39,7 @@ Standing orders so the full inventory actually runs (not just exists):
 | 10× leads / alerts / engagement | **NOT done** (alerts ~6) |
 | Exhaustive F00–F12 verify | **NOT done** |
 | Design / UI 2026 craft (G7 / P5) | **NOT done** — was plan, **was missing from this queue** (fixed below) |
-| Layer A + seo-shell forever | **Partial** |
+| Layer A + seo-shell forever | **SHIP** (`ci:seo-shell` locked; C1 residual copy still partial) |
 | Competitive entity truth | **Partial** |
 | Report factory / feature cubes / inventory snapshots | **NOT done** |
 | Habit engagement system | **NOT done** (sticky only) |
@@ -70,8 +70,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 ### Block C — Discovery lock (G5)
 
 9. [~] **C1 Layer A residual** — money families exact-match titles/H1s (partial ship)
-10. [ ] **C2 `ci:seo-shell` (or equivalent)** — poetry H1s cannot return
-11. [ ] **C3 Internal links from hubs** — Buy / Areas / Market / Sell
+10. [x] **C2 `ci:seo-shell`** — `scripts/check-seo-shell.mjs` + `npm run ci:seo-shell` in `ci:gates`; banned poetry + required exact-match H1/title; KbHero defaults Layer A locked
+11. [~] **C3 Internal links from hubs** — Buy (+open houses), Market hub (+OH/price-drops/sell); cities already linked; sell form-first residual
 
 ### Block D — Exhaustive feature verify (G2–G3) — you rejected skip lists
 
@@ -167,8 +167,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 | Field | Value |
 |-------|--------|
 | **NOW** | **B2 Saved search / save path** (L1 prod HTML blocked: site 403 from agent host) |
-| **THEN** | D2–D3 money-path verify · C2 seo-shell · B3–B5 · Block E UI craft · rest of A–M |
-| **NOTE** | B1 surface ship on main `48a72b74`; enrollment volume still the B1 outcome exit |
+| **THEN** | D2–D3 money-path verify · C3 hub residual · B3–B5 · Block E UI craft · rest of A–M |
+| **NOTE** | C2 `ci:seo-shell` forever-gate shipped; B1 surface on `48a72b74`; enrollment volume still open |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 

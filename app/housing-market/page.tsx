@@ -384,6 +384,9 @@ export default async function HousingMarketHubPage() {
               { href: '/cities', label: 'All Central Oregon cities' },
               { href: '/communities', label: 'Communities and neighborhoods' },
               { href: '/homes-for-sale', label: 'Browse homes for sale' },
+              { href: '/open-houses', label: 'Open houses this week' },
+              { href: '/price-drops', label: 'Recent price drops' },
+              { href: '/sell', label: 'Sell your home' },
               { href: '/blog', label: 'Buying and selling guides' },
               { href: '/area-guides', label: 'Area guides' },
             ].map(({ href, label }) => (

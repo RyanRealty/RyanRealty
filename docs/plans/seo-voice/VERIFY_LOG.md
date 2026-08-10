@@ -43,6 +43,14 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 C2 `ci:seo-shell` forever-gate
+- **Shipped:** `scripts/check-seo-shell.mjs` + `npm run ci:seo-shell` wired into `ci:gates` (after `ci:seo-routes`).
+- **Checks:** banned poetry in Layer A shells on money routes; required exact-match H1/title contracts (home, city, market, sell, OH, price-drops, search); KbHero defaults locked to `Central Oregon` / `Homes for Sale`.
+- **Fix:** removed poetry defaults from `KbHero.client.tsx` (was "The MLS list," / "and what it sold for.").
+- **C3 partial:** Buy hero + open houses; market hub + open-houses / price-drops / sell.
+- **Gate:** `npm run ci:seo-shell` exit 0.
+- **Commit:** see main after this unit.
+
 ### 2026-08-10 L1 blocked (host 403)
 - curl `https://ryan-realty.com/cities/bend` → **403** from agent host (WAF/bot). Prod browser proof needs Matt or alternate egress. Queue advances past L1 without abandoning the unit.
 

@@ -89,6 +89,7 @@ const OLD_MILL_HERO = '/images/homepage/sisters-downtown-three-peaks.jpg'
 const HERO_CHIPS = [
   { label: 'Search homes', href: '/homes-for-sale' },
   { label: 'Get listing alerts', href: '/lp/buyer-listing-alerts' },
+  { label: 'Open houses', href: '/open-houses' },
   { label: 'Price drops', href: '/price-drops' },
   { label: 'Talk to a broker', href: '/contact?inquiry=Buying' },
   { label: 'Area guides', href: '/area-guides' },
