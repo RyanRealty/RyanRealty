@@ -252,12 +252,26 @@ export function KbNav({ solid = false }: { solid?: boolean } = {}) {
           </button>
         </nav>
       </header>
-      <div id="menu-overlay" ref={overlayRef} className={`menu-overlay${open ? ' open' : ''}`} aria-hidden={!open}>
+      <div
+        id="menu-overlay"
+        ref={overlayRef}
+        className={`menu-overlay${open ? ' open' : ''}`}
+        role={open ? 'dialog' : undefined}
+        aria-modal={open ? true : undefined}
+        aria-label="Site menu"
+        aria-hidden={!open}
+      >
         <div className="menu-top">
-          <Link href="/" aria-label="Ryan Realty home">
+          <Link href="/" aria-label="Ryan Realty home" onClick={closeOverlay}>
             <img className="logo-img" src="/images/brand/logo-horizontal-navy-transparent.png" alt="Ryan Realty" />
           </Link>
-          <button ref={closeBtnRef} className="menu-close" onClick={closeOverlay}>
+          <button
+            ref={closeBtnRef}
+            type="button"
+            className="menu-close"
+            onClick={closeOverlay}
+            aria-label="Close menu"
+          >
             Close ×
           </button>
         </div>

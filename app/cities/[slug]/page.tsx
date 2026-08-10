@@ -486,6 +486,13 @@ export default async function CityDetailPage({ params }: Props) {
           title={`Every active home\nin ${cityName}`}
           subtitle={`Every active single-family listing with a ${cityName} address.`}
         />
+        {/* E3 light craft: buyer alerts right after inventory (featured/map),
+            not buried under open houses. City-scoped; empty subdivision. */}
+        <KbCommunityAlerts
+          communityName={cityName}
+          city={cityName}
+          subdivision=""
+        />
         {aboutParagraphs.length > 0 ? (
           <KbAbout eyebrow={`${cityName} · Oregon`} heading={`${cityName}, in plain words`} paragraphs={aboutParagraphs} facts={aboutFacts} />
         ) : null}
@@ -524,13 +531,6 @@ export default async function CityDetailPage({ params }: Props) {
         ) : null}
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={cityName} posterSrc={heroPosterSrc} />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
-        {/* Buyer listing alerts earlier in the funnel (B1): after inventory
-            moments, before activity scroll. City-scoped; empty subdivision. */}
-        <KbCommunityAlerts
-          communityName={cityName}
-          city={cityName}
-          subdivision=""
-        />
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
         <KbSell
           data={{

@@ -117,3 +117,11 @@
 
 ### 2026-08-10 autonomous continue (2)
 - Marts **2016–2025**; dim_office **280**; agents; A10 cron; B1.
+
+### 2026-08-10 E1 + E2 (+ E3 light) UI craft
+- **Unit:** EXECUTION_QUEUE E1 chrome polish, E2 homepage, E3 city light.
+- **E1 chrome:** `kb.css` topbar/menu — safe-area insets, z-index 100/200 stack, 44px hit targets, cream focus rings on logo/links/CTAs/menu, menu hover + reduced-motion, sticky CTA row spacing. `KbNav` — `role=dialog` + `aria-modal` when open, Close type/label, logo closes overlay. No dual chrome / no SiteHeader remount.
+- **E2 homepage:** mid-page `KbCommunityAlerts` (Central Oregon, `propertyType: A` SFR narrowing); hero sub max-width 42ch; search/sell focus craft. Layer A H1 still `Central Oregon` / `Homes for Sale`.
+- **E3 light:** city `KbCommunityAlerts` moved to after map (inventory), not under open houses.
+- **Gates:** `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · `ci:kb-a11y-static` ✓ · `ci:kb-overlay-hidden` ✓ · `ci:css-layers` ✓ (baseline line-shift refresh) · `ci:default-chrome-footer` ✓ · `ci:kb-page-contract` ✓ · `ci:kb-single-source` ✓.
+- **Pointer next:** E3 full city craft or E4 listing.

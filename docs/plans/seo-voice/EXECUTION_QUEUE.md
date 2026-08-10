@@ -92,9 +92,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block E — Design / UI craft (G7 / P5) — **was in plan; now on spine**
 
-26. [ ] **E1 UI craft — chrome polish** (brand locked; no rebrand)
-27. [ ] **E2 UI craft — homepage**
-28. [ ] **E3 UI craft — city**
+26. [x] **E1 UI craft — chrome polish** — **2026-08-10:** safe-area topbar/menu, z-index stack (topbar 100 / menu 200), 44px hit targets, cream focus rings, menu dialog a11y, reduced-motion, hover polish. No dual chrome / no SiteHeader remount.
+27. [x] **E2 UI craft — homepage** — **2026-08-10:** mid-page `KbCommunityAlerts` (SFR / Central Oregon), hero sub width + search focus craft, sell form focus, Layer A H1 locked. Gates: seo-shell + brand-voice green.
+28. [~] **E3 UI craft — city** — **2026-08-10 light:** city alerts moved to after map (inventory). Full city craft pass still open.
 29. [ ] **E4 UI craft — listing**
 30. [ ] **E5 UI craft — sell**
 31. [ ] **E6 UI craft — market**
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **E1 UI craft chrome polish** (or H6 feature cubes / I4 Ryan buy-side / D5–D13 residual) |
-| **THEN** | E2–E7 UI craft · F4 · M2–M3 · H6 full cubes · K1 body inventory · Matt: G3 + L1 browser |
-| **NOTE** | Large batch shipped this /endtoend; **not 10×** (alerts still 6). Blockers: L1/J4 host 403, G3 Matt UI, I6 Matt lock. |
+| **NOW** | **E3 UI craft city** (full pass; light ship done) or **E4 listing** |
+| **THEN** | E4–E7 UI craft · Matt: G3 + L1 browser · I6 lock |
+| **NOTE** | E1+E2 shipped 2026-08-10; E3 light only. **not 10×** (alerts still ~6). Blockers: L1/J4 host 403, G3 Matt UI, I6 Matt lock. |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 

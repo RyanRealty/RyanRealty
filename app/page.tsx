@@ -20,6 +20,7 @@ import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import type { KbTownItem, KbCommunityItem, KbTickerItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
@@ -213,6 +214,17 @@ export default async function Home() {
         <KbExploreTowns towns={towns} eyebrow="By town" title={'Where the sales\nare happening'} />
         <KbCommunities communities={communityItems} eyebrow="Resorts and planned communities" />
         <KbFeatured items={featuredItems} eyebrow="Listed right now" />
+        {/* Mid-page buyer capture (E2 craft): navy band after inventory so the
+            homepage is not sell-only until deep scroll. propertyType A = SFR
+            across the regional MLS — honest Central Oregon filter without a
+            single-city lie. hasNarrowingFilter accepts propertyType alone. */}
+        <KbCommunityAlerts
+          communityName="Central Oregon"
+          city=""
+          extraFilters={{ propertyType: 'A' }}
+          headline="Central Oregon"
+          body="Enter your email. When a single-family home hits the market in Bend, Redmond, Sisters, Sunriver, or nearby, you hear first."
+        />
         {/* fitToFeatures frames the actual inventory — the REGION box in this
             wide container padded half the visible map out to the Willamette
             Valley with zero pins (design-audit). */}

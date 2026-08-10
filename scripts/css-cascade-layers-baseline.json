@@ -2,13 +2,13 @@
   "$comment": "Ratchet baseline for check-css-cascade-layers.mjs. Each entry is an un-layered bare-element link/button color rule (file:line selector). May only SHRINK: move the rule into @layer base (so Tailwind utilities keep winning) and remove its entry.",
   "offenders": [
     "components/admin/help/help-driver.css:32 .driver-popover-navigation-btns button",
-    "components/site/kb/kb.css:628 .kb-root .mkt-toggle button",
-    "components/site/kb/kb.css:650 .kb-root .foot-contact a, .kb-root .foot-contact span",
-    "components/site/kb/kb.css:652 .kb-root .foot-social a",
-    "components/site/kb/kb.css:654 .kb-root .foot-col a",
-    "components/site/kb/kb.css:655 .kb-root .foot-col a:hover, .kb-root .foot-contact a:hover, .kb-root .foot-socia",
-    "components/site/kb/kb.css:682 .kb-root .proof-team-head a",
-    "components/site/kb/kb.css:683 .kb-root .proof-team-head a:hover",
-    "components/site/kb/kb.css:1649 .kb-root .comm-str-text a"
+    "components/site/kb/kb.css:731 .kb-root .mkt-toggle button",
+    "components/site/kb/kb.css:753 .kb-root .foot-contact a, .kb-root .foot-contact span",
+    "components/site/kb/kb.css:755 .kb-root .foot-social a",
+    "components/site/kb/kb.css:757 .kb-root .foot-col a",
+    "components/site/kb/kb.css:758 .kb-root .foot-col a:hover, .kb-root .foot-contact a:hover, .kb-root .foot-socia",
+    "components/site/kb/kb.css:786 .kb-root .proof-team-head a",
+    "components/site/kb/kb.css:787 .kb-root .proof-team-head a:hover",
+    "components/site/kb/kb.css:1761 .kb-root .comm-str-text a"
   ]
 }
