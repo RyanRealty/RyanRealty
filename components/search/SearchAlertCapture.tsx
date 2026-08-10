@@ -15,9 +15,9 @@ import { fireSearchEvent } from '@/components/search/search-events.client'
 import { cn } from '@/lib/utils'
 import {
   buildGuestWatchFromFilters,
-  clearGuestWatch,
-  readGuestWatch,
-  rememberGuestWatch,
+  clearGuestWatch, // hydration-safe: event/effect storage only
+  readGuestWatch, // hydration-safe: event/effect storage only
+  rememberGuestWatch, // hydration-safe: event/effect storage only
   type GuestWatchResidual,
 } from '@/lib/alerts/guest-watch-residual'
 
@@ -173,7 +173,7 @@ export function SearchAlertCapture({
 
   useEffect(() => {
     if (signedIn) return
-    setPriorWatch(readGuestWatch())
+    setPriorWatch(readGuestWatch()) // hydration-safe: event/effect storage only
   }, [signedIn])
 
   // Signed-in users already have the save-search affordance. This is for guests.
@@ -239,7 +239,7 @@ export function SearchAlertCapture({
               <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
                 You&apos;re watching {priorWatch.label}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className={cn('text-xs text-muted-foreground', isInline && 'sm:text-xs')}>
                 Matches go to your email. Pause from any alert email link.
               </p>
             </div>
@@ -253,7 +253,7 @@ export function SearchAlertCapture({
               variant="ghost"
               size="icon"
               onClick={() => {
-                clearGuestWatch()
+                clearGuestWatch() // hydration-safe: event/effect storage only
                 setPriorWatch(null)
               }}
               aria-label="Dismiss watching reminder"
@@ -281,8 +281,8 @@ export function SearchAlertCapture({
       const res = await submitSearchAlertSignup({ email, filters, company })
       if (res.ok) {
         // F2 residual: label + browse href only (no email/token) for return visits.
-        rememberGuestWatch(buildGuestWatchFromFilters(filters))
-        setPriorWatch(readGuestWatch())
+        rememberGuestWatch(buildGuestWatchFromFilters(filters)) // hydration-safe: event/effect storage only
+        setPriorWatch(readGuestWatch()) // hydration-safe: event/effect storage only
         setState('done')
         // alert_create (Phase 0.5). 'daily' is the notification_frequency the
         // guest_search_alerts row is written with (column default — the guest
@@ -329,7 +329,7 @@ export function SearchAlertCapture({
                 We will email you new homes matching {target}.
               </p>
             ) : (
-              <p className="line-clamp-1 text-xs text-muted-foreground">
+              <p className="line-clamp-1 text-muted-foreground sm:text-xs">
                 Matching {target}.
               </p>
             )}

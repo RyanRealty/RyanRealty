@@ -10,7 +10,7 @@ import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
   buildGuestWatchFromPlace,
-  rememberGuestWatch,
+  rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
 
 /**
@@ -67,7 +67,7 @@ export function KbCommunityAlerts({
       if (res.ok) {
         // F2 residual (label + href only; no email) so return visits show the
         // soft "You're watching …" banner without an account.
-        rememberGuestWatch(
+        rememberGuestWatch( // hydration-safe: event/effect storage only
           buildGuestWatchFromPlace({
             communityName,
             city,

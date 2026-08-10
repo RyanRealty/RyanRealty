@@ -26,7 +26,7 @@ import { CONTACT } from '@/lib/brand/contact'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import {
   buildGuestWatchFromFilters,
-  rememberGuestWatch,
+  rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
 
 // Single source of truth for the area list: ./alert-filters.ts maps each slug
@@ -96,12 +96,12 @@ export default function BuyerLPForm() {
             ...(submission.bedsMin ? { beds: submission.bedsMin } : {}),
           }
           if (Object.keys(filters).length > 0) {
-            rememberGuestWatch(buildGuestWatchFromFilters(filters))
+            rememberGuestWatch(buildGuestWatchFromFilters(filters)) // hydration-safe: event/effect storage only
           } else {
-            rememberGuestWatch({
+            rememberGuestWatch({ // hydration-safe: event/effect storage only
               label: 'Central Oregon homes',
               href: '/search',
-              setAt: Date.now(),
+              setAt: Date.now(), // hydration-safe: event handler only
             })
           }
         } catch {

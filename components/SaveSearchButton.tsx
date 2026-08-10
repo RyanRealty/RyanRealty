@@ -16,7 +16,7 @@ import { buildSearchSavePayload, countActiveSearchParams } from '@/lib/search/se
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
   buildGuestWatchFromFilters,
-  rememberGuestWatch,
+  rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -132,7 +132,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     if (res.ok) {
       setStatus('done')
       // F2 residual for return visits (label + href only; no email).
-      rememberGuestWatch(buildGuestWatchFromFilters(filters))
+      rememberGuestWatch(buildGuestWatchFromFilters(filters)) // hydration-safe: event/effect storage only
       fireSaveEvent()
       try {
         trackEvent('save_search', {

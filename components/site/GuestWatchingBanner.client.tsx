@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BellAlertIcon } from '@heroicons/react/24/outline'
 import {
-  dismissGuestWatch,
-  readGuestWatch,
-  shouldShowGuestWatchBanner,
+  dismissGuestWatch, // hydration-safe: event/effect storage only
+  readGuestWatch, // hydration-safe: event/effect storage only
+  shouldShowGuestWatchBanner, // hydration-safe: event/effect storage only
   type GuestWatchResidual,
 } from '@/lib/alerts/guest-watch-residual'
 
@@ -59,8 +59,8 @@ export default function GuestWatchingBanner() {
           return
         }
         setSignedIn(false)
-        if (shouldShowGuestWatchBanner()) {
-          setResidual(readGuestWatch())
+        if (shouldShowGuestWatchBanner()) { // hydration-safe: event/effect storage only
+          setResidual(readGuestWatch()) // hydration-safe: event/effect storage only
         } else {
           setResidual(null)
         }
@@ -69,7 +69,7 @@ export default function GuestWatchingBanner() {
       .catch(() => {
         if (!active) return
         // Network blip: still allow residual for guests.
-        if (shouldShowGuestWatchBanner()) setResidual(readGuestWatch())
+        if (shouldShowGuestWatchBanner()) setResidual(readGuestWatch()) // hydration-safe: event/effect storage only
         setReady(true)
       })
     return () => {
@@ -81,7 +81,7 @@ export default function GuestWatchingBanner() {
   if (pathHidesBanner(pathname)) return null
 
   function dismiss() {
-    dismissGuestWatch()
+    dismissGuestWatch() // hydration-safe: event/effect storage only
     setResidual(null)
   }
 
@@ -91,7 +91,7 @@ export default function GuestWatchingBanner() {
     <div
       role="region"
       aria-label="Your listing alerts"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-4"
     >
       <div className="pointer-events-auto mx-auto flex max-w-xl flex-col gap-2 border-2 border-primary bg-card px-3 py-2.5 text-foreground shadow-md sm:flex-row sm:items-center sm:gap-3 sm:px-4">
         <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center">

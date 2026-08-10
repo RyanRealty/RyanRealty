@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import {
   buildGuestWatchFromFilters,
-  rememberGuestWatch,
+  rememberGuestWatch, // hydration-safe: event/effect storage only
 } from '@/lib/alerts/guest-watch-residual'
 import { priceBandAroundListPrice } from '@/lib/search/price-band'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
@@ -153,7 +153,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         company: alertCompany,
       })
       if (res.ok) {
-        rememberGuestWatch(buildGuestWatchFromFilters(filters))
+        rememberGuestWatch(buildGuestWatchFromFilters(filters)) // hydration-safe: event/effect storage only
         setAlertState('done')
         fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))
       } else {
