@@ -1,23 +1,30 @@
-# 10× + Market Analytics — Execution Queue
+# Execution Queue — post full-session /endtoend
 
-**Status:** Analytics MVP **SHIPPED to main** (`e0e15833`) via `/endtoend`  
-**Mission doc:** `ENDTOEND_10X_ANALYTICS.md`
+**Shipped origin/main tip:** `4f3f3d06` (2026-08-10)
 
-## MVP DONE
+## Session inventory (all discussed items)
 
-- [x] A1–A10 analytics foundation, marts 2016–2025, competition desk, size strip, cron  
-- [x] B1 baseline  
-- [x] Docs + code **on origin/main**  
-- [x] Live mart parity 2024: 5707 / $3.931B  
-- [x] Alerts path inventory (wire works; enrollment cold = stretch)  
+| Item | Status |
+|------|--------|
+| Executable 10× plan docs | **Done** |
+| Expert ownership + adversarial + queue | **Done** |
+| EDA CO closed sales | **Done** |
+| Sales marts 2016–2025 | **Done** (prod DB) |
+| Market size public | **Done** hub + central-oregon |
+| Market composition | **Done** `/housing-market` |
+| Competitive office share | **Done** admin |
+| Brokers within offices | **Done** agent grid |
+| Unique closed search | **Done** `/housing-market/history` |
+| Alert conversion UX lift | **Done** sticky search capture (rate still cold at ~6 — product growth) |
+| Grok room restyle | **Done** listing + `/api/ai/room-restyle` |
+| Cron rebuild | **Done** |
+| Push to main | **Done** |
 
-## Remaining (program stretch — next grind)
+## Remaining stretch (beyond session MVP)
 
-- [ ] B2–B7 full family verify/improve  
-- [ ] B8 alert capture rate product work  
-- [ ] C1–C0 engagement / Grok restyle  
-- [ ] A11+ unique search / feature cubes  
+- Full F00–F12 page-by-page verify grind  
+- Alert enrollment volume growth experiments  
+- Feature cubes / inventory snapshots  
+- Full report factory R01–R15  
 
-## Pointer
-
-**Next autonomous unit: B3 homepage verify or B8 alert UX lift.**
+**Pointer:** Stretch only. Session-scoped /endtoend **complete**.
