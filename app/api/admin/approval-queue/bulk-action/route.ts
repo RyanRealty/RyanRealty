@@ -68,6 +68,18 @@ export async function POST(request: NextRequest) {
           .in('status', MUTABLE_STATUSES)
           .select('id')
         if (error) throw error
+        void import('@/app/actions/log-admin-action')
+          .then(({ logAdminAction }) =>
+            logAdminAction({
+              adminEmail: user.email,
+              role: ctx.role,
+              actionType: 'approval_queue_bulk_approve',
+              resourceType: 'marketing_brain_action',
+              resourceId: ids[0] ?? null,
+              details: { affected: (data ?? []).length, ids },
+            }),
+          )
+          .catch(() => {})
         return NextResponse.json({ ok: true, status: 'approved', affected: (data ?? []).length })
       }
 
@@ -85,6 +97,22 @@ export async function POST(request: NextRequest) {
           .in('status', MUTABLE_STATUSES)
           .select('id')
         if (error) throw error
+        void import('@/app/actions/log-admin-action')
+          .then(({ logAdminAction }) =>
+            logAdminAction({
+              adminEmail: user.email,
+              role: ctx.role,
+              actionType: 'approval_queue_bulk_reject',
+              resourceType: 'marketing_brain_action',
+              resourceId: ids[0] ?? null,
+              details: {
+                affected: (data ?? []).length,
+                ids,
+                killed_reason: body.killed_reason.trim(),
+              },
+            }),
+          )
+          .catch(() => {})
         return NextResponse.json({ ok: true, status: 'killed', affected: (data ?? []).length })
       }
 

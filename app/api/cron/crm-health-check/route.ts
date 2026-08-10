@@ -208,6 +208,21 @@ export async function GET(request: Request) {
     if (ok) queued++
   }
 
+  // P12: fill first-broker-action stamps for recent people still missing them
+  // (timeline already has the outbound). Best-effort — never fail the health run.
+  let measurementBackfill: { scanned: number; stamped: number } | null = null
+  try {
+    const { backfillFirstBrokerActionStamps } = await import(
+      '@/lib/data/crm/backfillFirstBrokerAction'
+    )
+    measurementBackfill = await backfillFirstBrokerActionStamps({ sinceDays: 14, limit: 100 })
+  } catch (e) {
+    console.warn(
+      '[crm-health-check] measurement backfill failed:',
+      e instanceof Error ? e.message : e,
+    )
+  }
+
   return NextResponse.json({
     ok: true,
     checked_at: now.toISOString(),
@@ -215,6 +230,7 @@ export async function GET(request: Request) {
     alarms,
     alarms_firing: alarms.length,
     alerts_queued: queued,
+    measurement_backfill: measurementBackfill,
     duration_ms: Date.now() - startMs,
   })
 }

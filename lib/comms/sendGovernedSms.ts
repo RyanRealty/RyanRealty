@@ -77,6 +77,11 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
       },
       broker: slug, source: req.timelineSource ?? 'app', dedupe_key: `twilio:${sent.sid}:p${req.personId}`,
     })
+    void import('@/lib/crm/first-broker-action')
+      .then(({ stampFirstBrokerActionIfEmpty }) =>
+        stampFirstBrokerActionIfEmpty(sb, req.personId, { kind: 'sms_out', broker: slug }),
+      )
+      .catch(() => {})
     // Shadow-write into the conversation model (RC1). Non-fatal: the timeline
     // is still the source of truth until the inbox read path flips.
     try {

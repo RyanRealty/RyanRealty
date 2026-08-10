@@ -32,6 +32,21 @@ export async function POST(
 
     const service = createServiceClient()
 
+    const audit = (actionType: string, details?: Record<string, unknown>) => {
+      void import('@/app/actions/log-admin-action')
+        .then(({ logAdminAction }) =>
+          logAdminAction({
+            adminEmail: user.email,
+            role: ctx.role,
+            actionType,
+            resourceType: 'marketing_brain_action',
+            resourceId: id,
+            details: { verb: body.action, ...details },
+          }),
+        )
+        .catch(() => {})
+    }
+
     switch (body.action) {
       case 'approve_now': {
         const { error } = await service
@@ -43,6 +58,7 @@ export async function POST(
           })
           .eq('id', id)
         if (error) throw error
+        audit('approval_queue_approve')
         return NextResponse.json({ ok: true, status: 'approved' })
       }
 
@@ -60,6 +76,7 @@ export async function POST(
           })
           .eq('id', id)
         if (error) throw error
+        audit('approval_queue_approve_schedule', { scheduled_for: body.scheduled_for })
         return NextResponse.json({ ok: true, status: 'approved' })
       }
 
@@ -94,6 +111,7 @@ export async function POST(
           })
           .eq('id', id)
         if (error) throw error
+        audit('approval_queue_request_changes')
         return NextResponse.json({ ok: true, status: 'needs_changes', comments: updated })
       }
 
@@ -109,6 +127,7 @@ export async function POST(
           })
           .eq('id', id)
         if (error) throw error
+        audit('approval_queue_reject', { killed_reason: body.killed_reason.trim() })
         return NextResponse.json({ ok: true, status: 'killed' })
       }
 

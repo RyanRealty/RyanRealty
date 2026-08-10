@@ -134,6 +134,14 @@ async function sendViaResend(
     source: req.initiator.kind === 'system' ? 'automation' : 'app',
     dedupe_key: `resend:${res.id}:p${req.personId}`,
   })
+  void import('@/lib/crm/first-broker-action')
+    .then(({ stampFirstBrokerActionIfEmpty }) =>
+      stampFirstBrokerActionIfEmpty(sb, req.personId, {
+        kind: 'email_out',
+        broker: req.initiator.broker ?? null,
+      }),
+    )
+    .catch(() => {})
   try {
     await recordConversationMessage({
       sb, direction: 'out', channel: 'email', body: prepared.text, subject: payload.subject,

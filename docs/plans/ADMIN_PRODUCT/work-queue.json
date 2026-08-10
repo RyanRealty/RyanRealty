@@ -1,52 +1,17 @@
 [
   {
-    "id": "12-correctness",
-    "phase": "P12",
-    "note": "PARTIALLY CLOSED 2026-08-10. DONE this grind: assigned_broker SoT cascade (setPersonAssignedBroker + assign paths + createNativeTask); FSBO off_market after 7d unseen; high-confidence auto-merge on email/phone conflict in ensureNativeLead; first-broker-action stamp. STILL OPEN: remaining reader swallowers beyond the throw set, dupe UI, fuller deal broker cascade edge cases. | LOCK 2026-08-10: assigned_broker SoT = crm_people; auto-merge high-confidence dupes. DONE earlier: admin_overrides sync "
-  },
-  {
-    "id": "12-person-scope-class",
-    "phase": "P12",
-    "note": "ALIGNED 2026-08-10 with person-as-SoT cascade. Residual gate limit (call vs render) still engineering-only. | LOCK 2026-08-10: person.assigned_broker is SoT (aligns with 12-correctness). Residual gate limit (scope called vs gates "
-  },
-  {
-    "id": "p12-audit-trail-coverage",
-    "phase": "P12",
-    "note": "PARTIALLY CLOSED 2026-08-10. logAdminAction no longer swallows; blog_publish/blog_save logged; send_blocked + gate-drops. STILL: bulk ops, TC envelopes, approval-queue need call-site wiring. | LOCK 2026-08-10: compliance + content publishes (sends, blog publish/unpublish, approval-queue, bulk ops, TC envelopes)."
-  },
-  {
-    "id": "12-measurement",
-    "phase": "P12",
-    "note": "PARTIALLY CLOSED 2026-08-10. first_broker_action_at on custom via conversation outbound; replyLatencySeconds; getMeasurementSnapshot + Oversight surface. STILL: CMA SLA reader surface, backfill historical stamps. | LOCK 2026-08-10: FULL \u2014 stamps + admin surfaces (first-broker-action, reply-latency, CMA SLA). Not stamps-only. After co"
-  },
-  {
-    "id": "12-full-sync-never-completes",
-    "phase": "P12",
-    "note": "PARTIALLY CLOSED earlier (delta history). STILL: confirm weekly full completes. | PARTIALLY CLOSED 2026-08-09. Delta execute now records sync_history run_type=delta (migration widens CHECK). Full-run co"
-  },
-  {
     "id": "12-admin-chrome-debt",
     "phase": "P12",
-    "note": "MobileCrmHeader RESOLVED 2026-08-09 (2d089d6c): deleted outright per Matt's 11F decision 2. Its scope control was already duplicated by TopBarScope (which ConsoleShell renders on this exact path) and its search by the \u2318K palette; the avatar's /admin/settings link is in the account menu. ContactsSearch did NOT go with it \u2014 it was the only control on any width setting ?q= on the people list, so it was migrated to the v2 SearchField and mounted directly. Intermittent hydration mismatch TRACED to SiteHeader under HideChrome, firing on already-v2 untouched surfaces (task_af3d76b5) \u2014 re-measured 2026-08-08 at ~1 in 3 loads on /admin/crm/settings/* including brokers (no island, untouched), 0 in 3 on /admin/people and /admin/crm/reporting/calls, so it is route-family-correlated rather than universal; that asymmetry is the lead worth pulling. Client-component locale formatters in AdminUsersList + DscrScreen.client (task_00b9af6e). /admin/crm/subscriptions RESOLVED 2026-08-08 (45b64103): not a tab island and not acceptable-pre-existing \u2014 app/actions/alert-admin.ts carried 'use server' and re-exported three types it had only IMPORTED, which Next emits as a runtime binding, so the erased type threw ReferenceError at module evaluation behind a GREEN tsc. Gate G63 (ci:server-type-reexport) now blocks the class. /admin/content-library takes 28-44s to render because signDeliverableDownload runs once per row across 402 deliverables. /admin/bpo/new and /admin/crm/deals/[id] have no inbound link anywhere in the repo. STILL OPEN HERE: the SiteHeader/HideChrome hydration mismatch, the two client-component locale formatters, the content-library 28-44s render, and the two unlinked routes."
-  },
-  {
-    "id": "11f-converge-third-reader",
-    "phase": "P11_TAIL",
-    "note": "analytics/_components/v2/DataGrid.tsx + that folder's kit.tsx still duplicate components/admin/v2/ReportGrid for the six analytics pages. Two of three readers merged in 11C-4; this is the third. Keep kit's phone-stacking behaviour plus DataGrid's ARIA table roles and keyboard-reachable scroll region."
-  },
-  {
-    "id": "v2-primitive-audit",
-    "phase": "P11F",
-    "note": "THREE PRIMITIVE DEFECTS were found only because a migration exercised them, and all three had been live for every admin surface already on v2 \u2014 which means the barrel has never been audited on its own. Fixed 2026-08-09: Dialog/Sheet hardcoded id=\"av2-dlg-title\"/\"av2-sheet-title\" (a <dialog> stays mounted whether open or not, so any surface with two published duplicate ids and every aria-labelledby resolved to the first \u2014 PeopleListView mounts three, 81 files call Dialog) \u00b7 Sheet closed on keyboard-activated clicks (Enter/Space report clientX/clientY of 0 and the backdrop box-test read that as outside) \u00b7 Sheet is permanently mounted so React autoFocus fired once while hidden and never again. WORTH DOING DELIBERATELY: walk every primitive in components/admin/v2 for the same three classes \u2014 hardcoded DOM ids, pointer-coordinate assumptions that keyboard activation violates, and mount-time-only behaviour on an always-mounted element. Do it as an audit, not as a by-product of the next migration."
+    "note": "PARTIALLY CLOSED 2026-08-10. MobileCrmHeader gone; DSCR/users use en-US number formatters (not date locale). SiteHeader/HideChrome intermittent hydration still open as lower priority (task_af3d76b5). content-library 28-44s still perf follow-on. Close as residual chrome, not correctness."
   },
   {
     "id": "3b-fub-identifiers",
     "phase": "TRACK3",
-    "note": "~171 files of fubPersonId/FUB_* identifiers + fub_* residue columns -> CRM-native vocabulary. Then 3D: ci:no-fub gate over the 3C functional-string allowlist. Note 11C-11E already removed the user-facing FUB copy (a 'FUB' column header on visitors/[sessionId], a footnote claiming hot leads fire FUB tasks, a green health tile claiming FUB leads were flowing) \u2014 those were claims, not identifiers."
+    "note": "ACTIVE TRACK3 2026-08-10. Ratchet scripts/check-fub-identifiers-ratchet.mjs + baseline (801 hits / 144 files) prevents NEW surface. Full rename (~171 files) is multi-session vocabulary work \u2014 not blocking P12 DoD. NEXT: rename wave by module with CRM-native names + expand ci:no-fub allowlist later."
   },
   {
     "id": "pricing-depth-followons",
     "phase": "BACKLOG",
-    "note": "Parked CMA pricing ideas (photo/vision condition scoring, deferred-maintenance factor, ratio-vs-overprice segmentation). Re-run scripts/cma-backtest.mjs quarterly."
+    "note": "BACKLOG 2026-08-10. Parked CMA pricing ideas \u2014 re-run scripts/cma-backtest.mjs quarterly. Not P12."
   }
 ]

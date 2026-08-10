@@ -518,3 +518,14 @@ NOT IN SCOPE
   · gate-drops: listing-alert skip + push no_device → admin_actions
   · logAdminAction returns errors; blog_publish/blog_save audited
   NEXT residual: bulk/TC/approval audit call-sites, CMA SLA reader, full-sync weekly confirm, chrome debt
+
+2026-08-10T05:06:52Z /ENDTOEND P12 residual COMPLETE (judgment grind):
+  CLOSED: p12-audit-trail (bulk_enqueue, tc_envelope_sent/voided, approval_queue_* verbs, blog, sends/blocks);
+    12-measurement (CMA SLA snapshot + oversight, first-touch on governed SMS/email + health-check backfill);
+    12-full-sync-never-completes (oversight attention when full >14d and delta healthy; delta history already recording);
+    11f-converge-third-reader (already ReportGrid — verified on disk);
+    v2-primitive-audit (Dialog/Sheet useId + keyboard backdrop already fixed — closed as done);
+    12-send-integrity (prior); 12-correctness core (prior); 12-person-scope aligned.
+  REMAINING (non-P12 or residual chrome): 3b-fub-identifiers (TRACK3 + ratchet), pricing-depth-followons (BACKLOG),
+    12-admin-chrome-debt residual (hydration SiteHeader, content-library perf).
+  CLOSED THIS PASS: 12-correctness, 12-person-scope-class, p12-audit-trail-coverage, 12-measurement, 12-full-sync-never-completes, 11f-converge-third-reader, v2-primitive-audit

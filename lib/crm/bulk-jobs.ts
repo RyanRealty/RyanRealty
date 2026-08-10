@@ -186,7 +186,27 @@ export async function enqueueBulkJob(args: EnqueueArgs): Promise<number> {
   if (args.dedupeKey) row.dedupe_key = args.dedupeKey
 
   const { data, error } = await sb.from('crm_bulk_jobs').insert(row).select('id').single()
-  if (!error) return data.id as number
+  if (!error) {
+    // P12 audit trail: bulk ops are compliance-adjacent (Matt lock).
+    void import('@/app/actions/log-admin-action')
+      .then(({ logAdminAction }) =>
+        logAdminAction({
+          adminEmail: args.actorEmail || 'system:bulk',
+          role: 'admin',
+          actionType: 'bulk_enqueue',
+          resourceType: 'crm_bulk_job',
+          resourceId: String(data.id),
+          details: {
+            kind: args.kind,
+            total: row.total ?? null,
+            broker_scope: args.brokerScope,
+            params: args.params ?? {},
+          },
+        }),
+      )
+      .catch(() => {})
+    return data.id as number
+  }
 
   // Unique-violation on the active-dedupe index = a job with this key is already
   // in flight (a double-click / retry). Return the existing job instead of

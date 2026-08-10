@@ -18,24 +18,69 @@ import { createServiceClient } from '@/lib/supabase/service'
 export interface SyncFreshness {
   lastDeltaAt: string | null
   lastFullAt: string | null
+  /** Latest completed full row in sync_history (may lag sync_state). */
+  lastFullHistoryAt: string | null
+  /** Latest delta row in sync_history (P12 keep-fresh record). */
+  lastDeltaHistoryAt: string | null
+  /** True when no completed full sync in 14+ days while delta is healthy. */
+  fullSyncStale: boolean
   unreadable: boolean
 }
 
 /** sync_state singleton → when the MLS delta/full sync last completed. */
 export async function getSyncFreshness(): Promise<SyncFreshness> {
   const sb = createServiceClient()
-  const { data, error } = await sb
-    .from('sync_state')
-    .select('last_delta_sync_at, last_full_sync_at')
-    .eq('id', 'default')
-    .maybeSingle()
-  if (error) {
-    console.error('[oversight] sync_state read failed:', error.message)
-    return { lastDeltaAt: null, lastFullAt: null, unreadable: true }
+  const [stateRes, fullHistRes, deltaHistRes] = await Promise.all([
+    sb.from('sync_state').select('last_delta_sync_at, last_full_sync_at').eq('id', 'default').maybeSingle(),
+    sb
+      .from('sync_history')
+      .select('completed_at')
+      .eq('run_type', 'full')
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    sb
+      .from('sync_history')
+      .select('completed_at')
+      .eq('run_type', 'delta')
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ])
+  if (stateRes.error) {
+    console.error('[oversight] sync_state read failed:', stateRes.error.message)
+    return {
+      lastDeltaAt: null,
+      lastFullAt: null,
+      lastFullHistoryAt: null,
+      lastDeltaHistoryAt: null,
+      fullSyncStale: false,
+      unreadable: true,
+    }
   }
+  const lastDeltaAt = (stateRes.data?.last_delta_sync_at as string | null) ?? null
+  const lastFullAt = (stateRes.data?.last_full_sync_at as string | null) ?? null
+  const lastFullHistoryAt = (fullHistRes.data?.completed_at as string | null) ?? null
+  const lastDeltaHistoryAt = (deltaHistRes.data?.completed_at as string | null) ?? null
+  const fullIso = lastFullHistoryAt ?? lastFullAt
+  const fullAgeDays =
+    fullIso && Number.isFinite(Date.parse(fullIso))
+      ? (Date.now() - Date.parse(fullIso)) / (24 * 3600_000)
+      : Infinity
+  const deltaAgeMin =
+    lastDeltaAt && Number.isFinite(Date.parse(lastDeltaAt))
+      ? (Date.now() - Date.parse(lastDeltaAt)) / 60_000
+      : Infinity
+  // Stale full only matters when delta is still healthy — otherwise the whole
+  // pipeline is already in attention.
+  const fullSyncStale = fullAgeDays > 14 && deltaAgeMin < 120
+
   return {
-    lastDeltaAt: (data?.last_delta_sync_at as string | null) ?? null,
-    lastFullAt: (data?.last_full_sync_at as string | null) ?? null,
+    lastDeltaAt,
+    lastFullAt,
+    lastFullHistoryAt,
+    lastDeltaHistoryAt,
+    fullSyncStale,
     unreadable: false,
   }
 }

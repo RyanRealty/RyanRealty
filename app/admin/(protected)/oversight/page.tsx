@@ -17,6 +17,7 @@ import { getTaskQueue } from '@/lib/data/crm/getTaskQueue'
 import { getBrokerActionQueue } from '@/lib/data/crm/getBrokerActionQueue'
 import { getCrmSignalFreshness } from '@/lib/data/crm/getCrmSignalFreshness'
 import { getMeasurementSnapshot } from '@/lib/data/crm/getMeasurementSnapshot'
+import { getCmaSlaSnapshot } from '@/lib/data/cma/getCmaSlaSnapshot'
 import { mirrorHealthStatus } from '@/lib/crm/mirror-health'
 import { QueueRow, QuietRow, VerdictLine, SectionHead } from '@/components/admin/v2'
 
@@ -53,17 +54,19 @@ export default async function OversightPage() {
   const brokerScope = isSuper ? null : ctx.brokerSlug
   const nowMs = Date.now()
 
-  const [sync, alerts, signoff, workflows, s2l, tasks, parked, signals, measurement] = await Promise.all([
-    isSuper ? getSyncFreshness() : null,
-    isSuper ? getAlertQueueHealth() : null,
-    isSuper ? getSignoffWaits() : null,
-    getWorkflowAnalytics(brokerScope),
-    getSpeedToLeadReport({ brokerSlug: brokerScope, datePreset: 'this_week' }),
-    getTaskQueue({ brokerScope, view: 'overdue' }),
-    getBrokerActionQueue({ brokerSlug: brokerScope }),
-    isSuper ? getCrmSignalFreshness() : null,
-    isSuper ? getMeasurementSnapshot({ limit: 12 }) : null,
-  ])
+  const [sync, alerts, signoff, workflows, s2l, tasks, parked, signals, measurement, cmaSla] =
+    await Promise.all([
+      isSuper ? getSyncFreshness() : null,
+      isSuper ? getAlertQueueHealth() : null,
+      isSuper ? getSignoffWaits() : null,
+      getWorkflowAnalytics(brokerScope),
+      getSpeedToLeadReport({ brokerSlug: brokerScope, datePreset: 'this_week' }),
+      getTaskQueue({ brokerScope, view: 'overdue' }),
+      getBrokerActionQueue({ brokerSlug: brokerScope }),
+      isSuper ? getCrmSignalFreshness() : null,
+      isSuper ? getMeasurementSnapshot({ limit: 12 }) : null,
+      isSuper ? getCmaSlaSnapshot({ windowDays: 30, limit: 8 }) : null,
+    ])
   const mirror = isSuper ? mirrorHealthStatus({ CRM_MIRROR_ENABLED: process.env.CRM_MIRROR_ENABLED }) : null
 
   const attention: Attention[] = []
@@ -93,6 +96,18 @@ export default async function OversightPage() {
         context: `Delta target is every 15 minutes · last run ${ageWords(sync.lastDeltaAt, nowMs)}`,
         href: '/admin/sync',
         actionLabel: 'Details',
+      })
+    } else if (sync.fullSyncStale) {
+      // P12: full weekly can go months without completing while delta keeps
+      // listings fresh — surface it as waiting, not a false "all clear".
+      attention.push({
+        key: 'full-sync-stale',
+        word: 'Waiting',
+        tone: 'waiting',
+        title: 'Weekly full sync has not completed in 14+ days',
+        context: `Delta is healthy (${ageWords(sync.lastDeltaAt, nowMs)}). Last full history: ${ageWords(sync.lastFullHistoryAt ?? sync.lastFullAt, nowMs)}. Run Smart Sync → full if history is overdue.`,
+        href: '/admin/sync',
+        actionLabel: 'Open sync',
       })
     }
   }
@@ -264,6 +279,43 @@ export default async function OversightPage() {
           <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 6 }}>
             Stamp lands on the first outbound SMS/email/call (conversation shadow). Speed-to-lead report remains the
             full source breakdown.
+          </p>
+        </section>
+      )}
+
+      {cmaSla && (
+        <section aria-label="CMA delivery SLA" style={{ marginBottom: 18 }}>
+          <SectionHead>CMA create → deliver ({cmaSla.windowDays}d)</SectionHead>
+          <ul className="av2-quietlist" style={{ marginTop: 8 }}>
+            <QuietRow
+              name="Delivered CMAs"
+              figure={`${cmaSla.deliveredCount} sent · ${cmaSla.openFinalizedCount} finalized not sent`}
+            />
+            <QuietRow
+              name="Median create→deliver"
+              figure={
+                cmaSla.medianCreateToDeliverSeconds == null
+                  ? 'no deliveries in window'
+                  : cmaSla.medianCreateToDeliverSeconds < 3600
+                    ? `${Math.round(cmaSla.medianCreateToDeliverSeconds / 60)}m`
+                    : `${Math.round(cmaSla.medianCreateToDeliverSeconds / 3600)}h`
+              }
+            />
+            <QuietRow
+              name="P90 create→deliver"
+              figure={
+                cmaSla.p90CreateToDeliverSeconds == null
+                  ? '—'
+                  : cmaSla.p90CreateToDeliverSeconds < 3600
+                    ? `${Math.round(cmaSla.p90CreateToDeliverSeconds / 60)}m`
+                    : `${Math.round(cmaSla.p90CreateToDeliverSeconds / 3600)}h`
+              }
+            />
+          </ul>
+          <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 6 }}>
+            <Link href="/admin/cmas" className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>
+              Open valuations
+            </Link>
           </p>
         </section>
       )}

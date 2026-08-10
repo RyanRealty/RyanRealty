@@ -626,6 +626,24 @@ export async function sendEnvelope(envelopeId: string): Promise<{ ok: boolean; e
     },
   })
 
+  // P12 audit trail: TC envelope send (compliance + content matrix).
+  void import('@/app/actions/log-admin-action')
+    .then(({ logAdminAction }) =>
+      logAdminAction({
+        adminEmail: auth.email,
+        role: 'broker',
+        actionType: 'tc_envelope_sent',
+        resourceType: 'tc_envelope',
+        resourceId: envelopeId,
+        details: {
+          envelope: env.name,
+          cycle_id: env.cycle_id,
+          signers: signable.length,
+        },
+      }),
+    )
+    .catch(() => {})
+
   revalidatePath('/admin/deals')
   return { ok: true }
 }
@@ -700,6 +718,20 @@ export async function voidEnvelope(envelopeId: string, reason: string): Promise<
     action: 'envelope_voided',
     detail: { envelope: env.name, reason },
   })
+
+  void import('@/app/actions/log-admin-action')
+    .then(({ logAdminAction }) =>
+      logAdminAction({
+        adminEmail: auth.email,
+        role: 'broker',
+        actionType: 'tc_envelope_voided',
+        resourceType: 'tc_envelope',
+        resourceId: envelopeId,
+        details: { envelope: env.name, reason },
+      }),
+    )
+    .catch(() => {})
+
   revalidatePath('/admin/deals')
   return { ok: true }
 }
