@@ -42,6 +42,7 @@ import {
   getMarketPulse,
   getMarketPulseCitySnapshots,
   getPriceHistory,
+  getCoMarketAnnualSeries,
   getRecentBlogPosts,
 } from '@/lib/data'
 import { buildMarketFaq } from '@/lib/site/market-faq'
@@ -66,6 +67,7 @@ import { ContentSection } from '@/components/site/ContentSection'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { CoMarketSizeStrip } from '@/components/site/analytics/CoMarketSizeStrip'
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 300
@@ -220,7 +222,7 @@ export default async function CentralOregonRegionPage() {
   //                   property_type='A'. ONE call replaces legacy ~12-call fan-out.
   //   blogPosts     — blog_posts, status='published', newest first. Up to 3.
   // -------------------------------------------------------------------------
-  const [regionPulse, priceHistory, citySnapshots, blogPosts, heroPhoto] = await Promise.all([
+  const [regionPulse, priceHistory, citySnapshots, blogPosts, heroPhoto, coMarketSeries] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
     getMarketPulseCitySnapshots(CITY_LABELS).catch(() => []),
@@ -229,6 +231,7 @@ export default async function CentralOregonRegionPage() {
     getRecentBlogPosts({ limit: 3, offset: 3 }).catch(() => []),
     // Distinct hero photo from the /housing-market hub — different seed.
     getSurfaceImage('hero', { geoTags: ['central-oregon'], seed: 'housing-market-central-oregon-report' }).catch(() => null),
+    getCoMarketAnnualSeries({ fromYear: 2016, toYear: 2024, typeScope: 'all' }).catch(() => []),
   ])
 
   // Drop the in-progress current month — partial-month spike is misleading.
@@ -435,6 +438,11 @@ export default async function CentralOregonRegionPage() {
             (region row) and market_stats_cache (price history). yearSeries built
             from completePriceMonths via buildYearSeries, same pattern as city page. */}
         <KbMarketHud data={marketData} eyebrow="Central Oregon · The market" geoName="Central Oregon" asOf={pulse?.refreshedAt ?? null} />
+
+        {/* Closed-sales $ volume (all types) — distinct from SFR pulse HUD. §0 via marts. */}
+        {coMarketSeries.length > 0 ? (
+          <CoMarketSizeStrip series={coMarketSeries} highlightYear={2024} />
+        ) : null}
 
         {/* City tiles — per-city active counts from ONE getMarketPulseCitySnapshots
             call. §0: every count is the exact active_count from market_pulse_live. */}
