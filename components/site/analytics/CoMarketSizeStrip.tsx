@@ -2,7 +2,8 @@
  * CoMarketSizeStrip — public CO closed-sales size (all property types).
  * Renders inside .kb-root so --navy/--cream tokens apply. §0 methodology footer.
  */
-import { ANALYTICS_METHODOLOGY_V1, type CoMarketAnnualRow } from '@/lib/data'
+import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
+import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 
 function money(n: number): string {
   if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`

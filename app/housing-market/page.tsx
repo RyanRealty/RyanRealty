@@ -48,8 +48,8 @@ import {
   getMarketPulse,
   getMarketPulseCitySnapshots,
   getRecentBlogPosts,
-  getCoMarketAnnualSeries,
 } from '@/lib/data'
+import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
 import { CoMarketSizeStrip } from '@/components/site/analytics/CoMarketSizeStrip'
 import { getSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 import { buildMarketFaq } from '@/lib/site/market-faq'

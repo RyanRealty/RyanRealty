@@ -42,9 +42,9 @@ import {
   getMarketPulse,
   getMarketPulseCitySnapshots,
   getPriceHistory,
-  getCoMarketAnnualSeries,
   getRecentBlogPosts,
 } from '@/lib/data'
+import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildYearSeries } from '@/lib/kb/year-series'

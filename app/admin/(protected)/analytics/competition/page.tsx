@@ -5,12 +5,10 @@
  * Not public. String-level office names until dim_office aliases land.
  */
 import Link from 'next/link'
-import {
-  getCoOfficeShare,
-  getCoAgentShare,
-  getCoMarketAnnual,
-  ANALYTICS_METHODOLOGY_V1,
-} from '@/lib/data'
+import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
+import { getCoOfficeShare } from '@/lib/data/analytics/getCoOfficeShare'
+import { getCoAgentShare } from '@/lib/data/analytics/getCoAgentShare'
+import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
 import { SectionHead } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
