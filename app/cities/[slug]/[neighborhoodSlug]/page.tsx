@@ -15,11 +15,10 @@
  * parent city's getPriceHistory('city', citySlug, 'monthly', 60), relabeled via
  * chartScopeLabel "{City} (city)" so the city figure never reads as this one's.
  *
- * Section stack (city-page funnel parity): breadcrumb · hero · featured · ticker ·
- * map · overview/about · market · subdivisions · area guide · open houses ·
- * activity · SELL · guides · testimonials · team · other cities · FAQ · footer.
- * Inventory leads and the seller CTA precedes the exit links, so a home is never
- * buried under prose (design-audit P1, shipped on the city page 2026-07-28).
+ * Section stack (E3 light, city funnel parity): breadcrumb · hero · featured ·
+ * ticker · map · buyer alerts (mid) · overview/about · market · subdivisions ·
+ * area guide · open houses · activity · SELL · guides · testimonials · team ·
+ * other cities · FAQ · footer. Inventory leads; convert before exit links.
  *
  * Data ONLY through @/lib/data and @/app/actions/cities. No raw .from() calls.
  */
@@ -416,7 +415,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           lead={`in ${cityName}. List prices and days on market, pulled live.`}
           videoSrc={null}
           posterSrc={heroPhoto}
+          posterAlt={`${neighborhood.name} in ${cityName}, Oregon`}
           mediaCaption={mediaCaption}
+          cta={{
+            href: subdivisionListingsPath(cityName, neighborhood.name),
+            label: `See ${neighborhood.name} homes`,
+          }}
+          ctaSecondary={{ href: '/sell/valuation', label: 'Value my home' }}
         />
         {/* Inventory first: the page is titled "{Neighborhood} homes for sale",
             so a buyer never scrolls prose to reach a home (design-audit P1). The
@@ -443,6 +448,17 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             subtitle={`Every active single-family listing in ${neighborhood.name}.`}
           />
         ) : null}
+        {/* Mid-page buyer capture (E3 light): after map inventory. City-scoped
+            listing_alerts only — neighborhood keys are not always 1:1 with MLS
+            tags (§0), so no invented subdivision filter. */}
+        <KbCommunityAlerts
+          communityName={cityName}
+          city={cityName}
+          subdivision=""
+          extraFilters={{ propertyType: 'A' }}
+          headline={cityName}
+          body={`Enter your email. When a single-family home hits the market in ${cityName}${neighborhood.name ? ` (including ${neighborhood.name})` : ''}, you hear first.`}
+        />
         {/* Rich, verified depth. Null when no config, so it degrades to nothing.
             When present it carries the overview, so About is suppressed. */}
         <KbResortOverview content={richContent} name={neighborhood.name} postsBySlug={amenityPosts} />
@@ -479,15 +495,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"
         />
-        {/* Buyer path before seller: inline city-scoped capture (same listing_alerts
-            path as search). No invented neighborhood MLS filter — neighborhood
-            keys are not always 1:1 with MLS tags (§0). */}
-        <KbCommunityAlerts
-          communityName={cityName}
-          city={cityName}
-          subdivision=""
-          body={`Save a search for ${cityName} homes${neighborhood.name ? `, including ${neighborhood.name}` : ''}. New matches land in your inbox.`}
-        />
         {/* Convert before trust, and BOTH before the exit links. */}
         <KbSell
           data={{
@@ -495,6 +502,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.closedLast30Days ?? null,
           }}
+          eyebrow={`Sell in ${cityName}`}
         />
         <KbArticles
           posts={articlePosts}

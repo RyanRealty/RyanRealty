@@ -56,6 +56,14 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 E3 UI craft — city (full)
+- **Unit:** EXECUTION_QUEUE E3.
+- **City** `app/cities/[slug]/page.tsx`: Layer A H1 stays `{City}` / `Homes for Sale`. Hero city-scoped primary CTA (`homesForSalePath`) + Value my home; `posterAlt`. Featured view-all city path kept. Mid-page `KbCommunityAlerts` after map with `propertyType: A` + city headline/body. Sell eyebrow `Sell in {City}`. Section stack: inventory → mid capture → place → urgency → convert → trust → exit.
+- **Neighborhood light** `app/cities/[slug]/[neighborhoodSlug]/page.tsx`: alerts after map (parity); hero nbhd CTAs + posterAlt; sell eyebrow city-scoped; no invented MLS subdivision filter on alerts (§0).
+- **No kb.css / no dual chrome / no poetry H1s.** Brand navy/cream/Amboqia/Geist via existing KB sections.
+- **Gates:** `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · `ci:voice-constructions` ✓ · `ci:file-size-budget` ✓ (city 590 < 600) · `ci:kb-page-contract` ✓ · `ci:kb-single-source` ✓ · `ci:market-section-nesting` ✓ · `ci:naked-verb-headings` ✓.
+- **Pointer next:** E5 sell (E4 listing craft concurrent).
+
 ### 2026-08-10 H6 + H8 upgrade + I4
 - **H6 Feature cubes:** migration `20260810150000_analytics_feature_inventory.sql` → `analytics_mart_feature_annual`. Keys: **fireplace**, **garage**, **association** (HOA) — typed high-fill only. Rebuild in `rebuild-analytics-marts.mjs`. DAL `getCoFeatureAnnual`. Public strip on `/housing-market/history`. 2024: fireplace=3589 garage=4381 association=2866; market parity 5707 / $3.931B.
 - **H8 Inventory warehouse:** `analytics_inventory_snapshot` + script upsert + cron `/api/cron/snapshot-active-inventory` 08:30 UTC. First snapshot ~3376 active CO.
@@ -146,3 +154,14 @@
 - **E3 light:** city `KbCommunityAlerts` moved to after map (inventory), not under open houses.
 - **Gates:** `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · `ci:kb-a11y-static` ✓ · `ci:kb-overlay-hidden` ✓ · `ci:css-layers` ✓ (baseline line-shift refresh) · `ci:default-chrome-footer` ✓ · `ci:kb-page-contract` ✓ · `ci:kb-single-source` ✓.
 - **Pointer next:** E3 full city craft or E4 listing.
+
+### 2026-08-10 E4 UI craft — listing
+- **Unit:** EXECUTION_QUEUE E4 (listing family only; no cities/homepage/sell/market/LP/kb.css chrome).
+- **Thesis:** Money-page clarity — price + tour dominate; restyle is a contained navy/cream panel; alert coach never fights the mobile broker bar.
+- **PriceCtaStrip:** primary Schedule a tour (full-width mobile, 44px), secondary Ask/Save/Share (44px), tertiary alerts link with quiet rule separator. Layer A H1 = price + sr-only address (honest MLS).
+- **RoomRestyle:** 3-step flow (photo → style → generate), KB navy/cream panel, compact post-success alert + broker link (no second full card).
+- **ListingAlertCoach + ListingLikeThisAlerts:** coach mounts with alerts strip; on viewports below lg lifts above listing-mobile-cta; hide when capture in view; session dismiss.
+- **Shell:** denser main column gaps on mobile (`gap-8` → `lg:gap-10`).
+- **LOC:** `app/listing/[listingKey]/page.tsx` **573** (under 600); lifestyle lines extracted to `listing-city-lifestyle.ts`.
+- **Gates:** listing-detail-a11y ✓ · site-contracts ✓ · `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · `ci:mockup-parity` ✓ · `ci:file-size-budget` ✓.
+- **Pointer next:** E3 full city craft (still open on spine) or E5 sell.

@@ -94,8 +94,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 26. [x] **E1 UI craft — chrome polish** — **2026-08-10:** safe-area topbar/menu, z-index stack (topbar 100 / menu 200), 44px hit targets, cream focus rings, menu dialog a11y, reduced-motion, hover polish. No dual chrome / no SiteHeader remount.
 27. [x] **E2 UI craft — homepage** — **2026-08-10:** mid-page `KbCommunityAlerts` (SFR / Central Oregon), hero sub width + search focus craft, sell form focus, Layer A H1 locked. Gates: seo-shell + brand-voice green.
-28. [~] **E3 UI craft — city** — **2026-08-10 light:** city alerts moved to after map (inventory). Full city craft pass still open.
-29. [ ] **E4 UI craft — listing**
+28. [x] **E3 UI craft — city** — **2026-08-10 full:** city-scoped hero CTAs + posterAlt; mid-page SFR `KbCommunityAlerts` (after map); featured view-all city path; sell eyebrow `Sell in {City}`; nbhd light parity (alerts mid + CTAs). Layer A H1 locked. Gates: seo-shell + brand-voice green.
+29. [x] **E4 UI craft — listing** — **2026-08-10:** CTA hierarchy (tour primary / secondary 44px / tertiary alerts), RoomRestyle 3-step KB panel + quiet post-success conversion, coach lifts above mobile broker bar and mounts with alerts strip, denser main stack on mobile. Layer A price H1 honest. Page 573 LOC (lifestyle helper extracted). Gates: listing-detail-a11y, seo-shell, brand-voice, mockup-parity, file-size.
 30. [ ] **E5 UI craft — sell**
 31. [ ] **E6 UI craft — market**
 32. [ ] **E7 UI craft — LP templates**  
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **E3 UI craft city** (full pass; light ship done) or **E4 listing** |
-| **THEN** | E4–E7 UI craft · Matt: G3 + L1 browser · I6 lock |
-| **NOTE** | D5/D7/D9–D13 static I + F4/M2/M3/K1 + E1/E2 shipped. **not 10×** (alerts ~6). Blockers: L1/J4 403, G3, I6. D14 residual = browser V. |
+| **NOW** | **E5 UI craft — sell** |
+| **THEN** | E6–E7 UI craft · Matt: G3 + L1 browser · I6 lock |
+| **NOTE** | E1–E4 UI craft shipped (E3 full city + E4 listing). **not 10×** (alerts ~6). Blockers: L1/J4 403, G3, I6. D14 residual = browser V. |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 

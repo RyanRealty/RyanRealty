@@ -12,11 +12,11 @@
  * LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/City/Dataset/FAQPage) +
  * tracking (CityPageTracker + section/interaction events). Every figure live (§0).
  *
- * Section stack: breadcrumb · hero · featured · ticker · map · about · market ·
- * neighborhoods · popular searches · communities · golf · area guide · open
- * houses · activity · SELL · guides · testimonials · team · other-cities · FAQ ·
- * footer. Funnel (Brain Dump 2): the seller CTA sat 18 deep, below the two blocks
- * that route a reader OFF the page; it now follows activity (design-audit P1).
+ * Section stack (E3 craft 2026-08-10): breadcrumb · hero (Layer A + city CTAs) ·
+ * featured · ticker · map · buyer alerts (mid) · about · market · neighborhoods ·
+ * popular · communities · golf · area guide · open houses · activity · SELL ·
+ * guides · testimonials · team · other-cities · FAQ · footer.
+ * Funnel: inventory first, capture mid-page, convert before exit links.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/city/parity.json (KB set).
  */
@@ -470,11 +470,23 @@ export default async function CityDetailPage({ params }: Props) {
           lead={`in ${cityName}. List prices and days on market, pulled live.`}
           videoSrc={heroVideoSrc}
           posterSrc={heroPosterSrc}
+          posterAlt={`${cityName}, Oregon`}
           mediaCaption={mediaCaption}
+          // City-scoped CTAs (E3): default /homes-for-sale is region-wide and
+          // steers off this inventory page. Primary stays on city inventory;
+          // ghost keeps the valuation path for owners reading a buyer page.
+          cta={{ href: homesForSalePath(cityName), label: `See ${cityName} homes` }}
+          ctaSecondary={{ href: '/sell/valuation', label: 'Value my home' }}
         />
-        {/* Inventory first (shared place template with community pages). The grid
-            caps at 12 tiles, so the footer link must reach the REST of the city. */}
-        <KbFeatured items={featuredItems} eyebrow={`${cityName} · For sale`} viewAllHref={homesForSalePath(cityName)} viewAllLabel={`See every ${cityName} home for sale`} viewAllPlace={cityName} totalCount={activeCount || null} />
+        {/* Inventory first. Grid caps at 12; foot CTA reaches the rest of the city. */}
+        <KbFeatured
+          items={featuredItems}
+          eyebrow={`${cityName} · For sale`}
+          viewAllHref={homesForSalePath(cityName)}
+          viewAllLabel={`See every ${cityName} home for sale`}
+          viewAllPlace={cityName}
+          totalCount={activeCount || null}
+        />
         <KbTicker items={tickerItems} />
         <KbListingMap
           geojson={mapGeo}
@@ -486,12 +498,15 @@ export default async function CityDetailPage({ params }: Props) {
           title={`Every active home\nin ${cityName}`}
           subtitle={`Every active single-family listing with a ${cityName} address.`}
         />
-        {/* E3 light craft: buyer alerts right after inventory (featured/map),
-            not buried under open houses. City-scoped; empty subdivision. */}
+        {/* Mid-page buyer capture (E3): after map inventory, city + SFR only.
+            propertyType A matches hero activeCount (§0). Empty subdivision. */}
         <KbCommunityAlerts
           communityName={cityName}
           city={cityName}
           subdivision=""
+          extraFilters={{ propertyType: 'A' }}
+          headline={cityName}
+          body={`Enter your email. When a single-family home hits the market in ${cityName}, you hear first.`}
         />
         {aboutParagraphs.length > 0 ? (
           <KbAbout eyebrow={`${cityName} · Oregon`} heading={`${cityName}, in plain words`} paragraphs={aboutParagraphs} facts={aboutFacts} />
@@ -530,14 +545,17 @@ export default async function CityDetailPage({ params }: Props) {
           />
         ) : null}
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={cityName} posterSrc={heroPosterSrc} />
+        {/* Urgency cluster (this week + live feed) before convert. */}
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
+        {/* Convert before trust + exit links (E3 CTA clarity). City eyebrow. */}
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.closedLast30Days ?? null,
           }}
+          eyebrow={`Sell in ${cityName}`}
         />
         <KbArticles
           posts={articlePosts}
@@ -547,6 +565,7 @@ export default async function CityDetailPage({ params }: Props) {
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
+        {/* Exit links last: every row leaves this city page. */}
         <KbExploreTowns
           towns={otherCityItems}
           eyebrow="Central Oregon"
