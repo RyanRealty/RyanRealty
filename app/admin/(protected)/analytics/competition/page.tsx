@@ -1,15 +1,14 @@
 /**
- * /admin/analytics/competition — CO closed-sales office market share (MVP A8)
- *
- * List-side and buy-side rankings from getCoOfficeShare (§0 methodology).
- * Not public. String-level office names until dim_office aliases land.
+ * /admin/analytics/competition — CO closed-sales office + agent share (MVP)
+ * Uses admin v2 + analytics DataGrid (ReportGrid primitive).
  */
 import Link from 'next/link'
+import { SectionHead } from '@/components/admin/v2'
+import { DataGrid } from '../_components/v2/DataGrid'
 import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getCoOfficeShare } from '@/lib/data/analytics/getCoOfficeShare'
 import { getCoAgentShare } from '@/lib/data/analytics/getCoAgentShare'
 import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
-import { SectionHead } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -41,14 +40,14 @@ export default async function CompetitionAnalyticsPage({
   const ryanRows = share.rows.filter((r) => /ryan/i.test(r.officeName))
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 p-6">
+    <div className="space-y-8 p-6">
       <div>
         <p className="text-xs uppercase tracking-wide text-neutral-500">Market analytics</p>
         <SectionHead>Competition — office share ({year})</SectionHead>
         <p className="mt-2 text-sm text-neutral-600">
           Central Oregon closed sales. Side:{' '}
-          {side === 'list' ? 'listing office' : 'buyer office'}. String-level names (aliases not
-          merged yet).
+          {side === 'list' ? 'listing office' : 'buyer office'}. String-level
+          names until brand aliases are fully merged.
         </p>
       </div>
 
@@ -113,90 +112,93 @@ export default async function CompetitionAnalyticsPage({
 
       {ryanRows.length > 0 ? (
         <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm">
-          <strong>Ryan string match (not alias-resolved):</strong>{' '}
+          <strong>Ryan string match:</strong>{' '}
           {ryanRows.map((r) => (
             <span key={r.officeName} className="mr-4">
-              #{r.rank} {r.officeName} — {r.volumeSharePct.toFixed(2)}% $ /{' '}
-              {r.sidesCount} sides
+              #{r.rank} {r.officeName} — {r.volumeSharePct.toFixed(2)}% $ / {r.sidesCount}{' '}
+              sides
             </span>
           ))}
         </div>
       ) : (
         <div className="rounded border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
-          No office name matching /ryan/i in top {share.rows.length} on this side/year. Buy side
-          and aliases still required for a true Ryan share.
+          No /ryan/i office in top {share.rows.length} this side/year. Buy-side and aliases
+          still needed for a true share.
         </div>
       )}
 
-      <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-            <tr>
-              <th className="px-3 py-2">Rank</th>
-              <th className="px-3 py-2">Office</th>
-              <th className="px-3 py-2 tabular-nums">Sides</th>
-              <th className="px-3 py-2 tabular-nums">Volume</th>
-              <th className="px-3 py-2 tabular-nums">$ share</th>
-              <th className="hidden px-3 py-2 tabular-nums sm:table-cell">Unit share</th>
-            </tr>
-          </thead>
-          <tbody>
-            {share.rows.map((r) => (
-              <tr key={r.officeName} className="border-b border-neutral-100">
-                <td className="px-3 py-2 tabular-nums text-neutral-500">{r.rank}</td>
-                <td className="px-3 py-2 font-medium">{r.officeName}</td>
-                <td className="px-3 py-2 tabular-nums">{r.sidesCount.toLocaleString('en-US')}</td>
-                <td className="px-3 py-2 tabular-nums">{money(r.totalVolume)}</td>
-                <td className="px-3 py-2 tabular-nums">{r.volumeSharePct.toFixed(2)}%</td>
-                <td className="hidden px-3 py-2 tabular-nums sm:table-cell">
-                  {r.unitSharePct.toFixed(2)}%
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataGrid
+        label={`Office share ${year} ${side}`}
+        rows={share.rows}
+        getRowKey={(r) => r.officeName}
+        cap={40}
+        minWidth={520}
+        empty={<p>No office share rows for this year/side.</p>}
+        columns={[
+          { key: 'rank', header: 'Rank', numeric: true, width: '64px', cell: (r) => r.rank },
+          { key: 'office', header: 'Office', cell: (r) => r.officeName },
+          {
+            key: 'sides',
+            header: 'Sides',
+            numeric: true,
+            cell: (r) => r.sidesCount.toLocaleString('en-US'),
+          },
+          {
+            key: 'vol',
+            header: 'Volume',
+            numeric: true,
+            cell: (r) => money(r.totalVolume),
+          },
+          {
+            key: 'share',
+            header: '$ share',
+            numeric: true,
+            cell: (r) => `${r.volumeSharePct.toFixed(2)}%`,
+          },
+        ]}
+      />
 
       <SectionHead>Top agents — {side} side ({year})</SectionHead>
-      <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
-            <tr>
-              <th className="px-3 py-2">Rank</th>
-              <th className="px-3 py-2">Agent</th>
-              <th className="hidden px-3 py-2 sm:table-cell">Office</th>
-              <th className="px-3 py-2 tabular-nums">Sides</th>
-              <th className="px-3 py-2 tabular-nums">Volume</th>
-              <th className="hidden px-3 py-2 tabular-nums sm:table-cell">$ share</th>
-            </tr>
-          </thead>
-          <tbody>
-            {agents.rows.map((r) => (
-              <tr key={`${r.agentName}-${r.officeName}`} className="border-b border-neutral-100">
-                <td className="px-3 py-2 tabular-nums text-neutral-500">{r.rank}</td>
-                <td className="px-3 py-2 font-medium">{r.agentName}</td>
-                <td className="hidden px-3 py-2 text-neutral-600 sm:table-cell">{r.officeName}</td>
-                <td className="px-3 py-2 tabular-nums">{r.sidesCount.toLocaleString('en-US')}</td>
-                <td className="px-3 py-2 tabular-nums">{money(r.totalVolume)}</td>
-                <td className="hidden px-3 py-2 tabular-nums sm:table-cell">
-                  {r.volumeSharePct.toFixed(2)}%
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DataGrid
+        label={`Agent share ${year} ${side}`}
+        rows={agents.rows}
+        getRowKey={(r) => `${r.agentName}-${r.officeName}`}
+        cap={30}
+        minWidth={520}
+        empty={<p>No agent rows for this year/side.</p>}
+        columns={[
+          { key: 'rank', header: 'Rank', numeric: true, width: '64px', cell: (r) => r.rank },
+          { key: 'agent', header: 'Agent', cell: (r) => r.agentName },
+          { key: 'office', header: 'Office', cell: (r) => r.officeName },
+          {
+            key: 'sides',
+            header: 'Sides',
+            numeric: true,
+            cell: (r) => r.sidesCount.toLocaleString('en-US'),
+          },
+          {
+            key: 'vol',
+            header: 'Volume',
+            numeric: true,
+            cell: (r) => money(r.totalVolume),
+          },
+          {
+            key: 'share',
+            header: '$ share',
+            numeric: true,
+            cell: (r) => `${r.volumeSharePct.toFixed(2)}%`,
+          },
+        ]}
+      />
 
       <p className="text-xs leading-relaxed text-neutral-500">
-        {ANALYTICS_METHODOLOGY_V1}. Side = {side}. Source = {share.source}. Dual-agency closes
-        credit both offices when list≠buy; same-office both sides still one row per side count.
-        Not for public advertising of competitor production without policy review. Computed{' '}
-        {share.computedAt}.
+        {ANALYTICS_METHODOLOGY_V1}. Side = {side}. Source = {share.source}. Not for public
+        advertising of competitor production without policy review. Computed {share.computedAt}.
       </p>
 
       <p className="text-sm">
         <Link href="/admin/analytics" className="text-neutral-700 underline">
-          ← Analytics hub
+          Analytics hub
         </Link>
       </p>
     </div>
