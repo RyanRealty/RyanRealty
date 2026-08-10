@@ -17,6 +17,7 @@ import { join } from 'node:path'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/service'
 import { supabaseAnon } from '@/lib/data/client'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { ANALYTICS_CO_CITIES_PROPER, ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
@@ -194,15 +195,21 @@ async function shareFromMart(
 ): Promise<RyanSideShare | null> {
   const sb = supabaseAnon()
   if (!sb) return null
-  const { data, error } = await sb
-    .from('analytics_mart_office_share_annual')
-    .select('office_name,sides_count,total_volume')
-    .eq('geo_type', 'region')
-    .eq('geo_slug', 'central-oregon')
-    .eq('year', year)
-    .eq('type_scope', 'all')
-    .eq('side', side)
-    .limit(2000)
+  // Page past PostgREST's 1k row cap (ci:row-cap) — office mart can exceed 1k strings.
+  type OfficeShareRow = { office_name: string | null; sides_count: number | null; total_volume: number | null }
+  const { rows: data, error } = await fetchPagedRows<OfficeShareRow>(
+    (from, to) =>
+      sb
+        .from('analytics_mart_office_share_annual')
+        .select('office_name,sides_count,total_volume')
+        .eq('geo_type', 'region')
+        .eq('geo_slug', 'central-oregon')
+        .eq('year', year)
+        .eq('type_scope', 'all')
+        .eq('side', side)
+        .order('office_name', { ascending: true })
+        .range(from, to),
+  )
   if (error || !data?.length) return null
 
   let sidesCount = 0

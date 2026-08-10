@@ -211,5 +211,6 @@
 - **Proof rhythm:** reorder to hero → SellProof → KbTestimonials → service story (value props → situations → process → marketing → fee → market). SellProof re-ask CTA after ledger/solds. SellValuationCTA navy dominant ask band.
 - **Valuation path (B3 kept):** `/sell/valuation` hero CTA → `#valuation-form` + scroll-mt-24; form in bordered band; method steps as numbered strip; navy list-plan close; mobile sticky → form; `pageMetadata` shell. Hero secondary = call.
 - **Layer A:** sell `titleTop="Sell your home in"` + metadata `Sell Your Home…` (`ci:seo-shell` ✓). Brand lock navy/cream; no invented stats.
-- **Gates:** `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · `ci:design-tokens` improved (252 vs 253).
-- **Pointer next:** E6 market (if still open on spine) or next incomplete unit.
+- **Gates:** `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · pre-commit brand-voice + unit suite green.
+- **Commit:** `517e0712`
+- **Pointer next:** Block E complete (E1–E7); residual F / Matt G3 / I6.
