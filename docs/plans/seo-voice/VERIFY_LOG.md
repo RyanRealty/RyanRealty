@@ -21,8 +21,9 @@
 | A9 public size | V | CoMarketSizeStrip + series |
 | A10 cron | V | rebuild-analytics-marts daily 08:15 UTC |
 | H5 explorer path | V | result_cache + mart + analyze_closed_sales_co RPC; no Node listings page |
-| H6 feature cubes | V | analytics_mart_feature_annual + getCoFeatureAnnual + history strip |
+| H6 feature cubes | V | analytics_mart_feature_annual 2016–2025; 2024 fireplace=3589 garage=4381 association=2866; parity 0% |
 | H8 inventory warehouse | V | analytics_inventory_snapshot + snapshot script + daily cron |
+| I1 brand/entity merge | V/~ | getCoOfficeShareMerged on competition desk (brand default); mart office_id residual |
 | I4 Ryan brand share | V | getRyanBrandShare list+buy alias rollup on competition desk |
 
 ## Family status
@@ -56,6 +57,27 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 H6 residual + G3 docs + J4 presence + A3 sitemap list
+- **H6 residual rebuild:** `node scripts/analytics/rebuild-analytics-marts.mjs --from 2016 --to 2025` (service role / `.env.local`). Feature mart all years:
+
+| Year | rows | fireplace | garage | association |
+|-----:|-----:|----------:|-------:|------------:|
+| 2016 | 8038 | 4797 | 5616 | 3689 |
+| 2017 | 7850 | 4844 | 5611 | 3368 |
+| 2018 | 7940 | 5047 | 5722 | 3734 |
+| 2019 | 7765 | 4836 | 5681 | 3666 |
+| 2020 | 9098 | 5712 | 6629 | 4499 |
+| 2021 | 9282 | 5658 | 6746 | 4576 |
+| 2022 | 7142 | 4442 | 5281 | 3392 |
+| 2023 | 5363 | 3372 | 4061 | 2687 |
+| **2024** | **5707** | **3589** | **4381** | **2866** |
+| 2025 | 5768 | 3799 | 4534 | 2991 |
+
+- **PARITY 2024:** sold_count **5707**, total_volume **$3.931B**, nErr **0.000%**, vErr **0.000%**, ok **true** (still holds after full-range rebuild).
+- **G3:** Wrote `GA4_OPS_CHECKLIST_MATT.md` (exact clicks: Blended · Advanced Consent Modeling eligibility · Tag Assistant smoke). Linked from `MEASUREMENT_DUAL_SOURCE.md` + EXECUTION_QUEUE G3 — **docs ready; blocked on Matt**.
+- **J4 residual:** Playwright presence test (no xAI): `e2e/features/listing-detail.spec.ts` — `#room-restyle-heading`, style chips, Restyle photo enabled, alerts path; **does not** click generate.
+- **A3 residual:** GSC console still human. Optional `node scripts/list-public-sitemap-urls.mjs` lists live public sitemap locs (browser UA; no GSC API submit). Index children: core/geo/listings/matrix/content.
+
 ### 2026-08-10 L1 browser-UA proof pack (WAF unblock)
 - **Unblock:** bare `curl` → **403**; `curl -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'` → **200** on all public proof URLs (agent host 2026-08-10).
 - **L1 [x]** public proof pack (HTML fetch, not interactive Playwright; competition admin auth not included):
@@ -72,7 +94,7 @@
 | listing `/homes-for-sale/bend/3056-craftsman-220224037` | 200 | address H1; `listing-like-alerts`; **Get alerts for homes like this**; `RoomRestyle` in bundle |
 | bare curl (no UA) `/cities/bend` | **403** | WAF still blocks non-browser UA |
 
-- **J4 [~]:** Restyle **present** in listing HTML (`RoomRestyle` chunk + alert path markup); **not** full interactive browser E2E (click/render).
+- **J4 [~]:** Restyle **present** in listing HTML (`RoomRestyle` chunk + alert path markup); Playwright UI presence test added (no generate); **not** live AI click/render.
 - **A2 / D1 browser V:** PublicNav + kb-nav on home/listing; **no** `SiteHeader` dual chrome in prod HTML. Visual craft residual open.
 - **C1 [x]:** `npm run ci:seo-shell` exit 0 (21 money-route page.tsx + KbHero defaults). Residual = Layer B body only.
 - **C3 [x]:** Hub links enough in prod: home Buy → open-houses + price-drops; market hub → open-houses + price-drops + sell + `/housing-market/history`; cities linked. Dense matrix not claimed.
@@ -113,6 +135,15 @@
 - **M1:** `/housing-market` FAQ appends mart size + composition from `getCoMarketAnnual(2024)` when present.
 - **K2:** SESSION_INTENT_SSOT — never re-sweep four retired shape rules (VOICE.md 2026-08-06).
 - **Pointer next:** A3 or D1 (prod 403 may block browser V).
+
+### 2026-08-10 B1/B2/F3 residual — map/split + hubs
+- **B1 residual:** Map/split guest capture via `SearchAlertCapture` `variant="inline"` (non-sticky shrink-0 under filters on `/search`; `underFilterBar` on slug MapSplitView). OH hub + price-drops hub: LP-only CTAs → inline `KbCommunityAlerts` (region + `propertyType: A`). Homepage mid-page after featured kept. Post-success: watch inbox + sign-in to manage alerts. Guest-watch residual helper (label+href only, no PII).
+- **B2 residual:** SaveSearchButton success copy names next step (inbox / manage).
+- **F3 residual:** guest capture default on map/split + hubs, not list-only.
+- **Commit:** `e3a1669c` (not pushed; parent integrates).
+- **Tests:** map-search-contracts (incl. inline variant pin) + guest-watch-residual unit green.
+- **Snapshot at ship:** listing_alerts **6** (5 active) · saved_searches **2** · FP total ~68751. **Not 10×.**
+- **Pointer next:** measure weekly; optional guest F2 banner wiring.
 
 ### 2026-08-10 B2 + B4 surface ship
 - **B2:** Navy `SaveSearchButton` mid-browse on `/search` + `/homes-for-sale/[...slug]`; guest success panel (no silent close); trigger becomes "Search saved". Map/split keep SaveSearchButton; sticky `SearchAlertCapture` stays list-only (layout).

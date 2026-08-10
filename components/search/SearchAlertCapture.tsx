@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import type { FormEvent } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { BellAlertIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,14 @@ import { getFiltersSummary } from '@/lib/search-filters'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
+import { cn } from '@/lib/utils'
+import {
+  buildGuestWatchFromFilters,
+  clearGuestWatch,
+  readGuestWatch,
+  rememberGuestWatch,
+  type GuestWatchResidual,
+} from '@/lib/alerts/guest-watch-residual'
 
 /**
  * Inline guest-email "get listing alerts for this search" capture, shown to
@@ -19,6 +28,11 @@ import { fireSearchEvent } from '@/components/search/search-events.client'
  * The URL is the source of truth for the current search on /search, so we read
  * the live filters from useSearchParams(). The captured alert matches exactly
  * what the visitor is looking at, even after they change a filter client-side.
+ *
+ * Variants:
+ * - sticky — list view: docks under filters in normal document flow (sticky bar)
+ * - inline — map/split: compact non-sticky strip under filters (layout-safe;
+ *   sticky on app-frame overlapped the filter chip row)
  */
 
 /**
@@ -99,6 +113,7 @@ export function SearchAlertCapture({
   defaultCity,
   defaultSubdivision,
   defaultFilters,
+  variant = 'sticky',
 }: {
   signedIn: boolean
   defaultCity?: string
@@ -106,6 +121,12 @@ export function SearchAlertCapture({
   defaultSubdivision?: string
   /** Preset-supplied filters that live in the path (e.g. /homes-for-sale/bend/under-750k), not the query. */
   defaultFilters?: Record<string, string>
+  /**
+   * sticky = list document flow (default).
+   * inline = map/split compact non-sticky under filters — must stay shrink-0 and
+   * not use sticky/z-30 so it cannot overlap the filter chip row.
+   */
+  variant?: 'sticky' | 'inline'
 }) {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
@@ -114,6 +135,9 @@ export function SearchAlertCapture({
   const [error, setError] = useState('')
   const [dismissed, setDismissed] = useState(false)
   const [pending, startTransition] = useTransition()
+  const isInline = variant === 'inline'
+  /** F2 residual from a prior guest signup in this browser (no PII). */
+  const [priorWatch, setPriorWatch] = useState<GuestWatchResidual | null>(null)
 
   const defaultFiltersSnapshot = JSON.stringify(defaultFilters ?? {})
   const filters = useMemo(() => {
@@ -147,15 +171,100 @@ export function SearchAlertCapture({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, defaultCity, defaultSubdivision, defaultFiltersSnapshot])
 
+  useEffect(() => {
+    if (signedIn) return
+    setPriorWatch(readGuestWatch())
+  }, [signedIn])
+
   // Signed-in users already have the save-search affordance. This is for guests.
   if (signedIn || dismissed) return null
 
   if (state === 'done') {
     return (
-      <div className="w-full border-b border-border bg-card">
-        <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2.5 text-sm text-foreground sm:px-6">
-          <BellAlertIcon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-          <p>You are set. We will email you when a match comes up.</p>
+      <div
+        className={cn(
+          'w-full border-b border-border bg-card',
+          isInline && 'shrink-0'
+        )}
+        role="status"
+      >
+        <div
+          className={cn(
+            'mx-auto flex max-w-7xl flex-col gap-1 px-4 py-2.5 text-sm text-foreground sm:px-6',
+            isInline ? 'px-3 py-2 sm:px-4' : ''
+          )}
+        >
+          <div className="flex items-start gap-2 sm:items-center">
+            <BellAlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden />
+            <div className="min-w-0">
+              <p className="font-medium">You are set. Watch your inbox for new matches.</p>
+              <p className="text-xs text-muted-foreground">
+                Next visit we will remind you you&apos;re watching this search. Pause from any alert email.{' '}
+                <Link href="/login?returnUrl=%2Faccount%2Fsaved-searches" className="underline underline-offset-2 hover:text-foreground">
+                  Sign in to manage alerts
+                </Link>
+                .
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // F2: returning guest who already set an alert in this browser — soft residual
+  // instead of re-asking for email. Clear residual to enroll a new search here.
+  if (priorWatch && state === 'idle') {
+    return (
+      <div
+        className={cn(
+          'w-full border-b border-border bg-card',
+          !isInline &&
+            'sticky top-0 z-30 bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/90',
+          isInline && 'shrink-0 bg-card'
+        )}
+      >
+        <div
+          className={cn(
+            'mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-6',
+            isInline && 'gap-1.5 px-3 py-2 sm:gap-2 sm:px-4 sm:py-1.5'
+          )}
+        >
+          <div className="flex min-w-0 items-start gap-2 sm:items-center">
+            <BellAlertIcon
+              className={cn('mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0', isInline && 'mt-0')}
+              aria-hidden
+            />
+            <div className="min-w-0">
+              <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
+                You&apos;re watching {priorWatch.label}
+              </p>
+              <p className={cn('text-xs text-muted-foreground', isInline && 'text-[11px] sm:text-xs')}>
+                Matches go to your email. Pause from any alert email link.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button asChild size={isInline ? 'sm' : 'default'} className="shrink-0">
+              <Link href={priorWatch.href}>See matching homes</Link>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                clearGuestWatch()
+                setPriorWatch(null)
+              }}
+              aria-label="Dismiss watching reminder"
+              className={cn(
+                'shrink-0 text-muted-foreground hover:text-foreground',
+                isInline && 'h-8 w-8'
+              )}
+            >
+              <XMarkIcon className="h-4 w-4" aria-hidden />
+            </Button>
+          </div>
         </div>
       </div>
     )
@@ -171,6 +280,9 @@ export function SearchAlertCapture({
     startTransition(async () => {
       const res = await submitSearchAlertSignup({ email, filters, company })
       if (res.ok) {
+        // F2 residual: label + browse href only (no email/token) for return visits.
+        rememberGuestWatch(buildGuestWatchFromFilters(filters))
+        setPriorWatch(readGuestWatch())
         setState('done')
         // alert_create (Phase 0.5). 'daily' is the notification_frequency the
         // guest_search_alerts row is written with (column default — the guest
@@ -184,18 +296,43 @@ export function SearchAlertCapture({
   }
 
   return (
-    <div className="sticky top-0 z-30 w-full border-b border-border bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/90">
-      <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-start gap-2 sm:items-center">
-          <BellAlertIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0" aria-hidden />
+    <div
+      className={cn(
+        'w-full border-b border-border bg-card',
+        // sticky list: docks under filters in document flow
+        !isInline &&
+          'sticky top-0 z-30 bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/90',
+        // inline map/split: never sticky — occupies flex chrome only (layout-safe)
+        isInline && 'shrink-0 bg-card'
+      )}
+    >
+      <div
+        className={cn(
+          'mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-6',
+          isInline && 'gap-1.5 px-3 py-2 sm:gap-2 sm:px-4 sm:py-1.5'
+        )}
+      >
+        <div className="flex min-w-0 items-start gap-2 sm:items-center">
+          <BellAlertIcon
+            className={cn('mt-0.5 h-4 w-4 shrink-0 text-primary sm:mt-0', isInline && 'mt-0')}
+            aria-hidden
+          />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground">Stay on this search. Get new listings by email.</p>
+            <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
+              {isInline ? 'Email me new matches' : 'Stay on this search. Get new listings by email.'}
+            </p>
             {/* "for $90M, Bend" read as nonsense (matches FOR a price?) — "matching"
                 works grammatically no matter what the filter-shorthand contains
                 (design-audit P3). */}
-            <p className="line-clamp-2 text-xs text-muted-foreground">
-              We will email you new homes matching {target}.
-            </p>
+            {!isInline ? (
+              <p className="line-clamp-2 text-xs text-muted-foreground">
+                We will email you new homes matching {target}.
+              </p>
+            ) : (
+              <p className="line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">
+                Matching {target}.
+              </p>
+            )}
           </div>
         </div>
         <form onSubmit={onSubmit} className="flex items-center gap-2">
@@ -224,10 +361,15 @@ export function SearchAlertCapture({
             aria-label="Email for listing alerts"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full sm:w-56"
+            className={cn('w-full sm:w-56', isInline && 'h-8 sm:w-44')}
             disabled={pending}
           />
-          <Button type="submit" size="default" disabled={pending} className="shrink-0">
+          <Button
+            type="submit"
+            size={isInline ? 'sm' : 'default'}
+            disabled={pending}
+            className="shrink-0"
+          >
             {pending ? 'Setting up...' : 'Get alerts'}
           </Button>
           <Button
@@ -236,14 +378,23 @@ export function SearchAlertCapture({
             size="icon"
             onClick={() => setDismissed(true)}
             aria-label="Dismiss"
-            className="shrink-0 text-muted-foreground hover:text-foreground"
+            className={cn(
+              'shrink-0 text-muted-foreground hover:text-foreground',
+              isInline && 'h-8 w-8'
+            )}
           >
             <XMarkIcon className="h-4 w-4" aria-hidden />
           </Button>
         </form>
       </div>
       {state === 'error' ? (
-        <div className="mx-auto max-w-7xl px-4 pb-2 text-xs text-destructive sm:px-6" role="alert">
+        <div
+          className={cn(
+            'mx-auto max-w-7xl px-4 pb-2 text-xs text-destructive sm:px-6',
+            isInline && 'px-3 pb-1.5 sm:px-4'
+          )}
+          role="alert"
+        >
           {error}
         </div>
       ) : null}

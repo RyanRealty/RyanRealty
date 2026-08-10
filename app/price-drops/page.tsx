@@ -51,6 +51,7 @@ import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import type { KbFeaturedItem } from '@/components/site/kb/types'
@@ -580,35 +581,16 @@ export default async function PriceDropsRegionPage() {
           </section>
         )}
 
-        {/* Listing alerts — buyer lead capture. design-audit #106: this
-            section previously promised a curated "we pull the prior week's
-            reductions and send a plain-language summary" product that does
-            not exist — /lp/buyer-listing-alerts signs a buyer up for new
-            matching listings (weekly cadence available), not a price-drop
-            digest. Copy now describes what the signup actually delivers. */}
-        <section className="section" id="weekly-report" aria-label="Listing alerts">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Listing alerts</span>
-              <h2 className="sec-title display">
-                New homes that<br />match your search
-              </h2>
-            </div>
-            <div className="max-w-xl mt-4">
-              <p className="text-muted-foreground">
-                Save a search and pick a weekly cadence. We email you new homes that match
-                your criteria as they list. This page stays live for the current week&rsquo;s
-                price cuts.
-              </p>
-              <Link
-                href="/lp/buyer-listing-alerts"
-                className="btn alt mt-5"
-              >
-                Get listing alerts <span className="arr">→</span>
-              </Link>
-            </div>
-          </div>
-        </section>
+        {/* Listing alerts — inline region capture (B1 residual). Product is
+            new matching listings (listing_alerts), not a price-drop digest.
+            propertyType A = SFR narrowing so signup is valid without a city. */}
+        <KbCommunityAlerts
+          communityName="Central Oregon"
+          city=""
+          extraFilters={{ propertyType: 'A' }}
+          headline="Central Oregon"
+          body="Enter your email. We email new single-family homes that match as they list. This page stays live for the current week's price cuts."
+        />
 
         {/* All-city navigation */}
         <section className="section" id="city-links" aria-label="Price drops by city">

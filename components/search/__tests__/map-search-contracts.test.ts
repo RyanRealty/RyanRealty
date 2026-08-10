@@ -523,6 +523,18 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
     expect(src).toMatch(/defaultSubdivision/)
     expect(src).toMatch(/defaultFilters/)
   })
+
+  it('supports layout-safe map/split inline variant (B1 residual)', () => {
+    // sticky overlapped filter chips on app-frame; inline is non-sticky shrink-0.
+    expect(src).toMatch(/variant\?: 'sticky' \| 'inline'/)
+    expect(src).toMatch(/isInline && 'shrink-0'/)
+    expect(src).toMatch(/Sign in to manage alerts/)
+    const searchIndex = readSrc('app/search/page.tsx')
+    expect(searchIndex).toMatch(/variant=\{isAppFrame \? 'inline' : 'sticky'\}/)
+    const mapSplit = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+    expect(mapSplit).toMatch(/variant="inline"/)
+    expect(mapSplit).toMatch(/underFilterBar/)
+  })
 })
 
 describe('no mojibake in the search surface', () => {

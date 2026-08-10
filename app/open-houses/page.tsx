@@ -26,6 +26,7 @@ import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
@@ -223,32 +224,16 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
             countNoun="open houses"
           />
         ) : null}
-        {/* Buyer conversion — listing alerts LP (same path as price-drops hub /
-            cities hub). Open-house pages are buy-intent; alerts keeps demand
-            when this week's calendar is thin. */}
-        <section className="section region" id="listing-alerts" aria-label="Listing alerts">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">New listings</span>
-              <h2 className="sec-title display">
-                Get new homes<br />by email
-              </h2>
-            </div>
-            <div className="max-w-xl pt-6 pb-12">
-              <p className="neigh-sub" style={{ margin: 0 }}>
-                Save a search across Central Oregon. New matches land in your inbox as they list.
-              </p>
-              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
-                <a href="/lp/buyer-listing-alerts" className="btn">
-                  Get listing alerts <span className="arr" aria-hidden="true">→</span>
-                </a>
-                <a href={listingsBrowsePath()} className="btn ghost">
-                  See all homes for sale
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Buyer conversion — inline region capture (B1 residual). Same
+            listing_alerts product as city OH pages; propertyType A = SFR
+            narrowing so hasNarrowingFilter passes without inventing a city. */}
+        <KbCommunityAlerts
+          communityName="Central Oregon"
+          city=""
+          extraFilters={{ propertyType: 'A' }}
+          headline="Central Oregon"
+          body="Enter your email. When a single-family home hits the market in Bend, Redmond, Sisters, Sunriver, or nearby, you hear first. This open-house calendar stays live for the week."
+        />
         <KbSell
           data={{
             medianListPrice: regionPulse?.medianListPrice ?? null,

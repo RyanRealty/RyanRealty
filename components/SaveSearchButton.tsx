@@ -14,6 +14,10 @@ import {
 import { trackEvent } from '@/lib/tracking'
 import { buildSearchSavePayload, countActiveSearchParams } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
+import {
+  buildGuestWatchFromFilters,
+  rememberGuestWatch,
+} from '@/lib/alerts/guest-watch-residual'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -127,6 +131,8 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     const res = await submitSearchAlertSignup({ email, filters: stringFilters, company })
     if (res.ok) {
       setStatus('done')
+      // F2 residual for return visits (label + href only; no email).
+      rememberGuestWatch(buildGuestWatchFromFilters(filters))
       fireSaveEvent()
       try {
         trackEvent('save_search', {
@@ -214,12 +220,12 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
             <Card role="status" className="absolute left-0 top-full z-50 mt-1 w-72 shadow-md">
               <CardContent className="p-4">
               <p className="text-sm font-medium text-foreground">
-                {user ? 'Search saved.' : 'You are set.'}
+                {user ? 'Search saved.' : 'You are set. Watch your inbox.'}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {user
-                  ? 'We will email you when a new match hits the market.'
-                  : 'We will email you when a new match hits the market. No account required.'}
+                  ? 'We will email you when a new match hits the market. Manage alerts in Account → Saved searches.'
+                  : 'We email you when a new match hits the market. Sign in later to manage alerts. Next visit we will remind you you are watching this search.'}
               </p>
               <Button
                 type="button"

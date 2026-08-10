@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, Suspense } from 'react'
 import { getSession } from '../../../actions/auth'
 import { getBuyingPreferences } from '../../../actions/buying-preferences'
 import { getCityBoundary } from '../../../actions/cities'
@@ -8,6 +8,7 @@ import { entityKeyToSlug } from '../../../../lib/community-slug'
 import { Container } from '@/components/site/primitives'
 import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
 import SearchFilterBar from '../../../../components/SearchFilterBar'
+import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import { decodeMapPolygon } from '@/lib/map-polygon'
 import { withTimeout } from '../fetch-guards'
 import { type ResolvedSearchSlug } from '../resolve-slug'
@@ -56,6 +57,16 @@ export async function renderMapSplitView(props: {
   // design-audit NAV-1: clear the 64px fixed KbNav and size the app-frame to
   // the remaining viewport (overrides the shared .map-search-shell 100vh-120px
   // which assumed the in-flow 72px SiteHeader).
+  // Compact guest alert strip for map/split (layout-safe: non-sticky shrink-0).
+  // Grid/list branch of this route still uses sticky SearchAlertCapture in page.tsx.
+  const guestAlertFilters: Record<string, string> = {}
+  if (sp.minPrice) guestAlertFilters.minPrice = String(sp.minPrice)
+  if (sp.maxPrice) guestAlertFilters.maxPrice = String(sp.maxPrice)
+  if (sp.beds) guestAlertFilters.beds = String(sp.beds)
+  if (sp.baths) guestAlertFilters.baths = String(sp.baths)
+  if (sp.propertyType) guestAlertFilters.propertyType = String(sp.propertyType)
+  if (sp.keywords) guestAlertFilters.keywords = String(sp.keywords)
+
   return (
     <main className="flex flex-col map-search-shell overflow-hidden" style={{ marginTop: 64, height: 'calc(100vh - 64px)' }}>
       <div className="shrink-0 border-b border-primary/20 bg-primary">
@@ -132,6 +143,17 @@ export async function renderMapSplitView(props: {
             perPage={perPageParam}
             poly={sp.poly}
           />
+        }
+        underFilterBar={
+          <Suspense fallback={null}>
+            <SearchAlertCapture
+              signedIn={!!session?.user}
+              defaultCity={city ?? ''}
+              defaultSubdivision={decodedSubdivision ?? ''}
+              defaultFilters={guestAlertFilters}
+              variant="inline"
+            />
+          </Suspense>
         }
       />
     </main>

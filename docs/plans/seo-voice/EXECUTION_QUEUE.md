@@ -40,7 +40,7 @@ Standing orders so the full inventory actually runs (not just exists):
 | Exhaustive F00–F12 verify | **Static I complete**; interactive residual |
 | Design / UI 2026 craft (G7 / P5) | **E1–E7 SHIP** (engaged-rate proof open) |
 | Layer A + seo-shell forever | **SHIP** |
-| Competitive entity truth | **Partial** (aliases + Ryan list/buy; office_id join residual) |
+| Competitive entity truth | **Partial** (aliases + Ryan list/buy + I1 brand/entity rollup; mart office_id still null) |
 | Report factory / feature cubes / inventory | **SHIP** (registry + feature mart + snapshot table) |
 | Habit engagement | **Partial** (sticky + coach + account feed; guest habit residual) |
 | Measurement ops ritual | **SHIP** (scoreboard + FP-primary) |
@@ -57,12 +57,12 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 1. [x] **A1 Baseline scoreboard** — FP sessions, engaged, alerts, saves, CO mart into VERIFY_LOG via `scoreboard-snapshot.mjs` (2026-08-10). GSC/GA4 still optional ops (access).
 2. [~] **A2 F00 chrome systems** — dual chrome kill + PublicNav + menu CSS shipped; **prod HTML V 2026-08-10** (browser UA): PublicNav/kb-nav, no SiteHeader dual. Visual craft residual open.
-3. [~] **A3 Sitemap / GSC health** — `ci:sitemap-resolvable` + `ci:sitemap-inventory-gate` on every push; GSC console ops still human
+3. [~] **A3 Sitemap / GSC health** — `ci:sitemap-resolvable` + `ci:sitemap-inventory-gate` on every push; **GSC console still human**. Optional inventory: `node scripts/list-public-sitemap-urls.mjs` (live public sitemap locs; no GSC submit)
 
 ### Block B — Conversion 10× (G4) — primary lead lever
 
-4. [~] **B1 Capture product** — **2026-08-10 surface ship:** listing (city+price band+beds), neighborhood/OH/price-drops city inline capture; city alerts earlier; `alert_create` on KB form. Search sticky already. **Outcome still open:** enrollments ~6 until traffic proves lift.
-5. [~] **B2 Saved search / save path** — **2026-08-10 surface:** navy SaveSearchButton + guest success confirmation on search + slug pages (`1e8cb1ec`). **Outcome open:** saved_searches ~2 until traffic.
+4. [~] **B1 Capture product** — **2026-08-10 residual (`e3a1669c`):** map/split compact `SearchAlertCapture` (inline non-sticky under filters); OH + price-drops **hubs** inline `KbCommunityAlerts` (region SFR, not LP-only); homepage mid-page after featured kept; post-success next-step (inbox + manage alerts). City/listing/nbhd already. **Outcome still open:** enrollments ~6 until traffic proves lift.
+5. [~] **B2 Saved search / save path** — **2026-08-10 residual:** guest/signed-in success copy names next step (inbox + manage). Navy SaveSearchButton mid-browse already (`1e8cb1ec`). **Outcome open:** saved_searches ~2 until traffic.
 6. [x] **B3 Valuation / CMA friction** — **2026-08-10:** verified ValuationForm → insertValuationRequest + FUB/CRM + trackEvent/CAPI/MP; hero CTA → `#valuation-form` + Lenis hash scroll; /sell form-first + link to `/sell/valuation`
 7. [~] **B4 Listing primary CTAs** — **2026-08-10 surface:** PriceCtaStrip → `#listing-like-alerts`; RoomRestyle next-step alert + contact (`1e8cb1ec`). Tour/ask/save already on strip + broker CTA.
 8. [x] **B5 LP alignment** — **2026-08-10:** `/lp/buyer-listing-alerts` copy + FAQ: same free `listing_alerts` product as `/search` + `/cities/bend`
@@ -105,14 +105,14 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 33. [~] **F1 Sticky / mid-browse capture** — bar shipped; not full habit system
 34. [~] **F2 Personal feed / return loop** — **signed-in** `/account` ActivityFeed + “new since” insights exist; guest habit feed not built
-35. [~] **F3 Save + alert as default product behavior** — surfaces default on search/listing (B1/B2); not yet product-default identity for all guests
+35. [~] **F3 Save + alert as default product behavior** — **2026-08-10 residual:** guest can capture on map/split (inline strip) + list sticky + hubs OH/price-drops; still not full product-default identity for all guests
 36. [x] **F4 Demand signals / next-step coach** — **2026-08-10:** listing `ListingAlertCoach` (5s dwell soft bar → `#listing-like-alerts`). Search has SaveSearchButton.
 
 ### Block G — Measurement maturity (G6)
 
 37. [~] **G1 Dual-source docs + MP page_view** — prior ship
 38. [x] **G2 Weekly scoreboard ritual** — `SCOREBOARD_RITUAL.md` + script; MEASUREMENT_DUAL_SOURCE §3 updated
-39. [ ] **G3 GA4 ops** — **BLOCKED Matt UI:** Tag Assistant; Advanced Consent Modeling; Reporting identity Blended
+39. [ ] **G3 GA4 ops** — **docs ready; blocked on Matt:** exact clicks in `GA4_OPS_CHECKLIST_MATT.md` (Tag Assistant · Advanced Consent Modeling · Reporting identity Blended)
 40. [x] **G4 Prove or document** — **2026-08-10 FP-primary permanent** (MEASUREMENT_DUAL_SOURCE §7b): FP+GSC primary forever; GA4 supplementary; not waiting for GA4 parity
 
 ### Block H — Market analytics residual (G9 / SI) — foundation ≠ full platform
@@ -122,16 +122,16 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 43. [x] **H3 Public size strip**
 44. [x] **H4 Public composition** — **2026-08-10 prod:** `/housing-market` composition strip + 5,707/$3.93B size (browser UA)
 45. [x] **H5 History explorer** — mart/result_cache first; SQL aggregate RPC on miss only; **no Node listings paging**
-46. [x] **H6 Feature cubes / amenity-era queries** — **2026-08-10:** `analytics_mart_feature_annual` + rebuild + `getCoFeatureAnnual` + history amenity strip (fireplace/garage/association typed only)
+46. [x] **H6 Feature cubes / amenity-era queries** — **2026-08-10:** `analytics_mart_feature_annual` + rebuild + `getCoFeatureAnnual` + history amenity strip; **residual rebuild 2016–2025** (feature mart all years; 2024 parity 0% — fireplace=3589 garage=4381 association=2866)
 47. [x] **H7 Report factory R01–R15** — **2026-08-10 registry** `REPORT_FACTORY_REGISTRY.md` (R01 size shipped public, R14 competitive admin; others planned)
 48. [x] **H8 Inventory snapshots** — **2026-08-10:** `analytics_inventory_snapshot` + script write + daily cron `snapshot-active-inventory` 08:30 UTC
 49. [x] **H9 Cron rebuild marts**
 
 ### Block I — Competitive intelligence (U9)
 
-50. [~] **I1 Office list/buy ranks admin** — string-level shipped
+50. [~] **I1 Office list/buy ranks admin** — string-level + **brand-family / office-entity merge** (`getCoOfficeShareMerged`, default `view=brand` on competition desk). Residual: mart `office_id` still null (name→dim join); brand_family ranks **advisory** not legal-entity share. See DIM_OFFICE § I1.
 51. [x] **I2 Agent ranks** — market-wide top-N + per-office drill (I5)
-52. [x] **I3 Brand aliases / entity resolution** — `data/analytics/office-brand-aliases.json` + bootstrap; methodology `DIM_OFFICE_ENTITY_RESOLUTION.md` (share mart still string-level until office_id join)
+52. [x] **I3 Brand aliases / entity resolution** — `data/analytics/office-brand-aliases.json` + bootstrap; methodology `DIM_OFFICE_ENTITY_RESOLUTION.md` (share mart still string-level; I1 rollup joins post-hoc)
 53. [x] **I4 Ryan buy-side + alias truth** — **2026-08-10:** `getRyanBrandShare` list+buy alias rollup on competition desk; methodology in DIM_OFFICE § I4
 54. [x] **I5 Per-office agent drill + CSV export** — `?office=` + `/admin/analytics/competition/export`
 55. [ ] **I6 Public competitor naming** — **BLOCKED Matt lock** (policy)
@@ -141,7 +141,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 56. [x] **J1 Room restyle API + listing UI**
 57. [x] **J2 Interior photo pick + rate/cost caps** — default interior heuristic + picker; strict RL notes UI+API
 58. [x] **J3 Conversion path after restyle** — city alert (listing_alerts) + contact CTA
-59. [~] **J4 Prod browser E2E proof** — **2026-08-10:** listing HTML has `RoomRestyle` + `listing-like-alerts` (browser UA). Interactive restyle click/render path **not** browser-tested.
+59. [~] **J4 Prod browser E2E proof** — **2026-08-10:** listing HTML has `RoomRestyle` + `listing-like-alerts` (browser UA). Playwright **UI presence** test in `e2e/features/listing-detail.spec.ts` (panel + style chips + Restyle control; **no** generate / no xAI cost). Live AI click/render still open.
 
 ### Block K — Voice residual (Layer B only)
 
@@ -166,8 +166,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | Outcome grind: **B1/B2 enrollment volume** (measure weekly) · optional guest F2 · brand-merged office_id mart join |
-| **THEN** | Matt: **G3** GA4 UI · **I6** public competitor names · J4 interactive restyle click |
+| **NOW** | Measure B1/B2 after map/split + hub residual (`e3a1669c`) · optional guest F2 · optional mart office_id at rebuild (I1 DAL merge shipped) |
+| **THEN** | Matt: **G3** GA4 UI (`GA4_OPS_CHECKLIST_MATT.md` — docs ready) · **I6** public competitor names · J4 interactive restyle generate (cost) |
 | **NOTE** | Executable inventory largely shipped or blocked. **not 10×** (alerts ~6). True remaining: outcomes + Matt locks + polish residuals. |
 
 ---

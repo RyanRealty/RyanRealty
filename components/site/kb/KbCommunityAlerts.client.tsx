@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
+import {
+  buildGuestWatchFromPlace,
+  rememberGuestWatch,
+} from '@/lib/alerts/guest-watch-residual'
 
 /**
  * KB listing-alert email capture (city, community, listing, OH, price-drops).
@@ -61,6 +65,16 @@ export function KbCommunityAlerts({
     startTransition(async () => {
       const res = await submitSearchAlertSignup({ email, filters, company })
       if (res.ok) {
+        // F2 residual (label + href only; no email) so return visits show the
+        // soft "You're watching …" banner without an account.
+        rememberGuestWatch(
+          buildGuestWatchFromPlace({
+            communityName,
+            city,
+            subdivision: subdivision || undefined,
+            extraFilters,
+          }),
+        )
         setState('done')
         // Same alert_create event as SearchAlertCapture (measurement parity).
         fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))
@@ -77,7 +91,14 @@ export function KbCommunityAlerts({
         <div className="comm-alerts-inner">
           <BellAlertIcon className="comm-alerts-icon" aria-hidden />
           <p className="comm-alerts-confirm">
-            Set. New {communityName} listings come to your inbox when they land.
+            Set. Watch your inbox — new {communityName} listings land by email when they hit the market.
+          </p>
+          <p className="comm-alerts-fine" style={{ marginTop: '0.5rem' }}>
+            Next visit we&apos;ll remind you you&apos;re watching {communityName}.{' '}
+            <a href="/login?returnUrl=%2Faccount%2Fsaved-searches" className="underline underline-offset-2">
+              Sign in to manage alerts
+            </a>
+            . Pause from any alert email.
           </p>
         </div>
       </section>

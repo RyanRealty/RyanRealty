@@ -99,6 +99,11 @@ export type UnifiedMapListingsViewProps = GetListingsForMapOptions & {
   prefs?: { downPaymentPercent?: number; interestRate?: number; loanTermYears?: number } | null
   /** Optional filter bar to render above the split (e.g. SearchFilterBar). */
   filterBar?: React.ReactNode
+  /**
+   * Optional chrome under the filter bar (e.g. compact SearchAlertCapture on
+   * map/split). Must be non-sticky shrink-0 so it never overlaps filter chips.
+   */
+  underFilterBar?: React.ReactNode
   /** Optional class for the root container (e.g. h-[70vh] for home page section). */
   containerClassName?: string
   /** Optional GeoJSON boundary (city/neighborhood/community) to draw on the map. */
@@ -124,6 +129,7 @@ export default function UnifiedMapListingsView({
   userEmail = null,
   prefs = null,
   filterBar,
+  underFilterBar,
   containerClassName,
   boundaryGeojson,
   initialListings,
@@ -392,6 +398,7 @@ export default function UnifiedMapListingsView({
           {filterBar}
         </div>
       )}
+      {underFilterBar != null ? <div className="shrink-0">{underFilterBar}</div> : null}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Left: scrollable sidebar — fixed width, list scrolls */}
         <div className="flex w-full flex-col min-h-0 border-r border-border bg-card md:w-[420px] lg:w-[480px] shrink-0">

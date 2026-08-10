@@ -341,14 +341,16 @@ export default async function SearchPage({
       <div className={cn('sticky top-16 z-20 w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
-      {/* Guest listing-alert capture — LIST view only. In the split/map
-          app-frame it is a sticky flex sibling that overlapped the filter bar
-          (its "Get alerts" button floated into the chip row). Map/split guests
-          still get SaveSearchButton in SearchFilters (navy mid-browse control).
-          List view lays out in normal flow, where the strip docks cleanly. */}
-      {!isAppFrame && (
-        <SearchAlertCapture signedIn={!!session?.user} defaultCity={effectiveFilters.city ?? ''} />
-      )}
+      {/* Guest listing-alert capture for all views.
+          List: sticky strip in document flow.
+          Map/split: compact non-sticky inline under filters (shrink-0) — sticky
+          on the app-frame previously overlapped the filter chip row. Guests also
+          keep SaveSearchButton in SearchFilters (navy mid-browse control). */}
+      <SearchAlertCapture
+        signedIn={!!session?.user}
+        defaultCity={effectiveFilters.city ?? ''}
+        variant={isAppFrame ? 'inline' : 'sticky'}
+      />
       <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
         {view === 'map' && (
           <div className="map-search-shell w-full">
