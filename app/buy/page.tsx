@@ -54,17 +54,17 @@ const FAQ_ITEMS = [
   {
     question: 'Do I need to sign a buyer-representation agreement before touring homes?',
     answer:
-      'Under the 2024 NAR settlement rules, a written buyer-broker agreement is required before we tour a home together. We walk you through the agreement before your first showing so you know exactly what you are signing and why.',
+      'Under the 2024 NAR settlement rules, a written buyer-broker agreement is required before we tour a home together. We walk through that agreement before the first showing so you know what you are signing and why.',
   },
   {
     question: 'How much earnest money is typical in Central Oregon?',
     answer:
-      'Most accepted offers in the Bend area carry 1 to 3 percent of the purchase price in earnest money. In competitive situations that number can be higher. We advise on the amount based on the specific listing and current market conditions.',
+      'Most accepted offers in the Bend area put 1 to 3 percent of the purchase price in earnest money. Competitive listings can require more. We set the number from the specific listing and what similar homes are closing with.',
   },
   {
     question: 'How do I get matched to listings without signing up for a national portal?',
     answer:
-      'Submit your criteria through our buyer alert form and a Ryan Realty broker pulls matching listings directly from the MLS. You receive real listings, not algorithmically ranked advertisements.',
+      'Send your criteria through our buyer alert form. A Ryan Realty broker pulls matches from the MLS and sends them to you. Nothing on that list is ranked by ad spend.',
   },
   {
     question: 'What areas do you help buyers in?',
@@ -74,12 +74,12 @@ const FAQ_ITEMS = [
   {
     question: 'What is the typical timeline from offer to closing?',
     answer:
-      'A standard residential transaction in Oregon closes in 30 to 45 days after an accepted offer. Cash transactions can close in 10 to 21 days. Resort communities and vacant land can run longer depending on title and survey work.',
+      'A standard residential deal in Oregon closes in 30 to 45 days after acceptance. Cash can close in 10 to 21 days. Resort communities and vacant land often take longer for title and survey work.',
   },
   {
     question: 'How does a buyer broker get paid?',
     answer:
-      'In most transactions the seller offers a buyer-agent commission in the MLS. If the seller offers nothing, the buyer-broker fee is discussed and agreed in your buyer-broker agreement before we tour. The number is on the table before you sign anything.',
+      'In most deals the seller offers a buyer-agent commission in the MLS. If the seller offers nothing, the buyer-broker fee is written into your buyer-broker agreement before we tour. You see the number before you sign.',
   },
 ] as const
 
@@ -95,11 +95,11 @@ const HERO_CHIPS = [
   { label: 'Area guides', href: '/area-guides' },
 ] as const
 
-// Why work with us — value-prop grid (copy preserved verbatim).
+// Why work with us — value-prop grid (Layer B body).
 const VALUE_PROPS = [
   {
     heading: 'Wells, septic, and HOA history',
-    body: 'Our brokers live in Central Oregon. Ask about the well and septic on a rural parcel, the HOA history in a resort community, or what the last four homes on that street closed for, and you get the answer from the person standing in the driveway with you.',
+    body: 'Our brokers live here. Ask about the well and septic on a rural parcel, the HOA history in a resort community, or what the last four homes on that street closed for. The person in the driveway answers.',
   },
   {
     heading: 'Listings straight from the MLS',
@@ -107,50 +107,50 @@ const VALUE_PROPS = [
   },
   {
     heading: 'No transaction desk, no hand-off',
-    body: 'The broker who tours homes with you writes the offer, negotiates it, and sits at the closing table. You never get passed to a coordinator you have not met.',
+    body: 'The broker who tours with you writes the offer, negotiates it, and sits at closing. You are not handed to a coordinator you have not met.',
   },
 ] as const
 
-// How it works — process steps (copy preserved verbatim).
+// How it works — process steps (Layer B body).
 const PROCESS_STEPS = [
   {
     step: '01',
     lead: 'Tell us what you want.',
-    body: 'Share your criteria, neighborhoods, and budget. We set up a custom MLS search and you receive new matches as they hit the market.',
+    body: 'Share criteria, neighborhoods, and budget. We set an MLS search and send new matches as they list.',
   },
   {
     step: '02',
     lead: 'Tour the home.',
-    body: 'We walk it with you and name what the photos leave out. Schools, commute, HOA history, and the known issues in that subdivision.',
+    body: 'We walk it with you and name what the photos leave out: schools, commute, HOA history, and the known issues in that subdivision.',
   },
   {
     step: '03',
     lead: 'Write the offer.',
-    body: 'We pull the recent closed comps for that exact address, show you what each one sold for and how long it took, and write the offer off those numbers.',
+    body: 'We pull recent closed comps for that address, show sale price and days on market, and write the offer from those numbers.',
   },
   {
     step: '04',
     lead: 'Close.',
-    body: 'From inspection through appraisal to the closing table, the same broker is with you. We review every document before you sign it.',
+    body: 'From inspection through appraisal to the table, the same broker stays with you. Every document gets a read before you sign.',
   },
 ] as const
 
-// Buyer guides — strategy sub-pages (copy + hrefs preserved verbatim).
+// Buyer guides — strategy sub-pages (Layer B body; hrefs unchanged).
 const BUYER_GUIDES = [
   {
     href: '/buy/first-time-home-buyer',
     heading: 'First-time buyer plan',
-    body: 'Down-payment programs, inspection fundamentals, and a realistic timeline for buying your first home in Central Oregon.',
+    body: 'Down-payment programs, what to inspect, and a realistic timeline for a first home in Central Oregon.',
   },
   {
     href: '/buy/relocation',
     heading: 'Relocation guidance',
-    body: 'Moving to Bend or Central Oregon from out of state. What to know about the market before you arrive, and how to tour efficiently on a short visit.',
+    body: 'Moving to Bend or Central Oregon from out of state. What the market looks like before you arrive, and how to tour on a short visit.',
   },
   {
     href: '/buy/investment',
     heading: 'Investment strategy',
-    body: 'Vacation rental potential, long-term rental markets, and how to evaluate cash flow on a Central Oregon investment property.',
+    body: 'Vacation rentals, long-term rent, and how to underwrite cash flow on a Central Oregon property.',
   },
 ] as const
 
@@ -223,8 +223,8 @@ export default async function BuyPage() {
             </h1>
             <div className="hero-sub-row">
               <p className="hero-sub">
-                Every active MLS listing in Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. The broker
-                who walks the house with you writes the offer and sits at the closing table.
+                Every active MLS listing in Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. The broker who
+                walks the house with you writes the offer and sits at closing.
               </p>
             </div>
             <nav className="flex flex-wrap gap-2.5 mt-5" aria-label="Buyer quick links">
@@ -246,7 +246,7 @@ export default async function BuyPage() {
             <div className="sec-head">
               <span className="sec-index">Why work with us</span>
               <h2 className="sec-title display" id="why-us-title">
-                The broker who walks the house writes your offer.
+                The broker who walks the house writes the offer.
               </h2>
             </div>
             <div className="grid gap-6 sm:grid-cols-3" style={{ paddingTop: 'clamp(30px,4vw,46px)' }}>
@@ -379,8 +379,8 @@ export default async function BuyPage() {
                 fontWeight: 500,
               }}
             >
-              Tell us the town, the beds, and the ceiling on price. A Ryan Realty broker reads it and sends the
-              homes that match, straight from the MLS.
+              Tell us the town, the beds, and the ceiling on price. A broker reads it and sends the homes that match,
+              straight from the MLS.
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
               <a href="/lp/buyer-listing-alerts" className="btn" style={{ borderColor: 'var(--cream)' }}>

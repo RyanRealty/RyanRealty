@@ -98,7 +98,7 @@ export default async function LuxuryHomesBendPage() {
             {count != null && count > 0
               ? `${count.toLocaleString('en-US')} single-family homes above $1.5 million are active in Bend right now. `
               : 'Single-family homes above $1.5 million in Bend. '}
-            Every listing on this page comes from the regional MLS and refreshes through the day.
+            Listings come from the regional MLS and refresh through the day.
           </p>
         </div>
       </section>
@@ -110,7 +110,7 @@ export default async function LuxuryHomesBendPage() {
             Active listings, high to low
           </h2>
           <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
-            Priced high to low. You can get an email the morning a new home above $1.5 million lists.{' '}
+            Sorted high to low. Email the morning a home above $1.5 million lists.{' '}
             <Link href="/lp/buyer-listing-alerts" className="font-semibold underline underline-offset-4">
               Set up an alert
             </Link>
@@ -137,7 +137,9 @@ export default async function LuxuryHomesBendPage() {
               ))}
             </div>
           ) : (
-            <p className="mt-10 text-base text-[#102742]/70">No homes above $1.5 million are active right now. We can set an alert for the next one.</p>
+            <p className="mt-10 text-base text-[#102742]/70">
+              No homes above $1.5 million are active right now. We can email you when the next one lists.
+            </p>
           )}
           <div className="mt-10">
             <Link href="/homes-for-sale/bend" className="text-sm font-semibold uppercase tracking-widest text-[#102742] underline-offset-4 hover:underline">
@@ -154,7 +156,7 @@ export default async function LuxuryHomesBendPage() {
             Where these homes sit
           </h2>
           <p className="mt-4 max-w-2xl text-base text-[#faf8f4]/80">
-            Most of Bend&apos;s homes above $1.5 million sit in gated and golf communities on the west side and along the Deschutes. Start with these.
+            Most Bend homes above $1.5 million sit in gated and golf communities on the west side and along the Deschutes. These are the ones with dedicated pages.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             {LUX_COMMUNITIES.map((c) => (

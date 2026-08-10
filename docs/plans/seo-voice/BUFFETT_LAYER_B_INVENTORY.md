@@ -31,18 +31,18 @@
 | Home | `/` | **PARTIAL** | Hero Layer A locked; body modules (about/sell/articles) still worth a pass |
 | Search | `/search`, `/search/[...slug]`, `/homes-for-sale/*` | **PARTIAL** | Filter chrome + empty states; avoid shell poetry |
 | Listing | `/listing/[listingKey]`, by-address/by-key | **PARTIAL** | Specs/history DATA; CTAs + restyle coach already shipping |
-| City | `/cities/[slug]` | **PARTIAL** | Large KB body; Layer A H1 locked |
+| City | `/cities/[slug]` | **PASS** (2026-08-10) | Layer B about bodies in `lib/city-content.ts` + data-driven fallbacks; Layer A H1 locked |
 | Neighborhood | `/cities/[slug]/[neighborhoodSlug]` | **PARTIAL** | Boundary honesty + body depth |
-| Community | `/communities/[slug]` | **PARTIAL** | Resort configs vary; research prose uneven |
-| Sell | `/sell`, `/sell/valuation`, `/sell/[intent]` | **PARTIAL** | Form-first; residual process copy |
+| Community | `/communities/[slug]` | **PARTIAL** | Resort overview bodies in `lib/community-content.ts` rewritten 2026-08-10; deep SEO prose (`community-seo-content`) still residual |
+| Sell | `/sell`, `/sell/valuation`, `/sell/[intent]` | **PARTIAL** | Intent bodies (`SELL_INTENT_PAGES`) rewritten 2026-08-10; `/sell` hub form-first residual |
 | Market hub | `/housing-market` | **PARTIAL** | FAQ cube-backed (M1); hub chrome residual |
 | Market report | `/housing-market/[...slug]`, central-oregon, annual-review, reports/* | **DATA / PARTIAL** | Stats from pulse/mart; narrative blocks still PASS-NEEDED |
 | Market history | `/housing-market/history` | **DATA** | Explorer UI |
 | Open houses | `/open-houses`, `/open-houses/[city]` | **PARTIAL** | |
 | Price drops | `/price-drops`, `/price-drops/[city]` | **PARTIAL** | |
 | LPs | `/lp/*` | **PARTIAL** | Conversion gate exists; body still marketing-register risk |
-| Buyer intent | `/buy`, `/buy/[intent]` | **PASS-NEEDED** | Intent pages often thinner |
-| Luxury | `/luxury-homes-bend` | **PASS-NEEDED** | |
+| Buyer intent | `/buy`, `/buy/[intent]` | **PASS** (2026-08-10) | `/buy` body + `BUY_INTENT_PAGES` Layer B; H1/seoTitle/seoDescription left Layer A |
+| Luxury | `/luxury-homes-bend` | **PASS** (2026-08-10) | Under-H1 leads + section prose tightened; H1 + floor `$1.5M` locked |
 | Our homes | `/our-homes` | **PARTIAL** | Inventory list + chrome |
 | Motivated | `/motivated-sellers`, `/[city]` | **PASS-NEEDED** | |
 | Compare | `/compare` | **LIGHT** | Utility |

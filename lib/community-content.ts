@@ -1,7 +1,9 @@
 /**
  * Static and data-driven content for community (subdivision) and resort pages.
- * Resort pages should read like splash pages: overview, amenities, lifestyle, real estate.
+ * Resort pages: overview, amenities, recreation, real estate mix.
  * Regular communities get substantive about copy so search engines and LLMs don't see thin content.
+ *
+ * Layer B body only. Community H1 / title / meta stay on the route (Layer A).
  */
 
 function normalizeKey(s: string): string {
@@ -24,77 +26,77 @@ export type ResortCommunityContent = {
 const resortContent: Record<string, ResortCommunityContent> = {
   'sunriver:sunriver': {
     overview:
-      'Sunriver is a premier resort and residential community south of Bend, set among ponderosa pines along the Deschutes River. Developed as a planned resort in the 1960s, it has grown into a mix of vacation homes, full-time residences, and short-term rentals while keeping strict design and natural-space standards. The community is known for its extensive path system, three golf courses, and family-friendly amenities.',
+      'Sunriver is a planned resort and residential community south of Bend, among ponderosa pines along the Deschutes River. Built in the 1960s, it now mixes vacation homes, full-time residences, and short-term rentals under strict design and open-space rules. The path system, three golf courses, and resort amenities are the main draws.',
     amenities:
-      'Sunriver offers a private path system for walking and biking, multiple pools and tennis facilities, the Sunriver Resort and Lodge, and the Village at Sunriver with shops and dining. Many homes have access to HOA amenities including recreation centers. The community is highly walkable and bike-friendly, with a focus on preserving open space and wildlife habitat.',
+      'Sunriver has a private path network for walking and biking, pools, tennis, Sunriver Resort and Lodge, and the Village with shops and dining. Many homes share HOA recreation centers. You can reach most of the community on foot or by bike without a car.',
     golf_recreation:
-      'Golf is central to Sunriver: the community is home to Crosswater (often ranked among the top courses in Oregon), Meadows at Sunriver, and Woodlands. The Deschutes River runs through the area for fishing and floating. In winter, Mt. Bachelor is a short drive for skiing and snowboarding. Trails, parks, and the Sunriver Nature Center round out outdoor recreation.',
+      'Golf sits at the center: Crosswater, Meadows at Sunriver, and Woodlands. The Deschutes River runs through for fishing and floating. Mt. Bachelor is a short drive for winter sports. Trails, parks, and the Sunriver Nature Center fill the rest of the calendar.',
     real_estate:
-      'Sunriver real estate includes single-family homes, townhomes, and condos, with a wide range of sizes and price points. Many buyers choose Sunriver as a second home or vacation rental investment; full-time residents enjoy a tight-knit community and year-round access to amenities. Listings are updated frequently; browse below for current homes for sale.',
+      'Inventory includes single-family homes, townhomes, and condos across a wide price range. Many buyers use Sunriver as a second home or short-term rental; others live here year-round. Browse the listings below for what is active now.',
   },
   'sunriver:sunriver resort': {
     overview:
-      'Sunriver Resort is the heart of the Sunriver community—a full-service resort with lodging, dining, and recreation. Real estate in the resort area includes condos and homes with proximity to the lodge, golf, and the Village. Buyers often look here for vacation properties or investment rentals with strong demand.',
+      'Sunriver Resort is the lodging, dining, and recreation core of the Sunriver community. Real estate near the resort includes condos and homes within a short walk of the lodge, golf, and the Village. Buyers often look here for vacation use or rental demand.',
     real_estate:
-      'Properties near Sunriver Resort appeal to buyers who want walkable access to the lodge, golf, and amenities. The mix includes condos and single-family homes. Browse current listings below for availability and pricing.',
+      'Properties near the resort trade on walkable access to the lodge, golf, and amenities. The mix is condos and single-family homes. Current pricing and availability are in the listings below.',
   },
   'bend:pronghorn': {
     overview:
-      'Pronghorn is a resort community in Bend built around two golf courses—one by Nicklaus Design and one by Tom Fazio—and a commitment to outdoor living. The community blends high-end homes with mountain and high-desert views, trails, and a members-only club. It attracts buyers seeking a resort lifestyle with easy access to Bend and Central Oregon recreation.',
+      'Pronghorn is a resort community outside Bend built around two golf courses (Nicklaus Design and Tom Fazio) and a members club. Homes sit with mountain and high-desert views, trails, and club access. It is a short drive into Bend and to the rest of Central Oregon recreation.',
     amenities:
-      'Pronghorn residents enjoy the Club at Pronghorn with dining and events, 36 holes of golf, a fitness center, and extensive trails. The design standards and natural landscaping give the community a cohesive, upscale feel. Many properties are second homes; full-time residents enjoy a quiet, active lifestyle.',
+      'Residents use the Club at Pronghorn for dining and events, 36 holes of golf, a fitness center, and trails. Design standards keep the streetscape consistent. Many homes are second residences; some owners live here full time.',
     golf_recreation:
-      'Golf is the centerpiece: the Nicklaus and Fazio courses offer distinct challenges and views. Hiking and biking trails connect to the broader Bend trail network. Mt. Bachelor, Smith Rock, and the Deschutes River are all within a short drive.',
+      'The Nicklaus and Fazio courses are the centerpiece. Hiking and biking trails link into the wider Bend network. Mt. Bachelor, Smith Rock, and the Deschutes River are all a short drive.',
     real_estate:
-      'Pronghorn real estate includes custom and production homes, often on larger lots with views. Price points range from mid-six figures into the millions. Browse active listings below for current availability.',
+      'Stock is mostly custom and production homes, often on larger lots with views. Prices run from the mid six figures into the millions. Active listings are below.',
   },
   'sisters:black butte ranch': {
     overview:
-      'Black Butte Ranch is a resort and residential community west of Sisters, set against the Cascade Mountains. Two golf courses, a pool complex, tennis, and miles of trails define the lifestyle. The ranch has been a Central Oregon destination for decades, with a mix of vacation homes and year-round residents who value privacy and recreation.',
+      'Black Butte Ranch is a resort and residential community west of Sisters, under the Cascades. Two golf courses, a pool complex, tennis, and miles of trails define daily use. Vacation homes and year-round residents share the same ranch setting.',
     amenities:
-      'Black Butte Ranch offers two 18-hole golf courses, multiple pools, tennis and pickleball, dining at the Lodge, and a general store. The trail system is used for walking, biking, and horseback riding. HOA standards preserve the ranch character and natural setting.',
+      'Two 18-hole golf courses, multiple pools, tennis and pickleball, dining at the Lodge, and a general store. Trails support walking, biking, and horseback riding. HOA standards protect the ranch character and open land.',
     golf_recreation:
-      'Golf at Black Butte Ranch includes the Big Meadow and Glaze Meadow courses, both well-regarded for playability and views. The community is a gateway to the Deschutes National Forest, with easy access to hiking, fishing, and skiing at Hoodoo or Mt. Bachelor.',
+      'Big Meadow and Glaze Meadow are the two courses. The ranch sits against the Deschutes National Forest, with hiking, fishing, and skiing at Hoodoo or Mt. Bachelor within a drive.',
     real_estate:
-      'Homes at Black Butte Ranch range from cabins and condos to large custom homes. Many buyers use the property as a second home or vacation rental. Full-time residents enjoy a tight community and year-round access to amenities. Browse listings below for current homes for sale.',
+      'Homes range from cabins and condos to large custom builds. Many buyers hold them as second homes or vacation rentals. Listings below show what is for sale now.',
   },
   'bend:tetherow': {
     overview:
-      'Tetherow is a golf and resort community in Bend built around a David McLay Kidd–designed course and a modern lodge. The community offers a mix of homes and lots with mountain and fairway views, plus access to a pool, fitness, and dining. It appeals to buyers who want a resort feel with close proximity to Bend.',
+      'Tetherow is a golf and resort community in Bend around a David McLay Kidd course and a modern lodge. Homes and lots carry mountain and fairway views, with pool, fitness, and dining on site. Bend proper is a short drive.',
     amenities:
-      'Tetherow residents have access to the Tetherow Lodge, golf, pool, and fitness facilities. The community is designed for both vacation and full-time living, with design standards that maintain a consistent, high-quality look.',
+      'Access includes the Tetherow Lodge, golf, pool, and fitness. Design standards keep the built look consistent for both vacation and full-time use.',
     golf_recreation:
-      'The Tetherow Golf Course is a central feature—a links-style course with views of the Cascades. Bend’s trail network, Mt. Bachelor, and the Deschutes River are all nearby for additional recreation.',
+      'The Tetherow course is links-style with Cascade views. Bend trails, Mt. Bachelor, and the Deschutes River sit nearby for everything else.',
     real_estate:
-      'Tetherow real estate includes single-family homes and lots. Prices vary by size and location within the community. Browse active listings below for current availability.',
+      'Inventory is single-family homes and lots. Price varies by size and location inside the community. Active listings are below.',
   },
   'redmond:eagle crest resort': {
     overview:
-      'Eagle Crest Resort is a large resort community in Redmond with multiple golf courses, a spa, pools, and dining. The community caters to vacationers and full-time residents who want resort amenities and a Central Oregon lifestyle at a slightly lower price point than Bend or Sunriver.',
+      'Eagle Crest is a large resort community in Redmond with multiple golf courses, a spa, pools, and dining. It serves vacationers and full-time residents who want resort amenities at a lower price point than Bend or Sunriver.',
     amenities:
-      'Eagle Crest offers 54 holes of golf, multiple pools and hot tubs, a fitness center, spa, and several dining options. The resort has a mix of condos and single-family homes, many available as vacation rentals.',
+      'Fifty-four holes of golf, multiple pools and hot tubs, fitness, spa, and several dining options. Condos and single-family homes sit across the property; many are available as vacation rentals.',
     golf_recreation:
-      'Three golf courses provide variety for players. The resort is close to Smith Rock, the Deschutes River, and Redmond’s airport, making it convenient for outdoor recreation and travel.',
+      'Three courses give variety. Smith Rock, the Deschutes River, and Redmond Municipal Airport are close for outdoor days and travel.',
     real_estate:
-      'Eagle Crest real estate includes condos and single-family homes. Buyers often choose the community for a second home or investment property. Browse listings below for current homes for sale.',
+      'Stock is condos and single-family homes. Buyers often buy a second home or an investment. Current listings are below.',
   },
   'powell butte:brasada ranch': {
     overview:
-      'Brasada Ranch is a resort community east of Bend in Powell Butte, built around a Cupp Design golf course and a ranch-style lodge. The community offers homes and cabins with high-desert and mountain views, plus access to golf, pools, dining, and trails. It appeals to buyers seeking a quieter resort setting with easy access to Bend.',
+      'Brasada Ranch is a resort community east of Bend in Powell Butte, built around a Cupp Design golf course and a ranch-style lodge. Homes and cabins sit on high-desert and mountain views, with golf, pools, dining, and trails on site. Bend is a short drive.',
     amenities:
-      'Brasada Ranch features the Brasada Canyons golf course, Sage Canyon Sports Club with pool and fitness, and the Ranch House for dining. The design emphasizes the high-desert landscape and wide views.',
+      'Brasada Canyons golf, Sage Canyon Sports Club (pool and fitness), and the Ranch House for dining. The layout keeps the high-desert landscape and long views.',
     golf_recreation:
-      'Golf at Brasada Canyons is the centerpiece. The area is also suited to hiking, biking, and exploring Central Oregon’s high desert. Bend and Prineville are both within a short drive.',
+      'Golf at Brasada Canyons is the main amenity. Hiking and biking start from the property. Bend and Prineville are both a short drive.',
     real_estate:
-      'Brasada Ranch real estate includes cabins and custom homes. Listings range from more affordable cabins to higher-end custom builds. Browse below for current homes for sale.',
+      'Inventory includes cabins and custom homes, from simpler cabins up to higher-end builds. Active listings are below.',
   },
   'bend:petrosa': {
     overview:
-      'Petrosa is a residential community in Bend, Oregon, offering a mix of single-family homes with access to Central Oregon’s outdoor lifestyle. The neighborhood is known for its family-friendly setting, proximity to schools and services, and easy access to trails, parks, and the Deschutes River.',
+      'Petrosa is a residential neighborhood in Bend with single-family homes, nearby schools and services, and access to trails, parks, and the Deschutes River.',
     amenities:
-      'Residents of Petrosa benefit from Bend’s extensive path system for walking and biking, nearby parks, and the area’s strong schools and services. The community is close to shopping, dining, and healthcare, while remaining a short drive from Mt. Bachelor, the Deschutes River, and the Cascade Lakes. Many homes feature views and lot sizes that appeal to families and outdoor enthusiasts.',
+      'Residents use Bend path systems, nearby parks, and local schools and services. Shopping, dining, and healthcare are close. Mt. Bachelor, the river, and the Cascade Lakes are a short drive.',
     real_estate:
-      'Petrosa real estate includes single-family homes across a range of sizes and price points. The market here reflects Bend’s overall demand: active listings, competitive pricing, and solid interest from buyers. Browse the listings below for current homes for sale, or contact a Ryan Realty agent for a personalized market overview.',
+      'Homes span a range of sizes and prices. Listings below show what is active. Call a Ryan Realty broker if you want comps for a specific address.',
   },
 }
 
@@ -102,4 +104,3 @@ export function getResortCommunityContent(city: string, subdivision: string): Re
   const key = `${normalizeKey(city)}:${normalizeKey(subdivision)}`
   return resortContent[key] ?? null
 }
-
