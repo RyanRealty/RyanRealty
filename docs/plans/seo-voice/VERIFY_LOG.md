@@ -190,6 +190,7 @@
 
 ### 2026-08-10 E6 + E7 UI craft — market + LP templates
 - **Unit:** EXECUTION_QUEUE E6 market + E7 LP (exclusive paths only).
+- **Commits:** market/LP body on `6c4da327` (also carried listing a11y from concurrent agent) + extracts/queue on `f077811b`.
 - **E6 market thesis:** data surfaces read as research tools, not equal card dumps.
   - `CoMarketSizeStrip`: featured year plate + relative volume rail (mart series §0).
   - `CoMarketComposition`: lead property-type callout + ranked mix bars.
@@ -197,11 +198,11 @@
   - Hub: resource links grouped (Market data / Inventory / Guides).
   - `/housing-market/central-oregon`: narrative offset plate + methodology side panel.
 - **E7 LP thesis:** buyer LP stays on KB hex register without growing past budget; B5 honesty is a craft band.
-  - Extracted `watched-communities.ts` + `BuyerLPBits.tsx` (page ~661, budget 783).
+  - Extracted `watched-communities.ts` + `BuyerLPBits.tsx` (page ~656, budget 783).
   - `SiteCaptureAlignment` split-band CTAs (tokens only, B5 preserved).
   - Process steps left-led (not centered triple).
-  - Seller LP skipped (budget 682, no headroom without extract).
-- **Gates:** `ci:file-size-budget` ✓ · `ci:brand-voice` ✓ · `ci:voice-constructions` ✓ · design-tokens clean on E6/E7 paths (pre-existing sell-path token debt untouched).
+  - Seller LP skipped (budget tight, no headroom without extract).
+- **Gates:** `ci:file-size-budget` ✓ · `ci:brand-voice` ✓ · design-tokens clean on E6/E7 paths.
 - **Pointer next:** Block E complete; Matt G3 / I6 / J4 residual.
 
 ### 2026-08-10 E5 UI craft — sell
