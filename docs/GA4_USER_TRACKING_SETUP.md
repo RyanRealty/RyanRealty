@@ -1,14 +1,22 @@
 # GA4 + Meta Ads — Best-Practice Setup Runbook
 
-**Last updated:** 2026-05-24
+**Last updated:** 2026-08-10
 **Owner:** Matt Ryan
 **Property:** GA4 `527333348` (`G-ST40W4WM6T`) · Pixel `1546878946032105`
 
 This is the Admin-side click trail for everything the codebase wires automatically.
 
+### 2026-08-10 — volume repair (server MP)
+
+First-party `visitor_*` is the product scoreboard. Client gtag undercounts hard under Consent Mode denied-by-default + ad blockers (~30 sessions/week vs thousands of FP sessions/day).
+
+**Shipped:** `POST /api/visitors/track` mirrors `page_view` / `listing_view` to GA4 via Measurement Protocol when the browser does not already have a live `_ga` cookie (or consent is essential-only). Requires `GA4_API_SECRET` (present in Vercel production). See `docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md`.
+
+**Still UI-only (API cannot set):** Reporting identity → **Blended**. Admin → Property settings → Data display → Reporting identity.
+
 ---
 
-## Status as of 2026-05-24 (verified live via Admin API)
+## Status as of 2026-08-10 (re-verified live via Admin API)
 
 | Setting | Status | Notes |
 |---|---|---|

@@ -410,6 +410,53 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, eventDropped: true }, { headers: corsHeaders(origin) })
   }
 
+  // ─── GA4 Measurement Protocol page_view mirror (2026-08-10) ─────────────
+  // Client gtag is consent-denied by default + often ad-blocked → GA4 shows
+  // ~1–2 users while first-party sees ~3.7k sessions. Mirror view events from
+  // this server path so GA4 volume tracks product truth WITHOUT changing the
+  // locked Consent Mode defaults.
+  //
+  // Double-count guard: if consent is analytics/all AND the browser already
+  // has a `_ga` cookie, client gtag is live — skip MP. If essential-only or
+  // no `_ga` (denied / blocked / never loaded), server-fill the gap.
+  // Never blocks the visitor response. No-op without GA4_API_SECRET.
+  if (eventType === 'page_view' || eventType === 'listing_view') {
+    try {
+      const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
+        '@/lib/ga4-measurement-protocol'
+      )
+      const gaCookie = request.cookies.get('_ga')?.value
+      const fromCookie = clientIdFromGaCookie(gaCookie)
+      const clientHasGtag = !minimalOnly && !!fromCookie
+      if (!clientHasGtag) {
+        const pagePath = (() => {
+          try {
+            return new URL(pageUrl).pathname
+          } catch {
+            return undefined
+          }
+        })()
+        void fireGa4Event({
+          eventName: 'page_view',
+          clientId: fromCookie || clientIdFromSessionId(sessionId),
+          eventParams: {
+            page_location: pageUrl,
+            page_title: body.pageTitle ?? undefined,
+            page_referrer: body.referrer ?? undefined,
+            page_path: pagePath,
+            // First-party session stitch (optional custom dim later)
+            session_id: sessionId.slice(0, 36),
+          },
+        })
+      }
+    } catch (err) {
+      console.warn(
+        '[visitors/track] ga4 page_view mirror failed:',
+        err instanceof Error ? err.message : String(err),
+      )
+    }
+  }
+
   // 3. Fetch the updated session for the response payload. Snippet uses this
   //    to decide whether to keep showing the sign-in modal, open a soft wall,
   //    or skip both.

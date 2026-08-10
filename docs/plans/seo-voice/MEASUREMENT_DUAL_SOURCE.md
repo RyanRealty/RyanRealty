@@ -1,9 +1,20 @@
 # Measurement dual-source — ops scoreboard
 
 **Date:** 2026-08-10  
-**Status:** foundation shipped (ops model + docs). Full GA4 parity **blocked on Matt decision**.  
+**Status:** dual-source ops live + **server page_view MP mirror shipped (2026-08-10)**.  
 **Locks:** Consent Mode v2 denied-by-default is **LOCKED** by `ci:tracking-policy` / `docs/TRACKING_POLICY.md`. Do **not** auto-grant analytics for all US traffic without Matt’s explicit go.  
 **Companion:** `TOP_SITE_GOAL_SYSTEM.md` §L5 · `ENDTOEND_MISSION.md` P4 · `docs/TRACKING_POLICY.md`
+
+### Server page_view mirror (chosen repair path)
+
+| Piece | Behavior |
+|-------|----------|
+| Trigger | Successful `page_view` / `listing_view` write in `POST /api/visitors/track` |
+| Transport | `lib/ga4-measurement-protocol.ts` → `mp/collect` |
+| When **skipped** | Consent is `analytics`/`all` **and** browser already has `_ga` (client gtag is live — avoid double-count) |
+| When **fires** | Essential-only consent, or no `_ga` (denied / blocked / never loaded) |
+| Privacy | GPC opt-out still drops the whole track (no FP write, no MP). Declined consent still rejected. |
+| Secret | `GA4_API_SECRET` + measurement id — no-op warn once if missing |
 
 ---
 

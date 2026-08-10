@@ -77,6 +77,9 @@ export function clientIdFromGaCookie(cookieValue: string | undefined | null): st
  *
  * Boolean values are coerced to 1/0 since GA4 doesn't support bool params.
  */
+/** GA4 MP string limits — page_location/referrer allow 1000; most params 100. */
+const LONG_STRING_PARAMS = new Set(['page_location', 'page_referrer', 'page_title', 'page_path'])
+
 function sanitizeParams(params: Record<string, string | number | boolean | undefined | null>): Record<string, string | number> {
   const cleaned: Record<string, string | number> = {}
   for (const [rawKey, rawVal] of Object.entries(params)) {
@@ -87,7 +90,8 @@ function sanitizeParams(params: Record<string, string | number | boolean | undef
     } else if (typeof rawVal === 'number') {
       if (Number.isFinite(rawVal)) cleaned[key] = rawVal
     } else {
-      cleaned[key] = String(rawVal).slice(0, 100)
+      const max = LONG_STRING_PARAMS.has(key) ? 1000 : 100
+      cleaned[key] = String(rawVal).slice(0, max)
     }
     if (Object.keys(cleaned).length >= 25) break
   }
@@ -116,10 +120,31 @@ function sanitizeUserProperties(props: Record<string, string | number>): Record<
  * should `void` the result if they don't care, since the failure mode is a
  * console.warn — never a thrown error that crashes the upstream action.
  */
+/** Once-per-process: high-volume page_view mirror must not spam logs when secret missing. */
+let warnedMissingSecret = false
+
+/**
+ * Stable GA4 client_id from our first-party session uuid (no PII).
+ * Format `digits.digits` matches the web SDK shape so sessions stitch better
+ * when the browser later sets `_ga`.
+ */
+export function clientIdFromSessionId(sessionId: string): string {
+  const hex = sessionId.replace(/-/g, '').toLowerCase()
+  if (hex.length < 16 || !/^[0-9a-f]+$/.test(hex)) {
+    return randomUUID()
+  }
+  const a = Number.parseInt(hex.slice(0, 8), 16)
+  const b = Number.parseInt(hex.slice(8, 16), 16)
+  return `${a}.${b}`
+}
+
 export async function fireGa4Event(params: Ga4MpFireParams): Promise<Ga4MpFireResult> {
   const creds = getCreds()
   if (!creds) {
-    console.warn('[ga4-mp] skipping fire — GA4_API_SECRET or GA4_MEASUREMENT_ID not configured')
+    if (!warnedMissingSecret) {
+      warnedMissingSecret = true
+      console.warn('[ga4-mp] skipping fire — GA4_API_SECRET or GA4_MEASUREMENT_ID not configured (this warning once per process)')
+    }
     return { ok: false, error: 'GA4_API_SECRET_MISSING' }
   }
 
