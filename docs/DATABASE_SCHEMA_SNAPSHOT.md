@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-09T04:23:53.938Z
+**Generated:** 2026-08-10T16:44:49.091Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -59,7 +59,7 @@ One row per MLS-history event for a listing. snake_case columns; `listing_key` r
 | `sort_order` | integer | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
 
-### `listings` · **rows ≈ 617,326**
+### `listings` · **rows ≈ 594,650**
 
 Source-of-truth RETS-style listings table (~589K rows). **Quotable mixed-case columns** — `"ListingKey"`, `"StreetNumber"`, `"StreetName"`, `"ListPrice"`, `"StandardStatus"`, `"Latitude"`, `"Longitude"`, etc. The `details` jsonb column carries the raw RETS payload. **Never aggregate from this table at request time** — use `listing_tile_mv` / `market_pulse_live` / `market_stats_cache`.
 
@@ -348,7 +348,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 76,075**
+### `similar_listings_mv` · **rows ≈ 75,941**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 12,995**
+### `market_stats_cache` · **rows ≈ 14,470**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -594,7 +594,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 268**
+### `cmas` · **rows ≈ 272**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -683,7 +683,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 249**
+### `expired_listings` · **rows ≈ 251**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -742,7 +742,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 653**
+### `marketing_brain_actions` · **rows ≈ 669**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -930,6 +930,108 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `approved_at` | timestamp with time zone | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `analytics_dim_agent`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `agent_id` | uuid | no | gen_random_uuid() |
+| `primary_mls_id` | text | yes |  |
+| `primary_email` | text | yes |  |
+| `display_name` | text | no |  |
+| `aliases` | ARRAY | no | '{}'::text[] |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `analytics_dim_office`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `office_id` | uuid | no | gen_random_uuid() |
+| `canonical_name` | text | no |  |
+| `brand_family` | text | yes |  |
+| `is_ryan_realty` | boolean | no | false |
+| `aliases` | ARRAY | no | '{}'::text[] |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `analytics_mart_market_annual`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `year` | integer | no |  |
+| `type_scope` | text | no |  |
+| `sold_count` | integer | no | 0 |
+| `total_volume` | numeric | no | 0 |
+| `median_close` | numeric | yes |  |
+| `mean_close` | numeric | yes |  |
+| `property_type_breakdown` | jsonb | no | '{}'::jsonb |
+| `methodology` | text | no | 'closed_cte+service_area_v1'::text |
+| `computed_at` | timestamp with time zone | no | now() |
+
+### `analytics_mart_office_share_annual`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `geo_type` | text | no |  |
+| `geo_slug` | text | no |  |
+| `year` | integer | no |  |
+| `type_scope` | text | no | 'all'::text |
+| `side` | text | no |  |
+| `office_name` | text | no |  |
+| `office_id` | uuid | yes |  |
+| `sides_count` | integer | no | 0 |
+| `total_volume` | numeric | no | 0 |
+| `volume_share_pct` | numeric | yes |  |
+| `unit_share_pct` | numeric | yes |  |
+| `rank_volume` | integer | yes |  |
+| `methodology` | text | no | 'closed_cte+service_area_v1'::text |
+| `computed_at` | timestamp with time zone | no | now() |
+
+### `analytics_service_area_cities`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `city_proper` | text | no |  |
+| `city_lower` | text | no |  |
+
+### `analytics_v_closed_sale_co`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `close_date` | date | yes |  |
+| `close_year` | integer | yes |  |
+| `close_price` | numeric | yes |  |
+| `property_type` | text | yes |  |
+| `type_scope_bucket` | text | yes |  |
+| `city` | text | yes |  |
+| `city_lower` | text | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `living_sqft` | numeric | yes |  |
+| `year_built` | smallint | yes |  |
+| `fireplace_yn` | boolean | yes |  |
+| `pool_yn` | boolean | yes |  |
+| `garage_yn` | boolean | yes |  |
+| `association_yn` | boolean | yes |  |
+| `new_construction_yn` | boolean | yes |  |
+| `horse_yn` | boolean | yes |  |
+| `days_to_pending` | smallint | yes |  |
+| `sale_to_list_ratio` | numeric | yes |  |
+| `buyer_financing` | text | yes |  |
+| `concessions_amount` | numeric | yes |  |
+| `list_office_name` | text | yes |  |
+| `list_agent_name` | text | yes |  |
+| `list_agent_email` | text | yes |  |
+| `list_agent_mls_id` | text | yes |  |
+| `buy_office_name` | text | yes |  |
+| `buy_agent_name` | text | yes |  |
+| `buy_agent_mls_id` | text | yes |  |
+| `is_dual_office` | boolean | yes |  |
+| `is_dual_agent` | boolean | yes |  |
 
 ### `asset_library`
 
