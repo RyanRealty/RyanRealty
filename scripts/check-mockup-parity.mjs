@@ -86,6 +86,18 @@ function loadParityContracts() {
   return out
 }
 
+/**
+ * Global public chrome (Matt 2026-08-10 dual-chrome kill):
+ * app/layout.tsx mounts <PublicNav /> → KbNav. Pages must NOT re-import KbNav.
+ * Treat layout-owned PublicNav as satisfying a parity contract that still lists KbNav.
+ */
+function layoutOwnsPublicNav() {
+  const layoutPath = join(ROOT, 'app/layout.tsx')
+  if (!existsSync(layoutPath)) return false
+  const src = readFileSync(layoutPath, 'utf8')
+  return /<PublicNav\b/.test(src) || /from\s+['"][^'"]*PublicNav/.test(src)
+}
+
 function checkPage(contract) {
   const pagePath = join(ROOT, contract.route)
   if (!existsSync(pagePath)) {
@@ -96,15 +108,17 @@ function checkPage(contract) {
     }
   }
   const src = readFileSync(pagePath, 'utf8')
+  const publicNavGlobal = layoutOwnsPublicNav()
   const missing = []
   for (const comp of contract.requiredComponents) {
     // Match either:  import { ComponentName }   or  import ComponentName
     const pattern = new RegExp(
       `import\\s+(?:\\{[^}]*\\b${escapeRegex(comp.name)}\\b[^}]*\\}|${escapeRegex(comp.name)}(?:\\s*,|\\s+from))`,
     )
-    if (!pattern.test(src)) {
-      missing.push(comp)
-    }
+    if (pattern.test(src)) continue
+    // KbNav lives in layout via PublicNav — do not require page-level import.
+    if (comp.name === 'KbNav' && publicNavGlobal) continue
+    missing.push(comp)
   }
   return { ok: missing.length === 0, missing }
 }
