@@ -21,6 +21,9 @@
 | A9 public size | V | CoMarketSizeStrip + series |
 | A10 cron | V | rebuild-analytics-marts daily 08:15 UTC |
 | H5 explorer path | V | result_cache + mart + analyze_closed_sales_co RPC; no Node listings page |
+| H6 feature cubes | V | analytics_mart_feature_annual + getCoFeatureAnnual + history strip |
+| H8 inventory warehouse | V | analytics_inventory_snapshot + snapshot script + daily cron |
+| I4 Ryan brand share | V | getRyanBrandShare list+buy alias rollup on competition desk |
 
 ## Family status
 
