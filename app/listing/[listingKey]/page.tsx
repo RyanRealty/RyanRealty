@@ -37,7 +37,7 @@ import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistor
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
-import { ListingAlertCoach } from '@/components/site/listing-detail/ListingAlertCoach.client'
+import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
@@ -157,31 +157,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     path: canonicalPath,
     ogImage: `/api/og?type=listing&id=${encodeURIComponent(listing.listingKey)}`,
   })
-}
-
-// City-level geographic facts (no fabricated per-listing drive times). The old
-// version returned Bend distances ("12 minutes to downtown Bend") for EVERY
-// listing regardless of city — a Redmond/Sisters/La Pine home claimed Bend
-// proximity (CLAUDE.md §0 data-accuracy violation). These are unambiguous
-// city-level geographic relationships; a city without a verified line returns
-// null so the lifestyle line simply does not render rather than show a wrong one.
-const CITY_LIFESTYLE_LINE: Record<string, string> = {
-  bend: 'In Bend, the largest city in Central Oregon, between the high desert and the Cascades.',
-  redmond: 'In Redmond, at the center of the Central Oregon High Desert.',
-  sisters: 'In Sisters, at the foot of the Three Sisters.',
-  sunriver: 'In Sunriver, a Deschutes River resort community south of Bend.',
-  'la pine': 'In La Pine, high desert near the Cascade Lakes and Newberry National Volcanic Monument.',
-  tumalo: 'In Tumalo, just northwest of Bend.',
-  prineville: 'In Prineville, in the Crooked River valley.',
-  terrebonne: 'In Terrebonne, beneath Smith Rock State Park.',
-  'powell butte': 'In Powell Butte, ranch country between Bend and Prineville.',
-  madras: 'In Madras, near Lake Billy Chinook.',
-  'crooked river ranch': 'In Crooked River Ranch, high-desert canyon country north of Terrebonne.',
-}
-
-function buildLifestyleLine(listing: { city: string | null }): string | null {
-  const key = (listing.city ?? '').toLowerCase().trim()
-  return CITY_LIFESTYLE_LINE[key] ?? null
 }
 
 // Save/unsave a listing from the price strip. Returns needsAuth for a signed-out
@@ -590,8 +565,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
           listPrice={listing.listPrice}
           beds={listing.beds}
         />
-        {/* F4 soft next-step coach — 5s dwell, links to #listing-like-alerts; no dark patterns */}
-        <ListingAlertCoach city={listing.city} />
         <KbFooter towns={[]} listingKey={listing.listingKey} />
       </SmoothScrollProvider>
     </main>

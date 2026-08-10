@@ -4,7 +4,10 @@ import { priceBandAroundListPrice } from '@/lib/search/price-band'
 /**
  * Listing-detail B1 capture: city + price band (+ beds) for "homes like this."
  * Server-safe wrapper so app/listing page stays under the file-size budget.
- * `#listing-like-alerts` is the anchor for PriceCtaStrip + RoomRestyle CTAs (B4).
+ * `#listing-like-alerts` is the anchor for PriceCtaStrip + RoomRestyle + coach (E4).
+ *
+ * E4 craft: quiet full-width section so the strip reads as part of the page
+ * rhythm, not a bolted-on card under the footer.
  */
 export function ListingLikeThisAlerts({
   city,
@@ -17,7 +20,14 @@ export function ListingLikeThisAlerts({
 }) {
   if (!city) return null
   return (
-    <div id="listing-like-alerts">
+    <section
+      id="listing-like-alerts"
+      aria-label={`Listing alerts for ${city}`}
+      style={{
+        borderTop: '3px solid var(--navy)',
+        scrollMarginTop: '5.5rem',
+      }}
+    >
       <KbCommunityAlerts
         communityName={city}
         city={city}
@@ -29,6 +39,6 @@ export function ListingLikeThisAlerts({
         headline={`${city} homes like this`}
         body={`Email when a new ${city} home lists near this price${beds != null && beds > 0 ? ` with ${beds}+ beds` : ''}. Same alert engine as search and city pages.`}
       />
-    </div>
+    </section>
   )
 }

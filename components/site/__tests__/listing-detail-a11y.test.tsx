@@ -112,7 +112,10 @@ describe('F4 ListingAlertCoach source contract', () => {
     join(root, 'components/site/listing-detail/ListingAlertCoach.client.tsx'),
     'utf8',
   )
-  const page = readFileSync(join(root, 'app/listing/[listingKey]/page.tsx'), 'utf8')
+  const alerts = readFileSync(
+    join(root, 'components/site/listing-detail/ListingLikeThisAlerts.tsx'),
+    'utf8',
+  )
 
   it('is a soft coach: dwell timer + dismiss + anchor, no auto-form', () => {
     expect(coach).toMatch(/DWELL_MS\s*=\s*5000/)
@@ -122,8 +125,7 @@ describe('F4 ListingAlertCoach source contract', () => {
     expect(coach).not.toMatch(/submitSearchAlertSignup/)
   })
 
-  it('is wired on the listing page next to ListingLikeThisAlerts', () => {
-    expect(page).toMatch(/ListingAlertCoach/)
-    expect(page).toMatch(/ListingLikeThisAlerts/)
+  it('is mounted from ListingLikeThisAlerts (keeps listing page under LOC budget)', () => {
+    expect(alerts).toMatch(/ListingAlertCoach/)
   })
 })
