@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
 
 const STORAGE_KEY = 'rr-listing-alert-coach-dismissed'
 const DWELL_MS = 5000
@@ -8,7 +9,7 @@ const DWELL_MS = 5000
 /**
  * F4 soft next-step coach on listing detail.
  *
- * After 5s dwell (or when the user is near the page foot), show one cream bar:
+ * After 5s dwell, show one cream bar:
  * "Next step: get alerts for homes like this" → `#listing-like-alerts`.
  *
  * Rules (no dark patterns):
@@ -82,33 +83,33 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
     <div
       role="region"
       aria-label="Suggested next step"
-      className="fixed inset-x-0 bottom-0 z-40 pointer-events-none px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4 sm:pb-4"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-4 sm:pb-4"
+      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
     >
       <div
-        className="pointer-events-auto mx-auto flex max-w-xl items-center gap-3 rounded-sm border-2 border-primary bg-background px-3 py-2.5 shadow-md sm:px-4"
+        className="pointer-events-auto mx-auto flex max-w-xl items-center gap-3 rounded-sm border-2 px-3 py-2.5 shadow-md sm:px-4"
         style={{ borderColor: 'var(--navy)', background: 'var(--cream)', color: 'var(--navy)' }}
       >
         <p className="min-w-0 flex-1 text-sm leading-snug">
           <span className="font-semibold">Next step:</span>{' '}
           <a
             href="#listing-like-alerts"
-            className="font-semibold underline underline-offset-2 decoration-[color:var(--navy-12)] hover:decoration-[color:var(--navy)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--navy)]"
-            onClick={() => {
-              // Soft coach only: scroll to the real form; do not dismiss so user can re-tap if needed
-            }}
+            className="font-semibold underline underline-offset-2"
           >
             get alerts for homes like this
           </a>
-          <span className="text-muted-foreground"> — free, no account required.</span>
+          <span className="text-muted-foreground">. Free, no account required.</span>
         </p>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={dismiss}
-          className="shrink-0 rounded-sm px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--navy)]"
+          className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
           aria-label="Dismiss next step suggestion"
         >
           Not now
-        </button>
+        </Button>
       </div>
     </div>
   )
