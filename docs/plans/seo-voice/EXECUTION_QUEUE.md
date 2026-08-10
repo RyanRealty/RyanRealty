@@ -62,9 +62,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 ### Block B — Conversion 10× (G4) — primary lead lever
 
 4. [~] **B1 Capture product** — **2026-08-10 surface ship:** listing (city+price band+beds), neighborhood/OH/price-drops city inline capture; city alerts earlier; `alert_create` on KB form. Search sticky already. **Outcome still open:** enrollments ~6 until traffic proves lift.
-5. [ ] **B2 Saved search / save path** — off ~2; mid-browse identity where product allows
+5. [~] **B2 Saved search / save path** — **2026-08-10 surface:** navy SaveSearchButton + guest success confirmation on search + slug pages (`1e8cb1ec`). **Outcome open:** saved_searches ~2 until traffic.
 6. [ ] **B3 Valuation / CMA friction** — money-path lead paths working + measured
-7. [ ] **B4 Listing primary CTAs** — contact / tour / alert / restyle→next step
+7. [~] **B4 Listing primary CTAs** — **2026-08-10 surface:** PriceCtaStrip → `#listing-like-alerts`; RoomRestyle next-step alert + contact (`1e8cb1ec`). Tour/ask/save already on strip + broker CTA.
 8. [ ] **B5 LP alignment** — alerts LP + paid LPs consistent with capture model
 
 ### Block C — Discovery lock (G5)
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **B2 Saved search / save path** (L1 prod HTML blocked: site 403 from agent host) |
-| **THEN** | D2–D3 money-path verify · C3 hub residual · B3–B5 · Block E UI craft · rest of A–M |
-| **NOTE** | C2 `ci:seo-shell` forever-gate shipped; B1 surface on `48a72b74`; enrollment volume still open |
+| **NOW** | **B3 Valuation / CMA friction** |
+| **THEN** | B5 LP alignment · D2–D3 money-path verify · C3 hub residual · Block E UI craft · rest of A–M |
+| **NOTE** | B2+B4 surface code on `1e8cb1ec`; L1 still host 403; B1/B2/B4 outcome counts still cold |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 

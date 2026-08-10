@@ -47,6 +47,14 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 B2 + B4 surface ship
+- **B2:** Navy `SaveSearchButton` mid-browse on `/search` + `/homes-for-sale/[...slug]`; guest success panel (no silent close); trigger becomes "Search saved". Map/split keep SaveSearchButton; sticky `SearchAlertCapture` stays list-only (layout).
+- **B4:** `PriceCtaStrip` → `#listing-like-alerts`; `ListingLikeThisAlerts` anchor; `RoomRestyle` next-step inline alert (`submitSearchAlertSignup`) + broker contact. No invented §0 numbers.
+- **Code:** on main in `1e8cb1ec` (bundled with A1/G2/J2/J3 concurrent ship).
+- **Tests:** listing-detail-a11y + map-search-contracts B2/B4 asserts green.
+- **Snapshot:** listing_alerts **6**, saved_searches **2** (volume exit open).
+- **Pointer next:** B3 valuation/CMA friction.
+
 ### 2026-08-10 I3 + I5 competitive intelligence
 - **I3:** `data/analytics/office-brand-aliases.json` (30 curated groups); `bootstrap-dim-office.mjs` merges true aliases + `brand_family`; methodology `DIM_OFFICE_ENTITY_RESOLUTION.md`. Hosted dim multi-alias (Cascade SIR↔Sotheby's, KW C.O., RE/MAX Out West LLC, BHHS, John L Scott Bend+Redmond, Ryan variants). **No brand-level share invented** — mart ranks stay string-level until `office_id` join.
 - **I5:** `/admin/analytics/competition?office=` drills agents; office column links; CSV at `/admin/analytics/competition/export?kind=offices|agents`. Admin-only; I6 public naming locked.
