@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-10T20:12:27.221Z
+**Generated:** 2026-08-10T20:28:08.732Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 

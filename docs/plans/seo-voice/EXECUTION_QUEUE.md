@@ -166,11 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | Block E complete — next open units (F residual / Matt G3 / I6) |
-| **THEN** | Matt: G3 · I6 lock · J4 interactive restyle if needed |
-| **NOTE** | E1–E7 UI craft shipped. **not 10×** (alerts ~6). Blockers: G3, I6. J4 residual. |
-
-**UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
+| **NOW** | Outcome grind: **B1/B2 enrollment volume** (measure weekly) · optional guest F2 · brand-merged office_id mart join |
+| **THEN** | Matt: **G3** GA4 UI · **I6** public competitor names · J4 interactive restyle click |
+| **NOTE** | Executable inventory largely shipped or blocked. **not 10×** (alerts ~6). True remaining: outcomes + Matt locks + polish residuals. |
 
 ---
 
