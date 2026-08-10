@@ -18,6 +18,7 @@ import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { H2 } from '@/components/site/primitives'
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 3600
@@ -159,7 +160,7 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
 
           {featureCube && featureCube.rows.length > 0 ? (
             <div className="mt-10">
-              <h2 className="text-lg font-medium">Amenity share — CO {year}</h2>
+              <H2 className="text-lg font-medium">Amenity share for CO {year}</H2>
               <p className="mt-1 text-sm opacity-80">
                 Precomputed feature cubes (typed columns only). Region, all property types.
                 Not filtered by the form above.
