@@ -35,6 +35,7 @@
  */
 
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import {
   getMarketPulse,
   getCityMarketDetail,
@@ -223,7 +224,7 @@ export default async function SellPage() {
                 Prefer to talk first? Call{' '}
                 <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
                 . Dedicated written valuation page:{' '}
-                <a href="/sell/valuation">What&apos;s my home worth</a>.
+                <Link href="/sell/valuation">What&apos;s my home worth</Link>.
               </p>
             </>
           }
