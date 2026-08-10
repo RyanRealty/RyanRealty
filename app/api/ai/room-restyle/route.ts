@@ -1,6 +1,11 @@
 /**
  * POST /api/ai/room-restyle
  * Grok Imagine image edit: restyle a listing photo (visualization only).
+ *
+ * Rate / cost:
+ *   - `checkRateLimit(..., 'strict')` → ~10 req / 60s per IP (Upstash; fail-open if unset).
+ *   - Each success hits xAI images/edits (paid). Prefer interior photos client-side.
+ *   - Prefer one style at a time; UI surfaces the cap copy.
  */
 import { NextResponse } from 'next/server'
 import { checkRateLimit } from '@/lib/rate-limit'

@@ -90,22 +90,26 @@ Visitor lands
 
 ## 3. Weekly ritual (ops)
 
-**Cadence:** same day each week (e.g. Monday ops) — 15 minutes.
+**Cadence:** same day each week (e.g. Monday ops) — 10–15 minutes.  
+**Agent-runnable spine (G2):** `docs/plans/seo-voice/SCOREBOARD_RITUAL.md`  
+**Script (no Matt click):** `node scripts/analytics/scoreboard-snapshot.mjs`  
+Optional: `--append-verify-log` · `--json`
 
 | Step | Action | Pass criteria |
 |------|--------|----------------|
-| 1 | Open first-party: `/admin` live pulse or visitors live + `visitor_sessions` day count | Sessions ≫ 0; track order of magnitude (~thousands/day class) |
-| 2 | Open GSC performance (28d) | Clicks/impressions trend; note money queries |
-| 3 | Open GA4 real-time + last 7 days | Record users/sessions **as consented Google view only** |
-| 4 | Compute **ratio** first-party sessions ÷ GA4 sessions (same calendar window) | Log ratio. Do **not** declare traffic dead if ratio ≫ 1 |
-| 5 | Leads: CRM inbound + valuation_requests week | Lead volume independent of GA4 |
-| 6 | If ratio worse than last week | Run Tag Assistant / debug (§4) before product panic |
-| 7 | Log one line in growth or ops notes | `FP sessions / GA4 sessions / GSC clicks / leads` |
+| 1 | Run **scoreboard-snapshot** (FP 1d/7d/30d, engaged score≥2, alerts, saves, CO 2024 mart) | Sessions ≫ 0; order of magnitude stable |
+| 2 | Optional: `/admin` live pulse cross-check | Same class as script |
+| 3 | Open GSC performance (28d) — ops with access | Clicks/impressions trend; note money queries |
+| 4 | Open GA4 real-time + last 7 days | Record users/sessions **as consented Google view only** |
+| 5 | Compute **ratio** first-party sessions ÷ GA4 sessions (same calendar window) | Log ratio. Do **not** declare traffic dead if ratio ≫ 1 |
+| 6 | Leads: CRM inbound + valuation_requests week | Lead volume independent of GA4 |
+| 7 | If ratio worse than last week | Run Tag Assistant / debug (§4) before product panic |
+| 8 | Log one line in `VERIFY_LOG.md` Data probe snapshots | Script row or manual paste |
 
 **Scoreboard line template**
 
 ```
-Week of YYYY-MM-DD | FP sessions: N | GA4 users: N | GSC clicks: N | Leads: N | Ratio FP/GA4: x
+Week of YYYY-MM-DD | FP 1d/7d/30d: N/N/N | eng7d: N (x%) | alerts: T/A/+30d | saves: N | CO2024: sold/$B | [GA4 users: N | GSC clicks: N]
 ```
 
 ---

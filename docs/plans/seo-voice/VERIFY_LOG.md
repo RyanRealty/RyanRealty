@@ -46,6 +46,15 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 H5 History explorer — zero Node closed scans
+- **Unit:** EXECUTION_QUEUE H5.
+- **Architecture (Option A + C):** request path = `analytics_result_cache` → `analytics_mart_market_annual` (region + city grain) → `analyze_closed_sales_co` RPC (metrics only) → write cache. **Never pages `listings` from Node.**
+- **Migrations applied:** `20260810140000_analytics_result_cache_analyze_rpc.sql`, `20260810141000_analyze_closed_sales_co_fast.sql`.
+- **Rebuild:** 2024 city grain marts (71 region+city rows); 2024 parity 5707 / $3.931B.
+- **Smoke:** default 2024 → mart 5707; Bend → mart 2709; Bend SFR fireplace → RPC 1930 then cache hit; type B price band → RPC 28.
+- **Residual risk:** cache-miss still runs bounded SQL aggregate over closed rows (≤~700ms full year); not full row fan-out. City marts only rebuilt for 2024 so far (other years use RPC until next full rebuild). Property types B/C never use multi mart (exact letter only via RPC).
+- **Pointer next:** H6 feature cubes or rebuild city grain 2016–2025 on cron.
+
 ### 2026-08-10 A1 + G2 + J2/J3
 - **A1:** Live probe via service role → VERIFY_LOG Data probe row refreshed (FP 1d/7d/30d + eng + alerts + mart). Script: `scripts/analytics/scoreboard-snapshot.mjs` (`--json`, `--append-verify-log`).
 - **G2:** Weekly ritual agent-runnable: `docs/plans/seo-voice/SCOREBOARD_RITUAL.md` + MEASUREMENT_DUAL_SOURCE §3 points at script. Not Matt-click dependent.
