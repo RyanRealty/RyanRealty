@@ -79,6 +79,7 @@ import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbAreaGuideVideo } from '@/components/site/kb/KbAreaGuideVideo'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -478,35 +479,15 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"
         />
-        {/* Buyer path before seller: listing-alerts LP (city-scoped signup on
-            the LP). No invented neighborhood MLS filter — neighborhood
-            subdivision keys are not always 1:1 with MLS tags (§0). */}
-        <section className="section region" id="listing-alerts" aria-label={`Listing alerts for ${neighborhood.name}`}>
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">New listings</span>
-              <h2 className="sec-title display">
-                Get new {cityName}
-                <br />
-                listings by email
-              </h2>
-            </div>
-            <div className="max-w-xl pt-6 pb-12">
-              <p className="neigh-sub" style={{ margin: 0 }}>
-                Save a search for {cityName} homes
-                {neighborhood.name ? `, including ${neighborhood.name}` : ''}. New matches land in your inbox.
-              </p>
-              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
-                <a href="/lp/buyer-listing-alerts" className="btn">
-                  Get listing alerts <span className="arr" aria-hidden="true">→</span>
-                </a>
-                <a href={`/homes-for-sale/${citySlug}`} className="btn ghost">
-                  See {cityName} homes
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Buyer path before seller: inline city-scoped capture (same listing_alerts
+            path as search). No invented neighborhood MLS filter — neighborhood
+            keys are not always 1:1 with MLS tags (§0). */}
+        <KbCommunityAlerts
+          communityName={cityName}
+          city={cityName}
+          subdivision=""
+          body={`Save a search for ${cityName} homes${neighborhood.name ? `, including ${neighborhood.name}` : ''}. New matches land in your inbox.`}
+        />
         {/* Convert before trust, and BOTH before the exit links. */}
         <KbSell
           data={{

@@ -6,27 +6,36 @@ import { BellAlertIcon } from '@heroicons/react/24/outline'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { buildAlertCreatePayload } from '@/lib/search/search-events'
+import { fireSearchEvent } from '@/components/search/search-events.client'
 
 /**
- * KB Community Alerts — inline email capture for community pages.
+ * KB listing-alert email capture (city, community, listing, OH, price-drops).
  *
- * Reuses the existing guest listing-alert backend (`submitSearchAlertSignup`
- * + the unified `listing_alerts` table). Prefills city + subdivision from the
- * community registry so the captured alert matches the page the visitor
- * is looking at. No new backend wiring — same server action, same DB table,
- * same FUB integration that SearchAlertCapture uses on /search.
+ * Reuses `submitSearchAlertSignup` + unified `listing_alerts`. Prefills filters
+ * so the alert matches the page. Optional extraFilters (beds, price band) support
+ * listing "homes like this" capture without a new backend.
  *
- * KB design register: navy background, cream text, hard borders — consistent
- * with the KB section library (kb.css `.comm-alerts-*` classes).
+ * KB register: navy ground, cream text — `.comm-alerts-*` in kb.css.
  */
 export function KbCommunityAlerts({
   communityName,
   city,
-  subdivision,
+  subdivision = '',
+  extraFilters,
+  headline,
+  body,
 }: {
   communityName: string
   city: string
-  subdivision: string
+  /** Empty string = whole city (no subdivision filter). */
+  subdivision?: string
+  /** Extra narrowing filters (beds, minPrice, maxPrice, propertyType, …). Strings only. */
+  extraFilters?: Record<string, string>
+  /** Override H2 first line target name (defaults to communityName). */
+  headline?: string
+  /** Override supporting sentence. */
+  body?: string
 }) {
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('') // honeypot — humans never see this
@@ -37,7 +46,13 @@ export function KbCommunityAlerts({
   const filters: Record<string, string> = {
     city,
     ...(subdivision ? { subdivision } : {}),
+    ...(extraFilters ?? {}),
   }
+
+  const titleTarget = headline ?? communityName
+  const support =
+    body ??
+    `Enter your email. When a home hits the market in ${communityName}, you hear first.`
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -47,6 +62,8 @@ export function KbCommunityAlerts({
       const res = await submitSearchAlertSignup({ email, filters, company })
       if (res.ok) {
         setState('done')
+        // Same alert_create event as SearchAlertCapture (measurement parity).
+        fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))
       } else {
         setState('error')
         setErrorMsg(res.error)
@@ -75,16 +92,13 @@ export function KbCommunityAlerts({
         <div className="comm-alerts-copy">
           <span className="sec-index">New listings</span>
           <h2 className="comm-alerts-h display">
-            Get new {communityName}
+            Get new {titleTarget}
             <br />
             listings by email
           </h2>
-          <p className="comm-alerts-p">
-            Enter your email. When a home hits the market in {communityName}, you hear first.
-          </p>
+          <p className="comm-alerts-p">{support}</p>
         </div>
         <form className="comm-alerts-form" onSubmit={onSubmit} noValidate>
-          {/* Honeypot: visually + a11y hidden, not tab-reachable. Bots fill it. */}
           <Input
             type="text"
             name="company"

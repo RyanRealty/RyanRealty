@@ -32,6 +32,7 @@ import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -244,33 +245,13 @@ export default async function OpenHousesCityPage({
             subtitle={`Every open house in ${cityName} with a pin.`}
           />
         ) : null}
-        {/* Buyer conversion — listing alerts LP + city inventory (same dual
-            path as the open-houses hub and price-drops hub). */}
-        <section className="section region" id="listing-alerts" aria-label={`Listing alerts for ${cityName}`}>
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">New listings</span>
-              <h2 className="sec-title display">
-                Get new {cityName}
-                <br />
-                homes by email
-              </h2>
-            </div>
-            <div className="max-w-xl pt-6 pb-12">
-              <p className="neigh-sub" style={{ margin: 0 }}>
-                Save a search for {cityName}. New matches land in your inbox as they list.
-              </p>
-              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
-                <a href="/lp/buyer-listing-alerts" className="btn">
-                  Get listing alerts <span className="arr" aria-hidden="true">→</span>
-                </a>
-                <a href={`/homes-for-sale/${citySlug}`} className="btn ghost">
-                  See {cityName} homes
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Buyer conversion — inline city-scoped listing_alerts capture (B1). */}
+        <KbCommunityAlerts
+          communityName={cityName}
+          city={cityName}
+          subdivision=""
+          body={`Save a search for ${cityName}. New matches land in your inbox as they list.`}
+        />
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,

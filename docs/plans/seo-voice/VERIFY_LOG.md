@@ -38,10 +38,17 @@
 
 | Metric | Value | Ticket |
 |--------|------:|--------|
-| listing_alerts | 6 | SearchAlertCapture on /search; LP exists; rate cold not missing wire |
+| listing_alerts | 6 | Snapshot 2026-08-10 pre/post B1 surface ship; count unchanged at ship time |
 | saved_searches | 2 | same |
 
 ## Session notes (newest first)
+
+### 2026-08-10 B1 capture surface ship (grind start)
+- **Unit:** EXECUTION_QUEUE B1 (partial — surfaces, not enrollment volume).
+- **Shipped:** Inline `KbCommunityAlerts` on listing detail (city + price band + beds), neighborhood pages (city-scoped), open-houses/[city], price-drops/[city]; city page alerts moved earlier (after open houses); `extraFilters` + `alert_create` event; `lib/search/price-band.ts` + unit test.
+- **Already present:** sticky SearchAlertCapture on /search; city/community KB capture; buyer LP.
+- **Snapshot:** listing_alerts still **6** at ship (expect lift only after prod traffic).
+- **Pointer next:** L1 prod browser proof, then B2 / outcome watch on B1.
 
 ### 2026-08-10 /endtoend complete (analytics MVP)
 - **Shipped main:** `e0e15833` (stack from `d876b9a9`).

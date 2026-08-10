@@ -46,8 +46,9 @@
 - No multi-week “roadmap theater.”  
 - Don’t thin sitemap; don’t rebrand.
 
-### Done means (from EXECUTION_QUEUE)
-Public 10× path + analytics platform (marts, size/composition, competitive admin) + gates green + VERIFY_LOG current.
+### Done means (from EXECUTION_QUEUE — U32)
+**All** plan blocks execute: conversion, F-family verify, **design/UI craft (G7)**, engagement, measurement ops, analytics residual, competitive truth, AI restyle polish, voice residual, authority flywheel.  
+Not: analytics MVP only. Incomplete units need a logged external blocker — not silent “stretch.”
 
 ---
 

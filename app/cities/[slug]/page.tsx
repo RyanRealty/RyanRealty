@@ -524,15 +524,14 @@ export default async function CityDetailPage({ params }: Props) {
         ) : null}
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={cityName} posterSrc={heroPosterSrc} />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
-        <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
-        {/* Buyer listing alerts — city-scoped email capture (same backend as
-            community pages / search). Empty subdivision = every new listing in
-            this city. Sits before KbSell so buy intent converts first. */}
+        {/* Buyer listing alerts earlier in the funnel (B1): after inventory
+            moments, before activity scroll. City-scoped; empty subdivision. */}
         <KbCommunityAlerts
           communityName={cityName}
           city={cityName}
           subdivision=""
         />
+        <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,

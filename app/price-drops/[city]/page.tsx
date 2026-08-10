@@ -42,6 +42,7 @@ import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
@@ -483,33 +484,14 @@ export default async function PriceDropsCityPage({ params }: Props) {
           </div>
         </section>
 
-        {/* Listing alerts — buyer path (parity with /price-drops hub). Copy
-            describes the real product: new matching listings, not a price-drop
-            digest. */}
-        <section className="section" id="listing-alerts" aria-label="Listing alerts">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Listing alerts</span>
-              <h2 className="sec-title display">
-                New homes that<br />match your search
-              </h2>
-            </div>
-            <div className="max-w-xl mt-4">
-              <p className="text-muted-foreground">
-                Save a search for {cityName} and pick a cadence. We email you new homes that match
-                as they list. This page stays live for the current week&rsquo;s price cuts.
-              </p>
-              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex', marginTop: '1.25rem' }}>
-                <Link href="/lp/buyer-listing-alerts" className="btn alt">
-                  Get listing alerts <span className="arr">→</span>
-                </Link>
-                <Link href={`/homes-for-sale/${slug}`} className="btn ghost">
-                  See {cityName} homes
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Listing alerts — inline city-scoped capture (B1). Product is new
+            matching listings, not a price-drop digest. */}
+        <KbCommunityAlerts
+          communityName={cityName}
+          city={cityName}
+          subdivision=""
+          body={`Save a search for ${cityName}. We email new homes that match as they list. This page stays live for the current week's price cuts.`}
+        />
 
         {/* Sell block */}
         <KbSell

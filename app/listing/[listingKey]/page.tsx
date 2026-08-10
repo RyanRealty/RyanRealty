@@ -36,6 +36,7 @@ import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
+import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
@@ -60,18 +61,9 @@ import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import '@/components/site/kb/kb.css'
 
-// PhotoGalleryLightbox is referenced for parity-gate coverage (D75);
-// the actual consumer is <ListingHero>, which renders it. Re-exporting
-// the name here keeps the parity contract satisfied without changing
-// runtime behavior. The underscore prefix silences `no-unused-vars`.
+// Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
-// TextMattCTA is the mockup-spec sidebar CTA (D75 parity gate). The listing page
-// uses ListingBrokerCTA as the functional implementation (it supports broker
-// attribution and lock-to-default). TextMattCTA is kept in scope so the parity
-// gate D75 is satisfied; it is available for direct render when needed.
 void _TextMattCTAImport
-// ListingMobileContactBar renders via ListingBrokerCTA.client; kept in scope for
-// the parity gate.
 void ListingMobileContactBar
 
 /**
@@ -576,9 +568,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
       />
       <KbSectionTracker pageType="listing" />
       <SmoothScrollProvider>
-        {/* No top spacer: the hero is now the first thing, full-bleed under the
-            fixed KbNav (immersive, nav overlays the dark photo) — matching every
-            other KB page. */}
         <ListingDetailShell
           listing={listingWithPhotos}
           breadcrumbs={breadcrumbs}
@@ -586,11 +575,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
           main={main}
           sidebar={sidebar}
         />
-        {/* "Similar homes" = the canonical featured rail scoped to THIS listing's
-            subdivision/neighborhood (city fallback), footer-linked to the rest. */}
         {featuredItems.length > 0 ? (
           <KbFeatured items={featuredItems} eyebrow={`${featuredGeoName} · For sale`} viewAllHref={featuredViewAllHref} viewAllLabel={`See every ${featuredGeoName} home for sale`} />
         ) : null}
+        <ListingLikeThisAlerts
+          city={listing.city}
+          listPrice={listing.listPrice}
+          beds={listing.beds}
+        />
         <KbFooter towns={[]} listingKey={listing.listingKey} />
       </SmoothScrollProvider>
     </main>
