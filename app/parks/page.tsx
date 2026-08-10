@@ -21,7 +21,6 @@ import { getParks, getParksCount } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -54,7 +53,6 @@ export default function ParksIndexPage() {
   return (
     <main className="kb-root">
       <ParksIndexStyles />
-      <KbNav />
       <KbSectionTracker pageType="parks" />
       <MetadataBlock
         schemas={[

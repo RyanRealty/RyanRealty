@@ -85,7 +85,6 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
@@ -106,6 +105,7 @@ import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbBuyCta } from '@/components/site/kb/KbBuyCta.client'
 import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbSchools } from '@/components/site/kb/KbSchools'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'; import { MarketSources } from '@/components/site/MarketSources'
@@ -723,7 +723,6 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <CommunityPageTracker
         slug={slug}
         communityName={community.name}
@@ -751,7 +750,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           }}
           eyebrow={communityLabel}
           titleTop={`${community.name},`}
-          titleBottom="the list right now."
+          titleBottom="Homes for Sale"
           // KbHero prefixes "<N> homes for sale" when activeCount is known.
           // Full sentence only when the count is unknown — never double the place name.
           lead={
@@ -898,6 +897,20 @@ export default async function CommunityDetailPage({ params }: Props) {
           communityName={community.name}
           city={cityName}
           subdivision={community.subdivision}
+        />
+        {/* Seller conversion — address capture hands off to /sell/valuation
+            (same KbSell path as city / open-house / market pages). Lives after
+            buyer CTAs so each audience gets a dedicated block. Figures from
+            community-scoped pulse with region fallback when local is null. */}
+        <KbSell
+          data={{
+            medianListPrice: medianListPrice ?? regionPulse?.medianListPrice ?? null,
+            medianDaysToPending:
+              pulse?.medianDaysToPending ?? regionPulse?.medianDaysToPending ?? null,
+            // pulse (getMarketPulse) → closedLast30Days; region (getRegionPulse) → soldCount30d
+            soldCount30d: pulse?.closedLast30Days ?? regionPulse?.soldCount30d ?? null,
+          }}
+          eyebrow={`Sell in ${community.name}`}
         />
         {/* Second-home / investment note — resort pages only. Generic framing:
             confirms the community is a popular second-home / vacation destination

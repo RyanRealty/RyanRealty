@@ -5,7 +5,6 @@ import { tileToCardData } from '@/lib/site/listing-card'
 import HideAwareVideoGrid, { type HideAwareVideoItem } from '@/components/site/HideAwareVideoGrid'
 import type { ListingCardData } from '@/components/site/ListingCard'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -158,7 +157,6 @@ export default async function VideosPage({
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="media" />
 
       {/* AEO: the video-tour homes as a structured ItemList so an answer engine

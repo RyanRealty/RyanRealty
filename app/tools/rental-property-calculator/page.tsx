@@ -25,7 +25,6 @@ import type { Metadata } from 'next'
 import RentalCalculator from '@/components/tools/RentalCalculator'
 import { getCalculatorDefaults } from '@/lib/data'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -118,7 +117,6 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="tools" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
@@ -136,8 +134,8 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Before you buy a rental"
-          titleTop="Does the rent"
-          titleBottom="cover the costs?"
+          titleTop="Rental Property"
+          titleBottom="Calculator"
           lead="Price, financing, rent, and expenses. You get cash flow, cap rate, cash-on-cash return, and how equity builds on a long hold."
           videoSrc={null}
           posterSrc="/images/lp/hero-pond.jpg"

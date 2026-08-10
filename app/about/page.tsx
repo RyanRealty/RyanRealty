@@ -4,9 +4,9 @@
  *
  * Reuses the SAME section library as the homepage, city, and community pages
  * (components/site/kb/*) — single source of truth, never forked (ci:kb-single-source G50).
- * KbNav + KbFooter carry the chrome. HideChrome should suppress the default
- * SiteHeader/SiteFooter for this route (SKIPPED — shared-component change,
- * orchestrator to handle).
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
  * Voice (CLAUDE.md §3 + VOICE.md Five Laws): show, don't say. No stated virtues,
  * no headcount/smallness positioning, no overt category claims. Every claim is
@@ -28,10 +28,10 @@
  *   KB design + SEO (pageMetadata + MetadataBlock JSON-LD: Organization/AboutPage/
  *   Breadcrumb + FAQPage) + tracking (KbSectionTracker). Every figure live (§0).
  *
- * Section stack: KbNav · KbBreadcrumb · KbHero · KbAbout · KbExploreTowns ·
- *   KbTestimonials · team-link (CTA to /team, design-audit #169 -- /team
- *   already owns the full broker grid) · KbArticles · KbSell · FAQBlock ·
- *   KbFooter.
+ * Section stack: (global PublicNav) · KbBreadcrumb · KbHero · KbAbout ·
+ *   KbExploreTowns · KbTestimonials · team-link (CTA to /team, design-audit
+ *   #169 -- /team already owns the full broker grid) · KbArticles · KbSell ·
+ *   FAQBlock · KbFooter.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/about/parity.json (KB set).
  */
@@ -44,7 +44,6 @@ import { getSurfaceImage, getRecentBlogPosts, getRegionPulse } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
@@ -221,7 +220,6 @@ export default async function AboutPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="about" />
       <MetadataBlock
         schemas={[

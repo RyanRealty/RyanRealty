@@ -3,8 +3,9 @@
 /**
  * HideOnLP — client-side route gate that hides public chrome on /lp/* and
  * /admin routes. Admin carries its own header + nav (AdminHeader,
- * AdminSidebar/AdminMobileNav); stacking the public SiteHeader above it
- * double-spent ~140px of phone viewport and put two hamburgers on screen
+ * AdminSidebar/AdminMobileNav). PublicNav (root layout → KbNav) also
+ * self-hides on those paths; HideOnLP still gates JSON-LD / skip-link /
+ * client islands so LP and admin stay distraction-free
  * (fixed 2026-06-10, Matt report).
  *
  * We can't use `headers()` in the root layout for LP detection: that call
@@ -29,41 +30,31 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
   // no marketing nav, no "Sign in" prompt, no footer. It carries its own
   // minimal Ryan Realty branding (see components/tc/pdf-sign/SignFlow.tsx).
   if (pathname?.startsWith("/sign/")) return null
-  // /concept/* — KB design-preview surfaces carry their own KB chrome (KbNav +
-  // the KB footer section); the default site header/footer would double up.
+  // /concept/* — design-preview surfaces; hide marketing client islands
+  // (PublicNav also self-hides on non-public shells via its own predicate).
   if (pathname?.startsWith("/concept/")) return null
   return <>{children}</>
 }
 
 /**
- * HideChrome — like HideOnLP, but ALSO hides on the homepage "/". The homepage
- * is the kinetic-brutalist design and carries its own chrome (KbNav + the KB
- * footer section), so the default SiteHeader would double up.
+ * HideChrome — legacy CSS visibility gate (display: contents vs none).
  *
- * Use this ONLY for the header. SiteFooter no longer routes through this gate:
- * it used to, which shipped a hidden 48-link <footer> in the HTML of every
- * KB/LP/admin page. The footer is now rendered server-side by exactly the
- * routes that show it (enforced by scripts/check-default-chrome-footer.mjs).
- * Everything else the layout wraps in HideOnLP (the site-wide JSON-LD,
- * VisitTracker, auth bridges, skip-link) MUST keep running on the homepage —
- * it is the highest-traffic page — so those stay on plain HideOnLP, which does
- * NOT hide "/".
+ * Dual-chrome kill (Matt 2026-08-10): app/layout.tsx no longer mounts
+ * SiteHeader. The single public header is PublicNav → KbNav from
+ * lib/site-nav.ts (Buy · Areas · Market · Sell · About). Pages must NOT
+ * re-mount KbNav; do not "fix double chrome" by adding HideChrome around a
+ * second header — remove the second mount instead.
  *
- * The route predicate lives in @/lib/site/chrome-routes (pure, unit-tested).
+ * Still exported because app/not-found.tsx wraps SiteFooter here (404s can
+ * land on any pathname; the gate keeps the default footer off KB/LP/admin
+ * paths). shouldHideDefaultChrome in @/lib/site/chrome-routes remains the
+ * predicate. SiteFooter on real pages is route-owned
+ * (scripts/check-default-chrome-footer.mjs) — never re-mount a global hidden
+ * footer in layout.
  *
- * DO NOT toggle the header's MOUNT STATE (returning `null` vs `children`). That
- * pattern raced during App Router soft-navigation and mid-deploy hydration skew
- * and left a STALE duplicate <header> in the DOM — the "double nav" Matt reported
- * 2026-07-11 (two identical navy SiteHeaders stacked on /homes-for-sale). The
- * SiteHeader is an async server component whose HTML always ships in the RSC
- * payload; unmounting it on hydration is exactly the add/remove that duplicates.
- *
- * Instead keep a STRUCTURALLY STABLE wrapper node that is never added or removed,
- * and toggle visibility with CSS. `display: contents` when shown means the wrapper
- * generates no box, so the child <header>'s `position: sticky` behaves exactly as
- * if the wrapper weren't there; `display: none` when hidden removes it from the
- * render tree without unmounting. React only flips one inline style on a stable
- * node — it can never duplicate the element.
+ * If anything ever re-wraps default chrome: keep a STRUCTURALLY STABLE
+ * wrapper and toggle CSS only — never unmount on hydration (the 2026-07-11
+ * double-header bug was mount-toggle of an async server header).
  */
 export function HideChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

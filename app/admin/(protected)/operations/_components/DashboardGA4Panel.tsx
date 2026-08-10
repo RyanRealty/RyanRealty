@@ -60,6 +60,7 @@ export default async function DashboardGA4Panel() {
       <div className="space-y-4">
         <p style={bodySm}>
           Last 30 days with acquisition, social channel performance, and lead-event tracking so you can optimize for more seller leads.
+          {' '}GA4 is consent-gated and undercounts vs first-party — use <code style={codeChip}>visitor_sessions</code> / live visitors as primary traffic (see docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md).
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div style={statTile}>

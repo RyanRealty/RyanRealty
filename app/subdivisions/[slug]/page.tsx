@@ -50,7 +50,6 @@ import { cityHero } from '@/lib/geo-images'
 import resortCommunitiesData from '@/data/resort-communities.json'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
@@ -136,7 +135,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // thin plat pages never dilute the programmatic-page quality signal.
   const indexable = await isSubdivisionIndexable(slug)
   return pageMetadata({
-    title: `${name} homes for sale | ${city}, Oregon`,
+    title: `Homes for Sale in ${name} | ${city}, Oregon`,
     description: `Active homes in ${name}, a subdivision in ${city}. Boundary map and live MLS listings.`,
     path: `/subdivisions/${slug}`,
     noindex: !indexable,
@@ -455,7 +454,6 @@ export default async function SubdivisionPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="subdivision" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb
@@ -482,7 +480,7 @@ export default async function SubdivisionPage({ params }: Props) {
           }}
           eyebrow={eyebrow}
           titleTop={`${displayName},`}
-          titleBottom="the list right now."
+          titleBottom="Homes for Sale"
           lead={lede}
           videoSrc={null}
           posterSrc={posterSrc}

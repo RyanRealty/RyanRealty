@@ -64,7 +64,6 @@ import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeo
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
@@ -393,7 +392,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="neighborhood" />
       <MetadataBlock schemas={neighborhoodSchemas} />
       <KbBreadcrumb
@@ -413,7 +411,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           }}
           eyebrow={neighborhoodLabel}
           titleTop={neighborhood.name}
-          titleBottom="on the market now."
+          titleBottom="Homes for Sale"
           lead={`in ${cityName}. List prices and days on market, pulled live.`}
           videoSrc={null}
           posterSrc={heroPhoto}
@@ -480,6 +478,35 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"
         />
+        {/* Buyer path before seller: listing-alerts LP (city-scoped signup on
+            the LP). No invented neighborhood MLS filter — neighborhood
+            subdivision keys are not always 1:1 with MLS tags (§0). */}
+        <section className="section region" id="listing-alerts" aria-label={`Listing alerts for ${neighborhood.name}`}>
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">New listings</span>
+              <h2 className="sec-title display">
+                Get new {cityName}
+                <br />
+                listings by email
+              </h2>
+            </div>
+            <div className="max-w-xl pt-6 pb-12">
+              <p className="neigh-sub" style={{ margin: 0 }}>
+                Save a search for {cityName} homes
+                {neighborhood.name ? `, including ${neighborhood.name}` : ''}. New matches land in your inbox.
+              </p>
+              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
+                <a href="/lp/buyer-listing-alerts" className="btn">
+                  Get listing alerts <span className="arr" aria-hidden="true">→</span>
+                </a>
+                <a href={`/homes-for-sale/${citySlug}`} className="btn ghost">
+                  See {cityName} homes
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
         {/* Convert before trust, and BOTH before the exit links. */}
         <KbSell
           data={{

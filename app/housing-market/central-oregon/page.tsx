@@ -51,7 +51,6 @@ import { getSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { KbMarketData, KbTownItem } from '@/components/site/kb/types'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
@@ -406,7 +405,6 @@ export default async function CentralOregonRegionPage() {
           KbBreadcrumb has no JSON-LD of its own. FAQPage emitted by FAQBlock. */}
       <MetadataBlock schemas={schemas} />
 
-      <KbNav />
       <KbSectionTracker pageType="market-report" />
 
       {/* BreadcrumbList visual — Home > Housing market > Central Oregon */}
@@ -427,8 +425,8 @@ export default async function CentralOregonRegionPage() {
             medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
           }}
           eyebrow="Central Oregon · Oregon"
-          titleTop="The region,"
-          titleBottom="as the numbers read."
+          titleTop="Central Oregon"
+          titleBottom="market report"
           lead={lede}
           posterSrc={heroPhoto ?? undefined}
         />

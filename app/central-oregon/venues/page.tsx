@@ -16,7 +16,6 @@ import { VENUE_TYPE_LABEL, type CoVenue } from '@/data/co-venues'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -80,7 +79,6 @@ export default function VenuesIndexPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="venues" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb

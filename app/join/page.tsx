@@ -38,7 +38,6 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -210,7 +209,6 @@ export default async function JoinPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="join" />
 
       <MetadataBlock

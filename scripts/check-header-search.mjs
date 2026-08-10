@@ -1,34 +1,29 @@
 #!/usr/bin/env node
 /**
- * check-header-search.mjs — ci:header-search (W4.1).
+ * check-header-search.mjs — ci:header-search (W4.1 + 2026-08-10 dual-chrome kill).
  *
- * "Global header search on every page" only holds if BOTH top-level site chromes
- * carry it. The KB-nav chrome (components/site/kb/KbNav.client.tsx) always did;
- * the DEFAULT chrome (components/site/SiteHeader.tsx) did not, so /dashboard,
- * /account, the auth pages, /feed, and the legal pages had no search anywhere in
- * their header. This gate keeps both chromes wired to the ONE shared suggestions
- * engine (components/search/SearchSuggest) so neither can silently lose search.
+ * Public chrome is a single surface: PublicNav → KbNav, which must carry the
+ * shared SearchSuggest engine. SiteHeader is no longer mounted in app/layout
+ * (account/dashboard use their own shells).
  *
  * Asserts:
- *   1. SiteHeader.tsx renders <SiteHeaderSearch/> (the default chrome has search).
- *   2. SiteHeaderSearch.client.tsx imports the shared engine from
- *      @/components/search/SearchSuggest (uses the ONE engine, never a copy).
- *   3. KbNav.client.tsx imports the shared engine too.
+ *   1. app/layout.tsx mounts <PublicNav /> (or <KbNav />).
+ *   2. KbNav.client.tsx imports the shared engine from SearchSuggest.
+ *   3. If SiteHeader.tsx still exists and is imported by a live layout, it must
+ *      still render SiteHeaderSearch (defensive — currently not in root layout).
  *
- * AST-based (docs: reference_code_inspecting_gates_use_ast) — parses with the
- * TypeScript compiler, never a regex over source.
- *
- * Exit: 0 = both chromes carry the shared search engine, 1 = a chrome lost it.
+ * Exit: 0 = public chrome has search, 1 = search was lost.
  */
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import ts from 'typescript'
 
 const ENGINE = '@/components/search/SearchSuggest'
+const LAYOUT = 'app/layout.tsx'
+const PUBLIC_NAV = 'components/site/PublicNav.client.tsx'
+const KB_NAV = 'components/site/kb/KbNav.client.tsx'
 const SITE_HEADER = 'components/site/SiteHeader.tsx'
 const SITE_HEADER_SEARCH = 'components/site/SiteHeaderSearch.client.tsx'
-const KB_NAV = 'components/site/kb/KbNav.client.tsx'
-const MOBILE_NAV = 'components/site/MobileNav.tsx'
 
 const problems = []
 
@@ -41,7 +36,6 @@ function parse(rel) {
   return ts.createSourceFile(rel, readFileSync(p, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
 }
 
-/** Does the source value-import at least one binding from `moduleSpec`? */
 function importsFrom(sf, moduleSpec) {
   let found = false
   const visit = (node) => {
@@ -60,7 +54,6 @@ function importsFrom(sf, moduleSpec) {
   return found
 }
 
-/** Does the source render a JSX element named `tag` (self-closing or open)? */
 function rendersJsx(sf, tag) {
   let found = false
   const nameOf = (n) => (ts.isIdentifier(n) ? n.text : n.getText(sf))
@@ -73,73 +66,56 @@ function rendersJsx(sf, tag) {
   return found
 }
 
-// 1. SiteHeader renders <SiteHeaderSearch/>.
-const header = parse(SITE_HEADER)
-if (header && !rendersJsx(header, 'SiteHeaderSearch')) {
+const layout = parse(LAYOUT)
+if (layout && !rendersJsx(layout, 'PublicNav') && !rendersJsx(layout, 'KbNav')) {
   problems.push(
-    `${SITE_HEADER}: does not render <SiteHeaderSearch/> — the default chrome (dashboard, account, auth, feed, legal pages) would have NO header search. Render the shared search widget.`,
+    `${LAYOUT}: does not mount <PublicNav /> (or <KbNav />) — public pages would have no header search.`,
   )
 }
 
-// 2. SiteHeaderSearch uses the shared engine (not a copy).
-const widget = parse(SITE_HEADER_SEARCH)
-if (widget && !importsFrom(widget, ENGINE)) {
-  problems.push(
-    `${SITE_HEADER_SEARCH}: does not import the shared suggestions engine from ${ENGINE}. Header search must reuse the ONE engine (useSearchSuggest / SearchSuggestPanel), never a second copy.`,
-  )
+const publicNav = parse(PUBLIC_NAV)
+if (publicNav && !importsFrom(publicNav, '@/components/site/kb/KbNav.client') && !rendersJsx(publicNav, 'KbNav')) {
+  // PublicNav may import KbNav as named export — check import path loosely via source text
+  const src = readFileSync(join(process.cwd(), PUBLIC_NAV), 'utf8')
+  if (!src.includes('KbNav')) {
+    problems.push(`${PUBLIC_NAV}: does not render KbNav — public header lost.`)
+  }
 }
 
-// 3. KbNav chrome uses the shared engine too.
 const kb = parse(KB_NAV)
 if (kb && !importsFrom(kb, ENGINE)) {
-  problems.push(`${KB_NAV}: no longer imports the shared suggestions engine from ${ENGINE} — the KB chrome lost search.`)
-}
-
-/** Does the source render a JSX <form> carrying role="search"? */
-function hasSearchForm(sf) {
-  let found = false
-  const attrsOf = (node) => (ts.isJsxSelfClosingElement(node) ? node.attributes : node.attributes)
-  const isForm = (node) => {
-    const tag = ts.isJsxSelfClosingElement(node) ? node.tagName : node.tagName
-    return ts.isIdentifier(tag) && tag.text === 'form'
-  }
-  const visit = (node) => {
-    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && isForm(node)) {
-      for (const attr of attrsOf(node).properties) {
-        if (
-          ts.isJsxAttribute(attr) &&
-          ts.isIdentifier(attr.name) &&
-          attr.name.text === 'role' &&
-          attr.initializer &&
-          ts.isStringLiteral(attr.initializer) &&
-          attr.initializer.text === 'search'
-        ) {
-          found = true
-        }
-      }
-    }
-    ts.forEachChild(node, visit)
-  }
-  visit(sf)
-  return found
-}
-
-// 4. The DEFAULT-chrome MOBILE nav carries a header search entry too (the
-//    desktop widget is `hidden md:block`, so sub-md pages need their own).
-const mobile = parse(MOBILE_NAV)
-if (mobile && !hasSearchForm(mobile)) {
   problems.push(
-    `${MOBILE_NAV}: no <form role="search"> — the default-chrome mobile header (dashboard, account, auth, feed, legal pages at sub-md) would have NO search. Add a mobile search entry.`,
+    `${KB_NAV}: no longer imports the shared suggestions engine from ${ENGINE} — public chrome lost search.`,
   )
 }
 
-console.log('Global header-search gate (ci:header-search)')
-console.log('============================================')
+// Defensive: if SiteHeader is still mounted from any app layout, it must keep search.
+const layoutFiles = ['app/layout.tsx', 'app/account/layout.tsx', 'app/dashboard/layout.tsx']
+let siteHeaderMounted = false
+for (const rel of layoutFiles) {
+  const p = join(process.cwd(), rel)
+  if (!existsSync(p)) continue
+  if (readFileSync(p, 'utf8').includes('SiteHeader')) siteHeaderMounted = true
+}
+if (siteHeaderMounted) {
+  const header = parse(SITE_HEADER)
+  if (header && !rendersJsx(header, 'SiteHeaderSearch')) {
+    problems.push(
+      `${SITE_HEADER}: still mounted but missing <SiteHeaderSearch/> — restore search on that chrome.`,
+    )
+  }
+  const widget = parse(SITE_HEADER_SEARCH)
+  if (widget && !importsFrom(widget, ENGINE)) {
+    problems.push(`${SITE_HEADER_SEARCH}: must import shared engine ${ENGINE}.`)
+  }
+}
+
 if (problems.length) {
-  console.error('\nA site chrome is missing the shared header search:')
-  for (const p of problems) console.error(`  ✗ ${p}`)
-  console.error(`\n\x1b[31m✗ ci:header-search: ${problems.length} problem(s).\x1b[0m`)
+  console.error('Global header-search gate FAILED:\n')
+  for (const p of problems) console.error(`  • ${p}`)
   process.exit(1)
 }
-console.log('✓ Both site chromes (SiteHeader + KbNav) carry the shared search engine.')
+console.log('Global header-search gate (ci:header-search)')
+console.log('============================================')
+console.log('✓ Public chrome (PublicNav → KbNav) carries the shared search engine.')
 process.exit(0)

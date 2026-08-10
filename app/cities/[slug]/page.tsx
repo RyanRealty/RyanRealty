@@ -2,9 +2,11 @@
  * City page — KB (kinetic-brutalist) design, Phase 9 wave 1 of the convergence
  * program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME section library as the
  * homepage (components/site/kb/*), fed CITY-scoped DAL data, never forked
- * (ci:kb-single-source G50). KbNav + KbFooter carry the chrome (default chrome
- * hidden for ^/cities/[slug] via HideChrome). Bend reuses the homepage hero video;
- * other cities use their VERIFIED cityHero photo with a labeled regional fallback.
+ * (ci:kb-single-source G50). CHROME: Global PublicNav in app/layout.tsx owns the
+ * top bar (KbNav from lib/site-nav.ts). This page owns KbFooter only — do not
+ * re-mount KbNav. HideChrome is only for the not-found footer edge case / CSS
+ * hide if still used. Bend reuses the homepage hero video; other cities use
+ * their VERIFIED cityHero photo with a labeled regional fallback.
  *
  * THE PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md): KB design + SEO for Google &
  * LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/City/Dataset/FAQPage) +
@@ -69,7 +71,6 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
@@ -87,6 +88,7 @@ import { KbArticles } from '@/components/site/kb/KbArticles'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbPopularSearches } from '@/components/site/kb/KbPopularSearches'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -141,7 +143,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!snapshot) notFound()
   const cityName = snapshot.geoLabel
   return pageMetadata({
-    title: `${cityName}, Oregon homes for sale`,
+    title: `Homes for Sale in ${cityName}, Oregon`,
     description: `Active single-family homes in ${cityName}, Oregon. Live list prices, neighborhoods, open houses, and recent market activity from the regional MLS.`,
     path: `/cities/${slug}`,
   })
@@ -445,7 +447,6 @@ export default async function CityDetailPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <CityPageTracker
         cityName={cityName}
         slug={slug}
@@ -465,7 +466,7 @@ export default async function CityDetailPage({ params }: Props) {
           }}
           eyebrow={`${cityName} · Oregon`}
           titleTop={cityName}
-          titleBottom="on the market now."
+          titleBottom="Homes for Sale"
           lead={`in ${cityName}. List prices and days on market, pulled live.`}
           videoSrc={heroVideoSrc}
           posterSrc={heroPosterSrc}
@@ -524,6 +525,14 @@ export default async function CityDetailPage({ params }: Props) {
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={cityName} posterSrc={heroPosterSrc} />
         <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${slug}`} />
         <KbActivity items={activityItems} eyebrow={`Live · ${cityName}`} heading="Latest market activity" viewAllHref="/housing-market" viewAllLabel="Full market pulse" />
+        {/* Buyer listing alerts — city-scoped email capture (same backend as
+            community pages / search). Empty subdivision = every new listing in
+            this city. Sits before KbSell so buy intent converts first. */}
+        <KbCommunityAlerts
+          communityName={cityName}
+          city={cityName}
+          subdivision=""
+        />
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,

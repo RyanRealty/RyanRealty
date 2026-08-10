@@ -35,7 +35,6 @@ import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
@@ -179,7 +178,6 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="out-of-area-city" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb
@@ -198,8 +196,8 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             medianDaysToPending: null,
           }}
           eyebrow={`${city.name.toUpperCase()} · OREGON`}
-          titleTop={`${city.name},`}
-          titleBottom="outside our market."
+          titleTop="Homes for sale in"
+          titleBottom={city.name}
           lead={
             city.activeAllCount > 0
               ? `in ${city.name}. Live from the statewide MLS. We introduce you to a local broker if you need one.`

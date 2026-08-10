@@ -23,7 +23,6 @@ import { formatEventDate, shortEventDate } from '@/lib/events-format'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -97,7 +96,6 @@ export default function EventsIndexPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="events" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb

@@ -55,7 +55,6 @@ import type { SchemaInput } from '@/lib/site/json-ld'
 // RESTYLED IN PLACE — every data fetch, section, form, gallery, map,
 // calculator, JSON-LD, and the sticky broker sidebar are preserved exactly.
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import '@/components/site/kb/kb.css'
@@ -562,7 +561,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
   return (
     <main className="kb-root">
       <MetadataBlock schemas={listingJsonLdSchemas} />
-      <KbNav />
       <ListingTracker
         listingKey={listing.listingKey}
         listingId={listing.listingKey}

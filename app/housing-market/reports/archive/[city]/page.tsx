@@ -29,7 +29,6 @@ import { CityArchiveSection } from '@/components/reports/CityArchiveSection'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketSources } from '@/components/site/MarketSources'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -80,7 +79,6 @@ export default async function CityArchivePage({ params }: PageProps) {
 
   return (
     <main className="kb-root">
-      <KbNav solid />
       <KbSectionTracker pageType="reports" />
       <MetadataBlock
         schema={{

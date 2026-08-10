@@ -10,7 +10,6 @@ import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { listingDetailPath } from '@/lib/slug'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
@@ -33,9 +32,10 @@ const ogImage = `${siteUrl}/api/og?type=default`
 
 /**
  * Homepage — the kinetic-brutalist design (navy + cream, Amboqia + Geist, GSAP +
- * Lenis motion). Carries its own chrome (KbNav + the KB footer section); the
- * default SiteHeader/SiteFooter are hidden on "/" via HideChrome in the layout,
- * while the global JSON-LD, VisitTracker, and auth bridges still run. Every
+ * Lenis motion). CHROME: Global PublicNav in app/layout.tsx owns the top bar
+ * (KbNav from lib/site-nav.ts). This page owns KbFooter only — do not re-mount
+ * KbNav. HideChrome is only for the not-found footer edge case / CSS hide if
+ * still used. Global JSON-LD, VisitTracker, and auth bridges still run. Every
  * figure is live from the DAL (§0). ISR cache at 60s.
  *
  * Promoted from the /concept/kb preview 2026-06-17 (Matt-approved design).
@@ -189,7 +189,6 @@ export default async function Home() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="homepage" />
       <SmoothScrollProvider>
         {/* Hero: defaults restored to Buffett voice (VOICE.md 2026-08-06).

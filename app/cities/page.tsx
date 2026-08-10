@@ -22,8 +22,9 @@
  * Section telemetry now via KbSectionTracker (every .kb-root section[id]).
  * All figures from the DAL — no invented numbers, em-dash when unavailable.
  *
- * KbNav + KbFooter carry the chrome (default SiteHeader/SiteFooter hidden for
- * /cities via HideChrome — managed by the orchestrator, not this file).
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
@@ -43,7 +44,6 @@ import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketSources } from '@/components/site/MarketSources'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -256,7 +256,6 @@ export default async function CitiesPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="index" />
 
       {/* Structured data: breadcrumb + CollectionPage + ItemList of city pages */}
@@ -583,6 +582,9 @@ export default async function CitiesPage() {
                 <a href="/lp/buyer-listing-alerts" className="btn ghost">
                   Get listing alerts
                 </a>
+                <Link href="/sell/valuation" className="btn ghost">
+                  Value my home
+                </Link>
               </div>
             </div>
           </div>

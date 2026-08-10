@@ -42,7 +42,6 @@ import {
 import { PULSE_DEFAULT_CITIES } from '@/lib/pulse-config'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -136,7 +135,6 @@ export default async function PulsePage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="feed" />
       <script
         type="application/ld+json"
@@ -165,8 +163,8 @@ export default async function PulsePage() {
             medianDaysToPending: null,
           }}
           eyebrow="Bend · Oregon · Live MLS"
-          titleTop="What just listed,"
-          titleBottom="sold, or cut price."
+          titleTop="The Central"
+          titleBottom="Oregon pulse"
           lead={
             regionSnapshot?.active_count != null
               ? 'across Central Oregon. New listings, sold homes, pending sales, and price cuts as they hit the MLS.'

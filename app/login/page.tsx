@@ -26,11 +26,10 @@ export default async function LoginPage({ searchParams }: Props) {
   return (
     <>
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
-      {/* No re-typeset wordmark here — the global SiteHeader above already
-          carries the real Amboqia wordmark; re-rendering "Ryan Realty" in
-          bold Geist put the brand name on screen twice in two different
-          typefaces, and the design system says the wordmark is never
-          re-typeset (design-audit P3). */}
+      {/* No re-typeset wordmark here — PublicNav (root layout → KbNav) already
+          carries the Amboqia wordmark; re-rendering "Ryan Realty" in bold Geist
+          put the brand name on screen twice in two different typefaces, and the
+          design system says the wordmark is never re-typeset (design-audit P3). */}
       <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
         <H1 className="text-center text-xl text-foreground">Sign in</H1>
         <p className="mt-1 text-center text-sm text-muted-foreground">

@@ -29,7 +29,6 @@ import { CO_SCHOOLS, getSchoolBySlug, slugifySchoolName, type SchoolLevel } from
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
@@ -219,7 +218,6 @@ export default async function SchoolDetailPage({ params }: Props) {
   return (
     <main className="kb-root">
       <SchoolDetailStyles />
-      <KbNav />
       <KbSectionTracker pageType="schools" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb

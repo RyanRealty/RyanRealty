@@ -77,8 +77,8 @@ import { ContentSection } from '@/components/site/ContentSection'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import { MarketSources } from '@/components/site/MarketSources'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
@@ -333,7 +333,6 @@ export default async function AnnualReviewPage() {
     <main className="kb-root">
       <MetadataBlock schemas={schemas} />
 
-      <KbNav solid />
       <KbSectionTracker pageType="market-report-annual" />
 
       <KbBreadcrumb
@@ -568,6 +567,16 @@ export default async function AnnualReviewPage() {
           intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation."
           submitLabel="Ask a broker"
           tone="muted"
+        />
+
+        {/* Seller conversion — same KbSell + region pulse path as /housing-market. */}
+        <KbSell
+          data={{
+            medianListPrice: regionPulse?.medianListPrice ?? null,
+            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
+            soldCount30d: regionPulse?.closedLast30Days ?? null,
+          }}
+          eyebrow="Sell in Central Oregon"
         />
 
         <KbFooter towns={[]} />

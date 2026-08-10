@@ -1,14 +1,18 @@
 /**
- * lib/site-nav.ts — single source of truth for site navigation.
+ * lib/site-nav.ts — SINGLE source of truth for public site navigation.
  *
- * PRIMARY_NAV drives SiteHeader (mega-menu + desktop) and MobileNav (Sheet + Accordion).
- * FOOTER_NAV drives SiteFooter column groups.
+ * Matt lock 2026-08-10 (SEO/IA plan):
+ *   Top bar: Buy · Areas · Market · Sell · About
+ *   Lifestyle (parks, schools, trails, events, venues, golf) lives under Areas
+ *   One chrome (KbNav) for public pages — dual SiteHeader/KbNav trees retired
  *
- * All slugs are hardcoded to avoid runtime fetches.
- * Community slugs match data/resort-communities.json and app/communities/[slug].
- * City slugs match app/cities/[slug].
+ * Projections from this file (do not re-author separate trees):
+ *   KB_TOP_NAV     — desktop top bar + caret panels (KbNav)
+ *   KB_MENU_GROUPS — Menu+ / mobile overlay
+ *   KB_FOOTER_COLUMNS / FOOTER_NAV — footer columns
+ *   PRIMARY_NAV    — alias of KB_TOP_NAV for reachability gate + legacy imports
  *
- * Wire the gate: node scripts/check-nav-reachability.mjs (see that file for CI setup)
+ * Gate: scripts/check-nav-reachability.mjs
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -30,24 +34,10 @@ export type FooterGroup = {
   links: NavLink[]
 }
 
-// ─── Community + City data (hardcoded — static and crawlable) ─────────────────
+/** A top-bar group. `href` is required — every top-level item is a real destination. */
+export type TopNavGroup = NavGroup & { href: string }
 
-const COMMUNITY_LINKS: NavLink[] = [
-  { href: '/communities/tetherow', label: 'Tetherow' },
-  { href: '/communities/broken-top', label: 'Broken Top' },
-  { href: '/communities/eagle-crest', label: 'Eagle Crest' },
-  { href: '/communities/pronghorn', label: 'Pronghorn' },
-  { href: '/communities/caldera-springs', label: 'Caldera Springs' },
-  { href: '/communities/sunriver', label: 'Sunriver' },
-  { href: '/communities/awbrey-glen', label: 'Awbrey Glen' },
-  { href: '/communities/northwest-crossing', label: 'Northwest Crossing' },
-  { href: '/communities/crosswater', label: 'Crosswater' },
-  { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch' },
-  { href: '/communities/brasada-ranch', label: 'Brasada Ranch' },
-  { href: '/communities/widgi-creek', label: 'Widgi Creek' },
-  { href: '/communities/vandevert-ranch', label: 'Vandevert Ranch' },
-  { href: '/communities/three-rivers', label: 'Three Rivers' },
-]
+// ─── Shared link banks ────────────────────────────────────────────────────────
 
 const CITY_LINKS: NavLink[] = [
   { href: '/cities/bend', label: 'Bend' },
@@ -55,190 +45,27 @@ const CITY_LINKS: NavLink[] = [
   { href: '/cities/sisters', label: 'Sisters' },
   { href: '/cities/sunriver', label: 'Sunriver' },
   { href: '/cities/la-pine', label: 'La Pine' },
-  { href: '/cities/madras', label: 'Madras' },
-  { href: '/cities/prineville', label: 'Prineville' },
-  { href: '/cities/culver', label: 'Culver' },
   { href: '/cities/terrebonne', label: 'Terrebonne' },
-  { href: '/cities/powell-butte', label: 'Powell Butte' },
+  { href: '/cities/prineville', label: 'Prineville' },
+  { href: '/cities/madras', label: 'Madras' },
 ]
 
-// ─── PRIMARY_NAV ──────────────────────────────────────────────────────────────
-
-/**
- * Top-level navigation groups.
- * Each group has a label (shown in the nav bar), an optional top-level href,
- * and child links that populate the mega-menu panel or accordion section.
- */
-export const PRIMARY_NAV: NavGroup[] = [
-  {
-    // "Homes" is the merged Homes + Explore panel. Children include every city
-    // and community href so the reachability gate passes and mobile accordion
-    // exposes all destinations under one section.
-    label: 'Homes',
-    href: '/homes-for-sale',
-    children: [
-      { href: '/homes-for-sale', label: 'All homes for sale' },
-      { href: '/homes-for-sale?view=map', label: 'Map search' },
-      { href: '/open-houses', label: 'Open houses' },
-      { href: '/price-drops', label: 'Price drops' },
-      { href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' },
-      { href: '/cities', label: 'All cities' },
-      ...CITY_LINKS,
-      { href: '/communities', label: 'All communities' },
-      ...COMMUNITY_LINKS,
-    ],
-  },
-  {
-    label: 'Market',
-    href: '/housing-market',
-    children: [
-      { href: '/housing-market', label: 'Market overview' },
-      { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/activity', label: 'Recent activity' },
-      { href: '/price-drops', label: 'Price drops' },
-    ],
-  },
-  {
-    label: 'Sell',
-    href: '/sell',
-    children: [
-      { href: '/sell', label: 'Sell your home' },
-      { href: '/sell/valuation', label: 'Get a free valuation' },
-      { href: '/our-homes', label: 'Our listings' },
-    ],
-  },
-  {
-    label: 'Guides',
-    href: '/blog',
-    children: [
-      // '/blog' was listed twice here, once as "Blog" and once as "Buyer and
-      // seller guides" — the same destination offered twice in one menu, and a
-      // duplicate React key in any consumer that keys on href.
-      { href: '/blog', label: 'Blog and buyer/seller guides' },
-      { href: '/central-oregon/events', label: 'Central Oregon events' },
-      { href: '/central-oregon/venues', label: 'Live music & shows' },
-      { href: '/resources', label: 'Resources' },
-      { href: '/faq', label: 'FAQ' },
-      { href: '/videos', label: 'Video tours' },
-      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
-      { href: '/tools/appreciation', label: 'Appreciation tool' },
-    ],
-  },
-  {
-    label: 'About',
-    href: '/about',
-    children: [
-      { href: '/team', label: 'Meet the team' },
-      { href: '/about', label: 'About Ryan Realty' },
-      { href: '/contact', label: 'Contact us' },
-      { href: '/reviews', label: 'Client reviews' },
-      { href: '/join', label: 'Join the team' },
-    ],
-  },
+const COMMUNITY_LINKS: NavLink[] = [
+  { href: '/communities/tetherow', label: 'Tetherow' },
+  { href: '/communities/broken-top', label: 'Broken Top' },
+  { href: '/communities/northwest-crossing', label: 'NorthWest Crossing' },
+  { href: '/communities/caldera-springs', label: 'Caldera Springs' },
+  { href: '/communities/eagle-crest', label: 'Eagle Crest' },
+  { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch' },
+  { href: '/communities/pronghorn', label: 'Pronghorn' },
+  { href: '/communities/sunriver', label: 'Sunriver' },
+  { href: '/communities/brasada-ranch', label: 'Brasada Ranch' },
+  { href: '/communities/awbrey-glen', label: 'Awbrey Glen' },
+  { href: '/communities/crosswater', label: 'Crosswater' },
+  { href: '/communities/widgi-creek', label: 'Widgi Creek' },
+  { href: '/communities/vandevert-ranch', label: 'Vandevert Ranch' },
+  { href: '/communities/three-rivers', label: 'Three Rivers' },
 ]
-
-// ─── FOOTER_NAV ───────────────────────────────────────────────────────────────
-
-/**
- * Footer column groups.
- * Each group maps to one column in the footer grid.
- */
-export const FOOTER_NAV: FooterGroup[] = [
-  {
-    heading: 'Search',
-    links: [
-      { href: '/homes-for-sale', label: 'Homes for sale' },
-      { href: '/homes-for-sale?view=map', label: 'Map search' },
-      // Sitewide internal link to the indexed-but-underlinked luxury page —
-      // GSC was ranking /sitemap/ for "luxury homes bend" while this page sat
-      // with no inbound links from money surfaces (westside backlog #10).
-      { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
-      { href: '/open-houses', label: 'Open houses' },
-      { href: '/compare', label: 'Compare listings' },
-      { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
-    ],
-  },
-  {
-    heading: 'Communities',
-    links: [
-      { href: '/communities', label: 'All communities' },
-      { href: '/communities/tetherow', label: 'Tetherow' },
-      { href: '/communities/broken-top', label: 'Broken Top' },
-      { href: '/communities/eagle-crest', label: 'Eagle Crest' },
-      { href: '/communities/sunriver', label: 'Sunriver' },
-      { href: '/communities/pronghorn', label: 'Pronghorn' },
-      { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch' },
-      { href: '/communities/caldera-springs', label: 'Caldera Springs' },
-    ],
-  },
-  {
-    heading: 'Cities',
-    links: [
-      { href: '/cities', label: 'All cities' },
-      { href: '/cities/bend', label: 'Bend' },
-      { href: '/cities/redmond', label: 'Redmond' },
-      { href: '/cities/sisters', label: 'Sisters' },
-      { href: '/cities/sunriver', label: 'Sunriver' },
-      { href: '/cities/la-pine', label: 'La Pine' },
-      { href: '/cities/madras', label: 'Madras' },
-    ],
-  },
-  {
-    heading: 'Market',
-    links: [
-      { href: '/housing-market', label: 'Market overview' },
-      { href: '/housing-market/reports', label: 'Market reports' },
-      { href: '/activity', label: 'Recent activity' },
-    ],
-  },
-  {
-    heading: 'Sell',
-    links: [
-      { href: '/sell', label: 'Sell your home' },
-      { href: '/sell/valuation', label: 'Free home valuation' },
-      { href: '/our-homes', label: 'Our listings' },
-    ],
-  },
-  {
-    heading: 'Company',
-    links: [
-      { href: '/team', label: 'Meet the team' },
-      { href: '/about', label: 'About us' },
-      { href: '/contact', label: 'Contact' },
-      { href: '/reviews', label: 'Client reviews' },
-      { href: '/join', label: 'Join the team' },
-    ],
-  },
-  {
-    heading: 'Learn',
-    links: [
-      { href: '/blog', label: 'Blog' },
-      { href: '/central-oregon/events', label: 'Central Oregon events' },
-      { href: '/central-oregon/venues', label: 'Live music & shows' },
-      { href: '/videos', label: 'Video tours' },
-      { href: '/faq', label: 'FAQ' },
-      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
-      { href: '/tools/appreciation', label: 'Appreciation tool' },
-    ],
-  },
-]
-
-/**
- * Legal row links — rendered separately at the bottom of the footer.
- */
-export const LEGAL_LINKS: NavLink[] = [
-  { href: '/privacy', label: 'Privacy policy' },
-  { href: '/terms', label: 'Terms of use' },
-  { href: '/accessibility', label: 'Accessibility' },
-  { href: '/fair-housing', label: 'Fair housing' },
-  { href: '/dmca', label: 'DMCA' },
-  // Site index — crawlable directory of every browse-URL family (W3.4
-  // internal-link layer). Registry entry so both footers render it from the
-  // same source instead of hand-appending the link.
-  { href: '/site-index', label: 'Site index' },
-]
-
-// ─── KB chrome SSOT (KbNav + KbFooter) ────────────────────────────────────────
 
 /** Canonical map entry — never bare `/search` (that 301s to homes-for-sale). */
 export const MAP_SEARCH: NavLink = {
@@ -249,41 +76,24 @@ export const MAP_SEARCH: NavLink = {
 /** Global chrome valuation CTA — form page, not the ad LP. */
 export const VALUATION_FORM: NavLink = {
   href: '/sell/valuation',
-  label: "What's my home worth",
+  label: 'Value my home',
 }
 
-/** Ad-funnel LP only — never use in KbNav / KbFooter / SiteHeader chrome. */
+/** Ad-funnel LP only — never use in primary chrome. */
 export const VALUATION_LP: NavLink = {
   href: '/lp/seller-home-value',
-  label: "What's my home worth",
+  label: 'Value my home',
 }
 
-/** A top-bar group. Unlike NavGroup, `href` is required — every top-level item
- *  is itself a real destination, never a dropdown-only label. */
-export type TopNavGroup = NavGroup & { href: string }
+// ─── KB_TOP_NAV — the public top bar (SSOT) ───────────────────────────────────
 
 /**
- * KB top bar — ONE uniform shape for every entry.
- *
- * Matt, 2026-07-30: "The menus on these sites are inadequate. I can't get to
- * most of the features. There is really no way to easily get to the brokerage
- * information. There was just an About section created, but the menu now has a
- * submenu that doesn't match anything else."
- *
- * The fix is uniformity, not deletion. Every top-level item now behaves
- * identically: it is a link to its own overview page AND it opens a panel of
- * children on hover/focus. There is no longer one special item with a dropdown
- * and four bare links, and no item is dropdown-only.
- *
- * Reachability contract (enforced by scripts/check-nav-reachability.mjs):
- * every destination is at most two interactions from any page — hover/focus a
- * top item then click a child, or open Menu+ then click. Brokerage pages
- * (about, team, reviews, contact, our listings) all sit under About, one
- * hover away, and are mirrored in Menu+ Company and the footer.
+ * Every top-level item is a link to its overview AND a panel of children.
+ * Reachability: at most two interactions from any page (hover then click, or Menu+).
  */
 export const KB_TOP_NAV: TopNavGroup[] = [
   {
-    label: 'Homes',
+    label: 'Buy',
     href: '/homes-for-sale',
     children: [
       { href: '/homes-for-sale', label: 'All homes for sale' },
@@ -292,14 +102,18 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/price-drops', label: 'Price drops' },
       { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
       { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
-      { href: '/compare', label: 'Compare listings' },
-      { href: '/lp/buyer-listing-alerts', label: 'Get listing alerts' },
+      { href: '/compare', label: 'Compare homes' },
+      { href: '/videos', label: 'Video tours' },
+      { href: '/lp/buyer-listing-alerts', label: 'Listing alerts' },
     ],
   },
   {
-    label: 'Communities',
-    href: '/communities',
+    label: 'Areas',
+    href: '/area-guides',
     children: [
+      { href: '/area-guides', label: 'Area guides' },
+      { href: '/cities', label: 'All cities' },
+      ...CITY_LINKS,
       { href: '/communities', label: 'All communities' },
       { href: '/communities/tetherow', label: 'Tetherow' },
       { href: '/communities/broken-top', label: 'Broken Top' },
@@ -307,22 +121,12 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/communities/caldera-springs', label: 'Caldera Springs' },
       { href: '/communities/eagle-crest', label: 'Eagle Crest' },
       { href: '/communities/black-butte-ranch', label: 'Black Butte Ranch' },
-      { href: '/area-guides', label: 'Area guides' },
-    ],
-  },
-  {
-    label: 'Cities',
-    href: '/cities',
-    children: [
-      { href: '/cities', label: 'All cities' },
-      { href: '/cities/bend', label: 'Bend' },
-      { href: '/cities/redmond', label: 'Redmond' },
-      { href: '/cities/sisters', label: 'Sisters' },
-      { href: '/cities/sunriver', label: 'Sunriver' },
-      { href: '/cities/la-pine', label: 'La Pine' },
-      { href: '/cities/terrebonne', label: 'Terrebonne' },
       { href: '/schools', label: 'Schools' },
       { href: '/parks', label: 'Parks' },
+      { href: '/central-oregon/trails', label: 'Trails' },
+      { href: '/central-oregon/events', label: 'Events' },
+      { href: '/central-oregon/venues', label: 'Live music and shows' },
+      { href: '/lp/central-oregon-golf', label: 'Golf' },
     ],
   },
   {
@@ -332,7 +136,12 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/housing-market', label: 'Market overview' },
       { href: '/housing-market/reports', label: 'Market reports' },
       { href: '/activity', label: 'Recent activity' },
+      { href: '/months-of-supply', label: 'Months of supply' },
+      { href: '/blog', label: 'Blog and guides' },
+      { href: '/faq', label: 'FAQ' },
+      { href: '/resources', label: 'Resources' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
+      { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
       { href: '/tools/appreciation', label: 'Appreciation tool' },
     ],
   },
@@ -342,13 +151,11 @@ export const KB_TOP_NAV: TopNavGroup[] = [
     children: [
       { href: '/sell', label: 'Sell your home' },
       VALUATION_FORM,
-      { href: '/motivated-sellers', label: 'Sell on a deadline' },
       { href: '/our-homes', label: 'Our listings' },
+      { href: '/motivated-sellers', label: 'Sell on a deadline' },
     ],
   },
   {
-    // Brokerage information. Matt's second complaint was that this was hard to
-    // reach; it is now a top-level item whose panel holds every company page.
     label: 'About',
     href: '/about',
     children: [
@@ -356,51 +163,73 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/team', label: 'Our team' },
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact us' },
-      { href: '/our-homes', label: 'Our listings' },
       { href: '/join', label: 'Join the team' },
     ],
   },
 ]
 
-/** Derived — the flat top-bar labels. KB_TOP_NAV is the source of truth. */
+/** Alias — reachability gate and any legacy import. Same object as KB_TOP_NAV. */
+export const PRIMARY_NAV: TopNavGroup[] = KB_TOP_NAV
+
+/** Derived — flat top-bar labels. */
 export const KB_TOP_LINKS: NavLink[] = KB_TOP_NAV.map((g) => ({
   href: g.href,
   label: g.label,
 }))
 
-/** Derived — the three trust pages under About, kept as a named export because
- *  other surfaces reference the trust subset directly. */
+/** Trust subset under About (named export for surfaces that need only these). */
 const ABOUT_TRUST_HREFS = ['/team', '/reviews', '/contact']
 export const KB_ABOUT_DROPDOWN: NavLink[] =
   KB_TOP_NAV.find((g) => g.href === '/about')?.children.filter((l) =>
-    ABOUT_TRUST_HREFS.includes(l.href)
+    ABOUT_TRUST_HREFS.includes(l.href),
   ) ?? []
 
-/**
- * Menu+ overlay groups. Company sits second so mobile trust pages appear near
- * the top of the overlay (IA plan Phase 1).
- */
+// ─── Menu+ / mobile overlay (projection — denser than top bar) ────────────────
+
 export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
   {
     title: 'Buy',
     links: [
       { href: '/homes-for-sale', label: 'Search homes' },
       MAP_SEARCH,
-      { href: '/communities', label: 'Communities' },
-      { href: '/cities', label: 'Cities' },
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
+      { href: '/luxury-homes-bend', label: 'Luxury homes' },
+      { href: '/compare', label: 'Compare homes' },
+      { href: '/videos', label: 'Video tours' },
+      { href: '/lp/buyer-listing-alerts', label: 'Listing alerts' },
       { href: '/our-homes', label: 'Our listings' },
     ],
   },
   {
-    title: 'Company',
+    title: 'Areas',
     links: [
-      { href: '/about', label: 'About' },
-      { href: '/team', label: 'Our team' },
-      { href: '/reviews', label: 'Reviews' },
-      { href: '/contact', label: 'Contact' },
-      { href: '/join', label: 'Join the team' },
+      { href: '/area-guides', label: 'Area guides' },
+      { href: '/cities', label: 'All cities' },
+      ...CITY_LINKS,
+      { href: '/communities', label: 'All communities' },
+      ...COMMUNITY_LINKS.slice(0, 8),
+      { href: '/schools', label: 'Schools' },
+      { href: '/parks', label: 'Parks' },
+      { href: '/central-oregon/trails', label: 'Trails' },
+      { href: '/central-oregon/events', label: 'Events' },
+      { href: '/central-oregon/venues', label: 'Live music and shows' },
+      { href: '/lp/central-oregon-golf', label: 'Golf' },
+    ],
+  },
+  {
+    title: 'Market',
+    links: [
+      { href: '/housing-market', label: 'Market overview' },
+      { href: '/housing-market/reports', label: 'Market reports' },
+      { href: '/activity', label: 'Recent activity' },
+      { href: '/months-of-supply', label: 'Months of supply' },
+      { href: '/blog', label: 'Blog and guides' },
+      { href: '/faq', label: 'FAQ' },
+      { href: '/resources', label: 'Resources' },
+      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
+      { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
+      { href: '/tools/appreciation', label: 'Appreciation tool' },
     ],
   },
   {
@@ -408,35 +237,18 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
     links: [
       { href: '/sell', label: 'Sell your home' },
       VALUATION_FORM,
+      { href: '/our-homes', label: 'Our listings' },
       { href: '/motivated-sellers', label: 'Sell on a deadline' },
     ],
   },
   {
-    title: 'Market',
+    title: 'About',
     links: [
-      { href: '/housing-market', label: 'Housing market' },
-      { href: '/area-guides', label: 'Area guides' },
-      { href: '/schools', label: 'Schools' },
-      { href: '/parks', label: 'Parks' },
-      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
-    ],
-  },
-  {
-    title: 'Learn',
-    links: [
-      { href: '/blog', label: 'Blog' },
-      { href: '/faq', label: 'FAQ' },
-      { href: '/videos', label: 'Videos' },
-      { href: '/resources', label: 'Resources' },
-    ],
-  },
-  {
-    title: 'Things to do',
-    links: [
-      { href: '/central-oregon/events', label: 'Events' },
-      { href: '/central-oregon/venues', label: 'Live music & shows' },
-      { href: '/central-oregon/trails', label: 'Trails' },
-      { href: '/lp/central-oregon-golf', label: 'Golf' },
+      { href: '/about', label: 'About Ryan Realty' },
+      { href: '/team', label: 'Our team' },
+      { href: '/reviews', label: 'Client reviews' },
+      { href: '/contact', label: 'Contact us' },
+      { href: '/join', label: 'Join the team' },
     ],
   },
   {
@@ -448,58 +260,136 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
   },
 ]
 
-/** KB footer columns (Explore / Communities / lifestyle stay hand-curated geos). */
+// ─── Footers (projections) ────────────────────────────────────────────────────
+
 export const KB_FOOTER_COLUMNS: FooterGroup[] = [
   {
-    heading: 'Explore',
+    heading: 'Buy',
     links: [
+      { href: '/homes-for-sale', label: 'Homes for sale' },
+      MAP_SEARCH,
+      { href: '/open-houses', label: 'Open houses' },
+      { href: '/price-drops', label: 'Price drops' },
+      { href: '/luxury-homes-bend', label: 'Luxury homes' },
+      { href: '/compare', label: 'Compare homes' },
+      { href: '/videos', label: 'Video tours' },
+    ],
+  },
+  {
+    heading: 'Areas',
+    links: [
+      { href: '/cities', label: 'All cities' },
       { href: '/cities/bend', label: 'Bend homes' },
       { href: '/cities/redmond', label: 'Redmond homes' },
       { href: '/cities/sisters', label: 'Sisters homes' },
       { href: '/cities/sunriver', label: 'Sunriver homes' },
       { href: '/cities/la-pine', label: 'La Pine homes' },
-      { href: '/cities/terrebonne', label: 'Terrebonne homes' },
+      { href: '/communities', label: 'All communities' },
+      { href: '/area-guides', label: 'Area guides' },
+      { href: '/schools', label: 'Schools' },
+      { href: '/parks', label: 'Parks' },
+      { href: '/central-oregon/trails', label: 'Trails' },
+      { href: '/central-oregon/events', label: 'Events' },
     ],
   },
   {
-    heading: 'Communities',
+    heading: 'Market',
     links: [
+      { href: '/housing-market', label: 'Market overview' },
+      { href: '/housing-market/reports', label: 'Market reports' },
+      { href: '/activity', label: 'Recent activity' },
+      { href: '/months-of-supply', label: 'Months of supply' },
+      { href: '/blog', label: 'Blog' },
+      { href: '/faq', label: 'FAQ' },
+      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
+      { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
+    ],
+  },
+  {
+    heading: 'Sell',
+    links: [
+      { href: '/sell', label: 'Sell your home' },
+      VALUATION_FORM,
+      { href: '/our-homes', label: 'Our listings' },
+      { href: '/motivated-sellers', label: 'Sell on a deadline' },
+    ],
+  },
+  {
+    heading: 'About',
+    links: [
+      { href: '/about', label: 'About Ryan Realty' },
+      { href: '/team', label: 'Our team' },
+      { href: '/reviews', label: 'Client reviews' },
+      { href: '/contact', label: 'Contact' },
+      { href: '/join', label: 'Join the team' },
+    ],
+  },
+]
+
+/** Portal SiteFooter columns — same IA, slightly different packing for legal routes. */
+export const FOOTER_NAV: FooterGroup[] = [
+  {
+    heading: 'Buy',
+    links: [
+      { href: '/homes-for-sale', label: 'Homes for sale' },
+      MAP_SEARCH,
+      { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
+      { href: '/open-houses', label: 'Open houses' },
+      { href: '/compare', label: 'Compare homes' },
+      { href: '/homes-for-sale?status=Sold', label: 'Sold homes' },
+    ],
+  },
+  {
+    heading: 'Areas',
+    links: [
+      { href: '/cities', label: 'All cities' },
+      { href: '/cities/bend', label: 'Bend' },
+      { href: '/cities/redmond', label: 'Redmond' },
+      { href: '/cities/sisters', label: 'Sisters' },
+      { href: '/cities/sunriver', label: 'Sunriver' },
+      { href: '/cities/la-pine', label: 'La Pine' },
+      { href: '/communities', label: 'All communities' },
       { href: '/communities/tetherow', label: 'Tetherow' },
       { href: '/communities/broken-top', label: 'Broken Top' },
-      { href: '/communities/northwest-crossing', label: 'NorthWest Crossing' },
-      { href: '/communities/caldera-springs', label: 'Caldera Springs' },
+      { href: '/area-guides', label: 'Area guides' },
     ],
   },
   {
-    heading: 'Central Oregon',
+    heading: 'Market',
     links: [
-      { href: '/central-oregon/events', label: 'Events' },
-      { href: '/central-oregon/venues', label: 'Live music & shows' },
-      { href: '/central-oregon/trails', label: 'Trails' },
-      { href: '/lp/central-oregon-golf', label: 'Golf' },
+      { href: '/housing-market', label: 'Market overview' },
+      { href: '/housing-market/reports', label: 'Market reports' },
+      { href: '/activity', label: 'Recent activity' },
+      { href: '/blog', label: 'Blog' },
+      { href: '/faq', label: 'FAQ' },
+      { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
     ],
   },
   {
-    heading: 'Buyers',
+    heading: 'Sell',
     links: [
-      { href: '/homes-for-sale', label: 'Browse homes' },
-      // Sitewide link to the indexed-but-underlinked luxury page (westside
-      // backlog #10) — this is the LIVE footer; SiteFooter carries the same
-      // link but renders display:none behind the chrome toggle.
-      { href: '/luxury-homes-bend', label: 'Luxury homes' },
-      { href: '/housing-market', label: 'The market' },
-      { href: '/about', label: 'About' },
-      { href: '/team', label: 'The team' },
-      { href: '/reviews', label: 'Reviews' },
-      { href: '/contact', label: 'Contact' },
-    ],
-  },
-  {
-    heading: 'Sellers',
-    links: [
-      VALUATION_FORM,
       { href: '/sell', label: 'Sell your home' },
-      { href: '/housing-market', label: 'Market reports' },
+      VALUATION_FORM,
+      { href: '/our-homes', label: 'Our listings' },
     ],
   },
+  {
+    heading: 'About',
+    links: [
+      { href: '/team', label: 'Meet the team' },
+      { href: '/about', label: 'About us' },
+      { href: '/contact', label: 'Contact' },
+      { href: '/reviews', label: 'Client reviews' },
+      { href: '/join', label: 'Join the team' },
+    ],
+  },
+]
+
+export const LEGAL_LINKS: NavLink[] = [
+  { href: '/privacy', label: 'Privacy policy' },
+  { href: '/terms', label: 'Terms of use' },
+  { href: '/accessibility', label: 'Accessibility' },
+  { href: '/fair-housing', label: 'Fair housing' },
+  { href: '/dmca', label: 'DMCA' },
+  { href: '/site-index', label: 'Site index' },
 ]

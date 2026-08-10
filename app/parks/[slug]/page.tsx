@@ -34,7 +34,6 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { NeighborhoodMap } from '@/components/site/NeighborhoodMap'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -177,7 +176,6 @@ export default async function ParkDetailPage({ params }: Props) {
   return (
     <main className="kb-root">
       <ParkDetailStyles />
-      <KbNav />
       <KbSectionTracker pageType="parks" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb overlay

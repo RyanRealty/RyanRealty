@@ -1,12 +1,17 @@
 /**
- * lib/site-menu.ts — the STATIC, serializable mega-menu config.
+ * lib/site-menu.ts — STATIC, serializable mega-menu display config.
  *
- * Top-level nav: Homes · Sell · Market · Guides · About
+ * Top-level nav (aligned to lib/site-nav.ts KB_TOP_NAV SSOT):
+ *   Buy · Areas · Market · Sell · About
  *
- * "Homes" is the merged Homes + Explore panel — browse links, cities,
- * communities, price ranges, and lifestyle filters in one unified panel.
- * The old "Explore" top-level entry and its "Central Oregon, end to end"
- * promo card are removed entirely.
+ * Chrome model:
+ *   - PublicNav → KbNav is the public chrome (desktop top bar + Menu+ / mobile).
+ *   - site-menu is the DISPLAY layer for legacy SiteHeader mega-panels /
+ *     MobileNav accordion when those surfaces still import MENU — same IA
+ *     labels and group order as KB_TOP_NAV so the two trees do not drift.
+ *
+ * Areas holds places + lifestyle (parks, schools, trails, events, venues, golf).
+ * Market holds market data (+ optional tools). Guides (blog, faq) live under Areas.
  *
  * Each entry carries intent-grouped link columns plus a short text "promo"
  * (eyebrow + title + one line + a single CTA) pinned to the right edge of the
@@ -14,17 +19,18 @@
  * stats, counts, sparklines, verdict pills, tiles, or photos here by design —
  * this is the approved clean "menu-B" direction.
  *
- * Single source of truth for nav structure remains lib/site-nav.ts (PRIMARY_NAV
- * drives the reachability gate). This file is the DISPLAY layer for the desktop
- * panels and the mobile accordion. Every href below is grounded in a real route:
+ * Single source of truth for nav structure remains lib/site-nav.ts (KB_TOP_NAV /
+ * PRIMARY_NAV drives the reachability gate). This file is the display layer.
+ * Every href below is grounded in a real route:
  *   - /homes-for-sale + homesForSalePath(city) + preset paths (app/search/[...slug],
  *     preset slugs verified against lib/search-presets.ts)
  *   - /communities + /communities/<slug> (app/communities/[slug])
  *   - /cities + /cities/<slug> (app/cities/[slug])
+ *   - /area-guides, /schools, /parks, /central-oregon/*, /lp/central-oregon-golf
  *   - /housing-market + /housing-market/<city> (app/housing-market/*)
  *   - /sell, /sell/valuation (app/sell/*)
  *   - /team, /about, /contact, /reviews, /join (real pages)
- *   - /guides, /blog, /faq, /videos, /tools/* (real pages)
+ *   - /blog, /faq, /videos, /tools/* (real pages)
  *
  * Because this is a plain data module (no JSX, no client hooks) it is fully
  * serializable and can be imported by the SERVER SiteHeader and passed to the
@@ -75,7 +81,7 @@ export type AreaPulseRow = {
 }
 
 /**
- * The biggest price drop this week — for the Homes panel editorial strip.
+ * The biggest price drop this week — for the Buy/Homes panel editorial strip.
  * Null when no drops are available (panel falls back to text-only).
  */
 export type TopPriceDrop = {
@@ -104,9 +110,9 @@ export type NavData = {
   cityRows: AreaPulseRow[]
   /** Areas panel: community + neighborhood rows — static, no live data yet. */
   communityRows: AreaPulseRow[]
-  /** Homes panel: biggest price drop this week. */
+  /** Buy panel: biggest price drop this week. */
   topDrop: TopPriceDrop | null
-  /** Homes panel: total price-drop count for the badge. */
+  /** Buy panel: total price-drop count for the badge. */
   dropCount: number
   /** Market panel: region-level active count. */
   regionActive: number | null
@@ -125,14 +131,14 @@ function bendPreset(slug: string): string {
 
 // ─── MENU ────────────────────────────────────────────────────────────────────
 //
-// Order: Homes · Sell · Market · Guides · About
+// Order: Buy · Areas · Market · Sell · About
+// (display layer aligned to lib/site-nav.ts KB_TOP_NAV)
 //
 
 export const MENU: MenuEntry[] = [
   {
-    // Merged Homes + Explore. Five content columns: Browse, Cities,
-    // Communities, By price, Lifestyle & type. Right side: live price-drop strip.
-    label: 'Homes',
+    // Inventory + search presets. Places live under Areas.
+    label: 'Buy',
     href: '/homes-for-sale',
     columns: [
       {
@@ -143,32 +149,8 @@ export const MENU: MenuEntry[] = [
           { label: 'Open houses', href: '/open-houses' },
           { label: 'New this week', href: bendPreset('new-listings') },
           { label: 'Price drops', href: '/price-drops' },
+          { label: 'Luxury homes in Bend', href: '/luxury-homes-bend' },
           { label: 'Get listing alerts', href: '/lp/buyer-listing-alerts' },
-        ],
-      },
-      {
-        heading: 'Cities',
-        links: [
-          { label: 'Bend', href: '/cities/bend' },
-          { label: 'Redmond', href: '/cities/redmond' },
-          { label: 'Sisters', href: '/cities/sisters' },
-          { label: 'Sunriver', href: '/cities/sunriver' },
-          { label: 'La Pine', href: '/cities/la-pine' },
-          { label: 'Prineville', href: '/cities/prineville' },
-          { label: 'Terrebonne', href: '/cities/terrebonne' },
-          { label: 'See all cities', href: '/cities' },
-        ],
-      },
-      {
-        heading: 'Communities',
-        links: [
-          { label: 'Tetherow', href: '/communities/tetherow' },
-          { label: 'Broken Top', href: '/communities/broken-top' },
-          { label: 'NorthWest Crossing', href: '/communities/northwest-crossing' },
-          { label: 'Awbrey Butte', href: '/communities/bend-awbrey-butte' },
-          { label: 'Caldera Springs', href: '/communities/caldera-springs' },
-          { label: 'Black Butte Ranch', href: '/communities/black-butte-ranch' },
-          { label: 'All communities', href: '/communities' },
         ],
       },
       {
@@ -203,6 +185,93 @@ export const MENU: MenuEntry[] = [
     },
   },
   {
+    // Places + lifestyle + guides (blog/faq). Matches KB_TOP_NAV Areas group.
+    label: 'Areas',
+    href: '/area-guides',
+    columns: [
+      {
+        heading: 'Places',
+        links: [
+          { label: 'Area guides', href: '/area-guides' },
+          { label: 'All cities', href: '/cities' },
+          { label: 'Bend', href: '/cities/bend' },
+          { label: 'Redmond', href: '/cities/redmond' },
+          { label: 'Sisters', href: '/cities/sisters' },
+          { label: 'Sunriver', href: '/cities/sunriver' },
+          { label: 'All communities', href: '/communities' },
+          { label: 'Tetherow', href: '/communities/tetherow' },
+          { label: 'Broken Top', href: '/communities/broken-top' },
+          { label: 'NorthWest Crossing', href: '/communities/northwest-crossing' },
+        ],
+      },
+      {
+        heading: 'Lifestyle',
+        links: [
+          { label: 'Schools', href: '/schools' },
+          { label: 'Parks', href: '/parks' },
+          { label: 'Trails', href: '/central-oregon/trails' },
+          { label: 'Events', href: '/central-oregon/events' },
+          { label: 'Live music and shows', href: '/central-oregon/venues' },
+          { label: 'Golf', href: '/lp/central-oregon-golf' },
+        ],
+      },
+      {
+        heading: 'Guides',
+        links: [
+          { label: 'Blog', href: '/blog' },
+          { label: 'Frequently asked questions', href: '/faq' },
+        ],
+      },
+    ],
+    promo: {
+      eyebrow: 'Central Oregon',
+      title: 'Know the area before you buy',
+      body: 'City guides, communities, schools, parks, and what life is like here.',
+      ctaLabel: 'Browse area guides',
+      ctaHref: '/area-guides',
+    },
+  },
+  {
+    label: 'Market',
+    href: '/housing-market',
+    columns: [
+      {
+        heading: 'Market data',
+        links: [
+          { label: 'Market overview', href: '/housing-market' },
+          { label: 'Latest market report', href: '/housing-market/reports' },
+          { label: 'Recent activity', href: '/activity' },
+          { label: 'Months of supply', href: '/months-of-supply' },
+          { label: 'Price drops', href: '/price-drops' },
+        ],
+      },
+      {
+        heading: 'By city',
+        links: [
+          { label: 'Bend market', href: '/housing-market/bend' },
+          { label: 'Redmond market', href: '/housing-market/redmond' },
+          { label: 'Sisters market', href: '/housing-market/sisters' },
+          { label: 'Central Oregon', href: '/housing-market/central-oregon' },
+        ],
+      },
+      {
+        heading: 'Tools',
+        links: [
+          { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
+          { label: 'Appreciation tool', href: '/tools/appreciation' },
+          { label: 'Video tours', href: '/videos' },
+        ],
+      },
+    ],
+    promo: {
+      eyebrow: 'Market',
+      title: 'Where the market stands',
+      body: 'Current prices, inventory, and pace across the region.',
+      ctaLabel: 'Latest report',
+      ctaHref: '/housing-market/reports',
+    },
+  },
+  {
     label: 'Sell',
     href: '/sell',
     columns: [
@@ -229,68 +298,6 @@ export const MENU: MenuEntry[] = [
       body: 'Get a free valuation, without the high pressure.',
       ctaLabel: 'Free home valuation',
       ctaHref: '/sell/valuation',
-    },
-  },
-  {
-    label: 'Market',
-    href: '/housing-market',
-    columns: [
-      {
-        heading: 'Market data',
-        links: [
-          { label: 'Market overview', href: '/housing-market' },
-          { label: 'Latest market report', href: '/housing-market/reports' },
-          { label: 'Explore reports', href: '/housing-market' },
-          { label: 'Recent activity', href: '/activity' },
-          { label: 'Price drops', href: '/price-drops' },
-          { label: 'Neighborhood guides', href: '/area-guides' },
-        ],
-      },
-      {
-        heading: 'By city',
-        links: [
-          { label: 'Bend market', href: '/housing-market/bend' },
-          { label: 'Redmond market', href: '/housing-market/redmond' },
-          { label: 'Sisters market', href: '/housing-market/sisters' },
-          { label: 'Central Oregon', href: '/housing-market/central-oregon' },
-        ],
-      },
-    ],
-    promo: {
-      eyebrow: 'Market',
-      title: 'Where the market stands',
-      body: 'Current prices, inventory, and pace across the region.',
-      ctaLabel: 'Latest report',
-      ctaHref: '/housing-market/reports',
-    },
-  },
-  {
-    label: 'Guides',
-    href: '/blog',
-    columns: [
-      {
-        heading: 'Guides & answers',
-        links: [
-          { label: 'Buyer and seller guides', href: '/blog' },
-          { label: 'Blog', href: '/blog' },
-          { label: 'Frequently asked questions', href: '/faq' },
-        ],
-      },
-      {
-        heading: 'Tools',
-        links: [
-          { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
-          { label: 'Appreciation tool', href: '/tools/appreciation' },
-          { label: 'Video tours', href: '/videos' },
-        ],
-      },
-    ],
-    promo: {
-      eyebrow: 'Resources',
-      title: 'Guides, tools, and answers',
-      body: 'Free home tools plus buyer and seller guides.',
-      ctaLabel: 'Browse guides',
-      ctaHref: '/blog',
     },
   },
   {

@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
-import SiteHeader from "../components/site/SiteHeader";
+import "@/components/site/kb/kb.css";
+import { PublicNav } from "../components/site/PublicNav.client";
 import { RootProvider } from "../components/site/providers";
-import HideOnLP, { HideChrome } from "../components/layout/HideOnLP";
+import HideOnLP from "../components/layout/HideOnLP";
 // PublicClientLayer bundles the interactive public client components (prompts,
 // comparison tray, visitor/intent trackers, auth bridges) behind route-aware
 // dynamic imports so their chunks never load on /admin (RC3 drop-public-bundle).
@@ -77,9 +78,9 @@ export const viewport: Viewport = {
   themeColor: "#102742",
 };
 
-/* Site v2 chrome is fully static — no brokerage fetch, no server-side cookie
- * read, no Suspense wrapper required. SiteHeader + SiteFooter render
- * synchronously and the static shell stays cacheable at the Vercel edge. */
+/* Public chrome is fully static — no brokerage fetch, no server-side cookie
+ * read, no Suspense wrapper required. PublicNav → KbNav is the single public
+ * header; SiteFooter is route-owned. Static shell stays cacheable at the edge. */
 
 export default function RootLayout({
   children,
@@ -140,22 +141,12 @@ export default function RootLayout({
           <HideOnLP>
             <JsonLd />
           </HideOnLP>
-          {/* Static site v2 chrome. HideChrome CSS-hides the header on /lp/*,
-              /admin, /sign/*, KB routes, and the "/" homepage (which carries its
-              own KbNav + KB footer). The site-wide JSON-LD + VisitTracker + auth
-              bridges below stay on plain HideOnLP so they keep running on the
-              homepage.
-
-              SiteFooter is NOT rendered here. It used to be, behind the same
-              HideChrome gate — which shipped a hidden 48-link <footer> in the
-              HTML of every KB/LP/admin page (dead DOM weight; Google discounts
-              display:none links). The footer is now rendered server-side only by
-              the routes that actually show it (legal/auth/account/dashboard/
-              utility + the legacy housing-market report) — enforced by
-              scripts/check-default-chrome-footer.mjs. */}
-          <HideChrome>
-            <SiteHeader />
-          </HideChrome>
+          {/* ONE public header (Matt 2026-08-10): PublicNav → KbNav from
+              lib/site-nav.ts (Buy · Areas · Market · Sell · About). SiteHeader
+              mega-menu dual chrome is retired. PublicNav self-hides on LP /
+              admin / sign / account / dashboard. SiteFooter stays route-owned
+              (check-default-chrome-footer) — never mount a hidden global footer. */}
+          <PublicNav />
           <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
           {/* Real-user Core Web Vitals -> /api/web-vitals + GA4 (field CWV). */}
           <WebVitalsReporter />

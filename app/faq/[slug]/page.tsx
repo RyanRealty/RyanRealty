@@ -34,7 +34,6 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -100,7 +99,6 @@ export default async function FaqAnswerPage({ params }: Props) {
   return (
     <main className="kb-root">
       {/* solid: this route has no hero photo, the same treatment as a blog article */}
-      <KbNav solid />
       <KbSectionTracker pageType="faq_answer" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb

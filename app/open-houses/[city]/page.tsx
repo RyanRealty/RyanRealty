@@ -27,7 +27,6 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
@@ -47,10 +46,10 @@ type Props = { params: Promise<{ city: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: citySlug } = await params
   const cityName = await getCityFromSlug(citySlug)
-  if (!cityName) return pageMetadata({ title: 'Open House Calendar', description: "This week's open house calendar for Central Oregon.", path: `/open-houses/${citySlug}` })
+  if (!cityName) return pageMetadata({ title: 'Open Houses in Central Oregon', description: "This week's open houses across Central Oregon.", path: `/open-houses/${citySlug}` })
   return pageMetadata({
-    title: `Open House Calendar · ${cityName}, Oregon`,
-    description: `This week's open house calendar for ${cityName}, Oregon. Times, addresses, and prices from the regional MLS.`,
+    title: `Open Houses in ${cityName}, Oregon`,
+    description: `This week's open houses in ${cityName}, Oregon. Times, addresses, and prices from the regional MLS.`,
     path: `/open-houses/${citySlug}`,
   })
 }
@@ -196,7 +195,6 @@ export default async function OpenHousesCityPage({
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="open-houses-city" />
       <TrackSearchView city={cityName} resultsCount={openHouseCount} />
       <MetadataBlock schemas={schemas} />
@@ -215,8 +213,8 @@ export default async function OpenHousesCityPage({
           }}
           countNoun={openHouseCount === 1 ? 'open house' : 'open houses'}
           eyebrow={`${cityName} · Open house calendar`}
-          titleTop="This week's open"
-          titleBottom={`houses in ${cityName}.`}
+          titleTop="Open houses in"
+          titleBottom={cityName}
           lead={
             openHouseCount
               ? `on the calendar in ${cityName} this week.`
@@ -246,6 +244,33 @@ export default async function OpenHousesCityPage({
             subtitle={`Every open house in ${cityName} with a pin.`}
           />
         ) : null}
+        {/* Buyer conversion — listing alerts LP + city inventory (same dual
+            path as the open-houses hub and price-drops hub). */}
+        <section className="section region" id="listing-alerts" aria-label={`Listing alerts for ${cityName}`}>
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">New listings</span>
+              <h2 className="sec-title display">
+                Get new {cityName}
+                <br />
+                homes by email
+              </h2>
+            </div>
+            <div className="max-w-xl pt-6 pb-12">
+              <p className="neigh-sub" style={{ margin: 0 }}>
+                Save a search for {cityName}. New matches land in your inbox as they list.
+              </p>
+              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
+                <a href="/lp/buyer-listing-alerts" className="btn">
+                  Get listing alerts <span className="arr" aria-hidden="true">→</span>
+                </a>
+                <a href={`/homes-for-sale/${citySlug}`} className="btn ghost">
+                  See {cityName} homes
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
         <KbSell
           data={{
             medianListPrice: pulse?.medianListPrice ?? null,

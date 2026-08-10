@@ -124,11 +124,12 @@ export default async function AdminDashboardPage() {
     },
     {
       key: 'sessions',
-      label: 'Sessions, 30 days',
+      // GA4 only — not product traffic. Primary volume = visitor_sessions (see docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md).
+      label: 'GA4 sessions, 30 days (not primary traffic)',
       value: ga4.ok ? nf.format(ga4.sessions) : '—',
       delta: {
         direction: 'flat',
-        text: ga4.ok ? `${nf.format(ga4.socialSessions)} from social` : 'GA4 offline',
+        text: ga4.ok ? `${nf.format(ga4.socialSessions)} from social · FP = visitor_sessions` : 'GA4 offline · use visitor_sessions',
       },
     },
     {

@@ -19,10 +19,11 @@
  *     revalidate = 60, the daysOnMarket helper + its retention note, and the
  *     AICompare wire-or-delete investigation note are all preserved.
  *
- * KB shell: <main className="kb-root"> + KbNav (top) + KbFooter (bottom) +
- *   SmoothScrollProvider + KbSectionTracker pageType="compare" + kb.css.
- *   HideChrome (suppress default SiteHeader/SiteFooter) is a shared-component
- *   edit deferred to the orchestrator.
+ * KB shell: <main className="kb-root"> + KbFooter (bottom) + SmoothScrollProvider
+ *   + KbSectionTracker pageType="compare" + kb.css.
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
  * No KbHero: /compare is a noindex utility tool, not a marketing surface, so a
  * cinematic stock hero would be off-brand and would add content the page never
@@ -37,7 +38,6 @@ import { getListingTiles, getListingDetailPhotos } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -151,7 +151,6 @@ export default async function ComparePage({
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="compare" />
 
       <MetadataBlock

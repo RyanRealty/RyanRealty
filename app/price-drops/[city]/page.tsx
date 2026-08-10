@@ -37,7 +37,6 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { DisplayHeading } from '@/components/site/primitives'
 import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
@@ -322,7 +321,6 @@ export default async function PriceDropsCityPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="price-drops-city" />
       <TrackSearchView city={cityName} resultsCount={total} />
       <MetadataBlock schemas={schemas} />
@@ -342,7 +340,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
             medianDaysToPending: null,
           }}
           eyebrow={`${cityName}, Oregon · last 7 days · MLS`}
-          titleTop="Price cuts in"
+          titleTop="Price Drops"
           titleBottom={cityName}
           countNoun="price cuts"
           lead={`Active single-family homes in ${cityName} where the seller reduced the asking price in the last 7 days. Figures come from the regional MLS.`}
@@ -481,6 +479,34 @@ export default async function PriceDropsCityPage({ params }: Props) {
                   {CITY_DISPLAY[sibling] ?? sibling}
                 </Link>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Listing alerts — buyer path (parity with /price-drops hub). Copy
+            describes the real product: new matching listings, not a price-drop
+            digest. */}
+        <section className="section" id="listing-alerts" aria-label="Listing alerts">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">Listing alerts</span>
+              <h2 className="sec-title display">
+                New homes that<br />match your search
+              </h2>
+            </div>
+            <div className="max-w-xl mt-4">
+              <p className="text-muted-foreground">
+                Save a search for {cityName} and pick a cadence. We email you new homes that match
+                as they list. This page stays live for the current week&rsquo;s price cuts.
+              </p>
+              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex', marginTop: '1.25rem' }}>
+                <Link href="/lp/buyer-listing-alerts" className="btn alt">
+                  Get listing alerts <span className="arr">→</span>
+                </Link>
+                <Link href={`/homes-for-sale/${slug}`} className="btn ghost">
+                  See {cityName} homes
+                </Link>
+              </div>
             </div>
           </div>
         </section>

@@ -4,22 +4,71 @@ import {
   KB_FOOTER_COLUMNS,
   KB_MENU_GROUPS,
   KB_TOP_LINKS,
+  KB_TOP_NAV,
   MAP_SEARCH,
+  PRIMARY_NAV,
   VALUATION_FORM,
 } from './site-nav'
 import { getPlaceLinks, canonicalCommunitySlug } from './place-links'
 
-describe('KB nav SSOT', () => {
-  it('exposes About in the top bar and trust children in the dropdown', () => {
-    expect(KB_TOP_LINKS.some((l) => l.href === '/about')).toBe(true)
+describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
+  it('top bar is the five intent labels in order', () => {
+    expect(KB_TOP_LINKS.map((l) => l.label)).toEqual(['Buy', 'Areas', 'Market', 'Sell', 'About'])
+    expect(KB_TOP_LINKS.map((l) => l.href)).toEqual([
+      '/homes-for-sale',
+      '/area-guides',
+      '/housing-market',
+      '/sell',
+      '/about',
+    ])
+  })
+
+  it('PRIMARY_NAV is the same tree as KB_TOP_NAV', () => {
+    expect(PRIMARY_NAV).toBe(KB_TOP_NAV)
+  })
+
+  it('puts brokerage pages in the About top-bar group', () => {
+    const about = KB_TOP_NAV.find((g) => g.href === '/about')
+    const hrefs = about?.children.map((l) => l.href) ?? []
+    for (const h of ['/about', '/team', '/reviews', '/contact']) {
+      expect(hrefs).toContain(h)
+    }
     expect(KB_ABOUT_DROPDOWN.map((l) => l.href).sort()).toEqual(['/contact', '/reviews', '/team'])
   })
 
-  it('puts Company near the top of Menu+ and includes Join', () => {
-    expect(KB_MENU_GROUPS[1]?.title).toBe('Company')
-    const company = KB_MENU_GROUPS.find((g) => g.title === 'Company')
-    expect(company?.links.some((l) => l.href === '/join')).toBe(true)
-    expect(company?.links.some((l) => l.href === '/about')).toBe(true)
+  it('puts lifestyle under Areas (not a junk Guides drawer)', () => {
+    const areas = KB_TOP_NAV.find((g) => g.label === 'Areas')
+    const hrefs = areas?.children.map((l) => l.href) ?? []
+    for (const h of [
+      '/schools',
+      '/parks',
+      '/central-oregon/trails',
+      '/central-oregon/events',
+      '/central-oregon/venues',
+      '/lp/central-oregon-golf',
+    ]) {
+      expect(hrefs).toContain(h)
+    }
+  })
+
+  it('puts tools under Market including rental calculator', () => {
+    const market = KB_TOP_NAV.find((g) => g.label === 'Market')
+    const hrefs = market?.children.map((l) => l.href) ?? []
+    expect(hrefs).toContain('/tools/mortgage-calculator')
+    expect(hrefs).toContain('/tools/rental-property-calculator')
+    expect(hrefs).toContain('/months-of-supply')
+  })
+
+  it('Menu+ mirrors intent groups; About includes Join', () => {
+    expect(KB_MENU_GROUPS.map((g) => g.title).slice(0, 5)).toEqual([
+      'Buy',
+      'Areas',
+      'Market',
+      'Sell',
+      'About',
+    ])
+    const about = KB_MENU_GROUPS.find((g) => g.title === 'About')
+    expect(about?.links.some((l) => l.href === '/join')).toBe(true)
   })
 
   it('uses canonical map + valuation destinations', () => {
@@ -29,18 +78,19 @@ describe('KB nav SSOT', () => {
     expect(buy?.links.some((l) => l.href === MAP_SEARCH.href)).toBe(true)
   })
 
-  it('footer Buyers column carries About, Team, Reviews, Contact', () => {
-    const buyers = KB_FOOTER_COLUMNS.find((c) => c.heading === 'Buyers')
-    const hrefs = buyers?.links.map((l) => l.href) ?? []
+  it('footer About column carries team trust links', () => {
+    const about = KB_FOOTER_COLUMNS.find((c) => c.heading === 'About')
+    const hrefs = about?.links.map((l) => l.href) ?? []
     for (const h of ['/about', '/team', '/reviews', '/contact']) {
       expect(hrefs).toContain(h)
     }
   })
 
-  it('Learn group restores FAQ and Videos', () => {
-    const learn = KB_MENU_GROUPS.find((g) => g.title === 'Learn')
-    expect(learn?.links.some((l) => l.href === '/faq')).toBe(true)
-    expect(learn?.links.some((l) => l.href === '/videos')).toBe(true)
+  it('no group lists the same href twice', () => {
+    for (const g of KB_TOP_NAV) {
+      const hrefs = g.children.map((c) => c.href)
+      expect(new Set(hrefs).size, g.label).toBe(hrefs.length)
+    }
   })
 })
 

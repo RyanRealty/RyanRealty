@@ -584,3 +584,30 @@ NOT IN SCOPE
   NOT DONE (out of scope / separate): DB blog_posts bodies, CRM templates, weekly
   report HTML from DB, unattributed market narratives needing Matt attribution.
   BONUS §0: open-houses/[city] hero count now uses openHouseCount not pulse.activeCount.
+
+2026-08-10T14:00:00Z RESEARCH+IA — competitive component matrix + navigation
+  Wrote docs/plans/seo-voice/PAGE_IA_COMPONENT_MATRIX.md
+  Covers: dual-nav diagnosis (PRIMARY vs KB trees), target intent nav, orphan
+  routes, universal slot catalog, page-family recipes, moat modules, delivery
+  architecture, phased N0–N4. No product code yet — awaits Matt nav label decisions.
+
+2026-08-10T15:00:00Z GOAL SYSTEM — top real estate site (traffic/UX/engagement/leads)
+  Wrote docs/plans/seo-voice/TOP_SITE_GOAL_SYSTEM.md unifying L0–L6:
+  discovery (Layer A/B) · nav Buy/Areas/Market/Sell/About · page product matrix ·
+  2026 UI with navy/cream/Amboqia/Geist locked · dual-source measurement · conversion.
+  Scoreboard + 90d targets + phases P0–P7. In-flight: PublicNav + site-nav + geo H1 restore.
+
+2026-08-10T15:30:00Z DATA FOUNDATION — live DB probe for top-site program
+  Wrote docs/plans/seo-voice/DATA_FOUNDATION_TOP_SITE.md
+  Probed: listings ~595k / active ~7.6k; market_pulse 45 geos; geo_snapshot ~6.9k;
+  activity_events ~33k; visitor_sessions ~69k; crm_people ~23k; cmas 271; blog 87;
+  alerts 6 (underused). Maps page slots → DAL → tables. HOA/fee facts not in MLS.
+
+2026-08-10T16:00:00Z /ENDTOEND MISSION — Top Site Goal System (entirety)
+  GOAL: Traffic + UX + engagement + leads per TOP_SITE_GOAL_SYSTEM.md +
+  DATA_FOUNDATION_TOP_SITE.md + PAGE_IA_COMPONENT_MATRIX.md.
+  PHASES THIS RUN: P1 nav dual-chrome kill · P2 Layer A money pages · P4
+  measurement foundation · P3/P6 conversion hooks where data exists · ship.
+  DONE WHEN: gates green, origin/main updated, PublicNav live, Homes for Sale
+  Layer A on geos, first-party scoreboard documented/wired, sitemap intact.
+  STOP ONLY FOR: credentials, destructive ambiguity, conflicting requirements.

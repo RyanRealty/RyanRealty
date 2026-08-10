@@ -24,7 +24,6 @@ import Link from 'next/link'
 import { unstable_noStore as noStore } from 'next/cache'
 import { getSiteIndexLinks } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -70,7 +69,6 @@ export default async function SiteIndexPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="site_index" />
       <script
         type="application/ld+json"

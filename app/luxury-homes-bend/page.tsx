@@ -10,7 +10,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getListingTiles, getListingTilesCount } from '@/lib/data'
 import { listingTileHref } from '@/lib/slug'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import '@/components/site/kb/kb.css'
@@ -84,7 +83,6 @@ export default async function LuxuryHomesBendPage() {
 
   return (
     <div className="kb-root min-h-screen bg-[#faf8f4] text-[#102742]">
-      <KbNav />
       <KbSectionTracker pageType="luxury-homes-bend" />
 
       {/* Hero */}

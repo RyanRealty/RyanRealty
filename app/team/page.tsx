@@ -2,23 +2,19 @@
  * Team index (/team) — KB (kinetic-brutalist) design, Phase 9 of the
  * convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME section
  * library as the homepage + city/community pages (components/site/kb/*), fed the
- * team DAL, never forked (ci:kb-single-source G50). KbNav + KbFooter carry the
- * chrome (default chrome hidden for /team via HideChrome — handled by the
- * orchestrator, not this file).
+ * team DAL, never forked (ci:kb-single-source G50).
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
  * THE PAGE CONTRACT: KB design + SEO (export const metadata + MetadataBlock
  * JSON-LD: CollectionPage/Breadcrumb) + tracking (KbSectionTracker pageType="team").
  * Every broker figure comes from getBrokers() (§0 — no fabricated stats).
  *
- * Section stack: nav · breadcrumb · hero · about · testimonials · team grid ·
- * sell · faq · footer.
+ * Section stack: (global PublicNav) · breadcrumb · hero · about · testimonials ·
+ * team grid · sell · faq · footer.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/team/parity.json (KB set).
- *
- * NOTE — HideChrome: this page needs the default site header/footer suppressed so
- * KbNav and KbFooter can carry the chrome. That requires a HideChrome wrapper in
- * app/layout.tsx or a route-group layout. The orchestrator handles this; this file
- * does not touch layout components.
  */
 
 import type { Metadata } from 'next'
@@ -28,7 +24,6 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
@@ -143,7 +138,6 @@ export default async function TeamPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="team" />
       <MetadataBlock
         schemas={[

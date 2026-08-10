@@ -16,7 +16,6 @@ import { TRAIL_USE_LABEL, type CoTrail } from '@/data/co-trails'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -86,7 +85,6 @@ export default function TrailsIndexPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="trails" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Trails' }]} />

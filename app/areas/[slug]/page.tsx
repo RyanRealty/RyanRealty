@@ -33,7 +33,6 @@ import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { cityHero } from '@/lib/geo-images'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
@@ -227,7 +226,6 @@ export default async function AreaPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="area" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb
@@ -247,7 +245,7 @@ export default async function AreaPage({ params }: Props) {
           }}
           eyebrow={`${area.name} · Central Oregon`}
           titleTop={area.name}
-          titleBottom="on the market now."
+          titleBottom="Homes for Sale"
           lead={lede}
           videoSrc={null}
           posterSrc={heroData.src}

@@ -2,8 +2,10 @@
  * ZIP listings page (/zip/[zip]) — KB (kinetic-brutalist) design, Phase 9 of
  * the KB convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME
  * section library as the city pages (components/site/kb/*), fed ZIP-scoped DAL
- * data. KbNav + KbFooter carry the chrome; HideChrome is NOT applied here because
- * this route does not match the /cities/* pattern.
+ * data.
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
  * THE PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md): KB design + SEO for Google
  * and LLMs (generateMetadata + MetadataBlock JSON-LD: Breadcrumb/Place/Dataset) +
@@ -37,7 +39,6 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
@@ -368,7 +369,6 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="zip" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb overlay
@@ -387,8 +387,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
             medianDomActive: medianDom,
           }}
           eyebrow={`${zip} · ${area} · Oregon`}
-          titleTop={`${zip}:`}
-          titleBottom="homes on the list."
+          titleTop="Homes for sale in"
+          titleBottom={zip}
           lead={
             activeCount == null
               ? `Single-family homes in ${area}, Oregon. Live inventory from the regional MLS.`

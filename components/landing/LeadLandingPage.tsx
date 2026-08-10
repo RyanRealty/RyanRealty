@@ -50,7 +50,6 @@ export default function LeadLandingPage({ config }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="lead-landing" />
       <KbBreadcrumb
         overlay

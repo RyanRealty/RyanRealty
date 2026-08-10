@@ -28,7 +28,6 @@ import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import { listingsBrowsePath } from '@/lib/slug'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -105,7 +104,6 @@ export default function ResourcesPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="info" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <KbBreadcrumb overlay
@@ -121,8 +119,8 @@ export default function ResourcesPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Before you decide"
-          titleTop="Tools and reports"
-          titleBottom="in one place."
+          titleTop="Buyer & seller"
+          titleBottom="resources"
           lead="Market reports by city, area guides, live activity, a four-home comparison, and the appreciation calculator."
           videoSrc={null}
           posterSrc="/images/kb/redmond-downtown-aerial.jpg"

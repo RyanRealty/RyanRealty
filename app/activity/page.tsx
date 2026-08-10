@@ -33,7 +33,6 @@ import HomeValuationCta from '@/components/HomeValuationCta'
 import { listingsBrowsePath, listingTileHref } from '@/lib/slug'
 import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbActivity, type KbActivityItem } from '@/components/site/kb/KbActivity.client'
@@ -117,7 +116,6 @@ export default async function ActivityPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="feed" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script
@@ -144,8 +142,8 @@ export default async function ActivityPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Live MLS"
-          titleTop="What just moved"
-          titleBottom="on the list."
+          titleTop="Live Market"
+          titleBottom="Activity"
           lead="New listings, price cuts, pending sales, and closed sales across Central Oregon."
           videoSrc={null}
           posterSrc="/images/homepage/bend-drake-park-aerial.jpg"

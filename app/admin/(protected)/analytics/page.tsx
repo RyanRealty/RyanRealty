@@ -89,7 +89,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   return (
     <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
       <p className="av2-note">
-        Every analytics and reporting surface in one place: traffic, funnel, conversions, and the report catalog. Numbers trace to GA4 Data API and Supabase. Range: {range.startDate} to {range.endDate}.
+        Every analytics and reporting surface in one place: traffic, funnel, conversions, and the report catalog. Overview/Acquisition/Behavior tabs are GA4 (consent-gated — not primary site volume). Primary traffic = first-party visitor_sessions (funnel-breakdown, social, traffic-sources). See docs/plans/seo-voice/MEASUREMENT_DUAL_SOURCE.md. Range: {range.startDate} to {range.endDate}.
       </p>
       <RangeControl current={rangeChoice} currentStart={sp.startDate} currentEnd={sp.endDate} />
 

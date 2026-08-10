@@ -24,7 +24,6 @@ import AppreciationCalculator from '@/components/tools/AppreciationCalculator'
 import AdUnit from '@/components/AdUnit'
 import HomeValuationCta from '@/components/HomeValuationCta'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -68,7 +67,6 @@ export default function AppreciationToolPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="tools" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <KbBreadcrumb overlay
@@ -85,8 +83,8 @@ export default function AppreciationToolPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Hold-period math"
-          titleTop="If values"
-          titleBottom="keep rising."
+          titleTop="Home Appreciation"
+          titleBottom="Calculator"
           lead="Set a purchase price, an annual rate, and how many years you hold. You get a projected future value and total gain. It is math, not an appraisal."
           videoSrc={null}
           posterSrc="/images/kb/three-sisters-sunrise.jpg"

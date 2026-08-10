@@ -5,7 +5,6 @@ import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
 import { formatDate } from '@/lib/format/date'
 import { ReviewsCollapse } from './ReviewsCollapse.client'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -108,7 +107,6 @@ export default function ReviewsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd) }}
       />
-      <KbNav />
       <KbSectionTracker pageType="media" />
       <KbBreadcrumb overlay
         trail={[

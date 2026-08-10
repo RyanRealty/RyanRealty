@@ -40,7 +40,6 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -199,7 +198,6 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="motivated-sellers-city" />
       <TrackSearchView city={cityName} resultsCount={listings.length} />
       <MetadataBlock schemas={schemas} />

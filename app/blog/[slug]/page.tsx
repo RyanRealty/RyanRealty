@@ -10,7 +10,9 @@
  * own --tw-prose-* CSS vars) + inline var(--navy) — no inline <style> (D32), no forked
  * KB component, no kb.css edit, no off-ladder Tailwind, no raw hex.
  *
- * KbNav + KbFooter carry the chrome (default chrome hidden for ^/blog via HideChrome).
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  */
 import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
@@ -24,7 +26,6 @@ import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { generateBlogSchema, generateBreadcrumbSchema } from '@/lib/structured-data'
 import ShareButton from '@/components/ShareButton'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -158,7 +159,6 @@ export default async function BlogPostPage({ params }: PageProps) {
     <main className="kb-root">
       {/* solid — article pages have no dark hero; the transparent bar rendered
           white links + a white wordmark on cream (invisible) at scroll 0. */}
-      <KbNav solid />
       <KbSectionTracker pageType="blog_post" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <script

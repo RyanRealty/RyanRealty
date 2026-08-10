@@ -2,9 +2,10 @@
  * Broker landing page (/team/[slug]) — KB (kinetic-brutalist) design, Phase 9 of
  * the convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME
  * section library as the homepage + city/community pages (components/site/kb/*),
- * fed per-broker DAL data, never forked (ci:kb-single-source G50). KbNav +
- * KbFooter carry the chrome (default chrome hidden for /team/* via HideChrome —
- * handled by the orchestrator, not this file).
+ * fed per-broker DAL data, never forked (ci:kb-single-source G50).
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
  * THE PAGE CONTRACT: KB design + SEO (generateMetadata + MetadataBlock JSON-LD:
  * RealEstateAgent/Breadcrumb) + tracking (KbSectionTracker pageType="broker").
@@ -21,15 +22,12 @@
  * on this page. reviewBelongsOnPage() keeps only reviews that name THIS broker
  * or name no broker at all (§0 — never imply a client praised the wrong broker).
  *
- * Section stack: nav · breadcrumb · hero (broker portrait + stats) · bio (About)
- * · track record (Featured) · testimonials · sell · footer.
+ * Section stack: (global PublicNav) · breadcrumb · hero (broker portrait + stats) ·
+ * bio (About) · track record (Featured) · testimonials · sell · footer.
  *
  * JSON-LD: RealEstateAgent (Person + worksFor LocalBusiness) + BreadcrumbList.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/team/parity.json (KB set).
- *
- * NOTE — HideChrome: this page needs the default site header/footer suppressed.
- * The orchestrator handles this via HideChrome; this file does not touch layouts.
  */
 
 import { notFound } from 'next/navigation'
@@ -48,7 +46,6 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
 import BrokerAttributionSetter from '@/components/BrokerAttributionSetter'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
@@ -364,7 +361,6 @@ export default async function TeamMemberPage({ params }: Props) {
         }}
       />
 
-      <KbNav />
       <KbSectionTracker pageType="broker" />
       <MetadataBlock
         schemas={[

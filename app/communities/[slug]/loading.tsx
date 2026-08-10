@@ -2,8 +2,10 @@
  * KB-styled loading skeleton for the community detail page.
  *
  * The community detail page (/communities/<slug>) is the kinetic-brutalist
- * (KB) design — full-bleed navy .kb-root, no default SiteHeader/SiteFooter
- * (hidden via HideChrome). This skeleton mirrors that shell: a navy
+ * (KB) design — full-bleed navy .kb-root. Global PublicNav in app/layout.tsx
+ * owns the top bar (KbNav from lib/site-nav.ts); the page owns KbFooter only
+ * (do not re-mount KbNav). HideChrome is only for the not-found footer edge
+ * case / CSS hide if still used. This skeleton mirrors that shell: a navy
  * full-bleed root, a hero band, a live stat row, and the first content
  * block, so the cream bg-background flash never shows while the real KB
  * sections stream in. Mirrors app/cities/[slug]/loading.tsx.

@@ -7,9 +7,10 @@
  * preserved verbatim. Only the presentation moved to the KB look (navy + cream
  * surfaces, Amboqia display headings, hard --edge borders, the
  * .section/.wrap rhythm, .mono-* labels), built entirely from existing kb.css
- * classes + Tailwind utilities (no inline <style> block — D32). KB chrome
- * (KbNav + KbFooter) replaces the default site header/footer (HideChrome hides
- * them for /buy).
+ * classes + Tailwind utilities (no inline <style> block — D32).
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
  * DATA ACCURACY (CLAUDE.md §0): all value props describe real capabilities only.
  * No invented stats, no sale-percentages, no days-to-close claims. Hero photo
@@ -27,7 +28,6 @@ import { getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -162,7 +162,6 @@ export default async function BuyPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="buy" />
 
       {/* JSON-LD: breadcrumb + webPage + RealEstateAgent organization + FAQPage */}

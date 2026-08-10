@@ -40,7 +40,6 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -171,7 +170,6 @@ export default async function MotivatedSellersPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="motivated-sellers" />
       <TrackSearchView resultsCount={listings.length} />
       <MetadataBlock schemas={schemas} />
@@ -189,8 +187,8 @@ export default async function MotivatedSellersPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · MLS price cuts and remarks"
-          titleTop="Homes with price"
-          titleBottom="cuts or a push to sell"
+          titleTop="Motivated"
+          titleBottom="Sellers"
           lead="Active listings with a documented price cut from the original ask, seller-motivation language in the remarks, or a long time on market. Ranked from those signals. Updated from the regional MLS."
           videoSrc={null}
           posterSrc="/images/homepage/tetherow-golf-aerial.jpg"

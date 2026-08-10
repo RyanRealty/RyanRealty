@@ -55,7 +55,6 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import type { KbTownItem } from '@/components/site/kb/types'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
@@ -106,7 +105,7 @@ const CITY_SLUG: Record<string, string> = {
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Central Oregon housing market',
+    title: 'Central Oregon Housing Market',
     description:
       'Central Oregon housing market hub. Live single-family market data by city, with the full Central Oregon region report and per-city market pages. ' +
       'Updated every 15 minutes from Oregon Data Share.',
@@ -290,7 +289,6 @@ export default async function HousingMarketHubPage() {
           KbBreadcrumb has no JSON-LD of its own. FAQPage emitted by FAQBlock. */}
       <MetadataBlock schemas={schemas} />
 
-      <KbNav />
       <KbSectionTracker pageType="market-report" />
 
       {/* Breadcrumb visual — Home > Housing market */}
@@ -310,8 +308,8 @@ export default async function HousingMarketHubPage() {
             medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
           }}
           eyebrow="Central Oregon · Oregon"
-          titleTop="The list right now,"
-          titleBottom="city by city."
+          titleTop="Central Oregon"
+          titleBottom="Housing Market"
           lead={lede}
           posterSrc={heroPhoto ?? undefined}
         />

@@ -61,7 +61,6 @@ import { TESTIMONIALS } from '@/lib/testimonials'
 import { getSoldStories, getTestimonialAggregate } from '@/app/lp/seller-home-value/data'
 import SellerLPForm from '@/app/lp/seller-home-value/SellerLPForm'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
@@ -78,7 +77,7 @@ const FORM_ANCHOR = '#get-value'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Sell your home · Ryan Realty, Central Oregon',
+    title: 'Sell Your Home in Central Oregon',
     description:
       'List your Central Oregon home with Ryan Realty. The fee is 2.5% to 3.5% of the sale price, photos within 48 hours of signing, and a written report every week it is listed.',
     path: ROUTE_PATH,
@@ -184,7 +183,6 @@ export default async function SellPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="sell" />
       <MetadataBlock
         schemas={[
@@ -204,10 +202,8 @@ export default async function SellPage() {
       />
 
       <SmoothScrollProvider>
-        {/* "This is how your home gets sold." was a drama header any Bend
-            brokerage could paste verbatim. The headline now names what the
-            seller actually receives, and the lead opens on the cost (VOICE.md
-            rule 6, bad news first) before the commitments. */}
+        {/* Layer A H1: query language (sell intent + place). Layer B lead keeps
+            fee-first facts (VOICE.md rule 6, bad news first). */}
         <KbHero
           data={{
             activeCount: pulse?.activeCount ?? null,
@@ -215,8 +211,8 @@ export default async function SellPage() {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow="Sell with Ryan Realty"
-          titleTop="Your price, and"
-          titleBottom="every comp behind it."
+          titleTop="Sell your home in"
+          titleBottom="Central Oregon"
           statless
           lead="The listing fee is 2.5% to 3.5% of the sale price, nothing billed on the side. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week."
           showSearch={false}

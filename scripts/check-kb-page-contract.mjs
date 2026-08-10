@@ -29,7 +29,15 @@ function walk(dir, out = []) {
   return out
 }
 
-const kbPages = walk('app').filter((p) => readFileSync(p, 'utf8').includes('components/site/kb/KbNav'))
+// KB page = renders the .kb-root shell (nav is global PublicNav; do not require
+// a page-level KbNav import — dual-chrome kill 2026-08-10).
+// Search is an app-frame surface (filters/map), not an editorial KB page.
+const kbPages = walk('app').filter((p) => {
+  if (p.includes(`${join('app', 'search')}`) || p.includes('app/search/')) return false
+  const s = readFileSync(p, 'utf8')
+  const code = s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
+  return /kb-root/.test(code)
+})
 
 const fails = []
 for (const p of kbPages) {

@@ -7,7 +7,9 @@
  * reuses shared kb.css classes + inline var(--navy) tokens — no inline <style> (D32),
  * no forked KB component, no kb.css edit, no off-ladder Tailwind, no raw hex.
  *
- * KbNav + KbFooter carry the chrome (default chrome hidden for ^/blog via HideChrome).
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  * KbArticles isn't used for the grid because it can't carry the per-post category /
  * author / read-time metadata this page shows — so the grid reuses the KbArticles
  * .art-* card classes in place instead of dropping content.
@@ -26,7 +28,6 @@ import { generateBreadcrumbSchema } from '@/lib/structured-data'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { formatDate } from '@/lib/format/date'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -140,7 +141,6 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="blog" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script

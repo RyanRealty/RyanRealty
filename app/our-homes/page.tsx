@@ -29,7 +29,6 @@ import Link from 'next/link'
 import { getBrokerageListings, type PriceDropTile } from '@/lib/data'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
@@ -103,7 +102,6 @@ export default async function OurHomesPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="info" />
       <KbBreadcrumb overlay
         trail={[

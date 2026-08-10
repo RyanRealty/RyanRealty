@@ -22,7 +22,6 @@ import { H2, H3 } from '@/components/site/primitives'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -58,7 +57,6 @@ const VALUE_STEPS = [
 export default function SellValuationPage() {
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="sell-valuation" />
       <MetadataBlock
         schema={{

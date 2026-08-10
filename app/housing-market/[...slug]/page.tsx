@@ -79,7 +79,6 @@ import type { KbMarketData, KbTownItem } from '@/components/site/kb/types'
 
 // KB imports (city scope)
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
@@ -573,7 +572,6 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             KbBreadcrumb has no JSON-LD of its own. FAQPage emitted by FAQBlock. */}
         <MetadataBlock schemas={schemas} />
 
-        <KbNav />
         <KbSectionTracker pageType="market-report" />
 
         {/* BreadcrumbList visual — Home > Housing market > {cityName} */}
@@ -595,7 +593,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
             }}
             eyebrow={`${cityName} · Oregon`}
             titleTop={`${cityName},`}
-            titleBottom="as the numbers read."
+            titleBottom="market report"
             lead={lede}
           />
 

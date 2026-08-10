@@ -39,7 +39,6 @@ import { listingTileHref } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -123,7 +122,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="info" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />

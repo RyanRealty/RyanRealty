@@ -28,7 +28,6 @@ import { getMarketReportBySlug, getReportImageUrl, getMarketPulse } from '@/lib/
 import ShareButton from '../../../components/ShareButton'
 import { sanitizeHtml } from '@/lib/sanitize'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { Suspense } from 'react'
@@ -102,7 +101,6 @@ export default async function ReportPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav solid />
       <KbSectionTracker pageType="market-reports" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reportSchema) }} />
       <KbBreadcrumb

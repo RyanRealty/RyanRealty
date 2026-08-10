@@ -27,7 +27,6 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { VenueMap, type VenuePin } from '@/components/site/VenueMap'
 import { AreaMarketBand } from '@/components/site/AreaMarketBand'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -165,7 +164,6 @@ export default async function EventDetailPage({ params }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="events" />
       <MetadataBlock schemas={schemas} />
       <KbBreadcrumb

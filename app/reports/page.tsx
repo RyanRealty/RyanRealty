@@ -44,7 +44,6 @@ import ReportsByCityView from '@/components/reports/ReportsByCityView'
 import ReportsIndexContent from './ReportsIndexContent'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -374,7 +373,6 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="market-reports" />
       <MetadataBlock
         schemas={[
@@ -407,8 +405,8 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Live market data"
-          titleTop="What sold,"
-          titleBottom="and what is still listed."
+          titleTop="Market"
+          titleBottom="reports"
           lead="Inventory, median price, and days on market by city. Pick the cities and the range. Last 30 days is the default."
           videoSrc={null}
           posterSrc="/images/lp/hero-mountain.jpg"

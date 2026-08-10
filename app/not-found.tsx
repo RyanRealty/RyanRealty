@@ -8,11 +8,11 @@ export default function NotFound() {
       <div className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
         <NotFoundClient />
       </div>
-      {/* 404s render at any pathname, so the footer keeps the old route-aware CSS
-          gate here: visible on default-chrome paths, hidden on KB/LP/admin paths.
-          This is the ONE surface that still ships the footer behind HideChrome —
-          acceptable because 404 responses are never indexed. Every real page
-          renders its footer server-side per scripts/check-default-chrome-footer.mjs. */}
+      {/* 404s render at any pathname. HideChrome still gates SiteFooter visibility
+          (KB/LP/admin hide). This is the ONE surface that still ships a footer
+          behind HideChrome — 404s are never indexed. Real pages render footer
+          server-side (scripts/check-default-chrome-footer.mjs). Public nav is
+          PublicNav in root layout; do not re-mount KbNav here. */}
       <HideChrome>
         <SiteFooter />
       </HideChrome>

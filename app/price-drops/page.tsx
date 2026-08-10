@@ -45,7 +45,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
@@ -67,7 +66,7 @@ export const revalidate = 1800
 // ---- Metadata --------------------------------------------------------------
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Price cuts · Central Oregon homes, last 7 days',
+  title: 'Price Drops in Central Oregon | Last 7 Days',
   description:
     'Active single-family homes in Central Oregon where the seller cut the asking price in the last 7 days. ' +
     'Current price, original list price, and drop percentage from the regional MLS. Bend, Redmond, Sisters, Sunriver, and nearby cities.',
@@ -365,7 +364,6 @@ export default async function PriceDropsRegionPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="price-drops" />
       <TrackSearchView resultsCount={total} />
       <MetadataBlock schemas={schemas} />
@@ -384,8 +382,8 @@ export default async function PriceDropsRegionPage() {
             medianDaysToPending: null,
           }}
           eyebrow="Central Oregon · last 7 days · MLS"
-          titleTop="Price cuts"
-          titleBottom="on active homes"
+          titleTop="Price Drops"
+          titleBottom="Central Oregon"
           countNoun="price cuts"
           lead="Active single-family homes where the seller reduced the asking price in the last 7 days. Figures come from the regional MLS."
           videoSrc={null}

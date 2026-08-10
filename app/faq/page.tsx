@@ -38,7 +38,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -85,7 +84,6 @@ export default async function FAQPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="faq" />
       {/* Breadcrumb + FAQPage JSON-LD for Gemini Ask Maps + Google featured snippets */}
       <MetadataBlock schemas={schemas} />
@@ -102,8 +100,8 @@ export default async function FAQPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Bend real estate"
-          titleTop="What people ask"
-          titleBottom="before they call."
+          titleTop="Frequently asked"
+          titleBottom="questions"
           lead="Neighborhoods we cover, first-time buying, listing cost, sale timelines, relocations, and how we work."
           videoSrc={null}
           posterSrc="/images/homepage/smith-rock-terrebonne.jpg"

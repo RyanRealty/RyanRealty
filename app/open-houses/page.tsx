@@ -20,7 +20,6 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
@@ -36,9 +35,9 @@ export const revalidate = 60
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Open House Calendar · Central Oregon',
+    title: 'Open Houses in Central Oregon',
     description:
-      "This week's open house calendar for Bend, Redmond, Sisters, La Pine, and the rest of Central Oregon. Times, addresses, and prices from the regional MLS.",
+      "This week's open houses in Bend, Redmond, Sisters, La Pine, and across Central Oregon. Times, addresses, and prices from the regional MLS.",
     path: '/open-houses',
   })
 }
@@ -173,7 +172,6 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="open-houses" />
       <TrackSearchView resultsCount={openHouseCount} />
       <MetadataBlock schemas={schemas} />
@@ -194,8 +192,8 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
           }}
           countNoun={openHouseCount === 1 ? 'open house' : 'open houses'}
           eyebrow="Central Oregon · Open house calendar"
-          titleTop="This week's open"
-          titleBottom="house calendar."
+          titleTop="Open houses in"
+          titleBottom="Central Oregon"
           // design-audit STA-1: with a count the hero reads "N open houses …"
           // At zero the count prefix drops, so the lead must stand alone.
           lead={
@@ -225,6 +223,32 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
             countNoun="open houses"
           />
         ) : null}
+        {/* Buyer conversion — listing alerts LP (same path as price-drops hub /
+            cities hub). Open-house pages are buy-intent; alerts keeps demand
+            when this week's calendar is thin. */}
+        <section className="section region" id="listing-alerts" aria-label="Listing alerts">
+          <div className="wrap">
+            <div className="sec-head">
+              <span className="sec-index">New listings</span>
+              <h2 className="sec-title display">
+                Get new homes<br />by email
+              </h2>
+            </div>
+            <div className="max-w-xl pt-6 pb-12">
+              <p className="neigh-sub" style={{ margin: 0 }}>
+                Save a search across Central Oregon. New matches land in your inbox as they list.
+              </p>
+              <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
+                <a href="/lp/buyer-listing-alerts" className="btn">
+                  Get listing alerts <span className="arr" aria-hidden="true">→</span>
+                </a>
+                <a href={listingsBrowsePath()} className="btn ghost">
+                  See all homes for sale
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
         <KbSell
           data={{
             medianListPrice: regionPulse?.medianListPrice ?? null,

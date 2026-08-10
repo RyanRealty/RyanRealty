@@ -24,8 +24,9 @@
  * Section telemetry now via KbSectionTracker (every .kb-root section[id]).
  * All figures from the DAL — no invented numbers, em-dash when unavailable.
  *
- * KbNav + KbFooter carry the chrome (default SiteHeader/SiteFooter hidden for
- * /communities via HideChrome — managed by the orchestrator, not this file).
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  */
 
 import type { Metadata } from 'next'
@@ -43,7 +44,6 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketSources } from '@/components/site/MarketSources'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
@@ -227,7 +227,6 @@ export default async function CommunitiesPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="index" />
 
       {/* Structured data: BreadcrumbList + Dataset (aggregate active count) +
@@ -486,8 +485,11 @@ export default async function CommunitiesPage() {
                 <Link href="/search" className="btn">
                   Search all listings <span className="arr">→</span>
                 </Link>
+                <a href="/lp/buyer-listing-alerts" className="btn ghost">
+                  Get listing alerts
+                </a>
                 <Link href="/sell/valuation" className="btn ghost">
-                  See the estimate
+                  Value my home
                 </Link>
               </div>
             </div>

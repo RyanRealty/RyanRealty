@@ -28,7 +28,6 @@ import { sortCitiesWithPrimaryFirst, getPrimaryCityRank } from '@/lib/cities'
 import { sortResortCommunitiesInPrimaryCities } from '@/lib/communities'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
@@ -88,7 +87,6 @@ export default async function AreaGuidesPage() {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="guides" />
       <MetadataBlock
         schemas={[

@@ -468,8 +468,8 @@ async function LeadFlowContent({
       />
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 10 }}>
         Visitor → engaged → form submit → broker assigned → CMA. Sessions and engagement come from
-        GA4; submits from valuation_requests + listing_inquiries; leads and CMAs from the Supabase
-        canonical tables. Sessions-to-lead conversion:{' '}
+        GA4 (undercounts vs first-party — do not read as “traffic is dead”; primary volume is visitor_sessions, see MEASUREMENT_DUAL_SOURCE.md); submits from valuation_requests + listing_inquiries; leads and CMAs from the Supabase
+        canonical tables. Sessions-to-lead conversion (vs GA4 only):{' '}
         <span style={{ color: 'var(--a-text)', fontVariantNumeric: 'tabular-nums' }}>
           {formatPct(totalAssignments, ga4Sessions)}
         </span>

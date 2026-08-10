@@ -23,7 +23,6 @@ import Link from 'next/link'
 import MortgageCalculator from './MortgageCalculator'
 import { getCalculatorDefaults } from '@/lib/data'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbNav } from '@/components/site/kb/KbNav.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -34,12 +33,12 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Mortgage Calculator',
+  title: 'Mortgage Calculator for Home Buyers',
   description:
     'Estimate your monthly house payment from price, down payment, interest rate, and loan term. Central Oregon tax and insurance defaults included.',
   alternates: { canonical: `${siteUrl}/tools/mortgage-calculator` },
   openGraph: {
-    title: 'Mortgage Calculator | Ryan Realty',
+    title: 'Mortgage Calculator for Home Buyers | Ryan Realty',
     description:
       'Estimate your monthly house payment from price, down payment, interest rate, and loan term. Central Oregon tax and insurance defaults included.',
     url: `${siteUrl}/tools/mortgage-calculator`,
@@ -87,7 +86,6 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
 
   return (
     <main className="kb-root">
-      <KbNav />
       <KbSectionTracker pageType="tools" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
       <KbBreadcrumb overlay
@@ -104,8 +102,8 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Before you offer"
-          titleTop="What will the"
-          titleBottom="payment be?"
+          titleTop="Mortgage Calculator"
+          titleBottom="for Home Buyers"
           lead="Enter price, down payment, rate, and term. Taxes and insurance start at Central Oregon defaults you can change. The total is an estimate, not a lender quote."
           showSearch={false}
           videoSrc={null}
