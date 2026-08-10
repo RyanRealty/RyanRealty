@@ -131,7 +131,7 @@ export default async function CompetitionAnalyticsPage({
       )}
 
       <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full text-left text-sm">
           <thead className="border-b bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
             <tr>
               <th className="px-3 py-2">Rank</th>
@@ -139,7 +139,7 @@ export default async function CompetitionAnalyticsPage({
               <th className="px-3 py-2 tabular-nums">Sides</th>
               <th className="px-3 py-2 tabular-nums">Volume</th>
               <th className="px-3 py-2 tabular-nums">$ share</th>
-              <th className="px-3 py-2 tabular-nums">Unit share</th>
+              <th className="hidden px-3 py-2 tabular-nums sm:table-cell">Unit share</th>
             </tr>
           </thead>
           <tbody>
@@ -150,7 +150,9 @@ export default async function CompetitionAnalyticsPage({
                 <td className="px-3 py-2 tabular-nums">{r.sidesCount.toLocaleString('en-US')}</td>
                 <td className="px-3 py-2 tabular-nums">{money(r.totalVolume)}</td>
                 <td className="px-3 py-2 tabular-nums">{r.volumeSharePct.toFixed(2)}%</td>
-                <td className="px-3 py-2 tabular-nums">{r.unitSharePct.toFixed(2)}%</td>
+                <td className="hidden px-3 py-2 tabular-nums sm:table-cell">
+                  {r.unitSharePct.toFixed(2)}%
+                </td>
               </tr>
             ))}
           </tbody>
@@ -159,15 +161,15 @@ export default async function CompetitionAnalyticsPage({
 
       <SectionHead>Top agents — {side} side ({year})</SectionHead>
       <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
-        <table className="w-full min-w-[640px] text-left text-sm">
+        <table className="w-full text-left text-sm">
           <thead className="border-b bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
             <tr>
               <th className="px-3 py-2">Rank</th>
               <th className="px-3 py-2">Agent</th>
-              <th className="px-3 py-2">Office</th>
+              <th className="hidden px-3 py-2 sm:table-cell">Office</th>
               <th className="px-3 py-2 tabular-nums">Sides</th>
               <th className="px-3 py-2 tabular-nums">Volume</th>
-              <th className="px-3 py-2 tabular-nums">$ share</th>
+              <th className="hidden px-3 py-2 tabular-nums sm:table-cell">$ share</th>
             </tr>
           </thead>
           <tbody>
@@ -175,10 +177,12 @@ export default async function CompetitionAnalyticsPage({
               <tr key={`${r.agentName}-${r.officeName}`} className="border-b border-neutral-100">
                 <td className="px-3 py-2 tabular-nums text-neutral-500">{r.rank}</td>
                 <td className="px-3 py-2 font-medium">{r.agentName}</td>
-                <td className="px-3 py-2 text-neutral-600">{r.officeName}</td>
+                <td className="hidden px-3 py-2 text-neutral-600 sm:table-cell">{r.officeName}</td>
                 <td className="px-3 py-2 tabular-nums">{r.sidesCount.toLocaleString('en-US')}</td>
                 <td className="px-3 py-2 tabular-nums">{money(r.totalVolume)}</td>
-                <td className="px-3 py-2 tabular-nums">{r.volumeSharePct.toFixed(2)}%</td>
+                <td className="hidden px-3 py-2 tabular-nums sm:table-cell">
+                  {r.volumeSharePct.toFixed(2)}%
+                </td>
               </tr>
             ))}
           </tbody>
