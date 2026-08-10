@@ -57,7 +57,7 @@ const SITUATIONS: Situation[] = [
     key: 'curious',
     chip: 'Just curious',
     headline: 'You want a real number.',
-    body: 'A broker's written read on your home's value, closer to what closed sales support than an online guess. We tell you who follows up and when. Plenty of people start here years before they sell.',
+    body: "A broker's written read on your home's value, closer to what closed sales support than an online guess. We tell you who follows up and when. Plenty of people start here years before they sell.",
   },
   {
     key: 'downsizing',
