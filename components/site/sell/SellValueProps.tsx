@@ -1,8 +1,8 @@
 /**
  * SellValueProps — three differentiation cards for the /sell page.
  *
- * Uses shadcn Card + design-token colors only. No raw buttons, no hex
- * colors, no banned vocabulary. Server-renderable.
+ * E5 craft: asymmetric section head + numbered cards (first card muted accent).
+ * Uses shadcn Card + design-token colors only. Server-renderable.
  */
 
 import {
@@ -47,26 +47,41 @@ const VALUE_PROPS: ValueProp[] = [
 
 export function SellValueProps() {
   return (
-    <Section padding="default" tone="default" divider>
+    <Section padding="default" tone="default" divider id="what-you-get">
       <Container>
-        <Stack gap="tight" className="mb-10 max-w-[52ch]">
-          <Eyebrow>What you get when you list</Eyebrow>
-          <H2>Every price we quote arrives with the comps behind it.</H2>
-        </Stack>
+        <div className="mb-10 grid grid-cols-1 items-end gap-6 lg:grid-cols-12">
+          <Stack gap="tight" className="max-w-xl lg:col-span-7">
+            <Eyebrow>What you get when you list</Eyebrow>
+            <H2>Every price we quote arrives with the comps behind it.</H2>
+          </Stack>
+          <Body size="default" tone="muted" className="max-w-sm leading-relaxed lg:col-span-5 lg:justify-self-end">
+            Free CMA first. One broker from pricing to close. Photos in 48 hours, listed in a week.
+          </Body>
+        </div>
         <Grid cols={3} gap="loose">
-          {VALUE_PROPS.map((v) => (
-            <Card key={v.title} className="rounded-[14px] shadow-sm">
+          {VALUE_PROPS.map((v, i) => (
+            <Card
+              key={v.title}
+              className={
+                i === 0
+                  ? 'rounded-xl border-primary/20 bg-muted shadow-none'
+                  : 'rounded-xl border-border shadow-none'
+              }
+            >
               <CardHeader className="pb-2">
-                <CardTitle className="text-[19px] font-bold leading-snug tracking-[-0.01em] text-foreground">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <CardTitle className="text-lg font-bold leading-snug tracking-tight text-foreground">
                   {v.title}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
-                <Body size="default" tone="muted" className="leading-[1.65]">
+                <Body size="default" tone="muted" className="leading-relaxed">
                   {v.body}
                 </Body>
                 {v.detail ? (
-                  <p className="mt-3 text-[12px] font-semibold uppercase tracking-[0.08em] text-primary">
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-primary">
                     {v.detail}
                   </p>
                 ) : null}

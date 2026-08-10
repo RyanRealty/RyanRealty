@@ -99,7 +99,7 @@ export function SellMarketingPlan() {
         </Stack>
 
         {/* Interactive centerpiece */}
-        <SellPlanExplorer />
+        <SellPlanExplorer valuationHref="#get-value" />
 
         <p className="mt-4 text-sm text-muted-foreground">
           A written valuation includes a broker walking you through all three.{' '}

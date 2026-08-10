@@ -1,37 +1,24 @@
 /**
- * Sell page (/sell) — KB (kinetic-brutalist) design, conversion-first rework
- * 2026-07-11. The page is Ryan Realty's highest-intent lead surface, and the
- * prior build was a brochure: the ask lived two clicks away (/sell/valuation →
- * scroll past a second hero → form) and the page carried zero proof (no
- * reviews, no sold homes, no track record). This rework:
+ * Sell page (/sell) — KB design, conversion-first craft (E5).
  *
- *   1. THE ASK IS IN THE HERO. The proven two-step seller form from
- *      /lp/seller-home-value (Google Places autocomplete, partial-lead capture
- *      on step 1, FUB workflow + broker assignment + CMA queue on submit)
- *      renders inside KbHero via formSlot. pagePath='/sell' keeps FUB
- *      sourceUrl attribution on this page.
- *   2. THE PAGE LEADS WITH THE SERVICE (Matt 2026-07-11: selling a home is not
- *      just the home's value). Order: how we sell (value props → process →
- *      marketing plan → fee), THEN proof (SellProof live track record + sold
- *      homes with verbatim paired reviews, KbTestimonials seller reviews).
- *      The valuation form is the entry point, not the theme.
- *   3. Every internal valuation CTA anchors to the on-page form (#get-value)
- *      instead of navigating away.
+ * Conversion stack (parity competitive target + B3 wiring):
+ *   1. THE ASK IS IN THE HERO. SellerLPForm (Places autocomplete, partial-lead
+ *      on step 1, FUB + CMA queue on submit) via formSlot. pagePath='/sell'
+ *      keeps sourceUrl attribution on this page. Anchor #get-value.
+ *   2. PROOF EARLY. SellProof (live track record + sold homes) then
+ *      KbTestimonials, so receipts sit above the long service story.
+ *   3. SERVICE STORY. Value props → situations → process → marketing plan →
+ *      fee → live market context.
+ *   4. Every internal valuation CTA anchors to #get-value (on-page form).
+ *      Secondary path: /sell/valuation for the dedicated written CMA surface.
  *
- * DATA ACCURACY (CLAUDE.md §0): all stats are live DAL values (getMarketPulse,
- * getCityMarketDetail, getBrokerageTrackRecord, Sold Stories via
- * listing_tile_mv) or they do not render. Reviews are verbatim Google reviews
- * from lib/testimonials.ts. No invented results, sale percentages, or
- * days-to-sell stats (D99). Pulse/detail timeouts run at 8s: with
- * revalidate=300 the wait happens during background ISR revalidation, never on
- * a user request — the prior 3.5s budget silently blanked the live numbers.
+ * DATA ACCURACY (CLAUDE.md §0): all stats are live DAL values or they do not
+ * render. Reviews are verbatim Google reviews from lib/testimonials.ts.
  *
- * Section stack: KbNav · MetadataBlock · KbBreadcrumb · KbHero(formSlot) ·
- *   SellProof · KbTestimonials · SellValueProps · SellProcess ·
- *   SellMarketingPlan · SellCommission · SellMarketContext · LifestyleStrip ·
- *   SellValuationCTA · CTABar · FAQBlock · KbFooter.
+ * Layer A (seo-shell): titleTop "Sell your home in" + metadata "Sell Your Home…".
+ * Brand lock: navy/cream KB shell, Amboqia display, no invented metrics.
  *
- * Parity contract: design_system/ryan-realty/ui_kits/sell/parity.json (KB set).
+ * Parity: design_system/ryan-realty/ui_kits/sell/parity.json (KB set).
  */
 
 import type { Metadata } from 'next'
@@ -203,8 +190,7 @@ export default async function SellPage() {
       />
 
       <SmoothScrollProvider>
-        {/* Layer A H1: query language (sell intent + place). Layer B lead keeps
-            fee-first facts (VOICE.md rule 6, bad news first). */}
+        {/* Layer A H1: sell intent + place (seo-shell locked). */}
         <KbHero
           data={{
             activeCount: pulse?.activeCount ?? null,
@@ -224,7 +210,7 @@ export default async function SellPage() {
                 Prefer to talk first? Call{' '}
                 <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
                 . Dedicated written valuation page:{' '}
-                <Link href="/sell/valuation">What&apos;s my home worth</Link>.
+                <Link href="/sell/valuation#valuation-form">What&apos;s my home worth</Link>.
               </p>
             </>
           }
@@ -234,9 +220,19 @@ export default async function SellPage() {
           posterSrc={heroSrc ?? OLD_MILL_HERO}
         />
 
+        {/* Proof early — conversion rhythm: form → receipts → story */}
+        <SellProof
+          record={trackRecord}
+          reviewAggregate={getTestimonialAggregate()}
+          stories={soldProof}
+          valuationHref={FORM_ANCHOR}
+        />
+
+        <KbTestimonials reviews={SELL_REVIEWS} />
+
         <SellValueProps />
 
-        <SellerSituations />
+        <SellerSituations valuationHref={FORM_ANCHOR} />
 
         <SellProcess />
 
@@ -244,15 +240,11 @@ export default async function SellPage() {
 
         <SellCommission />
 
-        <SellProof
-          record={trackRecord}
-          reviewAggregate={getTestimonialAggregate()}
-          stories={soldProof}
+        <SellMarketContext
+          pulse={pulse}
+          detail={marketDetail}
+          valuationHref={FORM_ANCHOR}
         />
-
-        <KbTestimonials reviews={SELL_REVIEWS} />
-
-        <SellMarketContext pulse={pulse} detail={marketDetail} />
 
         <LifestyleStrip
           images={lifestyleImages}
@@ -285,13 +277,19 @@ export default async function SellPage() {
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
 
-      {/* Sticky mobile CTA bar — the ask reachable from every scroll depth,
-          anchored to the on-page hero form. Mobile only. */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t-2 px-3 py-3 sm:hidden" style={{ background: 'var(--cream)', borderColor: 'var(--navy)' }}>
+      {/* Sticky mobile CTA — form reachable from every scroll depth. */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 border-t-2 px-3 py-3 sm:hidden"
+        style={{
+          background: 'var(--cream)',
+          borderColor: 'var(--navy)',
+          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+        }}
+      >
         <div className="flex items-center gap-2">
           <a
             href={FORM_ANCHOR}
-            className="flex-1 px-4 py-3 text-center text-sm font-bold uppercase tracking-widest"
+            className="flex min-h-12 flex-1 items-center justify-center px-4 py-3 text-center text-sm font-bold uppercase tracking-widest"
             style={{ background: 'var(--navy)', color: 'var(--cream)' }}
           >
             Get the valuation
@@ -299,7 +297,7 @@ export default async function SellPage() {
           <a
             href={`tel:${CONTACT.phoneDirectTel}`}
             aria-label={`Call Ryan Realty at ${CONTACT.phoneDirect}`}
-            className="flex h-12 items-center justify-center px-3 text-sm font-bold"
+            className="flex h-12 min-w-12 items-center justify-center px-3 text-sm font-bold"
             style={{ border: '2px solid var(--navy)', color: 'var(--navy)' }}
           >
             Call

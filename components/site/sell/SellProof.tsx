@@ -1,25 +1,23 @@
 /**
  * SellProof — the track-record proof section for /sell.
  *
- * A seller choosing who lists their largest asset needs evidence, not
- * adjectives (VOICE.md Law 1 + 2). This section is the receipt block:
- *   1. A hard-edged KB ledger of live aggregate sold stats
- *      (getBrokerageTrackRecord — listings table, ListOfficeName ilike
- *      '%ryan realty%', StandardStatus='Closed') plus the Google review
- *      aggregate from lib/testimonials.ts (verbatim verified reviews).
- *   2. Real sold homes (the LP Sold Stories pipeline — listing_tile_mv via
- *      getListingTiles, curated keys) with broker attribution and, where a
- *      real paired review exists, the verbatim Google pull quote.
+ * Conversion rhythm (E5): sits immediately after the hero form so the seller
+ * sees receipts before the long service story. Structure:
+ *   1. Hard-edged KB ledger of live aggregate sold stats
+ *      (getBrokerageTrackRecord) + Google review aggregate.
+ *   2. Real sold homes (Sold Stories pipeline) with broker attribution and
+ *      verbatim paired Google pull quotes.
+ *   3. Optional re-ask CTA back to the on-page form (#get-value).
  *
  * DATA ACCURACY (CLAUDE.md §0): every number is a live DAL value or the cell
- * does not render. Review quotes are verbatim with attribution (exempt from
- * the Five Laws, never altered). Nothing here is invented to fill a layout.
+ * does not render. Review quotes are verbatim with attribution.
  *
  * Server component. Props-driven — the page fetches, this renders.
  */
 
 import type { BrokerageTrackRecord } from '@/lib/data/track-record'
 import { formatPriceCompact, type SoldStory } from '@/app/lp/seller-home-value/data'
+import { CTAButton } from '@/components/site/primitives'
 
 type Props = {
   record: BrokerageTrackRecord | null
@@ -27,9 +25,16 @@ type Props = {
   reviewAggregate: { count: number; rating: string } | null
   /** Pre-filtered sold stories (badge 'Sold'), max 3. */
   stories: SoldStory[]
+  /** On-page form anchor (B3). Defaults to hero form. */
+  valuationHref?: string
 }
 
-export function SellProof({ record, reviewAggregate, stories }: Props) {
+export function SellProof({
+  record,
+  reviewAggregate,
+  stories,
+  valuationHref = '#get-value',
+}: Props) {
   const cells: { num: string; label: string }[] = []
   if (record) {
     cells.push({ num: record.homesSold.toLocaleString('en-US'), label: 'Homes sold' })
@@ -51,6 +56,7 @@ export function SellProof({ record, reviewAggregate, stories }: Props) {
   return (
     <section className="section sell-proof" id="track-record" aria-label="Ryan Realty track record">
       <div className="wrap">
+        {/* Asymmetric head: title left, MLS source right on desktop */}
         <div className="sec-head">
           <div>
             <span className="sec-index">Closed sales</span>
@@ -104,6 +110,16 @@ export function SellProof({ record, reviewAggregate, stories }: Props) {
             ))}
           </div>
         ) : null}
+
+        {/* Re-ask after proof — keep the form one scroll-gesture away */}
+        <div className="mt-10 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="max-w-xl text-sm font-medium text-muted-foreground sm:text-base">
+            Want the comps for your address? The written valuation is free and requires no listing agreement.
+          </p>
+          <CTAButton href={valuationHref} tone="primary" size="md" className="shrink-0">
+            Get the written valuation
+          </CTAButton>
+        </div>
       </div>
     </section>
   )

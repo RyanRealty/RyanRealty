@@ -43,7 +43,8 @@ import {
   TextLink,
 } from '@/components/site/primitives'
 
-const VALUATION_HREF = '/lp/seller-home-value'
+/** On-page hero form on /sell (B3). Override only if embedding off-page. */
+const DEFAULT_VALUATION_HREF = '#get-value'
 
 function mosVerdict(mos: number): string {
   if (mos <= 4) return "a seller's market"
@@ -71,9 +72,15 @@ type Signal = {
 type Props = {
   pulse: MarketPulse | null
   detail?: MarketDetail | null
+  /** Primary ask target — defaults to on-page #get-value. */
+  valuationHref?: string
 }
 
-export function SellMarketContext({ pulse, detail }: Props) {
+export function SellMarketContext({
+  pulse,
+  detail,
+  valuationHref = DEFAULT_VALUATION_HREF,
+}: Props) {
   const signals: Signal[] = []
 
   // Sale-to-list — the single clearest read on whether a price is right.
@@ -248,7 +255,7 @@ export function SellMarketContext({ pulse, detail }: Props) {
         </div>
 
         <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-          <CTAButton href={VALUATION_HREF} tone="primary" size="md">
+          <CTAButton href={valuationHref} tone="primary" size="md">
             Get the written valuation
           </CTAButton>
           <TextLink href="/housing-market" tone="primary" underline="on-hover">

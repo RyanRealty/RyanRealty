@@ -39,7 +39,8 @@ import {
 } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 
-const VALUATION_HREF = '/lp/seller-home-value'
+/** On-page hero form on /sell (B3). Pass the LP path when embedding on a paid LP. */
+const DEFAULT_VALUATION_HREF = '#get-value'
 const ASK_HREF = '/contact?inquiry=Selling'
 
 type Situation = {
@@ -56,7 +57,7 @@ const SITUATIONS: Situation[] = [
     key: 'curious',
     chip: 'Just curious',
     headline: 'You want a real number.',
-    body: 'A broker’s written read on your home’s value, closer to what closed sales support than an online guess. We tell you who follows up and when. Plenty of people start here years before they sell.',
+    body: 'A broker's written read on your home's value, closer to what closed sales support than an online guess. We tell you who follows up and when. Plenty of people start here years before they sell.',
   },
   {
     key: 'downsizing',
@@ -102,7 +103,24 @@ const SITUATIONS: Situation[] = [
   },
 ]
 
-export function SellerSituations({ tone = 'default' }: { tone?: 'default' | 'muted' }) {
+function valuationHrefFor(
+  base: string,
+  reason: string,
+): string {
+  // Hash anchors cannot carry query params. Path/LP targets keep ?reason= for CRM.
+  if (base.startsWith('#')) return base
+  const joiner = base.includes('?') ? '&' : '?'
+  return `${base}${joiner}reason=${encodeURIComponent(reason)}`
+}
+
+export function SellerSituations({
+  tone = 'default',
+  valuationHref = DEFAULT_VALUATION_HREF,
+}: {
+  tone?: 'default' | 'muted'
+  /** Primary ask — on /sell this is #get-value (hero form). */
+  valuationHref?: string
+}) {
   const [active, setActive] = useState(0)
   const current = SITUATIONS[active]!
 
@@ -129,7 +147,7 @@ export function SellerSituations({ tone = 'default' }: { tone?: 'default' | 'mut
           </Body>
         </Stack>
 
-        {/* Situation chips */}
+        {/* Situation chips — min 44px hit targets */}
         <div role="radiogroup" aria-label="What is bringing you to sell" className="flex flex-wrap gap-2.5">
           {SITUATIONS.map((s, i) => (
             <div
@@ -143,7 +161,7 @@ export function SellerSituations({ tone = 'default' }: { tone?: 'default' | 'mut
                 else onKey(e, i)
               }}
               className={cn(
-                'cursor-pointer select-none rounded-full border px-4 py-2 text-sm font-semibold transition',
+                'min-h-11 cursor-pointer select-none rounded-full border px-4 py-2.5 text-sm font-semibold transition',
                 active === i
                   ? 'border-primary bg-primary text-primary-foreground'
                   : 'border-border bg-card text-foreground hover:border-primary/40',
@@ -157,7 +175,7 @@ export function SellerSituations({ tone = 'default' }: { tone?: 'default' | 'mut
         {/* Tailored reassurance — always visible, keyed by selection */}
         <div
           key={current.key}
-          className="mt-6 rounded-[14px] border border-l-4 border-border border-l-primary bg-muted p-6 sm:p-8 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
+          className="mt-6 rounded-xl border border-l-4 border-border border-l-primary bg-muted p-6 sm:p-8 motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
         >
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-10">
             <div className="lg:col-span-2">
@@ -167,7 +185,12 @@ export function SellerSituations({ tone = 'default' }: { tone?: 'default' | 'mut
               </Body>
             </div>
             <div className="flex flex-col gap-3 lg:items-end lg:justify-center">
-              <CTAButton href={`${VALUATION_HREF}?reason=${current.key}`} tone="primary" size="md" className="w-full lg:w-auto">
+              <CTAButton
+                href={valuationHrefFor(valuationHref, current.key)}
+                tone="primary"
+                size="md"
+                className="w-full lg:w-auto"
+              >
                 Get your home value
               </CTAButton>
               <CTAButton href={`${ASK_HREF}&reason=${current.key}`} tone="outline" size="md" className="w-full lg:w-auto">

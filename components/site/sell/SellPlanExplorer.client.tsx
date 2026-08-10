@@ -25,7 +25,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { CTAButton, Eyebrow } from '@/components/site/primitives'
 import { cn } from '@/lib/utils'
 
-const VALUATION_HREF = '/lp/seller-home-value'
+/** On-page hero form on /sell (B3 conversion path). */
+const DEFAULT_VALUATION_HREF = '#get-value'
 const TOTAL_SERVICES = 31
 
 type Tier = {
@@ -128,7 +129,11 @@ function Check() {
   )
 }
 
-export function SellPlanExplorer() {
+export function SellPlanExplorer({
+  valuationHref = DEFAULT_VALUATION_HREF,
+}: {
+  valuationHref?: string
+} = {}) {
   const [active, setActive] = useState(1) // Enhanced by default
   const tier = TIERS[active]!
   const count = useCountUp(tier.services)
@@ -223,7 +228,7 @@ export function SellPlanExplorer() {
             </div>
 
             <div className="mt-8">
-              <CTAButton href={VALUATION_HREF} tone="on-navy" size="lg">
+              <CTAButton href={valuationHref} tone="on-navy" size="lg">
                 Get the written valuation
               </CTAButton>
             </div>
