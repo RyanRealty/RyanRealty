@@ -526,3 +526,8 @@ components/site/MarketSources.tsx
 # components/admin/cma/worklist/CmaBoard.client.tsx, all w-[380px]): a fixed
 # master/detail split-pane width has no locked-ladder equivalent.
 components/search/MapSearchView.tsx
+
+# Closed-sales explorer: native form controls for GET filter queries (no KB form kit).
+app/housing-market/history/page.tsx
+# Listing room restyle: client control chips for AI style pickers (no KB form kit).
+components/site/listing-detail/RoomRestyle.client.tsx

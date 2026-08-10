@@ -12,8 +12,6 @@ import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 3600
@@ -79,10 +77,10 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
             Results are counts and dollar totals. Never individual sold addresses.
           </p>
 
-          <form method="get" className="mt-10 grid gap-4 border border-border p-6 sm:grid-cols-2 lg:grid-cols-3">
+          <form method="get" className="mt-10 grid gap-4 border border-current/20 p-6 sm:grid-cols-2 lg:grid-cols-3">
             <div className="block text-sm">
-              <span className="text-muted-foreground">Year</span>
-              <Input name="year" list="year-options" defaultValue={String(year)} className="mt-1" />
+              <span className="opacity-70">Year</span>
+              <input name="year" list="year-options" defaultValue={String(year)} className="mt-1 w-full border border-current/30 bg-transparent px-3 py-2" />
               <datalist id="year-options">
                 {years.map((y) => (
                   <option key={y} value={y} />
@@ -90,8 +88,8 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
               </datalist>
             </div>
             <div className="block text-sm">
-              <span className="text-muted-foreground">City</span>
-              <Input name="city" list="city-options" defaultValue={city ?? ''} placeholder="All service-area cities" className="mt-1" />
+              <span className="opacity-70">City</span>
+              <input name="city" list="city-options" defaultValue={city ?? ''} placeholder="All service-area cities" className="mt-1 w-full border border-current/30 bg-transparent px-3 py-2" />
               <datalist id="city-options">
                 {ANALYTICS_CO_CITIES_PROPER.map((c) => (
                   <option key={c} value={c} />
@@ -99,8 +97,8 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
               </datalist>
             </div>
             <div className="block text-sm">
-              <span className="text-muted-foreground">Property type (A, B, C, or D)</span>
-              <Input name="type" list="type-options" defaultValue={propertyType ?? ''} placeholder="All types" className="mt-1" />
+              <span className="opacity-70">Property type (A, B, C, or D)</span>
+              <input name="type" list="type-options" defaultValue={propertyType ?? ''} placeholder="All types" className="mt-1 w-full border border-current/30 bg-transparent px-3 py-2" />
               <datalist id="type-options">
                 {types.map((t) => (
                   <option key={t} value={t} label={labelPropertyType(t)} />
@@ -108,19 +106,21 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
               </datalist>
             </div>
             <div className="block text-sm">
-              <span className="text-muted-foreground">Min close price</span>
-              <Input name="min" type="number" defaultValue={minPrice ?? ''} placeholder="e.g. 400000" className="mt-1" />
+              <span className="opacity-70">Min close price</span>
+              <input name="min" type="number" defaultValue={minPrice ?? ''} placeholder="e.g. 400000" className="mt-1 w-full border border-current/30 bg-transparent px-3 py-2" />
             </div>
             <div className="block text-sm">
-              <span className="text-muted-foreground">Max close price</span>
-              <Input name="max" type="number" defaultValue={maxPrice ?? ''} placeholder="e.g. 900000" className="mt-1" />
+              <span className="opacity-70">Max close price</span>
+              <input name="max" type="number" defaultValue={maxPrice ?? ''} placeholder="e.g. 900000" className="mt-1 w-full border border-current/30 bg-transparent px-3 py-2" />
             </div>
             <div className="flex items-end gap-2 text-sm pb-2">
-              <Input type="checkbox" name="fireplace" value="1" defaultChecked={fireplace} className="h-4 w-4" />
+              <input type="checkbox" name="fireplace" value="1" defaultChecked={fireplace} className="h-4 w-4" />
               <span>Fireplace only</span>
             </div>
             <div className="sm:col-span-2 lg:col-span-3">
-              <Button type="submit">Run query</Button>
+              <button type="submit" className="border-2 border-current px-6 py-2 text-sm font-medium">
+                Run query
+              </button>
             </div>
           </form>
 

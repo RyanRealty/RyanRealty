@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
 
 const STYLES = [
   { id: 'modern', label: 'Modern' },
@@ -62,20 +61,28 @@ export function RoomRestyle({ photoUrl, listingKey }: Props) {
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {STYLES.map((s) => (
-          <Button
+          <button
             key={s.id}
             type="button"
-            size="sm"
-            variant={style === s.id ? 'default' : 'outline'}
             onClick={() => setStyle(s.id)}
+            className={
+              style === s.id
+                ? 'border border-primary bg-primary px-3 py-1.5 text-xs text-primary-foreground'
+                : 'border border-border px-3 py-1.5 text-xs'
+            }
           >
             {s.label}
-          </Button>
+          </button>
         ))}
       </div>
-      <Button type="button" onClick={run} disabled={loading} className="mt-3">
+      <button
+        type="button"
+        onClick={run}
+        disabled={loading}
+        className="mt-3 border border-primary bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
+      >
         {loading ? 'Generating…' : 'Restyle photo'}
-      </Button>
+      </button>
       {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
       {resultUrl ? (
         <div className="mt-4 space-y-2">
