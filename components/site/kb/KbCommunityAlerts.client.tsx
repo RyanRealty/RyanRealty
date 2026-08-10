@@ -91,7 +91,7 @@ export function KbCommunityAlerts({
         <div className="comm-alerts-inner">
           <BellAlertIcon className="comm-alerts-icon" aria-hidden />
           <p className="comm-alerts-confirm">
-            Set. Watch your inbox — new {communityName} listings land by email when they hit the market.
+            Set. Watch your inbox. New {communityName} listings land by email when they hit the market.
           </p>
           <p className="comm-alerts-fine" style={{ marginTop: '0.5rem' }}>
             Next visit we&apos;ll remind you you&apos;re watching {communityName}.{' '}
