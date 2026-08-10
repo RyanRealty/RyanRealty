@@ -18,6 +18,7 @@ import ValuationForm from '@/app/home-valuation/ValuationForm'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { H2, H3, Eyebrow, Body, CTAButton } from '@/components/site/primitives'
+import { Card, CardContent } from '@/components/ui/card'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -116,9 +117,11 @@ export default function SellValuationPage() {
             <Body size="default" tone="muted" className="mt-3 leading-relaxed">
               We look up your property and send a comparative market analysis. If the home is not yet in our system, a broker still follows up with an estimate.
             </Body>
-            <div className="mt-8 rounded-xl border border-border bg-background p-5 sm:p-6">
-              <ValuationForm />
-            </div>
+            <Card className="mt-8">
+              <CardContent className="p-5 sm:p-6">
+                <ValuationForm />
+              </CardContent>
+            </Card>
             <p className="mt-4 text-sm text-muted-foreground">
               Prefer the full listing plan first?{' '}
               <Link
@@ -201,7 +204,6 @@ export default function SellValuationPage() {
         style={{
           background: 'var(--cream)',
           borderColor: 'var(--navy)',
-          paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
         }}
       >
         <a

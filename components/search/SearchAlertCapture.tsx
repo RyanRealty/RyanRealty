@@ -239,7 +239,7 @@ export function SearchAlertCapture({
               <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
                 You&apos;re watching {priorWatch.label}
               </p>
-              <p className={cn('text-xs text-muted-foreground', isInline && 'text-[11px] sm:text-xs')}>
+              <p className="text-xs text-muted-foreground">
                 Matches go to your email. Pause from any alert email link.
               </p>
             </div>
@@ -329,7 +329,7 @@ export function SearchAlertCapture({
                 We will email you new homes matching {target}.
               </p>
             ) : (
-              <p className="line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">
+              <p className="line-clamp-1 text-xs text-muted-foreground">
                 Matching {target}.
               </p>
             )}

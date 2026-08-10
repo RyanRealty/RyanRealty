@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BellAlertIcon } from '@heroicons/react/24/outline'
+import { Button } from '@/components/ui/button'
 import {
   dismissGuestWatch,
   readGuestWatch,
@@ -91,7 +92,7 @@ export default function GuestWatchingBanner() {
     <div
       role="region"
       aria-label="Your listing alerts"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 sm:px-4"
     >
       <div className="pointer-events-auto mx-auto flex max-w-xl flex-col gap-2 border-2 border-primary bg-card px-3 py-2.5 text-foreground shadow-md sm:flex-row sm:items-center sm:gap-3 sm:px-4">
         <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center">
@@ -122,14 +123,16 @@ export default function GuestWatchingBanner() {
           >
             Manage in account
           </Link>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={dismiss}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+            className="min-h-11 min-w-11 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             aria-label="Dismiss watching reminder"
           >
             Not now
-          </button>
+          </Button>
         </div>
       </div>
     </div>
