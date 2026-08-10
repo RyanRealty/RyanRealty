@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from '@/components/ui/checkbox'
+import { Card, CardContent } from '@/components/ui/card'
 
 type Props = {
   user: boolean
@@ -210,10 +211,8 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
         <>
           <div className="fixed inset-0 z-40" aria-hidden onClick={closePanel} />
           {status === 'done' ? (
-            <div
-              role="status"
-              className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
-            >
+            <Card role="status" className="absolute left-0 top-full z-50 mt-1 w-72 shadow-md">
+              <CardContent className="p-4">
               <p className="text-sm font-medium text-foreground">
                 {user ? 'Search saved.' : 'You are set.'}
               </p>
@@ -225,15 +224,17 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
               <Button
                 type="button"
                 onClick={closePanel}
-                className="mt-3 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                className="mt-3"
               >
                 Done
               </Button>
-            </div>
+              </CardContent>
+            </Card>
           ) : user ? (
+            <Card className="absolute left-0 top-full z-50 mt-1 w-72 shadow-md">
             <form
               onSubmit={handleSave}
-              className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
+              className="p-4"
             >
               <Label className="block text-sm font-medium text-muted-foreground">Name this search</Label>
               <Input
@@ -281,10 +282,12 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
                 </p>
               )}
             </form>
+            </Card>
           ) : (
+            <Card className="absolute left-0 top-full z-50 mt-1 w-72 shadow-md">
             <form
               onSubmit={handleGuestSave}
-              className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
+              className="p-4"
             >
               <p className="text-sm font-medium text-foreground">Save this search</p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -346,6 +349,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
                 </p>
               )}
             </form>
+            </Card>
           )}
         </>
       )}

@@ -41,13 +41,9 @@ export const metadata: Metadata = {
   },
 }
 
-// Paid-traffic / lead-capture surface uses the FUB-tracked dotted number so
-// inbound calls route through Follow Up Boss for attribution (CLAUDE.md §3).
 const BROKER_PHONE = CONTACT.phoneFub
 const BROKER_PHONE_TEL = CONTACT.phoneFubTel
 
-// Em-dash as a data placeholder for unavailable values — the one allowed use
-// per the brand spec ("Unavailable → em-dash").
 const MDASH = '—'
 
 // Two verified buyer-side reviews from TESTIMONIALS (Stephen Graham + Nick
@@ -639,11 +635,6 @@ export default async function BuyerLPPage() {
               value="faq-remote"
               q="I am not in Bend. Can I still look?"
               a="Yes. Video walk-throughs, document review by email, and showings scheduled around your visits make the distance workable."
-            />
-            <FAQ
-              value="faq-same-product"
-              q="Is this different from alerts on the website?"
-              a="No. Listing alerts here are the same free product as on search and city pages. Paid traffic and organic traffic enroll into one system."
             />
           </Accordion>
         </div>
