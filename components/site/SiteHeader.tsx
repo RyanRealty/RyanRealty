@@ -1,3 +1,4 @@
+// reachability: entry-point retired dual-chrome — not mounted in app/layout (PublicNav owns public chrome 2026-08-10); kept for optional utility remount / MegaMenu path.
 import Link from 'next/link'
 import { CTAButton, RyanRealtyMark } from '@/components/site/primitives'
 import HeaderAccount from '@/components/site/HeaderAccount'
@@ -10,6 +11,9 @@ import type { NavData, AreaPulseRow } from '@/lib/site-menu'
 /**
  * SiteHeader — sticky navy bar with an EDITORIAL mega-menu (Experience System
  * directive 2026-06-09: "rework the menu, think further ahead than others").
+ *
+ * RETIRED from public chrome (2026-08-10): app/layout mounts PublicNav → KbNav.
+ * Do not re-mount this in layout without removing PublicNav (dual chrome).
  *
  * DATA STRATEGY — one try/catch block, no waterfalls:
  *   1. getMarketPulseCitySnapshots (8 cities) — from market_pulse_live,
