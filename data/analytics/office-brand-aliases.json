@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "updated": "2026-08-10",
+  "methodology": "See docs/plans/seo-voice/DIM_OFFICE_ENTITY_RESOLUTION.md. Alias groups merge only true string variants / rebrands / abbreviations of the same local office. brand_family labels franchise umbrellas without inventing brand-level share figures. Source strings observed in analytics_mart_office_share_annual (CO service-area).",
+  "groups": [
+    {
+      "canonical_name": "Cascade Hasson SIR",
+      "brand_family": "Cascade Hasson / Sotheby's",
+      "is_ryan_realty": false,
+      "aliases": [
+        "Cascade Hasson SIR",
+        "Cascade Hasson Sotheby's International Realty",
+        "Cascade Hasson Sothebys International Realty",
+        "Cascade Hasson Sotheby's Int'l Realty"
+      ],
+      "notes": "Dominant MLS string is SIR; longer Sotheby's form is the same local brokerage rebrand/variant."
+    },
+    {
+      "canonical_name": "Keller Williams Realty Central Oregon",
+      "brand_family": "Keller Williams",
+      "is_ryan_realty": false,
+      "aliases": [
+        "Keller Williams Realty Central Oregon",
+        "Keller Williams Realty C.O.",
+        "Keller Williams Realty CO",
+        "KW Realty Central Oregon"
+      ]
+    },
+    {
+      "canonical_name": "RE/MAX Out West Realty",
+      "brand_family": "RE/MAX",
+      "is_ryan_realty": false,
+      "aliases": [
+        "RE/MAX Out West Realty",
+        "RE/MAX Out West Realty, LLC"
+      ]
+    },
+    {
+      "canonical_name": "RE/MAX Key Properties",
+      "brand_family": "RE/MAX",
+      "is_ryan_realty": false,
+      "aliases": ["RE/MAX Key Properties", "REMAX Key Properties"]
+    },
+    {
+      "canonical_name": "RE/MAX Land & Home Real Estate",
+      "brand_family": "RE/MAX",
+      "is_ryan_realty": false,
+      "aliases": ["RE/MAX Land & Home Real Estate", "REMAX Land & Home Real Estate"]
+    },
+    {
+      "canonical_name": "RE/MAX Equity Group",
+      "brand_family": "RE/MAX",
+      "is_ryan_realty": false,
+      "aliases": ["RE/MAX Equity Group"]
+    },
+    {
+      "canonical_name": "RE/MAX Platinum",
+      "brand_family": "RE/MAX",
+      "is_ryan_realty": false,
+      "aliases": ["RE/MAX Platinum"]
+    },
+    {
+      "canonical_name": "RE/MAX Revolution",
+      "brand_family": "RE/MAX",
+      "is_ryan_realty": false,
+      "aliases": ["RE/MAX Revolution"]
+    },
+    {
+      "canonical_name": "John L Scott Bend",
+      "brand_family": "John L. Scott",
+      "is_ryan_realty": false,
+      "aliases": [
+        "John L Scott Bend",
+        "John L. Scott Bend",
+        "John L Scott Bend-Redmond",
+        "John L. Scott Bend-Redmond",
+        "John L. Scott Real Estate"
+      ],
+      "notes": "Bend + Bend-Redmond + sparse 'John L. Scott Real Estate' treated as one local firm for CO competitive desk."
+    },
+    {
+      "canonical_name": "Coldwell Banker Bain",
+      "brand_family": "Coldwell Banker",
+      "is_ryan_realty": false,
+      "aliases": ["Coldwell Banker Bain"]
+    },
+    {
+      "canonical_name": "Coldwell Banker Morris Real Es",
+      "brand_family": "Coldwell Banker",
+      "is_ryan_realty": false,
+      "aliases": [
+        "Coldwell Banker Morris Real Es",
+        "Coldwell Banker Morris Real Estate"
+      ]
+    },
+    {
+      "canonical_name": "Coldwell Banker Reed Bros Rlty",
+      "brand_family": "Coldwell Banker",
+      "is_ryan_realty": false,
+      "aliases": [
+        "Coldwell Banker Reed Bros Rlty",
+        "Coldwell Banker Reed Bros Realty"
+      ]
+    },
+    {
+      "canonical_name": "Coldwell Banker Sun Country",
+      "brand_family": "Coldwell Banker",
+      "is_ryan_realty": false,
+      "aliases": ["Coldwell Banker Sun Country"]
+    },
+    {
+      "canonical_name": "Coldwell Banker Mayfield Realty",
+      "brand_family": "Coldwell Banker",
+      "is_ryan_realty": false,
+      "aliases": ["Coldwell Banker Mayfield Realty"]
+    },
+    {
+      "canonical_name": "Coldwell Banker Valley Brokers",
+      "brand_family": "Coldwell Banker",
+      "is_ryan_realty": false,
+      "aliases": ["Coldwell Banker Valley Brokers"]
+    },
+    {
+      "canonical_name": "Coldwell Banker Mountain West Real Estate, Inc.",
+      "brand_family": "Coldwell Banker",
+      "is_ryan_realty": false,
+      "aliases": ["Coldwell Banker Mountain West Real Estate, Inc."]
+    },
+    {
+      "canonical_name": "Windermere Realty Trust",
+      "brand_family": "Windermere",
+      "is_ryan_realty": false,
+      "aliases": ["Windermere Realty Trust"]
+    },
+    {
+      "canonical_name": "Windermere Heritage",
+      "brand_family": "Windermere",
+      "is_ryan_realty": false,
+      "aliases": ["Windermere Heritage"]
+    },
+    {
+      "canonical_name": "Windermere Western View",
+      "brand_family": "Windermere",
+      "is_ryan_realty": false,
+      "aliases": ["Windermere Western View"]
+    },
+    {
+      "canonical_name": "Berkshire Hathaway HomeService",
+      "brand_family": "Berkshire Hathaway HomeServices",
+      "is_ryan_realty": false,
+      "aliases": [
+        "Berkshire Hathaway HomeService",
+        "Berkshire Hathaway HomeServices",
+        "Berkshire Hathaway Home Services",
+        "Berkshire Hathaway SR"
+      ],
+      "notes": "MLS truncates HomeServices; SR is the Sunriver-tagged string for the same brand family in CO feed."
+    },
+    {
+      "canonical_name": "eXp Realty, LLC",
+      "brand_family": "eXp",
+      "is_ryan_realty": false,
+      "aliases": [
+        "eXp Realty, LLC",
+        "eXp Realty LLC",
+        "eXp Realty LLC.",
+        "EXP Realty, LLC",
+        "EXP Realty LLC"
+      ]
+    },
+    {
+      "canonical_name": "Century 21 North Homes Realty",
+      "brand_family": "Century 21",
+      "is_ryan_realty": false,
+      "aliases": [
+        "Century 21 North Homes Realty",
+        "Century 21 North Homes Realty "
+      ]
+    },
+    {
+      "canonical_name": "Century 21 Lifestyles Realty",
+      "brand_family": "Century 21",
+      "is_ryan_realty": false,
+      "aliases": ["Century 21 Lifestyles Realty"]
+    },
+    {
+      "canonical_name": "Duke Warner Realty",
+      "brand_family": "Duke Warner",
+      "is_ryan_realty": false,
+      "aliases": ["Duke Warner Realty"]
+    },
+    {
+      "canonical_name": "Stellar Realty Northwest",
+      "brand_family": "Stellar",
+      "is_ryan_realty": false,
+      "aliases": ["Stellar Realty Northwest"]
+    },
+    {
+      "canonical_name": "Pahlisch Real Estate, Inc.",
+      "brand_family": "Pahlisch",
+      "is_ryan_realty": false,
+      "aliases": ["Pahlisch Real Estate, Inc.", "Pahlisch Real Estate Inc."]
+    },
+    {
+      "canonical_name": "Harcourts The Garner Group Real Estate",
+      "brand_family": "Harcourts",
+      "is_ryan_realty": false,
+      "aliases": [
+        "Harcourts The Garner Group Real Estate",
+        "Harcourts Real Estate Network"
+      ]
+    },
+    {
+      "canonical_name": "Engel & Voelkers Bend",
+      "brand_family": "Engel & Völkers",
+      "is_ryan_realty": false,
+      "aliases": [
+        "Engel & Voelkers Bend",
+        "Engel & Volkers Bend",
+        "Engel and Voelkers Bend"
+      ]
+    },
+    {
+      "canonical_name": "Dennis Haniford's Cascade Realty",
+      "brand_family": null,
+      "is_ryan_realty": false,
+      "aliases": [
+        "Dennis Haniford's Cascade Realty",
+        "Dennis Haniford's Cascade Real"
+      ],
+      "notes": "Not Cascade Hasson — local independent; string truncation alias only."
+    },
+    {
+      "canonical_name": "Ryan Realty LLC",
+      "brand_family": "Ryan Realty",
+      "is_ryan_realty": true,
+      "aliases": [
+        "Ryan Realty LLC",
+        "Ryan Realty",
+        "Ryan Realty, LLC",
+        "Ryan Realty Inc",
+        "Ryan Realty Inc."
+      ]
+    }
+  ],
+  "brand_family_rules": [
+    { "pattern": "re/?max|remax", "brand_family": "RE/MAX" },
+    { "pattern": "coldwell", "brand_family": "Coldwell Banker" },
+    { "pattern": "windermere", "brand_family": "Windermere" },
+    { "pattern": "keller\\s*williams|\\bkw\\b", "brand_family": "Keller Williams" },
+    { "pattern": "\\bexp\\b|e\\s*xp\\s*realty", "brand_family": "eXp" },
+    { "pattern": "john\\s*l\\.?\\s*scott", "brand_family": "John L. Scott" },
+    { "pattern": "cascade\\s*hasson|sotheby", "brand_family": "Cascade Hasson / Sotheby's" },
+    { "pattern": "berkshire|\\bbhhs\\b", "brand_family": "Berkshire Hathaway HomeServices" },
+    { "pattern": "century\\s*21|\\bc21\\b", "brand_family": "Century 21" },
+    { "pattern": "ryan\\s*realty", "brand_family": "Ryan Realty" },
+    { "pattern": "duke\\s*warner", "brand_family": "Duke Warner" },
+    { "pattern": "stellar", "brand_family": "Stellar" },
+    { "pattern": "pahlisch", "brand_family": "Pahlisch" },
+    { "pattern": "harcourts", "brand_family": "Harcourts" },
+    { "pattern": "engel|v[oö]lkers", "brand_family": "Engel & Völkers" },
+    { "pattern": "realty\\s*one\\s*group", "brand_family": "Realty One Group" },
+    { "pattern": "compass", "brand_family": "Compass" },
+    { "pattern": "redfin", "brand_family": "Redfin" },
+    { "pattern": "real\\s*broker", "brand_family": "Real Broker" }
+  ]
+}

@@ -55,7 +55,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block A — Truth & systems (G0–G1)
 
-1. [~] **A1 Baseline scoreboard** — FP sessions, engaged, GSC, leads, alerts, CWV into VERIFY_LOG (probe existed; weekly ritual not locked)
+1. [x] **A1 Baseline scoreboard** — FP sessions, engaged, alerts, saves, CO mart into VERIFY_LOG via `scoreboard-snapshot.mjs` (2026-08-10). GSC/GA4 still optional ops (access).
 2. [~] **A2 F00 chrome systems** — dual chrome kill + PublicNav + menu CSS shipped; **prod browser V** still open
 3. [ ] **A3 Sitemap / GSC health** — child sitemaps resolvable; no thinning; ops triage
 
@@ -111,7 +111,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 ### Block G — Measurement maturity (G6)
 
 37. [~] **G1 Dual-source docs + MP page_view** — prior ship
-38. [ ] **G2 Weekly scoreboard ritual** (FP + GSC + leads + alerts)
+38. [x] **G2 Weekly scoreboard ritual** — `SCOREBOARD_RITUAL.md` + script; MEASUREMENT_DUAL_SOURCE §3 updated
 39. [ ] **G3 GA4 ops** — Tag Assistant; Advanced Consent Modeling; Reporting identity Blended (Matt UI click where required)
 40. [ ] **G4 Prove or document** GA4 within ~2× engaged FP **or** FP-primary permanent decision
 
@@ -121,7 +121,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 42. [x] **H2 Marts 2016–2025 + 2024 parity**
 43. [x] **H3 Public size strip**
 44. [~] **H4 Public composition** — shipped; verify prod
-45. [~] **H5 History explorer** — live; **must stop live full closed scans** (result cache / cubes only)
+45. [x] **H5 History explorer** — mart/result_cache first; SQL aggregate RPC on miss only; **no Node listings paging**
 46. [ ] **H6 Feature cubes / amenity-era queries**
 47. [ ] **H7 Report factory R01–R15** (registry + ship high-value reports, not stub forever)
 48. [ ] **H8 Inventory snapshots** (daily active inventory job — skeleton → live)
@@ -138,9 +138,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block J — Next-gen AI (U2)
 
-56. [~] **J1 Room restyle API + listing UI**
-57. [ ] **J2 Interior photo pick + rate/cost caps**
-58. [ ] **J3 Conversion path after restyle** (alert / contact / save)
+56. [x] **J1 Room restyle API + listing UI**
+57. [x] **J2 Interior photo pick + rate/cost caps** — default interior heuristic + picker; strict RL notes UI+API
+58. [x] **J3 Conversion path after restyle** — city alert (listing_alerts) + contact CTA
 59. [ ] **J4 Prod browser E2E proof** on a live listing
 
 ### Block K — Voice residual (Layer B only)

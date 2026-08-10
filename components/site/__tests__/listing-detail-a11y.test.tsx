@@ -96,4 +96,10 @@ describe('listing-detail CTA row accessible names', () => {
     expect(render()).toMatch(/aria-pressed="false"/)
     expect(render({ initialSaved: true })).toMatch(/aria-pressed="true"/)
   })
+
+  it('offers a clear path to the listing alert strip', () => {
+    const html = render()
+    expect(html).toMatch(/href="#listing-like-alerts"/)
+    expect(html).toMatch(/Get alerts for homes like this/)
+  })
 })

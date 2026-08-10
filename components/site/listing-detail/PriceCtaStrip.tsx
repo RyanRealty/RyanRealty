@@ -289,6 +289,20 @@ export function PriceCtaStrip({
           </button>
         </div>
       </div>
+
+      {/* Alert path without inventing metrics: jump to the existing capture strip
+          (ListingLikeThisAlerts / KbCommunityAlerts) lower on this page. */}
+      <p className="mt-3 text-sm" style={{ color: 'rgba(16,39,66,0.72)' }}>
+        <a
+          href="#listing-like-alerts"
+          className="font-medium underline-offset-2 hover:underline"
+          style={{ color: 'var(--navy)' }}
+        >
+          Get alerts for homes like this
+        </a>
+        {' · '}
+        city, price band, and beds from this listing only.
+      </p>
     </div>
   )
 }

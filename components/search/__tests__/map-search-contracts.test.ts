@@ -463,6 +463,17 @@ describe('slug search page: guest save + reachable map-move (2026-06-09)', () =>
     expect(bar).toMatch(/<SaveSearchButton user=\{!!props\.signedIn\} pathContext=\{props\.pathContext\}/)
   })
 
+  it('SaveSearchButton stays mid-browse for guests and signed-in (B2)', () => {
+    const button = readSrc('components/SaveSearchButton.tsx')
+    // Guest path must stay reachable (no early return when !user).
+    expect(button).not.toMatch(/if\s*\(\s*!user\s*\)\s*return\s+null/)
+    // Success must show confirmation (do not slam the panel closed on ok).
+    expect(button).toMatch(/You are set\./)
+    expect(button).toMatch(/Keep the panel open so guests see confirmation/)
+    // Navy primary trigger so the control is not a quiet outline chip.
+    expect(button).toMatch(/bg-primary text-primary-foreground/)
+  })
+
   it('hands the save-search button SERVER-RESOLVED geography, not the raw pathname', () => {
     // The button cannot tell a subdivision from a neighborhood from a preset by
     // looking at the URL: /bend/river-west, /bend/west-hills and

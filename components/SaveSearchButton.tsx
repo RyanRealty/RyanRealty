@@ -98,6 +98,15 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
     )
   }
 
+  function closePanel() {
+    setOpen(false)
+    // Keep status=done so the trigger stays "Search saved" as mid-browse proof.
+    if (status !== 'done') {
+      setStatus('idle')
+      setErrorMsg('')
+    }
+  }
+
   async function handleGuestSave(e: React.FormEvent) {
     e.preventDefault()
     setStatus('saving')
@@ -132,7 +141,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
       }
       setName('')
       setEmail('')
-      setOpen(false)
+      // Keep the panel open so guests see confirmation (old path closed instantly).
     } else {
       setStatus('error')
       setErrorMsg(res.error)
@@ -171,25 +180,57 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
       }
       setName('')
       setIsPublic(false)
-      setOpen(false)
+      // Keep panel open for confirmation (mirrors guest path).
+    } else {
+      setErrorMsg(result.error || 'Could not save. Try again.')
     }
   }
 
+  const triggerLabel = status === 'done' ? 'Search saved' : 'Save this search'
+
   return (
     <div className="relative">
+      {/* Navy-filled control so mid-browse save is not a quiet outline chip. */}
       <Button
         type="button"
-        variant="outline"
         size="sm"
-        onClick={() => setOpen((o) => !o)}
-        className="shrink-0"
+        onClick={() => {
+          if (status === 'done' && !open) {
+            setStatus('idle')
+          }
+          setOpen((o) => !o)
+        }}
+        className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
+        aria-expanded={open}
+        aria-haspopup="dialog"
       >
-        Save this search
+        {triggerLabel}
       </Button>
       {open && (
         <>
-          <div className="fixed inset-0 z-40" aria-hidden onClick={() => setOpen(false)} />
-          {user ? (
+          <div className="fixed inset-0 z-40" aria-hidden onClick={closePanel} />
+          {status === 'done' ? (
+            <div
+              role="status"
+              className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
+            >
+              <p className="text-sm font-medium text-foreground">
+                {user ? 'Search saved.' : 'You are set.'}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {user
+                  ? 'We will email you when a new match hits the market.'
+                  : 'We will email you when a new match hits the market. No account required.'}
+              </p>
+              <Button
+                type="button"
+                onClick={closePanel}
+                className="mt-3 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Done
+              </Button>
+            </div>
+          ) : user ? (
             <form
               onSubmit={handleSave}
               className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-card p-4 shadow-md"
@@ -228,14 +269,17 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={closePanel}
                   className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground"
                 >
                   Cancel
                 </Button>
               </div>
-              {status === 'done' && <p className="mt-2 text-sm text-success">Saved.</p>}
-              {status === 'error' && <p className="mt-2 text-sm text-destructive">Could not save. Try again.</p>}
+              {status === 'error' && (
+                <p className="mt-2 text-sm text-destructive" role="alert">
+                  {errorMsg || 'Could not save. Try again.'}
+                </p>
+              )}
             </form>
           ) : (
             <form
@@ -244,7 +288,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
             >
               <p className="text-sm font-medium text-foreground">Save this search</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Add your email and we will send new matches as they hit the market.
+                Enter your email. New matches come to your inbox. No account needed.
               </p>
               {searchParams?.get('poly') ? (
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -290,7 +334,7 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={closePanel}
                   className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground"
                 >
                   Cancel

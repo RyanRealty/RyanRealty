@@ -23,6 +23,8 @@ export type CoAgentShareRow = {
 export type CoAgentShareResult = {
   year: number
   side: 'list' | 'buy'
+  /** Exact office string filter when set (I5 per-office drill). */
+  officeName: string | null
   marketVolume: number
   marketSoldCount: number
   rows: CoAgentShareRow[]
@@ -52,6 +54,7 @@ async function fetchCoAgentShare(input: {
     return {
       year,
       side,
+      officeName: officeFilter,
       marketVolume: 0,
       marketSoldCount: 0,
       rows: [],
@@ -122,6 +125,7 @@ async function fetchCoAgentShare(input: {
   return {
     year,
     side,
+    officeName: officeFilter,
     marketVolume: marketVol,
     marketSoldCount: marketN,
     rows,
@@ -133,7 +137,7 @@ async function fetchCoAgentShare(input: {
 
 export const getCoAgentShare = makeResilientCached(
   fetchCoAgentShare,
-  ['analytics-co-agent-share-v1'],
+  ['analytics-co-agent-share-v2'],
   {
     revalidate: CACHE_WINDOWS.marketStats,
     tags: [cacheTag.market, 'analytics-co-agent-share'],
@@ -141,6 +145,7 @@ export const getCoAgentShare = makeResilientCached(
   {
     year: 0,
     side: 'list' as const,
+    officeName: null,
     marketVolume: 0,
     marketSoldCount: 0,
     rows: [],

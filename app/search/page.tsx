@@ -343,9 +343,9 @@ export default async function SearchPage({
       </div>
       {/* Guest listing-alert capture — LIST view only. In the split/map
           app-frame it is a sticky flex sibling that overlapped the filter bar
-          (its "Get alerts" button floated into the chip row), and it duplicates
-          the "Save this search" control + the header "Get listing alerts" CTA.
-          List view lays out in normal flow, where it docks cleanly. */}
+          (its "Get alerts" button floated into the chip row). Map/split guests
+          still get SaveSearchButton in SearchFilters (navy mid-browse control).
+          List view lays out in normal flow, where the strip docks cleanly. */}
       {!isAppFrame && (
         <SearchAlertCapture signedIn={!!session?.user} defaultCity={effectiveFilters.city ?? ''} />
       )}

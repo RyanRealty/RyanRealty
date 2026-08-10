@@ -7,7 +7,7 @@
 
 | Date | Active CO | CO closed 2024 | Mart years | FP sessions | Alerts | Notes |
 |------|-----------|----------------|------------|-------------|--------|-------|
-| 2026-08-10 | ~3409 | **5707 / $3.931B** | **2016–2025** | sessions total ~68701 | **6** | Cascade list ~18% / buy ~19% 2024 |
+| 2026-08-10 | ~3409 | **5707 / $3.931B** | **2016–2025** | total ~**68722**; 1d **1033**; 7d **24447** eng **4313** (17.6%); 30d **67190** eng **11037** (16.4%) | **6** (5 active; +2 created 30d) | A1 scoreboard-snapshot.mjs; eng=score≥2; saves=2; Cascade list ~18% |
 
 ## Analytics units
 
@@ -38,10 +38,19 @@
 
 | Metric | Value | Ticket |
 |--------|------:|--------|
-| listing_alerts | 6 | Snapshot 2026-08-10 pre/post B1 surface ship; count unchanged at ship time |
+| listing_alerts | 6 | A1 re-probe 2026-08-10 (scoreboard-snapshot); 5 active; 2 created last 30d |
 | saved_searches | 2 | same |
+| FP sessions total | ~68722 | A1; windows in Data probe table |
+| FP engaged 7d / 30d | 4313 / 11037 | engagement_score ≥ 2 |
+| CO closed 2024 (mart) | 5707 / $3.931B | analytics_mart_market_annual region all |
 
 ## Session notes (newest first)
+
+### 2026-08-10 A1 + G2 + J2/J3
+- **A1:** Live probe via service role → VERIFY_LOG Data probe row refreshed (FP 1d/7d/30d + eng + alerts + mart). Script: `scripts/analytics/scoreboard-snapshot.mjs` (`--json`, `--append-verify-log`).
+- **G2:** Weekly ritual agent-runnable: `docs/plans/seo-voice/SCOREBOARD_RITUAL.md` + MEASUREMENT_DUAL_SOURCE §3 points at script. Not Matt-click dependent.
+- **J2:** `RoomRestyle` interior default (`pickDefaultInteriorPhotoIndex`) + photo picker; rate-limit copy; API rate/cost header notes (`strict` ~10/min).
+- **J3:** After successful restyle — city listing alert via `submitSearchAlertSignup` + contact link (`intent=restyle`).
 
 ### 2026-08-10 C2 `ci:seo-shell` forever-gate
 - **Shipped:** `scripts/check-seo-shell.mjs` + `npm run ci:seo-shell` wired into `ci:gates` (after `ci:seo-routes`).

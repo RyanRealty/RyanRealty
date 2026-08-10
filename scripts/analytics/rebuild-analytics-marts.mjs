@@ -124,11 +124,54 @@ async function rebuildYear(year) {
     computed_at: new Date().toISOString(),
   }))
 
+  // City grain (H5 explorer mart-first path)
+  /** @type {Map<string, { all: number[], sfr: number[], multi: number[], land: number[], other: number[], typeBreak: Record<string, number> }>} */
+  const byCity = new Map()
+  for (const r of rows) {
+    const p = Number(r.ClosePrice)
+    if (!Number.isFinite(p)) continue
+    const city = (r.City || '').trim()
+    if (!city) continue
+    const slug = city.toLowerCase().replace(/\s+/g, '-')
+    if (!byCity.has(slug)) {
+      byCity.set(slug, { all: [], sfr: [], multi: [], land: [], other: [], typeBreak: {} })
+    }
+    const b = byCity.get(slug)
+    b.all.push(p)
+    b[typeScope(r.PropertyType)].push(p)
+    const t = r.PropertyType || 'unknown'
+    b.typeBreak[t] = (b.typeBreak[t] || 0) + 1
+  }
+  for (const [slug, c] of byCity) {
+    for (const [type_scope, prices] of Object.entries({
+      all: c.all,
+      sfr: c.sfr,
+      multi: c.multi,
+      land: c.land,
+      other: c.other,
+    })) {
+      if (!prices.length) continue
+      marketRows.push({
+        geo_type: 'city',
+        geo_slug: slug,
+        year,
+        type_scope,
+        sold_count: prices.length,
+        total_volume: prices.reduce((a, b) => a + b, 0),
+        median_close: median(prices),
+        mean_close: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
+        property_type_breakdown: type_scope === 'all' ? c.typeBreak : {},
+        methodology: 'closed_cte+service_area_v1',
+        computed_at: new Date().toISOString(),
+      })
+    }
+  }
+
   const { error: mErr } = await sb.from('analytics_mart_market_annual').upsert(marketRows, {
     onConflict: 'geo_type,geo_slug,year,type_scope',
   })
   if (mErr) throw new Error(`market mart: ${mErr.message}`)
-  console.log('market mart upserted', marketRows.length)
+  console.log('market mart upserted', marketRows.length, '(region + city)')
 
   // Office share list + buy
   for (const side of ['list', 'buy']) {

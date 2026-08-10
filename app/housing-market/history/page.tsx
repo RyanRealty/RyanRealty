@@ -1,6 +1,7 @@
 // @no-parity — analytics explorer; no mockup kit directory
 /**
  * /housing-market/history — constrained unique closed-sales search (CO).
+ * Data: analyzeClosedSales (result_cache → mart → SQL aggregate RPC). No listings paging.
  */
 import type { Metadata } from 'next'
 import Link from 'next/link'

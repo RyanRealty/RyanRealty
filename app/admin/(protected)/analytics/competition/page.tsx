@@ -1,6 +1,8 @@
 /**
  * /admin/analytics/competition — CO closed-sales office + agent share (MVP)
  * Uses admin v2 + analytics DataGrid (ReportGrid primitive).
+ * I5: office query param drills agents to that office string.
+ * Competitor names are admin-only (I6 public naming locked).
  */
 import Link from 'next/link'
 import { SectionHead } from '@/components/admin/v2'
@@ -21,6 +23,18 @@ function money(n: number): string {
   return `$${Math.round(n).toLocaleString('en-US')}`
 }
 
+function competitionHref(opts: {
+  year: number
+  side: string
+  office?: string | null
+}): string {
+  const q = new URLSearchParams()
+  q.set('year', String(opts.year))
+  q.set('side', opts.side)
+  if (opts.office) q.set('office', opts.office)
+  return `/admin/analytics/competition?${q.toString()}`
+}
+
 export default async function CompetitionAnalyticsPage({
   searchParams,
 }: {
@@ -30,14 +44,29 @@ export default async function CompetitionAnalyticsPage({
   const yearRaw = typeof sp.year === 'string' ? Number(sp.year) : 2024
   const year = Number.isFinite(yearRaw) && yearRaw >= 1998 && yearRaw <= 2030 ? yearRaw : 2024
   const side = sp.side === 'buy' ? 'buy' : 'list'
+  const officeFilter =
+    typeof sp.office === 'string' && sp.office.trim() ? sp.office.trim() : null
 
   const [share, market, agents] = await Promise.all([
     getCoOfficeShare({ year, side, limit: 40 }),
     getCoMarketAnnual({ year, typeScope: 'all' }),
-    getCoAgentShare({ year, side, limit: 30 }),
+    getCoAgentShare({
+      year,
+      side,
+      limit: officeFilter ? 50 : 30,
+      officeName: officeFilter ?? undefined,
+    }),
   ])
 
   const ryanRows = share.rows.filter((r) => /ryan/i.test(r.officeName))
+  const selectedOfficeRow = officeFilter
+    ? share.rows.find((r) => r.officeName === officeFilter) ?? null
+    : null
+
+  const exportOfficesHref = `/admin/analytics/competition/export?year=${year}&side=${side}&kind=offices`
+  const exportAgentsHref = officeFilter
+    ? `/admin/analytics/competition/export?year=${year}&side=${side}&kind=agents&office=${encodeURIComponent(officeFilter)}`
+    : `/admin/analytics/competition/export?year=${year}&side=${side}&kind=agents`
 
   return (
     <div className="space-y-8 p-6">
@@ -46,14 +75,17 @@ export default async function CompetitionAnalyticsPage({
         <SectionHead>Competition — office share ({year})</SectionHead>
         <p className="mt-2 text-sm text-neutral-600">
           Central Oregon closed sales. Side:{' '}
-          {side === 'list' ? 'listing office' : 'buyer office'}. String-level
-          names until brand aliases are fully merged.
+          {side === 'list' ? 'listing office' : 'buyer office'}. Rankings are
+          string-level office names; brand alias groups live in{' '}
+          <code className="text-xs">analytics_dim_office</code> (entity layer —
+          not yet used to merge share %). Admin only — not for public competitor
+          naming.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2 text-sm">
         <Link
-          href={`/admin/analytics/competition?year=${year}&side=list`}
+          href={competitionHref({ year, side: 'list', office: officeFilter })}
           className={
             side === 'list'
               ? 'rounded bg-neutral-900 px-3 py-1.5 text-white'
@@ -63,7 +95,7 @@ export default async function CompetitionAnalyticsPage({
           List side
         </Link>
         <Link
-          href={`/admin/analytics/competition?year=${year}&side=buy`}
+          href={competitionHref({ year, side: 'buy', office: officeFilter })}
           className={
             side === 'buy'
               ? 'rounded bg-neutral-900 px-3 py-1.5 text-white'
@@ -75,7 +107,7 @@ export default async function CompetitionAnalyticsPage({
         {[2022, 2023, 2024, 2025].map((y) => (
           <Link
             key={y}
-            href={`/admin/analytics/competition?year=${y}&side=${side}`}
+            href={competitionHref({ year: y, side, office: officeFilter })}
             className={
               y === year
                 ? 'rounded bg-neutral-700 px-3 py-1.5 text-white'
@@ -85,6 +117,12 @@ export default async function CompetitionAnalyticsPage({
             {y}
           </Link>
         ))}
+        <a
+          href={exportOfficesHref}
+          className="rounded border border-neutral-300 px-3 py-1.5 text-neutral-700"
+        >
+          Export offices CSV
+        </a>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -123,7 +161,7 @@ export default async function CompetitionAnalyticsPage({
       ) : (
         <div className="rounded border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
           No /ryan/i office in top {share.rows.length} this side/year. Buy-side and aliases
-          still needed for a true share.
+          still needed for a true share (I4).
         </div>
       )}
 
@@ -136,7 +174,23 @@ export default async function CompetitionAnalyticsPage({
         empty={<p>No office share rows for this year/side.</p>}
         columns={[
           { key: 'rank', header: 'Rank', numeric: true, width: '64px', cell: (r) => r.rank },
-          { key: 'office', header: 'Office', cell: (r) => r.officeName },
+          {
+            key: 'office',
+            header: 'Office',
+            cell: (r) => (
+              <Link
+                href={competitionHref({ year, side, office: r.officeName })}
+                className={
+                  officeFilter === r.officeName
+                    ? 'font-medium text-neutral-900 underline'
+                    : 'text-neutral-800 underline decoration-neutral-300 hover:decoration-neutral-600'
+                }
+                title="Show agents at this office"
+              >
+                {r.officeName}
+              </Link>
+            ),
+          },
           {
             key: 'sides',
             header: 'Sides',
@@ -158,18 +212,77 @@ export default async function CompetitionAnalyticsPage({
         ]}
       />
 
-      <SectionHead>Top agents — {side} side ({year})</SectionHead>
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <div>
+          <SectionHead>
+            {officeFilter
+              ? `Agents at ${officeFilter} — ${side} side (${year})`
+              : `Top agents — ${side} side (${year})`}
+          </SectionHead>
+          {officeFilter ? (
+            <p className="mt-1 text-sm text-neutral-600">
+              Filtered to exact office string match
+              {selectedOfficeRow
+                ? ` · office rank #${selectedOfficeRow.rank} · ${money(selectedOfficeRow.totalVolume)} · ${selectedOfficeRow.volumeSharePct.toFixed(2)}% $ share`
+                : ' (office may be outside top-40 table)'}.{' '}
+              <Link
+                href={competitionHref({ year, side })}
+                className="underline"
+              >
+                Clear office filter
+              </Link>
+              {' · '}
+              <a href={exportAgentsHref} className="underline">
+                Export agents CSV
+              </a>
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-neutral-600">
+              Market-wide top agents. Click an office name above to drill into agents at
+              that office.{' '}
+              <a href={exportAgentsHref} className="underline">
+                Export agents CSV
+              </a>
+            </p>
+          )}
+        </div>
+      </div>
+
       <DataGrid
-        label={`Agent share ${year} ${side}`}
+        label={
+          officeFilter
+            ? `Agent share ${year} ${side} @ ${officeFilter}`
+            : `Agent share ${year} ${side}`
+        }
         rows={agents.rows}
         getRowKey={(r) => `${r.agentName}-${r.officeName}`}
-        cap={30}
+        cap={officeFilter ? 50 : 30}
         minWidth={520}
-        empty={<p>No agent rows for this year/side.</p>}
+        empty={
+          <p>
+            {officeFilter
+              ? `No agents for office “${officeFilter}” this year/side.`
+              : 'No agent rows for this year/side.'}
+          </p>
+        }
         columns={[
           { key: 'rank', header: 'Rank', numeric: true, width: '64px', cell: (r) => r.rank },
           { key: 'agent', header: 'Agent', cell: (r) => r.agentName },
-          { key: 'office', header: 'Office', cell: (r) => r.officeName },
+          {
+            key: 'office',
+            header: 'Office',
+            cell: (r) =>
+              officeFilter ? (
+                r.officeName
+              ) : (
+                <Link
+                  href={competitionHref({ year, side, office: r.officeName })}
+                  className="underline decoration-neutral-300 hover:decoration-neutral-600"
+                >
+                  {r.officeName}
+                </Link>
+              ),
+          },
           {
             key: 'sides',
             header: 'Sides',
@@ -184,7 +297,7 @@ export default async function CompetitionAnalyticsPage({
           },
           {
             key: 'share',
-            header: '$ share',
+            header: '$ share mkt',
             numeric: true,
             cell: (r) => `${r.volumeSharePct.toFixed(2)}%`,
           },
@@ -192,8 +305,12 @@ export default async function CompetitionAnalyticsPage({
       />
 
       <p className="text-xs leading-relaxed text-neutral-500">
-        {ANALYTICS_METHODOLOGY_V1}. Side = {side}. Source = {share.source}. Not for public
-        advertising of competitor production without policy review. Computed {share.computedAt}.
+        {ANALYTICS_METHODOLOGY_V1}. Side = {side}
+        {officeFilter ? `; office filter = ${officeFilter}` : ''}. Source offices ={' '}
+        {share.source}; agents = {agents.source}. Entity aliases: see{' '}
+        <code>docs/plans/seo-voice/DIM_OFFICE_ENTITY_RESOLUTION.md</code>. Not for public
+        advertising of competitor production without policy review (I6). Computed{' '}
+        {share.computedAt}.
       </p>
 
       <p className="text-sm">

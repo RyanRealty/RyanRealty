@@ -411,8 +411,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
           remarks. Reordered 2026-07-30 to the buyer decision sequence. */}
       <PropertySpecs listing={listingWithPhotos} />
       <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
-      {photos[0]?.url ? (
-        <RoomRestyle photoUrl={photos[0].url} listingKey={listing.listingKey} />
+      {photos.some((p) => p.url) ? (
+        <RoomRestyle
+          photos={photos.map((p) => ({ url: p.url, caption: p.caption ?? null }))}
+          listingKey={listing.listingKey}
+          city={listing.city}
+          listPrice={listing.listPrice}
+          beds={listing.beds}
+        />
       ) : null}
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
       <ListingLocationMap
