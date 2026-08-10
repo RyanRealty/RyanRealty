@@ -35,16 +35,16 @@ Standing orders so the full inventory actually runs (not just exists):
 
 | Plan area | Status |
 |-----------|--------|
-| Analytics marts / size / composition / competition admin | **Partial SHIP** (foundation real) |
-| 10× leads / alerts / engagement | **NOT done** (alerts ~6) |
-| Exhaustive F00–F12 verify | **NOT done** |
-| Design / UI 2026 craft (G7 / P5) | **NOT done** — was plan, **was missing from this queue** (fixed below) |
-| Layer A + seo-shell forever | **SHIP** (`ci:seo-shell` locked; C1 residual = Layer B only) |
-| Competitive entity truth | **Partial** |
-| Report factory / feature cubes / inventory snapshots | **NOT done** |
-| Habit engagement system | **NOT done** (sticky only) |
-| Measurement ops ritual | **NOT done** |
-| Grok restyle | **Code partial** |
+| Analytics marts / size / composition / competition / features / inventory | **SHIP** (foundation + H5–H8) |
+| 10× leads / alerts / engagement | **NOT done** (alerts ~6 — surface ≠ outcome) |
+| Exhaustive F00–F12 verify | **Static I complete**; interactive residual |
+| Design / UI 2026 craft (G7 / P5) | **E1–E7 SHIP** (engaged-rate proof open) |
+| Layer A + seo-shell forever | **SHIP** |
+| Competitive entity truth | **Partial** (aliases + Ryan list/buy; office_id join residual) |
+| Report factory / feature cubes / inventory | **SHIP** (registry + feature mart + snapshot table) |
+| Habit engagement | **Partial** (sticky + coach + account feed; guest habit residual) |
+| Measurement ops ritual | **SHIP** (scoreboard + FP-primary) |
+| Grok restyle | **SHIP code**; interactive click E2E residual |
 
 ---
 
