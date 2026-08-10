@@ -38,6 +38,8 @@ function useSolidBar(pathname: string | null | undefined): boolean {
 
 export function PublicNav() {
   const pathname = usePathname()
+  // Hooks must run before any early return (rules-of-hooks).
+  const solid = useSolidBar(pathname)
   if (shouldHidePublicNav(pathname)) return null
-  return <KbNav solid={useSolidBar(pathname)} />
+  return <KbNav solid={solid} />
 }
