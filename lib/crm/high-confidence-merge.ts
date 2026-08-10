@@ -115,10 +115,22 @@ export async function maybeAutoMergeEmailPhoneConflict(
   const survivorId = Math.min(a, b)
   const mergedId = Math.max(a, b)
 
+  const survivor = people.find((p) => Number(p.id) === survivorId)
+  const mergedPerson = people.find((p) => Number(p.id) === mergedId)
+  const mergedName =
+    (mergedPerson as { name?: string | null } | undefined)?.name?.trim() ||
+    `contact #${mergedId}`
   try {
-    await mergePeopleCore(sb, survivorId, mergedId, {
-      email: 'system:high-confidence-merge',
-      brokerSlug: (people.find((p) => p.id === survivorId)?.assigned_broker as string | null) ?? 'matt',
+    await mergePeopleCore(sb, {
+      survivorId,
+      mergedId,
+      mergedName,
+      actor: {
+        email: 'system:high-confidence-merge',
+        brokerSlug:
+          ((survivor as { assigned_broker?: string | null } | undefined)?.assigned_broker as string | null) ??
+          'matt',
+      },
     })
   } catch (e) {
     return { merged: false, reason: 'merge_failed:' + (e as Error).message }

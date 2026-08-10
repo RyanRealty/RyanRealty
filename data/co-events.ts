@@ -754,12 +754,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 44.2857,
     lng: -120.8339,
     recurrence: 'Annually, the first full week of August',
-    nextConfirmedDate: '2026-08-05',
-    endDate: '2026-08-08',
+    // 2026 fair ended 2026-08-08; rolled to 2027 pending official calendar re-verify.
+    nextConfirmedDate: '2027-08-04',
+    endDate: '2027-08-07',
     priceInfo: 'Free',
     organizer: 'Crook County Fairgrounds',
     officialUrl: 'https://www.crookcountyfairgrounds.com/p/fair',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-08-10',
     blurb:
       'Prineville’s Blue Ribbon Days, four days of 4-H and livestock exhibits, carnival rides, and free admission at the county fairgrounds.',
   },

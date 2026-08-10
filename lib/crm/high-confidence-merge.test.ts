@@ -71,9 +71,11 @@ describe('maybeAutoMergeEmailPhoneConflict', () => {
     expect(r).toEqual({ merged: true, survivorId: 10, mergedId: 20 })
     expect(mergePeopleCore).toHaveBeenCalledWith(
       expect.anything(),
-      10,
-      20,
-      expect.objectContaining({ email: 'system:high-confidence-merge' }),
+      expect.objectContaining({
+        survivorId: 10,
+        mergedId: 20,
+        actor: expect.objectContaining({ email: 'system:high-confidence-merge' }),
+      }),
     )
   })
 
