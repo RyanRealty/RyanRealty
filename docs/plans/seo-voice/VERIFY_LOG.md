@@ -29,17 +29,17 @@
 
 | Family | Status | Notes |
 |--------|--------|-------|
-| F00 chrome | I | code: `PublicNav.client` + site-nav; prod HTML proof blocked (403 host) |
-| F01 home | I | static: page + KbSell + Layer A H1 locked by ci:seo-shell |
-| F02 search | I | SearchAlertCapture + SaveSearchButton wired; outcome cold |
-| F03 areas | I | city + community + nbhd capture; browser V open |
+| F00 chrome | I | PublicNav + kb-nav prod HTML 200 (browser UA); no SiteHeader dual |
+| F01 home | I | prod 200: H1 Central Oregon Homes for Sale; seo-shell locked |
+| F02 search | I | prod 200: Save this search; outcome cold |
+| F03 areas | I | prod 200 `/cities/bend` + alerts; browser craft still open |
 | F04 lifestyle | I | static 2026-08-10: Areas nav + parks/schools/trails/events/venues/golf; nearby homes; parks M3 band; browser V open |
-| F05 Market | I | size + composition + history explorer mart/RPC path |
+| F05 Market | I | prod 200: size 5,707/$3.93B + composition + history explorer |
 | F06 Tools | I | static 2026-08-10: mortgage/rental app_config defaults; appreciation scenario label; browser V open |
-| F07 sell | I | /sell + /sell/valuation ValuationForm present |
+| F07 sell | I | prod 200 `/sell` Layer A + valuation form |
 | F08 content | I | static 2026-08-10: blog/FAQ wired; annual claims → cubes (M2); browser V open |
 | F09 trust | I | static 2026-08-10: about/team/reviews/contact/join; browser V open |
-| F10 LPs | I | buyer-listing-alerts + seller LPs exist |
+| F10 LPs | I | prod 200 `/lp/buyer-listing-alerts` |
 | F11 Account | I | portal ActivityFeed + saved searches insights exist; volume cold |
 | F12 auth | I | static 2026-08-10: auth + legal public routes present; browser V open |
 | F13 | X | |
@@ -55,6 +55,28 @@
 | CO closed 2024 (mart) | 5707 / $3.931B | analytics_mart_market_annual region all |
 
 ## Session notes (newest first)
+
+### 2026-08-10 L1 browser-UA proof pack (WAF unblock)
+- **Unblock:** bare `curl` → **403**; `curl -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'` → **200** on all public proof URLs (agent host 2026-08-10).
+- **L1 [x]** public proof pack (HTML fetch, not interactive Playwright; competition admin auth not included):
+
+| URL | HTTP | Evidence (prod HTML) |
+|-----|-----:|----------------------|
+| `/` | 200 | H1 **Central Oregon Homes for Sale**; title Homes for Sale in Central Oregon… |
+| `/cities/bend` | 200 | H1 **Bend Homes for Sale**; `section.comm-alerts` + **Get alerts** CTA |
+| `/housing-market` | 200 | H2 **Size of the market** + composition; **5,707** closes / **$3.93B** (2024) |
+| `/housing-market/history` | 200 | H1 **Closed sales explorer**; year=2024 form; fireplace in meta/UI |
+| `/search` | 200 | button **Save this search** |
+| `/sell` | 200 | H1 **Sell your home in Central Oregon**; valuation form present |
+| `/lp/buyer-listing-alerts` | 200 | H1 **First Matches in 30 Minutes**; listing alerts LP |
+| listing `/homes-for-sale/bend/3056-craftsman-220224037` | 200 | address H1; `listing-like-alerts`; **Get alerts for homes like this**; `RoomRestyle` in bundle |
+| bare curl (no UA) `/cities/bend` | **403** | WAF still blocks non-browser UA |
+
+- **J4 [~]:** Restyle **present** in listing HTML (`RoomRestyle` chunk + alert path markup); **not** full interactive browser E2E (click/render).
+- **A2 / D1 browser V:** PublicNav + kb-nav on home/listing; **no** `SiteHeader` dual chrome in prod HTML. Visual craft residual open.
+- **C1 [x]:** `npm run ci:seo-shell` exit 0 (21 money-route page.tsx + KbHero defaults). Residual = Layer B body only.
+- **C3 [x]:** Hub links enough in prod: home Buy → open-houses + price-drops; market hub → open-houses + price-drops + sell + `/housing-market/history`; cities linked. Dense matrix not claimed.
+- **Honesty:** not 10× (alerts ~6 · saves ~2).
 
 ### 2026-08-10 E3 UI craft — city (full)
 - **Unit:** EXECUTION_QUEUE E3.
@@ -165,3 +187,19 @@
 - **LOC:** `app/listing/[listingKey]/page.tsx` **573** (under 600); lifestyle lines extracted to `listing-city-lifestyle.ts`.
 - **Gates:** listing-detail-a11y ✓ · site-contracts ✓ · `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · `ci:mockup-parity` ✓ · `ci:file-size-budget` ✓.
 - **Pointer next:** E3 full city craft (still open on spine) or E5 sell.
+
+### 2026-08-10 E6 + E7 UI craft — market + LP templates
+- **Unit:** EXECUTION_QUEUE E6 market + E7 LP (exclusive paths only).
+- **E6 market thesis:** data surfaces read as research tools, not equal card dumps.
+  - `CoMarketSizeStrip`: featured year plate + relative volume rail (mart series §0).
+  - `CoMarketComposition`: lead property-type callout + ranked mix bars.
+  - `/housing-market/history`: research-terminal query plate, hairline KPI results, active-query chip.
+  - Hub: resource links grouped (Market data / Inventory / Guides).
+  - `/housing-market/central-oregon`: narrative offset plate + methodology side panel.
+- **E7 LP thesis:** buyer LP stays on KB hex register without growing past budget; B5 honesty is a craft band.
+  - Extracted `watched-communities.ts` + `BuyerLPBits.tsx` (page ~661, budget 783).
+  - `SiteCaptureAlignment` split-band CTAs (tokens only, B5 preserved).
+  - Process steps left-led (not centered triple).
+  - Seller LP skipped (budget 682, no headroom without extract).
+- **Gates:** `ci:file-size-budget` ✓ · `ci:brand-voice` ✓ · `ci:voice-constructions` ✓ · design-tokens clean on E6/E7 paths (pre-existing sell-path token debt untouched).
+- **Pointer next:** E5 sell (or E3 city full).

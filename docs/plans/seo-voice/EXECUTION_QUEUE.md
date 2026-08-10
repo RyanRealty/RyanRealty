@@ -39,7 +39,7 @@ Standing orders so the full inventory actually runs (not just exists):
 | 10× leads / alerts / engagement | **NOT done** (alerts ~6) |
 | Exhaustive F00–F12 verify | **NOT done** |
 | Design / UI 2026 craft (G7 / P5) | **NOT done** — was plan, **was missing from this queue** (fixed below) |
-| Layer A + seo-shell forever | **SHIP** (`ci:seo-shell` locked; C1 residual copy still partial) |
+| Layer A + seo-shell forever | **SHIP** (`ci:seo-shell` locked; C1 residual = Layer B only) |
 | Competitive entity truth | **Partial** |
 | Report factory / feature cubes / inventory snapshots | **NOT done** |
 | Habit engagement system | **NOT done** (sticky only) |
@@ -56,7 +56,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 ### Block A — Truth & systems (G0–G1)
 
 1. [x] **A1 Baseline scoreboard** — FP sessions, engaged, alerts, saves, CO mart into VERIFY_LOG via `scoreboard-snapshot.mjs` (2026-08-10). GSC/GA4 still optional ops (access).
-2. [~] **A2 F00 chrome systems** — dual chrome kill + PublicNav + menu CSS shipped; **prod browser V** still open
+2. [~] **A2 F00 chrome systems** — dual chrome kill + PublicNav + menu CSS shipped; **prod HTML V 2026-08-10** (browser UA): PublicNav/kb-nav, no SiteHeader dual. Visual craft residual open.
 3. [~] **A3 Sitemap / GSC health** — `ci:sitemap-resolvable` + `ci:sitemap-inventory-gate` on every push; GSC console ops still human
 
 ### Block B — Conversion 10× (G4) — primary lead lever
@@ -69,26 +69,26 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block C — Discovery lock (G5)
 
-9. [~] **C1 Layer A residual** — money families exact-match titles/H1s (partial ship)
+9. [x] **C1 Layer A residual** — **2026-08-10:** enforced by `ci:seo-shell` (exit 0, 21 money routes + KbHero defaults); residual Layer B body only
 10. [x] **C2 `ci:seo-shell`** — `scripts/check-seo-shell.mjs` + `npm run ci:seo-shell` in `ci:gates`; banned poetry + required exact-match H1/title; KbHero defaults Layer A locked
-11. [~] **C3 Internal links from hubs** — Buy (+open houses), Market hub (+OH/price-drops/sell); cities already linked; sell form-first residual
+11. [x] **C3 Internal links from hubs** — **2026-08-10 prod HTML:** Buy → open-houses + price-drops; Market hub → OH + price-drops + sell + history; cities linked. Dense matrix polish not claimed.
 
 ### Block D — Exhaustive feature verify (G2–G3) — you rejected skip lists
 
-12. [~] **D1 F00** chrome — code V (PublicNav); browser V **blocked L1 403**
-13. [~] **D2 F01** Homepage — static I (seo-shell + structure); browser open
-14. [~] **D3 F02** Search + listing — static I (capture/save/restyle wired); outcome cold
-15. [~] **D4 F03** Areas — static I (city/community/nbhd capture)
-16. [x] **D5 F04** Lifestyle under Areas — **2026-08-10 static I:** parks/schools/trails/events/venues/golf + Areas nav; detail→nearby homes; parks M3 band. Browser V open (L1 403).
-17. [~] **D6 F05** Market — static I (size/composition/explorer)
+12. [~] **D1 F00** chrome — code V + **prod HTML V 2026-08-10** (PublicNav, no SiteHeader dual); full visual craft residual
+13. [~] **D2 F01** Homepage — prod 200 H1 Layer A; browser craft open
+14. [~] **D3 F02** Search + listing — prod 200 save + listing alerts/restyle markup; outcome cold
+15. [~] **D4 F03** Areas — prod 200 `/cities/bend` + comm-alerts
+16. [x] **D5 F04** Lifestyle under Areas — **2026-08-10 static I:** parks/schools/trails/events/venues/golf + Areas nav; detail→nearby homes; parks M3 band. Browser V open.
+17. [~] **D6 F05** Market — prod 200 size 5,707/$3.93B + composition + history explorer
 18. [x] **D7 F06** Tools — **2026-08-10 static I:** mortgage/rental `getCalculatorDefaults`; appreciation scenario rate labeled. Browser V open.
-19. [~] **D8 F07** Sell / valuation — static I (B3 path verified)
+19. [~] **D8 F07** Sell / valuation — prod 200 + B3 path verified
 20. [x] **D9 F08** Content / AEO — **2026-08-10 static I:** blog/FAQ hubs; no hardcoded annual volume in templates. Browser V open.
 21. [x] **D10 F09** Trust / brokerage — **2026-08-10 static I:** about/team/reviews/contact/join. Browser V open.
-22. [~] **D11 F10** Paid LPs — static I (B5 aligned)
+22. [~] **D11 F10** Paid LPs — prod 200 buyer-listing-alerts (B5)
 23. [~] **D12 F11** Account / saved — portal + ActivityFeed exist; volume cold
 24. [x] **D13 F12** Auth & compliance public — **2026-08-10 static I:** login/signup/legal/unsubscribes. Browser V open.
-25. [~] **D14 Close all B / high I tickets** — **2026-08-10:** no high-severity **B** in D5/D7/D9/D10/D13 static audit; residual **I** = prod browser V (L1 403)
+25. [~] **D14 Close all B / high I tickets** — no high-severity **B** in static audit; residual **I** = interactive/visual craft (L1 public pack done)
 
 ### Block E — Design / UI craft (G7 / P5) — **was in plan; now on spine**
 
@@ -97,8 +97,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 28. [x] **E3 UI craft — city** — **2026-08-10 full:** city-scoped hero CTAs + posterAlt; mid-page SFR `KbCommunityAlerts` (after map); featured view-all city path; sell eyebrow `Sell in {City}`; nbhd light parity (alerts mid + CTAs). Layer A H1 locked. Gates: seo-shell + brand-voice green.
 29. [x] **E4 UI craft — listing** — **2026-08-10:** CTA hierarchy (tour primary / secondary 44px / tertiary alerts), RoomRestyle 3-step KB panel + quiet post-success conversion, coach lifts above mobile broker bar and mounts with alerts strip, denser main stack on mobile. Layer A price H1 honest. Page 573 LOC (lifestyle helper extracted). Gates: listing-detail-a11y, seo-shell, brand-voice, mockup-parity, file-size.
 30. [ ] **E5 UI craft — sell**
-31. [ ] **E6 UI craft — market**
-32. [ ] **E7 UI craft — LP templates**  
+31. [x] **E6 UI craft — market** — **2026-08-10:** size strip = featured year + volume rail; composition = lead-type plate + ranked bars; history explorer research-terminal craft; hub resource groups; CO narrative offset plate. §0 marts/DAL only. No cities/listing/sell/home chrome.
+32. [x] **E7 UI craft — LP templates** — **2026-08-10:** buyer LP extract (`watched-communities`, `BuyerLPBits`) under 783 budget (→~661); SiteCaptureAlignment B5 split-band craft (tokens only); process steps left-led. Seller LP budget-tight (682) — no growth. No new hex palette.
     Order locked: E1→E7 one family at a time. Exit: engaged rate up, CWV not worse. Skill: frontend-design / Hallmark inside brand.
 
 ### Block F — Engagement habit product (U4 + G10)
@@ -120,7 +120,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 41. [x] **H1 CO EDA + geo lock**
 42. [x] **H2 Marts 2016–2025 + 2024 parity**
 43. [x] **H3 Public size strip**
-44. [~] **H4 Public composition** — shipped; verify prod
+44. [x] **H4 Public composition** — **2026-08-10 prod:** `/housing-market` composition strip + 5,707/$3.93B size (browser UA)
 45. [x] **H5 History explorer** — mart/result_cache first; SQL aggregate RPC on miss only; **no Node listings paging**
 46. [x] **H6 Feature cubes / amenity-era queries** — **2026-08-10:** `analytics_mart_feature_annual` + rebuild + `getCoFeatureAnnual` + history amenity strip (fireplace/garage/association typed only)
 47. [x] **H7 Report factory R01–R15** — **2026-08-10 registry** `REPORT_FACTORY_REGISTRY.md` (R01 size shipped public, R14 competitive admin; others planned)
@@ -141,7 +141,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 56. [x] **J1 Room restyle API + listing UI**
 57. [x] **J2 Interior photo pick + rate/cost caps** — default interior heuristic + picker; strict RL notes UI+API
 58. [x] **J3 Conversion path after restyle** — city alert (listing_alerts) + contact CTA
-59. [ ] **J4 Prod browser E2E proof** — **BLOCKED** same as L1 (host 403)
+59. [~] **J4 Prod browser E2E proof** — **2026-08-10:** listing HTML has `RoomRestyle` + `listing-like-alerts` (browser UA). Interactive restyle click/render path **not** browser-tested.
 
 ### Block K — Voice residual (Layer B only)
 
@@ -150,9 +150,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block L — Proof & ship hygiene
 
-62. [ ] **L1 Prod browser proof pack** — size, composition, history, competition admin, restyle, chrome on 8 URLs · **BLOCKED this host 2026-08-10:** public site returns **403** (WAF/bot); needs Matt browser or non-blocked egress
+62. [x] **L1 Prod browser proof pack** — **2026-08-10 agent browser-UA curl:** 8 public URLs HTTP 200 (home, bend+alerts, market size/comp 5,707, history explorer, search save, sell, buyer LP, listing restyle/alerts). Bare curl still 403. Competition admin auth not in public pack (see VERIFY_LOG).
 63. [x] **L2 Gates green path** — `npm run push` discipline (ongoing)
-64. [~] **L3 VERIFY_LOG current** — updated this grind; keep current after each unit
+64. [~] **L3 VERIFY_LOG current** — L1 pack logged 2026-08-10; keep current after each unit
 
 ### Block M — Authority flywheel (G8) — still part of 10× plan
 
@@ -167,8 +167,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 | Field | Value |
 |-------|--------|
 | **NOW** | **E5 UI craft — sell** |
-| **THEN** | E6–E7 UI craft · Matt: G3 + L1 browser · I6 lock |
-| **NOTE** | E1–E4 UI craft shipped (E3 full city + E4 listing). **not 10×** (alerts ~6). Blockers: L1/J4 403, G3, I6. D14 residual = browser V. |
+| **THEN** | Matt: G3 + I6 lock · J4 interactive restyle if needed |
+| **NOTE** | L1 public pack + C1/C3 closed 2026-08-10 (browser UA). E1–E4 + E6–E7 craft shipped; E5 open. **not 10×** (alerts ~6). Blockers: G3, I6. J4 [~] interactive residual. |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 

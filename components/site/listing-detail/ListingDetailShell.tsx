@@ -139,8 +139,10 @@ export function ListingDetailShell({
           BreadcrumbList JSON-LD above is retained for SEO/rich results — it's
           invisible structured data, not the on-page nav strip. */}
       <Section padding="default">
-        <Container className={cn('grid gap-10', sidebar ? 'lg:grid-cols-[1.6fr_360px]' : '', className)}>
-          <div className="min-w-0 flex flex-col gap-10">
+        {/* E4 craft: slightly denser main stack on mobile so price→tour→facts
+            stay in one decision glance; desktop keeps airy 2.5rem gaps. */}
+        <Container className={cn('grid gap-8 lg:gap-10', sidebar ? 'lg:grid-cols-[1.6fr_360px]' : '', className)}>
+          <div className="min-w-0 flex flex-col gap-8 lg:gap-10">
             {/* Referrer-gated: only shows when the buyer came from on-site
                 results, so direct landings keep the clean page. */}
             <BackToResults />

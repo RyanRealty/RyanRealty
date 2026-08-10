@@ -560,6 +560,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         {featuredItems.length > 0 ? (
           <KbFeatured items={featuredItems} eyebrow={`${featuredGeoName} · For sale`} viewAllHref={featuredViewAllHref} viewAllLabel={`See every ${featuredGeoName} home for sale`} />
         ) : null}
+        {/* B1 alerts + F4 coach (coach mounts inside ListingLikeThisAlerts) */}
         <ListingLikeThisAlerts
           city={listing.city}
           listPrice={listing.listPrice}

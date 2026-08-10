@@ -67,6 +67,14 @@ type Props = {
   beds?: number | null
 }
 
+/**
+ * RoomRestyle — contained AI visualization block on listing detail (E4 craft).
+ *
+ * Visual thesis: one navy-bordered cream panel with a clear 3-step flow
+ * (photo → style → generate). Not a second hero. Not a metrics card.
+ * Post-success conversion is one quiet row: alert email + broker link,
+ * without duplicating the full mid-page alert strip noise.
+ */
 export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props) {
   const safePhotos = useMemo(
     () => photos.filter((p) => typeof p.url === 'string' && p.url.startsWith('http')).slice(0, 12),
@@ -108,7 +116,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         error?: string
       }
       if (res.status === 429) {
-        setError(data.error || 'Rate limit hit. Try again in a minute (AI restyle is capped per IP).')
+        setError(data.error || 'Rate limit hit. Try again in a minute.')
         return
       }
       if (!res.ok || !data.ok) {
@@ -152,21 +160,49 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
 
   const contactHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=restyle`
   const pickerPhotos = safePhotos.slice(0, 8)
+  const selectedCaption = safePhotos[photoIdx]?.caption?.trim()
 
   return (
-    <div className="border border-border bg-card p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        Imagine this room
+    <section
+      aria-labelledby="room-restyle-heading"
+      style={{
+        border: '3px solid var(--navy)',
+        background: 'var(--cream)',
+        padding: 'clamp(1rem, 3vw, 1.5rem)',
+      }}
+    >
+      <p
+        className="mono-lab"
+        style={{
+          color: 'var(--navy)',
+          fontSize: '0.62rem',
+          letterSpacing: '0.14em',
+          lineHeight: 1.1,
+        }}
+      >
+        AI visualization
       </p>
-      <p className="mt-1 text-sm text-foreground">
-        AI visualization from a listing photo. Prefer interiors. Pick a room below. Not the listed
-        condition.
+      <h2
+        id="room-restyle-heading"
+        className="display mt-1.5 text-2xl leading-tight tracking-tight"
+        style={{ color: 'var(--navy)' }}
+      >
+        Imagine this room
+      </h2>
+      <p className="mt-1.5 max-w-prose text-sm leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
+        Pick an interior photo and a style. This is a visualization, not the listed condition.
       </p>
 
+      {/* Step 1: photo */}
       {pickerPhotos.length > 1 ? (
-        <div className="mt-3">
-          <p className="mb-1.5 text-xs text-muted-foreground">Choose a photo</p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="mt-4">
+          <p
+            className="mb-2 text-xs font-semibold uppercase tracking-wide"
+            style={{ color: 'rgba(16,39,66,0.55)', letterSpacing: '0.1em' }}
+          >
+            1 · Choose a photo
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
             {pickerPhotos.map((p, i) => {
               const selected = i === photoIdx
               return (
@@ -178,11 +214,18 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
                     setResultUrl(null)
                     setError('')
                   }}
-                  className={
-                    selected
-                      ? 'relative h-14 w-20 shrink-0 overflow-hidden border-2 border-primary'
-                      : 'relative h-14 w-20 shrink-0 overflow-hidden border border-border opacity-80 hover:opacity-100'
-                  }
+                  style={{
+                    position: 'relative',
+                    height: 56,
+                    width: 80,
+                    flexShrink: 0,
+                    overflow: 'hidden',
+                    border: selected ? '3px solid var(--navy)' : '2px solid rgba(16,39,66,0.28)',
+                    opacity: selected ? 1 : 0.82,
+                    background: 'transparent',
+                    padding: 0,
+                    cursor: 'pointer',
+                  }}
                   aria-label={p.caption?.trim() || `Listing photo ${i + 1}`}
                   aria-pressed={selected}
                 >
@@ -192,41 +235,88 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
               )
             })}
           </div>
+          {selectedCaption ? (
+            <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.55)' }}>
+              {selectedCaption}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        {STYLES.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => setStyle(s.id)}
-            className={
-              style === s.id
-                ? 'border border-primary bg-primary px-3 py-1.5 text-xs text-primary-foreground'
-                : 'border border-border px-3 py-1.5 text-xs'
-            }
-          >
-            {s.label}
-          </button>
-        ))}
+      {/* Step 2: style */}
+      <div className="mt-4">
+        <p
+          className="mb-2 text-xs font-semibold uppercase tracking-wide"
+          style={{ color: 'rgba(16,39,66,0.55)', letterSpacing: '0.1em' }}
+        >
+          {pickerPhotos.length > 1 ? '2 · Style' : '1 · Style'}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {STYLES.map((s) => {
+            const on = style === s.id
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setStyle(s.id)}
+                style={{
+                  border: '2px solid var(--navy)',
+                  background: on ? 'var(--navy)' : 'transparent',
+                  color: on ? 'var(--cream)' : 'var(--navy)',
+                  padding: '8px 14px',
+                  minHeight: 40,
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  letterSpacing: '0.04em',
+                  cursor: 'pointer',
+                }}
+                aria-pressed={on}
+              >
+                {s.label}
+              </button>
+            )
+          })}
+        </div>
       </div>
-      <button
-        type="button"
-        onClick={run}
-        disabled={loading}
-        className="mt-3 border border-primary bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50"
-      >
-        {loading ? 'Generating…' : 'Restyle photo'}
-      </button>
-      <p className="mt-1.5 text-xs text-muted-foreground">
-        Rate limit: AI restyle uses the strict API tier (~10 requests / minute per IP). Costs are
-        per generation. Try one style at a time.
-      </p>
-      {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+
+      {/* Step 3: generate */}
+      <div className="mt-4">
+        <p
+          className="mb-2 text-xs font-semibold uppercase tracking-wide"
+          style={{ color: 'rgba(16,39,66,0.55)', letterSpacing: '0.1em' }}
+        >
+          {pickerPhotos.length > 1 ? '3 · Generate' : '2 · Generate'}
+        </p>
+        <button
+          type="button"
+          onClick={run}
+          disabled={loading}
+          className="btn alt"
+          style={{
+            minHeight: 44,
+            opacity: loading ? 0.55 : 1,
+            cursor: loading ? 'wait' : 'pointer',
+          }}
+        >
+          {loading ? 'Generating…' : 'Restyle photo'}
+        </button>
+        <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.55)' }}>
+          One style at a time. Capped per IP.
+        </p>
+      </div>
+
+      {error ? (
+        <p className="mt-3 text-sm font-medium" style={{ color: 'var(--navy)' }} role="alert">
+          {error}
+        </p>
+      ) : null}
+
       {resultUrl ? (
-        <div className="mt-4 space-y-3">
-          <div className="relative aspect-[4/3] w-full overflow-hidden border border-border">
+        <div className="mt-5 space-y-3">
+          <div
+            className="relative w-full overflow-hidden"
+            style={{ aspectRatio: '4 / 3', border: '2px solid var(--navy)' }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={resultUrl}
@@ -234,23 +324,37 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
               className="h-full w-full object-cover"
             />
           </div>
-          <p className="text-xs text-muted-foreground">{disclaimer}</p>
+          {disclaimer ? (
+            <p className="text-xs" style={{ color: 'rgba(16,39,66,0.55)' }}>
+              {disclaimer}
+            </p>
+          ) : null}
 
-          {/* J3: conversion after successful restyle */}
-          <div className="border border-border bg-background p-3">
-            <p className="text-sm font-medium text-foreground">Next step</p>
-            <p className="mt-1 text-xs text-muted-foreground">
+          {/* Post-success conversion: one compact row, not a second full form card */}
+          <div
+            style={{
+              borderTop: '2px solid var(--navy)',
+              paddingTop: 14,
+            }}
+          >
+            <p className="text-sm font-semibold" style={{ color: 'var(--navy)' }}>
+              Next step
+            </p>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
               {city
                 ? `Get email when a similar ${city} home lists, or talk to a broker about this one.`
-                : 'Talk to a broker about this home, or set a search alert from the form lower on the page.'}
+                : 'Talk to a broker about this home, or set a search alert lower on the page.'}
             </p>
             {city ? (
               alertState === 'done' ? (
-                <p className="mt-2 text-sm text-foreground">
+                <p className="mt-2 text-sm" style={{ color: 'var(--navy)' }}>
                   Alert set. New {city} listings near this price band will hit your inbox.
                 </p>
               ) : (
-                <form onSubmit={onAlertSubmit} className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <form
+                  onSubmit={onAlertSubmit}
+                  className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch"
+                >
                   <input
                     type="email"
                     required
@@ -258,10 +362,18 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
                     placeholder="you@email.com"
                     value={alertEmail}
                     onChange={(e) => setAlertEmail(e.target.value)}
-                    className="min-w-0 flex-1 border border-border bg-card px-3 py-2 text-sm"
+                    style={{
+                      minWidth: 0,
+                      flex: 1,
+                      border: '2px solid var(--navy)',
+                      background: 'var(--cream)',
+                      color: 'var(--navy)',
+                      padding: '10px 12px',
+                      fontSize: '0.875rem',
+                      minHeight: 44,
+                    }}
                     aria-label={`${city} listing alert email`}
                   />
-                  {/* honeypot */}
                   <input
                     type="text"
                     name="company"
@@ -275,7 +387,12 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
                   <button
                     type="submit"
                     disabled={alertPending}
-                    className="border border-primary bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50"
+                    className="btn alt"
+                    style={{
+                      minHeight: 44,
+                      opacity: alertPending ? 0.55 : 1,
+                      whiteSpace: 'nowrap',
+                    }}
                   >
                     {alertPending ? 'Saving…' : `Alert me: ${city}`}
                   </button>
@@ -283,23 +400,43 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
               )
             ) : null}
             {alertState === 'error' && alertError ? (
-              <p className="mt-1 text-xs text-destructive">{alertError}</p>
+              <p className="mt-1 text-xs" style={{ color: 'var(--navy)' }} role="alert">
+                {alertError}
+              </p>
             ) : null}
-            <p className="mt-2">
+            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <Link
                 href={contactHref}
-                className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+                className="font-semibold underline-offset-2 hover:underline"
+                style={{ color: 'var(--navy)', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
               >
                 Contact a broker about this home
               </Link>
+              {city ? (
+                <>
+                  <span aria-hidden style={{ color: 'rgba(16,39,66,0.35)' }}>
+                    ·
+                  </span>
+                  <a
+                    href="#listing-like-alerts"
+                    className="underline-offset-2 hover:underline"
+                    style={{ color: 'rgba(16,39,66,0.72)', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
+                  >
+                    Full alert options
+                  </a>
+                </>
+              ) : null}
             </p>
           </div>
         </div>
       ) : (
-        <div className="relative mt-4 aspect-[4/3] w-full overflow-hidden border border-border opacity-80">
+        <div
+          className="relative mt-5 w-full overflow-hidden"
+          style={{ aspectRatio: '4 / 3', border: '2px solid rgba(16,39,66,0.28)' }}
+        >
           <Image src={photoUrl} alt="Selected listing photo" fill className="object-cover" unoptimized />
         </div>
       )}
-    </div>
+    </section>
   )
 }

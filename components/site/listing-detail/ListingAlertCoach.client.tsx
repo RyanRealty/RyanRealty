@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react'
 
 const STORAGE_KEY = 'rr-listing-alert-coach-dismissed'
 const DWELL_MS = 5000
+/** Matches .listing-mobile-cta height band so coach never sits under the broker bar. */
+const MOBILE_BAR_LIFT = 'max(4.75rem, calc(3.75rem + env(safe-area-inset-bottom, 0px)))'
+const DESKTOP_PAD = 'max(0.75rem, env(safe-area-inset-bottom, 0px))'
 
 /**
- * F4 soft next-step coach on listing detail.
+ * F4 soft next-step coach on listing detail (E4 craft).
  *
  * After 5s dwell, show one cream bar:
  * "Next step: get alerts for homes like this" → `#listing-like-alerts`.
@@ -16,12 +19,25 @@ const DWELL_MS = 5000
  * - Dismiss once per session (sessionStorage)
  * - Hide when the real capture strip is already in view
  * - Only render when city is known (same gate as ListingLikeThisAlerts)
+ * - On small screens, sit above the listing mobile contact bar (z-stack + lift)
+ *   so coach and "Schedule a tour" never become one unreadable blob
  *
  * No shadcn (ci:shadcn-burndown). Dismiss control is a raw button like
  * PriceCtaStrip / RoomRestyle (design-token ignore list).
  */
 export function ListingAlertCoach({ city }: { city: string | null | undefined }) {
   const [visible, setVisible] = useState(false)
+  /** true when viewport is below lg (mobile broker bar can show). */
+  const [liftForMobileBar, setLiftForMobileBar] = useState(true)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const apply = () => setLiftForMobileBar(!mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   useEffect(() => {
     if (!city) return
@@ -86,23 +102,49 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
       role="region"
       aria-label="Suggested next step"
       className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 sm:px-4"
-      style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+      style={{
+        // Sit above .listing-mobile-cta (z-80) visually via bottom lift, not z-war.
+        paddingBottom: liftForMobileBar ? MOBILE_BAR_LIFT : DESKTOP_PAD,
+      }}
     >
       <div
-        className="pointer-events-auto mx-auto flex max-w-xl items-center gap-3 rounded-sm border-2 px-3 py-2.5 shadow-md sm:px-4"
-        style={{ borderColor: 'var(--navy)', background: 'var(--cream)', color: 'var(--navy)' }}
+        className="pointer-events-auto mx-auto flex max-w-xl items-center gap-2 sm:gap-3"
+        style={{
+          border: '2px solid var(--navy)',
+          background: 'var(--cream)',
+          color: 'var(--navy)',
+          padding: '10px 12px',
+          boxShadow: '0 -6px 20px rgba(16,39,66,0.12)',
+        }}
       >
         <p className="min-w-0 flex-1 text-sm leading-snug">
           <span className="font-semibold">Next step:</span>{' '}
-          <a href="#listing-like-alerts" className="font-semibold underline underline-offset-2">
+          <a
+            href="#listing-like-alerts"
+            className="font-semibold underline underline-offset-2"
+            style={{ color: 'var(--navy)' }}
+          >
             get alerts for homes like this
           </a>
-          <span className="text-muted-foreground">. Free, no account required.</span>
+          <span style={{ color: 'rgba(16,39,66,0.62)' }}>. Free, no account required.</span>
         </p>
         <button
           type="button"
           onClick={dismiss}
-          className="shrink-0 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+          className="shrink-0"
+          style={{
+            minHeight: 44,
+            minWidth: 44,
+            padding: '0 10px',
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: 'rgba(16,39,66,0.55)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+          }}
           aria-label="Dismiss next step suggestion"
         >
           Not now

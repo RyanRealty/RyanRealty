@@ -14,22 +14,17 @@ import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
 
 /**
- * PriceCtaStrip — the price + address + pill row + 4-button CTA row
- * directly under the photo hero.
+ * PriceCtaStrip — price + address + pill row + CTA hierarchy under the hero.
+ *
+ * Hierarchy (E4 craft):
+ *   1. Price (Layer A H1, address in sr-only + visible lines) — honest MLS numbers only
+ *   2. Primary: Schedule a tour (navy-filled, full-width on mobile)
+ *   3. Secondary: Ask / Save / Share (outlined, 44px hit targets)
+ *   4. Tertiary: Get alerts for homes like this → #listing-like-alerts
  *
  * Spec source:
  *   design_system/ryan-realty/ui_kits/listing-detail/index.html §ld-price-block
  *   design_system/ryan-realty/ui_kits/listing-detail/parity.json "PriceCtaStrip"
- *
- * Replaces the simpler PriceBlock. Three-pill row carries the
- * fundamentals (status · DOM · $/sqft); the 4-button CTA row carries
- * the conversion actions (Schedule a tour, Ask a question, Save,
- * Share). Save + Share are client-side actions per the mockup; this
- * scaffold wires the UI + onClick handlers, persistence ties in via
- * Wave 3 callbacks the page passes through.
- *
- * Per CLAUDE.md brand voice — no banned tokens, sentence-case labels,
- * Amboqia on the price headline (DisplayHeading).
  */
 
 type SaveState = 'idle' | 'saving' | 'saved'
@@ -78,12 +73,6 @@ const PILL_TONE: Record<string, { filled: boolean }> = {
   Withdrawn: { filled: false },
   Expired: { filled: false },
   Canceled: { filled: false },
-}
-
-function statusDot(status: string): string {
-  if (status === 'Active') return '●'
-  if (status === 'Active Under Contract' || status === 'Pending') return '●'
-  return '●'
 }
 
 export function PriceCtaStrip({
@@ -189,25 +178,21 @@ export function PriceCtaStrip({
       style={{
         borderBottom: '3px solid var(--navy)',
         paddingBottom: '1.5rem',
-        paddingTop: '1.5rem',
+        paddingTop: '1.25rem',
       }}
     >
+      {/* Layer A: one H1. Visible price is the money signal; address names it
+          for screen readers. Do not poetry-rewrite this shell. */}
       <DisplayHeading
         as="h1"
-        className="text-4xl leading-none tracking-tight"
+        className="text-4xl leading-none tracking-tight sm:text-5xl"
         style={{ color: 'var(--navy)' }}
       >
-        {/* The page's only H1 was a bare dollar figure — a screen-reader
-            visitor navigating by headings heard a price with no property
-            name, and the whole h2 outline (Description, Property details...)
-            hung off a number (design-audit P2). The address renders visibly
-            right below in its own line; this just gives the heading itself
-            an accessible name. */}
         {street ? <span className="sr-only">{[street, cityWithCommunity].filter(Boolean).join(', ')} </span> : null}
         <Price value={headlinePrice} />
       </DisplayHeading>
       {street ? (
-        <div className="mt-1 text-lg" style={{ color: 'var(--navy)' }}>
+        <div className="mt-1.5 text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
           {street}
         </div>
       ) : null}
@@ -233,7 +218,7 @@ export function PriceCtaStrip({
 
       <div className="mt-3.5 flex flex-wrap gap-2">
         <Pill kind={listing.status}>
-          <span aria-hidden>{statusDot(listing.status)}</span>{' '}
+          <span aria-hidden>●</span>{' '}
           {isClosed && listing.closeDate
             ? `Closed ${new Date(listing.closeDate).toLocaleDateString('en-US', {
                 month: 'short',
@@ -254,16 +239,17 @@ export function PriceCtaStrip({
         ) : null}
       </div>
 
-      {/* Mobile: primary full-width, three secondaries in one even row (was
-          ragged 1/2/1 wrapping across three rows — design-audit P3).
-          Desktop keeps the original inline-wrap layout. */}
-      <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
-        {/* Primary action — navy-filled KB button (.btn.alt) on the cream strip. */}
-        <a href={tourHref} className="btn alt sm:w-auto w-full text-center">
+      {/* CTA hierarchy: primary full-width on mobile, secondaries even 3-col.
+          Desktop keeps the inline wrap. */}
+      <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-stretch">
+        <a
+          href={tourHref}
+          className="btn alt w-full text-center sm:w-auto"
+          style={{ minHeight: 44, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+        >
           Schedule a tour <span className="arr">→</span>
         </a>
         <div className="grid grid-cols-3 gap-2.5 sm:contents">
-          {/* Secondary actions — outlined navy KB buttons on cream. */}
           <a href={askHrefResolved} className="btn" style={OUTLINE_BTN_STYLE}>
             Ask a question
           </a>
@@ -290,19 +276,27 @@ export function PriceCtaStrip({
         </div>
       </div>
 
-      {/* Alert path without inventing metrics: jump to the existing capture strip
-          (ListingLikeThisAlerts / KbCommunityAlerts) lower on this page. */}
-      <p className="mt-3 text-sm" style={{ color: 'rgba(16,39,66,0.72)' }}>
+      {/* Tertiary: alert path without inventing metrics — jump to B1 capture. */}
+      <div
+        className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
+        style={{
+          borderTop: '1px solid rgba(16,39,66,0.14)',
+          paddingTop: 14,
+          color: 'rgba(16,39,66,0.72)',
+        }}
+      >
         <a
           href="#listing-like-alerts"
-          className="font-medium underline-offset-2 hover:underline"
-          style={{ color: 'var(--navy)' }}
+          className="font-semibold underline-offset-2 hover:underline"
+          style={{ color: 'var(--navy)', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
         >
           Get alerts for homes like this
         </a>
-        {' · '}
-        city, price band, and beds from this listing only.
-      </p>
+        <span aria-hidden style={{ color: 'rgba(16,39,66,0.35)' }}>
+          ·
+        </span>
+        <span className="text-xs sm:text-sm">City, price band, and beds from this listing only.</span>
+      </div>
     </div>
   )
 }
@@ -316,6 +310,11 @@ const OUTLINE_BTN_STYLE: React.CSSProperties = {
   background: 'transparent',
   color: 'var(--navy)',
   borderColor: 'var(--navy)',
+  minHeight: 44,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
 }
 
 function Pill({
@@ -337,11 +336,9 @@ function Pill({
         display: 'inline-flex',
         alignItems: 'center',
         gap: 6,
-        // Square brutalist chip — hard 2px navy edge, no rounding.
         border: `2px solid ${navy}`,
         background: filled ? navy : 'transparent',
         color: filled ? cream : navy,
-        // mono-lab ships a cream tone for dark surfaces; force the on-cream values.
         padding: '5px 11px',
         fontSize: '0.62rem',
         letterSpacing: '0.14em',
