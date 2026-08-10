@@ -10,7 +10,7 @@ export function SiteCaptureAlignment() {
         </p>
         <p className="mt-3 text-base leading-relaxed text-foreground">
           This form writes the same free listing alerts product used across the open site. No ad
-          required — enroll anytime from{' '}
+          required. Enroll anytime from{' '}
           <Link href="/search" className="font-semibold text-primary underline underline-offset-4 hover:no-underline">
             search
           </Link>{' '}
