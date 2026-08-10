@@ -61,8 +61,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block B — Conversion 10× (G4) — primary lead lever
 
-4. [~] **B1 Capture product** — **2026-08-10 residual (`e3a1669c`):** map/split compact `SearchAlertCapture` (inline non-sticky under filters); OH + price-drops **hubs** inline `KbCommunityAlerts` (region SFR, not LP-only); homepage mid-page after featured kept; post-success next-step (inbox + manage alerts). City/listing/nbhd already. **Outcome still open:** enrollments ~6 until traffic proves lift.
-5. [~] **B2 Saved search / save path** — **2026-08-10 residual:** guest/signed-in success copy names next step (inbox + manage). Navy SaveSearchButton mid-browse already (`1e8cb1ec`). **Outcome open:** saved_searches ~2 until traffic.
+4. [~] **B1 Capture product** — multi-surface ship + **2026-08-10 outcome copy residual:** search sticky trust line; listing form after DescriptionBlock; `/buy` mid-page `KbCommunityAlerts` (not LP-only hop). Map/split + OH/price-drops hubs + homepage + city/nbhd already. **Outcome still open:** enrollments ~6 until traffic proves lift.
+5. [~] **B2 Saved search / save path** — guest/signed-in success copy names next step (inbox + manage). Navy SaveSearchButton mid-browse already. **Outcome open:** saved_searches ~2 until traffic.
 6. [x] **B3 Valuation / CMA friction** — **2026-08-10:** verified ValuationForm → insertValuationRequest + FUB/CRM + trackEvent/CAPI/MP; hero CTA → `#valuation-form` + Lenis hash scroll; /sell form-first + link to `/sell/valuation`
 7. [~] **B4 Listing primary CTAs** — **2026-08-10 surface:** PriceCtaStrip → `#listing-like-alerts`; RoomRestyle next-step alert + contact (`1e8cb1ec`). Tour/ask/save already on strip + broker CTA.
 8. [x] **B5 LP alignment** — **2026-08-10:** `/lp/buyer-listing-alerts` copy + FAQ: same free `listing_alerts` product as `/search` + `/cities/bend`
@@ -105,7 +105,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 33. [~] **F1 Sticky / mid-browse capture** — bar shipped; residual strip when guest already watching (F2)
 34. [x] **F2 Personal feed / return loop** — **2026-08-10:** signed-in `/account` ActivityFeed + “new since”; **guest residual** = first-party localStorage label+href only (no email/token) after alert signup → site-wide `GuestWatchingBanner` “You’re watching …” + search sticky residual; manage/pause via email unsubscribe token already used; claim-on-login unchanged
-35. [~] **F3 Save + alert as default product behavior** — **2026-08-10 residual:** guest can capture on map/split (inline strip) + list sticky + hubs OH/price-drops; still not full product-default identity for all guests
+35. [~] **F3 Save + alert as default product behavior** — guest capture on map/split + list sticky + hubs + **buy hub inline** + listing early form; still not full product-default identity for all guests
 36. [x] **F4 Demand signals / next-step coach** — **2026-08-10:** listing `ListingAlertCoach` (5s dwell soft bar → `#listing-like-alerts`). Search has SaveSearchButton.
 
 ### Block G — Measurement maturity (G6)
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Outcome loop only:** weekly `scoreboard-snapshot.mjs` — if alerts stay cold after 7d traffic, iterate copy/placement (product already multi-surface) |
+| **NOW** | **Outcome loop only:** weekly `scoreboard-snapshot.mjs` — copy/placement iteration #1 shipped (search trust + listing early form + /buy inline). If still cold after 7d traffic, next small copy unit only |
 | **THEN** | Matt: **G3** (`GA4_OPS_CHECKLIST_MATT.md`) · **I6** public competitor names · optional mart `office_id` at rebuild · J4 paid restyle click |
-| **NOTE** | Plan executable work is complete or Matt-blocked. **not 10×** (alerts 6 / saves 2). |
+| **NOTE** | Plan executable work is complete or Matt-blocked. **not 10×** (alerts 6 / saves 2 as of 2026-08-10 pm snapshot). |
 
 ---
 

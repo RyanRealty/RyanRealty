@@ -2,21 +2,22 @@
  * Buy page (/buy) — KB (kinetic-brutalist) design, Phase 9 page-class migration.
  *
  * RESTYLED IN PLACE: every section, the DAL hero fetch (getSurfaceImage), all
- * value props, the process walkthrough, the buyer-guide sub-pages, the CTA band,
- * the full 6-item FAQ, and the BreadcrumbList + WebPage + FAQPage JSON-LD are
- * preserved verbatim. Only the presentation moved to the KB look (navy + cream
- * surfaces, Amboqia display headings, hard --edge borders, the
+ * value props, the process walkthrough, the buyer-guide sub-pages, mid-page
+ * listing-alert capture, the full 6-item FAQ, and the BreadcrumbList + WebPage
+ * + FAQPage JSON-LD are preserved. Only the presentation moved to the KB look
+ * (navy + cream surfaces, Amboqia display headings, hard --edge borders, the
  * .section/.wrap rhythm, .mono-* labels), built entirely from existing kb.css
- * classes + Tailwind utilities (no inline <style> block — D32).
+ * classes + Tailwind utilities (no inline <style> block - D32).
  * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
  * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
  * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
  * DATA ACCURACY (CLAUDE.md §0): all value props describe real capabilities only.
  * No invented stats, no sale-percentages, no days-to-close claims. Hero photo
- * pulled from getSurfaceImage (approved asset library). The lead path is the
- * existing /lp/buyer-listing-alerts LP (captures the lead + triggers the FUB
- * buyer workflow). This page has no embedded form.
+ * pulled from getSurfaceImage (approved asset library). Primary capture is
+ * mid-page KbCommunityAlerts (same free listing_alerts product as homepage:
+ * Central Oregon + propertyType A SFR). /lp/buyer-listing-alerts remains a
+ * quiet secondary link for ads that need a dedicated landing URL.
  *
  * Brand voice (CLAUDE.md §3): sentence-case headings, no em-dashes, no banned
  * words. Copy is unchanged from the prior verified version.
@@ -30,6 +31,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import '@/components/site/kb/kb.css'
 
@@ -88,7 +90,7 @@ const OLD_MILL_HERO = '/images/homepage/sisters-downtown-three-peaks.jpg'
 // Hero quick-links (preserved from the prior version — every destination kept).
 const HERO_CHIPS = [
   { label: 'Search homes', href: '/homes-for-sale' },
-  { label: 'Get listing alerts', href: '/lp/buyer-listing-alerts' },
+  { label: 'Get listing alerts', href: '#get-alerts' },
   { label: 'Open houses', href: '/open-houses' },
   { label: 'Price drops', href: '/price-drops' },
   { label: 'Talk to a broker', href: '/contact?inquiry=Buying' },
@@ -346,52 +348,41 @@ export default async function BuyPage() {
           </div>
         </section>
 
-        {/* CTA BAND — buyer conversion to the listing-alerts LP (navy surface). */}
-        <section
-          className="section"
-          id="get-alerts"
-          aria-labelledby="get-alerts-title"
+        {/* Mid-page buyer capture — same free listing_alerts product as homepage
+            (E2 craft on /). propertyType A = SFR across the regional MLS so
+            hasNarrowingFilter passes without inventing a city. LP stays a
+            quiet secondary for ad landing URLs only. */}
+        <div id="get-alerts">
+          <KbCommunityAlerts
+            communityName="Central Oregon"
+            city=""
+            extraFilters={{ propertyType: 'A' }}
+            headline="Central Oregon"
+            body="Enter your email. When a single-family home hits the market in Bend, Redmond, Sisters, Sunriver, or nearby, you hear first."
+          />
+        </div>
+        <p
+          className="wrap"
           style={{
-            background: 'var(--navy)',
-            color: 'var(--cream)',
-            padding: 'clamp(54px,8vw,92px) 0',
             textAlign: 'center',
+            margin: 0,
+            padding: '0 0 clamp(28px,4vw,40px)',
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            color: 'var(--navy-70)',
           }}
         >
-          <div className="wrap">
-            <span className="sec-index" style={{ display: 'block', opacity: 0.78 }}>
-              Listing alerts
-            </span>
-            <h2
-              className="display"
-              id="get-alerts-title"
-              style={{ fontSize: 'clamp(2rem,6vw,4rem)', lineHeight: 0.94, margin: '16px 0 18px' }}
-            >
-              New matches, sent by a broker.
-            </h2>
-            <p
-              style={{
-                maxWidth: '54ch',
-                margin: '0 auto 28px',
-                color: 'var(--cream-70)',
-                fontSize: 'clamp(.98rem,1.8vw,1.2rem)',
-                lineHeight: 1.5,
-                fontWeight: 500,
-              }}
-            >
-              Tell us the town, the beds, and the ceiling on price. A broker reads it and sends the homes that match,
-              straight from the MLS.
-            </p>
-            <div className="flex gap-3 justify-center flex-wrap">
-              <a href="/lp/buyer-listing-alerts" className="btn" style={{ borderColor: 'var(--cream)' }}>
-                Get listing alerts <span className="arr">&rarr;</span>
-              </a>
-              <a href="/contact?inquiry=Buying" className="btn ghost">
-                Talk to a broker
-              </a>
-            </div>
-          </div>
-        </section>
+          <a
+            href="/lp/buyer-listing-alerts"
+            className="underline underline-offset-2 hover:text-foreground"
+          >
+            Prefer a longer form
+          </a>
+          {' · '}
+          <a href="/contact?inquiry=Buying" className="underline underline-offset-2 hover:text-foreground">
+            Talk to a broker
+          </a>
+        </p>
 
         {/* FAQ — verified buyer facts (cream surface). The canonical FAQPage
             JSON-LD is emitted by MetadataBlock above, so none is duplicated here. */}

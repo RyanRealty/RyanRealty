@@ -69,23 +69,25 @@ void ListingMobileContactBar
 
 /**
  * Listing-detail composition, ordered to the buyer decision sequence
- * (reordered 2026-07-30): see it, price it, check the facts, read the
- * story, tour it, place it, judge the market, schools and parks, history,
- * run the money, then who to call.
+ * (reordered 2026-07-30; alerts early 2026-08-10): see it, price it,
+ * check the facts, read the story, capture intent, tour it, place it,
+ * judge the market, schools and parks, history, run the money, then
+ * who to call.
  *
  *   hero        ListingHero (photo-grid OR autoplay-video)
  *   main        PriceCtaStrip · OpenHouses · PropertySpecs · DescriptionBlock
- *               · ListingVideoEmbed · ListingLocationMap
+ *               · ListingLikeThisAlerts (#listing-like-alerts + coach)
+ *               · RoomRestyle · ListingVideoEmbed · ListingLocationMap
  *               · NeighborhoodMarketContext · SchoolsBlock · ParksNearbyBlock
  *               · PropertyHistory · MortgageCalculator · RentalAnalysis
  *               · ListingAttribution (ODS §5-3)
  *   sidebar     ListingBrokerCTA (TextMattCTA + ListingMobileContactBar)
- *   full-width  KbFeatured — homes for sale in this area
+ *   full-width  KbFeatured - homes for sale in this area
  *
  * Two sections were retired here 2026-07-30: VacationRentalPotential (no
  * nightly-rate, occupancy, or City of Bend STR-permit source exists) and
  * TransparentCMASummary (every public.cmas row is a confidential client
- * document). Neither had ever rendered — both took a hardcoded null prop.
+ * document). Neither had ever rendered - both took a hardcoded null prop.
  *
  * The mockup-parity CI gate verifies every requiredComponent in
  * design_system/ryan-realty/ui_kits/listing-detail/parity.json is
@@ -387,6 +389,15 @@ export default async function ListingDetailPage({ params }: PageProps) {
           remarks. Reordered 2026-07-30 to the buyer decision sequence. */}
       <PropertySpecs listing={listingWithPhotos} />
       <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
+      {/* B1 alerts early (after facts + story) so high-intent visitors see the
+          form without scrolling past the full main stack + featured homes.
+          id="listing-like-alerts" is the jump target for PriceCtaStrip,
+          RoomRestyle next-step, and ListingAlertCoach. Single mount only. */}
+      <ListingLikeThisAlerts
+        city={listing.city}
+        listPrice={listing.listPrice}
+        beds={listing.beds}
+      />
       {photos.some((p) => p.url) ? (
         <RoomRestyle
           photos={photos.map((p) => ({ url: p.url, caption: p.caption ?? null }))}
@@ -560,12 +571,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
         {featuredItems.length > 0 ? (
           <KbFeatured items={featuredItems} eyebrow={`${featuredGeoName} · For sale`} viewAllHref={featuredViewAllHref} viewAllLabel={`See every ${featuredGeoName} home for sale`} />
         ) : null}
-        {/* B1 alerts + F4 coach (coach mounts inside ListingLikeThisAlerts) */}
-        <ListingLikeThisAlerts
-          city={listing.city}
-          listPrice={listing.listPrice}
-          beds={listing.beds}
-        />
         <KbFooter towns={[]} listingKey={listing.listingKey} />
       </SmoothScrollProvider>
     </main>

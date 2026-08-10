@@ -8,6 +8,7 @@
 | Date | Active CO | CO closed 2024 | Mart years | FP sessions | Alerts | Notes |
 |------|-----------|----------------|------------|-------------|--------|-------|
 | 2026-08-10 | ~3376 | **5707 / $3.931B** | **2016–2025** (+ feature mart same years) | total ~**68749**; 1d **639**; 7d **24012** eng **4263** (17.8%); 30d **67138** eng **11047** (16.4%) | **6** (5 active; +2 created 30d) | Post residual ship; saves=2; map/split+hub capture + guest F2 + I1 brand merge on main |
+| 2026-08-10 (pm) | — | **5707 / $3.931B** | 2016–2025 | total **68754**; 1d **638**; 7d **23800** eng **4244** (17.8%); 30d **67121** eng **11042** (16.5%) | **6** (5 active; +2 created 30d) | Outcome loop re-probe; **saves still 2**; conversion copy residual ship same day (search trust / listing form early /buy inline) |
 
 ## Analytics units
 
@@ -261,3 +262,14 @@
 - **Gates:** `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · pre-commit brand-voice + unit suite green.
 - **Commit:** `517e0712`
 - **Pointer next:** Block E complete (E1–E7); residual F / Matt G3 / I6.
+
+### 2026-08-10 outcome loop /endtoend residual (conversion copy + ship hygiene)
+- **Scoreboard:** `scoreboard-snapshot.mjs --json` → alerts **6**/active **5**/30d **2**; saves **2**; FP 7d eng rate **17.8%**. **Not moved vs morning baseline.**
+- **Prod UA proof (9/9):** PublicNav-only; KbCommunityAlerts home/cities/OH/price-drops; SearchAlertCapture+Save search; RoomRestyle+listing-like-alerts; market size **$3.93B**; buyer LP form; bare curl 403.
+- **Conversion residual shipped (code, outcomes still cold):**
+  1. Search sticky/inline trust: `SearchAlertCapture` — benefit headline + “Free. Unsubscribe any time.”
+  2. Listing form earlier: `ListingLikeThisAlerts` after DescriptionBlock (single `#listing-like-alerts`)
+  3. Buy hub: mid-page `KbCommunityAlerts` (CO + SFR) instead of primary LP hop; LP secondary text link
+- **Gates residual:** voice em-dash fix on `KbCommunityAlerts` success copy; design-token/hydration guest banner fixes on main; `npm run push` green (`ccd86d81` + this commit).
+- **Deferred (honest):** mart `office_id` at rebuild (optional, bootstrap FK coupling, zero public win); G3/I6 Matt locks; J4 paid restyle click; 10× claim ban until enrollments move.
+- **Pointer:** weekly scoreboard; if still cold after traffic, next copy unit only — not new multi-surface product.

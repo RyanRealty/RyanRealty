@@ -319,19 +319,22 @@ export function SearchAlertCapture({
           />
           <div className="min-w-0">
             <p className={cn('text-sm font-medium text-foreground', isInline && 'text-xs sm:text-sm')}>
-              {isInline ? 'Email me new matches' : 'Stay on this search. Get new listings by email.'}
+              {isInline ? 'Email me new matches' : 'Get new homes for this search by email.'}
             </p>
             {/* "for $90M, Bend" read as nonsense (matches FOR a price?) — "matching"
                 works grammatically no matter what the filter-shorthand contains
                 (design-audit P3). */}
             {!isInline ? (
               <p className="line-clamp-2 text-xs text-muted-foreground">
-                We will email you new homes matching {target}.
+                New homes matching {target}.
               </p>
             ) : (
-              <p className="line-clamp-1 text-muted-foreground sm:text-xs">
-                Matching {target}.
-              </p>
+              <>
+                <p className="line-clamp-1 text-muted-foreground sm:text-xs">
+                  Matching {target}.
+                </p>
+                <p className="text-xs text-muted-foreground">Free. Unsubscribe any time.</p>
+              </>
             )}
           </div>
         </div>
@@ -387,6 +390,11 @@ export function SearchAlertCapture({
           </Button>
         </form>
       </div>
+      {!isInline ? (
+        <p className="mx-auto max-w-7xl px-4 pb-2 text-xs text-muted-foreground sm:px-6">
+          Free. One email per new match. Unsubscribe any time.
+        </p>
+      ) : null}
       {state === 'error' ? (
         <div
           className={cn(

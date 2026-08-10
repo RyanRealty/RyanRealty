@@ -40,10 +40,10 @@ export function ListingLikeThisAlerts({
             ...(beds != null && beds > 0 ? { beds: String(beds) } : {}),
           }}
           headline={`${city} homes like this`}
-          body={`Email when a new ${city} home lists near this price${beds != null && beds > 0 ? ` with ${beds}+ beds` : ''}. Same alert engine as search and city pages.`}
+          body={`Email when a new ${city} home lists near this price${beds != null && beds > 0 ? ` with ${beds}+ beds` : ''}.`}
         />
       </section>
-      {/* F4 soft next-step coach — 5s dwell, links to #listing-like-alerts */}
+      {/* F4 soft next-step coach - 5s dwell, links to #listing-like-alerts */}
       <ListingAlertCoach city={city} />
     </>
   )
