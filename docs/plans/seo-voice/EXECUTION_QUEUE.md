@@ -130,10 +130,10 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 ### Block I — Competitive intelligence (U9)
 
 50. [~] **I1 Office list/buy ranks admin** — string-level shipped
-51. [~] **I2 Agent ranks** — market-wide top-N; per-office drill incomplete
-52. [ ] **I3 Brand aliases / entity resolution** (`dim_office` real aliases)
+51. [x] **I2 Agent ranks** — market-wide top-N + per-office drill (I5)
+52. [x] **I3 Brand aliases / entity resolution** — `data/analytics/office-brand-aliases.json` + bootstrap; methodology `DIM_OFFICE_ENTITY_RESOLUTION.md` (share mart still string-level until office_id join)
 53. [ ] **I4 Ryan buy-side + alias truth** (strategy-grade share)
-54. [ ] **I5 Per-office agent drill + CSV export** as desk requires
+54. [x] **I5 Per-office agent drill + CSV export** — `?office=` + `/admin/analytics/competition/export`
 55. [ ] **I6 Public competitor naming** — only after Matt lock (policy)
 
 ### Block J — Next-gen AI (U2)

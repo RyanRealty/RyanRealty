@@ -14,12 +14,13 @@
 | Unit | Status | Evidence |
 |------|--------|----------|
 | A1–A3 foundation | V | migration applied |
-| A4 dim_office | V | 280 offices seeded |
+| A4 dim_office | V | 404 offices; I3 multi-alias brand groups applied |
 | A5–A6 marts | V | 2016–2025 rebuilt, 2024 parity 0% |
-| A7 DAL | V | getCoMarketAnnual/Office/AgentShare |
-| A8 competition+agents | V | /admin/analytics/competition |
+| A7 DAL | V | getCoMarketAnnual/Office/AgentShare (office filter) |
+| A8 competition+agents | V | competition desk + office drill + CSV (I5) |
 | A9 public size | V | CoMarketSizeStrip + series |
 | A10 cron | V | rebuild-analytics-marts daily 08:15 UTC |
+| H5 explorer path | V | result_cache + mart + analyze_closed_sales_co RPC; no Node listings page |
 
 ## Family status
 
@@ -45,6 +46,11 @@
 | CO closed 2024 (mart) | 5707 / $3.931B | analytics_mart_market_annual region all |
 
 ## Session notes (newest first)
+
+### 2026-08-10 I3 + I5 competitive intelligence
+- **I3:** `data/analytics/office-brand-aliases.json` (30 curated groups); `bootstrap-dim-office.mjs` merges true aliases + `brand_family`; methodology `DIM_OFFICE_ENTITY_RESOLUTION.md`. Hosted dim multi-alias (Cascade SIR↔Sotheby's, KW C.O., RE/MAX Out West LLC, BHHS, John L Scott Bend+Redmond, Ryan variants). **No brand-level share invented** — mart ranks stay string-level until `office_id` join.
+- **I5:** `/admin/analytics/competition?office=` drills agents; office column links; CSV at `/admin/analytics/competition/export?kind=offices|agents`. Admin-only; I6 public naming locked.
+- **Code on main:** `1e8cb1ec` (bundled with A1/G2/J2/J3 in concurrent ship).
 
 ### 2026-08-10 H5 History explorer — zero Node closed scans
 - **Unit:** EXECUTION_QUEUE H5.
