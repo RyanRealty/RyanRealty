@@ -202,8 +202,13 @@
   - Process steps left-led (not centered triple).
   - Seller LP skipped (budget 682, no headroom without extract).
 - **Gates:** `ci:file-size-budget` ✓ · `ci:brand-voice` ✓ · `ci:voice-constructions` ✓ · design-tokens clean on E6/E7 paths (pre-existing sell-path token debt untouched).
-- **Pointer next:** E5 sell (or E3 city full).
+- **Pointer next:** Block E complete; Matt G3 / I6 / J4 residual.
 
-### 2026-08-10 E4 code ship (listing components)
-- **Code commit:** listing-only surfaces (PriceCtaStrip, RoomRestyle, ListingAlertCoach, ListingLikeThisAlerts, ListingDetailShell, listing-city-lifestyle.ts, page comment). Queue/VERIFY already marked E4 in E3 commit race; this ship is the component implementation.
-- **Gates (pre-commit):** listing-detail-a11y, brand-voice, seo-shell, mockup-parity, file-size as previously logged.
+### 2026-08-10 E5 UI craft — sell
+- **Unit:** EXECUTION_QUEUE E5 (conversion-first sell craft). Exclusive: `app/sell/*`, `components/site/sell/*` — no kb.css / cities / listing / home / market / LPs.
+- **Form visibility:** hero `SellerLPForm` (`#get-value`) kept; sticky mobile bar with safe-area; all sell CTAs default to `#get-value` (was `/lp/seller-home-value` drift in Situations / MarketContext / PlanExplorer / SellValuationCTA).
+- **Proof rhythm:** reorder to hero → SellProof → KbTestimonials → service story (value props → situations → process → marketing → fee → market). SellProof re-ask CTA after ledger/solds. SellValuationCTA navy dominant ask band.
+- **Valuation path (B3 kept):** `/sell/valuation` hero CTA → `#valuation-form` + scroll-mt-24; form in bordered band; method steps as numbered strip; navy list-plan close; mobile sticky → form; `pageMetadata` shell. Hero secondary = call.
+- **Layer A:** sell `titleTop="Sell your home in"` + metadata `Sell Your Home…` (`ci:seo-shell` ✓). Brand lock navy/cream; no invented stats.
+- **Gates:** `ci:seo-shell` ✓ · `ci:brand-voice` ✓ · `ci:design-tokens` improved (252 vs 253).
+- **Pointer next:** E6 market (if still open on spine) or next incomplete unit.

@@ -96,9 +96,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 27. [x] **E2 UI craft — homepage** — **2026-08-10:** mid-page `KbCommunityAlerts` (SFR / Central Oregon), hero sub width + search focus craft, sell form focus, Layer A H1 locked. Gates: seo-shell + brand-voice green.
 28. [x] **E3 UI craft — city** — **2026-08-10 full:** city-scoped hero CTAs + posterAlt; mid-page SFR `KbCommunityAlerts` (after map); featured view-all city path; sell eyebrow `Sell in {City}`; nbhd light parity (alerts mid + CTAs). Layer A H1 locked. Gates: seo-shell + brand-voice green.
 29. [x] **E4 UI craft — listing** — **2026-08-10:** CTA hierarchy (tour primary / secondary 44px / tertiary alerts), RoomRestyle 3-step KB panel + quiet post-success conversion, coach lifts above mobile broker bar and mounts with alerts strip, denser main stack on mobile. Layer A price H1 honest. Page 573 LOC (lifestyle helper extracted). Gates: listing-detail-a11y, seo-shell, brand-voice, mockup-parity, file-size.
-30. [ ] **E5 UI craft — sell**
+30. [x] **E5 UI craft — sell** — **2026-08-10:** conversion-first stack (form → proof → service); all CTAs → `#get-value`; valuation page form band + sticky mobile + B3 `#valuation-form`; seo-shell sell titles locked
 31. [x] **E6 UI craft — market** — **2026-08-10:** size strip = featured year + volume rail; composition = lead-type plate + ranked bars; history explorer research-terminal craft; hub resource groups; CO narrative offset plate. §0 marts/DAL only. No cities/listing/sell/home chrome.
-32. [x] **E7 UI craft — LP templates** — **2026-08-10:** buyer LP extract (`watched-communities`, `BuyerLPBits`) under 783 budget (→~661); SiteCaptureAlignment B5 split-band craft (tokens only); process steps left-led. Seller LP budget-tight (682) — no growth. No new hex palette.
+32. [x] **E7 UI craft — LP templates** — **2026-08-10:** buyer LP extract (`watched-communities`, `BuyerLPBits`) under 783 budget (→~656); SiteCaptureAlignment B5 split-band craft (tokens only); process steps left-led. Seller LP budget-tight — no growth. No new hex palette.
     Order locked: E1→E7 one family at a time. Exit: engaged rate up, CWV not worse. Skill: frontend-design / Hallmark inside brand.
 
 ### Block F — Engagement habit product (U4 + G10)
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **E5 UI craft — sell** |
-| **THEN** | Matt: G3 + I6 lock · J4 interactive restyle if needed |
-| **NOTE** | L1 public pack + C1/C3 closed 2026-08-10 (browser UA). E1–E4 + E6–E7 craft shipped; E5 open. **not 10×** (alerts ~6). Blockers: G3, I6. J4 [~] interactive residual. |
+| **NOW** | Block E complete — next open units (F residual / Matt G3 / I6) |
+| **THEN** | Matt: G3 · I6 lock · J4 interactive restyle if needed |
+| **NOTE** | E1–E7 UI craft shipped. **not 10×** (alerts ~6). Blockers: G3, I6. J4 residual. |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 
