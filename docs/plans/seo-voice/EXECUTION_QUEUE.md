@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | Measure B1/B2 after map/split + hub residual + guest F2 ship · optional mart office_id at rebuild (I1 DAL merge shipped) · F3 default identity |
-| **THEN** | Matt: **G3** GA4 UI (`GA4_OPS_CHECKLIST_MATT.md` — docs ready) · **I6** public competitor names · J4 interactive restyle generate (cost) |
-| **NOTE** | Executable inventory largely shipped or blocked. **not 10×** (alerts ~6). True remaining: outcomes + Matt locks + polish residuals. |
+| **NOW** | **Outcome loop only:** weekly `scoreboard-snapshot.mjs` — if alerts stay cold after 7d traffic, iterate copy/placement (product already multi-surface) |
+| **THEN** | Matt: **G3** (`GA4_OPS_CHECKLIST_MATT.md`) · **I6** public competitor names · optional mart `office_id` at rebuild · J4 paid restyle click |
+| **NOTE** | Plan executable work is complete or Matt-blocked. **not 10×** (alerts 6 / saves 2). |
 
 ---
 

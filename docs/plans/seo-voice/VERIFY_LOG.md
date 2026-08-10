@@ -7,7 +7,7 @@
 
 | Date | Active CO | CO closed 2024 | Mart years | FP sessions | Alerts | Notes |
 |------|-----------|----------------|------------|-------------|--------|-------|
-| 2026-08-10 | ~3409 | **5707 / $3.931B** | **2016–2025** | total ~**68722**; 1d **1033**; 7d **24447** eng **4313** (17.6%); 30d **67190** eng **11037** (16.4%) | **6** (5 active; +2 created 30d) | A1 scoreboard-snapshot.mjs; eng=score≥2; saves=2; Cascade list ~18% |
+| 2026-08-10 | ~3376 | **5707 / $3.931B** | **2016–2025** (+ feature mart same years) | total ~**68749**; 1d **639**; 7d **24012** eng **4263** (17.8%); 30d **67138** eng **11047** (16.4%) | **6** (5 active; +2 created 30d) | Post residual ship; saves=2; map/split+hub capture + guest F2 + I1 brand merge on main |
 
 ## Analytics units
 
@@ -56,6 +56,15 @@
 | CO closed 2024 (mart) | 5707 / $3.931B | analytics_mart_market_annual region all |
 
 ## Session notes (newest first)
+
+### 2026-08-10 residual /endtoend close (outcome + residuals)
+- **B1/B2/F3 product:** map/split inline capture; OH/price-drops hubs inline; success next-step copy (`7ea32ff4`).
+- **F2 guest habit:** localStorage residual + `GuestWatchingBanner` (`a98c77de`); no PII.
+- **I1 brand merge:** `getCoOfficeShareMerged` admin desk (`deebf2f0` stack).
+- **H6 multi-year:** feature mart 2016–2025 rebuilt; 2024 parity 0%.
+- **G3:** `GA4_OPS_CHECKLIST_MATT.md` — blocked Matt UI.
+- **K1 Layer B:** city/community/buy/sell intent/luxury bodies (`fa58828c`).
+- **Scoreboard still cold:** alerts 6 · saves 2 — **not 10×**.
 
 ### 2026-08-10 I1 brand-merged competitive share
 - **DAL:** `getCoOfficeShareMerged({ year, side, mergeMode: brand_family|office_entity })` — joins mart `office_name` → `analytics_dim_office` (aliases; mart `office_id` still null). Sums real sides/volume only; share % ÷ market mart. Methodology `office_share_merged_v1` in `DIM_OFFICE_ENTITY_RESOLUTION.md` § I1.
