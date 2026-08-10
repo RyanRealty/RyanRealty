@@ -8,6 +8,17 @@ const DWELL_MS = 5000
 const MOBILE_BAR_LIFT = 'max(4.75rem, calc(3.75rem + env(safe-area-inset-bottom, 0px)))'
 const DESKTOP_PAD = 'max(0.75rem, env(safe-area-inset-bottom, 0px))'
 
+function alreadyWatchingInThisBrowser(): boolean {
+  try {
+    // F2 residual: guest already set an alert — do not coach them to set another.
+    // Lazy key check avoids importing residual helpers into this small coach chunk.
+    const raw = localStorage.getItem('rr_guest_alert_watch')
+    return typeof raw === 'string' && raw.length > 2
+  } catch {
+    return false
+  }
+}
+
 /**
  * F4 soft next-step coach on listing detail (E4 craft).
  *
@@ -48,6 +59,8 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
     } catch {
       // private mode — still allow one-shot coach this visit
     }
+    // Guest who already set an alert (F2 residual) — skip coach; return banner owns the loop.
+    if (alreadyWatchingInThisBrowser()) return
 
     let cancelled = false
     let timer: ReturnType<typeof setTimeout> | null = null
@@ -61,6 +74,7 @@ export function ListingAlertCoach({ city }: { city: string | null | undefined })
       } catch {
         /* ignore */
       }
+      if (alreadyWatchingInThisBrowser()) return
       setVisible(true)
     }
 

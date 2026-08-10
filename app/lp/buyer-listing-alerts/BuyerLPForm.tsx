@@ -24,6 +24,10 @@ import { submitBuyerLPForm, type BuyerLPTimeline } from './actions'
 import { BUYER_LP_SEARCH_AREAS } from './alert-filters'
 import { CONTACT } from '@/lib/brand/contact'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
+import {
+  buildGuestWatchFromFilters,
+  rememberGuestWatch,
+} from '@/lib/alerts/guest-watch-residual'
 
 // Single source of truth for the area list: ./alert-filters.ts maps each slug
 // to the canonical alert filter, so what the form offers and what the alert
@@ -80,6 +84,28 @@ export default function BuyerLPForm() {
           } catch {
             // Pixel suppressed (consent gate) — server-side lead still landed.
           }
+        }
+        // F2 residual so a later visit to the main site (not /lp) shows the
+        // soft "You're watching …" banner. Label + href only — no email stored.
+        try {
+          const firstArea = SEARCH_AREAS.find((a) => areas.includes(a.slug) && a.filter)
+          const filters: Record<string, unknown> = {
+            ...(firstArea?.filter ?? {}),
+            ...(submission.budgetMin ? { minPrice: submission.budgetMin } : {}),
+            ...(submission.budgetMax ? { maxPrice: submission.budgetMax } : {}),
+            ...(submission.bedsMin ? { beds: submission.bedsMin } : {}),
+          }
+          if (Object.keys(filters).length > 0) {
+            rememberGuestWatch(buildGuestWatchFromFilters(filters))
+          } else {
+            rememberGuestWatch({
+              label: 'Central Oregon homes',
+              href: '/search',
+              setAt: Date.now(),
+            })
+          }
+        } catch {
+          // best-effort residual
         }
         setResult({ ok: true, msg: "Got it. Your first batch of matches will be in your inbox within 30 minutes." })
       } else {

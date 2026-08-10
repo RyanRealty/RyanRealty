@@ -4,6 +4,10 @@ import { useMemo, useState, useTransition, type FormEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import {
+  buildGuestWatchFromFilters,
+  rememberGuestWatch,
+} from '@/lib/alerts/guest-watch-residual'
 import { priceBandAroundListPrice } from '@/lib/search/price-band'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
@@ -149,6 +153,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         company: alertCompany,
       })
       if (res.ok) {
+        rememberGuestWatch(buildGuestWatchFromFilters(filters))
         setAlertState('done')
         fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))
       } else {

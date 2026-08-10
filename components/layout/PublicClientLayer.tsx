@@ -32,6 +32,11 @@ const AuthCodeRedirect = dynamic(() => import('@/components/AuthCodeRedirect'), 
 const AuthErrorRedirect = dynamic(() => import('@/components/AuthErrorRedirect'), { ssr: false })
 const SignUpTracker = dynamic(() => import('@/components/tracking/SignUpTracker'), { ssr: false })
 const ComparisonTray = dynamic(() => import('@/components/comparison/ComparisonTray'), { ssr: false })
+// F2 guest habit residual — soft "You're watching …" return banner (no PII).
+const GuestWatchingBanner = dynamic(
+  () => import('@/components/site/GuestWatchingBanner.client'),
+  { ssr: false },
+)
 
 export default function PublicClientLayer() {
   const pathname = usePathname()
@@ -59,6 +64,9 @@ export default function PublicClientLayer() {
       </Suspense>
       <HideOnLP>
         <ComparisonTray />
+      </HideOnLP>
+      <HideOnLP>
+        <GuestWatchingBanner />
       </HideOnLP>
     </>
   )

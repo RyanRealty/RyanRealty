@@ -42,7 +42,7 @@ Standing orders so the full inventory actually runs (not just exists):
 | Layer A + seo-shell forever | **SHIP** |
 | Competitive entity truth | **Partial** (aliases + Ryan list/buy + I1 brand/entity rollup; mart office_id still null) |
 | Report factory / feature cubes / inventory | **SHIP** (registry + feature mart + snapshot table) |
-| Habit engagement | **Partial** (sticky + coach + account feed; guest habit residual) |
+| Habit engagement | **Partial** (sticky + coach + account feed + guest F2 residual banner) |
 | Measurement ops ritual | **SHIP** (scoreboard + FP-primary) |
 | Grok restyle | **SHIP code**; interactive click E2E residual |
 
@@ -103,8 +103,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block F — Engagement habit product (U4 + G10)
 
-33. [~] **F1 Sticky / mid-browse capture** — bar shipped; not full habit system
-34. [~] **F2 Personal feed / return loop** — **signed-in** `/account` ActivityFeed + “new since” insights exist; guest habit feed not built
+33. [~] **F1 Sticky / mid-browse capture** — bar shipped; residual strip when guest already watching (F2)
+34. [x] **F2 Personal feed / return loop** — **2026-08-10:** signed-in `/account` ActivityFeed + “new since”; **guest residual** = first-party localStorage label+href only (no email/token) after alert signup → site-wide `GuestWatchingBanner` “You’re watching …” + search sticky residual; manage/pause via email unsubscribe token already used; claim-on-login unchanged
 35. [~] **F3 Save + alert as default product behavior** — **2026-08-10 residual:** guest can capture on map/split (inline strip) + list sticky + hubs OH/price-drops; still not full product-default identity for all guests
 36. [x] **F4 Demand signals / next-step coach** — **2026-08-10:** listing `ListingAlertCoach` (5s dwell soft bar → `#listing-like-alerts`). Search has SaveSearchButton.
 
@@ -166,7 +166,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | Measure B1/B2 after map/split + hub residual (`e3a1669c`) · optional guest F2 · optional mart office_id at rebuild (I1 DAL merge shipped) |
+| **NOW** | Measure B1/B2 after map/split + hub residual + guest F2 ship · optional mart office_id at rebuild (I1 DAL merge shipped) · F3 default identity |
 | **THEN** | Matt: **G3** GA4 UI (`GA4_OPS_CHECKLIST_MATT.md` — docs ready) · **I6** public competitor names · J4 interactive restyle generate (cost) |
 | **NOTE** | Executable inventory largely shipped or blocked. **not 10×** (alerts ~6). True remaining: outcomes + Matt locks + polish residuals. |
 
