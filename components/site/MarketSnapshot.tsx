@@ -152,7 +152,7 @@ export default async function MarketSnapshot({ citySlug, cityName }: Props = {})
       <Container>
         <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
           <Stack gap="tight">
-            <Eyebrow>Market snapshot</Eyebrow>
+            <Eyebrow>Live from the MLS</Eyebrow>
             <H2>{geoLabel} housing market</H2>
             <Body size="small" tone="muted">
               Refreshed every 15 minutes from Oregon Data Share. Single-family homes only.

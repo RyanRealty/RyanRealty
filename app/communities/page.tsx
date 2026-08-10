@@ -60,11 +60,12 @@ export const revalidate = 1800
 export const metadata: Metadata = {
   title: 'Communities in Central Oregon | Bend, Redmond, Sisters',
   description:
-    'Communities and neighborhoods across Central Oregon, with homes for sale in Bend, Redmond, Sisters, Sunriver, and the towns around them.',
+    'Resort and master-planned communities across Central Oregon. Live single-family inventory for Bend, Redmond, Sisters, Sunriver, and the towns around them.',
   alternates: { canonical: `${siteUrl}/communities` },
   openGraph: {
     title: 'Communities in Central Oregon | Ryan Realty',
-    description: 'Communities and neighborhoods across Central Oregon.',
+    description:
+      'Resort and master-planned communities across Central Oregon, with live MLS inventory.',
     url: `${siteUrl}/communities`,
     siteName: 'Ryan Realty',
     type: 'website',
@@ -239,7 +240,8 @@ export default async function CommunitiesPage() {
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: 'Communities in Central Oregon',
-            description: 'Communities and neighborhoods across Central Oregon.',
+            description:
+              'Resort and master-planned communities across Central Oregon, with live MLS inventory.',
             url: `${siteUrl}/communities`,
             publisher: { '@type': 'Organization', name: 'Ryan Realty' },
             mainEntity: {
@@ -274,13 +276,13 @@ export default async function CommunitiesPage() {
                 <span className="dot" aria-hidden />
                 Live market
               </span>
-              <h1 className="sec-title display">Communities in<br />Central Oregon</h1>
+              <h1 className="sec-title display">Communities across<br />Central Oregon.</h1>
             </div>
 
             <p className="neigh-sub" style={{ marginTop: '20px' }}>
-              Resort and master-planned communities, neighborhoods, and subdivisions
-              across Bend, Redmond, Sisters, Sunriver, and the high desert towns
-              between them. Live inventory from the regional MLS.
+              Resorts, master-planned communities, and the plats between them.
+              Bend, Redmond, Sisters, Sunriver, and the high desert towns in
+              between. Live single-family inventory from the regional MLS.
             </p>
 
             <div className="region-grid" style={{ marginTop: '26px' }}>
@@ -311,7 +313,7 @@ export default async function CommunitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Resort communities</span>
-              <h2 className="sec-title display">Resort and<br />master-planned</h2>
+              <h2 className="sec-title display">Resorts and<br />planned communities</h2>
             </div>
 
             <div>
@@ -473,19 +475,19 @@ export default async function CommunitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Search every community<br />in Central Oregon</h2>
+              <h2 className="sec-title display">Find a home, or<br />price the one you have.</h2>
             </div>
             <div className="max-w-xl pt-6 pb-12">
               <p className="neigh-sub" style={{ margin: 0 }}>
-                Search active listings across every community with live filters for
-                price, beds, and location. Or start with what your current home is worth.
+                Search active listings across every community, with filters for
+                price, beds, and place. Or start with what your home is worth today.
               </p>
               <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
                 <Link href="/search" className="btn">
                   Search all listings <span className="arr">→</span>
                 </Link>
                 <Link href="/sell/valuation" className="btn ghost">
-                  What is your home worth
+                  See the estimate
                 </Link>
               </div>
             </div>

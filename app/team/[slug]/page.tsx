@@ -412,7 +412,7 @@ export default async function TeamMemberPage({ params }: Props) {
         {/* Bio — KbAbout with the broker's verified bio and key facts. */}
         <KbAbout
           eyebrow={`${firstName} · ${broker.title ?? 'Real Estate Broker'}`}
-          heading={`Meet ${firstName}`}
+          heading={`${firstName}'s profile.`}
           paragraphs={[bioText]}
           facts={aboutFacts}
         />
@@ -451,9 +451,9 @@ export default async function TeamMemberPage({ params }: Props) {
         <LeadCaptureBlock
           variant="seller"
           onSubmit={submitBrokerSellerLead}
-          eyebrow="What's your home worth"
-          title={`Get a valuation from ${firstName}`}
-          intro={`Tell ${firstName} about your home and you'll get a comparative market analysis with the comparable sales behind the number, not an automated estimate.`}
+          eyebrow="Home value"
+          title={`A CMA from ${firstName}`}
+          intro={`Tell ${firstName} about your home. You get a comparative market analysis with the closed comps behind the number, not an automated estimate.`}
           submitLabel="Request my valuation"
           tone="default"
         />
@@ -464,16 +464,16 @@ export default async function TeamMemberPage({ params }: Props) {
         {(telHref || smsHref || mailHref) ? (
           <section className="section" id="contact-broker" style={{ background: 'var(--cream)', color: 'var(--navy)' }}>
             <div className="wrap" style={{ paddingTop: 'clamp(48px,7vw,72px)', paddingBottom: 'clamp(48px,7vw,72px)' }}>
-              <span className="sec-index">{`Talk to ${firstName} directly`}</span>
+              <span className="sec-index">{`Direct line`}</span>
               <h2 className="display" style={{ fontSize: 'clamp(2.2rem,7vw,4rem)', lineHeight: 0.92, margin: '14px 0 0' }}>
-                {`Work with ${firstName}.`}
+                {broker.phone ? `Call or text ${firstName}.` : `Email ${firstName}.`}
               </h2>
               <p style={{ maxWidth: '52ch', margin: '18px 0 0', fontSize: '1.05rem', lineHeight: 1.55 }}>
-                {broker.phone ? `Call or text ${broker.phone}` : null}
-                {broker.phone && broker.email ? ', or ' : null}
-                {broker.email ? `email ${broker.email}` : null}
+                {broker.phone ? `${broker.phone}` : null}
+                {broker.phone && broker.email ? '. ' : null}
+                {broker.email ? `${broker.email}` : null}
                 {broker.phone || broker.email ? '. ' : null}
-                {`You work with ${firstName} directly, from the first call to closing.`}
+                {`${firstName} works the deal from the first call to closing.`}
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 26 }}>
                 {telHref ? (

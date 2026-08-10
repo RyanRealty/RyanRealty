@@ -36,11 +36,13 @@ const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
   title: 'Home Appreciation Calculator',
-  description: 'Estimate your future home value with an appreciation calculator built for Central Oregon homeowners.',
+  description:
+    'Project future home value from a purchase price, annual appreciation rate, and years held. Math, not an appraisal.',
   alternates: { canonical: `${siteUrl}/tools/appreciation` },
   openGraph: {
     title: 'Home Appreciation Calculator | Ryan Realty',
-    description: 'Project home value growth and compare appreciation scenarios.',
+    description:
+      'Project future home value from a purchase price, annual appreciation rate, and years held. Math, not an appraisal.',
     url: `${siteUrl}/tools/appreciation`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -48,7 +50,8 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary',
     title: 'Home Appreciation Calculator | Ryan Realty',
-    description: 'Project home value growth and compare appreciation scenarios.',
+    description:
+      'Project future home value from a purchase price, annual appreciation rate, and years held. Math, not an appraisal.',
     images: [ogImage],
   },
 }
@@ -60,7 +63,7 @@ export default function AppreciationToolPage() {
     name: 'Home Appreciation Calculator',
     url: `${siteUrl}/tools/appreciation`,
     applicationCategory: 'FinanceApplication',
-    description: 'Estimate future home value with appreciation scenarios.',
+    description: 'Project future home value from a purchase price, annual appreciation rate, and years held.',
   }
 
   return (
@@ -81,10 +84,10 @@ export default function AppreciationToolPage() {
             Calculator) are preserved as a dedicated CTA row below the hero. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Homeowner tools"
-          titleTop="Home Appreciation"
-          titleBottom="Calculator"
-          lead="Model different annual appreciation rates to see long-term equity growth."
+          eyebrow="Central Oregon · Hold-period math"
+          titleTop="If values"
+          titleBottom="keep rising."
+          lead="Set a purchase price, an annual rate, and how many years you hold. You get a projected future value and total gain. It is math, not an appraisal."
           videoSrc={null}
           posterSrc="/images/kb/three-sisters-sunrise.jpg"
         />

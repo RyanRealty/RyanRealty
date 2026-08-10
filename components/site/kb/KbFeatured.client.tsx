@@ -17,9 +17,9 @@ import { useInViewAutoplay } from './use-in-view-autoplay'
  */
 export function KbFeatured({
   items,
-  eyebrow = 'Featured homes',
+  eyebrow = 'Active listings',
   viewAllHref = '/homes-for-sale',
-  viewAllLabel = 'Browse homes',
+  viewAllLabel = 'See homes for sale',
   viewAllPlace,
   totalCount = null,
 }: {
@@ -97,9 +97,9 @@ export function KbFeatured({
         <div className="sec-head">
           <span className="sec-index">{eyebrow}</span>
           <h2 className="sec-title display">
-            Featured
+            On the
             <br />
-            homes
+            market
           </h2>
         </div>
         <div className="lst-grid">
@@ -111,7 +111,7 @@ export function KbFeatured({
                 ref={register(it.href)}
                 className={`lst-card${playing ? ' playing' : ''}`}
                 href={it.href}
-                aria-label={`${it.address}, ${it.city}${it.price ? ` – ${kbMoneyFull(it.price)}` : ''}${it.beds != null ? `, ${it.beds} bed` : ''}${it.baths != null ? `, ${it.baths} bath` : ''}. View listing.`}
+                aria-label={`${it.address}, ${it.city}${it.price ? `, ${kbMoneyFull(it.price)}` : ''}${it.beds != null ? `, ${it.beds} bed` : ''}${it.baths != null ? `, ${it.baths} bath` : ''}. View listing.`}
                 onMouseEnter={() => enter(it.href)}
                 onMouseLeave={() => leave(it.href)}
                 onFocus={() => enter(it.href)}

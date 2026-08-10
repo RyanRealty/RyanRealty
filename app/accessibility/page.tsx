@@ -9,11 +9,11 @@ const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'info@ryan-real
 
 export const metadata: Metadata = {
   title: 'Accessibility',
-  description: 'Ryan Realty commitment to web accessibility and how to report issues.',
+  description: 'How ryan-realty.com aims to meet WCAG 2.1 Level AA, and how to report a barrier.',
   alternates: { canonical: `${siteUrl}/accessibility` },
   openGraph: {
     title: 'Accessibility statement | Ryan Realty',
-    description: 'Ryan Realty commitment to web accessibility and how to report issues.',
+    description: 'How ryan-realty.com aims to meet WCAG 2.1 Level AA, and how to report a barrier.',
     url: `${siteUrl}/accessibility`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -31,43 +31,43 @@ export default function AccessibilityPage() {
 
       <section className="mt-8 space-y-6 text-sm text-primary">
         <div>
-          <H2 className="text-lg text-foreground">Our commitment</H2>
+          <H2 className="text-lg text-foreground">What we aim for</H2>
           <p className="mt-2">
-            Ryan Realty is committed to ensuring our website is accessible to people with disabilities. We aim to conform to Web Content Accessibility Guidelines (WCAG) 2.1 at Level AA where practicable.
+            We build this site so people with disabilities can use it. We aim for Web Content Accessibility Guidelines (WCAG) 2.1 Level AA where we can.
           </p>
         </div>
 
         <div>
-          <H2 className="text-lg text-foreground">Measures we take</H2>
+          <H2 className="text-lg text-foreground">What we do on the page</H2>
           <p className="mt-2">
-            We use semantic HTML, keyboard navigation support, sufficient color contrast, and descriptive links and labels. We avoid content that flashes in a way that could trigger seizures. We provide text alternatives for meaningful images where appropriate.
+            Semantic HTML, keyboard navigation, color contrast that holds up, and descriptive links and labels. We avoid content that flashes in a way that could trigger seizures. Meaningful images get text alternatives where it helps.
           </p>
         </div>
 
         <div>
           <H2 className="text-lg text-foreground">Known limitations</H2>
           <p className="mt-2">
-            Some third-party content (e.g., maps or embedded tools) may not be fully accessible. We are continually improving our pages and components. If you encounter a barrier, we want to hear from you.
+            Some third-party content, such as maps or embedded tools, may not be fully accessible. We keep improving pages and components. If you hit a barrier, tell us.
           </p>
         </div>
 
         <div>
           <H2 className="text-lg text-foreground">Reporting accessibility issues</H2>
           <p className="mt-2">
-            If you have trouble accessing any part of this site or have suggestions for improvement, please contact us:
+            If you cannot use any part of this site, or you have a fix in mind, email us:
           </p>
           <p className="mt-2">
             <a href={`mailto:${contactEmail}`} className="text-primary underline hover:no-underline">{contactEmail}</a>
           </p>
           <p className="mt-2">
-            We will respond and work to address the issue where feasible.
+            We will reply and fix what we can.
           </p>
         </div>
 
         <div>
           <H2 className="text-lg text-foreground">Third-party audits</H2>
           <p className="mt-2">
-            We may engage third-party accessibility audits from time to time. The date of the most recent audit (when performed) will be noted here. Currently we rely on internal review and user feedback to improve accessibility.
+            We may hire third-party accessibility audits from time to time. The date of the most recent audit, when one has been done, will sit here. Right now we rely on internal review and what you report.
           </p>
         </div>
       </section>

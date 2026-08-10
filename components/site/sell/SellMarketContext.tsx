@@ -169,12 +169,12 @@ export function SellMarketContext({ pulse, detail }: Props) {
     <Section id="pricing-insight" padding="default" tone="default" divider>
       <Container>
         <Stack gap="tight" className="mb-8 max-w-2xl">
-          <Eyebrow>Beyond the automated estimate</Eyebrow>
-          <H2>An automated estimate is one number. We price on the signals it cannot see.</H2>
+          <Eyebrow>What an online estimate misses</Eyebrow>
+          <H2>A model hands you one number. A list price sits on live local signals.</H2>
           <Body size="large" tone="muted" className="mt-1 leading-relaxed">
-            An automated estimate never walked your home, never weighed this
-            week’s buyers, and hands you a single guess. Here is the live read
-            a broker actually prices on, pulled from the Central Oregon MLS.
+            An automated estimate never walked your home and does not see this
+            week&apos;s buyers. Below is the Bend read a broker prices on, pulled
+            from the Central Oregon MLS.
           </Body>
         </Stack>
 
@@ -249,7 +249,7 @@ export function SellMarketContext({ pulse, detail }: Props) {
 
         <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <CTAButton href={VALUATION_HREF} tone="primary" size="md">
-            Get your address-specific read
+            Get the written valuation
           </CTAButton>
           <TextLink href="/housing-market" tone="primary" underline="on-hover">
             See the full Central Oregon market data

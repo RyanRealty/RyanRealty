@@ -7,9 +7,8 @@
  * Spec: marketing_brain_skills/producers/site-city-page/SKILL.md
  * First exemplar; Sisters, Redmond, La Pine, Tumalo follow.
  *
- * Tone: Welcome-first, positive, broker-as-host. No disclosures, no negative
- *       framing — the city sells itself. Map + listings + neighborhoods do the
- *       heavy lifting.
+ * Tone: Buffett voice. Inventory + market facts first. Map + listings +
+ *       neighborhoods carry the page. No tourism brochure register.
  */
 import 'server-only'
 import { promises as fs } from 'node:fs'
@@ -34,12 +33,12 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 export const metadata: Metadata = {
   title: 'Homes for sale in Bend, Oregon',
   description:
-    "Welcome to Bend. Search active homes, explore every Bend neighborhood and resort community, and meet a local principal broker. Current market data refreshed daily.",
+    'Active Bend homes for sale, every neighborhood and resort community, live market figures, and a Bend principal broker. Data refreshed daily.',
   alternates: { canonical: `${siteUrl}/lp/bend/` },
   openGraph: {
-    title: 'Welcome to Bend, Oregon',
+    title: 'Homes for sale in Bend, Oregon',
     description:
-      "Search homes for sale in Bend, explore every neighborhood, and meet a local principal broker.",
+      'Search active Bend homes, explore every neighborhood, and get live market figures from Ryan Realty.',
     type: 'website',
     url: `${siteUrl}/lp/bend/`,
     images: [`${siteUrl}/lp/bend/img/bend-hero.jpg`],
@@ -441,11 +440,10 @@ export default async function BendCityPage() {
         <div className="hero-overlay" role="presentation" />
         <div className="bend-shell">
           <div className="bend-eyebrow">Bend · Central Oregon</div>
-          <h1 className="bend-h1 font-display">Welcome to Bend, Oregon.</h1>
+          <h1 className="bend-h1 font-display">Homes for sale in Bend, Oregon.</h1>
           <p>
-            A small mountain city with the Cascades on one side and the high desert on the other.
-            Search active homes, explore every neighborhood and resort community, and meet a local
-            principal broker who actually lives here.
+            Cascades on one side, high desert on the other. Search active homes, open every
+            neighborhood and resort community, and see the market figures that move a sale.
           </p>
           <div className="hero-cta-row">
             <Link href="/lp/seller-home-value?source=bend-lp" className="btn-primary">
@@ -460,7 +458,7 @@ export default async function BendCityPage() {
               See active homes
             </Link>
             <Link href="#neighborhoods" className="btn-ghost-light">
-              Explore neighborhoods
+              Browse neighborhoods
             </Link>
           </div>
         </div>
@@ -471,26 +469,22 @@ export default async function BendCityPage() {
         <div className="bend-shell">
           <div className="grid-2-1">
             <div>
-              <div className="bend-eyebrow">A short introduction</div>
-              <h2 className="bend-h2 font-display">A small mountain city. A wide-open lifestyle.</h2>
+              <div className="bend-eyebrow">The city</div>
+              <h2 className="bend-h2 font-display">3,623 feet, east of the Cascades.</h2>
               <p className="bend-prose lg">
                 Bend sits on the eastern flank of the Cascade Range at 3,623 feet, with the
-                Deschutes River running through downtown and Mt. Bachelor rising 22 miles to the
-                southwest. About 105,000 people call it home. The city has grown into one of the
-                Pacific Northwest&rsquo;s most loved places to live, work, and visit, while keeping
-                the feel of a friendly mountain town.
+                Deschutes River running through downtown and Mt. Bachelor 22 miles to the
+                southwest. About 105,000 people live here. Deschutes County is about 210,000.
               </p>
               <p className="bend-prose">
-                The neighborhoods and resort communities each have their own personality.
-                Tetherow and Broken Top on the west side hug the golf and the Cascades. NorthWest
-                Crossing leans walkable and family-forward. Old Bend and River West sit closest to
-                downtown and the river. Pronghorn is the high-desert escape on the north end. The
-                interactive map below lets you click any neighborhood polygon to drill in.
+                Tetherow and Broken Top on the west side sit on golf and Cascade views. NorthWest
+                Crossing is walkable and family-oriented. Old Bend and River West sit closest to
+                downtown and the river. Pronghorn is high-desert living on the north end. The map
+                below opens any neighborhood polygon.
               </p>
               <p className="bend-prose">
-                Below the map, you&rsquo;ll find active homes for sale across the city, the current
-                market data refreshed daily, and a quick read on what life in Bend actually looks
-                like across recreation, food, schools, and the local economy.
+                Below the map: active homes for sale across the city, market data refreshed daily,
+                and the facts on recreation, schools, and the local economy.
               </p>
             </div>
 
@@ -665,10 +659,9 @@ export default async function BendCityPage() {
               <h3 className="lifestyle-hero-title font-display">Mt. Bachelor mornings, Phil&rsquo;s Trail afternoons.</h3>
               <p className="lifestyle-hero-text">
                 Mt. Bachelor opens late November and runs through late spring. By June the snow
-                lifts and the Phil&rsquo;s Trail network turns into one of the densest mountain-bike
-                systems in the Pacific Northwest. Smith Rock State Park, 30 minutes north, is one
-                of the country&rsquo;s most-loved sport-climbing destinations. Three Sisters
-                Wilderness is the western horizon from most of the city.
+                lifts and the Phil&rsquo;s Trail network opens for mountain biking. Smith Rock
+                State Park is 30 minutes north. Three Sisters Wilderness is the western horizon
+                from most of the city.
               </p>
             </div>
           </div>
@@ -705,9 +698,8 @@ export default async function BendCityPage() {
                 <div className="lifestyle-card-eyebrow">Beer &amp; food</div>
                 <h3>Where Oregon craft beer started.</h3>
                 <p>
-                  Deschutes Brewery opened in 1988 and the city never looked back. Add Crux,
-                  10 Barrel, Worthy, Sunriver, Bridge 99. And a restaurant scene from Bos Taurus
-                  to Pine Tavern that punches above its weight.
+                  Deschutes Brewery opened in 1988. Crux, 10 Barrel, Worthy, Sunriver, and
+                  Bridge 99 followed. Restaurants run from Bos Taurus to Pine Tavern.
                 </p>
               </div>
             </article>
@@ -867,7 +859,7 @@ export default async function BendCityPage() {
       {/* BROKER BIO — trust block before the final CTAs */}
       <section className="bend-section">
         <div className="bend-shell">
-          <div className="bend-eyebrow">Meet a local broker</div>
+          <div className="bend-eyebrow">Your broker</div>
           <h2 className="bend-h2 font-display">Matt Ryan, Oregon Principal Broker.</h2>
           <div className="broker-bio">
             <div
@@ -879,11 +871,10 @@ export default async function BendCityPage() {
               <div className="broker-name">Matt Ryan</div>
               <div className="broker-title">Owner · Oregon Principal Broker #201206613</div>
               <p className="broker-text">
-                I&rsquo;ve been selling homes in Bend since 2012, and I actually live here. My
-                kids go to Bend-La Pine schools, I ski Mt. Bachelor every winter, and I know the
-                builder roster on every west-side neighborhood by first name. If you&rsquo;re
-                buying, selling, or just trying to figure out the right move, I&rsquo;m happy to
-                spend 30 minutes on the phone with no pressure either way.
+                Matt has sold homes in Bend since 2012. He lives in the Bend-La Pine school
+                district, skis Mt. Bachelor, and works the west-side builder roster by name.
+                Thirty minutes on the phone is free, whether you are buying, selling, or still
+                deciding.
               </p>
               <div className="broker-cta-row">
                 <a href={`tel:${CONTACT.phoneFubTel}`} className="broker-cta-primary">
@@ -904,10 +895,10 @@ export default async function BendCityPage() {
           <div className="cta-row">
             <div className="cta-card">
               <div className="bend-eyebrow" style={{ color: 'rgba(250,248,244,0.72)' }}>Sellers</div>
-              <h3>What&rsquo;s your Bend home worth?</h3>
+              <h3>What is your Bend home worth?</h3>
               <p>
-                A 12-page home value report tailored to your neighborhood and price tier, built on
-                verified Bend close history. Signed by a Bend principal broker.
+                A 12-page value report on your neighborhood and price tier, built on closed Bend
+                sales. Signed by a Bend principal broker.
               </p>
               <Link href="/sell" className="btn">
                 Get my home value →
@@ -917,8 +908,7 @@ export default async function BendCityPage() {
               <div className="bend-eyebrow">Buyers</div>
               <h3>Looking at Bend homes?</h3>
               <p>
-                Drill into any neighborhood above for HOA tiers and the buyer track, or call Matt
-                direct at{' '}
+                Open any neighborhood above for HOA tiers and inventory, or call Matt at{' '}
                 <a href={`tel:${CONTACT.phoneFubTel}`} style={{ color: '#102742', textDecoration: 'underline' }}>
                   {CONTACT.phoneFub}
                 </a>{' '}

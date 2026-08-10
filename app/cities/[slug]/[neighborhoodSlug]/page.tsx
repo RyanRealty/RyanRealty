@@ -110,12 +110,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title =
     neighborhood.seoTitle?.trim() ||
-    `Homes for Sale in ${neighborhood.name} | ${neighborhood.cityName}, Oregon`
+    `${neighborhood.name} homes for sale | ${neighborhood.cityName}, Oregon`
 
   const generatedDescription =
     neighborhood.activeCount > 0
-      ? `${neighborhood.activeCount} homes for sale in ${neighborhood.name}, ${neighborhood.cityName}. Median list price ${neighborhood.medianPrice != null ? fmtK(neighborhood.medianPrice) ?? '' : 'available on request'}. Local market data from Ryan Realty.`
-      : `Homes for sale in ${neighborhood.name}, ${neighborhood.cityName}, Oregon, with live market data.`
+      ? `${neighborhood.activeCount} single-family homes for sale in ${neighborhood.name}, ${neighborhood.cityName}. Median list price ${neighborhood.medianPrice != null ? fmtK(neighborhood.medianPrice) ?? '' : 'available on request'}. Live market data from the regional MLS.`
+      : `Active single-family homes in ${neighborhood.name}, ${neighborhood.cityName}, Oregon. List prices and days on market, pulled live.`
   // Brand voice (CLAUDE.md): a curated DB seo_description carrying a banned
   // cliche (the live "charming" on /cities/bend/old-bend) must never reach the
   // SERP, so a tripped guard falls back to the clean data-driven description.
@@ -370,7 +370,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       type: 'place',
       placeType: 'Neighborhood',
       name: neighborhood.name,
-      description: `Homes for sale and live single-family market data for ${neighborhood.name} in ${cityName}, Oregon.`,
+      description: `Active single-family homes and live market data for ${neighborhood.name} in ${cityName}, Oregon.`,
       url: `/cities/${citySlug}/${neighborhoodSlug}`,
       address: { city: cityName, state: 'OR', country: 'US' },
       containedInPlace: cityName,
@@ -413,8 +413,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           }}
           eyebrow={neighborhoodLabel}
           titleTop={neighborhood.name}
-          titleBottom="Homes for Sale"
-          lead={`in ${neighborhood.name}, ${cityName}.`}
+          titleBottom="on the market now."
+          lead={`in ${cityName}. List prices and days on market, pulled live.`}
           videoSrc={null}
           posterSrc={heroPhoto}
           mediaCaption={mediaCaption}
@@ -440,7 +440,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             showRegionMarkers={false}
             polygons={mapPolygons}
             eyebrow={neighborhood.name}
-            title={`Homes in\n${neighborhood.name}`}
+            title={`Every active home\nin ${neighborhood.name}`}
             subtitle={`Every active single-family listing in ${neighborhood.name}.`}
           />
         ) : null}
@@ -450,7 +450,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         {richContent === null && aboutParagraphs.length > 0 ? (
           <KbAbout
             eyebrow={neighborhoodLabel}
-            heading={`Living in ${neighborhood.name}`}
+            heading={`${neighborhood.name}, in plain words`}
             paragraphs={aboutParagraphs}
             facts={aboutFacts}
           />
@@ -491,8 +491,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <KbArticles
           posts={articlePosts}
           eyebrow="Guides and news"
-          heading={`${neighborhood.name} real estate guides`}
-          subtitle={`Housing news, market data, and buyer and seller advice for ${neighborhood.name} and ${cityName}.`}
+          heading={`${neighborhood.name} guides`}
+          subtitle={`Housing news, market data, and buyer and seller notes for ${neighborhood.name} and ${cityName}.`}
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
@@ -501,13 +501,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <KbExploreTowns
           towns={otherCityItems}
           eyebrow="Central Oregon"
-          title="Other cities"
+          title="Other cities on the list"
           sectionId="nearby"
           cta={{ href: '/cities', label: 'Every city' }}
         />
         {faqs.length > 0 ? (
           <section id="faq" aria-label={`${neighborhood.name} real estate questions`}>
-            <FAQBlock items={faqs} eyebrow="Common questions" title={`${neighborhood.name} real estate questions`} />
+            <FAQBlock items={faqs} eyebrow="Common questions" title={`Questions about ${neighborhood.name}`} />
           </section>
         ) : null}
         <MarketSources sources={['ods']} />

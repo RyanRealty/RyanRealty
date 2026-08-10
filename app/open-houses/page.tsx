@@ -36,9 +36,9 @@ export const revalidate = 60
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Open Houses in Central Oregon',
+    title: 'Open House Calendar · Central Oregon',
     description:
-      'Browse open houses this weekend and upcoming in Bend, Redmond, Sisters, and Central Oregon. Live list from the regional MLS with times, photos, and prices.',
+      "This week's open house calendar for Bend, Redmond, Sisters, La Pine, and the rest of Central Oregon. Times, addresses, and prices from the regional MLS.",
     path: '/open-houses',
   })
 }
@@ -183,10 +183,9 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
       ) : null}
       <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Open houses' }]} />
       <SmoothScrollProvider>
-        {/* Lead with the open-house count, not total regional inventory (the
-            stat a visitor came for was buried second, behind an unrelated
-            1,824-homes figure); "this week", matching the section eyebrow
-            below, not "this weekend" (the feed is not weekend-scoped). §0. */}
+        {/* Lead with the open-house count, not total regional inventory. §0:
+            the feed is week-scoped (not Saturday-only), so the count line says
+            "this week." H1 frames the page as a calendar, not "Open houses in." */}
         <KbHero
           data={{
             activeCount: openHouseCount || null,
@@ -194,16 +193,15 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
             medianDaysToPending: null,
           }}
           countNoun={openHouseCount === 1 ? 'open house' : 'open houses'}
-          eyebrow="Central Oregon · Open houses"
-          titleTop="Open houses in"
-          titleBottom="Central Oregon"
-          // design-audit STA-1: with a count the hero reads "N open houses across
-          // Central Oregon this week." At zero the count prefix drops, so the lead
-          // must stand alone as a complete sentence, not the bare fragment.
+          eyebrow="Central Oregon · Open house calendar"
+          titleTop="This week's open"
+          titleBottom="house calendar."
+          // design-audit STA-1: with a count the hero reads "N open houses …"
+          // At zero the count prefix drops, so the lead must stand alone.
           lead={
             openHouseCount
-              ? 'across Central Oregon this week.'
-              : 'No open houses are posted across Central Oregon this week yet. Here is everything for sale right now.'
+              ? 'on the calendar this week across Bend, Redmond, Sisters, and Central Oregon.'
+              : 'Nothing is on the calendar this week yet. Here is everything for sale right now.'
           }
           videoSrc={null}
           posterSrc="/images/kb/sunriver-deschutes-river.jpg"
@@ -211,9 +209,9 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
         <KbOpenHouses
           items={openHouseItems}
           eyebrow="Central Oregon · This week"
-          heading="Open houses"
+          heading="On the calendar"
           viewAllHref={listingsBrowsePath()}
-          viewAllLabel="Browse all homes"
+          viewAllLabel="See all homes for sale"
         />
         {mapFeatures.length > 0 ? (
           <KbListingMap
@@ -223,7 +221,7 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
             showRegionMarkers={false}
             eyebrow="Central Oregon · On the map"
             title={'Open houses\non the map'}
-            subtitle="Every open house with a location. Each dot carries the price, the beds, and the street."
+            subtitle="Every open house with a pin. Price, beds, and street on each one."
             countNoun="open houses"
           />
         ) : null}

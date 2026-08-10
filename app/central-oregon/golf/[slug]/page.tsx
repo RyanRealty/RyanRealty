@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const course = courseBySlug(slug)
   if (!course) notFound()
   const city = displayCity(course.city)
-  const desc = `${course.name}, a ${GOLF_ACCESS_LABEL[course.access].toLowerCase()} ${course.holes}-hole golf course in ${city}, Central Oregon. What it is, where it plays, and the homes for sale nearby, from Ryan Realty.`
+  const desc = `${course.name}, a ${GOLF_ACCESS_LABEL[course.access].toLowerCase()} ${course.holes}-hole golf course in ${city}, Central Oregon. Course facts and the active homes for sale nearby.`
   return pageMetadata({
     title: `${course.shortName} | Central Oregon Golf`,
     description: desc,
@@ -301,12 +301,12 @@ export default async function GolfDetailPage({ params }: Props) {
                 <h2 className="sec-title display">The community around the course</h2>
               </div>
               <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
-                {course.shortName} sits inside a Ryan Realty community page with its own boundary,
-                market read, and current listings. See what it is like to own a home on this course.
+                {course.shortName} sits inside a community with its own boundary, market numbers,
+                and current listings.
               </p>
               <p style={{ marginTop: '18px' }}>
                 <a className="ev-link" href={`/communities/${course.communitySlug}`}>
-                  Explore the community <span className="arr">→</span>
+                  Community page <span className="arr">→</span>
                 </a>
               </p>
             </div>
@@ -369,15 +369,15 @@ export default async function GolfDetailPage({ params }: Props) {
         {/* CTA band */}
         <section className="section ev-cta" aria-label="Contact the team">
           <div className="wrap">
-            <span className="ev-cta-eyebrow mono-lab">Living near {course.shortName}</span>
-            <h2 className="ev-cta-h display">Talk to a Ryan Realty broker.</h2>
+            <span className="ev-cta-eyebrow mono-lab">Homes near {course.shortName}</span>
+            <h2 className="ev-cta-h display">Looking near this course?</h2>
             <p className="ev-cta-body">
-              We work across {city} and the rest of Central Oregon. Tell us what matters to you, and
-              we will show you the homes that fit, on the course or off it.
+              Tell us what you need. We will match it to what is for sale in {city} right now, on the
+              course or off it.
             </p>
             <div className="ev-cta-row">
               <a className="btn" href="/contact">
-                Meet the team <span className="arr">→</span>
+                Contact a broker <span className="arr">→</span>
               </a>
               <a className="btn ghost" href={`tel:${CONTACT.phoneDirectTel}`}>
                 Call {CONTACT.phoneDirect}

@@ -172,25 +172,27 @@ export default async function HousingMarketHubPage() {
   // -------------------------------------------------------------------------
   // KbHero's stat template already renders the count ("N homes for sale …"),
   // the median, and days-to-pending from the data prop — the lede must not
-  // repeat them (they rendered twice in one paragraph).
+  // repeat them (they rendered twice in one paragraph). Completes:
+  // "N homes for sale {lead} Median list $X. Pending in Y days."
   const ledeParts: string[] = []
   if (regionPulse && regionPulse.activeCount > 0) {
-    ledeParts.push('across Central Oregon.')
+    ledeParts.push('from Bend to La Pine.')
   }
   if (regionPulse?.monthsOfSupply != null) {
     // Classify the RAW value, not the rounded display value — rounding
     // first (the old `Math.round(x*10)/10` then comparing THAT to the
     // threshold) could flip a genuinely-balanced 4.05 into "seller's
     // market" once it rounded to 4.0 (design-audit P2, CLAUDE.md §0).
+    // MoS band is a formula fact (CLAUDE.md §0 thresholds), not a broker quote.
     const raw = regionPulse.monthsOfSupply
-    let verdict = 'balanced market'
-    if (raw <= 4) verdict = "seller's market"
-    else if (raw >= 6) verdict = "buyer's market"
-    ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply: ${verdict}.`)
+    let band = 'balanced'
+    if (raw <= 4) band = "seller's"
+    else if (raw >= 6) band = "buyer's"
+    ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply. A ${band} market.`)
   }
   const lede =
     ledeParts.join(' ') ||
-    'Live single-family market data across Central Oregon cities, updated every 15 minutes.'
+    'Live single-family figures for every city we cover, refreshed every 15 minutes.'
 
   // -------------------------------------------------------------------------
   // City tiles — KbExploreTowns from getMarketPulseCitySnapshots (§0).
@@ -308,8 +310,8 @@ export default async function HousingMarketHubPage() {
             medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
           }}
           eyebrow="Central Oregon · Oregon"
-          titleTop="Central Oregon"
-          titleBottom="housing market"
+          titleTop="The list right now,"
+          titleBottom="city by city."
           lead={lede}
           posterSrc={heroPhoto ?? undefined}
         />

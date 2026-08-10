@@ -14,7 +14,7 @@ import { useInViewAutoplay } from './use-in-view-autoplay'
  * button) when it becomes the in-focus card on screen or on hover — same model
  * as a listing tile. Routes to /communities/[slug].
  */
-export function KbCommunities({ communities, eyebrow = 'Communities' }: { communities: KbCommunityItem[]; eyebrow?: string }) {
+export function KbCommunities({ communities, eyebrow = 'Central Oregon' }: { communities: KbCommunityItem[]; eyebrow?: string }) {
   const root = useRef<HTMLElement>(null)
   const track = useRef<HTMLDivElement>(null)
   const { inViewKey, register } = useInViewAutoplay()
@@ -89,7 +89,11 @@ export function KbCommunities({ communities, eyebrow = 'Communities' }: { commun
       <div className="wrap">
         <div className="sec-head">
           <span className="sec-index">{eyebrow}</span>
-          <h2 className="sec-title display">Communities</h2>
+          <h2 className="sec-title display">
+            Named
+            <br />
+            communities
+          </h2>
         </div>
       </div>
       <div className="comm-viewport">
@@ -156,7 +160,7 @@ export function KbCommunities({ communities, eyebrow = 'Communities' }: { commun
       <div className="wrap">
         <div className="sec-cta">
           <Link href="/communities" className="btn alt">
-            Browse every community <span className="arr">→</span>
+            See every community <span className="arr">→</span>
           </Link>
         </div>
       </div>

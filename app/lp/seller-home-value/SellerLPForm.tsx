@@ -59,9 +59,9 @@ export type SellerLPFormProps = {
 type Step = 'address' | 'qualify' | 'success'
 
 const TIMELINE_OPTIONS: { value: SellerLPTimeline; label: string; sub: string }[] = [
-  { value: 'ready-now', label: 'Ready to sell', sub: "Let's get moving." },
-  { value: 'next-3-6', label: 'Sometime this year', sub: 'Planning ahead, no rush.' },
-  { value: 'exploring', label: 'Just curious', sub: 'Here for the number, not the sales pitch.' },
+  { value: 'ready-now', label: 'Ready to sell', sub: 'Listing in the next 90 days.' },
+  { value: 'next-3-6', label: 'Sometime this year', sub: 'Planning ahead.' },
+  { value: 'exploring', label: 'Just curious', sub: 'Here for the number only.' },
 ]
 
 // "What's bringing you to sell?" — the seller's situation. Optional and low
@@ -222,11 +222,11 @@ export default function SellerLPForm({
       return (
         <div className="rounded-2xl border border-primary/15 bg-card p-8 text-left text-foreground shadow-sm">
           <h2 className="font-display text-2xl font-semibold text-primary">
-            Thanks. A local broker will reach out to start your sale.
+            Got it. A broker will reach out about your listing.
           </h2>
           <p className="mt-3 text-lg text-foreground/85">
-            {"We'll review your home and recent comps, then call you to talk pricing and a plan."}
-            {isHot ? ' Because your timeline is short, expect a call very soon.' : ''}
+            {"We will review your home and recent comps, then call to talk pricing and a plan."}
+            {isHot ? ' Your timeline is short, so expect a call soon.' : ''}
           </p>
           <p className="mt-3 text-base text-muted-foreground">
             Prefer to talk right now? Call Matt directly at{' '}
@@ -243,15 +243,11 @@ export default function SellerLPForm({
           Got it. Your home value is on its way.
         </h2>
         <p className="mt-3 text-lg text-foreground/85">
-          {"We'll prepare a real comparative market analysis from recent local sales and send it your way."}
-          {isHot ? ' Because your timeline is short, Matt will personally reach out shortly to walk through your number.' : ' Matt will follow up with your number and answer any questions.'}
+          {"We will prepare a comparative market analysis from recent local sales and send it."}
+          {isHot ? ' Your timeline is short, so a broker will reach out soon to walk through the number.' : ' A broker will follow up with the number and answer questions.'}
         </p>
         <p className="mt-3 text-base text-foreground/75">
-          Your report lands in your inbox within one business day.
-        </p>
-        <p className="mt-3 text-base text-foreground/75">
-          No obligation, no pressure. Reach out whenever you are ready, this year or years from
-          now.
+          Your report lands in your inbox within one business day. No listing agreement attached.
         </p>
         <p className="mt-3 text-base text-muted-foreground">
           Prefer to talk right now? Call Matt directly at{' '}
@@ -482,8 +478,7 @@ export default function SellerLPForm({
             <span className="text-sm font-normal text-muted-foreground">(optional)</span>
           </legend>
           <p className="mt-1 text-sm text-muted-foreground">
-            It helps us tailor what we send. No pressure, and just curious is a
-            fine answer.
+            Optional. Helps us tailor the report. &ldquo;Just curious&rdquo; is a fine answer.
           </p>
           <Select value={reason} onValueChange={setReason}>
             <SelectTrigger

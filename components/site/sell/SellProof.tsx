@@ -53,11 +53,11 @@ export function SellProof({ record, reviewAggregate, stories }: Props) {
       <div className="wrap">
         <div className="sec-head">
           <div>
-            <span className="sec-index">The track record</span>
-            <h2 className="sec-title display">Sold and closed.</h2>
+            <span className="sec-index">Closed sales</span>
+            <h2 className="sec-title display">Homes we have sold.</h2>
           </div>
           <p className="sp-foot">
-            Sales figures from the Central Oregon MLS record for Ryan Realty listings.
+            Figures from the Central Oregon MLS for homes listed by Ryan Realty.
           </p>
         </div>
 

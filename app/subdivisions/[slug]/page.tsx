@@ -136,8 +136,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // thin plat pages never dilute the programmatic-page quality signal.
   const indexable = await isSubdivisionIndexable(slug)
   return pageMetadata({
-    title: `${name} Homes for Sale | ${city}, Oregon`,
-    description: `Homes for sale in ${name}, a subdivision in ${city}, with a boundary map and live listings.`,
+    title: `${name} homes for sale | ${city}, Oregon`,
+    description: `Active homes in ${name}, a subdivision in ${city}. Boundary map and live MLS listings.`,
     path: `/subdivisions/${slug}`,
     noindex: !indexable,
   })
@@ -284,8 +284,12 @@ export default async function SubdivisionPage({ params }: Props) {
   // string is a continuation fragment in that case and a full sentence only
   // when the count is unknown — never both, or the page reads "5 homes for
   // sale 5 homes for sale in X."
+  const placeBit =
+    cityName !== 'Central Oregon' ? `${displayName}, ${cityName}` : displayName
   const lede =
-    activeCount == null ? `Homes for sale in ${displayName}.` : `in ${displayName}.`
+    activeCount == null
+      ? `Single-family homes in ${placeBit}. Live inventory from the regional MLS.`
+      : `in ${displayName}. Live inventory from the regional MLS.`
 
   // ── Hero image ────────────────────────────────────────────────────────────
   // Use city hero as a sensible default for any subdivision plat. No
@@ -477,15 +481,15 @@ export default async function SubdivisionPage({ params }: Props) {
             medianDaysToPending: null,
           }}
           eyebrow={eyebrow}
-          titleTop={displayName}
-          titleBottom="Homes for Sale"
+          titleTop={`${displayName},`}
+          titleBottom="the list right now."
           lead={lede}
           videoSrc={null}
           posterSrc={posterSrc}
           mediaCaption={mediaCaption}
         />
         {/* Inventory leads (city-page funnel parity): the page is titled
-            "{displayName} homes for sale", so the homes come before the map and
+            "{displayName}, the list right now.", so the homes come before the map and
             the history. Graceful empty state when the plat has no active listing. */}
         {featuredItems.length > 0 ? (
           <KbFeatured
@@ -501,6 +505,9 @@ export default async function SubdivisionPage({ params }: Props) {
             <div className="wrap" style={{ textAlign: 'center', padding: '2.5rem 0' }}>
               <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '36rem', margin: '0 auto' }}>
                 No active listings in {displayName} right now.
+                {cityName !== 'Central Oregon'
+                  ? ` Browse homes in ${cityName}, or save a search for this plat.`
+                  : ' Browse nearby homes, or save a search for this plat.'}
               </p>
             </div>
           </section>

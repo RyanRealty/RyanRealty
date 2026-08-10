@@ -53,14 +53,14 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const faqOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'FAQ — Real Estate in Bend, Oregon',
+  title: 'FAQ · Real estate in Bend, Oregon',
   description:
-    "Answers to the questions Bend buyers and sellers ask Ryan Realty every week. Neighborhoods, timelines, market conditions, working with a brokerage.",
+    'Neighborhoods we cover, first-time buying, listing cost, sale timelines, relocations, and how Ryan Realty works in Bend.',
   alternates: { canonical: `${siteUrl}/faq` },
   openGraph: {
-    title: 'FAQ — Ryan Realty Bend',
+    title: 'FAQ · Ryan Realty Bend',
     description:
-      'Answers to the most common questions about buying and selling real estate in Bend, Oregon.',
+      'Neighborhoods we cover, first-time buying, listing cost, sale timelines, relocations, and how we work in Bend.',
     url: `${siteUrl}/faq`,
     images: [{ url: faqOgImage, width: 1200, height: 630, alt: 'Ryan Realty FAQ' }],
   },
@@ -101,10 +101,10 @@ export default async function FAQPage() {
             are preserved in the CTA row below the hero. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Buyer & seller questions"
-          titleTop="Frequently asked"
-          titleBottom="questions"
-          lead="Answers to the questions Bend buyers and sellers ask us every week."
+          eyebrow="Central Oregon · Bend real estate"
+          titleTop="What people ask"
+          titleBottom="before they call."
+          lead="Neighborhoods we cover, first-time buying, listing cost, sale timelines, relocations, and how we work."
           videoSrc={null}
           posterSrc="/images/homepage/smith-rock-terrebonne.jpg"
           showSearch={false}
@@ -133,8 +133,8 @@ export default async function FAQPage() {
         <section className="section" id="faq-toc" aria-label="Jump to a category">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Browse by topic</span>
-              <h2 className="sec-title display">What buyers and<br />sellers ask</h2>
+              <span className="sec-index">Four topics</span>
+              <h2 className="sec-title display">Neighborhoods, buying,<br />selling, working with us</h2>
             </div>
             <nav
               className="grid grid-cols-2 gap-0 border-t border-l sm:grid-cols-4"

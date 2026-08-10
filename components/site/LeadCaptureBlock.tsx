@@ -108,27 +108,27 @@ const variantDefaults: Record<
 > = {
   buyer: {
     eyebrow: 'Listing alerts',
-    title: 'Get matched homes the day they list',
+    title: 'Matching homes, the day they list',
     submitLabel: 'Set up alerts',
     consentLine: 'Unsubscribe anytime. We do not share your information.',
   },
   seller: {
     eyebrow: 'Home value',
     title: 'What a broker thinks your home is worth',
-    submitLabel: 'Request my valuation',
+    submitLabel: 'Value my home',
     consentLine: 'No automated estimate. A local broker writes back personally.',
   },
   expired: {
     eyebrow: 'Expired listing',
-    title: "Get a new plan for the home that didn't sell",
+    title: "A new plan for the home that didn't sell",
     submitLabel: 'Request a plan review',
     consentLine: 'No pitch. A broker writes back with a specific plan for your home.',
   },
   inquiry: {
     eyebrow: 'Contact',
-    title: 'Send us a note',
+    title: 'Write a broker',
     submitLabel: 'Send message',
-    consentLine: 'A real person reads every message. We reply same business day.',
+    consentLine: 'A broker reads every message and replies the same business day.',
   },
 }
 
@@ -284,7 +284,7 @@ export function LeadCaptureBlock({
               ) : null}
 
               {variant === 'inquiry' ? (
-                <Field label="How can we help?" htmlFor="lcb-message">
+                <Field label="Your question" htmlFor="lcb-message">
                   <Textarea
                     id="lcb-message"
                     required
@@ -325,7 +325,7 @@ export function LeadCaptureBlock({
                     result.ok ? 'text-success' : 'text-destructive',
                   )}
                 >
-                  {result.message ?? (result.ok ? 'Got it. We will be in touch.' : 'Something went wrong. Please try again.')}
+                  {result.message ?? (result.ok ? 'Got it. A broker will write back.' : 'That did not send. Try again.')}
                 </div>
               ) : null}
             </div>

@@ -554,3 +554,33 @@ NOT IN SCOPE
   REMAINING residual (not correctness): SiteHeader/HideChrome intermittent
   hydration (CSS gate already in place); FUB rename waves (ratchet 801/144);
   pricing backlog.
+
+2026-08-10T12:00:00Z /ENDTOEND MISSION GOAL — Buffett voice rewrite, ALL public pages
+  COMPLETE GOAL: Every word a member of the public reads on the site (page heroes,
+  section heads, leads, CTAs, empty states, meta titles/descriptions that are
+  prose) reads like Buffett writing to one homeowner: plain words, facts first,
+  personality on top of plainness. Not government-service stripped. Not SEO label
+  paste. GOV.UK is not a standard. Four retired shapes are guidance only — do NOT
+  re-sweep them.
+
+  DEFINITION OF DONE:
+  1) Every public page.tsx (excl /admin) and public-facing components/site (excl
+     pure UI/maps) has hero/section/body copy reviewed against VOICE.md and
+     rewritten where it fails the competitor test or the "person with a view" test.
+  2) ci:brand-voice + ci:voice-constructions still 0 (no em-dashes in prose, no
+     still-banned constructions). Numbers, legal, reviews, consent untouched.
+  3) Batch commits by surface family; npm run push green; progress ledger updated.
+  4) Final review pass reads representative pages (home, city, sell, market, tools).
+
+  STOP ONLY FOR: missing credentials, destructive ambiguity, conflicting requirements.
+  METHOD: fan-out by disjoint file families; parent verifies gates + sample reads.
+  NEVER: invent quotes; change §0 numbers; rewrite MLS remarks; re-ban retired shapes.
+
+
+2026-08-10T12:30:00Z /ENDTOEND Buffett public rewrite — fan-out COMPLETE (11 agents)
+  SCOPE: ~90 files of public page.tsx + LP + shared site/sell/kb components.
+  METHOD: 11 parallel agents, exclusive file sets, parent verified gates.
+  GATES: ci:brand-voice 0 · ci:voice-constructions 0.
+  NOT DONE (out of scope / separate): DB blog_posts bodies, CRM templates, weekly
+  report HTML from DB, unattributed market narratives needing Matt attribution.
+  BONUS §0: open-houses/[city] hero count now uses openHouseCount not pulse.activeCount.

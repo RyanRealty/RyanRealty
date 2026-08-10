@@ -17,9 +17,9 @@ export function KbExploreTowns({
   eyebrow,
   title,
   sectionId = 'towns',
-  // "Browse homes" is the one verb pair for every /homes-for-sale CTA on a page
-  // (design-audit P3: six different labels read as six different destinations).
-  cta = { href: '/homes-for-sale', label: 'Browse homes' },
+  // "See homes for sale" is the one verb pair for every /homes-for-sale CTA on a
+  // page (design-audit P3: six different labels read as six different destinations).
+  cta = { href: '/homes-for-sale', label: 'See homes for sale' },
 }: {
   towns: KbTownItem[]
   /** Required: a placeholder default here shipped a naked-verb heading for months (C-07). */

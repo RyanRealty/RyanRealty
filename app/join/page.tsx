@@ -50,7 +50,7 @@ export const revalidate = 3600
 export const metadata = pageMetadata({
   title: 'Join Ryan Realty · brokers, Central Oregon',
   description:
-    'Bring your listings to a Bend brokerage that markets every one of them: a listing film, a 3D walkthrough, live-data pricing, and a written report every week. You keep your client from first call to closing.',
+    'Every listing you bring gets a listing film, a 3D walkthrough, pricing from live MLS data, and a written seller report every week. You keep the client from first call to close. Split is set with you.',
   path: '/join',
   ogImage: '/images/office/ryan-realty-bend-office-interior-01.jpg',
   keywords: [
@@ -65,31 +65,31 @@ const OLD_MILL_HERO = '/images/office/ryan-realty-bend-office-interior-01.jpg'
 
 const LISTING_SUPPORT = [
   {
-    title: 'Production handled for you',
-    body: 'A listing film, a 3D walkthrough, and professional photography within 48 hours of a signed agreement. Produced by the brokerage, on every listing, at every price point. Not a cost you carry.',
+    title: 'Film, 3D, and photos in 48 hours',
+    body: 'A listing film, a 3D walkthrough, and professional photography within 48 hours of a signed agreement. Produced by the brokerage on every listing, at every price point. Not a cost you carry.',
   },
   {
-    title: 'Pricing built from live data',
-    body: 'A written CMA with three closed comps, three active comps, and the four levers that move the price, built from live MLS data running on ryan-realty.com. Your seller sees every number.',
+    title: 'CMA from live MLS data',
+    body: 'A written CMA with three closed comps, three active comps, and the four levers that move the price, built from live MLS data on ryan-realty.com. Your seller sees every number.',
   },
   {
-    title: 'Its own page and full distribution',
-    body: 'Every listing gets its own page on ryan-realty.com, full MLS syndication across Central Oregon, and native posts on @ryanrealtybend across Instagram, Facebook, TikTok, and YouTube.',
+    title: 'Its own page plus full syndication',
+    body: 'Every listing gets its own page on ryan-realty.com, MLS syndication across Central Oregon, and posts on @ryanrealtybend across Instagram, Facebook, TikTok, and YouTube.',
   },
   {
-    title: 'A written report every week',
-    body: 'Each week a listing is on the market, the seller gets a written update: showings, online traffic, where the views came from, and feedback. Your clients see the work, in writing.',
+    title: 'Written seller report every week',
+    body: 'Each week a listing is on market, the seller gets a written update: showings, online traffic, where the views came from, and feedback.',
   },
 ] as const
 
 const HOW_IT_WORKS = [
   {
-    lead: 'You keep your client, start to finish.',
-    body: 'No call center, no shared lead pool you compete inside, no hand-off to a closing coordinator the client never met. The broker who takes the call is the broker at the table.',
+    lead: 'You keep the client, start to finish.',
+    body: 'No call center. No shared lead pool you compete inside. No hand-off to a closing coordinator the client never met. The broker who takes the call is the broker at the table.',
   },
   {
-    lead: 'A principal broker supervises every transaction.',
-    body: 'Matt Ryan is the principal broker. A question on a contingency, a contract, or a difficult close gets answered by a licensed principal broker, not a queue.',
+    lead: 'A principal broker on every file.',
+    body: 'Matt Ryan is the principal broker. A question on a contingency, a contract, or a hard close gets answered by a licensed principal broker, not a queue.',
   },
   {
     // The /housing-market internal link is preserved by splitting the copy
@@ -97,12 +97,12 @@ const HOW_IT_WORKS = [
     lead: 'Central Oregon is the whole map.',
     bodyBefore:
       'Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the resort communities. The market data on ',
-    bodyAfter: ' updates from the MLS daily, and it is the same data you price from.',
+    bodyAfter: ' updates from the MLS daily. That is the same data you price from.',
     link: { href: '/housing-market', label: 'ryan-realty.com' },
   },
   {
-    lead: 'The split is set through a conversation with you.',
-    body: 'It is set with you, based on the business you bring and the business you want to build. The first conversation covers the numbers directly.',
+    lead: 'The split is set with you.',
+    body: 'Based on the business you bring and the business you want to build. The first conversation covers the numbers directly. There is no single published split, because there is not one.',
   },
 ] as const
 
@@ -252,34 +252,33 @@ export default async function JoinPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Join Ryan Realty · Brokers"
-          titleTop="Every listing you"
-          titleBottom="bring gets the plan"
-          lead="A listing film, a 3D walkthrough, a price built from live MLS data, and a written report every week. Not only at the top of the market. On all of them. You keep your client from the first call to the closing table."
+          titleTop="Film, 3D tour,"
+          titleBottom="weekly report."
+          lead="On every listing you bring, at every price point. Pricing from live MLS data. You keep the client from first call to close."
           videoSrc={null}
           posterSrc={heroSrc ?? OLD_MILL_HERO}
         />
 
-        {/* The three hero chips from the prior HeroBlock, preserved as a KB CTA
-            row so every destination stays one tap away. */}
-        <section className="section" id="join-cta" aria-label="Start the conversation">
+        {/* Primary next steps for a recruiting visitor. */}
+        <section className="section" id="join-cta" aria-label="Talk about joining">
           <div className="wrap">
             <div className="flex flex-wrap items-center gap-3 py-3">
               <Link href="/contact?inquiry=Join%20the%20team" className="btn alt">
-                Start the conversation <span className="arr">→</span>
+                Talk about joining <span className="arr">→</span>
               </Link>
               <Link
                 href="/sell#marketing-plan"
                 className="btn alt"
                 style={{ background: 'transparent', color: 'var(--navy)' }}
               >
-                See how we market listings <span className="arr">→</span>
+                Listing marketing plan <span className="arr">→</span>
               </Link>
               <Link
                 href="/team"
                 className="btn alt"
                 style={{ background: 'transparent', color: 'var(--navy)' }}
               >
-                Meet the brokers <span className="arr">→</span>
+                Broker profiles <span className="arr">→</span>
               </Link>
             </div>
           </div>
@@ -293,14 +292,14 @@ export default async function JoinPage() {
             <div className="sec-head">
               <span className="sec-index">What your listings get</span>
               <h2 className="sec-title display">
-                The brokerage markets
+                The brokerage runs
                 <br />
-                the listing
+                the marketing
               </h2>
             </div>
             <p className="pt-6" style={ledeStyle}>
-              The same plan runs on every listing, the one a seller can read on the sell page. It is
-              produced for you, so the marketing is not a line item you cover or a weekend you lose.
+              Same plan on every listing, the one a seller can read on the sell page. Produced for
+              you. Not a line item you cover, and not a weekend you lose.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 mt-8" style={{ borderTop: 'var(--edge) solid var(--navy)' }}>
               {LISTING_SUPPORT.map((item, i) => (
@@ -380,13 +379,13 @@ export default async function JoinPage() {
         <section
           className="section"
           id="get-in-touch"
-          aria-label="Start the conversation"
+          aria-label="Talk about joining"
           style={{ background: 'var(--navy)', color: 'var(--cream)' }}
         >
           <div className="wrap">
             <div style={{ maxWidth: '60ch', paddingTop: 'clamp(46px,7vw,80px)', paddingBottom: 'clamp(46px,7vw,80px)' }}>
               <span className="sec-index" style={{ display: 'block', marginBottom: 16, color: 'var(--cream-70)' }}>
-                Thinking about a move?
+                Ready to talk numbers
               </span>
               <h2
                 className="display"
@@ -397,9 +396,9 @@ export default async function JoinPage() {
                   marginBottom: 18,
                 }}
               >
-                Start the
+                Call or
                 <br />
-                conversation
+                write
               </h2>
               <p
                 style={{
@@ -411,12 +410,12 @@ export default async function JoinPage() {
                   fontWeight: 500,
                 }}
               >
-                Send a note or call. The first conversation is with a broker, not a recruiter, and
-                there is no script.
+                The first conversation is with a broker, not a recruiter. There is no script. Split,
+                support, and how you work get covered directly.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/contact?inquiry=Join%20the%20team" className="btn ghost">
-                  Get in touch <span className="arr">→</span>
+                  Send a note <span className="arr">→</span>
                 </Link>
                 <a href={`tel:${CONTACT.phoneDirectTel}`} className="btn ghost">
                   Call {CONTACT.phoneDirect}

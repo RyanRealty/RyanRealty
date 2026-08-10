@@ -42,7 +42,7 @@ const TIERS: Tier[] = [
   {
     name: 'Essential',
     rate: '2.5%',
-    tagline: '2.5% commission. The same spine, less reach.',
+    tagline: '2.5% of the sale price. Same spine, less marketing reach.',
     services: 13,
     reachPct: 42,
     addsLabel: 'What you get',
@@ -56,7 +56,7 @@ const TIERS: Tier[] = [
   {
     name: 'Enhanced',
     rate: '3%',
-    tagline: 'The full-court press. What most homes get.',
+    tagline: '3% of the sale price. The plan most homes list on.',
     services: 26,
     reachPct: 84,
     addsLabel: 'Everything in Essential, plus',
@@ -70,7 +70,7 @@ const TIERS: Tier[] = [
   {
     name: 'Elite',
     rate: '3.5%',
-    tagline: 'Every channel, turned all the way up.',
+    tagline: '3.5% of the sale price. Every channel in the plan.',
     services: 31,
     reachPct: 100,
     addsLabel: 'Everything in Enhanced, plus',
@@ -149,9 +149,9 @@ export function SellPlanExplorer() {
         {/* Header + selector */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Eyebrow className="text-primary-foreground/70">Turn the dial</Eyebrow>
+            <Eyebrow className="text-primary-foreground/70">Choose a plan</Eyebrow>
             <p className="mt-1 text-base font-medium text-primary-foreground/80">
-              Pick a plan. Watch the reach change.
+              Pick a fee tier. See what the marketing reach includes.
             </p>
           </div>
           <div
@@ -224,7 +224,7 @@ export function SellPlanExplorer() {
 
             <div className="mt-8">
               <CTAButton href={VALUATION_HREF} tone="on-navy" size="lg">
-                Get your free valuation
+                Get the written valuation
               </CTAButton>
             </div>
           </div>

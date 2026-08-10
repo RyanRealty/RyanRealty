@@ -13,9 +13,8 @@ import {
  * home value) on a muted surface. Mirrors design_system/ryan-realty/ui_kits/
  * website/index.html §cta-duo.
  *
- * Lifted onto Wave 2 Layer 1 primitives 2026-05-27. Copy edited at the
- * same time to clear the new brand-voice ESLint gate (em-dash replaced
- * with a period, "thinking about" replaced with "Considering").
+ * Lifted onto Wave 2 Layer 1 primitives 2026-05-27. Buffett voice pass
+ * 2026-08-10: plain one-person CTAs, no urgency, no throat-clear.
  */
 
 function BellIcon() {
@@ -85,17 +84,17 @@ export default function CtaDuo() {
         <Grid cols={2} gap="default">
           <CtaCard
             icon={<BellIcon />}
-            title="Never miss a new listing"
-            body="Save a search and get an alert the moment a matching home lists."
+            title="New listings, same day"
+            body="Tell us the towns, beds, and budget. We email you when a matching home lists."
             primary={{ href: '/lp/buyer-listing-alerts', label: 'Set up alerts' }}
-            secondary={{ href: '/homes-for-sale', label: 'Browse listings' }}
+            secondary={{ href: '/homes-for-sale', label: 'See homes for sale' }}
           />
           <CtaCard
             icon={<PinIcon />}
-            title="Considering a sale?"
-            body="Get a free home valuation from a broker who tracks your neighborhood. Based on closed sales, not a national algorithm."
-            primary={{ href: '/lp/seller-home-value', label: 'Get a valuation' }}
-            secondary={{ href: '/team', label: 'Meet the team' }}
+            title="What would your home sell for?"
+            body="A broker pulls closed and active comps near your address and writes the range. Free, with no listing agreement."
+            primary={{ href: '/lp/seller-home-value', label: 'Value my home' }}
+            secondary={{ href: '/team', label: 'Meet the brokers' }}
           />
         </Grid>
       </Container>

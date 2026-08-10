@@ -16,12 +16,12 @@ import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
 export const metadata: Metadata = {
   title: 'List Your Bend Home With Ryan Realty',
   description:
-    'Pricing from closed Bend sales, marketing built per listing, and the broker who prices your home is the one who runs it.',
+    'Pricing from closed Bend sales. The broker who sets the list price runs the listing. Book a free consultation.',
   robots: { index: false, follow: false },
   openGraph: {
     title: 'List Your Bend Home With Ryan Realty',
     description:
-      'Pricing from closed Bend sales, and the broker who prices your home is the one who runs it.',
+      'Pricing from closed Bend sales. The broker who sets the list price runs the listing.',
     type: 'website',
   },
 }
@@ -151,10 +151,10 @@ export default async function ListYourHomePage() {
                 Bend · Oregon · List your home
               </p>
               <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-5xl lg:text-6xl">
-                {"That's Every Bend Sale We've Closed."}
+                List your Bend home with us.
               </h1>
               <p className="mt-5 text-lg leading-relaxed text-[#102742]/75">
-                Ryan Realty has represented sellers through every kind of Bend market. Real data, real broker, from your first call to closing day.
+                Pricing from closed sales near your home. The broker who sets the list price is the one who runs the listing. Book a free consultation and we walk the comps with you.
               </p>
               {aggregate.count > 0 && (
                 <p className="mt-4 text-sm tabular-nums text-[#102742]/70">
@@ -204,25 +204,25 @@ export default async function ListYourHomePage() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <ScrollReveal>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
-              The difference
+              What you get
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
-              Why list with us
+              How a listing with us works
             </h2>
           </ScrollReveal>
 
           <div className="mt-12 border-t-[3px] border-[#102742]">
             <WhyPoint
-              title="Broker access from day one"
+              title="One broker, listing to close"
               body="The person who prices your home is the person on the phone when a buyer's agent calls. No handoffs."
             />
             <WhyPoint
-              title="Pricing from real local sales"
-              body="We pull recent closed sales near your home and walk you through the comps before we agree on a number. You see the reasoning."
+              title="Price from closed sales near you"
+              body="We pull recent closed sales near your home and walk the comps with you before we agree on a list price."
             />
             <WhyPoint
-              title="Marketing built for your home"
-              body="Professional photography, a full MLS listing with wide syndication, and targeted local promotion."
+              title="MLS, photos, and showings"
+              body="Professional photography, a full MLS listing with syndication to the major portals, and showings coordinated for feedback."
             />
           </div>
         </div>
@@ -243,7 +243,7 @@ export default async function ListYourHomePage() {
               Your broker is based in Bend
             </h2>
             <p className="mt-4 max-w-lg text-base leading-relaxed text-[#102742]/65">
-              Working this market every day. The broker you meet is your broker from listing to close.
+              Based in Bend. The broker you meet is your broker from listing to close.
             </p>
           </ScrollReveal>
 
@@ -486,10 +486,10 @@ export default async function ListYourHomePage() {
             One conversation
           </p>
           <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
-            {'Tell us about your sale.'}
+            Book a listing conversation.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#faf8f4]/80">
-            Tell us about your property. A broker will reach out to talk through pricing and a plan. No pitch, no pressure, no obligation.
+            Enter the address and a few details. A broker reaches out to walk pricing and a plan. No listing agreement attached to the call.
           </p>
           <div className="mt-8">
             <SellerLPForm knownVisitor={knownVisitor} variant="list-now" />

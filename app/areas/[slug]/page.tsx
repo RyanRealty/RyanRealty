@@ -116,8 +116,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     })
   }
   return pageMetadata({
-    title: `${area.name} Homes for Sale | Central Oregon`,
-    description: `Homes for sale in ${area.name}, a broker-drawn Central Oregon search area, with live listings inside the exact boundary.`,
+    title: `${area.name} homes for sale | Central Oregon`,
+    description: `Active homes inside the drawn ${area.name} boundary in Central Oregon. Live listings from the regional MLS, limited to the exact shape.`,
     path: `/areas/${slug}`,
   })
 }
@@ -177,8 +177,8 @@ export default async function AreaPage({ params }: Props) {
   // sale 5 homes for sale inside X."
   const lede =
     activeCount == null
-      ? `Homes for sale inside the ${area.name} boundary.`
-      : `inside the ${area.name} boundary.`
+      ? `Listings inside the drawn ${area.name} boundary. List prices, pulled live.`
+      : `inside the drawn ${area.name} boundary.`
 
   const featuredItems = await resolveFeaturedItems(rows.filter((t) => Boolean(t.photoUrl)))
 
@@ -219,7 +219,7 @@ export default async function AreaPage({ params }: Props) {
       type: 'place',
       placeType: 'Place',
       name: area.name,
-      description: `Homes for sale in ${area.name}, a Central Oregon search area with a broker-drawn boundary.`,
+      description: `Active homes inside the drawn ${area.name} boundary in Central Oregon.`,
       url: `/areas/${slug}`,
       hasMap: hasMap ? `/areas/${slug}` : undefined,
     },
@@ -247,7 +247,7 @@ export default async function AreaPage({ params }: Props) {
           }}
           eyebrow={`${area.name} · Central Oregon`}
           titleTop={area.name}
-          titleBottom="Homes for Sale"
+          titleBottom="on the market now."
           lead={lede}
           videoSrc={null}
           posterSrc={heroData.src}
@@ -261,7 +261,7 @@ export default async function AreaPage({ params }: Props) {
             showRegionMarkers={false}
             polygons={mapPolygons}
             eyebrow={area.name}
-            title={`Homes in\n${area.name}`}
+            title={`Every active home\nin ${area.name}`}
             subtitle={`Every active listing inside the drawn ${area.name} boundary.`}
           />
         ) : null}
@@ -270,7 +270,7 @@ export default async function AreaPage({ params }: Props) {
             items={featuredItems}
             eyebrow={`${area.name} · For sale`}
             viewAllHref="/homes-for-sale"
-            viewAllLabel="Browse every Central Oregon home for sale"
+            viewAllLabel="See every Central Oregon home for sale"
             viewAllPlace={area.name}
             totalCount={activeCount || null}
           />
@@ -278,7 +278,7 @@ export default async function AreaPage({ params }: Props) {
           <section className="section">
             <div className="wrap" style={{ textAlign: 'center', padding: '2.5rem 0' }}>
               <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--navy-70)', maxWidth: '36rem', margin: '0 auto' }}>
-                No active listings inside {area.name} right now.
+                No active listings inside the {area.name} boundary right now.
               </p>
             </div>
           </section>

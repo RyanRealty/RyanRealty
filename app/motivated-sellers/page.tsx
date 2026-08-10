@@ -58,17 +58,16 @@ export const dynamicParams = false
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Motivated Seller Homes in Central Oregon',
+    title: 'Price-cut and motivated seller homes · Central Oregon',
     description:
-      'Browse price-reduced homes and motivated seller listings across Central Oregon. ' +
-      'Sorted by most motivated. Real price cuts and listing remarks, no guesswork.',
+      'Active Central Oregon homes with documented MLS price cuts or seller-motivation language in the remarks. ' +
+      'Ranked by price cuts, remarks, and days on market. Updated from the regional MLS.',
     path: '/motivated-sellers',
     keywords: [
       'motivated seller homes Central Oregon',
       'price reduced homes Oregon',
       'motivated sellers Bend Oregon',
       'price cut homes Bend',
-      'below market homes Central Oregon',
       'seller motivated homes Oregon',
     ],
   })
@@ -163,9 +162,9 @@ export default async function MotivatedSellersPage() {
     // ItemList / webPage for the listing grid
     schemas.push({
       type: 'webPage',
-      name: 'Motivated Seller Homes in Central Oregon',
+      name: 'Price-cut and motivated seller homes in Central Oregon',
       description:
-        'Price-reduced and motivated seller listings across Bend, Redmond, Sisters, and Central Oregon. Sorted by most motivated.',
+        'Active homes across Bend, Redmond, Sisters, and Central Oregon with MLS price cuts or seller-motivation language in the remarks.',
       url: '/motivated-sellers',
     })
   }
@@ -189,10 +188,10 @@ export default async function MotivatedSellersPage() {
             display over the brand poster. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Motivated sellers"
-          titleTop="Motivated"
-          titleBottom="Sellers"
-          lead="Active homes with documented price cuts or seller-signaled motivation. Sorted by most motivated, updated hourly from the regional MLS."
+          eyebrow="Central Oregon · MLS price cuts and remarks"
+          titleTop="Homes with price"
+          titleBottom="cuts or a push to sell"
+          lead="Active listings with a documented price cut from the original ask, seller-motivation language in the remarks, or a long time on market. Ranked from those signals. Updated from the regional MLS."
           videoSrc={null}
           posterSrc="/images/homepage/tetherow-golf-aerial.jpg"
         />
@@ -203,27 +202,25 @@ export default async function MotivatedSellersPage() {
         <section className="section" id="how-it-works" aria-label="How it works">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">How it works</span>
+              <span className="sec-index">How the list is built</span>
               <h2 className="sec-title display">
-                What makes a
+                What gets a home
                 <br />
-                listing show up
+                on this page
               </h2>
             </div>
             <div className="grid gap-10 pt-8 lg:grid-cols-3">
               <div className="lg:col-span-2 flex flex-col gap-5">
                 <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55, maxWidth: '60ch' }}>
-                  Each listing earns a motivation score from real MLS data only. Three signals
-                  drive the score: price cuts from the original list price (the more and the
-                  bigger, the higher the score), days on market (a long time on market with
-                  no takers is a signal), and specific phrases in the listing remarks
-                  (the agent or seller saying things like &quot;seller motivated,&quot; &quot;priced to sell,&quot;
-                  or &quot;bring all offers&quot;). No guesswork, no fabrication.
+                  Each listing gets a score from MLS data only. Three signals drive it: price
+                  cuts from the original list price (more cuts and a larger total drop rank
+                  higher), days on market, and phrases in the listing remarks such as
+                  &quot;seller motivated,&quot; &quot;priced to sell,&quot; or &quot;bring all offers.&quot;
                 </p>
                 <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55, maxWidth: '60ch' }}>
                   A home with two price cuts totaling 8 percent plus &quot;motivated seller&quot; in the
-                  remarks will rank above a home that simply sat 60 days. The score is
-                  recalculated every 10 minutes as new price changes come through.
+                  remarks ranks above a home that only sat 60 days. The score recalculates
+                  every 10 minutes as new price changes come through.
                 </p>
               </div>
               <div
@@ -231,7 +228,7 @@ export default async function MotivatedSellersPage() {
                 style={{ borderTop: 'var(--edge) solid var(--navy)' }}
               >
                 <span className="mono-lab" style={{ color: 'var(--navy-70)', paddingTop: '14px' }}>
-                  Score signals
+                  Score inputs
                 </span>
                 <dl className="flex flex-col gap-3">
                   <div className="flex gap-3">
@@ -312,19 +309,19 @@ export default async function MotivatedSellersPage() {
         <section className="section listings" id="listings" aria-label="Motivated seller homes">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Most motivated</span>
+              <span className="sec-index">Ranked by MLS signals</span>
               <h2 className="sec-title display">
                 {listings.length > 0 ? (
                   <>
-                    {listings.length} motivated
+                    {listings.length} homes on
                     <br />
-                    seller homes
+                    this list
                   </>
                 ) : (
                   <>
-                    Motivated
+                    Homes on
                     <br />
-                    seller homes
+                    this list
                   </>
                 )}
               </h2>
@@ -338,8 +335,8 @@ export default async function MotivatedSellersPage() {
             ) : (
               <div className="pt-8" style={{ maxWidth: '54ch' }}>
                 <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55 }}>
-                  No motivated seller listings found at the moment. Check back soon as the
-                  MLS updates throughout the day.
+                  No listings currently match the price-cut or motivation signals. The MLS
+                  updates throughout the day.
                 </p>
                 <div className="sec-cta">
                   <a href="/homes-for-sale" className="btn alt">
@@ -360,17 +357,18 @@ export default async function MotivatedSellersPage() {
         <section className="section" id="contact-cta" aria-label="Talk to a broker">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Ready to make an offer</span>
+              <span className="sec-index">Before you write an offer</span>
               <h2 className="sec-title display">
-                Local brokers.
+                Put the cut next
                 <br />
-                Specific numbers.
+                to the comps
               </h2>
             </div>
             <div className="pt-7" style={{ maxWidth: '52ch' }}>
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55 }}>
-                We know this market. If a motivated seller has priced a home to move, we can tell
-                you whether it is actually a deal. No hype, just the facts.
+                A price cut or a motivated-seller remark does not mean the home is a bargain.
+                A broker can set the new ask next to recent closed sales and tell you whether
+                it still sits high, lands near market, or already looks soft.
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-6">
                 <a href="/contact" className="btn alt">

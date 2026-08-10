@@ -84,9 +84,9 @@ export default function SchoolsIndexPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Schools"
-          titleTop="Central Oregon"
-          titleBottom="schools"
-          lead={`${total} schools across ${districts.length} districts, from Bend to Madras. Pick a school to see the homes for sale that feed it, on a map and as listings.`}
+          titleTop="Schools by district,"
+          titleBottom="homes that feed them."
+          lead={`${total} schools across ${districts.length} districts, from Bend to Madras. Open a school for the map and the homes for sale that feed it.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.schools}
         />

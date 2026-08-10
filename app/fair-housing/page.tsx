@@ -11,11 +11,11 @@ const HUD_PHONE = '1-800-669-9777'
 
 export const metadata: Metadata = {
   title: 'Fair Housing',
-  description: 'Ryan Realty commitment to Equal Housing Opportunity and fair housing laws.',
+  description: 'Equal Housing Opportunity at Ryan Realty, and how to file a fair housing complaint.',
   alternates: { canonical: `${siteUrl}/fair-housing` },
   openGraph: {
     title: 'Fair Housing | Ryan Realty',
-    description: 'Ryan Realty commitment to Equal Housing Opportunity and fair housing laws.',
+    description: 'Equal Housing Opportunity at Ryan Realty, and how to file a fair housing complaint.',
     url: `${siteUrl}/fair-housing`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -37,14 +37,14 @@ export default function FairHousingPage() {
         <div>
           <H2 className="text-lg text-foreground">Equal Housing Opportunity</H2>
           <p className="mt-2">
-            Ryan Realty is committed to compliance with the Fair Housing Act and all applicable state and local laws. We do not discriminate on the basis of race, color, religion, sex, national origin, familial status, or disability.
+            Ryan Realty follows the Fair Housing Act and all applicable state and local laws. We do not discriminate on the basis of race, color, religion, sex, national origin, familial status, or disability.
           </p>
         </div>
 
         <div>
           <H2 className="text-lg text-foreground">Fair Housing Act</H2>
           <p className="mt-2">
-            The Fair Housing Act prohibits discrimination in the sale, rental, or financing of housing based on: race, color, religion, sex, national origin, familial status, and disability. We support these protections and treat every client and visitor with equal respect and service.
+            The Fair Housing Act prohibits discrimination in the sale, rental, or financing of housing based on: race, color, religion, sex, national origin, familial status, and disability. We apply those protections to every client and every visitor.
           </p>
         </div>
 
@@ -75,9 +75,9 @@ export default function FairHousingPage() {
         </div>
 
         <div>
-          <H2 className="text-lg text-foreground">Our commitment</H2>
+          <H2 className="text-lg text-foreground">How we work</H2>
           <p className="mt-2">
-            Ryan Realty is dedicated to equal opportunity in housing and to serving all clients fairly and without discrimination.
+            Equal housing opportunity is the baseline here. Every client gets the same service, without discrimination.
           </p>
         </div>
       </section>

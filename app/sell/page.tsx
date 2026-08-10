@@ -257,7 +257,7 @@ export default async function SellPage() {
 
         <LifestyleStrip
           images={lifestyleImages}
-          eyebrow="Why buyers come here"
+          eyebrow="Central Oregon"
           title="What buyers move here for."
           lede="Trails, rivers, fairways, and ski lifts, all within reach of Bend, Redmond, Sisters, and Sunriver."
         />
@@ -295,7 +295,7 @@ export default async function SellPage() {
             className="flex-1 px-4 py-3 text-center text-sm font-bold uppercase tracking-widest"
             style={{ background: 'var(--navy)', color: 'var(--cream)' }}
           >
-            Get my home value
+            Get the valuation
           </a>
           <a
             href={`tel:${CONTACT.phoneDirectTel}`}

@@ -33,15 +33,15 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const VALUATION_HERO = '/images/homepage/tetherow-golf-aerial.jpg'
 
 export const metadata: Metadata = {
-  title: 'Home Valuation | Free Estimate',
+  title: 'Home valuation · Ryan Realty, Central Oregon',
   description:
-    'Get a data-driven estimate of your Central Oregon home\'s value. Free, no obligation. See what your home could be worth in today\'s market.',
+    'A written comparative market analysis for your Central Oregon home. Three closed comps, three active comps, and the list-price range those six support. Free, no listing agreement.',
   alternates: { canonical: `${siteUrl}/sell/valuation` },
   openGraph: {
-    title: 'Home Valuation | Ryan Realty',
+    title: 'Home valuation · Ryan Realty',
     url: `${siteUrl}/sell/valuation`,
     type: 'website',
-    images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: 'Home Valuation | Ryan Realty' }],
+    images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: 'Home valuation · Ryan Realty' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -50,9 +50,9 @@ export const metadata: Metadata = {
 }
 
 const VALUE_STEPS = [
-  { title: 'Local comps', body: 'We pull recent sales in your neighborhood and similar subdivisions to establish a baseline.' },
-  { title: 'Market trends', body: 'Days on market, list-to-sale ratios, and inventory in your area inform our range.' },
-  { title: 'Your property', body: 'Square footage, beds and baths, lot size, condition, and upgrades are factored into the estimate.' },
+  { title: 'Local comps', body: 'Recent closed sales in your neighborhood and similar subdivisions set the floor and the ceiling.' },
+  { title: 'Active competition', body: 'Days on market, sale-to-list ratios, and what is for sale near you now shape the list-price range.' },
+  { title: 'Your home', body: 'Square footage, beds and baths, lot size, condition, and upgrades adjust the range for your property.' },
 ]
 
 export default function SellValuationPage() {
@@ -82,12 +82,12 @@ export default function SellValuationPage() {
       <SmoothScrollProvider>
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Free home valuation"
-          titleTop="What's your"
-          titleBottom="home worth?"
-          lead="A valuation built from the comparable sales that closed near you, and the market they closed into."
+          eyebrow="Written valuation · no listing agreement"
+          titleTop="Your address,"
+          titleBottom="the comps behind it."
+          lead="We send a comparative market analysis built from closed sales near you and the homes yours would compete against. It costs nothing. It is not a listing agreement."
           showSearch={false}
-          cta={{ href: '#home_valuation', label: 'Get my home value' }}
+          cta={{ href: '#home_valuation', label: 'Get the written valuation' }}
           ctaSecondary={null}
           videoSrc={null}
           posterSrc={VALUATION_HERO}
@@ -106,7 +106,7 @@ export default function SellValuationPage() {
               Enter your address
             </H2>
             <p className="mt-2 text-muted-foreground">
-              We&apos;ll look up your property and send you a Comparative Market Analysis. If your home isn&apos;t in our system yet, we&apos;ll still reach out with an estimate.
+              We look up your property and send a comparative market analysis. If the home is not yet in our system, a broker still follows up with an estimate.
             </p>
             <div className="mt-8">
               <ValuationForm />
@@ -121,11 +121,10 @@ export default function SellValuationPage() {
         >
           <div className="wrap mx-auto max-w-4xl">
             <H2 id="how-heading" className="text-center text-3xl text-primary sm:text-4xl">
-              How we value your home
+              What goes into the number
             </H2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-muted-foreground">
-              Our estimates are based on recent sales of similar homes in your area, current market
-              conditions, and adjustments for your property&apos;s features and condition.
+              Closed sales of similar homes nearby, what is for sale now, and adjustments for your home&apos;s size, condition, and upgrades.
             </p>
             <div className="mt-12 grid gap-8 sm:grid-cols-3">
               {VALUE_STEPS.map((item) => (
@@ -147,17 +146,17 @@ export default function SellValuationPage() {
         >
           <div className="wrap mx-auto max-w-2xl text-center">
             <H2 id="cta-heading" className="text-2xl text-primary sm:text-3xl">
-              Ready to sell?
+              If you decide to list
             </H2>
             <p className="mt-4 text-muted-foreground">
-              See our selling plan and how we market homes across Bend, Redmond, Sisters, and Central Oregon.
+              The listing fee is 2.5% to 3.5% of the sale price. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Button asChild size="lg">
-                <Link href="/sell">Our selling plan</Link>
+                <Link href="/sell">See the listing plan</Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/contact?inquiry=Selling">Contact us to sell</Link>
+                <Link href="/contact?inquiry=Selling">Talk to a broker</Link>
               </Button>
             </div>
           </div>

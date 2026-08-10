@@ -51,11 +51,12 @@ const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-rea
 type PageProps = { searchParams: Promise<{ inquiry?: string; listingKey?: string; intent?: string }> }
 
 export const metadata: Metadata = {
-  title: 'Contact Us',
-  description: 'Call, text, email, or message Ryan Realty about buying or selling in Central Oregon. A broker replies within one business day.',
+  title: 'Contact · Call, text, or write',
+  description:
+    'Call, text, or email Ryan Realty about buying or selling in Central Oregon. A broker replies within one business day.',
   alternates: { canonical: `${getCanonicalSiteUrl()}/contact` },
   openGraph: {
-    title: 'Contact Us | Ryan Realty',
+    title: 'Contact · Ryan Realty',
     url: `${getCanonicalSiteUrl()}/contact`,
     type: 'website',
     images: [{ url: contactOgImage, width: 1200, height: 630, alt: 'Contact Ryan Realty' }],
@@ -85,8 +86,12 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const listingTile = params.listingKey
     ? (await getListingTiles({ listingKeys: [params.listingKey], status: 'all', limit: 1 }).catch(() => []))[0] ?? null
     : null
-  const contactTitle = pageContent?.title?.trim() || 'Contact Us'
-  // Split the last word onto the hero's second display line ("Contact" / "Us").
+  // CMS can override the hero title. Generic "Contact Us" (default CMS and
+  // common seed) is corporate beige; use a plain action line instead. Split
+  // the last word onto the second display line.
+  const cmsTitle = pageContent?.title?.trim() ?? ''
+  const contactTitle =
+    !cmsTitle || /^contact(\s+us)?$/i.test(cmsTitle) ? 'Call, text, or write' : cmsTitle
   const contactTitleWords = contactTitle.split(/\s+/)
   const contactTitleTop = contactTitleWords.length > 1 ? contactTitleWords.slice(0, -1).join(' ') : contactTitle
   const contactTitleBottom = contactTitleWords.length > 1 ? contactTitleWords[contactTitleWords.length - 1] : ''
@@ -133,7 +138,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
         {/* Hero — CMS-overridable title + subtitle, in the KB Amboqia display. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Talk to a broker"
+          eyebrow="Ryan Realty · Central Oregon"
           titleTop={contactTitleTop}
           titleBottom={contactTitleBottom}
           lead="A broker replies within one business day. Calling or texting gets you an answer sooner."
@@ -257,7 +262,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
                 </p>
                 <div className="sec-cta">
                   <Link href="/team" className="btn alt">
-                    Meet the team <span className="arr">→</span>
+                    Broker profiles <span className="arr">→</span>
                   </Link>
                 </div>
               </div>

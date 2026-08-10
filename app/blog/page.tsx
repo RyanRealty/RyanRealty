@@ -73,15 +73,16 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams
   const shouldNoIndex = shouldNoIndexBlogIndex(params)
-  const title = 'Central Oregon Real Estate Blog'
-  const description = 'Market reports, community guides, and tips for buying and selling in Central Oregon.'
+  const title = 'Central Oregon market writing'
+  const description =
+    'How homes are selling in Bend and the towns around it. Monthly numbers, neighborhood context, and what changed.'
   return {
     title,
     description,
     alternates: { canonical: `${siteUrl}/blog` },
     robots: shouldNoIndex ? { index: false, follow: true } : undefined,
     openGraph: {
-      title: 'Central Oregon Real Estate Blog | Ryan Realty',
+      title: 'Central Oregon market writing | Ryan Realty',
       description,
       url: `${siteUrl}/blog`,
       type: 'website',
@@ -89,7 +90,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Central Oregon Real Estate Blog | Ryan Realty',
+      title: 'Central Oregon market writing | Ryan Realty',
       description,
       images: [defaultOgImage],
     },
@@ -120,9 +121,10 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Blog',
-    name: 'Central Oregon Real Estate Blog | Ryan Realty',
+    name: 'Central Oregon market writing | Ryan Realty',
     url: `${siteUrl}/blog`,
-    description: 'Market insights and guides for Central Oregon real estate.',
+    description:
+      'How homes are selling in Bend and the towns around it. Monthly numbers, neighborhood context, and what changed.',
     // Machine-readable article list — lets AI engines enumerate + cite posts
     // without scraping the HTML grid.
     mainEntity: {
@@ -160,10 +162,10 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
             Guides CTAs are reachable from the KbNav menu directory). */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Guides and insights"
-          titleTop="Real Estate"
-          titleBottom="Blog"
-          lead="Market insights, community guides, and tips for buying and selling in Central Oregon."
+          eyebrow="Central Oregon · From the brokerage"
+          titleTop="Central Oregon"
+          titleBottom="market writing."
+          lead="How homes are selling in Bend and the towns around it. Monthly numbers, neighborhood context, and what changed."
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.reports}
           mediaCaption="Central Oregon · Old Mill District"
@@ -202,8 +204,8 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
               </nav>
               <ShareButton
                 url={`${siteUrl}/blog`}
-                title="Central Oregon real estate blog"
-                text="Market reports, community guides, and buying or selling tips for Central Oregon."
+                title="Central Oregon market writing"
+                text="How homes are selling in Bend and the towns around it, from Ryan Realty."
                 trackContext="blog_index"
                 variant="default"
               />

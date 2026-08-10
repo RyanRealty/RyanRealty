@@ -44,7 +44,7 @@ export function SellProcess() {
     <Section padding="default" tone="muted" divider>
       <Container>
         <Stack gap="tight" className="mb-10 max-w-[52ch]">
-          <Eyebrow>Our process</Eyebrow>
+          <Eyebrow>From address to close</Eyebrow>
           <H2>What happens after you send us your address.</H2>
         </Stack>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">

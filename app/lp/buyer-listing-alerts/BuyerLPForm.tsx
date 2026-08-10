@@ -91,7 +91,7 @@ export default function BuyerLPForm() {
   if (result?.ok) {
     return (
       <div className="rounded-2xl border border-border bg-card p-8 text-center">
-        <p className="font-display text-lg font-semibold">Thanks for reaching out.</p>
+        <p className="font-display text-lg font-semibold">Got it. Your alerts are set.</p>
         <p className="mt-2 text-muted-foreground">{result.msg}</p>
         <p className="mt-4 text-sm text-muted-foreground">
           Anything specific to factor in?{' '}

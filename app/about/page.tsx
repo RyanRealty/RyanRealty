@@ -258,8 +258,8 @@ export default async function AboutPage() {
             medianDaysToPending: null,
           }}
           eyebrow="Ryan Realty · Bend, Oregon"
-          titleTop="A Bend brokerage,"
-          titleBottom="open since June 2023."
+          titleTop="Open since June 2023."
+          titleBottom="In Bend."
           lead="Matt Ryan is the principal broker. Every listing gets a video, a 3D walkthrough, and a price built from the comps that closed nearby."
           showSearch={false}
           videoSrc={null}
@@ -306,7 +306,7 @@ export default async function AboutPage() {
             posts={articlePosts}
             eyebrow="Guides and insights"
             heading="Bend and Central Oregon housing news."
-            subtitle="Local housing news, neighborhood deep dives, and buyer and seller guides for Bend and Central Oregon."
+            subtitle="Neighborhood guides, market notes, and buyer and seller how-tos."
           />
         ) : null}
 

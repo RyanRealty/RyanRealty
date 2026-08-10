@@ -293,10 +293,10 @@ export default async function PriceDropsCityPage({ params }: Props) {
     },
     {
       type: 'dataset',
-      name: `Price Drop Radar, ${cityName} Oregon SFR`,
+      name: `${cityName} price cuts, last 7 days`,
       description:
-        `Active single-family homes in ${cityName}, Oregon where the seller has reduced the asking price ` +
-        `in the last 7 days. Sourced daily from the regional MLS (ORMLS).`,
+        `Active single-family homes in ${cityName}, Oregon where the seller reduced the asking price ` +
+        `in the last 7 days. Sourced from the regional MLS (ORMLS).`,
       url: pageUrl,
       dateModified: fetchedAt,
       spatialCoverageName: `${cityName}, Oregon`,
@@ -314,7 +314,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
     },
     {
       type: 'webPage',
-      name: `Price Drop Radar, ${cityName} Oregon`,
+      name: `Price cuts in ${cityName}, Oregon · last 7 days`,
       description: `${total} active homes in ${cityName} with a price reduction in the last 7 days.`,
       url: pageUrl,
     },
@@ -341,11 +341,11 @@ export default async function PriceDropsCityPage({ params }: Props) {
             medianListPrice: null,
             medianDaysToPending: null,
           }}
-          eyebrow={`${cityName}, Oregon · Live MLS data`}
-          titleTop="Price drops in"
+          eyebrow={`${cityName}, Oregon · last 7 days · MLS`}
+          titleTop="Price cuts in"
           titleBottom={cityName}
-          countNoun="price drops"
-          lead={`in ${cityName} in the last 7 days, from the regional MLS.`}
+          countNoun="price cuts"
+          lead={`Active single-family homes in ${cityName} where the seller reduced the asking price in the last 7 days. Figures come from the regional MLS.`}
           videoSrc={null}
           posterSrc="/images/kb/sunriver-deschutes-river.jpg"
         />
@@ -404,9 +404,9 @@ export default async function PriceDropsCityPage({ params }: Props) {
             totalActive={total}
             fitToFeatures
             showRegionMarkers={false}
-            eyebrow={cityName}
-            title={`${total} price\nreductions`}
-            subtitle={`Every home with a price cut in ${cityName} in the last 7 days.`}
+            eyebrow={`${cityName} · last 7 days`}
+            title={`${total} price\ncuts`}
+            subtitle={`Active single-family homes in ${cityName} with a seller-initiated list-price reduction.`}
           />
         )}
 
@@ -504,9 +504,9 @@ export default async function PriceDropsCityPage({ params }: Props) {
       </div>
 
       <CTABar
-        eyebrow={`Ryan Realty in ${cityName}`}
-        title="Talk to a Ryan Realty broker."
-        body={`We close deals in ${cityName} every year. If a seller has priced a home to move, we can tell you whether it is actually a deal.`}
+        eyebrow={`Ryan Realty · ${cityName}`}
+        title="Talk to a broker about a cut price."
+        body={`A broker can put the new ask next to recent closed sales in ${cityName} and tell you whether it still sits high, lands near market, or already looks soft.`}
         primary={{ href: '/contact', label: 'Talk to a broker' }}
         secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
         tone="navy"

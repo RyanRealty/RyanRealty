@@ -56,7 +56,7 @@ const SITUATIONS: Situation[] = [
     key: 'curious',
     chip: 'Just curious',
     headline: 'You want a real number.',
-    body: 'Get a broker’s read on your home’s value, closer to reality than an online guess. We tell you exactly who follows up and when, and "no thanks for now" is a completely fine answer. Plenty of people start here years before they sell.',
+    body: 'A broker’s written read on your home’s value, closer to what closed sales support than an online guess. We tell you who follows up and when. Plenty of people start here years before they sell.',
   },
   {
     key: 'downsizing',
@@ -86,13 +86,13 @@ const SITUATIONS: Situation[] = [
     key: 'life-change',
     chip: 'A life change',
     headline: 'Sometimes the house is the smallest part of what is going on.',
-    body: 'We keep it discreet and low pressure. One point of contact, at whatever pace works for you. Start with a conversation, no obligation, and we take it from there.',
+    body: 'One broker, at the pace that works for you. Start with a conversation. Nothing to sign until you decide to list.',
   },
   {
     key: 'sell-soon',
     chip: 'Need to sell soon',
     headline: 'You are on a timeline, and you do not want speed to cost you.',
-    body: 'We give you the tradeoff between speed and price for your situation, using real local days on market, and lay out every option including the faster ones. No pressure to decide today.',
+    body: 'We lay out the tradeoff between speed and price for your situation, using local days on market, including the faster options. You decide when to move.',
   },
   {
     key: 'investment',
@@ -120,13 +120,12 @@ export function SellerSituations({ tone = 'default' }: { tone?: 'default' | 'mut
     <Section id="your-situation" padding="default" tone={tone} divider>
       <Container>
         <Stack gap="tight" className="mb-8 max-w-2xl">
-          <Eyebrow>Start where you are</Eyebrow>
+          <Eyebrow>Your situation</Eyebrow>
           <H2>What is bringing you to sell?</H2>
           <Body size="large" tone="muted" className="mt-1 leading-relaxed">
-            Every seller’s situation is different, and so is the worry that
-            comes with it. Tell us which one fits and we will show you how we
-            would handle it. And if you are not selling at all, just getting your
-            bearings, that is welcome here too.
+            Pick the situation that fits. We show you how we would handle it.
+            If you are not selling yet and only want a number, that is a fine
+            place to start.
           </Body>
         </Stack>
 
@@ -179,9 +178,8 @@ export function SellerSituations({ tone = 'default' }: { tone?: 'default' | 'mut
         </div>
 
         <p className="mt-5 text-sm text-muted-foreground">
-          We are a resource first. Ask a question, get your value, or just get to
-          know the market. No pressure, whether you sell in three months or three
-          years.
+          Ask a question, get a written valuation, or just watch the market. You
+          decide the pace.
         </p>
       </Container>
     </Section>

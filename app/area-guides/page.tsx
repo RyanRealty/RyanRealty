@@ -45,10 +45,10 @@ export const revalidate = 60
 export const metadata: Metadata = {
   title: 'Area Guides | Central Oregon Cities',
   description:
-    'Explore Bend, Redmond, Sisters, Sunriver, La Pine, Prineville and more. Neighborhoods, market trends, and homes for sale in every corner of Central Oregon.',
+    'Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the smaller towns around them. Market numbers and homes for sale in each one.',
   alternates: { canonical: `${siteUrl}/area-guides` },
   openGraph: {
-    title: 'Area Guides | Ryan Realty — Central Oregon',
+    title: 'Area Guides | Ryan Realty · Central Oregon',
     url: `${siteUrl}/area-guides`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -103,7 +103,7 @@ export default async function AreaGuidesPage() {
             type: 'webPage',
             name: 'Central Oregon area guides',
             description:
-              'Explore Central Oregon by city and community — Bend, Redmond, Sisters, Sunriver, and beyond, with market trends and homes for sale in every area.',
+              'Central Oregon by city and community. Bend, Redmond, Sisters, Sunriver, and the towns around them, with market numbers and homes for sale in each.',
             url: '/area-guides',
           },
         ]}
@@ -146,7 +146,7 @@ export default async function AreaGuidesPage() {
             hover, link to /cities/[slug]. Empty-safe (renders null). */}
         <KbExploreTowns
           towns={cityItems}
-          eyebrow="Explore by city"
+          eyebrow="By city"
           title="Central Oregon cities"
           sectionId="cities"
           cta={{ href: '/cities', label: 'All cities' }}
@@ -170,7 +170,7 @@ export default async function AreaGuidesPage() {
             </div>
             <div className="max-w-2xl pt-6">
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', lineHeight: 1.55 }}>
-                Use our interactive map to explore listings, schools, and neighborhoods across the region.
+                Draw a boundary, set your filters, and see active listings, schools, and neighborhoods on one map.
               </p>
               <div className="sec-cta">
                 <Link href="/search" className="btn alt">

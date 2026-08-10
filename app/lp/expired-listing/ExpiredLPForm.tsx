@@ -60,7 +60,7 @@ export default function ExpiredLPForm() {
       if (r.success) {
         setResult({
           ok: true,
-          msg: "Got it. We'll have the written audit in your inbox within the business day, or a quick call back if you picked that. No pitch coming.",
+          msg: 'Got it. The written audit lands in your inbox within the business day, or a call back if you picked that. No listing agreement attached.',
         })
       } else {
         setResult({ ok: false, msg: r.error })
@@ -72,7 +72,7 @@ export default function ExpiredLPForm() {
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <p className="text-lg font-semibold">Thanks.</p>
+          <p className="text-lg font-semibold">Got it.</p>
           <p className="mt-2 text-muted-foreground">{result.msg}</p>
           <p className="mt-4 text-sm text-muted-foreground">
             Or call us right now:{' '}
@@ -118,7 +118,7 @@ export default function ExpiredLPForm() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="audit">Send me a free written audit of my prior listing</SelectItem>
-              <SelectItem value="phone">Call me. 20-minute conversation, no pitch</SelectItem>
+              <SelectItem value="phone">Call me. 20-minute conversation</SelectItem>
               <SelectItem value="walkthrough">Come walk the property with me in person</SelectItem>
             </SelectContent>
           </Select>
@@ -127,7 +127,7 @@ export default function ExpiredLPForm() {
           Continue to contact info
         </Button>
         <p className="text-center text-xs text-muted-foreground">
-          No commitment. You get the audit either way.
+          You get the audit either way. No listing agreement required.
         </p>
       </form>
     )

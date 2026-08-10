@@ -46,22 +46,22 @@ import '@/components/site/kb/kb.css'
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export const metadata: Metadata = {
-  title: 'Compare properties · Ryan Realty',
-  description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
+  title: 'Compare homes · Ryan Realty',
+  description: 'Compare up to 4 Central Oregon homes side by side: price, size, beds, baths, and features.',
   alternates: { canonical: `${siteUrl}/compare` },
   robots: { index: false, follow: true },
   openGraph: {
-    title: 'Compare properties | Ryan Realty',
-    description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
+    title: 'Compare homes | Ryan Realty',
+    description: 'Compare up to 4 Central Oregon homes side by side: price, size, beds, baths, and features.',
     url: `${siteUrl}/compare`,
     type: 'website',
     siteName: 'Ryan Realty',
-    images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: 'Compare properties | Ryan Realty' }],
+    images: [{ url: `${siteUrl}/api/og?type=default`, width: 1200, height: 630, alt: 'Compare homes | Ryan Realty' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Compare properties | Ryan Realty',
-    description: 'Compare up to 4 Central Oregon homes side by side — price, size, features, and more.',
+    title: 'Compare homes | Ryan Realty',
+    description: 'Compare up to 4 Central Oregon homes side by side: price, size, beds, baths, and features.',
     images: [`${siteUrl}/api/og?type=default`],
   },
 }
@@ -171,12 +171,12 @@ export default async function ComparePage({
         <section
           className="section"
           id="compare-header"
-          aria-label="Compare properties"
+          aria-label="Compare homes"
           style={{ background: 'var(--navy)', color: 'var(--cream)' }}
         >
           <KbBreadcrumb
             overlay
-            trail={[{ label: 'Home', href: '/' }, { label: 'Compare properties' }]}
+            trail={[{ label: 'Home', href: '/' }, { label: 'Compare homes' }]}
           />
           <div className="wrap" style={{ paddingTop: 'clamp(96px, 14vh, 150px)', paddingBottom: 'clamp(36px, 6vw, 64px)' }}>
             <span className="eyebrow" style={{ color: 'var(--cream-70)', display: 'block', marginBottom: '16px' }}>
@@ -186,7 +186,7 @@ export default async function ComparePage({
               className="display"
               style={{ fontSize: 'clamp(2.4rem, 8vw, 5.2rem)', maxWidth: '14ch' }}
             >
-              Compare properties
+              Compare homes
             </h1>
             {ids.length === 0 && (
               <p
@@ -198,7 +198,7 @@ export default async function ComparePage({
                   lineHeight: 1.5,
                 }}
               >
-                Add homes from any search or listing page to compare them side by side. Up to 4 properties at a time.
+                Add homes from any search or listing page. Up to 4 at a time: price, size, beds, baths, and the rest.
               </p>
             )}
           </div>

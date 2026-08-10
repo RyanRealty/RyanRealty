@@ -27,12 +27,12 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Video feed',
-  description: 'Watch video tours of Central Oregon homes for sale. One after another.',
+  title: 'Video feed · Central Oregon homes',
+  description: 'Full video tours of Central Oregon homes for sale, one after another. Press play and keep scrolling.',
   alternates: { canonical: `${siteUrl}/feed` },
   openGraph: {
     title: 'Video feed | Ryan Realty',
-    description: 'Watch video tours of Central Oregon homes for sale.',
+    description: 'Full video tours of Central Oregon homes for sale, one after another.',
     url: `${siteUrl}/feed`,
     type: 'website',
     siteName: 'Ryan Realty',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Video feed | Ryan Realty',
-    description: 'Watch video tours of Central Oregon homes for sale.',
+    description: 'Full video tours of Central Oregon homes for sale, one after another.',
     images: [defaultOgImage],
   },
 }
@@ -91,7 +91,7 @@ export default async function FeedPage({
         <div>
           <h1 className="font-display text-3xl">No video tours yet</h1>
           <p className="mt-3 text-primary-foreground/80">
-            New walkthroughs land here as homes come to market across Central Oregon.
+            New tours land here as homes come on the market across Central Oregon.
           </p>
         </div>
       </main>

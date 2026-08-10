@@ -30,7 +30,7 @@ const TRUST_LINES = [
   'Written CMA within 24 hours of your request',
   'Three closed comps, three active comps, and the price range they support',
   'The person you talk to is the person who lists your home',
-  'No high pressure. No follow-up beyond two emails if you pass.',
+  'If you pass, two follow-up emails and then we stop',
 ]
 
 export function SellValuationCTA({
@@ -44,17 +44,17 @@ export function SellValuationCTA({
           <Stack gap="loose">
             <Stack gap="tight">
               <Eyebrow>Start with the CMA</Eyebrow>
-              <H2>Tell us your address. We send a written valuation within 24 hours.</H2>
+              <H2>Send your address. We send a written valuation within 24 hours.</H2>
             </Stack>
             <Body size="large" tone="muted" className="leading-[1.55] max-w-[44ch]">
-              A written valuation within 24 hours. If after reading it you want a 20-minute call, you book one. If you do not reply, we do not follow up beyond two emails.
+              It costs nothing and requires no listing agreement. After you read it, you can book a 20-minute call. If you do not reply, we follow up twice by email and then stop.
             </Body>
             <Body size="default" tone="muted" className="leading-[1.65] max-w-[44ch]">
-              We are not a national lead-gen funnel. We do not sell your contact info. The person you meet here is the person who lists your home.
+              We do not sell your contact info. The broker who writes the CMA is the broker who would list your home.
             </Body>
             <div className="flex flex-wrap gap-3">
               <CTAButton href={valuationHref} tone="primary" size="lg">
-                Get my free valuation
+                Get the written valuation
               </CTAButton>
               <CTAButton href={phoneHref} tone="outline" size="lg">
                 Or call {CONTACT.phoneDirect}

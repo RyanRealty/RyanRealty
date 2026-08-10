@@ -33,12 +33,12 @@ import LandingPageTracker from '@/components/LandingPageTracker'
  * authentic, honest, transparent, not salesy.
  */
 export const metadata: Metadata = {
-  title: 'Your Listing Expired. Here Is the Honest Read | Ryan Realty',
+  title: 'Your Listing Expired. Here Is What Broke | Ryan Realty',
   description:
-    'A free written audit of your prior listing. Pricing, photos, syndication, agent responsiveness. You get the audit either way, no listing agreement required.',
+    'A free written audit of your prior listing. Pricing, photos, syndication, agent response. You get the audit either way. No listing agreement required.',
   robots: { index: false, follow: false },
   openGraph: {
-    title: 'Your listing expired. Here is the honest read.',
+    title: 'Your listing expired. Here is what broke.',
     description: 'A free written audit. You get the audit either way.',
     type: 'website',
   },
@@ -140,16 +140,16 @@ export default async function ExpiredListingPage() {
               Bend · Redmond · Sisters · Central Oregon
             </p>
             <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#faf8f4] drop-shadow-sm sm:text-5xl">
-              Your Listing Expired. Here Is the Honest Read.
+              Your Listing Expired. Here Is What Broke.
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#faf8f4]/90 drop-shadow-sm">
               A free written audit of your prior listing. Pricing, photos, syndication, agent
-              responsiveness. You get the audit either way, no listing agreement required.
+              response. You get the audit either way. No listing agreement required.
             </p>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-[#faf8f4]/75 drop-shadow-sm">
               Your home was on the market. It did not sell. Most of the time that is not about
-              the home. It is about one or two specific things that broke in the way it was
-              priced, presented, or marketed. Those are knowable, and they are fixable.
+              the home. It is about one or two things that broke in price, presentation, or
+              marketing. Those are knowable, and they are fixable.
             </p>
           </div>
 
@@ -284,7 +284,7 @@ export default async function ExpiredListingPage() {
                 )}
                 <div className="bg-[#102742] px-3 py-3">
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#faf8f4]">
-                    The honest recommendation
+                    The recommendation
                   </p>
                   <p className="mt-1 text-xs text-[#faf8f4]/75">
                     Re-list, wait, rent, or hold. Written out, with the reasoning.
@@ -327,14 +327,14 @@ export default async function ExpiredListingPage() {
                 From the broker
               </p>
               <h2 className="mt-3 font-display text-2xl uppercase leading-snug tracking-[-0.01em] text-[#102742] sm:text-3xl">
-                If you decide to list again, we would like to earn your business.
+                If you re-list, here is how we run it.
               </h2>
               <div className="mt-5 space-y-4 text-base leading-7 text-[#102742]/85">
                 <p>
-                  An honest re-list starts with a written price thesis and the comps that
-                  support it. You see the math. If the prior photo set needs work, we tell you
-                  which photos to redo and why. The MLS description gets written from what your
-                  home actually offers, not boilerplate.
+                  A re-list starts with a written price thesis and the comps that support it.
+                  You see the math. If the prior photo set needs work, we tell you which photos
+                  to redo and why. The MLS description is written from what your home offers,
+                  not boilerplate.
                 </p>
                 <p>
                   Then you get weekly written progress reports. Every showing, every inquiry,
@@ -342,9 +342,8 @@ export default async function ExpiredListingPage() {
                   with the price, terms, contingencies, and what we would counter.
                 </p>
                 <p>
-                  And if the audit says the right move is to wait, rent, or hold, we will tell
-                  you that. We are not the right partner for you if you do not actually need
-                  one right now.
+                  If the audit says the right move is to wait, rent, or hold, we will say that.
+                  You do not need a listing partner if the home is not ready to re-list.
                 </p>
               </div>
               <div className="mt-8 flex items-center gap-4 border-t-[3px] border-[#102742] pt-6">
@@ -394,12 +393,12 @@ export default async function ExpiredListingPage() {
             <FAQ
               value="faq-list"
               q="Do I have to list with you to get the audit?"
-              a="No. You get the audit either way. We would rather you have honest information than feel cornered into a listing agreement."
+              a="No. You get the audit either way. There is no listing agreement attached to it."
             />
             <FAQ
               value="faq-notready"
               q="What if I am not ready to re-list yet?"
-              a="We are not the right partner if you do not actually need one. The audit still gives you a picture of what would need to change before you decide."
+              a="The audit still shows what would need to change before you decide. You can wait, rent, or hold without listing with us."
             />
           </Accordion>
         </div>
@@ -413,10 +412,10 @@ export default async function ExpiredListingPage() {
               One written page
             </p>
             <h2 className="mt-3 font-display text-2xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-3xl">
-              Get the honest read on your listing
+              Get the written audit on your listing
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-lg text-[#faf8f4]/85">
-              One written page. No pitch attached. You decide what happens next.
+              One written page. No listing agreement attached. You decide what happens next.
             </p>
           </ScrollReveal>
           <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">

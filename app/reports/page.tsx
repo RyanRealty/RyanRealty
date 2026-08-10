@@ -57,12 +57,14 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Central Oregon Real Estate Market Reports',
-  description: 'Real-time Housing Market Report by city: sold volume, median price, days on market, inventory. Choose cities and time range. Weekly reports and explore tools.',
+  title: 'Central Oregon market reports',
+  description:
+    'Sold volume, median price, days on market, and inventory by Central Oregon city. Pick cities and a time range. Weekly reports included.',
   alternates: { canonical: `${siteUrl}/housing-market/reports` },
   openGraph: {
-    title: 'Central Oregon Real Estate Market Reports',
-    description: 'Real-time Housing Market Report by city. Weekly reports and explore tools.',
+    title: 'Central Oregon market reports',
+    description:
+      'Sold volume, median price, days on market, and inventory by city. Weekly reports included.',
     url: `${siteUrl}/housing-market/reports`,
     type: 'website',
     siteName: 'Ryan Realty',
@@ -70,8 +72,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Market Reports',
-    description: 'Real-time Housing Market Report by city. Weekly reports and explore.',
+    title: 'Central Oregon market reports',
+    description:
+      'Sold volume, median price, days on market, and inventory by city. Weekly reports included.',
     images: [defaultOgImage],
   },
 }
@@ -404,9 +407,9 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Live market data"
-          titleTop="Market"
-          titleBottom="reports"
-          lead="Real-time market data by city. Add or remove cities and change the time range. Default: last 30 days."
+          titleTop="What sold,"
+          titleBottom="and what is still listed."
+          lead="Inventory, median price, and days on market by city. Pick the cities and the range. Last 30 days is the default."
           videoSrc={null}
           posterSrc="/images/lp/hero-mountain.jpg"
         />
@@ -440,7 +443,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
           <div className="wrap pb-12">
             <div className="sec-head">
               <span className="sec-index">Live data</span>
-              <h2 className="sec-title display">Housing<br />market report</h2>
+              <h2 className="sec-title display">By city,<br />and by range</h2>
             </div>
             {/* Headline figures per city: the §0 canonical cache path
                 (market_pulse_live + market_stats_cache via getCityReportSnapshots),

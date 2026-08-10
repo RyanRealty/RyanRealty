@@ -45,7 +45,7 @@ import '@/components/site/kb/kb.css'
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
   description:
-    'Work directly with a Ryan Realty broker in Bend, Oregon. Cinematic video, 3D tours, and data-backed pricing on every Central Oregon listing, from first call to closing.',
+    'The broker you call is the broker who works the deal. Every Ryan Realty listing gets video, a 3D walkthrough, and a price from live Central Oregon comps.',
   path: '/team',
   ogImage: '/images/hero/hero-old-mill-master-4k.jpg',
   keywords: [
@@ -187,10 +187,10 @@ export default async function TeamPage() {
         />
         <KbAbout
           eyebrow="The team"
-          heading="Work with the broker who lists your home"
+          heading="One broker from first call to close."
           paragraphs={[
-            'You work directly with the same broker from the first conversation to the closing table. No hand-offs to a junior agent, no transaction desk.',
-            'Call any broker directly using the number on their card. The broker who prices your home is the one who answers your calls.',
+            'No hand-off to a junior agent. No transaction desk between you and the person pricing the home.',
+            'Call any broker on the number on their card. That is who answers.',
           ]}
           facts={brokerFacts}
         />

@@ -58,9 +58,9 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 export const metadata: Metadata = pageMetadata({
   // Kept short enough that the " | Ryan Realty" template suffix still lands
   // inside the ~60-char SERP display budget (46 chars resolved).
-  title: 'Central Oregon Cities: Bend, Redmond, Sisters',
+  title: 'Central Oregon cities: Bend, Redmond, Sisters',
   description:
-    'Homes for sale in Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the rest of Central Oregon. Live inventory and pricing from the regional MLS.',
+    'Active single-family homes in Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the rest of Central Oregon. Live inventory and pricing from the regional MLS.',
   path: '/cities',
 })
 
@@ -267,8 +267,8 @@ export default async function CitiesPage() {
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
-            name: 'Central Oregon Cities',
-            description: 'Homes for sale in Bend, Redmond, Sisters, and the rest of Central Oregon.',
+            name: 'Central Oregon cities',
+            description: 'Active single-family homes in Bend, Redmond, Sisters, and the rest of Central Oregon. Live inventory from the regional MLS.',
             url: `${siteUrl}/cities`,
             publisher: { '@type': 'Organization', name: 'Ryan Realty' },
             mainEntity: {
@@ -303,7 +303,7 @@ export default async function CitiesPage() {
                 <span className="dot" aria-hidden />
                 Live market
               </span>
-              <h1 className="sec-title display">Central Oregon<br />Cities</h1>
+              <h1 className="sec-title display">Central Oregon,<br />city by city.</h1>
             </div>
 
             <p
@@ -355,7 +355,7 @@ export default async function CitiesPage() {
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
-              <h2 className="sec-title display">Homes for sale in<br />every Central Oregon town</h2>
+              <h2 className="sec-title display">Pick a city.<br />See what is listed.</h2>
             </div>
 
             <div>
@@ -574,7 +574,7 @@ export default async function CitiesPage() {
             </div>
             <div className="max-w-xl pt-6 pb-12">
               <p className="neigh-sub" style={{ margin: 0 }}>
-                Search active listings across all cities with live filters for price, beds, and location.
+                Filter by price, beds, and location across every city on the list.
               </p>
               <div className="sec-cta" style={{ gap: '12px', flexWrap: 'wrap', display: 'flex' }}>
                 <Link href="/search" className="btn">

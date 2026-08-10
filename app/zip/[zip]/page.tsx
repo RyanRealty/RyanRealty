@@ -147,7 +147,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const area = ZIP_AREA[zip] ?? 'Central Oregon'
   return pageMetadata({
     title: `Homes for sale in ${zip} · ${area}, Oregon`,
-    description: `Browse active single-family listings in ZIP code ${zip} (${area}), Central Oregon. Live market snapshot, subdivision breakdown, and every home on the map.`,
+    description: `Active single-family homes in ZIP ${zip} (${area}), Central Oregon. Live market snapshot, neighborhood breakdown, and every listing on the map.`,
     path: `/zip/${zip}`,
   })
 }
@@ -387,9 +387,13 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
             medianDomActive: medianDom,
           }}
           eyebrow={`${zip} · ${area} · Oregon`}
-          titleTop="Homes for sale in"
-          titleBottom={zip}
-          lead={`in ${area}, Oregon.`}
+          titleTop={`${zip}:`}
+          titleBottom="homes on the list."
+          lead={
+            activeCount == null
+              ? `Single-family homes in ${area}, Oregon. Live inventory from the regional MLS.`
+              : `in ${area}, Oregon. Live inventory from the regional MLS.`
+          }
           videoSrc={null}
           posterSrc={posterSrc}
         />
@@ -427,7 +431,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           <KbExploreTowns
             towns={subdivisionItems}
             eyebrow={`${zip} · Neighborhoods`}
-            title="What's in this ZIP"
+            title="Neighborhoods in this ZIP"
             sectionId="subdivisions"
             cta={{ href: `/search?keywords=${encodeURIComponent(zip)}`, label: `All homes in ${zip}` }}
           />
@@ -437,7 +441,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         <KbExploreTowns
           towns={otherZipItems}
           eyebrow="Central Oregon ZIPs"
-          title="Other ZIP codes"
+          title="Other ZIP codes we cover"
           sectionId="other-zips"
           cta={{ href: '/search', label: 'Open map search' }}
         />

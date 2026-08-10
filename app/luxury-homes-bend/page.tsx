@@ -34,11 +34,11 @@ const LUX_COMMUNITIES = [
 export const metadata: Metadata = {
   title: 'Luxury Homes in Bend, Oregon',
   description:
-    'Luxury homes for sale in Bend, Oregon. Live high-end listings above $1.5 million pulled from the regional MLS, plus the communities they sit in. A licensed Bend broker, not a portal.',
+    'Homes for sale in Bend, Oregon above $1.5 million. Live MLS listings and the communities where they sit.',
   alternates: { canonical: '/luxury-homes-bend' },
   openGraph: {
     title: 'Luxury Homes in Bend, Oregon | Ryan Realty',
-    description: 'Live high-end Bend listings above $1.5 million, pulled from the MLS.',
+    description: 'Active Bend homes above $1.5 million, pulled from the regional MLS.',
     images: [OLD_MILL_HERO],
   },
 }
@@ -94,13 +94,13 @@ export default async function LuxuryHomesBendPage() {
         <div className="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/80">Bend · Central Oregon</p>
           <h1 className="mt-4 max-w-3xl font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#faf8f4] sm:text-5xl lg:text-6xl">
-            Luxury homes in Bend, Oregon
+            Homes in Bend above $1.5 million
           </h1>
           <p className="mt-6 max-w-2xl text-base text-[#faf8f4]/90 sm:text-lg">
             {count != null && count > 0
-              ? `${count.toLocaleString('en-US')} homes above $1.5 million are active in Bend right now. `
-              : 'High-end homes above $1.5 million in Bend. '}
-            Every listing here is pulled live from the regional MLS by a licensed Bend broker. No algorithm ranking by who paid the most.
+              ? `${count.toLocaleString('en-US')} single-family homes above $1.5 million are active in Bend right now. `
+              : 'Single-family homes above $1.5 million in Bend. '}
+            Every listing on this page comes from the regional MLS and refreshes through the day.
           </p>
         </div>
       </section>
@@ -109,10 +109,10 @@ export default async function LuxuryHomesBendPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
           <h2 className="font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
-            High-end homes for sale in Bend
+            Active listings, high to low
           </h2>
           <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
-            A live look at the top of Bend&apos;s market, priced high to low. New homes in this range reach your inbox the morning they list.{' '}
+            Priced high to low. You can get an email the morning a new home above $1.5 million lists.{' '}
             <Link href="/lp/buyer-listing-alerts" className="font-semibold underline underline-offset-4">
               Set up an alert
             </Link>
@@ -139,7 +139,7 @@ export default async function LuxuryHomesBendPage() {
               ))}
             </div>
           ) : (
-            <p className="mt-10 text-base text-[#102742]/70">No homes above $1.5 million are active right now. Reach out and we will set an alert for the next one.</p>
+            <p className="mt-10 text-base text-[#102742]/70">No homes above $1.5 million are active right now. We can set an alert for the next one.</p>
           )}
           <div className="mt-10">
             <Link href="/homes-for-sale/bend" className="text-sm font-semibold uppercase tracking-widest text-[#102742] underline-offset-4 hover:underline">
@@ -153,10 +153,10 @@ export default async function LuxuryHomesBendPage() {
       <section className="border-b-[3px] border-[#102742] bg-[#102742] text-[#faf8f4]">
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
           <h2 className="font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
-            Where Bend&apos;s high-end homes sit
+            Where these homes sit
           </h2>
           <p className="mt-4 max-w-2xl text-base text-[#faf8f4]/80">
-            Much of Bend&apos;s top-of-market inventory is in its gated and golf communities on the west side and along the Deschutes. Start with these.
+            Most of Bend&apos;s homes above $1.5 million sit in gated and golf communities on the west side and along the Deschutes. Start with these.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             {LUX_COMMUNITIES.map((c) => (

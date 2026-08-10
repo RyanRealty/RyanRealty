@@ -249,10 +249,8 @@ export default async function MonthsOfSupplyPage() {
                 means inventory is piling up faster than buyers are closing on it.
               </Body>
               <Body>
-                It is the single most direct read on whether a market favors the
-                seller or the buyer, because it compares supply (what is for sale
-                right now) against demand (what is actually closing), not against
-                asking prices or how a market feels.
+                It compares what is for sale right now with what has been closing.
+                That is supply against demand, not asking prices or how a market feels.
               </Body>
             </Stack>
           </Container>
@@ -373,7 +371,7 @@ export default async function MonthsOfSupplyPage() {
         <FAQBlock
           eyebrow="Common questions"
           title="Months of supply, explained further"
-          intro="Direct answers, no hedging."
+          intro="The same formula and thresholds used on every market page here."
           tone="default"
           items={[
             {

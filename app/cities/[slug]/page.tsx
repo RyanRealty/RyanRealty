@@ -141,8 +141,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!snapshot) notFound()
   const cityName = snapshot.geoLabel
   return pageMetadata({
-    title: `Homes for Sale in ${cityName}, Oregon`,
-    description: `Homes for sale in ${cityName}, Oregon, with live single-family market data, neighborhoods, resort communities, open houses, and recent activity.`,
+    title: `${cityName}, Oregon homes for sale`,
+    description: `Active single-family homes in ${cityName}, Oregon. Live list prices, neighborhoods, open houses, and recent market activity from the regional MLS.`,
     path: `/cities/${slug}`,
   })
 }
@@ -423,7 +423,7 @@ export default async function CityDetailPage({ params }: Props) {
       type: 'place',
       placeType: 'City',
       name: cityName,
-      description: `Homes for sale and live single-family market data for ${cityName}, Oregon.`,
+      description: `Active single-family homes and live market data for ${cityName}, Oregon.`,
       url: `/cities/${slug}`,
       address: { city: cityName, state: 'OR', country: 'US' },
       containedInPlace: 'Central Oregon',
@@ -465,8 +465,8 @@ export default async function CityDetailPage({ params }: Props) {
           }}
           eyebrow={`${cityName} · Oregon`}
           titleTop={cityName}
-          titleBottom="Homes for Sale"
-          lead={`in ${cityName}, Oregon.`}
+          titleBottom="on the market now."
+          lead={`in ${cityName}. List prices and days on market, pulled live.`}
           videoSrc={heroVideoSrc}
           posterSrc={heroPosterSrc}
           mediaCaption={mediaCaption}
@@ -482,11 +482,11 @@ export default async function CityDetailPage({ params }: Props) {
           showRegionMarkers={false}
           polygons={neighborhoodPolygons}
           eyebrow={cityName}
-          title={`Homes in\n${cityName}`}
+          title={`Every active home\nin ${cityName}`}
           subtitle={`Every active single-family listing with a ${cityName} address.`}
         />
         {aboutParagraphs.length > 0 ? (
-          <KbAbout eyebrow={`${cityName} · Oregon`} heading={`Living in ${cityName}`} paragraphs={aboutParagraphs} facts={aboutFacts} />
+          <KbAbout eyebrow={`${cityName} · Oregon`} heading={`${cityName}, in plain words`} paragraphs={aboutParagraphs} facts={aboutFacts} />
         ) : null}
         {/* ONE market section (Matt 2026-07-29): the core charts render INSIDE the HUD
             section, not as a second stacked, separately-headed section. The communities
@@ -534,21 +534,21 @@ export default async function CityDetailPage({ params }: Props) {
         <KbArticles
           posts={articlePosts}
           eyebrow="Guides and news"
-          heading={`${cityName} real estate guides`}
-          subtitle={`Housing news, neighborhood guides, and buyer and seller advice for ${cityName} and Central Oregon.`}
+          heading={`${cityName} guides`}
+          subtitle={`Housing news, neighborhood guides, and buyer and seller notes for ${cityName}.`}
         />
         <KbTestimonials reviews={TESTIMONIALS.slice(0, 8)} />
         <KbTeam />
         <KbExploreTowns
           towns={otherCityItems}
           eyebrow="Central Oregon"
-          title="Other cities"
+          title="Other cities on the list"
           sectionId="nearby"
           cta={{ href: '/cities', label: 'Every city' }}
         />
         {faqs.length > 0 ? (
           <section id="faq" aria-label={`${cityName} real estate questions`}>
-            <FAQBlock items={faqs} eyebrow="Common questions" title={`${cityName} real estate questions`} />
+            <FAQBlock items={faqs} eyebrow="Common questions" title={`Questions about ${cityName}`} />
           </section>
         ) : null}
         {/* Census only when the page actually renders a population figure

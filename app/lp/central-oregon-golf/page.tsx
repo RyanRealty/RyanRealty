@@ -267,8 +267,8 @@ function HeroSection() {
         <h1 className="golf-hero__h1">Central Oregon golf, by the architects who built it.</h1>
         <p className="golf-hero__sub">
           27 named courses. McLay Kidd, Nicklaus, Fazio, RTJ Jr, Weiskopf, Fought. 3,600 feet of
-          elevation. 300 days of sunshine. The eight worth flying in for, the season window that
-          beats Bandon, and the back-nine views you don&apos;t get anywhere else.
+          elevation. 300 days of sunshine. The eight destination courses, the season window
+          next to Bandon, and the Cascade back-nine views at Tetherow and Pronghorn.
         </p>
         <div className="golf-hero__cta-row">
           <Link
@@ -662,7 +662,7 @@ function WhereToLiveSection({
     },
     'widgi-creek': {
       name: 'Widgi Creek',
-      pitch: "Locals' favorite public 18 on the way to Mt Bachelor. PNW's top pickleball complex shares the property.",
+      pitch: 'Public 18 on the way to Mt Bachelor. A large pickleball complex shares the property.',
       hasLP: false,
       image: '/lp/central-oregon-golf/img/widgi-creek-01.jpg',
       imageAlt: 'Widgi Creek Golf Club along the Deschutes corridor in west Bend',

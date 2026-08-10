@@ -47,10 +47,10 @@ type Props = { params: Promise<{ city: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: citySlug } = await params
   const cityName = await getCityFromSlug(citySlug)
-  if (!cityName) return pageMetadata({ title: 'Open Houses', description: 'Open houses in Central Oregon.', path: `/open-houses/${citySlug}` })
+  if (!cityName) return pageMetadata({ title: 'Open House Calendar', description: "This week's open house calendar for Central Oregon.", path: `/open-houses/${citySlug}` })
   return pageMetadata({
-    title: `Open Houses in ${cityName}, Oregon`,
-    description: `Browse open houses this weekend and upcoming in ${cityName}, Oregon. Live list from the regional MLS with times, photos, and prices.`,
+    title: `Open House Calendar · ${cityName}, Oregon`,
+    description: `This week's open house calendar for ${cityName}, Oregon. Times, addresses, and prices from the regional MLS.`,
     path: `/open-houses/${citySlug}`,
   })
 }
@@ -208,21 +208,27 @@ export default async function OpenHousesCityPage({
       <SmoothScrollProvider>
         <KbHero
           data={{
-            activeCount: pulse?.activeCount ?? null,
+            // §0: count open houses on the calendar, not city-wide active inventory.
+            activeCount: openHouseCount || null,
             medianListPrice: pulse?.medianListPrice ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
-          eyebrow={`${cityName} · Open houses`}
-          titleTop="Open houses in"
-          titleBottom={cityName}
-          lead={`in ${cityName} this weekend. ${openHouseCount > 0 ? `${openHouseCount} open ${openHouseCount === 1 ? 'house' : 'houses'} on the calendar.` : ''}`}
+          countNoun={openHouseCount === 1 ? 'open house' : 'open houses'}
+          eyebrow={`${cityName} · Open house calendar`}
+          titleTop="This week's open"
+          titleBottom={`houses in ${cityName}.`}
+          lead={
+            openHouseCount
+              ? `on the calendar in ${cityName} this week.`
+              : `Nothing is on the calendar in ${cityName} this week yet.`
+          }
           videoSrc={null}
           posterSrc="/images/kb/sunriver-deschutes-river.jpg"
         />
         <KbOpenHouses
           items={openHouseItems}
           eyebrow={`${cityName} · This week`}
-          heading="Open houses"
+          heading="On the calendar"
           viewAllHref="/open-houses"
         />
         {/* Map — every open house on the real terrain (restores the pre-KB map view) */}
@@ -237,7 +243,7 @@ export default async function OpenHousesCityPage({
             showRegionMarkers={false}
             eyebrow={cityName}
             title={'Open houses\non the map'}
-            subtitle={`Every open house in ${cityName} with a location.`}
+            subtitle={`Every open house in ${cityName} with a pin.`}
           />
         ) : null}
         <KbSell

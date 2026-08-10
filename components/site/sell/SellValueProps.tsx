@@ -50,7 +50,7 @@ export function SellValueProps() {
     <Section padding="default" tone="default" divider>
       <Container>
         <Stack gap="tight" className="mb-10 max-w-[52ch]">
-          <Eyebrow>Why list with us</Eyebrow>
+          <Eyebrow>What you get when you list</Eyebrow>
           <H2>Every price we quote arrives with the comps behind it.</H2>
         </Stack>
         <Grid cols={3} gap="loose">

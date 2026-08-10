@@ -299,23 +299,25 @@ export default async function CentralOregonRegionPage() {
   // -------------------------------------------------------------------------
   // KbHero's stat template already renders the count ("N homes for sale …"),
   // the median, and days-to-pending from the data prop — the lede must not
-  // repeat them (they rendered twice in one paragraph).
+  // repeat them (they rendered twice in one paragraph). Completes:
+  // "N homes for sale {lead} Median list $X. Pending in Y days."
   const ledeParts: string[] = []
   if (regionPulse && regionPulse.activeCount > 0) {
-    ledeParts.push('across Central Oregon.')
+    ledeParts.push('across the whole region.')
   }
   if (regionPulse?.monthsOfSupply != null) {
     // Classify the RAW value, not the rounded display value (design-audit
     // P2, CLAUDE.md §0 — see app/housing-market/page.tsx for the same fix).
+    // MoS band is a formula fact (CLAUDE.md §0 thresholds), not a broker quote.
     const raw = regionPulse.monthsOfSupply
-    let verdict = 'balanced market'
-    if (raw <= 4) verdict = "seller's market"
-    else if (raw >= 6) verdict = "buyer's market"
-    ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply: ${verdict}.`)
+    let band = 'balanced'
+    if (raw <= 4) band = "seller's"
+    else if (raw >= 6) band = "buyer's"
+    ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply. A ${band} market.`)
   }
   const lede =
     ledeParts.join(' ') ||
-    'Single-family market data across Central Oregon, updated every 15 minutes from Oregon Data Share.'
+    'Single-family inventory, median list price, and pace for Central Oregon, refreshed every 15 minutes.'
 
   // -------------------------------------------------------------------------
   // Market narrative + methodology trace — restored from the pre-KB page.
@@ -425,8 +427,8 @@ export default async function CentralOregonRegionPage() {
             medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
           }}
           eyebrow="Central Oregon · Oregon"
-          titleTop="Central Oregon"
-          titleBottom="market report"
+          titleTop="The region,"
+          titleBottom="as the numbers read."
           lead={lede}
           posterSrc={heroPhoto ?? undefined}
         />

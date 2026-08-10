@@ -154,8 +154,8 @@ export async function generateMetadata({
   const title = buildSearchTitle(filters)
   const description =
     filters.city || filters.subdivision
-      ? `Search homes for sale in ${filters.subdivision ?? ''} ${filters.city ?? 'Central Oregon'}. Filter by price, beds, baths, and more.`
-      : 'Search homes for sale in Central Oregon. Filter by city, price, beds, baths, and more.'
+      ? `Homes for sale in ${[filters.subdivision, filters.city].filter(Boolean).join(', ') || 'Central Oregon'}. Live from the regional MLS, with price, beds, baths, and the map.`
+      : 'Homes for sale across Central Oregon. Live from the regional MLS, with city, price, beds, baths, and the map.'
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const canonical = new URL('/homes-for-sale', siteUrl)
   Object.entries(sp).forEach(([k, v]) => {

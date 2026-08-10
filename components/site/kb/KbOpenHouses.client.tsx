@@ -137,7 +137,7 @@ export function KbOpenHouses({
             <h2 className="sec-title display">{heading}</h2>
           </div>
           <p style={{ marginTop: 16, fontSize: '1.05rem', lineHeight: 1.6, opacity: 0.8, maxWidth: 560 }}>
-            No open houses are scheduled in Central Oregon right now. New ones post through the week.
+            No open houses are on the calendar in Central Oregon right now. New ones post through the week.
           </p>
           <div style={{ marginTop: 22, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             {viewAllHref ? (
@@ -146,7 +146,7 @@ export function KbOpenHouses({
               </a>
             ) : null}
             <a href="/lp/buyer-listing-alerts" className="btn alt">
-              Get notified of new open houses <span className="arr">→</span>
+              Email me when one posts <span className="arr">→</span>
             </a>
           </div>
         </div>

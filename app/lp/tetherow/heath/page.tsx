@@ -423,10 +423,12 @@ export default async function HeathAtTetherowPage() {
           <h1 className="mt-3 font-display text-4xl leading-tight text-primary-foreground sm:text-5xl md:text-6xl">
             Heath at Tetherow.
             <br />
-            <span className="text-primary-foreground/85">A profile of the {monthYear} market.</span>
+            <span className="text-primary-foreground/85">Live inventory and the {monthYear} market.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-base text-primary-foreground/85 sm:text-lg">
-            The original golf-frontage phase of Tetherow. Half-acre and larger lots, single-family custom homes, direct course frontage on the McLay Kidd holes. Live inventory, recent closings, and a data trace you can audit below.
+            The original golf-frontage phase of Tetherow. Half-acre and larger lots, single-family
+            custom homes, course frontage on the McLay Kidd holes. Active listings, recent closings,
+            and the numbers behind them.
           </p>
 
           {/* Above-the-fold CTA, visible on mobile and desktop so a visitor can

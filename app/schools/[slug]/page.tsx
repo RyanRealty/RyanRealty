@@ -239,9 +239,9 @@ export default async function SchoolDetailPage({ params }: Props) {
             medianDaysToPending: null,
           }}
           eyebrow={`${levelLabel} · ${school.city}`}
-          titleTop={levelLabel}
+          titleTop="Homes that feed"
           titleBottom={school.name}
-          lead={`feed ${school.name}, part of ${school.district}.`}
+          lead={`in ${school.city}, part of ${school.district}.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.schools}
           mediaCaption="Regional view · Central Oregon"

@@ -168,7 +168,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // §0 NO COUNT HERE: `activeCount` fell through to the parent CITY's, so
   // three-rivers read "1000 homes for sale" (Bend's, row-capped) and sunriver 121
   // vs a body showing 102. Re-deriving it here is out (the SEO-58 incident).
-  const desc = `Homes for sale in ${community.name}, ${community.city}, OR. Live single-family market stats, open houses, and recent activity.`
+  const desc = `Active single-family homes in ${community.name}, ${community.city}, Oregon. Live inventory, open houses, and market stats from the regional MLS.`
 
   // OG image: use the community's curated KB hero photo when one exists, else the
   // generic branded card. Both paths are absolute at render time via pageMetadata.
@@ -750,9 +750,15 @@ export default async function CommunityDetailPage({ params }: Props) {
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow={communityLabel}
-          titleTop={community.name}
-          titleBottom="Homes for Sale"
-          lead={`in ${community.name}, ${cityName}.`}
+          titleTop={`${community.name},`}
+          titleBottom="the list right now."
+          // KbHero prefixes "<N> homes for sale" when activeCount is known.
+          // Full sentence only when the count is unknown — never double the place name.
+          lead={
+            activeCount == null
+              ? `Single-family homes in ${community.name}, ${cityName}. Live inventory from the regional MLS.`
+              : `in ${cityName}. Live inventory from the regional MLS.`
+          }
           videoSrc={null}
           posterSrc={heroPhoto}
           // Fix 6: descriptive alt text for the hero image. (§0)
@@ -807,8 +813,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           showRegionMarkers={false}
           polygons={mapPolygons}
           eyebrow={community.name}
-          title={`${community.name}\nHomes for Sale`}
-          subtitle={`Every active single-family listing in ${community.name}.`}
+          title={`Homes in\n${community.name}`}
+          subtitle={`Every active single-family listing in ${community.name}, on the map.`}
           // Fix 4: registry center_lon_lat ensures the map renders even when
           // this community has no active listings (empty geojson features). (§0)
           centerLonLat={registryEntry?.center_lon_lat ?? undefined}

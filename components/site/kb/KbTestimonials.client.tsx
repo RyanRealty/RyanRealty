@@ -55,8 +55,12 @@ export function KbTestimonials({ reviews }: { reviews: KbReview[] }) {
               back — the quotes are verbatim Google reviews, not a dated feed
               (design-audit P3). */}
           <div>
-            <span className="sec-index">Google reviews</span>
-            <h2 className="sec-title display">In their words</h2>
+            <span className="sec-index">Verified on Google</span>
+            <h2 className="sec-title display">
+              What clients
+              <br />
+              wrote
+            </h2>
           </div>
           <div className="kb-reviews-actions">
             <a className="kb-reviews-all" href="/reviews">

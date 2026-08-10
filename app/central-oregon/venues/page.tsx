@@ -92,9 +92,9 @@ export default function VenuesIndexPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Live music & shows"
-          titleTop="Live music"
-          titleBottom="& shows"
-          lead={`${total} of the venues that carry live music and performing arts across Central Oregon, from the amphitheater on the Deschutes to downtown theaters and brewery stages. Pick one to see what is on and the homes for sale nearby.`}
+          titleTop="Where the shows are,"
+          titleBottom="and homes nearby."
+          lead={`${total} live-music and performing-arts venues across Central Oregon, from the amphitheater on the Deschutes to downtown theaters and brewery stages. Each page has what is on and the homes for sale nearby.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.venues}
           statless

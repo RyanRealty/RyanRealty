@@ -143,16 +143,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!SITE_CITY_SLUGS.includes(slug)) notFound()
   const cityName = getCityName(slug)
   return pageMetadata({
-    title: `Motivated Seller Homes in ${cityName}, Oregon`,
+    title: `Price-cut and motivated seller homes in ${cityName}, Oregon`,
     description:
-      `Price-reduced and motivated seller homes in ${cityName}, Oregon. ` +
-      `Browse listings with documented price cuts and seller motivation signals, sorted by most motivated.`,
+      `Active homes in ${cityName}, Oregon with documented MLS price cuts or seller-motivation language in the remarks. ` +
+      `Ranked by price cuts, remarks, and days on market.`,
     path: `/motivated-sellers/${slug}`,
     keywords: [
       `motivated seller homes ${cityName} Oregon`,
       `price reduced homes ${cityName}`,
       `motivated sellers ${cityName} OR`,
-      `below market homes ${cityName}`,
       `price cut homes ${cityName} Oregon`,
     ],
   })
@@ -185,8 +184,8 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
     },
     {
       type: 'webPage',
-      name: `Motivated Seller Homes in ${cityName}, Oregon`,
-      description: `Price-reduced and motivated seller homes in ${cityName}, Oregon. Sorted by most motivated.`,
+      name: `Price-cut and motivated seller homes in ${cityName}, Oregon`,
+      description: `Active homes in ${cityName}, Oregon with MLS price cuts or seller-motivation language in the remarks.`,
       url: `/motivated-sellers/${slug}`,
     },
   ]
@@ -195,8 +194,8 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
 
   const heroLead =
     listings.length > 0
-      ? `${listings.length} ${listings.length === 1 ? 'listing' : 'listings'} with documented price cuts or seller motivation in ${cityName}. Updated hourly from the regional MLS.`
-      : `Active homes with price cuts or seller motivation signals in ${cityName}, Oregon. Updated hourly from the regional MLS.`
+      ? `${listings.length} ${listings.length === 1 ? 'listing' : 'listings'} in ${cityName} with a documented price cut, seller-motivation language in the remarks, or a long time on market. Updated from the regional MLS.`
+      : `Active homes in ${cityName} with MLS price cuts or seller-motivation language in the remarks. Updated from the regional MLS.`
 
   return (
     <main className="kb-root">
@@ -218,8 +217,8 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
             prior HeroBlock, in the KB Amboqia display. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow={`${cityName} · Oregon · Motivated sellers`}
-          titleTop="Motivated"
+          eyebrow={`${cityName}, Oregon · MLS price cuts and remarks`}
+          titleTop="Price cuts in"
           titleBottom={cityName}
           lead={heroLead}
           videoSrc={null}
@@ -230,24 +229,23 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
         <section className="section" id="how-scores-work" aria-label="How scores work">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">How scores work</span>
+              <span className="sec-index">How the list is built</span>
               <h2 className="sec-title display">
-                Why these homes
+                What gets a home
                 <br />
-                rank above others
+                on this page
               </h2>
             </div>
             <div className="flex flex-col gap-5 pt-8" style={{ maxWidth: '64ch' }}>
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55 }}>
-                Every listing on this page has at least one real motivation signal from the
-                MLS: a price reduction from the original list price, the seller or agent
-                using specific phrases in the listing remarks (things like &quot;seller motivated,&quot;
-                &quot;priced to sell,&quot; or &quot;bring all offers&quot;), or an unusually long days on market.
-                The score weights price cuts most heavily, followed by remarks, then DOM.
+                Every listing here has at least one signal from the MLS: a price reduction
+                from the original list price, phrases in the remarks such as &quot;seller motivated,&quot;
+                &quot;priced to sell,&quot; or &quot;bring all offers,&quot; or a long time on market. The score
+                weights price cuts most heavily, then remarks, then days on market.
               </p>
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55 }}>
                 The list refreshes every 10 minutes. When a price changes in the MLS, the
-                score recalculates and the ranking updates automatically.
+                score recalculates and the ranking updates.
               </p>
             </div>
           </div>
@@ -258,17 +256,17 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
         <section className="section listings" id="listings" aria-label={`Motivated seller homes in ${cityName}`}>
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Most motivated</span>
+              <span className="sec-index">Ranked by MLS signals</span>
               <h2 className="sec-title display">
                 {listings.length > 0 ? (
                   <>
-                    {listings.length} motivated
+                    {listings.length} {listings.length === 1 ? 'home' : 'homes'} on
                     <br />
-                    {listings.length === 1 ? 'home' : 'homes'} in {cityName}
+                    this list in {cityName}
                   </>
                 ) : (
                   <>
-                    Motivated homes
+                    Homes on this list
                     <br />
                     in {cityName}
                   </>
@@ -290,12 +288,12 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
             ) : (
               <div className="pt-8" style={{ maxWidth: '54ch' }}>
                 <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55 }}>
-                  No motivated seller listings found in {cityName} right now. The MLS updates
-                  throughout the day, so check back soon.
+                  No listings in {cityName} currently match the price-cut or motivation signals.
+                  The MLS updates throughout the day.
                 </p>
                 <div className="sec-cta">
                   <Link href="/motivated-sellers" className="btn alt">
-                    View all Central Oregon motivated sellers <span className="arr">→</span>
+                    View all Central Oregon on this list <span className="arr">→</span>
                   </Link>
                 </div>
               </div>
@@ -304,14 +302,14 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
         </section>
 
         {/* Other cities — sibling-city chips. */}
-        <section className="section" id="other-cities" aria-label="Motivated sellers in other cities">
+        <section className="section" id="other-cities" aria-label="Price-cut homes in other cities">
           <div className="wrap">
             <div className="sec-head">
               <span className="sec-index">Central Oregon</span>
               <h2 className="sec-title display">
-                Motivated sellers
+                Same list in
                 <br />
-                in other cities
+                other cities
               </h2>
             </div>
             <nav className="flex flex-wrap gap-2 pt-7" aria-label="Other cities">
@@ -342,17 +340,18 @@ export default async function MotivatedSellersCityPage({ params }: Props) {
         <section className="section" id="contact-cta" aria-label="Talk to a broker">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Why Ryan Realty in {cityName}</span>
+              <span className="sec-index">Before you write an offer</span>
               <h2 className="sec-title display">
-                Local brokers.
+                Put the cut next
                 <br />
-                Specific numbers.
+                to the comps
               </h2>
             </div>
             <div className="pt-7" style={{ maxWidth: '52ch' }}>
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.55 }}>
-                We close deals in {cityName} every year. If a motivated seller has priced a home
-                to move, we can tell you whether it is actually a deal.
+                A price cut or a motivated-seller remark does not mean the home is a bargain.
+                A broker can set the new ask next to recent closed sales in {cityName} and tell
+                you whether it still sits high, lands near market, or already looks soft.
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-6">
                 <a href="/contact" className="btn alt">

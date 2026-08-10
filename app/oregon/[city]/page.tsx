@@ -87,7 +87,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const indexable = await isIndexableOutOfAreaCity(slug)
   return pageMetadata({
     title: `Homes for sale in ${city.name}, Oregon`,
-    description: `Browse ${city.activeAllCount} live ${city.name} listings from the statewide MLS feed. ${city.name} is outside our Central Oregon home market, so we introduce you to a local broker we would use ourselves.`,
+    description: `${city.activeAllCount} live listings in ${city.name} from the statewide MLS. Outside our Central Oregon market. We introduce you to a local broker we would use ourselves.`,
     path: `/oregon/${city.slug}`,
     noindex: !indexable,
   })
@@ -198,9 +198,13 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             medianDaysToPending: null,
           }}
           eyebrow={`${city.name.toUpperCase()} · OREGON`}
-          titleTop="Homes for sale in"
-          titleBottom={city.name}
-          lead={`in ${city.name}, Oregon, outside Ryan Realty's Central Oregon market.`}
+          titleTop={`${city.name},`}
+          titleBottom="outside our market."
+          lead={
+            city.activeAllCount > 0
+              ? `in ${city.name}. Live from the statewide MLS. We introduce you to a local broker if you need one.`
+              : `No active MLS listings showing for ${city.name} right now. Outside our Central Oregon market. We introduce you to a local broker if you need one.`
+          }
           videoSrc={null}
           posterSrc="/images/homepage/smith-rock-terrebonne.jpg"
         />

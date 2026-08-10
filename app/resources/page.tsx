@@ -41,51 +41,54 @@ const ogImage = `${siteUrl}/api/og?type=default`
 const resources = [
   {
     title: 'Market reports',
-    description: 'City and community trends with pricing, inventory, and pace insights.',
+    description: 'City and community pricing, inventory, and days on market.',
     href: '/housing-market/reports',
   },
   {
     title: 'Housing market hub',
-    description: 'Evergreen market pages and regional Central Oregon market context.',
+    description: 'Evergreen market pages for Bend and the rest of Central Oregon.',
     href: '/housing-market',
   },
   {
     title: 'Area guides',
-    description: 'Neighborhood and relocation guides for buyers planning a move.',
+    description: 'Neighborhood and relocation guides if you are planning a move.',
     href: '/area-guides',
   },
   {
     title: 'Property comparison',
-    description: 'Compare up to four listings side by side before scheduling tours.',
+    description: 'Compare up to four listings side by side before you tour.',
     href: '/compare',
   },
   {
     title: 'Appreciation calculator',
-    description: 'Project potential value growth and equity over time.',
+    description: 'Project value growth and equity over a hold period.',
     href: '/tools/appreciation',
   },
   {
     title: 'Live market activity',
-    description: 'Follow new listings, pending updates, and closed activity in real time.',
+    description: 'New listings, pending updates, and closed sales as they post.',
     href: '/activity',
   },
 ]
 
 export const metadata: Metadata = {
-  title: 'Buyer and Seller Resources',
-  description: 'Explore guides, market tools, and report resources for Central Oregon real estate decisions.',
+  title: 'Market tools and guides',
+  description:
+    'Market reports, area guides, live activity, a four-home comparison, and the appreciation calculator for Central Oregon.',
   alternates: { canonical: `${siteUrl}/resources` },
   openGraph: {
-    title: 'Buyer and Seller Resources | Ryan Realty',
-    description: 'Guides, market tools, and report resources for Central Oregon buyers and sellers.',
+    title: 'Market tools and guides | Ryan Realty',
+    description:
+      'Market reports, area guides, live activity, a four-home comparison, and the appreciation calculator for Central Oregon.',
     url: `${siteUrl}/resources`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary',
-    title: 'Buyer and Seller Resources | Ryan Realty',
-    description: 'Guides, market tools, and report resources for Central Oregon buyers and sellers.',
+    title: 'Market tools and guides | Ryan Realty',
+    description:
+      'Market reports, area guides, live activity, a four-home comparison, and the appreciation calculator for Central Oregon.',
     images: [ogImage],
   },
 }
@@ -94,9 +97,10 @@ export default function ResourcesPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Buyer and Seller Resources',
+    name: 'Market tools and guides',
     url: `${siteUrl}/resources`,
-    description: 'Guides, reports, and planning tools for Central Oregon real estate decisions.',
+    description:
+      'Market reports, area guides, live activity, a four-home comparison, and the appreciation calculator for Central Oregon.',
   }
 
   return (
@@ -116,10 +120,10 @@ export default function ResourcesPage() {
             below. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Tools & market data"
-          titleTop="Buyer & seller"
-          titleBottom="resources"
-          lead="Calculators, market data, and guides for buying and selling in Central Oregon."
+          eyebrow="Central Oregon · Before you decide"
+          titleTop="Tools and reports"
+          titleBottom="in one place."
+          lead="Market reports by city, area guides, live activity, a four-home comparison, and the appreciation calculator."
           videoSrc={null}
           posterSrc="/images/kb/redmond-downtown-aerial.jpg"
         />
@@ -147,8 +151,8 @@ export default function ResourcesPage() {
         <section className="section" id="resource-grid" aria-label="Resources">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Plan your next move</span>
-              <h2 className="sec-title display">Guides, tools<br />and reports</h2>
+              <span className="sec-index">Six tools</span>
+              <h2 className="sec-title display">What is on<br />this page</h2>
             </div>
             <div
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
@@ -168,7 +172,7 @@ export default function ResourcesPage() {
                     {resource.description}
                   </p>
                   <span className="mt-auto inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
-                    Open resource <span className="arr">→</span>
+                    Open <span className="arr">→</span>
                   </span>
                 </Link>
               ))}

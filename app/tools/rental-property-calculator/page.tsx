@@ -38,12 +38,12 @@ const ogImage = `${siteUrl}/api/og?type=default`
 export const metadata: Metadata = {
   title: 'Rental Property Calculator',
   description:
-    'Run the numbers on any rental in Bend and Central Oregon. See monthly cash flow, cap rate, cash-on-cash return, and a long-term projection.',
+    'See whether rent covers the mortgage, taxes, insurance, and reserves on a Bend or Central Oregon rental. Cash flow, cap rate, cash-on-cash, and a long hold projection.',
   alternates: { canonical: `${siteUrl}/tools/rental-property-calculator` },
   openGraph: {
     title: 'Rental Property Calculator | Ryan Realty',
     description:
-      'See monthly cash flow, cap rate, cash-on-cash return, and a long-term projection for any rental property.',
+      'See whether rent covers the costs on a Central Oregon rental. Cash flow, cap rate, cash-on-cash return, and a long hold projection.',
     url: `${siteUrl}/tools/rental-property-calculator`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -135,10 +135,10 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
             Agent) are preserved as a dedicated CTA row below the hero. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Investor tools"
-          titleTop="Rental Property"
-          titleBottom="Calculator"
-          lead="Adjust price, financing, rent, and expenses to see monthly cash flow, cap rate, cash-on-cash return, and how equity builds over time."
+          eyebrow="Central Oregon · Before you buy a rental"
+          titleTop="Does the rent"
+          titleBottom="cover the costs?"
+          lead="Price, financing, rent, and expenses. You get cash flow, cap rate, cash-on-cash return, and how equity builds on a long hold."
           videoSrc={null}
           posterSrc="/images/lp/hero-pond.jpg"
         />

@@ -37,8 +37,8 @@ export async function buildSearchSlugMetadata({
     (subdivisionDisplayName ? (subdivisionDesc ?? getSubdivisionBlurb(subdivisionDisplayName)) : null) ??
     content?.metaDescription ??
     (preset
-      ? `Browse ${preset.label.toLowerCase()} in ${placeName}, Central Oregon. View listings and property details.`
-      : `Browse homes for sale in ${displayName}, Central Oregon. View listings, map, and property details.`)
+      ? `${preset.label} in ${placeName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`
+      : `Homes for sale in ${displayName}, Central Oregon. Live listings from the regional MLS, with price, size, and the map.`)
   const metaDesc = shareDescription(rawMetaDesc)
   const bannerUrl =
     city &&

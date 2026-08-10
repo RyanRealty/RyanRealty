@@ -139,7 +139,7 @@ export function KbActivity({
         {viewAllHref ? (
           <div className="sec-cta">
             <a href={viewAllHref} className="btn ghost">
-              {viewAllLabel ?? 'See all activity'} <span className="arr">→</span>
+              {viewAllLabel ?? 'See full activity feed'} <span className="arr">→</span>
             </a>
           </div>
         ) : null}

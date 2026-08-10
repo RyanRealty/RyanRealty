@@ -38,7 +38,7 @@ export const revalidate = 300
 export const metadata = pageMetadata({
   title: 'Buy a home in Central Oregon · Ryan Realty',
   description:
-    'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Live MLS data, and one broker from your first search to closing.',
+    'Homes for sale across Bend, Redmond, Sisters, Sunriver, and the towns around them. Live MLS data, and one broker from your first search to closing.',
   path: '/buy',
   ogImage: '/images/homepage/sisters-downtown-three-peaks.jpg',
   keywords: [
@@ -179,7 +179,7 @@ export default async function BuyPage() {
             type: 'webPage',
             name: 'Buy a home in Central Oregon · Ryan Realty',
             description:
-              'Search homes for sale across Bend, Redmond, Sisters, Sunriver, and surrounding communities. Live MLS data, and one broker from your first search to closing.',
+              'Homes for sale across Bend, Redmond, Sisters, Sunriver, and the towns around them. Live MLS data, and one broker from your first search to closing.',
             url: '/buy',
           },
           {
@@ -218,13 +218,13 @@ export default async function BuyPage() {
                 <span className="ln">Buy a home in</span>
               </span>
               <span className="reveal-mask">
-                <span className="ln indent">Central Oregon</span>
+                <span className="ln indent">Central Oregon.</span>
               </span>
             </h1>
             <div className="hero-sub-row">
               <p className="hero-sub">
                 Every active MLS listing in Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. The broker
-                who tours the home with you writes the offer and sits at the closing table.
+                who walks the house with you writes the offer and sits at the closing table.
               </p>
             </div>
             <nav className="flex flex-wrap gap-2.5 mt-5" aria-label="Buyer quick links">
@@ -246,7 +246,7 @@ export default async function BuyPage() {
             <div className="sec-head">
               <span className="sec-index">Why work with us</span>
               <h2 className="sec-title display" id="why-us-title">
-                The broker who shows you the home writes your offer.
+                The broker who walks the house writes your offer.
               </h2>
             </div>
             <div className="grid gap-6 sm:grid-cols-3" style={{ paddingTop: 'clamp(30px,4vw,46px)' }}>

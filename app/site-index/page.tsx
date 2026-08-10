@@ -37,7 +37,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 export const metadata: Metadata = pageMetadata({
   title: 'Site index',
   description:
-    'Every browse page on ryan-realty.com in one place. Cities, communities, subdivisions, and searches, ordered by live inventory.',
+    'Browse pages on ryan-realty.com in one place. Cities, communities, subdivisions, and searches, ordered by live inventory.',
   path: '/site-index',
 })
 

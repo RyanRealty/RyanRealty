@@ -53,14 +53,14 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const defaultOgImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Market Pulse',
+  title: 'Central Oregon market pulse',
   description:
-    'Live activity from the Central Oregon market. Every new listing, sold home, pending, and price drop. Filter by city and scroll.',
+    'New listings, sold homes, pending sales, and price cuts across Central Oregon as they hit the MLS. Filter by city.',
   alternates: { canonical: `${siteUrl}/pulse` },
   openGraph: {
-    title: 'Central Oregon Market Pulse | Ryan Realty',
+    title: 'Central Oregon market pulse | Ryan Realty',
     description:
-      'New listings, sold homes, price drops, and pending sales across Bend, Redmond, Sisters, Sunriver, and the rest of Central Oregon. Updated continuously.',
+      'New listings, sold homes, price cuts, and pending sales across Bend, Redmond, Sisters, Sunriver, and the rest of Central Oregon. Updated as they land.',
     url: `${siteUrl}/pulse`,
     type: 'website',
     siteName: 'Ryan Realty',
@@ -68,9 +68,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Central Oregon Market Pulse | Ryan Realty',
+    title: 'Central Oregon market pulse | Ryan Realty',
     description:
-      'Live MLS activity from Central Oregon: new listings, sold homes, price drops. Filter by city.',
+      'Live MLS activity from Central Oregon: new listings, sold homes, price cuts. Filter by city.',
     images: [defaultOgImage],
   },
 }
@@ -165,9 +165,13 @@ export default async function PulsePage() {
             medianDaysToPending: null,
           }}
           eyebrow="Bend · Oregon · Live MLS"
-          titleTop="The Central"
-          titleBottom="Oregon pulse"
-          lead="Every new listing, every sold home, every price drop. Live from the MLS, in order. Pick the cities you care about and scroll."
+          titleTop="What just listed,"
+          titleBottom="sold, or cut price."
+          lead={
+            regionSnapshot?.active_count != null
+              ? 'across Central Oregon. New listings, sold homes, pending sales, and price cuts as they hit the MLS.'
+              : 'New listings, sold homes, pending sales, and price cuts across Central Oregon as they hit the MLS.'
+          }
           videoSrc={null}
           posterSrc="/images/homepage/smith-rock-terrebonne.jpg"
         />

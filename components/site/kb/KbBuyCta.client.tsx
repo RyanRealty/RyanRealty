@@ -51,21 +51,21 @@ export function KbBuyCta({
   return (
     <section className="section buy-cta" id="buy" ref={root} aria-label={`Buy in ${communityName}`}>
       <div className="buy-cta-copy">
-        <span className="sec-index">For buyers</span>
+        <span className="sec-index">Buy in {communityName}</span>
         <h2 className="buy-cta-h display">
-          Ready to see
+          Homes for sale
           <br />
-          {communityName}?
+          in {communityName}
         </h2>
         <p className="buy-cta-p">
-          Browse every active listing in {communityName} or reach out to schedule a showing.
+          Every active MLS listing in {communityName}. Reach out when you want to walk one.
         </p>
         <div className="buy-cta-btns">
           <a href={listingsHref} className="btn" aria-label={`See all homes for sale in ${communityName}`}>
             See {communityName} homes <span className="arr" aria-hidden="true">→</span>
           </a>
-          <a href={contactHref} className="btn ghost" aria-label={`Request info on ${communityName}`}>
-            Request info
+          <a href={contactHref} className="btn ghost" aria-label={`Ask a broker about ${communityName}`}>
+            Ask a broker
           </a>
         </div>
       </div>

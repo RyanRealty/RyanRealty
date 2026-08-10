@@ -109,9 +109,9 @@ export default function EventsIndexPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Events"
-          titleTop="Central Oregon"
-          titleBottom="events"
-          lead={`${total} of the festivals, races, and seasonal events that anchor the year across Bend, Redmond, Sisters, and Sunriver. Pick one to see its confirmed dates and the homes for sale near the venue.`}
+          titleTop="Confirmed dates,"
+          titleBottom="homes by the venue."
+          lead={`${total} festivals, races, and seasonal events across Bend, Redmond, Sisters, and Sunriver. Each page has the next confirmed date and the homes for sale near the venue.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.events}
           statless

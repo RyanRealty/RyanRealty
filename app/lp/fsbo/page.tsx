@@ -32,14 +32,14 @@ import FsboLPForm from './FsboLPForm'
  * shell, so the navy/cream values are applied via Tailwind arbitrary values.
  */
 export const metadata: Metadata = {
-  title: 'Selling It Yourself? Smart. Here Is Backup | Ryan Realty',
+  title: 'Selling FSBO in Bend? Free Pricing Report | Ryan Realty',
   description:
     'Keep the sale yours. A free pricing report from a Bend broker: what your home should bring, who the buyer pool is, and where FSBO deals lose money.',
   robots: { index: false, follow: false },
   openGraph: {
-    title: 'Selling It Yourself? Smart. Here Is Backup.',
+    title: 'Selling FSBO in Bend? Free Pricing Report',
     description:
-      'A free pricing report from a Bend broker. Keep the sale yours, and you owe us nothing.',
+      'A free pricing report from a Bend broker. Keep the sale yours. You owe us nothing.',
     type: 'website',
   },
 }
@@ -158,12 +158,12 @@ export default function FsboLPPage() {
 
           {/* H1 — Amboqia display, Title Case (hero only) */}
           <h1 className="mt-4 font-display text-4xl uppercase leading-[0.92] tracking-[-0.01em] text-[#faf8f4] drop-shadow-sm sm:text-5xl lg:text-6xl">
-            Selling It Yourself? Smart. Here Is Backup.
+            Selling It Yourself? Here Is Pricing Backup.
           </h1>
 
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#faf8f4] drop-shadow-sm">
-            Keep the sale yours. We will tell you what your home should bring, who the buyer
-            pool is, and where for-sale-by-owner deals lose money. Free, and you owe us nothing.
+            Keep the sale yours. A free report on what your home should bring, who the buyer
+            pool is, and where for-sale-by-owner deals lose money. No listing agreement attached.
           </p>
 
           {/* Broker trust chip — hard-edge square frame */}
@@ -193,7 +193,7 @@ export default function FsboLPPage() {
           </div>
 
           <p className="mt-4 text-sm text-[#faf8f4]/75 drop-shadow-sm">
-            No listing agreement. No pitch call required. The report is yours either way.
+            No listing agreement. The report is yours either way.
           </p>
         </div>
       </section>
@@ -203,11 +203,11 @@ export default function FsboLPPage() {
         <div className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-6 sm:py-16">
           <ScrollReveal>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#faf8f4]/55">
-              The honest read
+              The cost of going solo
             </p>
             <p className="mt-4 font-display text-2xl uppercase leading-[0.95] tracking-[-0.01em] sm:text-3xl">
-              Plenty of owners sell on their own. The ones who net the most treat it like a
-              brokerage would.
+              You can sell on your own. The work is pricing, screening, showings, Oregon forms,
+              and closing. Most of the dollars move on the first ask and the negotiation.
             </p>
           </ScrollReveal>
         </div>
@@ -221,11 +221,11 @@ export default function FsboLPPage() {
               Side by side
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
-              The honest comparison
+              On your own vs with a broker
             </h2>
             <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
-              Each of these is doable on your own. The question is what your weekends are worth
-              and where the dollars actually move.
+              Each row is doable solo. The trade-off is your time, your weekend, and where the
+              sale price moves.
             </p>
           </ScrollReveal>
           <ScrollReveal delayMs={100}>
@@ -278,8 +278,8 @@ export default function FsboLPPage() {
               selling yourself. No listing agreement attached, no follow-up condition.
             </p>
             <p className="mt-4 text-base leading-relaxed text-[#102742]/70">
-              Why free? Because owners who get an honest number remember where it came from.
-              Some keep selling solo and do fine. Some call us later. Both are fine outcomes.
+              Some owners keep selling solo with the report. Some call later. Either way, the
+              report is yours.
             </p>
           </ScrollReveal>
           <ScrollReveal delayMs={100}>
@@ -377,12 +377,12 @@ export default function FsboLPPage() {
             <FAQ
               value="faq-catch"
               q="What is the catch on the free report?"
-              a="There is no condition attached. You get the report whether or not you ever talk to us again. Owners who get an honest number remember where it came from."
+              a="There is no condition attached. You get the report whether or not you ever talk to us again."
             />
             <FAQ
               value="faq-pitch"
-              q="Will you pressure me to list?"
-              a="No. The report arrives by email. If you want to talk it through, you call us. If we think you are positioned to keep selling solo, we will say so."
+              q="Do I have to list to get the report?"
+              a="No. The report arrives by email. If you want to talk it through, you call us. If you are better off selling solo, we will say so."
             />
             <FAQ
               value="faq-accuracy"

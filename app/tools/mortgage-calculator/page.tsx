@@ -35,11 +35,13 @@ const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
   title: 'Mortgage Calculator',
-  description: 'Estimate your monthly payment. Home price, down payment, interest rate, and loan term.',
+  description:
+    'Estimate your monthly house payment from price, down payment, interest rate, and loan term. Central Oregon tax and insurance defaults included.',
   alternates: { canonical: `${siteUrl}/tools/mortgage-calculator` },
   openGraph: {
     title: 'Mortgage Calculator | Ryan Realty',
-    description: 'Estimate your monthly payment. Home price, down payment, interest rate, and loan term.',
+    description:
+      'Estimate your monthly house payment from price, down payment, interest rate, and loan term. Central Oregon tax and insurance defaults included.',
     url: `${siteUrl}/tools/mortgage-calculator`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -101,10 +103,10 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
             Valuation) are preserved as a dedicated CTA row below the hero. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Buyer tools"
-          titleTop="Mortgage"
-          titleBottom="Calculator"
-          lead="Adjust home price, down payment, interest rate, and loan term to plan your purchase and estimate your monthly payment."
+          eyebrow="Central Oregon · Before you offer"
+          titleTop="What will the"
+          titleBottom="payment be?"
+          lead="Enter price, down payment, rate, and term. Taxes and insurance start at Central Oregon defaults you can change. The total is an estimate, not a lender quote."
           showSearch={false}
           videoSrc={null}
           posterSrc="/images/kb/redmond-downtown-aerial.jpg"

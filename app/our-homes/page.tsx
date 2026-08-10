@@ -42,12 +42,12 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Our Homes',
+  title: 'Homes listed by Ryan Realty · Central Oregon',
   description:
-    'Browse homes listed for sale by Ryan Realty. Our current listings across Bend, Redmond, Sisters, Sunriver and Central Oregon.',
+    'Current homes listed for sale by Ryan Realty across Bend, Redmond, Sisters, Sunriver, and Central Oregon. Live inventory from the regional MLS.',
   alternates: { canonical: `${siteUrl}/our-homes` },
   openGraph: {
-    title: 'Our Homes | Ryan Realty',
+    title: 'Homes listed by Ryan Realty · Central Oregon',
     url: `${siteUrl}/our-homes`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -116,10 +116,10 @@ export default async function OurHomesPage() {
             (View all listings / Sell with us) are preserved in the CTA row. */}
         <KbHero
           data={{ activeCount: listings.length || null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Listed by Ryan Realty"
-          titleTop="Homes listed"
-          titleBottom="by Ryan Realty"
-          lead="across Bend, Redmond, Sisters, Sunriver, and Central Oregon. Professional presentation, targeted outreach, and one broker accountable from listing to closing."
+          eyebrow="Central Oregon · Ryan Realty listings"
+          titleTop="Homes we have"
+          titleBottom="listed for sale"
+          lead="Active listings under Ryan Realty as the list office, across Bend, Redmond, Sisters, Sunriver, and the rest of Central Oregon. One broker from the listing agreement through close."
           videoSrc={null}
           posterSrc="/images/homepage/bend-drake-park-aerial.jpg"
         />
@@ -177,8 +177,8 @@ export default async function OurHomesPage() {
             <section className="section" id="our-homes-count" aria-label="Featured homes">
               <div className="wrap">
                 <div className="sec-head">
-                  <span className="sec-index">Available now</span>
-                  <h2 className="sec-title display">Featured homes<br />for sale</h2>
+                  <span className="sec-index">On the market</span>
+                  <h2 className="sec-title display">Current listings<br />for sale</h2>
                 </div>
                 <p
                   className="mono-num"
@@ -214,20 +214,20 @@ export default async function OurHomesPage() {
 
         {/* "Ready to list your home?" seller CTA block — kept verbatim, restyled
             in the KB register. Links to /sell. */}
-        <section className="section" id="our-homes-sell" aria-label="Ready to list your home">
+        <section className="section" id="our-homes-sell" aria-label="List your home">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Sell with us</span>
-              <h2 className="sec-title display">Ready to list<br />your home?</h2>
+              <span className="sec-index">Sell with Ryan Realty</span>
+              <h2 className="sec-title display">List your home<br />on this page</h2>
             </div>
             <div className="max-w-2xl pt-6">
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', lineHeight: 1.55 }}>
-                Get the full plan: a CMA with the comps behind the price, professional photo and video,
-                and one broker from listing to close.
+                The listing fee is 2.5% to 3.5% of the sale price. You get a CMA with the comps
+                behind the price, professional photo and video, and one broker from listing to close.
               </p>
               <div className="sec-cta">
                 <Link href="/sell" className="btn alt">
-                  Sell with us <span className="arr">→</span>
+                  See the listing plan <span className="arr">→</span>
                 </Link>
               </div>
             </div>

@@ -51,11 +51,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const imageUrl = await getReportImageUrl(report.image_storage_path)
   return {
     title: report.title,
-    description: `Central Oregon real estate market report: ${report.period_start} – ${report.period_end}. Pending and closed sales by city.`,
+    description: `Central Oregon weekly market report, ${report.period_start} to ${report.period_end}. Pending and closed sales by city.`,
     alternates: { canonical: reportUrl },
     openGraph: {
       title: report.title,
-      description: `Weekly market report: pending and closed sales by city. ${report.period_start} – ${report.period_end}.`,
+      description: `Pending and closed sales by city for ${report.period_start} to ${report.period_end}.`,
       url: reportUrl,
       type: 'article',
       ...(imageUrl && { images: [{ url: imageUrl, width: 1200, height: 336, alt: report.title }] }),
@@ -63,7 +63,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: report.title,
-      description: `Weekly market report: ${report.period_start} – ${report.period_end}.`,
+      description: `Pending and closed sales by city for ${report.period_start} to ${report.period_end}.`,
       // Object form with explicit width/height (matches openGraph above). A BARE
       // STRING here makes Next 16 fetch the URL to probe its dimensions during
       // metadata resolution; that fetch failed on the Vercel runtime and threw
@@ -93,7 +93,7 @@ export default async function ReportPage({ params }: Props) {
     '@context': 'https://schema.org',
     '@type': 'Report',
     name: report.title,
-    description: `Central Oregon real estate market report: ${report.period_start} – ${report.period_end}. Pending and closed sales by city.`,
+    description: `Central Oregon weekly market report, ${report.period_start} to ${report.period_end}. Pending and closed sales by city.`,
     url: reportUrl,
     datePublished: report.created_at,
     ...(imageUrl && { image: imageUrl }),
@@ -171,7 +171,7 @@ export default async function ReportPage({ params }: Props) {
               )}
 
               <p className="mt-8 text-sm" style={{ color: 'var(--navy-70)' }}>
-                Share this report via the button above to X (Twitter), Facebook, LinkedIn, or email.
+                If this is useful, pass it along. The share button sends it to X, Facebook, LinkedIn, or email.
               </p>
             </article>
           </div>

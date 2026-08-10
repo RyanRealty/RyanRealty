@@ -1200,13 +1200,12 @@ export default async function TetherowLandingPage() {
               className="mb-5 font-display text-[clamp(36px,5vw,56px)] font-semibold leading-[1.05] tracking-[-0.015em] text-[color:var(--rr-cream)]"
               style={{ fontFamily: 'var(--rr-font-display)' }}
             >
-              What would your Tetherow home sell for today? Free, no pressure, no follow-up unless
-              you ask.
+              What would your Tetherow home sell for today?
             </h2>
             <p className="mb-4 text-[17px] leading-[1.65] text-[rgba(250,248,244,0.85)]">
-              A 12-page value report on your home, built against your sub-neighborhood, your floor
-              plan range, your view category, and your HOA tier. Anchored to the {soldCount}{' '}
-              Tetherow homes that have sold in the last 365 days.
+              Free value report. No follow-up unless you ask. Built against your sub-neighborhood,
+              floor plan range, view category, and HOA tier. Anchored to the {soldCount}{' '}
+              Tetherow homes sold in the last 365 days.
             </p>
             <ul className="mt-6 list-none space-y-3 p-0">
               {[

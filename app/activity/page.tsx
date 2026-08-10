@@ -45,20 +45,23 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Live Market Activity',
-  description: 'Track new listings, price drops, pending sales, and closed activity across Central Oregon.',
+  title: 'What just moved on the list',
+  description:
+    'New listings, price cuts, pending sales, and closed sales across Central Oregon, as they hit the MLS.',
   alternates: { canonical: `${siteUrl}/activity` },
   openGraph: {
-    title: 'Live Market Activity | Ryan Realty',
-    description: 'Track listing activity signals across Central Oregon neighborhoods.',
+    title: 'What just moved on the list | Ryan Realty',
+    description:
+      'New listings, price cuts, pending sales, and closed sales across Central Oregon neighborhoods.',
     url: `${siteUrl}/activity`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary',
-    title: 'Live Market Activity | Ryan Realty',
-    description: 'Track listing activity signals across Central Oregon neighborhoods.',
+    title: 'What just moved on the list | Ryan Realty',
+    description:
+      'New listings, price cuts, pending sales, and closed sales across Central Oregon neighborhoods.',
     images: [ogImage],
   },
 }
@@ -107,9 +110,9 @@ export default async function ActivityPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Live Market Activity',
+    name: 'What just moved on the list',
     url: `${siteUrl}/activity`,
-    description: 'Recent listing activity events across Central Oregon.',
+    description: 'New listings, price cuts, pending sales, and closed sales across Central Oregon.',
   }
 
   return (
@@ -141,9 +144,9 @@ export default async function ActivityPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Live MLS"
-          titleTop="Live Market"
-          titleBottom="Activity"
-          lead="New listings, price changes, pending sales, and closed updates across Central Oregon."
+          titleTop="What just moved"
+          titleBottom="on the list."
+          lead="New listings, price cuts, pending sales, and closed sales across Central Oregon."
           videoSrc={null}
           posterSrc="/images/homepage/bend-drake-park-aerial.jpg"
         />
@@ -173,7 +176,7 @@ export default async function ActivityPage() {
           <KbActivity
             items={activityItems}
             eyebrow="Live · MLS"
-            heading="Latest market activity"
+            heading="Latest moves on the list"
             viewAllHref={listingsBrowsePath()}
             viewAllLabel="View all listings"
           />

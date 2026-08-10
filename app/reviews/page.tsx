@@ -34,12 +34,12 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const metadata: Metadata = {
-  title: 'Client Reviews',
+  title: `${TESTIMONIALS.length} client reviews · Ryan Realty`,
   description:
-    `${TESTIMONIALS.length} reviews from buyers and sellers across Central Oregon.`,
+    `${TESTIMONIALS.length} verified Google reviews from buyers and sellers across Central Oregon. Full text on this page.`,
   alternates: { canonical: `${siteUrl}/reviews` },
   openGraph: {
-    title: 'Client Reviews | Ryan Realty',
+    title: `${TESTIMONIALS.length} client reviews | Ryan Realty`,
     url: `${siteUrl}/reviews`,
     type: 'website',
     images: [{ url: ogImage, width: 1200, height: 630 }],
@@ -123,10 +123,10 @@ export default function ReviewsPage() {
             below the hero so it stays one tap away. */}
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Client reviews"
-          titleTop="What our"
-          titleBottom="clients say"
-          lead={`${TESTIMONIALS.length} reviews from buyers and sellers across Central Oregon, on the process, the communication, and how deals came together.`}
+          eyebrow="Ryan Realty · Google reviews"
+          titleTop={`${TESTIMONIALS.length} reviews.`}
+          titleBottom="All five stars."
+          lead="From buyers and sellers across Central Oregon. Quoted as written, with names."
           videoSrc={null}
           posterSrc="/images/homepage/bend-drake-park-aerial.jpg"
           showSearch={false}
@@ -162,13 +162,13 @@ export default function ReviewsPage() {
           <div className="wrap">
             <div className="sec-head kb-reviews-head">
               <div>
-                <span className="sec-index">In their words</span>
+                <span className="sec-index">Verified on Google</span>
                 <h2 id="testimonials-heading" className="sec-title display">
-                  Client reviews
+                  The full set
                 </h2>
               </div>
               <a className="kb-reviews-all" href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer">
-                Read all on Google <span className="arr">→</span>
+                Open on Google <span className="arr">→</span>
               </a>
             </div>
 
@@ -209,29 +209,29 @@ export default function ReviewsPage() {
           </div>
         </section>
 
-        {/* "Talk to a Ryan Realty broker" — preserved CTA block. */}
+        {/* Bottom CTA — next step after reading reviews. */}
         <section className="section" id="cta" aria-labelledby="cta-heading">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Buy or sell in Central Oregon</span>
+              <span className="sec-index">Next step</span>
               <h2 id="cta-heading" className="sec-title display">
-                Talk to a<br />Ryan Realty broker
+                Call a broker<br />directly
               </h2>
             </div>
             <div className="max-w-2xl pt-6">
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', lineHeight: 1.55 }}>
-                Buy or sell in Central Oregon with a broker you reach directly.
+                The broker who answers is the broker who works the deal.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-6">
                 <Link href="/contact" className="btn alt">
-                  Contact us <span className="arr">→</span>
+                  Send a message <span className="arr">→</span>
                 </Link>
                 <Link
                   href="/team"
                   className="btn alt"
                   style={{ background: 'transparent', color: 'var(--navy)' }}
                 >
-                  Meet the team <span className="arr">→</span>
+                  Broker profiles <span className="arr">→</span>
                 </Link>
               </div>
             </div>

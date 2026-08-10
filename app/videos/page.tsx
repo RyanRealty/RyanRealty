@@ -64,11 +64,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const city = resolveCity((await searchParams).city)
   const title = city
-    ? `${city} homes for sale with video tours | Central Oregon`
-    : 'Homes for sale with video tours | Bend, Oregon'
+    ? `Video tours of ${city} homes for sale | Central Oregon`
+    : 'Video tours of homes for sale | Bend, Oregon'
   const description = city
-    ? `Watch video tours of homes for sale in ${city}, Oregon. See the flow, the light, and the lot before you book a showing.`
-    : 'Watch video tours of homes for sale across Bend, Redmond, Sisters, and Central Oregon. See the flow, the light, and the lot before you book a showing.'
+    ? `Full video tours of homes for sale in ${city}, Oregon. Walk the floor plan, the light, and the lot before you book a showing.`
+    : 'Full video tours of homes for sale across Bend, Redmond, Sisters, and Central Oregon. Walk the floor plan, the light, and the lot before you book a showing.'
   const canonical = city ? `${siteUrl}/videos?city=${encodeURIComponent(city)}` : `${siteUrl}/videos`
   return {
     title,
@@ -80,7 +80,7 @@ export async function generateMetadata({
       url: canonical,
       siteName: 'Ryan Realty',
       type: 'website',
-      images: [{ url: ogImage, width: 1200, height: 630, alt: 'Homes for sale with video tours | Ryan Realty' }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: 'Video tours of homes for sale | Ryan Realty' }],
     },
     twitter: { card: 'summary_large_image', images: [ogImage] },
   }
@@ -112,10 +112,16 @@ export default async function VideosPage({
     .filter((x): x is HideAwareVideoItem => x !== null)
   const cards: ListingCardData[] = videoItems.map((v) => v.card)
 
-  const lede = city
-    ? `Current ${city} listings with a full video tour. Press play and walk the home from anywhere.`
-    : 'Current Central Oregon listings with a full video tour. Press play and walk the home from anywhere, then book a showing when one feels right.'
-  const heading = city ? `Watch ${city} homes on video` : 'Watch homes on video'
+  // KbHero prefixes with "N homes with a video tour" when count > 0, so the
+  // lead continues that sentence. At zero the prefix drops and the lead stands alone.
+  const lede = cards.length > 0
+    ? city
+      ? `in ${city} right now. Press play and walk the floor plan, the light, and the lot.`
+      : 'across Bend, Redmond, Sisters, and Central Oregon. Press play and walk the floor plan, the light, and the lot.'
+    : city
+      ? `No ${city} listings have a full video tour right now.`
+      : 'No listings have a full video tour right now.'
+  const heading = city ? `Video tours of ${city} homes` : 'Video tours of homes for sale'
   const canonicalUrl = city ? `${siteUrl}/videos?city=${encodeURIComponent(city)}` : `${siteUrl}/videos`
 
   // Make a card URL absolute for schema.org (it prefers absolute URLs). MLS /
@@ -257,9 +263,10 @@ export default async function VideosPage({
             type. activeCount surfaces the live count of video-tour homes. */}
         <KbHero
           data={{ activeCount: cards.length, medianListPrice: null, medianDaysToPending: null }}
+          countNoun={cards.length === 1 ? 'home with a video tour' : 'homes with a video tour'}
           eyebrow={city ? `${city} · Oregon · Video tours` : 'Central Oregon · Video tours'}
-          titleTop={city ? `Watch ${city}` : 'Watch homes'}
-          titleBottom="on video"
+          titleTop={city ? `Walk ${city} homes` : 'Walk the house'}
+          titleBottom="before you go."
           lead={lede}
           videoSrc={null}
           posterSrc="/images/lp/hero-pond.jpg"
@@ -273,7 +280,7 @@ export default async function VideosPage({
             <div className="sec-head">
               <span className="sec-index">Filter by city</span>
               <h2 className="sec-title display">
-                Where to<br />press play
+                Pick a city
               </h2>
             </div>
             <nav aria-label="Filter video tours by city" className="flex flex-wrap items-center gap-2 pt-6">
@@ -321,7 +328,7 @@ export default async function VideosPage({
                 {cards.length} {cards.length === 1 ? 'home' : 'homes'} · video tour
               </span>
               <h2 className="sec-title display">
-                {city ? `${city} homes` : 'Tour the homes'}
+                {city ? `${city} homes on video` : 'Homes on video'}
               </h2>
             </div>
 
@@ -335,10 +342,10 @@ export default async function VideosPage({
                     : 'No listings have a video tour right now.'}
                 </p>
                 <p className="mt-3 text-sm text-muted-foreground">
-                  New tours are added as listings come on the market.
+                  New tours land here as homes come on the market.
                 </p>
                 <Link href="/homes-for-sale" className="btn alt mt-5">
-                  Browse every home for sale <span className="arr">→</span>
+                  See every home for sale <span className="arr">→</span>
                 </Link>
               </div>
             )}

@@ -89,7 +89,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!post) return { title: 'Post Not Found | Ryan Realty', robots: { index: false, follow: true } }
 
   const title = post.seo_title?.trim() || `${post.title} | Ryan Realty Blog`
-  const description = post.seo_description?.trim() || post.excerpt?.trim() || 'Central Oregon real estate insights from Ryan Realty.'
+  const description =
+    post.seo_description?.trim() ||
+    post.excerpt?.trim() ||
+    'Central Oregon housing market writing from Ryan Realty.'
   const canonical = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
   // Pre-rendered static OG cards (hosted on Supabase storage) are served directly so
   // social crawlers that don't reliably fetch the dynamic /api/og endpoint (notably X)
@@ -301,7 +304,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                 style={{ borderTop: `1px solid ${NAVY_12}` }}
               >
                 <p className="font-medium" style={{ color: NAVY_70, fontSize: '.95rem' }}>
-                  Found this helpful? Share it with someone who could use it.
+                  Share this post.
                 </p>
                 <ShareButton
                   url={pageUrl}

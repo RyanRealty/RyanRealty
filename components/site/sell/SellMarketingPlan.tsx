@@ -102,7 +102,7 @@ export function SellMarketingPlan() {
         <SellPlanExplorer />
 
         <p className="mt-4 text-sm text-muted-foreground">
-          A free valuation comes with a broker walking you through all three.{' '}
+          A written valuation includes a broker walking you through all three.{' '}
           <TextLink href={BROKER_HREF} tone="primary" underline="on-hover">
             Or talk to a broker first
           </TextLink>

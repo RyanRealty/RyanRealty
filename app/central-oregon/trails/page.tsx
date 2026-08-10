@@ -95,9 +95,9 @@ export default function TrailsIndexPage() {
         <KbHero
           data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
           eyebrow="Central Oregon · Trails"
-          titleTop="Trails"
-          titleBottom="Central Oregon"
-          lead={`${total} of the hiking and mountain-bike trails that define Central Oregon, from the butte in the middle of Bend to the alpine lakes under South Sister and the walls at Smith Rock. Pick a trail to see what it is, where the trailhead is, and the homes for sale nearby.`}
+          titleTop="Trailheads,"
+          titleBottom="and homes nearby."
+          lead={`${total} hiking and mountain-bike trails, from Pilot Butte in Bend to the alpine lakes under South Sister and the walls at Smith Rock. Each page has the trailhead, the facts, and the homes for sale nearby.`}
           videoSrc={null}
           posterSrc={CONTENT_HERO_IMAGES.trails}
           statless

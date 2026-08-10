@@ -69,15 +69,15 @@ const HERO_VARIANTS: Record<string, HeroVariant> = {
   nopressure: {
     img: '/images/lp/hero-pond.jpg',
     alt: 'A neighborhood pond and homes in Bend, Oregon',
-    h1: 'No Pressure. Just the Real Number.',
-    sub: 'A real number from a local broker, whenever you are ready to think about selling.',
+    h1: 'Just the Real Number.',
+    sub: 'A number from closed sales near you, built by a Bend broker. No listing agreement attached.',
   },
 }
 const DEFAULT_HERO: HeroVariant = {
   img: '/images/lp/hero-banner.jpg',
   alt: 'Aerial view of the Old Mill District smokestacks and the Deschutes River in Bend, Oregon',
   h1: 'What Would Your Home Bring Today?',
-  sub: 'See what buyers are paying for homes like yours, from recent Central Oregon sales. A real number from a local broker, not an algorithm.',
+  sub: 'What buyers are paying for homes like yours, from recent Central Oregon sales. A number from a local broker, not an algorithm.',
 }
 
 // Two seller-side reviews for the brokers section (approved Figma LP 1, S3).
@@ -280,7 +280,7 @@ export default async function SellerHomeValuePage({
 
           {/* Micro-assurance */}
           <p className="mt-4 text-sm text-[#faf8f4]/75 drop-shadow-sm">
-            No pitch, no obligation. Plenty of owners check their number a year before they sell.
+            No listing agreement. Plenty of owners check their number a year before they sell.
           </p>
         </div>
       </section>
@@ -303,8 +303,7 @@ export default async function SellerHomeValuePage({
               The brokers behind your sale
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base text-[#102742]/70">
-              Your comps are pulled and your questions are answered by a licensed Oregon
-              broker, not a call center.
+              A licensed Oregon broker pulls the comps and answers your questions. Not a call center.
             </p>
           </ScrollReveal>
           <div className="mt-10 grid grid-cols-3 gap-3 sm:gap-8">
@@ -524,7 +523,7 @@ export default async function SellerHomeValuePage({
             <FAQ
               value="faq-cost"
               q="What does the report cost?"
-              a="Nothing. The comparative market analysis is free, and there is no listing agreement attached to it. We send it because owners who get an honest number tend to remember where it came from."
+              a="Nothing. The comparative market analysis is free, and there is no listing agreement attached to it."
             />
             <FAQ
               value="faq-timing"
@@ -553,10 +552,10 @@ export default async function SellerHomeValuePage({
               One field
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
-              Ready for your number?
+              Enter the address for your number
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-[#faf8f4]/85">
-              Enter the address. A broker takes it from there.
+              A broker builds the report from closed sales near you and sends it within one business day.
             </p>
           </ScrollReveal>
           <div className="mt-8 text-left">

@@ -510,29 +510,26 @@ export default async function HousingMarketGeoPage({ params }: Props) {
 
     // -------------------------------------------------------------------------
     // KbHero lede — data-driven from the city pulse (§0). Same pattern as region.
+    // Do NOT restate activeCount / median / days-to-pending: KbHero already
+    // renders those from the data prop ("N homes for sale {lead} Median list…").
     // -------------------------------------------------------------------------
     const ledeParts: string[] = []
     if (pulse && pulse.activeCount > 0) {
-      ledeParts.push(
-        `${pulse.activeCount.toLocaleString()} active single-family homes in ${cityName}.`,
-      )
-    }
-    if (pulse?.medianListPrice != null) {
-      const r = Math.round(pulse.medianListPrice / 1000) * 1000
-      ledeParts.push(`Median list price $${r.toLocaleString()}.`)
+      ledeParts.push(`in ${cityName}.`)
     }
     if (pulse?.monthsOfSupply != null) {
       // Classify the RAW value, not the rounded display value (design-audit
       // P2, CLAUDE.md §0 — see app/housing-market/page.tsx for the same fix).
+      // MoS band is a formula fact (CLAUDE.md §0 thresholds), not a broker quote.
       const raw = pulse.monthsOfSupply
-      let verdict = 'balanced market'
-      if (raw <= 4) verdict = "seller's market"
-      else if (raw >= 6) verdict = "buyer's market"
-      ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply: ${verdict}.`)
+      let band = 'balanced'
+      if (raw <= 4) band = "seller's"
+      else if (raw >= 6) band = "buyer's"
+      ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply. A ${band} market.`)
     }
     const lede =
       ledeParts.join(' ') ||
-      `Single-family market data for ${cityName}, Oregon, updated every 15 minutes from Oregon Data Share.`
+      `Single-family inventory and pace for ${cityName}, Oregon, refreshed every 15 minutes.`
 
     // -------------------------------------------------------------------------
     // Sibling city tiles — KbExploreTowns (other Central Oregon cities).
@@ -597,8 +594,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
               medianDaysToPending: pulse?.medianDaysToPending ?? null,
             }}
             eyebrow={`${cityName} · Oregon`}
-            titleTop={cityName}
-            titleBottom="market report"
+            titleTop={`${cityName},`}
+            titleBottom="as the numbers read."
             lead={lede}
           />
 
@@ -780,8 +777,8 @@ export default async function HousingMarketGeoPage({ params }: Props) {
       {/* Hero — DisplayHeading H1 in Amboqia via HeroBlock.
           lede is data-driven from pulse (market_pulse_live). */}
       <HeroBlock
-        headline={`${geoName} housing market`}
-        lede={subdivisionLede || `Single-family market data for ${geoName}, Oregon.`}
+        headline={`${geoName}, as the numbers read`}
+        lede={subdivisionLede || `Single-family inventory and pace for ${geoName}, Oregon.`}
         photo={{ src: cityHero(citySlug).src, alt: cityHero(citySlug).alt }}
         minHeight={480}
       />

@@ -55,10 +55,10 @@ export function KbFooter({
             the visitor is already on the get-in-touch page (design-audit P3). */}
         {hideCta ? null : (
         <div className="foot-cta">
-          <h2 className="display">Let&rsquo;s<br />talk.</h2>
+          <h2 className="display">A broker<br />writes back.</h2>
           <p className="sub">
             Buying, selling, or still deciding which town fits. Tell us the street. We bring the
-            comps and the number it sells for.
+            comps and the number a home sells for.
           </p>
           <div className="btn-row">
             {listingKey ? (
@@ -79,7 +79,7 @@ export function KbFooter({
                   {VALUATION_FORM.label} <span className="arr">→</span>
                 </Link>
                 <a href="/homes-for-sale" className="btn ghost">
-                  Browse homes
+                  See homes for sale
                 </a>
               </>
             )}
@@ -89,7 +89,7 @@ export function KbFooter({
         <div className="foot-cols">
           <div className="foot-brand">
             <img className="logo-img" src="/images/brand/logo-white.png" alt="Ryan Realty" />
-            <p>Central Oregon real estate across Bend, Redmond, Sisters, Sunriver, La Pine and Terrebonne.</p>
+            <p>Live MLS for Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne.</p>
             <div className="foot-contact">
               <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
               <a href="mailto:matt@ryan-realty.com">matt@ryan-realty.com</a>

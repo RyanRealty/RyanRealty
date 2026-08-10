@@ -23,11 +23,11 @@ import ScrollReveal from '@/components/landing/ScrollReveal'
 export const metadata: Metadata = {
   title: 'First Matches in 30 Minutes | Bend Listing Alerts | Ryan Realty',
   description:
-    'Tell us what you are looking for. A Ryan Realty broker pulls listings that match, within 30 minutes, not the next business day.',
+    'Tell us what you are looking for. A Ryan Realty broker pulls matching Central Oregon listings, usually within 30 minutes during business hours.',
   robots: { index: false, follow: false },
   openGraph: {
     title: 'First Matches in 30 Minutes',
-    description: 'Get matched Central Oregon listings in your inbox within 30 minutes.',
+    description: 'Matched Central Oregon listings in your inbox, usually within 30 minutes.',
     type: 'website',
     images: [
       {
@@ -313,8 +313,8 @@ export default async function BuyerLPPage() {
               First Matches in 30 Minutes
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-[#faf8f4] drop-shadow-sm">
-              Tell us what you are looking for. A Ryan Realty broker pulls listings that match,
-              within 30 minutes, not the next business day.
+              Tell us what you are looking for. A Bend broker pulls listings that match, usually
+              within 30 minutes during business hours. Overnight requests go out the next morning.
             </p>
 
             {/* Live inventory pill — only renders when the count is available */}
@@ -329,7 +329,7 @@ export default async function BuyerLPPage() {
               </p>
             ) : (
               <p className="mt-6 hidden text-sm text-[#faf8f4]/85 drop-shadow-sm sm:block">
-                Matched by a licensed Bend broker from real local listings. No spam, no pressure.
+                Matched by a licensed Bend broker from local MLS listings. Matches only. Unsubscribe anytime.
               </p>
             )}
           </div>
@@ -353,11 +353,11 @@ export default async function BuyerLPPage() {
                 Active in Bend right now
               </p>
               <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
-                New homes hit the market every week
+                Live in Bend today
               </h2>
               <p className="mt-4 max-w-2xl text-base text-[#102742]/70">
-                These are live in Bend today, pulled straight from the MLS. Homes like these reach
-                your inbox the morning they list. No portal delay, no pay-to-rank ranking.
+                Pulled from the MLS. When a home that matches your criteria lists, it reaches your
+                inbox the morning it hits the market.
               </p>
             </ScrollReveal>
             <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -552,10 +552,10 @@ export default async function BuyerLPPage() {
               Bend · The market
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
-              We watch this market every day
+              Bend single-family, current figures
             </h2>
             <p className="mt-4 max-w-2xl text-base text-[#faf8f4]/80">
-              We publish the Central Oregon market report every month. Same data, no spin.
+              From the same MLS data behind our monthly Central Oregon market report.
             </p>
           </ScrollReveal>
           {/* Brutalist KPI grid — hard cream hairlines, no rounded cards. */}
@@ -649,10 +649,10 @@ export default async function BuyerLPPage() {
               Three fields
             </p>
             <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] sm:text-4xl">
-              Your first matches are 30 minutes out
+              Start your listing alerts
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-[#faf8f4]/85">
-              Three fields. A real broker on the other end.
+              Three fields. A broker sends the first matches, usually within 30 minutes.
             </p>
           </ScrollReveal>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

@@ -67,10 +67,10 @@ export const revalidate = 1800
 // ---- Metadata --------------------------------------------------------------
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Price Drop Radar, Central Oregon',
+  title: 'Price cuts · Central Oregon homes, last 7 days',
   description:
-    'Track every active home in Central Oregon where the seller has cut the asking price. ' +
-    'Updated daily from the regional MLS. Browse Bend, Redmond, Sisters, Sunriver, and surrounding areas.',
+    'Active single-family homes in Central Oregon where the seller cut the asking price in the last 7 days. ' +
+    'Current price, original list price, and drop percentage from the regional MLS. Bend, Redmond, Sisters, Sunriver, and nearby cities.',
   path: '/price-drops',
   keywords: [
     'price reduced homes Central Oregon',
@@ -336,10 +336,10 @@ export default async function PriceDropsRegionPage() {
     },
     {
       type: 'dataset',
-      name: 'Price Drop Radar, Central Oregon SFR',
+      name: 'Central Oregon price cuts, last 7 days',
       description:
-        'Active single-family homes in Central Oregon where the seller has reduced the asking price ' +
-        'in the last 7 days. Sourced daily from the regional MLS (ORMLS) via the Ryan Realty platform.',
+        'Active single-family homes in Central Oregon where the seller reduced the asking price ' +
+        'in the last 7 days. Sourced from the regional MLS (ORMLS).',
       url: pageUrl,
       dateModified: fetchedAt,
       spatialCoverageName: 'Central Oregon',
@@ -357,7 +357,7 @@ export default async function PriceDropsRegionPage() {
     },
     {
       type: 'webPage',
-      name: 'Price Drop Radar, Central Oregon Real Estate',
+      name: 'Price cuts on Central Oregon homes, last 7 days',
       description: `${total} active homes in Central Oregon with a price reduction in the last 7 days.`,
       url: pageUrl,
     },
@@ -383,11 +383,11 @@ export default async function PriceDropsRegionPage() {
             medianListPrice: null,
             medianDaysToPending: null,
           }}
-          eyebrow="Central Oregon · Live MLS data"
-          titleTop="Price Drop"
-          titleBottom="Radar"
-          countNoun="price drops"
-          lead="across Central Oregon in the last 7 days."
+          eyebrow="Central Oregon · last 7 days · MLS"
+          titleTop="Price cuts"
+          titleBottom="on active homes"
+          countNoun="price cuts"
+          lead="Active single-family homes where the seller reduced the asking price in the last 7 days. Figures come from the regional MLS."
           videoSrc={null}
           posterSrc="/images/kb/sunriver-deschutes-river.jpg"
         />
@@ -496,10 +496,10 @@ export default async function PriceDropsRegionPage() {
             totalActive={total}
             fitToFeatures={false}
             showRegionMarkers
-            eyebrow="Central Oregon"
-            title={`${total} price\nreductions`}
-            subtitle={`Every home with a price cut in the last 7 days.`}
-            countNoun="price drops"
+            eyebrow="Central Oregon · last 7 days"
+            title={`${total} price\ncuts`}
+            subtitle={`Active single-family homes with a seller-initiated list-price reduction.`}
+            countNoun="price cuts"
           />
         )}
 
@@ -591,16 +591,16 @@ export default async function PriceDropsRegionPage() {
         <section className="section" id="weekly-report" aria-label="Listing alerts">
           <div className="wrap">
             <div className="sec-head">
-              <span className="sec-index">Stay ahead of the market</span>
+              <span className="sec-index">Listing alerts</span>
               <h2 className="sec-title display">
-                Get listing<br />alerts
+                New homes that<br />match your search
               </h2>
             </div>
             <div className="max-w-xl mt-4">
               <p className="text-muted-foreground">
-                Save a search and choose a weekly cadence. We&rsquo;ll email you new homes
-                matching your criteria as they list. This page stays live for the current
-                week&rsquo;s price cuts.
+                Save a search and pick a weekly cadence. We email you new homes that match
+                your criteria as they list. This page stays live for the current week&rsquo;s
+                price cuts.
               </p>
               <Link
                 href="/lp/buyer-listing-alerts"
@@ -672,8 +672,8 @@ export default async function PriceDropsRegionPage() {
 
       <CTABar
         eyebrow="Ryan Realty"
-        title="Talk to a Ryan Realty broker."
-        body="We pull price-reduction data every 30 minutes from the regional MLS. If a seller cut their price, we know about it before most buyers do."
+        title="Talk to a broker about a cut price."
+        body="Price reductions on this page refresh from the regional MLS on a 30-minute cycle. A broker can walk the comps and tell you whether the new ask is still high, about right, or already soft."
         primary={{ href: '/contact', label: 'Talk to a broker' }}
         secondary={{ href: `tel:${CONTACT.phoneDirectTel}`, label: `Call ${CONTACT.phoneDirect}` }}
         tone="navy"
