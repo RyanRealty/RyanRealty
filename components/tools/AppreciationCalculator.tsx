@@ -67,6 +67,10 @@ export default function AppreciationCalculator({ initialAnnualRate }: Props) {
               value={annualRate}
               onChange={(event) => setAnnualRate(event.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Default {DEFAULT_APPRECIATION_RATE_PCT}% is a scenario input you can change, not a live
+              Central Oregon market rate.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="years-held">Years held</Label>

@@ -79,16 +79,16 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 13. [~] **D2 F01** Homepage — static I (seo-shell + structure); browser open
 14. [~] **D3 F02** Search + listing — static I (capture/save/restyle wired); outcome cold
 15. [~] **D4 F03** Areas — static I (city/community/nbhd capture)
-16. [ ] **D5 F04** Lifestyle under Areas — not deep-audited
+16. [x] **D5 F04** Lifestyle under Areas — **2026-08-10 static I:** parks/schools/trails/events/venues/golf + Areas nav; detail→nearby homes; parks M3 band. Browser V open (L1 403).
 17. [~] **D6 F05** Market — static I (size/composition/explorer)
-18. [ ] **D7 F06** Tools — not deep-audited
+18. [x] **D7 F06** Tools — **2026-08-10 static I:** mortgage/rental `getCalculatorDefaults`; appreciation scenario rate labeled. Browser V open.
 19. [~] **D8 F07** Sell / valuation — static I (B3 path verified)
-20. [ ] **D9 F08** Content / AEO — not deep-audited
-21. [ ] **D10 F09** Trust / brokerage — not deep-audited
+20. [x] **D9 F08** Content / AEO — **2026-08-10 static I:** blog/FAQ hubs; no hardcoded annual volume in templates. Browser V open.
+21. [x] **D10 F09** Trust / brokerage — **2026-08-10 static I:** about/team/reviews/contact/join. Browser V open.
 22. [~] **D11 F10** Paid LPs — static I (B5 aligned)
 23. [~] **D12 F11** Account / saved — portal + ActivityFeed exist; volume cold
-24. [ ] **D13 F12** Auth & compliance public — not deep-audited
-25. [ ] **D14 Close all B / high I tickets** from D1–D13 (G3)
+24. [x] **D13 F12** Auth & compliance public — **2026-08-10 static I:** login/signup/legal/unsubscribes. Browser V open.
+25. [~] **D14 Close all B / high I tickets** — **2026-08-10:** no high-severity **B** in D5/D7/D9/D10/D13 static audit; residual **I** = prod browser V (L1 403)
 
 ### Block E — Design / UI craft (G7 / P5) — **was in plan; now on spine**
 
@@ -106,7 +106,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 33. [~] **F1 Sticky / mid-browse capture** — bar shipped; not full habit system
 34. [~] **F2 Personal feed / return loop** — **signed-in** `/account` ActivityFeed + “new since” insights exist; guest habit feed not built
 35. [~] **F3 Save + alert as default product behavior** — surfaces default on search/listing (B1/B2); not yet product-default identity for all guests
-36. [ ] **F4 Demand signals / next-step coach** (as product allows without creepy overreach)
+36. [x] **F4 Demand signals / next-step coach** — **2026-08-10:** listing `ListingAlertCoach` (5s dwell soft bar → `#listing-like-alerts`). Search has SaveSearchButton.
 
 ### Block G — Measurement maturity (G6)
 
@@ -145,7 +145,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block K — Voice residual (Layer B only)
 
-60. [~] **K1 Buffett Layer B residual inventory** — full rewrite was SEO-rejected in shell; finish body inventory under Layer A law
+60. [x] **K1 Buffett Layer B residual inventory** — **2026-08-10:** `BUFFETT_LAYER_B_INVENTORY.md`
 61. [x] **K2 No re-sweep of four retired shape rules** — **policy locked** in SESSION_INTENT_SSOT (aphorism / meaning-narration / sermon / obvious restatement; VOICE.md 2026-08-06)
 
 ### Block L — Proof & ship hygiene
@@ -157,8 +157,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 ### Block M — Authority flywheel (G8) — still part of 10× plan
 
 65. [x] **M1 AEO FAQs from real cubes only** — **2026-08-10:** hub FAQ appends mart size + composition when `getCoMarketAnnual(2024)` present (§0)
-66. [ ] **M2 Content engine pulls volume/composition from cubes**
-67. [ ] **M3 Lifestyle × homes joins where data exists**
+66. [x] **M2 Content engine pulls volume/composition from cubes** — **2026-08-10:** `content-market-claims.mjs` + market-report-blog Step 4a + content_engine Step 3
+67. [x] **M3 Lifestyle × homes joins where data exists** — **2026-08-10:** detail nearby→search; parks index M3 band → homes-for-sale
 
 ---
 
@@ -168,7 +168,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 |-------|--------|
 | **NOW** | **E3 UI craft city** (full pass; light ship done) or **E4 listing** |
 | **THEN** | E4–E7 UI craft · Matt: G3 + L1 browser · I6 lock |
-| **NOTE** | E1+E2 shipped 2026-08-10; E3 light only. **not 10×** (alerts still ~6). Blockers: L1/J4 host 403, G3 Matt UI, I6 Matt lock. |
+| **NOTE** | D5/D7/D9–D13 static I + F4/M2/M3/K1 + E1/E2 shipped. **not 10×** (alerts ~6). Blockers: L1/J4 403, G3, I6. D14 residual = browser V. |
 
 **UI craft (Block E)** stays on this queue and is owed — polish path after capture/honesty has solid shells.
 

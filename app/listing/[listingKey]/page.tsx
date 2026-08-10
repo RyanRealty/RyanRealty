@@ -37,6 +37,7 @@ import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistor
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
+import { ListingAlertCoach } from '@/components/site/listing-detail/ListingAlertCoach.client'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
@@ -589,6 +590,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
           listPrice={listing.listPrice}
           beds={listing.beds}
         />
+        {/* F4 soft next-step coach — 5s dwell, links to #listing-like-alerts; no dark patterns */}
+        <ListingAlertCoach city={listing.city} />
         <KbFooter towns={[]} listingKey={listing.listingKey} />
       </SmoothScrollProvider>
     </main>

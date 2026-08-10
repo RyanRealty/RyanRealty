@@ -146,6 +146,33 @@ export default function ParksIndexPage() {
           ))
         )}
 
+        {/* M3 lifestyle × homes — index cross-link pattern (details already join nearby homes) */}
+        {cities.length > 0 ? (
+          <section className="section about" id="parks-homes" aria-label="Homes near parks">
+            <div className="wrap">
+              <div className="sec-head">
+                <span className="sec-index">Next</span>
+                <h2 className="sec-title display">Homes near open space</h2>
+              </div>
+              <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
+                Every park page shows the active homes nearby on a map. Or start from{' '}
+                <Link className="parks-inline-link" href="/homes-for-sale">
+                  Central Oregon homes for sale
+                </Link>
+                ,{' '}
+                <Link className="parks-inline-link" href="/search">
+                  search with filters
+                </Link>
+                , or open a city such as{' '}
+                <Link className="parks-inline-link" href="/search?city=Bend">
+                  Bend
+                </Link>
+                .
+              </p>
+            </div>
+          </section>
+        ) : null}
+
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>

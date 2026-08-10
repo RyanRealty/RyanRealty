@@ -114,8 +114,9 @@ two formats, ask Matt one clarifying question before proceeding.
 
 **Step 3.  Research**
 Pull all data the format skill requires before touching the BEATS array:
-- Market stats: Supabase `listings` table + Spark API (per CLAUDE.md data accuracy rules)
-- Listing data: Spark API (`SPARK_API_BASE_URL` + `SPARK_API_KEY`)
+- **Annual volume / composition (M2):** `node scripts/analytics/content-market-claims.mjs --year=<YYYY> --type=all --json` → `analytics_mart_market_annual` (same as site DAL `getCoMarketAnnual`). Do **not** invent sold-count or $ volume; if the script fails, omit the annual claim.
+- **Monthly city pulse:** `market_pulse_live` + `market_stats_cache` (and Spark reconcile when required by CLAUDE.md §0)
+- Listing data: Spark API (`SPARK_API_BASE_URL` + `SPARK_API_KEY`) via DAL where the app already wraps it
 - News: WebSearch (24-72h window)
 - Generate `citations.json` stub.  one entry per figure, source named
 

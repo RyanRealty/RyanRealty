@@ -30,15 +30,15 @@
 | F01 home | I | static: page + KbSell + Layer A H1 locked by ci:seo-shell |
 | F02 search | I | SearchAlertCapture + SaveSearchButton wired; outcome cold |
 | F03 areas | I | city + community + nbhd capture; browser V open |
-| F04 lifestyle | O | under Areas; not deep-audited this grind |
+| F04 lifestyle | I | static 2026-08-10: Areas nav + parks/schools/trails/events/venues/golf; nearby homes; parks M3 band; browser V open |
 | F05 Market | I | size + composition + history explorer mart/RPC path |
-| F06 Tools | O | not deep-audited this grind |
+| F06 Tools | I | static 2026-08-10: mortgage/rental app_config defaults; appreciation scenario label; browser V open |
 | F07 sell | I | /sell + /sell/valuation ValuationForm present |
-| F08 content | O | not deep-audited this grind |
-| F09 trust | O | not deep-audited this grind |
+| F08 content | I | static 2026-08-10: blog/FAQ wired; annual claims → cubes (M2); browser V open |
+| F09 trust | I | static 2026-08-10: about/team/reviews/contact/join; browser V open |
 | F10 LPs | I | buyer-listing-alerts + seller LPs exist |
 | F11 Account | I | portal ActivityFeed + saved searches insights exist; volume cold |
-| F12 auth | O | not deep-audited this grind |
+| F12 auth | I | static 2026-08-10: auth + legal public routes present; browser V open |
 | F13 | X | |
 | F14 analytics | V | marts, competition desk, aliases, explorer cache path |
 ## Conversion
@@ -52,6 +52,18 @@
 | CO closed 2024 (mart) | 5707 / $3.931B | analytics_mart_market_annual region all |
 
 ## Session notes (newest first)
+
+### 2026-08-10 D5 D7 D9 D10 D13 D14 + F4 M2 M3 K1
+- **D5 F04 Lifestyle (I):** Areas nav: parks/schools/trails/events/venues/golf LP. Details → nearby homes `/search?city=`. Schools fair-housing safe. No high **B**.
+- **D7 F06 Tools (I):** mortgage/rental `getCalculatorDefaults`; appreciation 4.5% scenario labeled. No high **B**.
+- **D9 F08 Content (I):** blog/FAQ; templates no hardcoded annual volume. No high **B**.
+- **D10 F09 Trust (I):** about/team/reviews/contact/join. No high **B**.
+- **D13 F12 Auth (I):** login/signup/legal/unsubscribes. No high **B**.
+- **D14 [~]:** No high-severity **B**; residual browser V (L1 403).
+- **F4 [x]:** `ListingAlertCoach` 5s dwell soft bar → `#listing-like-alerts`.
+- **M2 [x]:** `content-market-claims.mjs` (2024 5707/$3.931B) + skill gates.
+- **M3 [x]:** Parks index “Homes near open space” cross-link.
+- **K1 [x]:** `BUFFETT_LAYER_B_INVENTORY.md`.
 
 ### 2026-08-10 B3 B5 G4 H7 H8 M1 K2 batch
 - **B3:** Code-verified ValuationForm path: `insertValuationRequest` + FUB/CRM + `trackEvent('generate_lead')` + Meta CAPI + `fireLeadGenerated`. Hero CTA → `#valuation-form` + `scroll-mt-24`; SmoothScrollProvider Lenis hash scroll; `/sell` form-first + prominent link to `/sell/valuation`. No invented numbers.

@@ -103,3 +103,27 @@ describe('listing-detail CTA row accessible names', () => {
     expect(html).toMatch(/Get alerts for homes like this/)
   })
 })
+
+describe('F4 ListingAlertCoach source contract', () => {
+  const { readFileSync } = require('node:fs') as typeof import('node:fs')
+  const { join } = require('node:path') as typeof import('node:path')
+  const root = join(__dirname, '../../..')
+  const coach = readFileSync(
+    join(root, 'components/site/listing-detail/ListingAlertCoach.client.tsx'),
+    'utf8',
+  )
+  const page = readFileSync(join(root, 'app/listing/[listingKey]/page.tsx'), 'utf8')
+
+  it('is a soft coach: dwell timer + dismiss + anchor, no auto-form', () => {
+    expect(coach).toMatch(/DWELL_MS\s*=\s*5000/)
+    expect(coach).toMatch(/#listing-like-alerts/)
+    expect(coach).toMatch(/Not now/)
+    expect(coach).toMatch(/sessionStorage/)
+    expect(coach).not.toMatch(/submitSearchAlertSignup/)
+  })
+
+  it('is wired on the listing page next to ListingLikeThisAlerts', () => {
+    expect(page).toMatch(/ListingAlertCoach/)
+    expect(page).toMatch(/ListingLikeThisAlerts/)
+  })
+})
