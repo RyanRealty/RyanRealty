@@ -28,8 +28,8 @@ export function DownloadDeliverableButton({
           setErr(null)
           start(async () => {
             const res = await signDeliverableForDownload({ actionId, filename })
-            if (!res.ok || !res.url) {
-              setErr(res.error ?? 'Could not sign download')
+            if (!res.ok) {
+              setErr(res.error || 'Could not sign download')
               return
             }
             // Open signed URL in the same tab (download attribute is best-effort
