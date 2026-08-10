@@ -86,6 +86,33 @@ node scripts/analytics/bootstrap-dim-office.mjs
 
 ---
 
+## I4 — Ryan Realty brand share (list + buy)
+
+**Code:** `lib/data/analytics/getRyanBrandShare.ts`  
+**Surface:** `/admin/analytics/competition` (amber “Ryan Realty brand share” panel)
+
+### Methodology (`ryan_brand_alias_rollup_v1`)
+
+1. **Alias set** (identity only — never invents volume):
+   - Prefer `analytics_dim_office` rows with `is_ryan_realty = true` (`canonical_name` ∪ `aliases`).
+   - Else curated group(s) from `data/analytics/office-brand-aliases.json` with `is_ryan_realty: true`.
+   - Fallback only if both missing: fixed legal-name list + `/ryan\s*realty/i` family regex.
+2. **Match rule:** exact case-insensitive MLS office string **or** normalized key (strip punctuation). No fuzzy edit-distance.
+3. **List side:** sum `analytics_mart_office_share_annual` rows for `side=list` whose `office_name` matches the alias set (live aggregate fallback over `ListOfficeName` if mart empty).
+4. **Buy side:** same for `side=buy` / `buyer_office_name`.
+5. **Share %:** Ryan total volume (or units) ÷ market total for the year from `analytics_mart_market_annual` (region `central-oregon`, `type_scope=all`), same closed CTE + CO service-area as all analytics.
+6. **Does not invent numbers.** If no matched strings, share is **0%** with empty matched list — never a placeholder share.
+7. **Admin only.** Not for public competitor claims (I6). Strategy-grade for our own list/buy truth.
+
+### Known caveats
+
+- Mart rows are still **string-level** until office mart rebuild joins `office_id`. Alias rollup sums matching strings after the fact.
+- Buy-side fill depends on MLS `buyer_office_name`; missing buy office ≠ non-Ryan buy.
+- Dual-office closes count once on each side when both names match (standard sides math).
+
+
+---
+
 ## Review cadence
 
 - Revisit groups when EDA or mart shows a new high-volume string variant.

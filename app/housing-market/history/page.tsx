@@ -7,6 +7,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { analyzeClosedSales } from '@/lib/data/analytics/analyzeClosedSales'
+import {
+  getCoFeatureAnnual,
+  CO_FEATURE_LABELS,
+  type CoFeatureKey,
+} from '@/lib/data/analytics/getCoFeatureAnnual'
 import { ANALYTICS_CO_CITIES_PROPER, ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -45,14 +50,18 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
   const minPrice = one(sp.min) ? Number(one(sp.min)) : undefined
   const maxPrice = one(sp.max) ? Number(one(sp.max)) : undefined
 
-  const result = await analyzeClosedSales({
-    year,
-    city: city || undefined,
-    propertyType: propertyType && 'ABCD'.includes(propertyType) ? propertyType : undefined,
-    fireplace: fireplace || undefined,
-    minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
-    maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
-  })
+  const [result, featureCube] = await Promise.all([
+    analyzeClosedSales({
+      year,
+      city: city || undefined,
+      propertyType: propertyType && 'ABCD'.includes(propertyType) ? propertyType : undefined,
+      fireplace: fireplace || undefined,
+      minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
+      maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
+    }),
+    // H6: precomputed amenity strip for the selected year (region, all types)
+    getCoFeatureAnnual({ year }).catch(() => null),
+  ])
 
   const years = [2016, 2018, 2020, 2022, 2023, 2024, 2025]
   const types = ['A', 'B', 'C', 'D'] as const
@@ -147,6 +156,43 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
               </div>
             </div>
           </div>
+
+          {featureCube && featureCube.rows.length > 0 ? (
+            <div className="mt-10">
+              <h2 className="text-lg font-medium">Amenity share — CO {year}</h2>
+              <p className="mt-1 text-sm opacity-80">
+                Precomputed feature cubes (typed columns only). Region, all property types.
+                Not filtered by the form above.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {featureCube.rows.map((row) => (
+                  <div key={row.featureKey} className="border border-current/20 p-4">
+                    <div className="text-xs uppercase opacity-70">
+                      {CO_FEATURE_LABELS[row.featureKey as CoFeatureKey] ?? row.featureKey}
+                    </div>
+                    <div className="mt-1 text-2xl font-semibold tabular-nums">
+                      {row.soldCount.toLocaleString('en-US')}
+                    </div>
+                    <div className="mt-1 text-sm opacity-80 tabular-nums">
+                      {money(row.totalVolume)}
+                      {row.medianClose != null
+                        ? ` · med $${Math.round(row.medianClose).toLocaleString('en-US')}`
+                        : ''}
+                    </div>
+                    {row.unitSharePct != null ? (
+                      <div className="mt-1 text-xs opacity-70 tabular-nums">
+                        {row.unitSharePct.toFixed(1)}% of CO closes
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-xs opacity-60">
+                Source {featureCube.source}. Fireplace = fireplace_yn or fireplaces_total &gt; 0;
+                garage = garage_yn; association = association_yn (HOA).
+              </p>
+            </div>
+          ) : null}
 
           <p className="mt-8 text-xs opacity-70">
             {ANALYTICS_METHODOLOGY_V1}. Aggregates only. As of{' '}

@@ -2,6 +2,7 @@
  * /admin/analytics/competition — CO closed-sales office + agent share (MVP)
  * Uses admin v2 + analytics DataGrid (ReportGrid primitive).
  * I5: office query param drills agents to that office string.
+ * I4: Ryan brand alias rollup (list + buy) from dim_office / catalog.
  * Competitor names are admin-only (I6 public naming locked).
  */
 import Link from 'next/link'
@@ -10,6 +11,7 @@ import { DataGrid } from '../_components/v2/DataGrid'
 import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { getCoOfficeShare } from '@/lib/data/analytics/getCoOfficeShare'
 import { getCoAgentShare } from '@/lib/data/analytics/getCoAgentShare'
+import { getRyanBrandShare } from '@/lib/data/analytics/getRyanBrandShare'
 import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
 
 export const dynamic = 'force-dynamic'
@@ -47,7 +49,7 @@ export default async function CompetitionAnalyticsPage({
   const officeFilter =
     typeof sp.office === 'string' && sp.office.trim() ? sp.office.trim() : null
 
-  const [share, market, agents] = await Promise.all([
+  const [share, market, agents, ryanBrand] = await Promise.all([
     getCoOfficeShare({ year, side, limit: 40 }),
     getCoMarketAnnual({ year, typeScope: 'all' }),
     getCoAgentShare({
@@ -56,6 +58,7 @@ export default async function CompetitionAnalyticsPage({
       limit: officeFilter ? 50 : 30,
       officeName: officeFilter ?? undefined,
     }),
+    getRyanBrandShare({ year }),
   ])
 
   const ryanRows = share.rows.filter((r) => /ryan/i.test(r.officeName))
@@ -148,22 +151,60 @@ export default async function CompetitionAnalyticsPage({
         </div>
       </div>
 
-      {ryanRows.length > 0 ? (
-        <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm">
-          <strong>Ryan string match:</strong>{' '}
-          {ryanRows.map((r) => (
-            <span key={r.officeName} className="mr-4">
-              #{r.rank} {r.officeName} — {r.volumeSharePct.toFixed(2)}% $ / {r.sidesCount}{' '}
-              sides
-            </span>
-          ))}
+      {/* I4 — strategy-grade Ryan brand share (alias rollup, list + buy) */}
+      <div className="rounded border border-amber-300 bg-amber-50 p-4 text-sm space-y-3">
+        <div>
+          <strong>Ryan Realty brand share ({year})</strong>
+          <span className="ml-2 text-xs text-neutral-600">
+            alias rollup · {ryanBrand.aliasSource} · source {ryanBrand.source}
+          </span>
         </div>
-      ) : (
-        <div className="rounded border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
-          No /ryan/i office in top {share.rows.length} this side/year. Buy-side and aliases
-          still needed for a true share (I4).
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded border border-amber-200 bg-white p-3">
+            <div className="text-xs uppercase tracking-wide text-neutral-500">List side</div>
+            <div className="mt-1 text-xl font-semibold tabular-nums">
+              {ryanBrand.list.volumeSharePct.toFixed(3)}% $
+            </div>
+            <div className="mt-1 text-neutral-700 tabular-nums">
+              {ryanBrand.list.sidesCount.toLocaleString('en-US')} sides ·{' '}
+              {money(ryanBrand.list.totalVolume)} · {ryanBrand.list.unitSharePct.toFixed(3)}% units
+            </div>
+          </div>
+          <div className="rounded border border-amber-200 bg-white p-3">
+            <div className="text-xs uppercase tracking-wide text-neutral-500">Buy side</div>
+            <div className="mt-1 text-xl font-semibold tabular-nums">
+              {ryanBrand.buy.volumeSharePct.toFixed(3)}% $
+            </div>
+            <div className="mt-1 text-neutral-700 tabular-nums">
+              {ryanBrand.buy.sidesCount.toLocaleString('en-US')} sides ·{' '}
+              {money(ryanBrand.buy.totalVolume)} · {ryanBrand.buy.unitSharePct.toFixed(3)}% units
+            </div>
+          </div>
         </div>
-      )}
+        <p className="text-xs text-neutral-600 leading-relaxed">
+          Canonical <code>{ryanBrand.canonicalName}</code>. Matched list strings:{' '}
+          {ryanBrand.list.matchedOfficeNames.length
+            ? ryanBrand.list.matchedOfficeNames.join('; ')
+            : 'none'}
+          . Matched buy strings:{' '}
+          {ryanBrand.buy.matchedOfficeNames.length
+            ? ryanBrand.buy.matchedOfficeNames.join('; ')
+            : 'none'}
+          . Market base: {(ryanBrand.list.marketSoldCount || market.soldCount).toLocaleString('en-US')}{' '}
+          closes / {money(ryanBrand.list.marketVolume || market.totalVolume || 0)}. See{' '}
+          <code>DIM_OFFICE_ENTITY_RESOLUTION.md</code> § I4.
+        </p>
+        {ryanRows.length > 0 ? (
+          <p className="text-xs text-neutral-600">
+            String rows in current top-{share.rows.length} ({side}):{' '}
+            {ryanRows.map((r) => (
+              <span key={r.officeName} className="mr-3">
+                #{r.rank} {r.officeName} {r.volumeSharePct.toFixed(2)}%
+              </span>
+            ))}
+          </p>
+        ) : null}
+      </div>
 
       <DataGrid
         label={`Office share ${year} ${side}`}

@@ -122,9 +122,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 43. [x] **H3 Public size strip**
 44. [~] **H4 Public composition** — shipped; verify prod
 45. [x] **H5 History explorer** — mart/result_cache first; SQL aggregate RPC on miss only; **no Node listings paging**
-46. [ ] **H6 Feature cubes / amenity-era queries**
+46. [x] **H6 Feature cubes / amenity-era queries** — **2026-08-10:** `analytics_mart_feature_annual` + rebuild + `getCoFeatureAnnual` + history amenity strip (fireplace/garage/association typed only)
 47. [x] **H7 Report factory R01–R15** — **2026-08-10 registry** `REPORT_FACTORY_REGISTRY.md` (R01 size shipped public, R14 competitive admin; others planned)
-48. [~] **H8 Inventory snapshots** — **2026-08-10 skeleton** `scripts/analytics/snapshot-active-inventory.mjs` (JSON counts by city; no warehouse table yet)
+48. [x] **H8 Inventory snapshots** — **2026-08-10:** `analytics_inventory_snapshot` + script write + daily cron `snapshot-active-inventory` 08:30 UTC
 49. [x] **H9 Cron rebuild marts**
 
 ### Block I — Competitive intelligence (U9)
@@ -132,7 +132,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 50. [~] **I1 Office list/buy ranks admin** — string-level shipped
 51. [x] **I2 Agent ranks** — market-wide top-N + per-office drill (I5)
 52. [x] **I3 Brand aliases / entity resolution** — `data/analytics/office-brand-aliases.json` + bootstrap; methodology `DIM_OFFICE_ENTITY_RESOLUTION.md` (share mart still string-level until office_id join)
-53. [ ] **I4 Ryan buy-side + alias truth** (strategy-grade share)
+53. [x] **I4 Ryan buy-side + alias truth** — **2026-08-10:** `getRyanBrandShare` list+buy alias rollup on competition desk; methodology in DIM_OFFICE § I4
 54. [x] **I5 Per-office agent drill + CSV export** — `?office=` + `/admin/analytics/competition/export`
 55. [ ] **I6 Public competitor naming** — **BLOCKED Matt lock** (policy)
 

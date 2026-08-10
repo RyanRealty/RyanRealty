@@ -2,12 +2,17 @@
 /**
  * rebuild-analytics-marts.mjs — populate analytics_mart_* from closed CO sales
  *
- * Requires migration 20260810120000_analytics_closed_foundation.sql applied
+ * Requires migrations:
+ *   20260810120000_analytics_closed_foundation.sql
+ *   20260810150000_analytics_feature_inventory.sql (H6 feature cubes)
  * OR will fail clearly. Uses service role.
  *
  * Usage:
  *   node scripts/analytics/rebuild-analytics-marts.mjs --year 2024
  *   node scripts/analytics/rebuild-analytics-marts.mjs --from 2016 --to 2025
+ *
+ * Marts: market_annual (region+city), office_share_annual (list+buy), feature_annual
+ * Feature keys (typed columns only): fireplace, garage, association (HOA)
  *
  * Parity: 2024 CO sold_count + total_volume must match EDA within 0.5%.
  */
@@ -59,6 +64,18 @@ function median(nums) {
   return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2
 }
 
+/** H6 typed feature predicates — real columns only (§0). High-fill amenity flags. */
+const FEATURE_KEYS = ['fireplace', 'garage', 'association']
+
+function hasFeature(row, key) {
+  if (key === 'fireplace') {
+    return row.fireplace_yn === true || Number(row.fireplaces_total) > 0
+  }
+  if (key === 'garage') return row.garage_yn === true
+  if (key === 'association') return row.association_yn === true
+  return false
+}
+
 async function fetchClosedYear(year) {
   const rows = []
   let from = 0
@@ -67,7 +84,7 @@ async function fetchClosedYear(year) {
     const { data, error } = await sb
       .from('listings')
       .select(
-        'ClosePrice,City,PropertyType,ListOfficeName,buyer_office_name,CloseDate',
+        'ClosePrice,City,PropertyType,ListOfficeName,buyer_office_name,CloseDate,fireplace_yn,fireplaces_total,garage_yn,association_yn',
       )
       .ilike('StandardStatus', '%Closed%')
       .gte('ClosePrice', 1000)
@@ -233,6 +250,47 @@ async function rebuildYear(year) {
       if (error) throw new Error(`office mart ${side}: ${error.message}`)
     }
     console.log(`office ${side} rows`, ranked.length, 'top', ranked[0]?.office_name, ranked[0]?.volume_share_pct?.toFixed?.(2))
+  }
+
+  // H6: Feature / amenity annual cubes (typed columns only)
+  const marketN = buckets.all.length
+  const marketVol = buckets.all.reduce((a, b) => a + b, 0)
+  const featureRows = []
+  for (const feature_key of FEATURE_KEYS) {
+    const prices = []
+    for (const r of rows) {
+      const p = Number(r.ClosePrice)
+      if (!Number.isFinite(p)) continue
+      if (hasFeature(r, feature_key)) prices.push(p)
+    }
+    featureRows.push({
+      geo_type: 'region',
+      geo_slug: 'central-oregon',
+      year,
+      type_scope: 'all',
+      feature_key,
+      sold_count: prices.length,
+      total_volume: prices.reduce((a, b) => a + b, 0),
+      median_close: median(prices),
+      mean_close: prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null,
+      market_sold_count: marketN,
+      market_volume: marketVol,
+      unit_share_pct: marketN ? (100 * prices.length) / marketN : null,
+      volume_share_pct: marketVol ? (100 * prices.reduce((a, b) => a + b, 0)) / marketVol : null,
+      methodology: 'closed_cte+service_area_v1+feature_typed_v1',
+      computed_at: new Date().toISOString(),
+    })
+  }
+  const { error: fErr } = await sb.from('analytics_mart_feature_annual').upsert(featureRows, {
+    onConflict: 'geo_type,geo_slug,year,type_scope,feature_key',
+  })
+  if (fErr) {
+    console.warn('feature mart upsert skipped:', fErr.message)
+  } else {
+    console.log(
+      'feature mart',
+      featureRows.map((r) => `${r.feature_key}=${r.sold_count}`).join(' '),
+    )
   }
 
   // Parity log vs known EDA 2024

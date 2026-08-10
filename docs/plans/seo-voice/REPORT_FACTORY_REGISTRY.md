@@ -12,9 +12,9 @@
 | R04 | City size $ by year | city × year | history explorer city filter + city mart grain | **Partial** |
 | R05 | Price distribution / bands | CO/city × year | Planned | Open |
 | R06 | DOM / months of supply | geo × month | Existing pulse paths | Prior |
-| R07 | Amenity class (e.g. fireplace) | CO × year | history explorer RPC | **Partial** (H5 RPC) |
+| R07 | Amenity class (e.g. fireplace) | CO × year | `analytics_mart_feature_annual` + history strip | **Shipped** H6 (fireplace/garage/association) |
 | R08 | New vs resale | CO × year | Planned (H6 cube) | Open |
-| R09 | Inventory snapshot active | city × day | H8 skeleton script | Open (skeleton) |
+| R09 | Inventory snapshot active | city × day | `analytics_inventory_snapshot` + daily cron | **Shipped** H8 warehouse |
 | R10 | List vs sale gap | geo × month | Planned | Open |
 | R11 | Seasonal volume | month-of-year | Planned | Open |
 | R12 | Neighborhood depth | nbhd × year | Planned | Open |
@@ -22,6 +22,6 @@
 | R14 | Competitive office share | office × year × side | `/admin/analytics/competition` | **Shipped** admin |
 | R15 | Competitive agent share | agent × year | admin agents + office drill | **Shipped** admin |
 
-**Next builds:** R05 bands, R07 feature cubes (H6), R09 daily inventory warehouse (after H8 skeleton), brand-merged share on R14 via office_id join.
+**Next builds:** R05 bands, R08 new vs resale, brand-merged competitor share on R14 via office_id join (Ryan brand rollup I4 shipped).
 
-**Ops:** Mart rebuild cron `rebuild-analytics-marts`; inventory skeleton `scripts/analytics/snapshot-active-inventory.mjs`.
+**Ops:** Mart rebuild cron `rebuild-analytics-marts` (market + office + H6 feature cubes); inventory warehouse cron `snapshot-active-inventory` → `analytics_inventory_snapshot`.

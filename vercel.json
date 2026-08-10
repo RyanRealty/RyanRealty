@@ -182,6 +182,10 @@
       "schedule": "15 8 * * *"
     },
     {
+      "path": "/api/cron/snapshot-active-inventory",
+      "schedule": "30 8 * * *"
+    },
+    {
       "path": "/api/cron/refresh-market-stats",
       "schedule": "0 7 * * *"
     },
