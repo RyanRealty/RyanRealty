@@ -147,9 +147,9 @@ If all three are unset: build the draft anyway. Surface the blockers to Matt in 
 
 Per CLAUDE.md §0, every figure in the post traces to a query run in this session. Never reuse numbers from a prior run or the payload without re-querying.
 
-### 4a — Annual volume / composition (M2 cube gate — mandatory when claimed)
+### 4a. Annual volume / composition (M2 cube gate, mandatory when claimed)
 
-If the post claims **annual sold count, total dollar volume, or property-type mix** for Central Oregon (or "how big was the market last year"), pull **only** from the analytics mart — the same path as site DAL `getCoMarketAnnual`:
+If the post claims **annual sold count, total dollar volume, or property-type mix** for Central Oregon (or "how big was the market last year"), pull **only** from the analytics mart, the same path as site DAL `getCoMarketAnnual`:
 
 ```bash
 node scripts/analytics/content-market-claims.mjs --year=2024 --type=all --json
@@ -158,9 +158,9 @@ node scripts/analytics/content-market-claims.mjs --year=2024 --type=all --json
 - Source table: `analytics_mart_market_annual` (`geo_type=region`, `geo_slug=central-oregon`)
 - Site twin: `getCoMarketAnnual({ year, typeScope })` in `lib/data/analytics/getCoMarketAnnual.ts`
 - If the script exits non-zero or `ok: false`: **omit the annual claim**. Do not invent volume or hand-SQL raw `listings` for annual aggregates in this skill.
-- Monthly pulse medians / DOM / inventory are **not** replaced by this cube — use 4b below.
+- Monthly pulse medians / DOM / inventory are **not** replaced by this cube. Use 4b below.
 
-### 4b — Monthly city pulse (primary for month-window posts)
+### 4b. Monthly city pulse (primary for month-window posts)
 
 Primary source: `market_pulse_live` and `market_stats_cache`.
 

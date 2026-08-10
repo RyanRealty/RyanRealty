@@ -53,6 +53,12 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 H6 + H8 upgrade + I4
+- **H6 Feature cubes:** migration `20260810150000_analytics_feature_inventory.sql` → `analytics_mart_feature_annual`. Keys: **fireplace**, **garage**, **association** (HOA) — typed high-fill only. Rebuild in `rebuild-analytics-marts.mjs`. DAL `getCoFeatureAnnual`. Public strip on `/housing-market/history`. 2024: fireplace=3589 garage=4381 association=2866; market parity 5707 / $3.931B.
+- **H8 Inventory warehouse:** `analytics_inventory_snapshot` + script upsert + cron `/api/cron/snapshot-active-inventory` 08:30 UTC. First snapshot ~3376 active CO.
+- **I4 Ryan buy-side truth:** `getRyanBrandShare` list+buy alias rollup on competition desk. Methodology `DIM_OFFICE_ENTITY_RESOLUTION.md` § I4. No invented shares. 2024 list ≈ 5 sides / 0.033% $; buy matched none (honest 0).
+- **Commit:** `663ddab2`.
+
 ### 2026-08-10 D5 D7 D9 D10 D13 D14 + F4 M2 M3 K1
 - **D5 F04 Lifestyle (I):** Areas nav: parks/schools/trails/events/venues/golf LP. Details → nearby homes `/search?city=`. Schools fair-housing safe. No high **B**.
 - **D7 F06 Tools (I):** mortgage/rental `getCalculatorDefaults`; appreciation 4.5% scenario labeled. No high **B**.
@@ -70,7 +76,7 @@
 - **B5:** Buyer LP band + FAQ: same free `listing_alerts` product as `/search` and `/cities/bend`.
 - **G4:** MEASUREMENT_DUAL_SOURCE §7b — FP+GSC primary permanent; GA4 supplementary; not waiting for parity.
 - **H7:** `docs/plans/seo-voice/REPORT_FACTORY_REGISTRY.md` R01–R15 status table.
-- **H8:** Skeleton `scripts/analytics/snapshot-active-inventory.mjs` (JSON by city; no table yet).
+- **H8:** Skeleton shipped earlier; upgraded same day to warehouse table (see H6+H8+I4 note above).
 - **M1:** `/housing-market` FAQ appends mart size + composition from `getCoMarketAnnual(2024)` when present.
 - **K2:** SESSION_INTENT_SSOT — never re-sweep four retired shape rules (VOICE.md 2026-08-06).
 - **Pointer next:** A3 or D1 (prod 403 may block browser V).
