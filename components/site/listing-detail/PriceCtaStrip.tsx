@@ -141,6 +141,7 @@ export function PriceCtaStrip({
       if (res.needsAuth) {
         // Signed-out: stash the intent + send them to sign in (and back), so the
         // save→account capture path completes itself on return (RC7).
+        // hydration-safe: only runs from the Save click handler, never during render.
         redirectToLoginForSave(listing.listingKey)
         return
       }

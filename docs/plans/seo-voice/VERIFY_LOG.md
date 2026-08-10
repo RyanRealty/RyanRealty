@@ -203,3 +203,7 @@
   - Seller LP skipped (budget 682, no headroom without extract).
 - **Gates:** `ci:file-size-budget` ✓ · `ci:brand-voice` ✓ · `ci:voice-constructions` ✓ · design-tokens clean on E6/E7 paths (pre-existing sell-path token debt untouched).
 - **Pointer next:** E5 sell (or E3 city full).
+
+### 2026-08-10 E4 code ship (listing components)
+- **Code commit:** listing-only surfaces (PriceCtaStrip, RoomRestyle, ListingAlertCoach, ListingLikeThisAlerts, ListingDetailShell, listing-city-lifestyle.ts, page comment). Queue/VERIFY already marked E4 in E3 commit race; this ship is the component implementation.
+- **Gates (pre-commit):** listing-detail-a11y, brand-voice, seo-shell, mockup-parity, file-size as previously logged.
