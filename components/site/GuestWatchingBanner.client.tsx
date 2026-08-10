@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BellAlertIcon } from '@heroicons/react/24/outline'
-import { Button } from '@/components/ui/button'
 import {
   dismissGuestWatch,
   readGuestWatch,
@@ -123,16 +122,14 @@ export default function GuestWatchingBanner() {
           >
             Manage in account
           </Link>
-          <Button
+          <button
             type="button"
-            variant="ghost"
-            size="sm"
             onClick={dismiss}
-            className="min-h-11 min-w-11 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
             aria-label="Dismiss watching reminder"
           >
             Not now
-          </Button>
+          </button>
         </div>
       </div>
     </div>
