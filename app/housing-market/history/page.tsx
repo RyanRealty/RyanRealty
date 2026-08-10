@@ -155,7 +155,7 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
             </Link>
           </p>
         </section>
-        <KbFooter />
+        <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>
   )
