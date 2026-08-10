@@ -1,0 +1,813 @@
+{
+  "generated_at": "2026-08-10T15:51:55.990Z",
+  "methodology": {
+    "closed": "Closed + ClosePrice>=1000 + CloseDate set",
+    "geo": "CENTRAL_OREGON_CITY_SLUGS proper-case City in()",
+    "cities": [
+      "Bend",
+      "Redmond",
+      "Sisters",
+      "Sunriver",
+      "La Pine",
+      "Tumalo",
+      "Terrebonne",
+      "Black Butte Ranch",
+      "Camp Sherman",
+      "Brothers",
+      "Alfalfa",
+      "Madras",
+      "Culver",
+      "Metolius",
+      "Warm Springs",
+      "Gateway",
+      "Ashwood",
+      "Crooked River",
+      "Crooked River Ranch",
+      "Prineville",
+      "Powell Butte",
+      "Paulina",
+      "Post",
+      "Mitchell"
+    ]
+  },
+  "probes": {
+    "closed_priced_all_feed": 377073,
+    "closed_priced_service_area": 192567,
+    "closed_2024_all": 12069,
+    "closed_2024_co": 5707,
+    "closed_2016_co": 8038,
+    "closed_1998_co": 5179,
+    "active_co": 3409,
+    "rows_2024_co": 5707,
+    "volume_2024_co": 3931010428.6399994,
+    "property_type_2024_co": {
+      "D": 600,
+      "A": 4850,
+      "F": 51,
+      "C": 54,
+      "E": 11,
+      "B": 124,
+      "G": 12,
+      "H": 5
+    },
+    "top_cities_2024_co": [
+      {
+        "city": "Bend",
+        "n": 2709,
+        "vol": 2337206371.45
+      },
+      {
+        "city": "Redmond",
+        "n": 1083,
+        "vol": 600169898.03
+      },
+      {
+        "city": "Prineville",
+        "n": 535,
+        "vol": 203098213.6
+      },
+      {
+        "city": "Sisters",
+        "n": 233,
+        "vol": 189818223.56
+      },
+      {
+        "city": "La Pine",
+        "n": 408,
+        "vol": 152181553
+      },
+      {
+        "city": "Sunriver",
+        "n": 170,
+        "vol": 124994619
+      },
+      {
+        "city": "Powell Butte",
+        "n": 111,
+        "vol": 107887575
+      },
+      {
+        "city": "Terrebonne",
+        "n": 155,
+        "vol": 81029509
+      },
+      {
+        "city": "Madras",
+        "n": 172,
+        "vol": 59448482
+      },
+      {
+        "city": "Black Butte Ranch",
+        "n": 41,
+        "vol": 40560600
+      },
+      {
+        "city": "Culver",
+        "n": 52,
+        "vol": 20466084
+      },
+      {
+        "city": "Camp Sherman",
+        "n": 11,
+        "vol": 6683000
+      },
+      {
+        "city": "Metolius",
+        "n": 18,
+        "vol": 5306000
+      },
+      {
+        "city": "Mitchell",
+        "n": 6,
+        "vol": 1354000
+      },
+      {
+        "city": "Ashwood",
+        "n": 1,
+        "vol": 546300
+      },
+      {
+        "city": "Paulina",
+        "n": 1,
+        "vol": 215000
+      },
+      {
+        "city": "Brothers",
+        "n": 1,
+        "vol": 45000
+      }
+    ],
+    "top_list_offices_2024_co": [
+      {
+        "office": "Cascade Hasson SIR",
+        "n": 766,
+        "vol": 705026603.56,
+        "share_vol_pct": 17.93,
+        "share_n_pct": 13.42
+      },
+      {
+        "office": "Stellar Realty Northwest",
+        "n": 285,
+        "vol": 227237027,
+        "share_vol_pct": 5.78,
+        "share_n_pct": 4.99
+      },
+      {
+        "office": "RE/MAX Key Properties",
+        "n": 259,
+        "vol": 203669621.63,
+        "share_vol_pct": 5.18,
+        "share_n_pct": 4.54
+      },
+      {
+        "office": "Bend Premier Real Estate LLC",
+        "n": 183,
+        "vol": 160928639,
+        "share_vol_pct": 4.09,
+        "share_n_pct": 3.21
+      },
+      {
+        "office": "Keller Williams Realty Central Oregon",
+        "n": 247,
+        "vol": 158618274,
+        "share_vol_pct": 4.04,
+        "share_n_pct": 4.33
+      },
+      {
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 218,
+        "vol": 153896960.55,
+        "share_vol_pct": 3.91,
+        "share_n_pct": 3.82
+      },
+      {
+        "office": "Coldwell Banker Bain",
+        "n": 215,
+        "vol": 153881170,
+        "share_vol_pct": 3.91,
+        "share_n_pct": 3.77
+      },
+      {
+        "office": "Windermere Realty Trust",
+        "n": 268,
+        "vol": 144972115.76,
+        "share_vol_pct": 3.69,
+        "share_n_pct": 4.7
+      },
+      {
+        "office": "Harcourts The Garner Group Real Estate",
+        "n": 144,
+        "vol": 144418620,
+        "share_vol_pct": 3.67,
+        "share_n_pct": 2.52
+      },
+      {
+        "office": "Duke Warner Realty",
+        "n": 130,
+        "vol": 108170896,
+        "share_vol_pct": 2.75,
+        "share_n_pct": 2.28
+      },
+      {
+        "office": "eXp Realty, LLC",
+        "n": 165,
+        "vol": 101759944,
+        "share_vol_pct": 2.59,
+        "share_n_pct": 2.89
+      },
+      {
+        "office": "John L Scott Bend",
+        "n": 194,
+        "vol": 93929692.6,
+        "share_vol_pct": 2.39,
+        "share_n_pct": 3.4
+      },
+      {
+        "office": "Sunriver Realty",
+        "n": 93,
+        "vol": 79400149,
+        "share_vol_pct": 2.02,
+        "share_n_pct": 1.63
+      },
+      {
+        "office": "New Home Star Oregon, LLC",
+        "n": 149,
+        "vol": 73673818,
+        "share_vol_pct": 1.87,
+        "share_n_pct": 2.61
+      },
+      {
+        "office": "Berkshire Hathaway HomeService",
+        "n": 74,
+        "vol": 69383804,
+        "share_vol_pct": 1.77,
+        "share_n_pct": 1.3
+      },
+      {
+        "office": "Engel & Voelkers Bend",
+        "n": 74,
+        "vol": 64097949,
+        "share_vol_pct": 1.63,
+        "share_n_pct": 1.3
+      },
+      {
+        "office": "Lennar Sales Corp",
+        "n": 98,
+        "vol": 50236000,
+        "share_vol_pct": 1.28,
+        "share_n_pct": 1.72
+      },
+      {
+        "office": "Knightsbridge International",
+        "n": 55,
+        "vol": 48430535,
+        "share_vol_pct": 1.23,
+        "share_n_pct": 0.96
+      },
+      {
+        "office": "Kizziar Property Co.",
+        "n": 49,
+        "vol": 40768879,
+        "share_vol_pct": 1.04,
+        "share_n_pct": 0.86
+      },
+      {
+        "office": "Century 21 North Homes Realty",
+        "n": 70,
+        "vol": 39303050,
+        "share_vol_pct": 1,
+        "share_n_pct": 1.23
+      },
+      {
+        "office": "West and Main Homes",
+        "n": 59,
+        "vol": 38497590,
+        "share_vol_pct": 0.98,
+        "share_n_pct": 1.03
+      },
+      {
+        "office": "Pacwest Realty Group",
+        "n": 67,
+        "vol": 37647253.83,
+        "share_vol_pct": 0.96,
+        "share_n_pct": 1.17
+      },
+      {
+        "office": "The Agency Bend",
+        "n": 36,
+        "vol": 34248648,
+        "share_vol_pct": 0.87,
+        "share_n_pct": 0.63
+      },
+      {
+        "office": "Brasada Ranch Real Estate",
+        "n": 35,
+        "vol": 31416375,
+        "share_vol_pct": 0.8,
+        "share_n_pct": 0.61
+      },
+      {
+        "office": "Coldwell Banker Sun Country",
+        "n": 103,
+        "vol": 29077150,
+        "share_vol_pct": 0.74,
+        "share_n_pct": 1.8
+      },
+      {
+        "office": "High Desert Realty, LLC",
+        "n": 58,
+        "vol": 28782210,
+        "share_vol_pct": 0.73,
+        "share_n_pct": 1.02
+      },
+      {
+        "office": "Eagle Crest Properties Inc",
+        "n": 39,
+        "vol": 26281500,
+        "share_vol_pct": 0.67,
+        "share_n_pct": 0.68
+      },
+      {
+        "office": "Realty One Group Discovery",
+        "n": 43,
+        "vol": 24465848,
+        "share_vol_pct": 0.62,
+        "share_n_pct": 0.75
+      },
+      {
+        "office": "D.R. Horton, Inc.-Portland",
+        "n": 51,
+        "vol": 23612432,
+        "share_vol_pct": 0.6,
+        "share_n_pct": 0.89
+      },
+      {
+        "office": "LivOregon Real Estate LLC",
+        "n": 21,
+        "vol": 22774500,
+        "share_vol_pct": 0.58,
+        "share_n_pct": 0.37
+      },
+      {
+        "office": "Coldwell Banker Mayfield Realty",
+        "n": 36,
+        "vol": 22265580,
+        "share_vol_pct": 0.57,
+        "share_n_pct": 0.63
+      },
+      {
+        "office": "Total Real Estate Group",
+        "n": 30,
+        "vol": 22093400,
+        "share_vol_pct": 0.56,
+        "share_n_pct": 0.53
+      },
+      {
+        "office": "Signet Realty",
+        "n": 59,
+        "vol": 20971900,
+        "share_vol_pct": 0.53,
+        "share_n_pct": 1.03
+      },
+      {
+        "office": "Premiere Property Group, LLC",
+        "n": 37,
+        "vol": 20538650,
+        "share_vol_pct": 0.52,
+        "share_n_pct": 0.65
+      },
+      {
+        "office": "Jeff Larkin Realty",
+        "n": 26,
+        "vol": 19750785,
+        "share_vol_pct": 0.5,
+        "share_n_pct": 0.46
+      },
+      {
+        "office": "La Pine Realty",
+        "n": 57,
+        "vol": 19719600,
+        "share_vol_pct": 0.5,
+        "share_n_pct": 1
+      },
+      {
+        "office": "Redfin",
+        "n": 24,
+        "vol": 19460637,
+        "share_vol_pct": 0.5,
+        "share_n_pct": 0.42
+      },
+      {
+        "office": "Assist 2 Sell Buyers & Seller",
+        "n": 26,
+        "vol": 19184020,
+        "share_vol_pct": 0.49,
+        "share_n_pct": 0.46
+      },
+      {
+        "office": "Ninebark Real Estate",
+        "n": 34,
+        "vol": 19179900,
+        "share_vol_pct": 0.49,
+        "share_n_pct": 0.6
+      },
+      {
+        "office": "Avenir Realty",
+        "n": 24,
+        "vol": 16744000,
+        "share_vol_pct": 0.43,
+        "share_n_pct": 0.42
+      },
+      {
+        "office": "MORE Realty, Inc.",
+        "n": 28,
+        "vol": 16255800,
+        "share_vol_pct": 0.41,
+        "share_n_pct": 0.49
+      },
+      {
+        "office": "Legacy Realty LLC",
+        "n": 25,
+        "vol": 16135575,
+        "share_vol_pct": 0.41,
+        "share_n_pct": 0.44
+      },
+      {
+        "office": "Tim Davis Group Central Oregon",
+        "n": 29,
+        "vol": 13843408,
+        "share_vol_pct": 0.35,
+        "share_n_pct": 0.51
+      },
+      {
+        "office": "Crooked River Realty",
+        "n": 31,
+        "vol": 13709010,
+        "share_vol_pct": 0.35,
+        "share_n_pct": 0.54
+      },
+      {
+        "office": "Ponderosa Properties",
+        "n": 21,
+        "vol": 13142500,
+        "share_vol_pct": 0.33,
+        "share_n_pct": 0.37
+      },
+      {
+        "office": "Compass Commercial Real Estate",
+        "n": 10,
+        "vol": 12982000,
+        "share_vol_pct": 0.33,
+        "share_n_pct": 0.18
+      },
+      {
+        "office": "Real Broker",
+        "n": 24,
+        "vol": 12556400,
+        "share_vol_pct": 0.32,
+        "share_n_pct": 0.42
+      },
+      {
+        "office": "Dreams Realty Group, LLC",
+        "n": 40,
+        "vol": 12020600,
+        "share_vol_pct": 0.31,
+        "share_n_pct": 0.7
+      },
+      {
+        "office": "Fay Ranches, Inc.",
+        "n": 5,
+        "vol": 10488750,
+        "share_vol_pct": 0.27,
+        "share_n_pct": 0.09
+      },
+      {
+        "office": "Hicks Team - Fay Ranches LLC",
+        "n": 13,
+        "vol": 10368300,
+        "share_vol_pct": 0.26,
+        "share_n_pct": 0.23
+      }
+    ],
+    "top_list_agents_2024_co": [
+      {
+        "agent": "Brian Ladd",
+        "office": "Cascade Hasson SIR",
+        "n": 73,
+        "vol": 80628455,
+        "share_vol_pct": 2.05
+      },
+      {
+        "agent": "Shelley Griffin",
+        "office": "Harcourts The Garner Group Real Estate",
+        "n": 53,
+        "vol": 52146349,
+        "share_vol_pct": 1.33
+      },
+      {
+        "agent": "Tim Kizziar",
+        "office": "Kizziar Property Co.",
+        "n": 49,
+        "vol": 40768879,
+        "share_vol_pct": 1.04
+      },
+      {
+        "agent": "Lisa Cole",
+        "office": "Berkshire Hathaway HomeService",
+        "n": 20,
+        "vol": 34655500,
+        "share_vol_pct": 0.88
+      },
+      {
+        "agent": "Michelle Gregg-Anderson",
+        "office": "Lennar Sales Corp",
+        "n": 54,
+        "vol": 31003850,
+        "share_vol_pct": 0.79
+      },
+      {
+        "agent": "Jacob Franke",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 47,
+        "vol": 30178633.3,
+        "share_vol_pct": 0.77
+      },
+      {
+        "agent": "Alan Cornelius",
+        "office": "Brasada Ranch Real Estate",
+        "n": 34,
+        "vol": 29716375,
+        "share_vol_pct": 0.76
+      },
+      {
+        "agent": "Pamela Mayo-Phillips",
+        "office": "Cascade Hasson SIR",
+        "n": 16,
+        "vol": 25787175,
+        "share_vol_pct": 0.66
+      },
+      {
+        "agent": "Robyn Fields",
+        "office": "Eagle Crest Properties Inc",
+        "n": 28,
+        "vol": 23545000,
+        "share_vol_pct": 0.6
+      },
+      {
+        "agent": "Sam DeLay",
+        "office": "Cascade Hasson SIR",
+        "n": 21,
+        "vol": 23541500,
+        "share_vol_pct": 0.6
+      },
+      {
+        "agent": "Keith Petersen",
+        "office": "Century 21 North Homes Realty",
+        "n": 37,
+        "vol": 23490450,
+        "share_vol_pct": 0.6
+      },
+      {
+        "agent": "Jenn Schaake",
+        "office": "Cascade Hasson SIR",
+        "n": 23,
+        "vol": 23120300,
+        "share_vol_pct": 0.59
+      },
+      {
+        "agent": "Kayla Shults",
+        "office": "New Home Star Oregon, LLC",
+        "n": 45,
+        "vol": 22878654,
+        "share_vol_pct": 0.58
+      },
+      {
+        "agent": "Heather Lowrie",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 31,
+        "vol": 22751575,
+        "share_vol_pct": 0.58
+      },
+      {
+        "agent": "Michelle Powell",
+        "office": "Cascade Hasson SIR",
+        "n": 24,
+        "vol": 22508000,
+        "share_vol_pct": 0.57
+      },
+      {
+        "agent": "Linda Dorr-Fagan",
+        "office": "Sunriver Realty",
+        "n": 13,
+        "vol": 22480499,
+        "share_vol_pct": 0.57
+      },
+      {
+        "agent": "Brent Landels",
+        "office": "RE/MAX Key Properties",
+        "n": 26,
+        "vol": 21622153,
+        "share_vol_pct": 0.55
+      },
+      {
+        "agent": "Valerie Skelton",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 31,
+        "vol": 20642505.25,
+        "share_vol_pct": 0.53
+      },
+      {
+        "agent": "Jason Boone",
+        "office": "Duke Warner Realty",
+        "n": 16,
+        "vol": 20601900,
+        "share_vol_pct": 0.52
+      },
+      {
+        "agent": "Betsey Little",
+        "office": "Cascade Hasson SIR",
+        "n": 17,
+        "vol": 20351694,
+        "share_vol_pct": 0.52
+      },
+      {
+        "agent": "Kristi Kaufman",
+        "office": "Coldwell Banker Bain",
+        "n": 19,
+        "vol": 20142000,
+        "share_vol_pct": 0.51
+      },
+      {
+        "agent": "Jordan Ries",
+        "office": "Assist 2 Sell Buyers & Seller",
+        "n": 26,
+        "vol": 19184020,
+        "share_vol_pct": 0.49
+      },
+      {
+        "agent": "Erik Berg",
+        "office": "Stellar Realty Northwest",
+        "n": 14,
+        "vol": 19150000,
+        "share_vol_pct": 0.49
+      },
+      {
+        "agent": "Matthew Griffin",
+        "office": "Lennar Sales Corp",
+        "n": 43,
+        "vol": 18877750,
+        "share_vol_pct": 0.48
+      },
+      {
+        "agent": "Mary Jo Murtagh",
+        "office": "D.R. Horton, Inc.-Portland",
+        "n": 41,
+        "vol": 18788731,
+        "share_vol_pct": 0.48
+      },
+      {
+        "agent": "Ryan McGlone",
+        "office": "Cascade Hasson SIR",
+        "n": 22,
+        "vol": 18216000,
+        "share_vol_pct": 0.46
+      },
+      {
+        "agent": "Robert Hendrickson",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 31,
+        "vol": 18008933,
+        "share_vol_pct": 0.46
+      },
+      {
+        "agent": "Nick Wilhite",
+        "office": "The Agency Bend",
+        "n": 18,
+        "vol": 17858799,
+        "share_vol_pct": 0.45
+      },
+      {
+        "agent": "Ryan Chase",
+        "office": "New Home Star Oregon, LLC",
+        "n": 39,
+        "vol": 17778123,
+        "share_vol_pct": 0.45
+      },
+      {
+        "agent": "Jennifer Dorsey",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 14,
+        "vol": 17435171,
+        "share_vol_pct": 0.44
+      },
+      {
+        "agent": "Maria Halsey",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 27,
+        "vol": 17407782,
+        "share_vol_pct": 0.44
+      },
+      {
+        "agent": "Kristen Butz",
+        "office": "Sunriver Realty",
+        "n": 25,
+        "vol": 17280050,
+        "share_vol_pct": 0.44
+      },
+      {
+        "agent": "Mike Sullivan",
+        "office": "Cascade Hasson SIR",
+        "n": 9,
+        "vol": 17268346,
+        "share_vol_pct": 0.44
+      },
+      {
+        "agent": "Jeffrey Larkin",
+        "office": "Jeff Larkin Realty",
+        "n": 22,
+        "vol": 17095785,
+        "share_vol_pct": 0.43
+      },
+      {
+        "agent": "Phil Arends",
+        "office": "Cascade Hasson SIR",
+        "n": 19,
+        "vol": 17057500,
+        "share_vol_pct": 0.43
+      },
+      {
+        "agent": "Linda Spittler",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 17,
+        "vol": 16866923,
+        "share_vol_pct": 0.43
+      },
+      {
+        "agent": "Terry Skjersaa",
+        "office": "Duke Warner Realty",
+        "n": 21,
+        "vol": 16593025,
+        "share_vol_pct": 0.42
+      },
+      {
+        "agent": "Kris Cavin",
+        "office": "New Home Star Oregon, LLC",
+        "n": 29,
+        "vol": 16166989,
+        "share_vol_pct": 0.41
+      },
+      {
+        "agent": "Dana Furlan",
+        "office": "Bend Premier Real Estate LLC",
+        "n": 14,
+        "vol": 15652900,
+        "share_vol_pct": 0.4
+      },
+      {
+        "agent": "Alexander Shields",
+        "office": "New Home Star Oregon, LLC",
+        "n": 32,
+        "vol": 14987104,
+        "share_vol_pct": 0.38
+      }
+    ],
+    "distinct_offices_2024_co": 234,
+    "distinct_agents_2024_co": 1312,
+    "dual_office_pct": 20.48,
+    "dual_agent_pct": 5.05,
+    "fireplace_true_2024_co": 3589,
+    "price_dist_2024_co": {
+      "n": 5707,
+      "p10": 245600.00000000003,
+      "p25": 410000,
+      "p50": 570000,
+      "p75": 799970,
+      "p90": 1255000,
+      "p99": 2746999.99999998,
+      "min": 1200,
+      "max": 9500000
+    },
+    "ryan_office_strings": [
+      {
+        "office": "Ryan Realty LLC",
+        "n": 5,
+        "vol": 1282034,
+        "share_vol_pct": 0.03
+      }
+    ],
+    "closed_co_by_year": {
+      "1998": 5179,
+      "2000": 5552,
+      "2005": 10526,
+      "2010": 5170,
+      "2015": 7625,
+      "2016": 8038,
+      "2018": 7940,
+      "2020": 9098,
+      "2022": 7142,
+      "2023": 5363,
+      "2024": 5707,
+      "2025": 5768
+    }
+  }
+}

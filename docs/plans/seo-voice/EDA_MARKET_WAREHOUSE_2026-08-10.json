@@ -1,0 +1,804 @@
+{
+  "generated_at": "2026-08-10T15:45:54.054Z",
+  "probes": {
+    "closed_priced_by_year": {
+      "1993": 3,
+      "1994": 13,
+      "1995": 111,
+      "1996": 2778,
+      "1997": 7564,
+      "1998": 8726,
+      "1999": 9431,
+      "2000": 8689,
+      "2001": 9253,
+      "2002": 12336,
+      "2003": 13892,
+      "2004": 16882,
+      "2005": 19138,
+      "2006": 14372,
+      "2007": 10047,
+      "2008": 7135,
+      "2009": 8562,
+      "2010": 9749,
+      "2011": 9933,
+      "2012": 11596,
+      "2013": 12366,
+      "2014": 12918,
+      "2015": 14929,
+      "2016": 15850,
+      "2017": 15801,
+      "2018": 15719,
+      "2019": 15722,
+      "2020": 17647,
+      "2021": 18537,
+      "2022": 15000,
+      "2023": 11482,
+      "2024": 12069,
+      "2025": 12141,
+      "2026": 6682
+    },
+    "volume_2024": {
+      "sum": 6523926346.37,
+      "n": 12069,
+      "truncated": false
+    },
+    "volume_2016": {
+      "sum": 4699077757.89,
+      "n": 15850,
+      "truncated": false
+    },
+    "volume_2005": {
+      "sum": 5105194663,
+      "n": 19138,
+      "truncated": false
+    },
+    "property_type_2024": {
+      "A": 9734,
+      "B": 492,
+      "C": 208,
+      "D": 1355,
+      "E": 52,
+      "F": 168,
+      "G": 45,
+      "H": 15,
+      "null": 0
+    },
+    "top_cities_2024_sample10k": [
+      {
+        "city": "Bend",
+        "n": 228,
+        "vol": 177351237.3
+      },
+      {
+        "city": "Medford",
+        "n": 127,
+        "vol": 63797818
+      },
+      {
+        "city": "Redmond",
+        "n": 77,
+        "vol": 40409747
+      },
+      {
+        "city": "Grants Pass",
+        "n": 83,
+        "vol": 33393245
+      },
+      {
+        "city": "Ashland",
+        "n": 33,
+        "vol": 20136589
+      },
+      {
+        "city": "Sunriver",
+        "n": 20,
+        "vol": 17726250
+      },
+      {
+        "city": "Klamath Falls",
+        "n": 71,
+        "vol": 17405147
+      },
+      {
+        "city": "Prineville",
+        "n": 39,
+        "vol": 15290610
+      },
+      {
+        "city": "Sisters",
+        "n": 17,
+        "vol": 13888158
+      },
+      {
+        "city": "Central Point",
+        "n": 31,
+        "vol": 13259957
+      },
+      {
+        "city": "Eagle Point",
+        "n": 16,
+        "vol": 11553400
+      },
+      {
+        "city": "La Pine",
+        "n": 36,
+        "vol": 11520072
+      },
+      {
+        "city": "Powell Butte",
+        "n": 9,
+        "vol": 7963000
+      },
+      {
+        "city": "White City",
+        "n": 26,
+        "vol": 7504000
+      },
+      {
+        "city": "Terrebonne",
+        "n": 9,
+        "vol": 5716000
+      },
+      {
+        "city": "Jacksonville",
+        "n": 8,
+        "vol": 4880000
+      },
+      {
+        "city": "Phoenix",
+        "n": 12,
+        "vol": 4674305
+      },
+      {
+        "city": "Madras",
+        "n": 11,
+        "vol": 3547836
+      },
+      {
+        "city": "Talent",
+        "n": 9,
+        "vol": 3180300
+      },
+      {
+        "city": "Rogue River",
+        "n": 8,
+        "vol": 2935000
+      },
+      {
+        "city": "Cave Junction",
+        "n": 14,
+        "vol": 2807670.5
+      },
+      {
+        "city": "Dayton",
+        "n": 1,
+        "vol": 2500000
+      },
+      {
+        "city": "Shady Cove",
+        "n": 7,
+        "vol": 1960500
+      },
+      {
+        "city": "Roseburg",
+        "n": 2,
+        "vol": 1850660
+      },
+      {
+        "city": "Merlin",
+        "n": 4,
+        "vol": 1541900
+      }
+    ],
+    "city_sample_n": 1000,
+    "top_list_offices_2024_sample10k": [
+      {
+        "office": "Cascade Hasson SIR",
+        "n": 55,
+        "vol": 44094311
+      },
+      {
+        "office": "John L. Scott Medford",
+        "n": 56,
+        "vol": 27726649
+      },
+      {
+        "office": "eXp Realty, LLC",
+        "n": 68,
+        "vol": 27694994
+      },
+      {
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 27,
+        "vol": 18869623.3
+      },
+      {
+        "office": "RE/MAX Key Properties",
+        "n": 23,
+        "vol": 17837231
+      },
+      {
+        "office": "Keller Williams Realty Central Oregon",
+        "n": 28,
+        "vol": 17334900
+      },
+      {
+        "office": "Coldwell Banker Bain",
+        "n": 21,
+        "vol": 14495695
+      },
+      {
+        "office": "Bend Premier Real Estate LLC",
+        "n": 12,
+        "vol": 13196000
+      },
+      {
+        "office": "Windermere Realty Trust",
+        "n": 29,
+        "vol": 11844125
+      },
+      {
+        "office": "Duke Warner Realty",
+        "n": 10,
+        "vol": 11059500
+      },
+      {
+        "office": "Stellar Realty Northwest",
+        "n": 19,
+        "vol": 10713100
+      },
+      {
+        "office": "Merit Commercial RE, LLC",
+        "n": 4,
+        "vol": 10069300
+      },
+      {
+        "office": "John L. Scott Ashland",
+        "n": 19,
+        "vol": 9780999
+      },
+      {
+        "office": "John L Scott Real Estate Grants Pass",
+        "n": 21,
+        "vol": 9614600
+      },
+      {
+        "office": "New Home Star Oregon, LLC",
+        "n": 19,
+        "vol": 9170004
+      },
+      {
+        "office": "Harcourts The Garner Group Real Estate",
+        "n": 11,
+        "vol": 8209750
+      },
+      {
+        "office": "John L Scott Bend",
+        "n": 23,
+        "vol": 8092100
+      },
+      {
+        "office": "Cascade Hasson Sotheby's International Realty",
+        "n": 5,
+        "vol": 7852000
+      },
+      {
+        "office": "Engel & Voelkers Bend",
+        "n": 11,
+        "vol": 7238025
+      },
+      {
+        "office": "Windermere Van Vleet & Assoc2",
+        "n": 20,
+        "vol": 7217372
+      },
+      {
+        "office": "Berkshire Hathaway HomeService",
+        "n": 7,
+        "vol": 7176500
+      },
+      {
+        "office": "Century 21 North Homes Realty",
+        "n": 10,
+        "vol": 6075250
+      },
+      {
+        "office": "Home Quest Realty",
+        "n": 15,
+        "vol": 6046233
+      },
+      {
+        "office": "RE/MAX Integrity",
+        "n": 14,
+        "vol": 5129122
+      },
+      {
+        "office": "RE/MAX Integrity Grants Pass",
+        "n": 11,
+        "vol": 4826495
+      },
+      {
+        "office": "Patie Millen Group, Inc",
+        "n": 6,
+        "vol": 4534000
+      },
+      {
+        "office": "Sunriver Realty",
+        "n": 4,
+        "vol": 4493000
+      },
+      {
+        "office": "Fisher Nicholson Realty, LLC",
+        "n": 25,
+        "vol": 4436700
+      },
+      {
+        "office": "Top Agents Real Estate Company",
+        "n": 8,
+        "vol": 4227500
+      },
+      {
+        "office": "Ninebark Real Estate",
+        "n": 5,
+        "vol": 4165000
+      },
+      {
+        "office": "HomeSmart Realty Group",
+        "n": 2,
+        "vol": 4000000
+      },
+      {
+        "office": "Coldwell Banker Holman Premier",
+        "n": 17,
+        "vol": 3940300
+      },
+      {
+        "office": "Redfin",
+        "n": 7,
+        "vol": 3915000
+      },
+      {
+        "office": "Lennar Sales Corp",
+        "n": 7,
+        "vol": 3900300
+      },
+      {
+        "office": "Premiere Property Group, LLC",
+        "n": 9,
+        "vol": 3815000
+      },
+      {
+        "office": "Coldwell Banker Sun Country",
+        "n": 9,
+        "vol": 3539400
+      },
+      {
+        "office": "Jeff Larkin Realty",
+        "n": 4,
+        "vol": 3470000
+      },
+      {
+        "office": "Keller Williams Realty Southern Oregon",
+        "n": 12,
+        "vol": 3441380
+      },
+      {
+        "office": "High Desert Realty, LLC",
+        "n": 5,
+        "vol": 3329000
+      },
+      {
+        "office": "Brasada Ranch Real Estate",
+        "n": 3,
+        "vol": 3095000
+      }
+    ],
+    "top_list_agents_2024_sample10k": [
+      {
+        "agent": "Christopher Chamberlain",
+        "office": "Merit Commercial RE, LLC",
+        "n": 3,
+        "vol": 9729400
+      },
+      {
+        "agent": "Jacob Franke",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 10,
+        "vol": 7205958.3
+      },
+      {
+        "agent": "Brian Ladd",
+        "office": "Cascade Hasson SIR",
+        "n": 10,
+        "vol": 6237000
+      },
+      {
+        "agent": "Alan DeVries",
+        "office": "Cascade Hasson Sotheby's International Realty",
+        "n": 2,
+        "vol": 6119000
+      },
+      {
+        "agent": "Lori Ebner",
+        "office": "John L Scott Real Estate Grants Pass",
+        "n": 8,
+        "vol": 4663500
+      },
+      {
+        "agent": "Jason Boone",
+        "office": "Duke Warner Realty",
+        "n": 2,
+        "vol": 4600000
+      },
+      {
+        "agent": "Mark Farrow",
+        "office": "HomeSmart Realty Group",
+        "n": 2,
+        "vol": 4000000
+      },
+      {
+        "agent": "Jordan Kramer",
+        "office": "John L. Scott Medford",
+        "n": 9,
+        "vol": 3966549
+      },
+      {
+        "agent": "Michelle Gregg-Anderson",
+        "office": "Lennar Sales Corp",
+        "n": 7,
+        "vol": 3900300
+      },
+      {
+        "agent": "Ellie George",
+        "office": "Home Quest Realty",
+        "n": 9,
+        "vol": 3789333
+      },
+      {
+        "agent": "Jacqueline Sebulsky",
+        "office": "Cascade Hasson SIR",
+        "n": 2,
+        "vol": 3711000
+      },
+      {
+        "agent": "Douglas Morse",
+        "office": "John L. Scott Medford",
+        "n": 4,
+        "vol": 3707600
+      },
+      {
+        "agent": "James North",
+        "office": "John L. Scott Medford",
+        "n": 2,
+        "vol": 3696350
+      },
+      {
+        "agent": "Maria Halsey",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 5,
+        "vol": 3484365
+      },
+      {
+        "agent": "Louie Hoffman",
+        "office": "John L Scott Bend",
+        "n": 6,
+        "vol": 3210200
+      },
+      {
+        "agent": "Shannon McNeil",
+        "office": "Cascade Hasson SIR",
+        "n": 1,
+        "vol": 3150000
+      },
+      {
+        "agent": "Alan Cornelius",
+        "office": "Brasada Ranch Real Estate",
+        "n": 3,
+        "vol": 3095000
+      },
+      {
+        "agent": "Keith Petersen",
+        "office": "Century 21 North Homes Realty",
+        "n": 4,
+        "vol": 2970250
+      },
+      {
+        "agent": "Debra Mortimore",
+        "office": "Sunriver Realty",
+        "n": 1,
+        "vol": 2923000
+      },
+      {
+        "agent": "John Snippen",
+        "office": "Coldwell Banker Bain",
+        "n": 2,
+        "vol": 2899995
+      },
+      {
+        "agent": "Kayla Shults",
+        "office": "New Home Star Oregon, LLC",
+        "n": 5,
+        "vol": 2893939
+      },
+      {
+        "agent": "Terry Skjersaa",
+        "office": "Duke Warner Realty",
+        "n": 2,
+        "vol": 2860000
+      },
+      {
+        "agent": "Shelley Griffin",
+        "office": "Harcourts The Garner Group Real Estate",
+        "n": 4,
+        "vol": 2843000
+      },
+      {
+        "agent": "Patricia Millen",
+        "office": "Patie Millen Group, Inc",
+        "n": 3,
+        "vol": 2830000
+      },
+      {
+        "agent": "Phil Arends",
+        "office": "Cascade Hasson SIR",
+        "n": 3,
+        "vol": 2770000
+      },
+      {
+        "agent": "Holly Cole",
+        "office": "Keller Williams Realty Central Oregon",
+        "n": 5,
+        "vol": 2749900
+      },
+      {
+        "agent": "Jennifer Dorsey",
+        "office": "Pahlisch Real Estate, Inc.",
+        "n": 3,
+        "vol": 2715471
+      },
+      {
+        "agent": "Cate Cushman",
+        "office": "Bend Premier Real Estate LLC",
+        "n": 1,
+        "vol": 2700000
+      },
+      {
+        "agent": "Paul Terjeson",
+        "office": "Keller Williams Realty Mid-Willamette",
+        "n": 2,
+        "vol": 2699999
+      },
+      {
+        "agent": "Shannon Mahar-Krug",
+        "office": "John L. Scott Medford",
+        "n": 4,
+        "vol": 2690000
+      }
+    ],
+    "dual_rates_sample": {
+      "n": 1000,
+      "dual_office_pct": 22.4,
+      "dual_agent_pct": 8
+    },
+    "distinct_list_offices_in_sample": 196,
+    "distinct_list_agents_in_sample": 653,
+    "brand_family_fragmentation_sample": {
+      "Coldwell*": {
+        "variants": 6,
+        "n": 57,
+        "vol": 24734395,
+        "names": [
+          "Coldwell Banker Cutting Edge",
+          "Coldwell Banker Holman Premier",
+          "Coldwell Banker Bain",
+          "Coldwell Banker Sun Country",
+          "Coldwell Banker Mayfield Realty",
+          "Coldwell Banker Pro West R.E."
+        ]
+      },
+      "other": {
+        "variants": 159,
+        "n": 529,
+        "vol": 293688919.3,
+        "names": [
+          "Invest Rite Realty Group, LLC",
+          "Sunriver Realty",
+          "Stellar Realty Northwest",
+          "Premiere Property Group, LLC",
+          "OHT",
+          "Top Agents Real Estate Company",
+          "Whole Heart Realty LLC",
+          "Sherri Scott Real Estate"
+        ]
+      },
+      "Windermere*": {
+        "variants": 8,
+        "n": 78,
+        "vol": 28639530,
+        "names": [
+          "Windermere Van Vleet Eagle Point",
+          "Windermere Realty Trust",
+          "Windermere RE Southern Oregon",
+          "Windermere Van Vleet & Associates",
+          "Windermere Van Vleet & Assoc2",
+          "Windermere Van Vleet Jacksonville",
+          "Windermere Real Estate Kf",
+          "Windermere Trails End R.E."
+        ]
+      },
+      "eXp*": {
+        "variants": 2,
+        "n": 70,
+        "vol": 28049994,
+        "names": [
+          "eXp Realty, LLC",
+          "eXp Realty LLC."
+        ]
+      },
+      "KW*": {
+        "variants": 5,
+        "n": 47,
+        "vol": 25140779,
+        "names": [
+          "Keller Williams Realty Southern Oregon",
+          "Keller Williams Realty Central Oregon",
+          "Keller Williams Realty Mid-Willamette",
+          "Keller Williams Realty GP Branch",
+          "Infinity Real Estate Group-Keller Williams Realty Southern Oregon"
+        ]
+      },
+      "Duke Warner*": {
+        "variants": 1,
+        "n": 10,
+        "vol": 11059500,
+        "names": [
+          "Duke Warner Realty"
+        ]
+      },
+      "John L. Scott*": {
+        "variants": 4,
+        "n": 119,
+        "vol": 55214348,
+        "names": [
+          "John L. Scott Ashland",
+          "John L. Scott Medford",
+          "John L Scott Bend",
+          "John L Scott Real Estate Grants Pass"
+        ]
+      },
+      "RE/MAX*": {
+        "variants": 5,
+        "n": 57,
+        "vol": 30637548,
+        "names": [
+          "RE/MAX Key Properties",
+          "RE/MAX Integrity Grants Pass",
+          "RE/MAX Integrity",
+          "RE/MAX Platinum",
+          "RE/MAX Out West Realty"
+        ]
+      },
+      "Century 21*": {
+        "variants": 5,
+        "n": 28,
+        "vol": 9826321.5,
+        "names": [
+          "Century 21 Team Realty",
+          "Century 21 North Homes Realty",
+          "Century 21 Showcase, Realtors",
+          "Century 21 Harris and Taylor",
+          "Century 21 JC Jones American Dream"
+        ]
+      },
+      "Sotheby's*": {
+        "variants": 1,
+        "n": 5,
+        "vol": 7852000,
+        "names": [
+          "Cascade Hasson Sotheby's International Realty"
+        ]
+      }
+    },
+    "fill_by_era": {
+      "1998-2004": {
+        "base": 79209,
+        "fireplace": 15824,
+        "fireplace_nn": 15824,
+        "pool_nn": 1,
+        "hoa_nn": 36911,
+        "garage_nn": 53836,
+        "year_built_nn": 61556,
+        "days_to_pending_nn": 40695,
+        "buyer_financing_nn": 25783,
+        "list_office_nn": 79209,
+        "list_agent_mls_nn": 79209,
+        "buyer_agent_mls_nn": 76107,
+        "elementary_nn": 40652,
+        "subdivision_nn": 42969,
+        "concessions_pos": 0
+      },
+      "2005-2009": {
+        "base": 59254,
+        "fireplace": 15880,
+        "fireplace_nn": 15880,
+        "pool_nn": 0,
+        "hoa_nn": 31425,
+        "garage_nn": 41750,
+        "year_built_nn": 47873,
+        "days_to_pending_nn": 49562,
+        "buyer_financing_nn": 52844,
+        "list_office_nn": 59254,
+        "list_agent_mls_nn": 59254,
+        "buyer_agent_mls_nn": 59164,
+        "elementary_nn": 39247,
+        "subdivision_nn": 32234,
+        "concessions_pos": 0
+      },
+      "2010-2015": {
+        "base": 71491,
+        "fireplace": 21396,
+        "fireplace_nn": 21396,
+        "pool_nn": 0,
+        "hoa_nn": 46130,
+        "garage_nn": 55904,
+        "year_built_nn": 63080,
+        "days_to_pending_nn": 64041,
+        "buyer_financing_nn": 65351,
+        "list_office_nn": 71491,
+        "list_agent_mls_nn": 71491,
+        "buyer_agent_mls_nn": 71466,
+        "elementary_nn": 50199,
+        "subdivision_nn": 38230,
+        "concessions_pos": 1532
+      },
+      "2016-2019": {
+        "base": 63092,
+        "fireplace": 23964,
+        "fireplace_nn": 23964,
+        "pool_nn": 0,
+        "hoa_nn": 41568,
+        "garage_nn": 50979,
+        "year_built_nn": 55249,
+        "days_to_pending_nn": 57145,
+        "buyer_financing_nn": 58395,
+        "list_office_nn": 63092,
+        "list_agent_mls_nn": 63092,
+        "buyer_agent_mls_nn": 63042,
+        "elementary_nn": 44196,
+        "subdivision_nn": 34312,
+        "concessions_pos": 4859
+      },
+      "2020-2026": {
+        "base": 93558,
+        "fireplace": 46177,
+        "fireplace_nn": 46177,
+        "pool_nn": 1008,
+        "hoa_nn": 90089,
+        "garage_nn": 89356,
+        "year_built_nn": 81309,
+        "days_to_pending_nn": 92547,
+        "buyer_financing_nn": 92685,
+        "list_office_nn": 93558,
+        "list_agent_mls_nn": 93267,
+        "buyer_agent_mls_nn": 93260,
+        "elementary_nn": 90456,
+        "subdivision_nn": 89947,
+        "concessions_pos": 25575
+      }
+    },
+    "price_dist_2024_sample": {
+      "n": 1000,
+      "p10": 109800.00000000001,
+      "p25": 284500,
+      "p50": 439258.5,
+      "p75": 633425,
+      "p90": 880000,
+      "p99": 2450499.9999999995,
+      "min": 1200,
+      "max": 6000000,
+      "sum": 514843334.8
+    },
+    "active_approx": 7733,
+    "closed_priced_total": 377073
+  }
+}

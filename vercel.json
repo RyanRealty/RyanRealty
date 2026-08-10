@@ -178,6 +178,10 @@
       "schedule": "*/30 * * * *"
     },
     {
+      "path": "/api/cron/rebuild-analytics-marts",
+      "schedule": "15 8 * * *"
+    },
+    {
       "path": "/api/cron/refresh-market-stats",
       "schedule": "0 7 * * *"
     },

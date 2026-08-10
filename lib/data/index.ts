@@ -355,6 +355,28 @@ export {
 export type { MarketPulseSnapshot } from '@/lib/data/market/getMarketPulseSnapshot'
 export { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 
+// Analytics — CO closed-sales market size (mart-first, live fallback)
+export {
+  getCoMarketAnnual,
+  getCoMarketAnnualSeries,
+} from '@/lib/data/analytics/getCoMarketAnnual'
+export type {
+  CoMarketAnnualRow,
+  AnalyticsTypeScope,
+} from '@/lib/data/analytics/getCoMarketAnnual'
+export { getCoOfficeShare } from '@/lib/data/analytics/getCoOfficeShare'
+export type {
+  CoOfficeShareResult,
+  CoOfficeShareRow,
+  OfficeShareSide,
+} from '@/lib/data/analytics/getCoOfficeShare'
+export { getCoAgentShare } from '@/lib/data/analytics/getCoAgentShare'
+export type {
+  CoAgentShareResult,
+  CoAgentShareRow,
+} from '@/lib/data/analytics/getCoAgentShare'
+export { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
+
 // Market reports — READ paths for /reports/* pages (WRITE stays in app/actions).
 export { getMarketReportBySlug, listMarketReports, getReportImageUrl } from '@/lib/data/market/getMarketReports'
 export type { MarketReportRow, MarketReportListItem } from '@/lib/data/market/getMarketReports'

@@ -1,8 +1,8 @@
 # End-to-end mission — Top Site foundation (2026-08-10)
 
-**Status:** shipping foundation (P1–P3, P4 dual-source ops, P6 CTAs)  
+**Status:** foundation largely shipped on main; **program continues under `GOAL_10X_EXECUTABLE.md`**  
 **Protocol:** `/endtoend` — production grade; real user can use it  
-**Companion:** `TOP_SITE_GOAL_SYSTEM.md` · `PAGE_IA_COMPONENT_MATRIX.md` · `DATA_FOUNDATION_TOP_SITE.md` · `BOTTLENECKS_AND_FIXES.md` · `MEASUREMENT_DUAL_SOURCE.md`
+**Companion:** `GOAL_10X_EXECUTABLE.md` (master) · `SITE_FEATURE_VERIFY_IMPROVE_PLAN.md` · `TOP_SITE_GOAL_SYSTEM.md` · `PAGE_IA_COMPONENT_MATRIX.md` · `DATA_FOUNDATION_TOP_SITE.md` · `MEASUREMENT_DUAL_SOURCE.md`
 
 ---
 

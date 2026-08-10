@@ -299,6 +299,9 @@ If we execute P0–P6 with discipline:
 | Doc | Role |
 |-----|------|
 | **`DATA_FOUNDATION_TOP_SITE.md`** | **DB + DAL map — every page slot must cite a real source** |
+| **`MARKET_ANALYTICS_PLATFORM.md`** | **Expert analytics canon (dimensions, A01–A24, search, reports)** |
+| **`SALES_INTELLIGENCE_EXECUTABLE.md`** | **G9 ship units for the analytics platform** |
+| **`GOAL_10X_EXECUTABLE.md`** | **Master executable 10× program (includes G9/G10)** |
 | `PAGE_IA_COMPONENT_MATRIX.md` | Nav diagnosis + component parity/moat matrix |
 | `marketing_brain_skills/brand-voice/VOICE.md` | Layer A/B must be amended into this |
 | `.claude/skills/frontend-design/SKILL.md` | UI craft inside locked brand |

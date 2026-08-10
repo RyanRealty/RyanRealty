@@ -12,8 +12,10 @@
 |-------|----------------------------|------------------------|
 | `listings` | **~595k** rows (history + active) | Full MLS warehouse |
 | Active listings | **~7,610** | Buy inventory product |
+| **Closed + priced (`ClosePrice≥1k`)** | **~377k** | **Sales intelligence fact table** |
 | `listing_tile_mv` | **~595k** | Fast cards/search/map pins |
 | `market_pulse_live` | **45** geos (16 city · 28 nbhd · 1 region) | Live market HUD / Layer A numbers |
+| `market_stats_cache` | **~13k** rows; monthly region from **2016-07** | Modern medians, **total_volume**, breakdowns (SFR-heavy consumers) |
 | `geo_snapshot_mv` | **~6.9k** keys | Sitemap + city/community counts |
 | `activity_events` | **~33k** | Price drops, new listings, ticker |
 | `visitor_sessions` | **~69k** | Engagement truth (not GA4) |
@@ -23,8 +25,9 @@
 | `blog_posts` | **87** | Current organic click leaders (GSC) |
 | Static content registries | Parks 533 · schools 929 · trails 392 · events 1093 · venues 422 · golf courses 541 · resort JSON 870 lines | Lifestyle × homes authority |
 | Curated resorts | **~19–20** in registry (not all 1.8k `communities` rows) | Premium community pages |
+| **Analytics platform (planned)** | fact_closed_sale · marts · analyze RPC | Full extraction — `MARKET_ANALYTICS_PLATFORM.md` + SI ship units |
 
-**Implication:** We already have **portal-class data depth** for Central Oregon. Traffic/UX/leads lag is product packaging + discovery + measurement — not “we lack MLS data.”
+**Implication:** We already have **portal-class inventory + multi-decade closed sales**. Lag is packaging + discovery + conversion + measurement + **sales-intelligence productization** — not “we lack MLS data.”
 
 ---
 
@@ -53,9 +56,24 @@
 | Store | Freshness | Fields that matter for UI/SEO | Consumers |
 |-------|-----------|-------------------------------|-----------|
 | `market_pulse_live` | **10–15 min** | `active_count`, `median_list_price`, `median_days_to_pending`, `months_of_supply`, `sold_count_*`, `median_close_price_90d`, sale-to-list, price_reduction_share, methodology JSON | City/region hero, KbMarketHud, reports, emails |
-| `market_stats_cache` | ~6h / period | Rolling 30/90/365 aggregates, YoY, health score | City market detail, history charts |
+| `market_stats_cache` | ~6h / period | Rolling 30/90/365; monthly from **2016-07**; **`total_volume`**, sold_count, medians, **`property_type_breakdown`**, price bands, bedroom_breakdown, YoY | City market detail, history charts, archives — **volume under-exposed** |
 | `getCoreChartSeries` / price history | Cache | Time series for charts | Market pages |
 | `getCityRangeReport` / archives | Report tables | Weekly/period reports | `/housing-market/reports` |
+| **`sales_cube_annual` (G9)** | Nightly/weekly rebuild | year × geo × **type_scope** → sold_count, **total_volume**, median*, bands | Market size / composition product |
+| **`sales_cube_feature` (G9)** | Same | year × geo × type_scope × feature → counts/volume | Attribute history (fireplace-class) |
+
+**Closed-sales fact table (same `listings` warehouse):**
+
+| Probe (2026-08-10) | Note |
+|--------------------|------|
+| ~377k closed+priced | Fact grain for all sales intelligence |
+| 1990 = 0 rows | Do not claim 1990 market from this feed |
+| 1998 ~8.7k; 2005 ~19k; 2024 ~12k all-types | Deep history is real from mid‑90s |
+| Typed attrs | `fireplace_yn`, `pool_yn`, `PropertyType`, beds, sqft, city, ClosePrice/Date, … |
+| G62 | No request-path `details` fan-out for history features |
+
+**Compute path (existing):**  
+`compute_and_cache_period_stats` · `refresh_market_pulse` · crons `refresh-market-stats` · `refresh-market-stats-monthly-recompute` · `market-history-snapshot` · `scripts/backfill-market-history.mjs` (floor 2016-07).
 
 **Pulse coverage (live):**  
 - **Cities with pulse:** Bend (490 active), Redmond (185), La Pine (171), Prineville (77), Powell Butte (67), Madras (53), Sunriver (49), Sisters (37), … + smaller CO geos  
@@ -63,9 +81,12 @@
 - **Region:** 1 Central Oregon row  
 - **Scope:** methodology is **SFR-only (PropertyType=A)** — copy and schema must say so when claiming “homes”
 
-**DAL:** `getMarketPulse`, `getRegionPulse`, `getCityMarketDetail`, `getPriceHistory`, `getCoreChartSeries`, `getCityReportSnapshot`, `getMarketReports`.
+**DAL (today):** `getMarketPulse`, `getRegionPulse`, `getCityMarketDetail`, `getPriceHistory`, `getCoreChartSeries`, `getCityReportSnapshot`, `getMarketReports`, `getCityArchive`, `getMarketHistoryWeekly`.  
+**DAL (G9):** `getSalesCubeAnnual`, `getSalesCubeFeature`, `getMarketSizeSeries` — see `SALES_INTELLIGENCE_EXECUTABLE.md`.
 
-**Layer A:** every market H1/lead figure must come from pulse or stats_cache for that geo.
+**Layer A:** every market H1/lead figure must come from pulse, stats_cache, or sales cubes for that geo + **labeled type_scope**.
+
+**Perf law:** Public market history **reads cubes/cache only**. Rebuilds are service-role RPC + partial indexes on closed sales. Spec: `docs/data/CACHE_TABLE_FIELD_SPEC.md` + sales intelligence plan.
 
 ---
 
