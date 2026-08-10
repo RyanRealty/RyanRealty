@@ -21,6 +21,7 @@ import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { H2 } from '@/components/site/primitives'
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 3600
@@ -250,9 +251,9 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
             <div className="mt-14">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <h2 className="font-display text-2xl md:text-3xl">
-                    Amenity share — CO {year}
-                  </h2>
+                  <H2 className="font-display text-2xl md:text-3xl">
+                    Amenity share for CO {year}
+                  </H2>
                   <p className="mt-2 max-w-2xl text-sm opacity-80">
                     Precomputed feature cubes (typed columns only). Region, all property types.
                     Not filtered by the form above.
@@ -283,8 +284,8 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
                 ))}
               </div>
               <p className="mt-3 text-xs opacity-60">
-                Source {featureCube.source}. Fireplace = fireplace_yn or fireplaces_total &gt; 0;
-                garage = garage_yn; association = association_yn (HOA).
+                Source {featureCube.source}. Fireplace uses fireplace_yn or fireplaces_total greater
+                than zero. Garage uses garage_yn. Association uses association_yn (HOA).
               </p>
             </div>
           ) : null}
