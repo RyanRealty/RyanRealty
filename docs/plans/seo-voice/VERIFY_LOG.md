@@ -273,3 +273,11 @@
 - **Gates residual:** voice em-dash fix on `KbCommunityAlerts` success copy; design-token/hydration guest banner fixes on main; `npm run push` green (`ccd86d81` + this commit).
 - **Deferred (honest):** mart `office_id` at rebuild (optional, bootstrap FK coupling, zero public win); G3/I6 Matt locks; J4 paid restyle click; 10× claim ban until enrollments move.
 - **Pointer:** weekly scoreboard; if still cold after traffic, next copy unit only — not new multi-surface product.
+
+### 2026-08-10 Matt locks on open items (Q&A)
+- **I6:** forever locked — no public competitor names/share tables; admin SI only. Unit closed `[x]`.
+- **I1 office_id residual:** deferred forever / until needed. Unit closed `[x]` at brand-merge ship bar.
+- **Outcome loop:** wait ~7d after copy residual #1, then re-snapshot; no craft grind now.
+- **G3:** Matt asked whether agent can do GA4 UI via API or browser login. **Truth:** site has Data API *read* path (viewer SA + DWD); G3 is *Admin* property settings (Reporting identity Blended, Google signals). Admin API update may exist for reporting identity but needs **write** Admin scopes + Editor on property — not proven wired here. Browser path: Matt can log into GA4; agent can guide or use computer-use if available; not fully unattended without OAuth Admin write.
+- **J4:** Matt: restyle works but wants more thoughtful → full craft pass shipped (styles/prompts, exterior refuse, before/after, next steps). Presence e2e updated (Light chip). No agent paid generate.
+- **G3 API:** `ga4-admin-setup.mjs --dry-run` — Signals/dimensions/conversions/attribution/retention already correct. **Matt doing Reporting Identity → Blended** (UI only; API cannot set).

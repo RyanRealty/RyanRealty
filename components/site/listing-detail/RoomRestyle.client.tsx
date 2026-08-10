@@ -12,11 +12,16 @@ import { priceBandAroundListPrice } from '@/lib/search/price-band'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 
+/**
+ * Style chips: label must stay stable for e2e (Modern, Warm, Staged, Mountain).
+ * `hint` is craft-only subcopy under the chip.
+ */
 const STYLES = [
-  { id: 'modern', label: 'Modern' },
-  { id: 'warm', label: 'Warm' },
-  { id: 'staged', label: 'Staged' },
-  { id: 'mountain', label: 'Mountain' },
+  { id: 'modern', label: 'Modern', hint: 'Clean, updated, calm' },
+  { id: 'warm', label: 'Warm', hint: 'Wood, soft light' },
+  { id: 'staged', label: 'Staged', hint: 'Market-ready' },
+  { id: 'mountain', label: 'Mountain', hint: 'Central Oregon' },
+  { id: 'light', label: 'Light', hint: 'Bright and airy' },
 ] as const
 
 export type RestylePhoto = {
@@ -61,6 +66,13 @@ export function pickDefaultInteriorPhotoIndex(photos: RestylePhoto[]): number {
   return 0
 }
 
+/** True when caption/url strongly suggest exterior or non-room (bad restyle input). */
+export function isLikelyExteriorPhoto(photo: RestylePhoto | undefined): boolean {
+  if (!photo) return false
+  const hay = `${photo.caption ?? ''} ${photo.url ?? ''}`
+  return EXTERIOR_RE.test(hay)
+}
+
 type Props = {
   /** Ordered listing photos (url + optional caption). First is usually exterior. */
   photos: RestylePhoto[]
@@ -71,13 +83,15 @@ type Props = {
   beds?: number | null
 }
 
+type CompareMode = 'after' | 'before' | 'split'
+
 /**
- * RoomRestyle — contained AI visualization block on listing detail (E4 craft).
+ * RoomRestyle — thoughtful AI visualization on listing detail.
  *
- * Visual thesis: one navy-bordered cream panel with a clear 3-step flow
- * (photo → style → generate). Not a second hero. Not a metrics card.
- * Post-success conversion is one quiet row: alert email + broker link,
- * without duplicating the full mid-page alert strip noise.
+ * Visual thesis: one navy-bordered cream panel with a clear flow
+ * (photo → style → generate → before/after → next step). Not a second hero.
+ * Exterior photos are refused with a clear reason. Post-success is a quiet
+ * conversion row (alert + broker + tour), not a second full form card.
  */
 export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props) {
   const safePhotos = useMemo(
@@ -91,6 +105,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
   const [error, setError] = useState('')
   const [resultUrl, setResultUrl] = useState<string | null>(null)
   const [disclaimer, setDisclaimer] = useState('')
+  const [compare, setCompare] = useState<CompareMode>('after')
 
   // J3: compact alert capture after success (same listing_alerts path as KB forms)
   const [alertEmail, setAlertEmail] = useState('')
@@ -102,10 +117,23 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
   const photoUrl = safePhotos[photoIdx]?.url ?? safePhotos[0]?.url ?? ''
   if (!photoUrl) return null
 
+  const exteriorSelected = isLikelyExteriorPhoto(safePhotos[photoIdx])
+  const selectedCaption = safePhotos[photoIdx]?.caption?.trim()
+  const styleMeta = STYLES.find((s) => s.id === style) ?? STYLES[0]
+  const tourHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=tour`
+  const contactHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=restyle`
+
   async function run() {
+    if (exteriorSelected) {
+      setError(
+        'This photo looks like an exterior or site view. Pick an interior room (kitchen, living, bedroom) for a useful restyle.',
+      )
+      return
+    }
     setLoading(true)
     setError('')
     setResultUrl(null)
+    setCompare('after')
     try {
       const res = await fetch('/api/ai/room-restyle', {
         method: 'POST',
@@ -163,9 +191,14 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
     })
   }
 
-  const contactHref = `/contact?listingKey=${encodeURIComponent(listingKey)}&intent=restyle`
+  function selectPhoto(i: number) {
+    setPhotoIdx(i)
+    setResultUrl(null)
+    setError('')
+    setCompare('after')
+  }
+
   const pickerPhotos = safePhotos.slice(0, 8)
-  const selectedCaption = safePhotos[photoIdx]?.caption?.trim()
 
   return (
     <section
@@ -195,7 +228,8 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         Imagine this room
       </h2>
       <p className="mt-1.5 max-w-prose text-sm leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
-        Pick an interior photo and a style. This is a visualization, not the listed condition.
+        See how an interior could feel in a different finish. Architecture stays the same.
+        This is a visualization, not the listed condition, and not a renovation quote.
       </p>
 
       {/* Step 1: photo */}
@@ -205,20 +239,17 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
             className="mb-2 text-xs font-semibold uppercase tracking-wide"
             style={{ color: 'rgba(16,39,66,0.72)', letterSpacing: '0.1em' }}
           >
-            1 · Choose a photo
+            1 · Choose an interior photo
           </p>
           <div className="flex gap-2 overflow-x-auto pb-1" style={{ WebkitOverflowScrolling: 'touch' }}>
             {pickerPhotos.map((p, i) => {
               const selected = i === photoIdx
+              const exterior = isLikelyExteriorPhoto(p)
               return (
                 <button
                   key={`${p.url}-${i}`}
                   type="button"
-                  onClick={() => {
-                    setPhotoIdx(i)
-                    setResultUrl(null)
-                    setError('')
-                  }}
+                  onClick={() => selectPhoto(i)}
                   style={{
                     position: 'relative',
                     height: 56,
@@ -226,12 +257,16 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
                     flexShrink: 0,
                     overflow: 'hidden',
                     border: selected ? '3px solid var(--navy)' : '2px solid rgba(16,39,66,0.28)',
-                    opacity: selected ? 1 : 0.82,
+                    opacity: exterior ? 0.55 : selected ? 1 : 0.82,
                     background: 'transparent',
                     padding: 0,
                     cursor: 'pointer',
                   }}
-                  aria-label={p.caption?.trim() || `Listing photo ${i + 1}`}
+                  aria-label={
+                    exterior
+                      ? `${p.caption?.trim() || `Listing photo ${i + 1}`} (likely exterior)`
+                      : p.caption?.trim() || `Listing photo ${i + 1}`
+                  }
                   aria-pressed={selected}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -243,6 +278,11 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
           {selectedCaption ? (
             <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
               {selectedCaption}
+            </p>
+          ) : null}
+          {exteriorSelected ? (
+            <p className="mt-2 text-sm font-medium" style={{ color: 'var(--navy)' }} role="status">
+              Exterior and site photos restyle poorly. Choose a kitchen, living room, or bedroom.
             </p>
           ) : null}
         </div>
@@ -263,21 +303,41 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
               <button
                 key={s.id}
                 type="button"
-                onClick={() => setStyle(s.id)}
+                onClick={() => {
+                  setStyle(s.id)
+                  setResultUrl(null)
+                  setError('')
+                }}
                 style={{
                   border: '2px solid var(--navy)',
                   background: on ? 'var(--navy)' : 'transparent',
                   color: on ? 'var(--cream)' : 'var(--navy)',
-                  padding: '8px 14px',
-                  minHeight: 40,
+                  padding: '8px 12px',
+                  minHeight: 44,
                   fontSize: '0.75rem',
                   fontWeight: 600,
                   letterSpacing: '0.04em',
                   cursor: 'pointer',
+                  textAlign: 'left',
+                  lineHeight: 1.25,
                 }}
                 aria-pressed={on}
+                title={s.hint}
               >
-                {s.label}
+                <span style={{ display: 'block' }}>{s.label}</span>
+                <span
+                  aria-hidden
+                  style={{
+                    display: 'block',
+                    fontSize: '0.65rem',
+                    fontWeight: 500,
+                    letterSpacing: '0.02em',
+                    opacity: on ? 0.85 : 0.72,
+                    marginTop: 2,
+                  }}
+                >
+                  {s.hint}
+                </span>
               </button>
             )
           })}
@@ -295,18 +355,20 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         <button
           type="button"
           onClick={run}
-          disabled={loading}
+          disabled={loading || exteriorSelected}
           className="btn alt"
           style={{
             minHeight: 44,
-            opacity: loading ? 0.55 : 1,
-            cursor: loading ? 'wait' : 'pointer',
+            opacity: loading || exteriorSelected ? 0.55 : 1,
+            cursor: loading ? 'wait' : exteriorSelected ? 'not-allowed' : 'pointer',
           }}
         >
-          {loading ? 'Generating…' : 'Restyle photo'}
+          {loading ? 'Generating…' : `Restyle photo · ${styleMeta.label}`}
         </button>
-        <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
-          One style at a time. Capped per IP.
+        <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
+          {loading
+            ? 'Keeping the room shape. Applying the finish. Usually under a minute.'
+            : 'One style at a time. Capped per visitor so costs stay honest.'}
         </p>
       </div>
 
@@ -316,26 +378,97 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         </p>
       ) : null}
 
+      {/* Preview / before-after */}
       {resultUrl ? (
         <div className="mt-5 space-y-3">
-          <div
-            className="relative w-full overflow-hidden"
-            style={{ aspectRatio: '4 / 3', border: '2px solid var(--navy)' }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={resultUrl}
-              alt="AI restyled room visualization"
-              className="h-full w-full object-cover"
-            />
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Compare listing photo and restyle">
+            {(
+              [
+                { id: 'after' as const, label: 'Restyle' },
+                { id: 'before' as const, label: 'Original' },
+                { id: 'split' as const, label: 'Side by side' },
+              ] as const
+            ).map((m) => {
+              const on = compare === m.id
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setCompare(m.id)}
+                  style={{
+                    border: '2px solid var(--navy)',
+                    background: on ? 'var(--navy)' : 'transparent',
+                    color: on ? 'var(--cream)' : 'var(--navy)',
+                    padding: '6px 12px',
+                    minHeight: 40,
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  aria-pressed={on}
+                >
+                  {m.label}
+                </button>
+              )
+            })}
           </div>
+
+          {compare === 'split' ? (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <figure className="m-0">
+                <div
+                  className="relative w-full overflow-hidden"
+                  style={{ aspectRatio: '4 / 3', border: '2px solid var(--navy)' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoUrl} alt="Original listing photo" className="h-full w-full object-cover" />
+                </div>
+                <figcaption className="mt-1 text-xs font-semibold" style={{ color: 'var(--navy)' }}>
+                  As listed
+                </figcaption>
+              </figure>
+              <figure className="m-0">
+                <div
+                  className="relative w-full overflow-hidden"
+                  style={{ aspectRatio: '4 / 3', border: '2px solid var(--navy)' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resultUrl}
+                    alt="AI restyled room visualization"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <figcaption className="mt-1 text-xs font-semibold" style={{ color: 'var(--navy)' }}>
+                  {styleMeta.label} visualization
+                </figcaption>
+              </figure>
+            </div>
+          ) : (
+            <div
+              className="relative w-full overflow-hidden"
+              style={{ aspectRatio: '4 / 3', border: '2px solid var(--navy)' }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={compare === 'before' ? photoUrl : resultUrl}
+                alt={
+                  compare === 'before'
+                    ? 'Original listing photo'
+                    : 'AI restyled room visualization'
+                }
+                className="h-full w-full object-cover"
+              />
+            </div>
+          )}
+
           {disclaimer ? (
-            <p className="text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
+            <p className="text-xs leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
               {disclaimer}
             </p>
           ) : null}
 
-          {/* Post-success conversion: one compact row, not a second full form card */}
+          {/* Post-success: thoughtful next steps, not a second form card */}
           <div
             style={{
               borderTop: '2px solid var(--navy)',
@@ -343,103 +476,166 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
             }}
           >
             <p className="text-sm font-semibold" style={{ color: 'var(--navy)' }}>
-              Next step
+              What do you want next?
             </p>
             <p className="mt-1 text-xs leading-relaxed" style={{ color: 'rgba(16,39,66,0.72)' }}>
               {city
-                ? `Get email when a similar ${city} home lists, or talk to a broker about this one.`
-                : 'Talk to a broker about this home, or set a search alert lower on the page.'}
+                ? `Tour this home, ask a broker how a finish like this would play in ${city}, or get email when a similar home lists.`
+                : 'Tour this home, ask a broker about finishes, or set a search alert lower on the page.'}
             </p>
-            {city ? (
-              alertState === 'done' ? (
-                <p className="mt-2 text-sm" style={{ color: 'var(--navy)' }}>
-                  Alert set. New {city} listings near this price band will hit your inbox.
-                </p>
-              ) : (
-                <form
-                  onSubmit={onAlertSubmit}
-                  className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch"
-                >
-                  <input
-                    type="email"
-                    required
-                    autoComplete="email"
-                    placeholder="you@email.com"
-                    value={alertEmail}
-                    onChange={(e) => setAlertEmail(e.target.value)}
-                    style={{
-                      minWidth: 0,
-                      flex: 1,
-                      border: '2px solid var(--navy)',
-                      background: 'var(--cream)',
-                      color: 'var(--navy)',
-                      padding: '10px 12px',
-                      fontSize: '0.875rem',
-                      minHeight: 44,
-                    }}
-                    aria-label={`${city} listing alert email`}
-                  />
-                  <input
-                    type="text"
-                    name="company"
-                    value={alertCompany}
-                    onChange={(e) => setAlertCompany(e.target.value)}
-                    className="hidden"
-                    tabIndex={-1}
-                    autoComplete="off"
-                    aria-hidden
-                  />
-                  <button
-                    type="submit"
-                    disabled={alertPending}
-                    className="btn alt"
-                    style={{
-                      minHeight: 44,
-                      opacity: alertPending ? 0.55 : 1,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {alertPending ? 'Saving…' : `Alert me: ${city}`}
-                  </button>
-                </form>
-              )
-            ) : null}
-            {alertState === 'error' && alertError ? (
-              <p className="mt-1 text-xs" style={{ color: 'var(--navy)' }} role="alert">
-                {alertError}
-              </p>
-            ) : null}
-            <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Link
+                href={tourHref}
+                className="btn alt"
+                style={{
+                  minHeight: 44,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textDecoration: 'none',
+                  padding: '10px 16px',
+                }}
+              >
+                Schedule a tour
+              </Link>
               <Link
                 href={contactHref}
                 className="font-semibold underline-offset-2 hover:underline"
-                style={{ color: 'var(--navy)', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
+                style={{
+                  color: 'var(--navy)',
+                  minHeight: 44,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '0 4px',
+                }}
               >
-                Contact a broker about this home
+                Ask a broker about finishes
               </Link>
-              {city ? (
-                <>
-                  <span aria-hidden style={{ color: 'rgba(16,39,66,0.72)' }}>
-                    ·
-                  </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setResultUrl(null)
+                  setError('')
+                  setCompare('after')
+                }}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'rgba(16,39,66,0.72)',
+                  minHeight: 44,
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 2,
+                  padding: '0 4px',
+                }}
+              >
+                Try another style
+              </button>
+            </div>
+
+            {city ? (
+              <div className="mt-4">
+                {alertState === 'done' ? (
+                  <p className="text-sm" style={{ color: 'var(--navy)' }}>
+                    Alert set. New {city} listings near this price band will hit your inbox.
+                  </p>
+                ) : (
+                  <form
+                    onSubmit={onAlertSubmit}
+                    className="flex flex-col gap-2 sm:flex-row sm:items-stretch"
+                  >
+                    <input
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="you@email.com"
+                      value={alertEmail}
+                      onChange={(e) => setAlertEmail(e.target.value)}
+                      style={{
+                        minWidth: 0,
+                        flex: 1,
+                        border: '2px solid var(--navy)',
+                        background: 'var(--cream)',
+                        color: 'var(--navy)',
+                        padding: '10px 12px',
+                        fontSize: '0.875rem',
+                        minHeight: 44,
+                      }}
+                      aria-label={`${city} listing alert email`}
+                    />
+                    <input
+                      type="text"
+                      name="company"
+                      value={alertCompany}
+                      onChange={(e) => setAlertCompany(e.target.value)}
+                      className="hidden"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden
+                    />
+                    <button
+                      type="submit"
+                      disabled={alertPending}
+                      className="btn alt"
+                      style={{
+                        minHeight: 44,
+                        opacity: alertPending ? 0.55 : 1,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {alertPending ? 'Saving…' : `Alert me: ${city}`}
+                    </button>
+                  </form>
+                )}
+                {alertState === 'error' && alertError ? (
+                  <p className="mt-1 text-xs" style={{ color: 'var(--navy)' }} role="alert">
+                    {alertError}
+                  </p>
+                ) : null}
+                <p className="mt-2">
                   <a
                     href="#listing-like-alerts"
-                    className="underline-offset-2 hover:underline"
-                    style={{ color: 'rgba(16,39,66,0.72)', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
+                    className="text-xs underline-offset-2 hover:underline"
+                    style={{ color: 'rgba(16,39,66,0.72)' }}
                   >
                     Full alert options
                   </a>
-                </>
-              ) : null}
-            </p>
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : (
         <div
           className="relative mt-5 w-full overflow-hidden"
-          style={{ aspectRatio: '4 / 3', border: '2px solid rgba(16,39,66,0.28)' }}
+          style={{
+            aspectRatio: '4 / 3',
+            border: exteriorSelected
+              ? '2px dashed rgba(16,39,66,0.4)'
+              : '2px solid rgba(16,39,66,0.28)',
+          }}
         >
-          <Image src={photoUrl} alt="Selected listing photo" fill className="object-cover" unoptimized />
+          <Image
+            src={photoUrl}
+            alt={exteriorSelected ? 'Selected photo (likely exterior)' : 'Selected listing photo'}
+            fill
+            className="object-cover"
+            unoptimized
+            style={{ opacity: exteriorSelected ? 0.7 : 1 }}
+          />
+          {loading ? (
+            <div
+              className="absolute inset-0 flex items-end p-3"
+              style={{ background: 'linear-gradient(transparent 40%, rgba(16,39,66,0.72))' }}
+            >
+              <p className="text-sm font-semibold" style={{ color: 'var(--cream)' }}>
+                Restyling as {styleMeta.label}…
+              </p>
+            </div>
+          ) : null}
         </div>
       )}
     </section>

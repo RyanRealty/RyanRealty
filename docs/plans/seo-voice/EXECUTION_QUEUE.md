@@ -112,7 +112,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 37. [~] **G1 Dual-source docs + MP page_view** — prior ship
 38. [x] **G2 Weekly scoreboard ritual** — `SCOREBOARD_RITUAL.md` + script; MEASUREMENT_DUAL_SOURCE §3 updated
-39. [ ] **G3 GA4 ops** — **docs ready; blocked on Matt:** exact clicks in `GA4_OPS_CHECKLIST_MATT.md` (Tag Assistant · Advanced Consent Modeling · Reporting identity Blended)
+39. [~] **G3 GA4 ops** — **2026-08-10 API path:** `ga4-admin-setup.mjs --dry-run` — Signals **on**, dimensions/conversions/attribution/retention **already correct** (SA has `analytics.edit`). **Only remaining:** Reporting Identity → **Blended** (Admin API does not expose; Matt UI ~30s). Checklist still has Tag Assistant optional.
 40. [x] **G4 Prove or document** — **2026-08-10 FP-primary permanent** (MEASUREMENT_DUAL_SOURCE §7b): FP+GSC primary forever; GA4 supplementary; not waiting for GA4 parity
 
 ### Block H — Market analytics residual (G9 / SI) — foundation ≠ full platform
@@ -129,19 +129,19 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block I — Competitive intelligence (U9)
 
-50. [~] **I1 Office list/buy ranks admin** — string-level + **brand-family / office-entity merge** (`getCoOfficeShareMerged`, default `view=brand` on competition desk). Residual: mart `office_id` still null (name→dim join); brand_family ranks **advisory** not legal-entity share. See DIM_OFFICE § I1.
+50. [x] **I1 Office list/buy ranks admin** — brand-family / office-entity merge shipped (`getCoOfficeShareMerged`, default `view=brand`). **2026-08-10 Matt:** mart `office_id` residual **deferred forever / until needed** (name→dim join is enough). brand_family ranks remain advisory.
 51. [x] **I2 Agent ranks** — market-wide top-N + per-office drill (I5)
 52. [x] **I3 Brand aliases / entity resolution** — `data/analytics/office-brand-aliases.json` + bootstrap; methodology `DIM_OFFICE_ENTITY_RESOLUTION.md` (share mart still string-level; I1 rollup joins post-hoc)
 53. [x] **I4 Ryan buy-side + alias truth** — **2026-08-10:** `getRyanBrandShare` list+buy alias rollup on competition desk; methodology in DIM_OFFICE § I4
 54. [x] **I5 Per-office agent drill + CSV export** — `?office=` + `/admin/analytics/competition/export`
-55. [ ] **I6 Public competitor naming** — **BLOCKED Matt lock** (policy)
+55. [x] **I6 Public competitor naming** — **2026-08-10 Matt lock: keep locked forever.** No public competitor names or share tables on ryan-realty.com. Admin SI only.
 
 ### Block J — Next-gen AI (U2)
 
 56. [x] **J1 Room restyle API + listing UI**
 57. [x] **J2 Interior photo pick + rate/cost caps** — default interior heuristic + picker; strict RL notes UI+API
 58. [x] **J3 Conversion path after restyle** — city alert (listing_alerts) + contact CTA
-59. [~] **J4 Prod browser E2E proof** — **2026-08-10:** listing HTML has `RoomRestyle` + `listing-like-alerts` (browser UA). Playwright **UI presence** test in `e2e/features/listing-detail.spec.ts` (panel + style chips + Restyle control; **no** generate / no xAI cost). Live AI click/render still open.
+59. [x] **J4 Prod browser E2E proof + craft pass** — presence proven (Playwright, no generate). **2026-08-10 Matt:** restyle works; full craft pass shipped: CO-tuned prompts, Light style, exterior refuse, before/after compare, thoughtful post-result (tour / broker / alert / try again).
 
 ### Block K — Voice residual (Layer B only)
 
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Outcome loop only:** weekly `scoreboard-snapshot.mjs` — copy/placement iteration #1 shipped (search trust + listing early form + /buy inline). If still cold after 7d traffic, next small copy unit only |
-| **THEN** | Matt: **G3** (`GA4_OPS_CHECKLIST_MATT.md`) · **I6** public competitor names · optional mart `office_id` at rebuild · J4 paid restyle click |
-| **NOTE** | Plan executable work is complete or Matt-blocked. **not 10×** (alerts 6 / saves 2 as of 2026-08-10 pm snapshot). |
+| **NOW** | **Outcome loop only:** wait ~**7d** after copy residual #1, then `scoreboard-snapshot.mjs`; next copy unit only if still cold |
+| **THEN** | **G3 only:** Matt flips Reporting Identity → **Blended** (API rest already green). I6 forever-locked. office_id deferred forever. J4 craft pass shipped. |
+| **NOTE** | **not 10×** (alerts 6 / saves 2). Outcome: wait ~7d then snapshot. |
 
 ---
 

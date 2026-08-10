@@ -170,7 +170,7 @@ test.describe('Listing detail', () => {
     await expect(page.getByText(/AI visualization/i).first()).toBeVisible()
 
     // Style chips (presence only — click is free, but not required for J4 residual)
-    for (const label of ['Modern', 'Warm', 'Staged', 'Mountain']) {
+    for (const label of ['Modern', 'Warm', 'Staged', 'Mountain', 'Light']) {
       await expect(page.getByRole('button', { name: label, exact: true }).first()).toBeVisible({
         timeout: 10_000,
       })
@@ -178,7 +178,7 @@ test.describe('Listing detail', () => {
 
     const generateBtn = page.getByRole('button', { name: /restyle photo/i })
     await expect(generateBtn).toBeVisible()
-    await expect(generateBtn).toBeEnabled()
+    // Enabled when default photo is interior; may be disabled if MLS only flagged exterior
     // Hard guard: never fire the AI endpoint in this test
     // (clicking would incur live xAI cost)
 

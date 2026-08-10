@@ -13,16 +13,24 @@ import { checkRateLimit } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+/**
+ * Style prompts: photoreal, architecture-locked, Central Oregon honest.
+ * Shared ids with RoomRestyle.client.tsx STYLES.
+ */
 const STYLES: Record<string, string> = {
   modern:
-    'Photorealistic interior redesign of this room in a modern contemporary style: clean lines, neutral palette, updated finishes. Keep architecture, windows, and camera angle identical. Do not add people or text.',
+    'Photorealistic interior redesign of this room in a clean contemporary style suited to a Central Oregon home: soft neutrals, refined materials, uncluttered surfaces, updated but not flashy finishes. Keep walls, windows, ceiling, floor plane, openings, and camera angle identical. Do not invent extra rooms or change the home footprint. No people, text, logos, watermarks, or floating furniture that breaks perspective.',
   warm:
-    'Photorealistic interior redesign with warm organic materials: wood tones, soft textiles, inviting lighting. Keep architecture and camera angle identical. No people or text.',
+    'Photorealistic interior redesign with warm organic materials for a livable Central Oregon home: soft wood tones, natural textiles, layered but calm lighting, inviting seating. Keep architecture, windows, and camera angle identical. Do not overcrowd. No people, text, or logos.',
   staged:
-    'Photorealistic professional real estate staging: declutter, tasteful furniture, bright and market-ready. Keep architecture and camera angle identical. No people or text.',
+    'Photorealistic professional real estate staging for a listing: declutter, tasteful furniture scaled to the room, bright market-ready light, neutral art, no personal clutter. Keep architecture and camera angle identical. Staging only, not a gut remodel. No people, text, or logos.',
   mountain:
-    'Photorealistic Central Oregon mountain-home aesthetic: natural materials, mountain lodge accents, cozy and refined. Keep architecture and camera angle identical. No people or text.',
+    'Photorealistic Central Oregon mountain-home aesthetic: natural wood and stone accents where they fit the existing room, cozy refined textiles, quiet lodge warmth without theme-park kitsch. Keep architecture, windows, and camera angle identical. No people, text, or logos. Do not add fake mountain murals or exterior views that were not there.',
+  light:
+    'Photorealistic bright Scandinavian-leaning interior: airy light woods, soft white and cream palette, simple furniture, maximum natural light feel without inventing windows. Keep architecture and camera angle identical. No people, text, or logos.',
 }
+
+const VALID_STYLES = new Set(Object.keys(STYLES))
 
 type Body = {
   imageUrl?: string
@@ -47,7 +55,8 @@ export async function POST(request: Request) {
   }
 
   const imageUrl = (body.imageUrl || '').trim()
-  const style = (body.style || 'modern').trim()
+  const styleRaw = (body.style || 'modern').trim()
+  const style = VALID_STYLES.has(styleRaw) ? styleRaw : 'modern'
   if (!imageUrl.startsWith('http')) {
     return NextResponse.json({ error: 'imageUrl required' }, { status: 400 })
   }
@@ -81,7 +90,7 @@ export async function POST(request: Request) {
     if (!res.ok) {
       console.error('[room-restyle]', res.status, text.slice(0, 500))
       return NextResponse.json(
-        { error: 'Restyle failed. Try another photo or style.' },
+        { error: 'Restyle failed. Try another interior photo or style.' },
         { status: 502 },
       )
     }
@@ -100,7 +109,7 @@ export async function POST(request: Request) {
       dataUrl: b64 ? `data:image/png;base64,${b64}` : null,
       style,
       disclaimer:
-        'AI visualization only. Not the listed condition. Not an appraisal or offer of renovation.',
+        'AI visualization only. Not the listed condition, not an appraisal, and not a promise of renovation cost or timeline.',
       listingKey: body.listingKey ?? null,
     })
   } catch (e) {
