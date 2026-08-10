@@ -182,10 +182,10 @@ export default function SellValuationPage() {
               The listing fee is 2.5% to 3.5% of the sale price. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week.
             </Body>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <CTAButton href="/sell" tone="on-navy" size="lg">
+              <CTAButton href="/sell" tone={'on-navy'} size="lg">
                 See the listing plan
               </CTAButton>
-              <CTAButton href="/contact?inquiry=Selling" tone="on-navy-ghost" size="lg">
+              <CTAButton href="/contact?inquiry=Selling" tone={'on-navy-ghost'} size="lg">
                 Talk to a broker
               </CTAButton>
             </div>
