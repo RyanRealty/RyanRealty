@@ -7,6 +7,7 @@
 
 import { useState, useTransition } from 'react'
 import { signDeliverableForDownload } from '@/app/actions/content-library-download'
+import { Button } from '@/components/admin/v2'
 
 export function DownloadDeliverableButton({
   actionId,
@@ -20,9 +21,9 @@ export function DownloadDeliverableButton({
 
   return (
     <span style={{ display: 'inline-flex', flexDirection: 'column', gap: 4 }}>
-      <button
+      <Button
         type="button"
-        className="av2-btn av2-btn--quiet"
+        variant="quiet"
         disabled={pending}
         onClick={() => {
           setErr(null)
@@ -39,7 +40,7 @@ export function DownloadDeliverableButton({
         }}
       >
         {pending ? 'Signing…' : 'Download'}
-      </button>
+      </Button>
       {err ? (
         <span style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-danger)' }}>{err}</span>
       ) : null}
