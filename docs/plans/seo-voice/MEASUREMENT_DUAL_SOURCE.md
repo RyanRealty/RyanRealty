@@ -81,10 +81,11 @@ Visitor lands
     ├─► GTM / gtag full tags only after hasAnalyticsConsent()
     │     → GA4 client hits (often killed by ad blockers even after Accept)
     │
-    └─► Server conversions (optional): lib/ga4-measurement-protocol.ts
-          fireGa4Event / fireLeadGenerated AFTER lead success
+    └─► Server MP (lib/ga4-measurement-protocol.ts):
+          fireLeadGenerated AFTER lead success
+          + page_view / listing_view mirror from /api/visitors/track
+            (skip when analytics consent + _ga already live — no double-count)
           requires GA4_API_SECRET — no-op warn if missing
-          ★ does NOT currently mirror page_view
 ```
 
 **Locked policy reminders**
@@ -146,18 +147,16 @@ Week of YYYY-MM-DD | FP 1d/7d/30d: N/N/N | eng7d: N (x%) | alerts: T/A/+30d | sa
 - **Recommended** as first Matt-approved Google-side lever.  
 - **G3 status:** docs ready; **blocked on Matt** UI (no agent API for these three items).
 
-### 4.3 Optional: Measurement Protocol `page_view` mirror (Matt go)
+### 4.3 Measurement Protocol `page_view` mirror — **SHIPPED (2026-08-10)**
 
 | Item | Detail |
 |------|--------|
-| Today | `lib/ga4-measurement-protocol.ts` fires **conversion-class** events (`generate_lead`, etc.) after server success. Safe **no-op** if `GA4_API_SECRET` missing. |
-| Secret | `GA4_API_SECRET` referenced in `.env.example` / `.env.local` (often empty). Generate in GA4 → Admin → Data Streams → Measurement Protocol API secrets. |
-| Proposed follow-up | From `/api/visitors/track` (or a thin helper), after successful first-party `page_view` write, `void fireGa4Event({ eventName: 'page_view', … })` with stable `client_id` when known. |
-| Why it helps | Server-side hit bypasses client ad blockers for **volume** in GA4; still should respect consent flags on the track payload (do not MP-mirror `declined`). |
-| Why it is **not** auto-shipped | Changes what Google receives; can double-count with client gtag if both fire for consented users unless client_id/session carefully joined; needs Matt go + secret in prod. |
-| Size | Clean follow-up; implement only when secret is set and Matt approves. Keep no-op without secret. |
+| Code | After successful first-party `page_view` / `listing_view` in `POST /api/visitors/track`, `fireGa4Event` MP when gtag is not already live |
+| Skip | Consent is `analytics`/`all` **and** browser already has `_ga` (avoid double-count) |
+| Secret | `GA4_API_SECRET` — no-op warn if missing; set in GA4 → Data Streams → Measurement Protocol API secrets |
+| Policy | GPC / declined still drop the whole track (no FP, no MP). Defaults remain denied-by-default |
 
-**Do not implement full MP pageviews in this P4 foundation** unless explicitly approved and kept secret-gated.
+No further Matt go required for this path. G3 UI (Blended identity) is separate.
 
 ### 4.4 Optional: US analytics default-grant (Matt go — policy change)
 
@@ -165,7 +164,7 @@ Week of YYYY-MM-DD | FP 1d/7d/30d: N/N/N | eng7d: N (x%) | alerts: T/A/+30d | sa
 |--------|--------|------|
 | **A. Status quo (default)** | Denied-by-default forever; first-party primary forever | GA4 stays thin; honest |
 | **B. Advanced modeling only** | Better GA4 estimates; defaults unchanged | Low legal/product risk |
-| **C. MP page_view mirror for non-declined** | GA4 volume closer to first-party for tracked sessions | Medium — config + double-count care |
+| **C. MP page_view mirror for non-declined** | **SHIPPED** — see §4.3 | Double-count care already coded (skip when `_ga` live) |
 | **D. Default-grant `analytics_storage` for US traffic** | Much higher GA4 parity | **Policy change** — requires Matt; update TRACKING_POLICY + G48 review; not agent-autonomous |
 
 **Agents must not ship D (or blanket auto-grant) without Matt’s explicit go.**
@@ -208,11 +207,11 @@ One-line UI notes (where cheap) point back here and to first-party visitors.
 | Done now | Still blocked on Matt |
 |----------|------------------------|
 | This dual-source ops doc | Option D (US analytics default-grant) |
-| Ban on GA4-only “traffic is dead” in ops language | Optional MP page_view mirror + prod `GA4_API_SECRET` |
+| Ban on GA4-only “traffic is dead” in ops language | G3 Reporting Identity → **Blended** (UI only) |
 | Weekly ritual defined | Any TRACKING_POLICY default change |
-| Admin honesty notes on worst GA4-only labels | Full GA4 ≈ first-party parity |
-| MP conversion path documented (exists, secret-gated) | — |
-| **G4 FP-primary permanent** (below) | Waiting on GA4 ≈ FP parity — **not required** |
+| Admin honesty notes on worst GA4-only labels | Full GA4 ≈ first-party parity (**not required**) |
+| MP conversion + page_view mirror | — |
+| **G4 FP-primary permanent** (below) | — |
 
 ---
 
@@ -243,11 +242,11 @@ One-line UI notes (where cheap) point back here and to first-party visitors.
 
 Present clearly when asking for a go:
 
-1. **Keep defaults denied; use dual-source forever** (recommended baseline).  
-2. **Enable Advanced Consent Modeling** in GA4 UI (recommended add-on).  
-3. **Generate `GA4_API_SECRET` + enable server `page_view` MP mirror** for non-declined track events (volume repair without default-grant).  
+1. **Keep defaults denied; use dual-source forever** (recommended baseline — already ops truth).  
+2. **G3:** Reporting Identity → **Blended** + confirm Google Signals (API already green for Signals).  
+3. ~~MP page_view mirror~~ — **shipped** (§4.3); ensure prod `GA4_API_SECRET` stays set.  
 4. **Default-grant analytics for US traffic** (policy change — highest GA4 parity, highest scrutiny).  
-5. **Do nothing Google-side** — only first-party + GSC for top-site scoreboard (valid if Matt prioritizes privacy posture over GA4 dashboards).
+5. **Do nothing further Google-side** — FP + GSC scoreboard is valid forever.
 
 ---
 

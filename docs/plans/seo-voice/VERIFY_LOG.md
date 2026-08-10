@@ -281,3 +281,11 @@
 - **G3:** Matt asked whether agent can do GA4 UI via API or browser login. **Truth:** site has Data API *read* path (viewer SA + DWD); G3 is *Admin* property settings (Reporting identity Blended, Google signals). Admin API update may exist for reporting identity but needs **write** Admin scopes + Editor on property — not proven wired here. Browser path: Matt can log into GA4; agent can guide or use computer-use if available; not fully unattended without OAuth Admin write.
 - **J4:** Matt: restyle works but wants more thoughtful → full craft pass shipped (styles/prompts, exterior refuse, before/after, next steps). Presence e2e updated (Light chip). No agent paid generate.
 - **G3 API:** `ga4-admin-setup.mjs --dry-run` — Signals/dimensions/conversions/attribution/retention already correct. **Matt doing Reporting Identity → Blended** (UI only; API cannot set).
+
+### 2026-08-10 evening /endtoend residual closeout
+- **Scoreboard:** alerts **6** active **5** 30d **2**; saves **2**; FP 7d eng **17.85%** (still cold; not 10×).
+- **Prod UA:** `/buy` mid-page alerts live; restyle craft (Light + Imagine this room) on listing deploy `dpl_67nF1WGR…`; G3 Blended still manual.
+- **Residual #2:** `/cities` mid-page `KbCommunityAlerts` (CO+SFR) + LP secondary; SaveSearchButton guest “Email alerts for this search.”
+- **G1 closed:** MP page_view mirror shipped; MEASUREMENT_DUAL_SOURCE drift fixed; queue G1/F1 `[x]`.
+- **Agent product inventory:** empty (A-class). Remaining: Matt G3 Blended; outcome wait; optional craft D-class not owed.
+- **Honest stop:** plan executable work complete or Matt-blocked.

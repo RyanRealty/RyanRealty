@@ -31,7 +31,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
+import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import '@/components/site/kb/kb.css'
 
@@ -348,41 +348,10 @@ export default async function BuyPage() {
           </div>
         </section>
 
-        {/* Mid-page buyer capture — same free listing_alerts product as homepage
-            (E2 craft on /). propertyType A = SFR across the regional MLS so
-            hasNarrowingFilter passes without inventing a city. LP stays a
-            quiet secondary for ad landing URLs only. */}
-        <div id="get-alerts">
-          <KbCommunityAlerts
-            communityName="Central Oregon"
-            city=""
-            extraFilters={{ propertyType: 'A' }}
-            headline="Central Oregon"
-            body="Enter your email. When a single-family home hits the market in Bend, Redmond, Sisters, Sunriver, or nearby, you hear first."
-          />
-        </div>
-        <p
-          className="wrap"
-          style={{
-            textAlign: 'center',
-            margin: 0,
-            padding: '0 0 clamp(28px,4vw,40px)',
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            color: 'var(--navy-70)',
-          }}
-        >
-          <a
-            href="/lp/buyer-listing-alerts"
-            className="underline underline-offset-2 hover:text-foreground"
-          >
-            Prefer a longer form
-          </a>
-          {' · '}
-          <a href="/contact?inquiry=Buying" className="underline underline-offset-2 hover:text-foreground">
-            Talk to a broker
-          </a>
-        </p>
+        {/* Mid-page free listing_alerts — same product as homepage / cities. */}
+        <RegionalSfrAlertsBand
+          secondaryExtra={{ href: '/contact?inquiry=Buying', label: 'Talk to a broker' }}
+        />
 
         {/* FAQ — verified buyer facts (cream surface). The canonical FAQPage
             JSON-LD is emitted by MetadataBlock above, so none is duplicated here. */}

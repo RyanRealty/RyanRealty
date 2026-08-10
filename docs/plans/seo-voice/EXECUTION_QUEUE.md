@@ -61,8 +61,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block B — Conversion 10× (G4) — primary lead lever
 
-4. [~] **B1 Capture product** — multi-surface ship + **2026-08-10 outcome copy residual:** search sticky trust line; listing form after DescriptionBlock; `/buy` mid-page `KbCommunityAlerts` (not LP-only hop). Map/split + OH/price-drops hubs + homepage + city/nbhd already. **Outcome still open:** enrollments ~6 until traffic proves lift.
-5. [~] **B2 Saved search / save path** — guest/signed-in success copy names next step (inbox + manage). Navy SaveSearchButton mid-browse already. **Outcome open:** saved_searches ~2 until traffic.
+4. [~] **B1 Capture product** — multi-surface + copy residuals #1–2: search trust, listing early form, `/buy` + **`/cities` mid-page** `KbCommunityAlerts` (LP secondary). Map/split + OH/price-drops + homepage + city/nbhd already. **Outcome still open:** enrollments ~6 until traffic proves lift.
+5. [~] **B2 Saved search / save path** — guest form: “Email alerts for this search” (same product). Success next-step + SaveSearchButton mid-browse. **Outcome open:** saved_searches ~2 until traffic.
 6. [x] **B3 Valuation / CMA friction** — **2026-08-10:** verified ValuationForm → insertValuationRequest + FUB/CRM + trackEvent/CAPI/MP; hero CTA → `#valuation-form` + Lenis hash scroll; /sell form-first + link to `/sell/valuation`
 7. [~] **B4 Listing primary CTAs** — **2026-08-10 surface:** PriceCtaStrip → `#listing-like-alerts`; RoomRestyle next-step alert + contact (`1e8cb1ec`). Tour/ask/save already on strip + broker CTA.
 8. [x] **B5 LP alignment** — **2026-08-10:** `/lp/buyer-listing-alerts` copy + FAQ: same free `listing_alerts` product as `/search` + `/cities/bend`
@@ -103,16 +103,16 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block F — Engagement habit product (U4 + G10)
 
-33. [~] **F1 Sticky / mid-browse capture** — bar shipped; residual strip when guest already watching (F2)
+33. [x] **F1 Sticky / mid-browse capture** — bar shipped; guest-already-watching residual = F2 (banner + sticky residual)
 34. [x] **F2 Personal feed / return loop** — **2026-08-10:** signed-in `/account` ActivityFeed + “new since”; **guest residual** = first-party localStorage label+href only (no email/token) after alert signup → site-wide `GuestWatchingBanner` “You’re watching …” + search sticky residual; manage/pause via email unsubscribe token already used; claim-on-login unchanged
 35. [~] **F3 Save + alert as default product behavior** — guest capture on map/split + list sticky + hubs + **buy hub inline** + listing early form; still not full product-default identity for all guests
 36. [x] **F4 Demand signals / next-step coach** — **2026-08-10:** listing `ListingAlertCoach` (5s dwell soft bar → `#listing-like-alerts`). Search has SaveSearchButton.
 
 ### Block G — Measurement maturity (G6)
 
-37. [~] **G1 Dual-source docs + MP page_view** — prior ship
+37. [x] **G1 Dual-source docs + MP page_view** — dual-source ops + server `page_view`/`listing_view` MP mirror in `/api/visitors/track` (skip when gtag live). Doc drift reconciled 2026-08-10.
 38. [x] **G2 Weekly scoreboard ritual** — `SCOREBOARD_RITUAL.md` + script; MEASUREMENT_DUAL_SOURCE §3 updated
-39. [~] **G3 GA4 ops** — **2026-08-10 API path:** `ga4-admin-setup.mjs --dry-run` — Signals **on**, dimensions/conversions/attribution/retention **already correct** (SA has `analytics.edit`). **Only remaining:** Reporting Identity → **Blended** (Admin API does not expose; Matt UI ~30s). Checklist still has Tag Assistant optional.
+39. [~] **G3 GA4 ops** — API path green (Signals, dims, key events, retention). **Only remaining:** Reporting Identity → **Blended** (Matt UI ~30s; Admin API cannot set).
 40. [x] **G4 Prove or document** — **2026-08-10 FP-primary permanent** (MEASUREMENT_DUAL_SOURCE §7b): FP+GSC primary forever; GA4 supplementary; not waiting for GA4 parity
 
 ### Block H — Market analytics residual (G9 / SI) — foundation ≠ full platform
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Outcome loop only:** wait ~**7d** after copy residual #1, then `scoreboard-snapshot.mjs`; next copy unit only if still cold |
-| **THEN** | **G3 only:** Matt flips Reporting Identity → **Blended** (API rest already green). I6 forever-locked. office_id deferred forever. J4 craft pass shipped. |
-| **NOTE** | **not 10×** (alerts 6 / saves 2). Outcome: wait ~7d then snapshot. |
+| **NOW** | **Outcome loop only:** product + copy residual #2 shipped; wait traffic then `scoreboard-snapshot.mjs` (alerts still 6). No more multi-surface product invent. |
+| **THEN** | **G3 only:** Matt flips Reporting Identity → **Blended**. I6 forever-locked. office_id deferred. J4/G1/F1 closed. |
+| **NOTE** | **not 10×** (alerts 6 / saves 2 as of 2026-08-10 evening snapshot). Session executable plan complete or Matt-blocked. |
 
 ---
 

@@ -17,14 +17,9 @@
  *      getMarketPulseCitySnapshots with geo_snapshot_mv fallback, and the
  *      three links per city (city guide / homes for sale / open houses).
  *   3. Other-areas compact ledger (every remaining city, live count + median).
- *   4. Navy search CTA band (Search all listings / Get listing alerts).
+ *   4. Mid-page RegionalSfrAlertsBand + navy search CTA.
  *
- * Section telemetry now via KbSectionTracker (every .kb-root section[id]).
- * All figures from the DAL — no invented numbers, em-dash when unavailable.
- *
- * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
- * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
- * HideChrome is only for the not-found footer edge case / CSS hide if still used.
+ * Section telemetry: KbSectionTracker. DAL figures only. PublicNav from layout.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/cities/parity.json
  */
@@ -47,6 +42,7 @@ import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import '@/components/site/kb/kb.css'
 
@@ -564,6 +560,9 @@ export default async function CitiesPage() {
           </section>
         ) : null}
 
+        {/* Mid-page free listing_alerts (shared band — keeps this page under LOC budget). */}
+        <RegionalSfrAlertsBand />
+
         {/* Search CTA: navy band */}
         <section className="section region" id="search-cta" aria-label="Search Central Oregon listings">
           <div className="wrap">
@@ -579,9 +578,6 @@ export default async function CitiesPage() {
                 <Link href="/search" className="btn">
                   Search all listings <span className="arr">→</span>
                 </Link>
-                <a href="/lp/buyer-listing-alerts" className="btn ghost">
-                  Get listing alerts
-                </a>
                 <Link href="/sell/valuation" className="btn ghost">
                   Value my home
                 </Link>

@@ -295,9 +295,9 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
               onSubmit={handleGuestSave}
               className="p-4"
             >
-              <p className="text-sm font-medium text-foreground">Save this search</p>
+              <p className="text-sm font-medium text-foreground">Email alerts for this search</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Enter your email. New matches come to your inbox. No account needed.
+                Enter your email. We email you when a new listing matches these filters. No account needed.
               </p>
               {searchParams?.get('poly') ? (
                 <p className="mt-1 text-xs text-muted-foreground">
