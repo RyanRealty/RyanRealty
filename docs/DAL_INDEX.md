@@ -226,6 +226,22 @@ Companion files:
 
 ---
 
+### `lib/data/analytics/getCoOfficeShareMerged.ts`
+
+**Exports:** `getCoOfficeShareMerged`
+
+**Tables:** `analytics_dim_office`, `analytics_mart_market_annual`, `analytics_mart_office_share_annual`, `listings`
+
+**Selected columns:** `office_id`, `canonical_name`, `brand_family`, `aliases`, `office_name`, `sides_count`, `total_volume`, `sold_count`, `ClosePrice`, `ListOfficeName`, `buyer_office_name`
+
+**TTL windows:** `CACHE_WINDOWS.marketStats`
+
+**Cache tags:** `cacheTag.market, 'analytics-co-office-share-merged'`
+
+**Notes:** I1 brand_family / office_entity rollup; sums real mart volume only; admin competition desk default view.
+
+---
+
 ### `lib/data/analytics/getRyanBrandShare.ts`
 
 **Exports:** `getRyanBrandShare`
@@ -3248,10 +3264,10 @@ Companion files:
 |---|---|
 | `activity_events` | `tileAndEventToDrop()`, `getPriceDrops()`, `getPriceDropDigest()`, `getSyncState()`, `getSyncStateFields()`, `updateSyncStateLastDelta()`, `getExistingListingsByListNumbers()`, `replaceListingHistoryForKey()`, `upsertListingRows()`, `insertPriceHistoryRows()`, `insertStatusHistoryRows()`, `getActivityEvents()`, `insertActivityEventRows()`, `getListingPhotoUrl()`, `updateListingPhotoUrl()`, `upsertExpiredListingRow()`, `findCommunityIdByName()`, `findCommunityIdBySlug()`, `insertCommunityRowReturnId()`, `findPropertyIdByAddress()`, `insertPropertyAddressOnly()`, `insertPropertyFullRow()`, `updatePropertyById()`, `findListingBySnakeKey()`, `upsertListingSnakeRow()`, `insertStatusHistoryRow()`, `insertPriceHistoryRow()`, `replaceListingPhotosForKey()`, `deleteListingAgentsForKey()`, `insertListingAgentRow()`, `replaceListingVideosForKey()`, `upsertSyncState()`, `insertActivityEventRow()`, `updateListingByListNumber()`, `updateListingByListingKey()`, `insertListingHistoryRows()`, `deleteListingHistoryForKey()`, `getListingFieldsByListingKey()`, `getListingFieldsByListNumber()`, `selectHistorySyncCandidates()`, `getOpenHouseByIdAndListing()`, `insertOpenHouseRsvp()`, `bumpOpenHouseRsvpCount()`, `insertNotificationQueueRow()`, `insertStrictVerifyRun()`, `selectStrictVerifyCandidates()`, `getExpiredListingLookupAttempts()`, `findPropertiesByAddressFilter()`, `getPropertyById()`, `selectNewExpiredListings()`, `getExistingExpiredListingKeys()`, `selectClosedListingsForCma()`, `getListingForCmaSubject()`, `findPropertiesByPostalAndStreet()`, `selectCmaSubjectListings()`, `insertValuationRequest()`, `listExpiredListingsForAdmin()`, `updateExpiredListingById()`, `updateExpiredListingByKey()`, `getCmaBySlug()`, `insertCmaRow()`, `upsertCmaRowBySlug()`, `listCmasForAdmin()`, `listCmasForLeadEmail()`, `countCmasInRange()`, `getBoundariesByGeoType()`, `upsertVideoToursCacheRow()`, `getExpiredListingsForDigest()`, `selectListingsAdmin()`, `getSyncCursor()`, `countListingsByOr()`, `countAllListingsByListingKey()`, `getLatestMarketPulseUpdatedAt()`, `countListingInquiriesSince()`, `countSavedSearchesSince()`, `insertOptimizationRun()`, `getAnyListingKey()`, `listingHistoryExistsForAnyKey()`, `countListingsByStatusOr()`, `countListingsByStatusOrAndFinalized()`, `countHistorySyncCandidates()` <br /> `lib/data/listings/getPriceDrops.ts` · `lib/data/sync/syncWrites.ts` |
 | `admin_actions` | `recordSendBlockEvent()` <br /> `lib/data/crm/recordSendBlockEvent.ts` |
-| `analytics_dim_office` | `getRyanBrandShare()` <br /> `lib/data/analytics/getRyanBrandShare.ts` |
+| `analytics_dim_office` | `getRyanBrandShare()`, `getCoOfficeShareMerged()` <br /> `lib/data/analytics/getRyanBrandShare.ts` · `lib/data/analytics/getCoOfficeShareMerged.ts` |
 | `analytics_mart_feature_annual` | `CO_FEATURE_KEYS()`, `CO_FEATURE_LABELS()`, `getCoFeatureAnnual()` <br /> `lib/data/analytics/getCoFeatureAnnual.ts` |
 | `analytics_mart_market_annual` | `analyzeClosedSales()`, `getCoMarketAnnual()`, `getCoMarketAnnualSeries()`, `getRyanBrandShare()` <br /> `lib/data/analytics/analyzeClosedSales.ts` · `lib/data/analytics/getCoMarketAnnual.ts` · `lib/data/analytics/getRyanBrandShare.ts` |
-| `analytics_mart_office_share_annual` | `getCoOfficeShare()`, `getRyanBrandShare()` <br /> `lib/data/analytics/getCoOfficeShare.ts` · `lib/data/analytics/getRyanBrandShare.ts` |
+| `analytics_mart_office_share_annual` | `getCoOfficeShare()`, `getCoOfficeShareMerged()`, `getRyanBrandShare()` <br /> `lib/data/analytics/getCoOfficeShare.ts` · `lib/data/analytics/getCoOfficeShareMerged.ts` · `lib/data/analytics/getRyanBrandShare.ts` |
 | `analytics_result_cache` | `analyzeClosedSales()` <br /> `lib/data/analytics/analyzeClosedSales.ts` |
 | `app_config` | `getCalculatorDefaults()` <br /> `lib/data/config.ts` |
 | `asset_library` | `PROPERTY_SHOOTS_BUCKET()`, `ensureShootsBucket()`, `uploadShootAsset()`, `findAssetBySourceId()`, `upsertAssetLibraryRow()`, `resolveListingLatLng()`, `getAreaGuideVideos()`, `getAreaGuideVideo()`, `getGeoTileImages()`, `getGolfImages()`, `pickGolfImage()`, `getLifestyleImages()`, `getSurfaceImages()`, `pickSurfaceImage()`, `getSurfaceImage()` <br /> `lib/data/agent/asset-registry.ts` · `lib/data/media/getAreaGuideVideos.ts` · `lib/data/media/getGeoTileImages.ts` · `lib/data/media/getGolfImages.ts` · `lib/data/media/getLifestyleImages.ts` · `lib/data/media/getSurfaceImages.ts` |

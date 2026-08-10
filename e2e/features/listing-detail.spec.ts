@@ -139,6 +139,62 @@ test.describe('Listing detail', () => {
     await page.keyboard.press('Escape')
   })
 
+  /**
+   * J4 residual — RoomRestyle UI presence only.
+   * Does NOT click "Restyle photo" (would call /api/ai/room-restyle → xAI cost).
+   * Asserts panel, style chips, generate control, and listing-like alerts anchor.
+   */
+  test('RoomRestyle panel is present with style chips and Restyle photo control (no generate)', async ({
+    page,
+  }) => {
+    const href = await getFirstListingHref(page)
+    if (!href) {
+      test.skip(true, 'No listing links found on /homes-for-sale/bend — skipping restyle UI test')
+      return
+    }
+    await page.goto(href, { waitUntil: 'domcontentloaded', timeout: DATA_TIMEOUT })
+    await expect(page.locator('main').first()).toBeVisible({ timeout: DATA_TIMEOUT })
+
+    // Component returns null when listing has no http photos — skip cleanly
+    const restyleHeading = page.locator('#room-restyle-heading')
+    const headingVisible = await restyleHeading.isVisible({ timeout: 20_000 }).catch(() => false)
+    if (!headingVisible) {
+      test.skip(
+        true,
+        'RoomRestyle not mounted (no interior/http photos on this listing) — not a product failure',
+      )
+      return
+    }
+
+    await expect(restyleHeading).toHaveText(/imagine this room/i)
+    await expect(page.getByText(/AI visualization/i).first()).toBeVisible()
+
+    // Style chips (presence only — click is free, but not required for J4 residual)
+    for (const label of ['Modern', 'Warm', 'Staged', 'Mountain']) {
+      await expect(page.getByRole('button', { name: label, exact: true }).first()).toBeVisible({
+        timeout: 10_000,
+      })
+    }
+
+    const generateBtn = page.getByRole('button', { name: /restyle photo/i })
+    await expect(generateBtn).toBeVisible()
+    await expect(generateBtn).toBeEnabled()
+    // Hard guard: never fire the AI endpoint in this test
+    // (clicking would incur live xAI cost)
+
+    // J3 conversion path anchor still on page
+    const alerts = page.locator('#listing-like-alerts, [id*="listing-like-alerts"]')
+    const alertsVisible = await alerts.first().isVisible({ timeout: 10_000 }).catch(() => false)
+    if (alertsVisible) {
+      await expect(alerts.first()).toBeAttached()
+    } else {
+      // Markup may use class/section without id in some variants — soft check
+      await expect(page.getByText(/get alerts for homes like this/i).first()).toBeVisible({
+        timeout: 10_000,
+      })
+    }
+  })
+
   test('mortgage calculator inputs change monthly payment output', async ({ page }) => {
     const href = await getFirstListingHref(page)
     if (!href) {

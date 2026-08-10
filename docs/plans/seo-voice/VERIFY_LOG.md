@@ -57,6 +57,13 @@
 
 ## Session notes (newest first)
 
+### 2026-08-10 I1 brand-merged competitive share
+- **DAL:** `getCoOfficeShareMerged({ year, side, mergeMode: brand_family|office_entity })` — joins mart `office_name` → `analytics_dim_office` (aliases; mart `office_id` still null). Sums real sides/volume only; share % ÷ market mart. Methodology `office_share_merged_v1` in `DIM_OFFICE_ENTITY_RESOLUTION.md` § I1.
+- **Admin:** `/admin/analytics/competition` default `view=brand`; toggle entity / raw. CSV export respects view.
+- **Honesty:** I1 remains **[~]** — brand_family ranks are advisory (franchise umbrella), not legal-entity share; optional future office_id at mart rebuild.
+- **2024 list brand-family top (market 5,707 / $3.931B; dim match 100% of 234 strings):** 1 Cascade Hasson/Sotheby's 17.93% · 2 Stellar 5.78% · 3 RE/MAX 5.41% (3 strings) · 4 Coldwell Banker 5.39% (6) · 5 Keller Williams 4.33% (6) · 6 Bend Premier 4.09% · 7 Pahlisch 3.91% · 8 Windermere 3.91% (3) · 9 Harcourts 3.67% · 10 Duke Warner 2.75%. Ryan brand via I4 panel (not top-10).
+- **No invented share (§0).**
+
 ### 2026-08-10 H6 residual + G3 docs + J4 presence + A3 sitemap list
 - **H6 residual rebuild:** `node scripts/analytics/rebuild-analytics-marts.mjs --from 2016 --to 2025` (service role / `.env.local`). Feature mart all years:
 

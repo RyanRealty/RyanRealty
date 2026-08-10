@@ -14,6 +14,10 @@
  * Marts: market_annual (region+city), office_share_annual (list+buy), feature_annual
  * Feature keys (typed columns only): fireplace, garage, association (HOA)
  *
+ * Office share is STRING grain (office_name PK). office_id is left null —
+ * brand/entity merge is DAL-side (getCoOfficeShareMerged → dim aliases).
+ * Optional future: resolve office_id at rebuild via bootstrap-dim-office map.
+ *
  * Parity: 2024 CO sold_count + total_volume must match EDA within 0.5%.
  */
 import { config } from 'dotenv'

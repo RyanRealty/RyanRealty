@@ -1,9 +1,10 @@
 # dim_office entity resolution — methodology
 
-**Status:** I3 foundation (2026-08-10)  
+**Status:** I3 foundation + I1 brand-merged rollup (2026-08-10)  
 **Table:** `public.analytics_dim_office`  
 **Seed source:** `data/analytics/office-brand-aliases.json`  
-**Bootstrap:** `scripts/analytics/bootstrap-dim-office.mjs`
+**Bootstrap:** `scripts/analytics/bootstrap-dim-office.mjs`  
+**Merged share DAL:** `lib/data/analytics/getCoOfficeShareMerged.ts`
 
 ---
 
@@ -12,11 +13,12 @@
 MLS `ListOfficeName` / `buyer_office_name` strings fragment the same brokerage
 (e.g. `Cascade Hasson SIR` vs `Cascade Hasson Sotheby's International Realty`).
 `analytics_dim_office` is the entity layer that maps raw strings → one office
-row so competitive share can later roll up truthfully.
+row so competitive share can roll up truthfully.
 
-**This document does not invent or publish share numbers.** Share figures stay
-string-level in `analytics_mart_office_share_annual` until a mart rebuild joins
-through `office_id`. Alias groups only define *who merges with whom*.
+**This document does not invent share numbers.** The mart remains string-level
+(`office_id` may be null on rows). Alias groups define *who merges with whom*;
+I1 rollup **sums real mart sides/volume** after joining names → dim — never
+fabricates market share.
 
 ---
 
@@ -28,10 +30,10 @@ through `office_id`. Alias groups only define *who merges with whom*.
 | **Brand family** | `brand_family` | Franchise / brand umbrella across offices | All `RE/MAX *` rows → `RE/MAX` |
 
 - **Aliases merge for entity resolution** (one `office_id`).
-- **Brand family labels only** — does *not* auto-merge independent franchise
-  offices (e.g. `RE/MAX Key Properties` stays separate from
-  `RE/MAX Out West Realty`). Brand-level share is a future rollup query, not
-  implied by seeding.
+- **Brand family is advisory** for strategy rank — independent franchise
+  offices remain separate legal entities (e.g. `RE/MAX Key Properties` ≠
+  `RE/MAX Out West Realty` operationally). Brand-level share is an explicit
+  rollup query (`getCoOfficeShareMerged`), not implied by seeding alone.
 
 ---
 
@@ -80,9 +82,49 @@ node scripts/analytics/bootstrap-dim-office.mjs
 
 | Surface | Policy |
 |---------|--------|
-| `/admin/analytics/competition` | May show raw office strings + brand labels; office → agent drill is string-level until mart uses `office_id` |
+| `/admin/analytics/competition` | Default **brand family** ranks (`view=brand`); toggle **office entity** (`view=entity`) and **raw string** (`view=raw`). Agent drill stays exact office string. |
 | Public site | **No competitor office naming** until I6 Matt lock |
-| Future brand rollup | Sum mart rows whose dim `brand_family` matches; label methodology explicitly |
+| Brand rollup | `getCoOfficeShareMerged` — sum mart rows after dim join; methodology `office_share_merged_v1` |
+
+---
+
+## I1 — Brand-merged / entity-merged competitive share
+
+**Code:** `lib/data/analytics/getCoOfficeShareMerged.ts`  
+**Surface:** `/admin/analytics/competition?view=brand|entity|raw` (default `brand`)  
+**Export:** `/admin/analytics/competition/export?kind=offices&view=brand|entity|raw`  
+**Status:** **[~]** — strategy-grade brand merge shipped; mart `office_id` still null (join is name→dim); brand_family merge is **advisory** not legal-entity share.
+
+### Methodology (`office_share_merged_v1`)
+
+1. **Load** full `analytics_mart_office_share_annual` rows for year/side (region `central-oregon`, `type_scope=all`). Live closed-listings aggregate only if mart empty.
+2. **Join** each `office_name` → `analytics_dim_office`:
+   - Prefer mart `office_id` when set (future rebuild path).
+   - Else exact case-insensitive match on `canonical_name` ∪ `aliases`.
+   - Else normalized key (strip punctuation). No fuzzy edit-distance.
+3. **Group:**
+   - `mergeMode=brand_family`: key = dim `brand_family`, else `brand_family_rules` regex from JSON catalog, else singleton (canonical or raw string).
+   - `mergeMode=office_entity`: key = dim `office_id` (alias group), else raw-string singleton.
+4. **Aggregate:** sum **real** `sides_count` and `total_volume` from matched mart rows only. Never invent sides/volume.
+5. **Share %:** group volume (or units) ÷ market total from `analytics_mart_market_annual` (same year, region, type_scope=all). If market mart missing, fall back to sum of full office mart for that side — still no invented figures.
+6. **Rank** by total volume descending. Members list = raw MLS office strings rolled into the group.
+7. **Admin only.** Not for public competitor claims (I6).
+
+### Honesty / residual
+
+| Residual | Detail |
+|----------|--------|
+| Mart `office_id` null | Rebuild still writes string grain only; join is post-hoc name→dim |
+| Brand family advisory | Franchise umbrellas merge for **strategy** ranking; independent offices remain separate legal entities |
+| Incomplete dim labels | Unmatched / unbranded strings stay singletons — ranks do not invent families |
+| Agent drill | Still exact office string (`?office=`), not brand-wide agents |
+
+### Rebuild note
+
+`scripts/analytics/rebuild-analytics-marts.mjs` continues to populate
+`analytics_mart_office_share_annual` at **string grain** (`office_id` left null).
+Optional future: resolve `office_id` at rebuild time via the same alias map.
+Until then, I1 merge is entirely in the DAL.
 
 ---
 
@@ -106,7 +148,7 @@ node scripts/analytics/bootstrap-dim-office.mjs
 
 ### Known caveats
 
-- Mart rows are still **string-level** until office mart rebuild joins `office_id`. Alias rollup sums matching strings after the fact.
+- Mart rows are still **string-level** (`office_id` may be null). Alias rollup sums matching strings after the fact (same join pattern as I1).
 - Buy-side fill depends on MLS `buyer_office_name`; missing buy office ≠ non-Ryan buy.
 - Dual-office closes count once on each side when both names match (standard sides math).
 

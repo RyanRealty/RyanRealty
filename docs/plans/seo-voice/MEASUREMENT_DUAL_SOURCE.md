@@ -38,7 +38,7 @@
 **First-party + GSC are primary** for “is traffic dead?” and product/SEO decisions.  
 **GA4 is supplementary** (Ads, Signals, Google ecosystem) until it is within ~2× engaged FP — and even then FP remains the honest daily scoreboard.  
 **Do not block shipping** on GA4 parity. Weekly ritual: `node scripts/analytics/scoreboard-snapshot.mjs` (`SCOREBOARD_RITUAL.md`).  
-G3 (Advanced Consent Modeling / Blended reporting identity) remains optional Matt UI work.
+G3 (Advanced Consent Modeling / Blended reporting identity) remains optional Matt UI work — **docs ready:** [`GA4_OPS_CHECKLIST_MATT.md`](./GA4_OPS_CHECKLIST_MATT.md) (exact clicks); **blocked on Matt**.
 
 ---
 
@@ -139,10 +139,12 @@ Week of YYYY-MM-DD | FP 1d/7d/30d: N/N/N | eng7d: N (x%) | alerts: T/A/+30d | sa
 
 ### 4.2 Advanced Consent Modeling (GA4 UI — Matt/ops)
 
+- **Exact clicks:** [`GA4_OPS_CHECKLIST_MATT.md`](./GA4_OPS_CHECKLIST_MATT.md) (Blended identity · modeling eligibility · Tag Assistant smoke).  
 - In GA4 Admin, enable **advanced consent modeling** / behavioral modeling where available for the property.  
 - Improves **modeled** reporting inside Google when many hits are cookieless.  
 - Does **not** replace first-party truth; does **not** require changing our denied defaults.  
-- **Recommended** as first Matt-approved Google-side lever.
+- **Recommended** as first Matt-approved Google-side lever.  
+- **G3 status:** docs ready; **blocked on Matt** UI (no agent API for these three items).
 
 ### 4.3 Optional: Measurement Protocol `page_view` mirror (Matt go)
 
@@ -228,7 +230,7 @@ One-line UI notes (where cheap) point back here and to first-party visitors.
 
 1. **Consent Mode v2 denied-by-default is LOCKED** (`ci:tracking-policy`). GA4 undercount vs FP is structural, not a bug to “fix” by auto-granting analytics.
 2. Observed scale (2026-08): FP **thousands/day**; undiagnosed GA4 windows often **~1–2 users**. Ratio ≫ 2× is expected under policy + blockers.
-3. **Do not wait for GA4 parity** to declare traffic healthy, ship conversion work, or run the weekly scoreboard. G4 queue unit is **closed as FP-primary permanent**, not deferred on GA4 ops (G3 Tag Assistant / modeling remain useful but are not blockers for product truth).
+3. **Do not wait for GA4 parity** to declare traffic healthy, ship conversion work, or run the weekly scoreboard. G4 queue unit is **closed as FP-primary permanent**, not deferred on GA4 ops (G3 Tag Assistant / modeling remain useful but are not blockers for product truth — checklist: [`GA4_OPS_CHECKLIST_MATT.md`](./GA4_OPS_CHECKLIST_MATT.md)).
 4. GA4 remains valuable for Ads linkage, Signals, and consented behavior — **compare, never sum** with FP; never use GA4-only to claim “traffic is dead.”
 
 ### Ops one-liner
@@ -253,6 +255,7 @@ Present clearly when asking for a go:
 
 - `docs/TRACKING_POLICY.md`  
 - `docs/GA4_USER_TRACKING_SETUP.md`  
+- **`docs/plans/seo-voice/GA4_OPS_CHECKLIST_MATT.md`** — G3 Matt UI checklist (Blended · modeling · Tag Assistant)  
 - `docs/plans/seo-voice/TOP_SITE_GOAL_SYSTEM.md` (L5)  
 - `docs/plans/seo-voice/ENDTOEND_MISSION.md` (P4)  
 - `lib/ga4-measurement-protocol.ts`  

@@ -22,6 +22,6 @@
 | R14 | Competitive office share | office × year × side | `/admin/analytics/competition` | **Shipped** admin |
 | R15 | Competitive agent share | agent × year | admin agents + office drill | **Shipped** admin |
 
-**Next builds:** R05 bands, R08 new vs resale, brand-merged competitor share on R14 via office_id join (Ryan brand rollup I4 shipped).
+**Next builds:** R05 bands, R08 new vs resale. R14 brand-merged share via `getCoOfficeShareMerged` (I1, default brand view) + Ryan rollup I4 shipped; mart `office_id` still optional residual.
 
 **Ops:** Mart rebuild cron `rebuild-analytics-marts` (market + office + H6 feature cubes); inventory warehouse cron `snapshot-active-inventory` → `analytics_inventory_snapshot`.
