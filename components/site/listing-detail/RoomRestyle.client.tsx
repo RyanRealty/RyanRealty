@@ -198,7 +198,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         <div className="mt-4">
           <p
             className="mb-2 text-xs font-semibold uppercase tracking-wide"
-            style={{ color: 'rgba(16,39,66,0.55)', letterSpacing: '0.1em' }}
+            style={{ color: 'rgba(16,39,66,0.72)', letterSpacing: '0.1em' }}
           >
             1 · Choose a photo
           </p>
@@ -236,7 +236,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
             })}
           </div>
           {selectedCaption ? (
-            <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.55)' }}>
+            <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
               {selectedCaption}
             </p>
           ) : null}
@@ -247,7 +247,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
       <div className="mt-4">
         <p
           className="mb-2 text-xs font-semibold uppercase tracking-wide"
-          style={{ color: 'rgba(16,39,66,0.55)', letterSpacing: '0.1em' }}
+          style={{ color: 'rgba(16,39,66,0.72)', letterSpacing: '0.1em' }}
         >
           {pickerPhotos.length > 1 ? '2 · Style' : '1 · Style'}
         </p>
@@ -283,7 +283,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
       <div className="mt-4">
         <p
           className="mb-2 text-xs font-semibold uppercase tracking-wide"
-          style={{ color: 'rgba(16,39,66,0.55)', letterSpacing: '0.1em' }}
+          style={{ color: 'rgba(16,39,66,0.72)', letterSpacing: '0.1em' }}
         >
           {pickerPhotos.length > 1 ? '3 · Generate' : '2 · Generate'}
         </p>
@@ -300,7 +300,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
         >
           {loading ? 'Generating…' : 'Restyle photo'}
         </button>
-        <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.55)' }}>
+        <p className="mt-1.5 text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
           One style at a time. Capped per IP.
         </p>
       </div>
@@ -325,7 +325,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
             />
           </div>
           {disclaimer ? (
-            <p className="text-xs" style={{ color: 'rgba(16,39,66,0.55)' }}>
+            <p className="text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
               {disclaimer}
             </p>
           ) : null}
@@ -414,7 +414,7 @@ export function RoomRestyle({ photos, listingKey, city, listPrice, beds }: Props
               </Link>
               {city ? (
                 <>
-                  <span aria-hidden style={{ color: 'rgba(16,39,66,0.35)' }}>
+                  <span aria-hidden style={{ color: 'rgba(16,39,66,0.72)' }}>
                     ·
                   </span>
                   <a

@@ -2,19 +2,16 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import LandingPageTracker from '@/components/LandingPageTracker'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
+import { Accordion } from '@/components/ui/accordion'
 import BuyerLPForm from './BuyerLPForm'
 import { SiteCaptureAlignment } from './SiteCaptureAlignment'
+import { WATCHED_COMMUNITIES } from './watched-communities'
+import { FAQ, PhoneIcon, PlayIcon, ProcessStep } from './BuyerLPBits'
 import { CONTACT } from '@/lib/brand/contact'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getAllCommunitySnapshots, getGeoSnapshot, getListingTiles } from '@/lib/data'
 import { listingTileHref } from '@/lib/slug'
-import { communityImage, SUNRIVER_DESCHUTES_PHOTO } from '@/lib/geo-images'
+import { communityImage } from '@/lib/geo-images'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import { ReviewStrip } from '@/components/landing/ReviewCard'
 import { TrustStrip } from '@/components/landing/TrustStrip'
@@ -51,71 +48,6 @@ const MDASH = '—'
 const BUYER_LP_REVIEWS = TESTIMONIALS.filter((t) =>
   ['Stephen Graham', 'Nick Crawley'].includes(t.author),
 )
-
-// ─── Resort + ranch communities we watch (approved Figma LP 4, S3) ─────────
-// slugs resolve photos via communityImage() (lib/geo-images.ts — geo-verified
-// curated/Area Guide photography) and live counts via geo_snapshot_mv keyed
-// "city:label" (same construction as /communities). Character notes are
-// established facts about each community, no superlatives, no invented stats.
-const WATCHED_COMMUNITIES: Array<{
-  slug: string
-  label: string
-  city: string
-  note: string
-  /** Override photo when the communityImage tier photo is not geo-correct. */
-  photoOverride?: string
-  photoAlt: string
-}> = [
-  {
-    slug: 'tetherow',
-    label: 'Tetherow',
-    city: 'Bend',
-    note: 'Golf resort living on the high desert edge of west Bend.',
-    photoAlt: 'Aerial view of the Tetherow golf course and homes in Bend, Oregon',
-  },
-  {
-    slug: 'caldera-springs',
-    label: 'Caldera Springs',
-    city: 'Sunriver',
-    note: 'Family resort community on the south end of Sunriver.',
-    photoAlt: 'The engraved Caldera boulder and pond at Caldera Springs, Sunriver, Oregon',
-  },
-  {
-    slug: 'crosswater',
-    label: 'Crosswater',
-    city: 'Sunriver',
-    note: 'Gated golf community along the Deschutes and Little Deschutes.',
-    photoAlt: 'A Crosswater golf fairway and pines near Sunriver, Oregon',
-  },
-  {
-    slug: 'sunriver',
-    label: 'Sunriver',
-    city: 'Sunriver',
-    note: 'The established resort community on the Deschutes, south of Bend.',
-    // communityImage('sunriver') points at a night-sky cabin photo that does
-    // not read as Sunriver (flagged in lib/geo-images.ts 2026-06-10). Use the
-    // geo-verified Deschutes kayak photo from the asset library instead
-    // (provenance documented on the constant in lib/geo-images.ts).
-    photoOverride: SUNRIVER_DESCHUTES_PHOTO,
-    photoAlt: 'A kayak on the Deschutes River at Sunriver, Oregon',
-  },
-  {
-    slug: 'vandevert-ranch',
-    label: 'Vandevert Ranch',
-    // Registry city (data/resort-communities.json) — MLS files Vandevert under
-    // Bend even though it sits just south of Sunriver.
-    city: 'Bend',
-    note: 'Private gated ranch community on the Little Deschutes.',
-    photoAlt: 'The wooden entrance gate at Vandevert Ranch near Sunriver, Oregon',
-  },
-  {
-    slug: 'broken-top',
-    label: 'Broken Top',
-    city: 'Bend',
-    note: 'Gated golf community inside Bend city limits, west side.',
-    photoAlt: 'The Broken Top community entrance monument in Bend, Oregon',
-  },
-]
 
 export default async function BuyerLPPage() {
   // Live data — active listing count for Bend SFR (market_pulse_live) +
@@ -477,18 +409,23 @@ export default async function BuyerLPPage() {
         </div>
       </section>
 
-      {/* ─── S4 · How matching works — 3 steps ─────────────────────────────── */}
+      {/* ─── S4 · How matching works — 3 steps (E7: left-led, not centered dump) ── */}
       <section className="border-b-[3px] border-[#102742] bg-[#faf8f4]">
-        <div className="mx-auto max-w-4xl px-4 py-14 sm:px-6 sm:py-20">
+        <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
           <ScrollReveal>
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
-              Three steps
-            </p>
-            <h2 className="mt-3 text-center font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
-              How matching works
-            </h2>
+            <div className="max-w-xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#102742]/70">
+                Three steps
+              </p>
+              <h2 className="mt-3 font-display text-3xl uppercase leading-[0.92] tracking-[-0.01em] text-[#102742] sm:text-4xl">
+                How matching works
+              </h2>
+              <p className="mt-4 text-base text-[#102742]/70">
+                Criteria in, broker-reviewed matches out. No mass blast of every new listing.
+              </p>
+            </div>
           </ScrollReveal>
-          <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-5">
+          <div className="mt-10 grid grid-cols-1 gap-10 border-t-[3px] border-[#102742]/15 pt-10 sm:grid-cols-3 sm:gap-8">
             <ScrollReveal delayMs={0}>
               <ProcessStep
                 num="1"
@@ -715,67 +652,5 @@ export default async function BuyerLPPage() {
         </div>
       </div>
     </main>
-  )
-}
-
-// ─── Tiny presentational helpers ─────────────────────────────────────────
-
-function ProcessStep({ num, title, body }: { num: string; title: string; body: string }) {
-  return (
-    <div className="flex flex-col items-center text-center">
-      <span className="flex h-12 w-12 items-center justify-center border-[3px] border-[#102742] bg-[#102742] font-display text-lg tabular-nums text-[#faf8f4]">
-        {num}
-      </span>
-      <p className="mt-4 font-display text-lg uppercase leading-none tracking-[-0.01em] text-[#102742]">{title}</p>
-      <p className="mt-2 text-sm leading-relaxed text-[#102742]/70">{body}</p>
-    </div>
-  )
-}
-
-function PlayIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M8 5.14v13.72a1 1 0 0 0 1.5.86l11-6.86a1 1 0 0 0 0-1.72l-11-6.86a1 1 0 0 0-1.5.86z" />
-    </svg>
-  )
-}
-
-function PhoneIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z" />
-    </svg>
-  )
-}
-
-function FAQ({ value, q, a }: { value: string; q: string; a: string }) {
-  return (
-    <AccordionItem
-      value={value}
-      className="border-[3px] border-[#102742] bg-[#faf8f4] px-5"
-    >
-      <AccordionTrigger className="py-4 font-display text-lg uppercase leading-snug tracking-[-0.01em] text-[#102742] hover:no-underline">
-        {q}
-      </AccordionTrigger>
-      <AccordionContent className="pb-4 text-base leading-relaxed text-[#102742]/85">
-        {a}
-      </AccordionContent>
-    </AccordionItem>
   )
 }

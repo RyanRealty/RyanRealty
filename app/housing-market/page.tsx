@@ -403,33 +403,62 @@ export default async function HousingMarketHubPage() {
             data explorer, communities, guides, area guides). Restored from the
             pre-KB hub so the region report and these sibling routes keep their
             inbound link from the hub (internal-linking / SEO value). */}
+        {/* Resource plate — editorial groups, not an equal card dump (E6). */}
         <ContentSection
           eyebrow="More resources"
           title="Explore Central Oregon real estate"
           tone="default"
           divider
+          width="wide"
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
-              { href: '/housing-market/history', label: 'Closed sales explorer' },
-              { href: '/housing-market/reports', label: 'Market report index' },
-              { href: '/cities', label: 'All Central Oregon cities' },
-              { href: '/communities', label: 'Communities and neighborhoods' },
-              { href: '/homes-for-sale', label: 'Browse homes for sale' },
-              { href: '/open-houses', label: 'Open houses this week' },
-              { href: '/price-drops', label: 'Recent price drops' },
-              { href: '/sell', label: 'Sell your home' },
-              { href: '/blog', label: 'Buying and selling guides' },
-              { href: '/area-guides', label: 'Area guides' },
-            ].map(({ href, label }) => (
-              <a
-                key={href}
-                href={href}
-                className="rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition hover:bg-muted hover:border-primary/30"
-              >
-                {label}
-              </a>
+          <div className="grid gap-8 md:grid-cols-3">
+            {(
+              [
+                {
+                  group: 'Market data',
+                  links: [
+                    { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
+                    { href: '/housing-market/history', label: 'Closed sales explorer' },
+                    { href: '/housing-market/reports', label: 'Market report index' },
+                  ],
+                },
+                {
+                  group: 'Inventory',
+                  links: [
+                    { href: '/cities', label: 'All Central Oregon cities' },
+                    { href: '/communities', label: 'Communities and neighborhoods' },
+                    { href: '/homes-for-sale', label: 'Browse homes for sale' },
+                    { href: '/open-houses', label: 'Open houses this week' },
+                    { href: '/price-drops', label: 'Recent price drops' },
+                  ],
+                },
+                {
+                  group: 'Guides and selling',
+                  links: [
+                    { href: '/sell', label: 'Sell your home' },
+                    { href: '/blog', label: 'Buying and selling guides' },
+                    { href: '/area-guides', label: 'Area guides' },
+                  ],
+                },
+              ] as const
+            ).map((col) => (
+              <div key={col.group} className="border border-border">
+                <p className="border-b border-border bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  {col.group}
+                </p>
+                <ul className="divide-y divide-border">
+                  {col.links.map(({ href, label }) => (
+                    <li key={href}>
+                      <a
+                        href={href}
+                        className="block px-4 py-3 text-sm font-medium text-foreground transition hover:bg-muted"
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
           </div>
         </ContentSection>

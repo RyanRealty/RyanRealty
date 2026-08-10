@@ -173,6 +173,9 @@ app/lp/sell-your-home/page.tsx
 app/lp/fsbo/page.tsx
 app/lp/expired-listing/page.tsx
 app/lp/buyer-listing-alerts/page.tsx
+# Buyer LP presentational helpers extracted for file-size budget (E7). Same LP
+# hex register as page.tsx above — not a new palette.
+app/lp/buyer-listing-alerts/BuyerLPBits.tsx
 
 # CMA email route — renders the HTML email body + preview-page wrapper
 # as inline-style HTML. Email clients don't support CSS variables so

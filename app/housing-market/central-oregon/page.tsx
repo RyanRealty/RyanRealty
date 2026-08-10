@@ -484,20 +484,28 @@ export default async function CentralOregonRegionPage() {
         {/* Market narrative + methodology trace (restored from the pre-KB page).
             §0 AI-citability: data-driven summary plus the source/formula/threshold
             trace that lets an AI assistant cite the page with provenance. */}
+        {/* Narrative plate — offset verdict + methodology footer (E6 craft). */}
         {narrativeWhat ? (
           <ContentSection
             eyebrow="Market data"
             title="Central Oregon market summary"
             tone="default"
             divider
+            width="wide"
           >
-            <div className="flex flex-col gap-4 text-muted-foreground text-base leading-relaxed">
-              <p>{narrativeWhat}</p>
-              {narrativeMethod ? (
-                <p className="text-xs text-muted-foreground border-t border-border pt-4 mt-2">
-                  <strong className="text-foreground">Methodology:</strong>{' '}
-                  {narrativeMethod}
+            <div className="grid gap-6 lg:grid-cols-12 lg:gap-10">
+              <div className="border-l-4 border-primary pl-5 lg:col-span-7">
+                <p className="text-lg leading-relaxed text-foreground md:text-xl">
+                  {narrativeWhat}
                 </p>
+              </div>
+              {narrativeMethod ? (
+                <div className="border border-border bg-muted/30 p-5 text-xs leading-relaxed text-muted-foreground lg:col-span-5">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-foreground">
+                    Methodology
+                  </p>
+                  <p className="mt-2">{narrativeMethod}</p>
+                </div>
               ) : null}
             </div>
           </ContentSection>

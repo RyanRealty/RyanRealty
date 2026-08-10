@@ -292,7 +292,7 @@ export function PriceCtaStrip({
         >
           Get alerts for homes like this
         </a>
-        <span aria-hidden style={{ color: 'rgba(16,39,66,0.35)' }}>
+        <span aria-hidden style={{ color: 'rgba(16,39,66,0.72)' }}>
           ·
         </span>
         <span className="text-xs sm:text-sm">City, price band, and beds from this listing only.</span>
