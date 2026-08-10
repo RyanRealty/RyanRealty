@@ -43,23 +43,24 @@ const ogImage = `${siteUrl}/api/og?type=default`
 export const revalidate = 60
 
 export const metadata: Metadata = {
-  title: 'Ryan Realty. Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
+  // Layer A discovery shell (Matt 2026-08-10): exact-match money query language.
+  title: 'Homes for Sale in Central Oregon | Bend, Redmond, Sisters, Sunriver',
   description:
-    'Live MLS inventory for Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne — list prices, days on market, and what closed on your street.',
+    'Active homes for sale in Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices, days on market, and closed comps from the regional MLS.',
   alternates: { canonical: siteUrl },
   openGraph: {
-    title: 'Ryan Realty. Central Oregon Real Estate',
+    title: 'Homes for Sale in Central Oregon | Ryan Realty',
     description:
-      'Live MLS inventory for Bend, Redmond, Sisters, and Sunriver — list prices, days on market, and closed comps.',
+      'Active homes for sale in Bend, Redmond, Sisters, and Sunriver. Live list prices, days on market, and closed comps.',
     url: siteUrl,
     siteName: 'Ryan Realty',
     type: 'website',
-    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Ryan Realty. Central Oregon Real Estate' }],
+    images: [{ url: ogImage, width: 1200, height: 630, alt: 'Homes for Sale in Central Oregon' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ryan Realty. Central Oregon Real Estate | Bend, Redmond, Sisters, Sunriver',
-    description: 'Live Central Oregon MLS inventory — list prices and days on market, town by town.',
+    title: 'Homes for Sale in Central Oregon | Bend, Redmond, Sisters, Sunriver',
+    description: 'Active Central Oregon homes for sale — list prices and days on market, town by town.',
   },
 }
 
@@ -191,16 +192,18 @@ export default async function Home() {
     <main className="kb-root">
       <KbSectionTracker pageType="homepage" />
       <SmoothScrollProvider>
-        {/* Hero: defaults restored to Buffett voice (VOICE.md 2026-08-06).
-            titleTop/titleBottom/lead live on KbHero — "The MLS list, and what
-            it sold for." plus the live count + median in the sub-line. Do not
-            re-pass a stripped lead here. */}
+        {/* Hero Layer A (Matt 2026-08-10 exact-match discovery home):
+            H1 matches money queries. Live count + median stay in the sub-line. */}
         <KbHero
           data={{
             activeCount: pulse?.activeCount ?? null,
             medianListPrice: pulse?.medianListPrice ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
+          eyebrow="Central Oregon Real Estate"
+          titleTop="Central Oregon"
+          titleBottom="Homes for Sale"
+          lead="in Bend, Redmond, Sisters, Sunriver, and nearby towns. List prices and days on market, pulled live."
         />
         {/* C-07: the homepage was the only one of four callers omitting `title`, so
             it inherited the placeholder default and rendered a naked verb, "EXPLORE".
