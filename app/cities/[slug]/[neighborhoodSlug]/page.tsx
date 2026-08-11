@@ -309,14 +309,25 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   // No excludeSlug: a neighborhood page links its own parent city on purpose.
   const otherCityItems: KbTownItem[] = buildOtherCityItems(allCitySnapshots)
 
+  // Prefer in-boundary open houses / activity when membership keys exist.
+  // Fall back to city-wide with an honest city eyebrow (§0).
+  const boundaryKeySet = new Set(boundaryListingKeys)
+  const ohScoped = openHouses.filter((oh) => boundaryKeySet.has(oh.listing_key))
+  const useOhScoped = ohScoped.length > 0
+  const activityScoped = activity.filter((a) => boundaryKeySet.has(a.listing_key))
+  const useActScoped = activityScoped.length > 0
+
   // ── LIVE ACTIVITY ──────────────────────────────────────────────────────────
-  // No stale-"New" relabel here — every event keeps the label the feed reports.
-  const activityItems = buildActivityItems(activity)
+  const activityItems = buildActivityItems(useActScoped ? activityScoped : activity)
 
   // ── OPEN HOUSES ────────────────────────────────────────────────────────────
-  // Fetched city-wide (the MLS has no neighborhood scope on open-house rows), so
-  // the section is labeled with the CITY, never the neighborhood (§0).
-  const openHouseItems = buildOpenHouseItems(openHouses)
+  const openHouseItems = buildOpenHouseItems(useOhScoped ? ohScoped : openHouses)
+  const openHouseEyebrow = useOhScoped
+    ? `${neighborhood.name} · This week`
+    : `${cityName} · This week`
+  const activityEyebrow = useActScoped
+    ? `Live · ${neighborhood.name}`
+    : `Live · ${cityName}`
 
   // ── GUIDES / BLOG ──────────────────────────────────────────────────────────
   const articlePosts = buildArticlePosts(blogPosts)
@@ -511,10 +522,15 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
         {/* Open houses + the feed are fetched city-wide (the MLS carries no
             neighborhood scope on either), so they are labeled with the city (§0). */}
-        <KbOpenHouses items={openHouseItems} eyebrow={`${cityName} · This week`} heading="Open houses" viewAllHref={`/open-houses/${citySlug}`} />
+        <KbOpenHouses
+          items={openHouseItems}
+          eyebrow={openHouseEyebrow}
+          heading="Open houses"
+          viewAllHref={`/open-houses/${citySlug}`}
+        />
         <KbActivity
           items={activityItems}
-          eyebrow={`Live · ${cityName}`}
+          eyebrow={activityEyebrow}
           heading="Latest market activity"
           viewAllHref="/housing-market"
           viewAllLabel="Full market pulse"

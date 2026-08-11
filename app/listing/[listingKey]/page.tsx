@@ -14,9 +14,11 @@ import {
 } from '@/lib/data'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
+import { getListingsByBuilder } from '@/lib/data/listings/getListingsByBuilder'
 import { findTrailsNear, findGolfNear } from '@/lib/explore/lifestyle-near'
 import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
 import { PlaceParentsSection } from '@/components/site/explore/PlaceParentsSection'
+import { BuilderExploreSection } from '@/components/site/explore/BuilderExploreSection'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
@@ -200,9 +202,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
       : { city: listing.city ?? undefined }
 
-  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma] =
+  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma, builderTiles] =
     await Promise.all([
-      // Exploration System: similar_listings_mv + place-scoped proximity (one API).
       withTimeoutFallback(
         getRelatedListings({
           anchorKey: listing.listingKey,
@@ -236,27 +237,23 @@ export default async function ListingDetailPage({ params }: PageProps) {
             'listing:pulse',
           )
         : Promise.resolve(null),
-      // market_stats_cache does NOT carry median_list_price / months_of_supply /
-      // sale_to_list_ratio / active_count / yoy_change_pct / refreshed_at —
-      // VERIFIED against information_schema 2026-06-01 (only median_dom exists).
-      // So this stays null on purpose (CLAUDE.md §0 — never render columns that
-      // don't exist). NeighborhoodMarketContext renders from pulse alone (active
-      // count + median list price + comparison). Do NOT "un-stub" this without
-      // first adding the columns to the cache + a methodology bump.
       Promise.resolve(null),
-      // Upcoming open houses for THIS listing (open_houses joined by key).
-      // Empty for most listings -> the section renders nothing. Timeout-guarded
-      // like every other arm so a slow pooler can't hang the #1 ad surface.
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
-      // Brokerage Google reviews — the lg-only social-proof block on the sticky
-      // broker card. Fetch a wide pool (count + average stay brokerage-wide
-      // regardless) so the broker-name filter below can still find a generic,
-      // broker-agnostic quote. Empty summary on a blip → the block just doesn't render.
       withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
-      // Our published opinion of value. Returns null unless the row carries the
-      // per-document publish flag AND passed its own audit, so the default for
-      // every listing is that this renders nothing.
       withTimeoutFallback(getPublishedCmaForListing(listing.listingKey), null, 3000, 'listing:publishedCma'),
+      listing.builderName
+        ? withTimeoutFallback(
+            getListingsByBuilder({
+              builderName: listing.builderName,
+              city: listing.city,
+              excludeKey: listing.listingKey,
+              limit: 8,
+            }),
+            [],
+            3500,
+            'listing:builder',
+          )
+        : Promise.resolve([]),
     ])
 
   const listingWithPhotos = { ...listing, photos }
@@ -572,6 +569,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
           eyebrow="Keep exploring"
           title="This home sits inside"
         />
+        {listing.builderName && builderTiles.length > 0 ? (
+          <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
+        ) : null}
         <KbFooter towns={[]} listingKey={listing.listingKey} />
       </SmoothScrollProvider>
     </main>

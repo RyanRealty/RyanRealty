@@ -6,6 +6,7 @@ import { GoogleMap, Polygon } from '@react-google-maps/api'
 import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from '@googlemaps/markerclusterer'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions } from '@/lib/maps/markers'
+import { PHOTO_STAMP_MIN_ZOOM } from '@/lib/maps/photo-stamp'
 import { kbMoneyFull } from './types'
 
 export type KbMapFeature = {
@@ -164,7 +165,11 @@ export function KbListingMapImpl({
       }
       if (framed) {
         map.fitBounds(bounds, 56)
-        const cap = g.event.addListener(map, 'idle', () => { if ((map.getZoom() ?? 0) > 14) map.setZoom(14); g.event.removeListener(cap) })
+        // Cap at 16 so close zoom can show photo stamps (PHOTO_STAMP_MIN_ZOOM = 15).
+        const cap = g.event.addListener(map, 'idle', () => {
+          if ((map.getZoom() ?? 0) > 16) map.setZoom(16)
+          g.event.removeListener(cap)
+        })
       } else {
         map.fitBounds(REGION, 24)
       }
@@ -172,35 +177,95 @@ export function KbListingMapImpl({
       // clustered listing markers
       const info = new g.InfoWindow({ maxWidth: 236 })
       infoRef.current = info
-      const dot: google.maps.Symbol = { path: g.SymbolPath.CIRCLE, scale: 5, fillColor: NAVY, fillOpacity: 1, strokeColor: CREAM, strokeWeight: 1.4 }
-      const markers = geojson.features.slice(0, MAX_MARKERS).map((f) => {
+      const features = geojson.features.slice(0, MAX_MARKERS)
+      const dot: google.maps.Symbol = {
+        path: g.SymbolPath.CIRCLE,
+        scale: 5,
+        fillColor: NAVY,
+        fillOpacity: 1,
+        strokeColor: CREAM,
+        strokeWeight: 1.4,
+      }
+      const photoIcon = (url: string): google.maps.Icon => ({
+        url,
+        scaledSize: new g.Size(48, 48),
+        anchor: new g.Point(24, 48),
+      })
+
+      const openPopup = (m: google.maps.Marker, p: KbMapFeature['properties']) => {
+        const specs = [
+          p.bd != null ? `${p.bd} bd` : '',
+          p.ba != null ? `${p.ba} ba` : '',
+          p.sf ? `${Number(p.sf).toLocaleString('en-US')} sf` : '',
+        ]
+          .filter(Boolean)
+          .map((s) => `<span>${s}</span>`)
+          .join('')
+        const img = p.img ? `<img class="kb-pop-img" src="${p.img}" alt="" loading="lazy">` : ''
+        info.setContent(
+          `<div class="kb-pop">${img}<div class="kb-pop-body"><div class="kb-pop-price mono-num">${money(p.p)}</div><div class="kb-pop-addr">${p.a || ''}<span class="sub">${p.sub ? p.sub + ' · ' : ''}${p.city || ''}</span></div><div class="kb-pop-specs">${specs}</div></div></div>`,
+        )
+        info.open({ map, anchor: m })
+      }
+
+      const markers = features.map((f) => {
         const [lng, lat] = f.geometry.coordinates
         const p = f.properties
-        // a11y: google.maps.Marker's `title` is the documented accessibility-text
-        // hook (Google's own docs: "an accessibility text... will be added to the
-        // marker"). Without it the marker's internal clickable div ships as an
-        // unlabeled role="button" — pa11y WCAG2AA.4_1_2 flagged every dot on
-        // /cities pages. ListingMapGoogle.tsx already does this for the
-        // single-listing map; this mirrors that proven pattern.
-        const m = new g.Marker({ position: { lat, lng }, icon: dot, title: `${money(p.p)} · ${p.a || 'Listing'}` })
-        m.addListener('click', () => {
-          const specs = [p.bd != null ? `${p.bd} bd` : '', p.ba != null ? `${p.ba} ba` : '', p.sf ? `${Number(p.sf).toLocaleString('en-US')} sf` : '']
-            .filter(Boolean).map((s) => `<span>${s}</span>`).join('')
-          const img = p.img ? `<img class="kb-pop-img" src="${p.img}" alt="" loading="lazy">` : ''
-          info.setContent(`<div class="kb-pop">${img}<div class="kb-pop-body"><div class="kb-pop-price mono-num">${money(p.p)}</div><div class="kb-pop-addr">${p.a || ''}<span class="sub">${p.sub ? p.sub + ' · ' : ''}${p.city || ''}</span></div><div class="kb-pop-specs">${specs}</div></div></div>`)
-          info.open({ map, anchor: m })
+        // a11y: Marker `title` is the accessibility-text hook (pa11y WCAG2AA).
+        const m = new g.Marker({
+          position: { lat, lng },
+          icon: dot,
+          title: `${money(p.p)} · ${p.a || 'Listing'}`,
         })
+        m.addListener('click', () => openPopup(m, p))
         return m
       })
+
+      /** Zoom storytelling: far = clusters; mid = dots; close = photo stamps. */
+      const applyMarkerMode = () => {
+        const z = map.getZoom() ?? 12
+        const photoMode = z >= PHOTO_STAMP_MIN_ZOOM
+        markers.forEach((m, i) => {
+          const p = features[i]?.properties
+          if (!p) return
+          if (photoMode && p.img) {
+            m.setIcon(photoIcon(p.img))
+            m.setLabel({
+              text: money(p.p),
+              color: NAVY,
+              fontSize: '10px',
+              fontWeight: '700',
+              className: 'kb-map-stamp-lbl',
+            })
+          } else {
+            m.setIcon(dot)
+            m.setLabel(null)
+          }
+        })
+      }
+      map.addListener('zoom_changed', applyMarkerMode)
+      applyMarkerMode()
+
       const renderer: Renderer = {
         render: ({ count, position }) => {
           const r = count < 25 ? 17 : count < 100 ? 21 : count < 400 ? 26 : 32
-          return new g.Marker({ position, zIndex: 1000 + count, icon: { path: g.SymbolPath.CIRCLE, scale: r, fillColor: NAVY, fillOpacity: 1, strokeColor: 'rgba(250,248,244,0.9)', strokeWeight: 2 }, label: { text: String(count), color: CREAM, fontSize: '13px', fontWeight: '700' }, title: `${count} listings` })
+          return new g.Marker({
+            position,
+            zIndex: 1000 + count,
+            icon: {
+              path: g.SymbolPath.CIRCLE,
+              scale: r,
+              fillColor: NAVY,
+              fillOpacity: 1,
+              strokeColor: 'rgba(250,248,244,0.9)',
+              strokeWeight: 2,
+            },
+            label: { text: String(count), color: CREAM, fontSize: '13px', fontWeight: '700' },
+            title: `${count} listings`,
+          })
         },
       }
-      // radius 80 (default 60): adjacent cluster bubbles overlapped at region
-      // zoom (96/26/2 collided near Redmond on the homepage — design-audit).
-      // maxZoom 14: far = clusters; closer = individual dots (aligns with search map storytelling).
+      // maxZoom 14: far = clusters; closer = individual markers / photo stamps.
       clustererRef.current = new MarkerClusterer({
         map,
         markers,

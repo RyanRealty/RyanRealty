@@ -138,6 +138,8 @@ const DETAIL_SELECT = [
   // raw feed payload (99.5% coverage on active rows, verified 2026-07-21).
   'ListOfficePhone:details->>ListOfficePhone',
   'ListAgentPreferredPhone:details->>ListAgentPreferredPhone',
+  // Builder for explore rail (new construction). JSONB path — not a typed column yet.
+  'BuilderName:details->>BuilderName',
 ].join(',')
 
 type ListingRow = {
@@ -150,6 +152,7 @@ type ListingRow = {
   // ODS §5-3 P attribution contacts (from the raw feed payload).
   ListOfficePhone: string | null
   ListAgentPreferredPhone: string | null
+  BuilderName: string | null
   StandardStatus: ListingStatus
   ListPrice: number | null
   OriginalListPrice: number | null
@@ -387,6 +390,7 @@ function rowToDetail(row: ListingRow): ListingDetail {
     communitySlug: slug(row.SubdivisionName),
     neighborhoodName: row.boundary_neighborhood,
     neighborhoodSlug: slug(row.boundary_neighborhood),
+    builderName: cleanText(row.BuilderName),
     refreshedAt: new Date().toISOString(),
   }
 }

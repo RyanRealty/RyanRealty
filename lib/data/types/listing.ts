@@ -136,6 +136,11 @@ export type ListingDetail = ListingTile & {
   communitySlug: Slug | null
   neighborhoodName: string | null
   neighborhoodSlug: Slug | null
+  /**
+   * MLS BuilderName from details JSONB (new construction). Null when absent.
+   * Used for “More by this builder” explore rail — not a full /builders product yet.
+   */
+  builderName: string | null
   refreshedAt: IsoTimestamp
 }
 

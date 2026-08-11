@@ -20,6 +20,9 @@
 | 4 | Community golf reverse links | **Shipped** (this commit) |
 | 5 | Neighborhood peers + lifestyle | **Shipped** (ExploreMap basemap + peers) |
 | 6 | ExploreMap basemap on place pages | **Shipped** (`getExploreMapOptions` + KbListingMap) |
+| 7 | Photo stamps on place maps | **Shipped** (zoom ≥15 photo icons on KbListingMap) |
+| 8 | Builder explore rail | **Shipped** (`builderName` + ledger) |
+| 9 | Nbhd in-boundary OH/activity when keys exist | **Shipped** |
 
 ## Non-goals
 
