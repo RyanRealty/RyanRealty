@@ -93,6 +93,10 @@ next-env.d.ts
 # lives in docs/plans/ADMIN_PRODUCT/ (tracked); leaving the runner local-only would strand the
 # OS on one machine and hide it from Cursor, breaking the pack's own cross-agent handoff story.
 !.claude/skills/admin-product-os/
+# ...and public-product-os — the runner half of the Public Product OS (2026-08-11). Same
+# reasoning as admin-product-os: memory lives in docs/plans/PUBLIC_PRODUCT/ (tracked); an
+# untracked runner strands the OS on one machine.
+!.claude/skills/public-product-os/
 .claude/worktrees
 .claude/cache
 .claude/projects

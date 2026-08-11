@@ -5,6 +5,11 @@ description: Run ONE quiet, serial revolution of the Ryan Realty Experience Syst
 
 # Experience Rollout — one revolution per invocation
 
+> **SUPERSEDED 2026-08-11.** The public-site design destination is now the Public Product OS
+> (`docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md`, runner `.claude/skills/public-product-os/SKILL.md`).
+> Do not migrate families to the v3 archetype language or resume this queue. If invoked,
+> say so and point at the Public Product OS. `docs/EXPERIENCE_SYSTEM.md` is evidence only.
+
 Mission (Matt, 2026-06-09): "thoroughly polished, much smarter UI/UX, more interactive with better information, keep users here, track them and make it better, no inconsistencies, never regress, we must have the best." The mechanism: SIX page archetypes in the approved v3 design language (see `docs/EXPERIENCE_SYSTEM.md`), every route migrated family by family.
 
 ## The optimized-loop contract (lessons from the first loop — binding)
