@@ -1,5 +1,10 @@
 # Public Product OS — session boot
 
+**This file is the universal entry point for ANY model in ANY harness** (Claude Code,
+Cursor, Grok, or a successor). The `.claude/skills/public-product-os` runner is a Claude
+convenience wrapper; when it is unavailable, this ritual + the constitution's phase blocks
+are the complete program. The intent lives on disk — no chat history is required to resume.
+
 ## Resume ritual (every session, in order)
 
 1. `ls docs/plans/PUBLIC_PRODUCT` — prove the memory root exists.

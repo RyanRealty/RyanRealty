@@ -512,13 +512,31 @@ win; update the loser. (4) invented process with no evidence → delete or mark 
 
 ---
 
-## Model posture (dated 2026-08-11 — swappable without touching the constitution)
+## Model posture (dated 2026-08-11 — per-model, swappable without touching the constitution)
 
-Written for Fable 5: de-prescribed on purpose — state the goal, constraints, verification;
-let the model plan. Delegation is encouraged: parallel subagents for disjoint enumeration,
-builds, and adversarial verification. Never surface remaining-token counts. Communication:
-one sentence before the first tool call; outcome-first; no self-celebration.
+**The program's intent lives entirely on disk, never in any model.** Matt runs this across
+models and harnesses (Fable 5 → Opus 5 → Grok 4.5 in Cursor, or any successor). Every rule,
+schema, lock, and next-step must therefore be recoverable from `SESSION_BOOT.md` +
+`state.json` + this constitution alone. A session that leaves intent only in chat has
+failed regardless of what it built.
 
-Autonomy: Matt is not watching in real time. For reversible work inside the locked scope,
-proceed without asking. The ONLY blocking wait is a Matt lock. Before ending a turn: if the
-last paragraph is a plan, question, or promise about undone work — do the work now.
+- **Fable 5 (or stronger):** de-prescribed — state the goal, constraints, verification; let
+  the model plan. Delegation encouraged: parallel subagents for disjoint enumeration,
+  builds, and adversarial verification.
+- **Opus 5:** same contract, tighter units — finish one queue unit fully before chaining;
+  delegate mechanical/bulk work to cheaper models; keep self-verification but still hand
+  P9 verification to a fresh-context agent.
+- **Non-Claude harness (Cursor / Grok / other):** the `.claude/skills/` runner and Agent
+  tooling do not exist there. The entry point is `docs/plans/PUBLIC_PRODUCT/SESSION_BOOT.md`
+  → this constitution's Dispatch-equivalent phase blocks. Same unit sizes, same stop
+  tokens (as literal text in the final message), same flush protocol, same lock rules.
+  Record the model/harness name in each progress.txt entry so drift is attributable.
+  Update `docs/plans/CROSS_AGENT_HANDOFF.md` when switching tools mid-phase.
+
+Universal, model-independent: never surface remaining-token counts; one sentence before the
+first tool call; outcome-first; no self-celebration.
+
+Autonomy (all models): Matt is not watching in real time. For reversible work inside the
+locked scope, proceed without asking. The ONLY blocking wait is a Matt lock. Before ending
+a turn: if the last paragraph is a plan, question, or promise about undone work — do the
+work now.
