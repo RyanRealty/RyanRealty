@@ -289,3 +289,7 @@
 - **G1 closed:** MP page_view mirror shipped; MEASUREMENT_DUAL_SOURCE drift fixed; queue G1/F1 `[x]`.
 - **Agent product inventory:** empty (A-class). Remaining: Matt G3 Blended; outcome wait; optional craft D-class not owed.
 - **Honest stop:** plan executable work complete or Matt-blocked.
+
+### 2026-08-10 G3 Blended confirmed + Search UX Wave 3 plan
+- **G3:** Matt screenshot — Reporting Identity already **Blended** (Save greyed; no change needed). Modeling “unavailable” expected until volume. Unit closed `[x]`.
+- **Search:** Plan `docs/plans/SEARCH_UX_WAVE3_PLAN.md` — mockup gaps + perf budgets + waves. Wave 0 code: parallel SSR session∥boundary; skip first map-idle viewport refetch.

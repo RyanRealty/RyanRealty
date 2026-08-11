@@ -470,6 +470,10 @@ export default function MapSearchView({
       firstBoundsReportRef.current = false
       if (isInitialSettle === false) dropGeoScope()
       if (!searchAsMove) return
+      // Perf (SEARCH_UX_WAVE3 P2): SSR already seeded list + markers for the city
+      // bbox. The map's first idle/fitBounds is not a user pan — do not pay a
+      // second exact-count viewport query (~500 tiles) on every cold load.
+      if (isInitialSettle) return
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => {
         runViewportSearch(bounds, drawnShapes)
@@ -644,7 +648,7 @@ export default function MapSearchView({
       ) : (
         <>
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          {visibleListings.slice(0, visibleCount).map((l) => {
+          {visibleListings.slice(0, visibleCount).map((l, cardIndex) => {
             const key = rowKey(l)
             const href = listingDetailPath(
               key,
@@ -698,6 +702,8 @@ export default function MapSearchView({
                       src={l.PhotoURL}
                       alt={`${formatAddress(l)} property photo`}
                       fill
+                      // SEARCH_UX_WAVE3 P7: first cards are LCP candidates on split.
+                      priority={cardIndex < 4}
                       className="pointer-events-none object-cover transition duration-300 group-hover:scale-[1.02]"
                       sizes="(max-width:1024px) 50vw, 25vw"
                     />

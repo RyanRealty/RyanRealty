@@ -191,9 +191,21 @@ export default async function SearchPage({
 
   const page = Math.max(1, parseInt(sp.page ?? '1', 10) || 1)
 
-  // Fetch session for every view so the anonymous-only alert strip knows the
-  // signed-in state in list view too (saved/liked keys stay gated below).
-  const session = await getSession()
+  // SPLIT (default, the mockup target): unified search-as-you-move. ONE viewport
+  // fetch seeds BOTH the list and the map markers so they can never diverge.
+  // Initial bounds come from the city's authoritative boundary bbox (DAL); the
+  // map refines to the real viewport on first idle.
+  //
+  // Perf (SEARCH_UX_WAVE3 P1): session and city boundary do not depend on each
+  // other — run them in parallel so anonymous TTFB is not auth+boundary serial.
+  // Saved/liked still wait on session (signed-in only).
+  const citySlug = effectiveFilters.city ? slugify(effectiveFilters.city) : null
+  const [session, cityBoundaryGeo] = await Promise.all([
+    getSession(),
+    view !== 'list' && citySlug
+      ? withTimeout(getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }), null, 2000)
+      : Promise.resolve(null),
+  ])
   const [savedKeys, likedKeys] =
     session?.user
       ? await Promise.all([
@@ -202,17 +214,6 @@ export default async function SearchPage({
         ])
       : [[], [] as string[]]
 
-  // SPLIT (default, the mockup target): unified search-as-you-move. ONE viewport
-  // fetch seeds BOTH the list and the map markers so they can never diverge.
-  // Initial bounds come from the city's authoritative boundary bbox (DAL); the
-  // map refines to the real viewport on first idle.
-  // Authoritative city boundary polygon (boundaries table via DAL). Seeds the
-  // initial viewport bbox AND draws on the map. One RPC, cached.
-  const citySlug = effectiveFilters.city ? slugify(effectiveFilters.city) : null
-  const cityBoundaryGeo =
-    view !== 'list' && citySlug
-      ? await withTimeout(getBoundaryGeoJSON({ geoType: 'city', geoSlug: citySlug }), null, 2000)
-      : null
   const initialBounds = bboxFromGeometry(cityBoundaryGeo) ?? BEND_DEFAULT_BOUNDS
   // ?shapes= — the user's drawn multi-shape set (polygons + radius circles,
   // include/exclude), with legacy ?poly= as the read-forever fallback. Either

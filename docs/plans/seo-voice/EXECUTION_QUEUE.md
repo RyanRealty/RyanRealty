@@ -112,7 +112,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 37. [x] **G1 Dual-source docs + MP page_view** — dual-source ops + server `page_view`/`listing_view` MP mirror in `/api/visitors/track` (skip when gtag live). Doc drift reconciled 2026-08-10.
 38. [x] **G2 Weekly scoreboard ritual** — `SCOREBOARD_RITUAL.md` + script; MEASUREMENT_DUAL_SOURCE §3 updated
-39. [~] **G3 GA4 ops** — API path green (Signals, dims, key events, retention). **Only remaining:** Reporting Identity → **Blended** (Matt UI ~30s; Admin API cannot set).
+39. [x] **G3 GA4 ops** — API path green (Signals, dims, key events, retention). **2026-08-10 Matt confirmed:** Reporting Identity already **Blended** in GA4 UI (no change needed). Modeling may stay “unavailable” until volume thresholds — expected under consent defaults.
 40. [x] **G4 Prove or document** — **2026-08-10 FP-primary permanent** (MEASUREMENT_DUAL_SOURCE §7b): FP+GSC primary forever; GA4 supplementary; not waiting for GA4 parity
 
 ### Block H — Market analytics residual (G9 / SI) — foundation ≠ full platform
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Outcome loop only:** product + copy residual #2 shipped; wait traffic then `scoreboard-snapshot.mjs` (alerts still 6). No more multi-surface product invent. |
-| **THEN** | **G3 only:** Matt flips Reporting Identity → **Blended**. I6 forever-locked. office_id deferred. J4/G1/F1 closed. |
-| **NOTE** | **not 10×** (alerts 6 / saves 2 as of 2026-08-10 evening snapshot). Session executable plan complete or Matt-blocked. |
+| **NOW** | **Search UX Wave 3** — `docs/plans/SEARCH_UX_WAVE3_PLAN.md` (Wave 0 perf shipped next; Wave 1 chrome hierarchy) |
+| **THEN** | Outcome scoreboard after traffic · Wave 2–3 search craft/perf |
+| **NOTE** | G3 Blended confirmed. **not 10×** (alerts 6 / saves 2). |
 
 ---
 
