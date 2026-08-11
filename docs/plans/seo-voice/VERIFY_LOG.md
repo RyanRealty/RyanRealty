@@ -58,6 +58,13 @@
 
 ## Session notes (newest first)
 
+### 2026-08-11 SEARCH_UX_WAVE3 residual pass (P10/P11/P13 + pan-count honesty)
+- **Action layer:** `app/actions/search.ts` **left alone.** `getViewportSearch` already accepts `{ limit? }` (pan → 250). `searchListingsAll` always returns exact `totalCount` on the same PostgREST select (`count: 'exact'` rides rows) — **no second count query**, so a `stickyCount` flag would not save work and was not added.
+- **P3 residual closed as N/A** (exact-count decoupling unnecessary given DAL shape). Documented in `SEARCH_UX_WAVE3_PLAN.md`.
+- **Sibling residual ship (assumed this pass):** dual SEO surface fold onto flagship `MapSearchView` (P10) · mobile map + results bottom sheet (P11) · split list on `ListingCard` (P13). Plan checkboxes + gap register updated.
+- **Still open on search plan:** GIS reference layers only (Wave 4.2 defer). Optional polish: P4 pin-lite, P6 AllFilters dynamic import.
+- **Outcome unchanged:** alerts/saves cold — **not 10×**. Scoreboard next, not more search chrome.
+
 ### 2026-08-10 residual /endtoend close (outcome + residuals)
 - **B1/B2/F3 product:** map/split inline capture; OH/price-drops hubs inline; success next-step copy (`7ea32ff4`).
 - **F2 guest habit:** localStorage residual + `GuestWatchingBanner` (`a98c77de`); no PII.
@@ -300,4 +307,4 @@
 - **2 Body:** sticky N homes · crumbs · sort; split loading skeleton; `#search-alert-capture`; parity layoutContracts.
 - **3 Pan:** `getViewportSearch` optional `{ limit }`; pan uses 250; map idle debounce 100ms.
 - **4 Map depth:** radius/shapes/named areas already present; GIS layers residual.
-- **Residual:** mobile bottom sheet, dual SEO surface, ListingCard on split.
+- **Residual (closed same day — residual pass):** mobile bottom sheet (P11) · dual SEO surface → MapSearchView (P10) · ListingCard on split (P13) · pan exact-count sticky **N/A** (DAL already exact on row fetch). See session note **2026-08-11 residual pass**.

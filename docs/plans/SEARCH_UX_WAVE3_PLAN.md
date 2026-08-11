@@ -1,7 +1,7 @@
 # Search UX Wave 3 — Mockup gap plan + performance
 
 **Date:** 2026-08-10  
-**Status:** ACTIVE — Wave 0–3 largely shipped 2026-08-11; residual dual-surface + mobile bottom-sheet + full GIS layers  
+**Status:** WAVE 0–3 + dual-surface/mobile/ListingCard residuals CLOSED 2026-08-11 — open: GIS layers only  
 
 **Route:** `https://ryan-realty.com/homes-for-sale` → `app/search/page.tsx`  
 **Mockup SSOT:** `design_system/ryan-realty/ui_kits/search/index.html`  
@@ -56,23 +56,23 @@ Severity: **P0** trust/block · **P1** main-path friction · **P2** clear defect
 | G5 | Card craft | Badges, $/sqft, clean meta | Cards work; less editorial | P3 | M | Align with listing card language |
 | G6 | Hover sync | List↔map highlight | `hoveredKey` exists | P2 | S | Verify both directions + a11y |
 | G7 | Photo pins | Marker photo popups | Price pills / clusters | P2 | M | Marker info window photo |
-| G8 | Mobile | List/map toggle, sheet | Dual toggles fixed once; still chrome-heavy | P1 | M | Bottom sheet results per plan UX |
+| G8 | Mobile | List/map toggle, sheet | **SHIP** Map + draggable results bottom sheet | P1 | M | P11 residual closed 2026-08-11 |
 | G9 | Empty / zero | Honest | Beyond-viewport count exists | P2 | S | Keep; polish copy |
 | G10 | Mockup gate | Visual fidelity | Gate checks **imports only** | P2 | S | Extend parity notes / optional visual checklist |
 | **P1** | SSR waterfall | Fast first paint | **Serial** `getSession` → boundary → viewport | **P0** | S | Parallelize session∥boundary |
 | **P2** | Cold pan fetch | No redundant work | First map idle still schedules `getViewportSearch` | **P0** | S | Skip fetch on initial settle |
-| **P3** | Exact count on pan | Count cheap or sticky | Every pan: `count: 'exact'` + up to 500 tiles | P1 | M | Decouple count; lower pan cap |
-| **P4** | Marker rebuild | Smooth pan | Full AdvancedMarker rebuild to 500 | P1 | L | Server cluster / pin-lite payload |
-| **P5** | Double debounce | Single timer | Map 200ms + parent 350ms | P2 | S | One debounce layer |
-| **P6** | JS weight | Filters light | Eager `AllFiltersSheet` | P2 | S–M | Dynamic import / split exports |
-| **P7** | LCP images | First cards priority | Default image loading | P2 | S | `priority` first 2–4 |
-| **P8** | loading UI | Split skeleton | Generic 6-card skeleton | P3 | S | Split-shell loading.tsx |
-| **P9** | Timeout honesty | Failures ≠ empty inventory | SSR `withTimeout` → empty listings looks like “0 homes” | **P0** | M | Surface retry / degraded state; never invent empty market |
-| **P10** | Dual search surfaces | One search, one truth | Flagship `MapSearchView` vs SEO `UnifiedMapListingsView` / `SearchFilterBar` | P1 | L | Phase 0 residual |
-| **P11** | Mobile Target UX | Map + draggable results sheet | List\|Map tabs; multi-row chrome before first card | P1 | L | Highest conversion residual for mobile |
-| **P12** | Beds/baths max in chip | Range in chip popover | Min-only chips; max only in All-filters | P2 | S | DAL already supports max |
-| **P13** | Split vs list cards | One card system | Hand-rolled split cards vs `ListingCard` on list | P2 | S | Unify on ListingCard |
-| **P14** | Parity gate | Visual fidelity | Import-only mockup-parity → false green | P2 | S | Refresh mockup + pin layout contracts |
+| **P3** | Exact count on pan | Count cheap or sticky | **CLOSED 2026-08-11:** pan `limit: 250`; DAL `searchListingsAll` returns exact `totalCount` on the **same** row fetch (`count: 'exact'` rides select — no second count query). `stickyCount` action flag not added (would not save work / would risk dishonest counts). | P1 | M | No further action on pan count |
+| **P4** | Marker rebuild | Smooth pan | Full AdvancedMarker rebuild to 500 | P1 | L | Server cluster / pin-lite payload — defer |
+| **P5** | Double debounce | Single timer | Map idle 100ms + parent 350ms (shipped Wave 3) | P2 | S | Acceptable; optional one-layer later |
+| **P6** | JS weight | Filters light | Eager `AllFiltersSheet` | P2 | S–M | Dynamic import / split exports — defer |
+| **P7** | LCP images | First cards priority | Default image loading | P2 | S | `priority` first 2–4 — defer polish |
+| **P8** | loading UI | Split skeleton | **SHIP** `app/search/loading.tsx` | P3 | S | Done Wave 2 |
+| **P9** | Timeout honesty | Failures ≠ empty inventory | **SHIP** `withTimeoutSettled` + `initialDegraded` + retry | **P0** | M | Done Wave 0b |
+| **P10** | Dual search surfaces | One search, one truth | **SHIP** SEO path folds onto flagship `MapSearchView` | P1 | L | Residual closed 2026-08-11 (sibling) |
+| **P11** | Mobile Target UX | Map + draggable results sheet | **SHIP** bottom sheet results | P1 | L | Residual closed 2026-08-11 (sibling) |
+| **P12** | Beds/baths max in chip | Range in chip popover | **SHIP** max in chip | P2 | S | Done Wave 1 |
+| **P13** | Split vs list cards | One card system | **SHIP** split list uses `ListingCard` | P2 | S | Residual closed 2026-08-11 (sibling) |
+| **P14** | Parity gate | Visual fidelity | Import-only mockup-parity → false green | P2 | S | layoutContracts refreshed Wave 1–2; visual still advisory |
 
 **Already met (do not re-plan as gaps):** search-as-you-move, list↔map hover sync, `?shapes=`/`?poly=`, radius draw + live mi, multi-shape, named areas picker, find-a-filter, zero-culprit sheet, save on flagship, dual-chrome kill, amenity filters on active split path.
 
@@ -113,26 +113,32 @@ Engine gaps (new filter fields) stay in SEARCH_OPTIMIZATION / FILTER_COMPLETENES
 1. [x] Row 1: omnibox + Voice + Save + Get alerts; sort removed from bar  
 2. [x] Get alerts → `#search-alert-capture`  
 3. [x] Row 2: Status · Price · Beds · Baths · Type · All filters (N); beds/baths **max** in chip  
-4. [~] Mobile bottom sheet (P11 full) still residual  
+4. [x] Mobile bottom sheet (P11) — residual pass 2026-08-11  
 
 ### Wave 2 — Split body craft — **SHIP 2026-08-11**
 
 1. [x] Sticky count · filters · Sort on list pane  
 2. [x] Photo info windows (already); hover sync  
 3. [x] Split loading shell (`app/search/loading.tsx`)  
-4. [~] Unify split cards onto `ListingCard` (list already uses it)  
+4. [x] Unify split cards onto `ListingCard` — residual pass 2026-08-11  
 
 ### Wave 3 — Pan performance (structural lite) — **SHIP 2026-08-11**
 
 1. [x] Skip first idle refetch (Wave 0)  
 2. [x] Pan `getViewportSearch(..., { limit: 250 })`  
 3. [x] Map idle debounce 100ms + parent 350ms  
-4. [~] Exact-count decoupling on pan (structural)  
+4. [x] Exact-count on pan — **closed as N/A:** `searchListingsAll` always returns exact `totalCount` with the row page (one PostgREST query). No second count; no `stickyCount` flag on `getViewportSearch` (would not reduce work).  
+
+### Wave 3b — Dual surface + mobile residual — **SHIP 2026-08-11**
+
+1. [x] **P10** SEO/geo surfaces fold onto flagship `MapSearchView` (one viewport truth)  
+2. [x] **P11** Mobile map + draggable results bottom sheet  
+3. [x] **P13** Split list cards = `ListingCard`  
 
 ### Wave 4 — Map depth — **mostly already shipped**
 
 1. [x] Radius + live mi, multi-shape, named areas, `?shapes=`  
-2. [ ] GIS reference layers / boundary-snap UI (defer)
+2. [ ] GIS reference layers / boundary-snap UI (defer — only open Wave item)
 
 ---
 
@@ -162,6 +168,7 @@ Engine gaps (new filter fields) stay in SEARCH_OPTIMIZATION / FILTER_COMPLETENES
 
 | Field | Value |
 |-------|--------|
-| **NOW** | Residual: mobile bottom sheet (P11) · dual SEO/flagship surface fold (P10) · ListingCard on split (P13) · GIS layers |
-| **THEN** | Measure field TTFB/pan after deploy; optional exact-count-on-pan decoupling |
+| **NOW** | **Closed** for Wave 0–3 + P10/P11/P13. Only open plan item: **GIS layers** (Wave 4.2 defer). |
+| **THEN** | Field measure TTFB / pan RTT / false-empty rate after deploy; optional P4 pin-lite / P6 code-split polish |
 | **MEASURE** | TTFB, first idle network, pan RTT, false-empty rate (degraded UI) |
+| **ACTION NOTE (2026-08-11 residual pass)** | `app/actions/search.ts` **unchanged** — `getViewportSearch` already takes `{ limit? }`; pan uses 250. DAL `searchListingsAll` always exact-counts on the row fetch; sticky/decoupled count not required. |

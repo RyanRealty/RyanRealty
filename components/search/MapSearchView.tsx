@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import type { ListingTileRow, MapBounds } from '@/app/actions/listings'
 import { countSearchListings, getViewportSearch, type SearchFilters } from '@/app/actions/search'
@@ -24,7 +22,6 @@ import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
 import { buildHiddenKeySet, excludeHiddenListings } from '@/components/search/hidden-exclusion'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -38,8 +35,8 @@ import {
 } from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
+import ListingCard, { type ListingBadge } from '@/components/site/ListingCard'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
-import SaveListingButton from '@/components/listing/SaveListingButton'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
   ssr: false,
@@ -50,44 +47,14 @@ const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered
   ),
 })
 
-function formatPrice(n: number | null | undefined): string {
-  if (n == null) return '—'
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
-}
-
-function formatAddress(l: ListingTileRow): string {
-  return [
-    [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ').trim(),
-    l.City,
-    l.State,
-    l.PostalCode,
-  ]
-    .filter(Boolean)
-    .join(', ')
-}
-
-// "street, City" only — the full "street, City, ST, zip" string never fits
-// the 2-up card width, so every card title truncated with an ellipsis and
-// no card showed a complete address (design-audit P3). The search is
-// already Oregon-scoped, so state + zip add nothing a buyer needs to scan a
-// result card. formatAddress() above still carries the full string for
-// photo alt text.
-function formatCardAddress(l: ListingTileRow): string {
-  return [[l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ').trim(), l.City]
-    .filter(Boolean)
-    .join(', ')
-}
-
-/** Street line only (e.g. "2732 NW Ordway Ave") for the elevated result card —
- *  the city/neighborhood sits on its own line below (matches ListingCard + the
- *  search mockup .addr / .city split). */
+/** Street line only (e.g. "2732 NW Ordway Ave") — matches ListingCard addressLine. */
 function cardStreet(l: ListingTileRow): string {
   return [l.StreetNumber, l.StreetName, l.StreetSuffix].filter(Boolean).join(' ').trim() || (l.City ?? 'Listing')
 }
 
 /** "Bend, OR 97703 · Awbrey Butte" — city + state + zip, plus subdivision when
  *  the row carries one. Oregon-scoped, so "OR" is a safe constant when State is
- *  absent. Mirrors the list card's cityLine so both views read identically. */
+ *  absent. Mirrors SearchResults cityLine so split + list views read identically. */
 function cardCity(l: ListingTileRow): string {
   const cityZip = [l.City ? `${l.City}, ${l.State ?? 'OR'}` : null, l.PostalCode].filter(Boolean).join(' ').trim()
   const sub = displaySubdivision(l.SubdivisionName)
@@ -152,26 +119,31 @@ type ViewportSearchFn = (
 
 const NEW_LISTING_WINDOW_DAYS = 7
 
-// Status/new badge — nothing distinguished fresh or under-contract inventory
-// on the result card, so a buyer triaging hundreds of homes couldn't tell
-// them apart without opening each one (design-audit P2). Only uses fields
-// already on the viewport row (StandardStatus, OnMarketDate) — no
-// fabricated price-drop or open-house data.
-//
-// `nowMs` is passed in rather than reading the wall clock here: this is a
-// 'use client' component, and a clock read in the render body disagrees
-// between the server-rendered HTML and the client's first hydration pass,
-// which kills hydration for the whole tree (G37 hydration-safety gate, the
-// React error 418 regression class). The server page computes `now` once and
-// passes it down as a prop instead.
-function cardBadge(l: ListingTileRow, nowMs: number): string | null {
+/**
+ * Map viewport badge → ListingCard badge prop.
+ * Only kinds that exist on ListingBadge ship; free-form status strings (Pending,
+ * Active Under Contract, …) are omitted rather than inventing a kind.
+ * `nowMs` is a server-passed wall-clock prop so SSR HTML matches hydration
+ * (do not sample the clock inside this pure helper).
+ */
+function cardBadge(
+  l: ListingTileRow,
+  nowMs: number
+): { kind: ListingBadge; label: string } | undefined {
   const status = l.StandardStatus?.trim()
-  if (status && status !== 'Active' && status !== 'Closed') return status
+  if (status && status !== 'Active' && status !== 'Closed') {
+    const lower = status.toLowerCase()
+    if (lower === 'sold' || lower.includes('sold')) return { kind: 'sold', label: status }
+    // No ListingBadge kind for pending / AUC / contingent — omit.
+    return undefined
+  }
   if (l.OnMarketDate) {
     const days = (nowMs - new Date(l.OnMarketDate).getTime()) / 86_400_000
-    if (Number.isFinite(days) && days >= 0 && days <= NEW_LISTING_WINDOW_DAYS) return 'New'
+    if (Number.isFinite(days) && days >= 0 && days <= NEW_LISTING_WINDOW_DAYS) {
+      return { kind: 'new', label: 'New' }
+    }
   }
-  return null
+  return undefined
 }
 
 function rowKey(l: ListingTileRow): string {
@@ -335,7 +307,9 @@ export default function MapSearchView({
   const [searchAsMove, setSearchAsMove] = useState(true)
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
   const [drawnShapes, setDrawnShapes] = useState<DrawnShape[]>(initialDrawn)
-  const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
+  // Map-first on mobile (SEARCH_UX_WAVE3 P11 Target UX). List expands the
+  // bottom sheet; Map hides the sheet and shows the canvas count pill.
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('map')
   // Window the CARD list so the SSR payload + hydration cost stays small even
   // when the viewport returns hundreds of homes. The MAP still gets every pin
   // (mapListings below) — only the heavy cards are paged in. "Show more" reveals
@@ -694,11 +668,14 @@ export default function MapSearchView({
     [listings, hiddenKeys],
   )
   const mapListings = useMemo(() => visibleListings.map(toMapListing), [visibleListings])
-  const savedSet = useMemo(() => new Set(savedListingKeys), [savedListingKeys])
 
   const countLabel = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString()
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
 
+  // listPanel is mounted once (desktop rail + mobile bottom sheet share the
+  // node via CSS). Mobile List expands the sheet; Map hides it (count pill).
+  // totalCount is sticky across pan refetches — loading never clears it, so
+  // the row / pill show previous N + "Updating…" (SEARCH_UX_WAVE3 pan sticky count).
   const listPanel = (
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
       {/* Mockup G2: "N homes · filters · Sort" sticky count/sort row. */}
@@ -792,7 +769,7 @@ export default function MapSearchView({
       ) : (
         <>
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          {visibleListings.slice(0, visibleCount).map((l, cardIndex) => {
+          {visibleListings.slice(0, visibleCount).map((l) => {
             const key = rowKey(l)
             const href = listingDetailPath(
               key,
@@ -801,98 +778,44 @@ export default function MapSearchView({
               { mlsNumber: l.ListNumber ?? null }
             )
             const isHovered = hoveredKey === key
-            const sqft = rowSqft(l)
-            const ppsf = cardPricePerSqft(l)
-            const badge = nowMs != null ? cardBadge(l, nowMs) : null
+            const addressLine = cardStreet(l)
+            const badge = nowMs != null ? cardBadge(l, nowMs) : undefined
+            // Canonical site ListingCard (same as SearchResults). Wrapper owns
+            // data-listing-key + hide control + map hover ring; no save/like on tiles.
             return (
-              // A button element (SaveListingButton) can't legally nest inside
-              // an anchor — the card used to be one big Link wrapping everything.
-              // The Link is now a stretched absolute overlay UNDER the save
-              // button (which sits above it in the DOM/z-index), so the
-              // whole card is still one click target except the save corner.
-              <article
+              <div
                 key={key}
                 data-listing-key={key}
                 className={cn(
-                  // `group/hide` (named) drives the hover-revealed hide control
-                  // without entangling the card's own unnamed `group` scale hover.
-                  'group group/hide relative overflow-hidden rounded-xl bg-card shadow-sm ring-1 transition',
-                  isHovered
-                    ? 'shadow-lg ring-2 ring-primary'
-                    : 'ring-foreground/10 hover:shadow-md hover:ring-primary/30'
+                  // `group group/hide relative` — contract + hide-control hover reveal.
+                  'group group/hide relative rounded-xl transition',
+                  isHovered ? 'ring-2 ring-primary shadow-lg' : undefined
                 )}
                 onMouseEnter={() => onListHover(key)}
                 onMouseLeave={() => onListHover(null)}
               >
-                <Link
-                  href={href}
-                  className="absolute inset-0 z-0"
-                  aria-label={`${formatCardAddress(l)}, ${formatPrice(l.ListPrice)}`}
-                  onFocus={() => onListHover(key)}
-                  onBlur={() => onListHover(null)}
-                />
-                {/* Hide control (top-left, clear of the save button at top-right
-                    and the badge now at bottom-left). Optimistically drops the
-                    home from this view AND the map pins via onHiddenChange. */}
                 <ListingCardHideControl
                   listingKey={key}
-                  addressLine={cardStreet(l)}
+                  addressLine={addressLine}
                   onVisibilityChange={onHiddenChange}
-                  className="left-2.5 right-auto top-2.5"
                 />
-                <div className="relative aspect-[4/3] bg-muted">
-                  {l.PhotoURL ? (
-                    <Image
-                      src={l.PhotoURL}
-                      alt={`${formatAddress(l)} property photo`}
-                      fill
-                      // SEARCH_UX_WAVE3 P7: first cards are LCP candidates on split.
-                      priority={cardIndex < 4}
-                      className="pointer-events-none object-cover transition duration-300 group-hover:scale-[1.02]"
-                      sizes="(max-width:1024px) 50vw, 25vw"
-                    />
-                  ) : (
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-br from-muted to-muted-foreground/20 text-sm text-muted-foreground">
-                      No photo
-                    </div>
-                  )}
-                  {badge ? (
-                    // Bottom-left so it never sits under the top-left hide control.
-                    <div className="pointer-events-none absolute bottom-2.5 left-2.5">
-                      <Badge variant="outline" className="bg-card px-2.5 shadow-sm">
-                        {badge}
-                      </Badge>
-                    </div>
-                  ) : null}
-                  <div className="absolute right-2 top-2 z-10">
-                    <SaveListingButton listingKey={key} saved={savedSet.has(key)} compact />
-                  </div>
-                </div>
-                <div className="pointer-events-none px-4 pb-4 pt-3.5">
-                  <div className="text-2xl font-bold tabular-nums tracking-[-0.01em] text-foreground">
-                    {formatPrice(l.ListPrice)}
-                  </div>
-                  <div className="mt-0.5 truncate text-sm text-foreground">{cardStreet(l)}</div>
-                  <div className="truncate text-xs text-muted-foreground">{cardCity(l)}</div>
-                  {(l.BedroomsTotal != null || l.BathroomsTotal != null || sqft != null) && (
-                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground tabular-nums">
-                      {[
-                        l.BedroomsTotal != null ? `${l.BedroomsTotal.toLocaleString()} bd` : null,
-                        l.BathroomsTotal != null ? `${l.BathroomsTotal.toLocaleString()} ba` : null,
-                        sqft != null ? `${sqft.toLocaleString()} sqft` : null,
-                        ppsf != null ? `$${ppsf.toLocaleString()}/sqft` : null,
-                      ]
-                        .filter(Boolean)
-                        .map((part, i) => (
-                          <span key={part} className="flex items-center gap-1.5">
-                            {i > 0 ? <span aria-hidden>·</span> : null}
-                            <span>{part}</span>
-                          </span>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              </article>
+                <ListingCard
+                  showPricePerSqft
+                  listing={{
+                    listingKey: key,
+                    href,
+                    photoUrl: l.PhotoURL,
+                    price: l.ListPrice,
+                    addressLine,
+                    cityLine: cardCity(l),
+                    beds: l.BedroomsTotal,
+                    baths: l.BathroomsTotal,
+                    sqft: rowSqft(l),
+                    pricePerSqft: cardPricePerSqft(l),
+                    badge,
+                  }}
+                />
+              </div>
             )
           })}
         </div>
@@ -969,7 +892,8 @@ export default function MapSearchView({
         role="status"
         aria-live="polite"
         className={cn(
-          'pointer-events-none absolute bottom-16 left-1/2 z-[100] -translate-x-1/2 transition-opacity',
+          // Sit above the mobile count pill / sheet so the spinner stays readable.
+          'pointer-events-none absolute bottom-24 left-1/2 z-[100] -translate-x-1/2 transition-opacity lg:bottom-16',
           loading ? 'opacity-100' : 'opacity-0'
         )}
       >
@@ -981,11 +905,14 @@ export default function MapSearchView({
           {loading ? 'Updating results…' : 'Results updated'}
         </span>
       </div>
-      {/* Mobile map view has no list header, so the result count rides the
-          canvas. Same totalCount state the pins render from — one query, one
-          number (§0). Never claim "0 homes" when the fetch was degraded (P9). */}
+      {/* Mobile map-first: result count rides the canvas from the SAME totalCount
+          as the pins (§0). Hidden when the list sheet is expanded (no double count).
+          Never claim "0 homes" when the fetch was degraded (P9). */}
       <p
-        className="pointer-events-none absolute bottom-4 left-1/2 z-[100] -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md tabular-nums lg:hidden"
+        className={cn(
+          'pointer-events-none absolute bottom-4 left-1/2 z-[100] -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md tabular-nums lg:hidden',
+          mobileView === 'list' ? 'invisible' : 'visible'
+        )}
         aria-live="polite"
       >
         {resultsDegraded ? (
@@ -993,6 +920,7 @@ export default function MapSearchView({
         ) : (
           <>
             <span className="font-semibold">{countLabel}</span> {totalCount === 1 ? 'home' : 'homes'} in this area
+            {loading ? <span className="ml-1.5 text-xs text-muted-foreground">Updating…</span> : null}
           </>
         )}
       </p>
@@ -1001,21 +929,13 @@ export default function MapSearchView({
 
   return (
     <div className="map-search-shell flex w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
-      {/* Mobile segmented toggle */}
+      {/* Mobile segmented toggle — map-first default; List expands sheet over map. */}
       <div className="flex shrink-0 border-b border-border bg-card lg:hidden">
         <ToggleGroup
           type="single"
           value={mobileView}
           onValueChange={(v) => {
             if (v === 'list' || v === 'map') {
-              // Opening the mobile map mounts a fresh map instance whose
-              // initial settle fires a bounds report — that report is not a
-              // user move, so it must not drop the geo scope.
-              if (v === 'map') {
-                firstBoundsReportRef.current = true
-                // Event-time read (user tap on the toggle), never render-time.
-                initialSettleUntilRef.current = Date.now() + INITIAL_SETTLE_GRACE_MS // hydration-safe
-              }
               setMobileView(v)
             }
           }}
@@ -1032,33 +952,33 @@ export default function MapSearchView({
         </ToggleGroup>
       </div>
 
-      {/* List + map, ONE mount each — CSS (not a second render) decides which
-          shows. Payload audit item 16 (2026-08-03): the old markup rendered
-          listPanel (and, when mobileView==="map", mapPanel) into the DOM
-          TWICE — once for this "desktop side by side" block, once for the
-          "mobile: one panel at a time" block below it, toggled with
-          hidden/lg:hidden. Both copies serialize into the SSR HTML regardless
-          of which is visible, doubling every card's markup, image srcset and
-          icons. Below, each slot mounts once; mobileView + the lg breakpoint
-          both gate the same node via Tailwind's hidden/lg:flex pattern. */}
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <div
-          className={cn(
-            'min-h-0 w-full flex-col lg:w-[420px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:border-r lg:border-border',
-            mobileView === 'list' ? 'flex' : 'hidden',
-            'lg:flex'
-          )}
-        >
-          {listPanel}
-        </div>
-        <div
-          className={cn(
-            'min-h-0 w-full flex-1',
-            mobileView === 'map' ? 'flex' : 'hidden',
-            'lg:flex'
-          )}
-        >
+      {/* List + map, ONE mount each. Desktop: side-by-side. Mobile (P11): map
+          always fills; list is a bottom sheet (expanded on List, hidden on Map
+          with canvas count pill). Never double-render panels. */}
+      <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
+        {/* Map — full-bleed under the sheet on mobile; flex-1 rail partner on desktop. */}
+        <div className="absolute inset-0 min-h-0 min-w-0 lg:static lg:relative lg:order-2 lg:min-h-0 lg:flex-1">
           {mapPanel}
+        </div>
+
+        {/* List rail / mobile bottom sheet.
+            Map mode: sheet hidden (count pill on canvas). List mode: ~75vh sheet.
+            Desktop: always the left rail. */}
+        <div
+          className={cn(
+            'z-20 min-h-0 flex-col bg-card',
+            // Mobile bottom sheet
+            'absolute bottom-0 left-0 right-0 max-h-[85vh] rounded-t-2xl border-t border-border shadow-lg transition-[height] duration-300 ease-out',
+            mobileView === 'list' ? 'flex h-[75vh]' : 'hidden',
+            // Desktop left rail (in-flow; stretch with map via flex-row)
+            'lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:w-[420px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none'
+          )}
+        >
+          {/* Drag handle affordance — mobile only */}
+          <div className="flex shrink-0 justify-center pt-2 pb-1 lg:hidden" aria-hidden>
+            <div className="h-1.5 w-10 rounded-full bg-muted-foreground/30" />
+          </div>
+          {listPanel}
         </div>
       </div>
     </div>
