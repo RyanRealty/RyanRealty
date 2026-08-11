@@ -308,8 +308,10 @@ Every route migrated to an archetype updates its `parity.json` in the **same com
 | Community golf reverse links | **Shipped** | `CommunityGolfLinks` from course registry |
 | Nbhd peers + lifestyle | **Shipped** | Peer Bend districts + lifestyle near centroid |
 | Events near | **Shipped** | `findEventsNear` in lifestyleNear |
-| Photo stamps on place maps | **Shipped** | KbListingMap zoom ≥15 photo icons + price label |
-| Builder rail | **Shipped** | `details->>BuilderName` on detail + ledger section |
+| Photo stamps on place maps | **Shipped** | OverlayView pills + photo stamps (search parity) |
+| Dual-pane list↔map | **Shipped** | Subdivision `PlaceMapListSplit` |
+| `/builders` product | **Shipped** | Index + slug pages from active new-construction sample |
+| Builder rail | **Shipped** | Listing ledger + link to `/builders/{slug}` |
 | Nbhd OH/activity scope | **Shipped** | Prefer in-boundary keys; city fallback with honest eyebrow |
 
 Full plan: session plan.md / Exploration System plan (2026-08-11).
