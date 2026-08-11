@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
-import { GoogleMap, InfoWindow, MapContext, Polygon } from '@react-google-maps/api'
+import { MapContext, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { MarkerClusterer, defaultOnClusterClickHandler } from '@googlemaps/markerclusterer'
 
@@ -9,11 +9,10 @@ import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { listingDetailPath } from '@/lib/slug'
 import type { DrawnShape, MapPolygonPoint } from '@/lib/map-polygon'
 import MapDrawTools from '@/components/search/MapDrawTools'
+import MapListingPopup from '@/components/search/MapListingPopup'
 import { Button } from "@/components/ui/button"
 import {
-  buildClusterIcon,
   formatPriceLabel,
-  buildInfoWindowHTML,
   getSearchMapOptions,
   MAP_NAVY,
   MAP_WHITE,
@@ -171,20 +170,24 @@ function buildPricePillElement(
   el.setAttribute('data-price-pill', '1')
 
   const pill = document.createElement('div')
+  // Cream edge + soft shadow: less "generic navy blob", more brand pin.
   pill.style.cssText = [
     `background:${active ? MAP_WHITE : MAP_NAVY}`,
     `color:${active ? MAP_NAVY : MAP_WHITE}`,
-    'font-family:system-ui,-apple-system,sans-serif',
-    `font-size:${hover || active ? '14px' : '13px'}`,
+    'font-family:system-ui,-apple-system,"Segoe UI",sans-serif',
+    `font-size:${hover || active ? '13px' : '12px'}`,
     'font-weight:700',
-    'padding:5px 11px',
+    'padding:4px 10px',
     'border-radius:999px',
     'white-space:nowrap',
-    'letter-spacing:-0.01em',
+    'letter-spacing:-0.02em',
     'font-variant-numeric:tabular-nums',
-    active ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 0 0 4px ${MAP_WHITE}` : '',
-    saved ? `box-shadow:0 0 0 2px #dc2626` : '',
-    'line-height:1.3',
+    `border:1.5px solid ${active ? MAP_NAVY : 'rgba(250,248,244,0.92)'}`,
+    active
+      ? `box-shadow:0 0 0 2px ${MAP_NAVY},0 4px 12px rgba(16,39,66,0.28)`
+      : 'box-shadow:0 2px 8px rgba(16,39,66,0.28)',
+    saved && !active ? `box-shadow:0 0 0 2px #dc2626,0 2px 8px rgba(16,39,66,0.28)` : '',
+    'line-height:1.25',
   ].join(';')
   pill.textContent = label + (saved ? ' ♥' : '')
 
@@ -411,7 +414,7 @@ export default function SearchMapClustered({
   // creation ourselves so we are not dependent on @react-google-maps/api's
   // internal useEffect timing (which had a race against our custom loader).
   const mapContainerRef = useRef<HTMLDivElement | null>(null)
-  // mapInstance drives MapContext.Provider so <Polygon>/<InfoWindow> etc. work.
+  // mapInstance drives MapContext.Provider so <Polygon> children work.
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null)
   const clustererRef = useRef<MarkerClusterer | null>(null)
   // Price-pill marker refs — AdvancedMarkerElement on the vector map (Map ID
@@ -557,7 +560,7 @@ export default function SearchMapClustered({
   // mapContainerRef is attached to the div we render. Once isLoaded is true and
   // the div is in the DOM, this effect fires, constructs the Map, calls onLoad,
   // and stores the instance in mapInstance (→ MapContext.Provider) so that
-  // <Polygon> / <InfoWindow> children from @react-google-maps/api work as before.
+  // <Polygon> children from @react-google-maps/api work as before.
   useEffect(() => {
     if (!isLoaded) return
     const container = mapContainerRef.current
@@ -935,8 +938,8 @@ export default function SearchMapClustered({
       }}
     >
       {/* Map container — we own map creation via the imperative useEffect above.
-          MapContext.Provider makes mapInstance available to <Polygon> and
-          <InfoWindow> children which read it via useGoogleMap() internally. */}
+          MapContext.Provider makes mapInstance available to <Polygon>
+          children which read it via useGoogleMap() internally. */}
       <MapContext.Provider value={mapInstance}>
         <div
           ref={mapContainerRef}
@@ -1017,47 +1020,40 @@ export default function SearchMapClustered({
                   }}
                 />
               ))}
-            {openInfo && openListing && openKey && (
-              <InfoWindow
+            {/* Brand popup (not stock Google InfoWindow — no white balloon / scroll chrome). */}
+            {mapInstance && openInfo && openListing && openKey ? (
+              <MapListingPopup
+                map={mapInstance}
                 position={openInfo.position}
-                onCloseClick={() => setOpenInfo(null)}
-                options={{ maxWidth: 280, pixelOffset: new google.maps.Size(0, -12) }}
-              >
-                {/* Inline styles required: Google InfoWindow renders in an isolated
-                    DOM context that does not inherit the app's Tailwind stylesheet.
-                    All styles come from buildInfoWindowHTML in lib/maps/markers.ts. */}
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: buildInfoWindowHTML({
-                      price: openListing.ListPrice ?? null,
-                      photoURL: openListing.PhotoURL ?? null,
-                      streetNumber: openListing.StreetNumber ?? null,
-                      streetName: openListing.StreetName ?? null,
-                      streetSuffix: openListing.StreetSuffix ?? null,
-                      city: openListing.City ?? null,
-                      state: openListing.State ?? null,
-                      postalCode: openListing.PostalCode ?? null,
-                      bedroomsTotal: openListing.BedroomsTotal ?? null,
-                      bathroomsTotal: openListing.BathroomsTotal ?? null,
-                      sqft: openListing.TotalLivingAreaSqFt ?? null,
-                      isSaved: savedSet.has(openKey),
-                      href: listingDetailPath(
-                        openKey,
-                        {
-                          streetNumber: openListing.StreetNumber,
-                          streetName: openListing.StreetName,
-                          city: openListing.City,
-                          state: openListing.State,
-                          postalCode: openListing.PostalCode,
-                        },
-                        undefined,
-                        { mlsNumber: openListing.ListNumber != null ? String(openListing.ListNumber) : null }
-                      ),
-                    }),
-                  }}
-                />
-              </InfoWindow>
-            )}
+                onClose={() => setOpenInfo(null)}
+                listing={{
+                  price: openListing.ListPrice ?? null,
+                  photoURL: openListing.PhotoURL ?? null,
+                  streetLine: [openListing.StreetNumber, openListing.StreetName, openListing.StreetSuffix]
+                    .filter(Boolean)
+                    .join(' '),
+                  cityLine: [openListing.City, openListing.State, openListing.PostalCode]
+                    .filter(Boolean)
+                    .join(' '),
+                  beds: openListing.BedroomsTotal ?? null,
+                  baths: openListing.BathroomsTotal ?? null,
+                  sqft: openListing.TotalLivingAreaSqFt ?? null,
+                  isSaved: savedSet.has(openKey),
+                  href: listingDetailPath(
+                    openKey,
+                    {
+                      streetNumber: openListing.StreetNumber,
+                      streetName: openListing.StreetName,
+                      city: openListing.City,
+                      state: openListing.State,
+                      postalCode: openListing.PostalCode,
+                    },
+                    undefined,
+                    { mlsNumber: openListing.ListNumber != null ? String(openListing.ListNumber) : null },
+                  ),
+                }}
+              />
+            ) : null}
           </>
         )}
       </MapContext.Provider>

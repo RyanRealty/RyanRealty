@@ -88,10 +88,12 @@ export function getSearchMapOptions(): google.maps.MapOptions {
     // Suppress clutter POI labels (restaurants, shops) so listing markers read.
     styles: MAP_SEARCH_STYLES,
   }
-  if (typeof google !== 'undefined' && google.maps?.ControlPosition && base.mapTypeControlOptions) {
+  if (typeof google !== 'undefined' && google.maps?.ControlPosition && google.maps?.MapTypeId) {
+    // Map + Satellite only — Terrain/Hybrid are portal noise on inventory search.
     opts.mapTypeControlOptions = {
-      ...base.mapTypeControlOptions,
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
       position: google.maps.ControlPosition.TOP_RIGHT,
+      mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.SATELLITE],
     }
   }
   return opts

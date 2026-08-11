@@ -434,8 +434,18 @@ describe('SearchMapClustered map primitive', () => {
     expect(src).toMatch(/buildPricePillElement\([^)]*\bhover:/)
   })
 
-  it('marker InfoWindow shows a photo card', () => {
-    expect(src).toMatch(/openListing\.PhotoURL/)
+  it('marker popup is a brand card (not stock Google InfoWindow chrome)', () => {
+    const map = readSrc('components/SearchMapClustered.tsx')
+    const popup = readSrc('components/search/MapListingPopup.tsx')
+    expect(map).toMatch(/MapListingPopup/)
+    expect(map).not.toMatch(/<InfoWindow[\s>]/)
+    expect(popup).toMatch(/OverlayView/)
+    expect(popup).toMatch(/View listing/)
+    expect(popup).toMatch(/maxHeight:\s*360/)
+  })
+
+  it('photoURL still reaches the popup card from the open listing', () => {
+    expect(src).toMatch(/photoURL:\s*openListing\.PhotoURL/)
     expect(src).toMatch(/PhotoURL\?:\s*string \| null/)
   })
 })
