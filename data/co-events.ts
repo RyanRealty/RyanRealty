@@ -539,12 +539,13 @@ export const CO_EVENTS: CoEvent[] = [
     lat: 43.8735,
     lng: -121.4419,
     recurrence: 'Annually, the second weekend of August',
-    nextConfirmedDate: '2026-08-07',
-    endDate: '2026-08-09',
+    // 2026 dates (Aug 7–9) are past; 2027 weekend not published on official site yet.
+    nextConfirmedDate: null,
+    endDate: null,
     priceInfo: 'Free',
     organizer: 'Sunriver Women’s Club',
     officialUrl: 'https://sunriverwomensclub.org/sraf-home',
-    lastVerified: '2026-07-03',
+    lastVerified: '2026-08-11',
     blurb:
       'A juried outdoor art fair in The Village at Sunriver, with dozens of artists across three days, run by the Sunriver Women’s Club.',
   },
