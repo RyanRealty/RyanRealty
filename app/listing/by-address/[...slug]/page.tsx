@@ -22,31 +22,35 @@ async function resolveListingKeyFromPathSegments(slug: string[]): Promise<string
   const [candidateKey, candidateAddressSlug] = listingSegment.split('~')
   const keyFromSegment = listingKeyFromSlug(candidateKey ?? '')
 
-  // Legacy `key~addressSlug` form: resolve from the address part first.
-  const normalizedAddressSlug = (candidateAddressSlug ?? '').trim()
-  if (normalizedAddressSlug) {
-    const resolvedFromAddress = await resolveListingKeyFromBreadcrumbPath({
-      citySlug,
-      areaSlugs,
-      addressSlug: normalizedAddressSlug,
-    })
-    if (resolvedFromAddress) return resolvedFromAddress
-  }
-
-  // Canonical URLs end in the MLS `ListNumber` (or a RETS `ListingKey`).
-  // getListingDetail resolves by EITHER column directly (both uniquely indexed),
-  // so hand the extracted id straight through. The MLS# is globally unique — no
-  // city/area disambiguation query is needed. This removes the ~30s
-  // resolveListingKeyFromCanonicalPath round-trip that previously made every
-  // canonical listing URL slow and, on miss, render "Page not found".
+  // Fast path FIRST: MLS# / ListingKey from the URL tail. Do not wait on
+  // breadcrumb resolution — that path can hang under load and blank the page.
   if (keyFromSegment) return keyFromSegment
 
-  // Legacy fallback: resolve from a pure address slug (no embedded id).
-  return resolveListingKeyFromBreadcrumbPath({
-    citySlug,
-    areaSlugs,
-    addressSlug: listingSegment,
-  })
+  // Legacy `key~addressSlug` form: resolve from the address part.
+  const normalizedAddressSlug = (candidateAddressSlug ?? '').trim()
+  if (normalizedAddressSlug) {
+    try {
+      const resolvedFromAddress = await resolveListingKeyFromBreadcrumbPath({
+        citySlug,
+        areaSlugs,
+        addressSlug: normalizedAddressSlug,
+      })
+      if (resolvedFromAddress) return resolvedFromAddress
+    } catch {
+      /* fall through */
+    }
+  }
+
+  // Pure address slug (no embedded id).
+  try {
+    return await resolveListingKeyFromBreadcrumbPath({
+      citySlug,
+      areaSlugs,
+      addressSlug: listingSegment,
+    })
+  } catch {
+    return null
+  }
 }
 
 export default async function ListingByAddressPage({ params }: PageProps) {

@@ -74,9 +74,13 @@ export function ListingLocationMap({
 
       <div
         className="relative w-full self-stretch"
-        style={{ aspectRatio: '21 / 9', marginTop: 'clamp(22px,3vw,36px)' }}
+        style={{
+          aspectRatio: '21 / 9',
+          minHeight: 280,
+          marginTop: 'clamp(22px,3vw,36px)',
+        }}
       >
-        <div className="absolute inset-0">
+        <div className="absolute inset-0" style={{ minHeight: 280 }}>
           <ListingLocationMapClient
             lat={lat}
             lng={lng}

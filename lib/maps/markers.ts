@@ -73,10 +73,16 @@ export function getBaseMapOptions(): google.maps.MapOptions {
  * Same editorial basemap as search (cream/muted). Uses Cloud Map ID when set;
  * otherwise MAP_SEARCH_STYLES. Cooperative gestures so page scroll still works.
  */
-export function getExploreMapOptions(): google.maps.MapOptions {
+export function getExploreMapOptions(optsExtra?: {
+  /** Prefer Cloud Map ID when set. Pass false to force raster styles (safer on single-pin maps). */
+  preferMapId?: boolean
+}): google.maps.MapOptions {
   const base = getBaseMapOptions()
+  const preferMapId = optsExtra?.preferMapId !== false
   const mapId =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) || ''
+    preferMapId && typeof process !== 'undefined'
+      ? (process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || '').trim()
+      : ''
   const opts: google.maps.MapOptions = {
     ...base,
     gestureHandling: 'cooperative',
@@ -85,13 +91,13 @@ export function getExploreMapOptions(): google.maps.MapOptions {
     streetViewControl: false,
     backgroundColor: '#faf8f4',
     minZoom: 7,
-    maxZoom: 16,
+    maxZoom: 18,
   }
+  // Always attach editorial styles. When mapId is valid, Cloud style wins and
+  // styles are ignored; if mapId misconfigured, styles still paint tiles.
+  opts.styles = MAP_SEARCH_STYLES
   if (mapId) {
-    // Cloud style owns the basemap; JSON styles are ignored with mapId.
     opts.mapId = mapId
-  } else {
-    opts.styles = MAP_SEARCH_STYLES
   }
   if (typeof google !== 'undefined' && google.maps?.ControlPosition && google.maps?.MapTypeId) {
     opts.mapTypeControl = true

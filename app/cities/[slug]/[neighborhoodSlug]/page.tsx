@@ -92,6 +92,8 @@ import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
 import { lifestyleNearLatLng } from '@/lib/explore/lifestyle-near'
 import { mapCentroid } from '@/lib/explore/subdivision-page-extras'
 import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
+import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
+import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
 import '@/components/site/kb/kb.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string; neighborhoodSlug: string }>> {
@@ -442,31 +444,30 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           }}
           ctaSecondary={{ href: '/sell/valuation', label: 'Value my home' }}
         />
-        {/* Inventory first: the page is titled "{Neighborhood} homes for sale",
-            so a buyer never scrolls prose to reach a home (design-audit P1). The
-            grid caps at 12 tiles; the footer link reaches the rest. */}
-        <KbFeatured
-          items={featuredItems}
-          eyebrow={`${neighborhood.name} · For sale`}
-          viewAllHref={subdivisionListingsPath(cityName, neighborhood.name)}
-          viewAllLabel={`See every ${neighborhood.name} home for sale`}
-          viewAllPlace={neighborhood.name}
-          totalCount={activeCount || null}
-        />
-        <KbTicker items={tickerItems} />
-        {/* Suppressed when degraded: an empty map badged "0 active listings" is the same fabricated zero as the hero (§0). */}
-        {hasMap ? (
-          <KbListingMap
-            geojson={mapGeo}
-            totalActive={activeCount ?? mapFeatures.length}
-            fitToFeatures
-            showRegionMarkers={false}
+        {/* Dual-pane when we have pins; else featured grid (no map of zero). */}
+        {hasMap && listingTiles.length > 0 ? (
+          <PlaceMapListSplit
+            rows={splitRowsFromTiles(listingTiles)}
+            mapGeo={mapGeo}
             polygons={mapPolygons}
-            eyebrow={neighborhood.name}
-            title={`Every active home\nin ${neighborhood.name}`}
-            subtitle={`Every active single-family listing in ${neighborhood.name}.`}
+            eyebrow={`${neighborhood.name} · For sale`}
+            title={`Homes in ${neighborhood.name}`}
+            subtitle={`Every active single-family listing in ${neighborhood.name}. Zoom the map for photo stamps.`}
+            totalActive={activeCount ?? mapFeatures.length}
+            viewAllHref={subdivisionListingsPath(cityName, neighborhood.name)}
+            viewAllLabel={`See every ${neighborhood.name} home for sale`}
           />
-        ) : null}
+        ) : (
+          <KbFeatured
+            items={featuredItems}
+            eyebrow={`${neighborhood.name} · For sale`}
+            viewAllHref={subdivisionListingsPath(cityName, neighborhood.name)}
+            viewAllLabel={`See every ${neighborhood.name} home for sale`}
+            viewAllPlace={neighborhood.name}
+            totalCount={activeCount || null}
+          />
+        )}
+        <KbTicker items={tickerItems} />
         {/* Mid-page buyer capture (E3 light): after map inventory. City-scoped
             listing_alerts only — neighborhood keys are not always 1:1 with MLS
             tags (§0), so no invented subdivision filter. */}

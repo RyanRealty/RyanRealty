@@ -3,27 +3,16 @@
 import { useMemo } from 'react'
 import { GoogleMap, Marker, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
+import { getExploreMapOptions } from '@/lib/maps/markers'
 
 /**
- * ListingLocationMap.client — actual Google Maps implementation for
- * the Layer 4 ListingLocationMap block. 21:9 aspect ratio. Single
- * marker on the listing's lat/lng plus an optional subdivision /
- * neighborhood polygon overlay.
- *
- * Loaded via next/dynamic from the server-safe wrapper at
- * ListingLocationMap.tsx so the @react-google-maps/api bundle only
- * ships on the listing-detail route.
+ * ListingLocationMap.client — Google Maps for listing detail location block.
+ * Fixed min height so tiles always paint (height:100% alone can init at 0px).
+ * Editorial basemap via getExploreMapOptions; Map ID when configured.
  */
 
 const NAVY = '#102742'
 const CREAM = '#faf8f4'
-
-const MAP_STYLES: google.maps.MapTypeStyle[] = [
-  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
-]
 
 type Props = {
   lat: number
@@ -46,29 +35,73 @@ function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
   return []
 }
 
-export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 14 }: Props) {
+export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 15 }: Props) {
   const { ready, error } = useGoogleMapsReady()
 
-  const containerStyle = useMemo(() => ({ width: '100%', height: '100%' }), [])
+  // Intrinsic height: clamp from viewport so GoogleMaps never inits at 0px.
+  const containerStyle = useMemo(
+    () => ({ width: '100%', height: 'min(52vh, 420px)', minHeight: 280 }),
+    [],
+  )
   const center = useMemo(() => ({ lat, lng }), [lat, lng])
 
-  const mapOptions = useMemo<google.maps.MapOptions>(
+  // preferMapId false: single-pin listing map must always show tiles even if
+  // Cloud Map ID is misconfigured; editorial MAP_SEARCH_STYLES still apply.
+  const mapOptions = useMemo(
     () => ({
-      styles: MAP_STYLES,
+      ...getExploreMapOptions({ preferMapId: false }),
       streetViewControl: true,
-      mapTypeControl: false,
       fullscreenControl: true,
       zoomControl: true,
-      gestureHandling: 'cooperative',
+      gestureHandling: 'cooperative' as const,
     }),
     [],
   )
 
-  if (error || !ready) {
+  // Static map fallback when JS maps fail (key, network, bootstrap).
+  const staticFallback = useMemo(() => {
+    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
+    if (!key) return null
+    const params = new URLSearchParams({
+      center: `${lat},${lng}`,
+      zoom: String(zoom),
+      size: '800x420',
+      scale: '2',
+      maptype: 'roadmap',
+      markers: `color:0x102742|${lat},${lng}`,
+      key,
+    })
+    return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`
+  }, [lat, lng, zoom])
+
+  if (error) {
+    if (staticFallback) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={staticFallback}
+          alt="Map of this home"
+          className="h-full w-full object-cover"
+          style={{ minHeight: 280, border: '3px solid var(--navy)' }}
+        />
+      )
+    }
+    return (
+      <div
+        className="flex h-full w-full items-center justify-center text-sm"
+        style={{ minHeight: 280, color: 'var(--navy-70)', background: CREAM, border: '3px solid var(--navy)' }}
+      >
+        Map unavailable right now.
+      </div>
+    )
+  }
+
+  if (!ready) {
     return (
       <div
         aria-hidden
-        className="h-full w-full animate-pulse rounded-[14px] border border-border bg-card"
+        className="h-full w-full animate-pulse"
+        style={{ minHeight: 280, background: CREAM, border: '3px solid var(--navy)' }}
       />
     )
   }
@@ -76,7 +109,7 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 14
   const paths = boundary ? geojsonToPaths(boundary) : []
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-[14px] border border-border shadow-sm">
+    <div className="h-full w-full overflow-hidden" style={{ minHeight: 280, border: '3px solid var(--navy)' }}>
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
