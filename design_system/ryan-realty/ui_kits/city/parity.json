@@ -12,7 +12,7 @@
     { "name": "KbHero", "section": "hero — full-bleed video (Bend reuses the homepage drone) or VERIFIED cityHero photo with labeled regional fallback, city name in Amboqia, plain-language search, live stat row.", "blocking": true },
     { "name": "KbAbout", "section": "about — editorial intro (getCityContent / data-driven) + quick-facts ledger.", "blocking": true },
     { "name": "KbFeatured", "section": "featured homes — poster grid; silent tour autoplay on focus or a Tour badge.", "blocking": true },
-    { "name": "KbListingMap", "section": "map — MapLibre point map zoomed to the city's listings.", "blocking": true },
+    { "name": "KbListingMap", "section": "map — dual-pane PlaceMapListSplit composes KbListingMap (list hover ↔ pin) when pins exist; map-only fallback path still imports KbListingMap.", "blocking": true },
     { "name": "KbTicker", "section": "ticker — scrolling price/address strip.", "blocking": true },
     { "name": "KbMarketHud", "section": "market — verdict stamp, KPI grid, median-close chart, by-neighborhood ladder.", "blocking": true },
     { "name": "KbExploreTowns", "section": "ledgers — reused for the Neighborhoods ledger, the Golf & master-planned communities ledger, and the Explore-other-cities list.", "blocking": true },
