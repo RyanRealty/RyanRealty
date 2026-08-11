@@ -88,6 +88,10 @@ import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { kbMoneyFull } from '@/components/site/kb/types'
 import type { KbTownItem, KbMarketData } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
+import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
+import { lifestyleNearLatLng } from '@/lib/explore/lifestyle-near'
+import { mapCentroid } from '@/lib/explore/subdivision-page-extras'
+import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
 import '@/components/site/kb/kb.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string; neighborhoodSlug: string }>> {
@@ -150,6 +154,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     pulse, stats, mktStats, regionPulse, priceHist,
     boundaryRead, allCitySnapshots, blogPosts, openHouses, activity,
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
+    peerNeighborhoods,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'nbh:stats'),
@@ -178,6 +183,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // Per-neighborhood area-guide video, tagged by the neighborhood/community
     // slug (EXACT geo match). Null → KbAreaGuideVideo renders nothing.
     withTimeoutFallback(getAreaGuideVideo(neighborhoodSlug), null, 3000, 'area-guide-video'),
+    withTimeoutFallback(peerNeighborhoodTowns(citySlug, neighborhoodSlug), [], 3500, 'nbh:peers'),
   ])
 
   const boundaryMapData = boundaryRead.value
@@ -218,6 +224,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const medianListPrice =
     activeCount == null ? null : pulse?.medianListPrice ?? neighborhood.medianPrice ?? null
   const medianDays = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
+  const nbhCentroid = mapCentroid(listingTiles)
+  const nbhLifestyle = lifestyleNearLatLng(nbhCentroid?.lat, nbhCentroid?.lng)
 
   // ── HERO ──────────────────────────────────────────────────────────────────
   // Curated communityImage by boundary slug (handles a neighborhood sharing its
@@ -484,6 +492,22 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             cta={{ href: `/homes-for-sale/${citySlug}`, label: `All ${cityName} homes` }}
           />
         ) : null}
+        {peerNeighborhoods.length > 0 ? (
+          <KbExploreTowns
+            towns={peerNeighborhoods}
+            eyebrow={`${cityName} · Other neighborhoods`}
+            title="Explore nearby neighborhoods"
+            sectionId="peer-neighborhoods"
+            cta={{ href: `/cities/${citySlug}`, label: `All of ${cityName}` }}
+          />
+        ) : null}
+        <LifestyleNearSection
+          lat={nbhCentroid?.lat}
+          lng={nbhCentroid?.lng}
+          items={nbhLifestyle}
+          eyebrow={`${neighborhood.name} · Lifestyle`}
+          title="Parks, trails, golf, and events nearby"
+        />
         <KbAreaGuideVideo videoUrl={areaGuideVideo?.url ?? null} wide={areaGuideVideo?.wide} locationName={neighborhood.name} posterSrc={heroPhoto} />
         {/* Open houses + the feed are fetched city-wide (the MLS carries no
             neighborhood scope on either), so they are labeled with the city (§0). */}

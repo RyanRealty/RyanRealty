@@ -6,6 +6,7 @@
 import { findParksNear } from '@/data/co-parks'
 import { CO_TRAILS } from '@/data/co-trails'
 import { GOLF_COURSES } from '@/data/golf/courses'
+import { CO_EVENTS } from '@/data/co-events'
 
 function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (d: number) => (d * Math.PI) / 180
@@ -19,7 +20,7 @@ function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number):
 }
 
 export type LifestyleNearItem = {
-  kind: 'park' | 'trail' | 'golf'
+  kind: 'park' | 'trail' | 'golf' | 'event'
   name: string
   href: string
   distanceMiles: number
@@ -63,6 +64,25 @@ export function findGolfNear(
     .slice(0, limit)
 }
 
+export function findEventsNear(
+  lat: number,
+  lng: number,
+  radiusMiles = 20,
+  limit = 3,
+): LifestyleNearItem[] {
+  return CO_EVENTS.filter((e) => typeof e.lat === 'number' && typeof e.lng === 'number')
+    .map((e) => ({
+      kind: 'event' as const,
+      name: e.name,
+      href: `/central-oregon/events/${e.slug}`,
+      distanceMiles: haversineMiles(lat, lng, e.lat as number, e.lng as number),
+      meta: e.category?.replace(/-/g, ' ') ?? 'Event',
+    }))
+    .filter((e) => e.distanceMiles <= radiusMiles)
+    .sort((a, b) => a.distanceMiles - b.distanceMiles)
+    .slice(0, limit)
+}
+
 export function lifestyleNearLatLng(
   lat: number | null | undefined,
   lng: number | null | undefined,
@@ -77,8 +97,9 @@ export function lifestyleNearLatLng(
   }))
   const trails = findTrailsNear(lat, lng, 10, 3)
   const golf = findGolfNear(lat, lng, 15, 3)
+  const events = findEventsNear(lat, lng, 25, 2)
   // Interleave kinds so we don't get six parks only — take top by distance overall.
-  return [...parks, ...trails, ...golf]
+  return [...parks, ...trails, ...golf, ...events]
     .sort((a, b) => a.distanceMiles - b.distanceMiles)
-    .slice(0, 8)
+    .slice(0, 9)
 }

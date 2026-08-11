@@ -69,25 +69,57 @@ export function getBaseMapOptions(): google.maps.MapOptions {
 }
 
 /**
- * Search-map specific options — extends base options with:
- * - gestureHandling 'greedy': single-finger pan/zoom inside the map container
- *   (no ctrl-key required). Standard behavior on Zillow/Redfin search maps.
- * - Fewer cluttering controls (no fullscreen on the constrained split panel,
- *   zoom still top-right).
- * - Map/Satellite type control moved off the default top-left corner: the
- *   search map's own "Draw area" button lives there, and the two controls
- *   overlapped so Satellite view was effectively unreachable (design-audit
- *   P2). RIGHT_TOP stacks it above the zoom control instead.
+ * Explore / place-page map options (city, community, subdivision, neighborhood).
+ * Same editorial basemap as search (cream/muted). Uses Cloud Map ID when set;
+ * otherwise MAP_SEARCH_STYLES. Cooperative gestures so page scroll still works.
+ */
+export function getExploreMapOptions(): google.maps.MapOptions {
+  const base = getBaseMapOptions()
+  const mapId =
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) || ''
+  const opts: google.maps.MapOptions = {
+    ...base,
+    gestureHandling: 'cooperative',
+    fullscreenControl: false,
+    mapTypeControl: false,
+    streetViewControl: false,
+    backgroundColor: '#faf8f4',
+    minZoom: 7,
+    maxZoom: 16,
+  }
+  if (mapId) {
+    // Cloud style owns the basemap; JSON styles are ignored with mapId.
+    opts.mapId = mapId
+  } else {
+    opts.styles = MAP_SEARCH_STYLES
+  }
+  if (typeof google !== 'undefined' && google.maps?.ControlPosition && google.maps?.MapTypeId) {
+    opts.mapTypeControl = true
+    opts.mapTypeControlOptions = {
+      style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+      position: google.maps.ControlPosition.TOP_RIGHT,
+      mapTypeIds: [google.maps.MapTypeId.ROADMAP, google.maps.MapTypeId.SATELLITE],
+    }
+  }
+  return opts
+}
+
+/**
+ * Search-map options — greedy gestures, Map/Satellite only, editorial basemap
+ * (or Cloud Map ID). Draw-area button owns top-left; type control is TOP_RIGHT.
  */
 export function getSearchMapOptions(): google.maps.MapOptions {
   const base = getBaseMapOptions()
+  const mapId =
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID) || ''
   const opts: google.maps.MapOptions = {
     ...base,
     gestureHandling: 'greedy',
     fullscreenControl: false,
     // Suppress clutter POI labels (restaurants, shops) so listing markers read.
-    styles: MAP_SEARCH_STYLES,
+    styles: mapId ? undefined : MAP_SEARCH_STYLES,
   }
+  if (mapId) opts.mapId = mapId
   if (typeof google !== 'undefined' && google.maps?.ControlPosition && google.maps?.MapTypeId) {
     // Map + Satellite only — Terrain/Hybrid are portal noise on inventory search.
     opts.mapTypeControlOptions = {

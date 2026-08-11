@@ -5,7 +5,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { GoogleMap, Polygon } from '@react-google-maps/api'
 import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from '@googlemaps/markerclusterer'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
-import { getBaseMapOptions, MAP_BOUNDARY_STYLES } from '@/lib/maps/markers'
+import { getExploreMapOptions } from '@/lib/maps/markers'
 import { kbMoneyFull } from './types'
 
 export type KbMapFeature = {
@@ -118,8 +118,9 @@ export function KbListingMapImpl({
     return { center: { lat: 44.05, lng: -121.32 }, zoom: 8 } // Central Oregon region
   })
 
+  // Exploration System: same cream/muted basemap as search (Cloud Map ID when set).
   const mapOptions = useMemo<google.maps.MapOptions>(
-    () => ({ ...getBaseMapOptions(), styles: MAP_BOUNDARY_STYLES, mapTypeControl: false, fullscreenControl: false, streetViewControl: false, scrollwheel: false, gestureHandling: 'cooperative', backgroundColor: CREAM, minZoom: 7, maxZoom: 16 }),
+    () => ({ ...getExploreMapOptions(), scrollwheel: false }),
     [],
   )
 
@@ -199,7 +200,13 @@ export function KbListingMapImpl({
       }
       // radius 80 (default 60): adjacent cluster bubbles overlapped at region
       // zoom (96/26/2 collided near Redmond on the homepage — design-audit).
-      clustererRef.current = new MarkerClusterer({ map, markers, renderer, algorithm: new SuperClusterAlgorithm({ radius: 80 }) })
+      // maxZoom 14: far = clusters; closer = individual dots (aligns with search map storytelling).
+      clustererRef.current = new MarkerClusterer({
+        map,
+        markers,
+        renderer,
+        algorithm: new SuperClusterAlgorithm({ radius: 80, maxZoom: 14 }),
+      })
 
       // towns + Cascade peaks (region scope only)
       const overlays: google.maps.Marker[] = []
