@@ -1,7 +1,8 @@
 # Search UX Wave 3 — Mockup gap plan + performance
 
 **Date:** 2026-08-10  
-**Status:** ACTIVE — execute through this doc  
+**Status:** ACTIVE — Wave 0–3 largely shipped 2026-08-11; residual dual-surface + mobile bottom-sheet + full GIS layers  
+
 **Route:** `https://ryan-realty.com/homes-for-sale` → `app/search/page.tsx`  
 **Mockup SSOT:** `design_system/ryan-realty/ui_kits/search/index.html`  
 **Parity contract:** `design_system/ryan-realty/ui_kits/search/parity.json`  
@@ -102,35 +103,36 @@ Engine gaps (new filter fields) stay in SEARCH_OPTIMIZATION / FILTER_COMPLETENES
 - [x] Perf quick wins P1 + P2 (parallel SSR, skip first idle fetch)  
 - [x] VERIFY_LOG stamp  
 
-### Wave 0b — Trust (before more chrome polish)
+### Wave 0b — Trust (before more chrome polish) — **SHIP 2026-08-11**
 
-1. **P9:** Distinguish degraded/timeout from true zero on SSR + client empty states (retry affordance).  
-2. Keep beyond-viewport “N homes outside this map” (already good).
+1. [x] **P9:** `withTimeoutSettled` → `initialDegraded` on MapSearchView + SearchResults; retry UI  
+2. [x] Beyond-viewport empty kept  
 
-### Wave 1 — Chrome hierarchy (mockup feel)
+### Wave 1 — Chrome hierarchy (mockup feel) — **SHIP 2026-08-11**
 
-1. Restack SearchFilters to mockup rows: **omnibox + Save + Alerts** | **chips** | **count + sort** (view toggle secondary).  
-2. Single primary alert path (prefer bar CTA → open capture; avoid double sticky strips fighting).  
-3. Primary chips = Price · Beds/Baths · Type · Status + All filters (N); beds/baths max in chip (P12).  
-4. Mobile: collapse chrome density (P11 lite before full bottom sheet).  
+1. [x] Row 1: omnibox + Voice + Save + Get alerts; sort removed from bar  
+2. [x] Get alerts → `#search-alert-capture`  
+3. [x] Row 2: Status · Price · Beds · Baths · Type · All filters (N); beds/baths **max** in chip  
+4. [~] Mobile bottom sheet (P11 full) still residual  
 
-**Exclusive files (start):** `components/search/SearchFilters.tsx`, `app/search/page.tsx`, `components/search/SearchAlertCapture.tsx`, optional CSS.
+### Wave 2 — Split body craft — **SHIP 2026-08-11**
 
-### Wave 2 — Split body craft
+1. [x] Sticky count · filters · Sort on list pane  
+2. [x] Photo info windows (already); hover sync  
+3. [x] Split loading shell (`app/search/loading.tsx`)  
+4. [~] Unify split cards onto `ListingCard` (list already uses it)  
 
-1. Results count stamp always visible in split (mockup row 3).  
-2. Card meta: $/sqft, open-house / price-drop badges where data exists (§0).  
-3. Hover sync QA + photo-capable marker popup.  
+### Wave 3 — Pan performance (structural lite) — **SHIP 2026-08-11**
 
-### Wave 3 — Pan performance (structural lite)
+1. [x] Skip first idle refetch (Wave 0)  
+2. [x] Pan `getViewportSearch(..., { limit: 250 })`  
+3. [x] Map idle debounce 100ms + parent 350ms  
+4. [~] Exact-count decoupling on pan (structural)  
 
-1. Single debounce; skip redundant idle fetch (Wave 0 partial).  
-2. Pin-lite pan payload or lower cap for dense zooms.  
-3. Sticky/approx count on pan; exact count on settle/filter apply.  
+### Wave 4 — Map depth — **mostly already shipped**
 
-### Wave 4 — Map depth (from SEARCH_OPTIMIZATION Phase 2)
-
-Radius live readout, named areas, layer toggles — only after Wave 1–3.
+1. [x] Radius + live mi, multi-shape, named areas, `?shapes=`  
+2. [ ] GIS reference layers / boundary-snap UI (defer)
 
 ---
 
@@ -160,6 +162,6 @@ Radius live readout, named areas, layer toggles — only after Wave 1–3.
 
 | Field | Value |
 |-------|--------|
-| **NOW** | Wave 0b trust (timeout ≠ empty) → Wave 1 chrome hierarchy |
-| **THEN** | Wave 2 craft · Wave 3 pan payload · Wave 4 map depth · dual-surface fold (P10) |
-| **MEASURE** | TTFB, first idle network (no spurious getViewportSearch), pan RTT, zero false-empty rate |
+| **NOW** | Residual: mobile bottom sheet (P11) · dual SEO/flagship surface fold (P10) · ListingCard on split (P13) · GIS layers |
+| **THEN** | Measure field TTFB/pan after deploy; optional exact-count-on-pan decoupling |
+| **MEASURE** | TTFB, first idle network, pan RTT, false-empty rate (degraded UI) |

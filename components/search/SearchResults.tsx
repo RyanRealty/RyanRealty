@@ -21,6 +21,11 @@ type Props = {
   view: 'split' | 'list' | 'map'
   /** When true and totalCount is 0, show a helpful empty state with clear-filters CTA. */
   hasActiveFilters?: boolean
+  /**
+   * SEARCH_UX_WAVE3 Wave 0b: SSR list fetch timed out or threw.
+   * Do not claim "no homes match" — that would invent empty inventory.
+   */
+  initialDegraded?: boolean
 }
 
 export default function SearchResults({
@@ -29,11 +34,13 @@ export default function SearchResults({
   initialPage,
   filters,
   hasActiveFilters = false,
+  initialDegraded = false,
 }: Props) {
   const [listings, setListings] = useState(initialListings)
   const [page, setPage] = useState(initialPage)
   const [total, setTotal] = useState(totalCount)
   const [loading, setLoading] = useState(false)
+  const [degraded, setDegraded] = useState(initialDegraded)
   // Per-user hidden homes ("Hide homes I don't want to see"). CONSTRAINT: the
   // server listing results are SHARED caches (same rows for every visitor), so
   // per-user hiding must never be baked into the fetch — it is filtered here,
@@ -69,7 +76,8 @@ export default function SearchResults({
     setListings(initialListings)
     setPage(initialPage)
     setTotal(totalCount)
-  }, [initialListings, initialPage, totalCount, filtersSnapshot])
+    setDegraded(initialDegraded)
+  }, [initialListings, initialPage, totalCount, initialDegraded, filtersSnapshot])
 
   const loadMore = useCallback(async () => {
     if (loading || listings.length >= total) return
@@ -122,7 +130,8 @@ export default function SearchResults({
   }, [loadMore])
 
   const listingKey = (row: ListingTileRow) => row.ListNumber ?? row.ListingKey ?? ''
-  const showEmptyState = total === 0 && hasActiveFilters
+  const showDegradedState = degraded && total === 0 && listings.length === 0
+  const showEmptyState = !showDegradedState && total === 0 && hasActiveFilters
   // Hidden homes drop out of the rendered grid only — `total` stays the shared
   // server count (per-user subtraction would misstate paging + the cache).
   const visibleListings = useMemo(
@@ -132,7 +141,25 @@ export default function SearchResults({
 
   return (
     <div className="w-full p-4 space-y-4">
-      {showEmptyState ? (
+      {showDegradedState ? (
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          <Eyebrow>Search delayed</Eyebrow>
+          <H3 className="mt-2">We could not load listings in time</H3>
+          <Body className="mx-auto mt-2 max-w-md text-muted-foreground">
+            This is a connection or timeout problem, not an empty market. Try again.
+          </Body>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-6"
+            onClick={() => {
+              if (typeof window !== 'undefined') window.location.reload()
+            }}
+          >
+            Reload page
+          </Button>
+        </div>
+      ) : showEmptyState ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <Eyebrow>No matches</Eyebrow>
           <H3 className="mt-2">No homes match these filters</H3>

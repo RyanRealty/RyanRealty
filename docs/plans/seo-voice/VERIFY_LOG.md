@@ -293,3 +293,11 @@
 ### 2026-08-10 G3 Blended confirmed + Search UX Wave 3 plan
 - **G3:** Matt screenshot — Reporting Identity already **Blended** (Save greyed; no change needed). Modeling “unavailable” expected until volume. Unit closed `[x]`.
 - **Search:** Plan `docs/plans/SEARCH_UX_WAVE3_PLAN.md` — mockup gaps + perf budgets + waves. Wave 0 code: parallel SSR session∥boundary; skip first map-idle viewport refetch.
+
+### 2026-08-11 SEARCH_UX_WAVE3 execute (Waves 0b–3)
+- **0b Trust:** `withTimeoutSettled` on split viewport + list; `initialDegraded` → MapSearchView + SearchResults retry UI (no false empty market).
+- **1 Chrome:** SearchFilters row1 omnibox/Save/Get alerts; row2 chips + All filters (N); beds/baths max; sort moved to list count row.
+- **2 Body:** sticky N homes · crumbs · sort; split loading skeleton; `#search-alert-capture`; parity layoutContracts.
+- **3 Pan:** `getViewportSearch` optional `{ limit }`; pan uses 250; map idle debounce 100ms.
+- **4 Map depth:** radius/shapes/named areas already present; GIS layers residual.
+- **Residual:** mobile bottom sheet, dual SEO surface, ListingCard on split.

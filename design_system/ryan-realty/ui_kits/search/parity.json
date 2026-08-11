@@ -2,7 +2,7 @@
   "route": "app/search/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/search/index.html",
   "competitiveTarget": "Redfin/Zillow-grade map search. Headline: search-as-you-move (pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch). Plus list↔map hover sync, photo popups on markers, mobile list/map toggle.",
-  "note": "Wave 3 site-v2 rebuild of the default split view. /homes-for-sale rewrites here; /search and /listings 301 here. The split view renders MapSearchView (the unified orchestrator); list + map views keep their existing components. Data: getViewportSearch -> getViewportListings (bbox + polygon aware, one set drives list + markers). Initial bounds seeded from getGeoBoundaryMapData (DAL).",
+  "note": "Wave 3 site-v2 rebuild of the default split view. /homes-for-sale rewrites here; /search and /listings 301 here. The split view renders MapSearchView (the unified orchestrator); list + map views keep their existing components. Data: getViewportSearch -> getViewportListings (bbox + polygon aware, one set drives list + markers). Initial bounds seeded from getGeoBoundaryMapData (DAL). Wave 3 layout contracts (must-hold UX, not only imports): 3-row chrome intent (omnibox + Save/Alerts | primary filter chips | count + sort), degraded search honesty (timeout/degraded empty ≠ true zero inventory without retry), dedicated count/sort row, search-as-you-move as the headline map behavior. Plan: docs/plans/SEARCH_UX_WAVE3_PLAN.md. loading.tsx is a split-shell skeleton (filter chrome + list cards + map panel), not a generic card grid.",
   "requiredComponents": [
     { "name": "SearchFilters", "section": "sticky search + filter chip bar (mockup: search-bar-row + filter-bar)", "blocking": true },
     { "name": "MapSearchView", "section": "split map + results with search-as-you-move (mockup: map-split)", "blocking": true },
@@ -11,5 +11,12 @@
   "layoutComponents": [
     { "name": "SiteHeader", "section": "renders from app/layout.tsx", "note": "gate checks the route file" },
     { "name": "SiteFooter", "section": "renders from app/layout.tsx", "note": "gate checks the route file" }
+  ],
+  "layoutContracts": [
+    "3-row chrome intent: Row 1 omnibox + Save/Alerts CTAs; Row 2 primary filter chips; Row 3 results count + filter summary + sort",
+    "Degraded search honesty: SSR/client timeout or fetch failure must not present as true zero inventory without a retry/degraded affordance",
+    "Count/sort row: dedicated visible stamp in split (N homes · scope/filters · sorted by…)",
+    "Search-as-you-move: pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch",
+    "Split body: map + results side-by-side on desktop; intentional mobile list/map toggle (not dual conflicting chrome)"
   ]
 }

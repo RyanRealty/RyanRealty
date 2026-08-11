@@ -608,13 +608,14 @@ export default function SearchMapClustered({
       // set before the map ever fires its first idle event.
       //
       // This is the primary mechanism for "search as you move": every time the
-      // map settles after a pan/zoom, reportBounds fires (debounced 200 ms) and
-      // UnifiedMapListingsView's onBoundsChanged updates the listing results.
+      // map settles after a pan/zoom, reportBounds fires (short idle settle)
+      // and the parent (MapSearchView) applies its own 350 ms pan debounce.
+      // 100 ms (was 200) shortens the double-timer stack without reporting mid-gesture.
       if (onBoundsChanged) {
         let idleTimeout: ReturnType<typeof setTimeout> | null = null
         const onIdle = () => {
           if (idleTimeout) clearTimeout(idleTimeout)
-          idleTimeout = setTimeout(reportBounds, 200)
+          idleTimeout = setTimeout(reportBounds, 100)
         }
         try {
           map.addListener('idle', onIdle)

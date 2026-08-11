@@ -26,7 +26,6 @@ import VoiceSearchButton from '@/components/VoiceSearchButton'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -78,7 +77,7 @@ const STATUS_OPTIONS = [
   { value: 'Sold', label: 'Sold' },
 ] as const
 
-const BEDS_OPTIONS = [
+const BEDS_MIN_OPTIONS = [
   { value: '', label: 'Any' },
   { value: '1', label: '1+' },
   { value: '2', label: '2+' },
@@ -87,12 +86,31 @@ const BEDS_OPTIONS = [
   { value: '5', label: '5+' },
 ] as const
 
-const BATHS_OPTIONS = [
+const BEDS_MAX_OPTIONS = [
+  { value: '', label: 'Any' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4' },
+  { value: '5', label: '5' },
+  { value: '6', label: '6' },
+] as const
+
+const BATHS_MIN_OPTIONS = [
   { value: '', label: 'Any' },
   { value: '1', label: '1+' },
   { value: '2', label: '2+' },
   { value: '3', label: '3+' },
   { value: '4', label: '4+' },
+] as const
+
+const BATHS_MAX_OPTIONS = [
+  { value: '', label: 'Any' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '4', label: '4' },
+  { value: '5', label: '5' },
 ] as const
 
 const PRICE_PRESETS = [
@@ -105,16 +123,16 @@ const PRICE_PRESETS = [
   { label: '$1.5M+', min: 1500000, max: undefined },
 ]
 
-const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'price_asc', label: 'Price: low to high' },
-  { value: 'price_desc', label: 'Price: high to low' },
-  { value: 'oldest', label: 'Oldest' },
-  { value: 'price_per_sqft_asc', label: 'Price per sq ft: low to high' },
-  { value: 'price_per_sqft_desc', label: 'Price per sq ft: high to low' },
-  { value: 'year_newest', label: 'Newest built' },
-  { value: 'year_oldest', label: 'Oldest built' },
-] as const
+/** Scroll to the inline alert capture strip and focus its email field (client-only). */
+function focusSearchAlertCapture() {
+  const root = document.getElementById('search-alert-capture')
+  if (!root) return
+  root.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const email = root.querySelector<HTMLInputElement>('input[type="email"], input[name="email"]')
+  if (email) {
+    window.setTimeout(() => email.focus({ preventScroll: true }), 350)
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -439,11 +457,11 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
 
   return (
     <div className="flex flex-col gap-0">
-      {/* Row 1: location + sort + view toggle */}
-      <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-        {/* Location search input — basis-full gives it its own line on phones
-            (sort + view toggle squeezed it to ~60px, showing "Ben" of "Bend"). */}
-        <div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 sm:max-w-sm">
+      {/* Row 1: omnibox + voice + save + get alerts. Sort lives on the count
+          row (sibling). View toggle stays desktop-only and quieter at the end. */}
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6">
+        {/* Location search input — basis-full on phones so it is never squeezed. */}
+        <div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 sm:max-w-md">
           <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
@@ -508,28 +526,22 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         {/* Voice search — speaks the same registry the screen panel renders */}
         <VoiceSearchButton onTranscript={applyNaturalQuery} className="shrink-0" />
 
-        {/* Sort — pushed to the right edge with a quiet label (mockup results-count) */}
-        <div className="ml-auto flex items-center gap-2">
-          <span className="hidden text-xs text-muted-foreground sm:inline">Sort</span>
-          <Select
-            value={initialFilters.sort ?? 'newest'}
-            onValueChange={(v) => setFilter('sort', v)}
-          >
-            <SelectTrigger className="h-9 w-44" aria-label="Sort results">
-              <SelectValue placeholder="Newest" />
-            </SelectTrigger>
-            <SelectContent>
-              {SORT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Save search — captures every live URL param, registry filters included. */}
+        <SaveSearchButton user={signedIn} />
 
-        {/* View toggle (split / list / map) — desktop only. MapSearchView's
-            own List/Map tab bar is the single mobile switcher; both showing
-            at once left "Split" selected up here while the actual bottom
-            tabs told a different story (design-audit P2). */}
+        {/* Get alerts — scroll to inline capture strip (id set on SearchAlertCapture). */}
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          onClick={focusSearchAlertCapture}
+          className="shrink-0"
+        >
+          Get alerts
+        </Button>
+
+        {/* View toggle (split / list / map) — desktop only, quiet chrome.
+            MapSearchView owns the mobile List/Map switcher (design-audit P2). */}
         <ToggleGroup
           type="single"
           value={view}
@@ -541,29 +553,24 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           }}
           variant="outline"
           size="sm"
-          className="hidden h-9 overflow-hidden rounded-lg border border-border lg:flex"
+          className="ml-auto hidden h-8 overflow-hidden rounded-md border border-border/60 bg-muted/40 lg:flex"
         >
           {(['split', 'list', 'map'] as const).map((v) => (
             <ToggleGroupItem
               key={v}
               value={v}
-              className="h-9 rounded-none border-0 px-3.5 text-sm font-medium capitalize"
+              className="h-8 rounded-none border-0 px-2.5 text-xs font-medium capitalize text-muted-foreground data-[state=on]:text-foreground"
               aria-label={`${v} view`}
             >
               {v}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-
-        {/* Save search — the whole alert backend existed with no entry point
-            on this surface (design-audit P1). Captures every live URL param,
-            registry filters included. */}
-        <SaveSearchButton user={signedIn} />
       </div>
 
       <Separator />
 
-      {/* Row 2: primary filter chips row.
+      {/* Row 2: primary filter chips only.
           Horizontal-scroll affordance kept for mobile (overflow-x-auto). The
           dropdown panels portal to <body> via Popover, so this scroll container
           no longer clips them (the old absolute-div approach was clipped here). */}
@@ -674,52 +681,88 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           </div>
         </FilterDropdown>
 
-        {/* Beds */}
+        {/* Beds — min + max (URL: beds / maxBeds) */}
         <FilterDropdown
           label={activeBedsLabel ?? 'Beds'}
           active={!!activeBedsLabel}
           open={openPanel === 'beds'}
           onOpenChange={panelOpenHandler('beds')}
         >
-          <div className="p-3">
-            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bedrooms (min)</p>
-            <div className="flex flex-wrap gap-1.5">
-              {BEDS_OPTIONS.map(({ value, label }) => (
-                <Button
-                  key={value || 'any'}
-                  type="button"
-                  variant={(initialFilters.beds ?? '') === value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => { setFilter('beds', value || undefined); setOpenPanel(null) }}
-                >
-                  {label}
-                </Button>
-              ))}
+          <div className="space-y-3 p-3">
+            <div>
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Min bedrooms</p>
+              <div className="flex flex-wrap gap-1.5">
+                {BEDS_MIN_OPTIONS.map(({ value, label }) => (
+                  <Button
+                    key={`beds-min-${value || 'any'}`}
+                    type="button"
+                    variant={(initialFilters.beds ?? '') === value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilter('beds', value || undefined)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Max bedrooms</p>
+              <div className="flex flex-wrap gap-1.5">
+                {BEDS_MAX_OPTIONS.map(({ value, label }) => (
+                  <Button
+                    key={`beds-max-${value || 'any'}`}
+                    type="button"
+                    variant={(initialFilters.maxBeds ?? '') === value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilter('maxBeds', value || undefined)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </FilterDropdown>
 
-        {/* Baths */}
+        {/* Baths — min + max (URL: baths / maxBaths) */}
         <FilterDropdown
           label={activeBathsLabel ?? 'Baths'}
           active={!!activeBathsLabel}
           open={openPanel === 'baths'}
           onOpenChange={panelOpenHandler('baths')}
         >
-          <div className="p-3">
-            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Bathrooms (min)</p>
-            <div className="flex flex-wrap gap-1.5">
-              {BATHS_OPTIONS.map(({ value, label }) => (
-                <Button
-                  key={value || 'any'}
-                  type="button"
-                  variant={(initialFilters.baths ?? '') === value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => { setFilter('baths', value || undefined); setOpenPanel(null) }}
-                >
-                  {label}
-                </Button>
-              ))}
+          <div className="space-y-3 p-3">
+            <div>
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Min bathrooms</p>
+              <div className="flex flex-wrap gap-1.5">
+                {BATHS_MIN_OPTIONS.map(({ value, label }) => (
+                  <Button
+                    key={`baths-min-${value || 'any'}`}
+                    type="button"
+                    variant={(initialFilters.baths ?? '') === value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilter('baths', value || undefined)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Max bathrooms</p>
+              <div className="flex flex-wrap gap-1.5">
+                {BATHS_MAX_OPTIONS.map(({ value, label }) => (
+                  <Button
+                    key={`baths-max-${value || 'any'}`}
+                    type="button"
+                    variant={(initialFilters.maxBaths ?? '') === value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setFilter('maxBaths', value || undefined)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </FilterDropdown>
@@ -750,17 +793,17 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           </div>
         </FilterDropdown>
 
-        {/* More Filters button */}
+        {/* All filters sheet trigger */}
         <Button
           type="button"
           variant={moreFilterCount > 0 ? 'default' : 'outline'}
           size="sm"
           onClick={() => setMoreSheetOpen(true)}
           className="shrink-0 gap-1 rounded-full px-3.5 tabular-nums"
-          aria-label="Open more filters"
+          aria-label="Open all filters"
         >
           <HugeiconsIcon icon={FilterIcon} className="size-3.5" aria-hidden />
-          {moreFilterCount > 0 ? `More (${moreFilterCount})` : 'More'}
+          {moreFilterCount > 0 ? `All filters (${moreFilterCount})` : 'All filters'}
         </Button>
       </div>
 

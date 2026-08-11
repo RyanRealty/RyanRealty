@@ -205,17 +205,6 @@ export async function getSearchListings(
 }
 
 /**
- * Search-as-you-move: fetch every home inside the current map viewport (or drawn
- * polygon), applying the active filters. ONE result set feeds BOTH the list and
- * the map markers so they stay in lockstep — the list is exactly the pins on the
- * map. `capped` lets the UI show "500+" honestly when the area overflows the cap.
- *
- * On-market scopes serve from listing_search_mv (searchListingsAll), so every
- * registry filter — amenities, outbuildings, schools, keywords — now applies in
- * split view too (the old getViewportListings path silently dropped them). Sold
- * scope keeps the legacy getViewportListings path.
- */
-/**
  * Public server action → the client-supplied shape set is untrusted. The DAL's
  * zod schema rejects a malformed set by THROWING (no silent widening), which
  * would 500 the whole action — so junk shapes are dropped to null here (the
@@ -238,16 +227,38 @@ function sanitizeShapeSet(set: MapShapeSet | null): MapShapeSet | null {
   return exclude.length > 0 ? { include, exclude } : { include }
 }
 
+/**
+ * Search-as-you-move: fetch every home inside the current map viewport (or drawn
+ * polygon), applying the active filters. ONE result set feeds BOTH the list and
+ * the map markers so they stay in lockstep — the list is exactly the pins on the
+ * map. `capped` lets the UI show "500+" honestly when the area overflows the cap.
+ *
+ * On-market scopes serve from listing_search_mv (searchListingsAll), so every
+ * registry filter — amenities, outbuildings, schools, keywords — now applies in
+ * split view too (the old getViewportListings path silently dropped them). Sold
+ * scope keeps the legacy getViewportListings path.
+ *
+ * @param options.limit Display cap for returned rows (default **500**). Client
+ *   pan/zoom refetches should pass **250** for a lighter payload; SSR seed and
+ *   first paint keep the default so the initial map is denser. Hard floor 1,
+ *   hard ceiling 1000 (matches getViewportListings).
+ */
 export async function getViewportSearch(
   filters: SearchFilters,
   bounds: MapBounds,
-  polygon: MapPolygonPoint[] | MapShapeSet | null
+  polygon: MapPolygonPoint[] | MapShapeSet | null,
+  options?: { limit?: number }
 ): Promise<{ listings: ListingTileRow[]; totalCount: number; capped: boolean }> {
   // The 3rd arg keeps its legacy shape (a single polygon ring) AND accepts the
   // Phase 2 multi-shape include/exclude set — both spellings of "the user drew
   // on the map". Arrays are the legacy ring; objects are the shape set.
   const legacyPoly = Array.isArray(polygon) && polygon.length >= 3 ? polygon : null
   const shapeSet = !Array.isArray(polygon) ? sanitizeShapeSet(polygon) : null
+  // Display-row cap only — totalCount remains exact when the DAL can count.
+  // Named `cap` is the search-perf-budget R5 constant (max 500). Pan may pass
+  // a lower options.limit (e.g. 250); never raise above `cap`.
+  const cap = 500
+  const displayCap = Math.min(Math.max(options?.limit ?? cap, 1), cap)
 
   if (filters.status === 'Sold') {
     const res = await getViewportListings({
@@ -277,6 +288,7 @@ export async function getViewportSearch(
       keywords: filters.keywords?.trim() || undefined,
       postalCode: filters.postalCode?.trim() || undefined,
       propertyType: filters.propertyType,
+      cap: displayCap,
     })
     if (!shapeSet) return res
     // Sold rides the legacy tile path (no MV/RPC coverage) — apply the shape
@@ -296,7 +308,6 @@ export async function getViewportSearch(
     : filters.status === 'Active' ? 'active'
     : 'active-and-pending'
 
-  const cap = 500
   const poly = legacyPoly
   const polygonBounds = poly ? getPolygonBounds(poly) : shapeSet ? getShapeSetBounds(shapeSet) : null
   const effectiveBounds = polygonBounds ?? bounds
@@ -325,7 +336,7 @@ export async function getViewportSearch(
       north: effectiveBounds.north,
     },
     ...(shapesParam ? { shapes: shapesParam } : {}),
-    limit: cap,
+    limit: displayCap,
   })
 
   // Both paths: totalCount is exact for the bbox/shape + filters (the shapes

@@ -166,8 +166,8 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Search UX Wave 3** — `docs/plans/SEARCH_UX_WAVE3_PLAN.md` (Wave 0 perf shipped next; Wave 1 chrome hierarchy) |
-| **THEN** | Outcome scoreboard after traffic · Wave 2–3 search craft/perf |
+| **NOW** | **Search UX Wave 3** residual only: mobile bottom sheet · dual SEO surface fold · optional ListingCard unify (`SEARCH_UX_WAVE3_PLAN.md`) |
+| **THEN** | Outcome scoreboard after traffic |
 | **NOTE** | G3 Blended confirmed. **not 10×** (alerts 6 / saves 2). |
 
 ---

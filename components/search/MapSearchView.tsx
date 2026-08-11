@@ -29,6 +29,13 @@ import { Button } from '@/components/ui/button'
 import { Eyebrow, H3, Body } from '@/components/site/primitives'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
@@ -94,18 +101,54 @@ function cardPricePerSqft(l: ListingTileRow): number | null {
   return Math.round(l.ListPrice / sqft)
 }
 
-/** Editorial results-summary suffix per sort mode (mockup: "· sorted by newest").
- *  Keys mirror SORT_OPTIONS in SearchFilters; unknown sorts render no suffix. */
-const SORT_SUFFIX: Record<string, string> = {
-  newest: 'sorted by newest',
-  oldest: 'sorted by oldest',
-  price_asc: 'price: low to high',
-  price_desc: 'price: high to low',
-  price_per_sqft_asc: 'price per sqft: low to high',
-  price_per_sqft_desc: 'price per sqft: high to low',
-  year_newest: 'newest built first',
-  year_oldest: 'oldest built first',
+/** Sort options for the list-pane count row (G2). Values match SearchFilters.SORT_OPTIONS. */
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'price_asc', label: 'Price: low to high' },
+  { value: 'price_desc', label: 'Price: high to low' },
+  { value: 'oldest', label: 'Oldest' },
+  { value: 'price_per_sqft_asc', label: 'Price per sq ft: low to high' },
+  { value: 'price_per_sqft_desc', label: 'Price per sq ft: high to low' },
+  { value: 'year_newest', label: 'Newest built' },
+  { value: 'year_oldest', label: 'Oldest built' },
+] as const
+
+/** Compact filter crumbs for the mockup count row ("N homes · Bend · $500K+"). */
+function buildFiltersSummary(f: SearchFiltersInitial): string {
+  const parts: string[] = []
+  if (f.city?.trim()) parts.push(f.city.trim())
+  if (f.subdivision?.trim()) parts.push(f.subdivision.trim())
+  if (f.postalCode?.trim()) parts.push(f.postalCode.trim())
+  const minP = f.minPrice?.trim() ? Number(f.minPrice) : null
+  const maxP = f.maxPrice?.trim() ? Number(f.maxPrice) : null
+  const fmt = (n: number) =>
+    n >= 1_000_000
+      ? `$${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`
+      : n >= 1_000
+        ? `$${Math.round(n / 1_000)}K`
+        : `$${n}`
+  if (minP != null && Number.isFinite(minP) && maxP != null && Number.isFinite(maxP)) {
+    parts.push(`${fmt(minP)} to ${fmt(maxP)}`)
+  } else if (minP != null && Number.isFinite(minP)) {
+    parts.push(`${fmt(minP)}+`)
+  } else if (maxP != null && Number.isFinite(maxP)) {
+    parts.push(`Up to ${fmt(maxP)}`)
+  }
+  if (f.beds?.trim()) parts.push(`${f.beds}+ bd`)
+  if (f.baths?.trim()) parts.push(`${f.baths}+ ba`)
+  if (f.propertyType?.trim()) parts.push(f.propertyType.trim())
+  if (f.status && f.status !== 'Active') parts.push(f.status)
+  return parts.join(' · ')
 }
+
+/** Optional 4th arg for pan payload cap. Server may ignore until Wave 3 API lands. */
+type ViewportSearchOptions = { limit?: number }
+type ViewportSearchFn = (
+  filters: SearchFilters,
+  bounds: MapBounds,
+  polygon: Parameters<typeof getViewportSearch>[2],
+  options?: ViewportSearchOptions
+) => ReturnType<typeof getViewportSearch>
 
 const NEW_LISTING_WINDOW_DAYS = 7
 
@@ -241,6 +284,11 @@ export type MapSearchViewProps = {
   /** Server-computed request timestamp (ms) for the card "New" badge — see
    *  cardBadge()'s comment for why this isn't read client-side. */
   nowMs?: number
+  /**
+   * SSR viewport timed out or failed (SEARCH_UX_WAVE3 P9). When true the empty
+   * state must NOT claim "no homes" — show a retry instead of inventing zero inventory.
+   */
+  initialDegraded?: boolean
 }
 
 export default function MapSearchView({
@@ -256,6 +304,7 @@ export default function MapSearchView({
   initialPolygon: initialPolygonProp = null,
   initialShapes = null,
   nowMs,
+  initialDegraded = false,
 }: MapSearchViewProps) {
   // One initial shape set, whichever URL spelling delivered it: ?shapes=
   // (multi-shape) wins; a legacy ?poly= ring arrives as a single include
@@ -272,6 +321,10 @@ export default function MapSearchView({
   const [listings, setListings] = useState(initialListings)
   const [totalCount, setTotalCount] = useState(initialTotalCount)
   const [capped, setCapped] = useState(initialCapped)
+  // Timeout honesty (P9): seed from SSR; clear on a successful viewport fetch.
+  const [resultsDegraded, setResultsDegraded] = useState(initialDegraded)
+  // Local sort so the Select stays in sync while URL replace + viewport refetch run.
+  const [sortValue, setSortValue] = useState(filters.sort?.trim() || 'newest')
   const [loading, setLoading] = useState(false)
   // Per-user hidden homes ("Hide homes I don't want to see"). Same edge-of-
   // render model as SearchResults: viewport results are SHARED caches, so the
@@ -297,6 +350,9 @@ export default function MapSearchView({
 
   const searchFilters = useMemo(() => toSearchFilters(filters), [filters])
   const filtersSnapshot = JSON.stringify(filters)
+  useEffect(() => {
+    setSortValue(filters.sort?.trim() || 'newest')
+  }, [filters.sort])
 
   // ── Geo scope (W4.2) ──────────────────────────────────────────────────────
   // The URL can pin the search to a place (city / subdivision / zip). That pin
@@ -393,11 +449,12 @@ export default function MapSearchView({
     setListings(initialListings)
     setTotalCount(initialTotalCount)
     setCapped(initialCapped)
+    setResultsDegraded(initialDegraded)
     setDrawnShapes(initialDrawn)
     setVisibleCount(CARD_PAGE)
     scopeDroppedRef.current = initialPolygon != null
     setScopeDropped(initialPolygon != null)
-  }, [initialListings, initialTotalCount, initialCapped, initialDrawn, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialListings, initialTotalCount, initialCapped, initialDegraded, initialDrawn, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clean up any pending debounce on unmount.
   useEffect(() => {
@@ -407,7 +464,7 @@ export default function MapSearchView({
   }, [])
 
   const runViewportSearch = useCallback(
-    async (bounds: MapBounds, shapes: DrawnShape[]) => {
+    async (bounds: MapBounds, shapes: DrawnShape[], opts?: ViewportSearchOptions) => {
       const reqId = ++reqIdRef.current
       setLoading(true)
       try {
@@ -421,12 +478,22 @@ export default function MapSearchView({
         // (PostGIS). Exclude-only sets ride the current viewport as the
         // include ring — "this view minus those areas".
         const poly = buildShapeSetForSearch(shapes, bounds)
-        const res = await getViewportSearch(effectiveFilters, bounds, poly)
+        // Pan passes { limit: 250 } for a lighter payload (P3). Non-pan paths
+        // (draw, toggle, retry) keep the three-arg call so SSR-style fidelity
+        // remains the default; the 4th arg is TypeScript-optional until the
+        // server action accepts it.
+        const res =
+          opts?.limit != null
+            ? await (getViewportSearch as ViewportSearchFn)(effectiveFilters, bounds, poly, {
+                limit: opts.limit,
+              })
+            : await getViewportSearch(effectiveFilters, bounds, poly)
         // Ignore out-of-order responses (user kept panning).
         if (reqId !== reqIdRef.current) return
         setListings(res.listings)
         setTotalCount(res.totalCount)
         setCapped(res.capped)
+        setResultsDegraded(false)
         // Instrumentation (Phase 0.5): a search round-trip that dead-ends at 0
         // homes, keyed by the live query string so repeated pans over the same
         // empty search fire once. Fire-and-forget — never touches the fetch.
@@ -438,12 +505,38 @@ export default function MapSearchView({
             fireSearchEvent('search_zero_results', payload)
           }
         }
+      } catch {
+        // Network / action failure: honest degraded empty, not "0 homes".
+        if (reqId === reqIdRef.current) setResultsDegraded(true)
       } finally {
         if (reqId === reqIdRef.current) setLoading(false)
       }
     },
     []
   )
+
+  /** Mockup G2: sort lives on the count row; updates URL like other filters. */
+  const handleSortChange = useCallback(
+    (value: string) => {
+      const next = value || 'newest'
+      setSortValue(next)
+      const params = new URLSearchParams(urlSearchParams?.toString() ?? '')
+      if (next === 'newest') params.delete('sort')
+      else params.set('sort', next)
+      params.delete('page')
+      const query = params.toString()
+      const base = pathname ?? '/homes-for-sale'
+      router.replace(query ? `${base}?${query}` : base, { scroll: false })
+      // Immediate viewport refetch with the new sort (don't wait on full SSR).
+      searchFiltersRef.current = { ...searchFiltersRef.current, sort: next }
+      void runViewportSearch(lastBoundsRef.current, drawnShapes)
+    },
+    [router, pathname, urlSearchParams, drawnShapes, runViewportSearch]
+  )
+
+  const retryViewportSearch = useCallback(() => {
+    void runViewportSearch(lastBoundsRef.current, drawnShapes)
+  }, [drawnShapes, runViewportSearch])
 
   /** Drop the place pin (chip tap or first user map move) — see geo-scope.ts. */
   const dropGeoScope = useCallback(() => {
@@ -475,8 +568,10 @@ export default function MapSearchView({
       // second exact-count viewport query (~500 tiles) on every cold load.
       if (isInitialSettle) return
       if (debounceRef.current) clearTimeout(debounceRef.current)
+      // Single 350 ms debounce on pan (map idle delay reduced separately).
+      // Cap pan payload at 250 pins; SSR seed keeps full fidelity (no remount recap).
       debounceRef.current = setTimeout(() => {
-        runViewportSearch(bounds, drawnShapes)
+        runViewportSearch(bounds, drawnShapes, { limit: 250 })
       }, 350)
     },
     [searchAsMove, drawnShapes, runViewportSearch, dropGeoScope]
@@ -602,19 +697,68 @@ export default function MapSearchView({
   const savedSet = useMemo(() => new Set(savedListingKeys), [savedListingKeys])
 
   const countLabel = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString()
-  const sortSuffix = SORT_SUFFIX[filters.sort ?? 'newest'] ?? null
+  const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
 
   const listPanel = (
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-card px-4 py-3">
-        <p className="text-sm text-muted-foreground tabular-nums" aria-live="polite">
-          <span className="font-semibold text-foreground">{countLabel}</span>{' '}
-          {totalCount === 1 ? 'home' : 'homes'} in this area
-          {sortSuffix ? <span className="hidden sm:inline"> · {sortSuffix}</span> : null}
+      {/* Mockup G2: "N homes · filters · Sort" sticky count/sort row. */}
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-3">
+        <p className="min-w-0 flex-1 text-sm text-muted-foreground tabular-nums" aria-live="polite">
+          {resultsDegraded ? (
+            <span className="font-semibold text-foreground">Search delayed</span>
+          ) : (
+            <>
+              <span className="font-semibold text-foreground">{countLabel}</span>{' '}
+              {totalCount === 1 ? 'home' : 'homes'}
+              {filtersSummary ? (
+                <span className="hidden sm:inline"> · {filtersSummary}</span>
+              ) : null}
+            </>
+          )}
+          {loading ? (
+            <span className="ml-2 text-xs text-muted-foreground">Updating…</span>
+          ) : null}
         </p>
-        {loading && <span className="shrink-0 text-xs text-muted-foreground">Updating…</span>}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden text-xs text-muted-foreground sm:inline">Sort</span>
+          <Select value={sortValue} onValueChange={handleSortChange}>
+            <SelectTrigger className="h-9 w-[10.5rem]" aria-label="Sort results" size="sm">
+              <SelectValue placeholder="Newest" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-      {listings.length === 0 ? (
+      {resultsDegraded ? (
+        <div className="p-8 text-center">
+          <Eyebrow>Try again</Eyebrow>
+          <H3 className="mt-2">Search took too long</H3>
+          <Body className="mt-2 text-muted-foreground">
+            We could not load homes for this view. Try again, or reload the page.
+          </Body>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Button type="button" size="sm" onClick={retryViewportSearch} disabled={loading}>
+              Try again
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (typeof window !== 'undefined') window.location.reload()
+              }}
+            >
+              Reload page
+            </Button>
+          </div>
+        </div>
+      ) : listings.length === 0 ? (
         hasNarrowingFilters ? (
           <div className="p-8 text-center">
             <Eyebrow>{beyondViewportCount != null ? 'Outside this view' : 'No matches'}</Eyebrow>
@@ -683,7 +827,7 @@ export default function MapSearchView({
                 <Link
                   href={href}
                   className="absolute inset-0 z-0"
-                  aria-label={`${formatCardAddress(l)} — ${formatPrice(l.ListPrice)}`}
+                  aria-label={`${formatCardAddress(l)}, ${formatPrice(l.ListPrice)}`}
                   onFocus={() => onListHover(key)}
                   onBlur={() => onListHover(null)}
                 />
@@ -839,12 +983,18 @@ export default function MapSearchView({
       </div>
       {/* Mobile map view has no list header, so the result count rides the
           canvas. Same totalCount state the pins render from — one query, one
-          number (§0). */}
+          number (§0). Never claim "0 homes" when the fetch was degraded (P9). */}
       <p
         className="pointer-events-none absolute bottom-4 left-1/2 z-[100] -translate-x-1/2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-md tabular-nums lg:hidden"
         aria-live="polite"
       >
-        <span className="font-semibold">{countLabel}</span> {totalCount === 1 ? 'home' : 'homes'} in this area
+        {resultsDegraded ? (
+          'Search delayed'
+        ) : (
+          <>
+            <span className="font-semibold">{countLabel}</span> {totalCount === 1 ? 'home' : 'homes'} in this area
+          </>
+        )}
       </p>
     </div>
   )

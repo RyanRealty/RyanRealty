@@ -64,16 +64,52 @@ const DEFAULT_VIEW = 'split'
 
 /**
  * Resolve a data promise to a fallback if it rejects OR exceeds the budget.
- * The default split-search view is where ads land — a slow / statement-timing-out
- * Supabase must NEVER crash the Server Components render to "Something went wrong".
- * It degrades to an empty result the client UI already handles. Mirrors the guard
- * pattern in app/search/[...slug]/page.tsx.
+ * Used for non-count reads (session, boundaries, saved keys) where empty is
+ * a safe silent fallback. Prefer `withTimeoutSettled` for any value that
+ * feeds a published inventory count — see §0 unknown-is-not-zero.
  */
 async function withTimeout<T>(promise: Promise<T>, fallback: T, timeoutMs = 4000): Promise<T> {
   return Promise.race([
     promise.catch(() => fallback),
     new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs)),
   ])
+}
+
+/**
+ * Settled timeout for inventory reads (SEARCH_UX_WAVE3 P9). Distinguishes
+ * "true zero homes" from "we never found out":
+ *   - promise resolves → `{ data, degraded: false }` (empty is a real zero)
+ *   - promise rejects OR times out → `{ data: fallback, degraded: true }`
+ * A bare empty fallback used to paint "0 homes" on timeout; MapSearchView /
+ * SearchResults use `initialDegraded` so the UI can say "couldn't load" instead.
+ */
+async function withTimeoutSettled<T>(
+  promise: Promise<T>,
+  fallback: T,
+  timeoutMs = 4000
+): Promise<{ data: T; degraded: boolean }> {
+  let settled = false
+  return new Promise((resolve) => {
+    const t = setTimeout(() => {
+      if (settled) return
+      settled = true
+      resolve({ data: fallback, degraded: true })
+    }, timeoutMs)
+    promise.then(
+      (data) => {
+        if (settled) return
+        settled = true
+        clearTimeout(t)
+        resolve({ data, degraded: false })
+      },
+      () => {
+        if (settled) return
+        settled = true
+        clearTimeout(t)
+        resolve({ data: fallback, degraded: true })
+      }
+    )
+  })
 }
 
 /**
@@ -228,13 +264,16 @@ export default async function SearchPage({
         (legacyPoly ? [{ type: 'polygon', points: legacyPoly, exclude: false }] : null)
       : null
   const hasIncludeShape = initialShapes?.some((s) => !s.exclude) ?? false
-  const viewport =
+  // Split viewport + list inventory: settled timeout so timeout/error is not
+  // painted as "0 homes" (SEARCH_UX_WAVE3 P9). True empty → degraded false.
+  const viewportSettled =
     view === 'split'
-      ? await withTimeout(
+      ? await withTimeoutSettled(
           getViewportSearch(
             hasIncludeShape ? stripGeoScope(effectiveFilters) : effectiveFilters,
             initialBounds,
             buildShapeSetForSearch(initialShapes, initialBounds)
+            // SSR seed uses default limit 500; client pan may pass { limit: 250 }.
           ),
           {
             listings: [],
@@ -243,12 +282,20 @@ export default async function SearchPage({
           }
         )
       : null
+  const viewport = viewportSettled?.data ?? null
+  const viewportDegraded = viewportSettled?.degraded ?? false
 
-  // LIST: paginated infinite-scroll browse (unchanged).
-  const { listings, totalCount } =
+  // LIST: paginated infinite-scroll browse (unchanged fetch; honesty flag added).
+  const listSettled =
     view === 'list'
-      ? await withTimeout(getSearchListings(effectiveFilters, page), { listings: [], totalCount: 0 })
-      : { listings: [], totalCount: 0 }
+      ? await withTimeoutSettled(getSearchListings(effectiveFilters, page), {
+          listings: [],
+          totalCount: 0,
+        })
+      : null
+  const listings = listSettled?.data.listings ?? []
+  const totalCount = listSettled?.data.totalCount ?? 0
+  const listDegraded = listSettled?.degraded ?? false
 
   // MAP: legacy full-screen marker set (unchanged).
   const mapListings = view === 'map' ? await withTimeout(getSearchMapListings(effectiveFilters), []) : []
@@ -382,6 +429,7 @@ export default async function SearchPage({
                 boundaryGeojson={boundaryGeojson ?? undefined}
                 initialShapes={initialShapes}
                 nowMs={Date.now()}
+                initialDegraded={viewportDegraded}
               />
             ) : (
               <SearchResults
@@ -402,6 +450,7 @@ export default async function SearchPage({
                     return value != null && value !== ''
                   })
                 )}
+                initialDegraded={listDegraded}
               />
             )}
           </div>

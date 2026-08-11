@@ -182,6 +182,7 @@ export function SearchAlertCapture({
   if (state === 'done') {
     return (
       <div
+        id="search-alert-capture"
         className={cn(
           'w-full border-b border-border bg-card',
           isInline && 'shrink-0'
@@ -217,6 +218,7 @@ export function SearchAlertCapture({
   if (priorWatch && state === 'idle') {
     return (
       <div
+        id="search-alert-capture"
         className={cn(
           'w-full border-b border-border bg-card',
           !isInline &&
@@ -297,6 +299,7 @@ export function SearchAlertCapture({
 
   return (
     <div
+      id="search-alert-capture"
       className={cn(
         'w-full border-b border-border bg-card',
         // sticky list: docks under filters in document flow
