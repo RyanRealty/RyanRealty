@@ -59,6 +59,7 @@ export const CENTRAL_OREGON_CITY_SLUGS = new Set([
 
 /** A listing_tile_mv row, as far as the map / ticker are concerned. */
 type TileRow = {
+  listingKey?: string | null
   listPrice: number | null
   beds: number | null
   baths: number | null
@@ -274,6 +275,7 @@ export function buildMapPointFeatures(tiles: readonly TileRow[]): KbMapFeature[]
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
         a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
+        k: t.listingKey ?? undefined,
       },
     }))
 }

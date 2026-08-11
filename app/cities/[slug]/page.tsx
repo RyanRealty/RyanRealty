@@ -75,7 +75,9 @@ import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
-import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
+import type { KbMapGeo } from '@/components/site/kb/KbListingMap.client'
+import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
+import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
@@ -478,26 +480,29 @@ export default async function CityDetailPage({ params }: Props) {
           cta={{ href: homesForSalePath(cityName), label: `See ${cityName} homes` }}
           ctaSecondary={{ href: '/sell/valuation', label: 'Value my home' }}
         />
-        {/* Inventory first. Grid caps at 12; foot CTA reaches the rest of the city. */}
-        <KbFeatured
-          items={featuredItems}
-          eyebrow={`${cityName} · For sale`}
-          viewAllHref={homesForSalePath(cityName)}
-          viewAllLabel={`See every ${cityName} home for sale`}
-          viewAllPlace={cityName}
-          totalCount={activeCount || null}
-        />
+        {hasMap && mapTiles.length > 0 ? (
+          <PlaceMapListSplit
+            rows={splitRowsFromTiles(mapTiles)}
+            mapGeo={mapGeo}
+            polygons={neighborhoodPolygons}
+            eyebrow={`${cityName} · For sale`}
+            title={`Homes in ${cityName}`}
+            subtitle={`Active single-family listings with a ${cityName} address. Hover the list to lift a pin.`}
+            totalActive={activeCount ?? mapFeatures.length}
+            viewAllHref={homesForSalePath(cityName)}
+            viewAllLabel={`See every ${cityName} home for sale`}
+          />
+        ) : (
+          <KbFeatured
+            items={featuredItems}
+            eyebrow={`${cityName} · For sale`}
+            viewAllHref={homesForSalePath(cityName)}
+            viewAllLabel={`See every ${cityName} home for sale`}
+            viewAllPlace={cityName}
+            totalCount={activeCount || null}
+          />
+        )}
         <KbTicker items={tickerItems} />
-        <KbListingMap
-          geojson={mapGeo}
-          totalActive={activeCount ?? mapFeatures.length}
-          fitToFeatures
-          showRegionMarkers={false}
-          polygons={neighborhoodPolygons}
-          eyebrow={cityName}
-          title={`Every active home\nin ${cityName}`}
-          subtitle={`Every active single-family listing with a ${cityName} address.`}
-        />
         {/* Mid-page buyer capture (E3): after map inventory, city + SFR only.
             propertyType A matches hero activeCount (§0). Empty subdivision. */}
         <KbCommunityAlerts

@@ -1,7 +1,7 @@
 'use client'
 // brand-voice:exempt — pure UI component, no user-facing prose
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GoogleMap, Polygon } from '@react-google-maps/api'
 import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from '@googlemaps/markerclusterer'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
@@ -12,7 +12,18 @@ import { kbMoneyFull } from './types'
 export type KbMapFeature = {
   type: 'Feature'
   geometry: { type: 'Point'; coordinates: [number, number] }
-  properties: { p: number | null; bd: number | null; ba: number | null; sf: number | null; a: string; sub: string; city: string; img: string }
+  properties: {
+    p: number | null
+    bd: number | null
+    ba: number | null
+    sf: number | null
+    a: string
+    sub: string
+    city: string
+    img: string
+    /** ListingKey for dual-pane list↔map highlight */
+    k?: string
+  }
 }
 export type KbMapGeo = { type: 'FeatureCollection'; features: KbMapFeature[] }
 
@@ -83,6 +94,8 @@ export function KbListingMapImpl({
   // LISTINGS" for every consumer, contradicting the page's own hero stat
   // (design-audit P2, §0).
   countNoun = 'active listings',
+  /** When set, scale up / raise z-index of the matching listing pin (list↔map). */
+  activeKey = null as string | null,
 }: {
   geojson: KbMapGeo
   totalActive: number
@@ -94,6 +107,7 @@ export function KbListingMapImpl({
   subtitle?: string
   centerLonLat?: [number, number]
   countNoun?: string
+  activeKey?: string | null
 }) {
   const { ready } = useGoogleMapsReady()
   const countEl = useRef<HTMLElement>(null)
@@ -102,6 +116,7 @@ export function KbListingMapImpl({
   const infoRef = useRef<google.maps.InfoWindow | null>(null)
   const overlaysRef = useRef<google.maps.Marker[]>([])
   const listingMarkersRef = useRef<google.maps.Marker[]>([])
+  const featureKeysRef = useRef<(string | undefined)[]>([])
 
   const polygonPaths = useMemo(
     () => (polygons?.features ?? []).map((f) => geojsonToPaths(f.geometry as GeoJSON.Geometry)).filter((p) => p.length),
@@ -222,6 +237,7 @@ export function KbListingMapImpl({
         return m
       })
       listingMarkersRef.current = markers
+      featureKeysRef.current = features.map((f) => f.properties.k)
 
       const applyMarkerMode = () => {
         const photoMode = (map.getZoom() ?? 12) >= PHOTO_STAMP_MIN_ZOOM
@@ -299,6 +315,30 @@ export function KbListingMapImpl({
     },
     [geojson, totalActive, fitToFeatures, showRegionMarkers, polygonPaths, centerLonLat],
   )
+
+  // List↔map highlight: scale + raise the active pin without remounting the map.
+  useEffect(() => {
+    const markers = listingMarkersRef.current
+    const keys = featureKeysRef.current
+    if (!markers.length) return
+    markers.forEach((m, i) => {
+      const isActive = Boolean(activeKey && keys[i] && keys[i] === activeKey)
+      m.setZIndex(isActive ? 10_000 : 1)
+      // Slight icon scale via opacity/label emphasis — classic Marker has no
+      // scale transform; use animation for a clear "this one" cue.
+      m.setAnimation(isActive ? google.maps.Animation.BOUNCE : null)
+      if (isActive) {
+        // Bounce briefly then stop so it does not loop forever.
+        window.setTimeout(() => {
+          try {
+            m.setAnimation(null)
+          } catch {
+            /* map unmounted */
+          }
+        }, 700)
+      }
+    })
+  }, [activeKey])
 
   const onUnmount = useCallback(() => {
     infoRef.current?.close()

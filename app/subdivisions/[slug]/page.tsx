@@ -356,6 +356,7 @@ export default async function SubdivisionPage({ params }: Props) {
         p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
         a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
+        k: t.listingKey,
       },
     }))
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }

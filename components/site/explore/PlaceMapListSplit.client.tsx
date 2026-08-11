@@ -49,10 +49,6 @@ export function PlaceMapListSplit({
   viewAllLabel,
 }: Props) {
   const [activeKey, setActiveKey] = useState<string | null>(null)
-
-  // Emphasize active pin by bumping its price property order is not available;
-  // filter map features so selected pin sorts last / stays visible via key match
-  // on popup — for now pass full geo; selection is list-driven scroll.
   const list = useMemo(() => rows.slice(0, 24), [rows])
 
   if (list.length === 0) return null
@@ -167,10 +163,11 @@ export function PlaceMapListSplit({
                 title={title.includes('\n') ? title : `Map\n${title}`}
                 subtitle={
                   activeKey
-                    ? 'Hover a home in the list. Pins show price pills, then photo stamps when you zoom in.'
-                    : 'Price pills on the map. Zoom in for photo stamps.'
+                    ? 'Hover a home in the list. That pin lifts on the map.'
+                    : 'Hover the list to light a pin. Zoom for photo stamps.'
                 }
                 countNoun="active listings"
+                activeKey={activeKey}
               />
             </div>
         </div>
