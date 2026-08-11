@@ -60,6 +60,7 @@ export const CENTRAL_OREGON_CITY_SLUGS = new Set([
 /** A listing_tile_mv row, as far as the map / ticker are concerned. */
 type TileRow = {
   listingKey?: string | null
+  listNumber?: string | null
   listPrice: number | null
   beds: number | null
   baths: number | null
@@ -72,6 +73,8 @@ type TileRow = {
   photoUrl: string | null
   lat: number | null
   lng: number | null
+  boundaryCity?: string | null
+  boundaryNeighborhood?: string | null
 }
 
 /** An open_houses row joined to its listing (app/actions/open-houses). */
@@ -276,6 +279,19 @@ export function buildMapPointFeatures(tiles: readonly TileRow[]): KbMapFeature[]
         a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
         sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
         k: t.listingKey ?? undefined,
+        // Popup + pin must open the listing detail page (not a dead info card).
+        href: t.listingKey
+          ? listingTileHref({
+              listingKey: t.listingKey,
+              listNumber: t.listNumber,
+              streetNumber: t.streetNumber,
+              streetName: t.streetName,
+              city: t.city,
+              subdivisionName: t.subdivisionName,
+              boundaryCity: t.boundaryCity,
+              boundaryNeighborhood: t.boundaryNeighborhood,
+            })
+          : undefined,
       },
     }))
 }

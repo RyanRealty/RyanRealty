@@ -7,13 +7,14 @@
  * buyer can orbit the lot when coverage exists. This is Google's city mesh
  * (same family as Earth), not a custom interior 3D model of the house.
  *
- * Fail-open: if maps3d is unavailable or tiles fail, render nothing and leave
- * the 2D ListingLocationMap as the primary map surface.
+ * Fail-open: if maps3d is unavailable, errors, or paints a black void (no
+ * photoreal coverage for that lat/lng), hide the section and leave the 2D
+ * ListingLocationMap as the primary map surface.
  *
  * CRITICAL: the Map3D host div must NEVER have React-managed children.
  * We attach the web component via replaceChildren(); if React also owns
  * children in that node, hydration throws NotFoundError removeChild and the
- * whole listing page falls into error.tsx ("This page didn't load").
+ * whole listing page falls into error.tsx.
  *
  * Setup: docs/MAPS_CLOUD_STYLE.md
  */
@@ -39,6 +40,7 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
     let cancelled = false
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let el: any = null
+    let loadTimer: number | undefined
 
     ;(async () => {
       try {
@@ -53,7 +55,6 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
         }
         el = new Map3DElement({
           center: { lat, lng, altitude: 80 },
-          // range = camera distance in meters — close enough to read the lot
           range: 350,
           tilt: 55,
           heading: 20,
@@ -63,9 +64,37 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
         el.style.height = '100%'
         el.style.display = 'block'
         el.setAttribute('gesture-handling', 'greedy')
-        // Imperative only — host has no React children (see file header).
+
+        // Preview API: error / no-coverage → hide the black box.
+        const onErr = () => {
+          if (!cancelled) setStatus('unavailable')
+        }
+        try {
+          el.addEventListener?.('gmp-error', onErr)
+          el.addEventListener?.('error', onErr)
+        } catch {
+          /* ignore */
+        }
+
         host.replaceChildren(el)
-        if (!cancelled) setStatus('ready')
+        if (cancelled) return
+        setStatus('ready')
+
+        // Photoreal tiles are not everywhere. If the canvas stays effectively
+        // empty (no coverage), fail open so buyers only see the working 2D map.
+        loadTimer = window.setTimeout(() => {
+          if (cancelled) return
+          try {
+            // When tiles never load, the custom element often reports no
+            // shadow content or remains pure black. Prefer hide over void.
+            const shadowKids = el.shadowRoot?.childElementCount ?? 0
+            if (shadowKids === 0 && !el.querySelector?.('canvas')) {
+              setStatus('unavailable')
+            }
+          } catch {
+            /* keep ready if we cannot inspect */
+          }
+        }, 5000)
       } catch {
         if (!cancelled) setStatus('unavailable')
       }
@@ -73,6 +102,7 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
 
     return () => {
       cancelled = true
+      if (loadTimer) window.clearTimeout(loadTimer)
       try {
         el?.remove?.()
         host.replaceChildren()
@@ -98,7 +128,6 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
           Photorealistic Google 3D tiles for this block when coverage exists. Drag to
           orbit. This is the neighborhood mesh, not an interior tour of the house.
         </p>
-        {/* relative shell: loading overlay is a SIBLING of the host, never a child */}
         <div
           className="relative mt-6 w-full overflow-hidden rounded-sm border-[3px] border-[color:var(--navy)] bg-[color:var(--cream)]"
           style={{ height: 'min(52vh, 420px)' }}
@@ -111,7 +140,6 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
               Loading 3D map…
             </div>
           ) : null}
-          {/* Empty host for Map3DElement — do not put React children here */}
           <div ref={hostRef} className="absolute inset-0" />
         </div>
       </div>

@@ -941,6 +941,8 @@ html.lenis, html.lenis body{height:auto;}
 /* Listing popup — the navy KB card lives inside a Google InfoWindow. Give the
    card its own navy bg (the InfoWindow box is transparentized around it). */
 .kb-root .kb-pop{background:var(--navy);border-radius:6px;overflow:hidden;width:212px;}
+.kb-root a.kb-pop-link{display:block;text-decoration:none;color:inherit;cursor:pointer;}
+.kb-root a.kb-pop-link:hover .kb-pop-cta{letter-spacing:.12em;}
 .kb-root .gm-style .gm-style-iw-c{padding:0!important;background:var(--navy)!important;border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.55);}
 .kb-root .gm-style .gm-style-iw-d{overflow:hidden!important;background:var(--navy);}
 .kb-root .gm-style .gm-style-iw-tc::after{background:var(--navy)!important;}
@@ -951,6 +953,7 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .kb-pop-addr{font-size:.78rem;font-weight:600;margin-top:6px;letter-spacing:.01em;}
 .kb-root .kb-pop-addr .sub{display:block;font-weight:500;color:var(--cream-70);font-size:.7rem;margin-top:2px;}
 .kb-root .kb-pop-specs{margin-top:9px;font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream-70);display:flex;gap:12px;}
+.kb-root .kb-pop-cta{margin-top:12px;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--cream);border-top:1px solid rgba(250,248,244,.18);padding-top:10px;}
 /* design-audit #148: .sec-title at 9vw forced overflow-wrap:anywhere to
    mid-word-break single long headings ("NEIGHBORHOOD/S") at 375px. 7.5vw
    fits "NEIGHBORHOODS" (the longest single-word sec-title site-wide) on
@@ -1913,8 +1916,11 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .comm-str-note-inner{max-width:var(--wrap);margin:0 auto;padding:0 var(--gutter,24px);display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;}
 .kb-root .comm-str-label{font-size:.65rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--navy-70);flex-shrink:0;padding-top:3px;}
 .kb-root .comm-str-text{font-size:.88rem;font-weight:500;line-height:1.55;color:var(--navy-70);max-width:64ch;}
-.kb-root .comm-str-text a{color:var(--navy);font-weight:700;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px;transition:opacity .18s;}
-.kb-root .comm-str-text a:hover{opacity:.65;}
+/* @layer base so Tailwind color utilities keep winning over bare `a` color. */
+@layer base {
+  .kb-root .comm-str-text a{color:var(--navy);font-weight:700;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px;transition:opacity .18s;}
+  .kb-root .comm-str-text a:hover{opacity:.65;}
+}
 
 /* ─── Hero form slot (KbHero formSlot — /sell address capture) ─────────────
    The conversion ask lives inside the hero: one address field + one button,

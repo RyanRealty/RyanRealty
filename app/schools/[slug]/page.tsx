@@ -143,6 +143,8 @@ export default async function SchoolDetailPage({ params }: Props) {
         sub: '',
         city: h.cityLine,
         img: h.photoUrl ?? '',
+        k: h.listingKey,
+        href: h.href,
       },
     }))
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }

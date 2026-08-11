@@ -23,6 +23,8 @@ export type KbMapFeature = {
     img: string
     /** ListingKey for dual-pane list↔map highlight */
     k?: string
+    /** Canonical /homes-for-sale/... detail path (popup + pin navigate here) */
+    href?: string
   }
 }
 export type KbMapGeo = { type: 'FeatureCollection'; features: KbMapFeature[] }
@@ -143,9 +145,10 @@ export function KbListingMapImpl({
     return { center: { lat: 44.05, lng: -121.32 }, zoom: 8 } // Central Oregon region
   })
 
-  // Exploration System: same cream/muted basemap as search (Cloud Map ID when set).
+  // Raster editorial styles — Cloud Map ID can render an empty cream canvas
+  // when the console style is incomplete; place maps need roads + labels.
   const mapOptions = useMemo<google.maps.MapOptions>(
-    () => ({ ...getExploreMapOptions(), scrollwheel: false }),
+    () => ({ ...getExploreMapOptions({ preferMapId: false }), scrollwheel: false }),
     [],
   )
 
@@ -227,8 +230,14 @@ export function KbListingMapImpl({
           .map((s) => `<span>${s}</span>`)
           .join('')
         const img = p.img ? `<img class="kb-pop-img" src="${p.img}" alt="" loading="lazy">` : ''
+        const href = (p.href || '').replace(/"/g, '&quot;')
+        // Whole card is the link so a buyer can open the listing detail page.
+        // Fallback: if no href, still show the card (no dead <a href="">).
+        const inner = `${img}<div class="kb-pop-body"><div class="kb-pop-price mono-num">${money(p.p)}</div><div class="kb-pop-addr">${p.a || ''}<span class="sub">${p.sub ? p.sub + ' · ' : ''}${p.city || ''}</span></div><div class="kb-pop-specs">${specs}</div>${href ? '<div class="kb-pop-cta">View this home →</div>' : ''}</div>`
         info.setContent(
-          `<div class="kb-pop">${img}<div class="kb-pop-body"><div class="kb-pop-price mono-num">${money(p.p)}</div><div class="kb-pop-addr">${p.a || ''}<span class="sub">${p.sub ? p.sub + ' · ' : ''}${p.city || ''}</span></div><div class="kb-pop-specs">${specs}</div></div></div>`,
+          href
+            ? `<a class="kb-pop kb-pop-link" href="${href}">${inner}</a>`
+            : `<div class="kb-pop">${inner}</div>`,
         )
         info.open({ map, anchor: m })
       }
@@ -240,6 +249,7 @@ export function KbListingMapImpl({
           position: { lat, lng },
           icon: dot,
           title: `${money(p.p)} · ${p.a || 'Listing'}`,
+          cursor: p.href ? 'pointer' : undefined,
         })
         m.addListener('click', () => {
           openPopup(m, p)

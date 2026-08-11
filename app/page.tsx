@@ -7,6 +7,7 @@ import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCa
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
+import { buildMapPointFeatures } from '@/lib/kb/place-sections'
 import { listingDetailPath } from '@/lib/slug'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -124,22 +125,7 @@ export default async function Home() {
     }
   }).filter((x): x is KbCommunityItem => x !== null)
 
-  const mapFeatures = tiles
-    .filter((t) => t.lat != null && t.lng != null)
-    .map((t) => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
-      properties: {
-        p: t.listPrice,
-        bd: t.beds,
-        ba: t.baths,
-        sf: t.sqft,
-        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
-        sub: t.subdivisionName ?? '',
-        city: t.city ?? '',
-        img: t.photoUrl ?? '',
-      },
-    }))
+  const mapFeatures = buildMapPointFeatures(tiles)
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
 
   // Each tape item links to its listing (design-audit: real prices + addresses
