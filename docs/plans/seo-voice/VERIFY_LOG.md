@@ -58,6 +58,11 @@
 
 ## Session notes (newest first)
 
+### 2026-08-11 SEARCH_UX_WAVE3 close — W7.2 ledger + baselines (push unblocked)
+- **Blocker:** residual ship deleted `UnifiedMapListingsView.tsx`; `ci:program-complete` failed W7.2 proof path.
+- **Fix:** COMPLETION-LEDGER W7.2 paths → `MapSearchView` + `MapSplitView`; proofPath prose + baselines (design-tokens, shadcn, canonical-listings) drop deleted file.
+- **Plan status:** Wave 0–3 + P10/P11/P13 **closed**. Only open Wave 4 item: GIS layers (explicit defer). Gates: program-complete + hidden-exclusion green pre-push.
+
 ### 2026-08-11 SEARCH_UX_WAVE3 residual pass (P10/P11/P13 + pan-count honesty)
 - **Action layer:** `app/actions/search.ts` **left alone.** `getViewportSearch` already accepts `{ limit? }` (pan → 250). `searchListingsAll` always returns exact `totalCount` on the same PostgREST select (`count: 'exact'` rides rows) — **no second count query**, so a `stickyCount` flag would not save work and was not added.
 - **P3 residual closed as N/A** (exact-count decoupling unnecessary given DAL shape). Documented in `SEARCH_UX_WAVE3_PLAN.md`.

@@ -1,5 +1,5 @@
 {
-  "count": 205,
+  "count": 204,
   "files": [
     "app/alerts/unsubscribe/page.tsx",
     "app/buy/loading.tsx",
@@ -65,7 +65,6 @@
     "components/SignInPrompt.tsx",
     "components/SubdivisionDescriptionActions.tsx",
     "components/TilesSlider.tsx",
-    "components/UnifiedMapListingsView.tsx",
     "components/VoiceSearchButton.tsx",
     "components/WelcomeBanner.tsx",
     "components/activity/ActivityFeedCard.tsx",

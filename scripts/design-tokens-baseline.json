@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-08-09T17:21:23.488Z",
-  "total": 253,
+  "total": 252,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/api/cma/[slug]/gmail-draft/route.ts": 1,
@@ -58,7 +58,6 @@
     "components/SearchListingsToolbar.tsx": 1,
     "components/ShareButton.tsx": 2,
     "components/TilesSlider.tsx": 1,
-    "components/UnifiedMapListingsView.tsx": 1,
     "components/activity/ActivityCelebrationOverlay.tsx": 2,
     "components/admin/crm/ContactActivityFeed.tsx": 1,
     "components/admin/crm/EmailComposer.tsx": 1,

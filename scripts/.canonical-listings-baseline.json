@@ -9,7 +9,6 @@
     "components/HomeListingsSection.tsx",
     "components/HomeListingsSlider.tsx",
     "components/RecentlySoldRow.tsx",
-    "components/UnifiedMapListingsView.tsx",
     "components/activity/ActivityFeedSection.tsx",
     "components/area-guides/ExploreByCitySlider.tsx",
     "components/area-guides/ResortCommunitiesSlider.tsx",

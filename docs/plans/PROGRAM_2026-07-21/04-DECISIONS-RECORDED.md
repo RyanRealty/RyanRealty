@@ -112,7 +112,7 @@ Recorded during the RR-PLATFORM-DECISIONS completion run. Scope calls made while
   - `components/search/SearchResults.tsx` — the /search grid (already excluded).
   - `components/search/MapSearchView.tsx` — the /search split view: subtracts from the card list AND the map pins, plus the hide control.
   - `app/search/[...slug]/page.tsx` **grid** view — renders through the new client `components/search/HideAwareListingGrid.tsx`.
-  - `components/UnifiedMapListingsView.tsx` — the /search/[...slug] **map/split** view: subtracts from the ListingTile list AND the map pins, plus the hide control. (BLOCKER round 1: the map view is a DIFFERENT component than MapSearchView and was leaking.)
+  - ~~`components/UnifiedMapListingsView.tsx`~~ — **DELETED 2026-08-11 (SEARCH_UX_WAVE3 P10).** SEO map/split now seeds flagship `MapSearchView` via `app/search/[...slug]/sections/MapSplitView.tsx` (list+pins+hide via ListingCardHideControl). Historical: was the leak surface in W7.2 R1 when it was a separate stack.
   - `components/search/HideAwareSearchMap.tsx` — the **/search?view=map** (map-only) pin layer: subtracts hidden before the pins draw. (BLOCKER round 2: the map-only branch of the flagship /search page rendered a raw SearchMapClustered with the server's unfiltered pins; the split view hid its pins but the map-only view of the same page did not.)
   - `app/price-drops/page.tsx` + `app/price-drops/[city]/page.tsx` **grids** — through HideAwareListingGrid (`gridClassName` preserves the KB grid styling).
   - `app/videos/page.tsx` — the video-tour browse grid, through the new `components/site/HideAwareVideoGrid.tsx`.
