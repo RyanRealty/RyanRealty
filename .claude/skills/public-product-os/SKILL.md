@@ -72,6 +72,16 @@ SESSION_BOOT.md accurate. Batch docs-only units and `npm run push` once per sess
 | `deepen <id>` | Override queue top to that id for one unit, then resume order |
 | `process locked` / `IA locked` / `visual locked` (+ answers) | Append decisions.md, set lock, clear awaiting_lock, advance phase, continue |
 
+## Idempotent + autonomous (the execution contract)
+
+Re-invoking this skill with the same phrase always resumes from disk — never from chat
+memory — so it is safe under `/loop` and safe to fire repeatedly. A firing asks Matt
+nothing mid-run; the ONLY human surface is a lock package (≤5 binary questions) at a stop
+token. Written for Fable 5 per the constitution's model-posture block: de-prescribed (goal,
+constraints, verification — plan the rest yourself), delegation encouraged for disjoint
+enumeration/builds/adversarial verify. Do not surface token counts; do not stop early
+because a session is long — flush and hand off instead.
+
 ## Verification (binding)
 
 Process claims = file:line/table/cron/analytics. UI claims = screenshots + timed runs at
