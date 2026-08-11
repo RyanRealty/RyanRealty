@@ -536,7 +536,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
         {open === 'hometype' && (
-          <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),22rem)] p-0')}>
+          <div className={cn(dropdownAnchor, dropdownSurface, 'w-full max-w-sm p-0')}>
             <HomeTypeFilterPanel
               propertyType={props.propertyType}
               propertySubTypes={selectedSubTypes}

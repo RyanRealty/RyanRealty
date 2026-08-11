@@ -541,3 +541,7 @@ components/site/listing-detail/RoomRestyle.client.tsx
 
 # F2 guest return residual banner — dismiss control + fixed bottom bar (no KB form kit).
 components/site/GuestWatchingBanner.client.tsx
+
+# Map listing popup: floats in Google Maps floatPane (no Tailwind inheritance).
+# Inline brand hex + raw button/close required — same class as lib/maps/markers.ts.
+components/search/MapListingPopup.tsx

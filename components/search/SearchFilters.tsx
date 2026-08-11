@@ -779,7 +779,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           open={openPanel === 'type'}
           onOpenChange={panelOpenHandler('type')}
         >
-          <div className="w-[min(calc(100vw-2rem),22rem)]">
+          <div className="w-full max-w-sm">
             <HomeTypeFilterPanel
               propertyType={initialFilters.propertyType}
               propertySubTypes={selectedSubTypes}

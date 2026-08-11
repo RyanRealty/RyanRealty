@@ -147,14 +147,14 @@ export default function HomeTypeFilterPanel({
           <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Specific type
           </p>
-          <p className="mb-2.5 text-[11px] leading-snug text-muted-foreground">
+          <p className="mb-2.5 text-xs leading-snug text-muted-foreground">
             MLS sub-types for Central Oregon inventory. Pick one or more, e.g. Duplex,
             Manufactured on land, Condo.
           </p>
-          <div className="max-h-[min(50vh,22rem)] space-y-3 overflow-y-auto pr-0.5">
+          <div className="max-h-96 space-y-3 overflow-y-auto pr-0.5">
             {groups.map(({ cls, label, options }) => (
               <div key={cls}>
-                <p className="mb-1.5 text-[11px] font-semibold text-muted-foreground">{label}</p>
+                <p className="mb-1.5 text-xs font-semibold text-muted-foreground">{label}</p>
                 <div className="flex flex-col gap-0.5">
                   {options.map((option) => {
                     const on = selected.has(option)
