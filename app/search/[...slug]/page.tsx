@@ -356,7 +356,7 @@ export default async function SearchPage({
   if (filterOpts.keywords) guestAlertFilters.keywords = filterOpts.keywords
 
   // "Map view" link — routes to the split list+map branch above (line ~517), which
-  // renders UnifiedMapListingsView with the perf-safe bounds-scoped "Search this
+  // renders MapSearchView (flagship) with the perf-safe bounds-scoped "Search this
   // area" loop. Carries the current filters/sort/perPage forward; only `view` flips.
   const mapViewHref = `${searchPagePath}?${new URLSearchParams({
     ...Object.fromEntries(

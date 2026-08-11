@@ -87,7 +87,7 @@ const WRAPPERS = [
   'components/search/HideAwareListingGrid.tsx',
   'components/search/SearchResults.tsx',
   'components/search/MapSearchView.tsx',
-  'components/UnifiedMapListingsView.tsx',
+  'components/search/MapSearchView.tsx',
   'components/site/HideAwareVideoGrid.tsx',
   'components/search/HideAwareSearchMap.tsx',
 ]

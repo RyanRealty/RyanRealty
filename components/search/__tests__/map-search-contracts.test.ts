@@ -203,33 +203,34 @@ describe('HideAwareListingGrid keeps a surface\'s own grid styling', () => {
   })
 })
 
-describe('the city map/split view (UnifiedMapListingsView) also subtracts hidden homes (W7.2, 2026-07-22)', () => {
-  // The BLOCKER the W7.2 verifier found: /search/[...slug] with view=map|split
-  // early-returns UnifiedMapListingsView (a DIFFERENT component than the /search
-  // MapSearchView that W7.2 first fixed), which rendered a ListingTile list + map
-  // pins with NO hidden subtraction — toggling "Map view" resurfaced a home the
-  // buyer hid in the grid. Contract: it now subtracts from BOTH the tile list and
-  // the pins, and carries the hide control.
-  const src = readSrc('components/UnifiedMapListingsView.tsx')
+describe('the city map/split view (MapSearchView via MapSplitView) subtracts hidden homes (W7.2, 2026-08-11)', () => {
+  // P10 fold: SEO map/split seeds flagship MapSearchView (not UnifiedMapListingsView).
+  // Contract stays: hide set subtracts from BOTH the card list and map pins.
+  const src = readSrc('components/search/MapSearchView.tsx')
+  const mapSplit = readSrc('app/search/[...slug]/sections/MapSplitView.tsx')
+
+  it('MapSplitView mounts MapSearchView (not UnifiedMapListingsView)', () => {
+    expect(mapSplit).toMatch(/import MapSearchView from '@\/components\/search\/MapSearchView'/)
+    expect(mapSplit).toMatch(/<MapSearchView/)
+    expect(mapSplit).not.toMatch(/UnifiedMapListingsView/)
+  })
 
   it('loads the user hidden set + subtracts on both keys', () => {
     expect(src).toMatch(/import \{ getHiddenListingKeys \} from '@\/app\/actions\/hidden-listings'/)
     expect(src).toMatch(/import \{ buildHiddenKeySet, excludeHiddenListings \} from '@\/components\/search\/hidden-exclusion'/)
     expect(src).toMatch(/setHiddenKeys\(buildHiddenKeySet\(keys\)\)/)
-    expect(src).toMatch(/const visibleListings = excludeHiddenListings\(listings, hiddenKeys\)/)
+    expect(src).toMatch(/excludeHiddenListings\(listings, hiddenKeys\)/)
   })
 
-  it('BOTH the tile list and the map pins render from the filtered set', () => {
-    expect(src).toMatch(/visibleListings\.map\(\(listing, i\)/) // the <ul> tile list
-    expect(src).toMatch(/const mapListings: ListingForMap\[\] = visibleListings\.map\(toMapListing\)/)
-    // The pins must NOT derive from raw `listings` anymore (that was the leak).
-    expect(src).not.toMatch(/mapListings: ListingForMap\[\] = listings\.map\(toMapListing\)/)
+  it('BOTH the card list and the map pins render from the filtered set', () => {
+    expect(src).toMatch(/const mapListings = useMemo\(\(\) => visibleListings\.map\(toMapListing\)/)
+    expect(src).not.toMatch(/mapListings.*= listings\.map\(toMapListing\)/)
   })
 
   it('carries the hover hide control on each tile', () => {
     expect(src).toMatch(/<ListingCardHideControl/)
     expect(src).toMatch(/onVisibilityChange=\{onHiddenChange\}/)
-    expect(src).toMatch(/className="relative group\/hide"/)
+    expect(src).toMatch(/group\/hide/)
   })
 })
 

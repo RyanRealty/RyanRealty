@@ -324,7 +324,7 @@ export async function renderMapSplitView(props: {
           />
         </div>
         {/* underFilterBar slot: guest alert sits under the filter bar (was a
-            UnifiedMapListingsView prop; MapSearchView owns the list/map shell). */}
+            MapSearchView owns the list/map shell). */}
         <Suspense fallback={null}>
           <SearchAlertCapture
             signedIn={!!session?.user}
