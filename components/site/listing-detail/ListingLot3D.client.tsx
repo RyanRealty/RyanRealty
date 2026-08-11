@@ -124,7 +124,7 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
           <span className="sec-index">Around the home</span>
           <h2 className="sec-title display">See the lot in 3D</h2>
         </div>
-        <p className="mt-2 max-w-prose text-sm text-[color:var(--navy-70)]">
+        <p className="mt-2 max-w-prose text-sm" style={{ color: 'var(--navy-70)' }}>
           Photorealistic Google 3D tiles for this block when coverage exists. Drag to
           orbit. This is the neighborhood mesh, not an interior tour of the house.
         </p>
@@ -134,7 +134,8 @@ export default function ListingLot3D({ lat, lng, label }: Props) {
         >
           {status === 'loading' ? (
             <div
-              className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center text-sm text-[color:var(--navy-70)]"
+              className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center text-sm"
+              style={{ color: 'var(--navy-70)' }}
               aria-live="polite"
             >
               Loading 3D map…

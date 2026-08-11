@@ -86,3 +86,13 @@ the ~106-name V2* section library, all ledger scores and dispositions, the three
   so no future session treats them as brand reference.
 - `components/site/v2/` has zero imports anywhere; `ui_kits/` referenced by
   MOTION_FIRST_RETHINK §2 is empty on disk. Cleanup timing is a P5/P9 call, not now.
+
+## 2026-08-11 — OBSERVED addendum: components/site/v2 deleted at BOOT
+
+The design-token ratchet (verified against the materialized push tree) flagged
+`components/site/v2/Button.tsx` as a raw-element regression. The register had zero imports
+anywhere (verified by grep this session) and was already superseded by this program, so it
+was deleted rather than exempted — one of the five design languages is gone. This narrows
+the earlier "cleanup timing is a P5/P9 call" note: DEAD registers (zero imports) may be
+deleted when a gate forces the question; LIVE registers (kb, legacy flat, primitives,
+explore) still wait for P5/P9.

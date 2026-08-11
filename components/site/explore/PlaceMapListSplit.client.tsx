@@ -77,14 +77,15 @@ export function PlaceMapListSplit({
           <h2 className="sec-title display">{title}</h2>
         </div>
         {subtitle ? (
-          <p className="mt-2 max-w-prose text-sm text-[color:var(--navy-70)]">
+          <p className="mt-2 max-w-prose text-sm" style={{ color: 'var(--navy-70)' }}>
             {subtitle}
           </p>
         ) : null}
         <div className="place-map-split mt-6 grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
             <div
               ref={listScrollRef}
-              className="max-h-[min(70vh,560px)] overflow-y-auto rounded-sm border border-[rgba(16,39,66,0.12)] bg-[color:var(--cream)]"
+              className="overflow-y-auto rounded-sm border border-[rgba(16,39,66,0.12)] bg-[color:var(--cream)]"
+              style={{ maxHeight: 'min(70vh, 560px)' }}
             >
               <ul className="m-0 list-none p-0">
                 {list.map((row) => {
@@ -102,11 +103,13 @@ export function PlaceMapListSplit({
                         href={row.href}
                         onMouseEnter={() => setActiveKey(row.key)}
                         onFocus={() => setActiveKey(row.key)}
-                        className={`flex gap-3 px-3.5 py-3 no-underline text-[color:var(--navy)] ${
-                          selected
-                            ? 'bg-[rgba(16,39,66,0.06)] shadow-[inset_3px_0_0_var(--navy)]'
-                            : 'bg-transparent'
+                        className={`flex gap-3 px-3.5 py-3 no-underline ${
+                          selected ? 'bg-[rgba(16,39,66,0.06)]' : 'bg-transparent'
                         }`}
+                        style={{
+                          color: 'var(--navy)',
+                          boxShadow: selected ? 'inset 3px 0 0 var(--navy)' : undefined,
+                        }}
                       >
                         {row.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -128,7 +131,7 @@ export function PlaceMapListSplit({
                             {row.title}
                           </div>
                           {row.subtitle ? (
-                            <div className="text-[0.78rem] text-[color:var(--navy-70)]">
+                            <div className="text-[0.78rem]" style={{ color: 'var(--navy-70)' }}>
                               {row.subtitle}
                             </div>
                           ) : null}
