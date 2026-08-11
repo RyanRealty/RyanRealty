@@ -61,7 +61,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 ### Block B — Conversion 10× (G4) — primary lead lever
 
-4. [~] **B1 Capture product** — multi-surface + copy residuals #1–2: search trust, listing early form, `/buy` + **`/cities` mid-page** `KbCommunityAlerts` (LP secondary). Map/split + OH/price-drops + homepage + city/nbhd already. **Outcome still open:** enrollments ~6 until traffic proves lift.
+4. [~] **B1 Capture product** — multi-surface + copy residuals #1–2: search trust, listing early form, `/buy` + **`/cities` mid-page** `KbCommunityAlerts` (LP secondary). Map/split + OH/price-drops + homepage + city/nbhd + **ZIP + communities + market hub** (2026-08-11). **Outcome still open:** enrollments ~6 until traffic proves lift.
 5. [~] **B2 Saved search / save path** — guest form: “Email alerts for this search” (same product). Success next-step + SaveSearchButton mid-browse. **Outcome open:** saved_searches ~2 until traffic.
 6. [x] **B3 Valuation / CMA friction** — **2026-08-10:** verified ValuationForm → insertValuationRequest + FUB/CRM + trackEvent/CAPI/MP; hero CTA → `#valuation-form` + Lenis hash scroll; /sell form-first + link to `/sell/valuation`
 7. [~] **B4 Listing primary CTAs** — **2026-08-10 surface:** PriceCtaStrip → `#listing-like-alerts`; RoomRestyle next-step alert + contact (`1e8cb1ec`). Tour/ask/save already on strip + broker CTA.
@@ -105,7 +105,7 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 33. [x] **F1 Sticky / mid-browse capture** — bar shipped; guest-already-watching residual = F2 (banner + sticky residual)
 34. [x] **F2 Personal feed / return loop** — **2026-08-10:** signed-in `/account` ActivityFeed + “new since”; **guest residual** = first-party localStorage label+href only (no email/token) after alert signup → site-wide `GuestWatchingBanner` “You’re watching …” + search sticky residual; manage/pause via email unsubscribe token already used; claim-on-login unchanged
-35. [~] **F3 Save + alert as default product behavior** — guest capture on map/split + list sticky + hubs + **buy hub inline** + listing early form; still not full product-default identity for all guests
+35. [~] **F3 Save + alert as default product behavior** — guest capture on map/split + list sticky + hubs + **buy hub inline** + listing early form + **ZIP pages + communities hub + market hub free listing_alerts** (2026-08-11). Outcome still open until enrollments rise.
 36. [x] **F4 Demand signals / next-step coach** — **2026-08-10:** listing `ListingAlertCoach` (5s dwell soft bar → `#listing-like-alerts`). Search has SaveSearchButton.
 
 ### Block G — Measurement maturity (G6)
@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Outcome scoreboard** after traffic (alerts / saves / FP engagement). Search Wave 3 + **P6/P7 polish shipped** 2026-08-11. |
-| **THEN** | Optional only if metrics demand: GIS layers · pin-lite (P4). Do not reopen search chrome without scoreboard signal. |
-| **NOTE** | G3 Blended confirmed. **not 10×** (alerts 6 / saves 2). P6 = lazy AllFiltersSheet; P7 = LCP priority first 4 cards. |
+| **NOW** | **Outcome scoreboard** after traffic (alerts / saves). F3 surface residual **ZIP + communities + market hub** free alerts shipped 2026-08-11 — wait for enrollments. |
+| **THEN** | If still cold after traffic: listing early-form friction audit, blog/lifestyle mid-page alerts, pin-lite only if pan metrics demand. No GIS without demand. |
+| **NOTE** | G3 Blended confirmed. **not 10×** (alerts 6 / saves 2; FP 7d ~23k). Search P6/P7 done. |
 
 ---
 

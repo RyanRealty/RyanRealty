@@ -47,6 +47,7 @@ import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import '@/components/site/kb/kb.css'
 
@@ -469,6 +470,13 @@ export default async function CommunitiesPage() {
           </div>
         </section>
 
+        {/* F3 residual: free listing_alerts on the communities hub (was LP-only hop). */}
+        <RegionalSfrAlertsBand
+          id="get-alerts"
+          showLpSecondary
+          secondaryExtra={{ href: '/sell/valuation', label: 'Value my home' }}
+        />
+
         {/* Search CTA: navy band */}
         <section className="section region" id="communities-cta" aria-label="Search Central Oregon communities">
           <div className="wrap">
@@ -485,8 +493,8 @@ export default async function CommunitiesPage() {
                 <Link href="/search" className="btn">
                   Search all listings <span className="arr">→</span>
                 </Link>
-                <a href="/lp/buyer-listing-alerts" className="btn ghost">
-                  Get listing alerts
+                <a href="#get-alerts" className="btn ghost">
+                  Get free listing alerts
                 </a>
                 <Link href="/sell/valuation" className="btn ghost">
                   Value my home

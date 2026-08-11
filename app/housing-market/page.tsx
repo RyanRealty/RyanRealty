@@ -28,10 +28,11 @@
  *      index, explorer, communities, guides, area guides) — restored from the
  *      pre-KB hub for internal linking the KB chrome does not otherwise carry
  *  11. KbSell           — seller conversion CTA
- *  12. LeadCaptureBlock — general "ask a broker" inquiry (submitMarketPageInquiry),
+ *  12. RegionalSfrAlertsBand — free listing_alerts (buyer path; F3 residual)
+ *  13. LeadCaptureBlock — general "ask a broker" inquiry (submitMarketPageInquiry),
  *      restored from the pre-KB hub so a non-seller market question has on-page
  *      capture (KbSell only routes to the seller valuation flow)
- *  13. KbFooter         — full sitemap close
+ *  14. KbFooter         — full sitemap close
  *
  * Data accuracy (CLAUDE.md §0):
  *   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
@@ -71,6 +72,7 @@ import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { ContentSection } from '@/components/site/ContentSection'
 import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
+import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
 import { submitMarketPageInquiry } from '@/app/housing-market/actions'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import '@/components/site/kb/kb.css'
@@ -472,6 +474,10 @@ export default async function HousingMarketHubPage() {
           }}
           eyebrow="Sell in Central Oregon"
         />
+
+        {/* F3 residual: market researchers are buyers too — free listing_alerts
+            (same product as /buy / homepage), not only broker-inquiry or LP. */}
+        <RegionalSfrAlertsBand id="get-alerts" showLpSecondary />
 
         {/* Broker inquiry — general "ask a broker" lead capture, restored from the
             pre-KB hub. Captured through the SAME server action the old page used

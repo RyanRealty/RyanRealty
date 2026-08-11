@@ -7,6 +7,7 @@
 
 | Date | Active CO | CO closed 2024 | Mart years | FP sessions | Alerts | Notes |
 |------|-----------|----------------|------------|-------------|--------|-------|
+| 2026-08-11 | — | **5707 / $3.931B** | — | total ~68813; 7d 23207 eng 4133 (17.8%); 30d 66829 eng 11004 | **6** (5 active; +2 30d) | scoreboard-snapshot · saves=2 |
 | 2026-08-10 | ~3376 | **5707 / $3.931B** | **2016–2025** (+ feature mart same years) | total ~**68749**; 1d **639**; 7d **24012** eng **4263** (17.8%); 30d **67138** eng **11047** (16.4%) | **6** (5 active; +2 created 30d) | Post residual ship; saves=2; map/split+hub capture + guest F2 + I1 brand merge on main |
 | 2026-08-10 (pm) | — | **5707 / $3.931B** | 2016–2025 | total **68754**; 1d **638**; 7d **23800** eng **4244** (17.8%); 30d **67121** eng **11042** (16.5%) | **6** (5 active; +2 created 30d) | Outcome loop re-probe; **saves still 2**; conversion copy residual ship same day (search trust / listing form early /buy inline) |
 
@@ -57,6 +58,11 @@
 | CO closed 2024 (mart) | 5707 / $3.931B | analytics_mart_market_annual region all |
 
 ## Session notes (newest first)
+
+### 2026-08-11 F3 residual — free alerts on ZIP / communities / market hub
+- **Scoreboard (scoreboard-snapshot):** FP 7d **23207** eng **4133** (17.8%); alerts **6** (5 active) / saves **2**; last consumer alert ~2026-07-18. **not 10×**. Zero `alert_create` visitor events in 7d sample.
+- **Gap:** high PV on `/zip/*` (~190+ each) and `/communities` had **no** free `listing_alerts` form (communities only LP hop). Market hub had broker inquiry + sell only.
+- **Ship:** ZIP pages → `KbCommunityAlerts` with `postalCode` + SFR + parent city; communities + housing-market hub → `RegionalSfrAlertsBand`. Communities CTA anchors `#get-alerts`.
 
 ### 2026-08-11 SEARCH_UX_WAVE3 P6/P7 polish
 - **P6:** `registry-filter-chrome.tsx` holds chip helpers; `SearchFilters` + `SearchFilterBar` `dynamic()` import `AllFiltersSheet` and mount only after first open (cold search chunk no longer pays ~1k LOC sheet).

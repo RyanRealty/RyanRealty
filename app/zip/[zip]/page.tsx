@@ -19,8 +19,8 @@
  *   when this ZIP's own listing history is sparse — relabeled so no city figure is
  *   passed off as a ZIP stat.
  *
- * Section stack: breadcrumb · hero · market hud · featured · map · subdivisions ·
- * other ZIPs · sell · footer.
+ * Section stack: breadcrumb · hero · market hud · featured · map · free
+ * listing_alerts (ZIP+SFR) · subdivisions · other ZIPs · sell · footer.
  *
  * Parity contract: design_system/ryan-realty/ui_kits/zip/parity.json (KB set).
  */
@@ -48,6 +48,7 @@ import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketSources } from '@/components/site/MarketSources'
 import type { KbMarketData, KbTownItem, KbFeaturedItem } from '@/components/site/kb/types'
@@ -425,6 +426,20 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           title={`Homes in\n${zip}`}
           subtitle={`Every active single-family listing in ${zip}.`}
         />
+
+        {/* F3 residual: free listing_alerts on ZIP inventory traffic (~190+ PV/7d
+            per ZIP). postalCode is a real searchListingsAll filter; city keeps
+            the alert human-readable. propertyType A matches this page's SFR scope. */}
+        <div id="get-alerts">
+          <KbCommunityAlerts
+            communityName={`ZIP ${zip}`}
+            city={cityName}
+            subdivision=""
+            extraFilters={{ propertyType: 'A', postalCode: zip }}
+            headline={zip}
+            body={`Enter your email. When a single-family home hits the market in ${zip} (${area}), you hear first.`}
+          />
+        </div>
 
         {/* Subdivisions — grouped from live tiles, verified counts (§0). */}
         {subdivisionItems.length > 0 ? (

@@ -1,17 +1,17 @@
 {
   "route": "app/zip/[zip]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/zip/index.html",
-  "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. ZIPs carry no cached market row, so every stat is derived live from listing_tile_mv tiles (CLAUDE.md §0). KB design mirrors the city page pattern (Phase 9, docs/KB_CONVERGENCE_ROADMAP.md).",
-  "note": "KB (kinetic-brutalist) rebuild 2026-06-18. ONE getZipListings(zip, {propertyType:'A', limit:5000}) call feeds the hero lede (active count, median list, median DOM), KbMarketHud (live tile stats + parent-city price history as trend source), KbFeatured (top 14 by price), KbListingMap, and two KbExploreTowns sections (subdivisions + other ZIPs). NO getMarketPulse/getMarketStats — there are no ZIP-keyed rows, nothing is fabricated. KbNav + KbFooter are the chrome (layout.tsx HideChrome does NOT fire for this route). Canonical 10 ZIPs, dynamicParams=false.",
+  "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. ZIPs carry no cached market row, so every stat is derived live from listing_tile_mv tiles (CLAUDE.md \u00a70). KB design mirrors the city page pattern (Phase 9, docs/KB_CONVERGENCE_ROADMAP.md).",
+  "note": "KB (kinetic-brutalist) rebuild 2026-06-18. ONE getZipListings(zip, {propertyType:'A', limit:5000}) call feeds the hero lede (active count, median list, median DOM), KbMarketHud (live tile stats + parent-city price history as trend source), KbFeatured (top 14 by price), KbListingMap, and two KbExploreTowns sections (subdivisions + other ZIPs). NO getMarketPulse/getMarketStats \u2014 there are no ZIP-keyed rows, nothing is fabricated. KbNav + KbFooter are the chrome (layout.tsx HideChrome does NOT fire for this route). Canonical 10 ZIPs, dynamicParams=false.",
   "requiredComponents": [
     {
       "name": "KbNav",
-      "section": "KB chrome — top navigation bar",
+      "section": "KB chrome \u2014 top navigation bar",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "KB page contract — section view + scroll depth tracking (pageType='zip')",
+      "section": "KB page contract \u2014 section view + scroll depth tracking (pageType='zip')",
       "blocking": true
     },
     {
@@ -31,22 +31,22 @@
     },
     {
       "name": "KbHero",
-      "section": "hero — 'Homes for sale in {zip}' + active count + median list + median DOM",
+      "section": "hero \u2014 'Homes for sale in {zip}' + active count + median list + median DOM",
       "blocking": true
     },
     {
       "name": "KbMarketHud",
-      "section": "market HUD — live stats from listing_tile_mv + parent-city price history trend",
+      "section": "market HUD \u2014 live stats from listing_tile_mv + parent-city price history trend",
       "blocking": true
     },
     {
       "name": "KbFeatured",
-      "section": "featured listings — top 14 by price via resolveFeaturedItems",
+      "section": "featured listings \u2014 top 14 by price via resolveFeaturedItems",
       "blocking": true
     },
     {
       "name": "KbListingMap",
-      "section": "map — all active SFR as GeoJSON points, fit to features",
+      "section": "map \u2014 all active SFR as GeoJSON points, fit to features",
       "blocking": true
     },
     {
@@ -55,13 +55,18 @@
       "blocking": true
     },
     {
+      "name": "KbCommunityAlerts",
+      "section": "F3 residual \u2014 free listing_alerts (ZIP + SFR postalCode filter) after map",
+      "blocking": true
+    },
+    {
       "name": "KbSell",
-      "section": "seller conversion CTA — eyebrow 'Sell in {area}'",
+      "section": "seller conversion CTA \u2014 eyebrow 'Sell in {area}'",
       "blocking": true
     },
     {
       "name": "KbFooter",
-      "section": "KB chrome — sitemap footer",
+      "section": "KB chrome \u2014 sitemap footer",
       "blocking": true
     }
   ]

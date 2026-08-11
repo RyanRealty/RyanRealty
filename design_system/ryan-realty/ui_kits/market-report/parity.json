@@ -11,7 +11,7 @@
     },
     {
       "name": "KbNav",
-      "section": "KB chrome nav — universal across all KB pages.",
+      "section": "KB chrome nav \u2014 universal across all KB pages.",
       "blocking": true
     },
     {
@@ -21,7 +21,7 @@
     },
     {
       "name": "KbBreadcrumb",
-      "section": "Visual breadcrumb — Home > Housing market.",
+      "section": "Visual breadcrumb \u2014 Home > Housing market.",
       "blocking": true
     },
     {
@@ -31,7 +31,7 @@
     },
     {
       "name": "KbHero",
-      "section": "Region eyebrow + data-driven glance lede from getMarketPulse (activeCount, medianListPrice, medianDaysToPending). eyebrow 'Central Oregon · Oregon', titleTop 'Central Oregon', titleBottom 'housing market'.",
+      "section": "Region eyebrow + data-driven glance lede from getMarketPulse (activeCount, medianListPrice, medianDaysToPending). eyebrow 'Central Oregon \u00b7 Oregon', titleTop 'Central Oregon', titleBottom 'housing market'.",
       "blocking": true
     },
     {
@@ -55,8 +55,13 @@
       "blocking": true
     },
     {
+      "name": "RegionalSfrAlertsBand",
+      "section": "F3 residual \u2014 free listing_alerts (CO SFR) before broker inquiry",
+      "blocking": true
+    },
+    {
       "name": "LeadCaptureBlock",
-      "section": "General 'ask a broker' inquiry form (variant='inquiry'), submitted through submitMarketPageInquiry → submitPageCTA (FUB person + event, Meta CAPI, canonical tagging, GA4 mirror). Restored from the pre-KB hub: KbSell only routes to the seller valuation flow, so without this a buyer/general market question had no on-page lead-capture surface.",
+      "section": "General 'ask a broker' inquiry form (variant='inquiry'), submitted through submitMarketPageInquiry \u2192 submitPageCTA (FUB person + event, Meta CAPI, canonical tagging, GA4 mirror). Restored from the pre-KB hub: KbSell only routes to the seller valuation flow, so without this a buyer/general market question had no on-page lead-capture surface.",
       "blocking": false
     },
     {
@@ -108,7 +113,7 @@
     "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live geo_type='region' geo_slug='central-oregon' property_type='A', 10 to 15 min freshness. Used for KbHero lede and KbSell data.",
     "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows geo_label IN CITY_LABELS, ONE call. Used by KbExploreTowns active counts.",
     "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, blog_posts status='published', newest first, limit 3. Used by KbArticles.",
-    "submitMarketPageInquiry": "app/housing-market/actions.ts (route-local server action) → submitPageCTA. Bound to the restored LeadCaptureBlock inquiry form. Same action the /housing-market/[...slug] flagship page uses.",
+    "submitMarketPageInquiry": "app/housing-market/actions.ts (route-local server action) \u2192 submitPageCTA. Bound to the restored LeadCaptureBlock inquiry form. Same action the /housing-market/[...slug] flagship page uses.",
     "note": "All read DAL functions imported from @/lib/data (G8 compliant). The only non-DAL import is the route-local server action submitMarketPageInquiry for the lead form (same pattern as the [...slug] page); it routes writes through submitPageCTA, not a raw .from()."
   },
   "sectionOrder": [
