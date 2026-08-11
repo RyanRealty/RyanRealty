@@ -27,3 +27,11 @@
 ## Non-goals
 
 Admin rewrite, all 1848 MLS “community” pages, Matterport, always-on GIS school catchments.
+
+## Mission status (2026-08-11)
+
+**Primary exploration loop: COMPLETE** on `main` through `1dacc452`.
+
+A buyer can climb listing → plat → community → neighborhood → city with shared basemap craft, multi-edge explore rails (related homes, parents, peers, lifestyle, golf, builder when present), and §0-honest scoped open houses/activity when boundary keys exist.
+
+Optional later (not blocking mission): full `/builders/{slug}` product, photo-stamp OverlayView parity with search pills, dual-pane list↔map on geo pages.
