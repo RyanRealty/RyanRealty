@@ -11,6 +11,15 @@ We already dual-path in `components/SearchMapClustered.tsx`:
 | `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` **set** | Vector map + Advanced Markers; basemap from **Cloud Console style** |
 | **unset** | Raster map + editorial `MAP_SEARCH_STYLES` in `lib/maps/markers.ts` + OverlayView pills |
 
+### Production IDs (Ryan Realty — set 2026-08)
+
+| What | ID | Where it lives |
+|------|-----|----------------|
+| **Map ID** | `2fda4566338348b37b114423` | App env `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` (Vercel + `.env.local`) |
+| **Map style** | `c8f5aadae9ca7e046191d511` | **Cloud Console only** — attached to the Map ID. Not an app env var. |
+
+The browser only sends the **Map ID**. Google resolves the linked style server-side. Putting the style ID in Vercel does nothing.
+
 ### Matt / ops steps (one-time)
 
 1. [Google Cloud Console](https://console.cloud.google.com/) → project that owns the Maps JS key.
@@ -23,14 +32,18 @@ We already dual-path in `components/SearchMapClustered.tsx`:
    - Roads: white/light, low-contrast labels  
    - Labels: navy `#102742`  
    - POI / transit: off or minimal  
-4. Attach the style to the Map ID.
-5. Set in Vercel (Production + Preview) and `.env.local`:
+4. **Attach the style to the Map ID** (required — Map ID alone does not apply a custom look):
+   - Open [Google Maps Platform → Map Management](https://console.cloud.google.com/google/maps-apis/studio/maps)  
+   - Click Map ID `2fda4566338348b37b114423`  
+   - Under map style / associated style, choose style `c8f5aadae9ca7e046191d511` (or open the style and assign this Map ID)  
+   - Save. Changes often show within minutes; hard-refresh the site.
+5. Set in Vercel (Production + Preview + Development) and `.env.local`:
 
 ```bash
-NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=your_map_id_here
+NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID=2fda4566338348b37b114423
 ```
 
-6. Redeploy. No code change required — search map picks up vector + Advanced Markers automatically.
+6. Redeploy Production (env is build-time for `NEXT_PUBLIC_*`). No code change required — search map picks up vector + Advanced Markers automatically.
 
 ### Enable APIs (billing project)
 
