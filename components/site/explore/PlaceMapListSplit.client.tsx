@@ -1,12 +1,12 @@
 'use client'
 
 /**
- * Dual-pane list ↔ map for place pages (subdivision / neighborhood inventory).
- * Hover/select a row → emphasize matching map pin via shared active key.
+ * Dual-pane list ↔ map for place pages (subdivision / neighborhood / city / community).
+ * List hover OR pin click → shared activeKey (list highlight + pin bounce).
  * Editorial ledger + KbListingMap (no second card grid).
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { formatPrice } from '@/lib/format/money'
@@ -35,6 +35,8 @@ type Props = {
   totalActive: number
   viewAllHref?: string
   viewAllLabel?: string
+  /** Empty-map center when pins exist but dual-pane still wants a registry fallback. */
+  centerLonLat?: [number, number]
 }
 
 export function PlaceMapListSplit({
@@ -47,9 +49,23 @@ export function PlaceMapListSplit({
   totalActive,
   viewAllHref,
   viewAllLabel,
+  centerLonLat,
 }: Props) {
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const list = useMemo(() => rows.slice(0, 24), [rows])
+  const listScrollRef = useRef<HTMLDivElement>(null)
+  const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map())
+
+  const onPinSelect = useCallback((key: string | null) => {
+    setActiveKey(key)
+  }, [])
+
+  // Pin click → scroll the matching list row into view.
+  useEffect(() => {
+    if (!activeKey) return
+    const el = rowRefs.current.get(activeKey)
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [activeKey])
 
   if (list.length === 0) return null
 
@@ -61,33 +77,36 @@ export function PlaceMapListSplit({
           <h2 className="sec-title display">{title}</h2>
         </div>
         {subtitle ? (
-          <p className="mt-2 max-w-prose text-sm" style={{ color: 'var(--navy-70)' }}>
+          <p className="mt-2 max-w-prose text-sm text-[color:var(--navy-70)]">
             {subtitle}
           </p>
         ) : null}
         <div className="place-map-split mt-6 grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
             <div
-              className="max-h-[min(70vh,560px)] overflow-y-auto rounded-sm border border-[rgba(16,39,66,0.12)]"
-              style={{ background: 'var(--cream)' }}
+              ref={listScrollRef}
+              className="max-h-[min(70vh,560px)] overflow-y-auto rounded-sm border border-[rgba(16,39,66,0.12)] bg-[color:var(--cream)]"
             >
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              <ul className="m-0 list-none p-0">
                 {list.map((row) => {
                   const selected = activeKey === row.key
                   return (
-                    <li key={row.key} style={{ borderBottom: '1px solid rgba(16,39,66,0.1)' }}>
+                    <li
+                      key={row.key}
+                      ref={(node) => {
+                        if (node) rowRefs.current.set(row.key, node)
+                        else rowRefs.current.delete(row.key)
+                      }}
+                      className="border-b border-[rgba(16,39,66,0.1)]"
+                    >
                       <Link
                         href={row.href}
                         onMouseEnter={() => setActiveKey(row.key)}
                         onFocus={() => setActiveKey(row.key)}
-                        style={{
-                          display: 'flex',
-                          gap: 12,
-                          padding: '12px 14px',
-                          textDecoration: 'none',
-                          color: 'var(--navy)',
-                          background: selected ? 'rgba(16,39,66,0.06)' : 'transparent',
-                          boxShadow: selected ? 'inset 3px 0 0 var(--navy)' : undefined,
-                        }}
+                        className={`flex gap-3 px-3.5 py-3 no-underline text-[color:var(--navy)] ${
+                          selected
+                            ? 'bg-[rgba(16,39,66,0.06)] shadow-[inset_3px_0_0_var(--navy)]'
+                            : 'bg-transparent'
+                        }`}
                       >
                         {row.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -96,45 +115,20 @@ export function PlaceMapListSplit({
                             alt=""
                             width={72}
                             height={54}
-                            style={{
-                              width: 72,
-                              height: 54,
-                              objectFit: 'cover',
-                              borderRadius: 2,
-                              flexShrink: 0,
-                              border: '1px solid rgba(16,39,66,0.12)',
-                            }}
+                            className="h-[54px] w-[72px] shrink-0 rounded-sm border border-[rgba(16,39,66,0.12)] object-cover"
                           />
                         ) : (
-                          <div
-                            style={{
-                              width: 72,
-                              height: 54,
-                              background: 'rgba(16,39,66,0.08)',
-                              flexShrink: 0,
-                            }}
-                          />
+                          <div className="h-[54px] w-[72px] shrink-0 bg-[rgba(16,39,66,0.08)]" />
                         )}
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div
-                            className="mono-num"
-                            style={{ fontWeight: 700, fontSize: '1rem' }}
-                          >
+                        <div className="min-w-0 flex-1">
+                          <div className="mono-num text-base font-bold">
                             {formatPrice(row.price)}
                           </div>
-                          <div
-                            style={{
-                              fontSize: '0.85rem',
-                              fontWeight: 600,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
+                          <div className="truncate text-[0.85rem] font-semibold">
                             {row.title}
                           </div>
                           {row.subtitle ? (
-                            <div style={{ fontSize: '0.78rem', color: 'var(--navy-70)' }}>
+                            <div className="text-[0.78rem] text-[color:var(--navy-70)]">
                               {row.subtitle}
                             </div>
                           ) : null}
@@ -145,8 +139,8 @@ export function PlaceMapListSplit({
                 })}
               </ul>
               {viewAllHref && viewAllLabel ? (
-                <div style={{ padding: 14 }}>
-                  <Link href={viewAllHref} className="btn alt" style={{ fontSize: '0.85rem' }}>
+                <div className="p-3.5">
+                  <Link href={viewAllHref} className="btn alt text-[0.85rem]">
                     {viewAllLabel} <span className="arr">→</span>
                   </Link>
                 </div>
@@ -159,15 +153,17 @@ export function PlaceMapListSplit({
                 fitToFeatures
                 showRegionMarkers={false}
                 polygons={polygons}
+                centerLonLat={centerLonLat}
                 eyebrow={eyebrow}
                 title={title.includes('\n') ? title : `Map\n${title}`}
                 subtitle={
                   activeKey
-                    ? 'Hover a home in the list. That pin lifts on the map.'
-                    : 'Hover the list to light a pin. Zoom for photo stamps.'
+                    ? 'List and map stay linked. Hover a row or tap a pin.'
+                    : 'Hover the list or tap a pin. Zoom for photo stamps.'
                 }
                 countNoun="active listings"
                 activeKey={activeKey}
+                onActiveKeyChange={onPinSelect}
               />
             </div>
         </div>

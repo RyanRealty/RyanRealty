@@ -96,6 +96,8 @@ export function KbListingMapImpl({
   countNoun = 'active listings',
   /** When set, scale up / raise z-index of the matching listing pin (list↔map). */
   activeKey = null as string | null,
+  /** Pin click → parent list highlight (dual-pane). */
+  onActiveKeyChange,
 }: {
   geojson: KbMapGeo
   totalActive: number
@@ -108,6 +110,7 @@ export function KbListingMapImpl({
   centerLonLat?: [number, number]
   countNoun?: string
   activeKey?: string | null
+  onActiveKeyChange?: (key: string | null) => void
 }) {
   const { ready } = useGoogleMapsReady()
   const countEl = useRef<HTMLElement>(null)
@@ -117,6 +120,11 @@ export function KbListingMapImpl({
   const overlaysRef = useRef<google.maps.Marker[]>([])
   const listingMarkersRef = useRef<google.maps.Marker[]>([])
   const featureKeysRef = useRef<(string | undefined)[]>([])
+  // Stable ref so marker click handlers do not force a full map rebuild.
+  const onActiveKeyChangeRef = useRef(onActiveKeyChange)
+  useEffect(() => {
+    onActiveKeyChangeRef.current = onActiveKeyChange
+  }, [onActiveKeyChange])
 
   const polygonPaths = useMemo(
     () => (polygons?.features ?? []).map((f) => geojsonToPaths(f.geometry as GeoJSON.Geometry)).filter((p) => p.length),
@@ -233,7 +241,10 @@ export function KbListingMapImpl({
           icon: dot,
           title: `${money(p.p)} · ${p.a || 'Listing'}`,
         })
-        m.addListener('click', () => openPopup(m, p))
+        m.addListener('click', () => {
+          openPopup(m, p)
+          if (p.k) onActiveKeyChangeRef.current?.(p.k)
+        })
         return m
       })
       listingMarkersRef.current = markers

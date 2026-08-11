@@ -40,7 +40,8 @@ Admin rewrite, all 1848 MLS “community” pages, Matterport, always-on GIS sch
 
 A buyer can climb listing → plat → community → neighborhood → city → builder with shared basemap craft, dual-pane inventory on plats, multi-edge rails, and §0-honest scoping.
 
-| Dual-pane pin↔row highlight | **Shipped** (list hover bounces matching pin via `activeKey`) |
+| Dual-pane pin↔row highlight | **Shipped** (list hover bounces pin; pin click highlights list + scrolls) |
 | Dual-pane on city | **Shipped** |
+| Dual-pane on community | **Shipped** |
 
 Optional later: typed `builder_name` column; OverlayView pill parity with search AdvancedMarkers.

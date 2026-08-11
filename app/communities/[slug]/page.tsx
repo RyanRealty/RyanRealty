@@ -88,7 +88,9 @@ import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbAbout } from '@/components/site/kb/KbAbout'
 import { KbResortOverview } from '@/components/site/kb/KbResortOverview'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
+// KbListingMap remains in the parity contract; PlaceInventoryMap composes dual-pane.
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
+import { PlaceInventoryMap } from '@/components/site/explore/PlaceInventoryMap'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
@@ -804,17 +806,13 @@ export default async function CommunityDetailPage({ params }: Props) {
             {CONTACT.phoneDirect}
           </a>
         </p>
-        <KbListingMap
-          geojson={mapGeo}
-          totalActive={activeCount ?? mapFeatures.length}
-          fitToFeatures
-          showRegionMarkers={false}
+        {/* Dual-pane when pins exist; map-only + registry center when empty (§0). */}
+        <PlaceInventoryMap
+          tiles={communityTiles}
+          mapGeo={mapGeo}
           polygons={mapPolygons}
-          eyebrow={community.name}
-          title={`Homes in\n${community.name}`}
-          subtitle={`Every active single-family listing in ${community.name}, on the map.`}
-          // Fix 4: registry center_lon_lat ensures the map renders even when
-          // this community has no active listings (empty geojson features). (§0)
+          placeName={community.name}
+          totalActive={activeCount ?? mapFeatures.length}
           centerLonLat={registryEntry?.center_lon_lat ?? undefined}
         />
         {/* ONE market section (Matt 2026-07-29): core charts render INSIDE the
