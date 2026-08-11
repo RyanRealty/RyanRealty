@@ -302,11 +302,14 @@ Every route migrated to an archetype updates its `parity.json` in the **same com
 | F0 Domain language | **Shipped** | `CONTEXT.md` Place geography terms |
 | F1 `resolvePlaceContext` | **Shipped** | Listing `PlaceIdentityLine` pilot |
 | F2 Related-homes ranker | **Shipped** | `getRelatedListings` merges MV + place proximity |
-| F3 ExploreMap | Pending | Search map craft on place pages |
+| F3 ExploreMap | **Shipped** | `getExploreMapOptions` + KbListingMap cream/Map ID basemap, cluster maxZoom 14 |
 | Subdivision GEO rebuild | **Shipped** | Lifestyle, parents, peer plats, city/community pulse on hero |
 | Listing lifestyle + parents | **Shipped** | Trails/golf ledger + place parents after featured rail |
 | Community golf reverse links | **Shipped** | `CommunityGolfLinks` from course registry |
-| Nbhd polish | Pending | Scope-honest OH/activity next |
+| Nbhd peers + lifestyle | **Shipped** | Peer Bend districts + lifestyle near centroid |
+| Events near | **Shipped** | `findEventsNear` in lifestyleNear |
+| Photo stamps on place maps | Pending | Search-map photo stamps at high zoom |
+| Builder rail | Pending | Needs BuilderName on listing detail DAL |
 
 Full plan: session plan.md / Exploration System plan (2026-08-11).
 

@@ -18,7 +18,8 @@
 | 2 | Subdivision full GEO rebuild | **Shipped** (this commit) |
 | 3 | Listing lifestyle + parents + related merge | **Shipped** (this commit) |
 | 4 | Community golf reverse links | **Shipped** (this commit) |
-| 5 | Neighborhood scope-honest polish | Pending (next) |
+| 5 | Neighborhood peers + lifestyle | **Shipped** (ExploreMap basemap + peers) |
+| 6 | ExploreMap basemap on place pages | **Shipped** (`getExploreMapOptions` + KbListingMap) |
 
 ## Non-goals
 
