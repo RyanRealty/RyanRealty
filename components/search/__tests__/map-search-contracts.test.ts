@@ -548,6 +548,24 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
   })
 })
 
+describe('Home type two-layer filter (class + MLS sub type)', () => {
+  it('primary chip bar mounts HomeTypeFilterPanel with duplex/manufactured sub-types', () => {
+    const panel = readSrc('components/search/HomeTypeFilterPanel.tsx')
+    expect(panel).toMatch(/PROPERTY_TYPES/)
+    expect(panel).toMatch(/propertySubTypeDisplayLabel/)
+    expect(panel).toMatch(/Duplex|propertySubTypes/)
+    for (const rel of ['components/search/SearchFilters.tsx', 'components/SearchFilterBar.tsx']) {
+      const src = readSrc(rel)
+      expect(src).toMatch(/HomeTypeFilterPanel/)
+      expect(src).toMatch(/propertySubTypes/)
+    }
+    const types = readSrc('lib/property-type.ts')
+    expect(types).toMatch(/multi-family/)
+    expect(types).toMatch(/SUBTYPE_DISPLAY_LABELS/)
+    expect(types).toMatch(/Manufactured On Land/)
+  })
+})
+
 describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
   it('P6: filter bars load AllFiltersSheet via dynamic() and mount only after first open', () => {
     for (const rel of ['components/search/SearchFilters.tsx', 'components/SearchFilterBar.tsx']) {

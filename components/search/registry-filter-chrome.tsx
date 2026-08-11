@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SEARCH_FIELDS, type SearchFieldDef } from '@/lib/search/field-registry'
+import { propertySubTypeDisplayLabel } from '@/lib/property-type'
 import { describeParsedSearch } from '@/lib/parse-search-query'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -64,7 +65,9 @@ export function activeRegistryFilters(source: ParamReader | null | undefined): A
       const values = raw.split(',').map((v) => v.trim()).filter(Boolean)
       if (values.length === 0) continue
       const extra = values.length > 1 ? ` +${values.length - 1}` : ''
-      out.push({ key: def.key, label: `${def.label}: ${values[0]}${extra}`, params: [def.key] })
+      const first =
+        def.key === 'propertySubTypes' ? propertySubTypeDisplayLabel(values[0]) : values[0]
+      out.push({ key: def.key, label: `${def.label}: ${first}${extra}`, params: [def.key] })
       continue
     }
     if (def.kind === 'text') {

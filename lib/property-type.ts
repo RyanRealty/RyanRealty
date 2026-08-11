@@ -3,10 +3,19 @@
  * Use everywhere (search, listing badges, reports) for consistent labeling.
  */
 
-/** Options for search/filter dropdowns (listings, saved searches). */
+/**
+ * Primary Home-type chip options (class layer).
+ *
+ * Values are what we put in `?propertyType=` — mapped to MLS letter codes by
+ * `propertyTypeFilterToCodes`. Prefer single-class codes (A/B/multi-family/Land)
+ * so buyers can separate duplexes and manufactured parks from SFR without
+ * opening All filters. Legacy `Residential` (A+B+C) still resolves for old URLs.
+ */
 export const PROPERTY_TYPES = [
   { value: '', label: 'All types' },
-  { value: 'Residential', label: 'Residential' },
+  { value: 'A', label: 'Residential' },
+  { value: 'multi-family', label: 'Multi-family' },
+  { value: 'B', label: 'Manufactured' },
   { value: 'Land', label: 'Land' },
   { value: 'Commercial', label: 'Commercial' },
 ] as const
@@ -15,12 +24,14 @@ export const PROPERTY_TYPES = [
  * Map a search property-type filter VALUE to the MLS PropertyType CODES stored in
  * `listing_tile_mv.property_type` / `listings.PropertyType` (single letters A-H).
  *
- * The search UI offers human labels (Residential / Land / Commercial) but the
- * feed stores codes, so a naive `.eq('property_type', 'Residential')` matched
- * NOTHING and silently emptied filtered searches. Verified against the live MV
- * (2026-06-08): A = residential dwellings (single family, condo, townhouse,
- * manufactured-on-land, multi-unit), B = manufactured in park, C = multi-family
- * / income (duplex/tri/quad), D = land/lots, E-H = commercial + other.
+ * The search UI offers human labels but the feed stores codes, so a naive
+ * `.eq('property_type', 'Residential')` matched NOTHING and silently emptied
+ * filtered searches. Verified against the live MV (2026-06-08):
+ *   A = residential dwellings (SFR, condo, townhouse, manufactured-on-land, …)
+ *   B = manufactured in park / leased land
+ *   C = multi-family / income (duplex / tri / quad / multi family)
+ *   D = land/lots
+ *   E–H = commercial + other
  *
  * Returns the codes to constrain by, or null when the value should NOT filter
  * (empty / "all" / an unmapped value — never silently zero the results).
@@ -29,14 +40,52 @@ export function propertyTypeFilterToCodes(value: string | null | undefined): str
   const v = (value ?? '').trim().toLowerCase()
   if (!v || v === 'all') return null
   if (/^[a-h]$/.test(v)) return [v.toUpperCase()] // already a raw code
+  // Legacy bucket (pre two-layer Home type): dwellings + income + park MH.
   if (v === 'residential') return ['A', 'B', 'C']
   if (v === 'land' || v === 'lots' || v === 'acreage') return ['D']
   if (v === 'commercial' || v === 'business') return ['E', 'F', 'G', 'H']
-  // Multi-family / income (duplex/tri/quad) — code C per the live-MV
-  // verification above. Powers the multi-family search preset
-  // (lib/search-presets.ts, W3.2 2026-07-21).
-  if (v === 'multi-family' || v === 'multifamily' || v === 'multi family' || v === 'income') return ['C']
+  // Multi-family / income (duplex/tri/quad) — code C. Powers the multi-family
+  // search preset (lib/search-presets.ts) and the primary Home-type chip.
+  if (v === 'multi-family' || v === 'multifamily' || v === 'multi family' || v === 'income') {
+    return ['C']
+  }
+  if (v === 'manufactured' || v === 'mobile') return ['B']
   return null
+}
+
+/**
+ * Buyer-facing labels for exact MLS PropertySubType feed strings.
+ * Registry / DAL keep the feed strings; UI never shows "In Park" raw.
+ */
+export const SUBTYPE_DISPLAY_LABELS: Readonly<Record<string, string>> = {
+  'Single Family Residence': 'Single-family home',
+  'Manufactured On Land': 'Manufactured on land',
+  Townhouse: 'Townhouse',
+  Condominium: 'Condo',
+  'Tenancy in Common': 'Tenancy in common',
+  'Residential Leased Land': 'Home on leased land',
+  'Stock Cooperative': 'Co-op',
+  Timeshare: 'Timeshare',
+  'In Park': 'Manufactured in park',
+  'On Leased Land': 'Manufactured on leased land',
+  Duplex: 'Duplex',
+  'Multi Family': 'Multi-family (5+ units)',
+  Quadruplex: 'Fourplex',
+  Triplex: 'Triplex',
+  'Residential Lots': 'Residential lots',
+  Commercial: 'Commercial land',
+  Recreational: 'Recreational land',
+  Agriculture: 'Agriculture',
+  Industrial: 'Industrial land',
+  Rangeland: 'Rangeland',
+  Investment: 'Investment land',
+}
+
+/** Readable label for a feed PropertySubType, or the raw string if unmapped. */
+export function propertySubTypeDisplayLabel(raw: string | null | undefined): string {
+  const v = (raw ?? '').trim()
+  if (!v) return ''
+  return SUBTYPE_DISPLAY_LABELS[v] ?? v
 }
 
 /** MLS PropertyType class codes that carry enumerated sub types. */

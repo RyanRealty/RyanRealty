@@ -758,7 +758,7 @@ export const SEARCH_FIELDS: readonly SearchFieldDef[] = [
     // NOTE: 'double wide' stays on bodyType 'Double Wide' (its registry
     // claim), deliberately NOT re-mapped here.
     key: 'propertySubTypes',
-    label: 'Property sub type',
+    label: 'Home type',
     category: 'type_construction',
     kind: 'multi',
     mv: 'property_sub_type',

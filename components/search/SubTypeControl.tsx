@@ -16,7 +16,7 @@
 
 import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { SUBTYPE_TO_CLASS } from '@/lib/property-type'
+import { SUBTYPE_TO_CLASS, propertySubTypeDisplayLabel } from '@/lib/property-type'
 import {
   PROPERTY_CLASS_LABELS,
   PROPERTY_CLASS_ORDER,
@@ -106,8 +106,8 @@ export default function SubTypeControl({
                   disabled={disabled || row.disabled}
                   aria-label={
                     row.count === 0
-                      ? `${row.value}, 0 ${scopeLabel ? `${scopeLabel.toLowerCase()} ` : ''}listings`
-                      : `${row.value}, ${row.count ?? 'unknown'} listings`
+                      ? `${propertySubTypeDisplayLabel(row.value)}, 0 ${scopeLabel ? `${scopeLabel.toLowerCase()} ` : ''}listings`
+                      : `${propertySubTypeDisplayLabel(row.value)}, ${row.count ?? 'unknown'} listings`
                   }
                   onClick={() => onToggle(row.value)}
                   className={cn(
@@ -115,7 +115,7 @@ export default function SubTypeControl({
                     row.suspended && 'line-through decoration-2 opacity-80',
                   )}
                 >
-                  {row.value}
+                  {propertySubTypeDisplayLabel(row.value)}
                   {row.count !== null && (
                     <span className={cn('ml-1', row.selected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
                       {row.count.toLocaleString()}

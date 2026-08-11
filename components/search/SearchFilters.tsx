@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useCallback, useState, useRef } from 'react'
+import { useCallback, useMemo, useState, useRef } from 'react'
 import { trackEvent } from '@/lib/tracking'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import { buildFilterApplyPayload } from '@/lib/search/search-events'
@@ -12,8 +12,7 @@ import {
   useSearchSuggest,
   type SuggestItem,
 } from '@/components/search/SearchSuggest'
-import { PROPERTY_TYPES } from '@/lib/property-type'
-import { propertyTypeDisplayLabel } from '@/lib/search/class-prevalence'
+import HomeTypeFilterPanel, { homeTypeChipLabel } from '@/components/search/HomeTypeFilterPanel'
 import { parseSearchQuery } from '@/lib/parse-search-query'
 import dynamic from 'next/dynamic'
 import SaveSearchButton from '@/components/SaveSearchButton'
@@ -175,14 +174,6 @@ function bathsLabel(min?: string, max?: string): string | null {
   if (min) return `${min}+ ba`
   if (max) return `Up to ${max} ba`
   return null
-}
-
-function typeLabel(v?: string): string | null {
-  if (!v) return null
-  // The All-filters sheet's sub-type auto-narrow writes class values the
-  // static option list does not carry ('A', 'multi-family', ...) — resolve
-  // those too so the chip never shows an active filter as inactive.
-  return PROPERTY_TYPES.find((t) => t.value === v)?.label ?? propertyTypeDisplayLabel(v)
 }
 
 function statusLabel(v?: string): string | null {
@@ -399,13 +390,18 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
   const activePriceLabel = priceLabel(initialFilters.minPrice, initialFilters.maxPrice)
   const activeBedsLabel = bedsLabel(initialFilters.beds, initialFilters.maxBeds)
   const activeBathsLabel = bathsLabel(initialFilters.baths, initialFilters.maxBaths)
-  const activeTypeLabel = typeLabel(initialFilters.propertyType)
+  const selectedSubTypes = useMemo(() => {
+    const raw = searchParams?.get('propertySubTypes') ?? ''
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  }, [searchParams])
+  const activeTypeLabel = homeTypeChipLabel(initialFilters.propertyType, selectedSubTypes)
   const activeStatusLabel = statusLabel(initialFilters.status)
 
   // Every registry field active in the URL, rendered generically (label from
   // the field registry). Covers price/beds/baths too, so the chip row needs no
   // per-field special cases.
-  const registryActive = activeRegistryFilters(searchParams)
+  // propertySubTypes rides the Home type chip — don't double-list it here.
+  const registryActive = activeRegistryFilters(searchParams).filter((f) => f.key !== 'propertySubTypes')
 
   const hasAnyFilter = !!(activeTypeLabel || activeStatusLabel || registryActive.length > 0)
 
@@ -776,29 +772,27 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           </div>
         </FilterDropdown>
 
-        {/* Home Type */}
+        {/* Home Type — class + MLS sub-type (duplex, manufactured on land, …) */}
         <FilterDropdown
           label={activeTypeLabel ?? 'Home type'}
           active={!!activeTypeLabel}
           open={openPanel === 'type'}
           onOpenChange={panelOpenHandler('type')}
         >
-          <div className="p-3">
-            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Home type</p>
-            <div className="flex flex-col gap-1">
-              {PROPERTY_TYPES.map(({ value, label }) => (
-                <Button
-                  key={value || 'all'}
-                  type="button"
-                  variant={(initialFilters.propertyType ?? '') === value ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => { setFilter('propertyType', value || undefined); setOpenPanel(null) }}
-                  className="justify-start"
-                >
-                  {label}
-                </Button>
-              ))}
-            </div>
+          <div className="w-[min(calc(100vw-2rem),22rem)]">
+            <HomeTypeFilterPanel
+              propertyType={initialFilters.propertyType}
+              propertySubTypes={selectedSubTypes}
+              onChange={({ propertyType, propertySubTypes }) => {
+                updateUrl({
+                  propertyType: propertyType || undefined,
+                  propertySubTypes:
+                    propertySubTypes && propertySubTypes.length > 0
+                      ? propertySubTypes.join(',')
+                      : undefined,
+                })
+              }}
+            />
           </div>
         </FilterDropdown>
 
@@ -830,7 +824,12 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             <RegistryFilterChip label={activeStatusLabel} onRemove={() => setFilter('status', undefined)} />
           )}
           {activeTypeLabel && (
-            <RegistryFilterChip label={activeTypeLabel} onRemove={() => setFilter('propertyType', undefined)} />
+            <RegistryFilterChip
+              label={activeTypeLabel}
+              onRemove={() =>
+                updateUrl({ propertyType: undefined, propertySubTypes: undefined })
+              }
+            />
           )}
           {registryActive.map(({ key, label, params }) => (
             <RegistryFilterChip key={key} label={label} onRemove={() => removeChip(params)} />

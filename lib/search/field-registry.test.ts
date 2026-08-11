@@ -208,7 +208,7 @@ describe('field-registry: propertySubTypes (sub-type tranche, plan §4 2026-07-3
   it('is an enumerated single-column IN multi over property_sub_type', () => {
     expect(def).toBeDefined()
     expect(def.kind).toBe('multi')
-    expect(def.label).toBe('Property sub type')
+    expect(def.label).toBe('Home type')
     expect(def.category).toBe('type_construction')
     expect(def.mv).toBe('property_sub_type')
     expect(def.singleColumnIn).toBe(true)

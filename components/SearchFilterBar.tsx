@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
-import { PROPERTY_TYPES } from '@/lib/property-type'
+import HomeTypeFilterPanel, { homeTypeChipLabel } from '@/components/search/HomeTypeFilterPanel'
 import dynamic from 'next/dynamic'
 import SaveSearchButton from '@/components/SaveSearchButton'
 import type { SavedSearchPathContext } from '@/lib/search/saved-search-path-filters'
@@ -123,8 +123,8 @@ function hasBedsBathsActive(params: SearchFilterBarProps): boolean {
   return !!(params.beds || params.baths)
 }
 
-function hasHomeTypeActive(params: SearchFilterBarProps): boolean {
-  return !!(params.propertyType && params.propertyType !== '')
+function hasHomeTypeActive(params: SearchFilterBarProps, subTypes: string[]): boolean {
+  return !!(params.propertyType && params.propertyType !== '') || subTypes.length > 0
 }
 
 function hasMoreActive(params: SearchFilterBarProps): boolean {
@@ -170,7 +170,14 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
   }, [])
 
   // Every registry field active in the URL — powers the More badge + chip row.
-  const registryActive = activeRegistryFilters(searchParams)
+  // propertySubTypes rides the Home type chip — don't double-list it here.
+  const registryActive = activeRegistryFilters(searchParams).filter((f) => f.key !== 'propertySubTypes')
+  const selectedSubTypes = useMemo(() => {
+    const raw = searchParams?.get('propertySubTypes') ?? ''
+    return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  }, [searchParams])
+  const homeTypeLabel =
+    homeTypeChipLabel(props.propertyType, selectedSubTypes) ?? 'Home Type'
 
   // Parsed-search confirmation chips (voice transcripts)
   const { chips: parsedChips, show: showParsedChips } = useParsedSearchConfirm()
@@ -227,6 +234,8 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       lotAcresMax: props.lotAcresMax,
       postalCode: props.postalCode,
       propertyType: props.propertyType,
+      // Sub-types live only in the query string (registry multi), not bar props.
+      propertySubTypes: searchParams?.get('propertySubTypes') || undefined,
       statusFilter: props.statusFilter,
       keywords: props.keywords,
       garageMin: props.garageMin,
@@ -513,77 +522,36 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
         )}
       </div>
 
-      {/* Home Type */}
+      {/* Home Type — class + MLS sub-type (duplex, manufactured on land, …) */}
       <div className="relative shrink-0">
         <Button
           type="button"
-          variant={open === 'hometype' || hasHomeTypeActive(props) ? 'secondary' : 'outline'}
+          variant={open === 'hometype' || hasHomeTypeActive(props, selectedSubTypes) ? 'secondary' : 'outline'}
           size="sm"
           onClick={() => setOpen(open === 'hometype' ? null : 'hometype')}
           className="gap-1"
           aria-expanded={open === 'hometype'}
         >
-          Home Type
+          {homeTypeLabel}
           <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
         {open === 'hometype' && (
-          <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),20rem)] p-4')}>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                const form = e.currentTarget
-                const type = (form.querySelector('input[name="propertyType"]:checked') as HTMLInputElement)?.value ?? ''
-                apply(buildParams({ propertyType: type || undefined }))
+          <div className={cn(dropdownAnchor, dropdownSurface, 'w-[min(calc(100vw-2rem),22rem)] p-0')}>
+            <HomeTypeFilterPanel
+              propertyType={props.propertyType}
+              propertySubTypes={selectedSubTypes}
+              onChange={({ propertyType, propertySubTypes }) => {
+                apply(
+                  buildParams({
+                    propertyType: propertyType || undefined,
+                    propertySubTypes:
+                      propertySubTypes && propertySubTypes.length > 0
+                        ? propertySubTypes.join(',')
+                        : undefined,
+                  }),
+                )
               }}
-              className="space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Home Type
-                </p>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="xs"
-                  className="h-auto p-0 text-xs"
-                  onClick={(e) => {
-                    const form = (e.target as HTMLElement).closest('form')
-                    form?.querySelectorAll<HTMLInputElement>('input[name="propertyType"]').forEach((el) => {
-                      el.checked = el.value === ''
-                    })
-                  }}
-                >
-                  Deselect all
-                </Button>
-              </div>
-              <div>
-                {PROPERTY_TYPES.filter((t) => t.value !== '').map(({ value, label }) => (
-                  <Label key={value} className="flex cursor-pointer items-center gap-2 py-1.5">
-                    <Input
-                      type="radio"
-                      name="propertyType"
-                      value={value}
-                      defaultChecked={(props.propertyType ?? '') === value}
-                      className="h-4 w-4 border-border text-accent-foreground focus:ring-accent"
-                    />
-                    <span className="text-sm text-foreground">{label}</span>
-                  </Label>
-                ))}
-                <Label className="flex cursor-pointer items-center gap-2 py-1.5">
-                  <Input
-                    type="radio"
-                    name="propertyType"
-                    value=""
-                    defaultChecked={!(props.propertyType ?? '')}
-                    className="h-4 w-4 border-border text-accent-foreground focus:ring-accent"
-                  />
-                  <span className="text-sm text-foreground">All types</span>
-                </Label>
-              </div>
-              <Button type="submit" disabled={isPending} className="w-full">
-                {isPending ? 'Applying…' : 'Apply'}
-              </Button>
-            </form>
+            />
           </div>
         )}
       </div>
