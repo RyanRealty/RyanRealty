@@ -13,7 +13,10 @@ import {
   resolveListingAgent,
 } from '@/lib/data'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
-import { fetchNearbyTiles } from '@/lib/kb/fetch-nearby-tiles'
+import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
+import { findTrailsNear, findGolfNear } from '@/lib/explore/lifestyle-near'
+import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
+import { PlaceParentsSection } from '@/components/site/explore/PlaceParentsSection'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
@@ -197,14 +200,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
       : { city: listing.city ?? undefined }
 
-  const [nearbyTilesRaw, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma] =
+  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma] =
     await Promise.all([
-      // price-proximity + widen-on-thin-scope, see lib/kb/fetch-nearby-tiles.ts.
+      // Exploration System: similar_listings_mv + place-scoped proximity (one API).
       withTimeoutFallback(
-        fetchNearbyTiles(nearbyScope, listing.listingKey, listing.listNumber, listing.listPrice),
-        [],
-        4000,
-        'listing:nearby',
+        getRelatedListings({
+          anchorKey: listing.listingKey,
+          excludeListNumber: listing.listNumber,
+          subjectPrice: listing.listPrice,
+          scope: nearbyScope,
+          limit: 14,
+        }),
+        { primary: [], similar: [], nearby: [] },
+        4500,
+        'listing:related',
       ),
       withTimeoutFallback(getListingDetailHistory(listingKey), [], 3000, 'listing:history'),
       withTimeoutFallback(getListingPhotos(listingKey), [], 4000, 'listing:photos'),
@@ -252,13 +261,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const listingWithPhotos = { ...listing, photos }
 
-  // Drop THIS listing from its own "homes in this area" rail, then resolve to the
-  // canonical KbFeatured item shape (the city/community featured section).
-  const nearbyTiles = nearbyTilesRaw
-    .filter((t) => t.listingKey !== listing.listingKey && t.listNumber !== listing.listNumber)
-    .slice(0, 12)
+  // Primary rail = place + similar merge; second rail = pure similar when it
+  // adds homes the primary set doesn't already show (avoid double tile walls).
+  // One inventory rail only (experience rule: no two card grids in a row).
+  // Ranking already merges similar_listings_mv + place proximity.
   const featuredItems = await withTimeoutFallback(
-    resolveFeaturedItems(nearbyTiles, 12),
+    resolveFeaturedItems(relatedHomes.primary.slice(0, 12), 12),
     [],
     3000,
     'listing:featured',
@@ -393,6 +401,20 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ) : null}
       <SchoolsBlock listing={listingWithPhotos} />
       <ParksNearbyBlock listing={listingWithPhotos} />
+      <LifestyleNearSection
+        lat={listing.lat}
+        lng={listing.lng}
+        items={
+          listing.lat != null && listing.lng != null
+            ? [
+                ...findTrailsNear(listing.lat, listing.lng, 10, 3),
+                ...findGolfNear(listing.lat, listing.lng, 15, 3),
+              ]
+            : []
+        }
+        eyebrow="Lifestyle"
+        title="Trails and golf nearby"
+      />
       {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" /> : null}
       {/* The money block: what it costs to own, then what it could earn. */}
       <MortgageCalculator
@@ -537,8 +559,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
           sidebar={sidebar}
         />
         {featuredItems.length > 0 ? (
-          <KbFeatured items={featuredItems} eyebrow={`${featuredGeoName} · For sale`} viewAllHref={featuredViewAllHref} viewAllLabel={`See every ${featuredGeoName} home for sale`} />
+          <KbFeatured
+            items={featuredItems}
+            eyebrow={`${featuredGeoName} · For sale`}
+            viewAllHref={featuredViewAllHref}
+            viewAllLabel={`See every ${featuredGeoName} home for sale`}
+          />
         ) : null}
+        {/* Ledger parents after the inventory rail (not a second card grid). */}
+        <PlaceParentsSection
+          parents={placeContext.parents}
+          eyebrow="Keep exploring"
+          title="This home sits inside"
+        />
         <KbFooter towns={[]} listingKey={listing.listingKey} />
       </SmoothScrollProvider>
     </main>

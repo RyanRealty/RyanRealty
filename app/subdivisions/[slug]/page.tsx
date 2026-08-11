@@ -19,10 +19,9 @@
  * permanentRedirect fires ONLY for marketing-level slugs (resolveSubdivisionAreaRedirect).
  * notFound fires ONLY when all three paths return empty.
  *
- * Section stack (city-page funnel parity, 2026-07-30): breadcrumb · hero ·
- * featured · video tours · map · sales history · schools · SELL · footer.
- * Inventory leads because the page is titled "{name} homes for sale", and the
- * seller CTA closes the page with no exit-link block after it.
+ * Section stack (Exploration System 2026-08): breadcrumb · hero · featured ·
+ * video tours · map · sales history · schools · lifestyle · parents/peers ·
+ * SELL · footer. Inventory leads; no dead-end after history.
  *
  * Data ONLY through @/lib/data and @/app/actions/communities. No raw .from().
  */
@@ -36,6 +35,14 @@ import {
   getListingTiles,
   getMarketStats,
 } from '@/lib/data'
+import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
+import {
+  fetchSubdivMarketExtras,
+  lifestyleForCentroid,
+  mapCentroid,
+  peerPlatsForResort,
+  subdivisionPlaceContext,
+} from '@/lib/explore/subdivision-page-extras'
 import { isSubdivisionIndexable } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
@@ -54,7 +61,6 @@ import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { VideoTourRail } from '@/components/site/VideoTourRail'
@@ -399,29 +405,34 @@ export default async function SubdivisionPage({ params }: Props) {
   // RPC (fails soft to [] until the migration is applied); stats = the
   // market_stats_cache geo_type='subdivision' row when one exists (most plats
   // have none until the cache backfill — the section feature-detects both).
-  const [salesHistory, subdivisionStats, subdivisionSchools] = await Promise.all([
-    withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
-    withTimeoutFallback(
-      // ytd is the stable subdivision stat period (refresh-subdivision-stats writes
-      // geo_slug = slugify(alias) = this route slug). Default rolling_90d is too thin
-      // for a single subdivision (ODS near-individual risk).
-      getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }),
-      null,
-      4500,
-      'sub:market-stats',
-    ),
-    // Schools (W2.4 MPC parity): city+SubdivisionName scoped modal assignment
-    // from the subdivision's OWN listings, §0-thresholded (>=70% of >=10 agree).
-    // Registry-only — a GIS plat has no exact (city, name) identity to scope on.
-    registryMatch
-      ? withTimeoutFallback(
-          getSubdivisionSchools(registryMatch.city, registryMatch.canonicalName),
-          [],
-          4500,
-          'sub:schools',
-        )
-      : Promise.resolve([]),
-  ])
+  const [salesHistory, subdivisionStats, subdivisionSchools, marketExtras] =
+    await Promise.all([
+      withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
+      withTimeoutFallback(
+        getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }),
+        null,
+        4500,
+        'sub:market-stats',
+      ),
+      registryMatch
+        ? withTimeoutFallback(
+            getSubdivisionSchools(registryMatch.city, registryMatch.canonicalName),
+            [],
+            4500,
+            'sub:schools',
+          )
+        : Promise.resolve([]),
+      fetchSubdivMarketExtras({ citySlug, resortSlug }),
+    ])
+  const { cityPulse, communityPulse } = marketExtras
+  const placeContext = subdivisionPlaceContext({ cityName, citySlug, displayName, slug })
+  const peerPlats = peerPlatsForResort(resortSlug, slug)
+  const centroid = mapCentroid(mapTiles)
+  const lifestyleItems = lifestyleForCentroid(centroid)
+  const heroMedian =
+    communityPulse?.medianListPrice ?? cityPulse?.medianListPrice ?? null
+  const heroDom =
+    communityPulse?.medianDaysToPending ?? cityPulse?.medianDaysToPending ?? null
 
   // ── JSON-LD ───────────────────────────────────────────────────────────────
   const schemas: SchemaInput[] = [
@@ -475,8 +486,8 @@ export default async function SubdivisionPage({ params }: Props) {
         <KbHero
           data={{
             activeCount,
-            medianListPrice: null,
-            medianDaysToPending: null,
+            medianListPrice: heroMedian,
+            medianDaysToPending: heroDom,
           }}
           eyebrow={eyebrow}
           titleTop={`${displayName},`}
@@ -550,12 +561,19 @@ export default async function SubdivisionPage({ params }: Props) {
             from this subdivision's own listings; renders null when no level
             clears the >=70%-of->=10 majority. */}
         <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} />
-        <KbSell
-          data={{
-            medianListPrice: null,
-            medianDaysToPending: null,
-            soldCount30d: null,
-          }}
+        <SubdivisionExploreTail
+          displayName={displayName}
+          placeContext={placeContext}
+          lifestyleItems={lifestyleItems}
+          centroid={centroid}
+          peerPlats={peerPlats}
+          resortLabel={resortLabel}
+          resortSlug={resortSlug}
+          cityName={cityName}
+          citySlug={citySlug}
+          heroMedian={heroMedian}
+          heroDom={heroDom}
+          soldCount={cityPulse?.closedLast30Days ?? null}
         />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>

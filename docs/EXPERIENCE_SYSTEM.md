@@ -299,13 +299,14 @@ Every route migrated to an archetype updates its `parity.json` in the **same com
 
 | Increment | State | Notes |
 |---|---|---|
-| F0 Domain language | **Shipped in tree** | `CONTEXT.md` Place geography terms |
-| F1 `resolvePlaceContext` | **Shipped in tree** | `lib/data/geo/resolvePlaceContext.ts` + unit tests; listing `PlaceIdentityLine` pilot |
-| F2 Related-homes ranker | Pending | Unify `fetchNearbyTiles` + `getSimilarListings` |
+| F0 Domain language | **Shipped** | `CONTEXT.md` Place geography terms |
+| F1 `resolvePlaceContext` | **Shipped** | Listing `PlaceIdentityLine` pilot |
+| F2 Related-homes ranker | **Shipped** | `getRelatedListings` merges MV + place proximity |
 | F3 ExploreMap | Pending | Search map craft on place pages |
-| Subdivision GEO rebuild | Pending | Highest dead-end ROI |
-| Listing multi-rails + lifestyle | Pending | Money page, extra care |
-| Nbhd / Community / Golf / City | Pending | Converge on section contracts |
+| Subdivision GEO rebuild | **Shipped** | Lifestyle, parents, peer plats, city/community pulse on hero |
+| Listing lifestyle + parents | **Shipped** | Trails/golf ledger + place parents after featured rail |
+| Community golf reverse links | **Shipped** | `CommunityGolfLinks` from course registry |
+| Nbhd polish | Pending | Scope-honest OH/activity next |
 
 Full plan: session plan.md / Exploration System plan (2026-08-11).
 

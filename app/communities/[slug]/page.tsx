@@ -1,7 +1,5 @@
 /**
  * Community page — KB (kinetic-brutalist) design, Phase 9 wave 2 of the
- * convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Resort / golf /
- * master-planned communities (Tetherow, Broken Top, Widgi Creek, Pronghorn,
  * NorthWest Crossing, Awbrey Glen) AND plain subdivisions live here. Reuses the
  * SAME section library as the homepage + city page (components/site/kb/*), fed
  * COMMUNITY-scoped DAL data, never forked (ci:kb-single-source G50). KbNav +
@@ -105,6 +103,7 @@ import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
 import { KbTeam } from '@/components/site/kb/KbTeam.client'
 import { KbBuyCta } from '@/components/site/kb/KbBuyCta.client'
 import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
+import { CommunityGolfLinks } from '@/components/site/explore/CommunityGolfLinks'
 import { KbSell } from '@/components/site/kb/KbSell.client'
 import { KbSchools } from '@/components/site/kb/KbSchools'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
@@ -859,11 +858,8 @@ export default async function CommunityDetailPage({ params }: Props) {
         {/* Schools district — sourced exclusively from data/co-schools.ts
             getDistrictForCity(). Specific school names/attendance zones are NOT
             shown because per-address boundary data is not in the system. (§0) */}
-        <KbSchools
-          communityName={community.name}
-          districtName={schoolDistrictInfo?.district ?? null}
-          districtSlug={schoolDistrictInfo?.districtSlug ?? null}
-        />
+        <KbSchools communityName={community.name} districtName={schoolDistrictInfo?.district ?? null} districtSlug={schoolDistrictInfo?.districtSlug ?? null} />
+        <CommunityGolfLinks communitySlug={slug} communityName={community.name} />
         <KbArticles
           posts={articlePosts}
           eyebrow="Guides and news"
@@ -940,3 +936,4 @@ export default async function CommunityDetailPage({ params }: Props) {
     </main>
   )
 }
+
