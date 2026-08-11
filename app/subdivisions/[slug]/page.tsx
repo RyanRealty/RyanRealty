@@ -36,11 +36,13 @@ import {
   getMarketStats,
 } from '@/lib/data'
 import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
+import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import {
   fetchSubdivMarketExtras,
   lifestyleForCentroid,
   mapCentroid,
   peerPlatsForResort,
+  splitRowsFromTiles,
   subdivisionPlaceContext,
 } from '@/lib/explore/subdivision-page-extras'
 import { isSubdivisionIndexable } from '@/lib/data/subdivisions/getIndexableSubdivisions'
@@ -374,6 +376,9 @@ export default async function SubdivisionPage({ params }: Props) {
 
   const hasMap = mapFeatures.length > 0 || Boolean(mapPolygons)
 
+  const splitRows = splitRowsFromTiles(mapTiles)
+  const useSplit = hasMap && splitRows.length > 0
+
   // ── Video tours scoped to THIS subdivision ───────────────────────────────
   // VideoTourRail falls back to the top-priced site-wide Central Oregon set when
   // its own scoped fetch returns nothing — which would render 24 unrelated
@@ -497,10 +502,20 @@ export default async function SubdivisionPage({ params }: Props) {
           posterSrc={posterSrc}
           mediaCaption={mediaCaption}
         />
-        {/* Inventory leads (city-page funnel parity): the page is titled
-            "{displayName}, the list right now.", so the homes come before the map and
-            the history. Graceful empty state when the plat has no active listing. */}
-        {featuredItems.length > 0 ? (
+        {/* Dual-pane list ↔ map when we have pins; else featured rail or empty. */}
+        {useSplit ? (
+          <PlaceMapListSplit
+            rows={splitRows}
+            mapGeo={mapGeo}
+            polygons={mapPolygons}
+            eyebrow={`${displayName} · For sale`}
+            title={`Homes in ${displayName}`}
+            subtitle={`Every active single-family listing in ${displayName}${cityName !== 'Central Oregon' ? `, ${cityName}` : ''}. List and map together. Zoom in for photo stamps.`}
+            totalActive={activeCount ?? mapFeatures.length}
+            viewAllHref={subdivisionListingsPath(cityName, displayName)}
+            viewAllLabel={`See every ${displayName} home for sale`}
+          />
+        ) : featuredItems.length > 0 ? (
           <KbFeatured
             items={featuredItems}
             eyebrow={`${displayName} · For sale`}
@@ -521,32 +536,12 @@ export default async function SubdivisionPage({ params }: Props) {
             </div>
           </section>
         )}
-        {/* Video tours scoped to this subdivision. Gated on hasSubdivisionVideoTours
-            so the rail only renders when in-area video tours actually exist — never
-            the top-priced site-wide Central Oregon fallback under a "Walk through
-            homes in {displayName}" header. We scope on the canonical MLS
-            SubdivisionName (community) rather than displayName so the rail's own
-            scoped fetch matches the probe above. Tap drops into /feed, where the
-            videos keep playing continuously. */}
         {hasSubdivisionVideoTours && registryMatch ? (
           <VideoTourRail
             community={registryMatch.canonicalName}
             city={registryMatch.city}
             eyebrow={`${displayName} · Video tours`}
             title={`Walk through homes in ${displayName}`}
-          />
-        ) : null}
-        {/* Map: draw boundary polygon when present; pins from active listings. */}
-        {hasMap ? (
-          <KbListingMap
-            geojson={mapGeo}
-            totalActive={activeCount ?? mapFeatures.length}
-            fitToFeatures
-            showRegionMarkers={false}
-            polygons={mapPolygons}
-            eyebrow={displayName}
-            title={`Homes in\n${displayName}`}
-            subtitle={`Every active single-family listing in ${displayName}${cityName !== 'Central Oregon' ? `, ${cityName}` : ''}.`}
           />
         ) : null}
         {/* Sales history (yearly closed-sale aggregates) + market-stats strip.

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { listingDetailPath } from '@/lib/slug'
+import { listingDetailPath, slugify } from '@/lib/slug'
 import { formatPrice } from '@/lib/format/money'
 
 type Props = {
@@ -21,6 +21,15 @@ export function BuilderExploreSection({ builderName, tiles }: Props) {
           <span className="sec-index">Builder</span>
           <h2 className="sec-title display">More by {builderName}</h2>
         </div>
+        <p className="mt-2 text-sm" style={{ color: 'var(--navy-70)' }}>
+          <Link
+            href={`/builders/${slugify(builderName)}`}
+            className="underline"
+            style={{ color: 'var(--navy)' }}
+          >
+            See all {builderName} homes
+          </Link>
+        </p>
         <ul
           style={{
             listStyle: 'none',

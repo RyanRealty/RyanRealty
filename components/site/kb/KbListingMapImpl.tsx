@@ -6,7 +6,12 @@ import { GoogleMap, Polygon } from '@react-google-maps/api'
 import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from '@googlemaps/markerclusterer'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions } from '@/lib/maps/markers'
-import { PHOTO_STAMP_MIN_ZOOM } from '@/lib/maps/photo-stamp'
+import { PHOTO_STAMP_MIN_ZOOM, buildPhotoStampElement } from '@/lib/maps/photo-stamp'
+import {
+  buildPricePillElement,
+  getHtmlMarkerOverlayClass,
+  type HtmlMarkerOverlayHandle,
+} from '@/lib/maps/html-marker-overlay'
 import { kbMoneyFull } from './types'
 
 export type KbMapFeature = {
@@ -101,6 +106,7 @@ export function KbListingMapImpl({
   const clustererRef = useRef<MarkerClusterer | null>(null)
   const infoRef = useRef<google.maps.InfoWindow | null>(null)
   const overlaysRef = useRef<google.maps.Marker[]>([])
+  const htmlMarkersRef = useRef<HtmlMarkerOverlayHandle[]>([])
 
   const polygonPaths = useMemo(
     () => (polygons?.features ?? []).map((f) => geojsonToPaths(f.geometry as GeoJSON.Geometry)).filter((p) => p.length),
@@ -174,25 +180,13 @@ export function KbListingMapImpl({
         map.fitBounds(REGION, 24)
       }
 
-      // clustered listing markers
+      // Clustered HTML markers: pills mid-zoom, photo stamps close (search parity).
       const info = new g.InfoWindow({ maxWidth: 236 })
       infoRef.current = info
       const features = geojson.features.slice(0, MAX_MARKERS)
-      const dot: google.maps.Symbol = {
-        path: g.SymbolPath.CIRCLE,
-        scale: 5,
-        fillColor: NAVY,
-        fillOpacity: 1,
-        strokeColor: CREAM,
-        strokeWeight: 1.4,
-      }
-      const photoIcon = (url: string): google.maps.Icon => ({
-        url,
-        scaledSize: new g.Size(48, 48),
-        anchor: new g.Point(24, 48),
-      })
+      const HtmlMarker = getHtmlMarkerOverlayClass()
 
-      const openPopup = (m: google.maps.Marker, p: KbMapFeature['properties']) => {
+      const openPopup = (anchor: HtmlMarkerOverlayHandle, p: KbMapFeature['properties']) => {
         const specs = [
           p.bd != null ? `${p.bd} bd` : '',
           p.ba != null ? `${p.ba} ba` : '',
@@ -205,46 +199,43 @@ export function KbListingMapImpl({
         info.setContent(
           `<div class="kb-pop">${img}<div class="kb-pop-body"><div class="kb-pop-price mono-num">${money(p.p)}</div><div class="kb-pop-addr">${p.a || ''}<span class="sub">${p.sub ? p.sub + ' · ' : ''}${p.city || ''}</span></div><div class="kb-pop-specs">${specs}</div></div></div>`,
         )
-        info.open({ map, anchor: m })
+        info.setPosition(anchor.getPosition())
+        info.open({ map })
       }
 
+      const contentFor = (p: KbMapFeature['properties'], photoMode: boolean) => {
+        const label = money(p.p)
+        if (photoMode && p.img) return buildPhotoStampElement(p.img, label)
+        return buildPricePillElement(label)
+      }
+
+      let photoMode = (map.getZoom() ?? 12) >= PHOTO_STAMP_MIN_ZOOM
       const markers = features.map((f) => {
         const [lng, lat] = f.geometry.coordinates
         const p = f.properties
-        // a11y: Marker `title` is the accessibility-text hook (pa11y WCAG2AA).
-        const m = new g.Marker({
+        const title = `${money(p.p)} · ${p.a || 'Listing'}`
+        const marker = new HtmlMarker({
           position: { lat, lng },
-          icon: dot,
-          title: `${money(p.p)} · ${p.a || 'Listing'}`,
+          content: contentFor(p, photoMode),
+          title,
+          onClick: () => openPopup(marker, p),
         })
-        m.addListener('click', () => openPopup(m, p))
-        return m
+        return marker
       })
+      htmlMarkersRef.current = markers
 
-      /** Zoom storytelling: far = clusters; mid = dots; close = photo stamps. */
+      /** Zoom storytelling: far = clusters; mid = pills; close = photo stamps. */
       const applyMarkerMode = () => {
-        const z = map.getZoom() ?? 12
-        const photoMode = z >= PHOTO_STAMP_MIN_ZOOM
+        const next = (map.getZoom() ?? 12) >= PHOTO_STAMP_MIN_ZOOM
+        if (next === photoMode) return
+        photoMode = next
         markers.forEach((m, i) => {
           const p = features[i]?.properties
           if (!p) return
-          if (photoMode && p.img) {
-            m.setIcon(photoIcon(p.img))
-            m.setLabel({
-              text: money(p.p),
-              color: NAVY,
-              fontSize: '10px',
-              fontWeight: '700',
-              className: 'kb-map-stamp-lbl',
-            })
-          } else {
-            m.setIcon(dot)
-            m.setLabel(null)
-          }
+          m.content = contentFor(p, photoMode)
         })
       }
       map.addListener('zoom_changed', applyMarkerMode)
-      applyMarkerMode()
 
       const renderer: Renderer = {
         render: ({ count, position }) => {
@@ -265,10 +256,11 @@ export function KbListingMapImpl({
           })
         },
       }
-      // maxZoom 14: far = clusters; closer = individual markers / photo stamps.
+      // maxZoom 14: far = clusters; closer = individual pills / photo stamps.
+      // MarkerClusterer accepts OverlayView duck-types (SearchMapClustered path).
       clustererRef.current = new MarkerClusterer({
         map,
-        markers,
+        markers: markers as unknown as google.maps.Marker[],
         renderer,
         algorithm: new SuperClusterAlgorithm({ radius: 80, maxZoom: 14 }),
       })
@@ -301,6 +293,8 @@ export function KbListingMapImpl({
     clustererRef.current?.setMap(null)
     for (const o of overlaysRef.current) o.setMap(null)
     overlaysRef.current = []
+    for (const m of htmlMarkersRef.current) m.setMap(null)
+    htmlMarkersRef.current = []
     mapRef.current = null
   }, [])
 

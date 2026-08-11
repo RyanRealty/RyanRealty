@@ -3,7 +3,7 @@
  * Keeps app/subdivisions/[slug]/page.tsx under the file-size budget.
  */
 
-import { slugify } from '@/lib/slug'
+import { listingDetailPath, slugify } from '@/lib/slug'
 import resortCommunitiesData from '@/data/resort-communities.json'
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import { lifestyleNearLatLng, type LifestyleNearItem } from '@/lib/explore/lifestyle-near'
@@ -72,6 +72,49 @@ export function lifestyleForCentroid(
 ): LifestyleNearItem[] {
   if (!centroid) return []
   return lifestyleNearLatLng(centroid.lat, centroid.lng)
+}
+
+/** Dual-pane list rows from map tiles. */
+export function splitRowsFromTiles(
+  mapTiles: Array<{
+    listingKey: string
+    listNumber?: string | null
+    listPrice: number | null
+    beds: number | null
+    baths: number | null
+    streetNumber: string | null
+    streetName: string | null
+    streetSuffix?: string | null
+    city: string | null
+    subdivisionName: string | null
+    photoUrl: string | null
+    lat: number | null
+    lng: number | null
+  }>,
+) {
+  return mapTiles
+    .filter((t) => t.lat != null && t.lng != null)
+    .slice(0, 24)
+    .map((t) => {
+      const street = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
+      return {
+        key: t.listingKey,
+        href: listingDetailPath(
+          t.listingKey,
+          { streetNumber: t.streetNumber, streetName: t.streetName, city: t.city },
+          { city: t.city, subdivision: t.subdivisionName },
+          { mlsNumber: t.listNumber },
+        ),
+        title: street || 'Listing',
+        subtitle: [t.beds != null ? `${t.beds} bd` : null, t.baths != null ? `${t.baths} ba` : null]
+          .filter(Boolean)
+          .join(' · '),
+        price: t.listPrice,
+        photoUrl: t.photoUrl,
+        lat: t.lat,
+        lng: t.lng,
+      }
+    })
 }
 
 export type SubdivMarketExtras = {

@@ -30,8 +30,14 @@ Admin rewrite, all 1848 MLS “community” pages, Matterport, always-on GIS sch
 
 ## Mission status (2026-08-11)
 
-**Primary exploration loop: COMPLETE** on `main` through `1dacc452`.
+**Primary + residual explore loop: COMPLETE** on `main`.
 
-A buyer can climb listing → plat → community → neighborhood → city with shared basemap craft, multi-edge explore rails (related homes, parents, peers, lifestyle, golf, builder when present), and §0-honest scoped open houses/activity when boundary keys exist.
+| Residual | Status |
+|----------|--------|
+| OverlayView pills + photo stamps on place maps | Done |
+| Dual-pane list↔map (subdivision) | Done |
+| `/builders` + `/builders/[slug]` | Done |
 
-Optional later (not blocking mission): full `/builders/{slug}` product, photo-stamp OverlayView parity with search pills, dual-pane list↔map on geo pages.
+A buyer can climb listing → plat → community → neighborhood → city → builder with shared basemap craft, dual-pane inventory on plats, multi-edge rails, and §0-honest scoping.
+
+Optional later: dual-pane on neighborhood/city; typed `builder_name` column; dual-pane pin↔row highlight wired into map markers.
