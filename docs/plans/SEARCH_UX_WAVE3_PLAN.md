@@ -66,8 +66,16 @@ Severity: **P0** trust/block · **P1** main-path friction · **P2** clear defect
 | **P6** | JS weight | Filters light | Eager `AllFiltersSheet` | P2 | S–M | Dynamic import / split exports |
 | **P7** | LCP images | First cards priority | Default image loading | P2 | S | `priority` first 2–4 |
 | **P8** | loading UI | Split skeleton | Generic 6-card skeleton | P3 | S | Split-shell loading.tsx |
+| **P9** | Timeout honesty | Failures ≠ empty inventory | SSR `withTimeout` → empty listings looks like “0 homes” | **P0** | M | Surface retry / degraded state; never invent empty market |
+| **P10** | Dual search surfaces | One search, one truth | Flagship `MapSearchView` vs SEO `UnifiedMapListingsView` / `SearchFilterBar` | P1 | L | Phase 0 residual |
+| **P11** | Mobile Target UX | Map + draggable results sheet | List\|Map tabs; multi-row chrome before first card | P1 | L | Highest conversion residual for mobile |
+| **P12** | Beds/baths max in chip | Range in chip popover | Min-only chips; max only in All-filters | P2 | S | DAL already supports max |
+| **P13** | Split vs list cards | One card system | Hand-rolled split cards vs `ListingCard` on list | P2 | S | Unify on ListingCard |
+| **P14** | Parity gate | Visual fidelity | Import-only mockup-parity → false green | P2 | S | Refresh mockup + pin layout contracts |
 
-Engine gaps (filters, MV, registry) are **out of Wave 3 scope** unless they block UX — see SEARCH_OPTIMIZATION_PLAN Phases 1–2.
+**Already met (do not re-plan as gaps):** search-as-you-move, list↔map hover sync, `?shapes=`/`?poly=`, radius draw + live mi, multi-shape, named areas picker, find-a-filter, zero-culprit sheet, save on flagship, dual-chrome kill, amenity filters on active split path.
+
+Engine gaps (new filter fields) stay in SEARCH_OPTIMIZATION / FILTER_COMPLETENESS unless they block UX.
 
 ---
 
@@ -94,11 +102,17 @@ Engine gaps (filters, MV, registry) are **out of Wave 3 scope** unless they bloc
 - [x] Perf quick wins P1 + P2 (parallel SSR, skip first idle fetch)  
 - [x] VERIFY_LOG stamp  
 
+### Wave 0b — Trust (before more chrome polish)
+
+1. **P9:** Distinguish degraded/timeout from true zero on SSR + client empty states (retry affordance).  
+2. Keep beyond-viewport “N homes outside this map” (already good).
+
 ### Wave 1 — Chrome hierarchy (mockup feel)
 
 1. Restack SearchFilters to mockup rows: **omnibox + Save + Alerts** | **chips** | **count + sort** (view toggle secondary).  
 2. Single primary alert path (prefer bar CTA → open capture; avoid double sticky strips fighting).  
-3. Mobile: one view switcher only; reduce chrome before first card.  
+3. Primary chips = Price · Beds/Baths · Type · Status + All filters (N); beds/baths max in chip (P12).  
+4. Mobile: collapse chrome density (P11 lite before full bottom sheet).  
 
 **Exclusive files (start):** `components/search/SearchFilters.tsx`, `app/search/page.tsx`, `components/search/SearchAlertCapture.tsx`, optional CSS.
 
@@ -146,6 +160,6 @@ Radius live readout, named areas, layer toggles — only after Wave 1–3.
 
 | Field | Value |
 |-------|--------|
-| **NOW** | Wave 0 code (P1 + P2) then Wave 1 chrome |
-| **THEN** | Wave 2–3 |
-| **MEASURE** | TTFB, first idle network (no spurious getViewportSearch), pan RTT |
+| **NOW** | Wave 0b trust (timeout ≠ empty) → Wave 1 chrome hierarchy |
+| **THEN** | Wave 2 craft · Wave 3 pan payload · Wave 4 map depth · dual-surface fold (P10) |
+| **MEASURE** | TTFB, first idle network (no spurious getViewportSearch), pan RTT, zero false-empty rate |
