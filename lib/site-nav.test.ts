@@ -73,7 +73,8 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
 
   it('uses canonical map + valuation destinations', () => {
     expect(MAP_SEARCH.href).toBe('/homes-for-sale?view=map')
-    expect(VALUATION_FORM.href).toBe('/sell/valuation')
+    // One valuation spine (Matt-granted): every global CTA anchors the on-page /sell form.
+    expect(VALUATION_FORM.href).toBe('/sell#get-value')
     const buy = KB_MENU_GROUPS.find((g) => g.title === 'Buy')
     expect(buy?.links.some((l) => l.href === MAP_SEARCH.href)).toBe(true)
   })

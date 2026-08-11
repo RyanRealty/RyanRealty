@@ -73,16 +73,16 @@ export const MAP_SEARCH: NavLink = {
   label: 'Map search',
 }
 
-/** Global chrome valuation CTA — form page, not the ad LP. */
+/** Global chrome valuation CTA — on-page form on /sell (Matt Wave 0). */
 export const VALUATION_FORM: NavLink = {
-  href: '/sell/valuation',
-  label: 'Value my home',
+  href: '/sell#get-value',
+  label: "Get your home's value",
 }
 
 /** Ad-funnel LP only — never use in primary chrome. */
 export const VALUATION_LP: NavLink = {
   href: '/lp/seller-home-value',
-  label: 'Value my home',
+  label: "Get your home's value",
 }
 
 // ─── KB_TOP_NAV — the public top bar (SSOT) ───────────────────────────────────
@@ -151,6 +151,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
     children: [
       { href: '/sell', label: 'Sell your home' },
       VALUATION_FORM,
+      { href: '/sell/valuation', label: 'Written valuation' },
       { href: '/our-homes', label: 'Our listings' },
       { href: '/motivated-sellers', label: 'Sell on a deadline' },
     ],
