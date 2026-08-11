@@ -67,6 +67,26 @@ describe('slug', () => {
     ).toBe('/homes-for-sale/bend/northwest-crossing/100-main-st-220189456')
   })
 
+  it('drops N/A / na subdivision so listing URLs never include /na/', () => {
+    expect(
+      listingDetailPath(
+        'spark-key-la-pine',
+        {
+          streetNumber: '50490',
+          streetName: 'Hwy 31',
+          city: 'La Pine',
+          state: 'OR',
+          postalCode: '97739',
+        },
+        {
+          city: 'La Pine',
+          subdivision: 'N/A',
+        },
+        { mlsNumber: '220223831' }
+      )
+    ).toBe('/homes-for-sale/la-pine/50490-hwy-31-220223831')
+  })
+
   it('includes neighborhood segment before subdivision when provided', () => {
     expect(
       listingDetailPath(

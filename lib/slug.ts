@@ -200,8 +200,11 @@ export function listingDetailPath(
 
   const cityRaw = location?.city ?? address?.city ?? null
   const citySlug = cityRaw?.trim() ? slugify(cityRaw) : null
-  const neighborhoodSlug = location?.neighborhood?.trim() ? slugify(location.neighborhood) : null
-  const subdivisionSlug = location?.subdivision?.trim() ? slugify(location.subdivision) : null
+  // Drop MLS noise ("N/A", "None", …) so we never emit /homes-for-sale/city/na/...
+  const cleanSubdivision = displaySubdivision(location?.subdivision)
+  const cleanNeighborhood = displaySubdivision(location?.neighborhood)
+  const neighborhoodSlug = cleanNeighborhood ? slugify(cleanNeighborhood) : null
+  const subdivisionSlug = cleanSubdivision ? slugify(cleanSubdivision) : null
   const listingSegment = listingAddressSlugWithMls(
     { streetNumber: address?.streetNumber ?? null, streetName: address?.streetName ?? null },
     publicId
