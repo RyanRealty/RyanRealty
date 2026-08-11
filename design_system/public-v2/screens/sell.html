@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Public v2 — Sell reference</title>
+  <style>
+    :root { --n:#102742; --c:#faf8f4; --e:rgba(16,39,66,.12); --m:rgba(16,39,66,.72); --f:Georgia,serif; --b:system-ui,sans-serif; }
+    *{box-sizing:border-box} body{margin:0;font-family:var(--b);background:var(--c);color:var(--n)}
+    .wrap{width:min(100% - 2rem,72rem);margin:0 auto}
+    .nav{display:flex;gap:.75rem;align-items:center;padding:1rem 0;border-bottom:1px solid var(--e);font-size:.875rem}
+    .nav a{color:inherit;text-decoration:none}.spacer{flex:1}
+    .btn{display:inline-flex;padding:.65rem 1.1rem;background:var(--n);color:var(--c);text-decoration:none;border:0;font-size:.875rem}
+    .hero{padding:3.5rem 0 2rem;display:grid;gap:2rem}
+    @media(min-width:900px){.hero{grid-template-columns:1.2fr .8fr;align-items:start}}
+    h1{font-family:var(--f);font-weight:400;font-size:clamp(2rem,4vw,3rem);margin:0;line-height:1.1;max-width:14ch}
+    .lede{color:var(--m);max-width:32rem}
+    .card{border:1px solid var(--e);padding:1.25rem}
+    label{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--m);margin-bottom:.35rem}
+    input{width:100%;min-height:2.75rem;border:1px solid var(--e);background:#fff;padding:.5rem .75rem;margin-bottom:1rem;font:inherit}
+    section{padding:2.5rem 0;border-top:1px solid var(--e)}
+    h2{font-family:var(--f);font-weight:400;font-size:1.75rem;margin:0 0 1rem}
+    details{border-bottom:1px solid var(--e);padding:1rem 0}
+    summary{cursor:pointer;font-weight:500}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav"><strong>Ryan Realty</strong><a href="#">Buy</a><a href="#">Sell</a><span class="spacer"></span><a class="btn" href="#value">Value my home</a></header>
+    <div class="hero">
+      <div>
+        <div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--m)">Sell</div>
+        <h1>Sell your home in Central Oregon</h1>
+        <p class="lede">One broker from pricing to close. Written CMA free — no listing agreement to see the comps.</p>
+      </div>
+      <form class="card" id="value">
+        <label for="addr">Property address</label>
+        <input id="addr" name="address" placeholder="Street, city" autocomplete="street-address" />
+        <button class="btn" type="submit" style="width:100%">Get my home value →</button>
+        <p class="lede" style="font-size:.85rem;margin:0.75rem 0 0">Written within 24 hours. We follow up twice, then stop if you pass.</p>
+      </form>
+    </div>
+  </div>
+  <section><div class="wrap">
+    <h2>Proof first — then plans</h2>
+    <p class="lede">Sold track record and reviews appear before any fee matrix. Matrices open on demand.</p>
+    <details><summary>Compare Essential 2.5% · Enhanced 3% · Elite 3.5%</summary>
+      <p class="lede">Same broker spine on every tier. Reach changes — not honesty.</p>
+    </details>
+  </div></section>
+</body>
+</html>

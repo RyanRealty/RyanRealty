@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Public v2 — About reference</title>
+  <style>
+    :root{--n:#102742;--c:#faf8f4;--e:rgba(16,39,66,.12);--m:rgba(16,39,66,.72);--f:Georgia,serif;--b:system-ui,sans-serif}
+    *{box-sizing:border-box}body{margin:0;font-family:var(--b);background:var(--c);color:var(--n)}
+    .wrap{width:min(100% - 2rem,72rem);margin:0 auto}
+    .nav{display:flex;gap:.75rem;padding:1rem 0;border-bottom:1px solid var(--e);font-size:.875rem;align-items:center}
+    .nav a{color:inherit;text-decoration:none}.spacer{flex:1}
+    .btn{display:inline-flex;padding:.65rem 1.1rem;background:var(--n);color:var(--c);text-decoration:none;font-size:.875rem}
+    .btn.sec{background:transparent;color:var(--n);border:1px solid rgba(16,39,66,.22)}
+    h1{font-family:var(--f);font-weight:400;font-size:clamp(2rem,4vw,3rem);max-width:16ch;line-height:1.1}
+    .lede{color:var(--m);max-width:36rem}
+    .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:1rem;padding:2rem 0;border-top:1px solid var(--e)}
+    .facts b{display:block;font-family:var(--f);font-size:1.5rem;font-weight:400}
+    .facts span{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--m)}
+    section{padding:2.5rem 0;border-top:1px solid var(--e)}
+    h2{font-family:var(--f);font-weight:400;font-size:1.75rem}
+    .actions{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.25rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav"><strong>Ryan Realty</strong><a href="#">About</a><a href="#">Team</a><span class="spacer"></span><a class="btn sec" href="/contact">Contact</a><a class="btn" href="/homes-for-sale">Search homes</a></header>
+    <div style="padding:3.5rem 0 1rem">
+      <div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--m)">Bend · Oregon</div>
+      <h1>Open since June 2023. Built for how people actually buy and sell here.</h1>
+      <p class="lede">Same broker from first call to close. Live market numbers on this site are the same figures we bring to pricing conversations. Differentiator: data-honest product + local execution — not a call center.</p>
+      <div class="actions"><a class="btn" href="/team">Meet the brokers</a><a class="btn sec" href="/sell/valuation">Value my home</a></div>
+    </div>
+    <div class="facts">
+      <div><b>2023</b><span>Founded</span></div>
+      <div><b>3</b><span>Brokers</span></div>
+      <div><b>5.0</b><span>Google rating</span></div>
+      <div><b>CO</b><span>Service area</span></div>
+    </div>
+  </div>
+  <section><div class="wrap">
+    <h2>What we do</h2>
+    <p class="lede"><strong>Buy</strong> — MLS search, alerts, tours, offers. <strong>Sell</strong> — written CMA, listing plans, weekly reports. No hand-offs.</p>
+  </div></section>
+</body>
+</html>

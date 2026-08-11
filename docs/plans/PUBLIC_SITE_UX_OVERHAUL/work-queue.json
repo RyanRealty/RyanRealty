@@ -1,0 +1,107 @@
+{
+  "updated_at": "2026-08-11T14:35:43Z",
+  "queue": [
+    {
+      "id": "boot-register",
+      "title": "BOOT: register PUBLIC_SITE_UX_OVERHAUL in DEVELOPMENT_PROCESS; note Experience/KB as evidence-only destination",
+      "status": "done",
+      "step": 1
+    },
+    {
+      "id": "boot-competitors",
+      "title": "BOOT: freeze competitor battery in decisions.md (locals + portal + optional product refs)",
+      "status": "done",
+      "step": 1
+    },
+    {
+      "id": "boot-ledgers",
+      "title": "BOOT: create inventory/ + audit/ skeleton; empty PAGE_LEDGER + SECTION_LEDGER schemas",
+      "status": "done",
+      "step": 1
+    },
+    {
+      "id": "boot-baseline",
+      "title": "BOOT: define baseline conversion queries (valuation, alerts, tour/contact) in conversion/BASELINE.md",
+      "status": "done",
+      "step": 1
+    },
+    {
+      "id": "p1-page-crawl",
+      "title": "P1: crawl all public routes \u2192 complete PAGE_LEDGER seed (every route listed)",
+      "status": "done",
+      "step": 2
+    },
+    {
+      "id": "p1-section-crawl",
+      "title": "P1: render-crawl templates \u2192 SECTION_LEDGER seed (every distinct section pattern)",
+      "status": "done",
+      "step": 2
+    },
+    {
+      "id": "p2-journey-a",
+      "title": "P2: Journey A buyer timed audit prod 390+1280 + defects linked to page/section IDs",
+      "status": "done",
+      "step": 3
+    },
+    {
+      "id": "p2-journey-b",
+      "title": "P2: Journey B seller timed audit prod 390+1280",
+      "status": "done",
+      "step": 3
+    },
+    {
+      "id": "p2-journey-c",
+      "title": "P2: Journey C brokerage timed audit prod 390+1280",
+      "status": "done",
+      "step": 3
+    },
+    {
+      "id": "p2-audit-drain",
+      "title": "P2: drain PAGE_LEDGER + SECTION_LEDGER \u2014 every row scored, competitive matrix, disposition (batch by family until unaudited=0)",
+      "status": "done",
+      "step": 3
+    },
+    {
+      "id": "p3-conversion-map",
+      "title": "P3: conversion map + instrumentation gaps \u2192 process lock package for Matt",
+      "status": "done",
+      "step": 4
+    },
+    {
+      "id": "p4-ia",
+      "title": "P4: IA reimagine 2\u20133 options + cut-list + redirects \u2192 await Matt IA lock",
+      "status": "done",
+      "step": 5
+    },
+    {
+      "id": "p5-visual-library",
+      "title": "P5: visual language + section library mapping every pattern \u2192 5 reference screens \u2192 await Matt visual lock",
+      "status": "done",
+      "step": 6
+    },
+    {
+      "id": "p6-primitives",
+      "title": "P6: build site v2 primitives + chrome + ratchet gates",
+      "status": "done",
+      "step": 7
+    },
+    {
+      "id": "p7-litmus",
+      "title": "P7: ship litmus spines until Journey A+B pass on prod \u2192 Matt litmus lock",
+      "status": "blocked_on_spine_ship",
+      "step": 8
+    },
+    {
+      "id": "p8-roll-drain",
+      "title": "P8\u2013P10: rebuild every page from library; section ratchet to 0; harden",
+      "status": "ready",
+      "step": 9
+    },
+    {
+      "id": "p8-spine-home",
+      "title": "P8 next unit: migrate homepage to v2 section composition per PUBLIC_UI (max effort)",
+      "status": "ready",
+      "step": 9
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Public v2 — Search reference</title>
+  <style>
+    :root{--n:#102742;--c:#faf8f4;--e:rgba(16,39,66,.12);--m:rgba(16,39,66,.72);--b:system-ui,sans-serif;--f:Georgia,serif}
+    *{box-sizing:border-box}body{margin:0;font-family:var(--b);background:var(--c);color:var(--n);height:100vh;display:flex;flex-direction:column}
+    .nav{display:flex;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid var(--e);font-size:.875rem;align-items:center}
+    .nav a{color:inherit;text-decoration:none}.spacer{flex:1}
+    .filters{display:flex;gap:.5rem;padding:.75rem 1rem;border-bottom:1px solid var(--e);flex-wrap:wrap;font-size:.8rem}
+    .chip{border:1px solid var(--e);padding:.4rem .65rem;background:#fff}
+    .body{flex:1;display:grid;min-height:0}
+    @media(min-width:900px){.body{grid-template-columns:1fr 1fr}}
+    .map{background:#d9e0e8;min-height:40vh;display:flex;align-items:center;justify-content:center;color:var(--m);border-bottom:1px solid var(--e)}
+    .list{overflow:auto;padding:0}
+    .card{display:grid;grid-template-columns:7rem 1fr;gap:.75rem;padding:.85rem 1rem;border-bottom:1px solid var(--e)}
+    .ph{background:#c5ced8}
+    .price{font-family:var(--f);font-size:1.25rem}
+    .meta{font-size:.8rem;color:var(--m)}
+    .bar{display:flex;justify-content:space-between;padding:.65rem 1rem;border-bottom:1px solid var(--e);font-size:.85rem}
+    .btn{background:var(--n);color:var(--c);border:0;padding:.45rem .75rem;font-size:.8rem}
+  </style>
+</head>
+<body>
+  <header class="nav"><strong>Ryan Realty</strong><a href="#">Buy</a><span class="spacer"></span><button class="btn">Get alerts</button></header>
+  <div class="filters"><span class="chip">For sale</span><span class="chip">Price</span><span class="chip">Beds</span><span class="chip">Home type</span><span class="chip">All filters</span></div>
+  <div class="bar"><span>808+ homes · Bend</span><span>List · Map · Split</span></div>
+  <div class="body">
+    <div class="map">Map (portal-parity · mobile first-class)</div>
+    <div class="list">
+      <div class="card"><div class="ph"></div><div><div class="price">$850,000</div><div class="meta">3 bd · 2 ba · Broken Top</div></div></div>
+      <div class="card"><div class="ph"></div><div><div class="price">$799,000</div><div class="meta">4 bd · 2 ba · Tanglewood</div></div></div>
+      <div class="card"><div class="ph"></div><div><div class="price">$735,000</div><div class="meta">3 bd · 4 ba · Broken Top</div></div></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -92,6 +92,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `PROGRAM_2026-07-21/` | **live** — the RR-PLATFORM-DECISIONS completion program package (master spec, recorded decisions, audits, completion ledger, preserved skills). One of the two sanctioned plan homes; every file within it is covered by this row. |
 | `ADMIN_REBUILD/` | **live** — the admin/CRM rebuild package (specs, audit reports). The second sanctioned plan home; every file within it is covered by this row. |
 | `ADMIN_PRODUCT/` | **live** — Admin Product OS memory root (state, registry, process specs). Every file within is covered by this row. |
+| `PUBLIC_SITE_UX_OVERHAUL/` | **live** — public site comprehensive reimagine (every page + every section, competitor-scored). Brand lock: navy/cream + Amboqia/Geist only. Bootstrap: `docs/plans/PUBLIC_SITE_UX_OVERHAUL/SESSION_BOOT.md`. **Destination** for public UX; supersedes Experience/KB conversion as the design end-state. Every file within is covered by this row. |
 | `seo-voice/` | **live** — top-site public program: **GOAL_10X_EXECUTABLE** (master), feature verify/improve grind + VERIFY_LOG, goal system, IA matrix, data foundation, dual-source measurement, bottlenecks, endtoend foundation log. Every file within is covered by this row. |
 | `master-plan.md`, `data-architecture-plan.md`, `continuous-improvement.md` | superseded by this canon for process authority; still on disk as orchestrate/ownership reference inputs (W13.1 keep) |
 | `money-path-contract-plan-2026-06-04.md` | open input — feed into the loop's backlog |
@@ -101,9 +102,9 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `VOICE-CANON-2026-08-05.md` | **live** — the end-to-end voice migration prompt (Matt 2026-08-05). Buffett-anchored canon at `marketing_brain_skills/brand-voice/VOICE.md` becomes the single voice document; every competing doc, banned-word list, and in-code style prompt is deleted and rebuilt from it, all public-facing copy is rewritten, and two gates (banned constructions, canon singularity) stop it recurring. |
 | `cma-accuracy-pipeline-2026-07-11.md` | record — CMA/BPO accuracy pipeline progress log |
 | `COMING_SOON_SQL_FOLLOWUP.md` | open input — SQL-layer residue from the 2026-07-21 Coming Soon public-exposure fix |
-| `../EXPERIENCE_SYSTEM.md` | **live canon** — six page archetypes, route map, shared module kit, engagement telemetry spec |
-| `KB_SITE_CONVERSION_GOAL.md` | **live** — whole-site KB conversion goal |
-| `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live** — page-review + redesign runbook |
+| `../EXPERIENCE_SYSTEM.md` | **evidence only** (2026-08-11) — six page archetypes + route map; **not** the public UX destination. Destination: `PUBLIC_SITE_UX_OVERHAUL/` |
+| `KB_SITE_CONVERSION_GOAL.md` | **evidence only** (2026-08-11) — prior whole-site KB conversion; **not** the public UX destination. Destination: `PUBLIC_SITE_UX_OVERHAUL/` |
+| `PAGE_REVIEW_REDESIGN_RUNBOOK.md` | **live method input** — render-truth + anti-regression law; feeds PUBLIC_SITE_UX_OVERHAUL audits (not a competing destination) |
 | `PAID_ADS_PLAN.md`, `ADS_CREATIVE_DIRECTION.md`, `ADS_BRIEFS.md`, `ADS_BUYER_SCRIPT.md`, `ADS_FOOTAGE_PLAN.md`, `ADS_PRO_EXAMPLES.md`, `ADS_GO_LIVE.md` | **live** — paid-ads program |
 | `TC_ARCHITECTURE_REVIEW.md` | **live** — Vault TC architecture backlog |
 | `AGENTIC_GRAPH_ENGINEERING_2026-07-30.md` | **live** — agentic-graph-engineering research + incorporation backlog: saved workflow library (`.claude/workflows/`), graph escape hatch in the loop skills, consumer-driven KG evaluation |

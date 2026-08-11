@@ -1,0 +1,6 @@
+2026-08-11 — Package created. Brand lock: navy/cream + Amboqia/Geist only.
+2026-08-11 — Plan v2: comprehensive reimagine. Every page + every section competitor-scored. Three tracks (Truth/System/Roll). 2026 bar B01–B14. Ledgers mandatory. Next steps ordered in README §11 and work-queue.json.
+2026-08-11 — BOOT complete: registered in DEVELOPMENT_PROCESS (Experience/KB → evidence only); competitor battery frozen (Cascade Hasson, Stellar, Duren + Zillow/Redfin); PAGE_LEDGER + SECTION_LEDGER schemas; conversion/BASELINE.md. Phase → P1_INVENTORY. Next: crawl every public route into PAGE_LEDGER.
+2026-08-11 — P1 COMPLETE: PAGE_LEDGER 131 routes (incl /homes-for-sale aliases); 16 key templates have section stacks; SECTION_LEDGER raw 406 / canonical audit queue 111; ROUTE_CRAWL.md written. Homepage stack: Hero→Towns→Communities→Featured→Alerts→Map→Ticker→Sell→Testimonials→Team→MarketHud→Footer. Phase → P2_AUDIT. Next: competitive + journey audits draining both ledgers.
+2026-08-11 — /endtoend P2 COMPLETE: 131 pages audited, 111 sections audited, journeys A/B/C, matrix, backlog 97 rebuilds.
+2026-08-11 — P3–P5 WORKING locks (process, IA Option 1, visual PUBLIC_UI). P6 v2 primitives in components/site/v2. P7 litmus open. P8 residual ready (homepage next).

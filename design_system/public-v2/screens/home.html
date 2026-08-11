@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Public v2 — Home reference</title>
+  <style>
+    :root {
+      --p-navy: #102742; --p-cream: #faf8f4; --p-edge: rgba(16,39,66,.12);
+      --p-ink-muted: rgba(16,39,66,.72);
+      --p-font-display: Georgia, serif; --p-font-body: system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--p-font-body); background: var(--p-cream); color: var(--p-navy); }
+    .wrap { width: min(100% - 2rem, 72rem); margin: 0 auto; }
+    header.nav { display: flex; gap: 1rem; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--p-edge); font-size: .875rem; }
+    header.nav a { color: inherit; text-decoration: none; margin-right: .75rem; }
+    header.nav .spacer { flex: 1; }
+    .btn { display: inline-flex; padding: .65rem 1.1rem; background: var(--p-navy); color: var(--p-cream); text-decoration: none; font-size: .875rem; }
+    .btn.sec { background: transparent; color: var(--p-navy); border: 1px solid rgba(16,39,66,.22); }
+    .hero { padding: 4.5rem 0 3rem; }
+    h1 { font-family: var(--p-font-display); font-size: clamp(2.25rem,4vw,3.25rem); font-weight: 400; max-width: 12ch; margin: 0; line-height: 1.1; }
+    .meta { color: var(--p-ink-muted); margin-top: 1rem; max-width: 36rem; }
+    .actions { display: flex; gap: .75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; padding: 2rem 0; border-top: 1px solid var(--p-edge); }
+    .stat b { font-family: var(--p-font-display); font-size: 2rem; font-weight: 400; display: block; }
+    .stat span { font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; color: var(--p-ink-muted); }
+    section { padding: 3rem 0; border-top: 1px solid var(--p-edge); }
+    h2 { font-family: var(--p-font-display); font-weight: 400; font-size: 1.75rem; margin: 0 0 1rem; }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--p-edge); }
+    .navy { background: var(--p-navy); color: var(--p-cream); border: 0; }
+    .navy .stat span { color: rgba(250,248,244,.7); }
+    @media (max-width: 640px) { .stats { grid-template-columns: 1fr 1fr; } .row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <strong>Ryan Realty</strong>
+      <a href="#">Buy</a><a href="#">Areas</a><a href="#">Market</a><a href="#">Sell</a><a href="#">About</a>
+      <span class="spacer"></span>
+      <a class="btn sec" href="/sell/valuation">Value my home</a>
+      <a class="btn" href="/homes-for-sale">Search homes</a>
+    </header>
+
+    <div class="hero">
+      <div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--p-ink-muted);margin-bottom:.75rem">Central Oregon</div>
+      <h1>Homes for sale, town by town</h1>
+      <p class="meta"><strong>1,815</strong> active · median <strong>$730,000</strong> · pending in <strong>22 days</strong>. Live from the regional MLS.</p>
+      <div class="actions">
+        <a class="btn" href="/homes-for-sale">Search homes</a>
+        <a class="btn sec" href="/homes-for-sale?view=map">Map search</a>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>$750k</b><span>Bend median</span></div>
+      <div class="stat"><b>$539k</b><span>Redmond median</span></div>
+      <div class="stat"><b>$699k</b><span>Sisters median</span></div>
+      <div class="stat"><b>$925k</b><span>Sunriver median</span></div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>Start with a place</h2>
+      <p class="meta">One path into inventory — not a brochure wall of equal sections.</p>
+      <div class="row"><div><strong>Bend</strong><div class="meta">488 active</div></div><a href="/cities/bend">View →</a></div>
+      <div class="row"><div><strong>Redmond</strong><div class="meta">182 active</div></div><a href="/cities/redmond">View →</a></div>
+      <div class="row"><div><strong>Sunriver</strong><div class="meta">48 active</div></div><a href="/cities/sunriver">View →</a></div>
+    </div>
+  </section>
+
+  <section class="navy">
+    <div class="wrap">
+      <h2>Selling instead?</h2>
+      <p class="meta" style="color:rgba(250,248,244,.78)">A written CMA with the comps behind the number. Free, no listing agreement.</p>
+      <div class="actions"><a class="btn" style="background:var(--p-cream);color:var(--p-navy)" href="/sell/valuation">Value my home</a></div>
+    </div>
+  </section>
+</body>
+</html>

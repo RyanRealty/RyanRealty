@@ -1,0 +1,28 @@
+{
+  "phase": "P8_ROLL",
+  "version": 2,
+  "locks": {
+    "brand": "2026-08-11 \u2014 navy/cream + Amboqia + Geist only",
+    "process": "2026-08-11 WORKING \u2014 conversion/CONVERSION_MAP.md",
+    "ia": "2026-08-11 WORKING \u2014 Option 1 journey-first",
+    "visual": "2026-08-11 WORKING \u2014 design/PUBLIC_UI.md + components/site/v2",
+    "litmus": null
+  },
+  "awaiting_lock": "litmus",
+  "tracks": {
+    "truth": "complete_p2",
+    "system": "complete_p3_p5_p6_foundation",
+    "roll": "in_progress_residual"
+  },
+  "ledgers": {
+    "pages_total": 131,
+    "pages_unaudited": 0,
+    "pages_rebuild": 97,
+    "sections_canonical": 111,
+    "sections_unaudited": 0
+  },
+  "current_process": "P2\u2013P6 foundation complete under working locks. Residual: P8 family rebuild of 97 routes on v2 library; P7 litmus after spine on prod.",
+  "plan_of_record": "docs/plans/PUBLIC_SITE_UX_OVERHAUL/README.md",
+  "endtoend": "docs/plans/PUBLIC_SITE_UX_OVERHAUL/ENDTOEND_MISSION.md",
+  "updated_at": "2026-08-11T14:35:43Z"
+}

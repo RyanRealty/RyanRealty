@@ -1,0 +1,4199 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-11T14:31:13Z",
+  "note": "P2 audit drain complete (template+live-sample method). Every route scored and dispositioned. Family ship still requires per-page competitive screenshots at build time.",
+  "counts": {
+    "total": 131,
+    "by_template": {
+      "home": 1,
+      "brokerage": 6,
+      "other": 8,
+      "account": 28,
+      "market": 16,
+      "hub": 9,
+      "geo": 22,
+      "content": 7,
+      "buy-hub": 2,
+      "deliverable": 2,
+      "tool": 4,
+      "contact": 1,
+      "legal": 6,
+      "search": 4,
+      "listing": 3,
+      "lp": 9,
+      "sell": 3
+    },
+    "by_intent": {
+      "buy": 41,
+      "brokerage": 7,
+      "content": 15,
+      "account": 28,
+      "market": 16,
+      "tool": 6,
+      "legal": 6,
+      "lp": 9,
+      "sell": 3
+    },
+    "by_priority": {
+      "P0": 13,
+      "P2": 31,
+      "P3": 34,
+      "P1": 53
+    },
+    "by_register": {
+      "kb": 59,
+      "unknown": 8,
+      "legacy": 28,
+      "hybrid": 21,
+      "legal-minimal": 6,
+      "lp": 9
+    },
+    "by_status": {
+      "audited": 131
+    },
+    "with_sections_attached": 16,
+    "unaudited": 0,
+    "by_disposition": {
+      "rebuild": 97,
+      "redesign": 28,
+      "legal-minimal": 6
+    },
+    "avg_score": 1.08
+  },
+  "pages": [
+    {
+      "route": "/",
+      "file": "app/page.tsx",
+      "template": "home",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbHero",
+        "jsx.KbExploreTowns",
+        "jsx.KbCommunities",
+        "jsx.KbFeatured",
+        "jsx.KbCommunityAlerts",
+        "jsx.KbListingMap",
+        "jsx.KbTicker",
+        "jsx.KbSell",
+        "jsx.KbTestimonials",
+        "jsx.KbTeam",
+        "jsx.KbMarketHud",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "See homes / Value my home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade Hasson / Stellar / Duren \u2014 equivalent surface",
+        "portal": "Zillow/Redfin search or listing",
+        "verdict": "Local home: brochure; Portal: search-first. We have live data but section stack is long/disjoint (hero\u2192towns\u2192communities\u2192featured\u2192alerts\u2192map\u2192ticker\u2192sell\u2192reviews\u2192team\u2192market).",
+        "result": "mixed \u2014 data/live inventory often leads locals; portal UX still ceiling on find"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "section_stack_human": [
+        "KbHero",
+        "KbExploreTowns",
+        "KbCommunities",
+        "KbFeatured",
+        "KbCommunityAlerts",
+        "KbListingMap",
+        "KbTicker",
+        "KbSell",
+        "KbTestimonials",
+        "KbTeam",
+        "KbMarketHud",
+        "KbFooter"
+      ],
+      "audit_notes": "Max-effort face. Too many equal-weight sections; buyer job competes with sell/team/market. | High CTA density (~63 signals) \u2014 risk of equal-weight actions. | Dual buy/sell CTAs present; hierarchy must pick a primary per intent. | H1 observed: Central Oregon Homes for Sale",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/about",
+      "file": "app/about/page.tsx",
+      "template": "brokerage",
+      "intent": "brokerage",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.KbAbout",
+        "jsx.KbExploreTowns",
+        "jsx.KbTestimonials",
+        "jsx.KbArticles",
+        "jsx.KbSell",
+        "jsx.FAQBlock",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Work with broker / Contact / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade/Stellar about+team",
+        "portal": "n/a",
+        "verdict": "Mature locals win on heritage/scale story; we must win on specificity + live data proof.",
+        "result": "lose on scale/heritage optics; must win on specificity + proof"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "audit_notes": "About/team/reviews not competitive enough as brand surface. | High CTA density (~46 signals) \u2014 risk of equal-weight actions. | Dual buy/sell CTAs present; hierarchy must pick a primary per intent. | H1 observed: Open since June 2023. In Bend.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/accessibility",
+      "file": "app/accessibility/page.tsx",
+      "template": "other",
+      "intent": "content",
+      "register_now": "unknown",
+      "sections": [],
+      "primary_cta_observed": "unknown",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 0,
+        "avg": 0.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "TBD per route in family pass",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Unclassified template \u2014 treat as rebuild until proven.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account",
+      "file": "app/account/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/areas",
+      "file": "app/account/areas/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/buying-preferences",
+      "file": "app/account/buying-preferences/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/collections",
+      "file": "app/account/collections/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/collections/[id]",
+      "file": "app/account/collections/[id]/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/hidden",
+      "file": "app/account/hidden/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/history",
+      "file": "app/account/history/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/notifications",
+      "file": "app/account/notifications/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/profile",
+      "file": "app/account/profile/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/saved-cities",
+      "file": "app/account/saved-cities/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/saved-communities",
+      "file": "app/account/saved-communities/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/saved-homes",
+      "file": "app/account/saved-homes/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/account/saved-searches",
+      "file": "app/account/saved-searches/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/activity",
+      "file": "app/activity/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/alerts/unsubscribe",
+      "file": "app/alerts/unsubscribe/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/area-guides",
+      "file": "app/area-guides/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/areas/[slug]",
+      "file": "app/areas/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/auth-error",
+      "file": "app/auth-error/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/blog",
+      "file": "app/blog/page.tsx",
+      "template": "content",
+      "intent": "content",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Related search / Contact / Alerts",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Editorial bar varies; conversion soft.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Editorial rhythm + end CTA; no off-intent seller hero spam.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/blog/[slug]",
+      "file": "app/blog/[slug]/page.tsx",
+      "template": "content",
+      "intent": "content",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Related search / Contact / Alerts",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Editorial bar varies; conversion soft.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Editorial rhythm + end CTA; no off-intent seller hero spam.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/builders",
+      "file": "app/builders/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/builders/[slug]",
+      "file": "app/builders/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/buy",
+      "file": "app/buy/page.tsx",
+      "template": "buy-hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.RegionalSfrAlertsBand",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Listing alerts / Search homes",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Local sell/buy service pages",
+        "portal": "Zillow seller path / Zestimate entry",
+        "verdict": "Often thin service pages locally. Need clearer path into search with intent.",
+        "result": "substance competitive; UX density and progressive disclosure lag 2026 bar"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "audit_notes": "Service story; primary job is route into search/alerts not essay. | High CTA density (~48 signals) \u2014 risk of equal-weight actions. | Dual buy/sell CTAs present; hierarchy must pick a primary per intent. | H1 observed: Buy a home in Central Oregon.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/buy/[intent]",
+      "file": "app/buy/[intent]/page.tsx",
+      "template": "buy-hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Listing alerts / Search homes",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Local sell/buy service pages",
+        "portal": "Zillow seller path / Zestimate entry",
+        "verdict": "Often thin service pages locally. Need clearer path into search with intent.",
+        "result": "substance competitive; UX density and progressive disclosure lag 2026 bar"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Service story; primary job is route into search/alerts not essay.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/central-oregon/events",
+      "file": "app/central-oregon/events/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/central-oregon/events/[slug]",
+      "file": "app/central-oregon/events/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/central-oregon/golf/[slug]",
+      "file": "app/central-oregon/golf/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/central-oregon/trails",
+      "file": "app/central-oregon/trails/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/central-oregon/trails/[slug]",
+      "file": "app/central-oregon/trails/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/central-oregon/venues",
+      "file": "app/central-oregon/venues/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/central-oregon/venues/[slug]",
+      "file": "app/central-oregon/venues/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/cities",
+      "file": "app/cities/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/cities/[slug]",
+      "file": "app/cities/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.KbFeatured",
+        "jsx.KbTicker",
+        "jsx.KbCommunityAlerts",
+        "jsx.KbAbout",
+        "jsx.KbMarketHud",
+        "jsx.KbExploreTowns",
+        "jsx.KbPopularSearches",
+        "jsx.KbCommunities",
+        "jsx.KbAreaGuideVideo",
+        "jsx.KbOpenHouses",
+        "jsx.KbActivity",
+        "jsx.KbSell",
+        "jsx.KbArticles",
+        "jsx.KbTestimonials",
+        "jsx.KbTeam",
+        "jsx.FAQBlock",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job. | High CTA density (~83 signals) \u2014 risk of equal-weight actions. | H1 observed: Bend Homes for Sale",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/cities/[slug]/[neighborhoodSlug]",
+      "file": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job. | High CTA density (~83 signals) \u2014 risk of equal-weight actions. | H1 observed: Bend Homes for Sale",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/cma-drafts/[id]",
+      "file": "app/cma-drafts/[id]/page.tsx",
+      "template": "deliverable",
+      "intent": "tool",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Register / Consent / Contact",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "n/a unique",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "CMA/BPO public doors \u2014 trust + consent UX critical.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/communities",
+      "file": "app/communities/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/communities/[slug]",
+      "file": "app/communities/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.KbResortOverview",
+        "jsx.KbAbout",
+        "jsx.KbFeatured",
+        "jsx.KbTicker",
+        "jsx.PlaceInventoryMap",
+        "jsx.KbMarketHud",
+        "jsx.KbCommunities",
+        "jsx.KbAreaGuideVideo",
+        "jsx.KbOpenHouses",
+        "jsx.KbActivity",
+        "jsx.KbSchools",
+        "jsx.KbArticles",
+        "jsx.KbExploreTowns",
+        "jsx.KbTestimonials",
+        "jsx.KbTeam",
+        "jsx.KbBuyCta",
+        "jsx.KbCommunityAlerts",
+        "jsx.KbSell",
+        "jsx.FAQBlock",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/compare",
+      "file": "app/compare/page.tsx",
+      "template": "tool",
+      "intent": "tool",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Calculate / Save / Contact",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Mortgage tools commodity; win on local defaults + next step.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Form-first, minimal chrome, lead hook after result.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/contact",
+      "file": "app/contact/page.tsx",
+      "template": "contact",
+      "intent": "brokerage",
+      "register_now": "hybrid",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.ContactForm",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Send message / Call",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Best put call/text first. Forms alone lose.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Fast contact methods must be above fold. | High CTA density (~81 signals) \u2014 risk of equal-weight actions. | Confirm call/text prominence in P2 render review. | H1 observed: Call, text, or write",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/cookies",
+      "file": "app/cookies/page.tsx",
+      "template": "legal",
+      "intent": "legal",
+      "register_now": "legal-minimal",
+      "sections": [],
+      "primary_cta_observed": "none",
+      "scores": {
+        "clarity": 2,
+        "trust": 2,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 2,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "n/a",
+        "portal": "n/a",
+        "verdict": "legal-minimal",
+        "result": "tie"
+      },
+      "disposition": "legal-minimal",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "Keep readable; brand tokens only.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/dashboard",
+      "file": "app/dashboard/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/collections",
+      "file": "app/dashboard/collections/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/collections/[id]",
+      "file": "app/dashboard/collections/[id]/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/history",
+      "file": "app/dashboard/history/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/likes",
+      "file": "app/dashboard/likes/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/marketing",
+      "file": "app/dashboard/marketing/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/marketing/inbox",
+      "file": "app/dashboard/marketing/inbox/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/notifications",
+      "file": "app/dashboard/notifications/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/saved",
+      "file": "app/dashboard/saved/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/searches",
+      "file": "app/dashboard/searches/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dashboard/settings",
+      "file": "app/dashboard/settings/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/data-deletion",
+      "file": "app/data-deletion/page.tsx",
+      "template": "legal",
+      "intent": "legal",
+      "register_now": "legal-minimal",
+      "sections": [],
+      "primary_cta_observed": "none",
+      "scores": {
+        "clarity": 2,
+        "trust": 2,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 2,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "n/a",
+        "portal": "n/a",
+        "verdict": "legal-minimal",
+        "result": "tie"
+      },
+      "disposition": "legal-minimal",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "Keep readable; brand tokens only.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/dev/animated-map",
+      "file": "app/dev/animated-map/page.tsx",
+      "template": "other",
+      "intent": "content",
+      "register_now": "unknown",
+      "sections": [],
+      "primary_cta_observed": "unknown",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 0,
+        "avg": 0.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "TBD per route in family pass",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Unclassified template \u2014 treat as rebuild until proven.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dev/components",
+      "file": "app/dev/components/page.tsx",
+      "template": "other",
+      "intent": "content",
+      "register_now": "unknown",
+      "sections": [],
+      "primary_cta_observed": "unknown",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 0,
+        "avg": 0.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "TBD per route in family pass",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Unclassified template \u2014 treat as rebuild until proven.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/dmca",
+      "file": "app/dmca/page.tsx",
+      "template": "legal",
+      "intent": "legal",
+      "register_now": "legal-minimal",
+      "sections": [],
+      "primary_cta_observed": "none",
+      "scores": {
+        "clarity": 2,
+        "trust": 2,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 2,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "n/a",
+        "portal": "n/a",
+        "verdict": "legal-minimal",
+        "result": "tie"
+      },
+      "disposition": "legal-minimal",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "Keep readable; brand tokens only.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/fair-housing",
+      "file": "app/fair-housing/page.tsx",
+      "template": "legal",
+      "intent": "legal",
+      "register_now": "legal-minimal",
+      "sections": [],
+      "primary_cta_observed": "none",
+      "scores": {
+        "clarity": 2,
+        "trust": 2,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 2,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "n/a",
+        "portal": "n/a",
+        "verdict": "legal-minimal",
+        "result": "tie"
+      },
+      "disposition": "legal-minimal",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "Keep readable; brand tokens only.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/faq",
+      "file": "app/faq/page.tsx",
+      "template": "content",
+      "intent": "content",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Related search / Contact / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.6
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Editorial bar varies; conversion soft.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Editorial rhythm + end CTA; no off-intent seller hero spam. | High CTA density (~63 signals) \u2014 risk of equal-weight actions. | H1 observed: Frequently asked questions",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/faq/[slug]",
+      "file": "app/faq/[slug]/page.tsx",
+      "template": "content",
+      "intent": "content",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Related search / Contact / Alerts",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Editorial bar varies; conversion soft.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Editorial rhythm + end CTA; no off-intent seller hero spam.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/feed",
+      "file": "app/feed/page.tsx",
+      "template": "other",
+      "intent": "content",
+      "register_now": "unknown",
+      "sections": [],
+      "primary_cta_observed": "unknown",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 0,
+        "avg": 0.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "TBD per route in family pass",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Unclassified template \u2014 treat as rebuild until proven.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/forgot-password",
+      "file": "app/forgot-password/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/homes-for-sale",
+      "file": "app/search/page.tsx (rewrite from /homes-for-sale)",
+      "template": "search",
+      "intent": "buy",
+      "register_now": "hybrid",
+      "sections": [
+        "jsx.HideAwareSearchMap",
+        "jsx.SearchResults",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Get alerts / open listing / save search",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade Hasson / Stellar / Duren \u2014 equivalent surface",
+        "portal": "Zillow/Redfin search or listing",
+        "verdict": "Must not embarrass vs Zillow/Redfin map+filters. Locals usually lose to us on map.",
+        "result": "mixed \u2014 data/live inventory often leads locals; portal UX still ceiling on find"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "notes": "Canonical search URL. next.config rewrites /homes-for-sale \u2192 /search; /search 301s to /homes-for-sale for SEO.",
+      "implements_as": "/search",
+      "audit_notes": "Portal-grade spine candidate. Chrome/register hybrid risk; mobile map parity P2 critical. | High CTA density (~96 signals) \u2014 risk of equal-weight actions. | Map present in HTML payload. | H1 observed: Homes for Sale",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/homes-for-sale/[...slug]",
+      "file": "app/search/[...slug]/page.tsx (rewrite)",
+      "template": "search",
+      "intent": "buy",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Save search / Get alerts / open listing",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Cascade Hasson / Stellar / Duren \u2014 equivalent surface",
+        "portal": "Zillow/Redfin search or listing",
+        "verdict": "Must not embarrass vs Zillow/Redfin map+filters. Locals usually lose to us on map.",
+        "result": "mixed \u2014 data/live inventory often leads locals; portal UX still ceiling on find"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "notes": "Geo/preset search paths under keyword-rich URL.",
+      "implements_as": "/search/[...slug]",
+      "audit_notes": "Portal-grade spine candidate. Chrome/register hybrid risk; mobile map parity P2 critical.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/housing-market",
+      "file": "app/housing-market/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.KbExploreTowns",
+        "jsx.KbArticles",
+        "jsx.FAQBlock",
+        "jsx.KbSell",
+        "jsx.RegionalSfrAlertsBand",
+        "jsx.LeadCaptureBlock",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch. | High CTA density (~49 signals) \u2014 risk of equal-weight actions. | H1 observed: Central Oregon Housing Market",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/housing-market/[...slug]",
+      "file": "app/housing-market/[...slug]/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/housing-market/annual-review",
+      "file": "app/housing-market/annual-review/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/housing-market/central-oregon",
+      "file": "app/housing-market/central-oregon/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/housing-market/history",
+      "file": "app/housing-market/history/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/housing-market/reports",
+      "file": "app/housing-market/reports/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/housing-market/reports/[slug]",
+      "file": "app/housing-market/reports/[slug]/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/housing-market/reports/[slug]/[geoName]",
+      "file": "app/housing-market/reports/[slug]/[geoName]/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/housing-market/reports/archive/[city]",
+      "file": "app/housing-market/reports/archive/[city]/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/join",
+      "file": "app/join/page.tsx",
+      "template": "brokerage",
+      "intent": "brokerage",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Work with broker / Contact / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade/Stellar about+team",
+        "portal": "n/a",
+        "verdict": "Mature locals win on heritage/scale story; we must win on specificity + live data proof.",
+        "result": "lose on scale/heritage optics; must win on specificity + proof"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "About/team/reviews not competitive enough as brand surface.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/listing/[listingKey]",
+      "file": "app/listing/[listingKey]/page.tsx",
+      "template": "listing",
+      "intent": "buy",
+      "register_now": "hybrid",
+      "sections": [
+        "jsx.ListingHero",
+        "jsx.DescriptionBlock",
+        "jsx.ListingLocationMap",
+        "jsx.SchoolsBlock",
+        "jsx.ParksNearbyBlock",
+        "jsx.KbFeatured",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Schedule tour / Call / Text",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade Hasson / Stellar / Duren \u2014 equivalent surface",
+        "portal": "Zillow/Redfin search or listing",
+        "verdict": "Portal listing depth is bar; locals often thinner. Our body can be patchwork sections.",
+        "result": "mixed \u2014 data/live inventory often leads locals; portal UX still ceiling on find"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "audit_notes": "Money page. Broker identity must be single; photo-first; one sticky contact.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/listing/by-address/[...slug]",
+      "file": "app/listing/by-address/[...slug]/page.tsx",
+      "template": "listing",
+      "intent": "buy",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Schedule tour / Call / Text",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade Hasson / Stellar / Duren \u2014 equivalent surface",
+        "portal": "Zillow/Redfin search or listing",
+        "verdict": "Portal listing depth is bar; locals often thinner. Our body can be patchwork sections.",
+        "result": "mixed \u2014 data/live inventory often leads locals; portal UX still ceiling on find"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "audit_notes": "Money page. Broker identity must be single; photo-first; one sticky contact.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/listing/by-key/[listingKey]",
+      "file": "app/listing/by-key/[listingKey]/page.tsx",
+      "template": "listing",
+      "intent": "buy",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Schedule tour / Call / Text",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade Hasson / Stellar / Duren \u2014 equivalent surface",
+        "portal": "Zillow/Redfin search or listing",
+        "verdict": "Portal listing depth is bar; locals often thinner. Our body can be patchwork sections.",
+        "result": "mixed \u2014 data/live inventory often leads locals; portal UX still ceiling on find"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "audit_notes": "Money page. Broker identity must be single; photo-first; one sticky contact.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/login",
+      "file": "app/login/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/lp/bend",
+      "file": "app/lp/bend/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/lp/buyer-listing-alerts",
+      "file": "app/lp/buyer-listing-alerts/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/lp/central-oregon-golf",
+      "file": "app/lp/central-oregon-golf/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/lp/expired-listing",
+      "file": "app/lp/expired-listing/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/lp/fsbo",
+      "file": "app/lp/fsbo/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/lp/sell-your-home",
+      "file": "app/lp/sell-your-home/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/lp/seller-home-value",
+      "file": "app/lp/seller-home-value/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/lp/tetherow",
+      "file": "app/lp/tetherow/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/lp/tetherow/heath",
+      "file": "app/lp/tetherow/heath/page.tsx",
+      "template": "lp",
+      "intent": "lp",
+      "register_now": "lp",
+      "sections": [],
+      "primary_cta_observed": "Form submit",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Ad LPs judged on message match + speed.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "One problem one action; convert carefully with before/after plan.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/luxury-homes-bend",
+      "file": "app/luxury-homes-bend/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero. | High CTA density (~34 signals) \u2014 risk of equal-weight actions. | H1 observed: Homes in Bend above $1.5 million",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/marketing/request",
+      "file": "app/marketing/request/page.tsx",
+      "template": "other",
+      "intent": "content",
+      "register_now": "unknown",
+      "sections": [],
+      "primary_cta_observed": "unknown",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 0,
+        "avg": 0.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "TBD per route in family pass",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Unclassified template \u2014 treat as rebuild until proven.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/months-of-supply",
+      "file": "app/months-of-supply/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/motivated-sellers",
+      "file": "app/motivated-sellers/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/motivated-sellers/[city]",
+      "file": "app/motivated-sellers/[city]/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/newsletter/unsubscribe",
+      "file": "app/newsletter/unsubscribe/page.tsx",
+      "template": "content",
+      "intent": "content",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Related search / Contact / Alerts",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Editorial bar varies; conversion soft.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Editorial rhythm + end CTA; no off-intent seller hero spam.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/offline",
+      "file": "app/offline/page.tsx",
+      "template": "other",
+      "intent": "content",
+      "register_now": "unknown",
+      "sections": [],
+      "primary_cta_observed": "unknown",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 0,
+        "avg": 0.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "TBD per route in family pass",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Unclassified template \u2014 treat as rebuild until proven.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/open-houses",
+      "file": "app/open-houses/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.KbOpenHouses",
+        "jsx.KbListingMap",
+        "jsx.KbCommunityAlerts",
+        "jsx.KbSell",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero. | High CTA density (~60 signals) \u2014 risk of equal-weight actions. | H1 observed: Open houses in Central Oregon",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/open-houses/[city]",
+      "file": "app/open-houses/[city]/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/oregon/[city]",
+      "file": "app/oregon/[city]/page.tsx",
+      "template": "other",
+      "intent": "content",
+      "register_now": "unknown",
+      "sections": [],
+      "primary_cta_observed": "unknown",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 0,
+        "avg": 0.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "TBD per route in family pass",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Unclassified template \u2014 treat as rebuild until proven.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/our-homes",
+      "file": "app/our-homes/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/parks",
+      "file": "app/parks/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/parks/[slug]",
+      "file": "app/parks/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/price-drops",
+      "file": "app/price-drops/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.KbFeatured",
+        "jsx.KbListingMap",
+        "jsx.HideAwareListingGrid",
+        "jsx.KbCommunityAlerts",
+        "jsx.KbSell",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero. | High CTA density (~93 signals) \u2014 risk of equal-weight actions. | H1 observed: Price Drops Central Oregon",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/price-drops/[city]",
+      "file": "app/price-drops/[city]/page.tsx",
+      "template": "hub",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Filter / Alerts / Open listing",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.0
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portals own price-drop/open-house UX; locals thin.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Hub identity = scoreboard + results, not generic hero.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/privacy",
+      "file": "app/privacy/page.tsx",
+      "template": "legal",
+      "intent": "legal",
+      "register_now": "legal-minimal",
+      "sections": [],
+      "primary_cta_observed": "none",
+      "scores": {
+        "clarity": 2,
+        "trust": 2,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 2,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "n/a",
+        "portal": "n/a",
+        "verdict": "legal-minimal",
+        "result": "tie"
+      },
+      "disposition": "legal-minimal",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "Keep readable; brand tokens only.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/pulse",
+      "file": "app/pulse/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/reports",
+      "file": "app/reports/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/reports/[slug]",
+      "file": "app/reports/[slug]/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/reports/[slug]/[geoName]",
+      "file": "app/reports/[slug]/[geoName]/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/reports/sales/[city]/[period]",
+      "file": "app/reports/sales/[city]/[period]/page.tsx",
+      "template": "market",
+      "intent": "market",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Explore report / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Beacon PDF is institution; we need live interactive beat-Beacon.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Charts + configurability; seller conversion hooks without bait-and-switch.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/resources",
+      "file": "app/resources/page.tsx",
+      "template": "content",
+      "intent": "content",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Related search / Contact / Alerts",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Editorial bar varies; conversion soft.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Editorial rhythm + end CTA; no off-intent seller hero spam.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/reviews",
+      "file": "app/reviews/page.tsx",
+      "template": "brokerage",
+      "intent": "brokerage",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Work with broker / Contact / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade/Stellar about+team",
+        "portal": "n/a",
+        "verdict": "Mature locals win on heritage/scale story; we must win on specificity + live data proof.",
+        "result": "lose on scale/heritage optics; must win on specificity + proof"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "About/team/reviews not competitive enough as brand surface. | High CTA density (~57 signals) \u2014 risk of equal-weight actions. | H1 observed: 25 reviews. All five stars.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/schools",
+      "file": "app/schools/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/schools/[slug]",
+      "file": "app/schools/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/search",
+      "file": "app/search/page.tsx",
+      "template": "search",
+      "intent": "buy",
+      "register_now": "hybrid",
+      "sections": [
+        "jsx.HideAwareSearchMap",
+        "jsx.SearchResults",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Get alerts / open listing / save search",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade Hasson / Stellar / Duren \u2014 equivalent surface",
+        "portal": "Zillow/Redfin search or listing",
+        "verdict": "Must not embarrass vs Zillow/Redfin map+filters. Locals usually lose to us on map.",
+        "result": "mixed \u2014 data/live inventory often leads locals; portal UX still ceiling on find"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "notes": " Internal implementer; public canonical is /homes-for-sale (301 from /search).",
+      "canonical_public": "/homes-for-sale",
+      "audit_notes": "Portal-grade spine candidate. Chrome/register hybrid risk; mobile map parity P2 critical. | High CTA density (~96 signals) \u2014 risk of equal-weight actions. | Map present in HTML payload. | H1 observed: Homes for Sale",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/search/[...slug]",
+      "file": "app/search/[...slug]/page.tsx",
+      "template": "search",
+      "intent": "buy",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Save search / Get alerts / open listing",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Cascade Hasson / Stellar / Duren \u2014 equivalent surface",
+        "portal": "Zillow/Redfin search or listing",
+        "verdict": "Must not embarrass vs Zillow/Redfin map+filters. Locals usually lose to us on map.",
+        "result": "mixed \u2014 data/live inventory often leads locals; portal UX still ceiling on find"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "audit_notes": "Portal-grade spine candidate. Chrome/register hybrid risk; mobile map parity P2 critical.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/sell",
+      "file": "app/sell/page.tsx",
+      "template": "sell",
+      "intent": "sell",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.SellerLPForm",
+        "jsx.SellProof",
+        "jsx.KbTestimonials",
+        "jsx.FAQBlock",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Get my home value (hero form / #get-value)",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Local sell/buy service pages",
+        "portal": "Zillow seller path / Zestimate entry",
+        "verdict": "Locals often weak on fee clarity; we have strong content but long matrix walls and possible form duplication.",
+        "result": "substance competitive; UX density and progressive disclosure lag 2026 bar"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "section_stack_human": [
+        "KbBreadcrumb",
+        "KbHero",
+        "SellerLPForm",
+        "SellProof",
+        "KbTestimonials",
+        "FAQBlock",
+        "KbFooter"
+      ],
+      "audit_notes": "Seller spine strong on substance; UX density and progressive disclosure need reimagine. | High CTA density (~56 signals) \u2014 risk of equal-weight actions. | Fee matrix present \u2014 progressive disclosure needed (matrix wall). | H1 observed: Sell your home in Central Oregon",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/sell/[intent]",
+      "file": "app/sell/[intent]/page.tsx",
+      "template": "sell",
+      "intent": "sell",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Get my home value / written valuation",
+      "scores": {
+        "clarity": 2,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 2,
+        "bar2026": 1,
+        "avg": 1.6
+      },
+      "competitor": {
+        "local": "Local sell/buy service pages",
+        "portal": "Zillow seller path / Zestimate entry",
+        "verdict": "Locals often weak on fee clarity; we have strong content but long matrix walls and possible form duplication.",
+        "result": "substance competitive; UX density and progressive disclosure lag 2026 bar"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "audit_notes": "Seller spine strong on substance; UX density and progressive disclosure need reimagine.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/sell/valuation",
+      "file": "app/sell/valuation/page.tsx",
+      "template": "sell",
+      "intent": "sell",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.ValuationForm",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Get my home value / written valuation",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Local sell/buy service pages",
+        "portal": "Zillow seller path / Zestimate entry",
+        "verdict": "Locals often weak on fee clarity; we have strong content but long matrix walls and possible form duplication.",
+        "result": "substance competitive; UX density and progressive disclosure lag 2026 bar"
+      },
+      "disposition": "rebuild",
+      "priority": "P0",
+      "status": "audited",
+      "audit_notes": "Seller spine strong on substance; UX density and progressive disclosure need reimagine. | High CTA density (~40 signals) \u2014 risk of equal-weight actions. | H1 observed: Your address, the comps behind it.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/sign/[token]",
+      "file": "app/sign/[token]/page.tsx",
+      "template": "deliverable",
+      "intent": "tool",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Register / Consent / Contact",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "n/a unique",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "CMA/BPO public doors \u2014 trust + consent UX critical.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/signup",
+      "file": "app/signup/page.tsx",
+      "template": "account",
+      "intent": "account",
+      "register_now": "legacy",
+      "sections": [],
+      "primary_cta_observed": "Sign in / Save",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Portal account UX is bar.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "redesign",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "P3 priority; product chrome consistency with public v2.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/site-index",
+      "file": "app/site-index/page.tsx",
+      "template": "other",
+      "intent": "content",
+      "register_now": "unknown",
+      "sections": [],
+      "primary_cta_observed": "unknown",
+      "scores": {
+        "clarity": 1,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 0,
+        "avg": 0.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "TBD per route in family pass",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Unclassified template \u2014 treat as rebuild until proven.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/subdivisions/[slug]",
+      "file": "app/subdivisions/[slug]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/team",
+      "file": "app/team/page.tsx",
+      "template": "brokerage",
+      "intent": "brokerage",
+      "register_now": "kb",
+      "sections": [
+        "jsx.KbBreadcrumb",
+        "jsx.KbHero",
+        "jsx.KbAbout",
+        "jsx.KbTeam",
+        "jsx.KbTestimonials",
+        "jsx.KbSell",
+        "jsx.FAQBlock",
+        "jsx.KbFooter"
+      ],
+      "primary_cta_observed": "Work with broker / Contact / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade/Stellar about+team",
+        "portal": "n/a",
+        "verdict": "Mature locals win on heritage/scale story; we must win on specificity + live data proof.",
+        "result": "lose on scale/heritage optics; must win on specificity + proof"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "About/team/reviews not competitive enough as brand surface. | High CTA density (~53 signals) \u2014 risk of equal-weight actions. | H1 observed: The broker you call is the broker you get.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/team/[slug]",
+      "file": "app/team/[slug]/page.tsx",
+      "template": "brokerage",
+      "intent": "brokerage",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Work with broker / Contact / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade/Stellar about+team",
+        "portal": "n/a",
+        "verdict": "Mature locals win on heritage/scale story; we must win on specificity + live data proof.",
+        "result": "lose on scale/heritage optics; must win on specificity + proof"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "About/team/reviews not competitive enough as brand surface.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/team/[slug]/edit",
+      "file": "app/team/[slug]/edit/page.tsx",
+      "template": "brokerage",
+      "intent": "brokerage",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "Work with broker / Contact / Value home",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Cascade/Stellar about+team",
+        "portal": "n/a",
+        "verdict": "Mature locals win on heritage/scale story; we must win on specificity + live data proof.",
+        "result": "lose on scale/heritage optics; must win on specificity + proof"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "About/team/reviews not competitive enough as brand surface.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "high"
+    },
+    {
+      "route": "/terms",
+      "file": "app/terms/page.tsx",
+      "template": "legal",
+      "intent": "legal",
+      "register_now": "legal-minimal",
+      "sections": [],
+      "primary_cta_observed": "none",
+      "scores": {
+        "clarity": 2,
+        "trust": 2,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 2,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "n/a",
+        "portal": "n/a",
+        "verdict": "legal-minimal",
+        "result": "tie"
+      },
+      "disposition": "legal-minimal",
+      "priority": "P3",
+      "status": "audited",
+      "audit_notes": "Keep readable; brand tokens only.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/tools/appreciation",
+      "file": "app/tools/appreciation/page.tsx",
+      "template": "tool",
+      "intent": "tool",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Calculate / Save / Contact",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Mortgage tools commodity; win on local defaults + next step.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Form-first, minimal chrome, lead hook after result.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/tools/mortgage-calculator",
+      "file": "app/tools/mortgage-calculator/page.tsx",
+      "template": "tool",
+      "intent": "tool",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Calculate / Save / Contact",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Mortgage tools commodity; win on local defaults + next step.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Form-first, minimal chrome, lead hook after result.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/tools/rental-property-calculator",
+      "file": "app/tools/rental-property-calculator/page.tsx",
+      "template": "tool",
+      "intent": "tool",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Calculate / Save / Contact",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 1,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.2
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Mortgage tools commodity; win on local defaults + next step.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Form-first, minimal chrome, lead hook after result.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    },
+    {
+      "route": "/videos",
+      "file": "app/videos/page.tsx",
+      "template": "content",
+      "intent": "content",
+      "register_now": "hybrid",
+      "sections": [],
+      "primary_cta_observed": "Related search / Contact / Alerts",
+      "scores": {
+        "clarity": 2,
+        "trust": 1,
+        "engagement": 0,
+        "conversion": 0,
+        "bar2026": 1,
+        "avg": 0.8
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Editorial bar varies; conversion soft.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P2",
+      "status": "audited",
+      "audit_notes": "Editorial rhythm + end CTA; no off-intent seller hero spam.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "medium"
+    },
+    {
+      "route": "/zip/[zip]",
+      "file": "app/zip/[zip]/page.tsx",
+      "template": "geo",
+      "intent": "buy",
+      "register_now": "kb",
+      "sections": [],
+      "primary_cta_observed": "See homes in place / Value home / Alerts",
+      "scores": {
+        "clarity": 1,
+        "trust": 2,
+        "engagement": 2,
+        "conversion": 1,
+        "bar2026": 1,
+        "avg": 1.4
+      },
+      "competitor": {
+        "local": "Named local equivalent where exists",
+        "portal": "Portal if find/sell-related else n/a",
+        "verdict": "Few locals have live geo depth; win data, lose if section stack is wallpaper.",
+        "result": "rebuild to library \u2014 do not keep as-is without win"
+      },
+      "disposition": "rebuild",
+      "priority": "P1",
+      "status": "audited",
+      "audit_notes": "Data-as-product opportunity; align section library with place job.",
+      "audited_at": "2026-08-11T14:31:13Z",
+      "rebuild_urgency": "normal"
+    }
+  ],
+  "p1_key_section_stacks": {
+    "/": [
+      "KbHero",
+      "KbExploreTowns",
+      "KbCommunities",
+      "KbFeatured",
+      "KbCommunityAlerts",
+      "KbListingMap",
+      "KbTicker",
+      "KbSell",
+      "KbTestimonials",
+      "KbTeam",
+      "KbMarketHud",
+      "KbFooter"
+    ],
+    "/sell": [
+      "KbBreadcrumb",
+      "KbHero",
+      "SellerLPForm",
+      "SellProof",
+      "KbTestimonials",
+      "FAQBlock",
+      "KbFooter"
+    ],
+    "/buy": [
+      "KbBreadcrumb",
+      "RegionalSfrAlertsBand",
+      "KbFooter"
+    ],
+    "/about": [
+      "KbBreadcrumb",
+      "KbHero",
+      "KbAbout",
+      "KbExploreTowns",
+      "KbTestimonials",
+      "KbArticles",
+      "KbSell",
+      "FAQBlock",
+      "KbFooter"
+    ],
+    "/search": [
+      "HideAwareSearchMap",
+      "SearchResults",
+      "KbFooter"
+    ],
+    "/homes-for-sale": [
+      "HideAwareSearchMap",
+      "SearchResults",
+      "KbFooter"
+    ],
+    "/team": [
+      "KbBreadcrumb",
+      "KbHero",
+      "KbAbout",
+      "KbTeam",
+      "KbTestimonials",
+      "KbSell",
+      "FAQBlock",
+      "KbFooter"
+    ],
+    "/housing-market": [
+      "KbBreadcrumb",
+      "KbHero",
+      "KbExploreTowns",
+      "KbArticles",
+      "FAQBlock",
+      "KbSell",
+      "RegionalSfrAlertsBand",
+      "LeadCaptureBlock",
+      "KbFooter"
+    ],
+    "/contact": [
+      "KbBreadcrumb",
+      "KbHero",
+      "ContactForm",
+      "KbFooter"
+    ],
+    "/sell/valuation": [
+      "KbBreadcrumb",
+      "KbHero",
+      "ValuationForm",
+      "KbFooter"
+    ],
+    "/listing/[listingKey]": [
+      "ListingHero",
+      "DescriptionBlock",
+      "ListingLocationMap",
+      "SchoolsBlock",
+      "ParksNearbyBlock",
+      "KbFeatured",
+      "KbFooter"
+    ],
+    "/cities/[slug]": [
+      "KbBreadcrumb",
+      "KbHero",
+      "KbFeatured",
+      "KbTicker",
+      "KbCommunityAlerts",
+      "KbAbout",
+      "KbMarketHud",
+      "KbExploreTowns",
+      "KbPopularSearches",
+      "KbCommunities",
+      "KbAreaGuideVideo",
+      "KbOpenHouses",
+      "KbActivity",
+      "KbSell",
+      "KbArticles",
+      "KbTestimonials",
+      "KbTeam",
+      "FAQBlock",
+      "KbFooter"
+    ],
+    "/communities/[slug]": [
+      "KbBreadcrumb",
+      "KbHero",
+      "KbResortOverview",
+      "KbAbout",
+      "KbFeatured",
+      "KbTicker",
+      "PlaceInventoryMap",
+      "KbMarketHud",
+      "KbCommunities",
+      "KbAreaGuideVideo",
+      "KbOpenHouses",
+      "KbActivity",
+      "KbSchools",
+      "KbArticles",
+      "KbExploreTowns",
+      "KbTestimonials",
+      "KbTeam",
+      "KbBuyCta",
+      "KbCommunityAlerts",
+      "KbSell",
+      "FAQBlock",
+      "KbFooter"
+    ],
+    "/open-houses": [
+      "KbBreadcrumb",
+      "KbHero",
+      "KbOpenHouses",
+      "KbListingMap",
+      "KbCommunityAlerts",
+      "KbSell",
+      "KbFooter"
+    ],
+    "/price-drops": [
+      "KbBreadcrumb",
+      "KbHero",
+      "KbFeatured",
+      "KbListingMap",
+      "HideAwareListingGrid",
+      "KbCommunityAlerts",
+      "KbSell",
+      "KbFooter"
+    ],
+    "/reviews": [
+      "KbBreadcrumb",
+      "KbHero",
+      "KbFooter"
+    ]
+  }
+}
