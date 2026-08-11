@@ -293,6 +293,22 @@ Every route migrated to an archetype updates its `parity.json` in the **same com
 - **SWEEP REVIEW SET forming (per scope-change review model):** preset = family 3 (built), geo = family 4 rework (built), hub = /communities rebuild (built). Tool + content representatives not yet built.
 - Homepage concepts (film/magazine/terminal/v4): owned by the interactive orchestrator session (concept-v4 shots 16:54). /loop session HANDS OFF.
 
+## Exploration System (program — 2026-08-11)
+
+**Thesis:** Listing · Neighborhood · Subdivision · Community · Golf · City as one continuous loop — shared place ladder, multi-rail “keep exploring,” unified map craft, §0 grain honesty. Admin out of scope.
+
+| Increment | State | Notes |
+|---|---|---|
+| F0 Domain language | **Shipped in tree** | `CONTEXT.md` Place geography terms |
+| F1 `resolvePlaceContext` | **Shipped in tree** | `lib/data/geo/resolvePlaceContext.ts` + unit tests; listing `PlaceIdentityLine` pilot |
+| F2 Related-homes ranker | Pending | Unify `fetchNearbyTiles` + `getSimilarListings` |
+| F3 ExploreMap | Pending | Search map craft on place pages |
+| Subdivision GEO rebuild | Pending | Highest dead-end ROI |
+| Listing multi-rails + lifestyle | Pending | Money page, extra care |
+| Nbhd / Community / Golf / City | Pending | Converge on section contracts |
+
+Full plan: session plan.md / Exploration System plan (2026-08-11).
+
 ## Rollout status
 
 | Family | Route | State | Notes |

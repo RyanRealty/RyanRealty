@@ -115,3 +115,36 @@ export function getCanonicalCityForSubdivision(subdivisionName: string | null | 
   if (!key) return null
   return canonicalCityByAlias.get(key) ?? null
 }
+
+// Built once: lowercased label + each subdivision_alias → registry entry.
+const communityByAlias: Map<string, ResortCommunityEntry> = (() => {
+  const map = new Map<string, ResortCommunityEntry>()
+  for (const entry of communities) {
+    map.set(entry.label.trim().toLowerCase(), entry)
+    map.set(entry.slug.trim().toLowerCase(), entry)
+    for (const alias of entry.subdivision_aliases ?? []) {
+      map.set(alias.trim().toLowerCase(), entry)
+    }
+    for (const sub of entry.sub_neighborhoods ?? []) {
+      map.set(sub.name.trim().toLowerCase(), entry)
+      map.set(sub.slug.trim().toLowerCase(), entry)
+      for (const a of sub.mls_aliases ?? []) {
+        map.set(a.trim().toLowerCase(), entry)
+      }
+    }
+  }
+  return map
+})()
+
+/**
+ * Resolve a curated Community (resort / master-plan) from an MLS subdivision
+ * name or slug. Returns null when the string is an ordinary plat, not a
+ * registry Community. See CONTEXT.md — Community vs Subdivision.
+ */
+export function getResortCommunityBySubdivisionName(
+  subdivisionName: string | null | undefined,
+): ResortCommunityEntry | null {
+  const key = subdivisionName?.trim().toLowerCase()
+  if (!key) return null
+  return communityByAlias.get(key) ?? null
+}

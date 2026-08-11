@@ -35,8 +35,10 @@ import { RoomRestyle } from '@/components/site/listing-detail/RoomRestyle.client
 import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
+import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentityLine'
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
+import { resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
@@ -176,44 +178,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const listing = await getListingDetail(listingKey)
   if (!listing) notFound()
 
-  // Resolve geo scope for the live-market block. Subdivision first
-  // (most specific), then neighborhood, then city.
-  //
-  // Filter out MLS sentinels — "N/A" subdivisions slugify to "na" and
-  // "Outside City Limits" neighborhoods slugify to "outside-city-limits";
-  // neither resolves to a real row in market_pulse_live, so they fall
-  // through to the city scope. This treats both as "no narrower scope
-  // available" rather than letting the geo lookup miss silently.
-  const NOISE_SLUGS = new Set(['na', 'none', 'unknown', 'outside-city-limits'])
-  const validSubdivisionSlug =
-    listing.subdivisionSlug && !NOISE_SLUGS.has(listing.subdivisionSlug)
-      ? listing.subdivisionSlug
-      : null
-  const validNeighborhoodSlug =
-    listing.neighborhoodSlug && !NOISE_SLUGS.has(listing.neighborhoodSlug)
-      ? listing.neighborhoodSlug
-      : null
-
-  const marketGeo: { geoType: 'community' | 'neighborhood' | 'city'; geoSlug: string; name: string } | null =
-    validSubdivisionSlug
-      ? {
-          geoType: 'community',
-          geoSlug: validSubdivisionSlug,
-          name: listing.subdivisionName ?? validSubdivisionSlug,
-        }
-      : validNeighborhoodSlug
-      ? {
-          geoType: 'neighborhood',
-          geoSlug: validNeighborhoodSlug,
-          name: listing.neighborhoodName ?? validNeighborhoodSlug,
-        }
-      : listing.citySlug
-      ? {
-          geoType: 'city',
-          geoSlug: listing.citySlug,
-          name: listing.city ?? listing.citySlug,
-        }
-      : null
+  // Place ladder + market grain (Exploration System). See CONTEXT.md.
+  const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
   const featuredGeoName = marketGeo?.name ?? listing.city ?? 'Nearby'
   const featuredViewAllHref = marketGeo && marketGeo.geoType !== 'city' ? subdivisionListingsPath(listing.city, marketGeo.name) : homesForSalePath(listing.city)
 
@@ -374,6 +340,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const main = (
     <>
       <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} />
+      <PlaceIdentityLine place={placeContext} />
       {openHouses.length > 0 ? (
         <OpenHouses
           events={openHouses.map((oh) => ({
