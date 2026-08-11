@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Outcome scoreboard** after traffic (alerts / saves). F3 surface residual **ZIP + communities + market hub** free alerts shipped 2026-08-11 — wait for enrollments. |
-| **THEN** | If still cold after traffic: listing early-form friction audit, blog/lifestyle mid-page alerts, pin-lite only if pan metrics demand. No GIS without demand. |
-| **NOTE** | G3 Blended confirmed. **not 10×** (alerts 6 / saves 2; FP 7d ~23k). Search P6/P7 done. |
+| **NOW** | **Outcome scoreboard** after traffic. Search Wave3 **DONE**. F3: ZIP/communities/market + **listing CTA elevate + lifestyle hubs** (parks/schools/trails/events/venues) shipped 2026-08-11. |
+| **THEN** | If enrollments still cold: blog mid-page alerts, form A/B trust copy only. No GIS / no search chrome reopen without metric signal. |
+| **NOTE** | **not 10×** (alerts 6 / saves 2; FP 7d ~23k). |
 
 ---
 

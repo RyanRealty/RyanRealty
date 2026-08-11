@@ -1,7 +1,7 @@
 # Search UX Wave 3 — Mockup gap plan + performance
 
 **Date:** 2026-08-10  
-**Status:** WAVE 0–3 + residuals + P6/P7 polish CLOSED 2026-08-11 — open: GIS layers + optional P4 pin-lite only  
+**Status:** **DONE for plan goals** (Wave 0–3 + residuals + P6/P7). Explicit defer only: GIS layers (non-goal) + optional P4 pin-lite if pan metrics demand.  
 
 **Route:** `https://ryan-realty.com/homes-for-sale` → `app/search/page.tsx`  
 **Mockup SSOT:** `design_system/ryan-realty/ui_kits/search/index.html`  

@@ -59,6 +59,11 @@
 
 ## Session notes (newest first)
 
+### 2026-08-11 Search Wave3 = DONE; F3 listing CTA + lifestyle hubs
+- **Search:** `SEARCH_UX_WAVE3_PLAN.md` goals closed. Remaining only GIS (explicit non-goal) + optional P4 pin-lite.
+- **Listing friction:** PriceCtaStrip "Get free alerts…" is a full-width outline button (was text link); ListingLikeThisAlerts defaults `propertyType: A` + freer pause copy.
+- **Lifestyle hubs:** free `RegionalSfrAlertsBand` on parks, schools, trails, events, venues indexes (was homes-link only).
+
 ### 2026-08-11 F3 residual — free alerts on ZIP / communities / market hub
 - **Scoreboard (scoreboard-snapshot):** FP 7d **23207** eng **4133** (17.8%); alerts **6** (5 active) / saves **2**; last consumer alert ~2026-07-18. **not 10×**. Zero `alert_create` visitor events in 7d sample.
 - **Gap:** high PV on `/zip/*` (~190+ each) and `/communities` had **no** free `listing_alerts` form (communities only LP hop). Market hub had broker inquiry + sell only.

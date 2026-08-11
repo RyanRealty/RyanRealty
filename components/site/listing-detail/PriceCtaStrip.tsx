@@ -276,27 +276,19 @@ export function PriceCtaStrip({
         </div>
       </div>
 
-      {/* Tertiary: alert path without inventing metrics — jump to B1 capture. */}
-      <div
-        className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
-        style={{
-          borderTop: '1px solid rgba(16,39,66,0.14)',
-          paddingTop: 14,
-          color: 'rgba(16,39,66,0.72)',
-        }}
+      {/* Alert path: full-width outline control (was text link only — too easy to
+          miss vs Tour/Ask/Save). Jumps to B1 #listing-like-alerts capture. */}
+      <a
+        href="#listing-like-alerts"
+        className="btn mt-3 w-full text-center sm:w-auto"
+        style={OUTLINE_BTN_STYLE}
+        aria-label="Get free email alerts for homes like this"
       >
-        <a
-          href="#listing-like-alerts"
-          className="font-semibold underline-offset-2 hover:underline"
-          style={{ color: 'var(--navy)', minHeight: 44, display: 'inline-flex', alignItems: 'center' }}
-        >
-          Get alerts for homes like this
-        </a>
-        <span aria-hidden style={{ color: 'rgba(16,39,66,0.72)' }}>
-          ·
-        </span>
-        <span className="text-xs sm:text-sm">City, price band, and beds from this listing only.</span>
-      </div>
+        Get free alerts for homes like this <span className="arr">→</span>
+      </a>
+      <p className="mt-2 text-xs" style={{ color: 'rgba(16,39,66,0.72)' }}>
+        Free email when a new home lists in this city near this price. Unsubscribe any time.
+      </p>
     </div>
   )
 }

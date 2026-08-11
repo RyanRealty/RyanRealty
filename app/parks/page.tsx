@@ -25,6 +25,7 @@ import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import type { ParkType } from '@/data/co-parks'
 import '@/components/site/kb/kb.css'
@@ -172,6 +173,9 @@ export default function ParksIndexPage() {
             </div>
           </section>
         ) : null}
+
+        {/* F3: lifestyle traffic → free listing_alerts (same product as /buy). */}
+        <RegionalSfrAlertsBand id="get-alerts" showLpSecondary={false} />
 
         <KbFooter towns={[]} />
       </SmoothScrollProvider>

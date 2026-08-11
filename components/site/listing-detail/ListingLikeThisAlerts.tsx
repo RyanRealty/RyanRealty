@@ -36,11 +36,13 @@ export function ListingLikeThisAlerts({
           city={city}
           subdivision=""
           extraFilters={{
+            // SFR default: "homes like this" on residential inventory pages.
+            propertyType: 'A',
             ...priceBandAroundListPrice(listPrice),
             ...(beds != null && beds > 0 ? { beds: String(beds) } : {}),
           }}
           headline={`${city} homes like this`}
-          body={`Email when a new ${city} home lists near this price${beds != null && beds > 0 ? ` with ${beds}+ beds` : ''}.`}
+          body={`Email when a new single-family home lists in ${city} near this price${beds != null && beds > 0 ? ` with ${beds}+ beds` : ''}. Free. Pause from any email.`}
         />
       </section>
       {/* F4 soft next-step coach - 5s dwell, links to #listing-like-alerts */}

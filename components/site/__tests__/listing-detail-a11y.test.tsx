@@ -100,7 +100,8 @@ describe('listing-detail CTA row accessible names', () => {
   it('offers a clear path to the listing alert strip', () => {
     const html = render()
     expect(html).toMatch(/href="#listing-like-alerts"/)
-    expect(html).toMatch(/Get alerts for homes like this/)
+    // Full-width outline btn (elevated from text link 2026-08-11).
+    expect(html).toMatch(/Get free alerts for homes like this/)
   })
 })
 

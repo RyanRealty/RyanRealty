@@ -19,6 +19,7 @@ import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -148,6 +149,7 @@ export default function VenuesIndexPage() {
           </section>
         ) : null}
 
+        <RegionalSfrAlertsBand id="get-alerts" showLpSecondary={false} />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
     </main>
