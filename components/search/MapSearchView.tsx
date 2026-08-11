@@ -306,6 +306,8 @@ export default function MapSearchView({
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set())
   const [searchAsMove, setSearchAsMove] = useState(true)
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+  /** Pin/list selection (stronger than hover) — map popup open ↔ list card ring + scroll. */
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [drawnShapes, setDrawnShapes] = useState<DrawnShape[]>(initialDrawn)
   // Map-first on mobile (SEARCH_UX_WAVE3 P11 Target UX). List expands the
   // bottom sheet; Map hides the sheet and shows the canvas count pill.
@@ -632,13 +634,25 @@ export default function MapSearchView({
   }, [drawnShapes, runViewportSearch])
 
   const onListHover = useCallback((key: string | null) => setHoveredKey(key), [])
-  const onMarkerHover = useCallback((key: string | null) => {
-    setHoveredKey(key)
-    if (key) {
-      const el = listContainerRef.current?.querySelector(`[data-listing-key="${key}"]`)
-      el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }
+  const scrollListToKey = useCallback((key: string) => {
+    const el = listContainerRef.current?.querySelector(`[data-listing-key="${key}"]`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }, [])
+  const onMarkerHover = useCallback(
+    (key: string | null) => {
+      setHoveredKey(key)
+      if (key) scrollListToKey(key)
+    },
+    [scrollListToKey],
+  )
+  const onMarkerClick = useCallback(
+    (key: string) => {
+      setSelectedKey((prev) => (prev === key ? null : key))
+      setHoveredKey(key)
+      scrollListToKey(key)
+    },
+    [scrollListToKey],
+  )
 
   // Load the signed-in user's hidden keys once; fail open (worst case a hidden
   // home briefly reappears). Membership matches ListingKey OR MLS ListNumber.
@@ -671,6 +685,13 @@ export default function MapSearchView({
 
   const countLabel = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString()
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
+  // Calm map-view honesty: this number is viewport-scoped, not city inventory.
+  const countPhrase =
+    totalCount === 0
+      ? 'No homes in this map view'
+      : totalCount === 1
+        ? `${countLabel} home in this map view`
+        : `${countLabel} homes in this map view`
 
   // listPanel is mounted once (desktop rail + mobile bottom sheet share the
   // node via CSS). Mobile List expands the sheet; Map hides it (count pill).
@@ -685,8 +706,7 @@ export default function MapSearchView({
             <span className="font-semibold text-foreground">Search delayed</span>
           ) : (
             <>
-              <span className="font-semibold text-foreground">{countLabel}</span>{' '}
-              {totalCount === 1 ? 'home' : 'homes'}
+              <span className="font-semibold text-foreground">{countPhrase}</span>
               {filtersSummary ? (
                 <span className="hidden sm:inline"> · {filtersSummary}</span>
               ) : null}
@@ -778,10 +798,11 @@ export default function MapSearchView({
               { mlsNumber: l.ListNumber ?? null }
             )
             const isHovered = hoveredKey === key
+            const isSelected = selectedKey === key
             const addressLine = cardStreet(l)
             const badge = nowMs != null ? cardBadge(l, nowMs) : undefined
             // Canonical site ListingCard (same as SearchResults). Wrapper owns
-            // data-listing-key + hide control + map hover ring; no save/like on tiles.
+            // data-listing-key + hide control + map hover/select ring.
             return (
               <div
                 key={key}
@@ -789,10 +810,15 @@ export default function MapSearchView({
                 className={cn(
                   // `group group/hide relative` — contract + hide-control hover reveal.
                   'group group/hide relative rounded-xl transition',
-                  isHovered ? 'ring-2 ring-primary shadow-lg' : undefined
+                  isSelected
+                    ? 'ring-2 ring-primary shadow-lg ring-offset-2 ring-offset-muted'
+                    : isHovered
+                      ? 'ring-2 ring-primary/60 shadow-md'
+                      : undefined,
                 )}
                 onMouseEnter={() => onListHover(key)}
                 onMouseLeave={() => onListHover(null)}
+                onClick={() => setSelectedKey(key)}
               >
                 <ListingCardHideControl
                   listingKey={key}
@@ -848,8 +874,9 @@ export default function MapSearchView({
         onBoundsChanged={handleBoundsChanged}
         shapes={drawnShapes}
         onShapesChange={handleShapesChange}
-        hoveredKey={hoveredKey}
+        hoveredKey={hoveredKey ?? selectedKey}
         onMarkerHover={onMarkerHover}
+        onMarkerClick={onMarkerClick}
         className="h-full w-full"
       />
       {/* Saved named areas (Flexmls My-Map-Overlays parity). Applying one
@@ -920,7 +947,7 @@ export default function MapSearchView({
           'Search delayed'
         ) : (
           <>
-            <span className="font-semibold">{countLabel}</span> {totalCount === 1 ? 'home' : 'homes'} in this area
+            <span className="font-semibold">{countPhrase}</span>
             {loading ? <span className="ml-1.5 text-xs text-muted-foreground">Updating…</span> : null}
           </>
         )}

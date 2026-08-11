@@ -548,6 +548,31 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
   })
 })
 
+describe('map craft: selection + zoom storytelling + basemap', () => {
+  it('selects list card when a map pin opens (stronger than hover)', () => {
+    const view = readSrc('components/search/MapSearchView.tsx')
+    expect(view).toMatch(/selectedKey/)
+    expect(view).toMatch(/onMarkerClick/)
+    expect(view).toMatch(/ring-offset-2/)
+    expect(view).toMatch(/in this map view/)
+  })
+
+  it('uses SuperCluster maxZoom and photo stamps at close zoom', () => {
+    const map = readSrc('components/SearchMapClustered.tsx')
+    expect(map).toMatch(/SuperClusterAlgorithm/)
+    expect(map).toMatch(/maxZoom:\s*14/)
+    expect(map).toMatch(/buildPhotoStampElement/)
+    expect(map).toMatch(/zoomMode/)
+  })
+
+  it('ships editorial MAP_SEARCH_STYLES for cream/muted basemap', () => {
+    const markers = readSrc('lib/maps/markers.ts')
+    expect(markers).toMatch(/MAP_SEARCH_STYLES/)
+    expect(markers).toMatch(/f3f0e8/)
+    expect(markers).toMatch(/c5d8e0/)
+  })
+})
+
 describe('Home type two-layer filter (class + MLS sub type)', () => {
   it('primary chip bar mounts HomeTypeFilterPanel with duplex/manufactured sub-types', () => {
     const panel = readSrc('components/search/HomeTypeFilterPanel.tsx')

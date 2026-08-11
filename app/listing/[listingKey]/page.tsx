@@ -412,6 +412,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         lat={listing.lat}
         lng={listing.lng}
         lifestyleLine={buildLifestyleLine({ city: listing.city })}
+        addressLine={street}
       />
       {marketGeo ? (
         <NeighborhoodMarketContext

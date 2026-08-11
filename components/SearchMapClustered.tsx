@@ -3,7 +3,11 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { MapContext, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
-import { MarkerClusterer, defaultOnClusterClickHandler } from '@googlemaps/markerclusterer'
+import {
+  MarkerClusterer,
+  SuperClusterAlgorithm,
+  defaultOnClusterClickHandler,
+} from '@googlemaps/markerclusterer'
 
 import { MAP_DEFAULT_CENTER } from '@/lib/map-constants'
 import { listingDetailPath } from '@/lib/slug'
@@ -240,6 +244,73 @@ function buildClusterElement(count: number): HTMLDivElement {
   return el
 }
 
+/**
+ * Close-zoom photo stamp: square listing photo + price caption.
+ * Used when map zoom is high so the canvas feels editorial, not “more pills.”
+ */
+function buildPhotoStampElement(
+  photoURL: string | null | undefined,
+  priceLabel: string,
+  opts?: { active?: boolean },
+): HTMLDivElement {
+  const active = opts?.active ?? false
+  const wrap = document.createElement('div')
+  wrap.style.cssText = [
+    'position:relative',
+    'width:56px',
+    'cursor:pointer',
+    'transform-origin:50% 100%',
+    active ? 'transform:scale(1.12)' : 'transform:scale(1)',
+    'filter:drop-shadow(0 3px 10px rgba(16,39,66,0.35))',
+    'transition:transform 120ms ease',
+  ].join(';')
+
+  const frame = document.createElement('div')
+  frame.style.cssText = [
+    'width:56px',
+    'height:56px',
+    'border-radius:10px',
+    `border:2px solid ${active ? MAP_NAVY : MAP_WHITE}`,
+    'overflow:hidden',
+    `background:${MAP_NAVY}`,
+    active ? `box-shadow:0 0 0 2px ${MAP_WHITE}` : '',
+  ].join(';')
+
+  if (photoURL) {
+    const img = document.createElement('img')
+    img.src = photoURL
+    img.alt = ''
+    img.draggable = false
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;'
+    frame.appendChild(img)
+  }
+
+  const cap = document.createElement('div')
+  cap.style.cssText = [
+    `background:${MAP_NAVY}`,
+    `color:${MAP_WHITE}`,
+    'font-family:system-ui,-apple-system,sans-serif',
+    'font-size:10px',
+    'font-weight:700',
+    'text-align:center',
+    'padding:2px 4px',
+    'border-radius:0 0 8px 8px',
+    'margin-top:-2px',
+    'font-variant-numeric:tabular-nums',
+    'letter-spacing:-0.02em',
+  ].join(';')
+  cap.textContent = priceLabel
+
+  wrap.appendChild(frame)
+  wrap.appendChild(cap)
+  return wrap
+}
+
+/** Zoom storytelling: far = clusters (algorithm), mid = pills, close = photo stamps. */
+function markerModeForZoom(zoom: number | undefined): 'pill' | 'photo' {
+  return (zoom ?? 12) >= 16 ? 'photo' : 'pill'
+}
+
 // ─── Classic OverlayView price pill (no-Map-ID raster path) ────────────────────
 
 /**
@@ -436,12 +507,27 @@ export default function SearchMapClustered({
     position: { lat: number; lng: number }
     listing: ListingForMap & { Latitude: number; Longitude: number }
   } | null>(null)
+  /** Zoom storytelling: pill (mid) vs photo stamp (close). Clusters handle far. */
+  const [zoomMode, setZoomMode] = useState<'pill' | 'photo'>('pill')
 
   // 'marker' library only needed for AdvancedMarkerElement (vector/Map ID path).
   // The raster path uses OverlayView from the core 'maps' module.
   const { ready: isLoaded, error: loadError } = useGoogleMapsReady({
     libraries: HAS_MAP_ID ? ['places', 'marker'] : ['places'],
   })
+
+  // Track zoom so markers can switch pill ↔ photo stamp without a full remount
+  // of the map instance.
+  useEffect(() => {
+    const map = mapInstance
+    if (!map) return
+    const sync = () => setZoomMode(markerModeForZoom(map.getZoom() ?? undefined))
+    sync()
+    const listener = map.addListener('zoom_changed', sync)
+    return () => {
+      google.maps.event.removeListener(listener)
+    }
+  }, [mapInstance])
 
   const validListings = useMemo(
     () =>
@@ -732,13 +818,17 @@ export default function SearchMapClustered({
     advMarkersRef.current = []
     markersByKeyRef.current = new Map()
 
+    const mode = zoomMode
     const newMarkers: PriceMarker[] = validListings.map((l, i) => {
       const listingKey = (l.ListNumber ?? l.ListingKey ?? `point-${i}`).toString()
       const price = Number(l.ListPrice ?? 0)
       const label = formatPriceLabel(price)
       const isSaved = savedSetRef.current.has(listingKey)
 
-      const pillEl = buildPricePillElement(label, { saved: isSaved })
+      const contentEl =
+        mode === 'photo' && l.PhotoURL
+          ? buildPhotoStampElement(l.PhotoURL, label, { active: false })
+          : buildPricePillElement(label, { saved: isSaved })
       const title = `${label} — ${[l.StreetNumber, l.StreetName].filter(Boolean).join(' ') || 'View listing'}`
       const handleClick = () => {
         // Multi-shape draw armed: MapDrawTools consumes the tap (a vertex in
@@ -769,7 +859,7 @@ export default function SearchMapClustered({
         const adv = new AdvancedMarkerElement({
           position: { lat: l.Latitude, lng: l.Longitude },
           map,
-          content: pillEl,
+          content: contentEl,
           title,
           zIndex: 1,
           gmpClickable: true,
@@ -781,15 +871,15 @@ export default function SearchMapClustered({
         marker = new PricePillOverlay!({
           position: { lat: l.Latitude, lng: l.Longitude },
           map,
-          content: pillEl,
+          content: contentEl,
           title,
           zIndex: 1,
           onClick: handleClick,
         })
       }
 
-      pillEl.addEventListener('mouseenter', () => onMarkerHoverRef.current?.(listingKey))
-      pillEl.addEventListener('mouseleave', () => onMarkerHoverRef.current?.(null))
+      contentEl.addEventListener('mouseenter', () => onMarkerHoverRef.current?.(listingKey))
+      contentEl.addEventListener('mouseleave', () => onMarkerHoverRef.current?.(null))
 
       markersByKeyRef.current.set(listingKey, marker)
       return marker
@@ -798,9 +888,11 @@ export default function SearchMapClustered({
     advMarkersRef.current = newMarkers
 
     // Cluster renderer: navy count bubble in whichever marker tech is active.
+    // maxZoom 14: far/mid = clusters; closer = individual pills or photo stamps.
     clustererRef.current = new MarkerClusterer({
       map,
       markers: newMarkers as unknown as google.maps.Marker[],
+      algorithm: new SuperClusterAlgorithm({ maxZoom: 14, radius: 60 }),
       // Draw mode: the default handler zooms into the cluster, which yanks the
       // viewport mid-outline and strands the user's partial polygon across two
       // zoom levels. Clusters go inert while drawing.
@@ -848,13 +940,10 @@ export default function SearchMapClustered({
         // guard against unmount race
       }
     }
-  }, [mapInstance, validListings])
+  }, [mapInstance, validListings, zoomMode])
 
-  // Marker emphasis: update the pill element in-place for hovered / active
-  // marker. Both marker implementations expose the same `content` / `zIndex`
-  // property API, so we mutate directly — much smoother than recreating the
-  // marker (no flicker, no clusterer churn). Also refreshes the saved-heart
-  // state when savedSet changes (marker creation reads it once).
+  // Marker emphasis: update content in-place for hovered / active marker.
+  // Pill vs photo stamp follows zoomMode. Mutate content (no full remount).
   const activeKey = openInfo?.listingKey ?? null
   useEffect(() => {
     const byKey = markersByKeyRef.current
@@ -870,8 +959,10 @@ export default function SearchMapClustered({
         const price = Number(listing?.ListPrice ?? 0)
         const label = formatPriceLabel(price)
         const isSaved = savedSet.has(key)
-        // Replace content element with updated state
-        const newEl = buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved })
+        const newEl =
+          zoomMode === 'photo' && listing?.PhotoURL
+            ? buildPhotoStampElement(listing.PhotoURL, label, { active: isActive || isHover })
+            : buildPricePillElement(label, { hover: emphasized, active: isActive, saved: isSaved })
         marker.content = newEl
         marker.zIndex = emphasized ? Number(google.maps.Marker.MAX_ZINDEX) : 1
         newEl.addEventListener('mouseenter', () => onMarkerHoverRef.current?.(key))
@@ -880,7 +971,7 @@ export default function SearchMapClustered({
         // marker DOM may be gone mid-pan; ignore
       }
     }
-  }, [hoveredKey, activeKey, validListings, savedSet])
+  }, [hoveredKey, activeKey, validListings, savedSet, zoomMode])
 
   if (loadError) {
     return (

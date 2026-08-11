@@ -100,14 +100,34 @@ export function getSearchMapOptions(): google.maps.MapOptions {
 }
 
 /**
- * Minimal map style for search: suppress transit + fine-grained POI icons so
- * listing price-pill markers are the dominant visual element.
- * Roadmap labels (roads, parks, waterbodies) are preserved for orientation.
+ * Editorial search basemap (raster path when no Cloud Map ID).
+ * Goal: cream/sand water, muted roads, quiet labels — price pins are the only
+ * loud layer. When NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID is set, Cloud console styles
+ * own the basemap instead (see docs/MAPS_CLOUD_STYLE.md); these JSON styles are
+ * stripped next to mapId (Google ignores them).
  */
 export const MAP_SEARCH_STYLES: google.maps.MapTypeStyle[] = [
+  { elementType: 'geometry', stylers: [{ color: '#f3f0e8' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#102742' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#faf8f4' }] },
+  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#c9c2b4' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', elementType: 'labels.text.fill', stylers: [{ color: '#5a6a7a' }] },
+  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#e8e4d8' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#e0dccf' }] },
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#d4e0c8' }] },
+  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#4a5d3a' }] },
   { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
   { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#d9d3c6' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#6b7280' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#f0ebe0' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#cfc6b4' }] },
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c5d8e0' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#5a7a8a' }] },
 ]
 
 /**

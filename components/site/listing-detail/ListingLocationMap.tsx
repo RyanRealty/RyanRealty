@@ -35,6 +35,11 @@ const ListingLocationMapClient = dynamic(() => import('./ListingLocationMap.clie
   ),
 })
 
+const ListingLot3D = dynamic(() => import('./ListingLot3D.client'), {
+  ssr: false,
+  loading: () => null,
+})
+
 type Props = {
   lat: number | null
   lng: number | null
@@ -53,10 +58,12 @@ export function ListingLocationMap({
   lifestyleLine,
   zoom,
   className,
-}: Props) {
+  addressLine,
+}: Props & { addressLine?: string | null }) {
   if (lat == null || lng == null) return null
 
   return (
+    <>
     <section className={cn('section', className)}>
       <div className="sec-head">
         <div>
@@ -93,5 +100,8 @@ export function ListingLocationMap({
         </div>
       ) : null}
     </section>
+    {/* Photorealistic Google 3D mesh when available — fails open to null. */}
+    <ListingLot3D lat={lat} lng={lng} label={addressLine} />
+    </>
   )
 }
