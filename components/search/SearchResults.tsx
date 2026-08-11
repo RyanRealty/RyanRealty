@@ -176,7 +176,7 @@ export default function SearchResults({
             {total.toLocaleString()} home{total !== 1 ? 's' : ''} found
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {visibleListings.map((listing) => {
+        {visibleListings.map((listing, cardIndex) => {
           const key = String(listingKey(listing)).trim()
           const href = listingDetailPath(key, {
             streetNumber: listing.StreetNumber,
@@ -205,6 +205,7 @@ export default function SearchResults({
               />
               <ListingCard
                 showPricePerSqft
+                priority={cardIndex < 4}
                 listing={{
                   listingKey: key,
                   href,

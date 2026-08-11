@@ -166,9 +166,9 @@ Order = ship sequence for leverage. **Empty checkbox = still owed.**
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Outcome scoreboard** after traffic (alerts / saves / FP engagement). Search Wave 3 residuals **closed** 2026-08-11 — see `SEARCH_UX_WAVE3_PLAN.md` + VERIFY_LOG residual pass. |
-| **THEN** | Optional search polish only if field metrics demand it: GIS layers · pin-lite (P4) · AllFilters code-split (P6). Do not reopen chrome without scoreboard signal. |
-| **NOTE** | G3 Blended confirmed. **not 10×** (alerts 6 / saves 2). Search action layer: no `stickyCount` — DAL exact count rides row fetch. |
+| **NOW** | **Outcome scoreboard** after traffic (alerts / saves / FP engagement). Search Wave 3 + **P6/P7 polish shipped** 2026-08-11. |
+| **THEN** | Optional only if metrics demand: GIS layers · pin-lite (P4). Do not reopen search chrome without scoreboard signal. |
+| **NOTE** | G3 Blended confirmed. **not 10×** (alerts 6 / saves 2). P6 = lazy AllFiltersSheet; P7 = LCP priority first 4 cards. |
 
 ---
 

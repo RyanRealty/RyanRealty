@@ -769,7 +769,7 @@ export default function MapSearchView({
       ) : (
         <>
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          {visibleListings.slice(0, visibleCount).map((l) => {
+          {visibleListings.slice(0, visibleCount).map((l, cardIndex) => {
             const key = rowKey(l)
             const href = listingDetailPath(
               key,
@@ -801,6 +801,7 @@ export default function MapSearchView({
                 />
                 <ListingCard
                   showPricePerSqft
+                  priority={cardIndex < 4}
                   listing={{
                     listingKey: key,
                     href,

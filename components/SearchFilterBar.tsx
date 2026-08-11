@@ -5,15 +5,22 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
 import { PROPERTY_TYPES } from '@/lib/property-type'
+import dynamic from 'next/dynamic'
 import SaveSearchButton from '@/components/SaveSearchButton'
 import type { SavedSearchPathContext } from '@/lib/search/saved-search-path-filters'
-import AllFiltersSheet, {
+import {
   activeRegistryFilters,
   ParsedSearchNotice,
   RegistryFilterChip,
   useParsedSearchConfirm,
-} from '@/components/search/AllFiltersSheet'
+} from '@/components/search/registry-filter-chrome'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
+
+/** P6: load the ~1k-LOC registry sheet only after first open (not on cold SEO browse). */
+const AllFiltersSheet = dynamic(() => import('@/components/search/AllFiltersSheet'), {
+  ssr: false,
+  loading: () => null,
+})
 import { parseSearchQuery, searchHrefForQuery } from '@/lib/parse-search-query'
 import { listingsBrowsePath } from '@/lib/slug'
 import { cn } from '@/lib/utils'
@@ -150,6 +157,8 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
   const pathname = props.basePath ?? listingsBrowsePath()
   const [open, setOpen] = useState<OpenKey>(null)
   const [moreSheetOpen, setMoreSheetOpen] = useState(false)
+  /** Keep the lazy sheet mounted after first open so close animation still works. */
+  const [moreSheetMounted, setMoreSheetMounted] = useState(false)
   const barRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -587,6 +596,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           size="sm"
           onClick={() => {
             setOpen(null)
+            setMoreSheetMounted(true)
             setMoreSheetOpen(true)
           }}
           className="gap-1"
@@ -651,14 +661,16 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
       {/* All filters — registry-driven sheet shared with /homes-for-sale.
           Live count stays off here: the location scope (city/neighborhood)
           lives in the path on these pages, so a query-only count would be a
-          wrong number. */}
-      <AllFiltersSheet
-        open={moreSheetOpen}
-        onOpenChange={setMoreSheetOpen}
-        onApply={applyRegistryUpdates}
-        closedScope={props.statusFilter === 'closed' || props.includeClosed === '1'}
-        enableCount={false}
-      />
+          wrong number. Mount only after first open (P6 cold-chunk). */}
+      {moreSheetMounted ? (
+        <AllFiltersSheet
+          open={moreSheetOpen}
+          onOpenChange={setMoreSheetOpen}
+          onApply={applyRegistryUpdates}
+          closedScope={props.statusFilter === 'closed' || props.includeClosed === '1'}
+          enableCount={false}
+        />
+      ) : null}
     </div>
   )
 }

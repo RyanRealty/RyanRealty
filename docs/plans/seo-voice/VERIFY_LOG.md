@@ -58,6 +58,11 @@
 
 ## Session notes (newest first)
 
+### 2026-08-11 SEARCH_UX_WAVE3 P6/P7 polish
+- **P6:** `registry-filter-chrome.tsx` holds chip helpers; `SearchFilters` + `SearchFilterBar` `dynamic()` import `AllFiltersSheet` and mount only after first open (cold search chunk no longer pays ~1k LOC sheet).
+- **P7:** `ListingCard` accepts `priority`; first 4 cards on split (`MapSearchView`) + list (`SearchResults`) set `priority`.
+- Plan pointer: GIS + P4 only remain optional; outcome scoreboard still cold (not 10×).
+
 ### 2026-08-11 SEARCH_UX_WAVE3 close — W7.2 ledger + baselines (push unblocked)
 - **Blocker:** residual ship deleted `UnifiedMapListingsView.tsx`; `ci:program-complete` failed W7.2 proof path.
 - **Fix:** COMPLETION-LEDGER W7.2 paths → `MapSearchView` + `MapSplitView`; proofPath prose + baselines (design-tokens, shadcn, canonical-listings) drop deleted file.

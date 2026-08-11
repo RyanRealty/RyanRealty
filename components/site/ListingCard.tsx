@@ -88,11 +88,14 @@ function PlayGlyph() {
 export default function ListingCard({
   listing,
   showPricePerSqft = false,
+  priority = false,
 }: {
   listing: ListingCardData
   /** Opt-in: append "$X/sqft" to the meta row (search results, per the search
    *  mockup). Off by default so featured/homepage/other grids stay unchanged. */
   showPricePerSqft?: boolean
+  /** LCP: pass for the first few above-the-fold cards on search results (P7). */
+  priority?: boolean
 }) {
   return (
     <Link
@@ -105,6 +108,7 @@ export default function ListingCard({
             src={listing.photoUrl}
             alt={listing.addressLine}
             fill
+            priority={priority}
             className="object-cover transition duration-300 group-hover:scale-[1.02]"
             sizes="(min-width: 1080px) 320px, (min-width: 560px) 50vw, 100vw"
           />

@@ -5,11 +5,11 @@
  * consumer all-filters sheet prints.
  *
  * This is a client component for exactly one reason: activeRegistryFilters
- * lives in components/search/AllFiltersSheet.tsx, which carries 'use client'.
- * Importing it into a server component would hand back a client reference the
- * server cannot call, so the chip row renders on the client instead. The
- * helper is IMPORTED, never forked, so a new registry field shows up in the
- * broker's mirror the day it ships on the consumer sheet.
+ * lives in components/search/registry-filter-chrome.tsx, which carries
+ * 'use client'. Importing it into a server component would hand back a client
+ * reference the server cannot call, so the chip row renders on the client
+ * instead. The helper is IMPORTED, never forked, so a new registry field shows
+ * up in the broker's mirror the day it ships on the consumer sheet.
  *
  * READ-ONLY: props in, badges out. No state, no handlers, no remove control.
  * RegistryFilterChip is deliberately NOT used here because it carries a remove
@@ -24,7 +24,7 @@
  * inside an anchor, so nothing interactive is lost.
  */
 
-import { activeRegistryFilters } from '@/components/search/AllFiltersSheet'
+import { activeRegistryFilters } from '@/components/search/registry-filter-chrome'
 import type { CSSProperties } from 'react'
 import type { PortalChip } from '@/lib/data/crm/getClientPortalView'
 

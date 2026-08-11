@@ -1,7 +1,7 @@
 # Search UX Wave 3 — Mockup gap plan + performance
 
 **Date:** 2026-08-10  
-**Status:** WAVE 0–3 + dual-surface/mobile/ListingCard residuals CLOSED 2026-08-11 — open: GIS layers only  
+**Status:** WAVE 0–3 + residuals + P6/P7 polish CLOSED 2026-08-11 — open: GIS layers + optional P4 pin-lite only  
 
 **Route:** `https://ryan-realty.com/homes-for-sale` → `app/search/page.tsx`  
 **Mockup SSOT:** `design_system/ryan-realty/ui_kits/search/index.html`  
@@ -64,8 +64,8 @@ Severity: **P0** trust/block · **P1** main-path friction · **P2** clear defect
 | **P3** | Exact count on pan | Count cheap or sticky | **CLOSED 2026-08-11:** pan `limit: 250`; DAL `searchListingsAll` returns exact `totalCount` on the **same** row fetch (`count: 'exact'` rides select — no second count query). `stickyCount` action flag not added (would not save work / would risk dishonest counts). | P1 | M | No further action on pan count |
 | **P4** | Marker rebuild | Smooth pan | Full AdvancedMarker rebuild to 500 | P1 | L | Server cluster / pin-lite payload — defer |
 | **P5** | Double debounce | Single timer | Map idle 100ms + parent 350ms (shipped Wave 3) | P2 | S | Acceptable; optional one-layer later |
-| **P6** | JS weight | Filters light | Eager `AllFiltersSheet` | P2 | S–M | Dynamic import / split exports — defer |
-| **P7** | LCP images | First cards priority | Default image loading | P2 | S | `priority` first 2–4 — defer polish |
+| **P6** | JS weight | Filters light | **SHIP** dynamic `AllFiltersSheet` + `registry-filter-chrome` | P2 | S–M | Closed 2026-08-11 polish pass |
+| **P7** | LCP images | First cards priority | **SHIP** `priority` first 4 cards | P2 | S | Closed 2026-08-11 polish pass |
 | **P8** | loading UI | Split skeleton | **SHIP** `app/search/loading.tsx` | P3 | S | Done Wave 2 |
 | **P9** | Timeout honesty | Failures ≠ empty inventory | **SHIP** `withTimeoutSettled` + `initialDegraded` + retry | **P0** | M | Done Wave 0b |
 | **P10** | Dual search surfaces | One search, one truth | **SHIP** SEO path folds onto flagship `MapSearchView` | P1 | L | Residual closed 2026-08-11 (sibling) |
@@ -168,7 +168,8 @@ Engine gaps (new filter fields) stay in SEARCH_OPTIMIZATION / FILTER_COMPLETENES
 
 | Field | Value |
 |-------|--------|
-| **NOW** | **Closed** for Wave 0–3 + P10/P11/P13. Only open plan item: **GIS layers** (Wave 4.2 defer). |
-| **THEN** | Field measure TTFB / pan RTT / false-empty rate after deploy; optional P4 pin-lite / P6 code-split polish |
+| **NOW** | **Closed** for Wave 0–3 + P10/P11/P13 + **P6/P7 polish**. Only open plan item: **GIS layers** (Wave 4.2 defer) + optional **P4 pin-lite**. |
+| **THEN** | Field measure TTFB / pan RTT / false-empty rate; outcome scoreboard (alerts/saves). Do not reopen chrome without signal. |
 | **MEASURE** | TTFB, first idle network, pan RTT, false-empty rate (degraded UI) |
 | **ACTION NOTE (2026-08-11 residual pass)** | `app/actions/search.ts` **unchanged** — `getViewportSearch` already takes `{ limit? }`; pan uses 250. DAL `searchListingsAll` always exact-counts on the row fetch; sticky/decoupled count not required. |
+| **ACTION NOTE (2026-08-11 P6/P7)** | Extracted `registry-filter-chrome.tsx`; bars `dynamic()` + mount-on-first-open for AllFiltersSheet. `ListingCard` `priority` on first 4 search cards. |

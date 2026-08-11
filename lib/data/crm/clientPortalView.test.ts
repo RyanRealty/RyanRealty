@@ -298,7 +298,8 @@ describe('client portal view is read-only by construction', () => {
 
   it('reuses activeRegistryFilters rather than forking the chip labels', () => {
     const code = readFileSync(path.join(ROOT, PORTAL_COMPONENT_DIR, 'PortalFilterChips.tsx'), 'utf8')
-    expect(code).toMatch(/import\s*\{\s*activeRegistryFilters\s*\}\s*from\s+['"]@\/components\/search\/AllFiltersSheet['"]/)
+    // P6: chip labels live in registry-filter-chrome (shared with bars); sheet stays lazy.
+    expect(code).toMatch(/import\s*\{\s*activeRegistryFilters\s*\}\s*from\s+['"]@\/components\/search\/registry-filter-chrome['"]/)
   })
 })
 

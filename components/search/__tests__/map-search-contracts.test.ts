@@ -538,6 +538,28 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
   })
 })
 
+describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
+  it('P6: filter bars load AllFiltersSheet via dynamic() and mount only after first open', () => {
+    for (const rel of ['components/search/SearchFilters.tsx', 'components/SearchFilterBar.tsx']) {
+      const src = readSrc(rel)
+      expect(src).toMatch(/dynamic\(\(\)\s*=>\s*import\(['"]@\/components\/search\/AllFiltersSheet['"]\)/)
+      expect(src).toMatch(/moreSheetMounted/)
+      expect(src).toMatch(/from ['"]@\/components\/search\/registry-filter-chrome['"]/)
+      // Cold path must not static-import the heavy sheet module.
+      expect(src).not.toMatch(/import AllFiltersSheet[, ]/)
+    }
+  })
+
+  it('P7: first four search cards request image priority for LCP', () => {
+    const card = readSrc('components/site/ListingCard.tsx')
+    expect(card).toMatch(/priority\?: boolean/)
+    expect(card).toMatch(/priority=\{priority\}/)
+    for (const rel of ['components/search/MapSearchView.tsx', 'components/search/SearchResults.tsx']) {
+      expect(readSrc(rel)).toMatch(/priority=\{cardIndex < 4\}/)
+    }
+  })
+})
+
 describe('no mojibake in the search surface', () => {
   // The "Â·" sequence (UTF-8 decoded as Latin-1) shipped here for months. Pin it
   // dead at the file level in addition to the repo-wide ci:no-mojibake gate.

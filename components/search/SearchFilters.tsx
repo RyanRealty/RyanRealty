@@ -15,14 +15,21 @@ import {
 import { PROPERTY_TYPES } from '@/lib/property-type'
 import { propertyTypeDisplayLabel } from '@/lib/search/class-prevalence'
 import { parseSearchQuery } from '@/lib/parse-search-query'
+import dynamic from 'next/dynamic'
 import SaveSearchButton from '@/components/SaveSearchButton'
-import AllFiltersSheet, {
+import {
   activeRegistryFilters,
   ParsedSearchNotice,
   RegistryFilterChip,
   useParsedSearchConfirm,
-} from '@/components/search/AllFiltersSheet'
+} from '@/components/search/registry-filter-chrome'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
+
+/** P6: load the ~1k-LOC registry sheet only after first open (not on cold search). */
+const AllFiltersSheet = dynamic(() => import('@/components/search/AllFiltersSheet'), {
+  ssr: false,
+  loading: () => null,
+})
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -260,6 +267,8 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
   // Dropdown panel state
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
   const [moreSheetOpen, setMoreSheetOpen] = useState(false)
+  /** Keep the lazy sheet mounted after first open so close animation still works. */
+  const [moreSheetMounted, setMoreSheetMounted] = useState(false)
 
   // Local view state (tabs: split / list / map)
   const [view, setView] = useState<'split' | 'list' | 'map'>(
@@ -798,7 +807,10 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           type="button"
           variant={moreFilterCount > 0 ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setMoreSheetOpen(true)}
+          onClick={() => {
+            setMoreSheetMounted(true)
+            setMoreSheetOpen(true)
+          }}
           className="shrink-0 gap-1 rounded-full px-3.5 tabular-nums"
           aria-label="Open all filters"
         >
@@ -859,17 +871,20 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         </div>
       )}
 
-      {/* All filters — registry-driven sheet shared with the SEO filter bar */}
-      <AllFiltersSheet
-        open={moreSheetOpen}
-        onOpenChange={setMoreSheetOpen}
-        onApply={updateUrl}
-        closedScope={initialFilters.status === 'Sold'}
-        contextDefaults={{
-          ...(initialFilters.city ? { city: initialFilters.city } : {}),
-          status: initialFilters.status ?? 'Active',
-        }}
-      />
+      {/* All filters — registry-driven sheet shared with the SEO filter bar.
+          Mount only after first open so the P6 chunk stays off the cold path. */}
+      {moreSheetMounted ? (
+        <AllFiltersSheet
+          open={moreSheetOpen}
+          onOpenChange={setMoreSheetOpen}
+          onApply={updateUrl}
+          closedScope={initialFilters.status === 'Sold'}
+          contextDefaults={{
+            ...(initialFilters.city ? { city: initialFilters.city } : {}),
+            status: initialFilters.status ?? 'Active',
+          }}
+        />
+      ) : null}
     </div>
   )
 }
