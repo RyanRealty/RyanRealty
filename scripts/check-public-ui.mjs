@@ -273,10 +273,11 @@ const failures = []
 const LABEL = {
   nonV3ImportSites: 'A. non-v3 register import sites',
   legacyPages: 'B. legacy pages (non-v3 imports, no v3)',
-  mixedPages: 'C. mixed pages (v3 AND a non-v3 register)',
+  mixedPages: 'C. mixed pages (the migration front, tracked not gated)',
 }
 
-for (const key of ['nonV3ImportSites', 'legacyPages', 'mixedPages']) {
+// A and B are the debt, and debt may only shrink.
+for (const key of ['nonV3ImportSites', 'legacyPages']) {
   const now = totals[key]
   const was = baseTotals[key]
   if (typeof was !== 'number') {
@@ -286,6 +287,27 @@ for (const key of ['nonV3ImportSites', 'legacyPages', 'mixedPages']) {
   if (now > was) {
     failures.push(`${LABEL[key]}: ${was} -> ${now}. This number may only shrink.`)
   }
+}
+
+// C is NOT debt, it is the migration front. A family being rebuilt necessarily
+// holds v3 body sections beside chrome that has not moved yet, so failing on a
+// rising mixed count would block the only path off the old registers. What is a
+// real defect is a page that already knows v3 reaching BACK: once a page imports
+// the barrel, its non-v3 count may never grow.
+const regressed = []
+for (const page of pages) {
+  const tally = counts[page]
+  if (v3Of(tally) === 0) continue
+  const now = nonV3Of(tally)
+  const was = nonV3Of(basePages[page])
+  if (typeof was === 'number' && now > was) {
+    regressed.push(`${page}: on v3 and its non-v3 imports grew ${was} -> ${now}.`)
+  }
+}
+if (regressed.length) {
+  failures.push(
+    `C. a page on v3 reached back into an old register:\n      ${regressed.join('\n      ')}`,
+  )
 }
 
 // The new-page tripwire.

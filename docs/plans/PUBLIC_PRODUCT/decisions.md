@@ -162,3 +162,40 @@ state.json: `locks.visual = 2026-08-11`, `awaiting_lock` cleared, phase → `P7_
 P7 builds `components/site/v3/` as the 1:1 pattern barrel (accessible name required in the
 type). The barrel is the pressure valve: a migration needing a control it lacks ADDS the
 primitive, never reaches back into kb/legacy/primitives/explore.
+
+## 2026-08-11 — OBSERVED: the KB gates encode the OLD destination (P9 blocker)
+
+The first attempted family migration (/housing-market onto the v3 barrel) was built,
+adversarially verified, REFUTED, and reverted unshipped. Two fresh-context verifiers found
+17 defects. Four were commit-blocking gate failures, and together they are the real finding:
+
+- `ci:mockup-parity` requires `<KbHero> <KbExploreTowns> <KbArticles> <ContentSection>` on
+  this route, per `design_system/ryan-realty/ui_kits/market-report/parity.json`.
+- `ci:seo-shell` requires the H1 to come from KbHero's `titleBottom="Housing Market"`.
+- `ci:kb-breadcrumb-overlay` requires `overlay` on the breadcrumb of any KbHero page.
+
+**Those gates enforce the KB era as the destination.** Any page migration therefore has a
+prerequisite the plan did not name: update the route's gate contracts to the NEW
+destination IN THE SAME CHANGE (the rollout rule the prior Experience program already
+learned: gates enforce the destination, never the past). A migration that does not do this
+cannot commit, no matter how good the page is.
+
+Also learned, and now written into the P9 unit definition:
+- A page migration must state which sections it DELETES. The attempt silently dropped
+  KbHero's property search and voice-search button.
+- A migrated page must not leave a discarded data read behind (getSurfaceImage stayed in
+  the Promise.all with its result dropped into a positional hole, paying for a fetch on
+  every revalidation that nothing renders).
+- Zero-value rows synthesized for missing cities may not render under a live-MLS source
+  line. Absent is not zero (CLAUDE.md section 0).
+- The verdict on the page and the verdict inside its FAQ JSON-LD are computed in two
+  different places and can disagree. One derivation, one number.
+
+## 2026-08-11 — ci:public-ui rule C corrected by the fixer
+
+Rule C originally failed any page importing BOTH v3 and an old register. That fails the
+migration front itself: a family being rebuilt necessarily holds v3 sections beside chrome
+that has not moved yet, so the rule as written blocked the only path off the old registers.
+C now fails the REAL defect: once a page imports the barrel, its non-v3 import count may
+never grow. Mixed pages are still counted and printed, as the visible migration front.
+Break-tested: a v3 page that adds a kb import fires; the clean tree is green.

@@ -1,12 +1,12 @@
 [
   {
-    "id": "p8-litmus",
-    "phase": "P8",
-    "note": "Time L1 (cold mobile visitor -> completed valuation request) and L2 (cold visitor -> saved search/alert with contact) against the barrel-built surface, on a real device profile at 390. A timing you did not measure this session is not a timing. Then propose the two target numbers to Matt for the litmus sign-off."
+    "id": "p9-market-family-v2",
+    "phase": "P9",
+    "note": "Retry /housing-market onto v3, WITH the prerequisite the first attempt discovered: in the SAME change, update design_system/ryan-realty/ui_kits/market-report/parity.json to the v3 contract, update the seo-shell H1 rule for this route, and satisfy kb-breadcrumb-overlay (or drop KbHero cleanly). Also required by the reverted attempt: declare every deleted section (KbHero carried a property search + voice search), remove any data read whose result is discarded, never synthesize zero rows under a live-MLS source line, and derive the page verdict and the FAQ JSON-LD verdict from ONE computation. Full defect list in the workflow journal wf_c655112d-c83."
   },
   {
-    "id": "p9-roll-first-family",
+    "id": "p9-chrome-unit",
     "phase": "P9",
-    "note": "First production family migration onto components/site/v3 + the ci:public-ui shrink-only ratchet in the SAME commit (per-register import counts, legacy-page count; AST-based; break-tested 3 ways). Proposed order: Market family, Places, Homes browse, Sell, homepage last. Adversarial fresh-context verify per family: git diff proves no capture contract, canonical, or metric moved."
+    "note": "Global chrome unit: replace the KB nav/footer/breadcrumb with v3 chrome across public pages. This is what unblocks every family at once (kb=528 of the 688 import sites are chrome-heavy pages). Must keep exactly one footer per page (ci:default-chrome-footer) and preserve every nav href."
   }
 ]
