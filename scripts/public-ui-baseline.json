@@ -1,0 +1,469 @@
+{
+  "note": "Public UI ratchet (ci:public-ui). Non-v3 design-register imports on public pages. Every number may only SHRINK. knownPages is the new-page tripwire: a public page absent from it that imports a non-v3 register fails regardless of totals. Re-seed after a P9 roll with `node scripts/check-public-ui.mjs --write-baseline`.",
+  "generated_by": "check-public-ui.mjs --write-baseline",
+  "registers": {
+    "kb": "components/site/kb/*",
+    "legacy": "components/site/<File> (flat files directly under components/site)",
+    "primitives": "components/site/primitives/*",
+    "explore": "components/site/explore/*",
+    "v3": "components/site/v3 (the destination register, not debt)"
+  },
+  "totals": {
+    "nonV3ImportSites": 688,
+    "legacyPages": 84,
+    "mixedPages": 0
+  },
+  "knownPages": [
+    "app/about/page.tsx",
+    "app/accessibility/page.tsx",
+    "app/account/areas/page.tsx",
+    "app/account/buying-preferences/page.tsx",
+    "app/account/collections/[id]/page.tsx",
+    "app/account/collections/page.tsx",
+    "app/account/hidden/page.tsx",
+    "app/account/history/page.tsx",
+    "app/account/notifications/page.tsx",
+    "app/account/page.tsx",
+    "app/account/profile/page.tsx",
+    "app/account/saved-cities/page.tsx",
+    "app/account/saved-communities/page.tsx",
+    "app/account/saved-homes/page.tsx",
+    "app/account/saved-searches/page.tsx",
+    "app/activity/page.tsx",
+    "app/alerts/unsubscribe/page.tsx",
+    "app/area-guides/page.tsx",
+    "app/areas/[slug]/page.tsx",
+    "app/blog/[slug]/page.tsx",
+    "app/blog/page.tsx",
+    "app/builders/[slug]/page.tsx",
+    "app/builders/page.tsx",
+    "app/buy/[intent]/page.tsx",
+    "app/buy/page.tsx",
+    "app/central-oregon/events/[slug]/page.tsx",
+    "app/central-oregon/events/page.tsx",
+    "app/central-oregon/golf/[slug]/page.tsx",
+    "app/central-oregon/trails/[slug]/page.tsx",
+    "app/central-oregon/trails/page.tsx",
+    "app/central-oregon/venues/[slug]/page.tsx",
+    "app/central-oregon/venues/page.tsx",
+    "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+    "app/cities/[slug]/page.tsx",
+    "app/cities/page.tsx",
+    "app/cma-drafts/[id]/page.tsx",
+    "app/communities/[slug]/page.tsx",
+    "app/communities/page.tsx",
+    "app/compare/page.tsx",
+    "app/contact/page.tsx",
+    "app/cookies/page.tsx",
+    "app/dashboard/collections/[id]/page.tsx",
+    "app/dashboard/collections/page.tsx",
+    "app/dashboard/history/page.tsx",
+    "app/dashboard/likes/page.tsx",
+    "app/dashboard/marketing/inbox/page.tsx",
+    "app/dashboard/marketing/page.tsx",
+    "app/dashboard/notifications/page.tsx",
+    "app/dashboard/page.tsx",
+    "app/dashboard/saved/page.tsx",
+    "app/dashboard/searches/page.tsx",
+    "app/dashboard/settings/page.tsx",
+    "app/data-deletion/page.tsx",
+    "app/dmca/page.tsx",
+    "app/fair-housing/page.tsx",
+    "app/faq/[slug]/page.tsx",
+    "app/faq/page.tsx",
+    "app/feed/page.tsx",
+    "app/housing-market/[...slug]/page.tsx",
+    "app/housing-market/annual-review/page.tsx",
+    "app/housing-market/central-oregon/page.tsx",
+    "app/housing-market/history/page.tsx",
+    "app/housing-market/page.tsx",
+    "app/housing-market/reports/[slug]/[geoName]/page.tsx",
+    "app/housing-market/reports/[slug]/page.tsx",
+    "app/housing-market/reports/archive/[city]/page.tsx",
+    "app/housing-market/reports/page.tsx",
+    "app/join/page.tsx",
+    "app/listing/[listingKey]/page.tsx",
+    "app/listing/by-address/[...slug]/page.tsx",
+    "app/listing/by-key/[listingKey]/page.tsx",
+    "app/lp/bend/page.tsx",
+    "app/lp/buyer-listing-alerts/page.tsx",
+    "app/lp/central-oregon-golf/page.tsx",
+    "app/lp/expired-listing/page.tsx",
+    "app/lp/fsbo/page.tsx",
+    "app/lp/sell-your-home/page.tsx",
+    "app/lp/seller-home-value/page.tsx",
+    "app/lp/tetherow/heath/page.tsx",
+    "app/lp/tetherow/page.tsx",
+    "app/luxury-homes-bend/page.tsx",
+    "app/marketing/request/page.tsx",
+    "app/months-of-supply/page.tsx",
+    "app/motivated-sellers/[city]/page.tsx",
+    "app/motivated-sellers/page.tsx",
+    "app/newsletter/unsubscribe/page.tsx",
+    "app/offline/page.tsx",
+    "app/open-houses/[city]/page.tsx",
+    "app/open-houses/page.tsx",
+    "app/oregon/[city]/page.tsx",
+    "app/our-homes/page.tsx",
+    "app/page.tsx",
+    "app/parks/[slug]/page.tsx",
+    "app/parks/page.tsx",
+    "app/price-drops/[city]/page.tsx",
+    "app/price-drops/page.tsx",
+    "app/privacy/page.tsx",
+    "app/pulse/page.tsx",
+    "app/reports/[slug]/[geoName]/page.tsx",
+    "app/reports/[slug]/page.tsx",
+    "app/reports/page.tsx",
+    "app/reports/sales/[city]/[period]/page.tsx",
+    "app/resources/page.tsx",
+    "app/reviews/page.tsx",
+    "app/schools/[slug]/page.tsx",
+    "app/schools/page.tsx",
+    "app/search/[...slug]/page.tsx",
+    "app/search/page.tsx",
+    "app/sell/[intent]/page.tsx",
+    "app/sell/page.tsx",
+    "app/sell/valuation/page.tsx",
+    "app/sign/[token]/page.tsx",
+    "app/site-index/page.tsx",
+    "app/subdivisions/[slug]/page.tsx",
+    "app/team/[slug]/edit/page.tsx",
+    "app/team/[slug]/page.tsx",
+    "app/team/page.tsx",
+    "app/terms/page.tsx",
+    "app/tools/appreciation/page.tsx",
+    "app/tools/mortgage-calculator/page.tsx",
+    "app/tools/rental-property-calculator/page.tsx",
+    "app/videos/page.tsx",
+    "app/zip/[zip]/page.tsx"
+  ],
+  "pages": {
+    "app/about/page.tsx": {
+      "legacy": 2,
+      "kb": 12
+    },
+    "app/accessibility/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/account/collections/[id]/page.tsx": {
+      "legacy": 1
+    },
+    "app/account/hidden/page.tsx": {
+      "legacy": 1
+    },
+    "app/activity/page.tsx": {
+      "kb": 7
+    },
+    "app/alerts/unsubscribe/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/area-guides/page.tsx": {
+      "legacy": 1,
+      "kb": 8
+    },
+    "app/areas/[slug]/page.tsx": {
+      "kb": 9,
+      "legacy": 1
+    },
+    "app/blog/[slug]/page.tsx": {
+      "kb": 5
+    },
+    "app/blog/page.tsx": {
+      "kb": 6
+    },
+    "app/builders/[slug]/page.tsx": {
+      "kb": 6,
+      "legacy": 1
+    },
+    "app/builders/page.tsx": {
+      "kb": 5,
+      "legacy": 1
+    },
+    "app/buy/page.tsx": {
+      "legacy": 1,
+      "kb": 6
+    },
+    "app/central-oregon/events/[slug]/page.tsx": {
+      "legacy": 3,
+      "kb": 7
+    },
+    "app/central-oregon/events/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/central-oregon/golf/[slug]/page.tsx": {
+      "legacy": 3,
+      "kb": 7
+    },
+    "app/central-oregon/trails/[slug]/page.tsx": {
+      "legacy": 3,
+      "kb": 7
+    },
+    "app/central-oregon/trails/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/central-oregon/venues/[slug]/page.tsx": {
+      "legacy": 3,
+      "kb": 7
+    },
+    "app/central-oregon/venues/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/cities/[slug]/[neighborhoodSlug]/page.tsx": {
+      "kb": 23,
+      "legacy": 3,
+      "explore": 2
+    },
+    "app/cities/[slug]/page.tsx": {
+      "kb": 24,
+      "explore": 1,
+      "legacy": 3
+    },
+    "app/cities/page.tsx": {
+      "legacy": 2,
+      "kb": 6
+    },
+    "app/cma-drafts/[id]/page.tsx": {
+      "legacy": 1
+    },
+    "app/communities/[slug]/page.tsx": {
+      "kb": 26,
+      "explore": 2,
+      "legacy": 3
+    },
+    "app/communities/page.tsx": {
+      "legacy": 2,
+      "kb": 6
+    },
+    "app/compare/page.tsx": {
+      "legacy": 1,
+      "kb": 5
+    },
+    "app/contact/page.tsx": {
+      "kb": 6
+    },
+    "app/cookies/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/data-deletion/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/dmca/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/fair-housing/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/faq/[slug]/page.tsx": {
+      "kb": 5,
+      "legacy": 1
+    },
+    "app/faq/page.tsx": {
+      "kb": 6,
+      "legacy": 1
+    },
+    "app/feed/page.tsx": {
+      "legacy": 2,
+      "kb": 1
+    },
+    "app/housing-market/[...slug]/page.tsx": {
+      "legacy": 16,
+      "kb": 12,
+      "primitives": 1
+    },
+    "app/housing-market/annual-review/page.tsx": {
+      "legacy": 5,
+      "kb": 6,
+      "primitives": 1
+    },
+    "app/housing-market/central-oregon/page.tsx": {
+      "kb": 11,
+      "legacy": 5
+    },
+    "app/housing-market/history/page.tsx": {
+      "kb": 5,
+      "primitives": 1
+    },
+    "app/housing-market/page.tsx": {
+      "kb": 11,
+      "legacy": 5
+    },
+    "app/housing-market/reports/archive/[city]/page.tsx": {
+      "legacy": 2,
+      "kb": 5
+    },
+    "app/join/page.tsx": {
+      "legacy": 1,
+      "kb": 6
+    },
+    "app/listing/[listingKey]/page.tsx": {
+      "explore": 3,
+      "legacy": 3,
+      "kb": 5
+    },
+    "app/lp/tetherow/heath/page.tsx": {
+      "legacy": 1,
+      "primitives": 1
+    },
+    "app/luxury-homes-bend/page.tsx": {
+      "kb": 3
+    },
+    "app/marketing/request/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/months-of-supply/page.tsx": {
+      "legacy": 4,
+      "primitives": 1
+    },
+    "app/motivated-sellers/[city]/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/motivated-sellers/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/newsletter/unsubscribe/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/offline/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/open-houses/[city]/page.tsx": {
+      "kb": 10,
+      "legacy": 1
+    },
+    "app/open-houses/page.tsx": {
+      "kb": 10,
+      "legacy": 1
+    },
+    "app/oregon/[city]/page.tsx": {
+      "kb": 11,
+      "legacy": 1
+    },
+    "app/our-homes/page.tsx": {
+      "kb": 8
+    },
+    "app/page.tsx": {
+      "kb": 16
+    },
+    "app/parks/[slug]/page.tsx": {
+      "legacy": 2,
+      "kb": 7
+    },
+    "app/parks/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/price-drops/[city]/page.tsx": {
+      "legacy": 3,
+      "primitives": 1,
+      "kb": 11
+    },
+    "app/price-drops/page.tsx": {
+      "legacy": 2,
+      "kb": 11
+    },
+    "app/privacy/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/pulse/page.tsx": {
+      "kb": 6
+    },
+    "app/reports/[slug]/page.tsx": {
+      "kb": 6
+    },
+    "app/reports/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/reports/sales/[city]/[period]/page.tsx": {
+      "legacy": 1,
+      "kb": 5
+    },
+    "app/resources/page.tsx": {
+      "kb": 6
+    },
+    "app/reviews/page.tsx": {
+      "kb": 6
+    },
+    "app/schools/[slug]/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/schools/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
+    "app/search/[...slug]/page.tsx": {
+      "kb": 1,
+      "primitives": 1,
+      "legacy": 2
+    },
+    "app/search/page.tsx": {
+      "kb": 2
+    },
+    "app/sell/page.tsx": {
+      "legacy": 4,
+      "kb": 7
+    },
+    "app/sell/valuation/page.tsx": {
+      "legacy": 1,
+      "primitives": 1,
+      "kb": 6
+    },
+    "app/site-index/page.tsx": {
+      "kb": 4
+    },
+    "app/subdivisions/[slug]/page.tsx": {
+      "explore": 2,
+      "kb": 9,
+      "legacy": 2
+    },
+    "app/team/[slug]/edit/page.tsx": {
+      "legacy": 1
+    },
+    "app/team/[slug]/page.tsx": {
+      "legacy": 2,
+      "kb": 11
+    },
+    "app/team/page.tsx": {
+      "legacy": 2,
+      "kb": 11
+    },
+    "app/terms/page.tsx": {
+      "primitives": 1,
+      "legacy": 1
+    },
+    "app/tools/appreciation/page.tsx": {
+      "kb": 6
+    },
+    "app/tools/mortgage-calculator/page.tsx": {
+      "kb": 6
+    },
+    "app/tools/rental-property-calculator/page.tsx": {
+      "kb": 6
+    },
+    "app/videos/page.tsx": {
+      "legacy": 2,
+      "kb": 6
+    },
+    "app/zip/[zip]/page.tsx": {
+      "kb": 13,
+      "legacy": 2
+    }
+  }
+}
