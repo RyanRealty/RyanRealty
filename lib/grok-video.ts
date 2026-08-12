@@ -6,7 +6,7 @@
 
 const XAI_VIDEOS_URL = 'https://api.x.ai/v1/videos/generations'
 const XAI_VIDEO_STATUS_URL = 'https://api.x.ai/v1/videos'
-const MODEL = 'grok-imagine-video'
+const MODEL = 'grok-imagine-video-1.5'
 const DEFAULT_DURATION = 10
 const POLL_INTERVAL_MS = 5000
 const POLL_TIMEOUT_MS = 10 * 60 * 1000 // 10 minutes
@@ -16,7 +16,7 @@ export type FlyoverVideoOptions = {
   prompt: string
   duration?: number
   aspect_ratio?: '16:9' | '9:16' | '1:1'
-  resolution?: '720p' | '480p'
+  resolution?: '720p' | '480p' | '1080p'
 }
 
 /**
@@ -83,7 +83,7 @@ export type ImageToVideoOptions = {
   /** Duration in seconds (1–15). Default 5; use 3–8 for short hero clips. */
   duration?: number
   aspect_ratio?: '16:9' | '9:16' | '1:1'
-  resolution?: '720p' | '480p'
+  resolution?: '720p' | '480p' | '1080p'
 }
 
 const IMAGE_TO_VIDEO_DURATION = 5

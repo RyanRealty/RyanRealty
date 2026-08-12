@@ -5,7 +5,7 @@
  */
 
 const XAI_IMAGES_URL = 'https://api.x.ai/v1/images/generations'
-const MODEL = 'grok-imagine-image'
+const MODEL = 'grok-imagine-image-quality'
 
 export type GrokImageOptions = {
   /** e.g. "Professional real estate banner for Bend, Central Oregon, wide landscape, no text" */
