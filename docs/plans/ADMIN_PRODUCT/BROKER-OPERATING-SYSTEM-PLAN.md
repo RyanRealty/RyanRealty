@@ -1,7 +1,7 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.8 plan. D1–D9 locked. Plan itself adversarially audited. Technical calls are agent-made. Complete enough to build A3/A4/A1 — not a finished OS.
+**Status:** v0.9 plan. D1–D10 locked. Plan itself adversarially audited. Technical calls are agent-made. Complete enough to build A3/A4/A1 — not a finished OS.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -47,7 +47,7 @@ if the call is wrong.
 
 **Matt still decides (stop):** outbound to real people (the actual send), money/ads, OAuth logins
 he must click, license/forms, named-artifact taste ("does this packet blow them
-away"). Product meaning that is still open: none of D1–D9. New product meaning
+away"). Product meaning that is still open: none of D1–D10. New product meaning
 gets a plain-language question, then a lock.
 
 **Agent decides (do not stop):** atom vs pattern, which quarry piece, schema/join,
@@ -112,6 +112,9 @@ A1–A30 attacked the stacked prompts. They did not attack the plan that grew ou
 | A40 | **Evidence is stale.** TC count = July 2026. Social census = 2026-08-08. | Building G1/B1 on a dead token or a dead envelope count is theater. | Re-probe before G1 or B1. Not a reason to keep planning. |
 | A41 | **No named exemplar for the expired or buyer packet.** Tumalo is a seller CMA. | C1/A5 will stall on "does this blow them away?" | Correct stall. Matt taste-stops those artifacts. Do not invent a beauty gate in code first. |
 | A42 | **Return-visit is FUB-keyed.** `fub_legacy_id` is a historical register. | D3 that only fires for FUB-era people misses newsletter buyers. | Wake keys `crm_people.id` (and session identity). FUB id is quarry, not the join. |
+| A43 | **A model zoo is the opposite of streamlined.** Replicate Kling/Hailuo/Luma/Veo/Wan/Seedance, Vertex Veo/Imagen, Fal, Synthesia, plus Grok Imagine — producers pick at random or copy Tumalo. May 2026 audit: the zoo was billed and almost unused. | A new broker cannot "just post." Agents cannot be expert in eight video APIs. | **D10.** One generative stack: Grok Imagine via `XAI_API_KEY`. Park the zoo. |
+| A44 | **Imagine is not Remotion.** 4-pillars scout (2026-05-03): Grok Video re-painted brand-locked vector stills (palette drift, cartoon outlines). Auto slop check passed; the look failed. | Baking numbers or Amboqia into generated frames will lie. | Imagine generates pixels. Remotion (and list-kit compositors) own exact type, live numbers, brand-locked motion. Fallback when Imagine drifts: still + Remotion. |
+| A45 | **A generated house is not the listing.** Photoreal AI "this home" is slop and a license hole. | First listing video that isn't 123 Main is a beauty and truth failure. | Listing motion = Imagine **image-to-video of the real MLS photo**. Never text-to-video a fake exterior and caption it as the property. |
 
 **v0.8 verdict:** The plan is complete as a **plan of record for meaning**. It is not a finished brokerage OS, and it was not fully audited until this pass. Further constitution is the failure mode. The best outcome now is to build A3/A4/A1 against these dispositions, not to add Loop H.
 
@@ -191,6 +194,8 @@ Google Business Profile is first-class. Organic social is first-class. Neither i
 GBP is one brokerage profile. Brokers do not each get a Google Business Profile.
 
 That is Loop A applied to presence: recommend → yes → do it → record. Draft-first still binds: the first yes is on the *calendar* (or the standing week-grant). It does not invent a silent publisher.
+
+**How posts get made (D10):** one generative stack — **Grok Imagine** (image + video) on `XAI_API_KEY`. Not Kling, not Veo, not Hailuo, not Synthesia. List-kit still orchestrates the listing kit. Imagine is the camera. Remotion and the Tumalo compositors are the type/data layer. See §7f.
 
 Per channel means **variants**, not one caption sprayed. Instagram is not LinkedIn is not a GBP local post. Parked platforms stay parked.
 
@@ -273,11 +278,16 @@ is the thing we replace.
 | Saved search / alerts | `listing-alert-care`, `save-and-return.*` | Other buyer doors + return loop |
 | Portal | `save-and-return.portal` | Saved homes, alerts, viewing trail bound to identity |
 | CMA / expired-audit / BPO | `lib/cma/build.ts`, `expired-audit.ts`, county/site intel | Know-this-home engine |
-| List-kit | `social_media_skills/list-kit/SKILL.md` | How we actually market a listing — generate half of Loop G |
+| Grok Imagine | `lib/grok-image.ts`, `lib/grok-video.ts`, `XAI_API_KEY` | **D10 — the generative camera.** Upgrade wrappers to Imagine 1.5 / image-quality. Download temp URLs into our storage. |
+| List-kit | `social_media_skills/list-kit/SKILL.md` | Listing-launch orchestrator (video + flyers + carousel + single). Produce half of Loop G. |
+| List-kit compositors | `scripts/build_tumalo_v3_kit.py`, single-image / Pattern D | Type on **real** listing photos. Tumalo is the named exemplar. Not a video model. |
+| Remotion | `video/market-report`, `video/listing_reveal` | Data-true motion. Live numbers from DAL. Fallback when Imagine drifts. |
+| FFmpeg / first-frame | `scripts/check_first_frame.py` | Assembly, concat, ship-blocker. Keep. |
+| Replicate / Vertex / Fal / Synthesia video zoo | Kling, Hailuo, Luma, Veo, Wan, Seedance, avatar | **PARK.** Do not route new produce through them. |
 | Content-approve | `docs/plans/ADMIN_PRODUCT/processes/content-approve.md` | Draft → stamp → publish law. KEEP. Two queues today. |
 | Approval queue | `/admin/approval-queue` (+ `/admin/crm/approvals`) | Human yes. IA says this lands on Today. Phone-first is the gap. |
 | Publisher | `publisher-sweep` → `/api/social/publish` | Execute after yes. `humanApprovedAt` ≤ 7 days. GBP is a platform. |
-| GBP client | `lib/google-business-profile.ts` | Local posts + token refresh. Dead until Matt reconnects OAuth. |
+| GBP client | `lib/google-business-profile.ts` | Local posts + token refresh. Refresh token live as of 2026-08-12; access tokens last ~1h. |
 | Local SEO | `.claude/skills/local-seo/SKILL.md` | Map-pack audit → drafts through the same approval pipeline |
 | GBP metrics | `marketing_channel_daily` channel=`gbp` | Scoreboard once the token is live |
 | Social parks | `docs/plans/ENTERPRISE_MAP/matrix/SOCIAL-PARKS.md` | RECONNECT vs PARK. Do not invent Threads/Nextdoor/Pinterest work. |
@@ -383,7 +393,13 @@ Until tokens are live, do not build a second publisher. Reconnect is the account
 
 **D9 — Public chart: atom inside Instrument, or a 7th pattern?** **LOCKED (agent, technical).** Atom inside Instrument. The six patterns stay closed. A trend lives under the big answer. A 7th pattern would reopen P6. Public families must not delete a working KB chart without a v3 replacement in the same change. Flattening a series to a figure is a defect.
 
-D1–D9 are locked. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. G4 and the public chart atom are unblocked on the decision.
+**D10 — What produces posts and video?** **LOCKED (Matt asked; agent: yes, one stack).** Grok Imagine is the only generative image/video model. `XAI_API_KEY`. Current models: `grok-imagine-image-quality` (stills + edits, up to 3 refs) and `grok-imagine-video-1.5` (text-to-video, image-to-video, reference-to-video, edit, extend, native audio). Duration 1–15s. Aspects 16:9 / 9:16 / 1:1 (and the rest the API names). 720p default; 1080p on t2v/i2v. Temp URLs get downloaded into our storage. Our wrappers (`lib/grok-image.ts`, `lib/grok-video.ts`) still name the old models — upgrade them, do not add a second client.
+
+Park: Replicate Kling / Hailuo / Luma / Veo / Wan / Seedance, Vertex Veo / Imagen, Fal as a parallel host, Synthesia avatars. Do not route new produce through them.
+
+Not Imagine (keep): Remotion for live numbers and brand-locked motion; list-kit compositors for type on real MLS photos; FFmpeg / first-frame; owned camera and drone. Listing motion is **i2v of the real photo**, never a generated house captioned as the property. If Imagine drifts (we already watched it re-paint vector stills), fall back to still + Remotion. Type and prices are composited in code, never baked into a prompt.
+
+D1–D10 are locked. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. Produce is Imagine (D10), not a model zoo.
 
 ---
 
@@ -408,7 +424,7 @@ Plus: **Look** — was this data surface opened in a real browser at 390 and 128
 Loop A extra: Queue / Yes / Wake (D3) / Person (who / next / now) / SMS (short).
 Loop B extra: Libraries / Anticipate / Fill / Send / File / Onboard.
 Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home) / Recommend / Packet beauty.
-Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / Post (timed) / Learn (measured) / Local pack (GBP) / Home (Today: do / socials / deals / modify).
+Loop G extra: Generate (Imagine, D10) / Variant (per channel) / Approve (one yes) / Post (timed) / Learn (measured) / Local pack (GBP) / Home (Today: do / socials / deals / modify).
 
 ### Scorecard (v0.8 — jobs, not code)
 
@@ -450,7 +466,7 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 6. **Seller first packet (C1):** one expired (or FSBO) message + deliverable that (a) proves we know the house, (b) shows how we would market **this** house. Still manual send. Matt taste.
 7. **Buyer see-back (D):** newsletter signup identifies the session; person shows homes/searches/scrolls.
 8. **Worth-copy inventory** (list path:line; public CTA rewrite is PUBLIC_PRODUCT).
-9. **Presence (G):** Matt reconnects brand GBP (and IG/FB if needed). One generate door. One yes. A live post we can open.
+9. **Presence (G):** Tokens are live (IG @ryanrealtybend; GBP refresh works). One generate door on Imagine (D10). One yes. A live post we can open.
 
 ### P2 — make it a brokerage, not a demo
 
@@ -486,6 +502,8 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 - A 7th public pattern (or a chart OS) instead of a v3 atom
 - A KPI wall that *is* the page
 - Flattening a time series to a single figure and calling it Instrument
+- Kling / Veo / Hailuo / Luma / Wan / Seedance / Synthesia / Fal as a second generative camera
+- A generated house captioned as the listing
 
 ### P4 — later
 
@@ -506,16 +524,17 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 | **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
 | **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0 | **Already in flight.** Do not start a second E1. See §7b live status. |
 | **F1** AI/GSC query battery | Those three example queries (and live GSC top queries) resolve to a citable Ryan Realty URL via Google and via `/llms.txt` + JSON-LD | Public session; ads still parked |
-| **G1** GBP live again | Matt reconnects OAuth. One approved GBP post (or photo batch) is visible on the live profile. Health cron reads. | Matt OAuth. Re-probe `google_business_profile_auth` first. |
-| **G2** Easy generate → post | Name a listing (or "GBP market update") → draft on Today → yes → live on Matt's primary IG (or brand FB / GBP). Same `humanApprovedAt` gate. | G1 tokens. Do not bypass the queue. |
+| **G1** GBP + IG live | IG @ryanrealtybend page token valid. GBP refresh token works (re-probe before a post). One approved post visible. | Tokens already in env. No new keys. |
+| **G2** Easy generate → post | Name a listing (or "GBP market update") → **Imagine produce** (D10) → draft on Today → yes → live on @ryanrealtybend (or brand FB / GBP). Same `humanApprovedAt` gate. | D10. Do not bypass the queue. Do not call Replicate. |
 | **G3** One week on a calendar | Copilot: "Hey Paul, want me to set up some ideas?" Week of per-channel drafts on Today. Yes → posts at `best_hours` (or a documented default until data exists). | G2. D7 locked: first week per-item, then 7-day grant. |
 | **G4** Broker connects own socials | Paul/Rebecca (or a new broker) OAuth from Settings: their IG, Facebook, LinkedIn (and later the rest of the live set). Calendar can post to *their* accounts as variants of the brand post. Own-book Today shows their social lane. | D8 locked. Do not stuff personal tokens into Matt's primary IG or the brand GBP row. |
+| **G5** Imagine is the camera | One listing still → Imagine i2v (1.5) → stored MP4 → draft on Today. Wrappers on `grok-imagine-video-1.5` / `grok-imagine-image-quality`. No Replicate call on the path. | D10. `XAI_API_KEY` already set. Matt taste on the clip. |
 | **V1** Chart inventory | Path:line of every public, admin, and packet surface that displays a series as type/table only, plus every live chart that was not browser-looked-at. | None. Planning/evidence. Do not migrate public charts in a broker session. |
 | **V2** One honest chart, looked at | One series (recommend: `/housing-market` trend or admin overview sparkline) is a real chart, 390 + 1280, figure reconciles to the line, source on screen. | Public half = public session (D9 locked: atom). Admin half can run here. |
 
 Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
-G1 can run the day Matt reconnects — it does not wait for A1. G2 shares Today's yes-path with A2; do not build a third approve button.
-G3 is the north star slice; it is not the first slice. Tokens and one live post come first or the calendar is a slideshow.
+G1 tokens are already live. G2/G5 share Today's yes-path with A2; do not build a third approve button. Produce is Imagine (D10).
+G3 is the north star slice; it is not the first slice. One live Imagine post comes first or the calendar is a slideshow.
 V1 can run in the planning pass. V2 public waits on the other process's barrel.
 
 ---
@@ -627,7 +646,7 @@ This is how Loop E streamlines instead of forking.
 Not a new marketing OS. The machine is:
 
 ```
-produce (brain / list-kit / calendar week)
+produce (Grok Imagine + list-kit compositors + Remotion for numbers)
   → per-channel variants
   → marketing_brain_actions ready
   → one yes (Today: "Hey Paul, want me to set up some ideas?")
@@ -639,8 +658,8 @@ produce (brain / list-kit / calendar week)
 
 **Production-ready is six proofs, in order:**
 
-1. **Tokens.** Re-probe auth tables. Matt reconnects brand GBP and **his primary Instagram** (plus brand Facebook / LinkedIn as they come back). Each broker later connects their own IG / Facebook / LinkedIn in Settings (G4). Agents do not log in as the broker. Checklist: `docs/plans/ENTERPRISE_MAP/matrix/SOCIAL-PARKS.md`. Never store Paul's token on Matt's IG row.
-2. **Generate is a calendar, not a chat scavenger hunt.** "Hey Paul, want me to set up some ideas?" produces a week of drafts that meet the beauty bar (Tumalo list-kit is the named exemplar). Steal mix ratios from `content-calendar.md`. Kill the Sheets/FUB door.
+1. **Tokens.** IG @ryanrealtybend page token is valid. GBP refresh token works (access tokens last ~1h; heartbeat or next call refreshes). Each broker later connects their own IG / Facebook / LinkedIn in Settings (G4). Never store Paul's token on Matt's IG row.
+2. **Generate is Imagine + a calendar, not a model zoo.** "Hey Paul, want me to set up some ideas?" produces a week of drafts. Stills and motion from Grok Imagine (D10). Type and prices from list-kit / Remotion. Beauty bar: Tumalo list-kit is the named exemplar. Kill the Sheets/FUB door. Do not call Kling/Veo/Hailuo.
 3. **Per channel is a variant.** Same idea, different format/hook/length. Never the same Reel on TikTok with a watermark. Parked platforms stay off the calendar.
 4. **Yes is the same yes as copilot.** One queue. Phone. Stamp lands `humanApprovedAt`. Kill and pause work. Stale >7 days re-approves. Collapse the second queue into Today. Standing week-grant is D7, not a silent default.
 5. **It actually posted, on time.** Open the live permalink. Row is `executed`. Schedule uses `best_hours` once sample_size is real; until then a documented Bend default (platform skill already names Tue–Thu 8am–4pm for IG) — labeled as default, not as "learned."
@@ -691,6 +710,93 @@ Public chart work is Loop E (barrel atom). Admin + packet charts are this plan. 
 
 ---
 
+## 7f. How we produce posts — Grok Imagine (D10, 2026-08-12)
+
+Matt: pare the video zoo back to one solution. Agent: **yes.** The zoo is why produce never got easy. One camera, one key, one expert path.
+
+### The stack (three layers, not eight models)
+
+| Layer | Job | Tool | Not |
+|---|---|---|---|
+| **Camera** | Generate or animate pixels | **Grok Imagine** (`XAI_API_KEY`) | Kling, Veo, Hailuo, Luma, Wan, Seedance, Fal, Synthesia |
+| **Type / data** | Exact words, live numbers, brand-locked motion | List-kit compositors (Tumalo) + **Remotion** | Baking prices or Amboqia into an Imagine prompt |
+| **Assembly** | Concat, first-frame, store | FFmpeg + our buckets | Leaving xAI temp URLs live |
+
+Owned drone / listing photos / MLS stills are **source frames**, not a fourth generative vendor.
+
+### Imagine API (be expert in this — current as of 2026-08)
+
+Docs: `https://docs.x.ai/developers/model-capabilities/imagine`
+
+**Auth:** `XAI_API_KEY` (already in env). Direct xAI API, not Fal as a host.
+
+**Image** — `POST https://api.x.ai/v1/images/generations` and `/v1/images/edits`
+- Model: `grok-imagine-image-quality` (quality stills; `grok-imagine-image` is the cheaper draft). Our `lib/grok-image.ts` still says `grok-imagine-image` — upgrade.
+- Text-to-image. Edits with up to **3** reference images (URL, data URI, or Files API `file_id`).
+- `response_format: b64_json` so we store it. Grok URLs are temporary.
+- Aspects we use: `1:1` (IG feed), `4:5` if the API names it, `9:16` (stories/reels still), `16:9` (YouTube/GBP). Default feed `1:1`.
+
+**Video** — `POST https://api.x.ai/v1/videos/generations`, poll `GET https://api.x.ai/v1/videos/{request_id}`
+- Model: `grok-imagine-video-1.5` (native audio, 1080p on t2v/i2v). Our `lib/grok-video.ts` still says `grok-imagine-video` — upgrade.
+- Modes (one per request):
+  1. **Text-to-video** — `prompt` only. First frame is invented, then animated. Use for brand/abstract/b-roll that is **not** a specific house.
+  2. **Image-to-video** — `prompt` + `image` (`{ url }` or data URI). The still **is** the first frame. **This is the listing path.**
+  3. **Reference-to-video** — `prompt` + `reference_images` (and optional `reference_audios` preset `voice_id`). Guides look without locking frame one. Cap 720p.
+  4. **Edit** — restyle / add / remove in an existing clip. Duration follows the source (cap ~8.7s).
+  5. **Extend** — continue from the last frame; stitch into one clip. How we get past 15s without a second vendor.
+- Duration **1–15s**. Default social: **5–8s** 9:16 720p. Don't spend 15s until the 5s take is good.
+- Resolution: `480p` (scout) / `720p` (ship) / `1080p` (t2v + i2v on 1.5). Reference-to-video and edit cap at 720p.
+- Aspect: `16:9`, `9:16`, `1:1`, plus `4:3` / `3:4` / `3:2` / `2:3` on t2v. **i2v follows the source image** unless we override (override stretches — don't, crop the still first).
+- Native **audio** on 1.5, included. Preset voices via `reference_audios` (`voice_id` from the TTS roster, e.g. `eve`). Custom voice files are partner-only — we do not wait on that.
+- Status: poll until `done` (use `video.url`), or `failed` / `expired`. Timeout 10 min is already in `lib/grok-video.ts`.
+- **Download immediately** into Supabase/storage. Do not publish the xAI URL.
+
+**Cost (xAI list, 2026-08 — re-read pricing before a volume week):** image-quality ~$0.05/still; video-1.5 ~$0.08/s (480p) to ~$0.14/s (720p). A 6s 720p i2v is about a dollar. Scout at 480p. Iterate 3–10 takes, pick one, then 720p. Money/ads stay Matt-gated; this is produce cost, not ad spend.
+
+### What to make with which mode
+
+| Post | Mode | Source | Overlay in code |
+|---|---|---|---|
+| Just listed / reel of **this** home | i2v | Best MLS exterior or hero photo | Address, price, beds/baths — list-kit type, never in the prompt |
+| Carousel / single still | Image edit or compositor | Real photos | Tumalo generators. Imagine may restyle a **non-listing** still, not replace the house |
+| Market / GBP update | Remotion if it has a number; Imagine t2v only for abstract motion under the number | DAL / GSC | The figure is Remotion or type |
+| Brand / lifestyle b-roll | t2v or ref2v | Brand stills we authored, or owned drone | No fake Cascades sold as Bend |
+| Talking head | Park Synthesia. If we need it later: Imagine ref2v + preset voice, still draft-first | Broker photo only with consent | Do not invent a person |
+| Longer than 15s | Extend from last frame, or FFmpeg concat of approved beats | Approved clips | First-frame gate on the stitch |
+
+### Hard rules (inviolable for produce)
+
+1. **The listing is the listing.** i2v the real photo. Never t2v a house and name an address.
+2. **Numbers and type are code.** Imagine is weak at exact lettering (we already failed a brand-locked vector scout, 2026-05-03). Prices, counts, CTAs, Amboqia — compositor or Remotion.
+3. **If it drifts, don't ship it.** Palette shift, extra people, wrong roofline, cartoon outlines → still + Remotion fallback. Auto duration checks are not the look.
+4. **Draft-first.** Imagine output is a draft on Today. `humanApprovedAt` still required.
+5. **Beauty bar.** If it would not make them want to see what this is about, it does not go out. Tumalo kit remains the still exemplar. Named video exemplar: first Imagine i2v Matt says yes to (G5).
+6. **Fair housing.** Place not people. No generated "buyers" as the hook.
+7. **One client.** Upgrade `lib/grok-image.ts` / `lib/grok-video.ts`. Do not add `lib/kling.ts`. Producers that still call Replicate i2v (`prepare-tour.ts` Wan, etc.) get pointed at Imagine on the next touch.
+
+### What we are not doing
+
+- Becoming a film studio with eight APIs.
+- Using Imagine on the public site as fake MLS photography (public creative-brain still: AI is a stylized layer, camera is truth). Social listing posts use **real photos in motion**, which is different and allowed.
+- Waiting on ElevenLabs vs Imagine native audio as a new OS. Remotion VO can keep Victoria until a produce pass replaces it; new social clips prefer Imagine's native track so we don't mix two VO vendors on one Reel.
+- Calling Fal's hosted Imagine. We already have the xAI key.
+
+### Expert produce loop (the actual craft)
+
+1. Pull the listing (or the week theme) once. Same facts as list-kit.
+2. Pick the still (MLS hero, owned drone still, or a brand frame we authored). Crop to the aspect.
+3. Scout: 2–4 Imagine takes at 480p, 5s, tight motion prompt (locked-off or slow push, no new objects, no text).
+4. Look at them. Pick one or fall back.
+5. Ship take: 720p, 5–8s, 9:16 for IG/FB Reels, 1:1 still for feed, 16:9 for GBP/YouTube.
+6. Composite type/price in the approved generator.
+7. First-frame gate. Store the MP4. Queue on Today.
+8. Caption is short, clear, no extra stuff (SMS lock's cousin). Per-channel variant, not the same file twice (D8).
+9. Matt/broker yes. Publish.
+
+Prompts are cinematography (lens, move, light), not adjectives. Negative: no text, no extra people, no logo, no changing the house. Iterate in the API, not in a new tool.
+
+---
+
 ## 8. Collision + evidence rules
 
 - No product code in the planning pass unless Matt says go.
@@ -706,10 +812,11 @@ Public chart work is Loop E (barrel atom). Admin + packet charts are this plan. 
   + GBP are Loop G, not ads.
 - **Loop F** uses existing `earn-search-traffic`, `measure-search-traffic-gsc`,
   `/llms.txt`, G34/G39. Do not build a parallel AI site.
-- **Loop G** uses `content-approve`, list-kit, `/api/social/publish`, local-seo,
+- **Loop G** uses `content-approve`, list-kit, Grok Imagine (D10), `/api/social/publish`, local-seo,
   `getFormatPerformance`, and the content-calendar *mix* (not its Sheets door).
   Do not build a second publisher. Do not post without `humanApprovedAt`.
-  Brand reconnect is Matt OAuth. Per-broker connect is that broker's OAuth.
+  Do not route new video through Replicate/Vertex/Fal/Synthesia.
+  Brand IG is @ryanrealtybend (page token live). Per-broker connect is that broker's OAuth.
 - Dirty public tree (`app/**/_v3/`, place/market pages, `components/site/v3`):
   inventory, do not edit, do not `git add -A`. Commit this plan with pathspecs.
 - **Charts:** public atom = public session. Admin/packet charts = this plan.
@@ -737,7 +844,7 @@ cutover (D2); then it is not the SoR.
 
 WHO DECIDES: Matt — OAuth clicks, money/ads, license, named-artifact taste,
 and product meaning asked in plain language. Agent — technical shape, recorded
-here. Do not stop to ask atom-vs-pattern. D1–D9 are locked.
+here. Do not stop to ask atom-vs-pattern. D1–D10 are locked.
 
 NORTH STAR — seven loops, one person record, one generation of code
   A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
@@ -768,6 +875,7 @@ NORTH STAR — seven loops, one person record, one generation of code
     connects their own IG / Facebook / LinkedIn (D8 locked). GBP is one brokerage
     profile. Today is the broker home (do / socials / deals / modify).
     Process exists (produce → approve → publisher-sweep → /api/social/publish).
+    Produce = Grok Imagine (D10) + list-kit type + Remotion for numbers. Park the video zoo.
     Production-ready = tokens + calendar yes + live posts + measured.
     Paid ads stay parked. Threads/Nextdoor/Pinterest stay parked.
 
@@ -795,10 +903,10 @@ disk, then the skills that match the loop you are scoring.
 
 Score every locked process: best / simple / clear / e2e / funnel / chart / look — on the job, then
 say whether the current how should be kept or replaced.
-Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/A3/A4/A5/C1/D1/B1/E1/F1/G1/G2/G3/G4/V1/V2.
+Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/A3/A4/A5/C1/D1/B1/E1/F1/G1/G2/G3/G4/G5/V1/V2.
 Stop for Matt on OAuth logins, money/ads, license, and named-artifact taste.
 Technical shape is decided in this file toward the goals. Do not ask. Record it.
-D1–D9 are locked. Scorecard is in this file. First build is A3 person header, A4 rewrite of queueReturnVisitAlert, A1 queue. Then wait only on those stop classes.
+D1–D10 are locked. Scorecard is in this file. First build is A3 person header, A4 rewrite of queueReturnVisitAlert, A1 queue. Produce is Grok Imagine. Then wait only on those stop classes.
 ```
 
 ---
@@ -816,3 +924,4 @@ D1–D9 are locked. Scorecard is in this file. First build is A3 person header, 
 - 2026-08-12 — Who decides: Matt will not answer technical shape. Agent makes the best call toward the goals and records it. D9 LOCKED: v3 chart atom inside Instrument, not pattern 7. Also agent-locked D4 (newsletter capture), D5 (worth-language in title/meta only), D6 (GBP+IG+FB+LI live; YT/X reconnect; Threads/ND/Pin parked), D7 (first week per-item, then 7-day grant). Stop only on D1–D3, OAuth, money, license, named taste.
 - 2026-08-12 — v0.7 D1–D3 locked. D2: SkySlope is live TMS until in-house is dialed, then cut over. D3: looking-at-a-home wakes the broker like a new lead (identified home, not every scroll). D1 (agent): ask first in a short text, then a buyer packet — never a seller CMA. SMS lock: clear, transparent, concise. Wake = `{name} is looking at {address}.` Ask = noticed the home; want a comparison? Person header: who they are, next step, what they're doing now — not in notes. Slices A3/A4/A5.
 - 2026-08-12 — v0.8 adversarial audit of the *plan* (not only the brief). Complete as meaning, not as a built OS. Return-visit alert already exists and is the wrong text (A32). Lead ask does not narrate the watch (A33). Buyer packet ≠ lender BPO (A34). Person header has sources, not typed fields (A35). Cutover is a checklist (A37). First build is A3/A4/A1. Scorecard filled. Stop writing constitution.
+- 2026-08-12 — v0.9 D10: Grok Imagine is the only generative camera (`grok-imagine-video-1.5` + `grok-imagine-image-quality`). Park Kling/Veo/Hailuo/Luma/Wan/Seedance/Fal/Synthesia. Keep Remotion + list-kit compositors + FFmpeg. Listing motion = i2v of the real MLS photo. §7f is the produce canon. Slice G5. IG @ryanrealtybend already live.

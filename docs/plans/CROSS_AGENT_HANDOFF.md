@@ -1,8 +1,26 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.8 (Grok 2026-08-12) — plan audited. Complete as meaning. First build A3/A4/A1. Rewrite return-visit alert. Do not mix with 11F or leftover public WIP.**
+> **NEWEST SUBJECT: Broker OS plan v0.9 (Grok 2026-08-12) — D10 Grok Imagine is the camera. Park the video zoo. First build still A3/A4/A1. Do not mix with 11F or leftover public WIP.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.8
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.9
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**No product code this session.** D1–D10 locked.
+
+**D10:** Grok Imagine is the only generative image/video stack (`XAI_API_KEY`,
+`grok-imagine-video-1.5` + `grok-imagine-image-quality`). Park Kling/Veo/Hailuo/
+Luma/Wan/Seedance/Fal/Synthesia. Keep Remotion + list-kit compositors + FFmpeg.
+Listing motion = image-to-video of the real MLS photo. Produce canon: §7f.
+
+**First build (when Matt says go):** A3 person header, A4 wake rewrite, A1 queue.
+G5 (Imagine i2v of one listing still) when we produce, not before the copilot.
+
+**Still Matt:** say go; money/ads; license; named-artifact taste (packets + first
+Imagine clip).
+
+**Loop E:** do not `git add -A`.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.8
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **No product code this session.** D1–D9 locked. Plan itself audited (A31–A42).
