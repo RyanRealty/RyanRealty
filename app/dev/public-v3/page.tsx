@@ -27,7 +27,7 @@ export default async function PublicV3PrototypePage() {
   // confident empty state (CLAUDE.md section 0 + the swallowed-errors-lie rule).
   const [pulse, tiles] = await Promise.all([
     getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
-    getListingTiles({ citySlug: 'bend', status: 'active', limit: 6 }),
+    getListingTiles({ city: 'Bend', status: 'active', limit: 6 }),
   ])
 
   return (
@@ -40,8 +40,8 @@ export default async function PublicV3PrototypePage() {
               medianListPrice: pulse.medianListPrice,
               monthsOfSupply: pulse.monthsOfSupply,
               medianDaysToPending: pulse.medianDaysToPending,
-              soldCount30d: pulse.soldCount30d,
-              updatedAt: pulse.updatedAt,
+              soldCount30d: pulse.closedLast30Days,
+              updatedAt: pulse.refreshedAt,
             }
           : null
       }
