@@ -1,13 +1,14 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.1 plan. Not a lock. Matt adversarially reviews the prompt + this file.
+**Status:** v0.4 plan. Not a lock. Matt adversarially reviews the prompt + this file.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
 
 This is the plan behind the broker OS prompt: copilot, known-seller streams,
-buyer/newsletter, Closings/forms, and a designer's bar on everything we send.
+buyer/newsletter, Closings/forms, public site, acquisition/truth, GBP + social
+publish, and a designer's bar on everything we send.
 
 ---
 
@@ -62,6 +63,8 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A16 | **Two sessions, one north star.** Public grind and broker-OS grind can run in parallel if they do not share files. | Mixed commits (11F inbox vs public v3 vs this plan) strand work. | Public session owns `app/` public routes + `components/site/v3` + `docs/plans/PUBLIC_PRODUCT/`. Broker session owns admin + packets + TC + this file. Voice/beauty/valuation language is shared law. |
 | A17 | **Ads now would fork the site.** Demand loop and LPs exist. Matt: do not spend a lot of time on ads right now. | A paid-creative grind will reopen old LPs and skip the spines. | Park ads. When they return, they hit Value my home / listing / newsletter — no new funnel. |
 | A18 | **"Dialed" without a scoreboard is a slogan.** GSC ingest, site_signal, ci:ai-crawler-access, ci:ai-structured-data already exist. | Rebuilding analytics is bloat; leaving them unread is the real hole. | Giant review: every page/process scored on funnel + GSC/AI query tests. Steal working ingest. Replace dashboards nobody uses. |
+| A19 | **The other process is already grinding Loop E.** Public Product OS is in-flight on this working tree (Places/Market family `_v3/` modules, migration-recipe, gate repairs). `state.json` / `work-queue.json` are stale (still say first Market attempt reverted). | Starting E1 here, polishing KB, or `git add -A` will strand or smash that session. | Loop E is owned by that session. Broker OS does not migrate public families. Trust git + uncommitted progress, not the stale queue. |
+| A20 | **GBP + organic social were missing from v0.3.** Process exists (`content-approve` → approval-queue → `publisher-sweep` → `/api/social/publish`, plus local-seo / GBP playbook). Last census (2026-08-08): GBP/LI/X/YT OAuth expired; measured=0; ready backlog ~397 mostly not posts. | "Easy generate and post" is a product job, not a new stack. Paid ads stay parked. | Loop G. Production-ready = tokens live + one generate door + one yes + actually posts. Re-probe tokens before G1. |
 
 **Verdict:** The brief is right. The failure mode is either boiling the ocean
 **or** protecting yesterday's code. Sequence the loops. Keep only the machines
@@ -118,6 +121,19 @@ Every process and every page is also a funnel question: **how does this drive so
 
 If the assistant cannot cite a Ryan Realty page that actually answers that, the page, the schema, or `llms.txt` is wrong. Fix the class. Do not build a parallel "AI site."
 
+### Loop G — Presence (GBP + organic social)
+
+Google Business Profile is first-class. Organic social is first-class. Neither is a footnote of SEO, and neither is paid ads (those stay parked).
+
+**It has to be very, very easy to generate social content and then post it.** The process is already in place. Production-ready means a broker can name a listing or a topic, see a draft that meets the beauty bar, say yes, and it actually lands on the live profiles (GBP, Instagram, Facebook, then the rest) with a record in the brain.
+
+Two GBP jobs, one loop:
+
+1. **Local pack** — NAP, categories, services, photos, reviews, Q&A, citations. Map Pack for "real estate agent Bend" is often worth more than a Page 1 organic rank. Runbook: `.claude/skills/local-seo/SKILL.md`. Why: `marketing_brain_skills/platforms/gbp/SKILL.md`.
+2. **Posts** — same generate → approve → publish path as IG/FB. `publishGoogleBusinessLocalPost` is already a platform on `/api/social/publish`.
+
+Loop F still scores "how does this drive someone in" (including map-pack queries). Loop G owns the operating machine so presence does not die in a reconnect checklist.
+
 ### Voice lock — valuation
 
 Never: "What's my home worth?" / "What is your home worth?"
@@ -148,7 +164,14 @@ is the thing we replace.
 | Saved search / alerts | `listing-alert-care`, `save-and-return.*` | Other buyer doors + return loop |
 | Portal | `save-and-return.portal` | Saved homes, alerts, viewing trail bound to identity |
 | CMA / expired-audit / BPO | `lib/cma/build.ts`, `expired-audit.ts`, county/site intel | Know-this-home engine |
-| List-kit | `social_media_skills/list-kit/SKILL.md` | How we actually market a listing |
+| List-kit | `social_media_skills/list-kit/SKILL.md` | How we actually market a listing — generate half of Loop G |
+| Content-approve | `docs/plans/ADMIN_PRODUCT/processes/content-approve.md` | Draft → stamp → publish law. KEEP. Two queues today. |
+| Approval queue | `/admin/approval-queue` (+ `/admin/crm/approvals`) | Human yes. IA says this lands on Today. Phone-first is the gap. |
+| Publisher | `publisher-sweep` → `/api/social/publish` | Execute after yes. `humanApprovedAt` ≤ 7 days. GBP is a platform. |
+| GBP client | `lib/google-business-profile.ts` | Local posts + token refresh. Dead until Matt reconnects OAuth. |
+| Local SEO | `.claude/skills/local-seo/SKILL.md` | Map-pack audit → drafts through the same approval pipeline |
+| GBP metrics | `marketing_channel_daily` channel=`gbp` | Scoreboard once the token is live |
+| Social parks | `docs/plans/ENTERPRISE_MAP/matrix/SOCIAL-PARKS.md` | RECONNECT vs PARK. Do not invent Threads/Nextdoor/Pinterest work. |
 | Prospecting worklist | `/admin/prospecting`, first-touch templates | Expired/FSBO stream machine |
 | TC foundation | `tc_*`, envelope engine, `/admin/forms`, ingest | Closings — unused in production |
 | SkySlope | Files API + Forms library API + Chrome session | Baseline + form blanks |
@@ -195,6 +218,17 @@ is the thing we replace.
 - No deliverable litmus. Voice gates ≠ design gates.
 - Two visual languages (public vs admin v2). Outbound packets need a third: print/email craft, with named exemplars.
 
+### Presence (G)
+
+- Pipeline is real. Production is not. Last live census 2026-08-08 (re-probe before G1): GBP / LinkedIn / YouTube / X **EXPIRED**; TikTok was valid only until 2026-08-09; Threads / Nextdoor / Pinterest **PARKED**. Meta page tokens exist (INT-007 amber) — ads parked, organic IG/FB still in scope.
+- Generate is chat/skill (`run the brain`, `direct produce`, list-kit), not a one-tap admin door. Content destination is "rare" and is blog/guides/library, not "make a post."
+- Approve is two queues, desktop-shaped, ~397 `ready` rows that are mostly CMA/ops not posts. Phone yes (Q3 must-have) is the same gap as Loop A.
+- Publish can fail silently (row stays `approved`). Measurement class is `measured=0` (CAP-015) — executed rows lack the identity the loop expects.
+- GBP health cron / digest / photo pipeline are useless until OAuth is live. Name-stuffing the GBP title is a suspension trigger — never.
+- List-kit already is the listing-launch generate path (video + flyers + carousel + single). It is not wired as the easy yes→post for a new broker.
+
+Until tokens are live, do not build a second publisher. Reconnect is Matt OAuth. Agents prepare the checklist only.
+
 ---
 
 ## 4. Open decisions (Matt)
@@ -212,7 +246,10 @@ is the thing we replace.
 
 **D5 — Worth-language in SEO titles.** Keep demand phrasing in `<title>`/meta only?
 
+**D6 — Production-ready social set.** Recommend: GBP + Instagram + Facebook first (daily presence). Then reconnect LinkedIn / YouTube / X. TikTok if the token is still alive. Threads / Nextdoor / Pinterest stay parked. Confirm.
+
 Until D1–D3 are answered, build the queue + stitch + ask-first path. Do not auto-send a buyer CMA.
+Until D6 is answered, G1 is GBP + one Meta surface, not every platform.
 
 ---
 
@@ -235,6 +272,7 @@ If it does not, it is a candidate to cut or merge.
 Loop C extra: Know / Market / Message / Voice / True / Stream.
 Loop B extra: Libraries / Anticipate / Fill / Send / File / Onboard.
 Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home) / Recommend / Packet beauty.
+Loop G extra: Generate (one door) / Beauty / Approve (one yes) / Post (live) / See (it went out) / Local pack (GBP).
 
 ---
 
@@ -254,6 +292,7 @@ Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home
 3. **Seller first packet (C):** one expired (or FSBO) message + deliverable that (a) proves we know the house using existing site intel, (b) shows how we would market **this** house (list-kit / sell plan, not generic services). Still manual send.
 4. **Buyer see-back (D):** newsletter signup identifies the session; person shows homes/searches/scrolls; copilot can say "looking at {address}" and offer ask-or-send (blocked on D1).
 5. **Worth-copy inventory** (list path:line; public CTA rewrite is PUBLIC_PRODUCT, not this file's code).
+6. **Presence (G):** Matt reconnects GBP (and IG/FB if needed). One generate door that produces a real draft. One yes on Today. `publisher-sweep` posts it. A live GBP post or IG/FB post exists that we can open. Not a new brain.
 
 ### P2 — make it a brokerage, not a demo
 
@@ -263,6 +302,9 @@ Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home
 - Newsletter beauty pass against the approved shell; nothing auto-sends unreviewed
 - Assigned-broker on visitor/copilot pings
 - Dual-intent people (buyer newsletter + expired owner) stay one person
+- One approval surface (Today), not `/admin/approval-queue` vs `/admin/crm/approvals`
+- List-kit → approve → post is the listing-launch path a new broker can run
+- GBP local-pack: NAP exact, review replies in Matt's voice, posts 2–3/week through the same queue
 
 ### P3 — strip bloat
 
@@ -273,6 +315,9 @@ Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home
 - A second event log that duplicates facts we already capture truthfully
 - SkySlope archive/folder clunk
 - Any shipped path that exists only because it shipped
+- A second social publisher, Buffer-as-SoR, or "just post from chat" that bypasses `humanApprovedAt`
+- Threads / Nextdoor / Pinterest connect work while GBP cannot post
+- Treating the ~397 `ready` CMA/ops rows as a social backlog
 
 ### P4 — later
 
@@ -288,10 +333,13 @@ Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home
 | **A2** Yes → send one SMS | Timeline `sms_out`, suppression held, sequence paused | Matt yes on that send |
 | **C1** One expired blow-away packet | Message + PDF on a real expired in-scope listing, manual send, no generic services hero | Matt review of packet |
 | **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
-| **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0 | Separate from A–D. Do not mix file sets. |
+| **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0 | **Already in flight.** Do not start a second E1. See §7b live status. |
 | **F1** AI/GSC query battery | Those three example queries (and live GSC top queries) resolve to a citable Ryan Realty URL via Google and via `/llms.txt` + JSON-LD | Public session; ads still parked |
+| **G1** GBP live again | Matt reconnects OAuth. One approved GBP post (or photo batch) is visible on the live profile. Health cron reads. | Matt OAuth. Re-probe `google_business_profile_auth` first. |
+| **G2** Easy generate → post | Name a listing (or "GBP market update") → draft on Today → yes → live IG/FB or GBP. Same `humanApprovedAt` gate. | G1 tokens. Do not bypass the queue. |
 
 Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
+G1 can run the day Matt reconnects — it does not wait for A1. G2 shares Today's yes-path with A2; do not build a third approve button.
 
 ---
 
@@ -310,8 +358,10 @@ language itself is wrong — amnesia allows that; a new OS does not).
 1. Open a **dedicated** session. First line: `run public product` (or
    `continue public OS`). That loads `.claude/skills/public-product-os/SKILL.md`
    and `docs/plans/PUBLIC_PRODUCT/SESSION_BOOT.md`.
-2. Orient from disk. Trust `state.json.phase` (today: `P9_ROLL`). Print the
-   top `work-queue.json` id before touching code.
+2. Orient from disk. Trust git + the bottom of `progress.txt`, then `state.json.phase`
+   (today: `P9_ROLL`). Print the top `work-queue.json` id **and verify it against
+   disk** — as of 2026-08-12 the queue still names the reverted Market attempt
+   and a chrome unit that already shipped. Do not obey a stale next-id.
 3. **One family per unit, ratchet must shrink, one commit, push, deploy
    READY, browser 390 + 1280.** Gate contracts for that route move in the
    **same** change (the lesson that reverted the first Market attempt).
@@ -332,10 +382,10 @@ AI/GSC query tests in Loop F. One defect class or one family per unit.
 Measure completed valuations week over week, not vibes. Never open
 "Public Product OS 2."
 
-**Parallelism:** a second session may grind broker OS (A–D) at the same time.
+**Parallelism:** a second session may grind broker OS (A–D + G) at the same time.
 Do not mix commits. Public session does not edit `app/admin`. Broker session
-does not migrate public families. Shared law: voice, Value my home, beauty
-bar, visitor identity stitch.
+does not migrate public families or touch in-flight `_v3/` work. Shared law:
+voice, Value my home, beauty bar, visitor identity stitch.
 
 ### Versioning (one generation, then increment)
 
@@ -364,6 +414,64 @@ the standing refine loop in
 docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loops E and F.
 ```
 
+### Live status of the other process (2026-08-12 — do not fight it)
+
+This is how Loop E streamlines instead of forking.
+
+**On `origin/main` (trust this over `state.json`):**
+- Phase is `P9_ROLL`. Process / IA / visual locked 2026-08-11.
+- `/housing-market` shipped on v3 (`b076e15b`). Chrome primitives are in the barrel. `ci:public-ui` ratchet is live.
+- `experience-rollout` is superseded. `PUBLIC_SITE_UX_OVERHAUL/` is evidence, not authority.
+
+**Stale on disk (do not obey):**
+- `docs/plans/PUBLIC_PRODUCT/state.json` still describes the *reverted* first Market attempt and names `p9-market-family-v2` as next.
+- `work-queue.json` still has only `p9-market-family-v2` and `p9-chrome-unit`. Chrome already shipped with `/housing-market`.
+
+**In flight on this working tree (another session, uncommitted):**
+- Places + rest-of-Market family: cities, neighborhoods, communities, zip, subdivisions, oregon city, pulse, months-of-supply, annual-review, central-oregon — page files modified, `_v3/` modules untracked.
+- `docs/plans/PUBLIC_PRODUCT/migration-recipe.md` staged — the executable procedure distilled from `b076e15b`. That is the streamline: broker OS does not rewrite it.
+- Gate repairs in the same change (months-of-supply one formatter, alert-capture disclosure, subdivision year clamp). Correctness, not a new visual language.
+- Sell spine / `app/dev/sell-film/` / `design_system/public-v2/` untracked. Also new files under `PUBLIC_SITE_UX_OVERHAUL/` — constitution says that folder is demoted. Do not join it. Do not `git add -A`.
+
+**What this means for broker OS:**
+- E1 is already being executed. A broker session that migrates a public family, edits `components/site/v3`, or "wraps the UI" is the third program A15 warned about.
+- Shared law only: voice, **Value my home**, beauty, visitor identity stitch, dual objectives + funnel.
+- Worth-copy inventory (P1.5) is a *list* from this plan. The public session owns the CTA rewrite.
+- When that session lands a family, Loop E's forever-refine and Loop F's query tests apply. Not before, and not by stealing the dirty files.
+
+**Parallelism that is actually safe:** A–D and G on admin / packets / TC / social tokens. E on public routes. Two sessions, disjoint paths, no mixed commits.
+
+---
+
+## 7c. Presence — how to make Loop G production-ready (Matt 2026-08-12)
+
+Not a new marketing OS. The machine is:
+
+```
+produce (brain / list-kit / "make a post")
+  → marketing_brain_actions ready
+  → one yes (Today / approval-queue)
+  → publisher-sweep
+  → /api/social/publish  (humanApprovedAt ≤ 7 days)
+  → live GBP / IG / FB / …
+```
+
+**Production-ready is four proofs, in order:**
+
+1. **Tokens.** Re-probe auth tables. Matt reconnects GBP (INT-009) and any expired social he wants in D6. Agents do not log into Google as Matt. Checklist only: `docs/plans/ENTERPRISE_MAP/matrix/SOCIAL-PARKS.md`.
+2. **Generate is one sentence.** "List kit for 123 Main" or "GBP post: Bend months of supply" produces a draft that meets the beauty bar (Tumalo list-kit is the named exemplar). If the current produce path makes the broker tap through chat + Python + a folder in `out/`, replace the *door*, keep the generators.
+3. **Yes is the same yes as copilot.** One queue. Phone. Stamp lands `humanApprovedAt`. Kill works. Stale >7 days re-approves. Collapse the second queue (`/admin/crm/approvals`) into Today — already the IA lock, not a new destination.
+4. **It actually posted.** Open the live GBP post or IG/FB permalink. Row is `executed`. Then fix measured=0 (CAP-015) so the loop can learn. Do not call it production-ready because the cron exists.
+
+**GBP continue (local pack, not only posts):**
+- Name stays **Ryan Realty**. No keyword suffix. Suspension takes weeks.
+- Phone 541.703.3095, address 115 NW Oregon Avenue, Bend, OR 97703 — exact NAP everywhere.
+- Review replies: Matt's 1:1 voice (`gbp_responses.md`). Draft-first.
+- Photos from the asset library, not stock. Weekly upload is a mutation → approve.
+- Map-pack queries sit on Loop F's scoreboard once the token can pull `marketing_channel_daily`.
+
+**Still inviolable:** draft-first, no invented numbers in a post, fair housing (place not people), ads parked.
+
 ---
 
 ## 8. Collision + evidence rules
@@ -377,9 +485,15 @@ docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loops E and F.
   vs current code. Code is evidence of what we tried, not a freeze.
 - Law is data (`TC_OREGON_COMPLIANCE.md`).
 - Draft-first forever. Silence is not approval.
-- Ads: parked. Do not open a paid-creative grind in this program.
+- Ads: parked. Do not open a paid-creative grind in this program. Organic social
+  + GBP are Loop G, not ads.
 - **Loop F** uses existing `earn-search-traffic`, `measure-search-traffic-gsc`,
   `/llms.txt`, G34/G39. Do not build a parallel AI site.
+- **Loop G** uses `content-approve`, list-kit, `/api/social/publish`, local-seo.
+  Do not build a second publisher. Do not post without `humanApprovedAt`.
+  Reconnect is Matt OAuth.
+- Dirty public tree (`app/**/_v3/`, place/market pages, `components/site/v3`):
+  inventory, do not edit, do not `git add -A`. Commit this plan with pathspecs.
 
 ---
 
@@ -400,7 +514,7 @@ already the simple machine, replace what is in the way. "We already have it"
 is not a veto. Still inviolable: draft-first, suppression, no invented
 numbers, no prior-agent blame, licensed forms, SkySlope is not the SoR.
 
-NORTH STAR — six loops, one person record, one generation of code
+NORTH STAR — seven loops, one person record, one generation of code
   A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
   B Closings: licensed forms → fill from deal → send → file. SkySlope is live baseline
     (browser+API, read-only). In-house should become the file we actually use. Soon.
@@ -410,13 +524,18 @@ NORTH STAR — six loops, one person record, one generation of code
     Back office sees every home they viewed, searches they saved, browse/scroll/click.
     Copilot: "So-and-so is looking at this home" → send or ask to send a packet.
   E Public site: wrap the locked v3 UI across every public page (Public Product OS
-    P9 grind), then forever refine. Do not start a third redesign. Giant push =
-    `run public product` in a dedicated session until legacy pages hit zero.
+    P9 grind — already in flight; do not start a second session on those files),
+    then forever refine. Do not start a third redesign.
   F Acquisition and truth: every page/process scored on how it drives the funnel.
     SEO, GSC, analytics, JSON-LD, /llms.txt, every tool — dialed and used.
     AI assistants (ChatGPT, Claude, Grok, Perplexity) citing "best broker in Bend"
     or "3-bed 2-bath in Northwest Crossing" must land on a real answering page.
     Ads parked for now.
+  G Presence: Google Business Profile is first-class (local pack + posts).
+    Generate social content and post it must be very easy. Process exists
+    (produce → approve → publisher-sweep → /api/social/publish). Production-ready
+    = tokens live + one generate door + one yes + it actually posted.
+    Paid ads stay parked. Threads/Nextdoor/Pinterest stay parked.
 
 VERSIONING: one generation. Delete historical registers in the same commit that
 ships the new path. Ratchets are the version gate. Methodology versions stay
@@ -434,8 +553,8 @@ disk, then the skills that match the loop you are scoring.
 
 Score every locked process: best / simple / clear / e2e / funnel — on the job, then
 say whether the current how should be kept or replaced.
-Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1.
-Stop for Matt on D1–D5 in the plan. Then wait.
+Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1/G1/G2.
+Stop for Matt on D1–D6 in the plan. Then wait.
 ```
 
 ---
@@ -446,3 +565,4 @@ Stop for Matt on D1–D5 in the plan. Then wait.
 - 2026-08-12 — v0.1 implementation amnesia (Matt): existing code/process must not block the right, efficient loop. "Do not rebuild" demoted from freeze to quarry test. A5 rewritten. Paste prompt updated.
 - 2026-08-12 — v0.2 Loop E: public site joins the OS. Giant incremental push = grind existing Public Product OS P9 (do not start OS #3), then standing refine forever. How-to in §7b.
 - 2026-08-12 — v0.3 Loop F: funnel + SEO/GSC/analytics/AI citation as the giant review lens. Ads parked. Versioning = one generation, delete historical registers as the new path ships. LLM acceptance queries recorded.
+- 2026-08-12 — v0.4 Loop G presence + live Loop E status. Public Product OS is in-flight on this tree (Places/Market `_v3/`, migration-recipe); broker OS does not touch it. GBP is first-class; organic social generate→approve→post must be production-ready on the existing pipeline (tokens + one door + one yes + live permalink). D6 added. Paid ads still parked.

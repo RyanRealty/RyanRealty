@@ -1,8 +1,33 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0 (Grok 2026-08-12) — `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F inbox/settings. Admin Product phase still P12; locks stand.**
+> **NEWEST SUBJECT: Broker OS plan v0.4 (Grok 2026-08-12) — `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Loop G = GBP + organic social production-ready. Do not mix with 11F inbox/settings or in-flight public `_v3/` migrations. Admin Product phase still P12; locks stand.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.4
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**No product code this session.** v0.4 adds Loop G (GBP + organic social) and
+records live Loop E status so we do not fight the public-product session.
+
+**Loop E (the other process), live:** Public Product OS is `P9_ROLL`. `/housing-market`
+is on v3 on main (`b076e15b`). `state.json` / `work-queue.json` are stale (still name
+the reverted Market attempt). This working tree has an uncommitted Places + rest-of-Market
+migration (`app/**/_v3/`, migration-recipe staged). **Do not `git add -A`. Do not
+migrate public families from a broker session.** E1 is already in flight.
+
+**Loop G:** process exists (`content-approve` → `/admin/approval-queue` →
+`publisher-sweep` → `/api/social/publish`, GBP included). Last census 2026-08-08:
+GBP/LI/X/YT OAuth **EXPIRED**; measured=0; ready ~397 mostly not posts. Production-ready
+= Matt reconnects tokens + one generate door + one yes + a live permalink. Paid ads
+stay parked. Threads/Nextdoor/Pinterest stay parked.
+
+**Next:** Matt adversarially audits the prompt + answers D1–D6. Then slices
+A1 / C1 / D1 / G1 (G1 the day tokens are live). Dedicated public session keeps E.
+Do not mix commits with 11F inbox or public `_v3/`.
+
+**Blocked on Matt:** D1 buyer packet; D2 "Parallel"; D3 looking-at-home wake vs Today;
+D6 production-ready social set (recommend GBP+IG+FB first); **OAuth reconnect for GBP**.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record for
 the stacked brief: copilot, Closings/forms, expired+FSBO first packets, newsletter
