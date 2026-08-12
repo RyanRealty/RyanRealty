@@ -1,7 +1,7 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.10 plan. D1–D10 locked. D11 (public voice) pending Matt. Third adversarial pass recorded. Technical calls are agent-made. Complete enough to build A3/A4/A1 — not a finished OS. Do not rewrite `VOICE.md` until D11 answers land.
+**Status:** v0.11 plan. D1–D11 locked. Public Product OS (“Site pages organization and navigation”) is Loop E, not a second plan. Ready to execute when Matt says go.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -47,13 +47,29 @@ if the call is wrong.
 
 **Matt still decides (stop):** outbound to real people (the actual send), money/ads, OAuth logins
 he must click, license/forms, named-artifact taste ("does this packet blow them
-away"), and **D11 voice** (the seven questions in §4). Product meaning that is
-still open: D11. D1–D10 stay locked. New product meaning gets a plain-language
-question, then a lock.
+away"). Product meaning that is still open: none. D1–D11 are locked. New product
+meaning gets a plain-language question, then a lock.
 
 **Agent decides (do not stop):** atom vs pattern, which quarry piece, schema/join,
 SEO title mechanics, default operating grants that still honor draft-first,
 channel mix inside the live set, chart geometry. Record the call. Do not ask.
+
+### Ready to execute (v0.11)
+
+Meaning is locked. Further constitution is the failure mode.
+
+**Two tracks. Do not mix files.**
+
+| Track | First unit | Owns |
+|---|---|---|
+| **Public / Loop E** | Remaining P9: Homes / listing, then chrome, homepage, Sell. D11 on any copy we write. Chart atom (D9) when a series ships. | `app/` public, `components/site/v3`, `docs/plans/PUBLIC_PRODUCT/` |
+| **Broker** | A3 person header → A4 wake rewrite **with** A1 queue | admin, CRM, this plan |
+
+If one session: pick a track. If two: keep the split. Claude’s “Site pages” session
+is already on public. This session starts broker A3 when Matt says go.
+
+Voice.md rewrite is a slice on whichever track first touches public copy. Not a
+third program.
 
 ---
 
@@ -172,13 +188,33 @@ Buyer leads come in when people sign up for the newsletter (named door). Newslet
 
 **D1 locked:** when they are looking at a home, we **ask first** in a short text, then send a **buyer** packet if they want it — not a seller CMA. Copilot still wakes the broker (D3). The ask to the lead is a yes from the broker, same as any other outbound.
 
-### Loop E — Public site (the face, then forever refine)
+### Loop E — Public site (Claude session: “Site pages organization and navigation”)
 
-The public pages are the same product. They are how buyers browse, how sellers tap **Value my home** / **Get my home's value**, how newsletter and alerts come back, how the copilot knows which home they were on.
+This is the same program as the in-flight Claude session. It is **not** a second
+redesign and not a third OS. Constitution: `docs/plans/PUBLIC_PRODUCT/`. Runner:
+`run public product`. Phase `P9_ROLL`.
 
-**Wrap the new UI once, then never stop improving.** That machine already exists: Public Product OS (`docs/plans/PUBLIC_PRODUCT/`), phase `P9_ROLL`, visual language locked (six v3 patterns), first family shipped (`/housing-market`). The giant incremental push is not a new redesign. It is grinding that roll until every public page is on `components/site/v3`, then a standing refine loop on the whole site forever.
+Matt’s founding ask (2026-08-11): pages are confusing; each page has an objective
+and the information to meet it; seamless exploration of Central Oregon; at least
+three section patterns; admin simplicity applied to the public site; the whole
+site is a lead-gen machine that never acts like it.
 
-Implementation amnesia applies: locked destinations (Homes, Places, Market, Sell, Saved, About) name the jobs. A page that is on v3 and still clunky gets refined, not protected. A page still on KB/legacy gets migrated, not polished in the old register.
+**Locked there (do not relitigate):** process, IA (Homes · Places · Market · Sell ·
+Saved · About), visual (six v3 patterns), dual objectives + exits per page.
+Market and Places families are on v3. `work-queue.json` is stale (still names the
+first Market attempt). Trust git + `decisions.md`, not the queue.
+
+**Still to grind (Loop E remaining):** Homes / listing, Sell, chrome, homepage,
+About. Copy on those pages obeys D11. Chart atom (D9) is still missing from the
+v3 barrel. sell-film (`app/dev/sell-film`) is a motion prototype for Sell, not
+production until VISUAL_LOCK on that film.
+
+**Collision:** that session owns `app/` public routes, `components/site/v3`,
+`docs/plans/PUBLIC_PRODUCT/`. This session does not migrate those families and
+does not `git add -A`.
+
+Implementation amnesia applies: destinations name the jobs. A v3 page that is
+still clunky gets refined. A KB page gets migrated, not polished in the old register.
 
 ### Loop F — Acquisition and truth (SEO, GSC, analytics, AI, every tool)
 
@@ -241,77 +277,53 @@ Loop F still scores "how does this drive someone in" (including map-pack queries
 Never: "What's my home worth?" / "What is your home worth?"
 Always: **Value my home** or **Get my home's value** (Get your home's value when addressing them).
 
-### Voice lock — public-facing (D11 pending)
+### Voice lock — public-facing (D11 LOCKED)
 
-This is the once-and-for-all replacement for the 2026-08-05 machine. It is **not
-fully locked**. Dialogue is in progress. Do not rewrite `VOICE.md`, do not delete
-gates, do not start a site-wide copy pass until D11 is closed.
+Dialogue closed 2026-08-12. Do not reopen unless Matt does. Next voice work is
+rewriting `VOICE.md` to this law, then applying it on public copy we touch.
+Do not start a site-wide copy sweep as its own program.
 
-**Locked from dialogue (2026-08-12):**
+**The law**
 
-- **Punctuation.** No em dash, no en dash, no semicolon, no `!`. Colon only as a
-  label or list (`Beds: 3`), never as a dramatic beat (`Here's the thing:`).
-- **Stop after the fact.** Do not add a sermon after the number. Client language,
-  not industry jargon (no "band," no "comp set"). Place names are fine. Seller
-  market line: `131 homes are for sale in Bend between $504,000 and $616,000. The
-  median one has been listed 53 days.`
-- **Buyer SMS (D1 ask).** `{address} is listed at {price}. Want a short comparison
-  and what to think about offering?`
-- **Who is talking.** `We`. Not `I`. Not a pronoun-free telegram unless the line
-  is a caption fragment.
-- **Listing sequence (public copy must be true).** Sign agreement → schedule
-  photographer → schedule sign → start marketing material → MLS coming soon →
-  go live when photos and materials are ready, sign goes in. Photos happen
-  **before** the listing posts. Public process line: `We sign. We schedule photos
-  and the sign. We start the marketing. It goes in the MLS as coming soon. When
-  the photos and materials are ready, we go live and the sign goes in.`
-- **Enthusiasm.** Complimentary and exciting is allowed. Not over-the-top salesy.
-  Caption shape: facts, then one true specific (`New on Awbrey Butte. 4 bed, 3
-  bath, $1.12M. Views, a usable lot, and a house that shows well.`). House
-  compliment: `A bright kitchen and a deck with a real view of the butte.` Not
-  stunning / incredible / jaw-dropping.
-- **Length.** Same rules everywhere. A caption can be short. A blog can be longer.
-  Neither overexplains.
-- **SEO vs voice.** Driving traffic outranks voice on discovery surfaces
-  (title, H1, meta). Body, SMS, captions, packets still obey the voice.
-  Homepage H1: `Homes for Sale in Central Oregon`. Under it: `Bend, Redmond,
-  Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.`
-- **Authenticity / genuine / every principle.** Conveyed only. **Never named.** We
-  never call ourselves authentic, genuine, honest, simple, transparent, trusted,
-  dedicated, or any other virtue we want the reader to feel. We never print the
-  principle. The language does the work. This outranks every other voice rule
-  except live numbers and invented quotes.
-- **Grateful.** Felt. Not printed on a listing post. The house is the post
-  (P9 C).
-- **Three registers, not one.**
-  1. **Public** (site, social, newsletter, packets, SMS to leads): the voice
-     above. Never name a virtue.
-  2. **Personal notes to clients:** always respectful. Always thank them for
-     the business. Their trust means a lot. This register may thank. Public
-     marketing may not.
-  3. **Admin:** as simple as possible. Completely different from public.
-     Instrument language (`ADMIN_UI`). Not this voice.
-- **Boutique.** Size fact, used to describe the firm. Not a virtue claim.
-- **MLS remarks.** Never rewrite. Someone else's words, plus our own remarks
-  as filed. Display may translate a property-type code (type A → Residential).
-  That is a label, not a voice pass.
-- **About draft (conflict, not locked).** Matt's line: `We are a boutique real
-  estate brokerage in Bend, Oregon, committed to building community through
-  authentic relationships and exceptional customer service.` This names
-  authentic and exceptional. It fights the never-name-the-virtues lock. P15b
-  decides which wins.
+Write to one person. Say the fact. Then stop. Never pander, never sermon, never
+self-praise, never overexplain. Never invent a quote. Live numbers. Value my home.
+A short judgment in our voice is allowed. Complimentary and exciting is allowed
+when it is true and specific. Not salesy.
 
-**Named exemplars so far (Matt picked):**
-- **Judgment.** A short sentence in our voice is allowed. Never an invented
-  quote. Never cut a true judgment only to avoid having a view.
-  Example: `The second listing succeeds by correcting the first ask, not
-  defending it.`
-- **Newsletter open.** The listings are the content. `14 new listings in Bend
-  this week. Median list $625,000.`
-- **Buffett.** Skipped. Not required to write this voice. Leave out of the
-  operating file unless Matt reopens it.
+**Never name the virtues** (everywhere except the About mission sentence).
+Do not call ourselves authentic, genuine, honest, simple, transparent, trusted,
+dedicated, or any other virtue. The language does the work. Only those virtue
+words are dead. Other words (boutique, premier, full-service) may stay if they
+are true. Boutique describes the firm.
 
-**Named exemplars so far (Matt picked):**
+**About mission (the one exception).** This sentence may appear on About:
+`We are a boutique real estate brokerage in Bend, Oregon, committed to building
+community through authentic relationships and exceptional customer service.`
+Nowhere else uses authentic / exceptional as a claim about us.
+
+**Punctuation.** No em dash, no en dash, no semicolon, no `!`. Colon only as a
+label or list (`Beds: 3`), never as a dramatic beat.
+
+**SEO vs voice.** Title, H1, and meta are search-first. Homepage H1:
+`Homes for Sale in Central Oregon`. Lead: `Bend, Redmond, Sisters, Sunriver,
+La Pine, and Terrebonne. Live list prices and days on market.` Body, SMS,
+captions, packets still obey the voice.
+
+**Three registers**
+
+1. **Public** (site, social, newsletter, packets, SMS to leads): the law above.
+   Listing posts do not thank. The house is the post.
+2. **Personal notes to clients:** always respectful. Always thank them. Their
+   trust matters. This register may thank.
+3. **Admin:** as simple as possible. Completely different from public.
+   Instrument language (`ADMIN_UI`).
+
+**MLS remarks.** Never rewrite. Display may translate a property-type code
+(type A → Residential).
+
+**Buffett.** Out of the operating file.
+
+**Named exemplars (Matt picked):**
 
 | Surface | Line |
 |---|---|
@@ -324,38 +336,12 @@ gates, do not start a site-wide copy pass until D11 is closed.
 | Listing process | We sign. We schedule photos and the sign. We start the marketing. It goes in the MLS as coming soon. When the photos and materials are ready, we go live and the sign goes in. |
 | Newsletter open | 14 new listings in Bend this week. Median list $625,000. |
 | Judgment | The second listing succeeds by correcting the first ask, not defending it. |
-
-**Still open:** About sentence vs never-name-the-virtues (P15b), word lists
-(premier / top producing / local experts), Buffett (skipped).
+| About mission | We are a boutique real estate brokerage in Bend, Oregon, committed to building community through authentic relationships and exceptional customer service. |
 
 **What failed last time.** We tried to encode taste as regex. Buffett-as-law plus
-GOV.UK mechanics plus construction bans plus word lists produced beige (agents
-wrote to pass the gate) or corny (rule 3 invented quotes). A second file
-(`.cursor/rules/blog-voice.mdc`) drifted from the canon. Colons are not in
-`PUNCTUATION` in `scripts/brand-voice-vocabulary.cjs`, but the blog rule still
-talks about "dramatic colons."
-
-**Recommended machine (pending yes):**
-
-1. **One short law, one file.** Write to one person. Say the fact. Then stop.
-   Never pander, never sermon, never self-praise, never overexplain. Never
-   invent a quote. Never name a virtue (authentic, genuine, honest, …). Live
-   numbers. Value my home. A short judgment in our voice is allowed.
-2. **Buffett is out of the operating file** unless Matt reopens it.
-3. **No invented quotes.** Judgment is a short sentence in our voice.
-4. **Punctuation (he named it):** no em dash, no en dash, no semicolon, no `!`.
-   Colon only as a label or list (`Beds: 3`), never as a dramatic beat
-   (`Here's the thing:`).
-5. **Shrink or kill word lists.** Do not ban words "to be safe." Keep only what
-   Matt keeps in the D11 answers.
-6. **Named exemplars** he would actually send (site, SMS, caption, newsletter,
-   packet). Review test: "does this sound like those?"
-7. **Mechanical gate stays tiny:** punctuation + invented quotes + Value my home
-   + (optional) a few pander/urgency phrases. Not a novel of regex.
-8. **Scope:** anything a member of the public reads. Code comments out. Admin
-   instrument copy out unless it is forwarded or sent. MLS remarks stay out
-   (format-specific) unless Matt pulls them in. Flyers/signage stay out.
-   Ads stay parked.
+GOV.UK mechanics plus construction bans plus word lists produced beige or corny.
+`.cursor/rules/blog-voice.mdc` is a second voice file. Delete it when `VOICE.md`
+is rewritten to this lock.
 
 **Surfaces in:** site, SMS, email, newsletter, blog, social captions, GBP posts,
 packets, video on-screen text we author, public error/empty states.
@@ -554,9 +540,9 @@ Park: Replicate Kling / Hailuo / Luma / Veo / Wan / Seedance, Vertex Veo / Image
 
 Not Imagine (keep): Remotion for live numbers and brand-locked motion; list-kit compositors for type on real MLS photos; FFmpeg / first-frame; owned camera and drone. Listing motion is **i2v of the real photo**, never a generated house captioned as the property. If Imagine drifts (we already watched it re-paint vector stills), fall back to still + Remotion. Type and prices are composited in code, never baked into a prompt.
 
-**D11 — Public voice, once and for all?** **PARTIAL (dialogue).** See Voice lock for what landed. Remaining questions are prompt dialogues, not the original seven-item list. Do not rewrite `VOICE.md` until this is closed.
+**D11 — Public voice, once and for all?** **LOCKED (Matt, dialogue closed 2026-08-12).** See Voice lock. About mission sentence is the one exception to never-name-the-virtues. Only virtue words are dead. Three registers. MLS remarks never rewritten. Buffett out of the file. Rewrite `VOICE.md` on the first voice slice. Do not start a site-wide copy program.
 
-D1–D10 are locked. D11 is the open product-meaning stop. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. Produce is Imagine (D10), not a model zoo. Voice copy passes wait on D11.
+D1–D11 are locked. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. Produce is Imagine (D10), not a model zoo. Public grind is Loop E (Public Product OS P9 remaining).
 
 ---
 
@@ -1007,7 +993,7 @@ cutover (D2); then it is not the SoR.
 
 WHO DECIDES: Matt — OAuth clicks, money/ads, license, named-artifact taste,
 and product meaning asked in plain language. Agent — technical shape, recorded
-here. Do not stop to ask atom-vs-pattern. D1–D10 are locked. D11 voice is pending Matt.
+here. Do not stop to ask atom-vs-pattern. D1–D11 are locked.
 
 NORTH STAR — seven loops, one person record, one generation of code
   A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
@@ -1049,11 +1035,10 @@ for honest numbers. Never a parallel stack.
 FUNNEL: on every page, how does this drive a buyer or seller in. If it does not,
 cut or merge.
 
-VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
-  Public-facing copy is honest, simple, transparent. Fact, then stop. Never pander,
-  never sermon, never invent a quote. D11 pending: one short law, named exemplars,
-  tiny punctuation gate. Do not rewrite VOICE.md until those answers land.
-  Code comments are out. Admin UI is out unless the words are sent.
+VOICE: D11 locked. Never name virtues except the About mission sentence. Fact then stop.
+  Never invent a quote. Value my home. Title/H1/meta are search-first. Three registers:
+  public / personal thank-you / admin simple. MLS remarks never rewritten.
+  Code comments are out.
 SMS: clear, transparent, concise. No extra stuff.
 BEAUTY: outbound blows them away. Admin is a finished instrument (ADMIN_UI), not a
 marketing page. If it would not make them want to see what we're about, it does not send.
@@ -1071,9 +1056,14 @@ disk, then the skills that match the loop you are scoring.
 Score every locked process: best / simple / clear / e2e / funnel / chart / look — on the job, then
 say whether the current how should be kept or replaced.
 Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/A3/A4/A5/C1/D1/B1/E1/F1/G1/G2/G3/G4/G5/V1/V2.
-Stop for Matt on OAuth logins, money/ads, license, named-artifact taste, and D11 voice.
+Stop for Matt on OAuth logins, money/ads, license, and named-artifact taste.
 Technical shape is decided in this file toward the goals. Do not ask. Record it.
-D1–D10 are locked. D11 is pending. Scorecard is in this file. First build is A3 person header, A4 rewrite of queueReturnVisitAlert (with A1 so Today shows looking-at), A1 queue. Produce is Grok Imagine. Voice rewrite waits on D11. Then wait only on those stop classes.
+D1–D11 are locked. Scorecard is in this file. Two execution tracks (do not mix files):
+  Public / Loop E: remaining P9 (Homes, Sell, chrome, homepage) on v3. Claude session
+  "Site pages organization and navigation" owns those files.
+  Broker: A3 person header, A4 rewrite of queueReturnVisitAlert (with A1 so Today
+  shows looking-at), A1 queue. Produce is Grok Imagine. Voice.md rewrite is a slice,
+  not a program. Then wait only on those stop classes.
 ```
 
 ---
@@ -1093,3 +1083,4 @@ D1–D10 are locked. D11 is pending. Scorecard is in this file. First build is A
 - 2026-08-12 — v0.8 adversarial audit of the *plan* (not only the brief). Complete as meaning, not as a built OS. Return-visit alert already exists and is the wrong text (A32). Lead ask does not narrate the watch (A33). Buyer packet ≠ lender BPO (A34). Person header has sources, not typed fields (A35). Cutover is a checklist (A37). First build is A3/A4/A1. Scorecard filled. Stop writing constitution.
 - 2026-08-12 — v0.9 D10: Grok Imagine is the only generative camera (`grok-imagine-video-1.5` + `grok-imagine-image-quality`). Park Kling/Veo/Hailuo/Luma/Wan/Seedance/Fal/Synthesia. Keep Remotion + list-kit compositors + FFmpeg. Listing motion = i2v of the real MLS photo. §7f is the produce canon. Slice G5. IG @ryanrealtybend already live.
 - 2026-08-12 — v0.10 third audit + voice. A46: the 2026-08-05 voice machine already failed (beige gates, corny rule-3 quotes, second blog file). D11 pending Matt (seven questions). Recommended: one short law, named exemplars, tiny punctuation/conduct gate; retire Buffett-as-law as a gate; kill rule 3. A47 closed person labels. A48 A4 ships with A1. A49 buyer packet sections named. A51 wrappers still old model names; listing-tour still Replicate. A55 `/admin/social` is a traffic report. First build still A3/A4/A1. Do not rewrite `VOICE.md` this pass.
+- 2026-08-12 — v0.11 D11 LOCKED + merge. Claude session “Site pages organization and navigation” = Public Product OS = Loop E (P9 remaining: Homes, Sell, chrome, homepage). About mission sentence is the one virtue-word exception. Only virtue words are dead. Three registers. Ready to execute on two tracks. Do not mix files.
