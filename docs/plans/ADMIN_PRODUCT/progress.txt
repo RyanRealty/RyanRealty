@@ -611,3 +611,5 @@ NOT IN SCOPE
   DONE WHEN: gates green, origin/main updated, PublicNav live, Homes for Sale
   Layer A on geos, first-party scoreboard documented/wired, sitemap intact.
   STOP ONLY FOR: credentials, destructive ambiguity, conflicting requirements.
+
+2026-08-12T19:45:00Z BROKER OS PLAN v0 (Grok, planning only). Wrote docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md from Matt's stacked brief (copilot + Closings/forms + expired/FSBO blow-away packets + newsletter buyers + behavior graph + Value my home voice + beauty bar). Adversarial pass in the plan §0: do not rebuild visitor_events; newsletter is named capture not the only buyer door; buyer "CMA" vs locked BPO is Matt D1; TC foundation unused (0 envelopes, July audit); prompt split short constitution vs this file. No product code. No locks reopened. Next: Matt audits prompt + D1–D5; then slices A1/C1/D1.

@@ -1,0 +1,274 @@
+# Broker Operating System — plan of record
+
+**Started:** 2026-08-12 (Grok, planning only — no product code this session)
+**Status:** v0 plan. Not a lock. Matt adversarially reviews the prompt + this file.
+**Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
+**Does not reopen:** process / IA / visual / litmus locks in `decisions.md`
+
+This is the plan behind the broker OS prompt: copilot, known-seller streams,
+buyer/newsletter, Closings/forms, and a designer's bar on everything we send.
+
+---
+
+## 0. Adversarial audit of the brief (before Matt audits the prompt)
+
+The stacked prompts describe a whole brokerage OS. That is the right ambition.
+It is the wrong shape for one agent session unless we sequence it. Findings:
+
+| # | Attack | Why it matters | Disposition |
+|---|---|---|---|
+| A1 | **Prompt obesity.** Four iterations concatenated. An executing agent will skip the middle. | Constitution must fit one screen. Method lives here. | Split: short prompt → this file |
+| A2 | **Four loops, one week.** Copilot + Closings + expired/FSBO + buyer/newsletter is a quarter, not a grind tick. | Sequence or nothing ships. | P1 = copilot queue + one seller packet + one buyer signal. Forms after. |
+| A3 | **"Send them a CMA" for a buyer looking at a home.** Locked engine: CMA = sellers, BPO = buyers/offer, expired-audit = expired. A seller CMA on a listing a buyer is touring is the wrong artifact. | Silent override would fork the product. | **Matt decision D1** |
+| A4 | **Newsletter is not the only buyer door.** Saved search, guest alerts, portal, listing inquiry, call/text, Meta already create buyer people. Building only newsletter orphans hotter signals. | Honor newsletter as the named capture. Do not delete the others. | Newsletter = curated edition + capture. Saved-search/portal = behavior SoR. Copilot reads both. |
+| A5 | **Behavior tracking already exists.** `visitor_events` already records `page_view`, `listing_view`, `search`, `scroll_depth`, `section_view`, `cta_click`, `save_listing`. `getContactBehaviorSummary` + `ContactBehaviorPanel` already say "see what they are looking at." Timeline merge already shows dwell + scroll. | Rebuilding tracking is bloat. | Gap = identity stitch (newsletter-only signup) + copilot sentence + one-yes "send packet on that home" |
+| A6 | **"Every scroll" will drown Today or feel like surveillance.** Matt's wake-ups are inbound-human (valuation, new lead, reply-on-thread). Hot-visitor was MERGE→broker-alert and was NOT in the wake list. | Unranked pings make the copilot unusable. | Rank: reply > looking-at-a-home (identified, repeated) > newsletter signup. Digest the rest. Honor GPC. |
+| A7 | **"Blow them away" / "designer's eye" is untestable.** Brand-voice gates banned words, not beauty. | Taste arguments will stall every packet. | Deliverable litmus: named exemplars (Tumalo CMA, approved newsletter shell, list-kit). If it is not in that league, it does not send. |
+| A8 | **Expired "how we will market THIS home" is not the generic services list.** `lib/cma/expired-audit.ts` layer 2 mirrors `/sell` "what every listing gets." List-kit is the real marketing machine. | C2 fails today by construction. | First packet = know-this-home (engine already has site intel) + this-home marketing plan (list-kit / sell plan, not a brochure). |
+| A9 | **TC "use soon" vs zero production envelopes.** July 2026 audit: `tc_envelopes` 0, `tc_principal_reviews` 0, no UI to create a deal, `/admin/deals` list reads stale SkySlope snapshot. Foundation is real. Daily use is not. | More schema is not the bottleneck. | First Closings slice: create-deal in UI + one licensed form fill/send/file to a Matt-owned email. Re-count live before building. |
+| A10 | **"Parallel" is undefined.** Could be TC_SYSTEM.md Phase 4 dual-file or a second vendor. | Wrong baseline. | **Matt decision D2** |
+| A11 | **Speed vs beauty is not a conflict.** Litmus is kickoff speed (≤3 taps / ≤30s). Beauty is the artifact, draft-first. | Mixing them produces either slow kickoff or ugly PDFs. | Keep both. Copilot is fast. Packets are curated. |
+| A12 | **Identity hole.** Behavior joins `visitor_sessions` via `crm_person_id` / `fub_person_id` / email / `rr_vid`. A newsletter subscribe that never identifies the browser leaves browse history anonymous. | Loop D fails without stitch. | Newsletter signup must identify the session the same way seller LP + saved-search already do. |
+| A13 | **Worth-language vs SEO.** On-page CTA lock is "Value my home" / "Get my home's value." Search demand still uses "home worth." | Blunt rewrite of `<title>` can lose rankings. | CTA/headline/SMS = Value my home. Title/meta may keep demand language; call that out, do not silently smash SEO. |
+| A14 | **Assigned broker.** Copilot and visitor-escalate still smell Matt-only. Q4 lock: own book default, Matt sees all. | New-broker onboard fails if every ping is Matt's. | Route by `assigned_broker`. |
+| A15 | **Public Product OS is a parallel plane.** Buyer browse + newsletter live on the public site. Admin copilot lives in ADMIN_PRODUCT. | One prompt that edits both without a collision rule will fight the public OS. | Public copy/design = PUBLIC_PRODUCT. Admin copilot/queue = ADMIN_PRODUCT. Packets (CMA/newsletter HTML) are shared artifacts with one beauty bar. |
+
+**Verdict:** The brief is right. The failure mode is boiling the ocean and rebuilding things that already exist. This plan keeps the north star and cuts to the first complete loops.
+
+---
+
+## 1. North star (Matt, 2026-08-12 — do not drift)
+
+### Loop A — Copilot (daily, phone)
+
+"Tell me everyone I need to respond to." → Grok names the person, what they wrote or did, the one next action, the draft. Matt says yes. Grok does it. CRM records it.
+
+### Loop B — Closings (soon-use)
+
+SkySlope is the live file and the baseline (browser + API, read-only unless Matt names a mutation). In-house already has anticipate / envelope / seal / commissions / form blanks. Refine until a broker can pick a licensed form, fill it from the deal, send it, and file it. Easier than SkySlope. Brokers never build forms. New broker: access → own book → ground running.
+
+### Loop C — Known sellers (weekly, guaranteed stream)
+
+Expired and FSBO are people we know are selling. First **message** and first **deliverable** must blow them away: prove we know everything about **this** home, and show how we will **market this** home. Manual first touch. Never blame the prior agent. Never invent numbers.
+
+### Loop D — Buyers (newsletter + site behavior)
+
+Buyer leads come in when people sign up for the newsletter (named door). Newsletter is its own curated process — designer's eye, nothing ships that does not blow them away. In the back we see exactly what they looked at: homes, searches created, browse, scroll, clicks, learned-more. Copilot: "So-and-so is looking at this home." Matt: send a packet, or ask if they want one. Easy.
+
+### Voice lock — valuation
+
+Never: "What's my home worth?" / "What is your home worth?"
+Always: **Value my home** or **Get my home's value** (Get your home's value when addressing them).
+
+### Beauty lock
+
+Everything we deliver is curated. Designer's eye. If it would not make them want to see what we are about, it does not go out.
+
+---
+
+## 2. What already exists (do not rebuild)
+
+| Piece | Where | Use it for |
+|---|---|---|
+| Today / inbound triage | `getInboundTriage`, `getBrokerActionQueue` | Copilot queue substrate |
+| Suggested reply | `lib/crm/reply-intent.ts`, email twin | "Here's what I think you should do" |
+| Governed send | `lib/comms/guards.ts`, `sendGovernedSms.ts` | Execute after yes |
+| Broker SMS agent | `lib/agent/*` | Runtime to reuse — different job (broker→agent) |
+| Behavior events | `app/api/visitors/track/route.ts` | listing_view, search, scroll_depth, cta_click, save_listing |
+| Behavior summary | `getContactBehaviorSummary`, `ContactBehaviorPanel` | "Homes they looked at / searches they ran" |
+| Timeline merge | `app/actions/crm.ts` visitor_events → person timeline | Dwell + scroll already on the contact |
+| Newsletter engine | `newsletter-run` PDS, `lib/newsletter/produce-draft.ts` | Curate → draft → approve → drain. Healthiest admin engine. |
+| Saved search / alerts | `listing-alert-care`, `save-and-return.*` | Other buyer doors + return loop |
+| Portal | `save-and-return.portal` | Saved homes, alerts, viewing trail bound to identity |
+| CMA / expired-audit / BPO | `lib/cma/build.ts`, `expired-audit.ts`, county/site intel | Know-this-home engine |
+| List-kit | `social_media_skills/list-kit/SKILL.md` | How we actually market a listing |
+| Prospecting worklist | `/admin/prospecting`, first-touch templates | Expired/FSBO stream machine |
+| TC foundation | `tc_*`, envelope engine, `/admin/forms`, ingest | Closings — unused in production |
+| SkySlope | Files API + Forms library API + Chrome session | Baseline + form blanks |
+| Value my home lock | PUBLIC_SITE_UX_OVERHAUL + PUBLIC_PRODUCT decisions | CTA language — still violated in live copy |
+| GPC / suppression | `lib/crm/gpc.ts`, `lib/comms/guards.ts` | Fail-closed on watch + send |
+
+---
+
+## 3. Gaps vs the brief (the real work)
+
+### Copilot (A)
+
+- Reply-on-thread is **locked** to the wake rail and still only cell-forwards (`inbound-respond` §5.7).
+- No single ranked queue that speaks in Matt's sentence: everyone to respond to, plus "looking at this home."
+- Suggested reply exists; "yes → Grok sends" does not (broker still taps send in admin).
+- Visitor-hot is a fourth notification path, Matt-hardcoded, not assigned-broker.
+
+### Known sellers (C)
+
+- Detection → skip-trace → doc queue → worklist **works**.
+- First-touch template is a compliant intro, not a blow-away.
+- Expired-audit **knows** the house (history, comps, GIS) but **markets** with a generic services list.
+- FSBO uses a CMA, not a tailored "you're selling it yourself; here is the market + how we would sell it" packet.
+- Worth-question language still lives on sell/valuation surfaces.
+
+### Buyers (D)
+
+- Newsletter subscribe + curated draft engine **exist**. Beauty bar is not gated.
+- Behavior exists on identified people. Newsletter-only email with no session identify = blind.
+- Copilot does not yet say "they're looking at 123 Main" with a one-yes send/ask.
+- Buyer packet on a specific home is unspecified (CMA vs BPO — D1).
+- Listing alerts + portal are stronger *behavior* doors than newsletter; newsletter is the named *capture* door. Must join, not compete.
+
+### Closings (B)
+
+- Cannot create a deal in the UI (script-fed).
+- Dashboard list ≠ `tc_deals`.
+- Form libraries ingested (~111 versions, July audit) but template→fill→send is not a daily path.
+- Zero production envelopes. CRM person ↔ tc_deal still unbridged.
+- SkySlope remains the working file.
+
+### Beauty
+
+- No deliverable litmus. Voice gates ≠ design gates.
+- Two visual languages (public vs admin v2). Outbound packets need a third: print/email craft, with named exemplars.
+
+---
+
+## 4. Open decisions (Matt)
+
+**D1 — Buyer looking at a home: what do we send?**
+- (a) BPO / offer-strategy packet (locked engine meaning)
+- (b) A buyer-facing CMA on that listing (Matt's words)
+- (c) Ask first ("want us to send a value packet on 123 Main?") then (a) or (b)
+
+**D2 — What is "Parallel"?** Phase 4 dual-file with in-house TC, or a second vendor?
+
+**D3 — Is "looking at this home" a wake-up SMS, or only a Today/copilot line?** Q1 wake-ups were inbound-human. Recommend: copilot/Today only unless they repeat-view or reply. Confirm.
+
+**D4 — Newsletter vs saved-search as primary buyer capture.** Matt named newsletter. Recommend: newsletter captures; saved-search/portal is the behavior graph; one person record.
+
+**D5 — Worth-language in SEO titles.** Keep demand phrasing in `<title>`/meta only?
+
+Until D1–D3 are answered, build the queue + stitch + ask-first path. Do not auto-send a buyer CMA.
+
+---
+
+## 5. Four questions (every process)
+
+Score each locked process 1–5:
+
+1. **Best** — would we still do it this way for A–D?
+2. **Simple** — fewest steps, stores, taps
+3. **Clear** — one sentence a new broker understands
+4. **E2E** — inception reaches a CRM (and deal-file) artifact
+
+Plus: **Improve** / **Inform** (more information only if it changes the action).
+
+Loop C extra: Know / Market / Message / Voice / True / Stream.
+Loop B extra: Libraries / Anticipate / Fill / Send / File / Onboard.
+Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home) / Recommend / Packet beauty.
+
+---
+
+## 6. Ranked plan
+
+### P0 — do not ship broken
+
+- Suppression / unapproved send / invented numbers in a packet
+- Inbound SMS/email not on `crm_timeline`
+- GPC honored on watch + send
+- No "what's my home worth" on a seller **CTA we would tap** (inventory first)
+
+### P1 — first complete loops (this is "start using it")
+
+1. **Copilot queue (A):** one ranked Today list: unreplied inbound + "looking at {address}" (identified, ranked) + CMA-ready + parked sequence. Sentence form. Assigned-broker scoped.
+2. **Yes-path for one SMS reply:** preload draft → Matt yes → `sendGovernedSms` → timeline. Do not build a new agent stack; reuse composer + reply-intent.
+3. **Seller first packet (C):** one expired (or FSBO) message + deliverable that (a) proves we know the house using existing site intel, (b) shows how we would market **this** house (list-kit / sell plan, not generic services). Still manual send.
+4. **Buyer see-back (D):** newsletter signup identifies the session; person shows homes/searches/scrolls; copilot can say "looking at {address}" and offer ask-or-send (blocked on D1).
+5. **Worth-copy inventory** (list path:line; public CTA rewrite is PUBLIC_PRODUCT, not this file's code).
+
+### P2 — make it a brokerage, not a demo
+
+- CRM person ↔ `tc_deal` link; create-deal from UI; `/admin/deals` reads `tc_*`
+- One OREF fill → send to Matt-owned email → seal → checklist (Loop B)
+- Reply-on-thread joins the wake rail (already locked)
+- Newsletter beauty pass against the approved shell; nothing auto-sends unreviewed
+- Assigned-broker on visitor/copilot pings
+- Dual-intent people (buyer newsletter + expired owner) stay one person
+
+### P3 — strip bloat
+
+- Generic "what every listing gets" as the hero of an expired audit
+- CRM kanban vs TC vs SkySlope snapshot as three "deals"
+- Cell-forward as a fourth inbox
+- Visitor-escalate as a separate email rail
+- Rebuilding `visitor_events`
+- SkySlope archive/folder clunk
+
+### P4 — later
+
+- Dark mode unreachable, FUB vocab ratchet, reporting collapse, full SkySlope cutover after one clean parallel deal
+
+---
+
+## 7. First build slices (smallest complete)
+
+| Slice | Done when | Blocked on |
+|---|---|---|
+| **A1** Copilot queue sentence | Matt can ask "who do I respond to" and the list is true (inbound + looking-at + ready docs) | None for a read-only prototype; write path needs composer reuse |
+| **A2** Yes → send one SMS | Timeline `sms_out`, suppression held, sequence paused | Matt yes on that send |
+| **C1** One expired blow-away packet | Message + PDF on a real expired in-scope listing, manual send, no generic services hero | Matt review of packet |
+| **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
+| **B1** One form packet | OREF from `tc_form_versions` filled from a test deal, emailed to Matt, sealed, filed | D2; SkySlope session if blanks need refresh; live e2e to Matt email |
+
+Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
+
+---
+
+## 8. Collision + evidence rules
+
+- No product code in the planning pass unless Matt says go.
+- Dirty `app/admin/**/crm/inbox/**` from 11F: inventory, do not edit.
+- Public CTA/copy: PUBLIC_PRODUCT OS. Admin queue: ADMIN_PRODUCT.
+- Path:line or it is not a finding. Code wins vs stale docs.
+- Law is data (`TC_OREGON_COMPLIANCE.md`).
+- Draft-first forever. Silence is not approval.
+
+---
+
+## 9. Paste prompt (short constitution)
+
+The long method stays in this file. The executing agent reads this file after orientation.
+
+```
+PLANNING / BUILD only as Matt's last line allows. Default: plan and evidence, no product code.
+
+You are the expert on Ryan Realty's broker OS. None of this is rocket science.
+Deepen and refine. Do not rebuild what exists. Strip bloat. New broker: access,
+own book, hit the ground running.
+
+NORTH STAR — four loops, one person record
+  A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
+  B Closings: licensed forms → fill from deal → send → file. SkySlope is live baseline
+    (browser+API, read-only). In-house foundation exists; production use does not. Soon.
+  C Known sellers: expired + FSBO. First message + first packet blow them away:
+    know THIS home, market THIS home. Manual first touch.
+  D Buyers: newsletter is the named capture and a curated, beautiful edition.
+    Back office sees every home they viewed, searches they saved, browse/scroll/click.
+    Copilot: "So-and-so is looking at this home" → send or ask to send a packet.
+
+VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
+BEAUTY: if it would not make them want to see what we're about, it does not send.
+LAW: draft-first, suppression fail-closed, no invented numbers, no prior-agent blame.
+
+Canon: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md
+Orient: ENTERPRISE_MAP/SESSION_HANDOFF.md, CROSS_AGENT_HANDOFF.md, ADMIN_PRODUCT
+disk, then the skills that match the loop you are scoring.
+Do not reopen locks. Do not fork a second CRM, tracker, or signing stack.
+
+Score every locked process: best / simple / clear / e2e.
+Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1.
+Stop for Matt on D1–D5 in the plan. Then wait.
+```
+
+---
+
+## 10. Session log
+
+- 2026-08-12 — v0 written from Matt's stacked brief + adversarial pass + disk evidence already in ADMIN_PRODUCT / visitor track / newsletter / prospecting / TC. No live recount of `tc_envelopes` this pass (cite July 2026 audit; re-count before B1).

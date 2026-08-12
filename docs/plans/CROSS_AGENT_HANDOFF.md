@@ -1,8 +1,27 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Admin Product OS — 11F (Claude). Inbox/settings may be dirty — do not mix map commits with admin product commits. Token-gate progress: trust ADMIN_PRODUCT state/progress.**
-> Prior: PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
+> **NEWEST SUBJECT: Broker OS plan v0 (Grok 2026-08-12) — `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F inbox/settings. Admin Product phase still P12; locks stand.**
+> Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-08 (Claude Code, local) — 11F UNIT 1
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record for
+the stacked brief: copilot, Closings/forms, expired+FSBO first packets, newsletter
+buyers + site behavior, Value my home voice, beauty bar. **No product code this
+session.** Skills read: admin-product-os, crm-up-to-snuff, crm-e2e, tc-builder,
+skyslope-api, skyslope-form-compliance, oregon-real-estate-oref, cma producer,
+prospecting/cma-deliver/newsletter-run/listing-alert-care/visitor-escalate/
+inbound-respond/broker-alert PDS, TC_SYSTEM, TC_FORMS_LOADING_HANDOFF,
+getContactBehaviorSummary, visitors/track.
+
+**Next:** Matt adversarially audits the prompt + answers D1–D5 in the plan.
+Then first slices A1 (copilot queue), C1 (expired blow-away packet), D1
+(newsletter identity + homes list). Do not start B1 (forms) until those are
+specified. Inbox/settings may still be dirty from 11F — do not mix commits.
+
+**Blocked on Matt:** D1 buyer packet = BPO vs CMA vs ask-first; D2 what
+"Parallel" is; D3 is "looking at this home" a wake SMS or Today-only.
+
+# Prior — 2026-08-08 (Claude Code, local) — 11F UNIT 1
 
 `main` @ `ad56f804`, pushed; code commit `4c0186e1` deployed READY (`cli-4c0186e`) and
 probed on production. Disk is the source of truth:
