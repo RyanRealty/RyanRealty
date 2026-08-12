@@ -8,6 +8,16 @@ import path from 'path'
 // timeouts sized to real DB latency. Unit tests keep full parallelism.
 const INT_INCLUDE = ['lib/**/*.int.test.ts']
 
+// Gate self-tests (the break-tests that prove a gate FIRES) each materialize a
+// copy of the tree and run the checker as a node subprocess, sometimes three per
+// case. Run fully parallel they starve each other and fail in ways that read as
+// real gate regressions: on 2026-08-11 this blocked three separate commits with
+// three different false failures (an entity-scope 5s timeout, a toast-discipline
+// pragma case, and a view-preset run claiming lib/search-presets.ts had stopped
+// exporting a function it still exports). Each suite passes alone. Same class as
+// the int project below, same fix: their own project with capped workers.
+const GATE_INCLUDE = ['scripts/__tests__/**/*.test.mjs', 'scripts/__tests__/**/*.test.ts']
+
 // Int tests write to the PRODUCTION Supabase project, and a killed run strands
 // rows there (2026-07-30: 17 `cmas` rows archived by hand, five of them sitting
 // in `delivered` and inflating the delivered-document count). Every int run
@@ -27,8 +37,35 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
-          exclude: ['**/node_modules/**', '**/dist/**', ...INT_INCLUDE],
+          exclude: ['**/node_modules/**', '**/dist/**', ...INT_INCLUDE, ...GATE_INCLUDE],
           sequence: { groupOrder: 0 },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'gates',
+          include: GATE_INCLUDE,
+          // `extends: true` MERGES the root include list rather than replacing it,
+          // so without this exclude the project would run the whole unit suite.
+          exclude: [
+            '**/node_modules/**',
+            '**/dist/**',
+            'lib/**',
+            'app/**',
+            'components/**',
+            'video/**',
+            'scripts/lib/**',
+            'scripts/*.test.mjs',
+          ],
+          // Two at a time: enough parallelism to stay fast, few enough that the
+          // subprocess-per-case suites are not competing for the whole machine.
+          maxWorkers: 2,
+          hookTimeout: 30_000,
+          testTimeout: 60_000,
+          // Vitest refuses two projects with different maxWorkers in the same
+          // group, so the gate suite runs in its own group after the unit set.
+          sequence: { groupOrder: 1 },
         },
       },
       {
@@ -45,7 +82,7 @@ export default defineConfig({
           maxWorkers: 1,
           hookTimeout: 30_000,
           testTimeout: 120_000,
-          sequence: { groupOrder: 1 },
+          sequence: { groupOrder: 2 },
         },
       },
     ],

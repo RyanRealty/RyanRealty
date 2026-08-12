@@ -248,7 +248,7 @@
     "flyer:just-listed": "node scripts/render-just-listed-flyer.mjs",
     "sync:strict-last-ask": "node scripts/sync-strict-verify-last-ask.mjs",
     "test": "vitest run",
-    "test:unit": "vitest run --project unit",
+    "test:unit": "vitest run --project unit --project gates",
     "test:int": "vitest run --project int",
     "orchestrate": "npx tsx scripts/orchestrate.ts",
     "orchestrate:status": "npx tsx scripts/orchestrate.ts status",
