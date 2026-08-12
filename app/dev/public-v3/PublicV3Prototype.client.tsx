@@ -30,6 +30,31 @@ type Tile = {
   city: string | null
   photoUrl: string | null
   dom: number | null
+  lat: number | null
+  lng: number | null
+}
+
+/**
+ * Real geography, not decoration. Pins are placed by normalizing each home's own
+ * coordinates into the frame. A map whose pins are arithmetic on an array index
+ * implies a spatial claim the data never made (CLAUDE.md section 0).
+ */
+function placePins(tiles: Tile[]) {
+  const located = tiles.filter((t) => t.lat != null && t.lng != null)
+  if (located.length === 0) return []
+  const lats = located.map((t) => t.lat as number)
+  const lngs = located.map((t) => t.lng as number)
+  const minLat = Math.min(...lats)
+  const maxLat = Math.max(...lats)
+  const minLng = Math.min(...lngs)
+  const maxLng = Math.max(...lngs)
+  const span = (v: number, lo: number, hi: number) => (hi - lo < 1e-9 ? 0.5 : (v - lo) / (hi - lo))
+  // Inset so a pin never clips the frame at 390.
+  return located.map((t) => ({
+    tile: t,
+    leftPct: 14 + span(t.lng as number, minLng, maxLng) * 72,
+    topPct: 86 - span(t.lat as number, minLat, maxLat) * 68,
+  }))
 }
 
 const NA = 'not available'
@@ -71,17 +96,28 @@ function CountUp({ value, format }: { value: number | null; format: (n: number |
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [value, reduced])
+  // Hand the RAW value to the formatter and let each formatter decide its own rounding.
+  // Rounding here first published 3.6 months of supply as "4.0" — a wrong number, and
+  // 4.0 is the seller/balanced threshold itself (CLAUDE.md section 0).
   return (
     <span ref={ref} className="v3-num">
-      {format(shown == null ? null : Math.round(shown))}
+      {format(shown)}
     </span>
   )
 }
 
 const VALUE_CTA = 'Get your home’s value'
 
+/** The locked destination set. Every nav word is a real door, so the nodes form a graph. */
+const NAV = [
+  { label: 'Homes', href: '/dev/public-v3/homes' },
+  { label: 'Places', href: '/dev/public-v3/places' },
+  { label: 'Market', href: '/dev/public-v3' },
+  { label: 'Sell', href: '/dev/public-v3/sell' },
+  { label: 'About', href: '/about' },
+]
+
 export function PublicV3Prototype({ place, pulse, tiles }: { place: string; pulse: Pulse | null; tiles: Tile[] }) {
-  const reduced = useReducedMotion()
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [step, setStep] = useState(0)
   const [address, setAddress] = useState('')
@@ -91,6 +127,7 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
   // one, or 4.04 prints as "4.0" beside "balanced market".
   const mosRaw = pulse?.monthsOfSupply ?? null
   const mos = mosRaw == null ? null : Math.round(mosRaw * 10) / 10
+  const pins = placePins(tiles)
   const verdict = mos == null ? null : mos <= 4 ? "seller's market" : mos < 6 ? 'balanced market' : "buyer's market"
 
   return (
@@ -98,13 +135,19 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
       <header className="v3-chrome">
         <span className="v3-mark">Ryan Realty</span>
         <nav className="v3-nav" aria-label="Destinations">
-          {['Homes', 'Places', 'Market', 'Sell', 'About'].map((d) => (
-            <span key={d} className={d === 'Market' ? 'v3-nav-item is-here' : 'v3-nav-item'}>
-              {d}
-            </span>
+          {NAV.map((d) => (
+            <Link
+              key={d.label}
+              href={d.href}
+              className={d.label === 'Market' ? 'v3-nav-item is-here' : 'v3-nav-item'}
+            >
+              {d.label}
+            </Link>
           ))}
         </nav>
-        <span className="v3-cta-chip">{VALUE_CTA}</span>
+        <Link href="/dev/public-v3/sell" className="v3-cta-chip">
+          {VALUE_CTA}
+        </Link>
       </header>
 
       {/* PATTERN 1: INSTRUMENT. The answer, big, before any invitation. */}
@@ -122,7 +165,10 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
             <span className="v3-label">median list price</span>
           </div>
           <div className="v3-figure">
-            <CountUp value={pulse?.activeCount ?? null} format={(n) => (n == null ? NA : n.toLocaleString())} />
+            <CountUp
+              value={pulse?.activeCount ?? null}
+              format={(n) => (n == null ? NA : Math.round(n).toLocaleString())}
+            />
             <span className="v3-label">homes for sale</span>
           </div>
           <div className="v3-figure">
@@ -130,7 +176,10 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
             <span className="v3-label">months of supply</span>
           </div>
           <div className="v3-figure">
-            <CountUp value={pulse?.medianDaysToPending ?? null} format={(n) => (n == null ? NA : String(n))} />
+            <CountUp
+              value={pulse?.medianDaysToPending ?? null}
+              format={(n) => (n == null ? NA : String(Math.round(n)))}
+            />
             <span className="v3-label">median days to pending</span>
           </div>
         </div>
@@ -141,18 +190,14 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
       <section className="v3-field" aria-label="Homes for sale">
         <div className="v3-field-map" aria-hidden>
           <div className="v3-map-grid" />
-          {tiles.map((t, i) => (
-            <button
+          {pins.map(({ tile: t, leftPct, topPct }) => (
+            <span
               key={t.listingKey}
-              type="button"
               className={activeKey === t.listingKey ? 'v3-pin is-active' : 'v3-pin'}
-              style={{ left: `${12 + ((i * 37) % 76)}%`, top: `${18 + ((i * 23) % 62)}%` }}
-              onMouseEnter={() => setActiveKey(t.listingKey)}
-              onFocus={() => setActiveKey(t.listingKey)}
-              tabIndex={-1}
+              style={{ left: `${leftPct}%`, top: `${topPct}%` }}
             >
               {t.price ? `$${Math.round(t.price / 1000)}K` : NA}
-            </button>
+            </span>
           ))}
         </div>
         <ul className="v3-field-list">
@@ -176,35 +221,6 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
           ))}
           {tiles.length === 0 && <li className="v3-empty">No active listings returned by the DAL right now.</li>}
         </ul>
-      </section>
-
-      {/* PATTERN 3: LEDGER. Scannable rows, every row a door. */}
-      <section className="v3-ledger" aria-label="Recent activity">
-        <h2 className="v3-h2">What just changed</h2>
-        {tiles.slice(0, 4).map((t) => (
-          <Link key={t.listingKey} href={`/listing/${t.listingKey}`} className="v3-ledger-row">
-            <span className="v3-ledger-when">{t.dom == null ? 'new' : `${t.dom} days on market`}</span>
-            <span className="v3-ledger-what">{t.street || 'Listing'}</span>
-            <span className="v3-ledger-num">{money(t.price)}</span>
-          </Link>
-        ))}
-      </section>
-
-      {/* PATTERN 4: STAGE. Owned media, one line, one action. */}
-      <section className="v3-stage" aria-label="Central Oregon">
-        <video
-          className="v3-stage-video"
-          src="/videos/hero-optimized.mp4"
-          autoPlay={!reduced}
-          muted
-          loop
-          playsInline
-          poster="/videos/cities/bend.jpg"
-        />
-        <div className="v3-stage-copy">
-          <h2 className="v3-display v3-on-media">Every home in Central Oregon, one place.</h2>
-          <span className="v3-btn">Browse homes</span>
-        </div>
       </section>
 
       {/* PATTERN 5: SHEET. One question at a time. */}
@@ -256,9 +272,6 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
             {label}
           </Link>
         ))}
-        <p className="v3-source">
-          Prototype: real DAL data, six locked patterns, reduced motion honored{reduced ? ' (active now)' : ''}.
-        </p>
       </section>
     </main>
   )

@@ -7,6 +7,9 @@
   --navy-70: rgba(16, 39, 66, 0.7);
   --edge: rgba(16, 39, 66, 0.12);
   --wash: rgba(16, 39, 66, 0.06);
+  /* The brand display face. Without this every v3 heading fell back to Georgia,
+     so the prototype was not typeset in Amboqia at all. */
+  --font-display: var(--font-amboqia-safe);
   background: var(--cream);
   color: var(--navy);
   min-height: 100vh;
@@ -353,6 +356,135 @@
   font-size: 0.95rem;
 }
 
+/* ---------------------------------------------------------------------------
+   HOMES NODE (/dev/public-v3/homes). Additive only, tokens inherited from
+   .v3-root: navy #102742, cream #faf8f4, var(--edge), var(--wash). Nothing here
+   overrides a shared class, so the base node renders byte-identical.
+   --------------------------------------------------------------------------- */
+.v3h-head {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2.25rem 1.25rem 0;
+}
+.v3h-place {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.v3h-title {
+  font-size: clamp(1.9rem, 5.5vw, 3.2rem);
+  margin-bottom: 0.85rem;
+}
+.v3h-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+.v3h-num {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+}
+.v3h-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.1rem 0 0.65rem;
+}
+.v3h-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--navy-70);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 200ms ease-out, color 200ms ease-out, border-color 200ms ease-out;
+}
+.v3h-mode.is-on {
+  background: var(--wash);
+  border-color: var(--navy);
+  color: var(--navy);
+}
+.v3h-mode-n {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  opacity: 0.75;
+}
+.v3h-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--navy-70);
+  max-width: 44rem;
+}
+.v3h-mapwrap,
+.v3h-listwrap {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+}
+.v3h-maplegend {
+  margin-top: 0;
+}
+/* The set changing is a state change the visitor caused, so it enters. */
+.v3h-set {
+  animation: v3-rise 200ms ease-out;
+}
+/* Pins carry real coordinates, so a mode change moves them to the new
+   bounding box. That travel is the continuity, not decoration.
+   Bend inventory clusters, so price labels at rest stack on top of each other
+   and none of them can be read. At rest a pin is a dot. The price appears on
+   the one pin bound to the row under the cursor, which is the Field binding
+   doing the work instead of twenty labels fighting for the same 40 pixels. */
+.v3-pin.v3h-pin {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  background: var(--navy);
+  border-color: var(--cream);
+  overflow: hidden;
+  transition: left 300ms ease-out, top 300ms ease-out, transform 200ms ease-out,
+    background 200ms ease-out, color 200ms ease-out;
+}
+.v3-pin.v3h-pin .v3h-pin-label {
+  display: none;
+}
+.v3-pin.v3h-pin.is-active {
+  width: auto;
+  height: auto;
+  padding: 0.28rem 0.6rem;
+  border-color: var(--cream);
+}
+.v3-pin.v3h-pin.is-active .v3h-pin-label {
+  display: inline;
+}
+.v3h-badge {
+  justify-self: start;
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--navy-70);
+}
+.v3h-saved {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: start;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  background: var(--wash);
+  animation: v3-rise 300ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .v3-root *,
   .v3-root *::before,
@@ -361,4 +493,236 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   PLACES NODE (app/dev/public-v3/places). Additive only: nothing above this
+   line is modified. Same tokens, no new colors.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Section frame for the Field opening: the head sits above the map+list grid
+   so the honest state is read before the inventory. */
+.v3-place-head {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2.75rem 1.25rem 0;
+}
+.v3-place-note {
+  margin-top: 0.9rem;
+  max-width: 46rem;
+  border-left: 2px solid var(--edge);
+  padding-left: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--navy-70);
+}
+.v3-place-cta {
+  display: flex;
+  margin-top: 0.5rem;
+}
+
+/* Ledger row: the beds/baths line under the address. */
+.v3-ledger-sub {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--navy-70);
+}
+
+/* Quiet exits. The place chip nudges toward its destination on hover/focus:
+   the only motion here, and it encodes that place context carries across the
+   edge. Reduced motion collapses the transition and the chip stays visible. */
+.v3-place-exit {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--edge);
+  color: var(--navy);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+.v3-place-exit-label {
+  margin-right: auto;
+}
+.v3-place-exit-note {
+  font-size: 0.78rem;
+  color: var(--navy-70);
+}
+.v3-place-chip {
+  background: var(--wash);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  transition: opacity 200ms ease-out, transform 200ms ease-out;
+}
+.v3-place-exit:hover .v3-place-chip,
+.v3-place-exit:focus-visible .v3-place-chip {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+/* ==========================================================================
+   SELL NODE (app/dev/public-v3/sell). Added by the Sell node only.
+   Same tokens as above: navy #102742 / cream #faf8f4 / var(--edge) / var(--wash).
+   Nothing here restyles a class the other nodes use, except the two additive
+   modifiers .v3-sell-stage and .v3-figures-5, which apply only where opted in.
+   ========================================================================== */
+
+/* DEFECT FIX, scoped to this node so no other node's render changes underneath it.
+   The shared rules above ask for var(--font-display), which this codebase does not
+   define anywhere. An undefined custom property makes the whole font-family
+   declaration invalid at computed-value time, so every .v3-display / .v3-h2 / .v3-num
+   silently inherited Geist instead of the Amboqia display face the brand locks. The
+   real token is --font-amboqia-safe (app/globals.css), aliased here on the node root
+   so it cascades to every descendant. */
+.v3-sell-root {
+  --font-display: var(--font-amboqia-safe);
+}
+
+/* Stage sized so the first question of the valuation spine peeks under the fold. */
+.v3-sell-stage {
+  min-height: 78vh;
+}
+@media (min-width: 768px) {
+  .v3-sell-stage {
+    min-height: 72vh;
+  }
+}
+
+/* Legibility layer under the Stage line. Cream on navy at this depth is AAA. */
+.v3-stage-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(16, 39, 66, 0.78) 0%,
+    rgba(16, 39, 66, 0.42) 46%,
+    rgba(16, 39, 66, 0.16) 100%
+  );
+}
+.v3-on-media-eyebrow {
+  color: var(--cream);
+  text-shadow: 0 1px 12px rgba(16, 39, 66, 0.6);
+}
+
+/* Anchor target for the two Start-with-your-address actions. */
+.v3-sell-anchor {
+  scroll-margin-top: 5rem;
+}
+
+/* Instrument with five figures: 2 up on 390, 3 on tablet, 5 across on wide. */
+.v3-figures-5 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 768px) {
+  .v3-figures-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .v3-figures-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+.v3-sell-band {
+  border-top: 1px solid var(--edge);
+}
+
+/* PATTERN 5 again: the single plan. */
+.v3-sell-plan {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 3rem 1.25rem;
+  border-top: 1px solid var(--edge);
+}
+.v3-sell-rate {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  margin: 0.25rem 0 1.25rem;
+}
+.v3-sell-rate-num {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2.6rem, 9vw, 4.4rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.v3-sell-lede {
+  max-width: 42rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--navy-70);
+}
+.v3-disclosure {
+  margin-top: 1.5rem;
+  background: none;
+  border: 1px solid var(--navy);
+  border-radius: 999px;
+  color: var(--navy);
+  padding: 0.7rem 1.15rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 44px;
+  cursor: pointer;
+  transition: background 200ms ease-out, color 200ms ease-out;
+}
+.v3-disclosure:hover {
+  background: var(--wash);
+}
+.v3-sell-groups {
+  margin-top: 1.75rem;
+  display: grid;
+  gap: 1.75rem;
+  animation: v3-rise 300ms ease-out;
+}
+/* display:grid above would defeat the UA rule for [hidden], so restate it. */
+.v3-sell-groups[hidden] {
+  display: none;
+}
+@media (min-width: 768px) {
+  .v3-sell-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.75rem 2.5rem;
+  }
+}
+.v3-sell-group-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--navy-70);
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--edge);
+  margin-bottom: 0.7rem;
+}
+.v3-sell-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.v3-sell-item {
+  position: relative;
+  padding-left: 1.05rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+.v3-sell-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.58em;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--navy);
+  opacity: 0.55;
+}
+.v3-sell-cta {
+  margin-top: 2.25rem;
 }

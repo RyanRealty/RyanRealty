@@ -55,6 +55,8 @@ export default async function PublicV3PrototypePage() {
         city: t.city,
         photoUrl: t.photoUrl,
         dom: t.dom,
+        lat: t.lat,
+        lng: t.lng,
       }))}
     />
   )
