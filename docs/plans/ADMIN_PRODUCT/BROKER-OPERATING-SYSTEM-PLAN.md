@@ -1,14 +1,15 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.5 plan. D8 locked (Matt 2026-08-12). Not otherwise a lock.
+**Status:** v0.6 plan. D8 locked (Matt 2026-08-12). Not otherwise a lock.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
 
 This is the plan behind the broker OS prompt: copilot, known-seller streams,
 buyer/newsletter, Closings/forms, public site, acquisition/truth, GBP + a
-self-running social calendar, a broker home that looks finished, and a
+self-running social calendar, a broker home that looks finished, charts
+wherever we display a series, visual inspection (not only code), and a
 designer's bar on everything we send.
 
 ---
@@ -72,6 +73,9 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A24 | **"Broker dashboard" as destination 12.** IA already locked 11 jobs. Today = what to do; Closings = deals; Reports = numbers; Settings = modify; Content = publish. A 12th home repeats the 160-route problem. | A new dashboard OS would fight the lock and the public session. | The broker home **is Today**, with four lanes (do / socials / deals / modify). Do not add a nav word. |
 | A25 | **"Super awesome" vs locked ADMIN_UI.** Admin is a calm instrument (queues over dashboards; public navy/Amboqia blacklisted). Outbound posts and packets are the marketing surface. | Painting admin like the public site reopens P6. | Outbound must blow them away. Admin must look *finished* inside ADMIN_UI (no leftover islands, every screen leads with the next action). Reopen visual lock only if Matt says the instrument itself is wrong. |
 | A26 | **Identical cross-post is not "optimized per channel."** Platform skills already ban watermarked/cross-posted Reels. "All channels" is not Threads/Nextdoor/Pinterest (parked) and not the same caption everywhere. | Spray-and-pray would tank reach and look cheap. | One idea → per-channel variants (length, format, hook). D6 still limits which channels are live. |
+| A27 | **We flattened series into type.** Public v3 Instrument is a big number with no chart primitive in the barrel. Admin 11C replaced recharts sparklines with typographic figures + a plain polyline, citing "data is typographic." Market charts still live in KB (`KbMarketChart`, `MarketCoreCharts`, `PriceChart`). | A median without the line is not the market. Code that "has the number" is not visualization. | Series and comparisons get a chart. A singleton status stays type. Vanity KPI walls stay cut. |
+| A28 | **Code inspection cannot see a lying chart.** Gates catch hex, nesting, empty aria-labels. They do not catch a clipped Y-axis, a smear at 390, a tooltip that invents a number, or a sparkline that does not match the figure beside it. | Public OS already requires browser 390+1280. That is not yet a *chart* look. | Visual inspection is law: load the page, look at the chart, reconcile to the figure and the source. Screenshot or it did not happen. |
+| A29 | **A 7th public pattern would reopen P6.** The six are closed. Atoms may grow. | A "Chart" destination or a new OS is the death mode. | **D9.** Recommend: a v3 chart **atom** inside Instrument (trend under the answer), not pattern 7. Admin charts use `--a-*` (11F already burned on hardcoded navy in recharts). Public session owns the public atom. |
 
 **Verdict:** The brief is right. The failure mode is either boiling the ocean
 **or** protecting yesterday's code. Sequence the loops. Keep only the machines
@@ -173,6 +177,17 @@ Two surfaces, one bar, different languages (already locked — do not mix them):
 - **Outbound** (posts, packets, newsletter, list-kit): blow them away. Tumalo kit is the named exemplar.
 - **Admin / broker home:** a finished instrument (`design_system/admin/ADMIN_UI.md`). Every screen leads with the next action. No leftover islands. Not a marketing page. If the instrument itself is ugly, fix it inside the lock — or Matt reopens P6.
 
+### Chart lock (Matt 2026-08-12 — we are dropping the ball)
+
+**The data is the spectacle** is already the public thesis. We are not living it. A series shown only as a number, a table, or a dead polyline is a defect.
+
+- **Series or comparison → chart.** Price over time, months of supply, social reach, pipeline, seasonality, comps vs subject. Honest axes, labeled, source line, empty state that states the reason. No pie. No 3D. No chartjunk. Reduced-motion: static final state.
+- **Singleton status → type.** "4 things need you" stays a sentence. ADMIN_UI still bans a KPI wall that *is* the page.
+- **Look at it.** Every data surface is inspected in a real browser at 390 and 1280 on live numbers. Code review is necessary and not sufficient. If the line and the figure disagree, the chart is wrong — even if every gate is green.
+- **One language per plane.** Public charts are a v3 atom (D9), not a leftover `KbMarketChart` on a v3 page. Admin charts resolve `--a-*` at runtime (recharts cannot take `var()`). CMA/packet charts are print craft, same honesty.
+
+Quarry, not a new library: recharts is installed; `KbMarketChart`, `PriceChart`, `MarketCoreCharts`, `SalesReportCharts`, CMA `seasonalityChartSvg`, admin `analytics/_components/charts.tsx` exist. Steal the honest ones. Replace the ones that lie or live in the wrong register.
+
 ---
 
 ## 2. Quarry — steal what's right, cut what isn't
@@ -206,7 +221,10 @@ is the thing we replace.
 | Format performance | `getFormatPerformance` in `lib/marketing-brain/generate-briefs.ts` | Per-platform uplift, `best_hours`, `best_topics`. Starved by measured=0. |
 | Measurement loop | `lib/marketing-brain/measurement-loop.ts` | 48h/7d/30d pulls + winners digest. CAP-015 must actually flip `measured`. |
 | Platform specs | `social_media_skills/platform-best-practices/SKILL.md` | Per-channel variants. Bans identical cross-post. |
-| Admin visual | `design_system/admin/ADMIN_UI.md` | Broker home language. Queues over dashboards. |
+| Admin visual | `design_system/admin/ADMIN_UI.md` | Broker home language. Queues over dashboards. Charts of series are allowed; KPI walls are not. |
+| Public charts (KB) | `KbMarketChart`, `MarketCoreCharts`, `PriceChart`, `SalesReportCharts` | Honest series quarry. Do not import onto a v3 page — lift into a v3 atom. |
+| Admin charts | `app/admin/.../analytics/_components/charts.tsx`, `AgentActivityChart` | Recharts. Must use `--a-*` at runtime (11F). KPI strips that dropped sparklines are the miss. |
+| CMA charts | `lib/cma/render.ts` `seasonalityChartSvg` | Packet craft. Visual-inspect the PDF, not only the SVG string. |
 | Own-book scope | `crm_people.assigned_broker` (Q4) | Paul/Rebecca see their book. Matt sees all. |
 | Prospecting worklist | `/admin/prospecting`, first-touch templates | Expired/FSBO stream machine |
 | TC foundation | `tc_*`, envelope engine, `/admin/forms`, ingest | Closings — unused in production |
@@ -254,6 +272,16 @@ is the thing we replace.
 - No deliverable litmus. Voice gates ≠ design gates.
 - Two visual languages (public vs admin v2). Outbound packets need a third: print/email craft, with named exemplars.
 
+### Charts (everywhere we display a series)
+
+- Public v3 has **no chart atom**. Instrument is a big number. KB still holds the real market charts. Migrations can ship a Market page that lost the line.
+- Admin 11C *removed* recharts sparklines from KPI strips in the name of typography. The series is still in the data. The picture is gone.
+- Existing charts were not all looked at: 11F found public navy hardcoded in agent-activity recharts. A green gate is not a visual pass.
+- CMA seasonality SVG exists; nobody this program has opened the rendered PDF and asked if it blows them away.
+- Social lane on Today has no chart of what worked — and cannot until measured=0 is fixed.
+
+Do not start a chart-library program. Steal recharts + the honest KB charts. Add a v3 atom (D9). Look at every one in a browser.
+
 ### Presence (G)
 
 - Pipeline is real. Production is not. Last live census 2026-08-08 (re-probe before G1): GBP / LinkedIn / YouTube / X **EXPIRED**; TikTok was valid only until 2026-08-09; Threads / Nextdoor / Pinterest **PARKED**. Meta page tokens exist (INT-007 amber) — ads parked, organic IG/FB still in scope.
@@ -296,6 +324,10 @@ Until D6 is answered, G1 is GBP + Matt's primary IG (and brand FB), not every pa
 Until D7 is answered, G3 is per-item yes on a week of drafts — no standing grant.
 D8 is locked. G4 is unblocked on the decision; it still needs the per-broker OAuth store.
 
+**D9 — Public chart: atom inside Instrument, or a 7th pattern?** Recommend: **atom**. The six patterns stay closed. A trend lives under the big answer. A 7th pattern reopens P6. Confirm before the public session adds it to the barrel.
+
+Until D9 is answered, public families must not *delete* a working KB chart without a v3 replacement in the same change. Flattening a series to a figure is a defect.
+
 ---
 
 ## 5. Four questions (every process)
@@ -313,6 +345,8 @@ If the *job* scores high and the *current how* scores low, the finding is
 Plus: **Improve** / **Inform** (more information only if it changes the action).
 Plus: **Funnel** — how does this page or process drive a buyer or seller in?
 If it does not, it is a candidate to cut or merge.
+Plus: **Chart** — if this is a series or a comparison, is it a chart (honest axes, source, empty state) or did we flatten it to a number?
+Plus: **Look** — was this data surface opened in a real browser at 390 and 1280 on live numbers this session? Code review is not the look.
 
 Loop C extra: Know / Market / Message / Voice / True / Stream.
 Loop B extra: Libraries / Anticipate / Fill / Send / File / Onboard.
@@ -330,6 +364,8 @@ Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / 
 - GPC honored on watch + send
 - No "what's my home worth" on a seller **CTA we would tap** (inventory first)
 - No social post without a fresh stamp (calendar grant counts; silence does not)
+- No invented number on a chart axis, tooltip, or sparkline
+- No data surface shipped that was only grepped — look at it
 
 ### P1 — first complete loops (this is "start using it")
 
@@ -354,6 +390,7 @@ Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / 
 - **Calendar:** one week of per-channel drafts → copilot ask → yes → timed posts. Measurement writes. Next week uses `best_hours` / winning formats.
 - **Per-broker OAuth** in Settings (D8 locked). Matt's IG is primary. Paul/Rebecca connect their own IG / Facebook / LinkedIn. Calendar posts brand + broker as variants.
 - **Today as broker home:** do / socials / deals / modify. Own book. Looks finished inside ADMIN_UI.
+- **Chart pass:** every series we display is a chart, looked at in a browser. Public = v3 atom (D9). Admin = `--a-*` recharts, not a polyline that pretends. Packets = the CMA/seasonality figure actually read.
 
 ### P3 — strip bloat
 
@@ -370,6 +407,9 @@ Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / 
 - A 12th "Broker Dashboard" destination
 - Google Sheets / FUB as the content calendar
 - Identical cross-posts dressed up as "optimized"
+- A 7th public pattern (or a chart OS) instead of a v3 atom
+- A KPI wall that *is* the page
+- Flattening a time series to a single figure and calling it Instrument
 
 ### P4 — later
 
@@ -391,10 +431,13 @@ Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / 
 | **G2** Easy generate → post | Name a listing (or "GBP market update") → draft on Today → yes → live on Matt's primary IG (or brand FB / GBP). Same `humanApprovedAt` gate. | G1 tokens. Do not bypass the queue. |
 | **G3** One week on a calendar | Copilot: "Hey Paul, want me to set up some ideas?" Week of per-channel drafts on Today. Yes → posts at `best_hours` (or a documented default until data exists). | G2. D7 default = per-item until standing grant. |
 | **G4** Broker connects own socials | Paul/Rebecca (or a new broker) OAuth from Settings: their IG, Facebook, LinkedIn (and later the rest of the live set). Calendar can post to *their* accounts as variants of the brand post. Own-book Today shows their social lane. | D8 locked. Do not stuff personal tokens into Matt's primary IG or the brand GBP row. |
+| **V1** Chart inventory | Path:line of every public, admin, and packet surface that displays a series as type/table only, plus every live chart that was not browser-looked-at. | None. Planning/evidence. Do not migrate public charts in a broker session. |
+| **V2** One honest chart, looked at | One series (recommend: `/housing-market` trend or admin overview sparkline) is a real chart, 390 + 1280, figure reconciles to the line, source on screen. | Public half = public session + D9. Admin half can run here. |
 
 Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
 G1 can run the day Matt reconnects — it does not wait for A1. G2 shares Today's yes-path with A2; do not build a third approve button.
 G3 is the north star slice; it is not the first slice. Tokens and one live post come first or the calendar is a slideshow.
+V1 can run in the planning pass. V2 public waits on the other process's barrel.
 
 ---
 
@@ -418,8 +461,10 @@ language itself is wrong — amnesia allows that; a new OS does not).
    disk** — as of 2026-08-12 the queue still names the reverted Market attempt
    and a chrome unit that already shipped. Do not obey a stale next-id.
 3. **One family per unit, ratchet must shrink, one commit, push, deploy
-   READY, browser 390 + 1280.** Gate contracts for that route move in the
-   **same** change (the lesson that reverted the first Market attempt).
+   READY, browser 390 + 1280 — including looking at every chart.** Gate contracts
+   for that route move in the **same** change (the lesson that reverted the first
+   Market attempt). A series flattened to a figure is not a migration, it is a
+   deletion. Declare it or replace it with a v3 chart atom (D9).
 4. **Leverage order (verify queue vs disk each session):** chrome unit
    unblocks the most pages (KB chrome was most of the ratchet). Then Market
    remainder → Places → Homes/listing → Sell + valuation spine → About/trust
@@ -458,14 +503,16 @@ If a file exists only to support the old generation, it is holding us back. Cut 
 ```
 run public product. Grind P9 until every public family is on v3. One family
 per commit, ratchet shrinks, gate contracts move in the same change, browser
-390 and 1280, deploy READY. Chrome leverage first if the queue still says
-so — verify disk. Implementation amnesia: do not polish KB/legacy; migrate
-or cut. Beauty bar: if it would not make them want to see what we're about,
-it is not done. On every page: how does this drive someone into the funnel.
-SEO/JSON-LD/llms.txt stay honest so an LLM asked for the best broker in Bend
-or a 3-bed in Northwest Crossing can cite us. Ads parked. Stop only for a
-Matt lock, empty P9 queue, or a real blocker. When P9 is empty, do P10, then
-the standing refine loop in
+390 and 1280, deploy READY. LOOK at every chart — a series flattened to a
+figure is a deletion; replace it with a v3 chart atom (D9: atom inside
+Instrument, not a 7th pattern) or declare it. Chrome leverage first if the
+queue still says so — verify disk. Implementation amnesia: do not polish
+KB/legacy; migrate or cut. Beauty bar: if it would not make them want to
+see what we're about, it is not done. On every page: how does this drive
+someone into the funnel. SEO/JSON-LD/llms.txt stay honest so an LLM asked
+for the best broker in Bend or a 3-bed in Northwest Crossing can cite us.
+Ads parked. Stop only for a Matt lock, empty P9 queue, or a real blocker.
+When P9 is empty, do P10, then the standing refine loop in
 docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loops E and F.
 ```
 
@@ -552,6 +599,21 @@ Looks **super awesome** means: outbound artifacts blow them away; the home is a 
 
 ---
 
+## 7e. Charts + visual inspection (Matt 2026-08-12)
+
+This is already supposed to be in the process (public OS: browser 390+1280; admin 11F: load routes at 375). It is not specific enough, and we dropped the ball on the picture.
+
+**Pass, everywhere we display data:**
+
+1. Inventory the surface (V1). Is it a singleton or a series/comparison?
+2. If series: there is a chart in the *current* visual language (v3 atom / admin `--a-*` / packet SVG). Not a leftover KB widget on a v3 page. Not a polyline that replaced recharts to satisfy a misread of "data is typographic."
+3. **Look.** Real browser, 390 and 1280, live numbers. The line matches the figure. Axes are honest (zero baseline unless a labeled index). Tooltip does not invent. Empty state states the reason. Reduced-motion is complete, not blank. Screenshot in the commit or the decisions log.
+4. Code gates still run. They do not replace step 3.
+
+Public chart work is Loop E (barrel atom). Admin + packet charts are this plan. Do not mix.
+
+---
+
 ## 8. Collision + evidence rules
 
 - No product code in the planning pass unless Matt says go.
@@ -573,6 +635,8 @@ Looks **super awesome** means: outbound artifacts blow them away; the home is a 
   Brand reconnect is Matt OAuth. Per-broker connect is that broker's OAuth.
 - Dirty public tree (`app/**/_v3/`, place/market pages, `components/site/v3`):
   inventory, do not edit, do not `git add -A`. Commit this plan with pathspecs.
+- **Charts:** public atom = public session. Admin/packet charts = this plan.
+  Visual inspection is required on both. A green `ci:gates` is not a look.
 
 ---
 
@@ -630,15 +694,21 @@ cut or merge.
 VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
 BEAUTY: outbound blows them away. Admin is a finished instrument (ADMIN_UI), not a
 marketing page. If it would not make them want to see what we're about, it does not send.
+CHARTS: a series or comparison is a chart — honest axes, source, empty state.
+  Public: v3 atom inside Instrument (D9), not a leftover KB chart, not a 7th pattern.
+  Admin: --a-* recharts; typography does not mean "delete the sparkline."
+  Packets: look at the rendered PDF.
+LOOK: every data surface is opened in a real browser at 390 and 1280 on live numbers.
+  Code inspection is necessary and not sufficient. Screenshot or it did not happen.
 
 Canon: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md
 Orient: ENTERPRISE_MAP/SESSION_HANDOFF.md, CROSS_AGENT_HANDOFF.md, ADMIN_PRODUCT
 disk, then the skills that match the loop you are scoring.
 
-Score every locked process: best / simple / clear / e2e / funnel — on the job, then
+Score every locked process: best / simple / clear / e2e / funnel / chart / look — on the job, then
 say whether the current how should be kept or replaced.
-Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1/G1/G2/G3/G4.
-Stop for Matt on D1–D7 in the plan (D8 locked). Then wait.
+Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1/G1/G2/G3/G4/V1/V2.
+Stop for Matt on D1–D7 and D9 in the plan (D8 locked). Then wait.
 ```
 
 ---
@@ -652,3 +722,4 @@ Stop for Matt on D1–D7 in the plan (D8 locked). Then wait.
 - 2026-08-12 — v0.4 Loop G presence + live Loop E status. Public Product OS is in-flight on this tree (Places/Market `_v3/`, migration-recipe); broker OS does not touch it. GBP is first-class; organic social generate→approve→post must be production-ready on the existing pipeline (tokens + one door + one yes + live permalink). D6 added. Paid ads still parked.
 - 2026-08-12 — v0.5 Loop G calendar + broker home. Auto calendar, per-channel variants, learn-from-results, per-broker OAuth. Copilot sentence: "Hey Paul, want me to set up some ideas?" Today = do / socials / deals / modify (not dest 12). Draft-first stays: yes on the calendar, then it runs. D7 standing week-grant; D8 brand vs personal accounts. Beauty: outbound blows them away; admin is finished ADMIN_UI. Still planning only.
 - 2026-08-12 — D8 LOCKED (Matt): his Instagram is the primary IG. Brand FB/LI/GBP are the brokerage. Each broker hooks up their own Instagram, Facebook, LinkedIn, and the rest of the live set. Variants, never the same file twice. GBP is not per-broker. G4 unblocked on the decision.
+- 2026-08-12 — v0.6 charts + look. Series must be charts; visual inspection in a real browser is law (code review is not the look). v3 has no chart atom; admin 11C dropped sparklines. D9: recommend atom inside Instrument, not pattern 7. Slices V1/V2. Public chart work stays with the public session.
