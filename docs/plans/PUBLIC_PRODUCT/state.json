@@ -3,8 +3,8 @@
   "locks": {
     "process": "2026-08-11"
   },
-  "awaiting_lock": null,
-  "current_process": "P4 complete: data-atlas.md — 239 chains, 191 hold, 48 broken (gap statements + 5 critic buckets). Next: P5 IA package under amnesia.",
+  "awaiting_lock": "ia",
+  "current_process": "P5 package complete: ia-lock.md (6 destinations, continuity spec, amnesia test) + cut-list.md (GSC-evidenced) + 142-route dual-objective ledger. Awaiting Matt IA lock.",
   "plan_of_record": "docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md",
-  "updated_at": "2026-08-11T05:00:00Z"
+  "updated_at": "2026-08-11T06:00:00Z"
 }

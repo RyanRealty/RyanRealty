@@ -1,147 +1,2035 @@
 {
-  "updated_at": "2026-08-11T01:00:00Z",
-  "note": "P1 best-effort process map. destination/objectives/exits are P5 — leave them out at P1.",
+  "updated_at": "2026-08-11T06:00:00Z",
+  "note": "P5 draft ledger: destination + visitor_objective + machine_objective + exits per route (7 family agents); cut candidates carry GSC 90d evidence (live Search Console API via service account). BINDS at IA lock only.",
   "routes": {
-    "/": { "process": "find-a-home", "file": "app/page.tsx" },
-    "/about": { "process": "contact-a-broker", "file": "app/about/page.tsx" },
-    "/accessibility": { "process": "serve-legal", "file": "app/accessibility/page.tsx" },
-    "/account": { "process": "save-and-return", "file": "app/account/page.tsx" },
-    "/account/areas": { "process": "save-and-return", "file": "app/account/areas/page.tsx" },
-    "/account/buying-preferences": { "process": "save-and-return", "file": "app/account/buying-preferences/page.tsx" },
-    "/account/collections": { "process": "save-and-return", "file": "app/account/collections/page.tsx" },
-    "/account/collections/[id]": { "process": "save-and-return", "file": "app/account/collections/[id]/page.tsx" },
-    "/account/hidden": { "process": "save-and-return", "file": "app/account/hidden/page.tsx" },
-    "/account/history": { "process": "save-and-return", "file": "app/account/history/page.tsx" },
-    "/account/notifications": { "process": "save-and-return", "file": "app/account/notifications/page.tsx" },
-    "/account/profile": { "process": "save-and-return", "file": "app/account/profile/page.tsx" },
-    "/account/saved-cities": { "process": "save-and-return", "file": "app/account/saved-cities/page.tsx" },
-    "/account/saved-communities": { "process": "save-and-return", "file": "app/account/saved-communities/page.tsx" },
-    "/account/saved-homes": { "process": "save-and-return", "file": "app/account/saved-homes/page.tsx" },
-    "/account/saved-searches": { "process": "save-and-return", "file": "app/account/saved-searches/page.tsx" },
-    "/activity": { "process": "explore-market-knowledge", "file": "app/activity/page.tsx" },
-    "/alerts/unsubscribe": { "process": "deliver-alerts", "file": "app/alerts/unsubscribe/page.tsx" },
-    "/area-guides": { "process": "evaluate-a-place", "file": "app/area-guides/page.tsx" },
-    "/areas/[slug]": { "process": "evaluate-a-place", "file": "app/areas/[slug]/page.tsx" },
-    "/auth-error": { "process": "save-and-return", "file": "app/auth-error/page.tsx" },
-    "/blog": { "process": "read-content", "file": "app/blog/page.tsx" },
-    "/blog/[slug]": { "process": "read-content", "file": "app/blog/[slug]/page.tsx" },
-    "/bpo/[slug]": { "process": "get-home-value", "file": "app/bpo/[slug]/route.ts" },
-    "/builders": { "process": "evaluate-a-place", "file": "app/builders/page.tsx" },
-    "/builders/[slug]": { "process": "evaluate-a-place", "file": "app/builders/[slug]/page.tsx" },
-    "/buy": { "process": "plan-a-purchase", "file": "app/buy/page.tsx" },
-    "/buy/[intent]": { "process": "plan-a-purchase", "file": "app/buy/[intent]/page.tsx" },
-    "/central-oregon/events": { "process": "evaluate-a-place", "file": "app/central-oregon/events/page.tsx" },
-    "/central-oregon/events/[slug]": { "process": "evaluate-a-place", "file": "app/central-oregon/events/[slug]/page.tsx" },
-    "/central-oregon/golf/[slug]": { "process": "evaluate-a-place", "file": "app/central-oregon/golf/[slug]/page.tsx" },
-    "/central-oregon/trails": { "process": "evaluate-a-place", "file": "app/central-oregon/trails/page.tsx" },
-    "/central-oregon/trails/[slug]": { "process": "evaluate-a-place", "file": "app/central-oregon/trails/[slug]/page.tsx" },
-    "/central-oregon/venues": { "process": "evaluate-a-place", "file": "app/central-oregon/venues/page.tsx" },
-    "/central-oregon/venues/[slug]": { "process": "evaluate-a-place", "file": "app/central-oregon/venues/[slug]/page.tsx" },
-    "/cities": { "process": "evaluate-a-place", "file": "app/cities/page.tsx" },
-    "/cities/[slug]": { "process": "evaluate-a-place", "file": "app/cities/[slug]/page.tsx" },
-    "/cities/[slug]/[neighborhoodSlug]": { "process": "evaluate-a-place", "file": "app/cities/[slug]/[neighborhoodSlug]/page.tsx" },
-    "/clear": { "process": "UNMAPPED", "file": "app/clear/route.ts" },
-    "/cma/[slug]": { "process": "get-home-value", "file": "app/cma/[slug]/route.ts" },
-    "/cma-drafts/[id]": { "process": "get-home-value", "file": "app/cma-drafts/[id]/page.tsx" },
-    "/communities": { "process": "evaluate-a-place", "file": "app/communities/page.tsx" },
-    "/communities/[slug]": { "process": "evaluate-a-place", "file": "app/communities/[slug]/page.tsx" },
-    "/compare": { "process": "find-a-home", "file": "app/compare/page.tsx" },
-    "/contact": { "process": "contact-a-broker", "file": "app/contact/page.tsx" },
-    "/cookies": { "process": "serve-legal", "file": "app/cookies/page.tsx" },
-    "/dashboard": { "process": "save-and-return", "file": "app/dashboard/page.tsx" },
-    "/dashboard/collections": { "process": "save-and-return", "file": "app/dashboard/collections/page.tsx" },
-    "/dashboard/collections/[id]": { "process": "save-and-return", "file": "app/dashboard/collections/[id]/page.tsx" },
-    "/dashboard/history": { "process": "save-and-return", "file": "app/dashboard/history/page.tsx" },
-    "/dashboard/likes": { "process": "save-and-return", "file": "app/dashboard/likes/page.tsx" },
-    "/dashboard/marketing": { "process": "UNMAPPED", "file": "app/dashboard/marketing/page.tsx" },
-    "/dashboard/marketing/inbox": { "process": "UNMAPPED", "file": "app/dashboard/marketing/inbox/page.tsx" },
-    "/dashboard/notifications": { "process": "save-and-return", "file": "app/dashboard/notifications/page.tsx" },
-    "/dashboard/saved": { "process": "save-and-return", "file": "app/dashboard/saved/page.tsx" },
-    "/dashboard/searches": { "process": "save-and-return", "file": "app/dashboard/searches/page.tsx" },
-    "/dashboard/settings": { "process": "save-and-return", "file": "app/dashboard/settings/page.tsx" },
-    "/data-deletion": { "process": "serve-legal", "file": "app/data-deletion/page.tsx" },
-    "/data/market/[geoType]/[geoSlug]": { "process": "earn-search-traffic", "file": "app/data/market/[geoType]/[geoSlug]/route.ts" },
-    "/dmca": { "process": "serve-legal", "file": "app/dmca/page.tsx" },
-    "/fair-housing": { "process": "serve-legal", "file": "app/fair-housing/page.tsx" },
-    "/faq": { "process": "read-content", "file": "app/faq/page.tsx" },
-    "/faq/[slug]": { "process": "read-content", "file": "app/faq/[slug]/page.tsx" },
-    "/feed": { "process": "find-a-home", "file": "app/feed/page.tsx" },
-    "/forgot-password": { "process": "save-and-return", "file": "app/forgot-password/page.tsx" },
-    "/homes-for-sale": { "process": "find-a-home", "file": "app/search/page.tsx" },
-    "/homes-for-sale/[...slug]": { "process": "find-a-home", "file": "app/search/[...slug]/page.tsx" },
-    "/housing-market": { "process": "explore-market-knowledge", "file": "app/housing-market/page.tsx" },
-    "/housing-market/[...slug]": { "process": "explore-market-knowledge", "file": "app/housing-market/[...slug]/page.tsx" },
-    "/housing-market/annual-review": { "process": "explore-market-knowledge", "file": "app/housing-market/annual-review/page.tsx" },
-    "/housing-market/central-oregon": { "process": "explore-market-knowledge", "file": "app/housing-market/central-oregon/page.tsx" },
-    "/housing-market/history": { "process": "explore-market-knowledge", "file": "app/housing-market/history/page.tsx" },
-    "/housing-market/reports": { "process": "explore-market-knowledge", "file": "app/housing-market/reports/page.tsx" },
-    "/housing-market/reports/[slug]": { "process": "explore-market-knowledge", "file": "app/housing-market/reports/[slug]/page.tsx" },
-    "/housing-market/reports/[slug]/[geoName]": { "process": "explore-market-knowledge", "file": "app/housing-market/reports/[slug]/[geoName]/page.tsx" },
-    "/housing-market/reports/archive/[city]": { "process": "explore-market-knowledge", "file": "app/housing-market/reports/archive/[city]/page.tsx" },
-    "/join": { "process": "UNMAPPED", "file": "app/join/page.tsx" },
-    "/listing/[listingKey]": { "process": "find-a-home", "file": "app/listing/[listingKey]/page.tsx" },
-    "/listing/by-address/[...slug]": { "process": "find-a-home", "file": "app/listing/by-address/[...slug]/page.tsx" },
-    "/listing/by-key/[listingKey]": { "process": "REDIRECT", "file": "app/listing/by-key/[listingKey]/page.tsx" },
-    "/listing/odsmls/[...slug]": { "process": "REDIRECT", "file": "app/listing/odsmls/[...slug]/route.ts" },
-    "/llms.txt": { "process": "earn-search-traffic", "file": "app/llms.txt/route.ts" },
-    "/login": { "process": "save-and-return", "file": "app/login/page.tsx" },
-    "/lp/bend": { "process": "arrive-from-ad", "file": "app/lp/bend/page.tsx" },
-    "/lp/buyer-listing-alerts": { "process": "arrive-from-ad", "file": "app/lp/buyer-listing-alerts/page.tsx" },
-    "/lp/central-oregon-golf": { "process": "arrive-from-ad", "file": "app/lp/central-oregon-golf/page.tsx" },
-    "/lp/expired-listing": { "process": "arrive-from-ad", "file": "app/lp/expired-listing/page.tsx" },
-    "/lp/fsbo": { "process": "arrive-from-ad", "file": "app/lp/fsbo/page.tsx" },
-    "/lp/sell-your-home": { "process": "arrive-from-ad", "file": "app/lp/sell-your-home/page.tsx" },
-    "/lp/seller-home-value": { "process": "arrive-from-ad", "file": "app/lp/seller-home-value/page.tsx" },
-    "/lp/tetherow": { "process": "arrive-from-ad", "file": "app/lp/tetherow/page.tsx" },
-    "/lp/tetherow/heath": { "process": "arrive-from-ad", "file": "app/lp/tetherow/heath/page.tsx" },
-    "/luxury-homes-bend": { "process": "find-a-home", "file": "app/luxury-homes-bend/page.tsx" },
-    "/marketing/request": { "process": "UNMAPPED", "file": "app/marketing/request/page.tsx" },
-    "/months-of-supply": { "process": "explore-market-knowledge", "file": "app/months-of-supply/page.tsx" },
-    "/motivated-sellers": { "process": "find-a-home", "file": "app/motivated-sellers/page.tsx" },
-    "/motivated-sellers/[city]": { "process": "find-a-home", "file": "app/motivated-sellers/[city]/page.tsx" },
-    "/newsletter/unsubscribe": { "process": "deliver-alerts", "file": "app/newsletter/unsubscribe/page.tsx" },
-    "/offline": { "process": "UNMAPPED", "file": "app/offline/page.tsx" },
-    "/open-houses": { "process": "find-a-home", "file": "app/open-houses/page.tsx" },
-    "/open-houses/[city]": { "process": "find-a-home", "file": "app/open-houses/[city]/page.tsx" },
-    "/oregon/[city]": { "process": "refer", "file": "app/oregon/[city]/page.tsx" },
-    "/our-homes": { "process": "find-a-home", "file": "app/our-homes/page.tsx" },
-    "/parks": { "process": "evaluate-a-place", "file": "app/parks/page.tsx" },
-    "/parks/[slug]": { "process": "evaluate-a-place", "file": "app/parks/[slug]/page.tsx" },
-    "/price-drops": { "process": "find-a-home", "file": "app/price-drops/page.tsx" },
-    "/price-drops/[city]": { "process": "find-a-home", "file": "app/price-drops/[city]/page.tsx" },
-    "/privacy": { "process": "serve-legal", "file": "app/privacy/page.tsx" },
-    "/pulse": { "process": "explore-market-knowledge", "file": "app/pulse/page.tsx" },
-    "/r/[code]": { "process": "capture-and-attribute", "file": "app/r/[code]/route.ts" },
-    "/reports": { "process": "explore-market-knowledge", "file": "app/reports/page.tsx" },
-    "/reports/[slug]": { "process": "explore-market-knowledge", "file": "app/reports/[slug]/page.tsx" },
-    "/reports/[slug]/[geoName]": { "process": "explore-market-knowledge", "file": "app/reports/[slug]/[geoName]/page.tsx" },
-    "/reports/sales/[city]/[period]": { "process": "explore-market-knowledge", "file": "app/reports/sales/[city]/[period]/page.tsx" },
-    "/resources": { "process": "read-content", "file": "app/resources/page.tsx" },
-    "/reviews": { "process": "contact-a-broker", "file": "app/reviews/page.tsx" },
-    "/robots.txt": { "process": "earn-search-traffic", "file": "app/robots.ts" },
-    "/schools": { "process": "evaluate-a-place", "file": "app/schools/page.tsx" },
-    "/schools/[slug]": { "process": "evaluate-a-place", "file": "app/schools/[slug]/page.tsx" },
-    "/search": { "process": "REDIRECT", "file": "app/search/page.tsx" },
-    "/search/[...slug]": { "process": "REDIRECT", "file": "app/search/[...slug]/page.tsx" },
-    "/sell": { "process": "plan-a-sale", "file": "app/sell/page.tsx" },
-    "/sell/[intent]": { "process": "plan-a-sale", "file": "app/sell/[intent]/page.tsx" },
-    "/sell/valuation": { "process": "get-home-value", "file": "app/sell/valuation/page.tsx" },
-    "/sign/[token]": { "process": "UNMAPPED", "file": "app/sign/[token]/page.tsx" },
-    "/signup": { "process": "save-and-return", "file": "app/signup/page.tsx" },
-    "/site-index": { "process": "earn-search-traffic", "file": "app/site-index/page.tsx" },
-    "/sitemap.xml": { "process": "earn-search-traffic", "file": "app/sitemap.ts" },
-    "/sitemaps/[cls]": { "process": "earn-search-traffic", "file": "app/sitemaps/[cls]/route.ts" },
-    "/sitemaps/index.xml": { "process": "earn-search-traffic", "file": "app/sitemaps/index.xml/route.ts" },
-    "/subdivisions/[slug]": { "process": "evaluate-a-place", "file": "app/subdivisions/[slug]/page.tsx" },
-    "/sw.js": { "process": "earn-search-traffic", "file": "app/sw.ts" },
-    "/team": { "process": "contact-a-broker", "file": "app/team/page.tsx" },
-    "/team/[slug]": { "process": "contact-a-broker", "file": "app/team/[slug]/page.tsx" },
-    "/team/[slug]/edit": { "process": "UNMAPPED", "file": "app/team/[slug]/edit/page.tsx" },
-    "/terms": { "process": "serve-legal", "file": "app/terms/page.tsx" },
-    "/tools/appreciation": { "process": "get-home-value", "file": "app/tools/appreciation/page.tsx" },
-    "/tools/mortgage-calculator": { "process": "plan-a-purchase", "file": "app/tools/mortgage-calculator/page.tsx" },
-    "/tools/rental-property-calculator": { "process": "plan-a-purchase", "file": "app/tools/rental-property-calculator/page.tsx" },
-    "/videos": { "process": "find-a-home", "file": "app/videos/page.tsx" },
-    "/zip/[zip]": { "process": "evaluate-a-place", "file": "app/zip/[zip]/page.tsx" }
+    "/": {
+      "process": "find-a-home",
+      "file": "app/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Land on Central Oregon real estate and immediately pick the path that matches my intent — browse homes, explore a place, check the market, or value my home.",
+      "machine_objective": "Route an unqualified visitor into the highest-intent pillar (browse, places, market, or the valuation spine) within one click, so intent declares itself on the very next page.",
+      "exits": [
+        "/homes-for-sale",
+        "/cities",
+        "/housing-market",
+        "/sell",
+        "/about",
+        "/videos"
+      ]
+    },
+    "/about": {
+      "process": "contact-a-broker",
+      "file": "app/about/page.tsx",
+      "destination": "about",
+      "visitor_objective": "Learn who Ryan Realty is — the people, the verified record, the service area — enough to trust the brokerage with a purchase or sale.",
+      "machine_objective": "Trust established advances contact-made: the convinced visitor exits into the contact, valuation, or browse door carrying that trust, so the eventual lead arrives warm.",
+      "exits": [
+        "/team",
+        "/reviews",
+        "/contact",
+        "/homes-for-sale",
+        "/sell#get-value",
+        "/housing-market"
+      ]
+    },
+    "/accessibility": {
+      "process": "serve-legal",
+      "file": "app/accessibility/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Learn the site's accessibility commitment and report a barrier through a working channel.",
+      "machine_objective": "Keep the accessibility-compliance posture documented and the barrier-report channel real (single mailbox — defect: it currently splits from the other legal pages' address), protecting every visitor-facing surface's standing.",
+      "exits": [
+        "/"
+      ]
+    },
+    "/account": {
+      "process": "save-and-return",
+      "file": "app/account/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Pick up my home search exactly where I left it — everything I saved, and what changed since I was last here.",
+      "machine_objective": "Bind the visitor to a durable identified account stitched to their CRM record and generate recurring attributable return visits.",
+      "exits": [
+        "/account/saved-homes",
+        "/account/saved-searches",
+        "/listing/[listingKey]",
+        "/homes-for-sale",
+        "/cities/[slug]",
+        "/team/[slug]"
+      ]
+    },
+    "/account/areas": {
+      "process": "save-and-return",
+      "file": "app/account/areas/page.tsx",
+      "destination": "account",
+      "visitor_objective": "See the places I follow and jump back into any of them.",
+      "machine_objective": "Convert followed-place state into recurring place-node and search re-entries by the identified lead.",
+      "exits": [
+        "/cities/[slug]",
+        "/communities/[slug]",
+        "/homes-for-sale"
+      ]
+    },
+    "/account/buying-preferences": {
+      "process": "save-and-return",
+      "file": "app/account/buying-preferences/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Tell the site once what I'm actually looking for so everything it shows and sends me fits.",
+      "machine_objective": "Sharpen the identified buyer's intent profile so alerts, matches, and broker follow-up hit the mark.",
+      "exits": [
+        "/homes-for-sale",
+        "/account/saved-searches"
+      ]
+    },
+    "/account/collections": {
+      "process": "save-and-return",
+      "file": "app/account/collections/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Organize the homes I'm considering into named collections I can return to and share.",
+      "machine_objective": "Deepen the identified lead's persisted state, sharpening intent signal and raising return frequency.",
+      "exits": [
+        "/account/collections/[id]",
+        "/account/saved-homes",
+        "/homes-for-sale"
+      ]
+    },
+    "/account/collections/[id]": {
+      "process": "save-and-return",
+      "file": "app/account/collections/[id]/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Work a specific shortlist — compare its homes and step into any of them.",
+      "machine_objective": "Turn curated shortlist state into listing-detail re-entries and comparison moments by the identified lead.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/compare",
+        "/account/collections"
+      ]
+    },
+    "/account/hidden": {
+      "process": "save-and-return",
+      "file": "app/account/hidden/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Review homes I hid and un-hide any I've changed my mind about.",
+      "machine_objective": "Keep search results honest to the visitor's expressed taste so the browse loop stays trusted and returned-to.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale"
+      ]
+    },
+    "/account/history": {
+      "process": "save-and-return",
+      "file": "app/account/history/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Find a home I looked at before and jump back into it.",
+      "machine_objective": "Recover near-miss intent by routing the identified lead back into listing details they already showed interest in.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale"
+      ]
+    },
+    "/account/notifications": {
+      "process": "save-and-return",
+      "file": "app/account/notifications/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Control what the site emails me and how often, without unsubscribing from everything.",
+      "machine_objective": "Preserve the compliance-clean return channel by giving the lead a pace answer short of the kill switch.",
+      "exits": [
+        "/account/saved-searches",
+        "/homes-for-sale"
+      ]
+    },
+    "/account/profile": {
+      "process": "save-and-return",
+      "file": "app/account/profile/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Keep my contact details and sign-in method current.",
+      "machine_objective": "Keep the account→CRM identity stitch accurate so attribution and broker follow-up reach the real person.",
+      "exits": [
+        "/account",
+        "/account/notifications"
+      ]
+    },
+    "/account/saved-cities": {
+      "process": "save-and-return",
+      "file": "app/account/saved-cities/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Return to the cities I follow.",
+      "machine_objective": "Same followed-place return loop as /account/areas — duplicated per geo type today.",
+      "exits": [
+        "/cities/[slug]",
+        "/account/areas"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Portal PDS §11: saved-cities/saved-communities merge into one 'places' concept inside the single account destination — three surfaces for one job. Noindex, so no GSC equity expected; evidence pull still runs per protocol.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/account/saved-communities": {
+      "process": "save-and-return",
+      "file": "app/account/saved-communities/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Return to the communities I follow.",
+      "machine_objective": "Same followed-place return loop as /account/areas — duplicated per geo type today.",
+      "exits": [
+        "/communities/[slug]",
+        "/account/areas"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Same merge as /account/saved-cities: one saved-places surface per portal PDS §11 consolidation. Noindex; no GSC equity expected, evidence pull still runs.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/account/saved-homes": {
+      "process": "save-and-return",
+      "file": "app/account/saved-homes/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Return to the homes I saved and see what changed on them since I was last here.",
+      "machine_objective": "Convert saved-home state into repeat listing-detail visits and inquiry moments by the identified lead.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/compare",
+        "/homes-for-sale"
+      ]
+    },
+    "/account/saved-searches": {
+      "process": "save-and-return",
+      "file": "app/account/saved-searches/page.tsx",
+      "destination": "account",
+      "visitor_objective": "See, rerun, and tune the searches the site is watching for me — including alert pace — in one place.",
+      "machine_objective": "Keep the identified buyer's alert subscriptions alive and tuned so the return channel keeps re-entering the listing graph instead of being unsubscribed.",
+      "exits": [
+        "/homes-for-sale/[...slug]",
+        "/account/notifications",
+        "/listing/[listingKey]"
+      ]
+    },
+    "/activity": {
+      "process": "explore-market-knowledge",
+      "file": "app/activity/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Watch what just happened in the market — new listings, price cuts, pendings, closings — as a live ledger I can act on.",
+      "machine_objective": "Convert market-watching into buyer or seller intent: ledger events deep-link into listing inspection, and the seller-curious watcher exits into the valuation spine.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale",
+        "/sell",
+        "/housing-market"
+      ]
+    },
+    "/alerts/unsubscribe": {
+      "process": "deliver-alerts",
+      "file": "app/alerts/unsubscribe/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Stop these alert emails in one tap, one question.",
+      "machine_objective": "Execute a compliance-clean exit that preserves trust — and offer the road back into browsing rather than a dead end.",
+      "exits": [
+        "/homes-for-sale"
+      ]
+    },
+    "/area-guides": {
+      "process": "evaluate-a-place",
+      "file": "app/area-guides/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "Pick a place to explore from a curated ledger of cities and communities.",
+      "machine_objective": "Route into a place node — a job /cities and /communities already do; three chooser surfaces carry two ledgers of content.",
+      "exits": [
+        "/cities/[slug]",
+        "/communities/[slug]",
+        "/cities",
+        "/communities"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Third parallel chooser duplicating the /cities + /communities ledgers (evaluate-a-place PDS §10 names it a duplicate path); the locked places destination is ONE exploration surface. Sitemap-emitted and nav-linked, so it plausibly holds SEO equity — GSC evidence pull REQUIRED before cut; 301 target is the places index.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/areas/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/areas/[slug]/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "Explore a broker-drawn custom area with exact map-tool search parity.",
+      "machine_objective": "Hand off into a drawn-area-scoped search — but the family is empty in practice: generateStaticParams returns [], no index links in, absent from nav, depends entirely on broker-created public areas existing.",
+      "exits": [
+        "/homes-for-sale/[city]",
+        "/cities/[slug]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Usage-dependent cut per the PDS destination implication: folds into places only if P4/P5 finds real usage; otherwise cut with a 301 plan. Missing slugs already render noindex and the route is undiscoverable, so SEO equity is likely nil — confirm with the GSC pull plus a live row count of public saved areas before killing.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/auth-error": {
+      "process": "save-and-return",
+      "file": "app/auth-error/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Understand why sign-in failed and retry without a dead end.",
+      "machine_objective": "Salvage a failed auth attempt back into the sign-in flow rather than dropping the return visit.",
+      "exits": [
+        "/login",
+        "/"
+      ]
+    },
+    "/blog": {
+      "process": "read-content",
+      "file": "app/blog/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Find the long-form written answer — browse attributed editorial on Central Oregon real estate by category, with Blog+ItemList JSON-LD for machine readers.",
+      "machine_objective": "Earn organic and AI-citation entries for the knowledge family (the words leg beside the numbers leg) and route each reader into a post, a place, or a market node.",
+      "exits": [
+        "/blog/[slug]",
+        "/housing-market",
+        "/housing-market/reports",
+        "/faq",
+        "/contact"
+      ]
+    },
+    "/blog/[slug]": {
+      "process": "read-content",
+      "file": "app/blog/[slug]/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Read one direct, attributed, plain-language piece — answer above the fold, byline always present, empty bodies never faked.",
+      "machine_objective": "Turn earned reading trust into the next graph step — geo cross-link bands into community inventory, market-report reads, a valuation start, or the author's contact page — offered after the answer, never before it.",
+      "exits": [
+        "/communities/[slug]",
+        "/blog",
+        "/housing-market/reports",
+        "/sell#get-value",
+        "/team/[slug]",
+        "/contact"
+      ]
+    },
+    "/bpo/[slug]": {
+      "process": "get-home-value",
+      "file": "app/bpo/[slug]/route.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Read the broker price opinion prepared for you — same private, phone-first document read as the CMA, reached by possession of the link.",
+      "machine_objective": "Stitch the document read to the CRM person and record engagement; P3 must unify the door policy with /cma (identity-gated vs link-possession is today an accident of build order, not a decision).",
+      "exits": [
+        "/sell",
+        "/housing-market",
+        "/contact"
+      ]
+    },
+    "/builders": {
+      "process": "evaluate-a-place",
+      "file": "app/builders/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "See which builders have active new-construction inventory in Central Oregon.",
+      "machine_objective": "Route into a builder node or new-construction search — but the anchor is derived from a free-text MLS field with no registry, and the route sits in neither sitemap nor nav.",
+      "exits": [
+        "/builders/[slug]",
+        "/homes-for-sale/[city]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "PDS rise-or-die call: builders either rises to the anchor-family floor (facts SoR, map, stats, CTA, capture, discoverability) or is cut to a listing-detail rail only. Never sitemap-emitted and absent from nav (grep-verified), so SEO equity risk is effectively nil — still run the GSC check for internal-link-earned impressions before the kill.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/builders/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/builders/[slug]/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "See every active home this builder currently has for sale.",
+      "machine_objective": "Advance to a listing — the only job the stub performs; it has no facts SoR, no map, no stat band, no CTA, and no capture.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/builders",
+        "/homes-for-sale/[city]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Thinnest variant in the anchor family (D2): entered only from the listing-detail builder rail, which can absorb the whole job. Rise-or-die per PDS; not sitemap-emitted, so no meaningful SEO equity — confirm with GSC, then cut to the listing-detail rail with 301s to scoped new-construction search.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/buy": {
+      "process": "plan-a-purchase",
+      "file": "app/buy/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Understand how buying works in Central Oregon — representation, earnest money, timelines, the broker's role — well enough to take the next step with confidence.",
+      "machine_objective": "Named buyer lead with intent and timeline (or a listing alert with an email) captured at the moment the education makes reaching out the obvious next move.",
+      "exits": [
+        "/homes-for-sale",
+        "/buy/first-time-home-buyer",
+        "/buy/relocation",
+        "/buy/investment",
+        "/open-houses",
+        "/price-drops",
+        "/contact?inquiry=Buying"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Fold into homes as the buyer-education layer per the locked P5 set and the plan-a-purchase PDS: the hub is orphaned from primary chrome (nav Buy group is /homes-for-sale, no footer link) and adds a hop for every visitor who knows their segment. SEO equity flag: sitemapped priority 0.6 with FAQPage JSON-LD — GSC evidence pull mandatory before any 301.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/buy/[intent]": {
+      "process": "plan-a-purchase",
+      "file": "app/buy/[intent]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Understand the buying path that fits my specific situation — first home, relocation, or investment — and hand over my name when the plan makes sense.",
+      "machine_objective": "Named buyer lead carrying segment intent (first-time/relocation/investment) plus timeframe and true first-touch attribution — the one artifact no browse completion produces.",
+      "exits": [
+        "/homes-for-sale",
+        "/housing-market",
+        "/contact?inquiry=Buying",
+        "/buy"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Fold as homes buyer-education guides (modes/leaves of the browse destination) per the locked set; the three LPs keep their conversion job but stop being a parallel funnel with duplicate alert capture. SEO equity flag: all three slugs sitemapped (0.55) with per-intent canonicals and FAQPage JSON-LD — GSC evidence per route before any cut/rename; cuts get 301s.",
+      "gsc_90d": {
+        "clicks": 1,
+        "impressions": 21,
+        "verdict": "HAS_EQUITY_301_REQUIRED"
+      }
+    },
+    "/central-oregon/events": {
+      "process": "evaluate-a-place",
+      "file": "app/central-oregon/events/page.tsx",
+      "destination": "places",
+      "visitor_objective": "See Central Oregon's recurring events — confirmed dates only — to gauge what living here feels like through the year.",
+      "machine_objective": "Route into an event or venue node or capture a regional SFR alert, while the confirmed-dates-only discipline earns event-intent traffic without fabricated schema.",
+      "exits": [
+        "/central-oregon/events/[slug]",
+        "/central-oregon/venues/[slug]",
+        "/cities/[slug]",
+        "/homes-for-sale/[city]"
+      ]
+    },
+    "/central-oregon/events/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/central-oregon/events/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether life around this recurring event's home turf could work — confirmed dates, its venue, and the market around it.",
+      "machine_objective": "Advance one graph step (venue, city, or market read entered; listing opened) while Event JSON-LD is emitted only with a real confirmed date.",
+      "exits": [
+        "/central-oregon/venues/[slug]",
+        "/cities/[slug]",
+        "/homes-for-sale/[city]",
+        "/central-oregon/events/[slug]",
+        "/central-oregon/events",
+        "/contact"
+      ]
+    },
+    "/central-oregon/golf/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/central-oregon/golf/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether life around this golf course could work — verified course specs, tee-time outlink, and the real homes for sale around it.",
+      "machine_objective": "Advance one graph step — a listing opened, a community node entered (golf's strongest cross-link), or contact — while earning golf long-tail traffic; the golf index moves in-family in the target IA (today the only hub is the ad-owned /lp/central-oregon-golf, with 26 breadcrumbs pointing into ad territory — GSC decides which URL keeps the organic equity, 301 discipline applies).",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale/[city]",
+        "/communities/[slug]",
+        "/cities/[slug]",
+        "/central-oregon/golf/[slug]",
+        "/lp/central-oregon-golf",
+        "/contact"
+      ]
+    },
+    "/central-oregon/trails": {
+      "process": "evaluate-a-place",
+      "file": "app/central-oregon/trails/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Browse Central Oregon's trail network to find the trail worth living near.",
+      "machine_objective": "Route into a trail anchor node or capture a regional SFR alert while earning trail-intent search traffic.",
+      "exits": [
+        "/central-oregon/trails/[slug]",
+        "/cities/[slug]",
+        "/homes-for-sale/[city]"
+      ]
+    },
+    "/central-oregon/trails/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/central-oregon/trails/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether life around this trail could work — authoritative linework, verified facts with a lastVerified stamp, and the real homes near the trailhead.",
+      "machine_objective": "Advance one graph step (listing, city, or community node — trails carry community cross-links) while earning long-tail trail-intent traffic; honest empty states exit to city inventory.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale/[city]",
+        "/cities/[slug]",
+        "/communities/[slug]",
+        "/central-oregon/trails/[slug]",
+        "/central-oregon/trails",
+        "/contact"
+      ]
+    },
+    "/central-oregon/venues": {
+      "process": "evaluate-a-place",
+      "file": "app/central-oregon/venues/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Browse Central Oregon's music and event venues to find the cultural anchor worth living near.",
+      "machine_objective": "Route into a venue anchor node or capture a regional SFR alert while earning venue-intent search traffic.",
+      "exits": [
+        "/central-oregon/venues/[slug]",
+        "/cities/[slug]",
+        "/homes-for-sale/[city]"
+      ]
+    },
+    "/central-oregon/venues/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/central-oregon/venues/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether life around this venue could work — verified facts, an outbound link to its real calendar, and the homes for sale near it.",
+      "machine_objective": "Advance one graph step (listing opened, city node or an event page entered via the on-stage-here cross-sell) while the honest outbound calendar link builds trust rather than faking a lineup.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale/[city]",
+        "/cities/[slug]",
+        "/central-oregon/events/[slug]",
+        "/central-oregon/venues/[slug]",
+        "/central-oregon/venues",
+        "/contact"
+      ]
+    },
+    "/cities": {
+      "process": "evaluate-a-place",
+      "file": "app/cities/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Choose which Central Oregon city fits by comparing live inventory, prices, and market pace across every city on one chooser.",
+      "machine_objective": "Route the visitor into a specific city node or capture a regional SFR alert, by making the city comparison decisive enough that picking one is the obvious next tap.",
+      "exits": [
+        "/cities/[slug]",
+        "/communities/[slug]",
+        "/homes-for-sale/[city]",
+        "/housing-market"
+      ]
+    },
+    "/cities/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/cities/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether this city fits — see what's for sale, what it costs, how fast it moves, and what's around it, live.",
+      "machine_objective": "Capture a city-scoped listing alert (email → listing_alerts + crm_people), or hand the visitor into homes or sell with the city context attached, because the page answered the place question well enough that watching or browsing is the natural next step.",
+      "exits": [
+        "/homes-for-sale/[city]",
+        "/cities/[slug]/[neighborhoodSlug]",
+        "/communities/[slug]",
+        "/open-houses/[city]",
+        "/housing-market/[...slug]",
+        "/sell#get-value",
+        "/cities"
+      ]
+    },
+    "/cities/[slug]/[neighborhoodSlug]": {
+      "process": "evaluate-a-place",
+      "file": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether this neighborhood fits — live inventory, cost, pace, and what daily life near it looks like.",
+      "machine_objective": "Capture a place-scoped listing alert or hand off into homes/sell with neighborhood context, earned by answering the neighborhood question truthfully at this grain.",
+      "exits": [
+        "/homes-for-sale/[city]",
+        "/subdivisions/[slug]",
+        "/cities/[slug]",
+        "/cities/[slug]/[neighborhoodSlug]",
+        "/parks/[slug]",
+        "/schools/[slug]",
+        "/sell#get-value"
+      ]
+    },
+    "/clear": {
+      "process": "UNMAPPED",
+      "file": "app/clear/route.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "A visitor wedged on a stale pre-cutover service worker's dead cached shell gets fully un-wedged by visiting one URL — Clear-Site-Data wipes cache and storage (cookies preserved) and lands them home in ~1 second.",
+      "machine_objective": "Recover otherwise-permanently-lost returning visitors (a wedged shell converts at zero) — the out-of-band backstop to the automatic StaleServiceWorkerReset leg; URL is relayed by support, so it must stay stable.",
+      "exits": [
+        "/"
+      ]
+    },
+    "/cma/[slug]": {
+      "process": "get-home-value",
+      "file": "app/cma/[slug]/route.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Read the valuation your broker prepared for you — the number and every comparable behind it, on your phone, private to you.",
+      "machine_objective": "Verify the reader is the intended recipient, capture the one-time SMS/email consent decision, stitch the read and every click to the CRM person, and alert the broker the document landed (alert clause is target, not yet behavior — view-client-valuation-doc D6).",
+      "exits": [
+        "/sell",
+        "/housing-market",
+        "/contact"
+      ]
+    },
+    "/cma-drafts/[id]": {
+      "process": "get-home-value",
+      "file": "app/cma-drafts/[id]/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "The assigned broker reviews the auto-drafted CMA — lead identity, value + range + confidence, PDF, drafted email — from their phone and sends it to the lead in one tap, no admin login.",
+      "machine_objective": "Move a queued CMA from draft to delivered inside the 24-hour promise via the HMAC-signed review link (the human-approval step in the valuation fulfillment machine).",
+      "exits": []
+    },
+    "/communities": {
+      "process": "evaluate-a-place",
+      "file": "app/communities/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Compare Central Oregon's resort and planned communities side by side to shortlist the ones worth exploring.",
+      "machine_objective": "Route the visitor into a community node or capture a regional alert by making the community landscape legible in one pass.",
+      "exits": [
+        "/communities/[slug]",
+        "/cities/[slug]",
+        "/homes-for-sale/[city]",
+        "/housing-market"
+      ]
+    },
+    "/communities/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/communities/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether this resort/planned community fits — alias-true active count, real median, STR reality, schools, and what membership in the place actually looks like.",
+      "machine_objective": "Capture a community-scoped alert or a buyer contact, or hand off into homes/sell with the community attached — the second-home segment's strongest conversion surface. The duplicate city-prefixed slug space collapses to this canonical URL (308s already live; index-side link generation is the surviving half to fix).",
+      "exits": [
+        "/homes-for-sale/[city]",
+        "/subdivisions/[slug]",
+        "/cities/[slug]",
+        "/central-oregon/golf/[slug]",
+        "/contact",
+        "/sell#get-value",
+        "/communities"
+      ]
+    },
+    "/compare": {
+      "process": "find-a-home",
+      "file": "app/compare/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Put the homes I'm deciding between side by side, see which one wins on each measure, and hand the comparison to whoever is deciding with me.",
+      "machine_objective": "Advance a resolved shortlist into a captured buyer step — the winning listing inspected into a tour/save/alert — and make the shortlist durable so the comparison and its co-decider recipient stop exiting untracked.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale",
+        "/cities/[slug]",
+        "/housing-market"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "P3 locked compare-homes → find-a-home: no standalone destination — the compare utility folds into the browse system as its shortlist-decision tool. Zero SEO equity blocks this (noindex, deliberately absent from sitemap and site-search; GSC confirmation per standing carve-out). HARD external contract: every already-shared /compare?ids= link must keep resolving (kept or 301'd, never 404'd) — breaking it breaks artifacts in other people's hands. The nav's four 'Compare homes' links stop pretending it is a destination.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/contact": {
+      "process": "contact-a-broker",
+      "file": "app/contact/page.tsx",
+      "destination": "about",
+      "visitor_objective": "Reach a Ryan Realty broker with my question or tour request and know exactly when and how they will answer.",
+      "machine_objective": "Contact made: serving the ask fully (email plus the question's context) creates an identified, routed, sequence-enrolled crm_people lead carrying listing, intent, and attribution intact.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale",
+        "/team",
+        "/sell#get-value",
+        "tel:+15417033095"
+      ]
+    },
+    "/cookies": {
+      "process": "serve-legal",
+      "file": "app/cookies/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "See exactly which cookies the site sets, what each does, and change or clear consent from this page.",
+      "machine_objective": "Make the consent banner's choices legible and honorable so consent-gated analytics/marketing trackers keep running lawfully; return the visitor to browsing with consent state correct.",
+      "exits": [
+        "/privacy",
+        "/privacy#donotsell",
+        "/"
+      ]
+    },
+    "/dashboard": {
+      "process": "save-and-return",
+      "file": "app/dashboard/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach my saved state (legacy address).",
+      "machine_objective": "Deliver the returning visitor to the one portal without a broken bookmark.",
+      "exits": [
+        "/account"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Already an in-app redirect shell to /account (Matt 2026-06-14 Option A); portal PDS §11: /dashboard dies entirely — collapse the shell to a config-level 301. Noindex, no GSC equity expected; evidence pull confirms before deletion.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/collections": {
+      "process": "save-and-return",
+      "file": "app/dashboard/collections/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach my collections (legacy address).",
+      "machine_objective": "Preserve the legacy bookmark into the portal's collections surface.",
+      "exits": [
+        "/account/collections"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect shell to /account/collections; same /dashboard-dies consolidation — config 301. Noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/collections/[id]": {
+      "process": "save-and-return",
+      "file": "app/dashboard/collections/[id]/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach a specific collection (legacy address).",
+      "machine_objective": "Preserve deep legacy bookmarks into the portal collection.",
+      "exits": [
+        "/account/collections/[id]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect shell in the /dashboard family — config 301 per portal PDS §11. Noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/history": {
+      "process": "save-and-return",
+      "file": "app/dashboard/history/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach my viewing history (legacy address).",
+      "machine_objective": "Preserve the legacy bookmark into the portal history surface.",
+      "exits": [
+        "/account/history"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect shell to /account/history — config 301 per /dashboard consolidation. Noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/likes": {
+      "process": "save-and-return",
+      "file": "app/dashboard/likes/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach my liked homes (legacy address).",
+      "machine_objective": "Preserve the legacy bookmark; likes are merged into saved homes.",
+      "exits": [
+        "/account/saved-homes"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect shell to /account/saved-homes — config 301 per /dashboard consolidation. Noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/marketing": {
+      "process": "UNMAPPED",
+      "file": "app/dashboard/marketing/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "An admin reads the Marketing Brain's state — channel dailies, briefs, calendar, decisions, competitor intel — in one gated dashboard.",
+      "machine_objective": "Keep the marketing engine auditable by its operator; no public function, no visitor ever lands here.",
+      "exits": [
+        "/dashboard/marketing/inbox"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Admin-plane surface living in the public /dashboard namespace (which is itself a portal-dup consolidation candidate). Relocate under the /admin plane; admin-gated with zero SEO equity, so the move is free — a 301 or plain move, no GSC pull needed.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/marketing/inbox": {
+      "process": "UNMAPPED",
+      "file": "app/dashboard/marketing/inbox/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "An admin audits marketing@ inbox events — sender allowlisting, parser output, dispatch routing, stuck events — read-only.",
+      "machine_objective": "Keep the email-ingest half of the marketing engine observable so stuck events get found; no public function.",
+      "exits": [
+        "/dashboard/marketing"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Same as parent: admin-plane surface in public namespace; relocate under /admin with the marketing dashboard. Zero SEO equity.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/notifications": {
+      "process": "save-and-return",
+      "file": "app/dashboard/notifications/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach my notification settings (legacy address).",
+      "machine_objective": "Preserve the legacy bookmark into alert management.",
+      "exits": [
+        "/account/notifications"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect shell to /account/notifications — config 301 per /dashboard consolidation. Noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/saved": {
+      "process": "save-and-return",
+      "file": "app/dashboard/saved/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach my saved homes (legacy address).",
+      "machine_objective": "Preserve the legacy bookmark into the portal saved-homes surface.",
+      "exits": [
+        "/account/saved-homes"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect shell to /account/saved-homes — config 301 per /dashboard consolidation. Noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/searches": {
+      "process": "save-and-return",
+      "file": "app/dashboard/searches/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach my saved searches (legacy address).",
+      "machine_objective": "Preserve the legacy bookmark into the alert-manager surface.",
+      "exits": [
+        "/account/saved-searches"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect shell to /account/saved-searches — config 301 per /dashboard consolidation. Noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/dashboard/settings": {
+      "process": "save-and-return",
+      "file": "app/dashboard/settings/page.tsx",
+      "destination": "account",
+      "visitor_objective": "Reach my profile settings (legacy address).",
+      "machine_objective": "Preserve the legacy bookmark into the portal profile surface.",
+      "exits": [
+        "/account/profile"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect shell to /account/profile — config 301 per /dashboard consolidation. Noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/data-deletion": {
+      "process": "serve-legal",
+      "file": "app/data-deletion/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "File a data-deletion request — including revoking Facebook/Google app access — through a clearly named channel with a stated 30-day SLA.",
+      "machine_objective": "Satisfy the Meta/Google app data-deletion-URL requirement (this URL is externally pinned and un-renamable) so OAuth sign-in and platform app standing survive, keeping the sign-in capture path alive.",
+      "exits": [
+        "/privacy",
+        "/"
+      ]
+    },
+    "/data/market/[geoType]/[geoSlug]": {
+      "process": "earn-search-traffic",
+      "file": "app/data/market/[geoType]/[geoSlug]/route.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Fetch the live per-geography market pulse as machine-readable JSON with published methodology — the flat-file shape an AI crawler expects — with explicit nulls, never fabricated zeros.",
+      "machine_objective": "Make the market layer the most citable asset in the region: AI engines cite Ryan Realty's numbers, feeding the market destination's inception; serves explore-market-knowledge as its data face.",
+      "exits": []
+    },
+    "/dmca": {
+      "process": "serve-legal",
+      "file": "app/dmca/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "A copyright claimant finds the designated agent and the exact notice/counter-notice elements to file, in one page.",
+      "machine_objective": "Preserve DMCA safe-harbor standing for the thousands of MLS photos the browse system serves, so listing media keeps rendering without legal exposure.",
+      "exits": [
+        "/"
+      ]
+    },
+    "/fair-housing": {
+      "process": "serve-legal",
+      "file": "app/fair-housing/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Understand the brokerage's fair-housing commitment and the correct complaint channel — routed to HUD, the regulator, by design.",
+      "machine_objective": "Keep the license's fair-housing compliance surface intact (a HUD-intake officer or reviewer verifying it finds it complete), licensing every consumer-facing process to operate; the deliberate exit is off-site to HUD.",
+      "exits": [
+        "https://www.hud.gov/program_offices/fair_housing_equal_opp/online-complaint",
+        "/"
+      ]
+    },
+    "/faq": {
+      "process": "read-content",
+      "file": "app/faq/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Scan the canonical short answers to the questions people actually ask (buying, selling, neighborhoods, working with us) — full answers mounted, one tap deep.",
+      "machine_objective": "Win featured snippets and AI answer citations via FAQPage JSON-LD, then route the answered visitor to a report, a conversation, or the valuation spine.",
+      "exits": [
+        "/faq/[slug]",
+        "/housing-market/reports",
+        "/contact",
+        "/sell#get-value"
+      ]
+    },
+    "/faq/[slug]": {
+      "process": "read-content",
+      "file": "app/faq/[slug]/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Get one question answered as the first paragraph under the H1 — zero interaction, its own citable URL.",
+      "machine_objective": "Rank and be cited standalone per question (single-question FAQPage JSON-LD) — which requires closing the discovery hole (not in sitemap, zero inbound links outside /faq) — then hand off to a report or conversation.",
+      "exits": [
+        "/faq",
+        "/housing-market/reports",
+        "/contact"
+      ]
+    },
+    "/feed": {
+      "process": "find-a-home",
+      "file": "app/feed/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Flick through home videos vertically, phone-first, the way I already consume video.",
+      "machine_objective": "Convert vertical-feed browsing into listing inspections — as a MODE of /videos, not a second page.",
+      "exits": [
+        "/videos",
+        "/listing/[listingKey]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "P3 lock (Matt 2026-08-11): 'keep /videos, fold /feed' — the grid is the indexable canonical surface and the vertical feed becomes a mode of it. Route disposition is this pass: 301 /feed into /videos (vertical mode). No indexed-equity concern flagged in the PDS, but run the standing GSC check before the 301 lands. Also carries known register drift (legacy-flat SiteFooter) that dies with the fold.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 6,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/forgot-password": {
+      "process": "save-and-return",
+      "file": "app/forgot-password/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Regain access to my account by email in one step.",
+      "machine_objective": "Recover a locked-out identified lead back into the return loop instead of losing them.",
+      "exits": [
+        "/login"
+      ]
+    },
+    "/homes-for-sale": {
+      "process": "find-a-home",
+      "file": "app/search/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Find the homes that match what I can spend and how I want to live — filtered, mapped, and honest about counts and freshness — and know each one well enough to act.",
+      "machine_objective": "Capture a durable buyer-intent artifact — a guest alert with an email, a saved home on an account, or a tour request — at the moment browsing proves the intent.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/cities/[slug]",
+        "/open-houses",
+        "/price-drops",
+        "/contact",
+        "/login"
+      ]
+    },
+    "/homes-for-sale/[...slug]": {
+      "process": "find-a-home",
+      "file": "app/search/[...slug]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Browse live inventory already scoped to my city, community, or neighborhood, with the place/filter context carried in a shareable URL.",
+      "machine_objective": "Convert geo-scoped search intent (organic and internal) into an alert, save, or listing inspection, while the URL preserves the earned SEO equity of every geo segment.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/cities/[slug]",
+        "/housing-market/[...slug]",
+        "/homes-for-sale",
+        "/contact"
+      ]
+    },
+    "/housing-market": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Get the region-wide answer to \"how's the market\" — live active count, median, and the months-of-supply verdict, MLS-traced, above the fold with zero interaction.",
+      "machine_objective": "Convert the free verified answer into a durable channel — market-report subscription, listing alert, valuation start, or broker inquiry — every capture surface positioned after the answer, never as a gate.",
+      "exits": [
+        "/housing-market/bend",
+        "/housing-market/central-oregon",
+        "/housing-market/reports",
+        "/housing-market/history",
+        "/months-of-supply",
+        "/homes-for-sale",
+        "/sell#get-value",
+        "/contact",
+        "/blog"
+      ]
+    },
+    "/housing-market/[...slug]": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/[...slug]/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Get the same three-tense answer (now, 60-month history, verdict) for one specific city or subdivision, with honest 404s for geographies the data does not cover.",
+      "machine_objective": "Turn a geo-specific trust moment into an alert signup, valuation start, or inquiry tied to that geography, and pass authority into the place and inventory nodes for it.",
+      "exits": [
+        "/housing-market",
+        "/cities/[slug]",
+        "/homes-for-sale",
+        "/housing-market/reports/archive/[city]",
+        "/housing-market/reports",
+        "/sell#get-value",
+        "/contact"
+      ]
+    },
+    "/housing-market/annual-review": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/annual-review/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Read the citable annual reference — rolling-365d figures per geography — at a stable URL built for citation by humans and AI engines.",
+      "machine_objective": "Earn the citation/backlink and hand the reader to a city node, the history explorer, or the valuation spine after the reference is delivered.",
+      "exits": [
+        "/housing-market",
+        "/housing-market/history",
+        "/housing-market/reports",
+        "/sell#get-value"
+      ]
+    },
+    "/housing-market/central-oregon": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/central-oregon/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Read the regional roll-up — Central Oregon pulse, price history, and per-city snapshots — as one citable report page.",
+      "machine_objective": "Anchor regional-intent search and AI citation, then route the reader down to a city node or into a subscription, alert, or valuation after the answer.",
+      "exits": [
+        "/housing-market",
+        "/housing-market/bend",
+        "/housing-market/reports",
+        "/sell#get-value",
+        "/contact",
+        "/blog"
+      ]
+    },
+    "/housing-market/history": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/history/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Run parameterized closed-sales history queries (year, city, type, feature slices) against the 589K-row licensed dataset — aggregates only, addresses never.",
+      "machine_objective": "Prove the brokerage has data no competitor can fake, so the analyst-grade visitor subscribes, starts a valuation, or asks the broker who evidently has the numbers.",
+      "exits": [
+        "/housing-market",
+        "/housing-market/annual-review",
+        "/housing-market/reports",
+        "/sell#get-value",
+        "/contact"
+      ]
+    },
+    "/housing-market/reports": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/reports/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Scan the current per-city headline cards and range table, and reach any weekly report artifact — all off the same cache so figures cannot disagree.",
+      "machine_objective": "Convert repeat report readers into subscribers (the email cadence channel) and route city-card clicks into per-geo market nodes.",
+      "exits": [
+        "/housing-market/reports/[slug]",
+        "/housing-market/[...slug]",
+        "/housing-market/reports/archive/[city]",
+        "/housing-market",
+        "/sell#get-value"
+      ]
+    },
+    "/housing-market/reports/[slug]": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/reports/[slug]/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Read one dated weekly market report as a permanent, shareable, citable artifact with Report JSON-LD.",
+      "machine_objective": "Be the email click-back landing that sustains the subscription loop, and convert shares and re-reads into alerts, valuations, or inquiries.",
+      "exits": [
+        "/housing-market/reports",
+        "/housing-market",
+        "/housing-market/[...slug]",
+        "/sell#get-value",
+        "/contact"
+      ]
+    },
+    "/housing-market/reports/[slug]/[geoName]": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/reports/[slug]/[geoName]/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "None — redirect-only stub; the visitor job (per-geo report) is served by /housing-market/<city>.",
+      "machine_objective": "Preserve legacy link equity by permanently redirecting the dead reporting_cache-era URL into the live market node.",
+      "exits": [
+        "/housing-market/[...slug]",
+        "/housing-market/reports"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Redirect-only re-export of the legacy reporting_cache-era route (app/housing-market/reports/[slug]/[geoName]/page.tsx re-exports the permanentRedirect at app/reports/[slug]/[geoName]/page.tsx). Keep the 301/308 mapping (moved into next.config), delete the page files. No SEO risk — the redirect already carries equity to /housing-market/<city>; route is noindex.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 15,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/housing-market/reports/archive/[city]": {
+      "process": "explore-market-knowledge",
+      "file": "app/housing-market/reports/archive/[city]/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Browse a city's decade of monthly figures — the past-tense leaf of that city's market node.",
+      "machine_objective": "Capture long-tail \"<city> market history\" search intent and route the reader up into the live city node where the conversion surfaces live.",
+      "exits": [
+        "/housing-market/[...slug]",
+        "/housing-market/reports",
+        "/housing-market/history"
+      ]
+    },
+    "/join": {
+      "process": "UNMAPPED",
+      "file": "app/join/page.tsx",
+      "destination": "about",
+      "visitor_objective": "A Central Oregon broker learns what this brokerage does for their listings and their business, and what joining looks like, enough to start the conversation.",
+      "machine_objective": "Recruit conversation started: an identified, recruit-tagged contact reaching the principal broker — never a consumer buyer lead, never consumer drip (today's handoff breaks this: join-the-brokerage D1/D2). Off-graph node with its own chrome rule — the footer must not sell the recruit a CMA (D4).",
+      "exits": [
+        "/contact?inquiry=Join%20the%20team",
+        "/sell#marketing-plan",
+        "/team",
+        "/housing-market",
+        "tel:+15417033095"
+      ]
+    },
+    "/listing/[listingKey]": {
+      "process": "find-a-home",
+      "file": "app/listing/[listingKey]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Know this specific home well enough to act — price, specs, story, tours, market context, schools, history, and the monthly math.",
+      "machine_objective": "Convert proven single-home interest into a tour request, a save, or a like-this alert at the decision moment — this is the #1 ad-landing surface and the node where every capture lives.",
+      "exits": [
+        "/contact",
+        "/cities/[slug]",
+        "/housing-market/[...slug]",
+        "/homes-for-sale",
+        "/schools/[slug]"
+      ]
+    },
+    "/listing/by-address/[...slug]": {
+      "process": "find-a-home",
+      "file": "app/listing/by-address/[...slug]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Reach the exact home I searched or was sent by its human-readable address URL.",
+      "machine_objective": "Resolve pretty address URLs onto the canonical listing-detail node so shared links and address-query SEO land on the capture surface, never a 404.",
+      "exits": [
+        "/listing/[listingKey]"
+      ]
+    },
+    "/listing/by-key/[listingKey]": {
+      "process": "REDIRECT",
+      "file": "app/listing/by-key/[listingKey]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Anyone holding only a listing key (from an alert email, CRM message, or shared link) lands on the canonical listing-detail page for that home.",
+      "machine_objective": "Give internal senders (alerts, CRM, SMS shortlinks) one stable key-based resolver that permanent-redirects to the pretty canonical URL, so no send path ever hardcodes address slugs and the indexing signal never splits.",
+      "exits": [
+        "/listing/{canonical-pretty-slug}"
+      ]
+    },
+    "/listing/odsmls/[...slug]": {
+      "process": "REDIRECT",
+      "file": "app/listing/odsmls/[...slug]/route.ts",
+      "destination": "homes",
+      "visitor_objective": "A visitor (or Googlebot) following a legacy AgentFire IDX listing URL lands on the live canonical listing page — or the browse system if the listing is gone — never a 404.",
+      "machine_objective": "Preserve the SEO equity of the thousands of pre-cutover indexed listing URLs (the single biggest 404 pattern in GA4 before the fix) by 308ing them into the homes graph; keep until GSC shows the legacy pattern's crawl demand has decayed to zero.",
+      "exits": [
+        "/listing/{canonical-pretty-slug}",
+        "/homes-for-sale"
+      ]
+    },
+    "/llms.txt": {
+      "process": "earn-search-traffic",
+      "file": "app/llms.txt/route.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Give AI answer engines a purpose-built, always-fresh Markdown map of every citable surface — listings hubs, market data, full geo index, guides — from the same DAL the pages render from.",
+      "machine_objective": "Ryan Realty pages cited in AI answers (the site's stated forward-looking channel), feeding inception of find-a-home / evaluate-a-place / explore-market-knowledge; fix the redundant/redirecting Market Data lines (§10 defect 4).",
+      "exits": [
+        "/homes-for-sale",
+        "/housing-market",
+        "/cities",
+        "/blog"
+      ]
+    },
+    "/login": {
+      "process": "save-and-return",
+      "file": "app/login/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Get back into my account in one step and land where I was headed.",
+      "machine_objective": "Bind the session to the durable identity, claim any guest-captured alerts on every auth path, and resume the visitor into the portal.",
+      "exits": [
+        "/account",
+        "/signup",
+        "/forgot-password"
+      ]
+    },
+    "/lp/bend": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/bend/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Understand living and buying in Bend and claim help from a local broker.",
+      "machine_objective": "Turn organic/paid Bend interest into an attributed lead by serving real place knowledge with capture embedded.",
+      "exits": [
+        "/cities/bend",
+        "/homes-for-sale",
+        "/contact"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Dual-role indexable LP competing with the canonical Bend city node (/cities/bend) — arrive-from-ad PDS §11 says arrival surfaces are channel-owned and off-graph; indexable dual-role pages are how the Tetherow cannibalization defect happened. Fold capture into the places node. HAS sitemap presence — GSC equity pull required before any 301.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 2,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/lp/buyer-listing-alerts": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/buyer-listing-alerts/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Start receiving homes matched to my criteria by email — claimed in one short step.",
+      "machine_objective": "Convert the buyer ad click into an identified lead with a durable listing_alerts return channel whose every send re-enters the listing graph.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale",
+        "/account/saved-searches"
+      ]
+    },
+    "/lp/central-oregon-golf": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/central-oregon-golf/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Explore Central Oregon golf-community living and get matched to golf-course homes.",
+      "machine_objective": "Convert golf-lifestyle interest into an attributed lead by serving the golf place content with capture embedded.",
+      "exits": [
+        "/central-oregon/golf/[slug]",
+        "/communities/[slug]",
+        "/homes-for-sale"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Indexable dual-role LP overlapping the places golf content family (/central-oregon/golf/*) — same pick-a-side rule as the Tetherow pair. In the sitemap, so plausible SEO equity — GSC evidence pull required before folding/301.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 59,
+        "verdict": "HAS_EQUITY_301_REQUIRED"
+      }
+    },
+    "/lp/expired-listing": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/expired-listing/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Get the promised listing audit/repricing analysis after my listing failed, with no pressure.",
+      "machine_objective": "Convert an expired-listing owner into an attributed CRM seller lead by delivering the promised analysis and staging the broker's manual first touch.",
+      "exits": [
+        "/cma/[slug]",
+        "/housing-market/[...slug]",
+        "/contact"
+      ]
+    },
+    "/lp/fsbo": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/fsbo/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Get the FSBO pricing/listing help the outreach promised, in one short step.",
+      "machine_objective": "Convert an owner-seller prospect into an identified, attributed CRM lead by queuing the promised pricing deliverable and routing to the assigned broker.",
+      "exits": [
+        "/cma/[slug]",
+        "/housing-market/[...slug]",
+        "/contact"
+      ]
+    },
+    "/lp/sell-your-home": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/sell-your-home/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Claim the selling-plan/valuation offer the ad promised without hunting through a website.",
+      "machine_objective": "Convert the paid seller click into an attributed, broker-routed lead by fulfilling the promise — deliverable queued, enrollments fired.",
+      "exits": [
+        "/cma/[slug]",
+        "/sell",
+        "/contact"
+      ]
+    },
+    "/lp/seller-home-value": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/seller-home-value/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Claim the home valuation the ad promised in one short step.",
+      "machine_objective": "Convert the paid click into an identified, attributed, broker-routed CRM lead by delivering the promised CMA — queued, with instant broker alert.",
+      "exits": [
+        "/cma/[slug]",
+        "/housing-market/[...slug]",
+        "/contact"
+      ]
+    },
+    "/lp/tetherow": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/tetherow/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Evaluate Tetherow as a community and see its homes.",
+      "machine_objective": "Convert Tetherow interest into an attributed lead via the canonical community node with capture embedded.",
+      "exits": [
+        "/communities/tetherow",
+        "/homes-for-sale",
+        "/contact"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "The page already declares rel=canonical to /communities/tetherow — the dual-role that produced the documented cannibalization defect. PDS §11: must pick a side; the community node wins. 301 to /communities/tetherow; GSC pull confirms equity transfers cleanly.",
+      "gsc_90d": {
+        "clicks": 1,
+        "impressions": 146,
+        "verdict": "HAS_EQUITY_301_REQUIRED"
+      }
+    },
+    "/lp/tetherow/heath": {
+      "process": "arrive-from-ad",
+      "file": "app/lp/tetherow/heath/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Evaluate the Heath enclave inside Tetherow and request pricing on it.",
+      "machine_objective": "Convert micro-neighborhood interest into an attributed lead via the subdivision place node with CMA capture embedded.",
+      "exits": [
+        "/communities/tetherow",
+        "/subdivisions/[slug]",
+        "/cma/[slug]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Second half of the indexable Tetherow dual-role pair (in sitemap per PDS acceptance check 1). Fold into the places subdivision/community tier with capture embedded. Indexable, so GSC equity pull required before 301.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 2,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/luxury-homes-bend": {
+      "process": "find-a-home",
+      "file": "app/luxury-homes-bend/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Browse Bend's luxury inventory as a curated segment rather than digging it out of the full search.",
+      "machine_objective": "Convert high-value-segment search traffic (built for a GSC page-2 ranker — earned equity) into listing inspections and captures as the price-segment mode of the one browse system.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale",
+        "/cities/[slug]",
+        "/housing-market"
+      ]
+    },
+    "/marketing/request": {
+      "process": "UNMAPPED",
+      "file": "app/marketing/request/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "A Ryan Realty broker, arriving from the link in every marketing@ reply signature, picks a deliverable and gets a pre-written, pre-addressed request email built for them.",
+      "machine_objective": "Feed well-formed requests into the marketing inbox pipeline without brokers memorizing the menu; the URL is pinned by email signatures already in inboxes, so treat it as frozen like /sign/*.",
+      "exits": []
+    },
+    "/months-of-supply": {
+      "process": "explore-market-knowledge",
+      "file": "app/months-of-supply/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Learn what months of supply means and see the live regional value and verdict — formula and thresholds imported from code, never retyped.",
+      "machine_objective": "Own the term at a stable URL for search and AI citation (DefinedTerm JSON-LD), making the brokerage the cited authority, then route into geo nodes and the valuation spine.",
+      "exits": [
+        "/housing-market",
+        "/housing-market/[...slug]",
+        "/housing-market/reports",
+        "/sell#get-value",
+        "/contact"
+      ]
+    },
+    "/motivated-sellers": {
+      "process": "find-a-home",
+      "file": "app/motivated-sellers/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Find the homes whose sellers show documented motivation — cumulative cuts, remarks language, long days on market — ranked by signal strength with the method stated.",
+      "machine_objective": "Route offer-ready deal hunters into listing inspection or a comps conversation with a broker; slated to fold into the ONE deal-signals lens with /price-drops.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/motivated-sellers/[city]",
+        "/contact",
+        "/homes-for-sale",
+        "/cities/[slug]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Duplicate implementation of the deal-signals job (/price-drops serves the same visitor with a different metric window; zero cross-links either direction — hunt-price-cuts PDS §9). P3 locked the merge into find-a-home as ONE lens; the losing URL family 301s into the survivor. SEO equity is real (11 URLs sitemap'd daily at 0.8/0.75 with buyer-query metadata) — GSC evidence pull is MANDATORY before choosing the survivor; do not cut without it. The seller-framed nav label ('Sell on a deadline') re-homes to the sell destination regardless.",
+      "gsc_90d": {
+        "clicks": 1,
+        "impressions": 13,
+        "verdict": "HAS_EQUITY_301_REQUIRED"
+      }
+    },
+    "/motivated-sellers/[city]": {
+      "process": "find-a-home",
+      "file": "app/motivated-sellers/[city]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Find deal-signal homes in one specific city — the same urgency-ranked grid scoped to where the buyer is actually looking.",
+      "machine_objective": "Advance a city-scoped buyer toward a listing inquiry or saved search, capturing the geographic dimension of the bargain-hunt intent.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/motivated-sellers",
+        "/cities/[slug]",
+        "/price-drops/[city]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Folds with its parent into the homes destination's deal mode (city-filtered). Same duplication with /price-drops/[city]. Sitemapped city-scoped SEO doors — GSC per-URL pull before cut, 301s into the surviving city-scoped deal mode.",
+      "gsc_90d": {
+        "clicks": 1,
+        "impressions": 41,
+        "verdict": "HAS_EQUITY_301_REQUIRED"
+      }
+    },
+    "/newsletter/unsubscribe": {
+      "process": "deliver-alerts",
+      "file": "app/newsletter/unsubscribe/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Stop the monthly briefing in one step.",
+      "machine_objective": "Honor the global opt-out compliance-cleanly while leaving the door open to the site. (P5 note: inventory maps this to deliver-alerts; both PDS files agree it re-maps to newsletter-lifecycle.)",
+      "exits": [
+        "/"
+      ]
+    },
+    "/offline": {
+      "process": "UNMAPPED",
+      "file": "app/offline/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "When the connection — not the site — is the problem, see an honest recoverable state with a retry instead of a raw browser error.",
+      "machine_objective": "Keep a network-blipped session recoverable so it returns to the exploration graph instead of dying; currently DORMANT — no service worker ever routes here (app/sw.ts never builds).",
+      "exits": [
+        "/"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "PDS §11 P3 sub-decision: (A) wire the serwist offline worker for real, or (B) delete app/sw.ts, the serwist deps, and this page. The page is reachable only by typed URL today. Either branch is coherent; shipping the dormant status quo is the one wrong answer. No SEO equity (noindexed, out of sitemap).",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/open-houses": {
+      "process": "find-a-home",
+      "file": "app/open-houses/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "See which Central Oregon homes I can walk through this week, and when.",
+      "machine_objective": "Convert time-boxed touring intent into a listing-detail inspection and tour request — the open-house lens is a mode of the one browse system, and its done-state is the detail click-through.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/open-houses/[city]",
+        "/homes-for-sale",
+        "/cities/[slug]"
+      ]
+    },
+    "/open-houses/[city]": {
+      "process": "find-a-home",
+      "file": "app/open-houses/[city]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "See the open houses in my city without re-scoping from the region view.",
+      "machine_objective": "Convert city-scoped touring intent into detail inspections and tour requests while holding the visitor's established place context (binding continuity decision #5).",
+      "exits": [
+        "/listing/[listingKey]",
+        "/open-houses",
+        "/cities/[slug]",
+        "/homes-for-sale/[...slug]"
+      ]
+    },
+    "/oregon/[city]": {
+      "process": "refer",
+      "file": "app/oregon/[city]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "See live MLS inventory for this Oregon city and get a no-cost introduction to a trusted local broker, from a brokerage that says plainly this is not its market.",
+      "machine_objective": "Capture an out-of-area referral candidate (email + intent) that a broker converts by hand into a broker-to-broker referral with a recorded receivable — and keep that lead out of every automated drip (the no-auto-send gate and email-only capture are product law for this tier). Places' out-of-market boundary tier: middleware double-308 preserved verbatim, indexable set SEO-protected (100-cap, GSC evidence + 301s required for any rename).",
+      "exits": [
+        "/oregon/[city]",
+        "/cities",
+        "/homes-for-sale/[city]",
+        "#referral"
+      ]
+    },
+    "/our-homes": {
+      "process": "find-a-home",
+      "file": "app/our-homes/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "See the homes Ryan Realty itself represents, in one place.",
+      "machine_objective": "Convert brokerage-brand trust into direct inspection of our own listings — the highest-margin inventory — as the brokerage mode of the browse system.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale",
+        "/team",
+        "/contact"
+      ]
+    },
+    "/parks": {
+      "process": "evaluate-a-place",
+      "file": "app/parks/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Browse Central Oregon's parks to find the outdoor anchor worth living near.",
+      "machine_objective": "Route into a park anchor node or capture a regional SFR alert while earning parks-intent search traffic.",
+      "exits": [
+        "/parks/[slug]",
+        "/cities/[slug]",
+        "/homes-for-sale/[city]"
+      ]
+    },
+    "/parks/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/parks/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether life around this park could work — its verified boundary and amenities, and the real homes for sale near it.",
+      "machine_objective": "Advance one graph step (listing opened, city node entered, or contact initiated) earned by answering the anchor question honestly; per-anchor capture is the target-state addition.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale/[city]",
+        "/cities/[slug]",
+        "/parks/[slug]",
+        "/parks",
+        "/contact",
+        "/sell#get-value"
+      ]
+    },
+    "/price-drops": {
+      "process": "find-a-home",
+      "file": "app/price-drops/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Find the active homes where the seller is signaling on price, and judge whether any cut makes the home worth an offer.",
+      "machine_objective": "Convert proven bargain-intent into a durable buyer artifact — a price-cut alert with an email, or a listing inspected into a tour/save — at the moment the ranked list proves the intent; presumptive survivor URL of the ONE deal-signals lens (P3-locked merge of hunt-price-cuts), pending GSC evidence.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/price-drops/[city]",
+        "/homes-for-sale",
+        "/cities/[slug]",
+        "/housing-market"
+      ]
+    },
+    "/price-drops/[city]": {
+      "process": "find-a-home",
+      "file": "app/price-drops/[city]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "See the recent price cuts in my city, ranked by how hard the seller is signaling.",
+      "machine_objective": "Convert city-scoped bargain-intent into a price-cut alert or a listing inspection while carrying the visitor's place context into the deal-signals lens.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/price-drops",
+        "/cities/[slug]",
+        "/homes-for-sale/[...slug]"
+      ]
+    },
+    "/privacy": {
+      "process": "serve-legal",
+      "file": "app/privacy/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Get the definitive answer to what Ryan Realty collects, how it is used, and the exact channel to exercise a privacy right (do-not-sell, deletion, access) in one page.",
+      "machine_objective": "Keep every capture surface lawful and switched on — this URL is pinned by OAuth consent screens and A2P carrier review — and return the visitor to their exploration with trust raised rather than ending the session.",
+      "exits": [
+        "/cookies",
+        "/terms",
+        "/data-deletion",
+        "/"
+      ]
+    },
+    "/pulse": {
+      "process": "explore-market-knowledge",
+      "file": "app/pulse/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "Same job as /activity — a live feed of market activity — duplicated with different chrome.",
+      "machine_objective": "None distinct; it duplicates /activity's channel with zero inbound links, splitting the live-feed surface the market destination should own once.",
+      "exits": [
+        "/activity",
+        "/housing-market"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "PDS defect #1: two live feeds render the same activity_events plane; /pulse is a near-orphan (sitemap-emitted at app/sitemap.ts:152 but ZERO nav or component inbound links) while /activity is nav-linked. Fold into the market destination's present-tense view with a 301 to the survivor. SEO flag: it IS sitemap-emitted, so pull GSC impressions/clicks for /pulse before the cut — if it earns organic entries, the 301 must land on the surviving feed, not the hub.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/r/[code]": {
+      "process": "capture-and-attribute",
+      "file": "app/r/[code]/route.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "The link in my text opens the page I was promised, instantly — never a dead end, even mistyped, even years later.",
+      "machine_objective": "Record the tap as a person-level sms_click signal and deliver the stored target_url page a recognized, broker-attributed visitor; the /r/ namespace and every minted code are an immutable external contract — no rename, expiry, or cleanup ever.",
+      "exits": [
+        "/"
+      ]
+    },
+    "/reports": {
+      "process": "explore-market-knowledge",
+      "file": "app/reports/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "None — the URL already 308s to /housing-market/reports; the visitor job lives at the canonical URL.",
+      "machine_objective": "Preserve inbound equity on the old URL space via permanent redirect while ONE route family serves the reports surface.",
+      "exits": [
+        "/housing-market/reports"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Dual URL space (PDS defect #2): implementation lives at app/reports/*, canonical URLs at /housing-market/reports/*, stitched by next.config 308s plus 2-line re-export files. Collapse the implementation under the canonical route family; keep the permanent redirects. SEO-safe — 308s already in place; confirm with GSC that no /reports URL still earns direct impressions before deleting files.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/reports/[slug]": {
+      "process": "explore-market-knowledge",
+      "file": "app/reports/[slug]/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "None — 308s to /housing-market/reports/[slug]; the weekly-report job is served at the canonical URL.",
+      "machine_objective": "Preserve old deep-link equity via permanent redirect into the canonical weekly-report leaf.",
+      "exits": [
+        "/housing-market/reports/[slug]"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Same dual-URL-space consolidation as /reports: move implementation under /housing-market/reports/[slug], keep the 308. GSC evidence pull before file deletion; redirects stay permanently.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 3,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/reports/[slug]/[geoName]": {
+      "process": "explore-market-knowledge",
+      "file": "app/reports/[slug]/[geoName]/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "None — redirect-only legacy route; per-geo report intent is served live at /housing-market/<city>.",
+      "machine_objective": "Route dead reporting_cache-era URLs (which once printed unsourced verdicts) into the §0-honest live market node without losing link equity.",
+      "exits": [
+        "/housing-market/[...slug]",
+        "/housing-market/reports"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "PDS defect #7: exists solely to permanentRedirect away from the dropped reporting_cache era (app/reports/[slug]/[geoName]/page.tsx:14-25, noindex). Keep the redirect mapping in next.config, delete the page file. No SEO exposure — already noindex + permanent redirect.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/reports/sales/[city]/[period]": {
+      "process": "explore-market-knowledge",
+      "file": "app/reports/sales/[city]/[period]/page.tsx",
+      "destination": "market",
+      "visitor_objective": "Read a per-city, per-period closed-sales report — a dated citable slice of one city's market node.",
+      "machine_objective": "Own long-tail \"<city> home sales <period>\" search intent and route readers into the live city node and subscription channel.",
+      "exits": [
+        "/housing-market/[...slug]",
+        "/housing-market/reports",
+        "/sell#get-value"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Page survives but the URL is a consolidation candidate: it is the last LIVE surface in the retired /reports URL space, outside the canonical /housing-market/reports family. Rename under the canonical family requires a per-URL GSC evidence pull first (these dated slices may carry long-tail equity) and a 301 per URL.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 86,
+        "verdict": "HAS_EQUITY_301_REQUIRED"
+      }
+    },
+    "/resources": {
+      "process": "read-content",
+      "file": "app/resources/page.tsx",
+      "destination": "CUT-CANDIDATE",
+      "visitor_objective": "None of its own — a 6-tile router with no readable content; every tile is a door another destination owns.",
+      "machine_objective": "None distinct — it duplicates the nav directory's routing job, and carries the process's only AdSense slot, an odd fit with the lead-machine-that-never-acts-like-it north star.",
+      "exits": [
+        "/housing-market",
+        "/housing-market/reports",
+        "/area-guides",
+        "/homes-for-sale",
+        "/sell#get-value",
+        "/contact"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "PDS §11 explicit: the resources annex dissolves into IA/nav unless P5 gives it a job the nav directory (lib/site-nav.ts:140-146) is not already doing — a router page whose links are doors other destinations own is nav, not content. 301 to the market/knowledge hub. SEO flag: sitemap-emitted (app/sitemap.ts:149) and nav/footer-linked, so pull GSC evidence before the cut; expected equity is low (no readable content) but must be verified, not assumed.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/reviews": {
+      "process": "contact-a-broker",
+      "file": "app/reviews/page.tsx",
+      "destination": "about",
+      "visitor_objective": "Read every verified client review, verbatim and sourced to Google, to confirm the brokerage delivers what it claims.",
+      "machine_objective": "Proof consumed advances contact-made: the convinced reader exits into the team or contact door; verbatim-with-attribution sourcing is the trust mechanism itself.",
+      "exits": [
+        "/contact",
+        "/team",
+        "/homes-for-sale"
+      ]
+    },
+    "/robots.txt": {
+      "process": "earn-search-traffic",
+      "file": "app/robots.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Give any crawler — search, AI answer, or social — the complete, honest crawl-permission map and the sitemap pointer in one fetch.",
+      "machine_objective": "Feed the inception of every visitor process: keep the full crawler roster (Googlebot through GPTBot/PerplexityBot/ClaudeBot) allowed so organic search and AI citation continuously fill the top of the funnel at zero marginal cost.",
+      "exits": [
+        "/sitemap.xml"
+      ]
+    },
+    "/schools": {
+      "process": "evaluate-a-place",
+      "file": "app/schools/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Find the Central Oregon schools that matter to a relocating family and pick one to evaluate living near.",
+      "machine_objective": "Route into a school anchor node or capture a regional SFR alert (the only capture point in the schools family today) while earning school-intent search traffic.",
+      "exits": [
+        "/schools/[slug]",
+        "/cities/[slug]",
+        "/homes-for-sale/[city]"
+      ]
+    },
+    "/schools/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/schools/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether life around this school could work — verified academic facts, the attendance area, and the real homes that feed it.",
+      "machine_objective": "Advance one graph step — a listing opened, a city node entered, or contact initiated — while the page earns amenity long-tail traffic; target adds the missing per-anchor capture and replaces the keyword-hack overflow exit with a real school filter.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale/[city]",
+        "/cities/[slug]",
+        "/schools/[slug]",
+        "/schools",
+        "/contact",
+        "/sell#get-value"
+      ]
+    },
+    "/search": {
+      "process": "REDIRECT",
+      "file": "app/search/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Browse every home for sale with full filters, map, and saved-search capture — the ONE browse system, served at the canonical /homes-for-sale URL.",
+      "machine_objective": "This file is the beforeFiles rewrite TARGET of /homes-for-sale (the public /search URL itself 301s to /homes-for-sale — correct and already locked); it advances find-a-home toward saved searches, alerts, and listing-detail engagement under the homes destination.",
+      "exits": [
+        "/homes-for-sale/{city}",
+        "/listing/{canonical-pretty-slug}",
+        "/account"
+      ]
+    },
+    "/search/[...slug]": {
+      "process": "REDIRECT",
+      "file": "app/search/[...slug]/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Browse a scoped slice of the market — city, preset, price band, subdivision — with FAQ, adjacent-band links, and alert capture, served at the canonical /homes-for-sale/* URLs.",
+      "machine_objective": "Rewrite target for the entire /homes-for-sale/* programmatic space — the geo/matrix sitemap classes resolve here; it converts scoped browse intent into saved searches and listing-detail visits inside the homes destination, and its curated-intent modes (open houses, price drops, luxury, sold) fold in per the locked destination shape.",
+      "exits": [
+        "/homes-for-sale",
+        "/listing/{canonical-pretty-slug}",
+        "/homes-for-sale/{city}/{preset}",
+        "/account"
+      ]
+    },
+    "/sell": {
+      "process": "plan-a-sale",
+      "file": "app/sell/page.tsx",
+      "destination": "sell",
+      "visitor_objective": "Decide whether and how to sell this home with Ryan Realty — what it costs (the single plan), what happens when, and what proof backs it — without talking to anyone first.",
+      "machine_objective": "Start a written valuation (address + contact captured, CMA queued — the E2 KPI step) as the natural next click earned by fully answering the sell decision.",
+      "exits": [
+        "/sell#get-value",
+        "/contact?inquiry=Selling",
+        "/housing-market",
+        "/homes-for-sale",
+        "/our-homes"
+      ]
+    },
+    "/sell/[intent]": {
+      "process": "plan-a-sale",
+      "file": "app/sell/[intent]/page.tsx",
+      "destination": "sell",
+      "visitor_objective": "An owner in a specific bind (FSBO, expired listing, inherited home) sees their situation named and learns exactly what Ryan Realty would do about it.",
+      "machine_objective": "Capture a situation-qualified seller inquiry (Seller Inquiry event, canonical source tag) that starts the CRM seller relationship.",
+      "exits": [
+        "/sell#get-value",
+        "/sell",
+        "/contact?inquiry=Selling"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "plan-a-sale D4: all three landers (/sell/for-sale-by-owner, /sell/expired-listings, /sell/inherited-home) have ZERO internal links (organic-entry-only, sitemapped) and duplicate the /lp/fsbo + /lp/expired-listing paid LPs; they also skip the CMA queue (thinner completion) and use off-brand Unsplash heroes (D5). Fold as situation variants inside the sell destination or 301 — but they are sitemapped SEO doors targeting distinct long-tail queries, so the GSC per-URL equity pull is mandatory before the cut.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 7,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/sell/valuation": {
+      "process": "get-home-value",
+      "file": "app/sell/valuation/page.tsx",
+      "destination": "sell",
+      "visitor_objective": "Learn what your home is worth — a written number with the comps behind it, free, with no listing agreement.",
+      "machine_objective": "Complete a valuation request (address + contact captured — the E2 KPI event) and enroll the owner as a warm seller in the CRM spine.",
+      "exits": [
+        "/sell#get-value",
+        "/sell",
+        "/contact?inquiry=Selling"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Locked consolidation: ONE valuation intake spine at /sell#get-value; this page is a second, parallel capture contract (ValuationForm/submitValuationRequest vs the spine's SellerLPForm) — two contracts for one job. 301 to the spine. SEO caveat: the URL is sitemapped and targets 'home valuation Bend Oregon' / 'what is my home worth Bend' (app/sell/valuation/page.tsx:41-46) and already receives the /home-valuation 301 — equity is real, the 301 preserves it; GSC evidence pull required to confirm before execution.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 17,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/sign/[token]": {
+      "process": "UNMAPPED",
+      "file": "app/sign/[token]/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Read and sign your transaction documents from your email link in one sitting, on any device, with no account — and receive the completed, certified copy without asking.",
+      "machine_objective": "A legally defensible executed document with zero broker labor: consent, view, IP/UA attribution, ordered routing, per-field evidence, sealed PDF + certificate + sha256 filed to the deal, every party's copy delivered — served by ZERO cross-sell (the restraint IS the brand impression).",
+      "exits": []
+    },
+    "/signup": {
+      "process": "save-and-return",
+      "file": "app/signup/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Create my account in two taps so my saved state persists.",
+      "machine_objective": "Inception of the durable identity stitched to a CRM record — without dropping the sign-up's source context (PDS D5).",
+      "exits": [
+        "/account",
+        "/login"
+      ]
+    },
+    "/site-index": {
+      "process": "earn-search-traffic",
+      "file": "app/site-index/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "None — a crawler internal-link-equity hub auto-derived from live inventory, linked only from the footer legal row; not visitor content (P1 boundary finding upheld in read-content PDS §9).",
+      "machine_objective": "Distribute internal link equity across the live route inventory for crawlers beyond what XML sitemaps convey.",
+      "exits": [
+        "/homes-for-sale",
+        "/cities",
+        "/housing-market",
+        "/blog"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Named consolidation candidate in the P5 brief. It may be redundant with sitemap.xml + a well-linked IA, but in-page links carry crawl equity XML sitemaps do not, so the cut is usage-dependent: pull GSC crawl/impression evidence for /site-index before deciding. If cut, 301 to / and rely on the rebuilt destination graph for internal linking.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 1,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/sitemap.xml": {
+      "process": "earn-search-traffic",
+      "file": "app/sitemap.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Give the crawler the sitemap index — five per-class children on one canonical host with honest lastmod — from cache, instantly.",
+      "machine_objective": "Every emitted URL indexed and counted per class in GSC, making indexation attributable and prunable; this URL is a beforeFiles rewrite to /sitemaps/index.xml and must stay so.",
+      "exits": [
+        "/sitemaps/core.xml",
+        "/sitemaps/geo.xml",
+        "/sitemaps/listings.xml",
+        "/sitemaps/matrix.xml",
+        "/sitemaps/content.xml"
+      ]
+    },
+    "/sitemaps/[cls]": {
+      "process": "earn-search-traffic",
+      "file": "app/sitemaps/[cls]/route.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Give the crawler the complete, cache-warm urlset for one class (core/geo/listings/matrix/content) with truthful lastmod and zero Coming-Soon leakage.",
+      "machine_objective": "Every URL of the class indexed under its class sitemap in GSC; the matrix class is the documented prune candidate once the per-class indexed-count feedback loop closes (10,744 submitted / 60 indexed at the 2026-07-28 baseline).",
+      "exits": [
+        "/homes-for-sale",
+        "/cities",
+        "/housing-market",
+        "/blog"
+      ]
+    },
+    "/sitemaps/index.xml": {
+      "process": "earn-search-traffic",
+      "file": "app/sitemaps/index.xml/route.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Serve the same sitemap index as /sitemap.xml (this is the rewrite target) — the five class children, no data work, one canonical host.",
+      "machine_objective": "Keep the class-split architecture serving so per-class GSC attribution works; the pair with /sitemap.xml is one surface behind two URLs by rewrite design, not a duplicate to consolidate.",
+      "exits": [
+        "/sitemaps/core.xml",
+        "/sitemaps/geo.xml",
+        "/sitemaps/listings.xml",
+        "/sitemaps/matrix.xml",
+        "/sitemaps/content.xml"
+      ]
+    },
+    "/subdivisions/[slug]": {
+      "process": "evaluate-a-place",
+      "file": "app/subdivisions/[slug]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether this plat fits — the homes in it now, its sales history, and its assigned schools, at the finest honest grain.",
+      "machine_objective": "Advance the visitor one graph step (parent community/city, a listing, or a scoped alert) by being the only site that answers at plat grain; sub-index-floor plats stay noindex.",
+      "exits": [
+        "/communities/[slug]",
+        "/cities/[slug]",
+        "/subdivisions/[slug]",
+        "/homes-for-sale/[city]",
+        "/schools/[slug]",
+        "/sell#get-value"
+      ]
+    },
+    "/sw.js": {
+      "process": "earn-search-traffic",
+      "file": "app/sw.ts",
+      "destination": "SYSTEM",
+      "visitor_objective": "Deliver push notifications to a broker who opted in — the hand-authored push-only worker with deliberately no fetch handler.",
+      "machine_objective": "Carry the broker web-push channel without ever interposing on visitor requests; the filename is reserved for the future merged offline+push worker if P3 sub-decision A wires the dormant serwist half.",
+      "exits": []
+    },
+    "/team": {
+      "process": "contact-a-broker",
+      "file": "app/team/page.tsx",
+      "destination": "about",
+      "visitor_objective": "See the brokers — who they are and what they have actually closed — and pick the person I would work with.",
+      "machine_objective": "Broker chosen advances contact-made: routing the visitor into a per-broker profile or the contact door means the eventual lead arrives attributed to a specific person.",
+      "exits": [
+        "/team/[slug]",
+        "/contact",
+        "/reviews",
+        "/join"
+      ]
+    },
+    "/team/[slug]": {
+      "process": "contact-a-broker",
+      "file": "app/team/[slug]/page.tsx",
+      "destination": "about",
+      "visitor_objective": "Judge this specific broker — bio, verified MLS closings, reviews that name them — enough to want them on my side of the transaction.",
+      "machine_objective": "Attributed contact made: the profile sets the rr_agent_attribution so subsequent calls, texts, and form submits route to and credit this broker (the /contact path must honor the cookie — today it does not, contact-form-inquiry D1).",
+      "exits": [
+        "/contact",
+        "/sell#get-value",
+        "/reviews",
+        "/homes-for-sale",
+        "tel:+15417033095"
+      ]
+    },
+    "/team/[slug]/edit": {
+      "process": "UNMAPPED",
+      "file": "app/team/[slug]/edit/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "A Ryan Realty broker updates their own public profile (bio, phone, tagline, socials) without asking an admin.",
+      "machine_objective": "Keeps the team trust surfaces accurate at zero admin cost; noindex, auth-gated broker self-service — never part of the visitor graph.",
+      "exits": []
+    },
+    "/terms": {
+      "process": "serve-legal",
+      "file": "app/terms/page.tsx",
+      "destination": "SYSTEM",
+      "visitor_objective": "Understand what governs use of the site and its MLS data, including the SMS consent terms, in one page.",
+      "machine_objective": "Hold carrier and platform standing (the A2P consent sentence is verified word-for-word against this page) so every SMS-consented capture form stays legal, and hand the visitor back to the graph.",
+      "exits": [
+        "/privacy#sms",
+        "/privacy",
+        "/"
+      ]
+    },
+    "/tools/appreciation": {
+      "process": "get-home-value",
+      "file": "app/tools/appreciation/page.tsx",
+      "destination": "sell",
+      "visitor_objective": "Project what a home could be worth after a chosen hold period and appreciation rate — instant math with local defaults, no capture gate, no appraisal pretense.",
+      "machine_objective": "Mark the visitor's owner-segment financial seriousness in the intent trail and hand them into the valuation spine the moment the hold math makes a real valuation the obvious next step.",
+      "exits": [
+        "/sell#get-value",
+        "/tools/mortgage-calculator",
+        "/homes-for-sale"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "run-the-numbers §11: no standalone Tools destination — the hold-math calculator is a utility node attached to the valuation spine, embeddable in context. The standalone URL survives only as the SEO/answer-engine door (sitemapped, canonical, WebApplication JSON-LD): GSC usage + equity pull is mandatory before any re-home, and any move gets a 301. Also fix its intent classification — today this tool's use is invisible to the CRM segment signal (run-the-numbers §10 defect 1).",
+      "gsc_90d": {
+        "clicks": 2,
+        "impressions": 608,
+        "verdict": "HAS_EQUITY_301_REQUIRED"
+      }
+    },
+    "/tools/mortgage-calculator": {
+      "process": "plan-a-purchase",
+      "file": "app/tools/mortgage-calculator/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "See what a Central Oregon home would cost per month — computed instantly with honest local defaults, refinable, with nothing asked of me first.",
+      "machine_objective": "Marks buyer financial seriousness in the intent trail (the 'mortgage-calculator user' CRM signal) and hands the visitor into price-bounded browse or the valuation spine the moment the numbers make it the obvious next step.",
+      "exits": [
+        "/homes-for-sale",
+        "/sell#get-value"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Standalone destination dissolves per run-the-numbers PDS §11 — the engine embeds in context (listing detail already mounts it) and the payment tool attaches to the homes pillar. URL is NOT a plain cut: sitemapped, self-canonical, SoftwareApplication JSON-LD, listed in llms.txt and the AI chat prompt — keep it as the canonical SEO/answer-engine door or 301 on re-home; GSC evidence pull required.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 36,
+        "verdict": "SAFE_TO_CUT"
+      }
+    },
+    "/tools/rental-property-calculator": {
+      "process": "plan-a-purchase",
+      "file": "app/tools/rental-property-calculator/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Find out whether a Central Oregon rental pencils — cash flow, cap rate, cash-on-cash, a 30-year projection and a takeaway PDF — with no capture gate.",
+      "machine_objective": "Marks investor seriousness and converts in-tool: a rental-calculator/investor-tagged crm_people lead with the analysis context, or a warm handoff into investor browse and broker contact.",
+      "exits": [
+        "/contact",
+        "/homes-for-sale"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Standalone destination dissolves per run-the-numbers PDS — underwrite attaches to the investor lens of browse + contact and already embeds on listing detail (RentalAnalysis). URL keeps SEO value: sitemapped, SoftwareApplication + FAQPage JSON-LD, and the only tool with its own in-tool lead capture — canonical door kept or 301 on re-home; GSC evidence pull required. Fix first: this tool is invisible to the CRM intent signal (defect 1).",
+      "gsc_90d": {
+        "clicks": 1,
+        "impressions": 11,
+        "verdict": "HAS_EQUITY_301_REQUIRED"
+      }
+    },
+    "/videos": {
+      "process": "find-a-home",
+      "file": "app/videos/page.tsx",
+      "destination": "homes",
+      "visitor_objective": "Browse homes by watching their videos — a media-first way into the same live inventory.",
+      "machine_objective": "Convert passive video browsing into listing inspections and captures; P3-locked as the canonical video-browse surface (indexable grid) with /feed folding in as its vertical mode.",
+      "exits": [
+        "/listing/[listingKey]",
+        "/homes-for-sale",
+        "/cities/[slug]"
+      ]
+    },
+    "/zip/[zip]": {
+      "process": "evaluate-a-place",
+      "file": "app/zip/[zip]/page.tsx",
+      "destination": "places",
+      "visitor_objective": "Decide whether this ZIP fits — live count, median, and how it relates to the city and plats inside it.",
+      "machine_objective": "Capture a ZIP-filtered listing alert (postalCode filter → listing_alerts) or ladder the visitor into a finer place node; target repairs the two graph defects (subdivision doors currently dump to keyword search, cross-ZIP cards fabricate zero counts).",
+      "exits": [
+        "/homes-for-sale/[city]",
+        "/cities/[slug]",
+        "/subdivisions/[slug]",
+        "/zip/[zip]",
+        "/sell#get-value"
+      ]
+    },
+    "/home-valuation": {
+      "destination": "sell",
+      "visitor_objective": "Reach the valuation intake from an old link or memory of the legacy URL without hitting a dead end.",
+      "machine_objective": "Preserve accumulated SEO equity and inbound-link continuity by permanently forwarding to the one valuation spine.",
+      "exits": [
+        "/sell/valuation"
+      ],
+      "cut_candidate": true,
+      "cut_reason": "Already a 301 (next.config.ts:217 → /sell/valuation), so this is a retarget, not a cut: when /sell/valuation folds into the spine, repoint this redirect directly at the spine URL to avoid a two-hop redirect chain. Keep the redirect itself forever — it is an SEO fact.",
+      "gsc_90d": {
+        "clicks": 0,
+        "impressions": 0,
+        "verdict": "SAFE_TO_CUT"
+      }
+    }
   }
 }
