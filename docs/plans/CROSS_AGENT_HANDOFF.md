@@ -14,6 +14,7 @@ inbound-respond/broker-alert PDS, TC_SYSTEM, TC_FORMS_LOADING_HANDOFF,
 getContactBehaviorSummary, visitors/track.
 
 **Next:** Matt adversarially audits the prompt + answers D1–D5 in the plan.
+Implementation amnesia is in: existing code/process is a quarry, not a freeze.
 Then first slices A1 (copilot queue), C1 (expired blow-away packet), D1
 (newsletter identity + homes list). Do not start B1 (forms) until those are
 specified. Inbox/settings may still be dirty from 11F — do not mix commits.

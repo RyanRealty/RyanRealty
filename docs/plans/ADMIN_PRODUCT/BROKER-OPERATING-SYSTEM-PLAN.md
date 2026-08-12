@@ -1,12 +1,39 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0 plan. Not a lock. Matt adversarially reviews the prompt + this file.
+**Status:** v0.1 plan. Not a lock. Matt adversarially reviews the prompt + this file.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
-**Does not reopen:** process / IA / visual / litmus locks in `decisions.md`
+**Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
+currently do them is not sacred. See §Implementation amnesia.
 
 This is the plan behind the broker OS prompt: copilot, known-seller streams,
 buyer/newsletter, Closings/forms, and a designer's bar on everything we send.
+
+---
+
+## Implementation amnesia (Matt 2026-08-12 — outranks "we already have it")
+
+Existing code and existing process **must not** keep us from the right thing.
+The bar is efficient, smart, streamlined — a new broker plugs in and works.
+If the current path is slower, dumber, or clunkier than the north star, it
+goes, even if it is shipped, gated, or "dialed in."
+
+- **Loyal to the job, not the machine.** "Respond to inbound," "value this
+  home," "paper the deal," "curate the newsletter" stay. The current route,
+  table, cron, template, and PDS *how* are a quarry.
+- **Quarry, not museum.** Steal a chokepoint that is already right
+  (suppression fail-closed, §0 numbers, draft-first, ESIGN seal). Cut
+  everything that exists only because we built it.
+- **"We already have X" is not a veto.** It is evidence. If X already *is*
+  the simple machine, keep it. If X makes the broker tap twice, keep a
+  fourth inbox, send a generic brochure, or hide the homes they browsed
+  behind a panel nobody opens, replace it.
+- **Still inviolable (not "existing code" — law and license):** draft-first
+  to real people, suppression fail-closed, no invented numbers, no
+  prior-agent blame, OREF blanks stay licensed, SkySlope is not the SoR.
+- **Process/IA locks named the jobs and destinations.** They did not freeze
+  the implementation. Design amnesia already said this for chrome. It now
+  applies to workflows, data joins, and "don't rebuild" advice in v0.
 
 ---
 
@@ -21,7 +48,7 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A2 | **Four loops, one week.** Copilot + Closings + expired/FSBO + buyer/newsletter is a quarter, not a grind tick. | Sequence or nothing ships. | P1 = copilot queue + one seller packet + one buyer signal. Forms after. |
 | A3 | **"Send them a CMA" for a buyer looking at a home.** Locked engine: CMA = sellers, BPO = buyers/offer, expired-audit = expired. A seller CMA on a listing a buyer is touring is the wrong artifact. | Silent override would fork the product. | **Matt decision D1** |
 | A4 | **Newsletter is not the only buyer door.** Saved search, guest alerts, portal, listing inquiry, call/text, Meta already create buyer people. Building only newsletter orphans hotter signals. | Honor newsletter as the named capture. Do not delete the others. | Newsletter = curated edition + capture. Saved-search/portal = behavior SoR. Copilot reads both. |
-| A5 | **Behavior tracking already exists.** `visitor_events` already records `page_view`, `listing_view`, `search`, `scroll_depth`, `section_view`, `cta_click`, `save_listing`. `getContactBehaviorSummary` + `ContactBehaviorPanel` already say "see what they are looking at." Timeline merge already shows dwell + scroll. | Rebuilding tracking is bloat. | Gap = identity stitch (newsletter-only signup) + copilot sentence + one-yes "send packet on that home" |
+| A5 | **Behavior events exist; the product does not.** `visitor_events` already records listing_view / search / scroll / click / save. A contact panel can summarize them. That is quarry, not the copilot loop. If the join, the FUB-id leftover, or the panel-nobody-opens is why Matt cannot say "who is looking at what" in one sentence, replace the machine. | "Already tracked" is not "already useful." | Keep event facts if they are true. Rebuild the product surface (queue sentence, identity stitch, one-yes send) without loyalty to the current panel or join. |
 | A6 | **"Every scroll" will drown Today or feel like surveillance.** Matt's wake-ups are inbound-human (valuation, new lead, reply-on-thread). Hot-visitor was MERGE→broker-alert and was NOT in the wake list. | Unranked pings make the copilot unusable. | Rank: reply > looking-at-a-home (identified, repeated) > newsletter signup. Digest the rest. Honor GPC. |
 | A7 | **"Blow them away" / "designer's eye" is untestable.** Brand-voice gates banned words, not beauty. | Taste arguments will stall every packet. | Deliverable litmus: named exemplars (Tumalo CMA, approved newsletter shell, list-kit). If it is not in that league, it does not send. |
 | A8 | **Expired "how we will market THIS home" is not the generic services list.** `lib/cma/expired-audit.ts` layer 2 mirrors `/sell` "what every listing gets." List-kit is the real marketing machine. | C2 fails today by construction. | First packet = know-this-home (engine already has site intel) + this-home marketing plan (list-kit / sell plan, not a brochure). |
@@ -33,7 +60,9 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A14 | **Assigned broker.** Copilot and visitor-escalate still smell Matt-only. Q4 lock: own book default, Matt sees all. | New-broker onboard fails if every ping is Matt's. | Route by `assigned_broker`. |
 | A15 | **Public Product OS is a parallel plane.** Buyer browse + newsletter live on the public site. Admin copilot lives in ADMIN_PRODUCT. | One prompt that edits both without a collision rule will fight the public OS. | Public copy/design = PUBLIC_PRODUCT. Admin copilot/queue = ADMIN_PRODUCT. Packets (CMA/newsletter HTML) are shared artifacts with one beauty bar. |
 
-**Verdict:** The brief is right. The failure mode is boiling the ocean and rebuilding things that already exist. This plan keeps the north star and cuts to the first complete loops.
+**Verdict:** The brief is right. The failure mode is either boiling the ocean
+**or** protecting yesterday's code. Sequence the loops. Keep only the machines
+that already *are* the simple path. Cut the rest.
 
 ---
 
@@ -66,7 +95,11 @@ Everything we deliver is curated. Designer's eye. If it would not make them want
 
 ---
 
-## 2. What already exists (do not rebuild)
+## 2. Quarry — steal what's right, cut what isn't
+
+Inventory of current machines. **Not a freeze list.** Each row is kept only
+if it already is the efficient path for that job. If it is in the way, it
+is the thing we replace.
 
 | Piece | Where | Use it for |
 |---|---|---|
@@ -151,12 +184,15 @@ Until D1–D3 are answered, build the queue + stitch + ask-first path. Do not au
 
 ## 5. Four questions (every process)
 
-Score each locked process 1–5:
+Score each locked process 1–5 **on the job, not on the current code**:
 
-1. **Best** — would we still do it this way for A–D?
+1. **Best** — would we still do it this way for A–D if we were starting tomorrow?
 2. **Simple** — fewest steps, stores, taps
 3. **Clear** — one sentence a new broker understands
 4. **E2E** — inception reaches a CRM (and deal-file) artifact
+
+If the *job* scores high and the *current how* scores low, the finding is
+**replace the how**, not "keep it, we already built it."
 
 Plus: **Improve** / **Inform** (more information only if it changes the action).
 
@@ -198,8 +234,9 @@ Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home
 - CRM kanban vs TC vs SkySlope snapshot as three "deals"
 - Cell-forward as a fourth inbox
 - Visitor-escalate as a separate email rail
-- Rebuilding `visitor_events`
+- A second event log that duplicates facts we already capture truthfully
 - SkySlope archive/folder clunk
+- Any shipped path that exists only because it shipped
 
 ### P4 — later
 
@@ -226,9 +263,12 @@ Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," 
 - No product code in the planning pass unless Matt says go.
 - Dirty `app/admin/**/crm/inbox/**` from 11F: inventory, do not edit.
 - Public CTA/copy: PUBLIC_PRODUCT OS. Admin queue: ADMIN_PRODUCT.
-- Path:line or it is not a finding. Code wins vs stale docs.
+- Path:line or it is not a finding. The **right loop** wins vs stale docs *and*
+  vs current code. Code is evidence of what we tried, not a freeze.
 - Law is data (`TC_OREGON_COMPLIANCE.md`).
 - Draft-first forever. Silence is not approval.
+- Implementation amnesia: do not protect a process or module that makes the
+  broker slower or the packet worse.
 
 ---
 
@@ -240,13 +280,19 @@ The long method stays in this file. The executing agent reads this file after or
 PLANNING / BUILD only as Matt's last line allows. Default: plan and evidence, no product code.
 
 You are the expert on Ryan Realty's broker OS. None of this is rocket science.
-Deepen and refine. Do not rebuild what exists. Strip bloat. New broker: access,
-own book, hit the ground running.
+Make it efficient, smart, and streamlined. A new broker: access, own book,
+hit the ground running.
+
+IMPLEMENTATION AMNESIA: existing code and existing process must not keep us
+from the right thing. Jobs stay. Current how is a quarry — steal what is
+already the simple machine, replace what is in the way. "We already have it"
+is not a veto. Still inviolable: draft-first, suppression, no invented
+numbers, no prior-agent blame, licensed forms, SkySlope is not the SoR.
 
 NORTH STAR — four loops, one person record
   A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
   B Closings: licensed forms → fill from deal → send → file. SkySlope is live baseline
-    (browser+API, read-only). In-house foundation exists; production use does not. Soon.
+    (browser+API, read-only). In-house should become the file we actually use. Soon.
   C Known sellers: expired + FSBO. First message + first packet blow them away:
     know THIS home, market THIS home. Manual first touch.
   D Buyers: newsletter is the named capture and a curated, beautiful edition.
@@ -255,14 +301,13 @@ NORTH STAR — four loops, one person record
 
 VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
 BEAUTY: if it would not make them want to see what we're about, it does not send.
-LAW: draft-first, suppression fail-closed, no invented numbers, no prior-agent blame.
 
 Canon: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md
 Orient: ENTERPRISE_MAP/SESSION_HANDOFF.md, CROSS_AGENT_HANDOFF.md, ADMIN_PRODUCT
 disk, then the skills that match the loop you are scoring.
-Do not reopen locks. Do not fork a second CRM, tracker, or signing stack.
 
-Score every locked process: best / simple / clear / e2e.
+Score every locked process: best / simple / clear / e2e — on the job, then
+say whether the current how should be kept or replaced.
 Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1.
 Stop for Matt on D1–D5 in the plan. Then wait.
 ```
@@ -272,3 +317,4 @@ Stop for Matt on D1–D5 in the plan. Then wait.
 ## 10. Session log
 
 - 2026-08-12 — v0 written from Matt's stacked brief + adversarial pass + disk evidence already in ADMIN_PRODUCT / visitor track / newsletter / prospecting / TC. No live recount of `tc_envelopes` this pass (cite July 2026 audit; re-count before B1).
+- 2026-08-12 — v0.1 implementation amnesia (Matt): existing code/process must not block the right, efficient loop. "Do not rebuild" demoted from freeze to quarry test. A5 rewritten. Paste prompt updated.
