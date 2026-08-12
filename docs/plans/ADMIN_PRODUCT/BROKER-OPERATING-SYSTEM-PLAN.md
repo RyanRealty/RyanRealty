@@ -60,6 +60,8 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A14 | **Assigned broker.** Copilot and visitor-escalate still smell Matt-only. Q4 lock: own book default, Matt sees all. | New-broker onboard fails if every ping is Matt's. | Route by `assigned_broker`. |
 | A15 | **A third public rebuild would kill the giant push.** Public Product OS is already at P9_ROLL: process/IA/visual locked 2026-08-11, v3 barrel shipped, `/housing-market` on v3, ratchet live. `experience-rollout` is superseded. | Starting "frontend UI wrap-up" as a new program repeats the last death (self-reported dones, competing destinations). | Loop E = grind that OS to zero legacy pages, then a standing refine forever. Do not invent OS #3. |
 | A16 | **Two sessions, one north star.** Public grind and broker-OS grind can run in parallel if they do not share files. | Mixed commits (11F inbox vs public v3 vs this plan) strand work. | Public session owns `app/` public routes + `components/site/v3` + `docs/plans/PUBLIC_PRODUCT/`. Broker session owns admin + packets + TC + this file. Voice/beauty/valuation language is shared law. |
+| A17 | **Ads now would fork the site.** Demand loop and LPs exist. Matt: do not spend a lot of time on ads right now. | A paid-creative grind will reopen old LPs and skip the spines. | Park ads. When they return, they hit Value my home / listing / newsletter — no new funnel. |
+| A18 | **"Dialed" without a scoreboard is a slogan.** GSC ingest, site_signal, ci:ai-crawler-access, ci:ai-structured-data already exist. | Rebuilding analytics is bloat; leaving them unread is the real hole. | Giant review: every page/process scored on funnel + GSC/AI query tests. Steal working ingest. Replace dashboards nobody uses. |
 
 **Verdict:** The brief is right. The failure mode is either boiling the ocean
 **or** protecting yesterday's code. Sequence the loops. Keep only the machines
@@ -92,6 +94,29 @@ The public pages are the same product. They are how buyers browse, how sellers t
 **Wrap the new UI once, then never stop improving.** That machine already exists: Public Product OS (`docs/plans/PUBLIC_PRODUCT/`), phase `P9_ROLL`, visual language locked (six v3 patterns), first family shipped (`/housing-market`). The giant incremental push is not a new redesign. It is grinding that roll until every public page is on `components/site/v3`, then a standing refine loop on the whole site forever.
 
 Implementation amnesia applies: locked destinations (Homes, Places, Market, Sell, Saved, About) name the jobs. A page that is on v3 and still clunky gets refined, not protected. A page still on KB/legacy gets migrated, not polished in the old register.
+
+### Loop F — Acquisition and truth (SEO, GSC, analytics, AI, every tool)
+
+Every process and every page is also a funnel question: **how does this drive someone in?** Seller → Value my home. Buyer → newsletter / saved search / the home they were already looking at. AI and Google are the same job as a human landing: they must find the honest page that answers the question.
+
+**Dialed means measured, not claimed:**
+- SEO: indexable, canonical, JSON-LD, internal graph, no thin duplicates (cut-list + 301s)
+- Analytics: first-party trail + GA4/site_signal actually used to change a page
+- Google Search Console: daily snapshot ingest (`measure-search-traffic-gsc`) is the scoreboard; slipping queries get a class fix
+- Every tool (mortgage/appreciation/etc.): live, §0-honest, linked from the page that needs it — not a junk drawer
+- Every page: dual objectives + exits + beauty bar
+- Whole system: one generation of code. Historical registers (KB, v2, FUB-as-CRM, SkySlope-as-SoR, "what's my home worth" CTAs) get deleted as the new path ships — that is versioning.
+
+**Ads:** do not spend a lot of time now. Demand / Meta stays parked. When it comes back, it lands on the same spines (valuation, listing, newsletter) — it does not get its own site.
+
+**LLM delivery (already a process, now an acceptance test):**
+`earn-search-traffic` + `/llms.txt` + open AI robots + JSON-LD (G34/G39) are how ChatGPT, Claude, Grok, Perplexity, and AI Overviews find us. The giant review asks, for real queries:
+
+- "Show me the best broker in Bend"
+- "I need a 3-bedroom, 2-bath in Northwest Crossing"
+- "Get my home's value in Bend" (never the worth-question)
+
+If the assistant cannot cite a Ryan Realty page that actually answers that, the page, the schema, or `llms.txt` is wrong. Fix the class. Do not build a parallel "AI site."
 
 ### Voice lock — valuation
 
@@ -204,6 +229,8 @@ If the *job* scores high and the *current how* scores low, the finding is
 **replace the how**, not "keep it, we already built it."
 
 Plus: **Improve** / **Inform** (more information only if it changes the action).
+Plus: **Funnel** — how does this page or process drive a buyer or seller in?
+If it does not, it is a candidate to cut or merge.
 
 Loop C extra: Know / Market / Message / Voice / True / Stream.
 Loop B extra: Libraries / Anticipate / Fill / Send / File / Onboard.
@@ -262,6 +289,7 @@ Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home
 | **C1** One expired blow-away packet | Message + PDF on a real expired in-scope listing, manual send, no generic services hero | Matt review of packet |
 | **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
 | **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0 | Separate from A–D. Do not mix file sets. |
+| **F1** AI/GSC query battery | Those three example queries (and live GSC top queries) resolve to a citable Ryan Realty URL via Google and via `/llms.txt` + JSON-LD | Public session; ads still parked |
 
 Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
 
@@ -299,13 +327,26 @@ language itself is wrong — amnesia allows that; a new OS does not).
 
 Every later session that touches a public page runs the same four questions
 (best / simple / clear / e2e) plus beauty plus dual objectives (visitor +
-machine + exits). One defect class or one family per unit. Measure completed
-valuations week over week, not vibes. Never open "Public Product OS 2."
+machine + exits) plus **funnel** (how does this drive someone in) plus the
+AI/GSC query tests in Loop F. One defect class or one family per unit.
+Measure completed valuations week over week, not vibes. Never open
+"Public Product OS 2."
 
 **Parallelism:** a second session may grind broker OS (A–D) at the same time.
 Do not mix commits. Public session does not edit `app/admin`. Broker session
 does not migrate public families. Shared law: voice, Value my home, beauty
 bar, visitor identity stitch.
+
+### Versioning (one generation, then increment)
+
+Versioning here is not a new numbering scheme for its own sake. It is:
+
+1. **Name the generation we are on** — public v3, admin v2, CMA engine, TC vault — and stop shipping into the previous register.
+2. **Delete historical code as the new path lands** — KB/legacy imports, dual deal stores, FUB vocabulary, dead LPs that cannibalize, worth-question CTAs. The ratchet (`ci:public-ui`, `ci:admin-ui`) is the version gate.
+3. **Keep methodology versions for numbers** (`cache_methodology_definitions`) so a figure stays auditable. That is data versioning, not UI nostalgia.
+4. **After the wrap, every refine is a version bump of the same system** — one family or one defect class, measured, never a parallel stack.
+
+If a file exists only to support the old generation, it is holding us back. Cut it in the same commit that finishes the new path.
 
 **What you say to start the giant push:**
 
@@ -315,9 +356,12 @@ per commit, ratchet shrinks, gate contracts move in the same change, browser
 390 and 1280, deploy READY. Chrome leverage first if the queue still says
 so — verify disk. Implementation amnesia: do not polish KB/legacy; migrate
 or cut. Beauty bar: if it would not make them want to see what we're about,
-it is not done. Stop only for a Matt lock, empty P9 queue, or a real blocker.
-When P9 is empty, do P10, then the standing refine loop in
-docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loop E.
+it is not done. On every page: how does this drive someone into the funnel.
+SEO/JSON-LD/llms.txt stay honest so an LLM asked for the best broker in Bend
+or a 3-bed in Northwest Crossing can cite us. Ads parked. Stop only for a
+Matt lock, empty P9 queue, or a real blocker. When P9 is empty, do P10, then
+the standing refine loop in
+docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loops E and F.
 ```
 
 ---
@@ -333,8 +377,9 @@ docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loop E.
   vs current code. Code is evidence of what we tried, not a freeze.
 - Law is data (`TC_OREGON_COMPLIANCE.md`).
 - Draft-first forever. Silence is not approval.
-- Implementation amnesia: do not protect a process or module that makes the
-  broker slower or the packet worse.
+- Ads: parked. Do not open a paid-creative grind in this program.
+- **Loop F** uses existing `earn-search-traffic`, `measure-search-traffic-gsc`,
+  `/llms.txt`, G34/G39. Do not build a parallel AI site.
 
 ---
 
@@ -355,7 +400,7 @@ already the simple machine, replace what is in the way. "We already have it"
 is not a veto. Still inviolable: draft-first, suppression, no invented
 numbers, no prior-agent blame, licensed forms, SkySlope is not the SoR.
 
-NORTH STAR — five loops, one person record
+NORTH STAR — six loops, one person record, one generation of code
   A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
   B Closings: licensed forms → fill from deal → send → file. SkySlope is live baseline
     (browser+API, read-only). In-house should become the file we actually use. Soon.
@@ -367,6 +412,18 @@ NORTH STAR — five loops, one person record
   E Public site: wrap the locked v3 UI across every public page (Public Product OS
     P9 grind), then forever refine. Do not start a third redesign. Giant push =
     `run public product` in a dedicated session until legacy pages hit zero.
+  F Acquisition and truth: every page/process scored on how it drives the funnel.
+    SEO, GSC, analytics, JSON-LD, /llms.txt, every tool — dialed and used.
+    AI assistants (ChatGPT, Claude, Grok, Perplexity) citing "best broker in Bend"
+    or "3-bed 2-bath in Northwest Crossing" must land on a real answering page.
+    Ads parked for now.
+
+VERSIONING: one generation. Delete historical registers in the same commit that
+ships the new path. Ratchets are the version gate. Methodology versions stay
+for honest numbers. Never a parallel stack.
+
+FUNNEL: on every page, how does this drive a buyer or seller in. If it does not,
+cut or merge.
 
 VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
 BEAUTY: if it would not make them want to see what we're about, it does not send.
@@ -375,9 +432,9 @@ Canon: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md
 Orient: ENTERPRISE_MAP/SESSION_HANDOFF.md, CROSS_AGENT_HANDOFF.md, ADMIN_PRODUCT
 disk, then the skills that match the loop you are scoring.
 
-Score every locked process: best / simple / clear / e2e — on the job, then
+Score every locked process: best / simple / clear / e2e / funnel — on the job, then
 say whether the current how should be kept or replaced.
-Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1.
+Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1.
 Stop for Matt on D1–D5 in the plan. Then wait.
 ```
 
@@ -388,3 +445,4 @@ Stop for Matt on D1–D5 in the plan. Then wait.
 - 2026-08-12 — v0 written from Matt's stacked brief + adversarial pass + disk evidence already in ADMIN_PRODUCT / visitor track / newsletter / prospecting / TC. No live recount of `tc_envelopes` this pass (cite July 2026 audit; re-count before B1).
 - 2026-08-12 — v0.1 implementation amnesia (Matt): existing code/process must not block the right, efficient loop. "Do not rebuild" demoted from freeze to quarry test. A5 rewritten. Paste prompt updated.
 - 2026-08-12 — v0.2 Loop E: public site joins the OS. Giant incremental push = grind existing Public Product OS P9 (do not start OS #3), then standing refine forever. How-to in §7b.
+- 2026-08-12 — v0.3 Loop F: funnel + SEO/GSC/analytics/AI citation as the giant review lens. Ads parked. Versioning = one generation, delete historical registers as the new path ships. LLM acceptance queries recorded.

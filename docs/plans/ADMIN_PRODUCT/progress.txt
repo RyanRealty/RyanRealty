@@ -617,3 +617,5 @@ NOT IN SCOPE
 2026-08-12T19:50:00Z BROKER OS PLAN v0.1 — implementation amnesia (Matt). Existing code/process must not block the right efficient loop. "Do not rebuild" demoted from freeze to quarry test. Paste prompt + A5 + scorecard updated. Still planning only.
 
 2026-08-12T19:55:00Z BROKER OS PLAN v0.2 — Loop E public site. Giant incremental push = grind Public Product OS P9 (already at roll, v3 locked, /housing-market shipped). Do not start a third redesign. How-to in BROKER-OPERATING-SYSTEM-PLAN.md §7b. Dedicated session: `run public product`.
+
+2026-08-12T20:00:00Z BROKER OS PLAN v0.3 — Loop F acquisition/truth. Funnel question on every page. SEO/GSC/analytics/llms.txt/JSON-LD dialed as a review, not a rebuild. Ads parked. Versioning = one generation; delete historical registers as the new path ships. LLM tests: best broker in Bend; 3-bed 2-bath Northwest Crossing.

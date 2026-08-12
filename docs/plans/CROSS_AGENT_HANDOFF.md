@@ -16,8 +16,9 @@ getContactBehaviorSummary, visitors/track.
 **Next:** Matt adversarially audits the prompt + answers D1–D5 in the plan.
 Implementation amnesia is in: existing code/process is a quarry, not a freeze.
 Loop E: public giant push = `run public product` (P9 grind), not a new OS.
-Then first slices A1 / C1 / D1. Dedicated public session for E1. Do not mix
-commits with 11F inbox.
+Loop F: funnel + SEO/GSC/analytics/AI citation; ads parked; one-generation versioning.
+Then first slices A1 / C1 / D1 / E1 / F1. Dedicated public session for E+F.
+Do not mix commits with 11F inbox.
 
 **Blocked on Matt:** D1 buyer packet = BPO vs CMA vs ask-first; D2 what
 "Parallel" is; D3 is "looking at this home" a wake SMS or Today-only.
