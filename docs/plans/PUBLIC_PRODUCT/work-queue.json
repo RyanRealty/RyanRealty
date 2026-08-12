@@ -1,7 +1,7 @@
 [
   {
-    "id": "p6-visual-package",
+    "id": "p6-visual-lock",
     "phase": "P6",
-    "note": "Write design_system/public/PUBLIC_UI.md: CLOSED section-pattern set (>=3 floor, target 5-8) each mapped to a destination job + computed AA contrast table + recorded amnesia test + craft scorecard. Then build the MOVING in-repo prototype (real components, GSAP+Lenis already in repo, owned video) at 390 AND 1280 with a reduced-motion path that still sells. Static mockups are a HARD REFUSE. Then awaiting_lock=visual, stop BLOCKED_ON_MATT: visual."
+    "note": "AWAITING MATT: judge the MOVING prototype at http://localhost:3000/dev/public-v3 (npm run dev) against design_system/public/PUBLIC_UI.md. On grant: record dated section in decisions.md, set locks.visual, clear awaiting_lock, advance to P7_PRIMITIVES (build components/site/v3 barrel from the six patterns, 1:1 naming, accessible name required in the type)."
   }
 ]

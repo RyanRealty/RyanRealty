@@ -4,8 +4,8 @@
     "process": "2026-08-11",
     "ia": "2026-08-11"
   },
-  "awaiting_lock": null,
-  "current_process": "IA locked (6 destinations; /buy folds; calculators dissolve except /tools/appreciation; price-drops survives; all LPs noindex). Next: P6 visual — closed pattern set + MOVING prototype.",
+  "awaiting_lock": "visual",
+  "current_process": "P6 package: design_system/public/PUBLIC_UI.md (6 closed patterns, AA table, amnesia test) + MOVING prototype at /dev/public-v3 verified on real data at 390 and 1280. Awaiting Matt visual lock.",
   "plan_of_record": "docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md",
-  "updated_at": "2026-08-11T07:00:00Z"
+  "updated_at": "2026-08-11T08:00:00Z"
 }
