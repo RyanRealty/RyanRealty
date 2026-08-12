@@ -10,8 +10,10 @@
  * community / sell / about already pass it; this gate stops the cream bar from
  * reappearing on any dark-hero page.
  *
- * Rule: in any public page.tsx that renders BOTH <KbHero> and <KbBreadcrumb>, every
- * <KbBreadcrumb ... /> must include the `overlay` prop. Hard fail otherwise.
+ * Rule: in any public page.tsx that renders a dark opening and that register's
+ * breadcrumb, every breadcrumb tag must use the on-dark variant. Hard fail
+ * otherwise. KB spells the pairing KbHero + KbBreadcrumb `overlay`; the v3
+ * register spells the same pairing V3Stage + V3Breadcrumb `tone="on-media"`.
  *
  * Usage: node scripts/check-kb-breadcrumb-overlay.mjs
  */
@@ -35,20 +37,46 @@ function walk(dir, acc = []) {
   return acc
 }
 
+/**
+ * The defect is a CLASS, not a KB implementation detail, so the predicates name
+ * both registers. V3Stage is the v3 dark opening (full-bleed media under an
+ * overlayStrength scrim) and V3Breadcrumb is the v3 trail, whose on-dark variant
+ * is `tone="on-media"`. Migrating a page out of KB would otherwise take it out of
+ * this gate's scope with no edit and no failure, which unships the protection
+ * silently. docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.3.
+ */
+const REGISTERS = [
+  {
+    hero: /\bKbHero\b/,
+    tag: /<KbBreadcrumb\b([\s\S]*?)\/>/g,
+    onDark: /\boverlay\b/,
+    name: '<KbBreadcrumb>',
+    heroName: 'KbHero',
+    fix: 'add the `overlay` prop (navy variant), e.g. <KbBreadcrumb overlay trail={[...]} />',
+  },
+  {
+    hero: /<V3Stage\b/,
+    tag: /<V3Breadcrumb\b([\s\S]*?)\/>/g,
+    onDark: /tone\s*=\s*["']on-media["']/,
+    name: '<V3Breadcrumb>',
+    heroName: 'V3Stage',
+    fix: 'pass tone="on-media", e.g. <V3Breadcrumb tone="on-media" trail={[...]} />',
+  },
+]
+
 const fails = []
 for (const f of walk(APP)) {
   const src = readFileSync(f, 'utf8')
-  if (!/\bKbHero\b/.test(src)) continue // only dark-hero pages
-  if (!/<KbBreadcrumb\b/.test(src)) continue
-  // Each <KbBreadcrumb ... /> tag (self-closing; trail props carry no '/>').
-  const re = /<KbBreadcrumb\b([\s\S]*?)\/>/g
-  let m
-  while ((m = re.exec(src)) !== null) {
-    if (!/\boverlay\b/.test(m[1])) {
+  for (const reg of REGISTERS) {
+    if (!reg.hero.test(src)) continue // only dark-opening pages
+    reg.tag.lastIndex = 0
+    let m
+    while ((m = reg.tag.exec(src)) !== null) {
+      if (reg.onDark.test(m[1])) continue
       const line = src.slice(0, m.index).split('\n').length
       fails.push(
-        `${f}:${line}  <KbBreadcrumb> on a KbHero (dark) page must pass \`overlay\` — ` +
-          `the default cream bar renders as a white strip above the dark hero.`,
+        `${f}:${line}  ${reg.name} on a ${reg.heroName} (dark) page must use the on-dark variant — ` +
+          `the default cream bar renders as a white strip above the dark hero. Fix: ${reg.fix}.`,
       )
     }
   }
@@ -59,7 +87,7 @@ console.log('===========================================')
 if (fails.length) {
   console.error(`\nFAIL — ${fails.length} dark-hero page(s) render the cream breadcrumb bar:\n`)
   for (const x of fails) console.error('  • ' + x)
-  console.error('\nFix: add the `overlay` prop to <KbBreadcrumb> (navy variant), e.g. <KbBreadcrumb overlay trail={[...]} />.')
+  console.error('\nEach failure above names the fix for its own register.')
   process.exit(1)
 }
 console.log('Every KbBreadcrumb on a dark-hero page uses the navy overlay variant.')

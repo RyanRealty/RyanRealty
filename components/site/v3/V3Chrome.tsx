@@ -1,0 +1,620 @@
+'use client'
+// CLIENT BOUNDARY, and the only one in the chrome. The menu is a modal
+// disclosure: it opens, holds focus, closes on Escape, and closes on a route
+// change. Every one of those is visitor-caused state, which a server component
+// cannot hold. V3Footer and V3Breadcrumb stay pure server components.
+//
+// The BAR needs nothing from the client and would render as RSC if this unit
+// owned a second file to put the menu in. It does not: the unit is
+// V3Chrome.tsx, V3Footer.tsx, V3Breadcrumb.tsx and their three stylesheets. So
+// the bar rides inside this boundary, where it is markup and links only. It
+// server-renders to HTML like any client component, so every destination below
+// is in the initial response for a crawler and for a visitor with no JS; only
+// the menu's open state and the caret panels need hydration. Lifting the bar
+// into its own server file later is a file move, not a rewrite.
+/**
+ * V3 CHROME. The public site's persistent header.
+ *
+ * Replaces components/site/kb/KbNav.client.tsx. Visual language:
+ * design_system/public/PUBLIC_UI.md (locked 2026-08-11). Tokens: ./tokens.css.
+ *
+ * DESTINATIONS COME FROM lib/site-nav.ts, NEVER FROM THIS FILE.
+ * KB_TOP_NAV and KB_MENU_GROUPS are read at module load and projected into one
+ * model. Not one href is typed here, so a link cannot drift out of the single
+ * source of truth by being copied: the only two literal destinations in this
+ * file are `/` on the wordmark and the tel: URI built from lib/brand/contact.
+ * A development-time audit at the bottom of the model proves the projection
+ * lost nothing: every href in either projection is reachable in the chrome, and
+ * it warns by name if one is not.
+ *
+ * LABELS COME FROM THE IA LOCK (docs/plans/PUBLIC_PRODUCT/ia-lock.md).
+ * The locked words are Homes, Places, Market, Sell, About, with Saved as an
+ * account affordance rather than a nav word. Where a locked word lands on an
+ * existing group the group is RENAMED, never rebuilt: Buy renders as Homes and
+ * Areas renders as Places, each keeping its own href and its own children. A
+ * group the lock has no word for is CARRIED under its own label and warned
+ * about in development, because dropping it would delete destinations, which is
+ * the one thing this rebuild may not do.
+ *
+ * ONE PRIMARY CTA, and it is the valuation ask from VALUATION_FORM
+ * (`/sell#get-value`, the locked intake spine). There is no second primary
+ * anywhere in the chrome: the footer carries the same destination as an
+ * ordinary column link, and the menu overlay carries it inside the Sell group,
+ * so a visitor never sees two solid buttons competing in one viewport
+ * (PUBLIC_UI.md section 1, founding directive 3).
+ *
+ * WHAT THIS DELIBERATELY DOES NOT CARRY, versus KbNav:
+ *  - The suggest-search field. It reached into components/search, which drags a
+ *    second token layer onto every public page through the chrome, and search
+ *    belongs to the Field pattern that owns Homes. No nav destination is lost:
+ *    `/homes-for-sale` and the canonical map view both stay one tap away.
+ *    Search returns to the chrome as a v3 primitive or not at all.
+ *  - The transparent-over-hero bar with a scroll listener that flipped it to
+ *    solid. One bar, one color contract, legible over whatever scrolls under
+ *    it. AA on every text pair is a foundation, not a scroll position.
+ *
+ * MOUNTING: the header puts V3_ROOT_CLASS on its own outermost element, so
+ * ./tokens.css resolves with no wrapper. It is `position: sticky`, so it holds
+ * its own space in flow and a page needs no spacer under it.
+ */
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { CONTACT } from '@/lib/brand/contact'
+import {
+  KB_MENU_GROUPS,
+  KB_TOP_NAV,
+  VALUATION_FORM,
+  type NavLink,
+} from '@/lib/site-nav'
+import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
+import './tokens.css'
+import './V3Chrome.css'
+
+/* -------------------------------------------------------------------------- */
+/* The model: site-nav.ts projected onto the locked IA words                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The locked destination words (ia-lock.md), keyed by the site-nav group they
+ * rename. Typed with `| undefined` on purpose: a group this map has no word for
+ * is a real case (site-nav.ts may grow one), and the code below has to be able
+ * to ask whether a key is missing.
+ */
+const LOCKED_LABEL: Readonly<Record<string, string | undefined>> = {
+  Buy: 'Homes',
+  Areas: 'Places',
+  Market: 'Market',
+  Sell: 'Sell',
+  About: 'About',
+  'Your account': 'Saved',
+}
+
+/** The site-nav group whose destination is the visitor's own saved work. */
+const ACCOUNT_KEY = 'Your account'
+
+/** A destination group as the chrome renders it. */
+export type V3ChromeGroup = {
+  /** The site-nav group key, kept so a rename in the lock cannot orphan it. */
+  key: string
+  /** The locked IA word, or the group's own label when the lock has none. */
+  label: V3Text
+  /** The group's own overview page. Absent for the account group. */
+  href?: string
+  /** The curated set the desktop panel shows (KB_TOP_NAV children). */
+  featured: readonly NavLink[]
+  /** Panel set plus menu set, deduped: what the overlay shows at every width. */
+  links: readonly NavLink[]
+}
+
+/** A group that is also a destination, so it can head the bar. */
+type V3ChromeTopGroup = V3ChromeGroup & { href: string }
+
+/**
+ * Trimmed, named, deduped. A link with no href is not a door and a link with no
+ * label would ship an anchor with no accessible name (WCAG 2.4.4), so both are
+ * dropped rather than rendered. The dedupe is by href and it matters: the
+ * overlay merges two projections that overlap heavily, and two children with
+ * the same key is a React error as well as an IA defect.
+ */
+function clean(links: readonly NavLink[]): NavLink[] {
+  const seen = new Set<string>()
+  const out: NavLink[] = []
+  for (const link of links) {
+    const href = link?.href?.trim()
+    const label = link?.label?.trim()
+    if (!href || !label || seen.has(href)) continue
+    seen.add(href)
+    out.push({ href, label })
+  }
+  return out
+}
+
+const MENU_LINKS_BY_TITLE = new Map(KB_MENU_GROUPS.map((g) => [g.title, g.links]))
+const TOP_KEYS = new Set(KB_TOP_NAV.map((g) => g.label))
+
+/**
+ * The whole chrome model, built once at module load.
+ *
+ * The bar's five destinations are KB_TOP_NAV in its own order. The overlay adds
+ * every group KB_MENU_GROUPS has that the top bar does not, which today is the
+ * account group and is exactly why nothing is lost by the top bar being five
+ * words wide.
+ *
+ * `links` merges both projections because they are NOT the same set: the top
+ * bar knows `/sell/valuation` and `/homes-for-sale?status=Sold`, while the menu
+ * knows eight communities the top bar trims to six. KbNav showed the top-bar
+ * set only above 1000px, which left a handful of destinations unreachable on a
+ * phone. Merging fixes that without adding a link anyone has to maintain.
+ */
+const NAV_GROUPS: readonly V3ChromeGroup[] = [
+  ...KB_TOP_NAV.map((group) => ({
+    key: group.label,
+    label: v3Text(LOCKED_LABEL[group.label] ?? group.label),
+    href: group.href,
+    featured: clean(group.children),
+    links: clean([...group.children, ...(MENU_LINKS_BY_TITLE.get(group.label) ?? [])]),
+  })),
+  ...KB_MENU_GROUPS.filter((group) => !TOP_KEYS.has(group.title)).map((group) => ({
+    key: group.title,
+    label: v3Text(LOCKED_LABEL[group.title] ?? group.title),
+    featured: [] as readonly NavLink[],
+    links: clean(group.links),
+  })),
+]
+
+const TOP_GROUPS: readonly V3ChromeTopGroup[] = NAV_GROUPS.filter(
+  (group): group is V3ChromeTopGroup => typeof group.href === 'string',
+)
+
+const ACCOUNT_GROUP = NAV_GROUPS.find((group) => group.key === ACCOUNT_KEY)
+
+/**
+ * The account affordance. The lock puts Saved in the chrome and out of the nav
+ * row, so it renders as its own control beside the ask, and its destination is
+ * the account group's first link rather than a path typed here. No fallback: if
+ * site-nav ever drops the group, the affordance disappears and the development
+ * audit says so, which is honest. Inventing `/account` here would be the drift
+ * this file exists to prevent.
+ */
+const SAVED =
+  ACCOUNT_GROUP && ACCOUNT_GROUP.links.length > 0
+    ? { href: ACCOUNT_GROUP.links[0].href, label: ACCOUNT_GROUP.label }
+    : null
+
+/** The one primary action in the chrome, straight off the locked spine. */
+const CTA = { href: VALUATION_FORM.href, label: v3Text(VALUATION_FORM.label) }
+
+/**
+ * Fixed accessible names. Built through v3Text so a blank one throws at import
+ * rather than shipping a nameless landmark or a nameless control.
+ */
+const NAME = {
+  home: v3Text('Ryan Realty home'),
+  primary: v3Text('Primary'),
+  menu: v3Text('Site menu'),
+  sections: v3Text('Site sections'),
+  openMenu: v3Text('Menu'),
+  closeMenu: v3Text('Close menu'),
+}
+
+if (process.env.NODE_ENV !== 'production') {
+  const reachable = new Set<string>()
+  for (const group of NAV_GROUPS) {
+    if (group.href) reachable.add(group.href)
+    for (const link of group.links) reachable.add(link.href)
+  }
+  const required = new Set<string>([
+    ...KB_TOP_NAV.flatMap((g) => [g.href, ...g.children.map((c) => c.href)]),
+    ...KB_MENU_GROUPS.flatMap((g) => g.links.map((l) => l.href)),
+    VALUATION_FORM.href,
+  ])
+  const missing = [...required].filter((href) => !reachable.has(href))
+  if (missing.length > 0) {
+    console.warn(
+      `V3Chrome: ${missing.length} site-nav destination(s) are not reachable in the chrome: ${missing.join(', ')}`,
+    )
+  }
+  const carried = NAV_GROUPS.filter((group) => LOCKED_LABEL[group.key] === undefined)
+  if (carried.length > 0) {
+    console.warn(
+      `V3Chrome: carrying ${carried.length} site-nav group(s) the IA lock has no word for, under their own labels: ` +
+        `${carried.map((g) => g.key).join(', ')}. Give each one a locked word or accept the carry.`,
+    )
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* The wordmark and the icons                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The brand asset. One definition for the two places it renders (the bar and
+ * the open menu's own bar), so they cannot drift into two different logos.
+ *
+ * Plain img, not next/image, for the reason V3Stage states for its poster: this
+ * is an owned asset that must render on any path without depending on
+ * image-host configuration. It is also the WORDMARK, which brand law renders
+ * from the pre-rendered file and never re-typesets, so re-encoding a
+ * transparent PNG down to a 20px display height buys nothing and risks the
+ * alpha edge. The intrinsic dimensions are on the element, so the row reserves
+ * its space and the bar does not jump when the file lands.
+ */
+function Wordmark() {
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src="/images/brand/logo-horizontal-navy-transparent.png"
+      alt="Ryan Realty"
+      width={2271}
+      height={454}
+      decoding="async"
+    />
+  )
+}
+
+/* Icons. Stroke is currentColor, so every one inherits the token beside it. */
+
+function IconChevron() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path
+        d="M4 6l4 4 4-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function IconBookmark() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path
+        d="M4 2.75h8v10.5L8 10.4l-4 2.85z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function IconMenu() {
+  return (
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
+      <path
+        d="M3 6h14M3 10h14M3 14h14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function IconClose() {
+  return (
+    <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false">
+      <path
+        d="M5 5l10 10M15 5L5 15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Current destination                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Whether a bar destination owns the page the visitor is on. Compared against
+ * the path only: a group href may carry a query (`?view=map`), and a query does
+ * not change which section of the graph the visitor is standing in.
+ */
+function isCurrentPath(pathname: string | null, href: string): boolean {
+  if (!pathname || !href.startsWith('/')) return false
+  const path = href.split('?')[0]
+  if (path === '/') return pathname === '/'
+  return pathname === path || pathname.startsWith(`${path}/`)
+}
+
+/* -------------------------------------------------------------------------- */
+/* One bar destination: a link, plus a disclosure for its children              */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * WAI-ARIA APG "disclosure navigation menu with top-level links": a real link
+ * to the group's own page, plus an adjacent caret button that owns the expanded
+ * state. Pointer users get hover; keyboard users tab across five link and caret
+ * pairs and expand only what they want, because auto-expanding on focus would
+ * drop every child link into the tab sequence. Escape closes and returns focus
+ * to the caret. Below 900px the whole row is display:none and the overlay
+ * carries navigation.
+ *
+ * The panel's links are removed from the tab order when closed by
+ * `visibility: hidden`, not by opacity: an invisible-but-focusable link is a
+ * keyboard trap in slow motion.
+ */
+function V3ChromeDestination({
+  group,
+  currentPath,
+}: {
+  group: V3ChromeTopGroup
+  currentPath: string
+}) {
+  // The open state is stored as the path it was opened ON, and read back by
+  // comparing. A panel left open across a navigation would hang over the page
+  // the visitor just asked for, and this closes it BY DERIVATION: the moment
+  // the path changes, `open` is false. No effect, no cascading render, and no
+  // teardown anyone can forget to write.
+  const [openPath, setOpenPath] = useState<string | null>(null)
+  const open = openPath === currentPath
+  const rootRef = useRef<HTMLDivElement>(null)
+  const caretRef = useRef<HTMLButtonElement>(null)
+  const panelId = `${useId()}-panel`
+  const current = isCurrentPath(currentPath, group.href)
+
+  // Native focusout rather than React's onBlur: collapse once focus leaves the
+  // group entirely, so tabbing out of the last child closes the panel behind it.
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el) return
+    const onFocusOut = (event: FocusEvent) => {
+      if (!el.contains(event.relatedTarget as Node | null)) setOpenPath(null)
+    }
+    el.addEventListener('focusout', onFocusOut)
+    return () => el.removeEventListener('focusout', onFocusOut)
+  }, [])
+
+  return (
+    <div
+      ref={rootRef}
+      className={cn('v3-chrome__group', open && 'is-open')}
+      onMouseEnter={() => setOpenPath(currentPath)}
+      onMouseLeave={() => {
+        // Never yank a panel out from under a keyboard user whose focus is
+        // still inside it because the pointer drifted away.
+        if (!rootRef.current?.contains(document.activeElement)) setOpenPath(null)
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || !open) return
+        event.stopPropagation()
+        setOpenPath(null)
+        caretRef.current?.focus()
+      }}
+    >
+      <Link
+        href={group.href}
+        className="v3-chrome__group-link"
+        aria-current={current ? 'page' : undefined}
+      >
+        {group.label}
+      </Link>
+      <button
+        ref={caretRef}
+        type="button"
+        className="v3-chrome__caret"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label={`${group.label} pages`}
+        onClick={() => setOpenPath(open ? null : currentPath)}
+      >
+        <IconChevron />
+      </button>
+      <div className="v3-chrome__panel" id={panelId}>
+        <ul className="v3-chrome__panel-list">
+          {group.featured.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="v3-chrome__panel-link"
+                onClick={() => setOpenPath(null)}
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* V3Chrome                                                                    */
+/* -------------------------------------------------------------------------- */
+
+export type V3ChromeProps = {
+  /**
+   * Overrides the path the bar marks as current. Only for a surface that
+   * renders the chrome outside a router context; the default reads
+   * usePathname(), which is what every real page wants.
+   */
+  currentPath?: string
+  id?: string
+  className?: string
+}
+
+export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
+  const pathname = usePathname()
+  const path = currentPath ?? pathname ?? ''
+  // The menu remembers the path it was opened ON, so a route change closes it
+  // BY DERIVATION rather than by an effect that sets state: `open` is simply
+  // false the moment the visitor lands somewhere else. That also means the
+  // teardown below (scroll lock, key handler, focus return) runs on a
+  // navigation exactly as it does on Escape, through one code path.
+  const [openPath, setOpenPath] = useState<string | null>(null)
+  const open = openPath === path
+  const menuId = `${useId()}-menu`
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  // Closes on a same-path click too, which derivation alone cannot see: a link
+  // to the page the visitor is already on changes nothing to compare against.
+  const close = useCallback(() => setOpenPath(null), [])
+  const menuHidden = open === false
+
+  // Everything the open menu owns, in one effect so the teardown cannot drift
+  // from the setup: the scroll lock, the focus trap, Escape, and returning
+  // focus to the control that opened it.
+  useEffect(() => {
+    if (!open) return
+    const overlay = overlayRef.current
+    if (!overlay) return
+
+    const opener = triggerRef.current
+    const body = document.body
+    const priorOverflow = body.style.overflow
+    body.style.overflow = 'hidden'
+    closeRef.current?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.stopPropagation()
+        setOpenPath(null)
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = overlay.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled])',
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      body.style.overflow = priorOverflow
+      opener?.focus()
+    }
+  }, [open])
+
+  return (
+    <header id={id} className={cn(V3_ROOT_CLASS, 'v3-chrome', className)}>
+      <div className="v3-chrome__bar">
+        <Link href="/" className="v3-chrome__mark" aria-label={NAME.home}>
+          <Wordmark />
+        </Link>
+
+        <nav className="v3-chrome__nav" aria-label={NAME.primary}>
+          {TOP_GROUPS.map((group) => (
+            <V3ChromeDestination key={group.key} group={group} currentPath={path} />
+          ))}
+        </nav>
+
+        <div className="v3-chrome__actions">
+          {SAVED ? (
+            <Link
+              href={SAVED.href}
+              className="v3-chrome__saved"
+              aria-current={isCurrentPath(path, SAVED.href) ? 'page' : undefined}
+            >
+              <IconBookmark />
+              <span>{SAVED.label}</span>
+            </Link>
+          ) : null}
+
+          <V3Button href={CTA.href} className="v3-chrome__cta">
+            {CTA.label}
+          </V3Button>
+
+          <button
+            ref={triggerRef}
+            type="button"
+            className="v3-chrome__menu-btn"
+            aria-expanded={open}
+            aria-controls={menuId}
+            onClick={() => setOpenPath(path)}
+          >
+            <IconMenu />
+            <span className="v3-chrome__menu-word">{NAME.openMenu}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ALWAYS MOUNTED, closed with the `hidden` attribute rather than by
+          conditional rendering, and that is an SEO decision as much as an
+          accessibility one. This index is the only place a handful of
+          destinations appear (the account pages, the communities the top bar
+          trims), so rendering it only while the menu is open would drop them
+          out of the HTML of every page on the site. `hidden` resolves to
+          display:none, which takes the whole subtree out of the accessibility
+          tree AND out of the tab order at once, so there is no
+          invisible-but-focusable link and no aria-hidden wrapper around
+          reachable controls. Going from display:none to display:flex is also
+          what starts the entrance, so the animation still runs on open. */}
+      <div
+        id={menuId}
+        ref={overlayRef}
+        hidden={menuHidden}
+        className="v3-chrome__overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label={NAME.menu}
+      >
+        <div className="v3-chrome__overlay-bar">
+          <Link href="/" className="v3-chrome__mark" aria-label={NAME.home} onClick={close}>
+            <Wordmark />
+          </Link>
+          <button ref={closeRef} type="button" className="v3-chrome__close" onClick={close}>
+            <IconClose />
+            <span className="v3-chrome__menu-word">{NAME.closeMenu}</span>
+          </button>
+        </div>
+
+        <nav className="v3-chrome__menu-nav" aria-label={NAME.sections}>
+          {NAV_GROUPS.map((group, index) => {
+            const headingId = `${menuId}-group-${index}`
+            return (
+              <div className="v3-chrome__menu-group" key={group.key}>
+                <h2 className="v3-chrome__menu-title" id={headingId}>
+                  {group.href ? (
+                    <Link href={group.href} onClick={close}>
+                      {group.label}
+                    </Link>
+                  ) : (
+                    group.label
+                  )}
+                </h2>
+                <ul className="v3-chrome__menu-list" aria-labelledby={headingId}>
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      <Link href={link.href} onClick={close}>
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
+        </nav>
+
+        <p className="v3-chrome__menu-foot">
+          <span>Bend, Oregon</span>
+          <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
+        </p>
+      </div>
+    </header>
+  )
+}

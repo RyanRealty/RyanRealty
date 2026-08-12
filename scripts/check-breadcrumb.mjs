@@ -133,7 +133,13 @@ function classify(pagePath) {
   // KbBreadcrumb is the KB-era breadcrumb (components/site/kb/KbBreadcrumb) — the
   // design-system pages render it instead of PageBreadcrumb. It counts as a real
   // breadcrumb; this gate predated it, which is why ~49 KB pages read as "missing".
-  const hasBreadcrumb = isReExportOnly || /BreadcrumbNav|PageBreadcrumb|KbBreadcrumb/.test(src)
+  // V3Breadcrumb (components/site/v3/V3Breadcrumb.tsx) is the same thing for the
+  // public-product destination register: same canon (Home root, sentence case, the
+  // current page never a link), different implementation. Visual lock 2026-08-11,
+  // docs/plans/PUBLIC_PRODUCT/decisions.md. The label canon and the on-navy scoping
+  // below are register-independent and apply to it unchanged.
+  const hasBreadcrumb =
+    isReExportOnly || /BreadcrumbNav|PageBreadcrumb|KbBreadcrumb|V3Breadcrumb/.test(src)
   const usesDeprecated = DEPRECATED_IMPORT.test(src)
   const directRender = DIRECT_RENDER.test(src)
   const navyTone = /tone="on-navy"/.test(src) && !NAVY_TONE_ALLOWED.has(rel)

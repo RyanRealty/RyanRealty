@@ -81,8 +81,26 @@ const REQUIRED = [
   },
   {
     file: 'app/housing-market/page.tsx',
+    // The FACT this locks is the head term and its capitalization, not the prop that
+    // carries it. KB spells the H1 as titleTop/titleBottom; the v3 register has no
+    // such prop — its patterns take `headline` (V3InstrumentProps.headline). Writing
+    // a prop literally named titleBottom on a v3 page to satisfy a regex would be
+    // gate-gaming, so the check accepts either register's spelling.
+    //
+    // BOTH ARMS ARE EXACT LITERALS, DELIBERATELY. The first pass at this translation
+    // matched `[Hh]ousing [Mm]arket` anywhere inside any headline literal, which is a
+    // LOOSER lock than the KB rule it replaced: it accepts any casing and any
+    // surrounding copy on a money route whose head term is the thing being locked.
+    // v3 headlines are sentence case (design_system/public/PUBLIC_UI.md), so the KB
+    // arm keeps title case and the v3 arm pins the sentence-case string the page
+    // actually opens with. Change the page's H1 and this must be changed with it —
+    // that is the point of a required contract.
+    // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2, blocker B3.
     checks: [
-      { re: /titleBottom\s*=\s*["']Housing Market["']/, msg: 'market hub H1 titleBottom must be exact "Housing Market"' },
+      {
+        re: /titleBottom\s*=\s*["']Housing Market["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?[`'"]Central Oregon housing market\b/,
+        msg: 'market hub H1 must carry the head term: KB titleBottom="Housing Market", or a v3 headline literal opening "Central Oregon housing market"',
+      },
       { re: /title:\s*['"]Central Oregon Housing Market['"]/i, msg: 'market hub title must be "Central Oregon Housing Market"' },
     ],
   },
@@ -204,6 +222,12 @@ function extractLayerAShell(src) {
   // <h1>…</h1> and <H1>…</H1> (may span lines / nested spans)
   pushAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi, 1)
   pushAll(/<H1\b[^>]*>([\s\S]*?)<\/H1>/g, 1)
+  // v3 register (components/site/v3): headings render through <V3Heading> and the
+  // six patterns take their H1 copy as `headline`, so without these two the
+  // banned-poetry scan goes completely blind the moment a money route migrates.
+  // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
+  pushAll(/<V3Heading\b[^>]*>([\s\S]*?)<\/V3Heading>/g, 1)
+  pushAll(/\bheadline\s*=\s*\{?\s*(?:v3Text\(\s*)?(["'`])([\s\S]*?)\1/g, 2)
   // aria-label="…"
   pushAll(/\baria-label\s*=\s*(["'`])([\s\S]*?)\1/g, 2)
   // headerTitle assignment blob (search routes)

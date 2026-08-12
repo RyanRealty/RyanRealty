@@ -1,0 +1,241 @@
+/* ===========================================================================
+   V3 FOOTER
+   Styles for V3Footer.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3Footer.tsx imports and whose scope the footer opens on
+   itself with V3_ROOT_CLASS. No raw color, no hardcoded duration.
+
+   The footer is the quietest surface on the page and it is built the way the
+   Quiet pattern is built: a ground-tinted band, hairline rows, muted ink, and
+   no card, no fill, no shadow. It closes the node without competing with it.
+
+   The block selector is doubled (.v3.v3-footer) for the same reason every
+   pattern stylesheet doubles its own: the prototype route declares plain
+   single-class globals, and a one-class rule here would be decided by load
+   order rather than by specificity.
+   =========================================================================== */
+
+.v3.v3-footer {
+  background: var(--v3-ground);
+  border-top: 1px solid var(--v3-edge);
+}
+
+.v3-footer__inner {
+  display: grid;
+  gap: var(--v3-space-xl);
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-2xl) var(--v3-gutter) var(--v3-space-xl);
+}
+
+/* Brand block ---------------------------------------------------------------
+   Wordmark, the one-tap broker contact, and the profiles. The phone is a real
+   tel: link at the thumb minimum, because the fastest path to a broker on a
+   phone is the phone. */
+.v3-footer__mark {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+}
+
+.v3-footer__mark img {
+  display: block;
+  width: auto;
+  height: 1.5rem;
+}
+
+.v3-footer__contact,
+.v3-footer__social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--v3-space-md);
+  margin: var(--v3-space-2xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-footer__contact {
+  flex-direction: column;
+}
+
+/* `color` on a bare `a` lives in @layer base so Tailwind's utilities layer keeps
+   winning: un-layered author CSS beats EVERY layered rule regardless of
+   specificity, which is how `.kb-root a{color:inherit}` rendered navy-on-navy
+   CTA text on the seller money path (the invisible-CTA-text P0, 2026-07-08).
+   Enforced by ci:css-layers. Source order inside the layer still decides ties,
+   so the muted override below must stay after the base rule. */
+@layer base {
+  .v3-footer__contact a,
+  .v3-footer__social a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-sm);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: var(--v3-underline-offset);
+    transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+  }
+
+  .v3-footer__social a {
+    color: var(--v3-ink-muted);
+  }
+}
+
+.v3-footer__contact a {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Stacked on a phone, where each row is a 44px target and the column is the
+   whole width anyway. One line above the wide stop, where three stacked rows of
+   44px only pushed the sitemap further down the page. */
+@media (min-width: 56.25rem) {
+  .v3-footer__contact {
+    flex-direction: row;
+    gap: 0 var(--v3-space-lg);
+  }
+}
+
+@layer base {
+  .v3-footer__contact a:hover,
+  .v3-footer__contact a:focus-visible,
+  .v3-footer__social a:hover,
+  .v3-footer__social a:focus-visible {
+    color: var(--v3-ink);
+    text-decoration-color: currentColor;
+  }
+}
+
+/* Sitemap -------------------------------------------------------------------
+   One column at 390 and five across at the wide stop, which is the count
+   lib/site-nav.ts projects today. `minmax(0, 1fr)` rather than `1fr` so a long
+   label wraps instead of forcing the grid wider than the page. */
+.v3-footer__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-lg);
+}
+
+@media (min-width: 40rem) {
+  .v3-footer__columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 48rem) {
+  .v3-footer__columns {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 56.25rem) {
+  .v3-footer__columns {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--v3-space-xl) var(--v3-space-lg);
+  }
+}
+
+.v3-footer__column-title {
+  margin: 0 0 var(--v3-space-2xs);
+  font-family: inherit;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-footer__column-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-footer__column-list li {
+  border-top: 1px solid var(--v3-edge);
+}
+
+.v3-footer__column-list li:last-child {
+  border-bottom: 1px solid var(--v3-edge);
+}
+
+/* Thumb minimum on the widths a thumb is used at. Above the wide stop the
+   footer is pointer territory and a 44px row in a twelve-row column would push
+   the legal line most of a viewport further down for no one's benefit; 2rem
+   still clears the WCAG 2.5.8 target minimum. */
+@layer base {
+  .v3-footer__column-list a {
+    display: flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    padding: var(--v3-space-3xs) 0;
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-sm);
+    line-height: var(--v3-leading-body);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: var(--v3-underline-offset);
+    transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+  }
+}
+
+.v3-footer__column-list a:hover,
+.v3-footer__column-list a:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+@media (min-width: 56.25rem) {
+  .v3-footer__column-list a {
+    min-height: 2rem;
+  }
+}
+
+/* Base ----------------------------------------------------------------------
+   Legal row, the brokerage line, and the Oregon Data Share attribution. */
+.v3-footer__base {
+  display: grid;
+  gap: var(--v3-space-sm);
+  padding-top: var(--v3-space-lg);
+  border-top: 1px solid var(--v3-edge);
+}
+
+.v3-footer__legal ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--v3-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@layer base {
+  .v3-footer__legal a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-sm);
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+}
+
+.v3-footer__line {
+  max-width: var(--v3-measure-text);
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
+.v3-footer__fine {
+  max-width: var(--v3-measure-text);
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-footer__num {
+  font-variant-numeric: tabular-nums;
+}

@@ -60,11 +60,12 @@
  * and this file names all five registers in prose above. It also means the
  * next/dynamic escape hatch is closed rather than invisible.
  *
- * RE-SEEDING IS SHRINK-ONLY TOO
+ * RE-SEEDING IS SHRINK-ONLY TOO, FOR THE TWO RATCHETED NUMBERS
  * A ratchet whose re-seed command quietly raises every ceiling is not a ratchet.
- * --write-baseline refuses to write a number larger than the one it replaces.
- * Loosening a ceiling is a real decision, so it costs an explicit --allow-growth
- * and shows up in the diff as what it is.
+ * --write-baseline refuses to write an A or a B larger than the one it replaces.
+ * Loosening one of those ceilings is a real decision, so it costs an explicit
+ * --allow-growth and shows up in the diff as what it is. C is recorded, not
+ * guarded, for the reason the RATCHETED constant below states in full.
  *
  * Usage:
  *   node scripts/check-public-ui.mjs                    # check (CI + local)
@@ -208,6 +209,23 @@ for (const page of pages) {
 
 const totals = { nonV3ImportSites, legacyPages, mixedPages }
 
+/**
+ * The two RATCHETED numbers. mixedPages is deliberately not one of them.
+ *
+ * The check path already treats C as tracked rather than gated (decisions.md,
+ * 2026-08-11, "ci:public-ui rule C corrected by the fixer"): a family being rebuilt
+ * necessarily holds v3 sections beside chrome that has not moved yet, so failing on
+ * C blocked the only path off the old registers. The WRITE path kept the old
+ * shrink-only rule over all three keys, which reproduced the same block one step
+ * later: the first real migration shrank A by 14 and B by 1 and then could not
+ * record the result, because C went 0 to 1 exactly as designed. --allow-growth
+ * would have unlocked it by loosening A and B at the same time, which is the
+ * opposite of what a ratchet is for. So the guard names the two numbers it is
+ * guarding. What C is doing per page is still written to the baseline, and rule C
+ * below still fails any page whose non-v3 count grows AFTER it joins the barrel.
+ */
+const RATCHETED = ['nonV3ImportSites', 'legacyPages']
+
 /* -------------------------------------------------------------------------- */
 /* Seed                                                                        */
 /* -------------------------------------------------------------------------- */
@@ -215,7 +233,7 @@ const totals = { nonV3ImportSites, legacyPages, mixedPages }
 if (WRITE) {
   if (existsSync(join(ROOT, BASELINE_PATH)) && !ALLOW_GROWTH) {
     const prior = JSON.parse(readFileSync(join(ROOT, BASELINE_PATH), 'utf8')).totals ?? {}
-    const grew = Object.keys(totals).filter(
+    const grew = RATCHETED.filter(
       (k) => typeof prior[k] === 'number' && totals[k] > prior[k],
     )
     if (grew.length) {
@@ -230,8 +248,12 @@ if (WRITE) {
   const seed = {
     note:
       'Public UI ratchet (ci:public-ui). Non-v3 design-register imports on public pages. ' +
-      'Every number may only SHRINK. knownPages is the new-page tripwire: a public page ' +
-      'absent from it that imports a non-v3 register fails regardless of totals. ' +
+      'nonV3ImportSites and legacyPages may only SHRINK. mixedPages is TRACKED, not ' +
+      'gated: it is the visible migration front, and a roll that moves a family onto ' +
+      'the barrel while its chrome waits necessarily raises it. Per page, once a page ' +
+      'imports the barrel its non-v3 count may never grow. knownPages is the new-page ' +
+      'tripwire: a public page absent from it that imports a non-v3 register fails ' +
+      'regardless of totals. ' +
       'Re-seed after a P9 roll with `node scripts/check-public-ui.mjs --write-baseline`.',
     generated_by: 'check-public-ui.mjs --write-baseline',
     registers: {

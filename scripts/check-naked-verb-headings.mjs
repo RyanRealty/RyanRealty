@@ -40,8 +40,15 @@ const NAKED = new Set([
 // AND the default-parameter form `title = 'Explore'` — which is how C-07 actually
 // shipped. The whitespace around `=` is not optional in the regex: the first cut of
 // this gate required `title="..."` and so passed the very defect it was written for.
-const HEADING_TAG = /<(h[1-6]|H[1-6]|DisplayHeading)[^>]*>\s*([A-Za-z][A-Za-z ]{0,24})\s*<\/\1>/g
-const HEADING_PROP = /\b(title|heading)\s*=\s*(?:"([^"]{1,25})"|'([^']{1,25})')/g
+// V3Heading is the v3 register's heading component and `headline` / `eyebrow` are
+// the props its six patterns take (V3InstrumentProps.headline, V3StageProps.headline).
+// Without them a migrated page ships `headline={v3Text('Explore')}` and this gate
+// stays silent, which is C-07 with a new prop name.
+// docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.19.
+const HEADING_TAG =
+  /<(h[1-6]|H[1-6]|DisplayHeading|V3Heading)[^>]*>\s*([A-Za-z][A-Za-z ]{0,24})\s*<\/\1>/g
+const HEADING_PROP =
+  /\b(title|heading|headline|eyebrow)\s*=\s*(?:"([^"]{1,25})"|'([^']{1,25})'|\{\s*v3Text\(\s*(?:"([^"]{1,25})"|'([^']{1,25})')\s*\)\s*\})/g
 
 const files = walkFiles('app').concat(walkFiles('components')).sort()
 const fails = []
@@ -56,7 +63,8 @@ for (const file of files) {
   }
   let m
   while ((m = HEADING_TAG.exec(src)) !== null) check(m[2], m.index, 'heading')
-  while ((m = HEADING_PROP.exec(src)) !== null) check(m[2] ?? m[3], m.index, `${m[1]} prop`)
+  while ((m = HEADING_PROP.exec(src)) !== null)
+    check(m[2] ?? m[3] ?? m[4] ?? m[5], m.index, `${m[1]} prop`)
 }
 
 console.log('naked-verb heading gate (ci:naked-verb-headings)')

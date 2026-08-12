@@ -1,133 +1,111 @@
 {
   "route": "app/housing-market/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/market-report/index.html",
-  "competitiveTarget": "Beat Zillow / Redfin / Windermere regional market entry pages. KB chrome (KbNav/KbHero/KbExploreTowns), live per-city active-count tiles, broker sell CTA, and the KB footer no aggregator carries.",
-  "note": "Hub page at /housing-market. Converted to KB design system (Phase 9). Region glance lede from getMarketPulse. Per-city tiles from ONE getMarketPulseCitySnapshots call linking to /housing-market/<slug>. No Dataset/FAQPage JSON-LD (those belong to /housing-market/central-oregon so the two URLs never duplicate structured market data). Shares the market-report/index.html mockup; a dedicated hub mockup is a follow-up deliverable.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
+  "competitiveTarget": "Beat Zillow / Redfin / Windermere regional market entry pages. The answer in the first viewport (verdict, four live figures, one source trace, one stamp), every city a row that is a door to its own report, last-full-year closed-sales size with its own population and trace, and a single low-pressure ask. No aggregator publishes the trace under the number.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9). Rhythm: four of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Instrument level 1, Ledger (cities), Instrument level 2 (closed sales), Ledger (guides), Quiet (FAQ), Sheet (inquiry), Quiet (edges), Footer. The verdict is derived ONCE and it classifies the RAW months-of-supply value; rounding to one decimal happens only at display, in the page and inside buildMarketFaq, which receives the raw figure. Classifying the rounded value walks the verdict across a canonical threshold in both directions (4.02 rounds to 4.0 and prints seller's, 5.97 rounds to 6.0 and prints buyer's), which is the CLAUDE.md section 0 defect the repair of 2026-08-12 closed. The page's guard is buildMarketFaq's own (months of supply above 0), so the H1 cannot assert a verdict the shared builder declined to answer. Closed-sales dollars publish as whole dollars, not formatPrice, because formatPrice rounds to the nearest $1,000 and the same string goes into the FAQPage JSON-LD. A covered city with no live market row is dropped from the Ledger and linked from the closing Quiet block instead of being synthesized as zero under a live-MLS source line. The KB-era deletions this migration made: KbHero's property search and voice-search button, KbSell's address prefill field, RegionalSfrAlertsBand, CoMarketSizeStrip, CoMarketComposition, KbArticles thumbnails, MarketSources, SmoothScrollProvider.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "BreadcrumbList + WebPage JSON-LD only. No Dataset; that lives on /housing-market/central-oregon.",
+      "section": "BreadcrumbList + WebPage + Dataset + FAQPage JSON-LD. All four are emitted here: V3Breadcrumb and V3Quiet carry no structured data of their own, on purpose, so one derivation feeds the visible copy and the markup.",
       "blocking": true
     },
     {
       "name": "KbNav",
-      "section": "KB chrome nav \u2014 universal across all KB pages.",
+      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design.",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "Page-level analytics tracker, pageType='market-report'. Required by the KB page contract.",
+      "section": "Page-level analytics, pageType='market-report'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent. ci:kb-page-contract accepts either register's tracker.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "Visual breadcrumb \u2014 Home > Housing market.",
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Housing market. Surface tone (this page opens on an Instrument, not a dark Stage), current page never a link. The surface tone also clears the fixed public header by default: the trail is the first flow element of <main>, the header is position:fixed, and without the offset the whole strip renders behind the wordmark.",
       "blocking": true
     },
     {
-      "name": "SmoothScrollProvider",
-      "section": "Smooth-scroll wrapper for all KB sections below the breadcrumb.",
+      "name": "V3Instrument",
+      "section": "Pattern 1, twice. Level 1 is the page's answer: the verdict headline, median list price, homes for sale, months of supply, and median days to pending, every one a door, under one trace from market_pulse_live region/central-oregon/property_type=A stamped with that row's refreshedAt. Its ask is a GHOST button, not a primary: the sticky public header carries a filled valuation CTA at every scroll position, so a solid button here would put two primaries in one viewport for the whole length of the page (PUBLIC_UI.md section 1). Level 2 is the last full calendar year of closed sales: a different population, its own trace, and its computedAt stamp ONLY when getCoMarketAnnual returned a mart row, because the live-aggregate fallback stamps now() and would print 'updated today' over a closed calendar year. All three of its figures are doors into the closed-sales explorer, the property-type one carrying its own type filter.",
       "blocking": true
     },
     {
-      "name": "KbHero",
-      "section": "Region eyebrow + data-driven glance lede from getMarketPulse (activeCount, medianListPrice, medianDaysToPending). eyebrow 'Central Oregon \u00b7 Oregon', titleTop 'Central Oregon', titleBottom 'housing market'.",
+      "name": "V3Ledger",
+      "section": "Pattern 3, twice. Cities: one figure row per city that returned a live row carrying a median, value column = median list price, trace and stamp from the city query itself. Guides: plain rows from getRecentBlogPosts, date through formatDate, no value column and therefore no source line.",
       "blocking": true
     },
     {
-      "name": "KbExploreTowns",
-      "section": "Per-city navigation tiles with live active counts from getMarketPulseCitySnapshots. Each tile links to /housing-market/<city-slug>. eyebrow 'Central Oregon', title 'Market by city'. The hub's primary navigation function.",
+      "name": "V3Quiet",
+      "section": "Pattern 6, twice. The region FAQ as question-and-answer prose from the same buildMarketFaq array the FAQPage JSON-LD uses, followed by that block's OWN outbound edges (region report, homes for sale, months of supply, the closed-sales year), because pattern 6 is defined as the block that carries the graph's outbound edges and answers naming linkable things while linking nowhere are dead text. Then the closing edge set: every internal link the KB hub carried, the Oregon Data Share citation MarketSources used to render, and any covered city with no live row.",
       "blocking": true
     },
     {
-      "name": "KbArticles",
-      "section": "Recent published blog posts (getRecentBlogPosts, limit 3). Provides cross-links to guides and region insights. Renders null when no posts available.",
-      "blocking": false
-    },
-    {
-      "name": "ContentSection",
-      "section": "Curated resource cross-links (region report, reports index, open data explorer, all cities, communities, homes-for-sale, guides, area guides). Restored from the pre-KB hub: the KB chrome does not otherwise surface these sibling routes from this page, so dropping them lost internal-linking / SEO value.",
-      "blocking": false
-    },
-    {
-      "name": "KbSell",
-      "section": "Seller conversion CTA, eyebrow 'Sell in Central Oregon'. Data from regionPulse (medianListPrice, medianDaysToPending, closedLast30Days).",
+      "name": "MarketInquirySheet",
+      "section": "Pattern 5, once, in app/housing-market/_v3/MarketInquirySheet.client.tsx. The page's one on-page ask. Wraps V3Sheet and calls the same route-local server action with the same payload: submitMarketPageInquiry, variant 'inquiry', fields name / email / message. The capture contract is unchanged.",
       "blocking": true
     },
     {
-      "name": "RegionalSfrAlertsBand",
-      "section": "F3 residual \u2014 free listing_alerts (CO SFR) before broker inquiry",
-      "blocking": true
-    },
-    {
-      "name": "LeadCaptureBlock",
-      "section": "General 'ask a broker' inquiry form (variant='inquiry'), submitted through submitMarketPageInquiry \u2192 submitPageCTA (FUB person + event, Meta CAPI, canonical tagging, GA4 mirror). Restored from the pre-KB hub: KbSell only routes to the seller valuation flow, so without this a buyer/general market question had no on-page lead-capture surface.",
-      "blocking": false
-    },
-    {
-      "name": "KbFooter",
-      "section": "Full sitemap close with city towns array for footer links.",
+      "name": "V3Footer",
+      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Carries no button: the one valuation primary belongs to the sticky header. Rendered OUTSIDE <main>, because HTML-AAM maps <footer> to role=contentinfo only when it is not nested in sectioning content, and <main> is sectioning content.",
       "blocking": true
     }
   ],
   "layoutComponents": [
     {
-      "name": "SiteHeader",
+      "name": "PublicNav",
       "section": "renders from app/layout.tsx",
-      "note": "Not in requiredComponents because the gate checks the route file."
-    },
-    {
-      "name": "SiteFooter",
-      "section": "renders from app/layout.tsx",
-      "note": "Not in requiredComponents because the gate checks the route file."
+      "note": "Resolves to KbNav today. Not in requiredComponents as itself because the gate checks the route file; the KbNav entry above is the one the gate auto-satisfies."
     }
   ],
   "deferredComponents": [
     {
+      "name": "V3Stage",
+      "reason": "Pattern 4 needs an owned video or photo and is never allowed over a number. The market hub's first viewport is the answer, so the opening is an Instrument. Adding a Stage would also put this route back inside ci:kb-breadcrumb-overlay's dark-hero arm, which would then require tone=\"on-media\" on the breadcrumb."
+    },
+    {
+      "name": "V3Field",
+      "reason": "Pattern 2 is live inventory as a spatial surface. It opens Homes and embeds in Places. Using it here would make the hub compete with /homes-for-sale and would push the page to five patterns, which the rhythm rule refuses."
+    },
+    {
       "name": "KbMarketHud",
-      "reason": "Hub is a nav/overview page. The full market HUD (KbMarketHud with price chart + yearSeries) belongs to the /housing-market/central-oregon region report, which already has it. Adding it here would duplicate a heavy data fetch and compete with the region report page."
-    },
-    {
-      "name": "FAQBlock",
-      "reason": "Region FAQ + FAQPage JSON-LD live on /housing-market/central-oregon (the AI-citable report). The hub omits them to keep the two URLs focused on different user intents."
-    },
-    {
-      "name": "KbCommunities",
-      "reason": "Community tiles appropriate at the city level (cities/[slug]). Hub uses KbExploreTowns for city-level navigation."
+      "reason": "The full market HUD with the price chart belongs to /housing-market/central-oregon, which already renders it. Duplicating it here would stack a second market section and duplicate a heavy fetch."
     }
   ],
   "jsonLd": {
     "required": [
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry)" },
+      { "type": "WebPage", "emittedBy": "MetadataBlock schemas array (webPage entry)" },
       {
-        "type": "BreadcrumbList",
-        "emittedBy": "MetadataBlock schemas array (breadcrumb entry)"
+        "type": "Dataset",
+        "emittedBy": "MetadataBlock schemas array (dataset entry), variableMeasured from buildMarketFaq, dateModified from the real market_pulse_live refreshedAt. Emitted only when there is at least one variable AND a refresh timestamp."
       },
       {
-        "type": "WebPage",
-        "emittedBy": "MetadataBlock schemas array (webPage entry)"
+        "type": "FAQPage",
+        "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same faqs array V3Quiet renders. On the KB page this came out of FAQBlock's includeJsonLd; the payload's meaning is unchanged."
       }
     ],
-    "note": "Hub is a nav/overview page. The region Dataset + FAQPage are emitted by /housing-market/central-oregon (market-report-region) so the two URLs do not duplicate the same structured market data."
+    "note": "One derivation, one answer. The visible FAQ, the FAQPage items, and the Dataset variables all come from buildMarketFaq called once, fed the rounded months-of-supply value the H1 displays."
   },
   "dataLayer": {
-    "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live geo_type='region' geo_slug='central-oregon' property_type='A', 10 to 15 min freshness. Used for KbHero lede and KbSell data.",
-    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows geo_label IN CITY_LABELS, ONE call. Used by KbExploreTowns active counts.",
-    "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, blog_posts status='published', newest first, limit 3. Used by KbArticles.",
-    "submitMarketPageInquiry": "app/housing-market/actions.ts (route-local server action) \u2192 submitPageCTA. Bound to the restored LeadCaptureBlock inquiry form. Same action the /housing-market/[...slug] flagship page uses.",
-    "note": "All read DAL functions imported from @/lib/data (G8 compliant). The only non-DAL import is the route-local server action submitMarketPageInquiry for the lead form (same pattern as the [...slug] page); it routes writes through submitPageCTA, not a raw .from()."
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts. market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A'. 10 to 15 minute freshness. Feeds the level-1 Instrument and buildMarketFaq.",
+    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts. market_pulse_live city rows, geo_label IN CITY_LABELS, property_type='A'. ONE call. Feeds the city Ledger and its own freshness stamp (newest updated_at in the returned rows).",
+    "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts. blog_posts, published, newest first, limit 3. Feeds the guides Ledger.",
+    "getCoMarketAnnual": "lib/data/analytics/getCoMarketAnnual.ts, year 2024, typeScope 'all'. Closed MLS sales across service-area cities, all property types. Feeds the level-2 Instrument and the two mart-backed FAQ answers, stamped with the row's own computedAt.",
+    "submitMarketPageInquiry": "app/housing-market/actions.ts (route-local server action) into submitPageCTA. Bound to MarketInquirySheet. Same action, same payload shape, same field names as the KB LeadCaptureBlock it replaces.",
+    "note": "Every read is a DAL function from @/lib/data or lib/data/analytics (G8). None is wrapped in a swallowing catch: each is resilient-cached with its own documented fallback, so a catch here would hide a real outage behind a confident empty page. Nothing is fetched that the page does not render. Guide rows drop any post whose title or slug is blank rather than passing it to v3Text, which throws by design on an empty string: blog_posts.title is the one DB-sourced string on this page that reaches the barrel and getRecentBlogPosts filters only on status and published_at. Route-local constants (the covered city set, the closed-sales year, the explorer's accepted type codes) live in app/housing-market/_v3/hub-constants.ts so the route file stays under the ci:file-size-budget floor."
   },
   "sectionOrder": [
     "MetadataBlock",
-    "KbNav",
     "KbSectionTracker",
-    "KbBreadcrumb",
-    "SmoothScrollProvider",
-    "KbHero",
-    "KbExploreTowns",
-    "KbArticles",
-    "ContentSection",
-    "KbSell",
-    "LeadCaptureBlock",
-    "KbFooter"
+    "V3Breadcrumb",
+    "V3Instrument (level 1, region answer)",
+    "V3Ledger (market by city)",
+    "V3Instrument (level 2, closed sales)",
+    "V3Ledger (guides and insights)",
+    "V3Quiet (region FAQ)",
+    "MarketInquirySheet (V3Sheet, broker inquiry)",
+    "V3Quiet (outbound edges)",
+    "V3Footer"
   ]
 }

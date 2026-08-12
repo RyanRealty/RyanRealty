@@ -1,6 +1,6 @@
 // brand-voice:exempt — factual market Q&A generated from verified live data, no marketing prose
 import type { StatValue } from '@/lib/site/json-ld'
-import { marketVerdict } from '@/lib/market/classify'
+import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice } from '@/lib/format/money'
 
 /**
@@ -122,12 +122,20 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   }
 
   if (pulse.monthsOfSupply != null && pulse.monthsOfSupply > 0) {
-    const mos = Math.round(pulse.monthsOfSupply * 10) / 10
+    // CLASSIFY THE RAW VALUE, ROUND ONLY FOR DISPLAY. CLAUDE.md section 0: "Never
+    // round in a way that changes the narrative." Rounding first and then comparing
+    // the rounded number to the threshold moves the verdict across a boundary in two
+    // directions: a genuinely balanced 4.02 rounds to 4.0, and 4.0 <= 4 prints
+    // "seller's"; a genuinely balanced 5.97 rounds to 6.0, and 6.0 >= 6 prints
+    // "buyer's". Both publish a verdict the canonical thresholds
+    // (lib/market/classify.ts) do not support, in the visible answer, the FAQPage
+    // JSON-LD, and every page whose H1 reads this same figure.
+    const displayMos = Math.round(pulse.monthsOfSupply * 10) / 10
     faqs.push({
       question: `Is ${geoName} a buyer's or seller's market?`,
-      answer: `${geoName} has ${mos} months of supply, which is a ${marketType(mos)} market. A balanced market runs 4 to 6 months. Under 4 months favors sellers, and 6 or more favors buyers.`,
+      answer: `${geoName} has ${displayMos} months of supply, which is a ${marketType(pulse.monthsOfSupply)} market. ${MOS_THRESHOLD_CLAUSE}`,
     })
-    datasetVariables.push({ name: 'Months of Supply', value: mos })
+    datasetVariables.push({ name: 'Months of Supply', value: displayMos })
   }
 
   // Days question: prefer medianDaysToPending (pulse, days-to-pending) over

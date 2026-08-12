@@ -140,6 +140,36 @@ export { V3Quiet } from './V3Quiet'
 export type { V3QuietProps, V3QuietItem, V3QuietLink, V3QuietProse } from './V3Quiet'
 
 /* -------------------------------------------------------------------------- */
+/* CHROME: the persistent frame the six patterns sit inside                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Header, footer, and trail. Not patterns: chrome is what surrounds a page's
+ * sections, so it is exempt from the rhythm rule and from "no two adjacent
+ * sections share a pattern". It obeys everything else, including the one that
+ * decides its shape: ONE primary CTA per viewport. That primary is the
+ * valuation ask in V3Chrome, which is why V3Footer carries no button at all.
+ *
+ * Every destination in all three comes from lib/site-nav.ts, read at module
+ * load. No href is typed inside these files, so a link cannot drift out of the
+ * single source of truth by being copied into the chrome. The nav LABELS follow
+ * the locked IA (Homes, Places, Market, Sell, About, with Saved as an account
+ * affordance); the DESTINATIONS stay whatever site-nav says they are.
+ */
+export { V3Chrome } from './V3Chrome'
+
+export type { V3ChromeProps, V3ChromeGroup } from './V3Chrome'
+
+/** V3_FOOTER_COLUMNS and V3_FOOTER_LEGAL are the canonical site-nav projections. */
+export { V3Footer, V3_FOOTER_COLUMNS, V3_FOOTER_LEGAL } from './V3Footer'
+
+export type { V3FooterProps, V3FooterColumn, V3FooterLink } from './V3Footer'
+
+export { V3Breadcrumb } from './V3Breadcrumb'
+
+export type { V3BreadcrumbProps, V3Crumb } from './V3Breadcrumb'
+
+/* -------------------------------------------------------------------------- */
 /* Deliberately NOT exported                                                   */
 /* -------------------------------------------------------------------------- */
 

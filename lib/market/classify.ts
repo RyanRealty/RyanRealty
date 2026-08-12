@@ -36,6 +36,13 @@ export function marketVerdict(mos: number | null | undefined): { kind: MarketKin
 export const MOS_METHODOLOGY_CLAUSE =
   'Months of supply = active listings divided by average monthly closings over the last 6 months (homes closed in the last 6 months divided by 6).'
 
-/** Threshold sentence — kept consistent with marketVerdict(). */
+/**
+ * Threshold sentence, and it must read the way marketVerdict() computes. The old
+ * wording said "Under 4 months is a seller's market, 4 to 6 is balanced", which
+ * contradicts the function at exactly 4.0: `mos <= MOS_SELLER_MAX` calls 4.0 a
+ * seller's market while the sentence calls it balanced. Five public market pages
+ * print this clause beside a verdict, so the disagreement was publishable
+ * (CLAUDE.md section 0: the narrative matches the number it sits next to).
+ */
 export const MOS_THRESHOLD_CLAUSE =
-  "Under 4 months is a seller's market, 4 to 6 is balanced, over 6 is a buyer's market."
+  "4 months of supply or less is a seller's market, above 4 and under 6 is balanced, 6 or more is a buyer's market."

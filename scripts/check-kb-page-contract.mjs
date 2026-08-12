@@ -16,7 +16,7 @@
  * Usage: node scripts/check-kb-page-contract.mjs
  */
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out
@@ -29,14 +29,38 @@ function walk(dir, out = []) {
   return out
 }
 
-// KB page = renders the .kb-root shell (nav is global PublicNav; do not require
-// a page-level KbNav import — dual-chrome kill 2026-08-10).
+/**
+ * Line comments are stripped BEFORE block comments, and the order is the whole
+ * point. A glob like `@/app/actions/*` written inside a `//` comment contains the
+ * literal `/*`; stripping block comments first opens a phantom comment there that
+ * runs to the next block-comment close in the file and swallows everything
+ * between. That is what happened to the three flagship market pages: the phantom
+ * ate lines 136 to 330 of app/housing-market/page.tsx, `kb-root` sat inside it,
+ * and this gate skipped the highest-traffic market URL on the site for as long as
+ * that one line of prose existed (found 2026-08-12,
+ * docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 2.1).
+ */
+function stripComments(src) {
+  return src.replace(/(^|[^:])\/\/.*$/gm, '$1').replace(/\/\*[\s\S]*?\*\//g, '')
+}
+
+// KB page = renders the .kb-root shell, or the v3 barrel's token scope (the
+// public-product destination register). Nav is global PublicNav; do not require
+// a page-level KbNav import — dual-chrome kill 2026-08-10.
 // Search is an app-frame surface (filters/map), not an editorial KB page.
 const kbPages = walk('app').filter((p) => {
   if (p.includes(`${join('app', 'search')}`) || p.includes('app/search/')) return false
+  // Dev prototypes are noindex, unlinked, and carry their own chrome. Every other
+  // public-surface gate (public-ui, breadcrumb, default-chrome-footer) excludes
+  // app/dev for the same reason; the page contract is about indexed pages.
+  if (p.includes(`${join('app', 'dev')}${sep}`) || p.includes('app/dev/')) return false
   const s = readFileSync(p, 'utf8')
-  const code = s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
-  return /kb-root/.test(code)
+  const code = stripComments(s)
+  // The v3 barrel (components/site/v3) opens its token scope with V3_ROOT_CLASS
+  // instead of kb-root. Without this arm a page silently leaves the contract the
+  // day it migrates: no metadata export, no rendered tracker, no emitted JSON-LD,
+  // and a green gate. See docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.4.
+  return /kb-root/.test(code) || /\bV3_ROOT_CLASS\b/.test(code) || /className=["'`]v3\b/.test(code)
 })
 
 const fails = []
@@ -45,7 +69,12 @@ for (const p of kbPages) {
   const hasSeo =
     /export\s+const\s+metadata\b/.test(s) || /export\s+(?:async\s+)?function\s+generateMetadata\b/.test(s)
   // Tracker must be RENDERED, not merely imported — an unused import tracks nothing.
-  const hasTrackerRendered = /<KbSectionTracker[\s/>]/.test(s)
+  // Either register's tracker satisfies the contract: section tracking is analytics
+  // wiring, not visual language. The v3 barrel ships no tracker today, so a migrated
+  // page keeps rendering <KbSectionTracker> (recorded in
+  // docs/plans/PUBLIC_PRODUCT/decisions.md, 2026-08-12).
+  const hasTrackerRendered =
+    /<KbSectionTracker[\s/>]/.test(s) || /<V3SectionTracker[\s/>]/.test(s)
   if (!hasSeo) fails.push(`${p}: missing SEO metadata (export const metadata OR generateMetadata)`)
   if (!hasTrackerRendered)
     fails.push(`${p}: <KbSectionTracker> is not rendered (page contract: every section view is tracked)`)

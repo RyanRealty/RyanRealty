@@ -32,6 +32,36 @@ describe('buildMarketFaq', () => {
     expect(mos?.answer).toContain("seller's market") // <= 4 months
   })
 
+  // CLAUDE.md section 0: "Never round in a way that changes the narrative."
+  // Rounding months-of-supply BEFORE classifying it walks the verdict across a
+  // canonical boundary in both directions. These two cases are the boundary.
+  it('classifies the RAW months of supply and rounds only for display', () => {
+    const justOverFour = buildMarketFaq('Central Oregon', {
+      monthsOfSupply: 4.02,
+      refreshedAt: null,
+    })
+    const over = justOverFour.faqs.find((f) => f.question.includes("buyer's or seller's"))
+    expect(over?.answer).toContain('4 months of supply') // displayed rounded
+    // Assert the VERDICT clause, not a bare substring: the shared threshold
+    // sentence appended to this answer names all three verdicts by design, so a
+    // substring check for "seller's market" now matches the explanation rather
+    // than the classification it is meant to protect.
+    expect(over?.answer).toContain('which is a balanced market') // classified raw: 4.02 > 4
+    expect(over?.answer).not.toContain("which is a seller's market")
+    expect(
+      justOverFour.datasetVariables.find((v) => v.name === 'Months of Supply')?.value,
+    ).toBe(4)
+
+    const justUnderSix = buildMarketFaq('Central Oregon', {
+      monthsOfSupply: 5.97,
+      refreshedAt: null,
+    })
+    const under = justUnderSix.faqs.find((f) => f.question.includes("buyer's or seller's"))
+    expect(under?.answer).toContain('6 months of supply') // displayed rounded
+    expect(under?.answer).toContain('which is a balanced market') // classified raw: 5.97 < 6
+    expect(under?.answer).not.toContain("which is a buyer's market")
+  })
+
   it('visible numbers and dataset variables come from one source (cannot diverge)', () => {
     const r = buildMarketFaq('Redmond', {
       activeCount: 88,

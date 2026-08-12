@@ -1,5 +1,5 @@
 {
-  "note": "Public UI ratchet (ci:public-ui). Non-v3 design-register imports on public pages. Every number may only SHRINK. knownPages is the new-page tripwire: a public page absent from it that imports a non-v3 register fails regardless of totals. Re-seed after a P9 roll with `node scripts/check-public-ui.mjs --write-baseline`.",
+  "note": "Public UI ratchet (ci:public-ui). Non-v3 design-register imports on public pages. nonV3ImportSites and legacyPages may only SHRINK. mixedPages is TRACKED, not gated: it is the visible migration front, and a roll that moves a family onto the barrel while its chrome waits necessarily raises it. Per page, once a page imports the barrel its non-v3 count may never grow. knownPages is the new-page tripwire: a public page absent from it that imports a non-v3 register fails regardless of totals. Re-seed after a P9 roll with `node scripts/check-public-ui.mjs --write-baseline`.",
   "generated_by": "check-public-ui.mjs --write-baseline",
   "registers": {
     "kb": "components/site/kb/*",
@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 688,
-    "legacyPages": 84,
-    "mixedPages": 0
+    "nonV3ImportSites": 674,
+    "legacyPages": 83,
+    "mixedPages": 1
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -294,8 +294,9 @@
       "primitives": 1
     },
     "app/housing-market/page.tsx": {
-      "kb": 11,
-      "legacy": 5
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/housing-market/reports/archive/[city]/page.tsx": {
       "legacy": 2,

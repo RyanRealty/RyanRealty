@@ -37,7 +37,13 @@ function internalTrack(eventType: 'section_view' | 'scroll_depth', extra?: Recor
  */
 export function KbSectionTracker({ pageType }: { pageType: string }) {
   useEffect(() => {
-    const sections = Array.from(document.querySelectorAll<HTMLElement>('.kb-root section[id]'))
+    // Both registers: '.kb-root' is the KB shell, '.v3' is the public v3 root
+    // (components/site/v3, V3_ROOT_CLASS). Scoping to kb-root alone silently
+    // dropped every section_view on the first migrated page, and analytics that
+    // stops reporting looks exactly like a page nobody scrolls.
+    const sections = Array.from(
+      document.querySelectorAll<HTMLElement>('.kb-root section[id], .v3 section[id]'),
+    )
     const seen = new Set<string>()
     const io = new IntersectionObserver(
       (entries) => {

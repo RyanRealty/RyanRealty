@@ -1,47 +1,47 @@
 /**
- * Housing market hub — Central Oregon entry / navigation page.
+ * /housing-market - the Central Oregon market hub, on the components/site/v3 barrel.
  *
- * Converted to the KB (kinetic-brutalist) design system (Phase 9).
- * Reuses components/site/kb/* AS-IS; no fork.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Market
+ * destinations open on Instrument. Four of the six patterns, no two adjacent alike.
+ * The section order, the sections this migration DELETED from the KB page, and the
+ * per-section reasoning are the parity contract, not this comment:
+ * design_system/ryan-realty/ui_kits/market-report/parity.json.
  *
- * This is the navigation / overview page. The deep region REPORT (price chart +
- * city comparison + narrative) lives at /housing-market/central-oregon. The hub
- * emits the same AI-citable Dataset + FAQPage structured data its child pages do
- * (built from the region pulse the hub already fetches), so the hub is consistent
- * with /housing-market/bend and /housing-market/central-oregon.
+ * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata,
+ * MetadataBlock JSON-LD (BreadcrumbList, WebPage, Dataset, FAQPage), a rendered
+ * KbSectionTracker with pageType="market-report", revalidate 300, and the route.
+ * MetadataBlock and KbSectionTracker stay on the KB register deliberately: both are
+ * wiring, neither is visual language, and the barrel ships no equivalent.
  *
- * THE PAGE CONTRACT: KB design + SEO (pageMetadata + MetadataBlock JSON-LD:
- * BreadcrumbList/WebPage/Dataset + FAQPage via FAQBlock) + KbSectionTracker
- * pageType="market-report". Every figure live and traced to a @/lib/data source (§0).
+ * The five invariants this file is written to hold, each enforced at its own site:
  *
- * Section order:
- *   1. MetadataBlock    — BreadcrumbList + WebPage + Dataset JSON-LD (AI-citability G34)
- *   2. KbNav            — KB chrome
- *   3. KbSectionTracker — page-level analytics (pageType="market-report")
- *   4. KbBreadcrumb     — Home > Housing market
- *   5. SmoothScrollProvider wrapper
- *   6. KbHero           — region eyebrow + glance lede (data-driven)
- *   7. KbExploreTowns   — per-city tiles with live active counts
- *   8. KbArticles       — cross-links to region report + blog posts
- *   9. FAQBlock         — region FAQ (includeJsonLd=true → FAQPage JSON-LD)
- *  10. ContentSection   — curated resource cross-links (region report, reports
- *      index, explorer, communities, guides, area guides) — restored from the
- *      pre-KB hub for internal linking the KB chrome does not otherwise carry
- *  11. KbSell           — seller conversion CTA
- *  12. RegionalSfrAlertsBand — free listing_alerts (buyer path; F3 residual)
- *  13. LeadCaptureBlock — general "ask a broker" inquiry (submitMarketPageInquiry),
- *      restored from the pre-KB hub so a non-seller market question has on-page
- *      capture (KbSell only routes to the seller valuation flow)
- *  14. KbFooter         — full sitemap close
+ *  1. ONE DERIVATION, AND IT CLASSIFIES THE RAW VALUE. marketVerdict reads mosRaw,
+ *     the screen reads mosRaw rounded to one decimal, and buildMarketFaq gets mosRaw
+ *     and repeats those two steps in that order. Rounding BEFORE classifying is what
+ *     this ordering prevents: 4.02 rounds to 4.0, `4.0 <= 4` prints "a seller's
+ *     market", and lib/market/classify.ts calls it balanced. 5.97 does the same into
+ *     "buyer's". CLAUDE.md section 0: never round in a way that changes the narrative.
+ *  2. ONE GUARD PER FIGURE, SHARED WITH ITS CONSUMER. mosRaw is null unless the stored
+ *     value is above 0, which is buildMarketFaq's own condition, so the H1 cannot
+ *     assert a verdict the shared builder declined to answer.
+ *  3. ONE TRACE PER QUERY, ONE STAMP PER TRACE. Three populations sit on this page
+ *     (region pulse, city snapshots, closed sales) and no section borrows another's
+ *     figures or another's clock.
+ *  4. ABSENT IS NOT ZERO (CLAUDE.md section 0). A covered city with no live row is
+ *     not printed as "0 active" under a live-MLS source line.
+ *  5. ONE PRIMARY PER VIEWPORT (PUBLIC_UI.md section 1). The sticky public header
+ *     carries a filled valuation CTA at every scroll position of this page, so the
+ *     Instrument's ask is SECONDARY. A solid button here would put two primaries in
+ *     one viewport for the whole length of the page, which is the same reason
+ *     V3Footer carries no button (components/site/v3/V3Footer.tsx). The two asks are
+ *     also two different products in lib/site-nav.ts, VALUATION_FORM being the
+ *     instant estimate at /sell#get-value and this one the written valuation.
  *
- * Data accuracy (CLAUDE.md §0):
- *   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
- *                   property_type='A'. Freshness 10-15 min. Source: getMarketPulse.
- *   citySnapshots — market_pulse_live, geo_type='city', cityLabels in CITY_LABELS.
- *                   ONE call. Source: getMarketPulseCitySnapshots.
- *   blogPosts     — blog_posts, published, newest first. Source: getRecentBlogPosts.
- *
- * Parity contract: design_system/ryan-realty/ui_kits/market-report/parity.json
+ * DATES RENDER IN PACIFIC, a change from the KB page, stated rather than absorbed.
+ * The KB guides rail formatted with `timeZone: 'UTC'` and formatDate is pinned to
+ * America/Los_Angeles, so a post published between 00:00 and 08:00 UTC now shows the
+ * previous calendar day, which is the correct day in the market this page covers.
+ * ci:date-format requires the canonical formatter, so the trade is not optional.
  */
 
 import type { Metadata } from 'next'
@@ -50,65 +50,48 @@ import {
   getMarketPulseCitySnapshots,
   getRecentBlogPosts,
 } from '@/lib/data'
-import { getCoMarketAnnual, getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
+import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
+import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
-import { CoMarketSizeStrip } from '@/components/site/analytics/CoMarketSizeStrip'
-import { CoMarketComposition } from '@/components/site/analytics/CoMarketComposition'
-import { getSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import type { KbTownItem } from '@/components/site/kb/types'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
-import { KbArticles } from '@/components/site/kb/KbArticles'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import {
+  marketVerdict,
+  MOS_METHODOLOGY_CLAUSE,
+  MOS_THRESHOLD_CLAUSE,
+} from '@/lib/market/classify'
+import { formatPrice } from '@/lib/format/money'
+import { formatDate } from '@/lib/format/date'
+import { listingsBrowsePath, valuationPath } from '@/lib/slug'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Ledger,
+  V3Quiet,
+  type V3InstrumentFigure,
+  type V3LedgerFigureRow,
+  type V3LedgerPlainRow,
+  type V3QuietItem,
+} from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { MarketSources } from '@/components/site/MarketSources'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { ContentSection } from '@/components/site/ContentSection'
-import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
-import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
-import { submitMarketPageInquiry } from '@/app/housing-market/actions'
-import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import '@/components/site/kb/kb.css'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
+import {
+  CITY_LABELS,
+  CITY_SLUG,
+  CLOSED_SALES_YEAR,
+  HISTORY_PATH,
+  HISTORY_TYPE_CODES,
+} from './_v3/hub-constants'
 
 export const revalidate = 300
 
-// ---------------------------------------------------------------------------
-// Central Oregon cities — drive the per-city navigation tiles.
-// ---------------------------------------------------------------------------
-
-const CITY_LABELS = [
-  'Bend',
-  'Redmond',
-  'Sisters',
-  'Sunriver',
-  'La Pine',
-  'Tumalo',
-  'Prineville',
-  'Terrebonne',
-]
-
-const CITY_SLUG: Record<string, string> = {
-  'Bend': 'bend',
-  'Redmond': 'redmond',
-  'Sisters': 'sisters',
-  'Sunriver': 'sunriver',
-  'La Pine': 'la-pine',
-  'Tumalo': 'tumalo',
-  'Prineville': 'prineville',
-  'Terrebonne': 'terrebonne',
-}
-
-// ---------------------------------------------------------------------------
-// Metadata
-// ---------------------------------------------------------------------------
-
+// Metadata - unchanged from the KB page.
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Central Oregon Housing Market',
@@ -127,171 +110,281 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 export default async function HousingMarketHubPage() {
-  // -------------------------------------------------------------------------
-  // Data — all via @/lib/data (G8). No @/app/actions/* imports.
-  //
-  // §0 trace:
-  //   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
-  //                   property_type='A'. Freshness 10-15 min.
-  //   citySnapshots — market_pulse_live, geo_type='city', geo_label IN CITY_LABELS,
-  //                   property_type='A'. ONE call replaces legacy per-city fan-out.
-  //   blogPosts     — blog_posts, status='published', newest first. Up to 3.
-  // -------------------------------------------------------------------------
-  const [regionPulse, citySnapshots, blogPosts, heroPhoto, coMarketSeries, co2024] = await Promise.all([
-    getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
-    getMarketPulseCitySnapshots(CITY_LABELS).catch(() => []),
-    getRecentBlogPosts({ limit: 3 }).catch(() => []),
-    // design-audit #110: distinct hero photo from /housing-market/central-oregon
-    // so the hub and the deep report don't look like the same page at a glance.
-    getSurfaceImage('hero', { geoTags: ['central-oregon'], seed: 'housing-market-hub' }).catch(() => null),
-    // Analytics: CO closed-sales size from marts (2016–2024). Fast after mart rebuild.
-    getCoMarketAnnualSeries({ fromYear: 2016, toYear: 2024, typeScope: 'all' }).catch(() => []),
-    getCoMarketAnnual({ year: 2024, typeScope: 'all' }).catch(() => null),
+  // Data, all through the DAL (G8). No catch-and-swallow: every function below is
+  // resilient-cached and answers a transient failure with its own documented
+  // fallback, so a `.catch(() => null)` here would only hide a real outage behind a
+  // confident empty page. Nothing is fetched that this page does not render.
+  const [regionPulse, citySnapshots, blogPosts, closedYear] = await Promise.all([
+    getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getMarketPulseCitySnapshots(CITY_LABELS),
+    getRecentBlogPosts({ limit: 3 }),
+    getCoMarketAnnual({ year: CLOSED_SALES_YEAR, typeScope: 'all' }),
   ])
 
-  // -------------------------------------------------------------------------
-  // buildMarketFaq — SINGLE source for the FAQ, the FAQPage JSON-LD, and the
-  // Dataset variableMeasured, all drawn from the same verified region pulse the
-  // hub already fetches. Same pattern as /housing-market/central-oregon so the
-  // hub emits the same AI-citable structured data its child page does.
-  // Null fields degrade gracefully inside buildMarketFaq (a stat with no value
-  // is omitted, never fabricated — §0); the structured-data block never vanishes.
-  // §0: Dataset.dateModified = pulse.refreshedAt (real refresh ts from
-  // market_pulse_live). Never a hardcoded or derived date.
-  // -------------------------------------------------------------------------
-  const refreshedAt = regionPulse?.refreshedAt ?? null
-  // Pulse-timeout fallback (G52 page-contract): feed buildMarketFaq a
-  // pulse-or-fallback input so the Dataset + FAQPage JSON-LD survives a slow or
-  // missing region market row instead of vanishing. Same pattern as the child
-  // /housing-market/central-oregon page.
+  // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, round only to
+  // display it, and hand the RAW value to buildMarketFaq so the shared builder
+  // repeats the same two steps in the same order.
+  const mosRaw =
+    regionPulse?.monthsOfSupply != null && regionPulse.monthsOfSupply > 0
+      ? regionPulse.monthsOfSupply
+      : null
+  const mosDisplay = mosRaw == null ? null : Math.round(mosRaw * 10) / 10
+  const verdict = marketVerdict(mosRaw)
+
+  // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
+  // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
+  // the page contract requires (G52): the structured data survives a slow or missing
+  // region row instead of vanishing. A null field produces no question and no
+  // variable, never a fabricated one.
   const pulse = regionPulse
+    ? {
+        activeCount: regionPulse.activeCount,
+        medianListPrice: regionPulse.medianListPrice,
+        // The RAW figure. The builder rounds it for its sentence exactly as this
+        // page rounds it for the H1, so both read one number and one verdict.
+        monthsOfSupply: mosRaw,
+        medianDaysToPending: regionPulse.medianDaysToPending,
+        refreshedAt: regionPulse.refreshedAt,
+      }
+    : null
   const marketFaq = buildMarketFaq(
     'Central Oregon',
     pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null },
   )
-  // M1 AEO: append mart-backed size + composition Qs when closed-sales row
-  // exists (§0 — numbers only from getCoMarketAnnual, never invented).
-  const faqs = [...marketFaq.faqs]
-  if (co2024 && co2024.soldCount > 0 && co2024.totalVolume > 0) {
-    const vol =
-      co2024.totalVolume >= 1e9
-        ? `$${(co2024.totalVolume / 1e9).toFixed(2)} billion`
-        : co2024.totalVolume >= 1e6
-          ? `$${Math.round(co2024.totalVolume / 1e6)} million`
-          : `$${Math.round(co2024.totalVolume).toLocaleString('en-US')}`
-    const medianBit =
-      co2024.medianClose != null && co2024.medianClose > 0
-        ? ` Median close price was $${Math.round(co2024.medianClose).toLocaleString('en-US')}.`
-        : ''
-    faqs.push({
-      question: `How large was the Central Oregon housing market in ${co2024.year}?`,
-      answer: `In ${co2024.year}, closed sales across Central Oregon service-area cities totaled ${vol} across ${co2024.soldCount.toLocaleString('en-US')} transactions (all property types).${medianBit} Figures come from closed MLS sales, not active list inventory.`,
-    })
-    const entries = Object.entries(co2024.propertyTypeBreakdown || {})
-      .map(([code, n]) => ({ code, n: Number(n) || 0 }))
-      .filter((e) => e.n > 0)
-      .sort((a, b) => b.n - a.n)
-    if (entries.length > 0) {
-      const top = entries[0]
-      const pct = ((100 * top.n) / co2024.soldCount).toFixed(1)
-      faqs.push({
-        question: `What property types made up Central Oregon sales in ${co2024.year}?`,
-        answer: `Of ${co2024.soldCount.toLocaleString('en-US')} closed sales in ${co2024.year}, ${labelPropertyType(top.code)} led at ${top.n.toLocaleString('en-US')} closes (${pct}% of units). Composition is by closed units, not active inventory.`,
-      })
-    }
-  }
   const { datasetVariables, asOfIso, asOfLabel } = marketFaq
+  const refreshedAt = regionPulse?.refreshedAt ?? null
 
-  // -------------------------------------------------------------------------
-  // KbHero lede — data-driven from the region pulse (§0).
-  // -------------------------------------------------------------------------
-  // KbHero's stat template already renders the count ("N homes for sale …"),
-  // the median, and days-to-pending from the data prop — the lede must not
-  // repeat them (they rendered twice in one paragraph). Completes:
-  // "N homes for sale {lead} Median list $X. Pending in Y days."
-  const ledeParts: string[] = []
-  if (regionPulse && regionPulse.activeCount > 0) {
-    ledeParts.push('from Bend to La Pine.')
-  }
-  if (regionPulse?.monthsOfSupply != null) {
-    // Classify the RAW value, not the rounded display value — rounding
-    // first (the old `Math.round(x*10)/10` then comparing THAT to the
-    // threshold) could flip a genuinely-balanced 4.05 into "seller's
-    // market" once it rounded to 4.0 (design-audit P2, CLAUDE.md §0).
-    // MoS band is a formula fact (CLAUDE.md §0 thresholds), not a broker quote.
-    const raw = regionPulse.monthsOfSupply
-    let band = 'balanced'
-    if (raw <= 4) band = "seller's"
-    else if (raw >= 6) band = "buyer's"
-    ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply. A ${band} market.`)
-  }
-  const lede =
-    ledeParts.join(' ') ||
-    'Live single-family figures for every city we cover, refreshed every 15 minutes.'
+  // Closed sales for the last full year: closed MLS sales, all property types,
+  // service-area cities. A different population from the pulse above, so its
+  // figures, its trace, and its stamp stay together and never borrow the pulse's.
+  const closed =
+    closedYear && closedYear.soldCount > 0 && closedYear.totalVolume > 0 ? closedYear : null
 
-  // -------------------------------------------------------------------------
-  // City tiles — KbExploreTowns from getMarketPulseCitySnapshots (§0).
-  // Each tile links to /housing-market/<city-slug> (city market report).
-  // Fill in any label that returned no snapshot row (zero active = no row).
-  // -------------------------------------------------------------------------
-  const coveredSlugs = new Set<string>()
-  const cityTowns: KbTownItem[] = citySnapshots
-    .filter((s) => CITY_SLUG[s.geo_label] !== undefined)
-    .map((s) => {
-      const slug = CITY_SLUG[s.geo_label] as string
-      coveredSlugs.add(s.geo_label)
-      return {
-        name: s.geo_label,
-        href: `/housing-market/${slug}`,
-        activeCount: s.active_count,
-        medianPrice: s.median_list_price,
-        img: '',
-      }
+  // Written once, printed twice: the Instrument prints these strings and the FAQ
+  // answer below prints the identical ones, so the page and its JSON-LD cannot
+  // drift. Whole dollars rather than formatPrice, because formatPrice rounds to the
+  // nearest $1,000 (lib/format/money.ts) - correct for a list-price display, wrong
+  // for a published payload, where a $627,450 median would go out of the FAQPage
+  // JSON-LD as $627,000. One number per fact, on the page and in the markup.
+  const closedVolumeLabel = closed
+    ? closed.totalVolume >= 1e9
+      ? `$${(closed.totalVolume / 1e9).toFixed(2)} billion`
+      : closed.totalVolume >= 1e6
+        ? `$${Math.round(closed.totalVolume / 1e6)} million`
+        : `$${Math.round(closed.totalVolume).toLocaleString('en-US')}`
+    : null
+  const closedMedianLabel =
+    closed && closed.medianClose != null && closed.medianClose > 0
+      ? `$${Math.round(closed.medianClose).toLocaleString('en-US')}`
+      : null
+
+  const closedTypes = closed
+    ? Object.entries(closed.propertyTypeBreakdown || {})
+        .map(([code, n]) => ({ code, n: Number(n) || 0 }))
+        .filter((e) => e.n > 0)
+        .sort((a, b) => b.n - a.n)
+    : []
+  const leadType = closedTypes[0] ?? null
+  const leadTypePct =
+    closed && leadType ? ((100 * leadType.n) / closed.soldCount).toFixed(1) : null
+
+  // Every closed-sales figure names a live filter on the explorer, so every one is a
+  // door. app/housing-market/history/page.tsx reads `year` and `type`.
+  const historyPath = closed ? `${HISTORY_PATH}?year=${closed.year}` : HISTORY_PATH
+  const leadTypePath =
+    closed && leadType && HISTORY_TYPE_CODES.has(leadType.code)
+      ? `${historyPath}&type=${leadType.code}`
+      : historyPath
+
+  // M1 AEO: the mart-backed size and composition questions, appended to the same FAQ
+  // array that feeds the FAQPage JSON-LD. Wording and numbers unchanged from the KB
+  // page, and both read the strings computed above.
+  const faqs = [...marketFaq.faqs]
+  if (closed && closedVolumeLabel) {
+    const medianBit = closedMedianLabel ? ` Median close price was ${closedMedianLabel}.` : ''
+    faqs.push({
+      question: `How large was the Central Oregon housing market in ${closed.year}?`,
+      answer: `In ${closed.year}, closed sales across Central Oregon service-area cities totaled ${closedVolumeLabel} across ${closed.soldCount.toLocaleString('en-US')} transactions (all property types).${medianBit} Figures come from closed MLS sales, not active list inventory.`,
     })
-
-  // Cities with zero active listings may not return a snapshot row — add them
-  // so every city always appears as a tile (activeCount: 0 renders as "0 active").
-  for (const label of CITY_LABELS) {
-    if (!coveredSlugs.has(label) && CITY_SLUG[label]) {
-      cityTowns.push({
-        name: label,
-        href: `/housing-market/${CITY_SLUG[label] as string}`,
-        activeCount: 0,
-        medianPrice: null,
-        img: '',
+    if (leadType && leadTypePct) {
+      faqs.push({
+        question: `What property types made up Central Oregon sales in ${closed.year}?`,
+        answer: `Of ${closed.soldCount.toLocaleString('en-US')} closed sales in ${closed.year}, ${labelPropertyType(leadType.code)} led at ${leadType.n.toLocaleString('en-US')} closes (${leadTypePct}% of units). Composition is by closed units, not active inventory.`,
       })
     }
   }
 
-  // -------------------------------------------------------------------------
-  // Blog / guide articles (KbArticles). Falls back gracefully to empty.
-  // -------------------------------------------------------------------------
-  const articlePosts = blogPosts.map((p) => ({
-    title: p.title,
-    href: `/blog/${p.slug}`,
-    excerpt: p.excerpt,
-    imageUrl: p.heroImageUrl,
-    dateLabel: p.publishedAt
-      ? new Date(p.publishedAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          timeZone: 'UTC',
-        })
-      : null,
-  }))
+  // Region figures. Every one is a door: PUBLIC-PRODUCT-OS calls dead text naming a
+  // linkable thing a defect. All four come from the one region pulse row, which is
+  // exactly what the trace under them describes.
+  const regionFigures: V3InstrumentFigure[] = []
+  if (regionPulse?.medianListPrice != null) {
+    regionFigures.push({
+      value: v3Text(formatPrice(regionPulse.medianListPrice)),
+      label: v3Text('median list price'),
+      href: '/housing-market/central-oregon',
+    })
+  }
+  if (regionPulse != null) {
+    regionFigures.push({
+      value: v3Text(regionPulse.activeCount.toLocaleString('en-US')),
+      label: v3Text('homes for sale'),
+      href: listingsBrowsePath(),
+    })
+  }
+  if (mosDisplay != null) {
+    regionFigures.push({
+      value: v3Text(mosDisplay.toFixed(1)),
+      label: v3Text('months of supply'),
+      href: '/months-of-supply',
+    })
+  }
+  if (regionPulse?.medianDaysToPending != null) {
+    regionFigures.push({
+      value: v3Text(String(regionPulse.medianDaysToPending)),
+      label: v3Text('median days to pending'),
+      href: '/housing-market/central-oregon',
+    })
+  }
+  const [firstRegionFigure, ...restRegionFigures] = regionFigures
 
-  // -------------------------------------------------------------------------
-  // JSON-LD schemas — BreadcrumbList + WebPage + Dataset.
-  // FAQPage is emitted by FAQBlock (includeJsonLd=true) below (G34), so the hub
-  // carries the same AI-citable structured data as /housing-market/central-oregon.
-  // §0: dateModified is the real refreshedAt from market_pulse_live, never now().
-  // -------------------------------------------------------------------------
+  const regionTrace =
+    'live MLS through Oregon Data Share, single-family homes across the Central Oregon region. ' +
+    MOS_METHODOLOGY_CLAUSE +
+    ' ' +
+    MOS_THRESHOLD_CLAUSE
+
+  // City rows. A city earns a row when the live query returned one AND that row
+  // carries a median list price, because the Ledger's value column is a figure and a
+  // figure this page cannot source is a figure it does not print. Cities the query
+  // did not return keep their link in the closing Quiet block instead.
+  const snapshotByLabel = new Map(citySnapshots.map((s) => [s.geo_label, s]))
+  const cityRows: V3LedgerFigureRow[] = []
+  const rowed = new Set<string>()
+  for (const label of CITY_LABELS) {
+    const slug = CITY_SLUG[label]
+    const snapshot = snapshotByLabel.get(label)
+    if (!slug || !snapshot || snapshot.median_list_price == null) continue
+    rowed.add(label)
+    cityRows.push({
+      href: `/housing-market/${slug}`,
+      when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
+      what: v3Text(label),
+      detail:
+        snapshot.median_days_to_pending != null
+          ? v3Text(`${snapshot.median_days_to_pending} days to pending`)
+          : undefined,
+      value: v3Text(formatPrice(snapshot.median_list_price)),
+      id: slug,
+    })
+  }
+  cityRows.sort((a, b) => String(a.what).localeCompare(String(b.what)))
+  const [firstCityRow, ...restCityRows] = cityRows
+
+  // A covered city that earned no row still keeps its door, and the reason it has no
+  // figure is stated from its own data (invariant 4). Three cases, and they are not
+  // the same claim: no row came back at all, a row came back with nothing active, or
+  // a row came back active but with no median. Tumalo is the live one, and the KB
+  // page rendered it as "0 active" under a live-MLS source line.
+  const cityFootnotes = CITY_LABELS.filter(
+    (label) => CITY_SLUG[label] !== undefined && !rowed.has(label),
+  ).map((label) => {
+    const snapshot = snapshotByLabel.get(label)
+    if (!snapshot) return { label, fact: `${label} returned no market row in the latest sync` }
+    if (snapshot.active_count === 0) {
+      return { label, fact: `${label} shows no active single-family listings` }
+    }
+    return {
+      label,
+      fact: `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median`,
+    }
+  })
+
+  // The city Ledger's own freshness stamp, from the city rows themselves. The region
+  // row refreshes on its own schedule, so borrowing its timestamp would date one
+  // query's figures with another query's clock.
+  const cityRefreshedAt = citySnapshots
+    .map((s) => s.updated_at)
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .sort()
+    .at(-1)
+
+  // Guides. Plain rows, no value column, so the Ledger carries no source line: a blog
+  // post is not a figure. A row with no title is DROPPED rather than handed to
+  // v3Text, which throws by design on an empty string. `title` is the one DB-sourced
+  // string on this page that reaches the barrel, getRecentBlogPosts filters only on
+  // status and published_at, and one blank title would otherwise take the whole
+  // /housing-market render down.
+  const guideRows: V3LedgerPlainRow[] = []
+  for (const post of blogPosts) {
+    const title = post.title?.trim()
+    const slug = post.slug?.trim()
+    if (!title || !slug) continue
+    const excerpt = post.excerpt?.trim()
+    guideRows.push({
+      href: `/blog/${slug}`,
+      when: v3Text(post.publishedAt ? formatDate(post.publishedAt) : 'Guide'),
+      what: v3Text(title),
+      detail: excerpt ? v3Text(excerpt) : undefined,
+      id: slug,
+    })
+  }
+  const [firstGuideRow, ...restGuideRows] = guideRows
+
+  // The FAQ block's own outbound edges. PUBLIC_UI.md section 3 pattern 6 defines
+  // Quiet as the block that "carries the graph's outbound edges", and answers naming
+  // the region, months of supply, active inventory, and a closed-sales year while
+  // linking nowhere are the dead-text defect one pattern up. Each edge ships only
+  // when the answers above it actually made that claim.
+  const faqEdges: V3QuietItem[] = [
+    { label: 'Central Oregon region report', href: '/housing-market/central-oregon' },
+  ]
+  if (regionPulse != null) {
+    faqEdges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
+  }
+  if (mosDisplay != null) {
+    faqEdges.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
+  }
+  if (closed) {
+    faqEdges.push({ label: `Closed sales explorer, ${closed.year}`, href: historyPath })
+  }
+
+  // The closing edges. Every internal link the KB hub carried, plus the outbound MLS
+  // citation MarketSources used to render, plus any city with no live row.
+  const exploreItems: V3QuietItem[] = [
+    { label: 'Central Oregon region report', href: '/housing-market/central-oregon' },
+    { label: 'Closed sales explorer', href: HISTORY_PATH },
+    { label: 'Market report index', href: '/housing-market/reports' },
+    { label: 'All Central Oregon cities', href: '/cities' },
+    { label: 'Communities and neighborhoods', href: '/communities' },
+    { label: 'Browse homes for sale', href: listingsBrowsePath() },
+    { label: 'Open houses this week', href: '/open-houses' },
+    { label: 'Recent price drops', href: '/price-drops' },
+    { label: 'Sell your home', href: '/sell' },
+    { label: 'Buying and selling guides', href: '/blog' },
+    { label: 'Area guides', href: '/area-guides' },
+    { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
+  ]
+  if (cityFootnotes.length > 0) {
+    exploreItems.push({
+      kind: 'prose',
+      term: 'Cities not in the table above',
+      body: `${cityFootnotes.map((c) => c.fact).join('. ')}.`,
+    })
+    for (const city of cityFootnotes) {
+      exploreItems.push({
+        label: `${city.label} market report`,
+        href: `/housing-market/${CITY_SLUG[city.label] as string}`,
+      })
+    }
+  }
+
+  // JSON-LD. BreadcrumbList + WebPage + Dataset + FAQPage, all from MetadataBlock.
+  // The KB page emitted FAQPage from inside FAQBlock. V3Breadcrumb and V3Quiet carry
+  // no structured data of their own, so the same payloads are emitted here from the
+  // same arrays the sections render. dateModified is the real refreshedAt from
+  // market_pulse_live, never now().
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -324,180 +417,174 @@ export default async function HousingMarketHubPage() {
     })
   }
 
+  if (faqs.length > 0) {
+    schemas.push({ type: 'faqPage', items: faqs })
+  }
+
   return (
-    <main className="kb-root">
-      {/* AI-citability structured data: BreadcrumbList + WebPage + Dataset.
-          KbBreadcrumb has no JSON-LD of its own. FAQPage emitted by FAQBlock. */}
-      <MetadataBlock schemas={schemas} />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <MetadataBlock schemas={schemas} />
 
-      <KbSectionTracker pageType="market-report" />
+        <KbSectionTracker pageType="market-report" />
 
-      {/* Breadcrumb visual — Home > Housing market */}
-      <KbBreadcrumb overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Housing market' },
-        ]}
-      />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Housing market' }]} />
 
-      <SmoothScrollProvider>
-        {/* Hero — region eyebrow + data-driven glance lede (§0) */}
-        <KbHero
-          data={{
-            activeCount: regionPulse?.activeCount ?? null,
-            medianListPrice: regionPulse?.medianListPrice ?? null,
-            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
-          }}
-          eyebrow="Central Oregon · Oregon"
-          titleTop="Central Oregon"
-          titleBottom="Housing Market"
-          lead={lede}
-          posterSrc={heroPhoto ?? undefined}
-        />
+        {firstRegionFigure ? (
+          <V3Instrument
+            id="market"
+            level={1}
+            eyebrow={v3Text('Central Oregon, Oregon')}
+            headline={v3Text(
+              `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
+            )}
+            figures={[firstRegionFigure, ...restRegionFigures]}
+            source={v3Text(regionTrace)}
+            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
+            // Secondary by invariant 5. The sticky header already carries a filled
+            // valuation CTA at every scroll position of this page.
+            action={{
+              label: v3Text('Get a free written valuation'),
+              href: valuationPath(),
+              variant: 'ghost',
+            }}
+          />
+        ) : (
+          <V3Quiet
+            id="market"
+            heading="Central Oregon housing market"
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: 'No live figures right now',
+                body: 'The Central Oregon market row did not return on this refresh, so this page is not printing a median, an inventory count, or a verdict. The city reports below carry their own live rows.',
+              },
+            ]}
+          />
+        )}
 
-        {/* Closed-sales market size (all types) — distinct from SFR pulse hero. §0 via getCoMarketAnnual. */}
-        {coMarketSeries.length > 0 ? (
-          <CoMarketSizeStrip series={coMarketSeries} highlightYear={2024} />
-        ) : null}
+        {firstCityRow ? (
+          <V3Ledger
+            id="cities"
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Market by city')}
+            rows={[firstCityRow, ...restCityRows]}
+            source={v3Text(
+              'live MLS through Oregon Data Share, active single-family listings, one row per city',
+            )}
+            updated={cityRefreshedAt ? v3Text(formatDate(cityRefreshedAt)) : undefined}
+            action={{ label: v3Text('All Central Oregon cities'), href: '/cities' }}
+          />
+        ) : (
+          <V3Ledger
+            id="cities"
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Market by city')}
+            rows={[]}
+            emptyMessage={v3Text(
+              'No city returned a live single-family market row on this refresh.',
+            )}
+          />
+        )}
 
-        {co2024 ? <CoMarketComposition row={co2024} /> : null}
-
-        {/* City tiles — per-city active counts from ONE getMarketPulseCitySnapshots
-            call (§0). Each tile links to that city's full market report. */}
-        {cityTowns.length > 0 ? (
-          <KbExploreTowns
-            towns={cityTowns}
-            eyebrow="Central Oregon"
-            title="Market by city"
-            sectionId="cities"
-            cta={{ href: '/cities', label: 'Every Central Oregon city' }}
+        {closed && closedVolumeLabel ? (
+          <V3Instrument
+            id="closed-sales"
+            level={2}
+            eyebrow={v3Text('Closed sales')}
+            headline={v3Text(`Central Oregon closed ${closedVolumeLabel} in ${closed.year}`)}
+            figures={[
+              {
+                value: v3Text(closed.soldCount.toLocaleString('en-US')),
+                label: v3Text('closed sales'),
+                href: historyPath,
+              },
+              ...(closedMedianLabel
+                ? [
+                    {
+                      value: v3Text(closedMedianLabel),
+                      label: v3Text('median close price'),
+                      href: historyPath,
+                    },
+                  ]
+                : []),
+              ...(leadType && leadTypePct
+                ? [
+                    {
+                      value: v3Text(`${leadTypePct}%`),
+                      label: v3Text(
+                        `${labelPropertyType(leadType.code)} share of closed units`,
+                      ),
+                      href: leadTypePath,
+                    },
+                  ]
+                : []),
+            ]}
+            source={v3Text(
+              `closed MLS sales through Oregon Data Share, Central Oregon service-area cities, all property types, calendar year ${closed.year}. Not active inventory. ${ANALYTICS_METHODOLOGY_V1}`,
+            )}
+            // Only a mart row carries a real computed_at. getCoMarketAnnual falls back
+            // to a live aggregate that stamps now(), which would print "updated today"
+            // over a closed calendar year, so that stamp is dropped instead.
+            updated={
+              closed.source === 'mart' && closed.computedAt
+                ? v3Text(formatDate(closed.computedAt))
+                : undefined
+            }
+            action={{
+              label: v3Text('Closed sales explorer'),
+              href: HISTORY_PATH,
+              variant: 'ghost',
+            }}
           />
         ) : null}
 
-        {/* Guide articles + region report cross-link — recent published blog posts. */}
-        {articlePosts.length > 0 ? (
-          <KbArticles
-            posts={articlePosts}
-            eyebrow="Guides and insights"
-            heading="Central Oregon real estate, explained"
-            subtitle="Local housing data, neighborhood deep dives, and buyer and seller guides for Central Oregon."
+        {firstGuideRow ? (
+          <V3Ledger
+            id="guides"
+            eyebrow={v3Text('Guides and insights')}
+            heading={v3Text('Central Oregon real estate, explained')}
+            note={v3Text(
+              'Local housing data, neighborhood deep dives, and buyer and seller guides for Central Oregon.',
+            )}
+            rows={[firstGuideRow, ...restGuideRows]}
+            action={{ label: v3Text('All guides'), href: '/blog' }}
           />
         ) : null}
 
-        {/* FAQ — region Q&A from buildMarketFaq (single source with the Dataset
-            vars above). includeJsonLd=true auto-emits the FAQPage JSON-LD (G34),
-            matching the structured data on /housing-market/central-oregon. */}
         {faqs.length > 0 ? (
-          <section id="faq" aria-label="Central Oregon real estate questions">
-            <FAQBlock
-              items={faqs}
-              eyebrow="Common questions"
-              title="Central Oregon real estate questions"
-              intro="Direct answers based on live MLS data."
-              includeJsonLd={true}
-              tone="muted"
-            />
-          </section>
+          <V3Quiet
+            id="faq"
+            eyebrow="Common questions"
+            heading="Central Oregon real estate questions"
+            items={[
+              ...faqs.map((item) => ({
+                kind: 'prose' as const,
+                term: item.question,
+                body: item.answer,
+              })),
+              ...faqEdges,
+            ]}
+          />
         ) : null}
 
-        {/* Resource cross-links — curated internal links the KB chrome does not
-            otherwise surface on this page (region report, reports index, the open
-            data explorer, communities, guides, area guides). Restored from the
-            pre-KB hub so the region report and these sibling routes keep their
-            inbound link from the hub (internal-linking / SEO value). */}
-        {/* Resource plate — editorial groups, not an equal card dump (E6). */}
-        <ContentSection
+        <MarketInquirySheet />
+
+        <V3Quiet
+          id="explore"
           eyebrow="More resources"
-          title="Explore Central Oregon real estate"
-          tone="default"
-          divider
-          width="wide"
-        >
-          <div className="grid gap-8 md:grid-cols-3">
-            {(
-              [
-                {
-                  group: 'Market data',
-                  links: [
-                    { href: '/housing-market/central-oregon', label: 'Central Oregon region report' },
-                    { href: '/housing-market/history', label: 'Closed sales explorer' },
-                    { href: '/housing-market/reports', label: 'Market report index' },
-                  ],
-                },
-                {
-                  group: 'Inventory',
-                  links: [
-                    { href: '/cities', label: 'All Central Oregon cities' },
-                    { href: '/communities', label: 'Communities and neighborhoods' },
-                    { href: '/homes-for-sale', label: 'Browse homes for sale' },
-                    { href: '/open-houses', label: 'Open houses this week' },
-                    { href: '/price-drops', label: 'Recent price drops' },
-                  ],
-                },
-                {
-                  group: 'Guides and selling',
-                  links: [
-                    { href: '/sell', label: 'Sell your home' },
-                    { href: '/blog', label: 'Buying and selling guides' },
-                    { href: '/area-guides', label: 'Area guides' },
-                  ],
-                },
-              ] as const
-            ).map((col) => (
-              <div key={col.group} className="border border-border">
-                <p className="border-b border-border bg-muted/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  {col.group}
-                </p>
-                <ul className="divide-y divide-border">
-                  {col.links.map(({ href, label }) => (
-                    <li key={href}>
-                      <a
-                        href={href}
-                        className="block px-4 py-3 text-sm font-medium text-foreground transition hover:bg-muted"
-                      >
-                        {label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </ContentSection>
-
-        {/* Sell CTA — feeds off region pulse figures (§0) */}
-        <KbSell
-          data={{
-            medianListPrice: regionPulse?.medianListPrice ?? null,
-            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
-            soldCount30d: regionPulse?.closedLast30Days ?? null,
-          }}
-          eyebrow="Sell in Central Oregon"
+          heading="Explore Central Oregon real estate"
+          items={exploreItems}
         />
+      </main>
 
-        {/* F3 residual: market researchers are buyers too — free listing_alerts
-            (same product as /buy / homepage), not only broker-inquiry or LP. */}
-        <RegionalSfrAlertsBand id="get-alerts" showLpSecondary />
-
-        {/* Broker inquiry — general "ask a broker" lead capture, restored from the
-            pre-KB hub. Captured through the SAME server action the old page used
-            (submitMarketPageInquiry → submitPageCTA: FUB person + event, Meta CAPI,
-            canonical tagging, GA4 mirror). KbSell only routes to the seller
-            valuation flow, so without this a buyer/general market question had no
-            on-page capture surface. */}
-        <LeadCaptureBlock
-          variant="inquiry"
-          onSubmit={submitMarketPageInquiry}
-          eyebrow="Talk to a broker"
-          title="Questions about the Central Oregon market?"
-          intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation."
-          submitLabel="Ask a broker"
-          tone="muted"
-        />
-
-        <MarketSources sources={['ods']} />
-        <KbFooter towns={cityTowns} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. The KB page nested KbFooter the same way, and
+          ci:default-chrome-footer counts footers without checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

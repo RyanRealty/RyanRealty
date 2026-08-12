@@ -1,0 +1,496 @@
+/* ===========================================================================
+   V3 CHROME
+   Styles for V3Chrome.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3Chrome.tsx imports and whose scope the header opens on
+   itself with V3_ROOT_CLASS. No raw color is declared here and no motion value
+   is hardcoded: travel reads --v3-travel and durations read the ladder, so a
+   visitor who asked for no movement gets none.
+
+   Mobile 390 is the design target. The bar at that width is wordmark, the one
+   ask, and the menu control, all at the 44px thumb minimum. The five locked
+   destinations and the Saved affordance appear at 56.25rem, which is the same
+   breakpoint the Field pattern uses to put its map beside its list, so the
+   whole language changes shape once rather than five times.
+
+   The block selector is doubled (.v3.v3-chrome) for the reason every pattern
+   stylesheet doubles its own: the prototype route at app/dev/public-v3 declares
+   plain single-class globals against its own token names, App Router keeps route
+   CSS in the document across client navigations, and a single-class rule here
+   would lose the tie by load order. The header carries V3_ROOT_CLASS on the same
+   element, so the compound always matches and always outranks.
+   =========================================================================== */
+
+.v3.v3-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--v3-surface);
+  border-bottom: 1px solid var(--v3-edge);
+}
+
+/* The bar -------------------------------------------------------------------
+   One row at every width. Flow order is wordmark, destinations, actions, and
+   the actions push right on their own margin rather than on a spacer element. */
+.v3-chrome__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
+  max-width: var(--v3-measure);
+  min-height: 3.5rem;
+  margin: 0 auto;
+  padding: var(--v3-space-2xs) var(--v3-gutter);
+}
+
+.v3-chrome__mark {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: var(--v3-tap);
+}
+
+/* The wordmark is the pre-rendered brand asset, never re-typeset. Intrinsic
+   dimensions are on the element so the row reserves its space before the file
+   arrives and the bar does not jump. */
+.v3-chrome__mark img {
+  display: block;
+  width: auto;
+  height: 1.25rem;
+}
+
+@media (min-width: 48rem) {
+  .v3-chrome__mark img {
+    height: 1.5rem;
+  }
+}
+
+.v3-chrome__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-3xs);
+  margin-inline-start: auto;
+}
+
+/* Destinations --------------------------------------------------------------
+   Hidden below 56.25rem, where the overlay carries navigation. Hidden by
+   display:none on purpose: a link a visitor cannot see must not be a link a
+   keyboard can reach. */
+.v3-chrome__nav {
+  display: none;
+}
+
+@media (min-width: 56.25rem) {
+  .v3-chrome__nav {
+    display: flex;
+    align-items: center;
+    gap: var(--v3-space-3xs);
+    margin-inline-start: var(--v3-space-sm);
+  }
+}
+
+.v3-chrome__group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.v3-chrome__group-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-3xs) 0 var(--v3-space-xs);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-chrome__group-link:hover,
+.v3-chrome__group-link:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+/* The page the visitor is standing in keeps its rule permanently. */
+.v3-chrome__group-link[aria-current='page'] {
+  font-weight: var(--v3-weight-strong);
+  text-decoration-color: currentColor;
+}
+
+.v3-chrome__caret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: var(--v3-tap);
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: var(--v3-radius-sm);
+  color: var(--v3-ink-muted);
+  cursor: pointer;
+}
+
+.v3-chrome__caret:hover {
+  color: var(--v3-ink);
+}
+
+.v3-chrome__caret svg {
+  transition: transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-chrome__group.is-open .v3-chrome__caret svg {
+  transform: rotate(180deg);
+}
+
+/* The panel -----------------------------------------------------------------
+   Hairline card, no shadow: the language weighs sections with rules rather than
+   elevation. Closed state is visibility:hidden rather than opacity:0 so the
+   links leave the tab order with the panel, and the visibility transition is
+   delayed on the way out only, which is what keeps the fade visible. */
+.v3-chrome__panel {
+  position: absolute;
+  top: 100%;
+  inset-inline-start: 0;
+  z-index: 1;
+  min-width: 14rem;
+  /* A panel taller than the window would put its last destinations off screen
+     with no way to reach them. Today's longest group (Places, 23 rows in two
+     columns) measures 541px and never hits this; the cap is what keeps that
+     true when site-nav grows. */
+  max-height: min(78vh, 40rem);
+  overflow-y: auto;
+  padding: var(--v3-space-2xs);
+  background: var(--v3-surface-raised);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-card);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--v3-travel));
+  transition:
+    opacity var(--v3-dur-state) var(--v3-ease-out),
+    transform var(--v3-dur-state) var(--v3-ease-out),
+    visibility 0s linear var(--v3-dur-state);
+}
+
+.v3-chrome__group.is-open .v3-chrome__panel {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
+}
+
+.v3-chrome__panel-list {
+  display: grid;
+  grid-template-columns: minmax(11rem, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A long set splits rather than growing a column taller than the viewport.
+   Counting in CSS keeps the rule with the layout instead of asking every caller
+   to declare how long its own menu is. */
+.v3-chrome__panel-list:has(> li:nth-child(9)) {
+  grid-template-columns: repeat(2, minmax(11rem, 1fr));
+}
+
+.v3-chrome__panel-link {
+  display: flex;
+  align-items: center;
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-sm);
+  border-radius: var(--v3-radius-sm);
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-control);
+  text-decoration: none;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-chrome__panel-link:hover,
+.v3-chrome__panel-link:focus-visible {
+  background: var(--v3-wash);
+}
+
+/* Saved ---------------------------------------------------------------------
+   The account affordance, not a nav word (ia-lock). It joins the bar at the
+   same width as the destinations; below that it lives in the overlay, where its
+   whole group is one of the sections. */
+.v3-chrome__saved {
+  display: none;
+}
+
+@media (min-width: 56.25rem) {
+  .v3-chrome__saved {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--v3-space-3xs);
+    min-height: var(--v3-tap);
+    padding: 0 var(--v3-space-xs);
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body-sm);
+    font-weight: var(--v3-weight-medium);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: var(--v3-underline-offset);
+    transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+  }
+
+  .v3-chrome__saved:hover,
+  .v3-chrome__saved:focus-visible,
+  .v3-chrome__saved[aria-current='page'] {
+    text-decoration-color: currentColor;
+  }
+}
+
+/* The one ask ---------------------------------------------------------------
+   V3Button owns the look. Only the horizontal padding changes here, and only so
+   the label fits beside the wordmark and the menu control at 390. The selector
+   is tripled because the button's own rule in tokens.css is `.v3 .v3-btn`, and
+   a two-class rule would tie with it and be decided by load order. */
+.v3.v3-chrome .v3-chrome__cta {
+  padding: 0.6rem 0.7rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 26rem) {
+  .v3.v3-chrome .v3-chrome__cta {
+    padding: 0.7rem 1.1rem;
+  }
+}
+
+/* Menu and close ------------------------------------------------------------
+   Icon-only at 390 and labelled from 40rem up. The word is never display:none:
+   it is the control's accessible name, so it moves out of sight and stays in
+   the accessibility tree. */
+.v3-chrome__menu-btn,
+.v3-chrome__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v3-space-3xs);
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
+  padding: 0 var(--v3-space-2xs);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--v3-radius-control);
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-control);
+  cursor: pointer;
+  transition: background var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-chrome__menu-btn:hover,
+.v3-chrome__close:hover {
+  background: var(--v3-wash);
+}
+
+.v3-chrome__menu-word {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
+@media (min-width: 40rem) {
+  .v3-chrome__menu-word {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .v3-chrome__menu-btn,
+  .v3-chrome__close {
+    padding: 0 var(--v3-space-sm);
+  }
+}
+
+/* The overlay ---------------------------------------------------------------
+   A full-surface sheet, not a drawer: at 390 the index is the whole screen, and
+   at desktop it still is, because a site menu that only half-covers the page it
+   is navigating away from asks the visitor to read two things at once.
+
+   The entrance is the one motion here and it encodes a state the visitor
+   caused. Both values are tokens, so reduced motion resolves it instantly. */
+/* The closed state. `display: none` on the block rule would be overridden by
+   the `display: flex` below, so the hidden attribute needs its own rule, and it
+   needs to win: without it the menu would be on screen at all times. Closing by
+   display also means the links leave the tab order and the accessibility tree
+   together, and reopening restarts the entrance, because an element going from
+   display:none to display:flex runs its animation again. */
+.v3-chrome__overlay[hidden] {
+  display: none;
+}
+
+.v3-chrome__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-lg);
+  padding: 0 var(--v3-gutter) var(--v3-space-2xl);
+  background: var(--v3-surface);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: v3-chrome-menu-in var(--v3-dur-enter) var(--v3-ease-out) both;
+}
+
+@keyframes v3-chrome-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--v3-travel));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.v3-chrome__overlay-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  min-height: 3.5rem;
+  padding: var(--v3-space-2xs) 0;
+  background: var(--v3-surface);
+  border-bottom: 1px solid var(--v3-edge);
+}
+
+.v3-chrome__menu-nav {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--v3-space-xl) var(--v3-space-lg);
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+}
+
+@media (min-width: 40rem) {
+  .v3-chrome__menu-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 56.25rem) {
+  .v3-chrome__menu-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.v3-chrome__menu-title {
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* `color` on a bare `a` lives in @layer base so Tailwind's utilities layer keeps
+   winning: un-layered author CSS beats EVERY layered rule regardless of
+   specificity, which is how `.kb-root a{color:inherit}` rendered navy-on-navy
+   CTA text on the seller money path (the invisible-CTA-text P0, 2026-07-08).
+   Enforced by ci:css-layers. */
+@layer base {
+  .v3-chrome__menu-title a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: var(--v3-underline-offset);
+    transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+  }
+
+  .v3-chrome__menu-title a:hover,
+  .v3-chrome__menu-title a:focus-visible {
+    color: var(--v3-ink);
+    text-decoration-color: currentColor;
+  }
+}
+
+/* Hairline rows, the same rhythm the Quiet pattern uses, so the index reads as
+   supporting content rather than as a second page. */
+.v3-chrome__menu-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-chrome__menu-list li {
+  border-top: 1px solid var(--v3-edge);
+}
+
+.v3-chrome__menu-list li:last-child {
+  border-bottom: 1px solid var(--v3-edge);
+}
+
+@layer base {
+  .v3-chrome__menu-list a {
+    display: flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    padding: var(--v3-space-3xs) 0;
+    color: var(--v3-ink);
+    font-size: var(--v3-size-body);
+    line-height: var(--v3-leading-body);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: var(--v3-underline-offset);
+    transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+  }
+}
+
+.v3-chrome__menu-list a:hover,
+.v3-chrome__menu-list a:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.v3-chrome__menu-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding-top: var(--v3-space-md);
+  border-top: 1px solid var(--v3-edge);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+@layer base {
+  .v3-chrome__menu-foot a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--v3-tap);
+    color: var(--v3-ink);
+    font-variant-numeric: tabular-nums;
+    text-decoration: underline;
+    text-underline-offset: var(--v3-underline-offset);
+  }
+}

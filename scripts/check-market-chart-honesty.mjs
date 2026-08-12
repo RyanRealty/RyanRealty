@@ -15,10 +15,31 @@
  *
  * Usage: node scripts/check-market-chart-honesty.mjs
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 
 const CHART = 'components/site/kb/KbMarketChart.client.tsx'
 const SERIES = 'lib/kb/year-series.ts'
+
+/**
+ * Both reads are guarded because the P9 roll may replace the chart with a v3 one.
+ * An unguarded readFileSync answers a deleted file with an ENOENT stack trace,
+ * which reads as a broken gate rather than as what it is: the honesty invariants
+ * for the market chart are no longer enforced anywhere. The spline ban in
+ * particular is a section 0 rule (smoothing invents medians that do not exist),
+ * so it must never lapse during a swap. Whoever moves the chart repoints these two
+ * constants and re-expresses the four invariants in the new file's terms.
+ * docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.20.
+ */
+for (const required of [CHART, SERIES]) {
+  if (existsSync(required)) continue
+  console.error(
+    `✗ market-chart-honesty: ${required} is missing, so the market chart's honesty ` +
+      `invariants (cream ink, no spline, volume floor, soldCount pass-through) are ` +
+      `enforced by nothing. Repoint this gate at the replacement file.`,
+  )
+  process.exit(1)
+}
+
 const chart = readFileSync(CHART, 'utf8')
 const series = readFileSync(SERIES, 'utf8')
 const fails = []

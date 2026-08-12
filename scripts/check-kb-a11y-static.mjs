@@ -22,7 +22,7 @@
  *
  * Usage: node scripts/check-kb-a11y-static.mjs
  */
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 const FILE = 'components/site/kb/kb.css'
@@ -32,16 +32,60 @@ const css = raw.replace(/\/\*[\s\S]*?\*\//g, '')
 
 const failures = []
 
-// ── Check 1: sub-AA token as text color ──────────────────────────────────────
-// `color:` not preceded by a word char or hyphen (so not `-color` / `scrollbar-color`).
-const subAaText = /(?<![-\w])color\s*:\s*var\(\s*--cream-(40|12|05)\b/g
-let m
-while ((m = subAaText.exec(css)) !== null) {
-  const line = css.slice(0, m.index).split('\n').length
-  failures.push(
-    `${FILE}:${line}  color:var(--cream-${m[1]}) used as TEXT — fails WCAG 1.4.3 (< 4.5:1 on navy). ` +
-      `Use var(--cream-muted) or var(--cream-70) for muted text; keep --cream-40 for lines only.`,
-  )
+/**
+ * Check 1 runs per register, because it was pinned to kb.css by path and the
+ * public site now has a second one. PUBLIC_UI.md section 4 computed the v3 stops:
+ * navy-70 on cream is 8.2:1 and cream-60 on navy is 5.99:1, while navy-50 on cream
+ * (3.9:1) and cream-40 on navy (3.4:1) failed AA and are deliberately absent from
+ * components/site/v3/tokens.css. This check is what keeps them absent.
+ * docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.8.
+ *
+ * IT SCANS EVERY STYLESHEET OF THE REGISTER, NOT ONLY WHERE THE TOKENS ARE
+ * DECLARED. The KB arm reads the whole KB stylesheet, so every KB rule is
+ * covered. Reading only components/site/v3/tokens.css would cover 16 of the v3
+ * register's 84 color declarations and leave 68 unread across the nine pattern
+ * stylesheets (V3Sheet 21, V3Chrome 12, V3Footer 8, V3Breadcrumb 7, V3Quiet 6,
+ * V3Ledger 5, V3Field 5, V3Instrument 2, V3Stage 2) — a `color: var(--v3-navy-50)`
+ * written into any of them would have passed. Declaring a faint stop is not the
+ * defect; painting text with one is.
+ */
+const KB_TEXT_TOKEN = /(?<![-\w])color\s*:\s*var\(\s*--cream-(40|12|05)\b/g
+const V3_TEXT_TOKEN =
+  /(?<![-\w])color\s*:\s*var\(\s*--v3-(?:cream-(?:4\d|3\d|2\d|1\d|0\d)|navy-(?:5\d|4\d|3\d|2\d|1\d|0\d))\b/g
+
+const V3_CSS_DIR = 'components/site/v3'
+const v3Stylesheets = existsSync(V3_CSS_DIR)
+  ? readdirSync(V3_CSS_DIR)
+      .filter((name) => name.endsWith('.css'))
+      .sort()
+      .map((name) => join(V3_CSS_DIR, name))
+  : []
+
+const TOKEN_LAYERS = [
+  {
+    file: FILE,
+    // `color:` not preceded by a word char or hyphen (so not `-color` / `scrollbar-color`).
+    re: KB_TEXT_TOKEN,
+    fix: 'Use var(--cream-muted) or var(--cream-70) for muted text; keep --cream-40 for lines only.',
+  },
+  ...v3Stylesheets.map((file) => ({
+    file,
+    re: V3_TEXT_TOKEN,
+    fix: 'Use var(--v3-ink-muted) (navy-70) or var(--v3-ink-on-navy-muted) (cream-60); the fainter stops are for lines only.',
+  })),
+]
+
+for (const layer of TOKEN_LAYERS) {
+  if (!existsSync(layer.file)) continue
+  const layerCss = readFileSync(layer.file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
+  layer.re.lastIndex = 0
+  let hit
+  while ((hit = layer.re.exec(layerCss)) !== null) {
+    const line = layerCss.slice(0, hit.index).split('\n').length
+    failures.push(
+      `${layer.file}:${line}  ${hit[0].replace(/\s+/g, ' ')} used as TEXT — fails WCAG 1.4.3 (< 4.5:1). ${layer.fix}`,
+    )
+  }
 }
 
 // ── Check 2: focus state strips the outline with no replacement ──────────────
