@@ -1,8 +1,27 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.7 (Grok 2026-08-12) — D1–D9 locked. Person = next step + what they're doing now. SMS short. SkySlope live until cutover. `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F or public `_v3/`.**
+> **NEWEST SUBJECT: Broker OS plan v0.8 (Grok 2026-08-12) — plan audited. Complete as meaning. First build A3/A4/A1. Rewrite return-visit alert. Do not mix with 11F or leftover public WIP.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.7
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.8
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**No product code this session.** D1–D9 locked. Plan itself audited (A31–A42).
+
+**Complete as meaning. Not a finished OS.** Further constitution is the failure mode.
+
+**First build (when Matt says go):** A3 person header (who / next / now with sources),
+A4 rewrite `queueReturnVisitAlert` to `{name} is looking at {address}.`, A1 queue.
+
+**Agent this pass:** lead ask names the home, does not say we watched them. Buyer
+packet ≠ lender BPO. Cutover = checklist. Unidentified = no SMS.
+
+**Still Matt:** say go; OAuth reconnects; money/ads; license; named-artifact taste
+(C1 packet, A5 packet).
+
+**Loop E:** Places/Market `_v3/` landed in `16f0361f` (mixed). Remaining public WIP
+is uncommitted — do not `git add -A`.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.7
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **No product code this session.** D1–D9 are locked.
