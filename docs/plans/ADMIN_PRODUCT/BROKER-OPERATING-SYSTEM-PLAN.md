@@ -276,8 +276,21 @@ gates, do not start a site-wide copy pass until D11 is closed.
   (title, H1, meta). Body, SMS, captions, packets still obey the voice.
   Homepage H1: `Homes for Sale in Central Oregon`. Under it: `Bend, Redmond,
   Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.`
-- **Authenticity / genuine.** Must be conveyed. How we claim it (say the word vs
-  show it) is still open.
+- **Authenticity / genuine / every principle.** Conveyed only. **Never named.** We
+  never call ourselves authentic, genuine, honest, simple, transparent, trusted,
+  dedicated, or any other virtue we want the reader to feel. We never print the
+  principle. The language does the work. This outranks every other voice rule
+  except live numbers and invented quotes.
+- **Grateful.** Felt. Not printed on a listing post. The house is the post
+  (P9 C). Personal notes still open.
+- **Judgment.** A short sentence in our voice is allowed. Never an invented
+  quote. Never cut a true judgment only to avoid having a view.
+  Example: `The second listing succeeds by correcting the first ask, not
+  defending it.`
+- **Newsletter open.** The listings are the content. `14 new listings in Bend
+  this week. Median list $625,000.`
+- **Buffett.** Skipped. Not required to write this voice. Leave out of the
+  operating file unless Matt reopens it.
 
 **Named exemplars so far (Matt picked):**
 
@@ -290,10 +303,12 @@ gates, do not start a site-wide copy pass until D11 is closed.
 | IG caption | New on Awbrey Butte. 4 bed, 3 bath, $1.12M. Views, a usable lot, and a house that shows well. |
 | House compliment | A bright kitchen and a deck with a real view of the butte. |
 | Listing process | We sign. We schedule photos and the sign. We start the marketing. It goes in the MLS as coming soon. When the photos and materials are ready, we go live and the sign goes in. |
+| Newsletter open | 14 new listings in Bend this week. Median list $625,000. |
+| Judgment | The second listing succeeds by correcting the first ask, not defending it. |
 
-**Still open:** grateful line (P9), Buffett (P8, Matt unsure), whether we ever print
-"authentic" / "genuine" about ourselves, rule 3 quotes, word lists, admin UI,
-MLS remarks.
+**Still open:** personal thank-you vs site (P9 was listing posts only), Buffett
+(skipped, out of the file unless reopened), word lists, admin UI, MLS remarks,
+whether "boutique brokerage" stays as a size fact.
 
 **What failed last time.** We tried to encode taste as regex. Buffett-as-law plus
 GOV.UK mechanics plus construction bans plus word lists produced beige (agents
