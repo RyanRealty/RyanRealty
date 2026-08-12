@@ -1,8 +1,24 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.13 (Grok 2026-08-12) — public OS folded in. One board: EXECUTION.md. Build parallel, land serial. First land E-CHROME. D1–D11 locked. Say go to fan out.**
+> **NEWEST SUBJECT: Broker OS plan v0.14 (Grok 2026-08-12) — Go = autonomous envelope. Hard stops: send/post/OAuth/license/taste/money. Waves on EXECUTION.md. Say go.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.13
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.14
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+`docs/plans/ADMIN_PRODUCT/EXECUTION.md` is the only "where we are."
+**D1–D11 locked.**
+
+**Go** = autonomous envelope to completion, max parallel per the waves, serial
+land. Does not send, post, mutate SkySlope, or declare a packet beautiful.
+Closings cutover is not in Go.
+
+**Wave 0:** E-CHROME · A3 · E-VOICE · V1 · G5 wrappers.
+**Then:** public families, A4+A1, chart atom, cuts, P10.
+
+**Still Matt:** say go; then only the hard stops (send, post, OAuth, license,
+taste, money).
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.13
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 `docs/plans/ADMIN_PRODUCT/EXECUTION.md` is the only "where we are."

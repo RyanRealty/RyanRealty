@@ -1,11 +1,85 @@
 # Execution board — the only "where we are"
 
-**Plan of record:** `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` (v0.13)
+**Plan of record:** `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` (v0.14)
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-12 (Grok, fold-in). **Waiting on Matt: say go.**
-No product code until then. Planning is done.
+**Updated:** 2026-08-12 (Grok, Go contract). **Waiting on Matt: say go.**
+No product code until then.
+
+---
+
+## What "Go" means
+
+**Go** = run the autonomous envelope to completion, max parallel, stop only at
+the named Matt gates. It does **not** mean texts go out, posts go live,
+Closings replaces SkySlope, or a packet is declared beautiful.
+
+### Autonomous envelope (agents finish without you)
+
+- Public: E-CHROME, then every family lease through legacy pages → 0 (migrate
+  or cut). Chart atom. Voice.md rewrite. D11 on copy we touch. Look at 390 + 1280.
+- Broker: A3 person header. A4+A1 wake rewrite + Today looking-at. A5 **ask
+  text in the composer** (not the send, not the PDF). D1 newsletter identity
+  stitch (no fake CRM lead). G5 wrapper upgrade to Imagine 1.5 / image-quality
+  (no live post). G2 **draft** on Today (no publish).
+- F1 query battery after the public spines exist. P10 remaining gates.
+
+### Hard stops (board turns red, wait)
+
+| Stop | Why | What already exists for you to say yes to |
+|---|---|---|
+| Actual SMS to a real person (A2, a live wake, A5 send) | Draft-first | The draft on Today |
+| Live social/GBP post, week-grant, Paul/Rebecca OAuth | Draft-first + OAuth click | Draft + connect URL |
+| Expired / buyer **packet PDF** taste (C1, A5 packet) | Beauty bar | The PDF |
+| Imagine clip taste (G5 ship, not the wrapper) | Beauty bar | The MP4 draft |
+| Licensed form send, SkySlope mutation, cutover | License. SkySlope is the live file (D2) | Nothing until A3/A4/A1 exist |
+| Money / ads | Parked | — |
+
+Closings (B1), ads, and G3's standing week-grant are **not** in Go. Building
+the calendar UI is in; flipping it to silent autopilot is not.
+
+### Why you cannot start every agent at minute zero
+
+1. **Chrome is one file.** `app/layout.tsx`. Until it lands and deploy is
+   READY, public family agents produce more mixed pages. That is the last
+   public failure mode.
+2. **Land is serial.** The ratchet, `ci:gates`, and Vercel production are
+   shared. Parallel **build** (worktrees). One **push** to `main` at a time.
+   Wall-clock ≈ chrome + N deploys, not N ÷ agents. Two pushes at once is
+   the broken build you already paid for.
+3. **The barrel is a bottleneck.** A family that needs a new v3 atom waits
+   on the chrome/chart agent. They do not edit `components/site/v3/**`
+   themselves.
+4. **This checkout is dirty.** Uncommitted sell-film, `SellerLPForm`,
+   `SignInPrompt`, `PUBLIC_SITE_UX_OVERHAUL/` leftovers. Go must use **clean
+   worktrees from `origin/main`**. Never `git add -A` in this tree.
+5. **Another session may still be alive.** Conductor confirms nothing else
+   is pushing to `main` before the first land.
+6. **Look does not parallelize for free.** Every land still gets a real
+   390 + 1280 pass. Skipping look is how a wrong months-of-supply shipped.
+7. **Concurrent `tsc` OOM reports clean.** One typecheck per land, not
+   thirteen at once (public OS lesson).
+
+### Max parallel (waves, not a stampede)
+
+**Wave 0** (on Go, same time, disjoint files):
+E-CHROME · A3 · E-VOICE · V1 · G5 wrappers (`lib/grok-image.ts`, `lib/grok-video.ts` only)
+
+**Wave 1** (after chrome SHA is on `origin/main` and deploy READY):
+E-HOMES-SEARCH · E-HOMES-DETAIL · E-HOMES-SIGNALS · E-HOMES-HOME · E-HOMES-TOOLS ·
+E-PLACES-REST · E-MARKET-REST · E-ABOUT · E-SELL · E-SAVED · E-SYSTEM ·
+A4+A1 · E-CHART (serial on the barrel — one agent, not beside another barrel edit)
+
+**Wave 2** (after wave-1 lands that they depend on):
+E-PLACES-REFINE · E-MARKET-REFINE (needs E-CHART) · E-CUT (301/noindex per cut-list)
+
+**Wave 3:** P10 · F1
+
+Cap: one agent per open lease in the current wave. Do not open a second agent
+on the same glob. Listing detail owns `components/site/listing-detail/**`.
+Search owns `app/search/**` and must not rewrite `listing-detail`. If a shared
+file is required, the first agent to need it takes the lease and the other waits.
 
 ---
 
@@ -177,20 +251,27 @@ On **go**, the conductor does not migrate pages. It:
 
 1. Reads this file + ratchet + `git status` (short). Prints the scoreboard.
 2. Confirms no other session is pushing to `main`.
-3. Opens E-CHROME as the first land.
-4. After chrome SHA is on `origin/main` and deploy READY, opens as many family
-   worktrees as there are **open** leases, each with this lease text and the plan.
-5. Lands one worktree at a time: rebase, ratchet re-seed, push, READY, update this file.
-6. Broker A3 may be a second conductor on admin files only, still serial-land on `main`.
+3. Spawns **clean worktrees from `origin/main`** (`wt/<lease>-YYYYMMDD`). Does
+   not build in a dirty checkout. Does not `git add -A`.
+4. Wave 0 in parallel: E-CHROME, A3, E-VOICE, V1, G5 wrappers.
+5. Lands **one** worktree at a time onto `main`: rebase, ratchet re-seed if
+   public, one typecheck, push, deploy READY, browser look, update this file.
+6. After chrome READY, opens wave 1 leases (one agent per glob). Same serial
+   land. Then wave 2, then wave 3.
+7. Hits a hard stop → write the artifact, turn the row red, keep the other
+   waves moving. Do not idle the public grind because a packet is waiting
+   on taste.
 
 **What you say to start:**
 
 ```
 go. One plan: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md
 Board: docs/plans/ADMIN_PRODUCT/EXECUTION.md
-Build parallel, land serial. First land is E-CHROME.
-Do not assume Claude's v3 pages are final. Quarry, rework if clunky.
-No git add -A. Evidence or it is not done.
+Autonomous envelope to completion. Max parallel per the waves.
+Clean worktrees from origin/main. Build parallel, land serial.
+First land is E-CHROME. Do not send, post, or mutate SkySlope.
+Do not assume Claude's v3 pages are final. No git add -A.
+Evidence or it is not done.
 ```
 
 ---

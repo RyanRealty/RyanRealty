@@ -1,7 +1,8 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.13 plan. D1–D11 locked. Public Product OS is folded in as Loop E quarry, not a second plan. One board: `EXECUTION.md`. Ready to execute when Matt says go. Parallel build, serial land.
+**Status:** v0.14 plan. D1–D11 locked. Public OS folded in. One board: `EXECUTION.md`.
+**Go** = autonomous envelope to completion (max parallel, serial land). Hard stops: send, post, OAuth, license, taste, money. Not Closings cutover.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -54,22 +55,21 @@ meaning gets a plain-language question, then a lock.
 SEO title mechanics, default operating grants that still honor draft-first,
 channel mix inside the live set, chart geometry. Record the call. Do not ask.
 
-### Ready to execute (v0.13)
+### Ready to execute (v0.14)
 
 Meaning is locked. Further constitution is the failure mode.
 
 **One plan. One board.** `docs/plans/ADMIN_PRODUCT/EXECUTION.md` is the only
-"where we are." Public Product OS (`docs/plans/PUBLIC_PRODUCT/`) is quarry:
-Matt locks, migration recipe, gate contracts, process specs. Its queue and
-`state.json` are stale. Claude’s v3 pages are starting points, not a final product.
+"where we are." Public Product OS is quarry. Claude’s v3 pages are starting
+points, not a final product.
 
-**How we execute:** build parallel (file leases, worktrees). Land serial (one
-push to `main` at a time). Chrome first (`app/layout.tsx` PublicNav → V3Chrome),
-then fan out public families and broker A3/A4/A1. Details and leases live on
-the board, not here.
+**Go** runs the autonomous envelope to completion: chrome, public families to
+zero legacy pages, A3, A4+A1, voice file, Imagine wrappers, drafts. It does
+not send, post, mutate SkySlope, or declare a packet beautiful. Waves and
+hard stops live on the board.
 
-Say **go**. The conductor reads the board and fans out. Do not start product
-code from a second plan.
+Say **go**. The conductor uses clean worktrees from `origin/main`, fans out
+per the waves, lands serial.
 
 ---
 
@@ -748,9 +748,11 @@ If a file exists only to support the old generation, it is holding us back. Cut 
 ```
 go. One plan: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md
 Board: docs/plans/ADMIN_PRODUCT/EXECUTION.md
-Build parallel, land serial. First land is E-CHROME.
-Do not assume Claude's v3 pages are final. Quarry, rework if clunky.
-No git add -A. Evidence or it is not done.
+Autonomous envelope to completion. Max parallel per the waves.
+Clean worktrees from origin/main. Build parallel, land serial.
+First land is E-CHROME. Do not send, post, or mutate SkySlope.
+Do not assume Claude's v3 pages are final. No git add -A.
+Evidence or it is not done.
 ```
 
 ---
@@ -1053,3 +1055,4 @@ D1–D11 are locked. Scorecard is in this file. One plan, one board
 - 2026-08-12 — v0.11 D11 LOCKED + merge. Claude session “Site pages organization and navigation” = Public Product OS = Loop E (P9 remaining: Homes, Sell, chrome, homepage). About mission sentence is the one virtue-word exception. Only virtue words are dead. Three registers. Ready to execute on two tracks. Do not mix files.
 - 2026-08-12 — v0.12 Loop E remaining locked to Claude’s stop. Live ratchet: 73 legacy pages, 527 non-v3 imports, 399 kb chrome. Chrome primitives exist; chrome unit (put them on leftover pages) is the unlock. Then Homes (search, listing detail, open houses, price drops), then trust/content. Claude stopped on collision; that stop was correct. Broker session does not start a public wave unless Matt says go public.
 - 2026-08-12 — v0.13 FOLD-IN. Public Product OS is quarry under this plan, not a second program. One board: EXECUTION.md. Build parallel, land serial. Chrome = layout PublicNav → V3Chrome (399 unlock). Mixed Market/Places pages are not done. Claude’s work is starting points, rework if clunky. Say go to fan out.
+- 2026-08-12 — v0.14 GO CONTRACT. Go = autonomous envelope to completion (chrome, families to 0 legacy, A3, A4+A1, voice file, Imagine wrappers, drafts). Hard stops: send, post, OAuth, license, packet/clip taste, money. Not Closings cutover. Waves on EXECUTION.md. Clean worktrees from origin/main.
