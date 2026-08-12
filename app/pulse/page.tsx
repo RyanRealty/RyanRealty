@@ -351,7 +351,7 @@ export default async function PulsePage({
     { label: 'Recent price drops', href: '/price-drops' },
     { label: 'Months of supply, defined', href: '/months-of-supply' },
     { label: 'Get a free home valuation', href: VALUATION_HREF },
-    { label: 'Sell your home', href: valuationHref('/pulse') },
+    { label: 'Sell your home', href: VALUATION_HREF },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
   if (cityFootnotes.length > 0) {

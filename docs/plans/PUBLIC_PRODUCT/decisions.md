@@ -652,3 +652,29 @@ Instrument, 95 on the map, 95 in the footnote, 95 in the FAQ.
 11 orphans from the cities / communities / zip / sell units. Reported, not touched: the browse
 route has no alias-aware mode, so `/homes-for-sale/<city>/<subdivision>` will keep publishing a
 smaller number than the community page until that route learns the alias set.
+
+## 2026-08-11 — INCIDENT: a sibling session committed and pushed this program's work
+
+While the ten-route migration was being committed, a concurrent session on the same
+working tree ran a broad `git add` and pushed. The result is on origin as `16f0361f`
+under the message **"docs: lock D1-D3, SMS voice, and person header"**, which describes
+that session's docs work and says nothing about the 108 files and ~16,300 insertions it
+actually carried: the Market and Places migrations, the v3 chrome primitives, the shared
+orphan cleanup, and all three re-seeded ratchet baselines.
+
+**The code is correct and verified** (every route smoke-tested, gates re-run, ratchets
+re-seeded), but its history is mislabeled, and the commit was already public before this
+was noticed, so it is not being rewritten with another session live.
+
+Two things this cost, both fixed:
+1. One type error reached origin: `app/pulse/page.tsx` referenced `valuationHref` where
+   the page exposes the `VALUATION_HREF` constant built from it. A broken build was on
+   main until the follow-up commit.
+2. The migration's real commit message, which carried the reasoning for three systemic
+   fixes, exists only in this program's progress log rather than in git history.
+
+**Rule going forward for this repo, which already had the lesson in a weaker form:** this
+program's commits stage explicit paths, never `-A` from the repo root, and a push is
+verified by reading back what the remote actually received rather than trusting the local
+exit code. When two sessions share a tree, the second one's broad `add` is indistinguishable
+from a merge, and the first one's message is what gets lost.
