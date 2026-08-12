@@ -1,5 +1,5 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.10 (Grok 2026-08-12) — D11 voice dialogue in progress (punctuation, stop-after-fact, buyer SMS, we, listing sequence, SEO>voice on titles). Do not rewrite VOICE.md. First build still A3/A4/A1. Do not mix with 11F or leftover public WIP.**
+> **NEWEST SUBJECT: Broker OS plan v0.10 (Grok 2026-08-12) — D11 voice dialogue. Exemplars landing. P8 Buffett unsure. Do not rewrite VOICE.md. First build still A3/A4/A1. Do not mix with 11F or leftover public WIP.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
 # Current — 2026-08-12 (Grok, local) — Broker OS plan v0.10
@@ -12,11 +12,11 @@ A47 closed person labels. A48 A4 ships with A1. A49 buyer packet sections named.
 A51 Imagine wrappers still old names; listing-tour still Replicate. A55
 `/admin/social` is a traffic report.
 
-**D11 partial:** punctuation yes. Stop after the fact. No industry jargon to
-clients. Buyer SMS = option A. Captions = facts plus moderate enthusiasm.
-Speaker = we. Listing copy must follow the real sequence (photos before go-live).
-SEO/traffic outranks voice on title/H1/meta. Homepage H1 and the salesy-vs-warm
-line still open. Do not rewrite `VOICE.md`.
+**D11 partial:** punctuation, stop-after-fact, no jargon, we, true listing
+sequence, SEO-first H1 (`Homes for Sale in Central Oregon`), caption exemplar
+(Awbrey Butte B), house compliment C, process A, length yes. Authentic/genuine
+must be conveyed (claim vs show still open). P8 Buffett unsure. P9 grateful
+unanswered. Do not rewrite `VOICE.md`.
 
 **First build (when Matt says go):** A3 person header, A4 wake rewrite **with** A1
 queue. Voice rewrite is a separate slice after D11 closes.

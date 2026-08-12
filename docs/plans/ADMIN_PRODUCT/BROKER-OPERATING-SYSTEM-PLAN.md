@@ -252,7 +252,9 @@ gates, do not start a site-wide copy pass until D11 is closed.
 - **Punctuation.** No em dash, no en dash, no semicolon, no `!`. Colon only as a
   label or list (`Beds: 3`), never as a dramatic beat (`Here's the thing:`).
 - **Stop after the fact.** Do not add a sermon after the number. Client language,
-  not industry jargon (no "band" to a seller). Confirm remaining jargon in dialogue.
+  not industry jargon (no "band," no "comp set"). Place names are fine. Seller
+  market line: `131 homes are for sale in Bend between $504,000 and $616,000. The
+  median one has been listed 53 days.`
 - **Buyer SMS (D1 ask).** `{address} is listed at {price}. Want a short comparison
   and what to think about offering?`
 - **Who is talking.** `We`. Not `I`. Not a pronoun-free telegram unless the line
@@ -260,17 +262,38 @@ gates, do not start a site-wide copy pass until D11 is closed.
 - **Listing sequence (public copy must be true).** Sign agreement → schedule
   photographer → schedule sign → start marketing material → MLS coming soon →
   go live when photos and materials are ready, sign goes in. Photos happen
-  **before** the listing posts. Never "we listed it, then we take photos."
-- **Enthusiasm.** Complimentary and exciting is allowed. Grateful for the
-  business. Highlight the client's home in a good light. Not over-the-top
-  salesy. Fine line. Still being sampled.
+  **before** the listing posts. Public process line: `We sign. We schedule photos
+  and the sign. We start the marketing. It goes in the MLS as coming soon. When
+  the photos and materials are ready, we go live and the sign goes in.`
+- **Enthusiasm.** Complimentary and exciting is allowed. Not over-the-top salesy.
+  Caption shape: facts, then one true specific (`New on Awbrey Butte. 4 bed, 3
+  bath, $1.12M. Views, a usable lot, and a house that shows well.`). House
+  compliment: `A bright kitchen and a deck with a real view of the butte.` Not
+  stunning / incredible / jaw-dropping.
+- **Length.** Same rules everywhere. A caption can be short. A blog can be longer.
+  Neither overexplains.
 - **SEO vs voice.** Driving traffic outranks voice on discovery surfaces
   (title, H1, meta). Body, SMS, captions, packets still obey the voice.
-  Homepage H1 still open (P3 expanded).
+  Homepage H1: `Homes for Sale in Central Oregon`. Under it: `Bend, Redmond,
+  Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.`
+- **Authenticity / genuine.** Must be conveyed. How we claim it (say the word vs
+  show it) is still open.
 
-**Still open:** homepage H1 (SEO options), caption enthusiasm samples,
-grateful/complimentary line, Buffett-as-law, rule 3, word lists, admin UI,
-MLS remarks, named exemplars, length rule (P7).
+**Named exemplars so far (Matt picked):**
+
+| Surface | Line |
+|---|---|
+| Market / packet | 131 homes are for sale in Bend between $504,000 and $616,000. The median one has been listed 53 days. |
+| Homepage H1 | Homes for Sale in Central Oregon |
+| Homepage lead | Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market. |
+| Buyer SMS | 123 Main is listed at $895,000. Want a short comparison and what to think about offering? |
+| IG caption | New on Awbrey Butte. 4 bed, 3 bath, $1.12M. Views, a usable lot, and a house that shows well. |
+| House compliment | A bright kitchen and a deck with a real view of the butte. |
+| Listing process | We sign. We schedule photos and the sign. We start the marketing. It goes in the MLS as coming soon. When the photos and materials are ready, we go live and the sign goes in. |
+
+**Still open:** grateful line (P9), Buffett (P8, Matt unsure), whether we ever print
+"authentic" / "genuine" about ourselves, rule 3 quotes, word lists, admin UI,
+MLS remarks.
 
 **What failed last time.** We tried to encode taste as regex. Buffett-as-law plus
 GOV.UK mechanics plus construction bans plus word lists produced beige (agents
