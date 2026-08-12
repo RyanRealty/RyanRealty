@@ -1,3 +1,5 @@
+> **MERGED -> evaluate-a-place (P3 lock, Matt 2026-08-11).** This PDS is evidence for the survivor; do not build surfaces from it directly.
+
 # Process: evaluate-a-place-poi — Evaluate around an anchor (schools, parks, golf, trails, venues, events, builders)
 
 ## 0. Meta

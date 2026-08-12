@@ -1,3 +1,5 @@
+> **MERGED -> find-a-home (P3 lock, Matt 2026-08-11).** This PDS is evidence for the survivor; do not build surfaces from it directly.
+
 # Process: hunt-price-cuts — hunt price-cut / motivated-seller listings
 
 ## 0. Meta

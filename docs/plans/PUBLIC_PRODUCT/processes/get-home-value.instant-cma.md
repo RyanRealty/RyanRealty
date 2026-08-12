@@ -1,3 +1,5 @@
+> **MERGED -> get-home-value.written-cma (P3 lock, Matt 2026-08-11).** This PDS is evidence for the survivor; do not build surfaces from it directly.
+
 # Process: get-home-value.instant-cma — Get an instant/auto CMA (dedicated valuation form)
 
 ## 0. Meta

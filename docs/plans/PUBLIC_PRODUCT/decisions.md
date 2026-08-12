@@ -96,3 +96,24 @@ was deleted rather than exempted — one of the five design languages is gone. T
 the earlier "cleanup timing is a P5/P9 call" note: DEAD registers (zero imports) may be
 deleted when a gate forces the question; LIVE registers (kb, legacy flat, primitives,
 explore) still wait for P5/P9.
+
+## 2026-08-11 — P3 PROCESS LOCK — GRANTED BY MATT (in-session structured answers)
+
+Process lock granted 2026-08-11. The registry is LOCKED at **28 processes** (34 − 6 merges).
+Matt's answers to the package questions:
+
+1. **All six merges APPROVED:** get-home-value.instant-cma → get-home-value.written-cma ·
+   evaluate-a-place-poi → evaluate-a-place · hunt-price-cuts → find-a-home ·
+   broker-attributed-lead → get-home-value.written-cma · sms-shortlink-click →
+   track-outbound-engagement · compare-homes → find-a-home.
+2. **Video browse: keep /videos, fold /feed.** The grid is the indexable canonical surface;
+   the vertical feed becomes a mode of it, not a second page. (Route disposition is P5;
+   the process truth is one video-browse lens inside find-a-home.)
+3. **PWA offline: minimal recovery only.** The live recovery half stays; full offline
+   browsing is explicitly NOT a workstream this wave.
+4. **Scope: keep everything in scope.** Client-service processes (sign-transaction-documents,
+   view-client-valuation-doc) and thin personas (refer-out-of-area, join-the-brokerage) all
+   receive this program's IA + design language.
+
+All 28 KEEP verdicts from p3-process-lock-package.md are locked as recorded there.
+state.json: locks.process = 2026-08-11, awaiting_lock cleared, phase → P4_DATA.

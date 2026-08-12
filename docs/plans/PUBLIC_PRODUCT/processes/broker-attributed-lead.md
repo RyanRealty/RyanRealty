@@ -1,3 +1,5 @@
+> **MERGED -> get-home-value.written-cma (P3 lock, Matt 2026-08-11).** This PDS is evidence for the survivor; do not build surfaces from it directly.
+
 # Process: broker-attributed-lead — Choose-your-broker attributed lead (broker landing page / ?agent=)
 
 ## 0. Meta

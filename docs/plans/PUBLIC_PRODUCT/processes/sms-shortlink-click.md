@@ -1,3 +1,5 @@
+> **MERGED -> track-outbound-engagement (P3 lock, Matt 2026-08-11).** This PDS is evidence for the survivor; do not build surfaces from it directly.
+
 # Process: sms-shortlink-click — SMS tracked-link click (/r/<code> redirect)
 
 ## 0. Meta

@@ -1,7 +1,7 @@
 [
   {
-    "id": "p3-lock-package",
-    "phase": "P3",
-    "note": "AWAITING MATT: p3-process-lock-package.md (6 merges + 5 questions). On grant: append dated section to decisions.md, set locks.process, clear awaiting_lock, banner merged PDS files, registry rows -> locked, advance phase to P4_DATA, queue P4 chains for KEEP set."
+    "id": "p4-data-chains",
+    "phase": "P4",
+    "note": "Build writer->store->reader->outcome chains for the 28 KEEP processes into data-atlas.md. Source: each PDS §4/§5 (already evidence-proven). Mark broken chains with a gap statement (never a design). Then P5: IA package under amnesia (destinations from jobs, GSC evidence per route, dual objectives + exits completed in page-inventory.json), stop at BLOCKED_ON_MATT: ia."
   }
 ]

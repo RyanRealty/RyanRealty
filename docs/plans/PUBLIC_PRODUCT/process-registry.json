@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-08-11T03:30:00Z",
-  "note": "P1+P2 COMPLETE. All 34 PDS deepened and adversarially verified (32 clean on first/repair pass; capture-and-attribute + sign-transaction-documents repaired by hand against code 2026-08-11). Verdicts remain P3 proposals until decisions.md grants the lock — see p3-process-lock-package.md.",
+  "updated_at": "2026-08-11T04:00:00Z",
+  "note": "PROCESS LOCK GRANTED (Matt 2026-08-11, decisions.md): 28 KEEP, 6 MERGE. Sub-decisions: keep /videos fold /feed; PWA minimal recovery; full scope incl. client-service + thin personas.",
   "processes": [
     {
       "id": "get-home-value.written-cma",
@@ -10,8 +10,8 @@
       "completion": "Lead durably captured in crm_people with canonical tags, enrolled in the seller sequence (autoEnrollByFubId inline, SMS-consent fail-closed), broker alerted; a cmas draft row + content:cma marketing_brain_actions row are queued, the cma-build-worker cron (twice hourly) builds the draft, broker reviews at /admin/cmas, and the observable done-state is the finalized/delivered CMA opened by the lead at /cma/[slug] behind the register+consent gate (immersive web view or print artifact, both from the same render_args).",
       "evidence": "app/sell/page.tsx:64 (#get-value anchor); app/sell/page.tsx:206-216 (SellerLPForm in hero formSlot, pagePath='/sell'); app/lp/seller-home-value/page.tsx:29 (noindex paid LP); app/lp/seller-home-value/page.tsx:56-81 (ad-matched hero variants); app/lp/seller-home-value/SellerLPForm.tsx:142-149 (partial-lead on step-1 advance); SellerLPForm.tsx:161-184 (submitSellerLPForm w/ smsConsent+homeDetails); app/lp/seller-home-value/actions.ts:104-154 (saveSellerPartialLead); actions.ts:343-356 (valuation_requests insert, city defaults to Bend); actions.ts:376-411 (sendEvent Seller Inquiry -> native personId); actions.ts:417-433 (ensureNativeLead fallback so lead never dropped); actions.ts:546-576 (enrichNativeLead tags/custom/origin note + geocode + marketing_assignments); actions.ts:580-589 (hot-lead 5-min call task); actions.ts:604-609 (inline autoEnrollByFubId); actions.ts:611-629 (createCmaRequest); actions.ts:685-715 (Meta CAPI $500); actions.ts:740-759 (GA4 MP generate_lead); lib/cma-request.ts:5-7,256-260 (cmas draft + content:cma marketing_brain_actions insert); lib/crm/enroll.ts:268-306 (autoEnrollByFubId native-id resolve + fail-closed SMS suppression); lib/crm/enroll.ts:27-32 (audience:seller -> master seq plan 69); lib/crm/enroll.ts:150-169 (enrollment insert, first touch auto); vercel.json:17-18 + app/api/cron/cma-build-worker/route.ts:1-12,29 (build-only worker, 14,44 * * * *, caps 3/run); app/cma/[slug]/route.ts:60-73 (finalized/delivered publication gate); route.ts:79-117 (register/consent/wrong-person shells); route.ts:134-162 (immersive render from render_args); vercel.json:25-26 + app/api/cron/crm-auto-enroll/route.ts:1-9 (15-min enrollment sweep safety net)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Same form+action also serves the list-now-lp variant (source 'list-now-lp', /lp/sell-your-home per actions.ts:528,682) — same pipeline, extra seller:listing-intent tag, so treated as a channel attribute not a separate process. Sequence delivery crons are registered (vercel.json:53-58 crm-scheduled-sends */5, crm-sequence-engine 13,28,43,58) but their route files were not opened this run. The '24h CMA' framing in the hypothesis is NOT in code: worker builds drafts twice hourly, delivery waits on broker review — no SLA constant found."
     },
     {
@@ -22,8 +22,8 @@
       "completion": "valuation_requests row inserted and lead captured (sendEvent, ensureNativeLead fallback) with canonical audience:seller + source:cma-request tags, which fire-and-forget auto-enrollment; then post-response after() work completes the visitor-observable state: broker alert email to admin, and EITHER an auto-computed CMA PDF emailed to the lead (when the address matches a DB property; suppression-gated, page-contract-checked) OR an immediate acknowledgment email promising a hand-built number, plus Meta CAPI and GA4 server events.",
       "evidence": "app/sell/valuation/page.tsx:17 (imports ValuationForm from @/app/home-valuation); page.tsx:99-101 (hero CTA -> #valuation-form); page.tsx:107-124 (form section); next.config.ts:217 (/home-valuation -> /sell/valuation permanent redirect); app/home-valuation/actions.ts:62-99 (submitValuationRequest + true-source resolution via ?from=/referer); actions.ts:101-112 (valuation_requests insert); actions.ts:131-160 (sendEvent Seller Inquiry -> personId); actions.ts:161-180 (ensureNativeLead fallback); actions.ts:189-201 (canonicallyTagLead audience:seller source:cma-request); lib/canonical-lead-tagger.ts:264-270 (fire-and-forget autoEnrollByFubId; 15-min cron is catch-all); actions.ts:203-222 (after() post-response split — inline path stays capture-only); actions.ts:246-259 (admin broker alert email); actions.ts:265-341 (suppression chokepoints + findPropertyByAddress -> getCachedCMA/computeCMA -> PDF render -> email attachment); actions.ts:350-376 (acknowledgment email when no auto-CMA); actions.ts:383-418 (Meta CAPI + GA4 MP mirror)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "MERGE->get-home-value.written-cma",
       "notes": "Materially diverges from the written-CMA spine: no cmas row and no content:cma brain action are queued here — automated fulfillment is only the auto-CMA PDF (address-match dependent); otherwise fulfillment of the promised hand-built number rides on the broker alert email, with no queued mechanism in this path. Both paths write valuation_requests and tag audience:seller (duplicated capture plumbing). Dead-ish path artifacts: app/home-valuation/ has no page.tsx (route exists only as a redirect; directory hosts the form+action consumed by /sell/valuation), and actions.ts:86 keeps '/home-valuation' as the hardcoded sourcePath fallback plus :255,:399 stamp the retired /home-valuation URL into the admin alert and CAPI eventSourceUrl."
     },
     {
@@ -34,8 +34,8 @@
       "completion": "crm_people row created/updated (sendEvent → ensureNativeLead, with direct-ensureNativeLead fallback so a blip never loses the lead), broker notification email sent, lead tagged + assigned via the lead-routing engine (seeded all_to_one → matt), instantly auto-enrolled in the follow-up sequence, anonymous session history stitched to the person, Lead conversion mirrored to Meta CAPI + GA4; visitor sees the 'Message received / Tour request received — one business day' confirmation.",
       "evidence": "app/contact/page.tsx:69-148 (route + intent/listingKey derivation); app/contact/ContactForm.tsx:40-69 (submit + tracking); app/contact/actions.ts:31-237 (full pipeline); lib/followupboss.ts:101-131 (sendEvent → ensureNativeLead); lib/resend.ts:103-120 (sendContactNotification); lib/canonical-lead-tagger.ts:80-95 (pickRoutedBroker assignment); lib/crm/enroll.ts:37-52 (autoEnrollByFubId); components/site/listing-detail/PriceCtaStrip.tsx:132-134, components/site/listing-detail/ListingMobileContactBar.client.tsx:40, components/site/kb/KbFooter.client.tsx:66-69 (internal entry CTAs)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "The one machine gap worth flagging (not a verdict): this path IGNORES the rr_agent_attribution cookie — a visitor who browsed Rebecca's page then used /contact is assigned by the routing engine (currently Matt), unlike the seller paths which honor the cookie. Listing tours are folded into this same form via intent=tour (tour time folded into message body, ContactForm.tsx:52-56) — not a separate pipeline. /about, /team, /reviews are trust surfaces feeding this process, not processes themselves."
     },
     {
@@ -46,8 +46,8 @@
       "completion": "Voice: Twilio webhook resolves the broker from the DIALED line, plays the recording announcement, forwards to that broker's cell, records dual-channel, logs a call timeline entry, and creates/finds the CRM person by phone; unanswered falls to voicemail + transcription. SMS: signature-verified webhook writes sms_in to the known contact's timeline and alerts the assigned broker, or creates a lead (source inbound-sms) for unknown senders; STOP keywords hit the suppression chokepoint. Done-state: visitor is talking to a broker (or left a captured voicemail) and the interaction exists on a CRM timeline.",
       "evidence": "app/contact/page.tsx:218-224 (tel link, CONTACT.phoneFubTel); app/team/[slug]/page.tsx:265-267,460-493 (per-broker tel/sms/mailto section); lib/brand/contact.ts:75-91,104-147 (Twilio brand + per-broker lines, forward-to-cell model); app/api/twilio/voice/route.ts:1-19,62-80 (broker-from-dialed-line routing, recording, lead creation); app/api/twilio/inbound-sms/route.ts:1-10 (timeline write, broker alert, unknown-sender lead)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Machine-observable despite being a phone channel — the Twilio cutover (2026-06-24) means every inbound call/text on published numbers lands in the CRM. Email (mailto: matt@ / broker emails) is the one sub-channel with no on-platform capture proven this run; completion there is observable only in the mailbox/email-ingest plane."
     },
     {
@@ -58,8 +58,8 @@
       "completion": "Seller-valuation lead created in the CRM ASSIGNED TO THE ATTRIBUTED BROKER — submitBrokerSellerLead adapts to submitSellerLPForm, which reads the cookie server-side (readAttributedAgentServer) and overrides default Matt-routing; visitor sees 'Got it. Your broker will reach out personally with a valuation.'",
       "evidence": "components/BrokerAttributionSetter.tsx:19-26 (cookie write on broker page); app/team/[slug]/page.tsx:281-285,316,447-455 (canonical attribution slug + setter mount + LeadCaptureBlock); app/team/actions.ts:14-41 (submitBrokerSellerLead adapter); app/lp/seller-home-value/actions.ts:217-218 (readAttributedAgentServer override); components/site/providers/IdentityBridges.tsx:19-27 + app/layout.tsx:135 (?agent= capture mounts site-wide); lib/agent-attribution.ts:21-88 (slug normalization + cookie parse)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "MERGE->get-home-value.written-cma",
       "notes": "SPLIT from the contact hypothesis because routing diverges (attributed broker vs routing engine) and the payload is a seller valuation. DUPLICATE-adjacent: it reuses the seller-home-value LP pipeline end to end, so a P1 row for a 'request-a-valuation' process will cover the same downstream — the contact-a-broker-specific part is only the attribution mechanism and the broker-page entry. The direct call/text links on the same broker page belong to broker-direct-call-text."
     },
     {
@@ -70,8 +70,8 @@
       "completion": "An observable buyer-intent artifact reaches the CRM or the user's account: (1) tour/contact lead — listing detail 'Schedule a tour' routes to /contact?listingKey=...&intent=tour (components/site/listing-detail/TextMattCTA.tsx:53-54) and app/contact/actions.ts:93-114 submits via sendEvent → ensureNativeLead → crm_people; (2) guest alert enrollment — SearchAlertCapture (app/search/page.tsx:397-401) submits submitSearchAlertSignup (components/search/SearchAlertCapture.tsx:12), which writes a durable listing_alerts row + native CRM lead + crm_tasks reminder (app/actions/search-alert-capture.ts:23-27,95-128), later delivered by the registered saved-search-alerts cron (vercel.json:213; app/api/cron/saved-search-alerts/route.ts:7); (3) signed-in save/like — saveListing inserts into saved_listings (app/actions/saved-listings.ts:42-47; keys hydrated into search at app/search/page.tsx:245-251). Mid-process engagement is fully telemetered: ListingTracker fires view_listing, scroll/time milestones, first-party events, and POST /api/listings/<key>/track (components/listing/ListingTracker.tsx:27-45,57-64).",
       "evidence": "app/search/page.tsx:212-469 (split/list/map views, field-registry filters, drawn-shape search, degraded-state honesty); next.config.ts:293-300 (/homes-for-sale → app/search rewrite + pretty address URLs → /listing/by-address) and 211-250 (legacy redirects); components/SearchMapClustered.tsx:7-9 (SuperClusterAlgorithm from @googlemaps/markerclusterer — the 'SuperCluster pins' hint, no standalone supercluster package) with dynamic import at components/search/MapSearchView.tsx:41; app/listing/[listingKey]/page.tsx:1-120 (detail composition: hero, PriceCtaStrip, specs, mortgage calc, broker CTA, ListingLikeThisAlerts, ISR 300s) plus resolver routes listing/by-address, listing/by-key, listing/odsmls (dir listing verified); app/open-houses/page.tsx:1-100 (getOpenHousesWithListings + Event JSON-LD linking listingDetailPath:75-80); app/price-drops/page.tsx:1-80 (getPriceDrops DAL, revalidate 1800); app/luxury-homes-bend/page.tsx:48-55 (getListingTiles propertyType 'A'); app/our-homes/page.tsx:29,57 (getBrokerageListings, force-dynamic); app/activity/page.tsx:105-218 (getActivityFeed limit 24 → KbActivity ledger, deep links via listingTileHref); app/videos/page.tsx:1-70 (inline-playing video grid, city chips, revalidate 300); app/feed/page.tsx:51-80 (vertical video feed, embeddability filter, detailHref → listingDetailPath); app/compare/page.tsx:36-77 (noindex utility, CompareClient side-by-side)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Hypothesis CONFIRMED as ONE process, not split: all ten hinted surfaces are alternate inceptions or in-process utilities of the same funnel — every one deep-links to /listing/* and shares the identical completion set (lead/alert/save). No divergent completion exists: /open-houses has no RSVP mechanism (grep of KbOpenHouses found none — its done-state on-site is the same listing-detail click-through), /compare is a noindex mid-process utility (robots at app/compare/page.tsx:52), and the video surfaces change the browse modality, not the outcome. Duplicates/dead-path notes for P3: (a) /videos and /feed are two overlapping video-browse surfaces over the same video-listing inventory (grid-with-chips vs vertical feed); (b) /compare carries a retained-but-unused daysOnMarket helper and an unresolved 'AICompare wire-or-delete' investigation note (app/compare/page.tsx:20,71-80); (c) /our-homes header comment claims getListingsWithAdvanced but the code imports getBrokerageListings (app/our-homes/page.tsx:7 vs 29) — doc drift only. Downstream machine process (separate registry candidate, not claimed here): saved-search-alerts cron delivering listing_alerts matches (vercel.json:213). Signed-in personalization threads through the whole loop: hidden-homes exclusion on list+map (app/search/page.tsx:405-407; MapSearchView.tsx:22-23), saved/liked key hydration (app/search/page.tsx:245-251)."
     },
     {
@@ -82,8 +82,8 @@
       "completion": "A seller lead is captured — observable done-state is a crm_people row plus the CMA queue rows. Three converging capture forms: (1) the /sell hero SellerLPForm (app/sell/page.tsx:208), whose action creates the CRM person, writes a public.cmas draft + a marketing_brain_actions content:cma row, and instant auto-enrolls the CRM seller sequence (app/lp/seller-home-value/actions.ts:591-607); (2) /sell/valuation ValuationForm (app/sell/valuation/page.tsx:17); (3) /sell/[intent] LeadLandingForm (components/landing/LeadLandingPage.tsx:136) via submitLeadLandingForm → sendEvent with ensureNativeLead fallback (app/actions/lead-landing.ts:54,84,108). Secondary completions: /contact?inquiry=Selling CTA (app/sell/page.tsx:266) or the tel: call links (app/sell/page.tsx:211,298).",
       "evidence": "app/sell/page.tsx:61-64,135-164,208,239,266,281-306; app/sell/valuation/page.tsx:17,30-31,41-46; app/sell/[intent]/page.tsx:16,39-49; lib/lead-landing-content.ts:30,75,119,300-302; app/sitemap.ts:133-135; components/landing/LeadLandingPage.tsx:27,136-140; app/actions/lead-landing.ts:54,84,108; app/lp/seller-home-value/actions.ts:591-607; lib/site-nav.ts:76-78,149-157; components/site/sell/SellMarketingPlan.tsx:38-39,91,102,114; docs/plans/PUBLIC_SITE_UX_OVERHAUL/decisions.md:90,172",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "CONTRADICTION (for P3): the banned plan matrix is still wired — decisions.md:90 'Kill the comparison matrix' and :172 'Only the 3% comprehensive plan is marketed… No matrix', yet SellPlanComparison renders on /sell via SellMarketingPlan.tsx:114, three-tier copy survives in SellMarketingPlan.tsx:91, app/sell/page.tsx:91 (FAQ) and :204 (hero lead '2.5% to 3.5%'). The replacement SellPlanSingle.tsx exists but is imported by nothing (grep across app/components: only its own definition). Untracked WIP: components/site/sell/spine/* and app/dev/sell-film (dev-only motion prototype, imports SellFilm.client only) — not reachable in prod nav. DUPLICATE PATHS: /sell/for-sale-by-owner and /sell/expired-listings overlap the standalone /lp/fsbo and /lp/expired-listing paid/outreach LPs (app/lp listing) — dedupe candidate. BOUNDARY: completion here IS the inception of get-home-value (seed #4, the E2 valuation spine) — the shared chokepoint is the valuation form submit; /sell/valuation reuses ValuationForm from app/home-valuation. DENIED from this process: /bpo/[slug] (app/bpo/[slug]/route.ts:1-89) is a noindex/no-store broker-shared BPO document view, referenced only from the CRM (lib/data/crm/getContactBpos.ts:60) — a delivery leg of the valuation/CMA machine process, not a visitor sale-planning surface."
     },
     {
@@ -94,8 +94,8 @@
       "completion": "Click-through to a listing detail page — every tile links listingDetailPath (app/motivated-sellers/[city]/page.tsx:93-108) — or a broker contact from the closing CTA: /contact or tel: under 'Before you write an offer' / 'Put the cut next to the comps' (app/motivated-sellers/[city]/page.tsx:338-365). There is no on-page capture form; section views are tracked via KbSectionTracker pageType='motivated-sellers[-city]' (lines 201-202) and TrackSearchView.",
       "evidence": "app/motivated-sellers/page.tsx:1-40; app/motivated-sellers/[city]/page.tsx:53-58,93-108,145-156,167-172,201-202,338-365; lib/site-nav.ts:156",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "MERGE->find-a-home",
       "notes": "SPLIT from the plan-a-sale hypothesis: the starting hints filed /motivated-sellers/[city] under plan-a-sale, but the page content addresses BUYERS (browse discounted actives, write an offer), not sellers planning a listing. Merge candidate into find-a-home (deal-hunting sub-path) at P2/P3. MISMATCH worth noting for P3: the nav files it in the Sell menu as 'Sell on a deadline' (lib/site-nav.ts:156) — a seller-framed label pointing at a buyer surface; sellers clicking it get a page telling other people how to buy their price-cut home. Not proposing a verdict, recording the incongruity."
     },
     {
@@ -106,8 +106,8 @@
       "completion": "Observable done-states, in descending strength: (1) place-scoped alert capture — KbCommunityAlerts on city/neighborhood/zip pages submits submitSearchAlertSignup → durable listing_alerts row the alert cron can email + crm_people id (components/site/kb/KbCommunityAlerts.client.tsx:8-22 docblock; app/actions/search-alert-capture.ts:23,96; mounted at app/cities/[slug]/page.tsx:509-516); (2) hand-off into find-a-home — hero CTA homesForSalePath(city) and PlaceMapListSplit 'See every {city} home for sale' (app/cities/[slug]/page.tsx:481,484-495); (3) hand-off into get-home-value/plan-a-sale — /sell/valuation secondary CTA + KbSell section (app/cities/[slug]/page.tsx:482,558-565). Section-level progress is measured (CityPageTracker + KbSectionTracker, app/cities/[slug]/page.tsx:453-460).",
       "evidence": "app/cities/[slug]/page.tsx:112-118,143-153,418-449,481-495,509-516,558-565; app/cities/[slug]/[neighborhoodSlug]/page.tsx:1-24; app/communities/[slug]/page.tsx:1-32; app/subdivisions/[slug]/page.tsx:11-21,133-150; app/zip/[zip]/page.tsx:1-70; app/areas/[slug]/page.tsx:1-51; app/area-guides/page.tsx:1-60; app/cities/page.tsx:1-14; app/communities/page.tsx:1-14; lib/data/geo/resolvePlaceContext.ts:1-55; lib/data/geo/getGeoBoundaryMapData.ts:15; lib/site-nav.ts:43-129; app/sitemap.ts:86-95,259,316,344,388-413,517; components/site/kb/KbCommunityAlerts.client.tsx:8-22; app/actions/search-alert-capture.ts:23,96",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "SPLIT 1 of 3 from the seed hypothesis. Duplicate-path fact (not a verdict): the same physical resort is reachable at both /communities/{city-prefixed index slug} and /communities/{registry slug} — the city page dedupes its two community ledgers by NAME because hrefs never match (app/cities/[slug]/page.tsx:368-375). Subdivision pages below the lifetime-sales indexability floor render but noindex (app/subdivisions/[slug]/page.tsx:138-150). /areas/[slug] returns [] from generateStaticParams and depends entirely on broker-created public areas existing (app/areas/[slug]/page.tsx:49-51) — thin usage is a P2 question, not a dead path."
     },
     {
@@ -118,8 +118,8 @@
       "completion": "Observable done-states: (1) click-through into a listing or inventory from the nearby-homes grid (KbFeatured cards on every POI detail page — app/schools/[slug]/page.tsx:34, app/parks/[slug]/page.tsx:40, app/central-oregon/golf/[slug]/page.tsx:28, app/central-oregon/trails/[slug]/page.tsx:33, app/builders/[slug]/page.tsx:54-60); (2) regional SFR alert capture on the events hub (RegionalSfrAlertsBand import, app/central-oregon/events/page.tsx:30); (3) hand-off to the city market read via AreaMarketBand on golf/trails (app/central-oregon/golf/[slug]/page.tsx:23; app/central-oregon/trails/[slug]/page.tsx:28) and contact CTA (CONTACT import on schools/parks/golf/trails detail pages). Section engagement measured via KbSectionTracker on every route read.",
       "evidence": "app/schools/[slug]/page.tsx:1-64; app/schools/page.tsx:1-14; app/parks/[slug]/page.tsx:1-60; app/parks/page.tsx:1-14; app/central-oregon/golf/[slug]/page.tsx:1-60; app/central-oregon/trails/[slug]/page.tsx:1-50; app/central-oregon/events/page.tsx:1-31; app/builders/[slug]/page.tsx:1-60; app/builders/page.tsx:1-14; app/sitemap.ts:100-104,140,170-196,207-215; lib/site-nav.ts:6,124-129",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "MERGE->evaluate-a-place",
       "notes": "SPLIT 2 of 3 — same visitor question ('does this place fit my life?') but materially different inception (amenity-intent long-tail query against a hand-verified registry, not a geography with market cache rows) and thinner completion (no per-POI market HUD or per-POI alert; the machine objective leans earn-search-traffic moat). P3 may merge back into evaluate-a-place. Structural facts: /central-oregon/golf has NO index page — the golf hub is /lp/central-oregon-golf (app/sitemap.ts:139-140,185; app/central-oregon/golf/[slug]/page.tsx:6-9), so this process's golf spine depends on an /lp/* route owned by arrive-from-ad. Venues detail exists (app/central-oregon/venues/[slug]/page.tsx present in route listing) but was not opened this run — its evidence rides the sitemap emission at app/sitemap.ts:178 only."
     },
     {
@@ -130,8 +130,8 @@
       "completion": "The referral form submits: KbOutOfAreaReferral (name/email/notes, email-only by design so no A2P consent surface) → submitOutOfAreaReferral server action → crm_people lead tagged geo:out-of-area + referral:candidate; the referral:candidate tag hard-gates autoEnrollPerson and NOTHING auto-sends — a broker reads it and connects the visitor with a local agent (components/site/kb/KbOutOfAreaReferral.client.tsx:7-15,41-50; app/actions/out-of-area-referral.ts:9-13,58-70). The observable done-state is the tagged crm_people row awaiting manual broker action.",
       "evidence": "app/oregon/[city]/page.tsx:1-60; middleware.ts:291-311,429-435; components/site/kb/KbOutOfAreaReferral.client.tsx:5-50; app/actions/out-of-area-referral.ts:9-13,58-70; app/sitemap.ts via getOutOfAreaCitySitemapEntries reference at app/oregon/[city]/page.tsx:16-17",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "SPLIT 3 of 3 — hinted under evaluate-a-place (/oregon/[city]) but diverges on BOTH axes: inception is an out-of-market query the middleware actively routes OUT of the evaluate ladder, and completion is a manual-referral capture rather than in-market evaluation exits (no market HUD, no alerts, no /sell CTA). Overlaps capture-and-attribute (seed #12) on the back half; P3 decides whether it stands alone or merges there."
     },
     {
@@ -142,8 +142,8 @@
       "completion": "Observable done-states: (a) lead-landing form submit → submitLeadLandingForm → CRM lead via sendEvent with ensureNativeLead fallback, Meta CAPI Lead, broker email notification, canonical tagging + visitor-session stitch, GA4 mirror (app/actions/lead-landing.ts:84-193); or (b) listing-alert signup on /buy via RegionalSfrAlertsBand → KbCommunityAlerts into listing_alerts (app/buy/page.tsx:352-354; components/site/kb/RegionalSfrAlertsBand.tsx:24-31) — hands off to deliver-alerts/save-and-return; or (c) exit into find-a-home via the primary 'Search homes' chip (app/buy/page.tsx:91-98,236-240).",
       "evidence": "app/buy/page.tsx:159-410; app/buy/[intent]/page.tsx:39-50; lib/lead-landing-content.ts:162-303 (exactly 3 intents); components/landing/LeadLandingPage.tsx:47,136; components/landing/LeadLandingForm.tsx:57-94; app/actions/lead-landing.ts:54-193; app/sitemap.ts:130,136-138; lib/site-nav.ts:96-97; components/site/kb/RegionalSfrAlertsBand.tsx:24-31",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "SPLIT: the /tools calculators seeded into this process diverge materially and are returned as run-the-numbers. Duplicate capture surfaces: the /buy alerts band is the same listing_alerts product as homepage/cities (RegionalSfrAlertsBand.tsx:2-4), and /lp/buyer-listing-alerts remains a parallel ad-LP for the same product (app/buy/page.tsx:19-20). Orphan risk: /buy is unreachable from nav/footer chrome — only sitemap, LP breadcrumbs, and direct/paid reach it. /buy/[intent] hero images are hotlinked Unsplash URLs (lib/lead-landing-content.ts:172), not the approved asset library."
     },
     {
@@ -154,8 +154,8 @@
       "completion": "The visitor gets a computed estimate entirely client-side (all three pages are @data-free; mortgage/rental seed defaults from getCalculatorDefaults app_config, mortgage page.tsx:74-85, rental page.tsx:87-93) — no server write of the result. Observable machine done-state: section_view + scroll_depth telemetry to /api/visitors/track and GA4 via KbSectionTracker pageType=\"tools\" (components/site/kb/KbSectionTracker.client.tsx:7-55; mortgage page.tsx:89), which later surfaces as the 'mortgage-calculator user' intent signal on identified CRM contacts (lib/data/crm/getContactBehaviorSummary.ts:133-137,213). Onward handoffs: mortgage → /homes-for-sale + /sell/valuation (page.tsx:166-176); rental → /contact (page.tsx:148-157,215-217); appreciation → /sell/valuation + HomeValuationCta capture card (page.tsx:150-154,168-172; components/HomeValuationCta.tsx:47).",
       "evidence": "app/tools/mortgage-calculator/page.tsx:73-184; app/tools/rental-property-calculator/page.tsx:86-266; app/tools/appreciation/page.tsx:58-178; lib/site-nav.ts:143-145; app/sitemap.ts:153-155; app/llms.txt/route.ts:152; components/site/kb/KbSectionTracker.client.tsx:7-55; lib/data/crm/getContactBehaviorSummary.ts:133-137,213",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "SPLIT from the plan-a-purchase seed: no capture contract of its own, different nav placement (Market group), different completion class (anonymous computation + intent telemetry vs CRM lead). Cross-process reality: the appreciation tool addresses owners ('Hold-period math') and funnels to /sell/valuation — it serves get-home-value/plan-a-sale as much as purchase planning; the rental calculator serves investors and pairs with /buy/investment. Dead/latent paths: no /tools index page exists (app/tools holds only the 3 route dirs); the searchParams pre-fill has no in-repo deep-linker — repo-wide grep found zero links carrying ?price/rent/down/rate params (rental page.tsx:2 marks MLS pre-fill 'a future enhancement'). A separate inline mortgage panel exists on listing pages (components/listing/ListingEstimatedMonthlyCost.tsx:73-80) — that belongs to find-a-home, noted as partially duplicated capability."
     },
     {
@@ -166,8 +166,8 @@
       "completion": "Visitor returns signed-in and lands on the /account portal (redirect to / if no session), which renders live per-render queries: saved+liked homes deduped across saved_listings and likes, 'New since your last visit' per saved search, named areas, places followed, recent views, and their activity feed; /dashboard is a redirect shell to /account. The observable done-state is the return visit consuming accrued saved state.",
       "evidence": "components/SignInPrompt.tsx:84-124 (engagement gate + channel suppressions), components/SignInPrompt.tsx:161-173 (pitch copy); components/layout/PublicClientLayer.tsx:27,49 + app/layout.tsx:166 (global mount); components/listing/SaveListingButton.tsx:69-80 (logged-out bounce), lib/pending-save.ts:19-50 (stash + redirect), app/actions/saved-listings.ts:77-94 (resumeSaveListing idempotent), app/actions/saved-listings.ts:42-55 (saveListing → saved_listings + CRM mirror); app/account/page.tsx:106-236 (portal queries + stats), app/account/page.tsx:288-322 (recently viewed); app/dashboard/page.tsx:10-12 (redirect to /account)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Sign-in also stamps the durable rr_pid CRM cookie and stitches visitor identity (app/auth/callback/route.ts:1-30). /feed (a starting hint) is a video-tour browse surface, not part of this process (app/feed/page.tsx:29-47). The heart/save action doubles as CRM behavioral capture (recordSaveListingEvent). Duplicate surface: /dashboard/* feature subpages still resolve alongside /account/* equivalents (saved, searches, likes, history, collections, notifications, settings) — partial duplication worth a P3 look."
     },
     {
@@ -178,8 +178,8 @@
       "completion": "The hourly cron /api/cron/saved-search-alerts (schedule '0 * * * *', 300s budget, 600-row scan default) runs runListingAlerts: typed-event diff (new/price_change/status_change/back_on_market/sold/open_house) per row toggle map, cadence-gated (instant/daily/weekly + schedule_days), capped at 200 emails/run. Each email carries a search deep link (browseAllUrl), a per-alert manage link /account/saved-searches#alert-<id> for the signed-in primary, and a token unsubscribe. Observable done-states: the click-back return visit / portal 'new since last visit' consumption, or deactivation via /alerts/unsubscribe (POST-confirmed token page) or the RFC 8058 one-click POST /api/alerts/unsubscribe.",
       "evidence": "components/SearchFilterBar.tsx:602 + components/search/SearchFilters.tsx:535 (save entry points); app/actions/saved-searches.ts:124-146 (createSavedSearch → upsertListingAlert into listing_alerts); vercel.json:213-214 (cron registered, hourly); app/api/cron/saved-search-alerts/route.ts:14-29 (route, budgets); app/actions/saved-search-alerts.ts:47-64 (unified typed-event engine), :81 (200-send cap), :111-150 (run loop + cadence gate); lib/alerts/send.ts:380-403 (per-recipient unsubscribe + manage links), lib/alerts/manage-url.ts:17-22 (/account/saved-searches#alert-<id>); app/alerts/unsubscribe/page.tsx:22-30 (POST-only deactivate); app/api/cron/neighborhood-default-subscriptions/route.ts:1-18 (manual-only provisioning)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "One unified engine: the old saved_searches/guest_search_alerts split is gone (route comment, saved-search-alerts route lines 6-8); legacy saved_searches table survives only for the public/social search feature and is never alert-scanned (saved-searches.ts:148-162, is_paused:true belt-and-suspenders). Alerts support household recipients with per-recipient compliance gating and hidden-home exclusion. Emails carry broker attribution + open/click tracking."
     },
     {
@@ -190,8 +190,8 @@
       "completion": "Same hourly cron mails the guest row; guests have no portal, so their done-states are: continuing to receive/click alert emails, unsubscribing via their token link (only management surface for guests), or signing in later — the OAuth callback claims guest alert rows into the new account (claimGuestSavedSearches), converting them into process save-and-return.search-alerts.",
       "evidence": "components/search/SearchAlertCapture.tsx:24-36 (guest-only inline capture, URL-as-truth filters); components/SaveSearchButton.tsx:61-66 (guest branch always reachable, routes through same buyer-lead path); app/actions/search-alert-capture.ts:19-101 (honeypot, rate limit, validation, narrowing guard, CRM lead + upsertListingAlert); lib/alerts/manage-url.ts:14-15 (guests manage via token unsubscribe only); lib/alerts/send.ts:384-390 (token links per recipient); app/auth/callback/route.ts:5 (claimGuestSavedSearches import in the OAuth callback)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "This inception is simultaneously a lead-generation conversion (CRM buyer lead with source:idx-registration tagging) and a save-and-return inception — P3 should treat it as the bridge between the anonymous funnel and the portal process. Guest residual state is also remembered client-side (guest-watch-residual) to keep the strip consistent after capture."
     },
     {
@@ -202,8 +202,8 @@
       "completion": "Two observable done-states. (a) Informed read: section_view + scroll_depth events recorded to the first-party visitor store and GA4 via KbSectionTracker pageType='market-report'/'feed'/'market-reports' on every surface (components/site/kb/KbSectionTracker.client.tsx:7-27; mounted at app/housing-market/page.tsx:333, app/pulse/page.tsx:138, app/housing-market/history/page.tsx:87). (b) Conversion exit: broker inquiry → crm_people (app/housing-market/actions.ts:24-70 submitMarketPageInquiry → submitPageCTA/ensureNativeLead; mounted hub page.tsx:488-496), listing-alerts signup (RegionalSfrAlertsBand, hub page.tsx:480), valuation CTA handoff to get-home-value (HomeValuationCta, app/pulse/page.tsx:208-212), signed-in market-report email subscription → crm_report_subscriptions (app/actions/market-report-optin.ts:1-60; UI components/dashboard/DashboardNotificationPrefs.tsx), or report share (ShareButton, app/reports/[slug]/page.tsx:28).",
       "evidence": "app/housing-market/page.tsx:145-155 (getMarketPulse/getMarketPulseCitySnapshots ← market_pulse_live); app/housing-market/[...slug]/page.tsx:61-71,120-138 (city+subdivision catch-all, getPriceHistory ← market_stats_cache); app/housing-market/central-oregon/page.tsx:1-25; app/housing-market/history/page.tsx:51-71 (analyzeClosedSales marts); app/housing-market/annual-review/page.tsx:22-40 (rolling_365d cache + pulse); app/reports/page.tsx:31-53,58-79 (canonical /housing-market/reports); app/housing-market/reports/page.tsx:1-2 (alias re-export); app/reports/[slug]/page.tsx:41-89 (getMarketReportBySlug); app/months-of-supply/page.tsx:20-35,53-54 (getRegionPulse + MOS clauses from lib/market/classify); app/pulse/page.tsx:77,96-102 (getPulseFeed/getPulseRegionSnapshot, force-dynamic); app/activity/page.tsx:1-40 (getActivityFeed); lib/data/market/getMarketPulse.ts:39 (.from('market_pulse_live')); lib/data/market/getPriceHistory.ts:60 (.from('market_stats_cache')); vercel.json:97-99 + app/api/cron/market-report/route.ts:16 (weekly report gen, Sun 14:00 UTC); vercel.json:85-87 + app/api/cron/generate-market-narratives/route.ts:9-21 (daily narratives); vercel.json:189-191 (refresh-market-stats daily 07:00); vercel.json:45-47 + app/api/cron/crm-market-report-send/route.ts:1-24 (subscription sends)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "NOT split: all three hypothesized modes share inception channels, the market_pulse_live/market_stats_cache data plane, the same KbSectionTracker observable, and the same conversion surfaces — no material divergence. Findings for P3: (1) /pulse is a near-orphan — no nav or footer inbound link, only sitemap.ts:151 + self-links in components/pulse/PulseFeed.tsx; /activity (nav-linked, lib/site-nav.ts:138) overlaps it as a second live feed. (2) /reports vs /housing-market/reports is an intentional alias (app/housing-market/reports/page.tsx is a 2-line re-export; canonical is /housing-market/reports per app/reports/page.tsx:62) — duplicate URL space. (3) public.market_narratives (written daily by cron) is rendered by NO public page — only /api/reports/export reads it; the visible city-page narrative is computed inline (buildNarrative, app/housing-market/[...slug]/page.tsx:209,751) — underused path. (4) /api/reports/export is public with 'no in-app callers — reachable by direct URL only' (route.ts:16-17). (5) The 'outlook' leg is thin by design: no forecast surface exists anywhere; narratives are present-tense MoS verdicts, consistent with §0's ban on invented forecasts. (6) The machine sender crm-market-report-send is a candidate to file under seed process 13 deliver-alerts rather than here — it re-enters this process as an inception channel."
     },
     {
@@ -214,8 +214,8 @@
       "completion": "Visitor lands on the DB-stored target URL via 302 (fail-open to homepage on unknown code, app/r/[code]/route.ts:24-33). For human user agents, an sms_click engagement row is upserted to crm_timeline deduped per person+code and crm_short_links click_count/first_click_at/last_click_at are bumped (lib/data/crm/shortLinks.ts:161-186); the click then surfaces on the person timeline and the prospecting/FSBO/expired engagement dashboards.",
       "evidence": "app/r/[code]/route.ts:18-33 (handler; bot filter line 23); lib/data/crm/shortLinks.ts:49-75 (createShortLink → crm_short_links), 82-129 (instrumentSmsLinks link rewrite), 43-47 (bot UA regex), 140-189 (resolveAndLogShortLinkClick: sms_click upsert 161-173, counters 179-186); lib/comms/sendGovernedSms.ts:59-65 (compose-time instrumentation before Twilio send); app/api/cron/crm-sequence-engine/route.ts:410 + vercel.json:57 (cron-sent drips carry tracked links); app/actions/expired-outreach.ts:142-143; app/actions/prospecting.ts:236-237; app/actions/fsbo-dashboard.ts:184-185; app/actions/send-doc.ts:290-291; consumers: lib/data/prospecting/engagement.ts:76-84, lib/data/expired/dashboard.ts:132-135, lib/data/fsbo/dashboard.ts:120, lib/data/crm/getContactActivityFeed.ts:55",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "MERGE->track-outbound-engagement",
       "notes": "The SMS analog of the email click tracker (/api/track/e/click) per lib/data/crm/shortLinks.ts:11. Anti-open-redirect: target comes only from the DB row written at compose time. Link-preview prefetchers (iMessage/WhatsApp/social) get the redirect but no click record; missing UA is treated as bot. Untrackable links (unsubscribe/opt-out/agency-disclosure/its own tracker) are never wrapped (shortLinks.ts:29-31). No dead paths found; no cron of its own — purely visitor-event-driven."
     },
     {
@@ -226,8 +226,8 @@
       "completion": "Observable done-state: the piece is consumed and the visitor exits into a next-step surface. Consumption is recorded per page by KbSectionTracker (pageType blog / blog_post / faq / faq_answer / info — app/blog/page.tsx:144, app/blog/[slug]/page.tsx:162, app/faq/page.tsx:87, app/faq/[slug]/page.tsx:102, app/resources/page.tsx:107), which fires section_view at ≥55% visibility plus 25/50/75/100 scroll-depth milestones, dual-sunk to GA4 AND POST /api/visitors/track (components/site/kb/KbSectionTracker.client.tsx:7-27,38-60), which upserts public.visitor_sessions and inserts public.visitor_events with score/intent triggers (app/api/visitors/track/route.ts:15-20,180,285,366,404). Hand-off exits that end the process: blog post geo cross-links into community pages 'On the market now' (app/blog/[slug]/page.tsx:264-285 via lib/blog-geo-links) → evaluate-a-place; FAQ 'Talk to us' + contact CTA (app/faq/page.tsx:112-127,186-203) → contact-a-broker; resources HomeValuationCta carrying LP/UTM attribution (app/resources/page.tsx:190-195) → get-home-value; resources tool tiles → reports/compare/calculator/activity (app/resources/page.tsx:40-71). Session identity is bridged on blog routes via getSession + getPersonIdFromCookie (app/blog/page.tsx:111-117).",
       "evidence": "app/blog/page.tsx:21,111-117,122-140,144,205-211; app/blog/[slug]/page.tsx:22,98-105,133-140,162,264-285; lib/data/blog/getPublishedBlogPosts.ts:12-16; lib/data/blog/getPopularBlogSlugs.ts:23-39; app/faq/page.tsx:48,77-89,112-127; app/faq/[slug]/page.tsx:5-17,61-65,96; app/faq/data.ts:1-33; app/faq/FaqAccordion.tsx:39; app/resources/page.tsx:40-71,107,190-195; components/site/kb/KbSectionTracker.client.tsx:7-60; app/api/visitors/track/route.ts:15-20,180,404; app/sitemap.ts:99,150,525-539; next.config.ts:218-220; lib/site-nav.ts:140-142,228-230,303-304,364-365,395",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "SPLIT/boundary corrections to the seeded member list ('blog, guides, FAQ, resources, videos'): (1) /site-index is NOT visitor content — it is the W3.4 crawler internal-link-equity hub, auto-derived from live inventory, linked only from the footer legal row (app/site-index/page.tsx:3-19; lib/site-nav.ts:395); it belongs to machine process earn-search-traffic. (2) /videos is a listing-browse surface — video tours of active/pending listings read from listing_tile_mv via getListingTiles/getCityListings with inline players (app/videos/page.tsx:16-37); belongs to find-a-home. (3) 'guides' as editorial no longer exists: /guides 308s to /blog (next.config.ts:219-220) and the sitemap deliberately emits no guides family (app/sitemap.ts:539); /area-guides is the geo hub into /cities + /communities (app/area-guides/page.tsx:1-30; next.config.ts:218 'editorial lives on /blog. Keep /area-guides as the geo hub') and belongs to evaluate-a-place. (4) /resources is a wayfinding router (6 link tiles, CollectionPage JSON-LD, no readable content of its own) — kept inside read-content as its annex rather than split, since it shares the arrive→scan→exit shape and carries the HomeValuationCta hand-off. Possible gap for P2: /faq/[slug] pages are not emitted in the sitemap (only /faq at app/sitemap.ts:150); they rely solely on hub internal links (app/faq/FaqAccordion.tsx:39) despite being built to rank standalone. Also of note: 'Popular posts' sidebar is actually recency-ordered — no per-post popularity signal is tracked (lib/data/blog/getPopularBlogSlugs.ts:2-5). Blog supply side (producer writes to blog_posts per §9 blog-publish path) is a marketing/machine process, not part of this visitor process."
     },
     {
@@ -238,8 +238,8 @@
       "completion": "A crm_people row exists (created or reused, email-first dedupe via crm_contact_points — lib/data/crm/ensureNativeLead.ts:86-111,158) carrying: a resolved source label + paid-channel fingerprint tags channel:/campaign:/ad-content: (lib/crm/lead-source.ts:37-64, consumed at app/lp/seller-home-value/actions.ts:379,501), canonical audience:/tier/broker: tags + broker assignment honoring the ?agent= cookie (lib/canonical-lead-tagger.ts:217-260; app/lp/seller-home-value/actions.ts:18,217; app/actions/agent-attribution-read.ts:20-33), a fail-closed SMS-consent suppression decision (lib/crm/enroll.ts:289-303), and an auto-enrollment decision — either a crm_sequence_enrollments row status=running + crm_timeline 'Enrolled' entry + queued instant broker alert (lib/crm/enroll.ts:154-170,268-320) or a recorded exclusion reason (pre-epoch, outreach-list, referral geo-block, hard-stop — lib/crm/enroll.ts:50-83). The crm-auto-enroll cron (vercel.json 4,19,34,49 * * * *; app/api/cron/crm-auto-enroll/route.ts:39-68) sweeps post-epoch people in a trailing 7-day window every 15 min so no lead sits outside this done-state regardless of entry door.",
       "evidence": "lib/followupboss.ts:101-136 (sendEvent → ensureNativeLead, the ONE capture entry point); lib/data/crm/ensureNativeLead.ts:86-111,158 (find-or-create decision, email-first); components/AgentAttributionBridge.tsx:6-17 (cookie write, 90-day); components/site/providers/IdentityBridges.tsx:19-27 + app/layout.tsx:135 (mounted on every route); app/actions/agent-attribution-read.ts:20-33 (server read); lib/crm/lead-source.ts:15-64 (source fingerprints); app/lp/seller-home-value/actions.ts:217,379,501,605-606 (attribution + fingerprints + autoEnrollByFubId wired at an LP); lib/canonical-lead-tagger.ts:217-260 (canonical tags + broker via enrichNativeLead); lib/crm/enroll.ts:40-170,268-320 (autoEnrollPerson rules, SMS fail-closed, enrollment insert + timeline); vercel.json:25-27 (crm-auto-enroll 4,19,34,49) + app/api/cron/crm-auto-enroll/route.ts:39-68 (sweep); app/api/cron/crm-portal-lead-intake/route.ts:1-30 (portal door); app/api/meta/lead-webhook/route.ts:440 (Meta door)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Confirmed as ONE process, not split: all four inception doors converge immediately at sendEvent/ensureNativeLead with identical completion, so paths do not materially diverge. Boundary: downstream sequence SENDING (crm-sequence-engine 13,28,43,58 + crm-scheduled-sends */5 in vercel.json:53-59) is a separate nurture/delivery process — the enrollment decision is this process's edge. Two off-site doors (Meta webhook, portal-email intake) are machine-only inceptions with no site visit; P2 may want them called out since they are not strictly visitor journeys, but they run the same spine. Legacy-naming debt, cosmetic only: autoEnrollByFubId now accepts native crm_people ids (lib/crm/enroll.ts:274-283), SendEventParams keeps the FUB event shape (lib/followupboss.ts:73-94), and sendEvent's `campaign` param is dead — UTM attribution was moved to the callers via resolveLeadSource after the 2026-07-09 fix (lib/crm/lead-source.ts:5-13). trackSignedInUser's sourceUrl/message/campaign params are also retained-but-unforwarded (lib/followupboss.ts:143-145). Anonymous page-view tracking (visitor_sessions/visitor_events) intentionally sits outside this process: ensureNativeLead skips events with no email/phone (lib/followupboss.ts:110-112)."
     },
     {
@@ -250,8 +250,8 @@
       "completion": "Per run: the engine (runListingAlerts, app/actions/saved-search-alerts.ts:111-446) scans due rows, detects typed listing events (new/price_change/status_change/back_on_market/sold/open_house), and for each firing alert sends ONE compliance-gated email per recipient via Resend with RFC 8058 List-Unsubscribe headers (lib/alerts/send.ts:365-470), advances last_notified_at + notified state via claim-before-send (saved-search-alerts.ts:386-403, restore on total failure :417-434), and logs an email_events 'sent' row (send.ts:456-466). Per subscription: the loop ends when the recipient deactivates via token unsubscribe (app/api/alerts/unsubscribe/route.ts:27-34 one-click POST; app/alerts/unsubscribe/page.tsx:22-30 confirm page — deactivateListingAlertByToken) or a signed-in user disables email in /account (honored at saved-search-alerts.ts:167-178).",
       "evidence": "vercel.json:213-215; app/api/cron/saved-search-alerts/route.ts:14-29; app/actions/saved-search-alerts.ts:81,111-446; lib/saved-search-cadence.ts:19,85-90,139-163; lib/alerts/send.ts:365-470; lib/alerts/event-detection.ts (imported at saved-search-alerts.ts:27-33); app/actions/saved-searches.ts:124-146; app/actions/search-alert-capture.ts:17,20-44; app/lp/buyer-listing-alerts/actions.ts:15,342-356; app/lp/buyer-listing-alerts/page.tsx:22-26; lib/crm/bulk-handlers/assign-saved-search.ts:2-5; app/api/alerts/unsubscribe/route.ts:27-46; app/alerts/unsubscribe/page.tsx:22-30; app/account/saved-searches/AlertPreferences.tsx:1-30; lib/data/leads/listingAlerts.ts:9-25; lib/alerts/guest-watch-residual.ts:1-16",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "One unified machine process — single table (public.listing_alerts, migration 20260707160000 unified the old saved_searches + guest_search_alerts split per lib/data/leads/listingAlerts.ts:9-25), single engine, single cron — so no split despite four inception channels. Per-row send cadence is subscriber-chosen: instant (~hourly)/daily/weekly (with per-day schedule_days, America/Los_Angeles)/monthly (lib/saved-search-cadence.ts:85-90,139-163); run caps: 600-row scan, 200 emails (route.ts:25, saved-search-alerts.ts:81). Guards proven: empty-filter blast guard, hidden-listings exclusion, VOW gate (guest rows never receive sold events, :296-299), per-recipient hard-stop + suppression with a re-check at the send chokepoint (send.ts:429-431), claim-before-send against re-blast. preview_mode rows queue events in listing_alert_queue for broker approval and release through the SAME send path (approveAlertQueueItems, saved-search-alerts.ts:465-533). Doc drift: route comment (route.ts:22-24) says '4x-daily cron' but vercel.json schedules hourly. NOT this process: /api/cron/crm-alert-drain (vercel.json:21) drains internal crm_broker_alerts to a broker-phone whitelist via Twilio SMS + web push (app/api/cron/crm-alert-drain/route.ts:25-51) — an internal broker-notification process, not visitor alert delivery. Client-side adjunct: guest-watch-residual is localStorage-only product memory after a guest sets an alert, no server delivery role."
     },
     {
@@ -262,8 +262,8 @@
       "completion": "The static policy page renders (all seven are data-free server components with robots noindex,follow). For /dmca and /data-deletion the done-state extends off-site: a mailto to admin@ryan-realty.com (DMCA designated agent; data-deletion request with stated 30-day SLA). No on-site form, ticket, or tracking exists for either request path.",
       "evidence": "app/privacy/page.tsx:30 PrivacyPage, :39 link to /cookies, :68-76 SMS consent section; app/terms/page.tsx:25; app/cookies/page.tsx:11 metadata, :38-45 COOKIES table rows; app/dmca/page.tsx:26, :34-41 designated-agent mailto; app/fair-housing/page.tsx:3 EqualHousing import, :28; app/accessibility/page.tsx:26; app/data-deletion/page.tsx:31, :53-60 email request + 30-day SLA; lib/site-nav.ts:389-396 LEGAL_LINKS; components/site/SiteFooter.tsx:12 import, :138-153 legal links row",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Split from the serve-legal hypothesis (1 of 3). Coverage gaps to note for P2/P3: /cookies is absent from footer LEGAL_LINKS (reachable only through /privacy prose); /data-deletion has ZERO internal inbound links — it exists to satisfy Meta/Google app data-deletion-URL requirements and is orphaned for on-site visitors; deletion and DMCA requests terminate in an untracked mailto (no observable completion signal on our side). All legal pages are noindexed by design."
     },
     {
@@ -274,8 +274,8 @@
       "completion": "Consent cookie written (JSON {analytics, marketing}, 1-year expiry) and a 'cookie-consent' CustomEvent dispatched; GA4 receives a Consent Mode v2 update (ad_storage/ad_user_data/ad_personalization/analytics_storage granted or denied) and Meta Pixel sets or clears LDU dataProcessingOptions. Banner never re-appears until cookie expiry. Explicit prior choice is never overridden by the ad-traffic auto-grant.",
       "evidence": "components/CookieConsentBanner.tsx:17 cookie key, :46-50 setConsentState 1yr, :76-87 autoGrantConsentForAdTraffic, :104 component, :119-136 acceptAll/essentialOnly/savePreferences dispatching cookie-consent, :163-186 banner UI with /privacy + Do-Not-Sell links; components/site/providers/RootProvider.tsx:40-42 mount inside HideOnLP; app/layout.tsx:135 RootProvider wrap; components/GoogleAnalytics.tsx:47-60 gtag consent update; components/MetaPixel.tsx:38-50 LDU gating reading the consent cookie",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Split from the serve-legal hypothesis (2 of 3). Meta Pixel intentionally loads pre-consent on ALL traffic (LDU mode when marketing not granted) per MetaPixel.tsx docblock — the privacy page's Meta disclosure is the compliance counterweight; EU-style consent-before-fire is explicitly not implemented. GA4 loads always under Consent Mode v2 with denied defaults. Consent state is also consumed by PageViewTracker, VisitTracker, AdUnit, GTMHead (imports proven by grep this session)."
     },
     {
@@ -286,8 +286,8 @@
       "completion": "ListingAttribution block rendered with the courtesy line (listing firm), listing-participant contact (listContact prop), ODS logo, and reliability + non-commercial disclaimers; opted-out listings (permit_internet_yn=false, permit_address_internet_yn=false, idx_participant=false) never render, enforced in the detail DAL guard and public MV predicates. Statically enforced at commit time by ci:ods-compliance inside ci:gates.",
       "evidence": "components/listing/ListingAttribution.tsx:1-55 component + ODS §5-3 docblock and listContact prop; app/listing/[listingKey]/page.tsx:57 import, :427 mount; components/site/SiteFooter.tsx:156-163 ODS source/disclaimer/license caption; scripts/check-ods-compliance.mjs:41-56 attribution + mount + opt-out assertions, :57-80 MV predicate ratchet; package.json:96 ci:ods-compliance script, :230 present in ci:gates chain",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Split from the serve-legal hypothesis (3 of 3). Not a visitor journey — a per-render MACHINE compliance process riding inside listing-detail serving; listed separately because its failure mode (license/compliance risk) and enforcement mechanism (G54 gate) are independent of the static legal pages. Sold-data VOW restriction and 12-hour refresh (sync-delta in vercel.json) are asserted by the same gate per its header; those clauses were read in the gate script this session, not re-proven against vercel.json here."
     },
     {
@@ -298,8 +298,8 @@
       "completion": "The crawler fetches each emitted URL and receives an ISR-cached page carrying a canonical URL and schema.org JSON-LD (site-wide Organization/RealEstateAgent anchor plus per-surface Product/Offer/Place markup); observable done-state is the URL counted as indexed in Google Search Console per class sitemap (the explicit purpose of the class split) and, downstream, an organic or AI-cited human landing.",
       "evidence": "app/robots.ts:16-52 (crawler rules + sitemap pointer); next.config.ts:288 (beforeFiles rewrite /sitemap.xml → /sitemaps/index.xml); app/sitemaps/index.xml/route.ts:37-52 (sitemapindex, revalidate 3600); app/sitemaps/[cls]/route.ts:29,59-91 (per-class urlset, hourly ISR); app/sitemap.ts:68,85-562 (buildAllUrls URL universe, force-dynamic; unreachable fallback documented 44-64); app/api/cron/warm-sitemaps/route.ts:40-71 + vercel.json:244-247 (hourly in-process cache warmer, '0 * * * *'); app/llms.txt/route.ts:11,23-159 (dynamic AI-crawler map, same DAL sources as sitemap); app/layout.tsx:18,142 + components/JsonLd.tsx:1-13 (site-wide Organization JSON-LD); components/listing/ListingJsonLd.tsx:1-3 (per-listing Product/Offer/Place); app/listing/[listingKey]/page.tsx:140-166 (canonical path construction); app/page.tsx:45 (ISR revalidate; 72 pages export revalidate); package.json:26,216,230 (ci:sitemap-resolvable, ci:ai-crawler-access wired into ci:gates)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Confirmed as one process: sitemap classes, llms.txt, robots, canonicals, and JSON-LD all serve the same crawler-to-indexed-URL loop and share the same DAL sources (parity pinned by lib/data/subdivisions/subdivision-index.test.ts per app/llms.txt/route.ts:29-32). Dead/stale paths: scripts/seo-gsc-sitemap-submit.mjs submits Yoast/WordPress-era sitemap URLs (sitemap_index.xml, page-sitemap.xml, post-sitemap.xml) that do not exist on the Next site and is not wired to any npm script — stale one-shot; app/api/revalidate/route.ts is a legacy Inngest-era hook restricted to /sitemap.xml (inngest absent from package.json dependencies); app/sitemap.ts default export is an intentionally unreachable fallback, do not delete (app/sitemap.ts:60-64)."
     },
     {
@@ -310,8 +310,8 @@
       "completion": "One marketing_channel_daily row set per day upserted with Google Search Console clicks/impressions (source 'gsc_search_analytics_api'), idempotently corrected on later runs once GSC's 2-3 day processing delay clears; this is the scoreboard the growth loop and admin operations panel read.",
       "evidence": "vercel.json:221-222 (/api/cron/snapshot-channels '0 12 * * *'); app/api/cron/snapshot-channels/route.ts:25-27,55 ('gsc' in PLATFORMS, fan-out map); app/api/cron/marketing-snapshot-gsc/route.ts:1 (invoked-by fan-out header), :25 (getSearchConsoleSummary import), :36 (SOURCE='gsc_search_analytics_api'), :139 (requireCronAuth), :180 (per-day GSC pull)",
       "cadence": "daily",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Split from earn-search-traffic: materially divergent path — daily telemetry ingest writing DB rows, versus continuous crawler-serving. It observes the earn process's completion rather than participating in it; P3 may prefer to file it under a measurement/growth-loop process family. Related one-shot tooling read this run but not part of the cron path: app/actions/search-console-report.ts (imported by the ingestor), scripts/_gsc-index-check.mjs, scripts/measure-search-and-analytics.mjs (not verified as scheduled)."
     },
     {
@@ -322,8 +322,8 @@
       "completion": "Lead captured and routed, observable as: crm_people row created/enriched with canonical audience/tier/source/broker + paid channel:/campaign:/ad-content: tags (seller-home-value/actions.ts:486-505; fsbo/actions.ts:217; expired-listing/actions.ts:183; buyer-listing-alerts/actions.ts:289); instant CRM sequence auto-enroll with fail-closed SMS consent (seller actions.ts:604-609; lib/crm/enroll.ts:268-298); deliverable queued — seller LPs create public.cmas draft + marketing_brain_actions content:cma via createCmaRequest (seller actions.ts:611-629; fsbo actions.ts:320), buyer LP upserts deduped listing_alerts rows feeding the alert cron (buyer actions.ts:354-366); broker notified — 5-min hot-lead crm_tasks (seller actions.ts:580-589) + always-on Matt alert email (seller actions.ts:653-667); attribution mirrored server-side to Meta CAPI Lead $500 seller / $300 buyer with rr_fbc fallback (seller actions.ts:685-715, :699) and GA4 MP generate_lead (seller actions.ts:740-759). Partial done-state exists: anonymous visitor_events address row on step-1 advance before contact info (seller actions.ts:104-154).",
       "evidence": "app/lp/seller-home-value/page.tsx:29 noindex; app/lp/seller-home-value/page.tsx:51-81 ad-matched ?v= variants; app/lp/seller-home-value/actions.ts:290-308 referer-UTM capture into sourceUrl; app/lp/seller-home-value/actions.ts:376-400 Seller Inquiry sendEvent + campaign object; app/lp/seller-home-value/actions.ts:457 isHardStopped compliance gate; middleware.ts:370-384 fbclid→rr_fbc; components/AgentAttributionBridge.tsx:6-17 + app/actions/agent-attribution-read.ts:20-33 broker attribution; app/lp/sell-your-home/page.tsx:20,495 noindex + shared SellerLPForm variant list-now; app/lp/seller-home-value/SellerLPForm.tsx:143-170 partial capture + source switch; app/lp/fsbo/page.tsx:38 + app/lp/fsbo/actions.ts:217,301-302,320,380; app/lp/expired-listing/page.tsx:39 + app/lp/expired-listing/actions.ts:183,251,313; lib/expired-listing-processor.ts:188 outreach link; app/lp/buyer-listing-alerts/page.tsx:25 + actions.ts:289,336,354-366,375,387; app/lp/tetherow/page.tsx:63-80 canonical→/communities/tetherow, serves ad traffic; app/lp/tetherow/_components/TetherowMultiStepForm.tsx:111 POST /api/cma; app/api/cma/route.ts:1-38 capture handler; app/lp/tetherow/heath/actions.ts:16-29 heath CMA tag schema; app/sitemap.ts:142,144; scripts/meta-build-campaign-shells.mjs:59-67 seller-intent path list; scripts/_render-seller-ads-pattern-a.mjs:130 ads drive to seller LP; components/LandingPageTracker.tsx:34-93 view_landing_page + scroll depth; lib/crm/enroll.ts:268-298 autoEnrollByFubId",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "SPLIT from the 8-route hint: only seller-home-value, sell-your-home, fsbo, expired-listing, buyer-listing-alerts are capture LPs (all noindex; fsbo + buyer-listing-alerts explicitly removed from sitemap, app/sitemap.ts:144). Tetherow is dual-role — indexable with canonical pointed at /communities/tetherow to end keyword cannibalization while 'the LP still serves ad traffic' (page.tsx:66-71); its 5 forms POST /api/cma, a route that 404'd and silently dropped every Tetherow lead until 2026-05-31 (app/api/cma/route.ts:4-10 documents the incident). /lp/tetherow/heath is a NINTH LP missing from the hint (indexable, in sitemap, own CMA action, counted as seller-intent by the Meta audience builder). sell-your-home is not a separate contract — it reuses SellerLPForm/actions with source:list-now-lp + seller:listing-intent tag. Entry-channel nuance: expired-listing is primarily outreach-entry, buyer-listing-alerts primarily internal-entry (?source=bend-lp/golf-lp CTAs) — same capture contract either way. Downstream handoffs: seller completion feeds get-home-value (CMA spine), buyer completion feeds deliver-alerts (listing_alerts), and the whole tail (ensureNativeLead, tags, enroll, CAPI/GA4) is the shared machinery hypothesized as capture-and-attribute — P2 should define the boundary there rather than duplicating it."
     },
     {
@@ -334,8 +334,8 @@
       "completion": "Signature recorded; when the last signer finishes, advanceOrSeal seals the envelope and completion notices email a finished copy to every party",
       "evidence": "app/sign/[token]/page.tsx:1-59 (token-gated public signing page, waiting/completed/inactive states, renders SignFlow); app/actions/tc-sign.ts:13-19 (token IS the credential, sha256-hash stored, ordered routing, sealing + completion notices, ESIGN / Oregon UETA ORS ch. 84)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Pure public-visitor process (the signer is a client, not an admin) untouched by all 15 seeds. Distinct persona: a transaction party executing legal documents, not a lead."
     },
     {
@@ -346,8 +346,8 @@
       "completion": "Client-ready document rendered after the registration/consent gate; page_view + identity stitch logged to the visitor session and CRM; optional full-comps download minted via hashed token at /api/cma-document/<token>",
       "evidence": "app/cma/[slug]/route.ts:10-16,60-80 (unlisted client documents, publication gate finalized/delivered, registration+consent gate on entry); app/bpo/[slug]/route.ts:1-8,33-49 (client-safe by default, offer-strategy stripped, final-only for public); public/rr-doc-tracker.js:1-16 (injected tracker posts page_view + email-click identity for raw-HTML docs); app/api/cma-document/[token]/route.ts:1-16 (hashed-token full-analysis delivery, publish flag re-checked per request)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Consumption side of a broker-prepared valuation — distinct from the get-home-value LP funnel (which requests an estimate) and from plan-a-sale. The recipient is a known client/lead reading a private deliverable through a consent door."
     },
     {
@@ -358,8 +358,8 @@
       "completion": "Recipient receives the per-broker-rendered issue via Resend; engagement lands in the track ledger; unsubscribe is a POST-confirmed token page mirroring /alerts/unsubscribe",
       "evidence": "components/site/NewsletterSignup.tsx:4,10-16 (public footer signup posting to subscribeNewsletterAction); app/newsletter/unsubscribe/page.tsx:10-17,26-32 (token unsubscribe, POST-only so prefetch cannot opt out); app/api/cron/newsletter-send/route.ts:1-14 (send-drain cron: claims queued recipients tier-by-tier, re-checks suppression, renders per-broker, sends via Resend); vercel.json:141-165 (newsletter-monthly-draft daily 13:15, newsletter-reconcile hourly, newsletter-send */2 min, postmaster-sync daily); lib/newsletter/ (send-queue.ts, track-ledger.ts, pre-send-gates.ts, cohort-enrollment.ts, postmaster.ts)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Issue cadence is monthly; the machine side runs continuously (send drain every 2 min, reconcile hourly). Deliver-alerts covers saved-search/listing alerts — the newsletter is a separate subscription, engine, ledger, and unsubscribe surface."
     },
     {
@@ -370,8 +370,8 @@
       "completion": "email_open / email_click / sms_click rows land on the person's crm_timeline (+ newsletter track ledger); recipient is 302'd to the DB-stored target; ?_pid/?_fuid clicks stitch the visitor session to the crm_people row",
       "evidence": "app/api/track/e/open/route.ts:1-30 (1x1 gif pixel, logs email_open to crm_timeline + newsletter engagement); app/api/track/e/click/route.ts:12-16 (destination signed inside the token, no open redirect, logs email_click then 302); app/r/[code]/route.ts:1-33 (SMS short-link resolver + sms_click logging, bot-UA prefetches excluded, target from our DB only); app/api/track/e/identify/route.ts:1-19 (email-click identity backfill for raw-HTML client docs)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Machine process serving recipients of outbound sends. Possible partial overlap with the capture-and-attribute seed on the identity-stitch leg — but engagement measurement of outbound comms (opens/clicks feeding the CRM timeline) is a different loop from capturing/attributing inbound site arrivals. Flagging so the parent can merge the identify leg if its taxonomy puts identity bridging under capture-and-attribute."
     },
     {
@@ -382,8 +382,8 @@
       "completion": "Document requests that fail offline fall back to /offline; a visitor wedged on a pre-migration stale SW is reset server-side by GET /clear (Clear-Site-Data: cache+storage, cookies preserved) and redirected home",
       "evidence": "app/sw.ts:13-31 (Serwist config: precache, navigationPreload, runtimeCaching, /offline document fallback); app/clear/route.ts:4-16,31-38 (one-visit browser reset via Clear-Site-Data header, breaks the stale-SW catch-22 from the previous apex stack)",
       "cadence": "continuous",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Machine process running in every visitor's browser; no seed covers availability/recovery of the client shell itself."
     },
     {
@@ -394,8 +394,8 @@
       "completion": "Recruit starts the conversation via the Start-the-conversation / get-in-touch / call CTAs",
       "evidence": "app/join/page.tsx:1-32 (documented as 'Join page (/join) — broker recruiting'; CTA row Start the conversation / See how we market listings / Meet the brokers; FAQPage JSON-LD; revalidate 3600)",
       "cadence": "rare",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "KEEP",
       "notes": "Distinct visitor persona — a recruit evaluating the brokerage as a workplace, not a buyer/seller lead. contact-a-broker covers consumer contact, not recruitment."
     },
     {
@@ -406,8 +406,8 @@
       "completion": "Side-by-side feature table with best-in-class highlighting and a maps embed; visitor copies a shareable link or downloads a PDF",
       "evidence": "app/compare/page.tsx:1-45 (CompareClient: photo row, side-by-side feature Table, best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF; getListingTiles/getListingDetailPhotos DAL fetch; noindex, revalidate 60)",
       "cadence": "event-driven",
-      "status": "deepened",
-      "verdict": null,
+      "status": "locked",
+      "verdict": "MERGE->find-a-home",
       "notes": "Lower confidence on non-duplication, not on existence: in this repo 'place' means geography, so evaluate-a-place does not cover comparing specific homes; find-a-home (search/browse) may or may not subsume shortlist decision support + shareable artifact. Parent should merge into find-a-home if its definition is broad."
     }
   ],
