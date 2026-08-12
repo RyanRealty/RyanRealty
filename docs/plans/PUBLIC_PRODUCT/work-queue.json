@@ -1,7 +1,12 @@
 [
   {
-    "id": "registry-pass",
-    "phase": "P1",
-    "note": "Thin-stub every process from the constitution's seed catalog (15 hypotheses) + code/analytics discovery. Evidence pointers file:line proven in-session. Best-effort page-inventory.json process map over the 131 public routes (PUBLIC_SITE_UX_OVERHAUL/inventory/PAGE_LEDGER.json is valid route inventory — never its scores). Queue the deepen order by KPI relevance: get-home-value and explore-market-knowledge early."
+    "id": "p2-resume-verify",
+    "phase": "P2",
+    "note": "RESUME the workflow: Workflow({scriptPath:'/Users/matthewryan/.claude/projects/-Users-matthewryan-RyanRealty/c32d51d9-fdd3-4460-bfcd-ec76cfaf61db/workflows/scripts/public-product-p1-p2-wf_c8e7076c-d7d.js', resumeFromRunId:'wf_c8e7076c-d7d'}) after the session limit resets (19:30 PT 2026-08-11). Cached: registry+inventory+completed deepens. Live: 9 missing PDS (cookie-consent, ods-idx-attribution, join-the-brokerage, compare-homes, pwa-offline-resilience, view-client-valuation-doc, newsletter-lifecycle, track-outbound-engagement, sign-transaction-documents) + ALL 34 adversarial verifies + repairs. NOTE: deepen agents that wrote their PDS but died before returning (e.g. serve-legal-pages) will RE-RUN and overwrite their file — acceptable, file quality equal or better. If resuming from a NON-Claude harness: skip the workflow machinery, author the 9 missing PDS per the constitution schema, then verify each existing PDS per the verifier checklist (open 4 evidence pointers, 12 sections non-empty, dual objective present)."
+  },
+  {
+    "id": "p3-lock-package",
+    "phase": "P3",
+    "note": "After all 34 PDS verified: draft KEEP/MERGE/KILL/DEFER table + <=5 questions from PDS §11 proposals into p3-process-lock-package.md, set awaiting_lock=process, stop with BLOCKED_ON_MATT: process. Merge candidates flagged by agents: /videos vs /feed overlap; contact-form-inquiry vs broker-direct-call-text vs broker-attributed-lead trio; save-and-return splits; sms-shortlink-click (thin)."
   }
 ]

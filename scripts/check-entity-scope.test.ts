@@ -151,7 +151,9 @@ beforeEach(() => {
   seed()
 })
 
-describe('ci:entity-scope (G66)', () => {
+// Each case spawns the checker as a subprocess (test 9 spawns three); under
+// parallel-suite machine load the default 5s timeout flakes — seen twice 2026-08-11.
+describe('ci:entity-scope (G66)', { timeout: 30_000 }, () => {
   it('1. FAILS: a NEW dynamic page with no scope call', () => {
     writePage('people/[id]', NO_SCOPE)
     const r = run()
