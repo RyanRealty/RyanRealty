@@ -141,3 +141,24 @@ The IA in `ia-lock.md` is LOCKED. Matt's answers:
 set; motivated-sellers family confirmed as the losing side; LP rows reclassified from cut
 to noindex-off-graph). state.json: `locks.ia = 2026-08-11`, `awaiting_lock` cleared,
 phase → `P6_VISUAL`.
+
+## 2026-08-11 — P6 VISUAL LOCK — GRANTED BY MATT
+
+Matt judged the MOVING prototype live in production at
+`https://ryan-realty.com/dev/public-v3` (real Bend data, 390 and 1280, reduced-motion path)
+and granted the lock: "yes looks good on visual".
+
+LOCKED as the public visual language: `design_system/public/PUBLIC_UI.md` in full — the
+calm-instrument thesis, the externally-cited foundations, the **SIX closed section
+patterns** (Instrument · Field · Ledger · Stage · Sheet · Quiet) with the rhythm rule (no
+two adjacent sections share a pattern, no page uses more than four), the per-destination
+openings, the computed AA contrast table, the motion rule (movement must encode a state
+change; reduced motion resolves instantly), and the recorded amnesia test.
+
+The pattern set is CLOSED. A section that fits none of the six does not get an exception —
+the language changes by editing PUBLIC_UI.md, never by exempting a page.
+
+state.json: `locks.visual = 2026-08-11`, `awaiting_lock` cleared, phase → `P7_PRIMITIVES`.
+P7 builds `components/site/v3/` as the 1:1 pattern barrel (accessible name required in the
+type). The barrel is the pressure valve: a migration needing a control it lacks ADDS the
+primitive, never reaches back into kb/legacy/primitives/explore.

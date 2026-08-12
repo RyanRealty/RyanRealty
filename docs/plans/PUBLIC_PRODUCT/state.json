@@ -1,11 +1,12 @@
 {
-  "phase": "P6_VISUAL",
+  "phase": "P7_PRIMITIVES",
   "locks": {
     "process": "2026-08-11",
-    "ia": "2026-08-11"
+    "ia": "2026-08-11",
+    "visual": "2026-08-11"
   },
-  "awaiting_lock": "visual",
-  "current_process": "P6 package: design_system/public/PUBLIC_UI.md (6 closed patterns, AA table, amnesia test) + MOVING prototype at /dev/public-v3 verified on real data at 390 and 1280. Awaiting Matt visual lock.",
+  "awaiting_lock": null,
+  "current_process": "Visual locked on the live moving prototype. Next: build components/site/v3 barrel (six patterns 1:1 + atoms), then P8 litmus, then P9 roll with the ci:public-ui ratchet.",
   "plan_of_record": "docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md",
-  "updated_at": "2026-08-11T08:00:00Z"
+  "updated_at": "2026-08-11T09:00:00Z"
 }
