@@ -38,11 +38,22 @@ Path: `/homes-for-sale`.
 | DOM interactive | 435 ms |
 | Load complete | 3,243 ms |
 | Taps from arrival to the capture visible | 1 ("Save this search") |
-| Time from that tap to the email field visible | 924 ms |
+| Time from that tap to the email field visible | **8 ms** (re-measured, see the correction below) |
 | Fields before submit is armed | 1 (email) |
 
-**Read:** the save path is one tap to capture, which is right. The 924 ms between the tap
-and a usable field is the whole cost, and it is client work, not network.
+**Read:** the save path is one tap and the field is usable on the same tick. There is no
+cost to remove here. The weak part of L2 is the 3.2 s to load complete before that tap is
+possible at all.
+
+### Correction, same session
+
+The first pass recorded **924 ms** for the tap-to-field span. That number was an artifact
+of the measurement, not the product: the probe clicked, then waited a fixed 700 ms before
+looking, and reported the whole elapsed time. Re-measured by reading the field in the same
+tick as the click, the real figure is **8 ms**. The original number is struck rather than
+quietly overwritten, because a measurement that turned out to be wrong is exactly the
+class of thing this program refuses to let disappear (CLAUDE.md section 0 applies to our
+own instrumentation, not only to published stats).
 
 ## What these numbers are for
 
@@ -54,7 +65,10 @@ page does not need 23,000 px under it.
 ## Proposed targets for Matt's litmus sign-off
 
 - **L1:** load complete under 2.5 s at 390, the ask reachable with no scroll, still 2 taps.
-- **L2:** email field usable within 300 ms of the tap, still 1 tap to capture.
+- **L2:** hold the 1-tap capture and the same-tick field, and bring load complete under
+  2.5 s so the tap is available sooner. The original "field usable within 300 ms" target is
+  withdrawn: it was written against the wrong number and the product already beats it by
+  two orders of magnitude.
 
 Both are proposals from the measured baseline, not commitments. Matt sets the numbers.
 

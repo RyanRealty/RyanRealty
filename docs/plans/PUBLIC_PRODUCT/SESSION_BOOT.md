@@ -83,3 +83,8 @@ history in the order it happened; a phase named there is what was true THEN, not
   page work, not after.
 - **Concurrent tsc runs OOM and report clean.** Thirteen simultaneous typechecks produced
   an empty grep that read as a pass. A typecheck that was killed is not a typecheck.
+- **A probe that waits reports its own wait.** The first L2 litmus number, 924 ms from tap
+  to a usable field, was almost entirely a fixed 700 ms sleep inside the measurement. Read
+  the state in the same tick, or poll with rAF and report the frame you found it on. Never
+  publish an elapsed time that includes a delay you chose. Section 0 applies to our own
+  instrumentation, not only to stats we show visitors.
