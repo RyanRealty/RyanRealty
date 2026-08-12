@@ -58,7 +58,8 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A12 | **Identity hole.** Behavior joins `visitor_sessions` via `crm_person_id` / `fub_person_id` / email / `rr_vid`. A newsletter subscribe that never identifies the browser leaves browse history anonymous. | Loop D fails without stitch. | Newsletter signup must identify the session the same way seller LP + saved-search already do. |
 | A13 | **Worth-language vs SEO.** On-page CTA lock is "Value my home" / "Get my home's value." Search demand still uses "home worth." | Blunt rewrite of `<title>` can lose rankings. | CTA/headline/SMS = Value my home. Title/meta may keep demand language; call that out, do not silently smash SEO. |
 | A14 | **Assigned broker.** Copilot and visitor-escalate still smell Matt-only. Q4 lock: own book default, Matt sees all. | New-broker onboard fails if every ping is Matt's. | Route by `assigned_broker`. |
-| A15 | **Public Product OS is a parallel plane.** Buyer browse + newsletter live on the public site. Admin copilot lives in ADMIN_PRODUCT. | One prompt that edits both without a collision rule will fight the public OS. | Public copy/design = PUBLIC_PRODUCT. Admin copilot/queue = ADMIN_PRODUCT. Packets (CMA/newsletter HTML) are shared artifacts with one beauty bar. |
+| A15 | **A third public rebuild would kill the giant push.** Public Product OS is already at P9_ROLL: process/IA/visual locked 2026-08-11, v3 barrel shipped, `/housing-market` on v3, ratchet live. `experience-rollout` is superseded. | Starting "frontend UI wrap-up" as a new program repeats the last death (self-reported dones, competing destinations). | Loop E = grind that OS to zero legacy pages, then a standing refine forever. Do not invent OS #3. |
+| A16 | **Two sessions, one north star.** Public grind and broker-OS grind can run in parallel if they do not share files. | Mixed commits (11F inbox vs public v3 vs this plan) strand work. | Public session owns `app/` public routes + `components/site/v3` + `docs/plans/PUBLIC_PRODUCT/`. Broker session owns admin + packets + TC + this file. Voice/beauty/valuation language is shared law. |
 
 **Verdict:** The brief is right. The failure mode is either boiling the ocean
 **or** protecting yesterday's code. Sequence the loops. Keep only the machines
@@ -83,6 +84,14 @@ Expired and FSBO are people we know are selling. First **message** and first **d
 ### Loop D — Buyers (newsletter + site behavior)
 
 Buyer leads come in when people sign up for the newsletter (named door). Newsletter is its own curated process — designer's eye, nothing ships that does not blow them away. In the back we see exactly what they looked at: homes, searches created, browse, scroll, clicks, learned-more. Copilot: "So-and-so is looking at this home." Matt: send a packet, or ask if they want one. Easy.
+
+### Loop E — Public site (the face, then forever refine)
+
+The public pages are the same product. They are how buyers browse, how sellers tap **Value my home** / **Get my home's value**, how newsletter and alerts come back, how the copilot knows which home they were on.
+
+**Wrap the new UI once, then never stop improving.** That machine already exists: Public Product OS (`docs/plans/PUBLIC_PRODUCT/`), phase `P9_ROLL`, visual language locked (six v3 patterns), first family shipped (`/housing-market`). The giant incremental push is not a new redesign. It is grinding that roll until every public page is on `components/site/v3`, then a standing refine loop on the whole site forever.
+
+Implementation amnesia applies: locked destinations (Homes, Places, Market, Sell, Saved, About) name the jobs. A page that is on v3 and still clunky gets refined, not protected. A page still on KB/legacy gets migrated, not polished in the old register.
 
 ### Voice lock — valuation
 
@@ -252,9 +261,64 @@ Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home
 | **A2** Yes → send one SMS | Timeline `sms_out`, suppression held, sequence paused | Matt yes on that send |
 | **C1** One expired blow-away packet | Message + PDF on a real expired in-scope listing, manual send, no generic services hero | Matt review of packet |
 | **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
-| **B1** One form packet | OREF from `tc_form_versions` filled from a test deal, emailed to Matt, sealed, filed | D2; SkySlope session if blanks need refresh; live e2e to Matt email |
+| **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0 | Separate from A–D. Do not mix file sets. |
 
 Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
+
+---
+
+## 7b. Giant incremental push — how to run Loop E (Matt 2026-08-12)
+
+This is the operating model so "do the whole frontend" does not become a third program.
+
+**What "wrap up the new UI" means, honestly:** the new UI is already locked
+(`design_system/public/PUBLIC_UI.md`, `components/site/v3/`). Wrapping up =
+every public route renders in that language. That is P9. After P9, you do not
+design a new UI. You refine inside it (or reopen the visual lock if the
+language itself is wrong — amnesia allows that; a new OS does not).
+
+**The giant push, now:**
+
+1. Open a **dedicated** session. First line: `run public product` (or
+   `continue public OS`). That loads `.claude/skills/public-product-os/SKILL.md`
+   and `docs/plans/PUBLIC_PRODUCT/SESSION_BOOT.md`.
+2. Orient from disk. Trust `state.json.phase` (today: `P9_ROLL`). Print the
+   top `work-queue.json` id before touching code.
+3. **One family per unit, ratchet must shrink, one commit, push, deploy
+   READY, browser 390 + 1280.** Gate contracts for that route move in the
+   **same** change (the lesson that reverted the first Market attempt).
+4. **Leverage order (verify queue vs disk each session):** chrome unit
+   unblocks the most pages (KB chrome was most of the ratchet). Then Market
+   remainder → Places → Homes/listing → Sell + valuation spine → About/trust
+   → residual. Listing detail is the money page — extra care, every CTA and
+   JSON-LD stays. LPs last, noindex, explicit approval.
+5. Keep grinding until `ci:public-ui` legacy pages → 0 and P9 DoD is met.
+   Then P10 (remaining gates). Then stop calling it a rollout.
+
+**Forever refine (after the wrap):**
+
+Every later session that touches a public page runs the same four questions
+(best / simple / clear / e2e) plus beauty plus dual objectives (visitor +
+machine + exits). One defect class or one family per unit. Measure completed
+valuations week over week, not vibes. Never open "Public Product OS 2."
+
+**Parallelism:** a second session may grind broker OS (A–D) at the same time.
+Do not mix commits. Public session does not edit `app/admin`. Broker session
+does not migrate public families. Shared law: voice, Value my home, beauty
+bar, visitor identity stitch.
+
+**What you say to start the giant push:**
+
+```
+run public product. Grind P9 until every public family is on v3. One family
+per commit, ratchet shrinks, gate contracts move in the same change, browser
+390 and 1280, deploy READY. Chrome leverage first if the queue still says
+so — verify disk. Implementation amnesia: do not polish KB/legacy; migrate
+or cut. Beauty bar: if it would not make them want to see what we're about,
+it is not done. Stop only for a Matt lock, empty P9 queue, or a real blocker.
+When P9 is empty, do P10, then the standing refine loop in
+docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loop E.
+```
 
 ---
 
@@ -262,7 +326,9 @@ Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," 
 
 - No product code in the planning pass unless Matt says go.
 - Dirty `app/admin/**/crm/inbox/**` from 11F: inventory, do not edit.
-- Public CTA/copy: PUBLIC_PRODUCT OS. Admin queue: ADMIN_PRODUCT.
+- **Loop E** lives in `docs/plans/PUBLIC_PRODUCT/` and `.claude/skills/public-product-os`.
+  Do not start a third public rebuild. `experience-rollout` is superseded.
+- Public CTA/copy/migrations: PUBLIC_PRODUCT session. Admin queue/packets/TC: this plan.
 - Path:line or it is not a finding. The **right loop** wins vs stale docs *and*
   vs current code. Code is evidence of what we tried, not a freeze.
 - Law is data (`TC_OREGON_COMPLIANCE.md`).
@@ -289,7 +355,7 @@ already the simple machine, replace what is in the way. "We already have it"
 is not a veto. Still inviolable: draft-first, suppression, no invented
 numbers, no prior-agent blame, licensed forms, SkySlope is not the SoR.
 
-NORTH STAR — four loops, one person record
+NORTH STAR — five loops, one person record
   A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
   B Closings: licensed forms → fill from deal → send → file. SkySlope is live baseline
     (browser+API, read-only). In-house should become the file we actually use. Soon.
@@ -298,6 +364,9 @@ NORTH STAR — four loops, one person record
   D Buyers: newsletter is the named capture and a curated, beautiful edition.
     Back office sees every home they viewed, searches they saved, browse/scroll/click.
     Copilot: "So-and-so is looking at this home" → send or ask to send a packet.
+  E Public site: wrap the locked v3 UI across every public page (Public Product OS
+    P9 grind), then forever refine. Do not start a third redesign. Giant push =
+    `run public product` in a dedicated session until legacy pages hit zero.
 
 VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
 BEAUTY: if it would not make them want to see what we're about, it does not send.
@@ -308,7 +377,7 @@ disk, then the skills that match the loop you are scoring.
 
 Score every locked process: best / simple / clear / e2e — on the job, then
 say whether the current how should be kept or replaced.
-Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1.
+Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1.
 Stop for Matt on D1–D5 in the plan. Then wait.
 ```
 
@@ -318,3 +387,4 @@ Stop for Matt on D1–D5 in the plan. Then wait.
 
 - 2026-08-12 — v0 written from Matt's stacked brief + adversarial pass + disk evidence already in ADMIN_PRODUCT / visitor track / newsletter / prospecting / TC. No live recount of `tc_envelopes` this pass (cite July 2026 audit; re-count before B1).
 - 2026-08-12 — v0.1 implementation amnesia (Matt): existing code/process must not block the right, efficient loop. "Do not rebuild" demoted from freeze to quarry test. A5 rewritten. Paste prompt updated.
+- 2026-08-12 — v0.2 Loop E: public site joins the OS. Giant incremental push = grind existing Public Product OS P9 (do not start OS #3), then standing refine forever. How-to in §7b.
