@@ -40,7 +40,7 @@ import { SellValueProps } from '@/components/site/sell/SellValueProps'
 import { SellerSituations } from '@/components/site/sell/SellerSituations.client'
 import { SellProcess } from '@/components/site/sell/SellProcess'
 import { SellProof } from '@/components/site/sell/SellProof'
-import { SellMarketingPlan } from '@/components/site/sell/SellMarketingPlan'
+import { SellPlanSingle } from '@/components/site/sell/SellPlanSingle'
 import { SellCommission } from '@/components/site/sell/SellCommission'
 import { SellValuationCTA } from '@/components/site/sell/SellValuationCTA'
 import { SellMarketContext } from '@/components/site/sell/SellMarketContext'
@@ -67,7 +67,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Sell Your Home in Central Oregon',
     description:
-      'List your Central Oregon home with Ryan Realty. The fee is 2.5% to 3.5% of the sale price, photos within 48 hours of signing, and a written report every week it is listed.',
+      'List your Central Oregon home with Ryan Realty. The listing fee is 3% of the sale price, photos within 48 hours of signing, and a written report every week it is listed.',
     path: ROUTE_PATH,
     ogImage: '/images/homepage/tetherow-golf-aerial.jpg',
     keywords: [
@@ -88,7 +88,7 @@ const FAQ_ITEMS = [
   {
     question: 'What does it cost to list with you?',
     answer:
-      'Three plans: Essential at 2.5%, Enhanced at 3%, and Elite at 3.5% of the sale price, with no add-on fees. Every plan lists on the MLS, includes professional photography, a 3D tour, every showing, and transaction management through close. The higher tiers add marketing reach: drone video, paid social, professional staging, and a pre-listing inspection. Buyer-agent compensation is a separate number, negotiated per offer under the current rules. Commission is negotiable and every listing agreement is its own conversation.',
+      'The listing fee is 3% of the sale price, with no add-on fees. It covers the MLS listing, professional photography, a 3D tour, the marketing plan, every showing, and transaction management through close. Buyer-agent compensation is a separate number, negotiated per offer under the current rules.',
   },
   {
     question: 'How do you decide on a list price?',
@@ -201,7 +201,7 @@ export default async function SellPage() {
           titleTop="Sell your home in"
           titleBottom="Central Oregon"
           statless
-          lead="The listing fee is 2.5% to 3.5% of the sale price, nothing billed on the side. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week."
+          lead="The listing fee is 3% of the sale price, nothing billed on the side. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week."
           showSearch={false}
           formSlot={
             <>
@@ -236,7 +236,7 @@ export default async function SellPage() {
 
         <SellProcess />
 
-        <SellMarketingPlan />
+        <SellPlanSingle valuationHref={FORM_ANCHOR} />
 
         <SellCommission />
 

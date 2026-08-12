@@ -182,7 +182,7 @@ export default function SellValuationPage() {
               If you decide to list
             </H2>
             <Body size="default" tone="on-photo" className="mt-4 leading-relaxed">
-              The listing fee is 2.5% to 3.5% of the sale price. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week.
+              The listing fee is 3% of the sale price. Photos in 48 hours, on the MLS in 5 to 7 business days, and a written report every week.
             </Body>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <CTAButton href="/sell" tone={'on-navy'} size="lg">

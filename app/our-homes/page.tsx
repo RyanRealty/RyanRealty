@@ -220,7 +220,7 @@ export default async function OurHomesPage() {
             </div>
             <div className="max-w-2xl pt-6">
               <p style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', lineHeight: 1.55 }}>
-                The listing fee is 2.5% to 3.5% of the sale price. You get a CMA with the comps
+                The listing fee is 3% of the sale price. You get a CMA with the comps
                 behind the price, professional photo and video, and one broker from listing to close.
               </p>
               <div className="sec-cta">

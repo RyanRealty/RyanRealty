@@ -1,19 +1,18 @@
 /**
- * SellCommission — the straight-up commission conversation for /sell.
+ * SellCommission — the fee conversation for /sell.
  *
- * POSITIONING (Matt, 2026-07-11): 3% is the headline (the Enhanced plan). A
- * seller can trim to 2.5% (Essential) for less reach or move to 3.5% (Elite)
- * for the full push. Buyer-agent compensation is a separate, negotiated number.
- * Commission is negotiable and every listing agreement is its own conversation.
+ * POSITIONING (Matt, locked in docs/plans/PUBLIC_PRODUCT/decisions.md): ONE plan is
+ * marketed, at 3% of the sale price, with a comprehensive feature list. The 2.5%
+ * Essential and 3.5% Elite tiers are OFF the public site, the comparison matrix is
+ * dead, and the page stays silent on negotiability. Buyer-agent compensation remains a
+ * separate, negotiated number.
  *
- * VOICE (VOICE.md): direct, specific, no pressure, no adjectives doing the work
- * of a number. No banned words, no em-dash, no semicolons. Design-token colors
- * only. Server-renderable. No hard numbers fabricated.
+ * VOICE (VOICE.md): direct, specific, no pressure, no adjectives doing the work of a
+ * number. Design-token colors only. Server-renderable. No fabricated figures.
  */
 
 import {
   Body,
-  Caption,
   Container,
   Eyebrow,
   H2,
@@ -29,19 +28,14 @@ export function SellCommission() {
           <Stack gap="loose">
             <Stack gap="tight">
               <Eyebrow>How the fee works</Eyebrow>
-              <H2>The listing fee is 2.5%, 3%, or 3.5% of the sale price.</H2>
+              <H2>The listing fee is 3% of the sale price.</H2>
             </Stack>
             <Stack gap="default">
               <Body size="default" tone="muted" className="leading-relaxed">
-                The 3% fee covers professional photography, the MLS listing, the
-                full marketing plan, every showing, and transaction management
-                from contract to close. Nothing is billed on the side, and it is
-                the same percentage on a $400,000 home and a $4 million one.
-              </Body>
-              <Body size="default" tone="muted" className="leading-relaxed">
-                Essential is 2.5% and keeps the same spine with less reach.
-                Elite is 3.5% and adds a pre-listing inspection, a professional
-                stager, paid social, and a placement in Bend Magazine.
+                It covers professional photography, the MLS listing, the full
+                marketing plan, every showing, and transaction management from
+                contract to close. Nothing is billed on the side, and it is the
+                same percentage on a $400,000 home and a $4 million one.
               </Body>
               <Body size="default" tone="muted" className="leading-relaxed">
                 Buyer-agent compensation is a separate number, negotiated per
@@ -55,16 +49,13 @@ export function SellCommission() {
                 by email and then stop.
               </Body>
             </Stack>
-            <Caption className="text-muted-foreground">
-              Commission is negotiable. Every listing agreement is its own conversation.
-            </Caption>
           </Stack>
 
           <div className="flex flex-col gap-4">
             {[
               {
-                heading: 'What changes between the tiers',
-                body: 'Essential 2.5%, Enhanced 3%, Elite 3.5%. Every tier lists on the MLS, gets professional photos and a 3D tour, and closes with one broker. Only the marketing reach changes.',
+                heading: 'What the fee includes',
+                body: 'Professional photography, a 3D tour, the MLS listing and every syndicated feed, the marketing plan, open houses, all showings, and transaction management through closing.',
               },
               {
                 heading: 'Buyer-agent compensation, explained',
