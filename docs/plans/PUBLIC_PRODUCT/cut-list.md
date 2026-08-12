@@ -60,3 +60,18 @@ Two kinds of cut: **route cuts** (the URL dies -> 301) and **surface cuts** (the
 ## Lock line
 
 When Matt locks: record answers in decisions.md, set state.json.locks.ia, clear awaiting_lock, FREEZE this file, advance phase to P6_VISUAL.
+
+---
+
+## FROZEN 2026-08-11 (Matt IA lock) — amendments applied
+
+- **`/tools/appreciation` REMOVED from the cut set** — keeps standing as a real page
+  (608 impressions / 90d). The other two calculators lose standalone pages and 301 into
+  their in-context homes.
+- **Deal signals: `/price-drops` is the survivor.** `/motivated-sellers` + its 10 city
+  URLs are confirmed route cuts, each 301ing to the matching price-drops URL.
+- **`/lp/*` reclassified: NOT cut — noindex, off the organic graph.** They remain live as
+  paid-arrival surfaces; city/community nodes own the keywords. Applies to every LP,
+  including the Tetherow pair, `/lp/bend`, and `/lp/central-oregon-golf`.
+
+This file is now FROZEN. Never resurrect a cut item during P9 rolls.

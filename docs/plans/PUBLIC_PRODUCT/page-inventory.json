@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-08-11T06:00:00Z",
-  "note": "P5 draft ledger: destination + visitor_objective + machine_objective + exits per route (7 family agents); cut candidates carry GSC 90d evidence (live Search Console API via service account). BINDS at IA lock only.",
+  "updated_at": "2026-08-11T07:00:00Z",
+  "note": "P5 LOCKED ledger (Matt IA lock 2026-08-11): destination + visitor_objective + machine_objective + exits per route. Amendments applied: /tools/appreciation kept standing; all /lp/* reclassified SYSTEM-noindex (not cut).",
   "routes": {
     "/": {
       "process": "find-a-home",
@@ -1181,7 +1181,7 @@
     "/lp/bend": {
       "process": "arrive-from-ad",
       "file": "app/lp/bend/page.tsx",
-      "destination": "places",
+      "destination": "SYSTEM",
       "visitor_objective": "Understand living and buying in Bend and claim help from a local broker.",
       "machine_objective": "Turn organic/paid Bend interest into an attributed lead by serving real place knowledge with capture embedded.",
       "exits": [
@@ -1189,8 +1189,7 @@
         "/homes-for-sale",
         "/contact"
       ],
-      "cut_candidate": true,
-      "cut_reason": "Dual-role indexable LP competing with the canonical Bend city node (/cities/bend) — arrive-from-ad PDS §11 says arrival surfaces are channel-owned and off-graph; indexable dual-role pages are how the Tetherow cannibalization defect happened. Fold capture into the places node. HAS sitemap presence — GSC equity pull required before any 301.",
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords.",
       "gsc_90d": {
         "clicks": 0,
         "impressions": 2,
@@ -1207,12 +1206,13 @@
         "/listing/[listingKey]",
         "/homes-for-sale",
         "/account/saved-searches"
-      ]
+      ],
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords."
     },
     "/lp/central-oregon-golf": {
       "process": "arrive-from-ad",
       "file": "app/lp/central-oregon-golf/page.tsx",
-      "destination": "places",
+      "destination": "SYSTEM",
       "visitor_objective": "Explore Central Oregon golf-community living and get matched to golf-course homes.",
       "machine_objective": "Convert golf-lifestyle interest into an attributed lead by serving the golf place content with capture embedded.",
       "exits": [
@@ -1220,8 +1220,7 @@
         "/communities/[slug]",
         "/homes-for-sale"
       ],
-      "cut_candidate": true,
-      "cut_reason": "Indexable dual-role LP overlapping the places golf content family (/central-oregon/golf/*) — same pick-a-side rule as the Tetherow pair. In the sitemap, so plausible SEO equity — GSC evidence pull required before folding/301.",
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords.",
       "gsc_90d": {
         "clicks": 0,
         "impressions": 59,
@@ -1238,7 +1237,8 @@
         "/cma/[slug]",
         "/housing-market/[...slug]",
         "/contact"
-      ]
+      ],
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords."
     },
     "/lp/fsbo": {
       "process": "arrive-from-ad",
@@ -1250,7 +1250,8 @@
         "/cma/[slug]",
         "/housing-market/[...slug]",
         "/contact"
-      ]
+      ],
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords."
     },
     "/lp/sell-your-home": {
       "process": "arrive-from-ad",
@@ -1262,7 +1263,8 @@
         "/cma/[slug]",
         "/sell",
         "/contact"
-      ]
+      ],
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords."
     },
     "/lp/seller-home-value": {
       "process": "arrive-from-ad",
@@ -1274,12 +1276,13 @@
         "/cma/[slug]",
         "/housing-market/[...slug]",
         "/contact"
-      ]
+      ],
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords."
     },
     "/lp/tetherow": {
       "process": "arrive-from-ad",
       "file": "app/lp/tetherow/page.tsx",
-      "destination": "places",
+      "destination": "SYSTEM",
       "visitor_objective": "Evaluate Tetherow as a community and see its homes.",
       "machine_objective": "Convert Tetherow interest into an attributed lead via the canonical community node with capture embedded.",
       "exits": [
@@ -1287,8 +1290,7 @@
         "/homes-for-sale",
         "/contact"
       ],
-      "cut_candidate": true,
-      "cut_reason": "The page already declares rel=canonical to /communities/tetherow — the dual-role that produced the documented cannibalization defect. PDS §11: must pick a side; the community node wins. 301 to /communities/tetherow; GSC pull confirms equity transfers cleanly.",
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords.",
       "gsc_90d": {
         "clicks": 1,
         "impressions": 146,
@@ -1298,7 +1300,7 @@
     "/lp/tetherow/heath": {
       "process": "arrive-from-ad",
       "file": "app/lp/tetherow/heath/page.tsx",
-      "destination": "places",
+      "destination": "SYSTEM",
       "visitor_objective": "Evaluate the Heath enclave inside Tetherow and request pricing on it.",
       "machine_objective": "Convert micro-neighborhood interest into an attributed lead via the subdivision place node with CMA capture embedded.",
       "exits": [
@@ -1306,8 +1308,7 @@
         "/subdivisions/[slug]",
         "/cma/[slug]"
       ],
-      "cut_candidate": true,
-      "cut_reason": "Second half of the indexable Tetherow dual-role pair (in sitemap per PDS acceptance check 1). Fold into the places subdivision/community tier with capture embedded. Indexable, so GSC equity pull required before 301.",
+      "cut_reason": "NOINDEX off-graph paid-arrival surface (Matt IA lock 2026-08-11) — not cut, removed from the organic graph; city/community nodes own the keywords.",
       "gsc_90d": {
         "clicks": 0,
         "impressions": 2,
@@ -1938,7 +1939,7 @@
     "/tools/appreciation": {
       "process": "get-home-value",
       "file": "app/tools/appreciation/page.tsx",
-      "destination": "sell",
+      "destination": "market",
       "visitor_objective": "Project what a home could be worth after a chosen hold period and appreciation rate — instant math with local defaults, no capture gate, no appraisal pretense.",
       "machine_objective": "Mark the visitor's owner-segment financial seriousness in the intent trail and hand them into the valuation spine the moment the hold math makes a real valuation the obvious next step.",
       "exits": [
@@ -1946,8 +1947,7 @@
         "/tools/mortgage-calculator",
         "/homes-for-sale"
       ],
-      "cut_candidate": true,
-      "cut_reason": "run-the-numbers §11: no standalone Tools destination — the hold-math calculator is a utility node attached to the valuation spine, embeddable in context. The standalone URL survives only as the SEO/answer-engine door (sitemapped, canonical, WebApplication JSON-LD): GSC usage + equity pull is mandatory before any re-home, and any move gets a 301. Also fix its intent classification — today this tool's use is invisible to the CRM segment signal (run-the-numbers §10 defect 1).",
+      "cut_reason": "KEPT STANDING (Matt IA lock 2026-08-11): 608 impressions/90d earns its own page; the other two calculators dissolve into context.",
       "gsc_90d": {
         "clicks": 2,
         "impressions": 608,

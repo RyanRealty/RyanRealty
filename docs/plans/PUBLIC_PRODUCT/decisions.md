@@ -117,3 +117,27 @@ Matt's answers to the package questions:
 
 All 28 KEEP verdicts from p3-process-lock-package.md are locked as recorded there.
 state.json: locks.process = 2026-08-11, awaiting_lock cleared, phase → P4_DATA.
+
+## 2026-08-11 — P5 IA LOCK — GRANTED BY MATT (in-session structured answers)
+
+The IA in `ia-lock.md` is LOCKED. Matt's answers:
+
+1. **Destinations: all six names approved as proposed** — top bar **Homes · Places ·
+   Market · Sell · About**, with **Saved** as the account affordance (not a nav word).
+   Places (not Areas) is locked: the job is evaluating a place.
+2. **Folds approved:** `/buy` + `/buy/[intent]` fold into **Homes** as the buyer-education
+   layer (zero organic equity). The `/tools` calculators dissolve into context — payment
+   math on listings, underwrite on the investor lens, hold math on the valuation spine —
+   **with one amendment: `/tools/appreciation` KEEPS STANDING as a real page** (608
+   impressions / 90d). The other two calculators lose their standalone pages and 301.
+3. **Deal signals: `/price-drops` is the survivor.** `/motivated-sellers` and its 10 city
+   URLs 301 into the matching price-drops URLs (buyer-framed URL for a buyer job). The
+   "Sell on a deadline" nav label re-homes to the Sell destination regardless.
+4. **Ad LPs: noindex all of them.** `/lp/*` become pure paid-arrival surfaces off the
+   organic graph; city and community nodes own their keywords. Ends the Tetherow, Bend,
+   and golf dual-role cannibalization.
+
+`cut-list.md` is FROZEN with these amendments applied (appreciation removed from the cut
+set; motivated-sellers family confirmed as the losing side; LP rows reclassified from cut
+to noindex-off-graph). state.json: `locks.ia = 2026-08-11`, `awaiting_lock` cleared,
+phase → `P6_VISUAL`.

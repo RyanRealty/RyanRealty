@@ -1,10 +1,11 @@
 {
-  "phase": "P5_IA",
+  "phase": "P6_VISUAL",
   "locks": {
-    "process": "2026-08-11"
+    "process": "2026-08-11",
+    "ia": "2026-08-11"
   },
-  "awaiting_lock": "ia",
-  "current_process": "P5 package complete: ia-lock.md (6 destinations, continuity spec, amnesia test) + cut-list.md (GSC-evidenced) + 142-route dual-objective ledger. Awaiting Matt IA lock.",
+  "awaiting_lock": null,
+  "current_process": "IA locked (6 destinations; /buy folds; calculators dissolve except /tools/appreciation; price-drops survives; all LPs noindex). Next: P6 visual — closed pattern set + MOVING prototype.",
   "plan_of_record": "docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md",
-  "updated_at": "2026-08-11T06:00:00Z"
+  "updated_at": "2026-08-11T07:00:00Z"
 }

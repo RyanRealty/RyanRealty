@@ -1,7 +1,7 @@
 [
   {
-    "id": "p5-ia-package",
-    "phase": "P5",
-    "note": "Derive destinations from the 28 locked processes (PDS §11 destination implications) under amnesia — names from jobs, zero inheritance of current nav/routes. Complete page-inventory.json: every route -> destination + visitor_objective + machine_objective + exits (or CUT/SYSTEM). Cut-list with route vs surface cuts + Explicitly-NOT-cut. GSC evidence pulled per cut/rename candidate (service-account read; 301 plan mandatory). Continuity spec: which context persists across which edges (founding directive 5). Then ia-lock.md + <=5 questions, awaiting_lock=ia, stop BLOCKED_ON_MATT: ia."
+    "id": "p6-visual-package",
+    "phase": "P6",
+    "note": "Write design_system/public/PUBLIC_UI.md: CLOSED section-pattern set (>=3 floor, target 5-8) each mapped to a destination job + computed AA contrast table + recorded amnesia test + craft scorecard. Then build the MOVING in-repo prototype (real components, GSAP+Lenis already in repo, owned video) at 390 AND 1280 with a reduced-motion path that still sells. Static mockups are a HARD REFUSE. Then awaiting_lock=visual, stop BLOCKED_ON_MATT: visual."
   }
 ]
