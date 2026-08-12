@@ -56,7 +56,7 @@ place-grain page. Precondition: none — every grain is publicly reachable, no a
    (`lib/data/geo/resolvePlaceContext.ts:17-25`).
 3. **Direct/typed** — stable, guessable URLs per grain (below).
 
-**Entry routes (the six grains + two indices):**
+**Entry routes (the six grains + three indices):**
 
 | Grain | Route | Resolution | Evidence |
 |---|---|---|---|

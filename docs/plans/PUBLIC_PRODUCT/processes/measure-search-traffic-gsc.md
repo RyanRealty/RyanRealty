@@ -17,7 +17,8 @@
   this as the observing twin), not among visitor journeys. Proposal only; the verdict locks
   at P3 in `decisions.md`.
 - Last evidence pass: **2026-08-11** (every file:line below opened this session; every number
-  below queried live this session)
+  below queried live this session); §12 checks 4/9 re-anchored and re-verified live
+  **2026-08-12 03:22 UTC, pre-fire**
 
 ## 1. Purpose
 
@@ -375,6 +376,16 @@ D3 (two absent days) — all enumerated with evidence in §10.
 
 Persist; never delete. Checks 8–9 FAIL today by design — they encode D1/D3 until fixed.
 
+**Timing rule for the SQL checks:** window-shaped checks anchor on the newest ingested day
+(`max(date)`), never on `current_date`. Between UTC midnight and the 12:00 UTC fire,
+`current_date-2` names a day the cron has not yet ingested, so a `current_date`-anchored
+window false-fails a healthy system for ~12 h every day — reproduced live 2026-08-12
+03:22 UTC (pre-fire): the old check 4 read 28 rows / 6,876 impressions / 91 clicks (the 4
+missing rows being exactly the un-ingested rotated-in day), and the old check 9 reported the
+not-yet-ingested day as a spurious third gap. Anchoring on `max(date)` makes these checks
+pass at any hour; freshness is deliberately NOT their job — check 10 (`snapshot:gsc` grades
+stale at 30 h/72 h) and the `fetched_at` trace in §7 carry it.
+
 1. **Cron registered + marker honored:**
    `grep -A1 '"/api/cron/snapshot-channels"' vercel.json` → schedule `0 12 * * *`;
    `head -1 app/api/cron/marketing-snapshot-gsc/route.ts` → `cron: invoked-by` marker;
@@ -385,14 +396,21 @@ Persist; never delete. Checks 8–9 FAIL today by design — they encode D1/D3 u
 3. **Manual run completes clean:**
    `curl -s -H "Authorization: Bearer $CRON_SECRET" https://ryan-realty.com/api/cron/marketing-snapshot-gsc | jq '{channel, rowsUpserted, errors}'`
    → `channel: "gsc"`, `rowsUpserted > 0`, `errors: []`.
-4. **Settled window is present and nonzero** (passed live 2026-08-11: 32 rows / 8,031 / 104):
+4. **Settled window is present and nonzero** (passed live 2026-08-11 post-fire AND 2026-08-12
+   03:22 UTC pre-fire: anchor 2026-08-09, 32 rows / 8,031 / 104 both times):
    ```sql
+   with anchor as (
+     select max(date) as d from marketing_channel_daily
+     where channel='gsc' and scope='account'
+   )
    select count(*) as rows_8d,
           sum(value) filter (where metric='impressions') as impressions_sum
-   from marketing_channel_daily
+   from marketing_channel_daily, anchor
    where channel='gsc' and scope='account'
-     and date between current_date-9 and current_date-2;
+     and date between anchor.d - 7 and anchor.d;
    -- expect rows_8d = 32 (8 days x 4 metrics) and impressions_sum > 0
+   -- (anchored on max(date), not current_date — see the §12 timing rule; a stale anchor
+   --  is check 10's catch, not this check's)
    ```
 5. **Query and page slices alive:**
    ```sql
@@ -414,9 +432,14 @@ Persist; never delete. Checks 8–9 FAIL today by design — they encode D1/D3 u
 8. **Reader contract (FAILS today — D1; flips green when the shape mismatch is fixed):**
    `curl -s -H "Authorization: Bearer $CRON_SECRET" 'https://ryan-realty.com/api/marketing-brain/audit/website' | jq '.seo.top_queries | length'`
    → must be `> 0` for any window where check 5 passes.
-9. **No gap days (FAILS today — D3: 2026-05-20, 2026-05-22; green after one backfill call):**
+9. **No gap days (FAILS today — D3: 2026-05-20, 2026-05-22; green after one backfill call.**
+   Verified 2026-08-12 03:22 UTC pre-fire: the anchored form below returns exactly those two
+   days — the `current_date-2` series end it replaces added a spurious third):
    ```sql
-   with days as (select generate_series(date '2026-02-13', current_date-2, interval '1 day')::date d)
+   with anchor as (select max(date) as mx from marketing_channel_daily
+                   where channel='gsc' and scope='account'),
+        days as (select generate_series(date '2026-02-13', anchor.mx, interval '1 day')::date d
+                 from anchor)
    select d from days left join (select distinct date from marketing_channel_daily
      where channel='gsc' and scope='account' and metric='impressions') t on t.date=days.d
    where t.date is null;  -- expect zero rows

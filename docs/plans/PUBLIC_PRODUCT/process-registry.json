@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-08-11T02:00:00Z",
-  "note": "P1 complete. P2 partial (session usage limit 2026-08-11, resets 19:30 PT): status deepened = PDS on disk but ADVERSARIAL VERIFY STILL PENDING for all — do not treat as verified; in_deepening = PDS not yet written. Verdicts are P3 — none locked.",
+  "updated_at": "2026-08-11T03:30:00Z",
+  "note": "P1+P2 COMPLETE. All 34 PDS deepened and adversarially verified (32 clean on first/repair pass; capture-and-attribute + sign-transaction-documents repaired by hand against code 2026-08-11). Verdicts remain P3 proposals until decisions.md grants the lock — see p3-process-lock-package.md.",
   "processes": [
     {
       "id": "get-home-value.written-cma",
@@ -274,7 +274,7 @@
       "completion": "Consent cookie written (JSON {analytics, marketing}, 1-year expiry) and a 'cookie-consent' CustomEvent dispatched; GA4 receives a Consent Mode v2 update (ad_storage/ad_user_data/ad_personalization/analytics_storage granted or denied) and Meta Pixel sets or clears LDU dataProcessingOptions. Banner never re-appears until cookie expiry. Explicit prior choice is never overridden by the ad-traffic auto-grant.",
       "evidence": "components/CookieConsentBanner.tsx:17 cookie key, :46-50 setConsentState 1yr, :76-87 autoGrantConsentForAdTraffic, :104 component, :119-136 acceptAll/essentialOnly/savePreferences dispatching cookie-consent, :163-186 banner UI with /privacy + Do-Not-Sell links; components/site/providers/RootProvider.tsx:40-42 mount inside HideOnLP; app/layout.tsx:135 RootProvider wrap; components/GoogleAnalytics.tsx:47-60 gtag consent update; components/MetaPixel.tsx:38-50 LDU gating reading the consent cookie",
       "cadence": "continuous",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Split from the serve-legal hypothesis (2 of 3). Meta Pixel intentionally loads pre-consent on ALL traffic (LDU mode when marketing not granted) per MetaPixel.tsx docblock — the privacy page's Meta disclosure is the compliance counterweight; EU-style consent-before-fire is explicitly not implemented. GA4 loads always under Consent Mode v2 with denied defaults. Consent state is also consumed by PageViewTracker, VisitTracker, AdUnit, GTMHead (imports proven by grep this session)."
     },
@@ -286,7 +286,7 @@
       "completion": "ListingAttribution block rendered with the courtesy line (listing firm), listing-participant contact (listContact prop), ODS logo, and reliability + non-commercial disclaimers; opted-out listings (permit_internet_yn=false, permit_address_internet_yn=false, idx_participant=false) never render, enforced in the detail DAL guard and public MV predicates. Statically enforced at commit time by ci:ods-compliance inside ci:gates.",
       "evidence": "components/listing/ListingAttribution.tsx:1-55 component + ODS §5-3 docblock and listContact prop; app/listing/[listingKey]/page.tsx:57 import, :427 mount; components/site/SiteFooter.tsx:156-163 ODS source/disclaimer/license caption; scripts/check-ods-compliance.mjs:41-56 attribution + mount + opt-out assertions, :57-80 MV predicate ratchet; package.json:96 ci:ods-compliance script, :230 present in ci:gates chain",
       "cadence": "continuous",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Split from the serve-legal hypothesis (3 of 3). Not a visitor journey — a per-render MACHINE compliance process riding inside listing-detail serving; listed separately because its failure mode (license/compliance risk) and enforcement mechanism (G54 gate) are independent of the static legal pages. Sold-data VOW restriction and 12-hour refresh (sync-delta in vercel.json) are asserted by the same gate per its header; those clauses were read in the gate script this session, not re-proven against vercel.json here."
     },
@@ -334,7 +334,7 @@
       "completion": "Signature recorded; when the last signer finishes, advanceOrSeal seals the envelope and completion notices email a finished copy to every party",
       "evidence": "app/sign/[token]/page.tsx:1-59 (token-gated public signing page, waiting/completed/inactive states, renders SignFlow); app/actions/tc-sign.ts:13-19 (token IS the credential, sha256-hash stored, ordered routing, sealing + completion notices, ESIGN / Oregon UETA ORS ch. 84)",
       "cadence": "event-driven",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Pure public-visitor process (the signer is a client, not an admin) untouched by all 15 seeds. Distinct persona: a transaction party executing legal documents, not a lead."
     },
@@ -346,7 +346,7 @@
       "completion": "Client-ready document rendered after the registration/consent gate; page_view + identity stitch logged to the visitor session and CRM; optional full-comps download minted via hashed token at /api/cma-document/<token>",
       "evidence": "app/cma/[slug]/route.ts:10-16,60-80 (unlisted client documents, publication gate finalized/delivered, registration+consent gate on entry); app/bpo/[slug]/route.ts:1-8,33-49 (client-safe by default, offer-strategy stripped, final-only for public); public/rr-doc-tracker.js:1-16 (injected tracker posts page_view + email-click identity for raw-HTML docs); app/api/cma-document/[token]/route.ts:1-16 (hashed-token full-analysis delivery, publish flag re-checked per request)",
       "cadence": "event-driven",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Consumption side of a broker-prepared valuation — distinct from the get-home-value LP funnel (which requests an estimate) and from plan-a-sale. The recipient is a known client/lead reading a private deliverable through a consent door."
     },
@@ -358,7 +358,7 @@
       "completion": "Recipient receives the per-broker-rendered issue via Resend; engagement lands in the track ledger; unsubscribe is a POST-confirmed token page mirroring /alerts/unsubscribe",
       "evidence": "components/site/NewsletterSignup.tsx:4,10-16 (public footer signup posting to subscribeNewsletterAction); app/newsletter/unsubscribe/page.tsx:10-17,26-32 (token unsubscribe, POST-only so prefetch cannot opt out); app/api/cron/newsletter-send/route.ts:1-14 (send-drain cron: claims queued recipients tier-by-tier, re-checks suppression, renders per-broker, sends via Resend); vercel.json:141-165 (newsletter-monthly-draft daily 13:15, newsletter-reconcile hourly, newsletter-send */2 min, postmaster-sync daily); lib/newsletter/ (send-queue.ts, track-ledger.ts, pre-send-gates.ts, cohort-enrollment.ts, postmaster.ts)",
       "cadence": "continuous",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Issue cadence is monthly; the machine side runs continuously (send drain every 2 min, reconcile hourly). Deliver-alerts covers saved-search/listing alerts — the newsletter is a separate subscription, engine, ledger, and unsubscribe surface."
     },
@@ -370,7 +370,7 @@
       "completion": "email_open / email_click / sms_click rows land on the person's crm_timeline (+ newsletter track ledger); recipient is 302'd to the DB-stored target; ?_pid/?_fuid clicks stitch the visitor session to the crm_people row",
       "evidence": "app/api/track/e/open/route.ts:1-30 (1x1 gif pixel, logs email_open to crm_timeline + newsletter engagement); app/api/track/e/click/route.ts:12-16 (destination signed inside the token, no open redirect, logs email_click then 302); app/r/[code]/route.ts:1-33 (SMS short-link resolver + sms_click logging, bot-UA prefetches excluded, target from our DB only); app/api/track/e/identify/route.ts:1-19 (email-click identity backfill for raw-HTML client docs)",
       "cadence": "continuous",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Machine process serving recipients of outbound sends. Possible partial overlap with the capture-and-attribute seed on the identity-stitch leg — but engagement measurement of outbound comms (opens/clicks feeding the CRM timeline) is a different loop from capturing/attributing inbound site arrivals. Flagging so the parent can merge the identify leg if its taxonomy puts identity bridging under capture-and-attribute."
     },
@@ -382,7 +382,7 @@
       "completion": "Document requests that fail offline fall back to /offline; a visitor wedged on a pre-migration stale SW is reset server-side by GET /clear (Clear-Site-Data: cache+storage, cookies preserved) and redirected home",
       "evidence": "app/sw.ts:13-31 (Serwist config: precache, navigationPreload, runtimeCaching, /offline document fallback); app/clear/route.ts:4-16,31-38 (one-visit browser reset via Clear-Site-Data header, breaks the stale-SW catch-22 from the previous apex stack)",
       "cadence": "continuous",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Machine process running in every visitor's browser; no seed covers availability/recovery of the client shell itself."
     },
@@ -394,7 +394,7 @@
       "completion": "Recruit starts the conversation via the Start-the-conversation / get-in-touch / call CTAs",
       "evidence": "app/join/page.tsx:1-32 (documented as 'Join page (/join) — broker recruiting'; CTA row Start the conversation / See how we market listings / Meet the brokers; FAQPage JSON-LD; revalidate 3600)",
       "cadence": "rare",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Distinct visitor persona — a recruit evaluating the brokerage as a workplace, not a buyer/seller lead. contact-a-broker covers consumer contact, not recruitment."
     },
@@ -406,7 +406,7 @@
       "completion": "Side-by-side feature table with best-in-class highlighting and a maps embed; visitor copies a shareable link or downloads a PDF",
       "evidence": "app/compare/page.tsx:1-45 (CompareClient: photo row, side-by-side feature Table, best-in-class highlighting, Google Maps locations embed, Copy Link + Download PDF; getListingTiles/getListingDetailPhotos DAL fetch; noindex, revalidate 60)",
       "cadence": "event-driven",
-      "status": "in_deepening",
+      "status": "deepened",
       "verdict": null,
       "notes": "Lower confidence on non-duplication, not on existence: in this repo 'place' means geography, so evaluate-a-place does not cover comparing specific homes; find-a-home (search/browse) may or may not subsume shortlist decision support + shareable artifact. Parent should merge into find-a-home if its definition is broad."
     }

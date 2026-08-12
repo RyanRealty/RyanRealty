@@ -6,7 +6,8 @@
 - Cadence: **event-driven** (every lead-bearing event fires the spine inline; a 15-minute
   sweep cron guarantees the completion state for anything the hot path missed)
 - Verdict: **PROPOSAL (not a lock — P3 decides): KEEP** — this is the machine spine every
-  visitor process completes INTO: all ~26 `sendEvent` call sites plus the two off-site doors
+  visitor process completes INTO: all 26 `sendEvent` call sites (24 site doors, the Meta
+  webhook, one dead caller — §10 D9) plus the portal-email door
   converge on one find-or-create chokepoint with one completion state, and killing or
   splitting it orphans the completion leg of `get-home-value`, `contact-form-inquiry`,
   `save-and-return.*`, `arrive-from-ad`, and the sign-in path at once. It is not mergeable
@@ -34,10 +35,17 @@ reads.
 **Trigger:** a lead-bearing event from ANY entry channel — an event carrying at least an
 email or phone (anonymous events are deliberately skipped, §6). Four doors:
 
-1. **Site actions (organic / paid / direct / internal).** 26 `sendEvent` call sites
-   enumerated by repo grep this session: contact form (`app/contact/actions.ts:93`),
+1. **Site actions (organic / paid / direct / internal).** 24 of the repo's 26
+   `sendEvent` call sites (grep re-run this session; the other two are the Meta webhook —
+   door 3 — and the dead `lib/crm/lead-router.ts:80`, §10 D9): contact form
+   (`app/contact/actions.ts:93`),
    home-valuation CTA (`app/actions/lead-capture.ts:87` — plus its 4 sibling captures at
-   `:180,293,407,533`), paid LPs (`app/lp/seller-home-value/actions.ts:133,376`,
+   `:180,293,407,533`), the valuation form (`app/home-valuation/actions.ts:131` —
+   `submitValuationRequest`; its ONLY live mount is `/sell/valuation` via
+   `app/sell/valuation/page.tsx:17,122` → `ValuationForm`
+   (`app/home-valuation/ValuationForm.tsx:4,21`); `app/home-valuation/` has no page.tsx
+   and the legacy `/home-valuation` path 301s to `/sell/valuation`,
+   `next.config.ts:217` — §9.8), paid LPs (`app/lp/seller-home-value/actions.ts:133,376`,
    `app/lp/fsbo/actions.ts:173`, `app/lp/expired-listing/actions.ts:145`,
    `app/lp/buyer-listing-alerts/actions.ts:206`, `app/lp/tetherow/heath/actions.ts:127`),
    saved searches (`app/actions/saved-searches.ts:182`), alert capture
@@ -219,8 +227,11 @@ sits outside the done-state longer than one sweep interval regardless of entry d
   `crm_suppressions` fail-CLOSED (`lib/crm/enroll.ts:74-83`).
 - **SMS consent (A2P/TCPA):** fail-closed — only an actively checked box lifts the
   sms-channel suppression; every consent-less caller suppresses by default
-  (`lib/crm/enroll.ts:290-305`). Meta leads are hard-suppressed (`smsConsent: false`,
-  `app/api/meta/lead-webhook/route.ts:618-623`).
+  (`lib/crm/enroll.ts:290-305`). Meta leads capture no SMS consent, so the one webhook
+  auto-enroll site (buyer audience, non-realtor only) passes `smsConsent: false` and the
+  sms step suppresses; other Meta leads are not auto-enrolled by the webhook at all
+  (`app/api/meta/lead-webhook/route.ts:615-625` — enroll gated on
+  `audience === 'buyer' && !possibleRealtor`).
 - **Enrollment gates:** pre-epoch never; outreach-list sources never (the taxonomy line
   between inbound leads and lists WE built, `lib/crm/enroll.ts:54-61`,
   `app/api/cron/crm-auto-enroll/route.ts:121-135`); referral geo-block; one master
@@ -298,8 +309,10 @@ confirmed ONE process, not four.
    dropped (§10 D5).
 4. **Meta Instant Form (machine-only, no visit)** — dedupe on leadgen id, audience/tier
    from the form's own answers, broker from the campaign name, canonical tags via
-   `buildLeadTags`, always sms-suppressed
-   (`app/api/meta/lead-webhook/route.ts:382-498,512-519,618-623`).
+   `buildLeadTags`; buyer-audience non-realtor leads auto-enroll email-first with
+   `smsConsent: false` (fail-closed — instant forms capture no SMS consent); other
+   Meta leads are captured but not webhook-auto-enrolled
+   (`app/api/meta/lead-webhook/route.ts:382-498,512-519,615-625`).
 5. **Portal email (machine-only, no visit)** — parsed from Gmail; `source:<portal>` +
    `intent:portal-lead`, broker matt, idempotent timeline note; unparsable → health
    alert, never silently lost (`app/api/cron/crm-portal-lead-intake/route.ts:114-158`).
@@ -310,6 +323,18 @@ confirmed ONE process, not four.
    through THIS process's sweep for their enrollment decision + alert
    (`app/api/cron/crm-auto-enroll/route.ts:1-9`) — the completion state is
    door-independent by construction.
+8. **Valuation form (`/sell/valuation`)** — the non-LP seller-KPI door
+   (`app/home-valuation/actions.ts:62-223`, read line-by-line this session): UTMs are
+   parsed off the referer (`:116-129`) but passed ONLY through the dead `campaign` param
+   (`:148-155` — the D1 class on a KPI path); no `readAttributedAgentServer` import, so
+   the `?agent=` cookie is ignored (D2 class); the carrier-required consent checkbox IS
+   rendered (`app/home-valuation/ValuationForm.tsx:115`, posts `smsConsent=yes`) but the
+   action never reads the field — collected consent is dropped (§10 D11); canonical
+   tagging is awaited inline (`audience:seller`, `source:cma-request`, tier `warm`,
+   `:188-201`) with a direct-`ensureNativeLead` fallback (`:161-180`); the true source
+   page is recovered from `?from=`/referer instead of the legacy constant (`:86-99`);
+   auto-CMA, acknowledgment email, and CAPI/GA4 mirrors run post-response via `after()`
+   (`:212-221`) and belong to `get-home-value`.
 
 ## 10. Current implementation map
 
@@ -330,16 +355,20 @@ confirmed ONE process, not four.
 - **D1 — UTM attribution is LP-only; `sendEvent`'s `campaign` param is dead.**
   `sendEvent` never reads `params.campaign` (`lib/followupboss.ts:101-136` — full read),
   yet non-LP doors still parse UTMs and pass them ONLY through that dead param
-  (`app/contact/actions.ts:104-111`; `app/api/meta/lead-webhook/route.ts:426-451`).
+  (`app/contact/actions.ts:104-111`; `app/api/meta/lead-webhook/route.ts:426-451`;
+  `app/home-valuation/actions.ts:116-129,148-155` — the valuation door, a seller-KPI
+  path).
   `resolveLeadSource`/`resolvePaidAttributionTags` run on exactly 5 LP actions (grep this
   session — §5.4). A Facebook ad click that converts on `/contact`, a saved search, an
   RSVP, or the homepage loses its channel/campaign attribution entirely; two
   reconciliation crons key on the intake-time tags and cannot repair what was never
   written (`app/api/cron/seller-lead-attribution/route.ts:14`,
   `app/api/cron/buyer-lead-attribution/route.ts:14`).
-- **D2 — the `?agent=` cookie is honored by 6 doors out of ~20.**
+- **D2 — the `?agent=` cookie is honored by 6 doors out of ~21.**
   `readAttributedAgentServer` is imported ONLY by the 5 LP actions + `cma-download`
-  (grep this session). The contact form, home-valuation, saved-searches, alert capture,
+  (grep re-run this session). The contact form, the valuation form (`/sell/valuation`,
+  `app/home-valuation/actions.ts` — no import), the home-valuation CTA captures,
+  saved-searches, alert capture,
   RSVP, homepage, and sign-in doors route through the engine's all-to-matt default —
   Rebecca's ad traffic that converts anywhere but her LP is assigned to Matt. (Same class
   as contact-PDS D1, now measured across the whole spine.)
@@ -384,6 +413,17 @@ confirmed ONE process, not four.
   CLOSED (`lib/crm/enroll.ts:74-83`); the downstream send-time gates make this
   non-exploitable but the intake tagging can mislabel during an outage — the same class
   the 2026-07-09 fix note describes (`:171-182`).
+- **D11 — the valuation door drops collected SMS consent.** `ValuationForm` renders the
+  carrier-required consent checkbox, which posts `smsConsent=yes` when checked
+  (`app/home-valuation/ValuationForm.tsx:115`; named-input contract in
+  `components/site/SmsConsentDisclosure.tsx` docstring), but `submitValuationRequest`
+  never reads the field (grep clean for `smsConsent` in
+  `app/home-valuation/actions.ts`) and calls no consent-carrying enroll — its only
+  enrollment writer is `canonicallyTagLead`'s consent-less fire-and-forget
+  (`app/home-valuation/actions.ts:188-201` → `lib/canonical-lead-tagger.ts:267-270`), so
+  the sms suppression stays even when the box was actively checked. Fail-closed (no TCPA
+  exposure) but the visitor's actual consent is discarded — the opposite loss to D3's
+  race. This door was omitted from this PDS entirely until the 2026-08-11 repair pass.
 - **Naming debt (cosmetic, confirmed):** `autoEnrollByFubId` accepts native ids
   (`lib/crm/enroll.ts:274-283`), `SendEventParams`/`FubEventPerson` keep the FUB shape
   (`lib/followupboss.ts:49-94`), `fubPersonId` variables are native ids throughout.
@@ -424,7 +464,10 @@ everywhere the contract allows.
 - ✗ The D3 consent race is asserted from code structure; not reproduced live.
 - ✗ Five minor doors (`track-cta-click`, `home.ts`, `agents.ts`, `crm.ts`,
   `lead-landing.ts`) were enumerated but not read line-by-line this session — their
-  attribution/consent handling is unaudited.
+  attribution/consent handling is unaudited. (The valuation form door,
+  `app/home-valuation/actions.ts`, was omitted from this PDS's first pass entirely; it
+  WAS read line-by-line in the 2026-08-11 repair pass and is documented at §2.1, §9.8,
+  §10 D1/D2/D11 — it is no longer an unaudited door.)
 
 **Destination implication + dual objective stamp:**
 
@@ -495,7 +538,10 @@ curl's default UA. SQL runs against live Supabase per §7 discipline.)
     the `rr_agent_attribution` cookie set to `rebecca` and Facebook UTMs on the referer,
     a `/contact` submit yields `source='Facebook'`, a `channel:fb-ads` tag, and
     `assigned_broker='rebecca'` — today the contact door writes the site-domain source
-    and routes to matt.
+    and routes to matt. Same check on a `/sell/valuation` submit WITH the consent box
+    checked additionally requires the sms suppression absent — today the valuation door
+    writes the site-domain source, routes to matt, and drops the checked consent
+    (D1/D2/D11).
 11. **Sign-in context (encodes decided behavior; fails today — D5).** A Google sign-in
     from `/listing/<key>` records which page and provider produced it on the person or
     timeline — today only bare `website-signup` lands.

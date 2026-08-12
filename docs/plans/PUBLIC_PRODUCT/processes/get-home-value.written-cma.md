@@ -370,9 +370,14 @@ up the created rows after).
    sticky mobile bar's "Get the valuation" scrolls to `#get-value`.
 2. **Partial capture (current behavior):** on `/lp/seller-home-value`, enter an address
    and advance to step 2 with a fresh session; verify
-   `SELECT * FROM visitor_events WHERE event_type ILIKE '%partial%' ORDER BY created_at DESC LIMIT 5`
-   gains a row carrying the address. (Re-point this check at whatever P3 decides for
-   D2.)
+   `SELECT session_id, metadata->>'partial_address' AS partial_address, event_at FROM visitor_events WHERE event_type = 'seller_intent' AND metadata->>'partial_address' IS NOT NULL AND metadata->>'lp_surface' = 'seller-lp' ORDER BY event_at DESC LIMIT 5`
+   gains a row whose `partial_address` equals the typed address. Query shape matches
+   the writer exactly: the anonymous row is inserted with `event_type='seller_intent'`
+   and the address under `metadata.partial_address` + `metadata.lp_surface='seller-lp'`
+   (`lib/data/leads/saveAnonymousPartialAddress.ts:77-96`); the word "partial" never
+   appears in `event_type`, and `visitor_events` has no `created_at` column — its
+   timestamp is `event_at` (DATABASE_SCHEMA_SNAPSHOT.md, `visitor_events`). (Re-point
+   this check at whatever P3 decides for D2.)
 3. **Full submit → lead:** submit with the test email, timeline "Ready to sell", SMS
    consent UNCHECKED. Then:
    `SELECT id, tags, custom->>'cmaSlug', assigned_broker FROM crm_people WHERE emails::text ILIKE '%e2e-cma-test%'`

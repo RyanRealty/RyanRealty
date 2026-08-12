@@ -269,8 +269,9 @@ the same path at §5 step 1 — no split.
     `KbListingMap` (schools :34,323), `NeighborhoodMap` (parks :35,268), `VenueMap`
     (golf :22, trails :27, venues :23) — duplicate paths that should converge.
   - **D6 — schools detail hand-rolls its listing cards** (`schools:347-373`) while every
-    sibling uses `KbFeatured`; schools/parks each carry ~80-line route-scoped style
-    blocks re-implementing the same card grid (`schools:489-525`, `parks:380-446`).
+    sibling uses `KbFeatured`; schools/parks carry route-scoped style blocks (~35 lines
+    `schools:489-525`, ~65 lines `parks:380-446` — ~100 combined) whose card-grid rules
+    duplicate each other near-verbatim (`schools:507-516` vs `parks:425-434`).
   - **D7 — schools overflow exit is a keyword hack** (`/search?…&keywords={name}`,
     `schools:178-183`) because search has no school filter.
 - **Duplicate/parallel paths that should die:** the three map components (D5); the

@@ -3,12 +3,12 @@
 ## 0. Meta
 
 - Status: **deepened**
-- Cadence: **continuous** — inceptions are event-driven (four channels), the engine ticks
-  hourly (`vercel.json:213-214`, schedule `0 * * * *`), and each subscription runs until its
-  recipient deactivates it.
+- Cadence: **continuous** — inceptions are event-driven on four channels plus one
+  manual-trigger provisioning channel (§2), the engine ticks hourly (`vercel.json:213-214`,
+  schedule `0 * * * *`), and each subscription runs until its recipient deactivates it.
 - Verdict: **PROPOSAL — KEEP.** This is the ONE machine-side send engine for every listing
   alert on the site: one table (`public.listing_alerts`), one cron, one engine, one send
-  path — regardless of which of the four channels minted the row. The sibling visitor PDS
+  path — regardless of which of the five channels minted the row. The sibling visitor PDS
   (`save-and-return.search-alerts` §0) already proposes crowning THIS process the single
   owner of engine truth at P3 and merging its own §5 steps 6–15 here; this PDS accepts that
   boundary: **deliver-alerts owns cron → detection → compliance → send → cursor →
@@ -31,7 +31,7 @@ channel.
 
 ## 2. Inception (what starts it)
 
-A row becomes active in `public.listing_alerts` through one of four channels; from that
+A row becomes active in `public.listing_alerts` through one of five channels; from that
 moment the machine owns it and the hourly cron starts each delivery run.
 
 | # | Channel | Entry | Evidence (opened this run) |
@@ -39,14 +39,18 @@ moment the machine owns it and the hourly cron starts each delivery run.
 | 1 | Signed-in Save Search (organic/direct/internal — mid-browse on `/search` + geo pages) | `createSavedSearch` → `upsertListingAlert` keyed `(email, filters_hash)`, `origin='user'`, `source='user'` | `app/actions/saved-searches.ts:124-146`; `lib/data/leads/listingAlerts.ts:150-182` |
 | 2 | Guest alert capture (organic — anonymous `/search` visitor) | `submitSearchAlertSignup`: honeypot (`:41-44`), per-IP rate limit fail-closed in prod (`:50-67`), email validation (`:69-73`), narrowing-filter guard (`:86-88`), CRM buyer lead (`:101-136`), then `upsertListingAlert` (`:142-143`) | `app/actions/search-alert-capture.ts:35-158`; UI `components/search/SearchAlertCapture.tsx:24-36` (URL-as-truth filters) |
 | 3 | Paid LP (`/lp/buyer-listing-alerts`, robots noindex) | form submit mints one `listing_alerts` row PER derived filter set via `upsertListingAlert`, skipped entirely for hard-stopped leads | `app/lp/buyer-listing-alerts/actions.ts:15,352-370`; `app/lp/buyer-listing-alerts/page.tsx:21-26` |
-| 4 | Broker attach (internal — CRM bulk action) | `assignSavedSearchHandler` → `createListingAlertForLead` with `origin='broker'`, default `weekly`; empty-after-normalization filters refuse the WHOLE job | `lib/crm/bulk-handlers/assign-saved-search.ts:49-116`; `lib/data/leads/listingAlerts.ts:190-238` |
+| 4 | Broker attach (internal — every CRM surface routes through `createListingAlertForLead` with `origin='broker'`, `source='broker-assigned'`) | Four live call sites, each passing an EXPLICIT frequency (the DAL weekly fallback `listingAlerts.ts:228-230` never fires): (a) CRM bulk action `assignSavedSearchHandler` — **effective default DAILY** (handler coerces anything non-weekly to daily, `assign-saved-search.ts:71`; bulk UI initial value `frequency:'daily'`, `components/admin/crm/bulk/registry.tsx:426,435`); empty-after-normalization filters refuse the WHOLE job (`:61-65`); (b) single-lead admin assign — default weekly (`app/actions/newsletter.ts:245-246`); (c) admin bulk assign — fixed weekly (`app/actions/newsletter.ts:294`); (d) listing-matches attach — default weekly (`app/actions/contact-listing-matches.ts:76,79-89`) | `lib/crm/bulk-handlers/assign-saved-search.ts:49-116`; `lib/data/leads/listingAlerts.ts:190-238` |
+| 5 | System neighborhood-default provisioning (internal, MANUAL-TRIGGER ONLY — Matt directive 2026-07-06; the route exists but is deliberately NOT in `vercel.json`, dry-run by default, live requires `confirm=1&dryRun=0`) | `GET /api/cron/neighborhood-default-subscriptions` → `provisionNeighborhoodDefaultSubscriptions`: every contact on a CRM neighborhood list gets a `{neighborhoodSlug}` alert row written DIRECTLY (not via `createListingAlertForLead`) with `origin='system'`, `source='neighborhood-default'`, `notification_frequency='weekly'`, `last_notified_at=now` (soft launch — first email carries only post-enrollment listings); insert-only `ignoreDuplicates` so an existing or unsubscribed row is never touched | `app/api/cron/neighborhood-default-subscriptions/route.ts:1-42` (manual-only `:6-18`, double-confirm gate `:31`); `lib/data/crm/neighborhoodDefaultSubscriptions.ts:210-226,252-259` |
 
 Preconditions on every channel: an email, a narrowing filter set (never a whole-feed alert —
 guards at `app/actions/search-alert-capture.ts:86-88` and
-`lib/crm/bulk-handlers/assign-saved-search.ts:61-65`, re-checked at send time §5.4), and the
-**resurrection guard**: a `(email, filters_hash)` pair the recipient explicitly one-click
-unsubscribed stays `is_active=false` on any re-create, from any channel
-(`lib/data/leads/listingAlerts.ts:111-133,157-158,211-213`).
+`lib/crm/bulk-handlers/assign-saved-search.ts:61-65`; channel 5 is narrowing by construction,
+always the normalized `{neighborhoodSlug}` filter — `neighborhoodDefaultSubscriptions.ts:49-51`;
+re-checked at send time §5.4), and the **resurrection guard**: a `(email, filters_hash)` pair
+the recipient explicitly one-click unsubscribed stays `is_active=false` on any re-create, from
+any channel (`lib/data/leads/listingAlerts.ts:111-133,157-158,211-213`; channel 5 goes further —
+insert-only `ignoreDuplicates` never touches ANY existing row, whatever its state,
+`neighborhoodDefaultSubscriptions.ts:94-111,252-259`).
 
 The run trigger is the cron: `GET /api/cron/saved-search-alerts`, Bearer `CRON_SECRET`,
 registered hourly (`vercel.json:213-214`; `app/api/cron/saved-search-alerts/route.ts:16-18`).
@@ -88,15 +92,18 @@ registered hourly (`vercel.json:213-214`; `app/api/cron/saved-search-alerts/rout
 
 ## 5. End-to-end path (inception → completion)
 
-Steps 1 is the handoff from any of the four §2 channels; steps 2–13 are one engine cycle for
+Steps 1 is the handoff from any of the five §2 channels; steps 2–13 are one engine cycle for
 one row. Actor "system" = the cron run; device is n/a for machine steps (the email itself is
 consumed mobile-first).
 
-1. **Row minted** · visitor/broker/system · one of the four §2 channels writes an active
+1. **Row minted** · visitor/broker/system · one of the five §2 channels writes an active
    `listing_alerts` row keyed `(email, filters_hash)`; upsert dedupes, resurrection guard
    holds · input: email + normalized filters · output: durable subscription ·
-   `lib/data/leads/listingAlerts.ts:150-182,190-238` · failure: generic error to the caller,
-   raw DB error server-side only (`:175-180`).
+   `lib/data/leads/listingAlerts.ts:150-182,190-238`;
+   `lib/data/crm/neighborhoodDefaultSubscriptions.ts:210-226,252-259` · failure: generic
+   error to the caller, raw DB error server-side only (`:175-180`); channel-5 batch errors
+   throw per neighborhood and collect into the run summary
+   (`neighborhoodDefaultSubscriptions.ts:259,294-297`).
 2. **Hourly scan** · cron · `GET /api/cron/saved-search-alerts` (300s budget) →
    `runListingAlerts` over `getActiveListingAlertsDue`: inactive rows excluded in the DB,
    **most-overdue first** (never-notified rows lead) so the queue drains fairly; scan budget
@@ -181,9 +188,19 @@ consumed mobile-first).
 
 ## 6. Decision points
 
-- **Which channel mints the row** (§2) — decides `origin`/`source` and default cadence
-  (`user` channels default daily via the normalizer; broker attach defaults weekly —
-  `lib/data/leads/listingAlerts.ts:169,224-230`).
+- **Which channel mints the row** (§2) — decides `origin`/`source` and effective cadence.
+  The `user` channels (1–3) write NO cadence at mint — `upsertListingAlert`'s payload has no
+  `notification_frequency` (`lib/data/leads/listingAlerts.ts:159-173`), so the DB column
+  default `'daily'` applies (`docs/DATABASE_SCHEMA_SNAPSHOT.md:2887` `listing_alerts`
+  section, `:2899` — `notification_frequency text not-null default 'daily'`). Broker attach
+  (channel 4): every live caller passes an explicit frequency, so the DAL weekly fallback
+  (`listingAlerts.ts:228-230`) is dead code in practice — the CRM bulk action's effective
+  default is **DAILY** (`lib/crm/bulk-handlers/assign-saved-search.ts:71` coerces
+  non-weekly to daily; UI initial `components/admin/crm/bulk/registry.tsx:426`), while the
+  single-lead assign, admin bulk assign, and listing-matches attach default/fix weekly
+  (`app/actions/newsletter.ts:245-246,294`; `app/actions/contact-listing-matches.ts:76`).
+  System provisioning (channel 5) writes weekly explicitly
+  (`lib/data/crm/neighborhoodDefaultSubscriptions.ts:219`).
 - **Resurrection guard** — an explicit opt-out beats every later re-create, from any channel
   (`lib/data/leads/listingAlerts.ts:111-133`).
 - **Cadence + schedule-days gate** (§5.3); **global email pref** (§5.4a); **empty-filter +
@@ -262,16 +279,20 @@ cursor, and (on click-through) an attributed return session carrying UTM `listin
 - **Stale budget rationale:** the route comment sizes the 600-row scan "across the 4x-daily
   cron" while the registered schedule is hourly — behavior is fine (hourly cycles faster),
   the math in the comment is stale (§10 defect 1;
-  `app/api/cron/saved-search-alerts/route.ts:21-24` vs `vercel.json:213-214`).
+  `app/api/cron/saved-search-alerts/route.ts:21-24` vs `vercel.json:213-214`). The cohort
+  that comment sizes against — "the weekly-cadence neighborhood-default cohort (thousands of
+  rows, mostly not-due skips)" — is the channel-5 population (§2.5).
 
 ## 9. Variants
 
 One engine, one table, one send path; variants differ only at inception or fan-out — none
 diverges in delivery, so no split:
 
-- **Four inception channels** (§2) — signed-in save · guest capture · paid LP · broker
-  attach. Identical delivery semantics; only `origin`/`source`/default-cadence differ
-  (`lib/data/leads/listingAlerts.ts:159-174,214-233`).
+- **Five inception channels** (§2) — signed-in save · guest capture · paid LP · broker
+  attach · system neighborhood-default provisioning. Identical delivery semantics; only
+  `origin`/`source`/effective-cadence differ
+  (`lib/data/leads/listingAlerts.ts:159-174,214-233`;
+  `lib/data/crm/neighborhoodDefaultSubscriptions.ts:210-226`).
 - **Guest vs signed-in delivery** — same email except: no manage link (token-only exit,
   `lib/alerts/send.ts:399-403`) and no `sold` events (VOW,
   `lib/alerts/event-detection.ts:382-388`).
@@ -290,6 +311,9 @@ diverges in delivery, so no split:
 ## 10. Current implementation map
 
 - **Routes/surfaces today:** `/api/cron/saved-search-alerts` (engine);
+  `/api/cron/neighborhood-default-subscriptions` (channel-5 provisioning — manual-trigger
+  only, deliberately NOT registered in `vercel.json`, dry-run by default;
+  `app/api/cron/neighborhood-default-subscriptions/route.ts:1-18,31`);
   `/api/alerts/unsubscribe` (RFC 8058 one-click POST + GET redirect);
   `/alerts/unsubscribe` (branded confirm page); admin subscriptions-hub Approval Queue tab
   (preview releases). Inception surfaces belong to their visitor processes (§2).
@@ -317,12 +341,24 @@ diverges in delivery, so no split:
      wildcard hides future column drift. Cleanup candidate, not a bug.
   4. **page-inventory boundary drift** — `page-inventory.json` maps `/newsletter/unsubscribe`
      to `deliver-alerts`, but the newsletter engine is a separate send system with its own
-     tables and DAL (`lib/data/newsletter/*` per `docs/DAL_INDEX.md:2247-2257` region); this
-     process touches neither. P5 must re-map that route (or P3 must widen this process's
-     charter explicitly — this PDS proposes re-mapping, not widening).
+     tables and DAL (`lib/data/newsletter/*` — the section region spanning
+     `docs/DAL_INDEX.md:2813-2873`, `brokerAnalytics.ts` through `tracking.ts`;
+     `:2247` is `lib/data/leads/listingAlerts.ts`, THIS process's DAL); this
+     process touches neither newsletter table. P5 must re-map that route (or P3 must widen
+     this process's charter explicitly — this PDS proposes re-mapping, not widening).
   5. **Engine truth documented twice** — §5 here and `save-and-return.search-alerts` §5
      steps 6–15 describe the same code. Deliberate during P2 (each PDS must stand alone);
      P3 crowns one owner (§0 verdict — this file).
+  6. **Dead DAL defaults that mislead** — `createListingAlertForLead`'s weekly fallback
+     (`lib/data/leads/listingAlerts.ts:228-230`, doc comment "Defaults to weekly" `:200-201`)
+     and its `origin:'system'` → `source:'system'` branch (`:198,224`) both have ZERO live
+     callers: all four callers pass `origin:'broker'` with an explicit frequency
+     (`lib/crm/bulk-handlers/assign-saved-search.ts:92-102`;
+     `app/actions/newsletter.ts:246,294`; `app/actions/contact-listing-matches.ts:79-89`),
+     and the real system channel writes `source='neighborhood-default'` directly
+     (`lib/data/crm/neighborhoodDefaultSubscriptions.ts:217-218`). An earlier draft of this
+     PDS transcribed the dead fallback as the bulk channel's default — the live default there
+     is daily (§2.4, §6). Cleanup candidate: delete or align the dead branches.
 - **Duplicate/parallel paths that should die:** none in the engine — the 2026-07-07
   unification killed the dual `saved_searches`/`guest_search_alerts` split
   (`app/api/cron/saved-search-alerts/route.ts:6-8`; `lib/data/leads/listingAlerts.ts:8-16`);
@@ -381,11 +417,16 @@ Prove the engine end-to-end. Persist; never delete.
    `curl -s -H "Authorization: Bearer $CRON_SECRET" "https://ryan-realty.com/api/cron/saved-search-alerts?dryRun=1&limit=50"`
    → `{ ok: true, scanned, sent, skipped, queued, errors: [] }`
    (shape at `app/actions/saved-search-alerts.ts:66-73`).
-3. **Four-channel inception census (also P4 gap fill):**
+3. **Five-channel inception census (also P4 gap fill):**
    `select origin, source, count(*) filter (where is_active), count(*) from listing_alerts group by 1,2 order by 4 desc;`
    → rows for `user/user` (signed-in), `user/idx-registration` (guest + LP),
-   `broker/broker-assigned`, `system/system`
-   (`lib/data/leads/listingAlerts.ts:168-169,222-224`).
+   `broker/broker-assigned` (all four broker surfaces), and `system/neighborhood-default` —
+   the last ONLY if the manual provisioning endpoint has ever been live-run (`confirm=1&dryRun=0`;
+   dry-run is the default and writes nothing, so zero system rows is a valid state, not a
+   defect). `system/system` must NOT appear: that DAL branch has no live caller (§10 defect 6)
+   (`lib/data/leads/listingAlerts.ts:168-169,222-224`;
+   `lib/data/crm/neighborhoodDefaultSubscriptions.ts:217-218`;
+   `app/api/cron/neighborhood-default-subscriptions/route.ts:31`).
 4. **Idempotent upsert:** submit the identical search twice through any one channel →
    `select count(*) from listing_alerts where email='<e>' and filters_hash='<h>';` → 1.
 5. **Resurrection guard, cross-channel:** one-click unsubscribe a row

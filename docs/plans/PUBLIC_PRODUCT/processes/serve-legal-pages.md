@@ -21,12 +21,12 @@ Trigger: a visitor opens one of seven static policy routes. Entry channels, in o
 4. **Internal — /privacy body prose** is the ONLY inbound link to /cookies (app/privacy/page.tsx:39,98).
 5. **External — compliance references.** /data-deletion has ZERO internal inbound links (repo grep this run: only its own metadata self-references at app/data-deletion/page.tsx:14,18) — it exists to satisfy the Meta/Google app data-deletion-URL requirement, and its body walks Facebook/Google access-revoke paths (app/data-deletion/page.tsx:64-79). /privacy is the URL named on OAuth consent screens and read by A2P carrier review. /fair-housing serves HUD-complaint context (app/fair-housing/page.tsx:59-74). /dmca serves copyright claimants arriving from anywhere.
 
-Preconditions: none — all seven pages are public, unauthenticated, data-free server components. Crawlers can reach them (app/robots.ts:22-28 does not disallow these paths), which is what lets the `noindex, follow` meta actually be honored.
+Preconditions: none — all seven pages are public, unauthenticated, data-free server components. Crawlers can reach them (app/robots.ts:21-27 — the `*` rule's disallow list at :26 covers no legal path), which is what lets the `noindex, follow` meta actually be honored.
 
 ## 3. Actors
 
 - **Visitor segments:** all segments touch these pages rarely; the distinct personas are (1) the privacy-conscious visitor mid-form (arriving from fine print), (2) the rights-exerciser (deletion, do-not-sell, CCPA/OCPA), (3) the claimant (DMCA, accessibility barrier, fair-housing complaint), (4) the non-visitor reviewer — carrier trust-and-safety verifying the A2P consent sentence, Meta/Google app review verifying the deletion URL. Device reality from GA4 for these routes was **not queried this pass** — a stated gap, not a number.
-- **Automated actors:** none. No cron touches these pages (vercel.json grep for legal/privacy/dmca: zero hits this run). Global trackers run on them like any page (VisitTrackerWithSession + GlobalIntentTracker via components/layout/PublicClientLayer.tsx:57-58, mounted app/layout.tsx:166; page-view analytics consent-gated per components/PageViewTracker.tsx:5).
+- **Automated actors:** none. No cron touches these pages (vercel.json grep for legal/privacy/dmca: zero hits this run). Global trackers run on them like any page (VisitTrackerWithSession + GlobalIntentTracker via components/layout/PublicClientLayer.tsx:56-57, mounted app/layout.tsx:166; page-view analytics consent-gated per components/PageViewTracker.tsx:5).
 - **Accountable for completion:** Matt (licensed principal broker — license 201206613, lib/brand/contact.ts:122) owns policy-content accuracy; the admin@ryan-realty.com mailbox owner owns the request-path SLAs the pages promise (30-day deletion, app/data-deletion/page.tsx:59; 45-day rights response, app/privacy/page.tsx:113,120).
 
 ## 4. Systems of record
@@ -34,7 +34,7 @@ Preconditions: none — all seven pages are public, unauthenticated, data-free s
 - **Policy text:** the git repo itself — the copy is hardcoded in the seven `app/*/page.tsx` files. No CMS, no DB table holds policy content.
 - **Cookie inventory:** the hardcoded `COOKIES` array (app/cookies/page.tsx:38-103, nine rows: sb-*, ryan_realty_cookie_consent, fub_cid, rr_session_id, ryan_realty_visit_id, rr_agent_attribution, _ga/_ga_*, _fbp, _fbc). This is a hand-maintained claim about what the codebase sets elsewhere — a drift-prone SoR (§10).
 - **Consent state:** the `ryan_realty_cookie_consent` first-party cookie, 1-year expiry (components/CookieConsentBanner.tsx:17,46-50) — the page describes it; the banner owns it.
-- **SMS consent sentence:** lib/crm/sms-consent-text (single server-safe source re-exported by components/site/SmsConsentDisclosure.tsx:29-31), locked in step with the Twilio A2P campaign and two gate scripts (docblock :7-24). The /privacy and /terms SMS sections must stay consistent with it.
+- **SMS consent sentence:** lib/crm/sms-consent-text (single server-safe source re-exported by components/site/SmsConsentDisclosure.tsx:28-29), locked in step with the Twilio A2P campaign and two gate scripts (docblock :7-24). The /privacy and /terms SMS sections must stay consistent with it.
 - **Deletion and DMCA requests:** the admin@ryan-realty.com mailbox — off-platform. Explicitly NOT a SoR on our side: no `legal_requests` table, no ticket, no CRM write exists for either request path (repo grep this run found none).
 - **NOT SoR:** these pages are not the source of ODS/IDX display compliance (that is sibling process `ods-idx-attribution`, enforced by G54) and /site-index is not theirs (belongs to `earn-search-traffic`).
 
@@ -113,7 +113,7 @@ Persist; never delete. Run against prod (https://ryan-realty.com) unless noted.
 1. **All seven serve with the right meta** — for each of privacy, terms, cookies, dmca, fair-housing, accessibility, data-deletion:
    `curl -s -o /dev/null -w '%{http_code}' https://ryan-realty.com/<route>` → `200`, and
    `curl -s https://ryan-realty.com/<route> | grep -c 'noindex, follow'` → `≥1`, and the canonical tag equals the route.
-2. **Crawlability of noindex pages** — `curl -s https://ryan-realty.com/robots.txt` shows no Disallow covering any of the seven paths (noindex only works on crawlable URLs; source app/robots.ts:22-28).
+2. **Crawlability of noindex pages** — `curl -s https://ryan-realty.com/robots.txt` shows no Disallow covering any of the seven paths (noindex only works on crawlable URLs; source app/robots.ts:21-27).
 3. **Internal link integrity of the policy set** — every cross-link resolves 200 with its anchor present: /privacy→/cookies, /cookies→/privacy#donotsell, /terms→/privacy#sms, /data-deletion→/privacy; `curl -s https://ryan-realty.com/privacy | grep -c 'id="sms"\|id="donotsell"'` → `2`; `curl -s https://ryan-realty.com/terms | grep -c 'id="sms"'` → `1`.
 4. **Footer coverage matches the locked decision** — `grep -A8 'LEGAL_LINKS' lib/site-nav.ts` lists exactly the set P3/P5 lock (today: 5 of 7 + /site-index; target-state: all visitor-reachable legal pages).
 5. **A2P lock-step green** — `node scripts/check-sms-consent-compliance.mjs` passes, and the carrier-verified sharing sentence is live on both pages: `curl -s https://ryan-realty.com/privacy | grep -c 'No mobile information will be shared'` → `≥1`, same for /terms.
