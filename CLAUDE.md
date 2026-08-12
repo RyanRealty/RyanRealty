@@ -150,18 +150,15 @@ shown to Matt before they enter a distribution path.
 # §2. Brand Voice — applies to EVERY piece of public-facing text
 
 **Canonical source, and the ONLY one: [`marketing_brain_skills/brand-voice/VOICE.md`](marketing_brain_skills/brand-voice/VOICE.md).**
-Read it before writing any text a member of the public will see. Locked 2026-08-05,
-anchored on Warren Buffett's shareholder letters. This section is a pointer, not a
-second copy: every rule, word list, and example lives in that file, and a rule that
-appears in two places is a rule that drifts.
+Read it before writing any text a member of the public will see. Locked D11
+(2026-08-12). This section is a pointer, not a second copy.
 
 **Triggers.** Any text a lead, client, or visitor reads, whatever produces it: email
 bodies and subjects, SMS bodies, saved-search and listing alerts, CMA/BPO/report
-prose, every site page and component, landing pages, our own listing remarks, social
-captions, ad copy, video on-screen text and voiceover, and any document a client
-opens. Not governed: code, comments, commit messages, admin screens, internal docs.
-Never rewritten: customer reviews, another broker's remarks, quoted third parties,
-MLS data fields.
+prose, every site page and component, landing pages, social captions, video
+on-screen text we author, and any document a client opens. Not governed: code,
+comments, commit messages, admin screens, internal docs. Never rewritten: customer
+reviews, another broker's remarks, quoted third parties, MLS remarks.
 
 **Enforced, not advisory.** [`scripts/check-brand-voice.mjs`](scripts/check-brand-voice.mjs)
 (`ci:brand-voice`, in `ci:gates` and the pre-commit hook) fails the commit, reading a
@@ -707,7 +704,7 @@ next.
 
 | Rule | Mechanism | Gate script |
 |---|---|---|
-| Brand voice — banned words, Five Laws | gated | `check-brand-voice.mjs` (vocabulary in `brand-voice-vocabulary.cjs`) |
+| Brand voice — punctuation, invented quotes, Value my home | gated | `check-brand-voice.mjs` (vocabulary in `brand-voice-vocabulary.cjs`) |
 | Design tokens — no off-brand hex, no raw controls | gated | `lint-design-tokens.js` |
 | Mockup parity per surface | gated | `check-mockup-parity.mjs` |
 | DAL boundary — no raw `.from()` outside `lib/data/` | gated | `check-dal-boundary.mjs` |

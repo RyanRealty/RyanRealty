@@ -229,7 +229,7 @@ export default async function TetherowLandingPage() {
             href="#cma"
             className="whitespace-nowrap rounded-full bg-[color:var(--rr-cream)] px-4 py-[7px] text-[12px] font-bold tracking-[0.04em] text-[color:var(--rr-navy)] transition hover:opacity-90"
           >
-            What&apos;s my home worth?
+            Value my home
           </a>
         </div>
       </div>

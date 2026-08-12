@@ -345,8 +345,8 @@ captions, packets still obey the voice.
 
 **What failed last time.** We tried to encode taste as regex. Buffett-as-law plus
 GOV.UK mechanics plus construction bans plus word lists produced beige or corny.
-`.cursor/rules/blog-voice.mdc` is a second voice file. Delete it when `VOICE.md`
-is rewritten to this lock.
+`.cursor/rules/blog-voice.mdc` was a second voice file. Deleted when `VOICE.md`
+was rewritten to this lock.
 
 **Surfaces in:** site, SMS, email, newsletter, blog, social captions, GBP posts,
 packets, video on-screen text we author, public error/empty states.
@@ -440,7 +440,7 @@ is the thing we replace.
 | TC foundation | `tc_*`, envelope engine, `/admin/forms`, ingest | Closings — unused in production |
 | SkySlope | Files API + Forms library API + Chrome session | **Live TMS until cutover (D2).** Baseline + form blanks. Not a second SoR after cutover. |
 | Value my home lock | PUBLIC_SITE_UX_OVERHAUL + PUBLIC_PRODUCT decisions | CTA language — still violated in live copy |
-| Voice canon (2026-08-05) | `marketing_brain_skills/brand-voice/VOICE.md` + `scripts/brand-voice-vocabulary.cjs` + `scripts/voice-constructions.cjs` + `.cursor/rules/blog-voice.mdc` | **Quarry to replace after D11.** Steal: one-file intent, never-invent-quotes, Value my home, punctuation. Cut: Buffett-as-law as a gate, rule 3 quotes, construction zoo, second blog file, long word lists. |
+| Voice canon (D11) | `marketing_brain_skills/brand-voice/VOICE.md` + tiny gate (`scripts/brand-voice-vocabulary.cjs`, `scripts/voice-constructions.cjs`) | **Operating file.** Punctuation + invented quotes + Value my home. `blog-voice.mdc` deleted. |
 | GPC / suppression | `lib/crm/gpc.ts`, `lib/comms/guards.ts` | Fail-closed on watch + send |
 
 ---

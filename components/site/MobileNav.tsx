@@ -195,7 +195,7 @@ export default function MobileNav({
             size="md"
             className="w-full whitespace-nowrap"
           >
-            What&apos;s my home worth
+            Value my home
           </CTAButton>
           <CTAButton
             href="/login"

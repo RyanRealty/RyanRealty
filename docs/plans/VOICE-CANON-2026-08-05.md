@@ -1,5 +1,10 @@
 # Voice canon migration — the end-to-end prompt
 
+**Superseded 2026-08-12 by D11.** The operating law is
+[`marketing_brain_skills/brand-voice/VOICE.md`](../../marketing_brain_skills/brand-voice/VOICE.md).
+Do not run this file as a site-wide copy program. Buffett-as-law is out.
+`.cursor/rules/blog-voice.mdc` is deleted.
+
 **Matt, 2026-08-05:** "I want to use the Buffett method. I want this to be a
 comprehensive solution that covers any public-facing text. Scour my site, remove any
 existing references to voice or any kind of voice references at all, so there is

@@ -6,8 +6,7 @@
  * vocabulary in string literals (text content + JSX attributes). Fails CI if
  * any new file introduces a banned word.
  *
- * Banned vocabulary canonical source: marketing_brain_skills/brand-voice/voice_guidelines.md
- * and docs/SITE_SPEC.md acceptance criteria.
+ * Banned vocabulary canonical source: marketing_brain_skills/brand-voice/VOICE.md
  *
  * Modes:
  *   node scripts/check-brand-voice.mjs                 → check against baseline, exit 1 if violations INCREASED
@@ -89,7 +88,7 @@ for (const { canon, covered } of VOCAB.PROJECTION_REQUIRED ?? []) {
       `\n✖ brand-voice vocabulary is out of sync with the canon.\n` +
         `  VOICE.md bans "${canon}", and the phrasing that projects it ` +
         `("${covered}") is missing from scripts/brand-voice-vocabulary.cjs.\n` +
-        `  Add it to SELF_PRAISE, or correct PROJECTION_REQUIRED if the canon changed.\n`
+        `  Add it to WORTH_CTA, or correct PROJECTION_REQUIRED if the canon changed.\n`
     )
     process.exit(1)
   }
@@ -108,12 +107,10 @@ const BANNED_PATTERNS = (VOCAB.BANNED_PATTERNS ?? []).map((p) => ({
   re: new RegExp(p.source, 'i'),
 }))
 
-// PUNCTUATION (wired 2026-08-02). CLAUDE.md §6 listed "brand voice — banned
-// words, Five Laws" as GATED, and the punctuation hard-fails in §2 as part of
-// the same rule — but VOCAB.PUNCTUATION was exported and referenced NOWHERE in
-// this file. The rule was documented, believed enforced, and checked by nothing.
-// The cost: the em dash in the layout title template shipped in all 20 page
-// titles, on every SERP listing, for as long as that template has existed.
+// PUNCTUATION (wired 2026-08-02). D11 bans em dash, en dash, semicolon, and
+// `!` in public prose. VOCAB.PUNCTUATION is the source. This scanner enforces
+// em dash and en dash in authored sentences. Semicolon and `!` stay in the
+// runtime check (lib/voice/check.ts) because they are also code punctuation.
 //
 // SCOPE — em dash and en dash ONLY, deliberately not all four entries:
 //
@@ -122,10 +119,9 @@ const BANNED_PATTERNS = (VOCAB.BANNED_PATTERNS ?? []).map((p) => ({
 //                  strings, path data). A blanket ban flags those as prose and
 //                  drowns the real signal. §2 bans it in BODY PROSE, which this
 //                  scanner cannot reliably separate from a style string.
-//   exclamation    §2 allows one per piece and bans it only in market-data
-//                  copy. That is a per-deliverable budget, not a per-literal
-//                  rule, so a literal-level gate would encode the wrong rule.
-//                  '!' is also code punctuation ('!important', '!=').
+//   exclamation    D11 bans `!` in public prose. A literal-level gate here
+//                  would also flag code ('!important', '!='), so `!` stays
+//                  in the runtime check, not this file scanner.
 //
 // Both remain enforced by human review per §2. Encoding them here would trade a
 // real gate for a noisy one. The two dashes have no legitimate use in authored
@@ -614,7 +610,7 @@ function main() {
       }
     }
     console.error('')
-    console.error('See marketing_brain_skills/brand-voice/voice_guidelines.md §6.')
+    console.error('See marketing_brain_skills/brand-voice/VOICE.md.')
     process.exit(1)
   }
 

@@ -48,26 +48,16 @@ export type VoiceCheckResult =
 
 /**
  * Punctuation that hard-fails a save. Derived from the canonical
- * PUNCTUATION_CHARS. The exclamation mark is NOT a hard fail here:
- * VOICE.md allows one exclamation per piece, and a single "!" in
- * a short SMS is legitimate, so the gate would over-block. Em/en-dash and
- * semicolon are unconditional hard fails per CLAUDE.md §3.
+ * PUNCTUATION_CHARS. The exclamation mark is NOT a hard fail here
+ * (short SMS). Em/en-dash and semicolon are unconditional hard fails.
  */
 export const TEMPLATE_BANNED_PUNCTUATION: readonly string[] = PUNCTUATION_CHARS.filter((ch) => ch !== '!')
 
 /**
- * Template-specific extras layered on top of the canonical banned-word list:
- * hyphenated/negated variants and terms not covered by the canonical set but
- * that fire on template copy in practice (SMS/email specific phrasing).
+ * Template-specific extras layered on top of the canonical banned-word list.
+ * D11 keeps the mechanical gate tiny, so this list stays empty.
  */
-const LOCAL_EXTRAS: readonly string[] = [
-  'white-glove',
-  'do not miss out',
-  'will not last',
-  'you will not believe',
-  'introducing',
-  'boutique',
-]
+const LOCAL_EXTRAS: readonly string[] = []
 
 /**
  * Banned words/phrases that hard-fail a save. Core list is the canonical

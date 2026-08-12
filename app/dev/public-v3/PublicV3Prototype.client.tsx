@@ -225,7 +225,7 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
 
       {/* PATTERN 5: SHEET. One question at a time. */}
       <section className="v3-sheet" aria-label="Home valuation">
-        <h2 className="v3-h2">What is your home worth?</h2>
+        <h2 className="v3-h2">Value my home</h2>
         {step === 0 ? (
           <div className="v3-step">
             <label className="v3-field-label" htmlFor="v3-addr">

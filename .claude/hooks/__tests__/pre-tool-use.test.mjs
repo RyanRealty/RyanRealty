@@ -201,7 +201,7 @@ run(
     tool_name: 'Write',
     tool_input: {
       file_path: 'app/sell/page.tsx',
-      content: 'export default function P() {\n  return <div>Act fast, this one will not last long.</div>\n}',
+      content: 'export default function P() {\n  return <div>What is your home worth this week.</div>\n}',
     },
   },
   { deny: true, contains: 'WRITE-BRAND-VOICE' },
@@ -212,7 +212,7 @@ run(
     tool_name: 'Edit',
     tool_input: {
       file_path: 'components/site/listing-detail/Hero.tsx',
-      new_string: '<div>Your local experts are standing by.</div>',
+      new_string: '<div>What is my home worth this week.</div>',
     },
   },
   { deny: true, contains: 'WRITE-BRAND-VOICE' },

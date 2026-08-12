@@ -18,10 +18,10 @@ describe('checkBrandVoice — string input', () => {
   })
 
   it('flags a banned word case-insensitively on a word boundary', () => {
-    const r = checkBrandVoice('This TOP PRODUCING office is ready')
+    const r = checkBrandVoice("This CTA says WHAT'S MY HOME WORTH today")
     expect(r.ok).toBe(false)
     expect(r.violations).toHaveLength(1)
-    expect(r.violations[0]).toMatchObject({ term: 'top producing', kind: 'word' })
+    expect(r.violations[0]).toMatchObject({ term: "what's my home worth", kind: 'word' })
     expect(r.violations[0]!.field).toBeUndefined()
   })
 
@@ -30,11 +30,9 @@ describe('checkBrandVoice — string input', () => {
   })
 
   it('flags a multi-word banned phrase', () => {
-    // Self-praise is caught by the construction rule (VOICE.md rule 8) rather
-    // than the word list. Assert the outcome, not which mechanism fired.
-    const r = checkBrandVoice('We pride ourselves on service')
+    const r = checkBrandVoice('What is your home worth in Bend')
     expect(r.ok).toBe(false)
-    expect(r.violations.some((v) => /self-praise/.test(v.term))).toBe(true)
+    expect(r.violations.some((v) => v.term === 'what is your home worth')).toBe(true)
   })
 
   it('treats an empty string as clean', () => {
@@ -69,10 +67,10 @@ describe('checkBrandVoice — stripHtml', () => {
   })
 
   it('a banned word hidden inside markup is still caught when stripHtml is true', () => {
-    const html = '<p>This <strong>top producing</strong> office is ready</p>'
+    const html = '<p>Tap <strong>what is my home worth</strong> to start</p>'
     const r = checkBrandVoice(html, { stripHtml: true })
     expect(r.ok).toBe(false)
-    expect(r.violations.some((v) => v.term === 'top producing')).toBe(true)
+    expect(r.violations.some((v) => v.term === 'what is my home worth')).toBe(true)
   })
 
   it('without stripHtml, raw tag angle-brackets do not themselves cause a punctuation violation', () => {
@@ -85,19 +83,18 @@ describe('checkBrandVoice — stripHtml', () => {
 
 describe('checkBrandVoice — object input', () => {
   it('tags each violation with its field', () => {
-    const r = checkBrandVoice({ subject: 'Top producing office —', body: 'Act fast; reply now' })
+    const r = checkBrandVoice({ subject: "What's my home worth —", body: 'Value my home; reply now' })
     expect(r.ok).toBe(false)
     const byField = Object.fromEntries(r.violations.map((v) => [`${v.field}:${v.term}`, v]))
-    expect(byField['subject:top producing']).toMatchObject({ kind: 'word', field: 'subject' })
+    expect(byField["subject:what's my home worth"]).toMatchObject({ kind: 'word', field: 'subject' })
     expect(byField['subject:—']).toMatchObject({ kind: 'punctuation', field: 'subject' })
-    expect(byField['body:act fast']).toMatchObject({ kind: 'word', field: 'body' })
     expect(byField['body:;']).toMatchObject({ kind: 'punctuation', field: 'body' })
   })
 
   it('bodyHtml is always HTML-stripped regardless of stripHtml', () => {
-    const r = checkBrandVoice({ bodyHtml: '<p>This <strong>top producing</strong> office</p>' })
+    const r = checkBrandVoice({ bodyHtml: '<p>Tap <strong>what is my home worth</strong></p>' })
     expect(r.ok).toBe(false)
-    expect(r.violations[0]).toMatchObject({ field: 'bodyHtml', term: 'top producing', kind: 'word' })
+    expect(r.violations[0]).toMatchObject({ field: 'bodyHtml', term: 'what is my home worth', kind: 'word' })
   })
 
   it('an HTML entity in bodyText is cleaned so its semicolon does not false-fail', () => {

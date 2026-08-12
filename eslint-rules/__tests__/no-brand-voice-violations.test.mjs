@@ -106,30 +106,29 @@ ruleTester.run('rr-brand-voice/no-violations', rule, {
       errors: [{ messageId: 'punctuation' }],
     },
     {
-      name: 'self-praise in JSX text is flagged (top producing)',
-      code: `const x = () => <p>A top producing office in Bend.</p>`,
+      name: 'worth CTA in JSX text is flagged',
+      code: `const x = () => <p>What's my home worth in Bend.</p>`,
       errors: [{ messageId: 'bannedWord' }],
     },
     {
-      name: 'manufactured urgency in JSX text is flagged (act fast)',
-      code: `const x = () => <p>Act fast on this one.</p>`,
+      name: 'worth CTA variant is flagged (what is your home worth)',
+      code: `const x = () => <p>What is your home worth this week.</p>`,
       errors: [{ messageId: 'bannedWord' }],
     },
     {
-      name: 'multi-word phrase is flagged (your local experts)',
-      code: `const x = () => <p>Find your local experts in Sisters.</p>`,
+      name: 'multi-word worth phrase is flagged',
+      code: `const x = () => <a>What is my home worth</a>`,
       errors: [{ messageId: 'bannedWord' }],
     },
     {
       name: 'banned word in a string-literal JSX attribute is flagged (placeholder)',
-      code: `const x = () => <input placeholder="Premier brokerage service." />`,
+      code: `const x = () => <input placeholder="What's my home worth" />`,
       errors: [{ messageId: 'bannedWord' }],
     },
     {
       name: 'banned text in {"…"} JSX expression container is flagged',
-      code: `const x = () => <p>{"Act fast, this premier brokerage delivers."}</p>`,
+      code: `const x = () => <p>{"What is your home worth today."}</p>`,
       errors: [
-        { messageId: 'bannedWord' },
         { messageId: 'bannedWord' },
       ],
     },

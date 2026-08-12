@@ -1,219 +1,57 @@
 ---
 name: ryan-realty-brand-voice
-description: Enforce Ryan Realty brand voice on every piece of marketing content before publish. Use when generating, reviewing, or validating any content for publication including blog posts, social posts on any platform, email, ad copy, listing copy, video voiceover scripts, video on-screen text, flyers, signage, or website copy. Validates against the Five Laws in VOICE.md (show it don't say it, a number beats an adjective, talk to a smart adult, the category is not a claim, every number is live and true), banned punctuation/words/phrases, and Matt Ryan's canonical writing corpus. Mandatory load for the marketing brain and any subagent generating Ryan Realty content.
+description: Enforce Ryan Realty brand voice on every piece of marketing content before publish. Use when generating, reviewing, or validating any content for publication including blog posts, social posts, email, SMS, packets, video voiceover, or website copy. The law lives in VOICE.md (D11). Mandatory load for the marketing brain and any subagent generating Ryan Realty content.
 ---
 
 # Ryan Realty Brand Voice
 
-This is the canonical voice enforcement skill for the marketing brain and every subagent generating Ryan Realty content. Every piece of content runs through this skill before publish.
+The law is `marketing_brain_skills/brand-voice/VOICE.md`. This file is the
+operational entry. Load VOICE.md before generating public copy. Do not keep a
+second canon here.
 
-The full ruleset lives at `marketing_brain_skills/brand-voice/VOICE.md`. The training corpus lives at `marketing_brain_skills/brand-voice/corpus/gbp_responses.md` (22 Matt Ryan first-party writing samples).
+## When to use
 
-This SKILL.md is the operational entry point. Load `VOICE.md` for full detail when generating long-form content, when validating edge cases, or when updating the rules.
-
----
-
-## When to use this skill
-
-- **Always** before publishing any piece of content to a Ryan Realty channel (organic social, paid ads, blog, email, website copy, flyers, signage, video).
-- **Always** when generating new content from a marketing brief.
+- Before publishing any piece of content to a Ryan Realty channel.
+- When generating new content from a marketing brief.
 - When auditing existing content for voice drift.
-- When updating the voice rules based on Matt's feedback.
 
-If a piece of content is going out under the Ryan Realty name in any medium, this skill governs it.
-
----
-
-## The Five Laws (canonical)
-
-The voice is the Five Laws in `VOICE.md` — the single source of truth. Read it
-first; this skill is workflow on top of it, never a replacement.
-
-1. **Show it, don't say it.** A virtue you name is a virtue the reader doubts.
-2. **A number beats an adjective.** The stat carries the sentence.
-3. **Talk to a smart adult.** No pandering, no talking down, no filler.
-4. **The category is not a claim.** Naming what we are ("independent brokerage,"
-   "licensed brokers") says nothing.
-5. **Every number is live and true.** Traced to the source of truth, per
-   CLAUDE.md §0.
-
-Then the Orwell rules (`VOICE.md` "The Orwell rules") decide how the sentence
-reads, and the two tests (competitor test, receipt test) decide whether it ships.
-The mechanical floor (`VOICE.md` + `scripts/brand-voice-vocabulary.cjs`)
-is the enforced punctuation/vocabulary layer under all of it.
-
-The older five-attribute model (trustworthy / honest / knowledgeable /
-professional / dependable) is retired: it described a tone instead of naming the
-moves, and Law 1 forbids the site from saying any of those words out loud.
-
----
+If a piece of content is going out under the Ryan Realty name, VOICE.md governs it.
 
 ## Point of view
 
-- Write from the client's side, never from the broker's or the deal's.
-- Use "we" for company voice. Use "I" only when the content is genuinely first-person from Matt.
-- The deal is never the subject. The client's situation is.
-- Never talk down. Never pander.
+We. Not I. Write to one person. Say the fact. Then stop.
 
-Full POV rules in `VOICE.md`.
+Personal notes to clients may thank. Public listing posts do not thank. The
+house is the post. Admin copy is instrument language.
 
----
+## Hard fails (the tiny mechanical gate)
 
-## Hard fails (ship-blockers)
+A piece that contains any of these stops at validation.
 
-A piece that contains any of these stops at validation. No publish.
+- Em dash, en dash, semicolon, `!`
+- An invented quote under a name
+- "What's my home worth" / "What is your home worth" on a CTA (use Value my home)
 
-### Banned punctuation
-- Em dashes (`. `)
-- Semicolons (`;`)
-- Dramatic colons (a colon used to introduce a punchline or expansion in body prose)
+The lists live in `scripts/brand-voice-vocabulary.cjs` and
+`scripts/voice-constructions.cjs`. Do not grow them.
 
-Compound hyphens are allowed when standard English requires them (single-family, out-of-state, 30-year fixed, first-time buyer, well-maintained).
-
-### Banned words (representative; full list in `VOICE.md`)
-
-**Real estate clichés.** stunning, breathtaking, gorgeous, charming, pristine, nestled, boasts, must-see, dream home, meticulously maintained, hidden gem, truly, spacious, cozy, luxurious, turnkey, immaculate, captivating, exquisite
-
-**AI filler.** delve, leverage, tapestry, navigate, robust, seamless, comprehensive, elevate, unlock, holistic, dynamic, vibrant, bustling, eclectic, curated, bespoke, foster
-
-**Vague qualifiers.** approximately, roughly, about, around, fairly, somewhat (use the real number)
-
-### Banned phrases
-- Hype openings: "Get ready to fall in love," "You won't believe," "Introducing," "Stunning new listing"
-- Pandering: complimenting the reader's taste, or opening with a gushing reaction to the home
-- Talking down: reassuring the reader not to worry, or offering to simplify things for them
-- Marketing slop: unearned superlatives ("top producing," "top 1 percent," "white glove," "luxury concierge," "premier," "exclusive," "boutique," "your real estate journey") and self-congratulation about being passionate or proud, with no receipt attached
-- Fake urgency: pushing a deadline or scarcity that the numbers do not support
-
-### Banned tropes
-- Dramatic before-and-after ("Most agents do X. We do Y.")
-- Fake humility brag ("We are just so honored to be voted..")
-- Market-doom or market-hype ("The market is crashing," "The market is on fire")
-- Agent-as-hero arc (content that puts the broker at the center of the story instead of the client)
-
-### Other hard fails
-- Any unsourced market statistic.
-- Any "guaranteed" outcome claim.
-- Any fair-housing violation (separate compliance check, but also a brand fail).
-
----
-
-## Soft flags (review required, not auto-blocked)
-
-- Sentence length significantly outside the corpus range (median 18 words, range 8 to 35).
-- Voice fingerprint score below threshold when compared to corpus.
-- Unusual emoji density (more than one per caption, or any emoji in blog/email/ad-headline body).
-- A first-time pattern not represented in the corpus.
-
-Soft flags go to Matt for review with the specific rule cited. Over time the brain learns which Matt consistently overrides and adjusts the threshold.
-
----
-
-## Canonical phrases (use these as templates)
-
-Drawn from Matt's actual GBP review responses. Full corpus at `corpus/gbp_responses.md`.
-
-### Openings
-- "Thank you so much for taking the time to.."
-- "[Name], thank you for.."
-- "This genuinely made my day."
-
-### Acknowledging the client
-- "It was genuinely a pleasure working with you."
-- "You were a great client to work with because [specific reason]."
-- "That kind of trust makes all the difference."
-- "It means a lot to me and to our team."
-
-### Positioning Ryan Realty
-- "A small business like ours."
-- "Honored to.." / "Privilege to.."
-
-### Closing
-- "I'm always here if you need anything down the road."
-- "Wishing you all the best in your new chapter."
-
-### Words to favor in Matt's voice
-genuinely, honored, privilege, small business like ours, trust, chapter, the finish line, the unpredictable market, without the high pressure
-
----
+Unsourced market statistics, guaranteed-outcome claims, and fair-housing
+violations are also ship-blockers (CLAUDE.md §0).
 
 ## Validation flow
 
-When a piece of content arrives for publish:
+1. Read the text (caption, body, VO, on-screen, headline).
+2. Run `checkBrandVoice` from `lib/voice/check.ts` (or `has_hard_fail` /
+   `grep_banned` from `scripts/_producer_lib.py`).
+3. If it fails, return FAIL with the specific rule. If it passes the gate,
+   still read it against the named exemplars in VOICE.md. Regex cannot catch
+   corny.
+4. Log the result. Route: pass, hard fail, or Matt review.
 
-1. **Strip and tokenize.** Get the text content (caption, body, VO script, on-screen text, headline).
-2. **Layer 1 (hard fail check).** Regex against every banned punctuation, word, and phrase. Check for unsourced statistics. Check for "guaranteed" outcome claims. If any hit, return FAIL with the specific rule cited.
-3. **Layer 2 (soft flag check).** Compare against corpus statistics (sentence length, vocabulary overlap, opening/closing pattern match). If significant deviation, return FLAG with the specific dimension cited.
-4. **Log.** Write the validation result to the `marketing_decisions` table in Supabase (piece, result, rules cited, reviewer, final decision).
-5. **Route.** Pass (publish), Hard fail (return to generator with fix instructions), Soft flag (route to Matt for review).
+When this file and `VOICE.md` disagree, **`VOICE.md` is the source of truth.**
 
-### Python implementation (for producer scripts)
+## Related
 
-The canonical Python checker lives at `scripts/_producer_lib.py`. It exposes:
-
-| Function | Purpose |
-|---|---|
-| `has_hard_fail(text) -> bool` | Quick boolean — does the text contain ANY hard-banned word/phrase? |
-| `grep_banned(text, *, include_soft=True) -> list[str]` | Returns sorted list of banned terms found. Set `include_soft=False` to skip vague-qualifier flags. |
-| `grep_banned_categorized(text) -> {"hard": [...], "soft": [...]}` | Split result by tier — hard = ship-blockers, soft = review-needed. |
-
-Two-tier classification (locked 2026-05-20):
-
-- **`HARD_BANNED`** — substring match, always a ship-blocker. All §6.2 clichés + AI filler, all §6.3 hype openings + pandering phrases + talking-down constructions + marketing slop + fake urgency, all §4.7 salesy script language, all §11.0 anti-pattern phrases.
-- **`SOFT_FLAGGED`** — substring match, flag for human review. Vague qualifiers from §6.2 (`about`, `around`, `approximately`, `roughly`, `fairly`, `somewhat`) that have legitimate non-hedge uses.
-
-When this list and `VOICE.md` disagree, **`VOICE.md` is the source of truth.** Update both together, never let them drift.
-
----
-
-## Calibration per channel
-
-The voice does not change across channels. The calibration does. Full details in `VOICE.md`.
-
-| Channel | Key calibration |
-|---|---|
-| Instagram | 1 to 3 sentences above fold. One stat in the hook. One emoji max. |
-| Facebook | 3 to 6 sentences. Same hook and emoji discipline. |
-| TikTok | VO carries the message. On-screen text 3 to 5 words per beat. |
-| YouTube long form | Measured pace. Sources named on screen. |
-| YouTube Shorts | Same as TikTok. |
-| LinkedIn | Professional anchor leans heaviest. No anecdote without a takeaway. |
-| X / Twitter | One idea per post. No engagement bait. |
-| Blog | 1,500 to 2,500 words. Every claim sourced. Every term defined. |
-| Email | Subject under 60 chars. One CTA. Plain text style. |
-| Ad copy | Headlines under 40 chars. Specifics not generics. |
-| Video on-screen text | 5 to 7 words per beat. 2 second minimum. Units always. |
-| Flyer/signage | Specifics over hype. Brand colors only. |
-
----
-
-## Reference seller persona
-
-**The Out-of-State Owner Selling Bend.** Default reader for seller-aimed content unless another audience is named. Drawn from review patterns (SwankHQ, Jim Creekmore, Stephen Graham, samuel hay, Audra Hedberg). They were geographically remote, needed someone they could trust to physically handle the property, and were earned by Matt's weekly updates, on-site repair checks, and same-day responsiveness.
-
-Full persona in `VOICE.md`.
-
----
-
-## Skill maintenance
-
-Update `VOICE.md` (the source of truth) when:
-- A new piece of content gets approved that uses a pattern not represented here.
-- A piece of content gets rejected for a reason not currently in the banned list.
-- Matt explicitly issues a new voice rule in chat.
-- The corpus grows (new long-form writing by Matt gets appended).
-
-This SKILL.md is updated to reflect changes to VOICE.md. Both files commit together.
-
-The corpus at `corpus/gbp_responses.md` grows over time. Matt's own writing in approved blog posts, email drafts, video VO scripts, and other first-party content gets appended.
-
----
-
-## Related skills
-
-- `marketing-brain:dispatch-content`.  calls this skill on every piece before publish.
-- `marketing-brain:generate-briefs`.  uses this skill's rules when writing content briefs so the generator starts on-voice.
-- `marketing-brain:weekly-cycle`.  invokes this skill as part of the publish gate.
-- `engineering:code-review`.  when this skill itself is being edited.
-
-Read `VOICE.md` for the full rulebook. Read `corpus/gbp_responses.md` when measuring fingerprint match.
+- Corpus of Matt's first-party writing: `corpus/gbp_responses.md`
+- Runtime chokepoint: `lib/voice/check.ts`
+- Commit gate: `ci:brand-voice` and `ci:voice-constructions`

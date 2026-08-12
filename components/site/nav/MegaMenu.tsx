@@ -491,7 +491,7 @@ function SellPanel({
             Sellers
           </Eyebrow>
           <DisplayHeading as="p" className="text-xl leading-snug text-foreground">
-            What is your home worth?
+            Value my home
           </DisplayHeading>
           <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
             Get a free valuation from a local broker.
@@ -501,9 +501,9 @@ function SellPanel({
             tone="primary"
             size="sm"
             className="mt-4 w-full"
-            onClick={() => onLinkClick(panel, "What's my home worth")}
+            onClick={() => onLinkClick(panel, 'Value my home')}
           >
-            What&apos;s my home worth
+            Value my home
           </CTAButton>
           <p className="mt-2 text-center text-[12px] text-muted-foreground">
             No obligation.

@@ -819,7 +819,7 @@
         ".cursor/rules/master-plan-protocol.mdc",
         ".cursor/rules/supabase-data-layer.mdc",
         ".cursor/rules/cma-data-model.mdc",
-        ".cursor/rules/blog-voice.mdc"
+        "marketing_brain_skills/brand-voice/VOICE.md"
       ],
       "acceptanceCriteria": [
         "Rules no longer conflict on URL structure, stats computation, or hierarchy terms",

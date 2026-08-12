@@ -188,7 +188,7 @@ export default function ResourcesPage() {
         </div>
 
         {/* Home valuation CTA — preserved untouched (carries LP/UTM attribution). */}
-        <section className="section" id="resource-valuation" aria-label="What is your home worth">
+        <section className="section" id="resource-valuation" aria-label="Value my home">
           <div className="wrap">
             <HomeValuationCta />
           </div>

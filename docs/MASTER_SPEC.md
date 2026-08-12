@@ -173,7 +173,7 @@ Matt Ryan is an Oregon principal broker who has made the specific choice to oper
 
 The editorial north star for every page, every headline, and every piece of copy on the site is this: **honesty over hype, data over adjectives, and relationships over transactions.** A page that says "Median sale in NW Crossing last month: $895k, 38 days on market" does more trust-building work than a page that says "Discover stunning luxury homes in one of Bend's most sought-after neighborhoods." The latter will not appear on this site.
 
-Brand voice attributes: honest, transparent, trustworthy, direct, kind, optimistic, and locally specific. [discovery 01: Brand Voice & Style] The brand explicitly prohibits: "stunning," "nestled," "boasts," "exquisite," "unparalleled," "world-class," "don't miss," "won't last," "must see," "once in a lifetime," "exclusive," "hot market," "now is the time to buy/sell," "dream home," "passionate," "premier," "luxury," "boutique," "concierge," "white-glove." [discovery 01: Brand Voice & Style, blog-voice.mdc]
+Brand voice: `marketing_brain_skills/brand-voice/VOICE.md` (D11). Never name virtues except the About mission sentence. [discovery 01: Brand Voice & Style]
 
 ### 1.2 What we sell
 

@@ -1,6 +1,6 @@
 ---
 name: voice-canon
-description: Drive every public-facing word in the codebase to the Buffett voice canon. Runs the violation scanner, works the ranked worklist down to zero, verifies by rendering, and ships. Use when Matt says "run voice canon", "fix the voice", or after any voice rule changes.
+description: Drive every public-facing word in the codebase to the D11 voice law in VOICE.md. Runs the violation scanner, works the ranked worklist down to zero, verifies by rendering, and ships. Use when Matt says "run voice canon", "fix the voice", or after any voice rule changes.
 ---
 
 # Voice canon — the grinder
@@ -102,9 +102,9 @@ Repeat until `--next` says DONE. Each pass:
 2. **Read the whole file, not just the flagged lines.** The scanner finds shapes it
    has patterns for. A file with three flagged sentences usually has five bad ones.
    Fix the flagged and the obvious neighbours in one pass.
-3. **Rewrite against the canon.** Delete interpretation, keep every fact. If a
-   judgment genuinely has to survive, move it inside a quote attributed to the
-   signing broker (rule 3). Shorter is the normal outcome; if your rewrite is
+3. **Rewrite against the canon.** Delete interpretation, keep every fact. A
+   short judgment in our voice is allowed. Never invent a quote under a name.
+   Shorter is the normal outcome; if your rewrite is
    longer, it is probably wrong.
 4. **Never change a number, a citation, a source line, a legal disclosure, or a
    consent string.** CLAUDE.md §0 outranks this work. See the exclusions below.

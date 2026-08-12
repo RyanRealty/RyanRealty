@@ -210,7 +210,7 @@ export default async function SellPage() {
                 Prefer to talk first? Call{' '}
                 <a href={`tel:${CONTACT.phoneDirectTel}`}>{CONTACT.phoneDirect}</a>
                 . Dedicated written valuation page:{' '}
-                <Link href="/sell/valuation#valuation-form">What&apos;s my home worth</Link>.
+                <Link href="/sell/valuation#valuation-form">Value my home</Link>.
               </p>
             </>
           }

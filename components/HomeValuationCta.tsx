@@ -35,7 +35,7 @@ export default function HomeValuationCta({ className }: Props) {
   return (
     <div className={className}>
       <div className="rounded-lg border border-border bg-card p-6">
-        <H2 className="text-xl">What&apos;s your home worth?</H2>
+        <H2 className="text-xl">Value my home</H2>
         <p className="mt-2 text-sm text-muted-foreground">
           Get a free valuation with local market data and next steps from our team.
         </p>

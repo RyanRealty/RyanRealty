@@ -130,7 +130,7 @@ The codebase has **three competing URL narratives** and multiple stale/conflicti
 | `docs/ENTITY_OPTIMIZATION.md` | Update structured data URL references | Medium |
 | `docs/CONSOLIDATED_AUDIT_AND_PLAN.md` | Mark resolved conflicts; add new ones if any | Medium |
 | `.cursor/rules/cma-data-model.mdc` | Verify ClosePrice rules align with stats computation rules | Low |
-| `.cursor/rules/blog-voice.mdc` | Update internal link examples if routes change | Low |
+| `marketing_brain_skills/brand-voice/VOICE.md` | Voice law (D11). Update internal link examples if routes change | Low |
 
 ### New Cursor Rule: `.cursor/rules/data-architecture.mdc` (Phase 0B)
 

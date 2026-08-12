@@ -30,7 +30,7 @@ assert.ok(Array.isArray(VOCAB.PUNCTUATION) && VOCAB.PUNCTUATION.length === 4,
 // stays non-empty (the canon does name phrases) but a size floor tied to
 // deleted categories would just re-encode the rules we removed.
 assert.ok(Array.isArray(VOCAB.BANNED_WORDS) && VOCAB.BANNED_WORDS.length > 0,
-  'BANNED_WORDS must carry the phrases VOICE.md names (pandering, fake urgency, self-praise, category positioning)')
+  'BANNED_WORDS must carry the phrases VOICE.md names (Value my home CTA)')
 assert.ok(Array.isArray(VOCAB.BANNED_WORD_STRINGS) && VOCAB.BANNED_WORD_STRINGS.length > 0,
   'BANNED_WORD_STRINGS must carry the deduped lowercase string list')
 

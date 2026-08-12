@@ -18,4 +18,4 @@ OREF forms use numbered lines, signature blocks, and cross-references between th
 
 - Subscribers access forms through **OREF-licensed hosting platforms**, not by pasting PDFs on random servers (see license terms).
 - **Spanish** and other translations may exist for residential forms; confirm on OREF’s site for current languages.
-- **Ryan Realty** blog voice rules (`.cursor/rules/blog-voice.mdc`) still apply to **marketing** copy; this skill applies to **transaction education** and **internal checklists**.
+- **Ryan Realty** public voice (`marketing_brain_skills/brand-voice/VOICE.md`) still applies to **marketing** copy; this skill applies to **transaction education** and **internal checklists**.
