@@ -1,0 +1,276 @@
+/* ===========================================================================
+   V3Field. PATTERN 2: FIELD (map + list in one frame, bound both ways).
+
+   Every value here reads a custom property from ./tokens.css. No color, size,
+   radius, ring, or duration is declared in this file, which is the barrel law:
+   tokens.css is the only place a v3 color exists.
+
+   Motion: 200ms for a highlight (a state change the visitor caused), 300ms for
+   a pin traveling to a new bounding box (continuity when the set changes).
+   Both collapse under prefers-reduced-motion because the duration tokens
+   themselves collapse in tokens.css.
+   =========================================================================== */
+
+/* The block selector is doubled (`.v3.v3-field`) on purpose, and every one of the
+   six patterns carries the same guard. The still-in-repo prototype route
+   (app/dev/public-v3/public-v3.css) declares a plain global `.v3-field`, and App
+   Router keeps route CSS in the document across client navigations, so once a
+   rolled public page and the prototype coexist in one session two single-class
+   rules collide and load order picks the winner. V3Field renders V3_ROOT_CLASS on
+   the same element as `v3-field`, so the compound always matches and reaches
+   (0,2,0), which the prototype's (0,1,0) can never reach. The `__` element
+   names below need no guard: the prototype spells its elements with a single
+   dash (`v3-field-...`), which does not collide. */
+/* The opening space is --v3-space-2xl, the same as Instrument, Ledger, Sheet,
+   and Quiet. This pattern was the one outlier at --v3-space-lg, carried over
+   from the prototype, which meant a Field stacked under an Instrument opened on
+   half the gap every other pair of sections opens on. The bottom stops stay as
+   each pattern authored them, because those encode a role (Quiet closes a node
+   on --v3-space-3xl); the top is what governs how two sections meet. */
+.v3.v3-field {
+  display: block;
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding: var(--v3-space-2xl) var(--v3-gutter) var(--v3-space-2xl);
+}
+
+/* The honest count, above the frame, so the number is read before the set. */
+.v3-field__count {
+  margin-bottom: var(--v3-space-lg);
+}
+
+.v3-field__source {
+  margin-top: var(--v3-space-md);
+}
+
+/* ---------------------------------------------------------------------------
+   The frame. One column on 390, map beside list from 900.
+   --------------------------------------------------------------------------- */
+
+.v3-field__frame {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--v3-space-md);
+}
+
+@media (min-width: 56.25rem) {
+  .v3-field__frame {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.v3-field__col {
+  display: grid;
+  gap: var(--v3-space-xs);
+  align-content: start;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Map frame. Holds whatever the caller passed, or the fallback plot.
+   --------------------------------------------------------------------------- */
+
+.v3-field__map {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-card);
+  background: var(--v3-ground);
+  overflow: hidden;
+}
+
+/* A real map arrives as one element and should fill the frame it was given. */
+.v3-field__map > :only-child {
+  width: 100%;
+  height: 100%;
+}
+
+@media (min-width: 56.25rem) {
+  .v3-field__map {
+    position: sticky;
+    top: var(--v3-space-lg);
+  }
+}
+
+.v3-field__plot {
+  position: absolute;
+  inset: 0;
+}
+
+/* The hairline field the pins sit on. Structural navy at 12%, not decoration:
+   it gives the plot a sense of scale without pretending to be a basemap. */
+.v3-field__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--v3-edge) 1px, transparent 1px),
+    linear-gradient(90deg, var(--v3-edge) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: 0.6;
+}
+
+/* ---------------------------------------------------------------------------
+   Pins. A dot at rest, the price when bound to the row under the cursor.
+   Inventory clusters, so twenty price labels at rest would stack and none of
+   them could be read. The binding does that work instead.
+   --------------------------------------------------------------------------- */
+
+.v3-field__pin {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid var(--v3-surface);
+  border-radius: var(--v3-radius-pill);
+  background: var(--v3-ink);
+  color: var(--v3-ink-on-navy);
+  font-size: var(--v3-size-source);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  line-height: var(--v3-leading-control);
+  white-space: nowrap;
+  overflow: hidden;
+  transition:
+    left var(--v3-dur-enter) var(--v3-ease-out),
+    top var(--v3-dur-enter) var(--v3-ease-out),
+    width var(--v3-dur-state) var(--v3-ease-out),
+    height var(--v3-dur-state) var(--v3-ease-out),
+    transform var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-field__pin-label {
+  display: none;
+}
+
+.v3-field__pin.is-active {
+  z-index: 2;
+  width: auto;
+  height: auto;
+  padding: var(--v3-space-3xs) var(--v3-space-xs);
+  overflow: visible;
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.v3-field__pin.is-active .v3-field__pin-label {
+  display: inline;
+}
+
+/* ---------------------------------------------------------------------------
+   List. Every row is a door: the whole row is the link, nothing inside it is.
+   --------------------------------------------------------------------------- */
+
+.v3-field__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-card);
+  overflow: hidden;
+}
+
+/* On a wide viewport the list becomes its own scroll region beside the sticky
+   map, which is what makes the two read as one frame. On 390 it stays in the
+   page flow: a nested scroll area inside a scrolling page is a trap on touch. */
+@media (min-width: 56.25rem) {
+  .v3-field__list {
+    max-height: min(70vh, 560px);
+    overflow-y: auto;
+  }
+}
+
+.v3-field__item {
+  margin: 0;
+}
+
+.v3-field__row {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  align-content: center;
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  border-bottom: 1px solid var(--v3-edge);
+  color: var(--v3-ink);
+  text-decoration: none;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    box-shadow var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-field__item:last-child .v3-field__row {
+  border-bottom: none;
+}
+
+/* The locked ring, drawn flush inside the row instead of outside it.
+
+   The list clips on both axes by design: overflow hidden at 390 so the rows
+   meet the card's rounded corners, overflow-y auto from 900 so the list becomes
+   its own scroll region. Neither axis is ever visible, so a ring at the shared
+   +2px offset loses its left and right segments on every row, and the row is
+   the only control this pattern hands a keyboard. Width and color stay the
+   tokens; the offset flips to -3px, which lands the ring's outer edge exactly
+   on the row's edge, so the whole ring is inside the clip.
+
+   The .v3 prefix is deliberate. This rule and .v3 :focus-visible in tokens.css
+   carry the same specificity, so without it the ring would depend on which
+   stylesheet the bundler emitted first. */
+.v3 .v3-field__row:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: calc(-1 * var(--v3-focus-width));
+}
+
+/* An outline follows the radius of the box it is drawn against. The first and
+   last rows sit under the card's rounded corners, so they carry that curve or
+   the clip nibbles the ring's outer corners there. Their backgrounds were
+   already clipped to this exact curve, so nothing at rest changes. */
+.v3-field__item:first-child .v3-field__row {
+  border-start-start-radius: var(--v3-radius-card);
+  border-start-end-radius: var(--v3-radius-card);
+}
+
+.v3-field__item:last-child .v3-field__row {
+  border-end-start-radius: var(--v3-radius-card);
+  border-end-end-radius: var(--v3-radius-card);
+}
+
+/* The highlight, both directions: hovering the row, or its pin, lands here. */
+.v3-field__row.is-active {
+  background: var(--v3-wash);
+  box-shadow: inset 3px 0 0 var(--v3-ink);
+}
+
+.v3-field__price {
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.v3-field__title {
+  font-size: var(--v3-size-body-sm);
+}
+
+.v3-field__meta {
+  font-size: var(--v3-size-body-sm);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink-muted);
+}
+
+.v3-field__empty {
+  padding: var(--v3-space-md);
+  font-size: var(--v3-size-body-sm);
+  color: var(--v3-ink-muted);
+}
+
+/* The quiet lines: what the map is, and what the set does not show. */
+.v3-field__note {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}

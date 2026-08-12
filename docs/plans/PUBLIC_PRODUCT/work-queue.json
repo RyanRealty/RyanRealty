@@ -1,17 +1,12 @@
 [
   {
-    "id": "p7-primitives",
-    "phase": "P7",
-    "note": "Build components/site/v3/: six pattern components (V3Instrument/V3Field/V3Ledger/V3Stage/V3Sheet/V3Quiet) + atoms (V3Button, V3Chrome, V3Figure, V3SourceLine, V3Row) + tokens.css + index.ts barrel. Accessible name REQUIRED in each type so a nameless control cannot compile. Then port /dev/public-v3 nodes onto the barrel to prove it."
-  },
-  {
     "id": "p8-litmus",
     "phase": "P8",
-    "note": "Time L1 (cold mobile visitor -> completed valuation request) and L2 (cold visitor -> saved search/alert with contact) on a real phone against a barrel-built surface. A timing you did not measure this session is not a timing."
+    "note": "Time L1 (cold mobile visitor -> completed valuation request) and L2 (cold visitor -> saved search/alert with contact) against the barrel-built surface, on a real device profile at 390. A timing you did not measure this session is not a timing. Then propose the two target numbers to Matt for the litmus sign-off."
   },
   {
     "id": "p9-roll-first-family",
     "phase": "P9",
-    "note": "First family migration + the ci:public-ui shrink-only ratchet lands IN THE SAME COMMIT (seeded at today real counts: per-register import counts, legacy-page count, section-pattern violations; AST-based, break-tested 3 ways). Order proposal: Market node family first (it is the pillar with the least entangled chrome), then Places, then Homes browse, then Sell, then the homepage last as the composition of all four."
+    "note": "First production family migration onto components/site/v3 + the ci:public-ui shrink-only ratchet in the SAME commit (per-register import counts, legacy-page count; AST-based; break-tested 3 ways). Proposed order: Market family, Places, Homes browse, Sell, homepage last. Adversarial fresh-context verify per family: git diff proves no capture contract, canonical, or metric moved."
   }
 ]

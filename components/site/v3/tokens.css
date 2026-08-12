@@ -1,0 +1,414 @@
+/* ===========================================================================
+   v3 TOKEN LAYER
+   The one place a v3 color, size, radius, ring, or duration is defined. Every
+   other file in components/site/v3/ consumes these custom properties and
+   declares no raw color of its own.
+
+   Scoped to the .v3 root class, never :root, so the barrel can be mounted on
+   one route at a time during the roll without touching any other surface.
+
+   Derived from design_system/public/PUBLIC_UI.md (locked 2026-08-11) and the
+   values proven in the moving prototype at app/dev/public-v3/. Brand law:
+   navy #102742, cream #faf8f4, Amboqia display, Geist body, 3px warm stone
+   focus ring, tabular numerals on every figure, 200/300/400ms motion ladder.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. TOKENS
+   --------------------------------------------------------------------------- */
+
+.v3 {
+  /* -- Brand color. The only two-color palette; white is a legibility layer. -- */
+  --v3-navy: #102742;
+  --v3-cream: #faf8f4;
+  --v3-white: #ffffff;
+
+  /* Muted stops. PUBLIC_UI.md section 4 computed these: navy-70 on cream is
+     8.2:1 (AAA) and cream-60 on navy is 5.99:1 (AA, body >= 16px only).
+     navy-50 and cream-40 failed AA and are deliberately absent. */
+  --v3-navy-70: rgba(16, 39, 66, 0.7);
+  --v3-cream-60: rgba(250, 248, 244, 0.6);
+
+  /* Structural navy: hairlines, washes, pressed states. Replaces the retired
+     --rr-sand and --rr-navy-deep tokens with alpha on the one navy. */
+  --v3-edge: rgba(16, 39, 66, 0.12);
+  --v3-wash: rgba(16, 39, 66, 0.06);
+  --v3-pressed: rgba(16, 39, 66, 0.85);
+  --v3-ground: #eee9e0;
+
+  /* Media legibility. Navy scrim under type on photo or video, never a
+     decorative gradient. */
+  --v3-scrim-strong: rgba(16, 39, 66, 0.78);
+  --v3-scrim-mid: rgba(16, 39, 66, 0.42);
+  --v3-scrim-soft: rgba(16, 39, 66, 0.16);
+  --v3-media-shadow: 0 2px 24px rgba(16, 39, 66, 0.55);
+
+  /* Focus. Warm stone, never navy on navy (WCAG 2.2 section 2.4.11). */
+  --v3-focus: #b9ab97;
+
+  /* -- Semantic roles. Components reference these, not the raw brand names. -- */
+  --v3-surface: var(--v3-cream);
+  --v3-surface-inverse: var(--v3-navy);
+  --v3-surface-raised: var(--v3-white);
+  --v3-ink: var(--v3-navy);
+  --v3-ink-muted: var(--v3-navy-70);
+  --v3-ink-on-navy: var(--v3-cream);
+  --v3-ink-on-navy-muted: var(--v3-cream-60);
+  --v3-ink-on-media: var(--v3-white);
+
+  /* -- Type. Two faces: Amboqia for display and figures, Geist for everything
+     a visitor reads in sentences.
+
+     THE DISPLAY FACE IS REPAIRED HERE, ONCE, FOR ALL SIX PATTERNS.
+     --font-display is not defined anywhere a v3 surface loads. Every definition
+     in the repo sits somewhere else: the prototype's own node-scoped fix
+     (app/dev/public-v3/public-v3.css), the design_system source stylesheet
+     (imported by nothing under app/), and the static mockups under
+     public/mockup-preview. A var() with no fallback pointing at an undefined
+     property is guaranteed-invalid, so `--v3-font-display: var(--font-display),
+     Georgia, serif` was invalid at computed value time, `font-family:
+     var(--v3-font-display)` on .v3-heading and .v3-figure__value dropped, and
+     every display heading and every figure INHERITED Geist from .v3 below --
+     the brand's locked display face, missing from the answer, the verdict, and
+     every number on five of the six patterns.
+
+     V3Stage.css carried this repair scoped to .v3-stage, which is why the Stage
+     alone rendered Amboqia. It is the token layer's job, not one pattern's, so
+     it moved here and the Stage's copy was deleted rather than left to diverge.
+
+     --font-amboqia-safe, NEVER --font-amboqia: the safe token (app/globals.css,
+     declared on :root so it reaches every route) layers the U+0049 patch ahead
+     of the family, without which a capital I is drawn as a 1 and "Inside Bend"
+     renders "1nside Bend".
+
+     Both names are set, and either alone is sufficient, so the repair does not
+     depend on which stylesheet the bundler emits first:
+      - --v3-font-display is what .v3-heading and .v3-figure__value read.
+      - --font-display is the raw name any descendant or nested mockup may read. */
+  --font-display: var(--font-amboqia-safe);
+  --v3-font-display: var(--font-amboqia-safe), Georgia, serif;
+  --v3-font-body: var(--font-sans), ui-sans-serif, sans-serif;
+
+  /* Fluid ramp. Body never drops below 16px (PUBLIC_UI.md section 2). */
+  --v3-size-display-1: clamp(2.2rem, 7vw, 4.2rem);
+  --v3-size-display-2: clamp(1.5rem, 4vw, 2.2rem);
+  --v3-size-num-lead: clamp(2.6rem, 9vw, 4.4rem);
+  --v3-size-num: clamp(1.5rem, 4.5vw, 2.4rem);
+  --v3-size-body-lg: 1.05rem;
+  --v3-size-body: 1rem;
+  --v3-size-body-sm: 0.9rem;
+  --v3-size-source: 0.78rem;
+  --v3-size-label: 0.74rem;
+  --v3-size-eyebrow: 0.72rem;
+
+  --v3-track-display: -0.01em;
+  --v3-track-signage: 0.08em;
+  --v3-track-label: 0.1em;
+  --v3-track-eyebrow: 0.16em;
+
+  --v3-leading-display: 1.02;
+  --v3-leading-heading: 1.1;
+  --v3-leading-body: 1.55;
+  --v3-leading-control: 1.2;
+  /* The tighter leading every small quiet line uses: source traces, hints,
+     field notes, plot disclosures, error text. It was a raw 1.5 written into
+     seven separate rules across five files, which is a token with seven
+     definitions and no name. */
+  --v3-leading-note: 1.5;
+
+  --v3-weight-body: 400;
+  --v3-weight-medium: 500;
+  --v3-weight-strong: 600;
+  --v3-weight-num: 700;
+
+  /* -- Spacing rhythm. Large quiet margins, hairline rules over heavy cards. -- */
+  --v3-space-3xs: 0.25rem;
+  --v3-space-2xs: 0.35rem;
+  --v3-space-xs: 0.5rem;
+  --v3-space-sm: 0.75rem;
+  --v3-space-md: 1rem;
+  --v3-space-lg: 1.5rem;
+  --v3-space-xl: 2.25rem;
+  --v3-space-2xl: 3rem;
+  --v3-space-3xl: 4rem;
+
+  --v3-gutter: 1.25rem;
+  --v3-measure: 72rem;
+  --v3-measure-sheet: 40rem;
+  --v3-measure-text: 44rem;
+
+  /* Minimum touch target, thumb reachable at 390 (Apple HIG / Material). */
+  --v3-tap: 44px;
+
+  /* -- Radii. 10px control, 14px card, pill for chips. -- */
+  --v3-radius-sm: 6px;
+  --v3-radius-control: 10px;
+  --v3-radius-card: 14px;
+  --v3-radius-pill: 999px;
+
+  /* -- Focus ring. 3px warm stone, always visible, 2px offset. -- */
+  --v3-focus-width: 3px;
+  --v3-focus-offset: 2px;
+  --v3-focus-ring: var(--v3-focus-width) solid var(--v3-focus);
+
+  /* -- Underline offset. One idea, previously spelled three ways: a raw 3px in
+     the text button, a raw 3px in the Quiet label, and a space token borrowed
+     as an offset in the Instrument door. Body text clears its descenders at
+     3px; a figure at display size needs the rule further out. -- */
+  --v3-underline-offset: 3px;
+  --v3-underline-offset-display: 4px;
+
+  /* -- Breakpoints. Media queries cannot read a custom property, so this is the
+     ladder every pattern stylesheet writes literally, and it is written in rem
+     everywhere so a visitor who enlarges their root font gets the wide layout
+     at the same effective text size on all six:
+       40rem  (640px) Sheet inner: the echo row and fact row take two columns
+       48rem  (768px) Instrument figure grid, Ledger third column, Stage height
+       56.25rem (900px) Field: map beside list, list becomes its own scroller
+     Instrument and Stage previously wrote 768px while Ledger wrote 48rem: the
+     same breakpoint in two notations, which diverge the moment the root font
+     is not 16px. -- */
+
+  /* -- Motion ladder. 200ms state change, 300ms entrance, 400ms fade-up,
+     longer only for a scroll-bound sequence the visitor controls. Travel
+     stays at or under 16px. -- */
+  --v3-dur-state: 200ms;
+  --v3-dur-enter: 300ms;
+  --v3-dur-rise: 400ms;
+  --v3-dur-sequence: 900ms;
+  --v3-ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --v3-travel: 10px;
+}
+
+/* ---------------------------------------------------------------------------
+   2. BASE SURFACE
+   Everything a v3 subtree inherits by sitting inside the token scope.
+   --------------------------------------------------------------------------- */
+
+.v3 {
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  font-family: var(--v3-font-body);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.v3:focus-visible,
+.v3 :focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+/* Reduced motion resolves every sequence instantly to its finished state. The
+   duration tokens collapse first, so any component reading them lands without
+   needing its own media query; the blanket rule below catches hardcoded ones. */
+@media (prefers-reduced-motion: reduce) {
+  .v3 {
+    --v3-dur-state: 0.01ms;
+    --v3-dur-enter: 0.01ms;
+    --v3-dur-rise: 0.01ms;
+    --v3-dur-sequence: 0.01ms;
+    --v3-travel: 0px;
+  }
+
+  .v3 *,
+  .v3 *::before,
+  .v3 *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   3. ATOM CLASSES
+   The styles for the primitives in atoms.tsx and nothing else. Pattern
+   components own their own layout; these own the small pieces only.
+
+   EVERY SELECTOR BELOW IS SCOPED UNDER .v3, AND THAT IS NOT DECORATION.
+   The still-in-repo prototype route (app/dev/public-v3/public-v3.css) declares
+   plain global `.v3-btn`, `.v3-figure`, `.v3-source`, and `.v3-eyebrow` against
+   its own token names, and App Router keeps route CSS in the document across
+   client navigations. Once a rolled public page and the prototype coexist in one
+   session, two single-class rules collide and load order picks the winner: the
+   prototype's `.v3-btn { border: none }` erases the ghost outline, its
+   `.v3-source { margin-top: 1.25rem; color: var(--navy-70) }` injects a margin
+   into every trace line and resolves the color against a token that does not
+   exist outside its route, and its `.v3-figure` and `.v3-eyebrow` rules land
+   the same way.
+
+   V3Instrument.css and V3Ledger.css already defended their own block selectors
+   this way and named this atom-layer exposure as the part they could not fix
+   from where they sat. It is fixed here. Every atom renders inside a section
+   that carries V3_ROOT_CLASS, so `.v3 ` always matches, reaches (0,2,0), and the
+   prototype's (0,1,0) can never reach it in either load order. The modifiers
+   carry the same prefix so the base rule cannot outrank them.
+   --------------------------------------------------------------------------- */
+
+/* V3Button ------------------------------------------------------------------
+   Primary is solid navy on cream, ghost is the outline, text is the tertiary
+   underline. One primary per viewport. */
+.v3 .v3-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v3-space-xs);
+  min-height: var(--v3-tap);
+  padding: 0.7rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--v3-radius-control);
+  font-family: inherit;
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-strong);
+  line-height: var(--v3-leading-control);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3 .v3-btn:disabled,
+.v3 .v3-btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.v3 .v3-btn--primary {
+  background: var(--v3-navy);
+  color: var(--v3-ink-on-navy);
+}
+
+.v3 .v3-btn--primary:hover:not(:disabled) {
+  background: var(--v3-pressed);
+}
+
+.v3 .v3-btn--ghost {
+  background: transparent;
+  color: var(--v3-ink);
+  border-color: var(--v3-navy);
+}
+
+.v3 .v3-btn--ghost:hover:not(:disabled) {
+  background: var(--v3-wash);
+}
+
+.v3 .v3-btn--text {
+  min-height: auto;
+  padding: var(--v3-space-xs) 0;
+  background: none;
+  border-color: transparent;
+  color: var(--v3-ink-muted);
+  font-weight: var(--v3-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: var(--v3-underline-offset);
+}
+
+.v3 .v3-btn--text:hover:not(:disabled) {
+  color: var(--v3-ink);
+}
+
+/* On media the button sits over the Stage scrim, so it inverts. */
+.v3 .v3-btn--on-media.v3-btn--ghost {
+  color: var(--v3-ink-on-media);
+  border-color: var(--v3-ink-on-media);
+}
+
+.v3 .v3-btn--on-media.v3-btn--text {
+  color: var(--v3-ink-on-media);
+}
+
+/* V3Figure ------------------------------------------------------------------
+   The number is the spectacle: Amboqia, tabular, with its label beneath. */
+.v3 .v3-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.v3 .v3-figure__value {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-display);
+  line-height: 1;
+}
+
+.v3 .v3-figure--lead .v3-figure__value {
+  font-size: var(--v3-size-num-lead);
+}
+
+.v3 .v3-figure__label {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-figure--on-media .v3-figure__value {
+  color: var(--v3-ink-on-media);
+  text-shadow: var(--v3-media-shadow);
+}
+
+.v3 .v3-figure--on-media .v3-figure__label {
+  color: var(--v3-ink-on-navy-muted);
+}
+
+/* V3SourceLine --------------------------------------------------------------
+   The section 0 trace under any data block. Present, quiet, never absent. */
+.v3 .v3-source {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-source--on-media {
+  color: var(--v3-ink-on-navy-muted);
+}
+
+/* V3Eyebrow ----------------------------------------------------------------- */
+.v3 .v3-eyebrow {
+  margin: 0;
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-eyebrow--on-media {
+  color: var(--v3-ink-on-media);
+  text-shadow: var(--v3-media-shadow);
+}
+
+/* V3Heading ----------------------------------------------------------------- */
+.v3 .v3-heading {
+  margin: 0;
+  font-family: var(--v3-font-display);
+  font-weight: var(--v3-weight-body);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-display);
+  text-wrap: balance;
+}
+
+.v3 .v3-heading--1 {
+  font-size: var(--v3-size-display-1);
+}
+
+.v3 .v3-heading--2 {
+  font-size: var(--v3-size-display-2);
+  line-height: var(--v3-leading-heading);
+}
+
+.v3 .v3-heading--on-media {
+  color: var(--v3-ink-on-media);
+  text-shadow: var(--v3-media-shadow);
+}

@@ -1,0 +1,117 @@
+/* ===========================================================================
+   V3Instrument. Layout for PATTERN 1: the answer, big.
+
+   Every color, size, radius, and duration is a custom property from
+   ./tokens.css, which is the only file in components/site/v3/ allowed to
+   declare a raw value. Geometry follows PUBLIC_UI.md pattern 1: quiet outer
+   margins, the verdict at display size, a single hairline separating it from
+   the figures, the source trace beneath in muted navy, the earned ask last.
+
+   The prototype at app/dev/public-v3/ renders the same pattern from its own
+   hand-written global CSS (public-v3.css) against its own token names
+   (--navy-70, --edge). It imports nothing from this directory, so it proves
+   nothing about this file, and it declares a plain global `.v3-instrument`
+   (padding: 3rem 1.25rem 2.5rem; max-width: 72rem) alongside global
+   `.v3-figure`, `.v3-source`, and `.v3-eyebrow`. Route CSS stays in the
+   document across App Router client navigations, so once a rolled public page
+   and the still-in-repo prototype coexist in one session, load order would
+   decide which box model wins.
+
+   Every selector below is therefore scoped under the token root class, which
+   V3Instrument renders on the same element as `v3-instrument`. The block
+   selector reaches (0,2,0) and the element selectors reach (0,3,0), which the
+   prototype's single-class rules can never match, so this file's geometry wins
+   in both load orders. All six patterns now carry this same guard, and the
+   atom-class exposure this comment used to hand off (`.v3-figure`,
+   `.v3-source`, `.v3-eyebrow`, `.v3-btn`, all single class) was closed at its
+   own layer: every atom rule in ./tokens.css is scoped `.v3 ` for exactly this
+   reason. Nothing under components/site/v3/ is order-dependent against the
+   prototype any more.
+
+   No motion lives here, and none is imported. PUBLIC_UI.md section 5 allows
+   600ms and longer only for a scroll-bound sequence the visitor controls, and
+   section 1 ships a motion only when it encodes a state change the visitor
+   caused. A section arriving is neither, so the Instrument has no entrance
+   animation and no arrival count-up. The one transition below belongs to a
+   door and fires on hover and focus, which the visitor causes, at the 200ms
+   state-change rung.
+   =========================================================================== */
+
+.v3.v3-instrument {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-2xl) var(--v3-gutter) var(--v3-space-xl);
+}
+
+.v3.v3-instrument .v3-instrument__eyebrow {
+  margin-bottom: var(--v3-space-sm);
+}
+
+/* The verdict. V3Heading carries the Amboqia face, the display size, and
+   text-wrap: balance; this owns only the space under it. */
+.v3.v3-instrument .v3-instrument__headline {
+  margin-bottom: var(--v3-space-xl);
+}
+
+/* Two columns at 390 so a four-figure set reads without scrolling, then as many
+   equal tracks as fit from 768 up. auto-fit with a 1fr max gives exactly one
+   track per figure whenever they fit, which is four across at 1280 and stays
+   right for three or five. */
+.v3.v3-instrument .v3-instrument__figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--v3-space-lg) var(--v3-space-md);
+  border-top: 1px solid var(--v3-edge);
+  padding-top: var(--v3-space-lg);
+}
+
+/* A lone figure is the headline figure, at lead size, so it takes the row. */
+.v3.v3-instrument .v3-instrument__figures--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 48rem) {
+  .v3.v3-instrument .v3-instrument__figures {
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+
+  .v3.v3-instrument .v3-instrument__figures--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A stat that is a door. Nothing at rest, because a row of underlined figures
+   would compete with the verdict; the affordance arrives on hover and on focus.
+   min-height holds the 44px target when a short figure sits in a tall row, and
+   the focus ring comes from the one :focus-visible rule in ./tokens.css. */
+.v3.v3-instrument .v3-instrument__door {
+  display: block;
+  min-width: 0;
+  min-height: var(--v3-tap);
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--v3-radius-sm);
+  transition: color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3.v3-instrument .v3-instrument__door:hover .v3-figure__value,
+.v3.v3-instrument .v3-instrument__door:focus-visible .v3-figure__value {
+  text-decoration: underline;
+  /* The display-size figure needs the rule further from its descenders than
+     body text does, which is why the token layer carries two offsets. */
+  text-underline-offset: var(--v3-underline-offset-display);
+}
+
+.v3.v3-instrument .v3-instrument__door:hover .v3-figure__label {
+  color: var(--v3-ink);
+}
+
+.v3.v3-instrument .v3-instrument__source {
+  margin-top: var(--v3-space-lg);
+}
+
+/* The ask, inside the labelled section and under the trace, so it belongs to
+   the answer that earned it. */
+.v3.v3-instrument .v3-instrument__action {
+  margin-top: var(--v3-space-xl);
+}

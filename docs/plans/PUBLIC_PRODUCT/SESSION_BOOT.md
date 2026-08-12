@@ -58,3 +58,28 @@ history in the order it happened; a phase named there is what was true THEN, not
   win; update the loser in the same session. Superseded text left standing (the old
   program's "GRANTED" wave order) misleads every later reader.
 - **Never gate a page whose rendered output still carries the old register.**
+- **An animation that rounds before formatting publishes a wrong number.** The count-up
+  rounded to an integer, so a real 3.6 months of supply rendered as "4.0" — and 4.0 is the
+  seller/balanced threshold itself. Hand the raw value to the formatter and let each
+  formatter own its rounding. This shipped to production and was caught only because a
+  sibling agent re-derived the same figure and saw the two disagree.
+- **A CSS variable the app never defines fails silently and beautifully.** The prototype
+  asked for `var(--font-display)`, which does not exist in this codebase, so every heading
+  rendered in the Georgia fallback and the design was judged in the wrong typeface. The
+  canonical public display face is `var(--font-amboqia-safe)` (app/globals.css). Verify a
+  font by reading the COMPUTED family in the browser, never by reading the stylesheet.
+- **Decorative geometry becomes a factual claim the moment it looks like a map.** Pins
+  positioned by arithmetic on an array index imply a spatial relationship the data never
+  made. Either place from real coordinates or do not draw a map.
+- **A span styled like a button is a dead end wearing a door's clothes.** Every action that
+  looks primary must be a real link or button, and every nav word must go somewhere — a
+  prototype whose nav does nothing cannot demonstrate the exploration graph it exists to
+  demonstrate.
+- **Copy that describes the design system is not visitor copy.** "Real DAL data, six locked
+  patterns, reduced motion honored" reads as the product explaining itself. Cut it.
+- **Parallel builders diverge unless the shared thing exists first.** Four nodes built in
+  parallel produced four CountUps, four chromes, three Field behaviors, and two type
+  scales. The fix that travels is the barrel; build shared primitives BEFORE fanning out
+  page work, not after.
+- **Concurrent tsc runs OOM and report clean.** Thirteen simultaneous typechecks produced
+  an empty grep that read as a pass. A typecheck that was killed is not a typecheck.

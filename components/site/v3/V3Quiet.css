@@ -1,0 +1,150 @@
+/* ===========================================================================
+   PATTERN 6: QUIET
+   Styles for V3Quiet.tsx and nothing else. Every value resolves from
+   ./tokens.css, which V3Quiet.tsx imports and whose scope the section opens on
+   itself with V3_ROOT_CLASS. No raw color is declared here, and no motion value
+   is hardcoded: travel reads --v3-travel so reduced motion collapses it to 0.
+
+   The pattern's whole job is to weigh nothing: hairline rules instead of
+   cards, body Geist instead of display, muted ink for anything that is not
+   the destination itself. If a Quiet block ever reads as loud as the section
+   above it, the rule is wrong, not the section.
+   =========================================================================== */
+
+/* The block selector is doubled (`.v3.v3-quiet`) on purpose, and every one of the
+   six patterns carries the same guard. The still-in-repo prototype route
+   (app/dev/public-v3/public-v3.css) declares a plain global `.v3-quiet`, and App
+   Router keeps route CSS in the document across client navigations, so once a
+   rolled public page and the prototype coexist in one session two single-class
+   rules collide and load order picks the winner. V3Quiet renders V3_ROOT_CLASS on
+   the same element as `v3-quiet`, so the compound always matches and reaches
+   (0,2,0), which the prototype's (0,1,0) can never reach. The `__` element
+   names below need no guard: the prototype spells its elements with a single
+   dash (`v3-quiet-...`), which does not collide. */
+.v3.v3-quiet {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-2xl) var(--v3-gutter) var(--v3-space-3xl);
+}
+
+/* Head ---------------------------------------------------------------------
+   Optional context line and optional title. Both absent is the common case:
+   a Quiet block usually closes a node without announcing itself. */
+.v3-quiet__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-xs);
+  margin-bottom: var(--v3-space-lg);
+}
+
+.v3-quiet__heading {
+  margin: 0;
+}
+
+.v3-quiet__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The hairline IS the pattern. Top rule per row, closed by a bottom rule on
+   the last one, so the block reads as a set without a border box. Every item
+   kind carries the same rule, so doors and passages sit on one rhythm. */
+.v3-quiet__item {
+  border-top: 1px solid var(--v3-edge);
+}
+
+.v3-quiet__item:last-child {
+  border-bottom: 1px solid var(--v3-edge);
+}
+
+/* Doors --------------------------------------------------------------------
+   The whole row is the target, at the 44px thumb minimum. */
+.v3-quiet__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v3-space-md);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-sm) 0;
+  color: var(--v3-ink);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  text-decoration: none;
+}
+
+.v3-quiet__label {
+  min-width: 0;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-quiet__link:hover .v3-quiet__label,
+.v3-quiet__link:focus-visible .v3-quiet__label {
+  text-decoration-color: currentColor;
+}
+
+/* The direction mark travels on hover or focus: the one motion in this
+   pattern, and it encodes a state the visitor caused. Both the distance and
+   the duration are tokens, so a visitor who asked for no movement gets none —
+   --v3-travel resolves to 0 under prefers-reduced-motion. */
+.v3-quiet__mark {
+  flex: none;
+  color: var(--v3-ink-muted);
+  transition:
+    transform var(--v3-dur-state) var(--v3-ease-out),
+    color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-quiet__link:hover .v3-quiet__mark,
+.v3-quiet__link:focus-visible .v3-quiet__mark {
+  color: var(--v3-ink);
+  transform: translateX(var(--v3-travel));
+}
+
+/* Passages -----------------------------------------------------------------
+   FAQ answer, definition, legal paragraph, proof note. Same hairline, same
+   rhythm, no disclosure widget: supporting content stays readable and
+   indexable rather than hiding behind a control. */
+.v3-quiet__item--prose {
+  padding: var(--v3-space-md) 0;
+}
+
+.v3-quiet__pair {
+  margin: 0;
+}
+
+.v3-quiet__term {
+  margin: 0 0 var(--v3-space-2xs);
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-strong);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3-quiet__body {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+}
+
+.v3-quiet__para {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+.v3-quiet__para + .v3-quiet__para {
+  margin-top: var(--v3-space-sm);
+}
+
+.v3-quiet__note {
+  max-width: var(--v3-measure-text);
+  margin: var(--v3-space-md) 0 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}

@@ -1,0 +1,157 @@
+/**
+ * components/site/v3 — THE BARREL.
+ *
+ * THIS FILE IS THE PRESSURE VALVE. A migration that needs a control this set
+ * does not have ADDS A PRIMITIVE HERE. It does not reach back into
+ * components/site/kb, the flat legacy files at components/site/*.tsx,
+ * components/site/primitives, components/site/explore, or components/ui. Those
+ * registers are a different visual language with a different token layer, and
+ * one import from any of them puts two languages on one page, which is the
+ * defect this rebuild exists to end. If a page needs something missing, the
+ * work is a new primitive or a new prop on an existing one, reviewed against
+ * design_system/public/PUBLIC_UI.md (locked 2026-08-11) and exported below.
+ *
+ * The six patterns are closed. The atoms are not: an atom is a small piece the
+ * patterns share, so growing that set is ordinary. Growing the pattern set is a
+ * change to the locked visual language and needs Matt.
+ *
+ * WHAT A CONSUMER GETS, AND WHAT IT STILL OWES:
+ *  - Mounting: every pattern puts V3_ROOT_CLASS on its own outermost element,
+ *    so a surface renders correctly with no wrapper. V3_ROOT_CLASS is exported
+ *    for a page that wants the token scope around a whole route.
+ *  - Data: no primitive here fetches, formats, rounds, or parses a date. Every
+ *    figure, stamp, and trace arrives as a string the caller already formatted
+ *    through lib/format, so the number on screen is the number the caller's
+ *    source trace covers (CLAUDE.md section 0).
+ *  - Names: every region and every control requires its accessible name in the
+ *    type. The four patterns differ in how the run-time half is enforced, and
+ *    each states its own discipline in its header: Stage throws in development,
+ *    Instrument and Ledger take a branded V3Text built by v3Text(), and Field,
+ *    Quiet, and Sheet drop what cannot be rendered honestly and warn.
+ */
+
+/* -------------------------------------------------------------------------- */
+/* Token scope + name safety                                                   */
+/* -------------------------------------------------------------------------- */
+
+export {
+  /** The class that opens the token scope. Every pattern renders it itself. */
+  V3_ROOT_CLASS,
+  /** Builds a V3Text. Throws on a blank string; `v3Text('')` does not compile. */
+  v3Text,
+} from './atoms'
+
+export type {
+  /** A string known to be non-empty, for anything that computes an accessible name. */
+  V3Text,
+  /** Rejects the empty string literal while leaving a plain `string` alone. */
+  V3NonEmpty,
+} from './atoms'
+
+/* -------------------------------------------------------------------------- */
+/* Atoms — the small pieces the six patterns share                             */
+/* -------------------------------------------------------------------------- */
+
+export { V3Button, V3Figure, V3SourceLine, V3Eyebrow, V3Heading } from './atoms'
+
+export type {
+  V3ButtonProps,
+  V3ButtonVariant,
+  V3FigureProps,
+  V3SourceLineProps,
+  V3EyebrowProps,
+  V3HeadingProps,
+} from './atoms'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 1 — INSTRUMENT: the answer, big                                     */
+/* -------------------------------------------------------------------------- */
+
+export { V3Instrument } from './V3Instrument'
+
+export type {
+  V3InstrumentProps,
+  V3InstrumentAction,
+  V3InstrumentFigure,
+  V3InstrumentFigures,
+} from './V3Instrument'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 2 — FIELD: inventory as a spatial surface                           */
+/* -------------------------------------------------------------------------- */
+
+export { V3Field, useV3FieldBinding } from './V3Field'
+
+export type {
+  V3FieldProps,
+  V3FieldItem,
+  V3FieldBinding,
+  V3FieldMapSlot,
+} from './V3Field'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 3 — LEDGER: a scannable list where every row is a door              */
+/* -------------------------------------------------------------------------- */
+
+export { V3Ledger } from './V3Ledger'
+
+export type {
+  V3LedgerProps,
+  V3LedgerAction,
+  V3LedgerRow,
+  V3LedgerFigureRow,
+  V3LedgerPlainRow,
+  V3LedgerRows,
+} from './V3Ledger'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 4 — STAGE: full-bleed owned media, one line, one action             */
+/* -------------------------------------------------------------------------- */
+
+export { V3Stage } from './V3Stage'
+
+export type { V3StageProps, V3StageAction, V3StageOverlay } from './V3Stage'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 5 — SHEET: the working surface for a step                           */
+/* -------------------------------------------------------------------------- */
+
+export { V3Sheet } from './V3Sheet'
+
+export type {
+  V3SheetProps,
+  V3SheetStep,
+  V3SheetField,
+  V3SheetOption,
+  V3SheetProse,
+  V3SheetBlock,
+  V3SheetFact,
+  V3SheetColumn,
+  V3SheetCompareRow,
+  V3SheetAdvance,
+} from './V3Sheet'
+
+/* -------------------------------------------------------------------------- */
+/* Pattern 6 — QUIET: hairline supporting content, the graph's outbound edges  */
+/* -------------------------------------------------------------------------- */
+
+export { V3Quiet } from './V3Quiet'
+
+export type { V3QuietProps, V3QuietItem, V3QuietLink, V3QuietProse } from './V3Quiet'
+
+/* -------------------------------------------------------------------------- */
+/* Deliberately NOT exported                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ./V3InstrumentCount.client.tsx (V3CountingFigure, parseFigureValue,
+ * renderFigureAt) is retired and stays out of the public surface.
+ * V3Instrument.tsx explains why in its header: PUBLIC_UI.md section 5 allows a
+ * 600ms-plus sequence only when the visitor controls it by scrolling, and a
+ * mount-triggered requestAnimationFrame is not that. When the Market
+ * instrument's settle is built it enters as a scroll-bound client child, not as
+ * a boolean prop that fires on arrival. Nothing imports the file today. It also
+ * hardcodes SWEEP_MS = 900 to mirror --v3-dur-sequence, which is one duration
+ * with two definitions and would drift the moment the token moved: whoever
+ * revives it repoints that constant first.
+ */

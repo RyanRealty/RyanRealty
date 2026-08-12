@@ -1,0 +1,474 @@
+/* ===========================================================================
+   v3 PATTERN 5: SHEET
+   The working surface for a step. One question visible at a time on 390, with
+   everything already answered still on screen above it.
+
+   Every value here resolves from ./tokens.css. No raw color, size, radius,
+   ring, or duration is declared in this file: the token layer is the only
+   place those exist, and the reduced-motion collapse in that file is what
+   makes the two animations below land instantly.
+   =========================================================================== */
+
+/* The surface ---------------------------------------------------------------
+   Narrow measure so the question is the only thing in the visitor's way, and
+   large quiet margins around it. */
+/* The block selector is doubled (`.v3.v3-sheet`) on purpose, and every one of the
+   six patterns carries the same guard. The still-in-repo prototype route
+   (app/dev/public-v3/public-v3.css) declares a plain global `.v3-sheet`, and App
+   Router keeps route CSS in the document across client navigations, so once a
+   rolled public page and the prototype coexist in one session two single-class
+   rules collide and load order picks the winner. V3Sheet renders V3_ROOT_CLASS on
+   the same element as `v3-sheet`, so the compound always matches and reaches
+   (0,2,0), which the prototype's (0,1,0) can never reach. The `__` element
+   names below need no guard: the prototype spells its elements with a single
+   dash (`v3-sheet-...`), which does not collide. */
+.v3.v3-sheet {
+  display: grid;
+  gap: var(--v3-space-lg);
+  max-width: var(--v3-measure-sheet);
+  margin-inline: auto;
+  padding: var(--v3-space-2xl) var(--v3-gutter);
+}
+
+.v3-sheet-head {
+  display: grid;
+  gap: var(--v3-space-xs);
+}
+
+/* Tabular so "Step 1 of 3" does not shift width as the visitor advances. */
+.v3-sheet-progress {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* The continuity carry -------------------------------------------------------
+   The one motion this pattern spends: what the visitor answered arrives with
+   the step that needed it. A navy rule marks it as carried context rather than
+   a new question. */
+.v3-sheet-echo {
+  display: grid;
+  gap: var(--v3-space-xs);
+  margin: 0;
+  padding-left: var(--v3-space-sm);
+  border-left: 3px solid var(--v3-navy);
+  animation: v3-sheet-carry var(--v3-dur-enter) var(--v3-ease-out) both;
+}
+
+.v3-sheet-echo-row {
+  display: grid;
+  gap: var(--v3-space-3xs);
+}
+
+.v3-sheet-echo-label {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-sheet-echo-value {
+  margin: 0;
+  font-size: var(--v3-size-body);
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 40rem) {
+  .v3-sheet-echo-row {
+    grid-template-columns: 11rem 1fr;
+    align-items: baseline;
+    gap: var(--v3-space-md);
+  }
+}
+
+/* The step -------------------------------------------------------------------
+   Keyed on the step id in the component, so this entrance runs on every step
+   change and only on a step change: the movement encodes that the visitor
+   advanced, which is the rule in PUBLIC_UI.md section 5. */
+.v3-sheet-step {
+  display: grid;
+  gap: var(--v3-space-md);
+  animation: v3-sheet-rise var(--v3-dur-rise) var(--v3-ease-out) both;
+}
+
+.v3-sheet-question {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body-lg);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+  text-wrap: balance;
+}
+
+/* Fields --------------------------------------------------------------------- */
+.v3-sheet-field {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.v3-sheet-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.v3-sheet-label {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  padding: 0;
+}
+
+/* One control style for input, textarea, and select. 44px minimum target,
+   thumb reachable at 390. */
+.v3-sheet-control {
+  width: 100%;
+  min-height: var(--v3-tap);
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface-raised);
+  color: var(--v3-ink);
+  font-family: inherit;
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-control);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  transition: border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-sheet-control::placeholder {
+  color: var(--v3-ink-muted);
+}
+
+.v3-sheet-control:hover {
+  border-color: var(--v3-ink-muted);
+}
+
+/* The palette is two colors, so an invalid control states itself with weight
+   rather than with a color the brand does not have. */
+.v3-sheet-control[aria-invalid='true'] {
+  border-width: 2px;
+  border-color: var(--v3-navy);
+}
+
+.v3-sheet-textarea {
+  min-height: calc(var(--v3-tap) * 2);
+  line-height: var(--v3-leading-body);
+  resize: vertical;
+}
+
+.v3-sheet-select-wrap {
+  position: relative;
+  display: block;
+}
+
+.v3-sheet-select {
+  appearance: none;
+  padding-right: var(--v3-space-xl);
+  cursor: pointer;
+}
+
+/* Drawn from currentColor so the chevron carries no color of its own. */
+.v3-sheet-select-wrap::after {
+  content: '';
+  position: absolute;
+  right: var(--v3-space-md);
+  top: 50%;
+  width: 0;
+  height: 0;
+  margin-top: -0.1em;
+  border-left: 0.32em solid transparent;
+  border-right: 0.32em solid transparent;
+  border-top: 0.36em solid currentColor;
+  color: var(--v3-ink-muted);
+  pointer-events: none;
+}
+
+/* Choice group --------------------------------------------------------------
+   A radio group where the whole row is the target, so a thumb at 390 does not
+   have to find the dot. */
+.v3-sheet-choices {
+  display: grid;
+  gap: var(--v3-space-xs);
+  margin-top: var(--v3-space-3xs);
+}
+
+.v3-sheet-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-sm);
+  min-height: var(--v3-tap);
+  padding: var(--v3-space-xs) var(--v3-space-sm);
+  border: 1px solid var(--v3-edge);
+  border-radius: var(--v3-radius-control);
+  background: var(--v3-surface-raised);
+  cursor: pointer;
+  transition:
+    background var(--v3-dur-state) var(--v3-ease-out),
+    border-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-sheet-choice:hover {
+  border-color: var(--v3-ink-muted);
+}
+
+.v3-sheet-choice:has(.v3-sheet-radio:checked) {
+  border-color: var(--v3-navy);
+  background: var(--v3-wash);
+}
+
+.v3-sheet-radio {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  flex: none;
+  accent-color: var(--v3-navy);
+}
+
+.v3-sheet-choice-label {
+  font-size: var(--v3-size-body);
+  color: var(--v3-ink);
+}
+
+/* Hint, error, prose --------------------------------------------------------- */
+.v3-sheet-hint {
+  margin: 0;
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3-sheet-error {
+  margin: 0;
+  padding-left: var(--v3-space-xs);
+  border-left: 2px solid var(--v3-navy);
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink);
+}
+
+.v3-sheet-prose {
+  margin: 0;
+  max-width: var(--v3-measure-text);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+}
+
+/* Structured blocks ----------------------------------------------------------
+   Section 3 gives this pattern four jobs, and two of them — comparison and
+   plan detail — are structure, not prose. Hairline rules and quiet margins
+   carry them, never a card or a fill: the density rule in section 2 is
+   "hairline rules over heavy cards", and a Sheet step is a working surface,
+   not a display. */
+.v3-sheet-block {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+}
+
+.v3-sheet-block-label {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* Points: what a plan includes. A navy hairline marks each line, so the list
+   reads as a set without a bullet glyph the brand does not own. */
+.v3-sheet-points {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.v3-sheet-point {
+  position: relative;
+  max-width: var(--v3-measure-text);
+  padding-left: var(--v3-space-md);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.v3-sheet-point::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 0.4rem;
+  height: 1px;
+  background: var(--v3-navy);
+}
+
+/* Facts: the label/value detail of a plan. Same rule-on-the-left treatment as
+   the continuity carry, one weight quieter. */
+.v3-sheet-facts {
+  display: grid;
+  gap: var(--v3-space-xs);
+  margin: 0;
+  padding-left: var(--v3-space-sm);
+  border-left: 1px solid var(--v3-edge);
+}
+
+.v3-sheet-fact {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+}
+
+.v3-sheet-fact-label {
+  margin: 0;
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3-sheet-fact-value {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  margin: 0;
+  min-width: 0;
+}
+
+.v3-sheet-fact-figure {
+  font-size: var(--v3-size-body);
+  color: var(--v3-ink);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  overflow-wrap: anywhere;
+}
+
+.v3-sheet-fact-note {
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+@media (min-width: 40rem) {
+  .v3-sheet-fact {
+    grid-template-columns: 11rem 1fr;
+    align-items: baseline;
+    gap: var(--v3-space-md);
+  }
+}
+
+/* Compare: a real comparison, with a column header row and a row header per
+   row. Every row repeats one template rather than the rowgroups collapsing to
+   display:contents, because a contents-collapsed row is a row some screen
+   readers stop reporting, and the roles in the markup are the point. Column
+   minimums are 0 so three columns still fit 390 by wrapping instead of by
+   scrolling sideways. */
+.v3-sheet-compare {
+  display: grid;
+  min-width: 0;
+}
+
+.v3-sheet-compare-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) repeat(var(--v3-sheet-cols, 2), minmax(0, 1fr));
+  gap: var(--v3-space-xs);
+  align-items: baseline;
+  padding: var(--v3-space-xs) 0;
+  border-top: 1px solid var(--v3-edge);
+}
+
+.v3-sheet-compare-row--head {
+  border-top: 0;
+  border-bottom: 1px solid var(--v3-navy);
+  align-items: end;
+}
+
+.v3-sheet-compare-corner,
+.v3-sheet-compare-head {
+  font-size: var(--v3-size-label);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.v3-sheet-compare-head {
+  color: var(--v3-ink);
+}
+
+.v3-sheet-compare-rowhead {
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+  overflow-wrap: anywhere;
+}
+
+.v3-sheet-compare-cell {
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  overflow-wrap: anywhere;
+}
+
+/* Actions --------------------------------------------------------------------
+   The advance control is the one primary in this viewport. Back is text, so it
+   never competes with it. */
+.v3-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--v3-space-md);
+  margin-top: var(--v3-space-3xs);
+}
+
+.v3-sheet-foot {
+  margin-top: var(--v3-space-3xs);
+}
+
+/* Motion ---------------------------------------------------------------------
+   Travel stays at or under the token. Under prefers-reduced-motion the token
+   layer collapses --v3-travel to 0 and every duration to 0.01ms, so both of
+   these resolve instantly to their finished state. */
+@keyframes v3-sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--v3-travel));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes v3-sheet-carry {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--v3-travel) * -0.6));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

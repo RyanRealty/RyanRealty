@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-09T17:21:23.488Z",
-  "total": 252,
+  "generatedAt": "2026-08-12T13:07:57.670Z",
+  "total": 250,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/api/cma/[slug]/gmail-draft/route.ts": 1,
@@ -64,7 +64,6 @@
     "components/admin/crm/NextStepCard.tsx": 1,
     "components/admin/crm/ReportSubscriptionsPanel.tsx": 1,
     "components/admin/crm/StoredAttachments.tsx": 1,
-    "components/admin/crm/subscriptions/AlertEngineSettingsDialog.tsx": 1,
     "components/auth/PasswordInput.tsx": 1,
     "components/auth/SignupForm.tsx": 1,
     "components/broker/BrokerBio.tsx": 1,
@@ -170,8 +169,8 @@
     "components/site/primitives/Headings.tsx": 1,
     "components/site/primitives/Layout.tsx": 1,
     "components/site/sell/SellProcess.tsx": 2,
-    "components/site/sell/SellValuationCTA.tsx": 3,
-    "components/site/sell/SellValueProps.tsx": 1,
+    "components/site/sell/SellValuationCTA.tsx": 2,
+    "components/site/sell/spine/SellProduct.client.tsx": 1,
     "components/tc/pdf-sign/EnvelopeComposer.tsx": 4,
     "components/tc/pdf-sign/SignFlow.tsx": 3,
     "components/tc/pdf-sign/SignaturePad.tsx": 4,

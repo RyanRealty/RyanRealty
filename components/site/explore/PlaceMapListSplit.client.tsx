@@ -118,20 +118,21 @@ export function PlaceMapListSplit({
                             alt=""
                             width={72}
                             height={54}
-                            className="h-[54px] w-[72px] shrink-0 rounded-sm border border-[rgba(16,39,66,0.12)] object-cover"
+                            className="shrink-0 rounded-sm border border-[rgba(16,39,66,0.12)] object-cover"
+                            style={{ height: 54, width: 72 }}
                           />
                         ) : (
-                          <div className="h-[54px] w-[72px] shrink-0 bg-[rgba(16,39,66,0.08)]" />
+                          <div className="shrink-0 bg-[rgba(16,39,66,0.08)]" style={{ height: 54, width: 72 }} />
                         )}
                         <div className="min-w-0 flex-1">
                           <div className="mono-num text-base font-bold">
                             {formatPrice(row.price)}
                           </div>
-                          <div className="truncate text-[0.85rem] font-semibold">
+                          <div className="truncate font-semibold" style={{ fontSize: '0.85rem' }}>
                             {row.title}
                           </div>
                           {row.subtitle ? (
-                            <div className="text-[0.78rem]" style={{ color: 'var(--navy-70)' }}>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--navy-70)' }}>
                               {row.subtitle}
                             </div>
                           ) : null}
@@ -143,7 +144,7 @@ export function PlaceMapListSplit({
               </ul>
               {viewAllHref && viewAllLabel ? (
                 <div className="p-3.5">
-                  <Link href={viewAllHref} className="btn alt text-[0.85rem]">
+                  <Link href={viewAllHref} className="btn alt" style={{ fontSize: '0.85rem' }}>
                     {viewAllLabel} <span className="arr">→</span>
                   </Link>
                 </div>

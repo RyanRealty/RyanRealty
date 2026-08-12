@@ -1,0 +1,216 @@
+/* ===========================================================================
+   V3Stage - PATTERN 4 (design_system/public/PUBLIC_UI.md, locked 2026-08-11).
+   Full-bleed owned media, one line of type, one action.
+
+   Every color, size, radius, and duration here is a var() from ./tokens.css.
+   No raw hex is declared in this file. The geometry is the geometry the moving
+   prototype proved at app/dev/public-v3 (home Stage and the Sell opening):
+   cover media, a bottom-weighted navy scrim, copy anchored bottom-left.
+
+   Motion: none of its own. The only movement a Stage makes is the owned video
+   playing, and that element is not mounted at all under reduced motion, so
+   there is nothing here for a media query to switch off.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   0. SCOPE
+   --------------------------------------------------------------------------- */
+
+/* DISPLAY FACE: repaired in ./tokens.css now, not here.
+   This file used to carry the repair alone, scoped to .v3-stage, which is why
+   the Stage was the only one of the six patterns that actually rendered
+   Amboqia: --v3-font-display resolved through an undefined --font-display, so
+   every heading and every figure on the other five inherited Geist. A token
+   defect belongs to the token layer, and a repair that lives on one pattern is
+   a token with two values. Both names (--font-display and --v3-font-display)
+   are now set on .v3 in ./tokens.css, and the Stage element carries
+   V3_ROOT_CLASS, so they resolve against this element exactly as they did when
+   this file declared them. */
+
+/* SCOPE. The component puts V3_ROOT_CLASS on this same element, so the token
+   layer resolves even when a consumer mounts a Stage outside a .v3 ancestor.
+   Without that, every token below is guaranteed-invalid and the pattern fails
+   quietly rather than loudly: the navy ground drops to transparent, all three
+   scrim ramps drop to transparent, the padding collapses to 0, and white type
+   sits on unscrimmed photography -- an AA legibility failure that reads like a
+   styling nit. Self-scoping also brings the focus ring and the reduced-motion
+   blanket, both of which tokens.css scopes to .v3 as well.
+
+   Carrying both classes means .v3's base surface rule (cream ground, navy ink)
+   now matches this element at equal specificity, where only stylesheet order
+   would decide the winner. The two properties that would flip are restated
+   here at two-class specificity, so the Stage's own ground is deterministic. */
+.v3-stage.v3 {
+  background: var(--v3-surface-inverse);
+  color: var(--v3-ink-on-media);
+}
+
+/* ---------------------------------------------------------------------------
+   1. THE FRAME
+   --------------------------------------------------------------------------- */
+
+/* Grid with the copy as the single participating child, so the two absolute
+   layers beneath it (media, scrim) never affect the height. Navy sits
+   underneath so a slow poster never flashes cream or white. */
+.v3.v3-stage {
+  position: relative;
+  display: grid;
+  align-items: end;
+  min-height: max(62vh, 26rem);
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--v3-surface-inverse);
+}
+
+/* Taller when the section below must peek under the fold on 390. Wide screens
+   need less height for the same effect. */
+.v3.v3-stage--tall {
+  min-height: max(78vh, 32rem);
+}
+
+@media (min-width: 48rem) {
+  .v3.v3-stage--tall {
+    min-height: max(72vh, 34rem);
+  }
+}
+
+/* Layer 1: the media. Poster always present; video, when the visitor allows
+   motion, covers it with the identical frame so the swap is invisible. */
+.v3 .v3-stage-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.v3 .v3-stage-poster,
+.v3 .v3-stage-video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.v3 .v3-stage-video {
+  z-index: 1;
+}
+
+/* Layer 2: the legibility scrim. Not a decorative gradient: it is the reason
+   white type holds over unknown footage. Bottom-weighted because the copy is
+   anchored to the bottom. Never intercepts a pointer. */
+.v3 .v3-stage-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* The ramp the prototype proved: navy .78 at the base, .42 at mid, .16 at top. */
+.v3.v3-stage--standard .v3-stage-scrim {
+  background: linear-gradient(
+    to top,
+    var(--v3-scrim-strong) 0%,
+    var(--v3-scrim-mid) 46%,
+    var(--v3-scrim-soft) 100%
+  );
+}
+
+/* Bright or busy footage: hold the strong stop through the copy zone. */
+.v3.v3-stage--deep .v3-stage-scrim {
+  background: linear-gradient(
+    to top,
+    var(--v3-scrim-strong) 0%,
+    var(--v3-scrim-strong) 34%,
+    var(--v3-scrim-mid) 100%
+  );
+}
+
+/* Already-dark footage only. This is the one stop that leans on the text
+   shadow rather than the scrim, so it is opt-in and never the default. */
+.v3.v3-stage--light .v3-stage-scrim {
+  background: linear-gradient(
+    to top,
+    var(--v3-scrim-mid) 0%,
+    var(--v3-scrim-soft) 55%,
+    transparent 100%
+  );
+}
+
+/* Layer 3: the copy. Bottom-left, inside the page measure, with the action
+   thumb-reachable at 390 because it sits at the bottom of the frame. */
+.v3 .v3-stage-copy {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--v3-space-md);
+  width: 100%;
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-3xl) var(--v3-gutter) var(--v3-space-2xl);
+}
+
+/* One line of type, so it stops short of the full measure rather than running
+   the width of a desktop viewport. */
+.v3 .v3-stage-line {
+  max-width: var(--v3-measure-text);
+}
+
+/* ---------------------------------------------------------------------------
+   2. THE ONE ACTION, ON MEDIA
+   The Stage is the only pattern whose control sits on footage we do not
+   control, so the on-media primary is defined here rather than in the atom
+   layer, where it would be a treatment with no pattern to live on.
+   --------------------------------------------------------------------------- */
+
+/* tokens.css inverts .v3-btn--on-media for --ghost and --text only. A primary
+   keeps its navy fill, painted straight onto a navy scrim. Measured from
+   rendered pixels, the 'standard' ramp over dark footage puts that fill at
+   1.07:1 against the backdrop it sits on. WCAG 2.2 SC 1.4.11 sets a 3:1 floor
+   on the visual information required to identify a control -- and because the
+   cream label passes text contrast on its own, the failure is silent: a legible
+   word that cannot be read as a button.
+
+   Inverted here: cream face, navy ink, navy edge. The boundary that identifies
+   the control is then between two colors the control owns -- 14.2:1 measured,
+   the pair PUBLIC_UI.md section 4 rates AAA -- so identification never depends
+   on the footage.
+
+   The edge is drawn at 2px rather than the base hairline because over a bright
+   frame the edge is the boundary doing the work, and that is measured rather
+   than assumed: under the 'light' ramp over a near-white frame the cream face
+   reads 2.96:1 against its backdrop -- under the floor on its own -- while the
+   navy edge reads 4.81:1. Over dark footage the face reads 13.4:1 and the edge
+   is only the quiet detail. Both stops are already in the two-color palette:
+   nothing new is introduced to pass a contrast check.
+
+   Every ratio in this block was sampled from rendered pixels, not computed from
+   the stylesheet: navy over navy is invisible in a way arithmetic on token
+   values understates. */
+.v3.v3-stage .v3-btn--on-media.v3-btn--primary {
+  background: var(--v3-surface);
+  color: var(--v3-ink);
+  border-color: var(--v3-ink);
+  border-width: 2px;
+  box-shadow: var(--v3-media-shadow);
+}
+
+/* Hover darkens the face rather than the ink, so the label holds 12.5:1 and the
+   control never restates itself as a different button. */
+.v3.v3-stage .v3-btn--on-media.v3-btn--primary:hover:not(:disabled) {
+  background: var(--v3-ground);
+}
+
+/* The focus ring is warm stone at a 2px offset (tokens.css), which places the
+   ring on the media rather than on the control -- against a bright frame it can
+   fall under the same 3:1 floor. Painting the offset gap navy puts a color the
+   control owns on the ring's inner edge, so the indicator is identifiable over
+   footage of any brightness. The media shadow is restated because box-shadow is
+   one property and would otherwise be dropped for the focused state. */
+.v3.v3-stage .v3-btn:focus-visible {
+  box-shadow:
+    0 0 0 var(--v3-focus-offset) var(--v3-surface-inverse),
+    var(--v3-media-shadow);
+}

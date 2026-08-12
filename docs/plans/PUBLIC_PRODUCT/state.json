@@ -1,12 +1,12 @@
 {
-  "phase": "P7_PRIMITIVES",
+  "phase": "P8_LITMUS",
   "locks": {
     "process": "2026-08-11",
     "ia": "2026-08-11",
     "visual": "2026-08-11"
   },
   "awaiting_lock": null,
-  "current_process": "Visual locked on the live moving prototype. Next: build components/site/v3 barrel (six patterns 1:1 + atoms), then P8 litmus, then P9 roll with the ci:public-ui ratchet.",
+  "current_process": "P7 complete: components/site/v3 barrel (6 patterns + atoms + tokens, accessible names enforced in the type), ci:public-v3 gate wired + break-tested, barrel proof at /dev/public-v3/barrel on real data. Design-token baseline ratcheted DOWN 252 -> 250. Next: P8 litmus timings.",
   "plan_of_record": "docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md",
-  "updated_at": "2026-08-11T09:00:00Z"
+  "updated_at": "2026-08-11T10:00:00Z"
 }
