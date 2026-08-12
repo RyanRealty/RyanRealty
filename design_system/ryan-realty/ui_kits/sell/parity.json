@@ -60,8 +60,8 @@
       "blocking": true
     },
     {
-      "name": "SellMarketingPlan",
-      "section": "the marketing plan \u2014 'What happens to your home, and when': three-phase deliverable schedule (process stated as fact + clocks) plus the two MOAT centerpieces (see-every-comp pricing, weekly written report). The /seller-plans legacy redirect deep-links here (#marketing-plan).",
+      "name": "SellPlanSingle",
+      "section": "the one plan \u2014 3% of the sale price with the comprehensive inclusions expandable by group. Replaced SellMarketingPlan 2026-08-11: Matt locked ONE marketed plan, so the three-tier comparison (2.5 / 3 / 3.5) is off the public site and its component is no longer part of this contract.",
       "blocking": true
     },
     {
