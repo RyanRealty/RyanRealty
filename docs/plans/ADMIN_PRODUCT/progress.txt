@@ -653,3 +653,5 @@ NOT IN SCOPE
 2026-08-13T01:10:00Z v0.13 FOLD-IN. Public Product OS is quarry under this plan. One board: EXECUTION.md (the only where-we-are). Build parallel, land serial. Chrome = app/layout.tsx PublicNav → V3Chrome (399 of 527). Mixed Market/Places pages are starting points, not done (0 v3-only pages). Claude's work reworked if clunky. First land on go: E-CHROME, then family leases + broker A3. No git add -A. Say go to fan out.
 
 2026-08-13T01:20:00Z v0.14 GO CONTRACT. Matt asked if Go can run the entire plan end to end with max parallel. Answer: autonomous envelope yes; live send/post/OAuth/license/taste/money no; Closings cutover not in Go. Waves on EXECUTION.md. Clean worktrees from origin/main. Serial land. Cap one agent per lease.
+
+2026-08-12T23:50:00Z E-CHROME LANDED c19b15bd. Layout PublicNav → V3Chrome. Production READY. Look 390+1280: one v3-chrome header, filled CTA both widths (Get your home's value), Sell links in the menu, /admin has no public bar. ci:public-ui held 527/73/11 (kb 399 is page imports, not the layout). Bundle -47.5 KB. Wave 1 families unblocked. Next serial land: G5, V1, A3, E-VOICE. Do not join SignInPrompt leftover.

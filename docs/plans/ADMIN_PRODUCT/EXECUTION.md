@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-12 (Grok, Go contract). **Waiting on Matt: say go.**
-No product code until then.
+**Updated:** 2026-08-12 (Grok, Go running). **E-CHROME landed** `c19b15bd`, production READY.
+Wave 0 remainder (G5, V1, A3, E-VOICE) lands next, serial. Wave 1 families are unblocked.
 
 ---
 
@@ -41,9 +41,8 @@ the calendar UI is in; flipping it to silent autopilot is not.
 
 ### Why you cannot start every agent at minute zero
 
-1. **Chrome is one file.** `app/layout.tsx`. Until it lands and deploy is
-   READY, public family agents produce more mixed pages. That is the last
-   public failure mode.
+1. **Chrome is one file.** `app/layout.tsx`. Landed `c19b15bd` (READY). Family
+   agents may now migrate page bodies. Do not remount chrome on pages.
 2. **Land is serial.** The ratchet, `ci:gates`, and Vercel production are
    shared. Parallel **build** (worktrees). One **push** to `main` at a time.
    Wall-clock ≈ chrome + N deploys, not N ÷ agents. Two pushes at once is
@@ -91,14 +90,16 @@ file is required, the first agent to need it takes the lease and the other waits
 | Public legacy pages (no v3) | **73** | same |
 | Public mixed pages (v3 body + leftover register) | **11** | same |
 | Of 527, kb chrome | **399** | same, register `kb` |
-| Public v3-only pages | **0** | same — chrome still in `app/layout.tsx` as `PublicNav` → KbNav |
-| Broker A3 / A4 / A1 | not started | no commits |
-| Voice.md rewrite | not started | D11 locked; file still the 2026-08-05 machine |
+| Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb footers/heroes |
+| E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held (399 is page imports, not the layout). |
+| Broker A3 / A4 / A1 | A3 built, not landed | local `e0f2a855`. A4+A1 not started |
+| Voice.md rewrite | built, not landed | local `936f290f`. Conductor drops this file's edits on land |
+| V1 chart inventory | built, not landed | local `41fcc336` → `docs/plans/ADMIN_PRODUCT/chart-inventory.md` |
+| G5 Imagine wrappers | built, not landed | local `f460f475`. No API call |
 
-Claude’s last public status matches the ratchet. It does **not** mean Market and Places
-are finished. Eleven routes have a v3 body under KB chrome. Sibling routes in those
-families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds,
-rework what is clunky, never call it final because a wave claimed it.
+Chrome is live. The 399 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
+
+Look residual (not this lease): at 390 a leftover `SignInPrompt` dialog covers the page. Dirty tree, do not join.
 
 ---
 
@@ -172,7 +173,7 @@ exists on disk, not accepted as done · `parked` = later.
 
 | Id | Lease | Status | Done when |
 |---|---|---|---|
-| **E-CHROME** | `app/layout.tsx` (PublicNav → V3Chrome), v3 chrome CSS layers, footer contract, `ci:kb-shared-shell` layout arm. Do not remount chrome on pages. | **open on go** | Layout mounts `V3Chrome`. Exactly one footer per page. Every current nav href preserved (`lib/site-nav.ts`). Ratchet kb drops hard (399 is the pile). `ci:css-layers` green on V3Chrome/V3Footer. Browser 390 + 1280: one header, one visible filled CTA at 1280, mobile CTA in the menu, no dual chrome. |
+| **E-CHROME** | `app/layout.tsx` (PublicNav → V3Chrome), v3 chrome CSS layers, footer contract, `ci:kb-shared-shell` layout arm. Do not remount chrome on pages. | **landed** `c19b15bd` READY | Layout mounts `V3Chrome`. One footer per page. Nav hrefs from `lib/site-nav.ts`. `ci:css-layers` green. Look 390+1280: one header, filled CTA at both widths, Sell in the menu, no dual chrome, no public bar on `/admin`. Ratchet kb **held at 399** (page imports). Family leases drop it. |
 
 ### Public families — after E-CHROME (parallel build)
 
@@ -182,32 +183,33 @@ from the baseline if it drifts.
 
 | Id | Lease (pages) | n leftover | Status | Notes |
 |---|---|---|---|---|
-| **E-HOMES-SEARCH** | `app/search/**`, `app/buy/**`, `app/compare/**` | 4 | blocked on chrome | Search is the Homes surface (`/homes-for-sale` rewrites here). |
-| **E-HOMES-DETAIL** | `app/listing/**` | 1 | blocked on chrome | Money page. Extra care. Every CTA + JSON-LD stays. |
-| **E-HOMES-SIGNALS** | `app/open-houses/**`, `app/price-drops/**`, `app/motivated-sellers/**` | 6 | blocked on chrome | Claude named these. |
-| **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | 6 | blocked on chrome | Homepage H1/lead already locked (D11). 16 kb imports on `app/page.tsx` today. |
-| **E-HOMES-TOOLS** | `app/tools/mortgage-calculator/**`, `app/tools/rental-property-calculator/**` | 2 | blocked on chrome | Appreciation stays with Market. |
-| **E-PLACES-REST** | `app/cities/page.tsx`, `app/communities/page.tsx`, `app/central-oregon/**`, `app/parks/**`, `app/schools/**` | 13 | blocked on chrome | Indexes + lifestyle. Detail cities/communities/subdivisions/zip/oregon are mixed quarry. |
-| **E-PLACES-REFINE** | `app/cities/[slug]/**`, `app/communities/[slug]/**`, `app/subdivisions/[slug]/**`, `app/zip/**`, `app/oregon/**` | 6 mixed | quarry, after chrome | Claude wave 2. Look. Rework if clunky. Do not re-migrate from scratch unless amnesia says the `_v3/` module is wrong. |
-| **E-MARKET-REST** | `app/blog/**`, `app/faq/**`, `app/housing-market/history/**`, `app/housing-market/[...slug]/**`, `app/housing-market/reports/**`, `app/reports/sales/**`, `app/tools/appreciation/**` | 9 | blocked on chrome | Catch-all and content. |
-| **E-MARKET-REFINE** | `app/housing-market/page.tsx`, `central-oregon`, `annual-review`, `app/months-of-supply/**` | 4 mixed | quarry, after chrome | Claude waves 1–2. Chart atom (D9) before flattening any series. Look at every chart. |
-| **E-ABOUT** | `app/about/**`, `app/team/**`, `app/contact/**`, `app/reviews/**`, `app/join/**` | 6 | blocked on chrome | About mission sentence is the one virtue-word exception. |
-| **E-SELL** | `app/sell/page.tsx`, `app/sell/valuation/**` | 2 | blocked on chrome | Valuation spine. 3% plan already locked. `app/dev/sell-film` is a prototype, not this lease. |
-| **E-SAVED** | `app/account/**` leftover | 2 | blocked on chrome | Saved is an affordance, not a sixth marketing destination. |
-| **E-SYSTEM** | legal + unsubscribe + offline + cma-drafts + team edit + site-index + noindex LPs | 15 | blocked on chrome | Quiet. Do not over-design. Dual objectives still required. |
-| **E-CUT** | CUT-CANDIDATE leftovers: area-guides, areas, builders, reports hub, resources, pulse | 8 | blocked on chrome | Honor `cut-list.md` + GSC. Migrate only what we keep. 301 or noindex the rest. Do not spend a v3 pass on a page we are killing. |
-| **E-CHART** | `components/site/v3/` chart atom inside Instrument | — | serial, with or right after chrome | D9. Needed before Market refine can tell the truth. |
-| **E-VOICE** | `marketing_brain_skills/brand-voice/VOICE.md` + delete `.cursor/rules/blog-voice.mdc` + tiny gate | — | open on go (one file) | First voice slice. Not a site-wide copy sweep. |
+| **E-HOMES-SEARCH** | `app/search/**`, `app/buy/**`, `app/compare/**` | 4 | **open** (wave 1) | Search is the Homes surface (`/homes-for-sale` rewrites here). |
+| **E-HOMES-DETAIL** | `app/listing/**` | 1 | **open** (wave 1) | Money page. Extra care. Every CTA + JSON-LD stays. |
+| **E-HOMES-SIGNALS** | `app/open-houses/**`, `app/price-drops/**`, `app/motivated-sellers/**` | 6 | **open** (wave 1) | Claude named these. |
+| **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | 6 | **open** (wave 1) | Homepage H1/lead already locked (D11). 16 kb imports on `app/page.tsx` today. Live H1 is still the film line, not the lock. |
+| **E-HOMES-TOOLS** | `app/tools/mortgage-calculator/**`, `app/tools/rental-property-calculator/**` | 2 | **open** (wave 1) | Appreciation stays with Market. |
+| **E-PLACES-REST** | `app/cities/page.tsx`, `app/communities/page.tsx`, `app/central-oregon/**`, `app/parks/**`, `app/schools/**` | 13 | **open** (wave 1) | Indexes + lifestyle. Detail cities/communities/subdivisions/zip/oregon are mixed quarry. |
+| **E-PLACES-REFINE** | `app/cities/[slug]/**`, `app/communities/[slug]/**`, `app/subdivisions/[slug]/**`, `app/zip/**`, `app/oregon/**` | 6 mixed | quarry, after rest | Claude wave 2. Look. Rework if clunky. Do not re-migrate from scratch unless amnesia says the `_v3/` module is wrong. |
+| **E-MARKET-REST** | `app/blog/**`, `app/faq/**`, `app/housing-market/history/**`, `app/housing-market/[...slug]/**`, `app/housing-market/reports/**`, `app/reports/sales/**`, `app/tools/appreciation/**` | 9 | **open** (wave 1) | Catch-all and content. |
+| **E-MARKET-REFINE** | `app/housing-market/page.tsx`, `central-oregon`, `annual-review`, `app/months-of-supply/**` | 4 mixed | quarry, after E-CHART | Claude waves 1–2. Chart atom (D9) before flattening any series. Look at every chart. |
+| **E-ABOUT** | `app/about/**`, `app/team/**`, `app/contact/**`, `app/reviews/**`, `app/join/**` | 6 | **open** (wave 1) | About mission sentence is the one virtue-word exception. |
+| **E-SELL** | `app/sell/page.tsx`, `app/sell/valuation/**` | 2 | **open** (wave 1) | Valuation spine. 3% plan already locked. `app/dev/sell-film` is a prototype, not this lease. |
+| **E-SAVED** | `app/account/**` leftover | 2 | **open** (wave 1) | Saved is an affordance, not a sixth marketing destination. |
+| **E-SYSTEM** | legal + unsubscribe + offline + cma-drafts + team edit + site-index + noindex LPs | 15 | **open** (wave 1) | Quiet. Do not over-design. Dual objectives still required. |
+| **E-CUT** | CUT-CANDIDATE leftovers: area-guides, areas, builders, reports hub, resources, pulse | 8 | wave 2 | Honor `cut-list.md` + GSC. Migrate only what we keep. 301 or noindex the rest. Do not spend a v3 pass on a page we are killing. |
+| **E-CHART** | `components/site/v3/` chart atom inside Instrument | — | **open** (serial on barrel) | D9. Needed before Market refine can tell the truth. Inventory: `docs/plans/ADMIN_PRODUCT/chart-inventory.md` (lands with V1). |
+| **E-VOICE** | `marketing_brain_skills/brand-voice/VOICE.md` + delete `.cursor/rules/blog-voice.mdc` + tiny gate | — | built, not landed | First voice slice. Not a site-wide copy sweep. Drop EXECUTION.md from that commit. |
 
 ### Broker — disjoint from public (may build during chrome)
 
 | Id | Lease | Status | Done when |
 |---|---|---|---|
-| **A3** | admin person header | open on go | Open a lead, no notes: who (closed labels), next step, what they're doing now. |
-| **A4+A1** | `queueReturnVisitAlert` rewrite + Today looking-at | open on go, ships together | `{name} is looking at {address}.` Key `crm_people.id`. Today shows looking-at. |
+| **A3** | admin person header | built, not landed | Open a lead, no notes: who (closed labels), next step, what they're doing now. |
+| **A4+A1** | `queueReturnVisitAlert` rewrite + Today looking-at | **open** (wave 1) | `{name} is looking at {address}.` Key `crm_people.id`. Today shows looking-at. |
 | **A5** | lead ask text | after A4 rail | Names the home. Does not say we watched them. Packet is taste. |
 | **C1** | expired packet | taste | Matt stops the PDF. |
-| **G1–G5** | social / Imagine | after A3 or in parallel if files disjoint | Tokens already live. Produce is Imagine. |
+| **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | built, not landed | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
+| **G1–G4** | social / GBP / calendar | after A3 or in parallel if files disjoint | Tokens already live. Produce is Imagine. Week-grant is not in Go. |
 
 ### Do not lease
 
