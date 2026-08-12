@@ -95,7 +95,11 @@ function layoutOwnsPublicNav() {
   const layoutPath = join(ROOT, 'app/layout.tsx')
   if (!existsSync(layoutPath)) return false
   const src = readFileSync(layoutPath, 'utf8')
-  return /<PublicNav\b/.test(src) || /from\s+['"][^'"]*PublicNav/.test(src)
+  return (
+    /<PublicNav\b/.test(src) ||
+    /from\s+['"][^'"]*PublicNav/.test(src) ||
+    /<V3Chrome\b/.test(src)
+  )
 }
 
 function checkPage(contract) {
@@ -117,7 +121,8 @@ function checkPage(contract) {
     )
     if (pattern.test(src)) continue
     // KbNav lives in layout via PublicNav — do not require page-level import.
-    if (comp.name === 'KbNav' && publicNavGlobal) continue
+    if ((comp.name === 'KbNav' || comp.name === 'PublicNav') && publicNavGlobal) continue
+    if (comp.name === 'V3Chrome' && publicNavGlobal) continue
     missing.push(comp)
   }
   return { ok: missing.length === 0, missing }

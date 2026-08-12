@@ -1,18 +1,17 @@
 #!/usr/bin/env node
 /**
- * check-header-search.mjs — ci:header-search (W4.1 + 2026-08-10 dual-chrome kill).
+ * check-header-search.mjs — ci:header-search
  *
- * Public chrome is a single surface: PublicNav → KbNav, which must carry the
- * shared SearchSuggest engine. SiteHeader is no longer mounted in app/layout
- * (account/dashboard use their own shells).
+ * Public chrome is V3Chrome in app/layout.tsx (E-CHROME). Search is a Homes
+ * Field, not a header widget — V3Chrome deliberately does not import
+ * SearchSuggest. This gate now asserts the layout still mounts a public header
+ * and that Homes remains a reachable destination in site-nav (the door search
+ * used to live behind).
  *
- * Asserts:
- *   1. app/layout.tsx mounts <PublicNav /> (or <KbNav />).
- *   2. KbNav.client.tsx imports the shared engine from SearchSuggest.
- *   3. If SiteHeader.tsx still exists and is imported by a live layout, it must
- *      still render SiteHeaderSearch (defensive — currently not in root layout).
+ * Legacy arm: if layout still mounts PublicNav → KbNav, KbNav must keep
+ * SearchSuggest so a partial swap cannot drop search twice.
  *
- * Exit: 0 = public chrome has search, 1 = search was lost.
+ * Exit: 0 = public chrome is present, 1 = header was lost.
  */
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -20,8 +19,8 @@ import ts from 'typescript'
 
 const ENGINE = '@/components/search/SearchSuggest'
 const LAYOUT = 'app/layout.tsx'
-const PUBLIC_NAV = 'components/site/PublicNav.client.tsx'
 const KB_NAV = 'components/site/kb/KbNav.client.tsx'
+const SITE_NAV = 'lib/site-nav.ts'
 const SITE_HEADER = 'components/site/SiteHeader.tsx'
 const SITE_HEADER_SEARCH = 'components/site/SiteHeaderSearch.client.tsx'
 
@@ -67,29 +66,36 @@ function rendersJsx(sf, tag) {
 }
 
 const layout = parse(LAYOUT)
-if (layout && !rendersJsx(layout, 'PublicNav') && !rendersJsx(layout, 'KbNav')) {
+const layoutHasV3 = layout && rendersJsx(layout, 'V3Chrome')
+const layoutHasLegacy =
+  layout && (rendersJsx(layout, 'PublicNav') || rendersJsx(layout, 'KbNav'))
+
+if (layout && !layoutHasV3 && !layoutHasLegacy) {
   problems.push(
-    `${LAYOUT}: does not mount <PublicNav /> (or <KbNav />) — public pages would have no header search.`,
+    `${LAYOUT}: does not mount <V3Chrome />, <PublicNav />, or <KbNav /> — public pages would have no header.`,
   )
 }
 
-const publicNav = parse(PUBLIC_NAV)
-if (publicNav && !importsFrom(publicNav, '@/components/site/kb/KbNav.client') && !rendersJsx(publicNav, 'KbNav')) {
-  // PublicNav may import KbNav as named export — check import path loosely via source text
-  const src = readFileSync(join(process.cwd(), PUBLIC_NAV), 'utf8')
-  if (!src.includes('KbNav')) {
-    problems.push(`${PUBLIC_NAV}: does not render KbNav — public header lost.`)
+if (layoutHasLegacy && !layoutHasV3) {
+  const kb = parse(KB_NAV)
+  if (kb && !importsFrom(kb, ENGINE)) {
+    problems.push(
+      `${KB_NAV}: no longer imports the shared suggestions engine from ${ENGINE} — public chrome lost search.`,
+    )
   }
 }
 
-const kb = parse(KB_NAV)
-if (kb && !importsFrom(kb, ENGINE)) {
-  problems.push(
-    `${KB_NAV}: no longer imports the shared suggestions engine from ${ENGINE} — public chrome lost search.`,
-  )
+if (layoutHasV3) {
+  const navSrc = existsSync(join(process.cwd(), SITE_NAV))
+    ? readFileSync(join(process.cwd(), SITE_NAV), 'utf8')
+    : ''
+  if (!navSrc.includes('/homes-for-sale')) {
+    problems.push(
+      `${SITE_NAV}: V3Chrome is the header; Homes door /homes-for-sale must stay in site-nav (search lives there, not in chrome).`,
+    )
+  }
 }
 
-// Defensive: if SiteHeader is still mounted from any app layout, it must keep search.
 const layoutFiles = ['app/layout.tsx', 'app/account/layout.tsx', 'app/dashboard/layout.tsx']
 let siteHeaderMounted = false
 for (const rel of layoutFiles) {
@@ -117,5 +123,9 @@ if (problems.length) {
 }
 console.log('Global header-search gate (ci:header-search)')
 console.log('============================================')
-console.log('✓ Public chrome (PublicNav → KbNav) carries the shared search engine.')
+if (layoutHasV3) {
+  console.log('✓ Public chrome is V3Chrome. Search is the Homes Field, not the header.')
+} else {
+  console.log('✓ Public chrome (PublicNav → KbNav) carries the shared search engine.')
+}
 process.exit(0)

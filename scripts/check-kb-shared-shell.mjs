@@ -110,6 +110,6 @@ if (fails.length) {
   process.exit(1)
 }
 console.log(
-  `✓ kb-shared-shell: layout owns PublicNav; all ${kbPages} KB page(s) keep <KbFooter> and do not re-mount KbNav.`,
+  `✓ kb-shared-shell: layout owns the public header; all ${kbPages} KB/v3 page(s) keep their register footer and do not re-mount the header.`,
 )
 process.exit(0)

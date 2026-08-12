@@ -3,7 +3,7 @@ import { validateEnv } from "@/lib/env";
 import { Suspense } from "react";
 import "./globals.css";
 import "@/components/site/kb/kb.css";
-import { PublicNav } from "../components/site/PublicNav.client";
+import { V3Chrome } from "@/components/site/v3/V3Chrome";
 import { RootProvider } from "../components/site/providers";
 import HideOnLP from "../components/layout/HideOnLP";
 // PublicClientLayer bundles the interactive public client components (prompts,
@@ -79,8 +79,8 @@ export const viewport: Viewport = {
 };
 
 /* Public chrome is fully static — no brokerage fetch, no server-side cookie
- * read, no Suspense wrapper required. PublicNav → KbNav is the single public
- * header; SiteFooter is route-owned. Static shell stays cacheable at the edge. */
+ * read, no Suspense wrapper required. V3Chrome is the single public header;
+ * SiteFooter is route-owned. Static shell stays cacheable at the edge. */
 
 export default function RootLayout({
   children,
@@ -141,12 +141,11 @@ export default function RootLayout({
           <HideOnLP>
             <JsonLd />
           </HideOnLP>
-          {/* ONE public header (Matt 2026-08-10): PublicNav → KbNav from
-              lib/site-nav.ts (Buy · Areas · Market · Sell · About). SiteHeader
-              mega-menu dual chrome is retired. PublicNav self-hides on LP /
-              admin / sign / account / dashboard. SiteFooter stays route-owned
-              (check-default-chrome-footer) — never mount a hidden global footer. */}
-          <PublicNav />
+          {/* ONE public header: V3Chrome from lib/site-nav.ts (Homes · Places ·
+              Market · Sell · About). Self-hides on LP / admin / sign / account /
+              dashboard. SiteFooter stays route-owned (check-default-chrome-footer)
+              — never mount a hidden global footer. */}
+          <V3Chrome />
           <div id="main-content" tabIndex={-1} className="min-h-[calc(100vh-64px)]">{children}</div>
           {/* Real-user Core Web Vitals -> /api/web-vitals + GA4 (field CWV). */}
           <WebVitalsReporter />

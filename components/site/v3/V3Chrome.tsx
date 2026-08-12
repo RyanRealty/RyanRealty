@@ -69,6 +69,7 @@ import {
   type NavLink,
 } from '@/lib/site-nav'
 import { valuationHref } from '@/lib/site/valuation-href'
+import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Chrome.css'
@@ -473,6 +474,7 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
   // to the page the visitor is already on changes nothing to compare against.
   const close = useCallback(() => setOpenPath(null), [])
   const menuHidden = open === false
+  const hidden = currentPath == null && shouldHidePublicChrome(pathname)
 
   // Everything the open menu owns, in one effect so the teardown cannot drift
   // from the setup: the scroll lock, the focus trap, Escape, and returning
@@ -517,6 +519,8 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
       opener?.focus()
     }
   }, [open])
+
+  if (hidden) return null
 
   return (
     <header id={id} className={cn(V3_ROOT_CLASS, 'v3-chrome', className)}>
