@@ -1,5 +1,5 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.5 (Grok 2026-08-12) — `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Loop G = self-running social calendar + broker home (Today). Do not mix with 11F inbox/settings or in-flight public `_v3/` migrations. Admin Product phase still P12; locks stand.**
+> **NEWEST SUBJECT: Broker OS plan v0.5 (Grok 2026-08-12) — D8 locked: Matt's IG is primary; brokers connect their own IG/FB/LI. `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F inbox/settings or in-flight public `_v3/` migrations. Admin Product phase still P12; locks stand.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
 # Current — 2026-08-12 (Grok, local) — Broker OS plan v0.5
@@ -19,11 +19,13 @@ starves it; `content-calendar.md` mix is stealable, Sheets/FUB door is not; auth
 tables are brand-level (G4 is per-broker OAuth). Last census 2026-08-08: GBP/LI/X/YT
 EXPIRED. Paid ads parked. Threads/Nextdoor/Pinterest parked.
 
-**Next:** Matt audits + D1–D8. Slices G1 (tokens) → G2 (one live post) → G3
-(calendar week) → G4 (Paul/Rebecca connect). Do not mix with 11F or public `_v3/`.
+**Next:** Matt audits + D1–D7 (D8 locked). Slices G1 (tokens, including Matt's primary IG)
+→ G2 (one live post) → G3 (calendar week) → G4 (Paul/Rebecca connect their own
+IG/FB/LI). Do not mix with 11F or public `_v3/`.
 
 **Blocked on Matt:** D1–D5 as before; D6 live social set; D7 standing week-grant vs
-per-item; D8 brand vs personal accounts; **OAuth reconnect for brand GBP**.
+per-item; **OAuth reconnect for brand GBP + Matt's primary IG**. D8 is locked
+(Matt's IG primary; brokers connect their own IG / Facebook / LinkedIn).
 
 # Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.4
 
