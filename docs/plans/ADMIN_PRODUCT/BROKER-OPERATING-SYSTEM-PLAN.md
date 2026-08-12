@@ -282,7 +282,26 @@ gates, do not start a site-wide copy pass until D11 is closed.
   principle. The language does the work. This outranks every other voice rule
   except live numbers and invented quotes.
 - **Grateful.** Felt. Not printed on a listing post. The house is the post
-  (P9 C). Personal notes still open.
+  (P9 C).
+- **Three registers, not one.**
+  1. **Public** (site, social, newsletter, packets, SMS to leads): the voice
+     above. Never name a virtue.
+  2. **Personal notes to clients:** always respectful. Always thank them for
+     the business. Their trust means a lot. This register may thank. Public
+     marketing may not.
+  3. **Admin:** as simple as possible. Completely different from public.
+     Instrument language (`ADMIN_UI`). Not this voice.
+- **Boutique.** Size fact, used to describe the firm. Not a virtue claim.
+- **MLS remarks.** Never rewrite. Someone else's words, plus our own remarks
+  as filed. Display may translate a property-type code (type A → Residential).
+  That is a label, not a voice pass.
+- **About draft (conflict, not locked).** Matt's line: `We are a boutique real
+  estate brokerage in Bend, Oregon, committed to building community through
+  authentic relationships and exceptional customer service.` This names
+  authentic and exceptional. It fights the never-name-the-virtues lock. P15b
+  decides which wins.
+
+**Named exemplars so far (Matt picked):**
 - **Judgment.** A short sentence in our voice is allowed. Never an invented
   quote. Never cut a true judgment only to avoid having a view.
   Example: `The second listing succeeds by correcting the first ask, not
@@ -306,9 +325,8 @@ gates, do not start a site-wide copy pass until D11 is closed.
 | Newsletter open | 14 new listings in Bend this week. Median list $625,000. |
 | Judgment | The second listing succeeds by correcting the first ask, not defending it. |
 
-**Still open:** personal thank-you vs site (P9 was listing posts only), Buffett
-(skipped, out of the file unless reopened), word lists, admin UI, MLS remarks,
-whether "boutique brokerage" stays as a size fact.
+**Still open:** About sentence vs never-name-the-virtues (P15b), word lists
+(premier / top producing / local experts), Buffett (skipped).
 
 **What failed last time.** We tried to encode taste as regex. Buffett-as-law plus
 GOV.UK mechanics plus construction bans plus word lists produced beige (agents
@@ -319,13 +337,12 @@ talks about "dramatic colons."
 
 **Recommended machine (pending yes):**
 
-1. **One short law, one file.** Honest, simple, transparent. Write to one person.
-   Say the fact. Then stop. Never pander, never sermon, never self-praise, never
-   overexplain. Never invent a quote. Live numbers. Value my home.
-2. **Retire Buffett-as-law as a gate.** Letters can stay optional reading. The law
-   is Matt's sentence, not a fifty-year corpus agents cannot check.
-3. **Kill rule 3.** If he did not say it, no quotes. Judgment is a short sentence
-   or we cut it.
+1. **One short law, one file.** Write to one person. Say the fact. Then stop.
+   Never pander, never sermon, never self-praise, never overexplain. Never
+   invent a quote. Never name a virtue (authentic, genuine, honest, …). Live
+   numbers. Value my home. A short judgment in our voice is allowed.
+2. **Buffett is out of the operating file** unless Matt reopens it.
+3. **No invented quotes.** Judgment is a short sentence in our voice.
 4. **Punctuation (he named it):** no em dash, no en dash, no semicolon, no `!`.
    Colon only as a label or list (`Beds: 3`), never as a dramatic beat
    (`Here's the thing:`).

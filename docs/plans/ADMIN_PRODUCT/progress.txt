@@ -643,3 +643,5 @@ NOT IN SCOPE
 2026-08-13T00:20:00Z D11 DIALOGUE. P2b A (Bend + price range, no band). P3 A homepage H1 Homes for Sale in Central Oregon + town list. P5b B caption. P10 C house compliment (bright kitchen, real view). P11 A listing process. P7 yes same rules different length. Authentic/genuine must be conveyed. P8 Buffett unsure. P9 still open. Exemplars recorded. Do not rewrite VOICE.md.
 
 2026-08-13T00:25:00Z D11. Never name the virtues (authentic, genuine, honest, simple, transparent, trusted, dedicated, or any principle). Language only. P9 C no thanks on listing posts. P13 A newsletter is the numbers. P14 A judgment is our sentence, never a fake quote. P8 skipped, Buffett out of the operating file. Do not rewrite VOICE.md.
+
+2026-08-13T00:30:00Z D11 THREE REGISTERS. Public = never name virtues. Personal notes to clients = always thank, respectful, grateful. Admin = as simple as possible, not the public voice. Boutique = size fact. MLS remarks never rewritten; property type codes may map (A → Residential). About draft names authentic/exceptional — conflicts with never-name lock, P15b open. Do not rewrite VOICE.md.

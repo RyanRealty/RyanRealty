@@ -1,5 +1,5 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.10 (Grok 2026-08-12) — D11: never name the virtues. Exemplars in the plan. Do not rewrite VOICE.md. First build still A3/A4/A1.**
+> **NEWEST SUBJECT: Broker OS plan v0.10 (Grok 2026-08-12) — D11 three registers (public / personal thank-you / admin simple). About line vs never-name-virtues still open. Do not rewrite VOICE.md. First build still A3/A4/A1.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
 # Current — 2026-08-12 (Grok, local) — Broker OS plan v0.10
@@ -12,10 +12,11 @@ A47 closed person labels. A48 A4 ships with A1. A49 buyer packet sections named.
 A51 Imagine wrappers still old names; listing-tour still Replicate. A55
 `/admin/social` is a traffic report.
 
-**D11 partial:** never name authentic/genuine/honest/any principle. Show it.
-No thanks line on listing posts. Newsletter opens on the numbers. Judgments
-are our sentences, never invented quotes. Buffett skipped (out of the file).
-Do not rewrite `VOICE.md`.
+**D11 partial:** three registers. Public never names virtues and does not thank
+on listing posts. Personal notes always thank. Admin is a different, simpler
+voice. Boutique = size fact. MLS remarks never rewritten; property-type codes
+may display as Residential. About sentence pending (names authentic). Do not
+rewrite `VOICE.md`.
 
 **First build (when Matt says go):** A3 person header, A4 wake rewrite **with** A1
 queue. Voice rewrite is a separate slice after D11 closes.
