@@ -1,7 +1,7 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.6 plan. D8 locked (Matt 2026-08-12). Not otherwise a lock.
+**Status:** v0.6 plan. D8 locked (Matt). D4–D7 and D9 agent-locked toward the goals (Matt 2026-08-12: technical calls are ours). D1–D3 still open.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -37,6 +37,21 @@ goes, even if it is shipped, gated, or "dialed in."
 - **Process/IA locks named the jobs and destinations.** They did not freeze
   the implementation. Design amnesia already said this for chrome. It now
   applies to workflows, data joins, and "don't rebuild" advice in v0.
+
+### Who decides (Matt 2026-08-12)
+
+Matt will not answer technical shape questions. The agent makes the best call
+toward the goals, records it in this file, and keeps moving. Matt overrides
+if the call is wrong.
+
+**Matt still decides (stop):** outbound to real people, money/ads, OAuth logins
+he must click, license/forms, named-artifact taste ("does this packet blow them
+away"), product meaning (what we send a buyer, what "Parallel" is, wake-up vs
+Today).
+
+**Agent decides (do not stop):** atom vs pattern, which quarry piece, schema/join,
+SEO title mechanics, default operating grants that still honor draft-first,
+channel mix inside the live set, chart geometry. Record the call. Do not ask.
 
 ---
 
@@ -75,7 +90,7 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A26 | **Identical cross-post is not "optimized per channel."** Platform skills already ban watermarked/cross-posted Reels. "All channels" is not Threads/Nextdoor/Pinterest (parked) and not the same caption everywhere. | Spray-and-pray would tank reach and look cheap. | One idea → per-channel variants (length, format, hook). D6 still limits which channels are live. |
 | A27 | **We flattened series into type.** Public v3 Instrument is a big number with no chart primitive in the barrel. Admin 11C replaced recharts sparklines with typographic figures + a plain polyline, citing "data is typographic." Market charts still live in KB (`KbMarketChart`, `MarketCoreCharts`, `PriceChart`). | A median without the line is not the market. Code that "has the number" is not visualization. | Series and comparisons get a chart. A singleton status stays type. Vanity KPI walls stay cut. |
 | A28 | **Code inspection cannot see a lying chart.** Gates catch hex, nesting, empty aria-labels. They do not catch a clipped Y-axis, a smear at 390, a tooltip that invents a number, or a sparkline that does not match the figure beside it. | Public OS already requires browser 390+1280. That is not yet a *chart* look. | Visual inspection is law: load the page, look at the chart, reconcile to the figure and the source. Screenshot or it did not happen. |
-| A29 | **A 7th public pattern would reopen P6.** The six are closed. Atoms may grow. | A "Chart" destination or a new OS is the death mode. | **D9.** Recommend: a v3 chart **atom** inside Instrument (trend under the answer), not pattern 7. Admin charts use `--a-*` (11F already burned on hardcoded navy in recharts). Public session owns the public atom. |
+| A29 | **A 7th public pattern would reopen P6.** The six are closed. Atoms may grow. | A "Chart" destination or a new OS is the death mode. | **D9 LOCKED (agent, 2026-08-12).** v3 chart **atom** inside Instrument (trend under the answer), not pattern 7. Admin charts use `--a-*`. Public session owns the public atom. |
 
 **Verdict:** The brief is right. The failure mode is either boiling the ocean
 **or** protecting yesterday's code. Sequence the loops. Keep only the machines
@@ -309,24 +324,22 @@ Until tokens are live, do not build a second publisher. Reconnect is the account
 
 **D3 — Is "looking at this home" a wake-up SMS, or only a Today/copilot line?** Q1 wake-ups were inbound-human. Recommend: copilot/Today only unless they repeat-view or reply. Confirm.
 
-**D4 — Newsletter vs saved-search as primary buyer capture.** Matt named newsletter. Recommend: newsletter captures; saved-search/portal is the behavior graph; one person record.
+**D4 — Newsletter vs saved-search as primary buyer capture.** **LOCKED (Matt named it; agent recorded).** Newsletter is the named capture. Saved-search/portal is the behavior graph. One person record.
 
-**D5 — Worth-language in SEO titles.** Keep demand phrasing in `<title>`/meta only?
+**D5 — Worth-language in SEO titles.** **LOCKED (agent, technical).** Keep demand phrasing in `<title>`/meta only. On-page CTA, headline, and SMS stay **Value my home** / **Get my home's value**. Do not smash SEO titles in the same pass as a CTA rewrite.
 
-**D6 — Production-ready social set.** Recommend: GBP + Instagram + Facebook first (daily presence). Then reconnect LinkedIn / YouTube / X. TikTok if the token is still alive. Threads / Nextdoor / Pinterest stay parked. Confirm.
+**D6 — Production-ready social set.** **LOCKED (agent, from Matt's FB/IG/LI + parks).** Live: GBP + Instagram + Facebook + LinkedIn. Reconnect YouTube / X when tokens are back. TikTok if the token is alive. Threads / Nextdoor / Pinterest stay parked. Ads stay parked.
 
-**D7 — Calendar yes: per-post, or a standing week-grant?** Recommend: first week is per-item (they see every draft). After that, "run my calendar" is a 7-day stamp — same freshness as `humanApprovedAt`. Kill and pause always work. Never a forever autopilot.
+**D7 — Calendar yes: per-post, or a standing week-grant?** **LOCKED (agent, toward "take the work away" + draft-first).** First week is per-item (they see every draft). After that, "run my calendar" is a 7-day stamp — same freshness as `humanApprovedAt`. Kill and pause always work. Never a forever autopilot.
 
 **D8 — Brand accounts vs per-broker accounts.** **LOCKED (Matt 2026-08-12).** Matt's Instagram is the primary IG. Brand Facebook / LinkedIn / GBP are the brokerage. Each broker connects their own Instagram, Facebook, LinkedIn, and the rest of the live set, in Settings. One idea can fan out to brand and to the broker as **variants**, never the same file twice. GBP stays one profile — not per-broker.
 
+**D9 — Public chart: atom inside Instrument, or a 7th pattern?** **LOCKED (agent, technical).** Atom inside Instrument. The six patterns stay closed. A trend lives under the big answer. A 7th pattern would reopen P6. Public families must not delete a working KB chart without a v3 replacement in the same change. Flattening a series to a figure is a defect.
+
 Until D1–D3 are answered, build the queue + stitch + ask-first path. Do not auto-send a buyer CMA.
-Until D6 is answered, G1 is GBP + Matt's primary IG (and brand FB), not every parked platform.
-Until D7 is answered, G3 is per-item yes on a week of drafts — no standing grant.
-D8 is locked. G4 is unblocked on the decision; it still needs the per-broker OAuth store.
-
-**D9 — Public chart: atom inside Instrument, or a 7th pattern?** Recommend: **atom**. The six patterns stay closed. A trend lives under the big answer. A 7th pattern reopens P6. Confirm before the public session adds it to the barrel.
-
-Until D9 is answered, public families must not *delete* a working KB chart without a v3 replacement in the same change. Flattening a series to a figure is a defect.
+G1 is GBP + Matt's primary IG + brand Facebook (D6). LinkedIn when that token is live.
+G3: first week per-item, then the D7 week-grant.
+D8 and D9 are locked. G4 and the public chart atom are unblocked on the decision.
 
 ---
 
@@ -429,10 +442,10 @@ Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / 
 | **F1** AI/GSC query battery | Those three example queries (and live GSC top queries) resolve to a citable Ryan Realty URL via Google and via `/llms.txt` + JSON-LD | Public session; ads still parked |
 | **G1** GBP live again | Matt reconnects OAuth. One approved GBP post (or photo batch) is visible on the live profile. Health cron reads. | Matt OAuth. Re-probe `google_business_profile_auth` first. |
 | **G2** Easy generate → post | Name a listing (or "GBP market update") → draft on Today → yes → live on Matt's primary IG (or brand FB / GBP). Same `humanApprovedAt` gate. | G1 tokens. Do not bypass the queue. |
-| **G3** One week on a calendar | Copilot: "Hey Paul, want me to set up some ideas?" Week of per-channel drafts on Today. Yes → posts at `best_hours` (or a documented default until data exists). | G2. D7 default = per-item until standing grant. |
+| **G3** One week on a calendar | Copilot: "Hey Paul, want me to set up some ideas?" Week of per-channel drafts on Today. Yes → posts at `best_hours` (or a documented default until data exists). | G2. D7 locked: first week per-item, then 7-day grant. |
 | **G4** Broker connects own socials | Paul/Rebecca (or a new broker) OAuth from Settings: their IG, Facebook, LinkedIn (and later the rest of the live set). Calendar can post to *their* accounts as variants of the brand post. Own-book Today shows their social lane. | D8 locked. Do not stuff personal tokens into Matt's primary IG or the brand GBP row. |
 | **V1** Chart inventory | Path:line of every public, admin, and packet surface that displays a series as type/table only, plus every live chart that was not browser-looked-at. | None. Planning/evidence. Do not migrate public charts in a broker session. |
-| **V2** One honest chart, looked at | One series (recommend: `/housing-market` trend or admin overview sparkline) is a real chart, 390 + 1280, figure reconciles to the line, source on screen. | Public half = public session + D9. Admin half can run here. |
+| **V2** One honest chart, looked at | One series (recommend: `/housing-market` trend or admin overview sparkline) is a real chart, 390 + 1280, figure reconciles to the line, source on screen. | Public half = public session (D9 locked: atom). Admin half can run here. |
 
 Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
 G1 can run the day Matt reconnects — it does not wait for A1. G2 shares Today's yes-path with A2; do not build a third approve button.
@@ -708,7 +721,10 @@ disk, then the skills that match the loop you are scoring.
 Score every locked process: best / simple / clear / e2e / funnel / chart / look — on the job, then
 say whether the current how should be kept or replaced.
 Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1/G1/G2/G3/G4/V1/V2.
-Stop for Matt on D1–D7 and D9 in the plan (D8 locked). Then wait.
+Stop for Matt on D1–D3, OAuth logins, money/ads, license, and named-artifact taste.
+Technical shape (atom vs pattern, quarry piece, SEO title mechanics, D7-class
+operating grants) is decided in this file toward the goals. Do not ask. Record it.
+D4–D9 are locked. Then wait only on D1–D3.
 ```
 
 ---
@@ -723,3 +739,4 @@ Stop for Matt on D1–D7 and D9 in the plan (D8 locked). Then wait.
 - 2026-08-12 — v0.5 Loop G calendar + broker home. Auto calendar, per-channel variants, learn-from-results, per-broker OAuth. Copilot sentence: "Hey Paul, want me to set up some ideas?" Today = do / socials / deals / modify (not dest 12). Draft-first stays: yes on the calendar, then it runs. D7 standing week-grant; D8 brand vs personal accounts. Beauty: outbound blows them away; admin is finished ADMIN_UI. Still planning only.
 - 2026-08-12 — D8 LOCKED (Matt): his Instagram is the primary IG. Brand FB/LI/GBP are the brokerage. Each broker hooks up their own Instagram, Facebook, LinkedIn, and the rest of the live set. Variants, never the same file twice. GBP is not per-broker. G4 unblocked on the decision.
 - 2026-08-12 — v0.6 charts + look. Series must be charts; visual inspection in a real browser is law (code review is not the look). v3 has no chart atom; admin 11C dropped sparklines. D9: recommend atom inside Instrument, not pattern 7. Slices V1/V2. Public chart work stays with the public session.
+- 2026-08-12 — Who decides: Matt will not answer technical shape. Agent makes the best call toward the goals and records it. D9 LOCKED: v3 chart atom inside Instrument, not pattern 7. Also agent-locked D4 (newsletter capture), D5 (worth-language in title/meta only), D6 (GBP+IG+FB+LI live; YT/X reconnect; Threads/ND/Pin parked), D7 (first week per-item, then 7-day grant). Stop only on D1–D3, OAuth, money, license, named taste.

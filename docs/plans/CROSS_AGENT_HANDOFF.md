@@ -1,8 +1,26 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.6 (Grok 2026-08-12) — charts + visual inspection. D8 locked. `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F inbox/settings or in-flight public `_v3/` migrations. Admin Product phase still P12; locks stand.**
+> **NEWEST SUBJECT: Broker OS plan v0.6 (Grok 2026-08-12) — technical calls are agent-made. D9 locked: chart atom. D8 Matt-locked. Stop only D1–D3 / OAuth / money / license / taste. `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F or public `_v3/`. Admin Product phase still P12.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.6
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.6 (who-decides)
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**No product code this session.** Matt: technical questions are the agent's call
+toward the goals. Recorded in the plan. Do not stop the grind to ask atom-vs-pattern.
+
+**Agent-locked this pass:** D9 chart **atom** inside Instrument (not pattern 7);
+D4 newsletter capture; D5 worth-language in title/meta only; D6 GBP+IG+FB+LI live
+(YT/X reconnect; Threads/ND/Pin parked); D7 first week per-item then 7-day grant.
+**Matt-locked:** D8 (his IG primary; brokers connect their own).
+**Still Matt:** D1 buyer packet, D2 "Parallel", D3 wake vs Today; OAuth clicks;
+money/ads; license; named-artifact taste.
+
+**Loop E:** public P9 still in flight. Do not `git add -A`. Public session may add
+the v3 chart atom (D9 locked).
+
+**Next:** V1 inventory; G1 when Matt reconnects tokens. Do not mix with 11F or `_v3/`.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.6
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **No product code this session.** v0.6: charts + look. A series displayed as a
