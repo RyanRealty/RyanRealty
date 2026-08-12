@@ -30,12 +30,23 @@ import { getCrmSources } from '@/lib/data/crm/getCrmSources'
 import { getLeadSmsRecipients } from '@/lib/data/crm/getLeadSmsRecipients'
 import { getGroupReplyParticipants } from '@/lib/data/crm/getGroupReplyParticipants'
 import { getAppointmentsForPerson } from '@/lib/data/crm/getAppointments'
+import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
+import { getPersonAwaitingBrokerStep } from '@/lib/data/crm/getBrokerActionQueue'
+import { isTriageTaskCandidate } from '@/lib/data/crm/getInboundTriage'
 import { extractAddressCandidate } from '@/lib/crm/seller-intent'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { CRM_MAILBOXES } from '@/lib/crm/gmail'
 import { renderCrmMerge, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
+import { mapPersonWhoLabels } from '@/lib/crm/person-who-labels'
+import {
+  composePersonNextStep,
+  composePersonNowLine,
+  listingViewIsRecent,
+  replyIntentFromTimeline,
+  unrepliedInboundFromMessages,
+} from '@/lib/crm/person-header-lines'
 import {
   getCrmAccess,
   getCrmEmailTemplates,
@@ -45,6 +56,7 @@ import {
   requirePersonInScope,
 } from '@/app/actions/crm'
 import { Button, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
+import { PersonIdentityHeader } from './PersonIdentityHeader'
 import {
   addNoteFromPerson,
   addTagFromPerson,
@@ -150,6 +162,8 @@ export default async function PersonPage({
     relationships,
     recipientOptions,
     fieldDefs,
+    behaviorSummary,
+    awaitingStep,
   ] = await Promise.all([
     getContactActivityFeed(idNum, 30),
     getContactCmas({ crmPersonId: idNum, emails: card.email ? [card.email] : [] }),
@@ -166,14 +180,32 @@ export default async function PersonPage({
     getContactRelationships(idNum),
     getRecipientOptionsForContact(idNum),
     getCrmFieldDefinitions(),
+    getContactBehaviorSummary(idNum),
+    getPersonAwaitingBrokerStep(idNum),
   ])
   const showKickoff = sp.intent === 'cma' || sp.kicked === '1'
   const kicked = sp.kicked === '1'
-  // Litmus parity with the legacy sheet (P8 bar: alert → 2 taps, no typing):
-  // suggest the address parsed from the latest inbound text. Editable — the
-  // broker confirms it before building.
   const latestInbound = feed.find((t) => t.kind === 'sms_in')?.snippet ?? null
   const suggestedAddress = extractAddressCandidate(latestInbound)
+  const nowMs = Date.now()
+  const latestListingView = behaviorSummary.latestListingView
+  const unreplied = unrepliedInboundFromMessages(conversation.items)
+  const openTriageTask =
+    full.tasks.find((t) => !t.completed_at && isTriageTaskCandidate({ name: t.name, type: t.type, origin: null })) ??
+    null
+  const whoLabels = mapPersonWhoLabels({
+    tags: card.tags,
+    stage: card.stage,
+    prospectKinds: prospectStory.map((s) => s.kind),
+    hasRecentListingView: listingViewIsRecent(latestListingView, nowMs),
+  })
+  const nextLine = composePersonNextStep({
+    unrepliedInbound: unreplied ? { channel: unreplied.channel } : null,
+    replyIntent: replyIntentFromTimeline(full.timeline) ?? unreplied?.replyIntent ?? null,
+    triageTask: openTriageTask ? { name: openTriageTask.name, type: openTriageTask.type } : null,
+    sequenceWaiting: awaitingStep,
+  })
+  const nowLine = composePersonNowLine({ latestListingView, nowMs })
 
   // ── B2 fold: daily-use machinery (renders only when the person is in the
   // acting broker's scope — getCrmPersonFull returns the empty bundle
@@ -397,40 +429,20 @@ export default async function PersonPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: 'var(--a-text-xl)', fontWeight: 600, letterSpacing: '-0.01em' }}>
-          {card.name ?? 'Unknown contact'}
-        </h1>
-        <StateWord state="accent">{card.stage}</StateWord>
-        {card.assignedBroker ? (
-          <span style={{ color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>assigned {card.assignedBroker}</span>
-        ) : null}
-      </div>
-      {/* Contact points are doors (acceptance bar #3): tap to call/email. */}
-      <div style={{ margin: '4px 0 4px', fontSize: 'var(--a-text-sm)', fontFamily: 'var(--a-font-mono)' }}>
-        {card.phone ? (
-          <a href={`tel:${card.phone}`} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
-            {card.phone}
-          </a>
-        ) : null}
-        {card.phone && card.email ? <span style={{ color: 'var(--a-text-2)' }}> · </span> : null}
-        {card.email ? (
-          <a href={`mailto:${card.email}`} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
-            {card.email}
-          </a>
-        ) : null}
-        {!card.phone && !card.email ? <span style={{ color: 'var(--a-text-2)' }}>No contact points</span> : null}
-      </div>
-      <div style={{ margin: '0 0 14px', color: 'var(--a-text-2)', fontSize: 'var(--a-text-sm)' }}>
-        {[
-          card.source ? `source ${card.source}` : null,
-          card.price != null ? `budget $${Math.round(card.price).toLocaleString('en-US')}` : null,
-          card.timeframe ?? null,
-          card.tags.length > 0 ? card.tags.slice(0, 4).join(', ') : null,
-        ]
-          .filter(Boolean)
-          .join(' · ') || '—'}
-      </div>
+      <PersonIdentityHeader
+        name={card.name}
+        whoLabels={whoLabels}
+        stage={card.stage}
+        assignedBroker={card.assignedBroker}
+        nextLine={nextLine}
+        nowLine={nowLine}
+        phone={card.phone}
+        email={card.email}
+        source={card.source}
+        price={card.price}
+        timeframe={card.timeframe}
+        tags={card.tags}
+      />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         <Link href={`/admin/messages?c=${card.personId}`}>

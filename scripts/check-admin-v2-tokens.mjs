@@ -42,6 +42,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/page.tsx',
   'app/admin/(protected)/people/actions.ts',
   'app/admin/(protected)/people/[id]/page.tsx',
+  'app/admin/(protected)/people/[id]/PersonIdentityHeader.tsx',
   'app/admin/(protected)/people/[id]/FieldEditors.tsx',
   'app/admin/(protected)/people/[id]/TasksSection.tsx',
   'app/admin/(protected)/people/[id]/NotesSection.tsx',

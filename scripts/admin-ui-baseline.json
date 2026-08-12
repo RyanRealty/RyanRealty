@@ -28,7 +28,6 @@
       "h2": 4
     },
     "app/admin/(protected)/people/[id]/page.tsx": {
-      "h1": 1,
       "h2": 4,
       "input": 2
     },

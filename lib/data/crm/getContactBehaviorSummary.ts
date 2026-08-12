@@ -65,6 +65,13 @@ export type TopSearch = {
   count: number
 }
 
+/** Latest identified listing_view (MLS + street + when). */
+export type LatestListingView = {
+  listingMls: string | null
+  listingStreet: string | null
+  eventAt: string
+}
+
 /** The at-a-glance behavior + intent summary the Contact-360 panel renders. */
 export type ContactBehaviorSummary = {
   lastSeenAt: string | null
@@ -72,6 +79,7 @@ export type ContactBehaviorSummary = {
   topListingsViewed: TopListingViewed[]
   topSearches: TopSearch[]
   intentSignals: string[]
+  latestListingView: LatestListingView | null
 }
 
 /** The minimal visitor_events row shape the pure derivations reason over. */
@@ -123,6 +131,31 @@ function isListingViewEvent(e: BehaviorEventRow): boolean {
     e.event_type === 'listing_view' ||
     (e.event_type === 'page_view' && e.page_category === 'listing_detail')
   )
+}
+
+/** Pure: newest listing_view that names a home (street or MLS). */
+export function pickLatestListingView(
+  events: ReadonlyArray<BehaviorEventRow>,
+): LatestListingView | null {
+  let best: LatestListingView | null = null
+  let bestT = -Infinity
+  for (const e of events ?? []) {
+    if (!isListingViewEvent(e)) continue
+    const t = e.event_at ? Date.parse(e.event_at) : NaN
+    if (!Number.isFinite(t)) continue
+    const mls = String(e.listing_mls ?? '').trim()
+    const street = String(e.listing_street ?? '').trim()
+    if (!mls && !street) continue
+    if (t > bestT) {
+      bestT = t
+      best = {
+        listingMls: mls || null,
+        listingStreet: street || null,
+        eventAt: e.event_at as string,
+      }
+    }
+  }
+  return best
 }
 
 /** True when an event is a search. */
@@ -259,6 +292,7 @@ export async function getContactBehaviorSummary(
     topListingsViewed: [],
     topSearches: [],
     intentSignals: [],
+    latestListingView: null,
   }
 
   const identity = await resolvePersonIdentity(crmPersonId)
@@ -312,7 +346,7 @@ export async function getContactBehaviorSummary(
   }))
 
   if (events.length === 0) {
-    return { ...empty, lastSeenAt, sessions30d }
+    return { ...empty, lastSeenAt, sessions30d, latestListingView: null }
   }
 
   // Top listings viewed: roll up the listing-view events by MLS key.
@@ -346,6 +380,7 @@ export async function getContactBehaviorSummary(
   }))
 
   const intentSignals = deriveIntentSignals(events)
+  const latestListingView = pickLatestListingView(events)
 
-  return { lastSeenAt, sessions30d, topListingsViewed, topSearches, intentSignals }
+  return { lastSeenAt, sessions30d, topListingsViewed, topSearches, intentSignals, latestListingView }
 }

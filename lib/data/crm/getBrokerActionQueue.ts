@@ -126,3 +126,33 @@ export async function getBrokerActionQueue(access: { brokerSlug: string | null }
   }
   return out
 }
+
+export type PersonQueueStep = {
+  sequenceName: string
+  channel: string
+}
+
+/**
+ * Person-scoped peek of the broker action queue: the awaiting_broker_next
+ * enrollment for this contact, if any. Same table/status as getBrokerActionQueue.
+ */
+export async function getPersonAwaitingBrokerStep(personId: number): Promise<PersonQueueStep | null> {
+  if (!Number.isFinite(personId) || personId <= 0) return null
+  const sb = createServiceClient()
+  const { data: en } = await sb
+    .from('crm_sequence_enrollments')
+    .select('step_index,crm_sequences!inner(name,steps)')
+    .eq('person_id', personId)
+    .eq('status', 'awaiting_broker_next')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!en) return null
+  const seq = en.crm_sequences as unknown as { name: string; steps: Array<Record<string, unknown>> }
+  const step = (seq.steps ?? [])[en.step_index as number] as Record<string, unknown> | undefined
+  if (!step) return null
+  return {
+    sequenceName: String(seq.name ?? ''),
+    channel: String(step.channel ?? 'step'),
+  }
+}
