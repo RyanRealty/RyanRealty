@@ -1,14 +1,15 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.4 plan. Not a lock. Matt adversarially reviews the prompt + this file.
+**Status:** v0.5 plan. Not a lock. Matt adversarially reviews the prompt + this file.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
 
 This is the plan behind the broker OS prompt: copilot, known-seller streams,
-buyer/newsletter, Closings/forms, public site, acquisition/truth, GBP + social
-publish, and a designer's bar on everything we send.
+buyer/newsletter, Closings/forms, public site, acquisition/truth, GBP + a
+self-running social calendar, a broker home that looks finished, and a
+designer's bar on everything we send.
 
 ---
 
@@ -65,6 +66,12 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A18 | **"Dialed" without a scoreboard is a slogan.** GSC ingest, site_signal, ci:ai-crawler-access, ci:ai-structured-data already exist. | Rebuilding analytics is bloat; leaving them unread is the real hole. | Giant review: every page/process scored on funnel + GSC/AI query tests. Steal working ingest. Replace dashboards nobody uses. |
 | A19 | **The other process is already grinding Loop E.** Public Product OS is in-flight on this working tree (Places/Market family `_v3/` modules, migration-recipe, gate repairs). `state.json` / `work-queue.json` are stale (still say first Market attempt reverted). | Starting E1 here, polishing KB, or `git add -A` will strand or smash that session. | Loop E is owned by that session. Broker OS does not migrate public families. Trust git + uncommitted progress, not the stale queue. |
 | A20 | **GBP + organic social were missing from v0.3.** Process exists (`content-approve` → approval-queue → `publisher-sweep` → `/api/social/publish`, plus local-seo / GBP playbook). Last census (2026-08-08): GBP/LI/X/YT OAuth expired; measured=0; ready backlog ~397 mostly not posts. | "Easy generate and post" is a product job, not a new stack. Paid ads stay parked. | Loop G. Production-ready = tokens live + one generate door + one yes + actually posts. Re-probe tokens before G1. |
+| A21 | **"Automatically post on all channels" vs draft-first.** Silence is not approval. A first post that the broker never saw is a license and brand hole. | Fully silent posting would violate the inviolable list. | Calendar auto-builds. Copilot asks. Broker yes (week grant or per-item). Then it posts, times, and learns by itself. **D7**. |
+| A22 | **"Optimal from what performs" cannot learn while measured=0.** `getFormatPerformance` already returns `best_hours` / `best_topics` / per-platform uplift from `content_performance`. Six rows, no status flip. | Building a new optimizer on empty data is theater. | Fix CAP-015 so the existing bias actually fires. Then the calendar uses it. |
+| A23 | **Auth is brand-level, not per-broker.** One GBP row, one Meta page token. Paul/Rebecca cannot "enter their credentials" today. | New-broker onboard fails if only Matt's Google login works. | Settings: per-broker OAuth (`broker_id` on the auth row). GBP stays the brokerage profile (principal). **D8**. |
+| A24 | **"Broker dashboard" as destination 12.** IA already locked 11 jobs. Today = what to do; Closings = deals; Reports = numbers; Settings = modify; Content = publish. A 12th home repeats the 160-route problem. | A new dashboard OS would fight the lock and the public session. | The broker home **is Today**, with four lanes (do / socials / deals / modify). Do not add a nav word. |
+| A25 | **"Super awesome" vs locked ADMIN_UI.** Admin is a calm instrument (queues over dashboards; public navy/Amboqia blacklisted). Outbound posts and packets are the marketing surface. | Painting admin like the public site reopens P6. | Outbound must blow them away. Admin must look *finished* inside ADMIN_UI (no leftover islands, every screen leads with the next action). Reopen visual lock only if Matt says the instrument itself is wrong. |
+| A26 | **Identical cross-post is not "optimized per channel."** Platform skills already ban watermarked/cross-posted Reels. "All channels" is not Threads/Nextdoor/Pinterest (parked) and not the same caption everywhere. | Spray-and-pray would tank reach and look cheap. | One idea → per-channel variants (length, format, hook). D6 still limits which channels are live. |
 
 **Verdict:** The brief is right. The failure mode is either boiling the ocean
 **or** protecting yesterday's code. Sequence the loops. Keep only the machines
@@ -121,16 +128,27 @@ Every process and every page is also a funnel question: **how does this drive so
 
 If the assistant cannot cite a Ryan Realty page that actually answers that, the page, the schema, or `llms.txt` is wrong. Fix the class. Do not build a parallel "AI site."
 
-### Loop G — Presence (GBP + organic social)
+### Loop G — Presence (GBP + a self-running social calendar)
 
 Google Business Profile is first-class. Organic social is first-class. Neither is a footnote of SEO, and neither is paid ads (those stay parked).
 
-**It has to be very, very easy to generate social content and then post it.** The process is already in place. Production-ready means a broker can name a listing or a topic, see a draft that meets the beauty bar, say yes, and it actually lands on the live profiles (GBP, Instagram, Facebook, then the rest) with a record in the brain.
+**The broker does not make the content.** The system does. A new broker (Paul, Rebecca, anyone) connects their accounts once. Copilot says: **"Hey Paul, do you want me to set up some ideas for your social media?"** They look at a week on a calendar, say yes. After that it posts on the live channels, in the format each channel actually rewards, at the hours that have been working, and it tracks what happened so the next week is smarter. Traction moves the next slot. Work is gone.
+
+That is Loop A applied to presence: recommend → yes → do it → record. Draft-first still binds: the first yes is on the *calendar* (or the standing week-grant). It does not invent a silent publisher.
+
+Per channel means **variants**, not one caption sprayed. Instagram is not LinkedIn is not a GBP local post. Parked platforms stay parked.
 
 Two GBP jobs, one loop:
 
 1. **Local pack** — NAP, categories, services, photos, reviews, Q&A, citations. Map Pack for "real estate agent Bend" is often worth more than a Page 1 organic rank. Runbook: `.claude/skills/local-seo/SKILL.md`. Why: `marketing_brain_skills/platforms/gbp/SKILL.md`.
-2. **Posts** — same generate → approve → publish path as IG/FB. `publishGoogleBusinessLocalPost` is already a platform on `/api/social/publish`.
+2. **Posts** — same generate → approve → publish path as IG/FB, on a calendar, timed from `content_performance`. `publishGoogleBusinessLocalPost` is already a platform on `/api/social/publish`.
+
+**The broker home (not a 12th destination).** Today is the dashboard. Four lanes, own-book scoped, Matt sees all:
+
+- **What they can do** — the copilot queue (inbound, looking-at, calendar yes, CMA-ready).
+- **How their socials are doing** — live channels, last posts, what worked, next scheduled. Numbers that change the next action, not a vanity wall.
+- **What their deals are** — Closings for their book, one tap into the file.
+- **Anything they can modify** — connect/disconnect socials, pause the calendar, voice/kill a draft. Settings is the door; Today shows the state.
 
 Loop F still scores "how does this drive someone in" (including map-pack queries). Loop G owns the operating machine so presence does not die in a reconnect checklist.
 
@@ -142,6 +160,11 @@ Always: **Value my home** or **Get my home's value** (Get your home's value when
 ### Beauty lock
 
 Everything we deliver is curated. Designer's eye. If it would not make them want to see what we are about, it does not go out.
+
+Two surfaces, one bar, different languages (already locked — do not mix them):
+
+- **Outbound** (posts, packets, newsletter, list-kit): blow them away. Tumalo kit is the named exemplar.
+- **Admin / broker home:** a finished instrument (`design_system/admin/ADMIN_UI.md`). Every screen leads with the next action. No leftover islands. Not a marketing page. If the instrument itself is ugly, fix it inside the lock — or Matt reopens P6.
 
 ---
 
@@ -172,6 +195,12 @@ is the thing we replace.
 | Local SEO | `.claude/skills/local-seo/SKILL.md` | Map-pack audit → drafts through the same approval pipeline |
 | GBP metrics | `marketing_channel_daily` channel=`gbp` | Scoreboard once the token is live |
 | Social parks | `docs/plans/ENTERPRISE_MAP/matrix/SOCIAL-PARKS.md` | RECONNECT vs PARK. Do not invent Threads/Nextdoor/Pinterest work. |
+| Content calendar skill | `social_media_skills/content/content-calendar.md` | Mix + cadence quarry. Door is wrong (Sheets / FUB / April 2026 doc). Keep pillars, replace the how. |
+| Format performance | `getFormatPerformance` in `lib/marketing-brain/generate-briefs.ts` | Per-platform uplift, `best_hours`, `best_topics`. Starved by measured=0. |
+| Measurement loop | `lib/marketing-brain/measurement-loop.ts` | 48h/7d/30d pulls + winners digest. CAP-015 must actually flip `measured`. |
+| Platform specs | `social_media_skills/platform-best-practices/SKILL.md` | Per-channel variants. Bans identical cross-post. |
+| Admin visual | `design_system/admin/ADMIN_UI.md` | Broker home language. Queues over dashboards. |
+| Own-book scope | `crm_people.assigned_broker` (Q4) | Paul/Rebecca see their book. Matt sees all. |
 | Prospecting worklist | `/admin/prospecting`, first-touch templates | Expired/FSBO stream machine |
 | TC foundation | `tc_*`, envelope engine, `/admin/forms`, ingest | Closings — unused in production |
 | SkySlope | Files API + Forms library API + Chrome session | Baseline + form blanks |
@@ -222,12 +251,15 @@ is the thing we replace.
 
 - Pipeline is real. Production is not. Last live census 2026-08-08 (re-probe before G1): GBP / LinkedIn / YouTube / X **EXPIRED**; TikTok was valid only until 2026-08-09; Threads / Nextdoor / Pinterest **PARKED**. Meta page tokens exist (INT-007 amber) — ads parked, organic IG/FB still in scope.
 - Generate is chat/skill (`run the brain`, `direct produce`, list-kit), not a one-tap admin door. Content destination is "rare" and is blog/guides/library, not "make a post."
-- Approve is two queues, desktop-shaped, ~397 `ready` rows that are mostly CMA/ops not posts. Phone yes (Q3 must-have) is the same gap as Loop A.
-- Publish can fail silently (row stays `approved`). Measurement class is `measured=0` (CAP-015) — executed rows lack the identity the loop expects.
+- There is no broker-facing **calendar**. `content-calendar.md` still points at Google Sheets, an April 2026 Word doc, and FUB. Mix ratios are quarry; the door is not.
+- Approve is two queues, desktop-shaped, ~397 `ready` rows that are mostly CMA/ops not posts. Phone yes (Q3 must-have) is the same gap as Loop A. No "Hey Paul, want me to set up some ideas?" sentence.
+- Publish can fail silently (row stays `approved`). Measurement class is `measured=0` (CAP-015) — executed rows lack the identity the loop expects. `best_hours` / `best_topics` exist in code and have nothing true to read.
+- Auth is one brand login. Paul cannot paste Instagram credentials into Settings and have the calendar post as Paul.
 - GBP health cron / digest / photo pipeline are useless until OAuth is live. Name-stuffing the GBP title is a suspension trigger — never.
-- List-kit already is the listing-launch generate path (video + flyers + carousel + single). It is not wired as the easy yes→post for a new broker.
+- List-kit already is the listing-launch generate path (video + flyers + carousel + single). It is not wired as a calendar slot a new broker can run.
+- Today does not show social health or deals as lanes. The 11 destinations name the jobs; the home does not yet *feel* like a brokerage cockpit.
 
-Until tokens are live, do not build a second publisher. Reconnect is Matt OAuth. Agents prepare the checklist only.
+Until tokens are live, do not build a second publisher. Reconnect is the account owner (Matt for brand GBP; each broker for their own IG/LI). Agents prepare the checklist only.
 
 ---
 
@@ -248,8 +280,13 @@ Until tokens are live, do not build a second publisher. Reconnect is Matt OAuth.
 
 **D6 — Production-ready social set.** Recommend: GBP + Instagram + Facebook first (daily presence). Then reconnect LinkedIn / YouTube / X. TikTok if the token is still alive. Threads / Nextdoor / Pinterest stay parked. Confirm.
 
+**D7 — Calendar yes: per-post, or a standing week-grant?** Recommend: first week is per-item (they see every draft). After that, "run my calendar" is a 7-day stamp — same freshness as `humanApprovedAt`. Kill and pause always work. Never a forever autopilot.
+
+**D8 — Brand accounts vs per-broker accounts.** Recommend: GBP + brokerage IG/FB are Ryan Realty (principal / Matt). Each broker connects their own IG / Facebook / LinkedIn in Settings. One idea can fan out to brand and to the broker, as **variants**, never the same file twice.
+
 Until D1–D3 are answered, build the queue + stitch + ask-first path. Do not auto-send a buyer CMA.
 Until D6 is answered, G1 is GBP + one Meta surface, not every platform.
+Until D7 is answered, G3 is per-item yes on a week of drafts — no standing grant.
 
 ---
 
@@ -272,7 +309,7 @@ If it does not, it is a candidate to cut or merge.
 Loop C extra: Know / Market / Message / Voice / True / Stream.
 Loop B extra: Libraries / Anticipate / Fill / Send / File / Onboard.
 Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home) / Recommend / Packet beauty.
-Loop G extra: Generate (one door) / Beauty / Approve (one yes) / Post (live) / See (it went out) / Local pack (GBP).
+Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / Post (timed) / Learn (measured) / Local pack (GBP) / Home (Today: do / socials / deals / modify).
 
 ---
 
@@ -284,6 +321,7 @@ Loop G extra: Generate (one door) / Beauty / Approve (one yes) / Post (live) / S
 - Inbound SMS/email not on `crm_timeline`
 - GPC honored on watch + send
 - No "what's my home worth" on a seller **CTA we would tap** (inventory first)
+- No social post without a fresh stamp (calendar grant counts; silence does not)
 
 ### P1 — first complete loops (this is "start using it")
 
@@ -292,7 +330,7 @@ Loop G extra: Generate (one door) / Beauty / Approve (one yes) / Post (live) / S
 3. **Seller first packet (C):** one expired (or FSBO) message + deliverable that (a) proves we know the house using existing site intel, (b) shows how we would market **this** house (list-kit / sell plan, not generic services). Still manual send.
 4. **Buyer see-back (D):** newsletter signup identifies the session; person shows homes/searches/scrolls; copilot can say "looking at {address}" and offer ask-or-send (blocked on D1).
 5. **Worth-copy inventory** (list path:line; public CTA rewrite is PUBLIC_PRODUCT, not this file's code).
-6. **Presence (G):** Matt reconnects GBP (and IG/FB if needed). One generate door that produces a real draft. One yes on Today. `publisher-sweep` posts it. A live GBP post or IG/FB post exists that we can open. Not a new brain.
+6. **Presence (G):** Matt reconnects brand GBP (and IG/FB if needed). One generate door that produces a real draft. One yes on Today. `publisher-sweep` posts it. A live GBP post or IG/FB post exists that we can open. Not a new brain.
 
 ### P2 — make it a brokerage, not a demo
 
@@ -305,6 +343,9 @@ Loop G extra: Generate (one door) / Beauty / Approve (one yes) / Post (live) / S
 - One approval surface (Today), not `/admin/approval-queue` vs `/admin/crm/approvals`
 - List-kit → approve → post is the listing-launch path a new broker can run
 - GBP local-pack: NAP exact, review replies in Matt's voice, posts 2–3/week through the same queue
+- **Calendar:** one week of per-channel drafts → copilot ask → yes → timed posts. Measurement writes. Next week uses `best_hours` / winning formats.
+- **Per-broker OAuth** in Settings. Paul/Rebecca connect; calendar can post as them.
+- **Today as broker home:** do / socials / deals / modify. Own book. Looks finished inside ADMIN_UI.
 
 ### P3 — strip bloat
 
@@ -318,6 +359,9 @@ Loop G extra: Generate (one door) / Beauty / Approve (one yes) / Post (live) / S
 - A second social publisher, Buffer-as-SoR, or "just post from chat" that bypasses `humanApprovedAt`
 - Threads / Nextdoor / Pinterest connect work while GBP cannot post
 - Treating the ~397 `ready` CMA/ops rows as a social backlog
+- A 12th "Broker Dashboard" destination
+- Google Sheets / FUB as the content calendar
+- Identical cross-posts dressed up as "optimized"
 
 ### P4 — later
 
@@ -337,9 +381,12 @@ Loop G extra: Generate (one door) / Beauty / Approve (one yes) / Post (live) / S
 | **F1** AI/GSC query battery | Those three example queries (and live GSC top queries) resolve to a citable Ryan Realty URL via Google and via `/llms.txt` + JSON-LD | Public session; ads still parked |
 | **G1** GBP live again | Matt reconnects OAuth. One approved GBP post (or photo batch) is visible on the live profile. Health cron reads. | Matt OAuth. Re-probe `google_business_profile_auth` first. |
 | **G2** Easy generate → post | Name a listing (or "GBP market update") → draft on Today → yes → live IG/FB or GBP. Same `humanApprovedAt` gate. | G1 tokens. Do not bypass the queue. |
+| **G3** One week on a calendar | Copilot: "Hey Paul, want me to set up some ideas?" Week of per-channel drafts on Today. Yes → posts at `best_hours` (or a documented default until data exists). | G2. D7 default = per-item until standing grant. |
+| **G4** Broker connects own socials | Paul/Rebecca (or a new broker) OAuth from Settings. Calendar can post to *their* IG/LI. Own-book Today shows their social lane. | D8. Do not stuff personal tokens into the brand GBP row. |
 
 Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
 G1 can run the day Matt reconnects — it does not wait for A1. G2 shares Today's yes-path with A2; do not build a third approve button.
+G3 is the north star slice; it is not the first slice. Tokens and one live post come first or the calendar is a slideshow.
 
 ---
 
@@ -448,20 +495,24 @@ This is how Loop E streamlines instead of forking.
 Not a new marketing OS. The machine is:
 
 ```
-produce (brain / list-kit / "make a post")
+produce (brain / list-kit / calendar week)
+  → per-channel variants
   → marketing_brain_actions ready
-  → one yes (Today / approval-queue)
-  → publisher-sweep
+  → one yes (Today: "Hey Paul, want me to set up some ideas?")
+  → publisher-sweep at best_hours
   → /api/social/publish  (humanApprovedAt ≤ 7 days)
   → live GBP / IG / FB / …
+  → content_performance → next week's mix and times
 ```
 
-**Production-ready is four proofs, in order:**
+**Production-ready is six proofs, in order:**
 
-1. **Tokens.** Re-probe auth tables. Matt reconnects GBP (INT-009) and any expired social he wants in D6. Agents do not log into Google as Matt. Checklist only: `docs/plans/ENTERPRISE_MAP/matrix/SOCIAL-PARKS.md`.
-2. **Generate is one sentence.** "List kit for 123 Main" or "GBP post: Bend months of supply" produces a draft that meets the beauty bar (Tumalo list-kit is the named exemplar). If the current produce path makes the broker tap through chat + Python + a folder in `out/`, replace the *door*, keep the generators.
-3. **Yes is the same yes as copilot.** One queue. Phone. Stamp lands `humanApprovedAt`. Kill works. Stale >7 days re-approves. Collapse the second queue (`/admin/crm/approvals`) into Today — already the IA lock, not a new destination.
-4. **It actually posted.** Open the live GBP post or IG/FB permalink. Row is `executed`. Then fix measured=0 (CAP-015) so the loop can learn. Do not call it production-ready because the cron exists.
+1. **Tokens.** Re-probe auth tables. Matt reconnects brand GBP (INT-009) and any expired social in D6. Each broker later connects their own (G4 / D8). Agents do not log in as the broker. Checklist: `docs/plans/ENTERPRISE_MAP/matrix/SOCIAL-PARKS.md`.
+2. **Generate is a calendar, not a chat scavenger hunt.** "Hey Paul, want me to set up some ideas?" produces a week of drafts that meet the beauty bar (Tumalo list-kit is the named exemplar). Steal mix ratios from `content-calendar.md`. Kill the Sheets/FUB door.
+3. **Per channel is a variant.** Same idea, different format/hook/length. Never the same Reel on TikTok with a watermark. Parked platforms stay off the calendar.
+4. **Yes is the same yes as copilot.** One queue. Phone. Stamp lands `humanApprovedAt`. Kill and pause work. Stale >7 days re-approves. Collapse the second queue into Today. Standing week-grant is D7, not a silent default.
+5. **It actually posted, on time.** Open the live permalink. Row is `executed`. Schedule uses `best_hours` once sample_size is real; until then a documented Bend default (platform skill already names Tue–Thu 8am–4pm for IG) — labeled as default, not as "learned."
+6. **It learned.** CAP-015: `content_performance` writes and status flips to `measured`. `getFormatPerformance` then boosts winners and suppresses losers. Traction can move the next slot. Do not call this production-ready because the cron exists.
 
 **GBP continue (local pack, not only posts):**
 - Name stays **Ryan Realty**. No keyword suffix. Suspension takes weeks.
@@ -471,6 +522,25 @@ produce (brain / list-kit / "make a post")
 - Map-pack queries sit on Loop F's scoreboard once the token can pull `marketing_channel_daily`.
 
 **Still inviolable:** draft-first, no invented numbers in a post, fair housing (place not people), ads parked.
+
+---
+
+## 7d. The broker home (Matt 2026-08-12)
+
+Paul, Rebecca, or a new broker should land somewhere that is obviously *theirs* and obviously finished.
+
+**It is Today.** Not a 12th destination. Own-book default; Matt sees all (Q4).
+
+| Lane | Job | Already named |
+|---|---|---|
+| **Do** | Copilot queue: respond, looking-at, calendar yes, CMA-ready | Today |
+| **Socials** | Connected channels, last posts, what worked, next scheduled, pause | Loop G on Today; Settings to connect |
+| **Deals** | Their closings, one tap into the file | Closings, scoped |
+| **Modify** | Connect socials, pause calendar, kill a draft, book settings | Settings; actions also inline on Today |
+
+Onboard: access → connect socials (OAuth, not a password pasted into chat) → copilot asks about ideas → they yes → the calendar runs.
+
+Looks **super awesome** means: outbound artifacts blow them away; the home is a finished ADMIN_UI instrument (next action first, no leftover islands, no vanity KPI wall). If Matt wants the admin to look like the public site, that is a P6 reopen, not a side project.
 
 ---
 
@@ -489,9 +559,10 @@ produce (brain / list-kit / "make a post")
   + GBP are Loop G, not ads.
 - **Loop F** uses existing `earn-search-traffic`, `measure-search-traffic-gsc`,
   `/llms.txt`, G34/G39. Do not build a parallel AI site.
-- **Loop G** uses `content-approve`, list-kit, `/api/social/publish`, local-seo.
+- **Loop G** uses `content-approve`, list-kit, `/api/social/publish`, local-seo,
+  `getFormatPerformance`, and the content-calendar *mix* (not its Sheets door).
   Do not build a second publisher. Do not post without `humanApprovedAt`.
-  Reconnect is Matt OAuth.
+  Brand reconnect is Matt OAuth. Per-broker connect is that broker's OAuth.
 - Dirty public tree (`app/**/_v3/`, place/market pages, `components/site/v3`):
   inventory, do not edit, do not `git add -A`. Commit this plan with pathspecs.
 
@@ -532,9 +603,12 @@ NORTH STAR — seven loops, one person record, one generation of code
     or "3-bed 2-bath in Northwest Crossing" must land on a real answering page.
     Ads parked for now.
   G Presence: Google Business Profile is first-class (local pack + posts).
-    Generate social content and post it must be very easy. Process exists
-    (produce → approve → publisher-sweep → /api/social/publish). Production-ready
-    = tokens live + one generate door + one yes + it actually posted.
+    A self-running social calendar: copilot asks "Hey Paul, want me to set up
+    some ideas?" → they yes → per-channel variants post at times that have been
+    working → results feed the next week. Brokers connect their own accounts
+    in Settings. Today is the broker home (do / socials / deals / modify).
+    Process exists (produce → approve → publisher-sweep → /api/social/publish).
+    Production-ready = tokens + calendar yes + live posts + measured.
     Paid ads stay parked. Threads/Nextdoor/Pinterest stay parked.
 
 VERSIONING: one generation. Delete historical registers in the same commit that
@@ -545,7 +619,8 @@ FUNNEL: on every page, how does this drive a buyer or seller in. If it does not,
 cut or merge.
 
 VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
-BEAUTY: if it would not make them want to see what we're about, it does not send.
+BEAUTY: outbound blows them away. Admin is a finished instrument (ADMIN_UI), not a
+marketing page. If it would not make them want to see what we're about, it does not send.
 
 Canon: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md
 Orient: ENTERPRISE_MAP/SESSION_HANDOFF.md, CROSS_AGENT_HANDOFF.md, ADMIN_PRODUCT
@@ -553,8 +628,8 @@ disk, then the skills that match the loop you are scoring.
 
 Score every locked process: best / simple / clear / e2e / funnel — on the job, then
 say whether the current how should be kept or replaced.
-Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1/G1/G2.
-Stop for Matt on D1–D6 in the plan. Then wait.
+Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1/G1/G2/G3/G4.
+Stop for Matt on D1–D8 in the plan. Then wait.
 ```
 
 ---
@@ -566,3 +641,4 @@ Stop for Matt on D1–D6 in the plan. Then wait.
 - 2026-08-12 — v0.2 Loop E: public site joins the OS. Giant incremental push = grind existing Public Product OS P9 (do not start OS #3), then standing refine forever. How-to in §7b.
 - 2026-08-12 — v0.3 Loop F: funnel + SEO/GSC/analytics/AI citation as the giant review lens. Ads parked. Versioning = one generation, delete historical registers as the new path ships. LLM acceptance queries recorded.
 - 2026-08-12 — v0.4 Loop G presence + live Loop E status. Public Product OS is in-flight on this tree (Places/Market `_v3/`, migration-recipe); broker OS does not touch it. GBP is first-class; organic social generate→approve→post must be production-ready on the existing pipeline (tokens + one door + one yes + live permalink). D6 added. Paid ads still parked.
+- 2026-08-12 — v0.5 Loop G calendar + broker home. Auto calendar, per-channel variants, learn-from-results, per-broker OAuth. Copilot sentence: "Hey Paul, want me to set up some ideas?" Today = do / socials / deals / modify (not dest 12). Draft-first stays: yes on the calendar, then it runs. D7 standing week-grant; D8 brand vs personal accounts. Beauty: outbound blows them away; admin is finished ADMIN_UI. Still planning only.

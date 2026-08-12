@@ -1,8 +1,31 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.4 (Grok 2026-08-12) — `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Loop G = GBP + organic social production-ready. Do not mix with 11F inbox/settings or in-flight public `_v3/` migrations. Admin Product phase still P12; locks stand.**
+> **NEWEST SUBJECT: Broker OS plan v0.5 (Grok 2026-08-12) — `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Loop G = self-running social calendar + broker home (Today). Do not mix with 11F inbox/settings or in-flight public `_v3/` migrations. Admin Product phase still P12; locks stand.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.4
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.5
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**No product code this session.** v0.5: Loop G is a self-running calendar, not a
+one-off post button. Copilot: "Hey Paul, want me to set up some ideas?" Brokers
+connect their own OAuth. Today is the broker home (do / socials / deals / modify).
+Draft-first stays — yes on the calendar, then it posts, times, and learns.
+
+**Loop E (the other process), live:** unchanged. Public Product OS `P9_ROLL` in
+flight on this tree. **Do not `git add -A`. Do not migrate public families.**
+
+**Loop G quarry:** `content-approve` → publisher-sweep → `/api/social/publish`;
+`getFormatPerformance` already has `best_hours` / `best_topics` but measured=0
+starves it; `content-calendar.md` mix is stealable, Sheets/FUB door is not; auth
+tables are brand-level (G4 is per-broker OAuth). Last census 2026-08-08: GBP/LI/X/YT
+EXPIRED. Paid ads parked. Threads/Nextdoor/Pinterest parked.
+
+**Next:** Matt audits + D1–D8. Slices G1 (tokens) → G2 (one live post) → G3
+(calendar week) → G4 (Paul/Rebecca connect). Do not mix with 11F or public `_v3/`.
+
+**Blocked on Matt:** D1–D5 as before; D6 live social set; D7 standing week-grant vs
+per-item; D8 brand vs personal accounts; **OAuth reconnect for brand GBP**.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.4
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **No product code this session.** v0.4 adds Loop G (GBP + organic social) and
