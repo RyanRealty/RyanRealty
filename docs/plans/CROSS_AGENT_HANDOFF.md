@@ -1,8 +1,28 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.5 (Grok 2026-08-12) — D8 locked: Matt's IG is primary; brokers connect their own IG/FB/LI. `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F inbox/settings or in-flight public `_v3/` migrations. Admin Product phase still P12; locks stand.**
+> **NEWEST SUBJECT: Broker OS plan v0.6 (Grok 2026-08-12) — charts + visual inspection. D8 locked. `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F inbox/settings or in-flight public `_v3/` migrations. Admin Product phase still P12; locks stand.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.5
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.6
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**No product code this session.** v0.6: charts + look. A series displayed as a
+number/table/dead polyline is a defect. Visual inspection in a real browser at
+390 and 1280 is law — code review is not the look. v3 barrel has no chart atom;
+admin 11C dropped sparklines. D9: recommend a v3 atom inside Instrument, not
+pattern 7. Public chart work stays with the public session.
+
+**D8 locked:** Matt's IG is primary; brokers connect their own IG/FB/LI.
+
+**Loop E (the other process), live:** unchanged. Public Product OS `P9_ROLL` in
+flight on this tree. **Do not `git add -A`. Do not migrate public families.**
+
+**Next:** Matt audits + D1–D7 and D9 (D8 locked). V1 chart inventory can run as
+evidence. V2 public waits on the other process. G1 when tokens are live.
+
+**Blocked on Matt:** D1–D5; D6 live social set; D7 week-grant; D9 chart atom vs
+7th pattern; **OAuth reconnect for brand GBP + Matt's primary IG**.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.5
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **No product code this session.** v0.5: Loop G is a self-running calendar, not a
