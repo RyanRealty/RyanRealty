@@ -110,7 +110,11 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
       <section className="v3-instrument" aria-labelledby="v3-verdict">
         <p className="v3-eyebrow">
           {place}
-          {pulse?.updatedAt ? ` · updated ${new Date(pulse.updatedAt).toLocaleDateString()}` : ''}
+          {pulse?.updatedAt
+            ? ` · updated ${new Date(pulse.updatedAt).toLocaleDateString('en-US', {
+                timeZone: 'America/Los_Angeles',
+              })}`
+            : ''}
         </p>
         <h1 id="v3-verdict" className="v3-display">
           {verdict ? `${place} is a ${verdict}` : `${place} market`}
