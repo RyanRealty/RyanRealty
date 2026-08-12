@@ -8,6 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { formatDate } from '@/lib/format/date'
 import './public-v3.css'
 
 type Pulse = {
@@ -110,11 +111,7 @@ export function PublicV3Prototype({ place, pulse, tiles }: { place: string; puls
       <section className="v3-instrument" aria-labelledby="v3-verdict">
         <p className="v3-eyebrow">
           {place}
-          {pulse?.updatedAt
-            ? ` · updated ${new Date(pulse.updatedAt).toLocaleDateString('en-US', {
-                timeZone: 'America/Los_Angeles',
-              })}`
-            : ''}
+          {pulse?.updatedAt ? ` · updated ${formatDate(pulse.updatedAt)}` : ''}
         </p>
         <h1 id="v3-verdict" className="v3-display">
           {verdict ? `${place} is a ${verdict}` : `${place} market`}
