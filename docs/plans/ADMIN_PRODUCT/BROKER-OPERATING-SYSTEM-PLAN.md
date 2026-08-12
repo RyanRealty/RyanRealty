@@ -1,7 +1,7 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.11 plan. D1–D11 locked. Public Product OS (“Site pages organization and navigation”) is Loop E, not a second plan. Ready to execute when Matt says go.
+**Status:** v0.12 plan. D1–D11 locked. Public Product OS (“Site pages organization and navigation”) is Loop E, not a second plan. Loop E remaining locked to Claude’s stop (73 legacy / 527 imports / 399 chrome). Ready to execute when Matt says go.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -54,7 +54,7 @@ meaning gets a plain-language question, then a lock.
 SEO title mechanics, default operating grants that still honor draft-first,
 channel mix inside the live set, chart geometry. Record the call. Do not ask.
 
-### Ready to execute (v0.11)
+### Ready to execute (v0.12)
 
 Meaning is locked. Further constitution is the failure mode.
 
@@ -62,11 +62,13 @@ Meaning is locked. Further constitution is the failure mode.
 
 | Track | First unit | Owns |
 |---|---|---|
-| **Public / Loop E** | Remaining P9: Homes / listing, then chrome, homepage, Sell. D11 on any copy we write. Chart atom (D9) when a series ships. | `app/` public, `components/site/v3`, `docs/plans/PUBLIC_PRODUCT/` |
+| **Public / Loop E** | Remaining P9, **chrome unit first** (399 of 527 leftover imports). Then Homes (search, listing detail, open houses, price drops). Then trust/content. D11 on any copy we write. Chart atom (D9) when a series ships. | `app/` public, `components/site/v3`, `docs/plans/PUBLIC_PRODUCT/` |
 | **Broker** | A3 person header → A4 wake rewrite **with** A1 queue | admin, CRM, this plan |
 
 If one session: pick a track. If two: keep the split. Claude’s “Site pages” session
-is already on public. This session starts broker A3 when Matt says go.
+**stopped** rather than start another public wave (two sessions were committing;
+last collision broke a build). This broker session does **not** start that wave.
+Say **go public**, **go broker**, or **go both**.
 
 Voice.md rewrite is a slice on whichever track first touches public copy. Not a
 third program.
@@ -98,7 +100,7 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A16 | **Two sessions, one north star.** Public grind and broker-OS grind can run in parallel if they do not share files. | Mixed commits (11F inbox vs public v3 vs this plan) strand work. | Public session owns `app/` public routes + `components/site/v3` + `docs/plans/PUBLIC_PRODUCT/`. Broker session owns admin + packets + TC + this file. Voice/beauty/valuation language is shared law. |
 | A17 | **Ads now would fork the site.** Demand loop and LPs exist. Matt: do not spend a lot of time on ads right now. | A paid-creative grind will reopen old LPs and skip the spines. | Park ads. When they return, they hit Value my home / listing / newsletter — no new funnel. |
 | A18 | **"Dialed" without a scoreboard is a slogan.** GSC ingest, site_signal, ci:ai-crawler-access, ci:ai-structured-data already exist. | Rebuilding analytics is bloat; leaving them unread is the real hole. | Giant review: every page/process scored on funnel + GSC/AI query tests. Steal working ingest. Replace dashboards nobody uses. |
-| A19 | **The other process is already grinding Loop E.** Public Product OS is in-flight on this working tree (Places/Market family `_v3/` modules, migration-recipe, gate repairs). `state.json` / `work-queue.json` are stale (still say first Market attempt reverted). | Starting E1 here, polishing KB, or `git add -A` will strand or smash that session. | Loop E is owned by that session. Broker OS does not migrate public families. Trust git + uncommitted progress, not the stale queue. |
+| A19 | **The other process stopped Loop E on purpose.** Claude’s last public status (session “Site pages organization and navigation”): 73 legacy pages, 527 non-v3 imports, 399 of them chrome. Stopped rather than start another wave because two sessions were committing; last collision broke a build. `state.json` / `work-queue.json` are stale (still name the first Market attempt). Live ratchet: `scripts/public-ui-baseline.json`. | Starting E1 here, polishing KB, or `git add -A` will strand or smash that tree the same way. | Pickup is chrome-first, then Homes, then trust/content. Broker OS does not migrate those families unless Matt says **go public** and the other session is clearly stopped. Trust git + the ratchet, not the stale queue. |
 | A20 | **GBP + organic social were missing from v0.3.** Process exists (`content-approve` → approval-queue → `publisher-sweep` → `/api/social/publish`, plus local-seo / GBP playbook). Last census (2026-08-08): GBP/LI/X/YT OAuth expired; measured=0; ready backlog ~397 mostly not posts. | "Easy generate and post" is a product job, not a new stack. Paid ads stay parked. | Loop G. Production-ready = tokens live + one generate door + one yes + actually posts. Re-probe tokens before G1. |
 | A21 | **"Automatically post on all channels" vs draft-first.** Silence is not approval. A first post that the broker never saw is a license and brand hole. | Fully silent posting would violate the inviolable list. | Calendar auto-builds. Copilot asks. Broker yes (week grant or per-item). Then it posts, times, and learns by itself. **D7**. |
 | A22 | **"Optimal from what performs" cannot learn while measured=0.** `getFormatPerformance` already returns `best_hours` / `best_topics` / per-platform uplift from `content_performance`. Six rows, no status flip. | Building a new optimizer on empty data is theater. | Fix CAP-015 so the existing bias actually fires. Then the calendar uses it. |
@@ -202,16 +204,24 @@ site is a lead-gen machine that never acts like it.
 **Locked there (do not relitigate):** process, IA (Homes · Places · Market · Sell ·
 Saved · About), visual (six v3 patterns), dual objectives + exits per page.
 Market and Places families are on v3. `work-queue.json` is stale (still names the
-first Market attempt). Trust git + `decisions.md`, not the queue.
+first Market attempt). Trust git + `decisions.md` + the live ratchet, not the queue.
 
-**Still to grind (Loop E remaining):** Homes / listing, Sell, chrome, homepage,
-About. Copy on those pages obeys D11. Chart atom (D9) is still missing from the
-v3 barrel. sell-film (`app/dev/sell-film`) is a motion prototype for Sell, not
-production until VISUAL_LOCK on that film.
+**Still to grind (Loop E remaining — Claude stop, verified 2026-08-12 against
+`scripts/public-ui-baseline.json`):**
+- **73** legacy pages. **527** non-v3 import sites. **11** mixed pages.
+- **399 of 527** remaining imports are kb chrome. That is the unlock.
+- v3 chrome primitives already exist (`V3Chrome` / `V3Footer` / `V3Breadcrumb`).
+  They are not yet on the leftover pages. Chrome **unit** = put them on.
+- Then **Homes:** search, listing detail, open houses, price drops.
+- Then **trust/content** families (About and the rest of that cluster).
+- Sell / homepage later in that grind. `app/dev/sell-film` is a motion prototype,
+  not production until VISUAL_LOCK.
+- Copy on those pages obeys D11. Chart atom (D9) is still missing from the v3 barrel.
 
-**Collision:** that session owns `app/` public routes, `components/site/v3`,
-`docs/plans/PUBLIC_PRODUCT/`. This session does not migrate those families and
-does not `git add -A`.
+**Collision:** Claude stopped rather than start another wave. Two sessions were
+committing to this tree; the last collision cost a broken build. That stop was
+correct. This session does not migrate those families and does not `git add -A`
+unless Matt says **go public** and the other session is clearly stopped.
 
 Implementation amnesia applies: destinations name the jobs. A v3 page that is
 still clunky gets refined. A KB page gets migrated, not polished in the old register.
@@ -669,7 +679,7 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 | **A5** Buyer ask | After broker yes, lead gets a short ask that names the home (no "we watched you"); yes → buyer packet, not seller CMA, not lender BPO | D1 locked. Packet is taste (Matt). |
 | **C1** One expired blow-away packet | Message + PDF on a real expired in-scope listing, manual send, no generic services hero | Matt review of packet |
 | **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
-| **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0 | **Already in flight.** Do not start a second E1. See §7b live status. |
+| **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0. Pickup: chrome unit first, then Homes, then trust/content. | **Paused on collision.** Claude stopped. Do not start a second E1 from a broker session. See §7b live status. |
 | **F1** AI/GSC query battery | Those three example queries (and live GSC top queries) resolve to a citable Ryan Realty URL via Google and via `/llms.txt` + JSON-LD | Public session; ads still parked |
 | **G1** GBP + IG live | IG @ryanrealtybend page token valid. GBP refresh token works (re-probe before a post). One approved post visible. | Tokens already in env. No new keys. |
 | **G2** Easy generate → post | Name a listing (or "GBP market update") → **Imagine produce** (D10) → draft on Today → yes → live on @ryanrealtybend (or brand FB / GBP). Same `humanApprovedAt` gate. | D10. Do not bypass the queue. Do not call Replicate. |
@@ -712,11 +722,13 @@ language itself is wrong — amnesia allows that; a new OS does not).
    for that route move in the **same** change (the lesson that reverted the first
    Market attempt). A series flattened to a figure is not a migration, it is a
    deletion. Declare it or replace it with a v3 chart atom (D9).
-4. **Leverage order (verify queue vs disk each session):** chrome unit
-   unblocks the most pages (KB chrome was most of the ratchet). Then Market
-   remainder → Places → Homes/listing → Sell + valuation spine → About/trust
-   → residual. Listing detail is the money page — extra care, every CTA and
-   JSON-LD stays. LPs last, noindex, explicit approval.
+4. **Leverage order (verify queue vs disk each session):** chrome **unit**
+   first — primitives already shipped with `/housing-market`; leftover pages
+   still import kb chrome (399 of 527). Then Homes (search, listing detail,
+   open houses, price drops) → trust/content → Sell + valuation spine →
+   homepage → residual. Listing detail is the money page — extra care, every
+   CTA and JSON-LD stays. LPs last, noindex, explicit approval. Market and
+   Places are already on v3; do not re-migrate them.
 5. Keep grinding until `ci:public-ui` legacy pages → 0 and P9 DoD is met.
    Then P10 (remaining gates). Then stop calling it a rollout.
 
@@ -763,30 +775,35 @@ When P9 is empty, do P10, then the standing refine loop in
 docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loops E and F.
 ```
 
-### Live status of the other process (2026-08-12 — do not fight it)
+### Live status of the other process (2026-08-12 — Claude stop is the pickup)
 
 This is how Loop E streamlines instead of forking.
 
 **On `origin/main` (trust this over `state.json`):**
 - Phase is `P9_ROLL`. Process / IA / visual locked 2026-08-11.
-- `/housing-market` shipped on v3 (`b076e15b`). Chrome primitives are in the barrel. `ci:public-ui` ratchet is live.
+- `/housing-market` shipped on v3 (`b076e15b`). Chrome **primitives** are in the barrel. They are not yet on leftover pages.
+- Waves 1+2 shipped Market remainder + Places. Live ratchet (`scripts/public-ui-baseline.json`): `nonV3ImportSites: 527`, `legacyPages: 73`, `mixedPages: 11`. Progress line `2026-08-11T16:00:00Z WAVES 1+2`: kb 518 → 399.
 - `experience-rollout` is superseded. `PUBLIC_SITE_UX_OVERHAUL/` is evidence, not authority.
+
+**Claude’s last public status (pickup, numbers match the ratchet):**
+> What remains: 73 legacy pages, concentrated in Homes (search, listing detail, open houses, price drops) and the trust/content families, plus the global chrome unit — which is the real unlock, since 399 of the 527 remaining imports are chrome. I've stopped here rather than starting another wave because two sessions are actively committing to this tree, and the last collision cost a broken build.
 
 **Stale on disk (do not obey):**
 - `docs/plans/PUBLIC_PRODUCT/state.json` still describes the *reverted* first Market attempt and names `p9-market-family-v2` as next.
-- `work-queue.json` still has only `p9-market-family-v2` and `p9-chrome-unit`. Chrome already shipped with `/housing-market`.
+- `work-queue.json` still has only `p9-market-family-v2` and `p9-chrome-unit`. Chrome primitives already shipped; the chrome **unit** (putting them on leftover pages) is still the remaining unlock. Do not treat “chrome already shipped” as “chrome unit done.”
 
-**In flight / collision (2026-08-12):**
-- Places + rest-of-Market `_v3/` landed on `origin/main` in `16f0361f` (mixed into a broker-OS docs commit because those files were already staged; main is protected, could not split). Public session should treat that as shipped quarry and keep grinding — do not re-migrate those families.
-- Still uncommitted and **not ours:** sell spine / `app/dev/sell-film/` / `design_system/public-v2/` / extra `PUBLIC_SITE_UX_OVERHAUL/` files. Constitution says that folder is demoted. Do not join it. Do not `git add -A`.
+**Collision (2026-08-12):**
+- Places + rest-of-Market `_v3/` landed on `origin/main` in `16f0361f` (mixed into a broker-OS docs commit because those files were already staged; main is protected, could not split). Treat those families as shipped quarry. Do not re-migrate them.
+- Claude **stopped** rather than start another public wave. That stop was correct.
+- Still uncommitted and **not ours:** sell spine / `app/dev/sell-film/` / extra `PUBLIC_SITE_UX_OVERHAUL/` files. Constitution says that folder is demoted. Do not join it. Do not `git add -A`.
 
 **What this means for broker OS:**
-- E1 is already being executed. A broker session that migrates a public family, edits `components/site/v3`, or "wraps the UI" is the third program A15 warned about.
+- E1 is **paused**, not “already being executed.” A broker session that migrates a public family, edits `components/site/v3`, or “wraps the UI” without Matt saying **go public** is the third program A15 warned about, and the same collision that broke the build.
 - Shared law only: voice, **Value my home**, beauty, visitor identity stitch, dual objectives + funnel.
 - Worth-copy inventory (P1.5) is a *list* from this plan. The public session owns the CTA rewrite.
-- When that session lands a family, Loop E's forever-refine and Loop F's query tests apply. Not before, and not by stealing the dirty files.
+- When a dedicated public session lands a family, Loop E's forever-refine and Loop F's query tests apply. Not before, and not by stealing the dirty files.
 
-**Parallelism that is actually safe:** A–D and G on admin / packets / TC / social tokens. E on public routes. Two sessions, disjoint paths, no mixed commits.
+**Parallelism that is actually safe:** A–D and G on admin / packets / TC / social tokens. E on public routes. Two sessions, disjoint paths, no mixed commits. If two sessions are already on this tree, do not start a third public wave.
 
 ---
 
@@ -1010,7 +1027,8 @@ NORTH STAR — seven loops, one person record, one generation of code
     if they want it — never a seller CMA, never a lender BPO (D1). Broker yes
     before the ask. Do not tell the lead we watched them browse.
   E Public site: wrap the locked v3 UI across every public page (Public Product OS
-    P9 grind — already in flight; do not start a second session on those files),
+    P9 remaining: chrome unit first, then Homes, then trust/content; Claude stopped
+    on collision — do not start a second public wave from a broker session),
     then forever refine. Do not start a third redesign.
   F Acquisition and truth: every page/process scored on how it drives the funnel.
     SEO, GSC, analytics, JSON-LD, /llms.txt, every tool — dialed and used.
@@ -1059,8 +1077,10 @@ Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/A3/A
 Stop for Matt on OAuth logins, money/ads, license, and named-artifact taste.
 Technical shape is decided in this file toward the goals. Do not ask. Record it.
 D1–D11 are locked. Scorecard is in this file. Two execution tracks (do not mix files):
-  Public / Loop E: remaining P9 (Homes, Sell, chrome, homepage) on v3. Claude session
-  "Site pages organization and navigation" owns those files.
+  Public / Loop E: remaining P9 — chrome unit first (399 of 527 imports), then Homes
+  (search, listing detail, open houses, price drops), then trust/content. Claude
+  session "Site pages organization and navigation" owns those files and stopped on
+  collision. Do not start a second public wave from a broker session.
   Broker: A3 person header, A4 rewrite of queueReturnVisitAlert (with A1 so Today
   shows looking-at), A1 queue. Produce is Grok Imagine. Voice.md rewrite is a slice,
   not a program. Then wait only on those stop classes.
@@ -1084,3 +1104,4 @@ D1–D11 are locked. Scorecard is in this file. Two execution tracks (do not mix
 - 2026-08-12 — v0.9 D10: Grok Imagine is the only generative camera (`grok-imagine-video-1.5` + `grok-imagine-image-quality`). Park Kling/Veo/Hailuo/Luma/Wan/Seedance/Fal/Synthesia. Keep Remotion + list-kit compositors + FFmpeg. Listing motion = i2v of the real MLS photo. §7f is the produce canon. Slice G5. IG @ryanrealtybend already live.
 - 2026-08-12 — v0.10 third audit + voice. A46: the 2026-08-05 voice machine already failed (beige gates, corny rule-3 quotes, second blog file). D11 pending Matt (seven questions). Recommended: one short law, named exemplars, tiny punctuation/conduct gate; retire Buffett-as-law as a gate; kill rule 3. A47 closed person labels. A48 A4 ships with A1. A49 buyer packet sections named. A51 wrappers still old model names; listing-tour still Replicate. A55 `/admin/social` is a traffic report. First build still A3/A4/A1. Do not rewrite `VOICE.md` this pass.
 - 2026-08-12 — v0.11 D11 LOCKED + merge. Claude session “Site pages organization and navigation” = Public Product OS = Loop E (P9 remaining: Homes, Sell, chrome, homepage). About mission sentence is the one virtue-word exception. Only virtue words are dead. Three registers. Ready to execute on two tracks. Do not mix files.
+- 2026-08-12 — v0.12 Loop E remaining locked to Claude’s stop. Live ratchet: 73 legacy pages, 527 non-v3 imports, 399 kb chrome. Chrome primitives exist; chrome unit (put them on leftover pages) is the unlock. Then Homes (search, listing detail, open houses, price drops), then trust/content. Claude stopped on collision; that stop was correct. Broker session does not start a public wave unless Matt says go public.

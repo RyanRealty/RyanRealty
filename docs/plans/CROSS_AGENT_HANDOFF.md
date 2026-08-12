@@ -1,8 +1,37 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.11 (Grok 2026-08-12) — D11 voice locked. Public Product OS (“Site pages organization and navigation”) is Loop E. Ready to execute. Two tracks, do not mix files.**
+> **NEWEST SUBJECT: Broker OS plan v0.12 (Grok 2026-08-12) — Loop E remaining locked to Claude’s stop. 73 legacy / 527 imports / 399 chrome. Chrome unit first. D1–D11 locked. Ready to execute. Two tracks, do not mix files.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.11
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.12
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**D1–D11 locked.** Ready to execute when Matt says go.
+
+**Merge:** Claude session “Site pages organization and navigation” **is** Public
+Product OS (`docs/plans/PUBLIC_PRODUCT/`), Loop E, phase P9_ROLL. Market + Places
+on v3. Not a second redesign.
+
+**Loop E remaining (Claude stop, matches `scripts/public-ui-baseline.json`):**
+73 legacy pages, 527 non-v3 imports, 399 of them kb chrome. Chrome primitives
+exist; they are not yet on leftover pages. Pickup: **chrome unit first**, then
+Homes (search, listing detail, open houses, price drops), then trust/content.
+Claude **stopped** rather than start another wave (two sessions committing;
+last collision broke a build). That stop was correct.
+
+**D11:** never name virtues except the About mission sentence. Only virtue words
+are dead. Three registers (public / personal thank-you / admin simple). MLS
+remarks never rewritten.
+
+**Two tracks (do not mix files):**
+- Public: remaining P9, chrome first. Owns `app/` public + `components/site/v3` + PUBLIC_PRODUCT.
+- Broker: A3 person header, A4 wake **with** A1 queue.
+
+**Still Matt:** say go (which track); money/ads; license; named-artifact taste.
+
+**Loop E:** do not `git add -A`. Do not start a public wave from a broker session
+unless Matt says **go public** and the other session is clearly stopped.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.11
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **D1–D11 locked.** Ready to execute when Matt says go.
