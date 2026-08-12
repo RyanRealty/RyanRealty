@@ -1,7 +1,7 @@
 [
   {
-    "id": "p4-data-chains",
-    "phase": "P4",
-    "note": "Build writer->store->reader->outcome chains for the 28 KEEP processes into data-atlas.md. Source: each PDS §4/§5 (already evidence-proven). Mark broken chains with a gap statement (never a design). Then P5: IA package under amnesia (destinations from jobs, GSC evidence per route, dual objectives + exits completed in page-inventory.json), stop at BLOCKED_ON_MATT: ia."
+    "id": "p5-ia-package",
+    "phase": "P5",
+    "note": "Derive destinations from the 28 locked processes (PDS §11 destination implications) under amnesia — names from jobs, zero inheritance of current nav/routes. Complete page-inventory.json: every route -> destination + visitor_objective + machine_objective + exits (or CUT/SYSTEM). Cut-list with route vs surface cuts + Explicitly-NOT-cut. GSC evidence pulled per cut/rename candidate (service-account read; 301 plan mandatory). Continuity spec: which context persists across which edges (founding directive 5). Then ia-lock.md + <=5 questions, awaiting_lock=ia, stop BLOCKED_ON_MATT: ia."
   }
 ]
