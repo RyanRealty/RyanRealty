@@ -244,8 +244,33 @@ Always: **Value my home** or **Get my home's value** (Get your home's value when
 ### Voice lock — public-facing (D11 pending)
 
 This is the once-and-for-all replacement for the 2026-08-05 machine. It is **not
-locked** until Matt answers the seven questions in §4. Until then, do not rewrite
-`VOICE.md`, do not delete gates, do not start a site-wide copy pass.
+fully locked**. Dialogue is in progress. Do not rewrite `VOICE.md`, do not delete
+gates, do not start a site-wide copy pass until D11 is closed.
+
+**Locked from dialogue (2026-08-12):**
+
+- **Punctuation.** No em dash, no en dash, no semicolon, no `!`. Colon only as a
+  label or list (`Beds: 3`), never as a dramatic beat (`Here's the thing:`).
+- **Stop after the fact.** Do not add a sermon after the number. Client language,
+  not industry jargon (no "band" to a seller). Confirm remaining jargon in dialogue.
+- **Buyer SMS (D1 ask).** `{address} is listed at {price}. Want a short comparison
+  and what to think about offering?`
+- **Who is talking.** `We`. Not `I`. Not a pronoun-free telegram unless the line
+  is a caption fragment.
+- **Listing sequence (public copy must be true).** Sign agreement → schedule
+  photographer → schedule sign → start marketing material → MLS coming soon →
+  go live when photos and materials are ready, sign goes in. Photos happen
+  **before** the listing posts. Never "we listed it, then we take photos."
+- **Enthusiasm.** Complimentary and exciting is allowed. Grateful for the
+  business. Highlight the client's home in a good light. Not over-the-top
+  salesy. Fine line. Still being sampled.
+- **SEO vs voice.** Driving traffic outranks voice on discovery surfaces
+  (title, H1, meta). Body, SMS, captions, packets still obey the voice.
+  Homepage H1 still open (P3 expanded).
+
+**Still open:** homepage H1 (SEO options), caption enthusiasm samples,
+grateful/complimentary line, Buffett-as-law, rule 3, word lists, admin UI,
+MLS remarks, named exemplars, length rule (P7).
 
 **What failed last time.** We tried to encode taste as regex. Buffett-as-law plus
 GOV.UK mechanics plus construction bans plus word lists produced beige (agents
@@ -474,15 +499,7 @@ Park: Replicate Kling / Hailuo / Luma / Veo / Wan / Seedance, Vertex Veo / Image
 
 Not Imagine (keep): Remotion for live numbers and brand-locked motion; list-kit compositors for type on real MLS photos; FFmpeg / first-frame; owned camera and drone. Listing motion is **i2v of the real photo**, never a generated house captioned as the property. If Imagine drifts (we already watched it re-paint vector stills), fall back to still + Remotion. Type and prices are composited in code, never baked into a prompt.
 
-**D11 — Public voice, once and for all?** **PENDING MATT.** Recommended machine is in the Voice lock above. Do not rewrite `VOICE.md` until these seven answers land. Then one file, one law, tiny gate, named exemplars. Kill the rest.
-
-1. **Punctuation.** No em dash, no en dash, no semicolon, no `!`. Colon only as a label or list (`Beds: 3`), never as a dramatic beat (`Here's the thing:`). Yes or no?
-2. **Retire Buffett-as-law.** The law is honest, simple, transparent: fact, then stop. Letters can stay optional reading. They are not a gate. Yes or no?
-3. **Kill rule 3.** If you did not say it, no quotes. Interpretation is a short sentence or we cut it. Yes or no?
-4. **Word lists.** Kill the long bans. Keep only Value my home + never invent quotes, **or** also keep a tiny pander/fake-urgency list, **or** exemplars only. Which?
-5. **Five exemplars** you would actually send: one site sentence, one SMS, one IG caption, one newsletter line, one packet sentence. Will you write them, or review drafts?
-6. **Admin UI copy.** Out (instrument language) unless the words are forwarded or sent. Yes or no?
-7. **MLS remarks.** Stay out (format-specific). Yes or no?
+**D11 — Public voice, once and for all?** **PARTIAL (dialogue).** See Voice lock for what landed. Remaining questions are prompt dialogues, not the original seven-item list. Do not rewrite `VOICE.md` until this is closed.
 
 D1–D10 are locked. D11 is the open product-meaning stop. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. Produce is Imagine (D10), not a model zoo. Voice copy passes wait on D11.
 
