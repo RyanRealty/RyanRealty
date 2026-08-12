@@ -1,5 +1,10 @@
 # SESSION_BOOT — how a fresh agent starts
 
+> **Broker OS (2026-08-12):** if you are here for the brokerage operating system
+> (copilot, public site, social, closings), the plan of record is
+> `BROKER-OPERATING-SYSTEM-PLAN.md` and the only "where we are" is
+> `EXECUTION.md`. This file remains the Admin Product OS (P12) ritual.
+
 Program: Admin Product OS. Constitution, PDS schema, seed catalog, design amnesia, and
 phase blocks live in `docs/plans/ADMIN_REBUILD/ADMIN-UI-UNIFICATION-PROMPT.md` (the
 pack). Runner procedure: `.claude/skills/admin-product-os/SKILL.md`. Read both by path —

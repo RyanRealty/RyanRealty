@@ -5,6 +5,11 @@ description: Run ONE unit (or grind until blocked) of the Public Product OS — 
 
 # Public Product OS — runner
 
+> **FOLDED IN (2026-08-12).** Orient from `docs/plans/ADMIN_PRODUCT/EXECUTION.md`.
+> Plan of record: `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`.
+> This skill still loads the public quarry (recipe, locks, ratchet). It does
+> not own a second plan. `state.json` / `work-queue.json` are not the next unit.
+
 The constitution is `docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md` — schemas, amnesia
 lists, phase blocks, DoD, precedence ladder, seed catalog. **Read that file when you need
 the schema or a blacklist. Do not reinvent it.** This skill is only the loop.
@@ -12,12 +17,14 @@ the schema or a blacklist. Do not reinvent it.** This skill is only the loop.
 ## Orient (always, before any work)
 
 ```bash
-ls docs/plans/PUBLIC_PRODUCT 2>/dev/null || true
+ls docs/plans/ADMIN_PRODUCT/EXECUTION.md docs/plans/PUBLIC_PRODUCT 2>/dev/null || true
 ```
 
-Then read in order: `SESSION_BOOT.md` → `state.json` → `work-queue.json` → `progress.txt`
-(last ~80 lines) → `decisions.md` → skim `process-registry.json`. Summarize in ≤5 bullets:
-phase, locks, top queue id, blockers, last progress line — printed BEFORE doing work.
+Then read in order: `docs/plans/ADMIN_PRODUCT/EXECUTION.md` →
+`docs/plans/PUBLIC_PRODUCT/SESSION_BOOT.md` → `decisions.md` →
+`progress.txt` (last ~80 lines). Summarize in ≤5 bullets: board scoreboard,
+your lease, blockers — printed BEFORE doing work.
+**Do not obey** `state.json` or `work-queue.json` as the next unit.
 First line of every firing after orient: state what you verified on disk. **No verify → no
 work.** Do not assume the harness or prior wiring is healthy; prove disk state in one cheap
 `ls`, then work — do not burn a session re-litigating the harness.
@@ -35,7 +42,7 @@ work.** Do not assume the harness or prior wiring is healthy; prove disk state i
 | `P6_VISUAL` | Greenfield `design_system/public/` — closed pattern set (≥3, target 5–8) + MOVING prototype; `awaiting_lock=visual`; **stop** |
 | `P7_PRIMITIVES` | `components/site/v3/` barrel + token exemption |
 | `P8_LITMUS` | Timed litmus pilot (L1 valuation span, L2 exploration span) on a real phone; **stop** for Matt |
-| `P9_ROLL` | One page family per unit inside locked IA; ratchet lands with the FIRST unit; adversarial fresh-context verify; one commit |
+| `P9_ROLL` | The leased unit on `docs/plans/ADMIN_PRODUCT/EXECUTION.md` (first: E-CHROME). Not the stale work-queue. Ratchet must shrink. Adversarial verify. One commit. Land serial. |
 | `P10_GATES` | Remaining mechanical gates |
 
 ## Grind semantics
@@ -44,13 +51,14 @@ Chain units until: Matt lock required · queue empty and phase DoD met · contex
 spent (finish in-flight unit, flush, stop). Continue-grinding phases: P1/P2/P4/P7/P9/P10.
 **Never cross a Matt lock. Never start P6 visuals before IA lock. Never start P5 IA before
 process lock.** Stop tokens: `BLOCKED_ON_MATT: process|ia|visual|litmus` ·
-`HANDOFF: phase=… next=… file=docs/plans/PUBLIC_PRODUCT/work-queue.json`
+`HANDOFF: next=<lease id> file=docs/plans/ADMIN_PRODUCT/EXECUTION.md`
 
 ## Flush (end of EVERY unit)
 
-state.json · work-queue.json (next item crystal clear) · process-registry.json · append
-progress.txt (`TIMESTAMP PHASE UNIT OUTCOME-with-numbers … Next: <unit>`) · keep
-SESSION_BOOT.md accurate. Batch docs-only units and `npm run push` once per session.
+Update `docs/plans/ADMIN_PRODUCT/EXECUTION.md` scoreboard + lease status.
+Append `docs/plans/ADMIN_PRODUCT/progress.txt` and this pack's `progress.txt`.
+Do not write a competing next-unit into `work-queue.json`. Batch docs-only
+units and `npm run push` once per session. Land serial on `main`.
 
 ## Hard refuses (return to queue instead)
 

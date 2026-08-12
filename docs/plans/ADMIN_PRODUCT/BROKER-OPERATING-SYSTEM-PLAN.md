@@ -1,7 +1,7 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.12 plan. D1–D11 locked. Public Product OS (“Site pages organization and navigation”) is Loop E, not a second plan. Loop E remaining locked to Claude’s stop (73 legacy / 527 imports / 399 chrome). Ready to execute when Matt says go.
+**Status:** v0.13 plan. D1–D11 locked. Public Product OS is folded in as Loop E quarry, not a second plan. One board: `EXECUTION.md`. Ready to execute when Matt says go. Parallel build, serial land.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -54,24 +54,22 @@ meaning gets a plain-language question, then a lock.
 SEO title mechanics, default operating grants that still honor draft-first,
 channel mix inside the live set, chart geometry. Record the call. Do not ask.
 
-### Ready to execute (v0.12)
+### Ready to execute (v0.13)
 
 Meaning is locked. Further constitution is the failure mode.
 
-**Two tracks. Do not mix files.**
+**One plan. One board.** `docs/plans/ADMIN_PRODUCT/EXECUTION.md` is the only
+"where we are." Public Product OS (`docs/plans/PUBLIC_PRODUCT/`) is quarry:
+Matt locks, migration recipe, gate contracts, process specs. Its queue and
+`state.json` are stale. Claude’s v3 pages are starting points, not a final product.
 
-| Track | First unit | Owns |
-|---|---|---|
-| **Public / Loop E** | Remaining P9, **chrome unit first** (399 of 527 leftover imports). Then Homes (search, listing detail, open houses, price drops). Then trust/content. D11 on any copy we write. Chart atom (D9) when a series ships. | `app/` public, `components/site/v3`, `docs/plans/PUBLIC_PRODUCT/` |
-| **Broker** | A3 person header → A4 wake rewrite **with** A1 queue | admin, CRM, this plan |
+**How we execute:** build parallel (file leases, worktrees). Land serial (one
+push to `main` at a time). Chrome first (`app/layout.tsx` PublicNav → V3Chrome),
+then fan out public families and broker A3/A4/A1. Details and leases live on
+the board, not here.
 
-If one session: pick a track. If two: keep the split. Claude’s “Site pages” session
-**stopped** rather than start another public wave (two sessions were committing;
-last collision broke a build). This broker session does **not** start that wave.
-Say **go public**, **go broker**, or **go both**.
-
-Voice.md rewrite is a slice on whichever track first touches public copy. Not a
-third program.
+Say **go**. The conductor reads the board and fans out. Do not start product
+code from a second plan.
 
 ---
 
@@ -96,11 +94,11 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A12 | **Identity hole.** Behavior joins `visitor_sessions` via `crm_person_id` / `fub_person_id` / email / `rr_vid`. A newsletter subscribe that never identifies the browser leaves browse history anonymous. | Loop D fails without stitch. | Newsletter signup must identify the session the same way seller LP + saved-search already do. |
 | A13 | **Worth-language vs SEO.** On-page CTA lock is "Value my home" / "Get my home's value." Search demand still uses "home worth." | Blunt rewrite of `<title>` can lose rankings. | CTA/headline/SMS = Value my home. Title/meta may keep demand language; call that out, do not silently smash SEO. |
 | A14 | **Assigned broker.** Copilot and visitor-escalate still smell Matt-only. Q4 lock: own book default, Matt sees all. | New-broker onboard fails if every ping is Matt's. | Route by `assigned_broker`. |
-| A15 | **A third public rebuild would kill the giant push.** Public Product OS is already at P9_ROLL: process/IA/visual locked 2026-08-11, v3 barrel shipped, `/housing-market` on v3, ratchet live. `experience-rollout` is superseded. | Starting "frontend UI wrap-up" as a new program repeats the last death (self-reported dones, competing destinations). | Loop E = grind that OS to zero legacy pages, then a standing refine forever. Do not invent OS #3. |
-| A16 | **Two sessions, one north star.** Public grind and broker-OS grind can run in parallel if they do not share files. | Mixed commits (11F inbox vs public v3 vs this plan) strand work. | Public session owns `app/` public routes + `components/site/v3` + `docs/plans/PUBLIC_PRODUCT/`. Broker session owns admin + packets + TC + this file. Voice/beauty/valuation language is shared law. |
+| A15 | **A third public rebuild would kill the giant push.** Public Product OS already locked process/IA/visual (2026-08-11), shipped a v3 barrel, and started P9. `experience-rollout` is superseded. | Starting "frontend UI wrap-up" as a new program repeats the last death (self-reported dones, competing destinations). | Folded in as Loop E. Grind to zero legacy pages, then standing refine. Do not invent OS #3. Implementation is quarry — do not treat Claude’s pages as final. |
+| A16 | **Two sessions on `main` at once broke a build.** Fan-out is required. Uncoordinated pushes are how it dies. | Mixed commits (11F inbox vs public v3 vs this plan) strand work. A stale public queue sends the next agent at a reverted Market attempt. | One board (`EXECUTION.md`). File leases. Build parallel, land serial. Shared files (`layout.tsx`, v3 barrel, ratchet) are one lease. |
 | A17 | **Ads now would fork the site.** Demand loop and LPs exist. Matt: do not spend a lot of time on ads right now. | A paid-creative grind will reopen old LPs and skip the spines. | Park ads. When they return, they hit Value my home / listing / newsletter — no new funnel. |
 | A18 | **"Dialed" without a scoreboard is a slogan.** GSC ingest, site_signal, ci:ai-crawler-access, ci:ai-structured-data already exist. | Rebuilding analytics is bloat; leaving them unread is the real hole. | Giant review: every page/process scored on funnel + GSC/AI query tests. Steal working ingest. Replace dashboards nobody uses. |
-| A19 | **The other process stopped Loop E on purpose.** Claude’s last public status (session “Site pages organization and navigation”): 73 legacy pages, 527 non-v3 imports, 399 of them chrome. Stopped rather than start another wave because two sessions were committing; last collision broke a build. `state.json` / `work-queue.json` are stale (still name the first Market attempt). Live ratchet: `scripts/public-ui-baseline.json`. | Starting E1 here, polishing KB, or `git add -A` will strand or smash that tree the same way. | Pickup is chrome-first, then Homes, then trust/content. Broker OS does not migrate those families unless Matt says **go public** and the other session is clearly stopped. Trust git + the ratchet, not the stale queue. |
+| A19 | **The public tracker lied.** Claude’s last status (73 / 527 / 399) matches the ratchet. `state.json` / `work-queue.json` still name the reverted first Market attempt. Eleven mixed routes are not “Market and Places done.” | Obeying the stale queue re-migrates shipped quarry or skips chrome. Treating mixed pages as final leaves KB chrome in layout forever. | Board is `EXECUTION.md`. Trust git + the ratchet. Chrome unit = layout swap, then families. Rework mixed pages if they are clunky. |
 | A20 | **GBP + organic social were missing from v0.3.** Process exists (`content-approve` → approval-queue → `publisher-sweep` → `/api/social/publish`, plus local-seo / GBP playbook). Last census (2026-08-08): GBP/LI/X/YT OAuth expired; measured=0; ready backlog ~397 mostly not posts. | "Easy generate and post" is a product job, not a new stack. Paid ads stay parked. | Loop G. Production-ready = tokens live + one generate door + one yes + actually posts. Re-probe tokens before G1. |
 | A21 | **"Automatically post on all channels" vs draft-first.** Silence is not approval. A first post that the broker never saw is a license and brand hole. | Fully silent posting would violate the inviolable list. | Calendar auto-builds. Copilot asks. Broker yes (week grant or per-item). Then it posts, times, and learns by itself. **D7**. |
 | A22 | **"Optimal from what performs" cannot learn while measured=0.** `getFormatPerformance` already returns `best_hours` / `best_topics` / per-platform uplift from `content_performance`. Six rows, no status flip. | Building a new optimizer on empty data is theater. | Fix CAP-015 so the existing bias actually fires. Then the calendar uses it. |
@@ -110,7 +108,7 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A26 | **Identical cross-post is not "optimized per channel."** Platform skills already ban watermarked/cross-posted Reels. "All channels" is not Threads/Nextdoor/Pinterest (parked) and not the same caption everywhere. | Spray-and-pray would tank reach and look cheap. | One idea → per-channel variants (length, format, hook). D6 still limits which channels are live. |
 | A27 | **We flattened series into type.** Public v3 Instrument is a big number with no chart primitive in the barrel. Admin 11C replaced recharts sparklines with typographic figures + a plain polyline, citing "data is typographic." Market charts still live in KB (`KbMarketChart`, `MarketCoreCharts`, `PriceChart`). | A median without the line is not the market. Code that "has the number" is not visualization. | Series and comparisons get a chart. A singleton status stays type. Vanity KPI walls stay cut. |
 | A28 | **Code inspection cannot see a lying chart.** Gates catch hex, nesting, empty aria-labels. They do not catch a clipped Y-axis, a smear at 390, a tooltip that invents a number, or a sparkline that does not match the figure beside it. | Public OS already requires browser 390+1280. That is not yet a *chart* look. | Visual inspection is law: load the page, look at the chart, reconcile to the figure and the source. Screenshot or it did not happen. |
-| A29 | **A 7th public pattern would reopen P6.** The six are closed. Atoms may grow. | A "Chart" destination or a new OS is the death mode. | **D9 LOCKED (agent, 2026-08-12).** v3 chart **atom** inside Instrument (trend under the answer), not pattern 7. Admin charts use `--a-*`. Public session owns the public atom. |
+| A29 | **A 7th public pattern would reopen P6.** The six are closed. Atoms may grow. | A "Chart" destination or a new OS is the death mode. | **D9 LOCKED (agent, 2026-08-12).** v3 chart **atom** inside Instrument (trend under the answer), not pattern 7. Admin charts use `--a-*`. Public atom is lease E-CHART on the board. |
 | A30 | **Identity lives in notes.** Matt has to read notes to learn "this person is an expired listing." Next step and "what are they doing right now" are not on the person. | A lead page that makes the broker hunt is the original "what am I supposed to do?" failure. | Person header always shows: who they are (expired / FSBO / buyer / …), **next step**, **what they're doing now**. Notes are history, not the label. |
 
 ### 0b. Adversarial audit of *this plan* (v0.8 — the brief audit was not enough)
@@ -127,7 +125,7 @@ A1–A30 attacked the stacked prompts. They did not attack the plan that grew ou
 | A36 | **Unidentified traffic and 1am pings.** Every scroll was already rejected. Anonymous heat is not a new-lead SMS. Broker wakes already fire at night for new leads. | Either silence (miss the lead) or spam Matt. | SMS only if identified. Unassigned → Matt, same as today's alert. Overnight OK (it is a new-lead class). Consumer ask honors quiet hours. Broker SMS opt-in still applies — if it is OFF, the wake never leaves; that is a Settings fact, not a new channel. |
 | A37 | **"Dialed" has no test, so SkySlope is forever.** | Alongside without a finish line is a second SoR. | Cutover when this list is green on one real file: create deal in UI, fill one licensed form from the deal, send, file/seal, person↔deal, a broker can run it without opening SkySlope. Until then SkySlope is the live file. |
 | A38 | **Dual-intent is the real person.** Expired owner who is also looking at homes. | Two records, or one label, hides the truth. | One person. Header shows both. Copilot can wake (looking-at) and still owe the expired packet. |
-| A39 | **P1 is nine items — still the ocean.** | A2 warned. | First build: **A3 person header, A4 wake rewrite, A1 queue.** C1 is taste (Matt). G1 is Matt OAuth. E is the other session. A5 ask text can ship with A4's rail; the packet waits on taste. |
+| A39 | **P1 is nine items — still the ocean.** | A2 warned. | First broker build: **A3 person header, A4 wake rewrite, A1 queue.** First public land: **E-CHROME**. Same board. C1 is taste (Matt). G1 is Matt OAuth. A5 ask text can ship with A4's rail; the packet waits on taste. |
 | A40 | **Evidence is stale.** TC count = July 2026. Social census = 2026-08-08. | Building G1/B1 on a dead token or a dead envelope count is theater. | Re-probe before G1 or B1. Not a reason to keep planning. |
 | A41 | **No named exemplar for the expired or buyer packet.** Tumalo is a seller CMA. | C1/A5 will stall on "does this blow them away?" | Correct stall. Matt taste-stops those artifacts. Do not invent a beauty gate in code first. |
 | A42 | **Return-visit is FUB-keyed.** `fub_legacy_id` is a historical register. | D3 that only fires for FUB-era people misses newsletter buyers. | Wake keys `crm_people.id` (and session identity). FUB id is quarry, not the join. |
@@ -152,7 +150,7 @@ first week fail in production. This pass does. It does not reopen D1–D10.
 | A50 | **The calendar cannot learn while `measured` stays 0.** CAP-015 writer exists (`measurement-status.ts`). If no live row flips, G3 "optimal hours" is theater. | A22 already said this. Building G3 on empty bias repeats it. | Do not build a new optimizer. Confirm one executed post writes `content_performance` and flips `measured`. Then G3. Default hours until that row exists. |
 | A51 | **Imagine wrappers and listing-tour still the old camera.** `lib/grok-image.ts` = `grok-imagine-image`. `lib/grok-video.ts` = `grok-imagine-video`. `video/listing-tour/scripts/prepare-tour.ts` still imports Replicate for i2v. | D10 said upgrade, don't add a second client. A listing tour that still calls Wan/Replicate is the zoo. | G5 upgrades wrappers to `grok-imagine-image-quality` + `grok-imagine-video-1.5`. Listing-tour i2v points at Imagine on next touch. Do not add a second client. |
 | A52 | **Two (really three) Grok talkers.** Broker SMS agent, copilot drafts, social caption generators. Three voices. | Public-facing copy will not stay consistent if each runtime has its own prompt novel. | One public-facing law (D11). Anything a person reads goes through it. Admin instrument copy is out unless it is forwarded or sent. |
-| A53 | **v3 barrel has no chart atom.** D9 locked. `components/site/v3/index.ts` still exports Instrument as a big number. KB still holds the real market charts. | A Market migration can ship without the line. | Public session owns the atom. Do not build it here. Flattening a series is still a defect. |
+| A53 | **v3 barrel has no chart atom.** D9 locked. `components/site/v3/index.ts` still exports Instrument as a big number. KB still holds the real market charts. | A Market migration can ship without the line. | Lease E-CHART. Flattening a series is still a defect. |
 | A54 | **Newsletter beauty is ungated.** The engine is the healthiest admin loop. An ugly or corny edition can still drain after approve. | Voice gates ≠ designer's eye. | Draft-first stays. Beauty is Matt's eye, not a regex. D11 applies to the prose. |
 | A55 | **`/admin/social` is a traffic report.** `next.config.ts` rewrites it to `/admin/analytics/social` (GA4 + visitor_sessions). OAuth callbacks land there. G4 connect UI is not that page. | A broker who "connects Instagram" and lands on a sessions chart will think the product is broken. | Settings = connect. Today = calendar. `analytics/social` stays a report. Do not make the rewrite the product. |
 | A56 | **Regex cannot catch corny or overexplain.** `voice-constructions.cjs` still grows by "we found this by eye." Agents write to pass the gate. That is how the site went beige. | A once-and-for-all voice that is a novel of regex will fail the same way again. | Mechanical gate after D11: punctuation + invented quotes + Value my home + (optional) a tiny pander/urgency list. Taste = named exemplars + "would Matt send this?" Delete `.cursor/rules/blog-voice.mdc` as a second canon when D11 lands. |
@@ -190,41 +188,38 @@ Buyer leads come in when people sign up for the newsletter (named door). Newslet
 
 **D1 locked:** when they are looking at a home, we **ask first** in a short text, then send a **buyer** packet if they want it — not a seller CMA. Copilot still wakes the broker (D3). The ask to the lead is a yes from the broker, same as any other outbound.
 
-### Loop E — Public site (Claude session: “Site pages organization and navigation”)
+### Loop E — Public site (folded in; quarry, not a second OS)
 
-This is the same program as the in-flight Claude session. It is **not** a second
-redesign and not a third OS. Constitution: `docs/plans/PUBLIC_PRODUCT/`. Runner:
-`run public product`. Phase `P9_ROLL`.
+The Claude session “Site pages organization and navigation” **is** this loop.
+It is not a second redesign and not a third OS. We were going to run it after
+this plan. It kept failing to finish (stale queue, two sessions on `main`,
+self-reported dones). It is folded in. We execute it from this plan.
 
-Matt’s founding ask (2026-08-11): pages are confusing; each page has an objective
-and the information to meet it; seamless exploration of Central Oregon; at least
-three section patterns; admin simplicity applied to the public site; the whole
-site is a lead-gen machine that never acts like it.
+**Founding ask (Matt 2026-08-11, still the job):** pages are confusing; each
+page has an objective and the information to meet it; seamless exploration of
+Central Oregon; at least three section patterns; admin simplicity applied to
+the public site; the whole site is a lead-gen machine that never acts like it.
 
-**Locked there (do not relitigate):** process, IA (Homes · Places · Market · Sell ·
-Saved · About), visual (six v3 patterns), dual objectives + exits per page.
-Market and Places families are on v3. `work-queue.json` is stale (still names the
-first Market attempt). Trust git + `decisions.md` + the live ratchet, not the queue.
+**Locked meaning (do not relitigate):** process, IA (Homes · Places · Market ·
+Sell · Saved · About), visual (six v3 patterns), dual objectives + exits per
+page. Evidence: `docs/plans/PUBLIC_PRODUCT/decisions.md`.
 
-**Still to grind (Loop E remaining — Claude stop, verified 2026-08-12 against
-`scripts/public-ui-baseline.json`):**
-- **73** legacy pages. **527** non-v3 import sites. **11** mixed pages.
-- **399 of 527** remaining imports are kb chrome. That is the unlock.
-- v3 chrome primitives already exist (`V3Chrome` / `V3Footer` / `V3Breadcrumb`).
-  They are not yet on the leftover pages. Chrome **unit** = put them on.
-- Then **Homes:** search, listing detail, open houses, price drops.
-- Then **trust/content** families (About and the rest of that cluster).
-- Sell / homepage later in that grind. `app/dev/sell-film` is a motion prototype,
-  not production until VISUAL_LOCK.
-- Copy on those pages obeys D11. Chart atom (D9) is still missing from the v3 barrel.
+**Implementation is quarry.** v3 barrel, ratchet, migration recipe, and the
+eleven mixed routes are useful. They are not a final product. A v3 page that
+is still clunky gets reworked. A KB page gets migrated, not polished in the
+old register. Do not re-litigate the six patterns unless Matt reopens visual.
 
-**Collision:** Claude stopped rather than start another wave. Two sessions were
-committing to this tree; the last collision cost a broken build. That stop was
-correct. This session does not migrate those families and does not `git add -A`
-unless Matt says **go public** and the other session is clearly stopped.
+**Live remaining (ratchet 2026-08-12):** 73 legacy pages, 527 non-v3 imports,
+399 kb, 11 mixed, **0** v3-only pages. Layout still mounts `PublicNav` → KbNav.
+That is why mixed exists and why chrome is the unlock. Market/Places “shipped”
+means some detail routes have v3 bodies, not that those families are done.
 
-Implementation amnesia applies: destinations name the jobs. A v3 page that is
-still clunky gets refined. A KB page gets migrated, not polished in the old register.
+**Where we are:** `docs/plans/ADMIN_PRODUCT/EXECUTION.md`. Not
+`PUBLIC_PRODUCT/state.json`. Not `work-queue.json`.
+
+**First land:** E-CHROME (layout → `V3Chrome`). Then fan-out per the board.
+Copy we write obeys D11. Chart atom (D9) before any series is flattened.
+`app/dev/sell-film` is a motion prototype, not production.
 
 ### Loop F — Acquisition and truth (SEO, GSC, analytics, AI, every tool)
 
@@ -552,7 +547,7 @@ Not Imagine (keep): Remotion for live numbers and brand-locked motion; list-kit 
 
 **D11 — Public voice, once and for all?** **LOCKED (Matt, dialogue closed 2026-08-12).** See Voice lock. About mission sentence is the one exception to never-name-the-virtues. Only virtue words are dead. Three registers. MLS remarks never rewritten. Buffett out of the file. Rewrite `VOICE.md` on the first voice slice. Do not start a site-wide copy program.
 
-D1–D11 are locked. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. Produce is Imagine (D10), not a model zoo. Public grind is Loop E (Public Product OS P9 remaining).
+D1–D11 are locked. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. Produce is Imagine (D10), not a model zoo. Public grind is Loop E, folded in; board is `EXECUTION.md`.
 
 ---
 
@@ -620,7 +615,7 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 5. **Buyer ask (A5 / D1):** after broker yes, a short ask that names the home (does not narrate the watch); if they want it, a buyer packet — not a seller CMA, not a lender BPO.
 6. **Seller first packet (C1):** one expired (or FSBO) message + deliverable that (a) proves we know the house, (b) shows how we would market **this** house. Still manual send. Matt taste.
 7. **Buyer see-back (D):** newsletter signup identifies the session; person shows homes/searches/scrolls.
-8. **Worth-copy inventory** (list path:line; public CTA rewrite is PUBLIC_PRODUCT).
+8. **Worth-copy inventory** (list path:line; public CTA rewrite is a Loop E family lease).
 9. **Presence (G):** Tokens are live (IG @ryanrealtybend; GBP refresh works). One generate door on Imagine (D10). One yes. A live post we can open.
 
 ### P2 — make it a brokerage, not a demo
@@ -679,14 +674,14 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 | **A5** Buyer ask | After broker yes, lead gets a short ask that names the home (no "we watched you"); yes → buyer packet, not seller CMA, not lender BPO | D1 locked. Packet is taste (Matt). |
 | **C1** One expired blow-away packet | Message + PDF on a real expired in-scope listing, manual send, no generic services hero | Matt review of packet |
 | **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
-| **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0. Pickup: chrome unit first, then Homes, then trust/content. | **Paused on collision.** Claude stopped. Do not start a second E1 from a broker session. See §7b live status. |
+| **E1** Public giant push | Board `EXECUTION.md` until legacy pages → 0. First land E-CHROME, then family leases. | **Folded in.** Say go. Do not run a second public OS. |
 | **F1** AI/GSC query battery | Those three example queries (and live GSC top queries) resolve to a citable Ryan Realty URL via Google and via `/llms.txt` + JSON-LD | Public session; ads still parked |
 | **G1** GBP + IG live | IG @ryanrealtybend page token valid. GBP refresh token works (re-probe before a post). One approved post visible. | Tokens already in env. No new keys. |
 | **G2** Easy generate → post | Name a listing (or "GBP market update") → **Imagine produce** (D10) → draft on Today → yes → live on @ryanrealtybend (or brand FB / GBP). Same `humanApprovedAt` gate. | D10. Do not bypass the queue. Do not call Replicate. |
 | **G3** One week on a calendar | Copilot: "Hey Paul, want me to set up some ideas?" Week of per-channel drafts on Today. Yes → posts at `best_hours` (or a documented default until data exists). | G2. D7 locked: first week per-item, then 7-day grant. |
 | **G4** Broker connects own socials | Paul/Rebecca (or a new broker) OAuth from Settings: their IG, Facebook, LinkedIn (and later the rest of the live set). Calendar can post to *their* accounts as variants of the brand post. Own-book Today shows their social lane. | D8 locked. Do not stuff personal tokens into Matt's primary IG or the brand GBP row. |
 | **G5** Imagine is the camera | One listing still → Imagine i2v (1.5) → stored MP4 → draft on Today. Wrappers on `grok-imagine-video-1.5` / `grok-imagine-image-quality`. No Replicate call on the path. | D10. `XAI_API_KEY` already set. Matt taste on the clip. |
-| **V1** Chart inventory | Path:line of every public, admin, and packet surface that displays a series as type/table only, plus every live chart that was not browser-looked-at. | None. Planning/evidence. Do not migrate public charts in a broker session. |
+| **V1** Chart inventory | Path:line of every public, admin, and packet surface that displays a series as type/table only, plus every live chart that was not browser-looked-at. | None. Planning/evidence. Public charts are E-CHART / family leases on the board. |
 | **V2** One honest chart, looked at | One series (recommend: `/housing-market` trend or admin overview sparkline) is a real chart, 390 + 1280, figure reconciles to the line, source on screen. | Public half = public session (D9 locked: atom). Admin half can run here. |
 | **Voice** One law, one file | `VOICE.md` is the short law. Buffett-as-law is not a gate. Rule 3 is gone. `blog-voice.mdc` is deleted. Mechanical gate is punctuation + invented quotes + Value my home (+ optional tiny pander/urgency). Five named exemplars in the file. | **D11 answers.** Do not start this slice before they land. Not mixed with A3/A4/A1. |
 
@@ -694,57 +689,48 @@ Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," 
 G1 tokens are already live. G2/G5 share Today's yes-path with A2; do not build a third approve button. Produce is Imagine (D10).
 G3 is the north star slice; it is not the first slice. One live Imagine post comes first or the calendar is a slideshow.
 V1 can run in the planning pass. V2 public waits on the other process's barrel.
-Voice waits on D11. First build is still A3 / A4 / A1.
+Voice waits on D11 (now locked). First broker build is still A3 / A4 / A1.
+Public first land is E-CHROME. Both are on the same board.
 
 ---
 
-## 7b. Giant incremental push — how to run Loop E (Matt 2026-08-12)
+## 7b. Giant incremental push — Loop E, folded in (Matt 2026-08-12, fold 2026-08-12)
 
 This is the operating model so "do the whole frontend" does not become a third program.
 
-**What "wrap up the new UI" means, honestly:** the new UI is already locked
+**Board:** `docs/plans/ADMIN_PRODUCT/EXECUTION.md` — leases, scoreboard, conductor.
+Do not start from `run public product` against the stale public queue.
+
+**What "wrap up the new UI" means:** the visual language is locked
 (`design_system/public/PUBLIC_UI.md`, `components/site/v3/`). Wrapping up =
-every public route renders in that language. That is P9. After P9, you do not
-design a new UI. You refine inside it (or reopen the visual lock if the
-language itself is wrong — amnesia allows that; a new OS does not).
+every public route renders in that language. After that, refine inside it
+(or reopen the visual lock if the language itself is wrong — amnesia allows
+that; a new OS does not). Claude’s shipped pages are quarry inside that
+language, not a finished wrap.
 
-**The giant push, now:**
+**How we run:**
 
-1. Open a **dedicated** session. First line: `run public product` (or
-   `continue public OS`). That loads `.claude/skills/public-product-os/SKILL.md`
-   and `docs/plans/PUBLIC_PRODUCT/SESSION_BOOT.md`.
-2. Orient from disk. Trust git + the bottom of `progress.txt`, then `state.json.phase`
-   (today: `P9_ROLL`). Print the top `work-queue.json` id **and verify it against
-   disk** — as of 2026-08-12 the queue still names the reverted Market attempt
-   and a chrome unit that already shipped. Do not obey a stale next-id.
-3. **One family per unit, ratchet must shrink, one commit, push, deploy
-   READY, browser 390 + 1280 — including looking at every chart.** Gate contracts
-   for that route move in the **same** change (the lesson that reverted the first
-   Market attempt). A series flattened to a figure is not a migration, it is a
-   deletion. Declare it or replace it with a v3 chart atom (D9).
-4. **Leverage order (verify queue vs disk each session):** chrome **unit**
-   first — primitives already shipped with `/housing-market`; leftover pages
-   still import kb chrome (399 of 527). Then Homes (search, listing detail,
-   open houses, price drops) → trust/content → Sell + valuation spine →
-   homepage → residual. Listing detail is the money page — extra care, every
-   CTA and JSON-LD stays. LPs last, noindex, explicit approval. Market and
-   Places are already on v3; do not re-migrate them.
-5. Keep grinding until `ci:public-ui` legacy pages → 0 and P9 DoD is met.
-   Then P10 (remaining gates). Then stop calling it a rollout.
+1. Matt says **go**. Conductor reads the board, not `work-queue.json`.
+2. **E-CHROME first** (serial): `app/layout.tsx` PublicNav → `V3Chrome`.
+   Primitives already exist. The unit is the layout swap + CSS layers +
+   one-footer contract. Until this lands, every v3 body stays mixed.
+3. **Then fan out.** Public families on disjoint `app/` globs. Broker
+   A3/A4/A1 on admin. Voice.md as one file. Build in worktrees. **Land
+   serial** on `main` (ratchet is shared). One push at a time. Deploy READY.
+   Browser 390 + 1280. Gate contracts move in the same change.
+4. Mixed Market/Places routes: look, then keep or rework. Do not assume
+   final. Do not re-migrate from scratch unless the `_v3/` module is wrong.
+5. CUT-CANDIDATE routes follow `cut-list.md`. Do not v3 a page we are killing.
+6. Keep going until `ci:public-ui` legacy pages → 0. Then P10. Then standing
+   refine. Never "Public Product OS 2."
 
-**Forever refine (after the wrap):**
+**Forever refine (after the wrap):** four questions + beauty + dual objectives
++ funnel + Loop F query tests. One defect class or one family per unit.
+Measure completed valuations week over week.
 
-Every later session that touches a public page runs the same four questions
-(best / simple / clear / e2e) plus beauty plus dual objectives (visitor +
-machine + exits) plus **funnel** (how does this drive someone in) plus the
-AI/GSC query tests in Loop F. One defect class or one family per unit.
-Measure completed valuations week over week, not vibes. Never open
-"Public Product OS 2."
-
-**Parallelism:** a second session may grind broker OS (A–D + G) at the same time.
-Do not mix commits. Public session does not edit `app/admin`. Broker session
-does not migrate public families or touch in-flight `_v3/` work. Shared law:
-voice, Value my home, beauty bar, visitor identity stitch.
+**Collision law:** no `git add -A`. No two lands on `main` at once. Shared
+files are one lease. Uncommitted sell-film / `PUBLIC_SITE_UX_OVERHAUL/` dirty
+files are not this plan.
 
 ### Versioning (one generation, then increment)
 
@@ -757,53 +743,15 @@ Versioning here is not a new numbering scheme for its own sake. It is:
 
 If a file exists only to support the old generation, it is holding us back. Cut it in the same commit that finishes the new path.
 
-**What you say to start the giant push:**
+**What you say to start:**
 
 ```
-run public product. Grind P9 until every public family is on v3. One family
-per commit, ratchet shrinks, gate contracts move in the same change, browser
-390 and 1280, deploy READY. LOOK at every chart — a series flattened to a
-figure is a deletion; replace it with a v3 chart atom (D9: atom inside
-Instrument, not a 7th pattern) or declare it. Chrome leverage first if the
-queue still says so — verify disk. Implementation amnesia: do not polish
-KB/legacy; migrate or cut. Beauty bar: if it would not make them want to
-see what we're about, it is not done. On every page: how does this drive
-someone into the funnel. SEO/JSON-LD/llms.txt stay honest so an LLM asked
-for the best broker in Bend or a 3-bed in Northwest Crossing can cite us.
-Ads parked. Stop only for a Matt lock, empty P9 queue, or a real blocker.
-When P9 is empty, do P10, then the standing refine loop in
-docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md Loops E and F.
+go. One plan: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md
+Board: docs/plans/ADMIN_PRODUCT/EXECUTION.md
+Build parallel, land serial. First land is E-CHROME.
+Do not assume Claude's v3 pages are final. Quarry, rework if clunky.
+No git add -A. Evidence or it is not done.
 ```
-
-### Live status of the other process (2026-08-12 — Claude stop is the pickup)
-
-This is how Loop E streamlines instead of forking.
-
-**On `origin/main` (trust this over `state.json`):**
-- Phase is `P9_ROLL`. Process / IA / visual locked 2026-08-11.
-- `/housing-market` shipped on v3 (`b076e15b`). Chrome **primitives** are in the barrel. They are not yet on leftover pages.
-- Waves 1+2 shipped Market remainder + Places. Live ratchet (`scripts/public-ui-baseline.json`): `nonV3ImportSites: 527`, `legacyPages: 73`, `mixedPages: 11`. Progress line `2026-08-11T16:00:00Z WAVES 1+2`: kb 518 → 399.
-- `experience-rollout` is superseded. `PUBLIC_SITE_UX_OVERHAUL/` is evidence, not authority.
-
-**Claude’s last public status (pickup, numbers match the ratchet):**
-> What remains: 73 legacy pages, concentrated in Homes (search, listing detail, open houses, price drops) and the trust/content families, plus the global chrome unit — which is the real unlock, since 399 of the 527 remaining imports are chrome. I've stopped here rather than starting another wave because two sessions are actively committing to this tree, and the last collision cost a broken build.
-
-**Stale on disk (do not obey):**
-- `docs/plans/PUBLIC_PRODUCT/state.json` still describes the *reverted* first Market attempt and names `p9-market-family-v2` as next.
-- `work-queue.json` still has only `p9-market-family-v2` and `p9-chrome-unit`. Chrome primitives already shipped; the chrome **unit** (putting them on leftover pages) is still the remaining unlock. Do not treat “chrome already shipped” as “chrome unit done.”
-
-**Collision (2026-08-12):**
-- Places + rest-of-Market `_v3/` landed on `origin/main` in `16f0361f` (mixed into a broker-OS docs commit because those files were already staged; main is protected, could not split). Treat those families as shipped quarry. Do not re-migrate them.
-- Claude **stopped** rather than start another public wave. That stop was correct.
-- Still uncommitted and **not ours:** sell spine / `app/dev/sell-film/` / extra `PUBLIC_SITE_UX_OVERHAUL/` files. Constitution says that folder is demoted. Do not join it. Do not `git add -A`.
-
-**What this means for broker OS:**
-- E1 is **paused**, not “already being executed.” A broker session that migrates a public family, edits `components/site/v3`, or “wraps the UI” without Matt saying **go public** is the third program A15 warned about, and the same collision that broke the build.
-- Shared law only: voice, **Value my home**, beauty, visitor identity stitch, dual objectives + funnel.
-- Worth-copy inventory (P1.5) is a *list* from this plan. The public session owns the CTA rewrite.
-- When a dedicated public session lands a family, Loop E's forever-refine and Loop F's query tests apply. Not before, and not by stealing the dirty files.
-
-**Parallelism that is actually safe:** A–D and G on admin / packets / TC / social tokens. E on public routes. Two sessions, disjoint paths, no mixed commits. If two sessions are already on this tree, do not start a third public wave.
 
 ---
 
@@ -872,7 +820,7 @@ This is already supposed to be in the process (public OS: browser 390+1280; admi
 3. **Look.** Real browser, 390 and 1280, live numbers. The line matches the figure. Axes are honest (zero baseline unless a labeled index). Tooltip does not invent. Empty state states the reason. Reduced-motion is complete, not blank. Screenshot in the commit or the decisions log.
 4. Code gates still run. They do not replace step 3.
 
-Public chart work is Loop E (barrel atom). Admin + packet charts are this plan. Do not mix.
+Public chart work is Loop E (lease E-CHART). Admin + packet charts are broker leases. Shared barrel files are serial.
 
 ---
 
@@ -967,9 +915,11 @@ Prompts are cinematography (lens, move, light), not adjectives. Negative: no tex
 
 - No product code in the planning pass unless Matt says go.
 - Dirty `app/admin/**/crm/inbox/**` from 11F: inventory, do not edit.
-- **Loop E** lives in `docs/plans/PUBLIC_PRODUCT/` and `.claude/skills/public-product-os`.
-  Do not start a third public rebuild. `experience-rollout` is superseded.
-- Public CTA/copy/migrations: PUBLIC_PRODUCT session. Admin queue/packets/TC: this plan.
+- **Loop E** is this plan + `EXECUTION.md`. `docs/plans/PUBLIC_PRODUCT/` is quarry
+  (locks, recipe, gate contracts). Do not start a third public rebuild.
+  `experience-rollout` is superseded. `run public product` orients from the board.
+- Public CTA/copy/migrations and admin queue/packets/TC are one plan, disjoint
+  **file leases**, serial land on `main`.
 - Path:line or it is not a finding. The **right loop** wins vs stale docs *and*
   vs current code. Code is evidence of what we tried, not a freeze.
 - Law is data (`TC_OREGON_COMPLIANCE.md`).
@@ -1026,10 +976,10 @@ NORTH STAR — seven loops, one person record, one generation of code
     viewed. Looking at a home: ask first in a short text, then a buyer packet
     if they want it — never a seller CMA, never a lender BPO (D1). Broker yes
     before the ask. Do not tell the lead we watched them browse.
-  E Public site: wrap the locked v3 UI across every public page (Public Product OS
-    P9 remaining: chrome unit first, then Homes, then trust/content; Claude stopped
-    on collision — do not start a second public wave from a broker session),
-    then forever refine. Do not start a third redesign.
+  E Public site: wrap the locked v3 UI across every public page. Folded in from
+    the Public Product OS. Board: docs/plans/ADMIN_PRODUCT/EXECUTION.md.
+    First land E-CHROME, then family leases. Claude's v3 pages are quarry, not
+    final. Then forever refine. Do not start a third redesign.
   F Acquisition and truth: every page/process scored on how it drives the funnel.
     SEO, GSC, analytics, JSON-LD, /llms.txt, every tool — dialed and used.
     AI assistants (ChatGPT, Claude, Grok, Perplexity) citing "best broker in Bend"
@@ -1076,14 +1026,11 @@ say whether the current how should be kept or replaced.
 Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/A3/A4/A5/C1/D1/B1/E1/F1/G1/G2/G3/G4/G5/V1/V2.
 Stop for Matt on OAuth logins, money/ads, license, and named-artifact taste.
 Technical shape is decided in this file toward the goals. Do not ask. Record it.
-D1–D11 are locked. Scorecard is in this file. Two execution tracks (do not mix files):
-  Public / Loop E: remaining P9 — chrome unit first (399 of 527 imports), then Homes
-  (search, listing detail, open houses, price drops), then trust/content. Claude
-  session "Site pages organization and navigation" owns those files and stopped on
-  collision. Do not start a second public wave from a broker session.
-  Broker: A3 person header, A4 rewrite of queueReturnVisitAlert (with A1 so Today
-  shows looking-at), A1 queue. Produce is Grok Imagine. Voice.md rewrite is a slice,
-  not a program. Then wait only on those stop classes.
+D1–D11 are locked. Scorecard is in this file. One plan, one board
+  (docs/plans/ADMIN_PRODUCT/EXECUTION.md). Build parallel, land serial.
+  First public land: E-CHROME. First broker build: A3 then A4+A1.
+  Claude's v3 pages are quarry, not final. Produce is Grok Imagine.
+  Voice.md rewrite is a slice, not a program. Then wait only on those stop classes.
 ```
 
 ---
@@ -1105,3 +1052,4 @@ D1–D11 are locked. Scorecard is in this file. Two execution tracks (do not mix
 - 2026-08-12 — v0.10 third audit + voice. A46: the 2026-08-05 voice machine already failed (beige gates, corny rule-3 quotes, second blog file). D11 pending Matt (seven questions). Recommended: one short law, named exemplars, tiny punctuation/conduct gate; retire Buffett-as-law as a gate; kill rule 3. A47 closed person labels. A48 A4 ships with A1. A49 buyer packet sections named. A51 wrappers still old model names; listing-tour still Replicate. A55 `/admin/social` is a traffic report. First build still A3/A4/A1. Do not rewrite `VOICE.md` this pass.
 - 2026-08-12 — v0.11 D11 LOCKED + merge. Claude session “Site pages organization and navigation” = Public Product OS = Loop E (P9 remaining: Homes, Sell, chrome, homepage). About mission sentence is the one virtue-word exception. Only virtue words are dead. Three registers. Ready to execute on two tracks. Do not mix files.
 - 2026-08-12 — v0.12 Loop E remaining locked to Claude’s stop. Live ratchet: 73 legacy pages, 527 non-v3 imports, 399 kb chrome. Chrome primitives exist; chrome unit (put them on leftover pages) is the unlock. Then Homes (search, listing detail, open houses, price drops), then trust/content. Claude stopped on collision; that stop was correct. Broker session does not start a public wave unless Matt says go public.
+- 2026-08-12 — v0.13 FOLD-IN. Public Product OS is quarry under this plan, not a second program. One board: EXECUTION.md. Build parallel, land serial. Chrome = layout PublicNav → V3Chrome (399 unlock). Mixed Market/Places pages are not done. Claude’s work is starting points, rework if clunky. Say go to fan out.

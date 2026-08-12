@@ -1,8 +1,28 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.12 (Grok 2026-08-12) — Loop E remaining locked to Claude’s stop. 73 legacy / 527 imports / 399 chrome. Chrome unit first. D1–D11 locked. Ready to execute. Two tracks, do not mix files.**
+> **NEWEST SUBJECT: Broker OS plan v0.13 (Grok 2026-08-12) — public OS folded in. One board: EXECUTION.md. Build parallel, land serial. First land E-CHROME. D1–D11 locked. Say go to fan out.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.12
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.13
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+`docs/plans/ADMIN_PRODUCT/EXECUTION.md` is the only "where we are."
+**D1–D11 locked.** Ready to execute when Matt says **go**.
+
+**Fold-in:** Claude session “Site pages organization and navigation” is Loop E,
+quarry not a second OS. Process/IA/visual locks stay. Implementation is not
+final. 73 legacy / 527 imports / 399 chrome / 11 mixed / 0 v3-only.
+Chrome = layout `PublicNav` → `V3Chrome`. Then family leases.
+
+**How we run:** build parallel (file leases, worktrees). Land serial (one push
+to `main` at a time). No `git add -A`. Evidence or it is not done.
+
+**On go:** conductor fans out from the board. First land E-CHROME. Broker A3
+may build in parallel (admin files). Mixed Market/Places pages get looked at
+and reworked if clunky.
+
+**Still Matt:** say go; money/ads; license; named-artifact taste.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.12
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **D1–D11 locked.** Ready to execute when Matt says go.

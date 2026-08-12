@@ -4,10 +4,12 @@ This file is the ONLY place a lock counts. Chat approval without a line here is 
 
 ## Lock status
 
-- Process lock (P3): **PENDING**
-- IA lock (P5): **PENDING**
-- Visual lock (P6): **PENDING**
-- Litmus sign-off (P8): **PENDING**
+- Process lock (P3): **GRANTED 2026-08-11** (see below). Still binds.
+- IA lock (P5): **GRANTED 2026-08-11**. Still binds.
+- Visual lock (P6): **GRANTED 2026-08-11**. Still binds.
+- Litmus sign-off (P8): measured; not a reopen.
+- **Plan of record (2026-08-12):** folded into Broker OS. Locks above still bind.
+  Implementation is quarry. Tracker: `docs/plans/ADMIN_PRODUCT/EXECUTION.md`.
 
 ---
 
@@ -678,3 +680,20 @@ program's commits stage explicit paths, never `-A` from the repo root, and a pus
 verified by reading back what the remote actually received rather than trusting the local
 exit code. When two sessions share a tree, the second one's broad `add` is indistinguishable
 from a merge, and the first one's message is what gets lost.
+
+## 2026-08-12 — FOLDED INTO BROKER OS (Matt)
+
+The public program is no longer a second plan of record. Plan:
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` v0.13.
+Board (the only "where we are"): `docs/plans/ADMIN_PRODUCT/EXECUTION.md`.
+
+Process / IA / visual locks above still bind. Dual objectives still bind.
+The v3 barrel, ratchet, migration recipe, and gate contracts stay as tools.
+
+Implementation on disk is quarry, not a final product. The 11 mixed routes
+(v3 body under KB chrome) are starting points. Sibling routes in Market and
+Places are still legacy. Chrome unit = `app/layout.tsx` PublicNav → V3Chrome.
+
+`state.json` and `work-queue.json` in this folder are not authority.
+Do not start Public Product OS 2.
+

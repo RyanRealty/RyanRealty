@@ -1,5 +1,10 @@
 # Public Product OS — session boot
 
+> **FOLDED IN (2026-08-12).** Do not resume from this file as if it were the
+> plan of record. Read `docs/plans/ADMIN_PRODUCT/EXECUTION.md` first, then
+> `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` Loop E / §7b.
+> This ritual remains useful for public-family leases (recipe, decisions, ratchet).
+
 **This file is the universal entry point for ANY model in ANY harness** (Claude Code,
 Cursor, Grok, or a successor). The `.claude/skills/public-product-os` runner is a Claude
 convenience wrapper; when it is unavailable, this ritual + the constitution's phase blocks
@@ -7,16 +12,16 @@ are the complete program. The intent lives on disk — no chat history is requir
 
 ## Resume ritual (every session, in order)
 
-1. `ls docs/plans/PUBLIC_PRODUCT` — prove the memory root exists.
-2. Read: this file → `state.json` → `work-queue.json` → `progress.txt` (last ~80 lines) →
-   `decisions.md` → skim `process-registry.json`.
-3. Print ≤5 bullets (phase, locks, top queue id, blockers, last progress line) BEFORE work.
-4. Execute the top queue unit per the constitution
-   (`docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md`) and the runner
-   (`.claude/skills/public-product-os/SKILL.md`). Grind until a stop token.
+1. Read `docs/plans/ADMIN_PRODUCT/EXECUTION.md` (the only "where we are").
+2. `ls docs/plans/PUBLIC_PRODUCT` — prove the memory root exists (quarry).
+3. Read: this file → `decisions.md` → `migration-recipe.md` as needed →
+   `progress.txt` (last ~80 lines). **Do not obey** `state.json` or
+   `work-queue.json` as the next unit — they are stale.
+4. Print ≤5 bullets (board scoreboard, your lease, blockers) BEFORE work.
+5. Execute the leased unit on the board. Grind until a stop token.
 
-**The live phase is always `state.json.phase` — read it first. The bullets below are
-history in the order it happened; a phase named there is what was true THEN, not now.**
+**The live phase is on `docs/plans/ADMIN_PRODUCT/EXECUTION.md`.** `state.json.phase`
+below is history. A phase named in the ledger is what was true THEN, not now.
 
 ## Rules that bind every session
 

@@ -6,7 +6,7 @@
     "visual": "2026-08-11"
   },
   "awaiting_lock": null,
-  "current_process": "P8 litmus measured (litmus.md). P9 mechanical half SHIPPED: ci:public-ui ratchet live at 688 import sites / 84 legacy pages, rule C corrected. First family migration attempted, refuted by two verifiers, reverted unshipped: the KB-era gate contracts (mockup-parity, seo-shell, kb-breadcrumb-overlay) must be updated to the new destination in the same change. Next unit: p9-market-family-v2.",
-  "plan_of_record": "docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md",
-  "updated_at": "2026-08-11T12:00:00Z"
+  "current_process": "FOLDED IN 2026-08-12. Plan of record: docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md. Where we are: docs/plans/ADMIN_PRODUCT/EXECUTION.md. This state.json is not authority. Next unit is E-CHROME on the board, not p9-market-family-v2.",
+  "plan_of_record": "docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md",
+  "updated_at": "2026-08-12T23:00:00Z"
 }

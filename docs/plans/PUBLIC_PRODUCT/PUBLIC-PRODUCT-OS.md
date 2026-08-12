@@ -1,5 +1,12 @@
 # PUBLIC PRODUCT OS — constitution
 
+> **FOLDED IN (2026-08-12).** Plan of record is
+> `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`.
+> Where we are: `docs/plans/ADMIN_PRODUCT/EXECUTION.md`.
+> This pack is quarry: schemas, locks, recipe, gate contracts, process specs.
+> `state.json` / `work-queue.json` here are stale and are not authority.
+> Do not start Public Product OS 2. Implementation on disk is not final.
+
 This file is the constitution for the public-site rebuild program: schemas, blacklists,
 phase blocks, definitions of done, and the precedence ladder. The runner is
 `.claude/skills/public-product-os/SKILL.md` — a thin loop that reads this pack. The skill
