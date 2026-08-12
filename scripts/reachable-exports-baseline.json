@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-24T18:41:18.431Z",
+  "generatedAt": "2026-08-12T21:51:21.220Z",
   "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 198,
+  "count": 196,
   "names": [
     "components/ActivityFeedCard.tsx",
     "components/ActivityFeedSlider.tsx",
@@ -189,7 +189,6 @@
     "lib/data/crm/getFirstTouchAttribution.ts",
     "lib/data/expired/dashboard.ts",
     "lib/data/fsbo/dashboard.ts",
-    "lib/data/listings/getSimilarListings.ts",
     "lib/email-templates/layout.tsx",
     "lib/grok-image.ts",
     "lib/lead-scoring.ts",

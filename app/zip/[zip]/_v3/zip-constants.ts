@@ -1,0 +1,226 @@
+/**
+ * Route-local constants and pure helpers for /zip/[zip].
+ *
+ * They live beside the route rather than in lib/ because nothing else in the
+ * codebase consumes them, and they live outside page.tsx so the route file stays
+ * under the ci:file-size-budget floor.
+ *
+ * NOTHING HERE CHANGED IN THE V3 MIGRATION except what is stated:
+ *  - CANONICAL_ZIPS keeps its ten members AND its order. generateStaticParams
+ *    maps over it, and the closing Ledger lists the other nine in the same
+ *    order the KB page listed them, so neither the prerendered param set nor
+ *    the on-page order moved.
+ *  - ZIP_AREA and ZIP_CITY_NAME are verified geography facts, carried verbatim.
+ *  - ZIP_CITY_SLUG was DELETED. It existed only to name the parent city's row in
+ *    market_pulse_live for the price-history chart, and that chart is gone with
+ *    the KB market HUD (the series was city-scoped, not ZIP-scoped). Deleting
+ *    the read means deleting the key that addressed it.
+ *
+ * ZIP_CITY_NAME is not decoration: it is the `city` value in the listing-alert
+ * capture payload, which is part of that form's contract.
+ *
+ * ADDED 2026-08-12, after the migration: `neighborhoodName`, the one place that
+ * decides whether a feed value is a place name a visitor can read. See its own
+ * docblock for why the Ledger cannot print `SubdivisionName` raw.
+ *
+ * MOVED HERE 2026-08-12 from page.tsx, unchanged: isFigure, numeric, tileTitle,
+ * tileMeta, zipSearchHref. They are pure, they were already route-local, and the
+ * route file has to stay under the ci:file-size-budget floor. Moving them is the
+ * sanctioned answer to that gate. Re-baselining it is not.
+ */
+
+import type { ListingTile } from '@/lib/data'
+import { displaySubdivision } from '@/lib/slug'
+
+/**
+ * The canonical ZIP codes Ryan Realty serves. `dynamicParams = false` on the
+ * route keeps it strict, so a ZIP outside this set 404s instead of prerendering
+ * an empty page.
+ */
+export const CANONICAL_ZIPS = new Set([
+  '97701',
+  '97702',
+  '97703', // Bend
+  '97756', // Redmond
+  '97759', // Sisters
+  '97739', // La Pine
+  '97707', // Sunriver
+  '97741', // Madras
+  '97754', // Prineville
+  '97760', // Terrebonne
+])
+
+/** Service-area label for each ZIP. Verified geography facts. */
+export const ZIP_AREA: Record<string, string> = {
+  '97701': 'Bend NE',
+  '97702': 'Bend SE',
+  '97703': 'Bend West',
+  '97707': 'Sunriver',
+  '97739': 'La Pine',
+  '97741': 'Madras',
+  '97754': 'Prineville',
+  '97756': 'Redmond',
+  '97759': 'Sisters',
+  '97760': 'Terrebonne',
+}
+
+/**
+ * Parent city for each ZIP, in the form the CRM and the alert filters use.
+ * Carried through the migration because it is a field value in the capture
+ * payload, not a display string.
+ */
+export const ZIP_CITY_NAME: Record<string, string> = {
+  '97701': 'Bend',
+  '97702': 'Bend',
+  '97703': 'Bend',
+  '97707': 'Sunriver',
+  '97739': 'La Pine',
+  '97741': 'Madras',
+  '97754': 'Prineville',
+  '97756': 'Redmond',
+  '97759': 'Sisters',
+  '97760': 'Terrebonne',
+}
+
+/**
+ * MLS subdivision values that name no neighborhood. A tile carrying one of them
+ * is counted in the ZIP total and excluded from the neighborhood breakdown,
+ * never rendered as a place.
+ */
+export const SUBDIVISION_NOISE = new Set(['', 'n/a', 'none', 'unknown', 'other'])
+
+/**
+ * `Crr` is how this feed writes Crooked River Ranch, the large planned community
+ * inside ZIP 97760 (Terrebonne). The equivalence is not invented here: it is the
+ * one this repo already records and queries by — lib/data/geo/report-cities.ts
+ * resolves the community as "Terrebonne + SubdivisionName ~ 'Crooked River Ranch'
+ * / 'Crr%'", and data/resort-communities.json carries the slug
+ * crooked-river-ranch under the label Crooked River Ranch, city Terrebonne.
+ *
+ * Only the ABBREVIATION is expanded. Whatever the feed appended stays verbatim,
+ * so `Crr 2` reads "Crooked River Ranch 2" the way the same feed writes
+ * "Parkside Place Phase 1" — the plat token is the feed's, not this file's.
+ * Matches `Crr` only when no letter follows it, so a real name beginning with
+ * those three letters is never rewritten.
+ */
+const CRR_ABBREVIATION = /^crr(?![a-z])/i
+
+/**
+ * The name a group is published under, or null when the feed's value is not a
+ * name at all.
+ *
+ * THIS EXISTS BECAUSE THE LEDGER'S ROWS ARE PLACES A VISITOR READS. The value
+ * in `SubdivisionName` is a feed field, and on this ZIP set it holds three
+ * different kinds of thing: real neighborhood names ("Ranch at the Canyons"),
+ * plat codes that are not names ("Crr3_C"), and one abbreviation used for a
+ * community the site publishes in full elsewhere ("Crr"). Rendering the field
+ * raw published all three as place names, so /zip/97760 listed `Crr3_C` as a
+ * neighborhood with a median beside it.
+ *
+ *  1. `displaySubdivision` first, the same normalizer the tile rows already run,
+ *     so a masked private value (`***`) or `na` / `n/a.` cannot reach the page
+ *     through the Ledger after being dropped from the tiles.
+ *  2. The noise set, which adds the values that ARE spelled but name nothing.
+ *  3. An underscore means the value is a field code rather than a name — no
+ *     spelled place name in this feed contains one. Those listings stay counted
+ *     in the ZIP total above and are not grouped, which the section says.
+ *  4. The documented abbreviation is expanded (see CRR_ABBREVIATION).
+ *
+ * The DOOR is unaffected: the caller keeps grouping and linking by the raw feed
+ * value, so a row's count and its destination's count stay the same number.
+ */
+export function neighborhoodName(raw: string | null | undefined): string | null {
+  const clean = displaySubdivision(raw)
+  if (!clean) return null
+  if (SUBDIVISION_NOISE.has(clean.toLowerCase())) return null
+  if (clean.includes('_')) return null
+  if (!CRR_ABBREVIATION.test(clean)) return clean
+  const rest = clean.slice(3).trim()
+  return rest ? `Crooked River Ranch ${rest}` : 'Crooked River Ranch'
+}
+
+/** The route param, reduced to the five digits the canonical set is keyed by. */
+export function normalizeZip(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, 5)
+}
+
+/**
+ * The median of a set of numbers, or null for an empty set. Null is the honest
+ * answer for "no values": a median of nothing is not zero, and the page prints
+ * no figure it cannot source (CLAUDE.md section 0).
+ */
+export function median(values: number[]): number | null {
+  if (values.length === 0) return null
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
+}
+
+/**
+ * A figure the page may print: a real number at or above its floor. A price of 0
+ * and a null price are the same fact here, which is that the feed reported none.
+ */
+export function isFigure(n: number | null | undefined, floor = 0): n is number {
+  return typeof n === 'number' && Number.isFinite(n) && n >= floor
+}
+
+/** The printable subset of a column of feed values. */
+export function numeric(values: Array<number | null | undefined>, floor = 0): number[] {
+  return values.filter((n): n is number => isFigure(n, floor))
+}
+
+/** The address as the feed reports it, or the best name the tile still carries. */
+export function tileTitle(tile: ListingTile, fallback: string): string {
+  const address = [tile.streetNumber, tile.streetName, tile.streetSuffix]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+  if (address) return address
+  return displaySubdivision(tile.subdivisionName) ?? tile.city?.trim() ?? fallback
+}
+
+/**
+ * THE DOOR BEHIND A FIGURE. Section 0 does not stop at the number: a count that
+ * is also a link makes a claim the destination has to honor, and a click that
+ * lands on a different population is the same reconciliation failure as a wrong
+ * number, discovered one click later.
+ *
+ * Every figure on the page is computed from ONE population — active,
+ * PropertyType 'A', postalCode = this ZIP — so every door out of a figure
+ * carries that population in the three params below. None is decoration:
+ *
+ *  - `postalCode` is the real searchListingsAll filter, and it is the same
+ *    filter this page's alert payload already sends (ZipAlertsSheet). The KB
+ *    page hung `?keywords=<zip>` on its subdivision CTA, and keywords is NOT
+ *    this filter: it is free text, so the ZIP never scopes the result set.
+ *  - `propertyType=A` is this page's scope. Without it the door over-answers,
+ *    because a ZIP also holds land, manufactured, and income rows: 97756
+ *    replies 474 against this page's 392, 97754 replies 405 against its 217.
+ *  - `view=list` is what makes the destination's count comparable at all. The
+ *    default split view defaults its city to Bend (app/search/page.tsx) and
+ *    counts only what the map viewport holds. Both are wrong under a figure:
+ *    the Bend default empties every non-Bend ZIP, and the viewport clip
+ *    answered 241 against 97703's 256. The list view applies no default city
+ *    and counts the whole filter.
+ *
+ * Verified against production 2026-08-12, count for count: the destination's
+ * result count equals the figure printed beside the link, for all ten canonical
+ * ZIPs and for each of the eight neighborhood rows on 97703.
+ */
+export function zipSearchHref(zip: string, subdivision?: string): string {
+  const params = new URLSearchParams({ postalCode: zip, propertyType: 'A' })
+  if (subdivision) params.set('subdivision', subdivision)
+  params.set('view', 'list')
+  return `/homes-for-sale?${params.toString()}`
+}
+
+/** Beds, baths, size, and the neighborhood, in the order a buyer scans them. */
+export function tileMeta(tile: ListingTile): string | undefined {
+  const parts = [
+    tile.beds != null ? `${tile.beds} bd` : '',
+    tile.baths != null ? `${tile.baths} ba` : '',
+    tile.sqft ? `${tile.sqft.toLocaleString('en-US')} sq ft` : '',
+    displaySubdivision(tile.subdivisionName) ?? '',
+  ].filter(Boolean)
+  return parts.length > 0 ? parts.join(' · ') : undefined
+}

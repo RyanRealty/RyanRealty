@@ -68,15 +68,50 @@ const REQUIRED = [
   },
   {
     file: 'app/cities/[slug]/page.tsx',
+    // The FACT this locks is the money-route head term in the H1, not the prop
+    // that carries it. KB spelled the city H1 as titleTop/titleBottom; the v3
+    // register has no such prop, its patterns take `headline`
+    // (V3InstrumentProps.headline). Writing a prop literally named titleBottom on
+    // a v3 page to satisfy a regex would be gate-gaming, so the check accepts
+    // either register's spelling.
+    //
+    // BOTH ARMS ARE EXACT LITERALS, DELIBERATELY, the same discipline as the
+    // market hub's arm below. The v3 arm pins the interpolated head term the page
+    // actually opens with, `${cityName} homes for sale`, in the sentence case
+    // design_system/public/PUBLIC_UI.md requires, so the H1 still carries the
+    // term the city money route ranks on while being the place verdict the
+    // locked Places opening asks for. Change the page's H1 and this must change
+    // with it, which is the point of a required contract.
+    // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
     checks: [
-      { re: /titleBottom\s*=\s*["']Homes for Sale["']/, msg: 'city H1 titleBottom must be exact "Homes for Sale"' },
+      {
+        re: /titleBottom\s*=\s*["']Homes for Sale["']|[`'"]\$\{cityName\} homes for sale\b/,
+        msg: 'city H1 must carry the head term: KB titleBottom="Homes for Sale", or a v3 headline literal opening "${cityName} homes for sale"',
+      },
       { re: /title:\s*[`'"]Homes for Sale in \$\{/i, msg: 'city metadata title must be "Homes for Sale in ${city}…"' },
     ],
   },
   {
     file: 'app/cities/[slug]/[neighborhoodSlug]/page.tsx',
+    // Same translation the market hub took (see the note on that entry below):
+    // the FACT locked here is the head term and its capitalization, not the prop
+    // that carries it. KB spells the H1 as titleTop/titleBottom; the v3 register
+    // has no such prop — its patterns take `headline`. Writing a prop literally
+    // named titleBottom onto a v3 component to satisfy a regex would be
+    // gate-gaming, so the check accepts either register's spelling.
+    //
+    // BOTH ARMS ARE EXACT, DELIBERATELY. The v3 arm requires a template-literal
+    // headline that opens with an interpolation (the place name) followed
+    // immediately by the exact sentence-case head term v3 headlines are written
+    // in (design_system/public/PUBLIC_UI.md). It does NOT accept "homes for
+    // sale" anywhere in any headline: a looser pattern on a money route would be
+    // a weaker lock than the KB rule it replaces.
+    // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
     checks: [
-      { re: /titleBottom\s*=\s*["']Homes for Sale["']/, msg: 'neighborhood H1 titleBottom must be exact "Homes for Sale"' },
+      {
+        re: /titleBottom\s*=\s*["']Homes for Sale["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?`\$\{[^`{}]*\}\s+homes for sale\b/,
+        msg: 'neighborhood H1 must carry the head term: KB titleBottom="Homes for Sale", or a v3 headline template literal reading `${place} homes for sale`',
+      },
     ],
   },
   {

@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>/sell · 390 · interactive mock v4</title>
+  <style>
+    @font-face {
+      font-family: 'Amboqia';
+      src: url('../../../public/fonts/Amboqia_Boriango.otf') format('opentype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    :root {
+      --navy: #102742;
+      --cream: #faf8f4;
+      --muted: rgba(16, 39, 66, 0.68);
+      --edge: rgba(16, 39, 66, 0.12);
+      --edge2: rgba(16, 39, 66, 0.22);
+      --live: #1f6b4a;
+      --display: 'Amboqia', Georgia, serif;
+      --body: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--body);
+      background: #1a1a1a;
+      color: var(--navy);
+      font-size: 15px;
+      line-height: 1.45;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      html { scroll-behavior: auto; }
+    }
+    .tag {
+      max-width: 390px;
+      margin: 1rem auto 0.35rem;
+      color: #999;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .device {
+      max-width: 390px;
+      margin: 0 auto 2rem;
+      background: var(--cream);
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+
+    /* Chrome */
+    .chrome {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(250, 248, 244, 0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--edge);
+    }
+    .logo { font-weight: 600; font-size: 14px; }
+    .grow { flex: 1; }
+    .tel {
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      color: var(--navy);
+      text-decoration: none;
+      border-bottom: 1px solid var(--edge2);
+    }
+    .chrome-cta {
+      background: var(--navy);
+      color: var(--cream);
+      font-size: 11px;
+      padding: 8px 10px;
+      text-decoration: none;
+      border: 0;
+      cursor: pointer;
+    }
+
+    /* Hero with visual weight */
+    .hero {
+      position: relative;
+      min-height: 420px;
+      color: var(--cream);
+      overflow: hidden;
+    }
+    .hero-media {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(16,39,66,0.35) 0%, rgba(16,39,66,0.82) 55%, rgba(16,39,66,0.95) 100%),
+        radial-gradient(ellipse 80% 60% at 70% 30%, rgba(255,255,255,0.12), transparent 55%),
+        linear-gradient(135deg, #1a3a55 0%, #102742 40%, #0a1828 100%);
+    }
+    /* subtle moving grain / light */
+    .hero-media::after {
+      content: '';
+      position: absolute;
+      inset: -20%;
+      background:
+        radial-gradient(circle at 20% 40%, rgba(250,248,244,0.08), transparent 40%),
+        radial-gradient(circle at 80% 60%, rgba(31,107,74,0.15), transparent 35%);
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to { transform: translate(-3%, 2%) scale(1.05); }
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      padding: 28px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      min-height: 420px;
+    }
+    .live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(250,248,244,0.8);
+      margin-bottom: 14px;
+    }
+    .live i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #3ecf8e;
+      box-shadow: 0 0 0 0 rgba(62, 207, 142, 0.6);
+      animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse {
+      70% { box-shadow: 0 0 0 8px rgba(62, 207, 142, 0); }
+    }
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: 30px;
+      line-height: 1.08;
+      margin: 0 0 10px;
+      max-width: 14ch;
+      animation: rise 0.7s ease both;
+    }
+    .hero .sub {
+      margin: 0 0 18px;
+      color: rgba(250,248,244,0.82);
+      font-size: 14px;
+      max-width: 32ch;
+      animation: rise 0.7s 0.08s ease both;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    /* Interactive address shell */
+    .capture {
+      margin-top: auto;
+      background: var(--cream);
+      color: var(--navy);
+      border: 1px solid rgba(250,248,244,0.2);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+      animation: rise 0.7s 0.15s ease both;
+    }
+    .capture-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 10px 12px 0;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .step-dots { display: flex; gap: 4px; }
+    .step-dots span {
+      width: 18px;
+      height: 3px;
+      background: var(--edge2);
+    }
+    .step-dots span.on { background: var(--navy); }
+    .capture-body { padding: 10px 12px 14px; }
+    .capture label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: var(--navy);
+    }
+    .capture input {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--edge2);
+      background: #fff;
+      padding: 0 12px;
+      font: inherit;
+      font-size: 16px;
+      margin-bottom: 10px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .capture input:focus {
+      outline: none;
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(16,39,66,0.12);
+    }
+    .capture .go {
+      width: 100%;
+      height: 48px;
+      border: 0;
+      background: var(--navy);
+      color: var(--cream);
+      font: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.12s, opacity 0.12s;
+    }
+    .capture .go:active { transform: scale(0.98); }
+    .capture .go:disabled { opacity: 0.45; cursor: not-allowed; }
+    .capture .hint {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .oauth {
+      display: none;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .oauth.show { display: grid; }
+    .oauth button {
+      height: 44px;
+      border: 1px solid var(--edge2);
+      background: #fff;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .progress-line {
+      height: 2px;
+      background: var(--edge);
+      overflow: hidden;
+      display: none;
+    }
+    .progress-line.run { display: block; }
+    .progress-line i {
+      display: block;
+      height: 100%;
+      width: 40%;
+      background: var(--navy);
+      animation: load 1.1s ease infinite;
+    }
+    @keyframes load {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(280%); }
+    }
+
+    /* Compare interaction */
+    .section { padding: 28px 16px; }
+    .section h2 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 1.12;
+      margin: 0 0 8px;
+    }
+    .section .lead {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      background: rgba(16,39,66,0.06);
+      margin-bottom: 14px;
+    }
+    .toggle button {
+      border: 0;
+      background: transparent;
+      height: 40px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .toggle button[aria-pressed="true"] {
+      background: var(--navy);
+      color: var(--cream);
+    }
+    .panel {
+      display: none;
+      border: 1px solid var(--edge2);
+      background: #fff;
+      padding: 14px;
+      min-height: 160px;
+      animation: fade 0.25s ease;
+    }
+    .panel.on { display: block; }
+    @keyframes fade {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+    .zest {
+      text-align: center;
+      padding: 18px 8px 8px;
+    }
+    .zest .num {
+      font-family: var(--display);
+      font-size: 40px;
+      line-height: 1;
+      color: var(--navy);
+    }
+    .zest .lbl {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .zest .blur {
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
+      border-top: 1px solid var(--edge);
+      padding-top: 12px;
+      text-align: left;
+    }
+    .cma-range {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .cma-range .n {
+      font-family: var(--display);
+      font-size: 22px;
+      line-height: 1;
+    }
+    .cma-range .mid {
+      font-family: var(--display);
+      font-size: 28px;
+      line-height: 1;
+    }
+    .cma-range span {
+      display: block;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-family: var(--body);
+    }
+    .bar {
+      height: 8px;
+      background: rgba(16,39,66,0.08);
+      position: relative;
+      margin: 8px 0 16px;
+      overflow: hidden;
+    }
+    .bar i {
+      position: absolute;
+      left: 12%;
+      right: 18%;
+      top: 0;
+      bottom: 0;
+      background: var(--navy);
+      transform-origin: left;
+      animation: grow 0.8s 0.1s ease both;
+    }
+    @keyframes grow {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    .comp-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 10px 0;
+      border-top: 1px solid var(--edge);
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    .comp-row.show {
+      animation: rise 0.4s ease forwards;
+    }
+    .comp-row:nth-child(2) { animation-delay: 0.05s; }
+    .comp-row:nth-child(3) { animation-delay: 0.1s; }
+    .comp-row:nth-child(4) { animation-delay: 0.15s; }
+    .comp-row:nth-child(5) { animation-delay: 0.2s; }
+    .comp-row:nth-child(6) { animation-delay: 0.25s; }
+    .comp-row:nth-child(7) { animation-delay: 0.3s; }
+    @keyframes rise {
+      to { opacity: 1; transform: none; }
+    }
+    .comp-row em {
+      font-style: normal;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .comp-row b {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: 16px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border: 1px solid var(--edge2);
+      color: var(--muted);
+      margin-left: 6px;
+    }
+    .badge.closed { border-color: rgba(31,107,74,0.35); color: var(--live); }
+
+    /* Scrub levers */
+    .levers { margin-top: 8px; }
+    .lever {
+      margin-bottom: 14px;
+    }
+    .lever-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: var(--navy);
+    }
+    .lever input[type="range"] {
+      width: 100%;
+      accent-color: var(--navy);
+      cursor: pointer;
+    }
+    .range-out {
+      font-family: var(--display);
+      font-size: 26px;
+      margin-top: 8px;
+      transition: color 0.2s;
+    }
+
+    /* Live market strip */
+    .ticker {
+      display: flex;
+      gap: 0;
+      overflow: hidden;
+      border-top: 1px solid var(--edge);
+      border-bottom: 1px solid var(--edge);
+      background: #fff;
+    }
+    .ticker-track {
+      display: flex;
+      gap: 28px;
+      padding: 12px 0;
+      animation: scroll 22s linear infinite;
+      white-space: nowrap;
+    }
+    .ticker-track span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .ticker-track strong {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: 15px;
+      color: var(--navy);
+      margin-right: 4px;
+    }
+    @keyframes scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* Review card swipe */
+    .reviews {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 6px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .reviews::-webkit-scrollbar { display: none; }
+    .rev {
+      flex: 0 0 86%;
+      scroll-snap-align: start;
+      background: #fff;
+      border: 1px solid var(--edge2);
+      padding: 14px;
+      min-height: 120px;
+    }
+    .rev q {
+      font-family: var(--display);
+      font-size: 17px;
+      line-height: 1.3;
+      quotes: none;
+      color: var(--navy);
+    }
+    .rev .by {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Plan accordion interactive */
+    .plan-rate {
+      font-family: var(--display);
+      font-size: 42px;
+      line-height: 1;
+      margin: 4px 0 12px;
+    }
+    details {
+      border-bottom: 1px solid var(--edge);
+      padding: 12px 0;
+    }
+    summary {
+      cursor: pointer;
+      list-style: none;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: '+';
+      font-weight: 400;
+      color: var(--muted);
+      transition: transform 0.2s;
+    }
+    details[open] summary::after { content: '−'; }
+    details p {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      animation: fade 0.25s ease;
+    }
+
+    .cta-sticky {
+      position: sticky;
+      bottom: 0;
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, transparent, var(--cream) 28%);
+      z-index: 30;
+    }
+    .cta-sticky button {
+      width: 100%;
+      height: 50px;
+      border: 0;
+      background: var(--navy);
+      color: var(--cream);
+      font: inherit;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 -4px 24px rgba(16,39,66,0.15);
+    }
+
+    .note {
+      max-width: 390px;
+      margin: 0 auto 2rem;
+      color: #aaa;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .sample {
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <p class="tag">Interactive mock · 390 · motion + compare + form</p>
+  <div class="device">
+    <header class="chrome">
+      <span class="logo">Ryan Realty</span>
+      <span class="grow"></span>
+      <a class="tel" href="tel:+15417033095">541.703.3095</a>
+      <button type="button" class="chrome-cta" data-jump="capture">Value my home</button>
+    </header>
+
+    <section class="hero">
+      <div class="hero-media" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <div class="live"><i></i> Central Oregon MLS · live</div>
+        <h1>A written valuation with the sales behind the price.</h1>
+        <p class="sub">A written CMA for your address — not a single model guess from a national portal.</p>
+
+        <div class="capture" id="capture">
+          <div class="progress-line" id="prog"><i></i></div>
+          <div class="capture-head">
+            <span id="stepLabel">Step 1 of 2 · address</span>
+            <div class="step-dots" aria-hidden="true">
+              <span class="on" id="d1"></span>
+              <span id="d2"></span>
+            </div>
+          </div>
+          <div class="capture-body">
+            <div id="step1">
+              <label for="addr">Property address</label>
+              <input id="addr" autocomplete="street-address" placeholder="Start typing an address" />
+              <button type="button" class="go" id="next1" disabled>Continue</button>
+              <p class="hint">We price from sales near this pin.</p>
+            </div>
+            <div id="step2" hidden>
+              <label for="email">Email for the written CMA</label>
+              <input id="email" type="email" autocomplete="email" placeholder="you@email.com" />
+              <button type="button" class="go" id="send">Send my valuation</button>
+              <div class="oauth show" id="oauth">
+                <button type="button">Continue with Google</button>
+                <button type="button">Continue with Facebook</button>
+              </div>
+              <p class="hint">Phone optional. Free. 24 hours. No listing agreement.</p>
+              <button type="button" class="hint" id="back" style="background:none;border:0;padding:8px 0;cursor:pointer;text-align:left">← Address</button>
+            </div>
+            <div id="done" hidden>
+              <p style="margin:0 0 8px;font-family:var(--display);font-size:22px;line-height:1.15">Request received.</p>
+              <p class="hint" style="margin:0">Written CMA within 24 hours to the email you entered. Sample UI only — not a live submit.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ticker" aria-label="Sample market tape">
+      <div class="ticker-track">
+        <span><strong>$730k</strong> median list</span>
+        <span><strong>22</strong> days to pending</span>
+        <span><strong>95.3%</strong> sale to list</span>
+        <span><strong>5.8</strong> mo supply</span>
+        <span><strong>1,815</strong> active</span>
+        <span><strong>$730k</strong> median list</span>
+        <span><strong>22</strong> days to pending</span>
+        <span><strong>95.3%</strong> sale to list</span>
+        <span><strong>5.8</strong> mo supply</span>
+        <span><strong>1,815</strong> active</span>
+      </div>
+    </div>
+
+    <section class="section">
+      <p class="sample">Sample comparison · interactive</p>
+      <h2>Portal number vs written CMA</h2>
+      <p class="lead">Tap to switch. Same address idea — different product.</p>
+
+      <div class="toggle" role="tablist">
+        <button type="button" role="tab" id="tabZ" aria-pressed="true" aria-controls="panelZ">Model estimate</button>
+        <button type="button" role="tab" id="tabC" aria-pressed="false" aria-controls="panelC">Written CMA</button>
+      </div>
+
+      <div class="panel on" id="panelZ" role="tabpanel">
+        <div class="zest">
+          <div class="num" id="zNum">$714,000</div>
+          <div class="lbl">Single automated value</div>
+          <p class="blur">
+            One figure from a national model. No named comps on the page. No walkthrough of your kitchen, shop, or view. No “here are the three actives a buyer will open next to yours.”
+          </p>
+        </div>
+      </div>
+
+      <div class="panel" id="panelC" role="tabpanel">
+        <p class="sample">Illustrative comps · not a real valuation</p>
+        <div class="cma-range">
+          <div><span>Low</span><div class="n" id="lo">$685k</div></div>
+          <div style="text-align:center"><span>Supported range</span><div class="mid" id="mid">$720k–$755k</div></div>
+          <div style="text-align:right"><span>High</span><div class="n" id="hi">$775k</div></div>
+        </div>
+        <div class="bar"><i></i></div>
+        <div id="comps">
+          <div class="comp-row"><div>214 NW Sample · 3/2 · 1,840 sf<br><em>Closed 12 days ago</em><span class="badge closed">Closed</span></div><b>$728k</b></div>
+          <div class="comp-row"><div>88 Pine Ridge · 3/2.5 · 1,910 sf<br><em>Closed 31 days ago</em><span class="badge closed">Closed</span></div><b>$741k</b></div>
+          <div class="comp-row"><div>402 River Trail · 4/2 · 2,050 sf<br><em>Closed 47 days ago</em><span class="badge closed">Closed</span></div><b>$699k</b></div>
+          <div class="comp-row"><div>19 Mesa Ct · 3/2 · 1,870 sf<br><em>Active · 9 DOM</em><span class="badge">Active</span></div><b>$759k</b></div>
+          <div class="comp-row"><div>601 Cascade · 3/3 · 1,960 sf<br><em>Active · 18 DOM</em><span class="badge">Active</span></div><b>$775k</b></div>
+          <div class="comp-row"><div>12 Larkspur · 3/2 · 1,800 sf<br><em>Active · 4 DOM</em><span class="badge">Active</span></div><b>$729k</b></div>
+        </div>
+        <p class="lead" style="margin:12px 0 0;font-size:13px">The sales sit on the page. That is the document we email within 24 hours.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <p class="sample">Play with levers · demo only</p>
+      <h2>What moves the range</h2>
+      <p class="lead">Condition, finishes, timing, terms. Drag to see how a write-up talks about the number — not a portal black box.</p>
+      <div class="levers">
+        <div class="lever">
+          <div class="lever-top"><span>Condition / updates</span><span id="condLbl">Average</span></div>
+          <input type="range" id="cond" min="0" max="2" step="1" value="1" />
+        </div>
+        <div class="lever">
+          <div class="lever-top"><span>Urgency to sell</span><span id="timeLbl">Normal</span></div>
+          <input type="range" id="time" min="0" max="2" step="1" value="1" />
+        </div>
+      </div>
+      <div class="range-out" id="rangeOut">$720k–$755k</div>
+      <p class="lead" style="margin:6px 0 0;font-size:13px">On a real CMA these levers are named in writing next to the comps. Sample UI.</p>
+    </section>
+
+    <section class="section" style="background:#fff;border-top:1px solid var(--edge)">
+      <p class="sample">Swipe</p>
+      <h2>Google reviews</h2>
+      <div class="reviews">
+        <div class="rev">
+          <q>His marketing was professional and thorough. Patient, low pressure, and always straight with us.</q>
+          <div class="by">Gary Timms · Google</div>
+        </div>
+        <div class="rev">
+          <q>Even in a tough market, he sold our home faster than we expected.</q>
+          <div class="by">Audra Hedberg · Google</div>
+        </div>
+        <div class="rev">
+          <q>Matt is the most professional, communicative, and honest Real Estate Broker I have ever worked with.</q>
+          <div class="by">Douglas Grant · Google</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <p class="sample">If you list</p>
+      <h2>3%</h2>
+      <div class="plan-rate">3%</div>
+      <p class="lead">One plan on this site. Tap a line.</p>
+      <details>
+        <summary>Photography, 3D, drone, video</summary>
+        <p>Pro photos within 48 hours of signing. 3D walkthrough, aerial drone, cinematic video.</p>
+      </details>
+      <details>
+        <summary>MLS + national feeds + page on this site</summary>
+        <p>Central Oregon MLS. Zillow, Redfin, Trulia feeds. Its own page on ryan-realty.com.</p>
+      </details>
+      <details>
+        <summary>Open houses, broker tour, outreach</summary>
+        <p>Open houses, broker tour, social, short-form video, neighbor email and mailers, agent outreach including Portland, Seattle, LA, SF.</p>
+      </details>
+      <details>
+        <summary>Weekly written report + TC</summary>
+        <p>Showings, traffic, feedback every week. Independent transaction coordinator through close.</p>
+      </details>
+    </section>
+
+    <div class="cta-sticky">
+      <button type="button" data-jump="capture">Get the written valuation</button>
+    </div>
+  </div>
+
+  <p class="note">
+    v4: motion, sticky chrome, multi-step capture, model vs CMA toggle with animated comps, scrub levers, swipe reviews, sticky CTA.
+    Prefer reduced-motion is honored. Sample data only.
+    VISUAL_LOCK / AMEND / REJECT.
+  </p>
+
+  <script>
+    (function () {
+      var addr = document.getElementById('addr');
+      var next1 = document.getElementById('next1');
+      var step1 = document.getElementById('step1');
+      var step2 = document.getElementById('step2');
+      var done = document.getElementById('done');
+      var prog = document.getElementById('prog');
+      var stepLabel = document.getElementById('stepLabel');
+      var d1 = document.getElementById('d1');
+      var d2 = document.getElementById('d2');
+
+      addr.addEventListener('input', function () {
+        next1.disabled = addr.value.trim().length < 6;
+      });
+
+      next1.addEventListener('click', function () {
+        prog.classList.add('run');
+        next1.disabled = true;
+        setTimeout(function () {
+          prog.classList.remove('run');
+          step1.hidden = true;
+          step2.hidden = false;
+          stepLabel.textContent = 'Step 2 of 2 · send CMA';
+          d1.classList.remove('on');
+          d2.classList.add('on');
+          document.getElementById('email').focus();
+        }, 700);
+      });
+
+      document.getElementById('back').addEventListener('click', function () {
+        step2.hidden = true;
+        step1.hidden = false;
+        stepLabel.textContent = 'Step 1 of 2 · address';
+        d2.classList.remove('on');
+        d1.classList.add('on');
+        next1.disabled = addr.value.trim().length < 6;
+      });
+
+      document.getElementById('send').addEventListener('click', function () {
+        var em = document.getElementById('email').value.trim();
+        if (!em || em.indexOf('@') < 0) {
+          document.getElementById('email').focus();
+          return;
+        }
+        prog.classList.add('run');
+        setTimeout(function () {
+          prog.classList.remove('run');
+          step2.hidden = true;
+          done.hidden = false;
+          stepLabel.textContent = 'Done';
+        }, 900);
+      });
+
+      document.querySelectorAll('[data-jump]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          document.getElementById('capture').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          addr.focus();
+        });
+      });
+
+      // Tabs
+      var tabZ = document.getElementById('tabZ');
+      var tabC = document.getElementById('tabC');
+      var panelZ = document.getElementById('panelZ');
+      var panelC = document.getElementById('panelC');
+      var compsShown = false;
+
+      function showZ() {
+        tabZ.setAttribute('aria-pressed', 'true');
+        tabC.setAttribute('aria-pressed', 'false');
+        panelZ.classList.add('on');
+        panelC.classList.remove('on');
+      }
+      function showC() {
+        tabZ.setAttribute('aria-pressed', 'false');
+        tabC.setAttribute('aria-pressed', 'true');
+        panelZ.classList.remove('on');
+        panelC.classList.add('on');
+        if (!compsShown) {
+          compsShown = true;
+          document.querySelectorAll('.comp-row').forEach(function (row, i) {
+            setTimeout(function () { row.classList.add('show'); }, 40 * i);
+          });
+        }
+      }
+      tabZ.addEventListener('click', showZ);
+      tabC.addEventListener('click', showC);
+
+      // Levers
+      var cond = document.getElementById('cond');
+      var time = document.getElementById('time');
+      var condLbl = document.getElementById('condLbl');
+      var timeLbl = document.getElementById('timeLbl');
+      var rangeOut = document.getElementById('rangeOut');
+      var ranges = [
+        ['$695k–$730k', '$705k–$740k', '$715k–$750k'],
+        ['$710k–$745k', '$720k–$755k', '$730k–$765k'],
+        ['$735k–$770k', '$745k–$780k', '$760k–$795k']
+      ];
+      var condNames = ['Needs work', 'Average', 'Updated'];
+      var timeNames = ['Must sell soon', 'Normal', 'Can wait'];
+      function updateLevers() {
+        var c = +cond.value;
+        var t = +time.value;
+        condLbl.textContent = condNames[c];
+        timeLbl.textContent = timeNames[t];
+        rangeOut.textContent = ranges[c][t];
+      }
+      cond.addEventListener('input', updateLevers);
+      time.addEventListener('input', updateLevers);
+    })();
+  </script>
+</body>
+</html>

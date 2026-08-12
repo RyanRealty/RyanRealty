@@ -10,6 +10,8 @@
  * second time they scroll past the same feed position.
  */
 
+import { valuationHref } from '@/lib/site/valuation-href'
+
 export type BrandCardKind =
   | 'home_valuation'
   | 'meet_broker'
@@ -95,7 +97,10 @@ export const BRAND_CARDS: BrandCardDefinition[] = [
     tone: 'navy',
     cta: {
       label: 'Get my valuation',
-      href: '/sell/valuation',
+      // The one locked valuation spine, carrying its origin so the lead says which
+      // surface produced it (lib/site/valuation-href.ts). '/sell/valuation' was the
+      // pre-lock destination and shipped no attribution at all.
+      href: valuationHref('/pulse'),
       event: 'cma_anchor_click',
     },
   },

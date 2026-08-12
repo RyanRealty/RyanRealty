@@ -111,6 +111,23 @@
   text-wrap: balance;
 }
 
+/* The honeypot ---------------------------------------------------------------
+   Off the screen, never off the page. `display: none` and `hidden` are what a
+   scripted filler checks for before it skips a field, so the trap has to stay
+   rendered and stay laid out at zero cost. aria-hidden and tabIndex -1 live on
+   the markup in V3Sheet.tsx: this rule owns only the visual half. */
+.v3-sheet-trap {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Fields --------------------------------------------------------------------- */
 .v3-sheet-field {
   display: grid;

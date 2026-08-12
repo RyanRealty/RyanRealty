@@ -1,142 +1,163 @@
 {
   "route": "app/communities/[slug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/community/index.html",
-  "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages — the kinetic-brutalist homepage look applied at resort / master-planned community scope: live single-family market data, the in-community listing map + zoom, per-community featured tours, sub-neighborhoods, open houses, and live activity no competitor surfaces, paired with authored local knowledge (HOA + club dues, amenities, drive times).",
-  "note": "KB (kinetic-brutalist) design language — Phase 9 wave 2 (docs/KB_CONVERGENCE_ROADMAP.md). The community page reuses the SAME section library as the homepage and the city page (components/site/kb/*), fed community-scoped DAL data, never forked (ci:kb-single-source G50). KbNav + KbFooter carry chrome (default SiteHeader/SiteFooter hidden for ^/communities/[slug] via HideChrome). Body lives in main.kb-root. THE PAGE CONTRACT: KB design + SEO for Google & LLMs (pageMetadata + MetadataBlock JSON-LD: Breadcrumb/Place/Dataset/FAQPage) + tracking (KbSectionTracker). Supersedes the Experience System Geo archetype v3.1; every former section (FlyoverHero, LiveMarketBand, SectionNav, CommunityMapLedgerPane + ListingLedger, PriceHistoryScrubber, PaymentSlider, PriceRangeTiles, RelatedAreas, ActivityFeed, ArticleGrid, InlineValuationHook, PageBreadcrumb) was rebuilt in KB form.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
+  "competitiveTarget": "Beat Zillow / Redfin / Coldwell Banker community pages. Three things no aggregator publishes: an alias-true active count (a resort's homes are MLS-tagged under many subdivision names, so every literal-name count undercounts it), the trace under every figure naming the query that produced it, and the authored knowledge of what belonging to the place costs and involves — HOA, membership, drive times, course, builders, schools, and the second-home reality — beside the live inventory instead of on a separate marketing page.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9). Rhythm: four of the six patterns (Instrument, Field, Quiet, Sheet), no two adjacent alike, chrome exempt. Order is Breadcrumb, Instrument level 1, Field, Instrument level 2, Quiet (the place), Sheet (alerts), Quiet (FAQ and edges), Footer. PUBLIC_UI.md section 3 sets the Places opening as Instrument then Field, and that is why this page carries no hero photo: Stage is the fifth pattern and the rhythm rule caps a page at four, so the curated community photo now lives only where it was already doing work, as the OG image in generateMetadata.",
+  "dataChanges": {
+    "figureCorrected": "The reliable-boundary branch published listings_in_boundary's pin count under the label 'Active single-family'. That RPC filters on status only and caps at 200 rows, so the number counted condos, land, and townhomes, and the median printed beside it came from a DIFFERENT set (the same listings narrowed to propertyType 'A'). The count is now the single-family actives inside the same boundary: the set the label claims and the set its median is computed from. On a community with no condos or land it is the same number.",
+    "monthsOfSupplyPublicationRule": "REPAIR 2026-08-12. Months of supply, and the verdict clause it puts in the H1, publish ONLY when the market pulse row's own active_count equals the count this page publishes. Months of supply is actives over average monthly closings and this page prints that formula, so the reader can check it against the count beside it. The pulse row computed the ratio from ITS numerator (the literal-subdivision-name count for the slug) while the page publishes the alias-aware one, and on 2026-08-12 they differed on every community carrying a row: tetherow 20 against 36, vandevert-ranch 12 against 0, broken-top 205 against 21. The arithmetic refuted the page in both directions: vandevert-ranch printed 'a buyer's market' and '72.0 months of supply' over '0 homes for sale' (0 actives yields 0 months, and zero inventory is definitionally not a buyer's market), and tetherow printed 'a balanced market' where its own 36 actives against the same denominator give 9.0, a buyer's. The figure now publishes on exactly the communities whose count came FROM that row (three-rivers: 91 actives, 16.1 months, 'a buyer's market', self-consistent) and is cut everywhere else, in the Instrument, in the visible FAQ, and in the Dataset's variableMeasured, from the one buildMarketFaq call. Median days to pending survives the same disagreement: it is a timing median over homes that went pending, prints no formula, and drives no verdict, and its trace names the pulse row.",
+    "monthsOfSupplyDisplay": "REPAIR 2026-08-12. The figure prints through lib/format/months-of-supply (formatMonthsOfSupply), the single boundary-safe rule: 4.02 prints 4.1, 5.97 prints 5.9. The migration had used Math.round(x*10)/10 with toFixed(1), which is the expression lib/site/market-faq.ts replaced in the same changeset for the reason written in its own comment, and it put three values of one statistic on one page: 4.0 in the Instrument, 4.1 in the visible FAQ answer, 4.1 in the Dataset variable.",
+    "unchanged": "Every other figure, filter, window, and unit. The alias-aware resort count, the oversized-hull fallback, the county-plat-union polygon rule, the median-list/median-sold split, the rolling-365d window on closed sales, the registry HOA fallback chain, and the school-district registry as the only permitted schools source all behave exactly as before."
+  },
   "requiredComponents": [
     {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + Place + Dataset + FAQPage JSON-LD. All four are emitted here. FAQPage moved into this array because its old emitter left: the KB page emitted it from inside FAQBlock's includeJsonLd, and the v3 Quiet block that renders the questions carries no structured data of its own, so a swap that did not move the payload would have dropped the strongest AI-citation lever silently.",
+      "blocking": true
+    },
+    {
       "name": "KbNav",
-      "section": "chrome — transparent-over-hero top bar + full-screen menu. Inside .kb-root.",
+      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design.",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "tracking — fires the community page-view + powers section/interaction analytics (page contract).",
+      "section": "Page-level analytics, pageType='community'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent. ci:kb-page-contract accepts either register's tracker.",
       "blocking": true
     },
     {
-      "name": "MetadataBlock",
-      "section": "AI-citability — Breadcrumb + Place + market Dataset JSON-LD.",
+      "name": "CommunityPageTracker",
+      "section": "The per-community view event, with the same five props it always took: slug, communityName, city, activeCount, medianPrice. It lives in components/community, outside the five registers ci:public-ui measures, and it is measurement wiring rather than visual language.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "breadcrumb — KB-styled Home > Communities > {City} > {Community} hierarchy (visual; JSON-LD is in MetadataBlock).",
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Communities > City > Community, the current page never a link. Surface tone, because this page opens on an Instrument and not on a dark Stage; the surface tone also clears the fixed public header by default, since the trail is the first flow element of <main> and the header is position:fixed.",
       "blocking": true
     },
     {
-      "name": "KbHero",
-      "section": "hero — full-bleed video or VERIFIED communityHero photo with labeled regional fallback, community name in Amboqia, plain-language search, live stat row.",
+      "name": "V3Instrument",
+      "section": "Pattern 1, twice, and the two carry different populations on purpose. Level 1 is the place answer: homes for sale and median list price from ONE branch (resolveLivePair picks the count, the median, the trace, and the stamp together), plus median days to pending when a market pulse row exists for this community and months of supply only when that row's own active count IS the count published here (see dataChanges.monthsOfSupplyPublicationRule), with the trace naming that second source rather than letting it borrow the first one's provenance, and naming each pulse figure separately so the months-of-supply formula and thresholds print only on a page that shows the months-of-supply figure. The H1's verdict clause is driven by the same publishable value, so the headline cannot carry a market call the figures beside it do not support. Both live figures link to the Field on this page rather than to the browse route, because the Field holds the very homes the count counts and the browse route does not. REPAIR 2026-08-12: its ask is the page's one FILLED control. It shipped as a ghost on the reasoning that the sticky header carries a filled valuation CTA at every scroll position, and that premise is false — components/site/kb/kb.css hides .topbar a.nav-cta below 880px and its drawer twin sits at visibility:hidden while the menu is closed, so at 390 the first viewport carried zero visible filled controls (measured 390x844, scrollY 0, tetherow: 0 before, 1 after). The one-primary rule counts VISIBLE filled controls (design_system/public/PUBLIC_UI.md section 1), so this page carries its own primary and the chrome's CTA counts only where the chrome shows it. Nothing else in the first viewport is filled: the Field carries no button, the closed-sales Instrument's ask stays ghost, and the alert sheet's submit is four sections down. Level 2 is the rolling 365 days of closed sales — median sale price, homes sold, median days on market — a different population with its own trace, never merged into the set above.",
       "blocking": true
     },
     {
-      "name": "KbAbout",
-      "section": "about — editorial intro (authored local knowledge / data-driven: HOA + club dues, amenities, drive times) + quick-facts ledger.",
+      "name": "V3Field",
+      "section": "Pattern 2, the locked second step of a Places node: map and list in one frame, bound both ways. Rows are the highest-priced 24 of the community's active single-family tiles, every row a door to the listing through the canonical listingTileHref. Pins are EVERY tile carrying coordinates, so the map is not capped by the list. The count is the plotted set with its own trace, and it carries no freshness stamp because listing tiles carry no sync clock and borrowing the pulse row's would date one query's figures with another query's clock. REPAIR 2026-08-12: the Field is fed the COUNTED set (the alias tiles whenever the alias-aware branch produced the count, even when that set is empty), so rows.length equals the published count whenever the count came from tiles and the section cannot describe a different population from the Instrument above it. The footnote counts the list against its own denominator rather than against the plotted subset, which had named rows that are not on the map and had gone silent entirely whenever fewer than 24 homes plotted; a separate map note discloses the plotted subset when coordinates are missing; and the footnote's old promise that every listed home is on the browse page is gone, because it was false. The empty state now distinguishes three facts it had collapsed into one: a verified zero, a count that came from a mart row with no listings behind it (three-rivers publishes 91 that way), and a read that did not come back.",
       "blocking": true
     },
     {
-      "name": "KbFeatured",
-      "section": "featured homes — poster grid; silent tour autoplay on focus or a Tour badge.",
+      "name": "CommunityFieldMap",
+      "section": "The real map, in V3Field's mapSlot, at app/communities/[slug]/_v3/CommunityFieldMap.client.tsx with its ssr:false impl beside it. Route-local because every existing map in the repo either carries its own section chrome (a second heading inside a section that already has one) or holds no binding. This one draws only what it is handed: a pin per item with coordinates, and the community outline ONLY when the page decided the boundary is trustworthy. It reads and writes V3Field's highlight through useV3FieldBinding, so pointing at a row enlarges its pin and pointing at a pin lights its row.",
       "blocking": true
     },
     {
-      "name": "KbListingMap",
-      "section": "map — MapLibre point map zoomed to the community's listings.",
+      "name": "V3Quiet",
+      "section": "Pattern 6, twice. First the authored knowledge of the place, built by _v3/place-knowledge.ts from the verified per-community config plus the resort and school registries: prose, at-a-glance facts, drive times, amenities by category, the course, membership, builders, schools, the second-home reality, and every constituent subdivision as a door. Then the closing block: the verified questions from the same buildMarketFaq array the FAQPage JSON-LD uses, followed by every exit page-inventory.json records for this node — browse, listing-alert management, city homes, city market report, city page, city open houses, each golf course whose registry row names this community, the communities index, the market hub, the sell spine, and contact. REPAIR 2026-08-12: the closing block's note carries the page's VISIBLE freshness line, 'Market data updated <label>', off the same asOfLabel/asOfIso pair buildMarketFaq returns and the Dataset publishes as dateModified. The KB page rendered that line as its own element and the migration replaced it with the Instrument's `updated` prop, which reads the live pair's stamp — null on the alias, reliable-boundary, and subdivision-name branches, so it never rendered on a resort or a plain subdivision while the Dataset went on publishing a dateModified no human was shown. It sits with the provenance line rather than under the figures because it dates the market rows, not the live tile count beside them. The browse door's label no longer says 'Every <community> home for sale': that route filters on the literal MLS subdivision name and publishes fewer homes than the alias-aware count on this page (36 here against 30 there, curl-verified 2026-08-12), so the label names the search it opens and claims nothing about completeness.",
       "blocking": true
     },
     {
-      "name": "KbTicker",
-      "section": "ticker — scrolling price/address strip.",
+      "name": "CommunityAlertSheet",
+      "section": "Pattern 5, once, at app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx. The node's one on-page ask, wrapping V3Sheet. The capture contract is unchanged: submitSearchAlertSignup, the same filters object (city always, subdivision when the community has one), the same field name 'email', the same trap name 'company', and the same two post-success effects in the same order — the guest-watch residual and the alert_create measurement event built by buildAlertCreatePayload('daily'). REPAIR 2026-08-12: two pieces had left with the honeypot and only the honeypot was declared. The honeypot is restored through V3Sheet's sheet-level `trap` prop (a trap is a property of the working surface, not one of its questions), so the action's first defence, the naive-bot filter in FRONT of the per-IP limiter, is back on a public write path and the sheet sends the trap's own answer rather than a hardcoded no-bot value. The standing disclosure is restored as step prose: 'One email per new listing. Unsubscribe any time.' on the asking step, and 'One email per new listing. Pause or unsubscribe from any alert email.' on the confirmation. The third piece was a LINK ('Sign in to manage alerts'), and V3Sheet renders prose rather than nodes on purpose, so the route to manage a subscription is a door in the closing Quiet block: 'Manage your listing alerts' to /login?returnUrl=%2Faccount%2Fsaved-searches.",
       "blocking": true
     },
     {
-      "name": "KbMarketHud",
-      "section": "market — verdict stamp, KPI grid, median-close chart, by-sub-neighborhood ladder.",
+      "name": "V3Footer",
+      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Carries no button: the page's one primary is the opening Instrument's ask, and a footer sits below every section that could earn a second one. Rendered OUTSIDE <main>, because HTML-AAM maps <footer> to role=contentinfo only when it is not nested in sectioning content, and <main> is sectioning content.",
       "blocking": true
-    },
-    {
-      "name": "KbExploreTowns",
-      "section": "ledgers — reused for the sub-neighborhoods ledger, the golf & master-planned communities cross-nav ledger, and the Explore-other-cities list.",
-      "blocking": true
-    },
-    {
-      "name": "KbCommunities",
-      "section": "communities — marquee rail with silent Area Guide clips.",
-      "blocking": true
-    },
-    {
-      "name": "KbOpenHouses",
-      "section": "open houses — upcoming, this community.",
-      "blocking": true
-    },
-    {
-      "name": "KbActivity",
-      "section": "activity — live new / price-cut / pending / sold rows.",
-      "blocking": true
-    },
-    {
-      "name": "KbArticles",
-      "section": "guides — recent blog posts scoped to the community (getRecentBlogPosts).",
-      "blocking": true
-    },
-    {
-      "name": "KbTestimonials",
-      "section": "testimonials — verified Google reviews.",
-      "blocking": true
-    },
-    {
-      "name": "KbTeam",
-      "section": "team — the brokers.",
-      "blocking": true
-    },
-    {
-      "name": "KbBuyCta",
-      "section": "buy CTA — primary next step into community inventory (IA: max one primary CTA; sell CTA removed from mid-page stack).",
-      "blocking": true
-    },
-    {
-      "name": "FAQBlock",
-      "section": "faq — verified market Q&A + FAQPage JSON-LD.",
-      "blocking": true
-    },
-    {
-      "name": "KbFooter",
-      "section": "footer — dual-audience close + sitemap (towns=[]).",
-      "blocking": true
-    },
-    {
-      "name": "KbResortOverview",
-      "section": "rich resort/golf/master-planned depth (overview + at-a-glance + drive times + amenities + golf course + membership + builders) from data/resort-community-<slug>.json. Renders null for communities without a config.",
-      "blocking": false
     }
   ],
   "layoutComponents": [
     {
-      "name": "SiteHeader",
-      "section": "hidden on ^/communities/[slug] via HideChrome — KbNav renders instead.",
-      "note": "Gate checks the route file."
+      "name": "PublicNav",
+      "section": "renders from app/layout.tsx",
+      "note": "Resolves to KbNav today. Not in requiredComponents as itself because the gate checks the route file; the KbNav entry above is the one the gate auto-satisfies. SiteHeader and SiteFooter stay suppressed on ^/communities/<slug> through lib/site/chrome-routes.ts, so the page owns exactly one footer and it is V3Footer."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Stage",
+      "reason": "Pattern 4 needs owned media and is never allowed over a number. PUBLIC_UI.md opens a Places node on Instrument then Field, and adding a Stage would make this the fifth pattern on a page the rhythm rule caps at four. It would also put the route inside ci:kb-breadcrumb-overlay's dark-hero arm, which then requires tone=\"on-media\" on the trail."
     },
     {
-      "name": "SiteFooter",
-      "section": "hidden on ^/communities/[slug] via HideChrome — KbFooter renders instead.",
-      "note": "Gate checks the route file."
+      "name": "V3Ledger",
+      "reason": "Pattern 3 would be the fifth pattern. The rows it would have carried — open houses, other communities, recent activity, guides — are city-scoped rather than community-scoped, so labelling them with this community's name was already untrue (the prior page labelled a city-wide activity feed 'Live · Tetherow'). They are doors in the closing Quiet block now, pointing at the city surfaces that own them."
     }
   ],
   "removedComponents": [
-    "FlyoverHero (replaced by KbHero)",
-    "LiveMarketBand (replaced by KbMarketHud)",
-    "SectionNav (KB pages have no sticky anchor rail)",
-    "CommunityMapLedgerPane + ListingLedger (replaced by KbFeatured + KbListingMap)",
-    "PriceHistoryScrubber (folded into KbMarketHud)",
-    "PaymentSlider (removed; lives on tools/sell surfaces)",
-    "PriceRangeTiles (folded into KbFeatured / KbListingMap browse)",
-    "InlineValuationHook (replaced by KbSell)",
-    "CommunityRichContent (folded into KbAbout)",
-    "OpenHousesGrid (replaced by KbOpenHouses)",
-    "ActivityFeed (replaced by KbActivity)",
-    "ArticleGrid (replaced by KbArticles)",
-    "RelatedAreas / editorial nearby rows (replaced by KbExploreTowns reuse)",
-    "PageBreadcrumb (replaced by KbBreadcrumb)"
+    "KbHero — the community hero photo and its stat row. Places open on Instrument (PUBLIC_UI.md section 3); the photo survives as the OG image.",
+    "KbResortOverview + KbAbout — the authored depth, rebuilt as the first V3Quiet block through _v3/place-knowledge.ts. Every fact it rendered is still rendered.",
+    "KbFeatured + KbTicker — the poster rail and the price tape. The Field's rows are the same listings, each a door, with the price beside the address.",
+    "PlaceInventoryMap (and through it PlaceMapListSplit + KbListingMap) — replaced by V3Field with CommunityFieldMap in its slot, which is the same map-plus-list job with the binding the Field pattern requires.",
+    "KbMarketHud + MarketCoreCharts + KbMarketChart — the market HUD and both chart modules. The barrel has no chart primitive and the pattern set is closed, so the charts are DELETED here rather than reproduced. For most communities the trend series was the parent CITY's anyway (the community's own close history is too thin for a multi-year line), and the city market report that owns those charts is a door from every closed-sale figure and from the closing block. The gap is reported to the P9 orchestrator: a chart primitive is the barrel's largest missing piece.",
+    "KbCommunities — the other-resorts rail. A door to /communities carries it.",
+    "KbOpenHouses — the open-house list. City-scoped; a door to /open-houses/<city> carries it.",
+    "KbActivity — the live activity feed. City-scoped and previously mislabelled with the community's name; a door to /housing-market carries it.",
+    "KbArticles — the blog rail. Amenity posts the config points at are doors in the knowledge block; the rest are reachable from /blog through the footer.",
+    "KbExploreTowns — the other-cities ledger. The footer's sitemap projection and the city doors carry it.",
+    "KbSchools — the district block, rebuilt as a knowledge row plus a door to the district page.",
+    "CommunityGolfLinks — the reverse golf edge, rebuilt as doors in the closing block, read from the same data/golf/courses registry.",
+    "KbTestimonials + KbTeam — brokerage proof. It belongs to the About cluster, and the footer carries the doors.",
+    "KbBuyCta + KbSell — two more asks on a page that now makes one ask per viewport: the opening Instrument's search button, then the alert sheet's submit four sections down (PUBLIC_UI.md section 1). The sell door is an edge in the closing block, and it goes through lib/site/valuation-href so the lead it produces still names this page.",
+    "KbAreaGuideVideo — the per-location guide video. It needs Stage, which is the deferred fifth pattern.",
+    "KbCommunityAlerts — replaced by CommunityAlertSheet. The action, the filters, the field name, the 'company' honeypot, the frequency and unsubscribe disclosure, and both post-success effects are all carried across. NOTHING OF THE CAPTURE CONTRACT IS DELETED HERE any more: the first cut of the migration dropped the honeypot and the standing disclosure, declared only the honeypot, and left an email-capture form on a licensed broker's site collecting an address with no frequency statement, no unsubscribe statement, and no route to manage the subscription. The 2026-08-12 repair restored all three (see the CommunityAlertSheet entry above). The one thing that did NOT come back as-is is the shape of the manage link: it was an <a> inside the block, and it is a door in the closing Quiet block now, because V3Sheet renders prose rather than nodes. That is the section's one remaining barrel gap.",
+    "FAQBlock — the questions moved into the closing V3Quiet and its FAQPage JSON-LD moved into the MetadataBlock array.",
+    "MarketSources — the Oregon Data Share citation now rides in the source lines under the figures and in the closing block's note.",
+    "SmoothScrollProvider — the Lenis wrapper. The v3 register does not depend on it, and PUBLIC_UI.md section 5 allows a scroll-bound sequence on exactly two moments, neither of which is on this page.",
+    "The freestanding phone line and the second-home note — the phone is in the footer and the chrome; the second-home paragraph is a knowledge row with its own contact door.",
+    "NOT removed, and it was undeclared while it was: the freestanding freshness signal (<p class=\"community-freshness-signal\">Market data updated {asOfLabel}</p>, old page.tsx:794). It is a sentence in the closing Quiet block's note now, off the same clock the Dataset's dateModified publishes.",
+    "boundary-derived hero facts strip — folded into the Instrument's figures."
+  ],
+  "deletedDataReads": [
+    "getRegionPulse — fed KbSell's fallback figures and the HUD's county median. Both sections are gone.",
+    "getPriceHistory (community and city) + getCoreChartSeries (community and city) — fed the two chart modules. Gone with the charts.",
+    "getMarketStatsCacheRowForGeo — fed one figure, the sale-to-list ratio, in the HUD. Its period basis differs from the rolling_365d window the other closed-sale figures use, so it would have put two windows in one figure set.",
+    "getAllCitySnapshots — fed KbExploreTowns.",
+    "getCommunitiesForIndex + allCommunities — fed KbCommunities.",
+    "getRecentBlogPosts — fed KbArticles.",
+    "getOpenHousesWithListings — fed KbOpenHouses.",
+    "getActivityFeedWithFallbackMulti — fed KbActivity.",
+    "getAreaGuideVideo — fed KbAreaGuideVideo.",
+    "Every read the page still performs is rendered. Nothing is fetched into a positional hole in the Promise.all."
+  ],
+  "jsonLd": {
+    "required": [
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry), built by _v3/community-metadata.ts" },
+      { "type": "Place", "emittedBy": "MetadataBlock schemas array (place entry). geo from the registry's center_lon_lat, containedInPlace the CITY (never the community itself), hasMap asserted only when the page renders a real map." },
+      { "type": "Dataset", "emittedBy": "MetadataBlock schemas array (dataset entry), variableMeasured from buildMarketFaq, dateModified from the real refreshedAt. Emitted only when there is at least one variable. REPAIR 2026-08-12: the DESCRIPTION is derived from those same variables (_v3/community-metadata.ts, datasetDescription). It was a hardcoded sentence naming median list price, active inventory, months of supply, and median days to pending on every community, which the months-of-supply publication rule had already made false on most of them and which vandevert-ranch published over a payload of one variable, Homes Sold (12 months). A machine-readable claim may not outrun its payload." },
+      { "type": "FAQPage", "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same faqs array V3Quiet renders. On the KB page this came out of FAQBlock's includeJsonLd; the payload's meaning is unchanged." }
+    ],
+    "note": "One derivation, one answer. The visible questions, the FAQPage items, and the Dataset variables all come from buildMarketFaq called once, fed the SAME figures the Instrument renders and the RAW months-of-supply value the page rounds only at display."
+  },
+  "dataLayer": {
+    "getCommunityBySlug": "app/actions/communities. Identity, city, subdivision, description. notFound() when absent, in both generateMetadata and the page.",
+    "getGeoSnapshot": "geo_type='community', geoKey='<city>:<subdivision>' lowercase. The always-present fallback pair (count and median computed from one active set by the same view) and the JSON-LD's fallback stamp.",
+    "getMarketPulse": "geo_type='neighborhood', geo_slug = the bare community slug. market_pulse_live carries no neighborhood rows today, so this is normally null and the page is built for that: it supplies months of supply and days to pending only when a row exists.",
+    "getMarketStats": "geo_type='neighborhood', periodType='rolling_365d'. market_stats_cache. Median sale price, sold count, and median days on market — the level-2 Instrument's whole figure set and the DOM and sold-count FAQ answers.",
+    "getGeoBoundaryMapData": "listings_in_boundary + boundary_geojson. Supplies the in-boundary listing keys and the stored polygon. The keys are re-fetched as tiles with propertyType 'A' so the published count matches the label.",
+    "getResortBoundaryGeoJSON": "the county plat union. ALWAYS draws when present, even for a slug in the oversized-hull baseline, because the baseline gates only the STORED hull.",
+    "getListingTiles": "listing_tile_mv. Three shapes: by in-boundary listing keys, by city (then narrowed by MLS subdivision name), or replaced entirely by the alias-matched resort set. status 'active', propertyType 'A' in every shape.",
+    "getCommunityListings": "app/actions/communities. The MLS subdivision-name listings, used to narrow the city pull when the stored hull is oversized or empty.",
+    "fetchAllCityActiveSfr": "lib/kb/city-active-sfr. Uncapped active SFR tiles for every MLS city this community lists under (registry mls_cities), because Caldera lists under Bend and the registry-city-only pull once rendered 0 of its 31 real homes.",
+    "getResortCommunityContent": "data/resort-community-<slug>.json through lib/resort-community-content. The authored depth. Null when no config exists, and the page then shows fewer rows.",
+    "getBlogPostsBySlugs": "resolves each amenity's blog_slug to a PUBLISHED post, so an amenity pointing at a draft produces no dead door.",
+    "getResortCommunityBySlug + getCanonicalCityForSubdivision + getAllResortCommunities": "lib/data/communities/registry. is_resort, subdivision_aliases, sub_neighborhoods, hoa_annual_estimate, mls_cities, center_lon_lat, the canonical-city redirect, and generateStaticParams.",
+    "getDistrictForCity": "data/co-schools. The ONLY permitted schools source. Undefined outside the service area, and the schools row and FAQ are then omitted rather than fabricated.",
+    "submitSearchAlertSignup": "app/actions/search-alert-capture, bound to CommunityAlertSheet. Same action, same payload, same field name as the KbCommunityAlerts block it replaces.",
+    "note": "Every read is guarded by withTimeoutFallback, and the published count carries an explicit number|null annotation, so a timed-out inventory read renders as 'no live figures' and never as 0 (ci:count-degraded-read, CLAUDE.md section 0). Route-local modules under app/communities/[slug]/_v3/ hold the metadata and schema builders, the figure sets and the live-pair resolution, and the knowledge rows, so the route file stays under the ci:file-size-budget floor."
+  },
+  "sectionOrder": [
+    "CommunityPageTracker",
+    "KbSectionTracker",
+    "MetadataBlock",
+    "V3Breadcrumb",
+    "V3Instrument (level 1, the place answer)",
+    "V3Field (homes, with CommunityFieldMap in the map slot)",
+    "V3Instrument (level 2, closed sales)",
+    "V3Quiet (living in the place)",
+    "CommunityAlertSheet (V3Sheet, listing alerts)",
+    "V3Quiet (questions and outbound edges)",
+    "V3Footer"
   ],
   "superseded": []
 }

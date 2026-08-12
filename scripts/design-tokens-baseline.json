@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-12T13:07:57.670Z",
-  "total": 250,
+  "generatedAt": "2026-08-12T21:51:20.773Z",
+  "total": 248,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/api/cma/[slug]/gmail-draft/route.ts": 1,
@@ -43,7 +43,6 @@
     "app/search/[...slug]/loading.tsx": 1,
     "app/search/og/[...slug]/route.tsx": 2,
     "app/signup/page.tsx": 2,
-    "app/subdivisions/[slug]/SubdivisionSalesHistory.tsx": 1,
     "app/team/[slug]/edit/page.tsx": 1,
     "components/ActivityFeedSlider.tsx": 1,
     "components/AuthDropdown.tsx": 2,
@@ -170,7 +169,6 @@
     "components/site/primitives/Layout.tsx": 1,
     "components/site/sell/SellProcess.tsx": 2,
     "components/site/sell/SellValuationCTA.tsx": 2,
-    "components/site/sell/spine/SellProduct.client.tsx": 1,
     "components/tc/pdf-sign/EnvelopeComposer.tsx": 4,
     "components/tc/pdf-sign/SignFlow.tsx": 3,
     "components/tc/pdf-sign/SignaturePad.tsx": 4,

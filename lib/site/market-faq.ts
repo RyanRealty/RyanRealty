@@ -2,6 +2,7 @@
 import type { StatValue } from '@/lib/site/json-ld'
 import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice } from '@/lib/format/money'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 
 /**
  * Structural input — a full MarketPulse satisfies this, and a geo page can also
@@ -122,20 +123,34 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   }
 
   if (pulse.monthsOfSupply != null && pulse.monthsOfSupply > 0) {
-    // CLASSIFY THE RAW VALUE, ROUND ONLY FOR DISPLAY. CLAUDE.md section 0: "Never
-    // round in a way that changes the narrative." Rounding first and then comparing
-    // the rounded number to the threshold moves the verdict across a boundary in two
-    // directions: a genuinely balanced 4.02 rounds to 4.0, and 4.0 <= 4 prints
-    // "seller's"; a genuinely balanced 5.97 rounds to 6.0, and 6.0 >= 6 prints
-    // "buyer's". Both publish a verdict the canonical thresholds
-    // (lib/market/classify.ts) do not support, in the visible answer, the FAQPage
-    // JSON-LD, and every page whose H1 reads this same figure.
-    const displayMos = Math.round(pulse.monthsOfSupply * 10) / 10
+    // CLASSIFY THE RAW VALUE, FORMAT ONLY FOR DISPLAY, AND DO NOT LET THE FORMATTING
+    // CROSS THE THRESHOLD THE CLASSIFICATION DID NOT. CLAUDE.md section 0: "Never
+    // round in a way that changes the narrative."
+    //
+    // Half of that is the ORDER. Rounding first and then comparing the rounded number
+    // to the threshold moves the verdict across a boundary in two directions: a
+    // genuinely balanced 4.02 rounds to 4.0, and 4.0 <= 4 prints "seller's"; a
+    // genuinely balanced 5.97 rounds to 6.0, and 6.0 >= 6 prints "buyer's". Both
+    // publish a verdict the canonical thresholds (lib/market/classify.ts) do not
+    // support. marketType() therefore reads the RAW value.
+    //
+    // The other half is the DIGITS, and Math.round reopened the contradiction from the
+    // far end: at 4.02 this answer read "4 months of supply, which is a balanced
+    // market" and then appended MOS_THRESHOLD_CLAUSE, which says 4 months or less is a
+    // seller's market. One sentence contradicting the next, in the visible FAQ, in the
+    // FAQPage JSON-LD, and in a Dataset variable that no longer equaled the figure the
+    // page's own Instrument printed for the same statistic. formatMonthsOfSupply is
+    // the single boundary-safe display rule (design-audit P2): 4.02 prints 4.1, 5.97
+    // prints 5.9. Every public surface that renders this figure already went through
+    // it; this builder was the one that did not.
+    const displayMos = formatMonthsOfSupply(pulse.monthsOfSupply)
     faqs.push({
       question: `Is ${geoName} a buyer's or seller's market?`,
       answer: `${geoName} has ${displayMos} months of supply, which is a ${marketType(pulse.monthsOfSupply)} market. ${MOS_THRESHOLD_CLAUSE}`,
     })
-    datasetVariables.push({ name: 'Months of Supply', value: displayMos })
+    // Number(), not the raw value: the Dataset variable is the machine-readable copy
+    // of the sentence above it, so it publishes the number that is on the screen.
+    datasetVariables.push({ name: 'Months of Supply', value: Number(displayMos) })
   }
 
   // Days question: prefer medianDaysToPending (pulse, days-to-pending) over

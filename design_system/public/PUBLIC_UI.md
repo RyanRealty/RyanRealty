@@ -1,11 +1,12 @@
-# Public UI — the visual language (P6, LOCK PENDING)
+# Public UI — the visual language (P6, LOCKED 2026-08-11)
 
 Greenfield. Written 2026-08-11 after the IA lock, under design amnesia: no current public
 page, prior mockup, or retired program's section library was opened as design input. Brand
 is the one inherited constraint (navy `#102742` / cream `#faf8f4`, Amboqia display + Geist
 body, voice canon) — everything about shape, rhythm, and motion is derived here from the
-28 locked processes and their destinations. **Binds when decisions.md records the visual
-lock; the lock requires a MOVING prototype, never a static screen.**
+28 locked processes and their destinations. **LOCKED by Matt 2026-08-11 on the moving
+prototype (docs/plans/PUBLIC_PRODUCT/decisions.md). The pattern set is closed: a section
+that fits none of the six changes this file, it never earns a page exemption.**
 
 ## 1. Thesis
 
@@ -18,7 +19,12 @@ spectacle.** Three commitments:
   persisted (the place you came from, the range being computed, the market settling). If a
   motion does not encode a state change the visitor caused, it does not ship.
 - **The ask is the next step, never an interruption.** One primary action per viewport,
-  earned by the content above it (founding directive 3).
+  earned by the content above it (founding directive 3). The count is of VISIBLE filled
+  controls, not of controls in the document, and it has a mobile corollary the first
+  migrations got wrong: at 390 the chrome's valuation CTA sits inside the collapsed menu,
+  so a page that demotes its own ask to ghost "because the header carries the primary"
+  ships a first viewport with no ask at all. A content page carries its own visible
+  primary; the chrome's CTA counts only where the chrome actually shows it.
 
 ## 2. Foundations (each cites an external standard, not our old site)
 
@@ -101,8 +107,9 @@ navy (3.4:1). Muted text stops at navy-70 / cream-60.
 Clarity 9 · Hierarchy 9 · Data honesty 9 · Motion discipline 8 · Mobile-first 9 ·
 Accessibility 9 · Distinctiveness 8 — average **8.7**, floor met.
 
-## 8. What the visual lock requires (not yet satisfied)
+## 8. How the lock was granted
 
-An in-repo MOVING prototype at `/dev/public-v3`: real components, real data, Lenis + GSAP,
-recorded at 390 and 1280, with the reduced-motion path shown. Static screens are a hard
-refuse. Until Matt grants the lock, `components/site/v3/` stays unwritten.
+Matt judged the MOVING prototype live in production at `/dev/public-v3` (real Bend data,
+390 and 1280, reduced-motion path) and granted the visual lock on 2026-08-11. The barrel
+that implements these patterns is `components/site/v3`, enforced by `ci:public-v3`, and
+the rollout onto it is ratcheted by `ci:public-ui`.

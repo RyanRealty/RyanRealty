@@ -1,0 +1,178 @@
+{
+  "route": "app/housing-market/annual-review/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). This directory holds NO index.html on purpose. The KB-era annual review never had a bespoke mockup — the retired route file opened with a `// @no-parity` directive saying exactly that — and the visual target now is the six closed patterns in PUBLIC_UI.md, built from components/site/v3, not a picture. ci:mockup-coverage fires only on directories that carry an index.html, so an index-less directory is not a coverage violation, while ci:mockup-parity binds on the `route` field above and now gates this route's component set.",
+  "competitiveTarget": "The citable Central Oregon annual reference. Beat the aggregators' year-in-review posts by publishing the trailing 12 months against the SAME 12-month window one year earlier (never a partial-year or quarter-versus-year comparison), for the region and every report city, with the months-of-supply formula and thresholds printed beside every verdict they produce, a source trace and a real refresh stamp under every section, and Dataset plus FAQPage JSON-LD so an LLM or an analyst can cite a URL and a number. No aggregator publishes the trace under the number, and none states the reason a place has no figure.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9), and this contract was authored 2026-08-12 as the repair of an UNDECLARED-DELETION defect: the migration shipped first with no parity.json anywhere on disk, so ci:mockup-parity did not bind the route and the KB-era sections it removed were declared nowhere. Rhythm: four of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Instrument level 1 (region now), Ledger (city inventory), Instrument (region trailing 12 months), Ledger (city trailing 12 months), Quiet (methodology and coverage), Sheet (broker inquiry), Quiet (questions and outbound edges), Footer. FOUR POPULATIONS, FOUR TRACES, FOUR STAMPS, and no section borrows another's clock: live inventory off market_pulse_live at 10-to-15-minute freshness, closed sales off market_stats_cache period_type='rolling_365d' at 6-hour freshness, each for the region and for the report cities. THE VERDICT IS DERIVED ONCE and it classifies the RAW months-of-supply value, through marketVerdict from lib/market/classify.ts. Display goes through formatMonthsOfSupply (lib/format/months-of-supply.ts), never Math.round, so the printed digits never cross a threshold the raw value did not: a stored 4.02 prints 4.1 rather than the 4.0 that would contradict the verdict beside it and MOS_THRESHOLD_CLAUSE under it. buildMarketFaq receives the same raw figure and repeats the same two steps in the same order, so the Instrument figure, the visible FAQ sentence, and the Dataset variableMeasured are one number and one verdict. EVERY PULSE FIGURE SHIPS ON ITS CONSUMER'S GUARD, `!= null && > 0`, the condition buildMarketFaq applies to that same figure, so the page cannot print a figure the shared builder declined to answer for. ABSENT IS NOT ZERO: a report city with no live row, or a row carrying no published median, is dropped from the Ledger, keeps its door, and states its own reason in the coverage Quiet, read off its own data (no row returned, no active listings, or active with no published median). Tumalo and any other NON_MLS_CITY_EXEMPTIONS place is named with the MLS city its listings file under, never given a structural-stub zero row. Trailing-12-month medians publish in whole dollars through formatWholeDollars rather than formatPrice, because the same figure goes into the Dataset payload as Math.round(medianSalePrice) and formatPrice rounds to the nearest $1,000, which would print $652,000 on screen beside $652,450 in the markup. REPAIRED 2026-08-12 against the fresh-context verifier, four findings, none closed by loosening a gate: (1) THE ONE-PRIMARY PREMISE WAS FALSE AT 390 and is struck from this file and from the route docblock rather than qualified. The header's filled valuation CTA is display:none until 880px, so the opening Instrument's action is now PRIMARY and the page carries its own visible filled control in the first viewport at every width; the level-2 ask stays ghost. (2) THE LEVEL-2 SECTION NOW HAS A DECLARED DEGRADE. It used to render null when the trailing-12-month row published no figure, which both removed a section silently and left the two Ledgers adjacent against the rhythm rule; it renders a Quiet stating which read happened. (3) ONE WINDOW, NOT TWO. The closed-sales trace formats the cache row's date-only period columns in UTC, so the printed window matches the Dataset temporalCoverage built from the same two fields; formatting them in the brand's Pacific zone printed each end one day early. (4) ONE MEDIAN LIST PRICE. The figure is rounded once in the page and that rounded figure feeds the Instrument, the FAQ sentence and the Dataset variable, which previously published the unrounded column value under a rounded number on screen. The city year-over-year variables are also narrowed to cities that earned a rendered row.",
+  "deletions": [
+    {
+      "component": "KbSell",
+      "path": "components/site/kb/KbSell.client.tsx",
+      "callSite": "The KB page rendered <KbSell data={{ medianListPrice, medianDaysToPending, soldCount30d }} eyebrow=\"Sell in Central Oregon\" /> as its last content section.",
+      "wentTo": "SPLIT, AND ONE PIECE IS DELETED OUTRIGHT. (1) The ADDRESS-PREFILL CAPTURE FIELD — the `Enter your home address` input and its `Value my home` submit, which pushed /sell/valuation?address=<typed>&from=<pathname> — is DELETED OUTRIGHT. It is the one capture affordance this migration does not carry across, and the visitor now types the address on /sell/valuation instead of before they arrive. The page's one on-page ask is the broker-inquiry Sheet (PUBLIC_UI.md section 1, one primary per viewport), and a second form competing with it in the same scroll would be the defect that rule exists to prevent. (2) THE VALUATION DOOR ITSELF SURVIVES, as a text edge in the closing Quiet, and it carries KbSell's `?from=` parameter unchanged — see the attribution entry below, which is the whole reason this deletion is safe. (3) The THREE PROOF FIGURES: medianListPrice became the region Instrument's `median list price` figure and medianDaysToPending became its `median days to pending` figure, both from the same market_pulse_live row KbSell read. soldCount30d (regionPulse.closedLast30Days) IS NOT RENDERED ANYWHERE ON THIS PAGE, and that is deliberate rather than an oversight: this page's closed-sales population is the trailing-12-month market_stats_cache row, on a 6-hour clock with its own trace, and dropping a 30-day closed count off the 10-to-15-minute pulse tier into the region Instrument would put two closed-sales windows on two clocks in one viewport on a page whose whole subject is the annual window. That figure is published, under its own trace, on /housing-market/central-oregon, which is this page's opening Instrument action and its first closing edge. No read was added or kept for it — closedLast30Days is a column on the single region pulse row the Instrument already needs, so nothing is queried that the page does not render."
+    },
+    {
+      "component": "KbSell attribution parameter",
+      "path": "components/site/kb/KbSell.client.tsx lines 48-55",
+      "wentTo": "CARRIED ONTO THE CANONICAL BUILDER, and it is a stated invariant of the route file (invariant 5). KbSell set `from` to usePathname(), producing /sell/valuation?address=...&from=/housing-market/annual-review. The route now ships TWO seller doors as text edges in the closing Quiet, both stamped with this page's path, both defined in _v3/annual-constants.ts: SELL_SPINE_HREF = valuationHref(CANONICAL_PATH), built by lib/site/valuation-href.ts, the one canonical builder named in migration-recipe.md's 2026-08-11 addendum; and WRITTEN_VALUATION_HREF = valuationPath() + ?from=, the written-CMA surface. The written door does NOT go through the builder, for a measured reason recorded beside the constant: the builder's base is /sell#get-value, and the action behind that form never reads `from` (app/lp/seller-home-value/actions.ts stores sanitizePagePath(pagePath); app/sell/page.tsx hardcodes pagePath='/sell'), so routing the written door through it would record '/sell' as the origin of every lead it produces. app/home-valuation/actions.ts, the action behind /sell/valuation, does read it, and falls back to the referer's own path when it is absent, which at submit time is /sell/valuation itself. That is the 2026-07-15 conversion audit, and it shipped broken here once already."
+    },
+    {
+      "component": "SmoothScrollProvider",
+      "path": "components/site/kb/SmoothScrollProvider.client.tsx",
+      "callSite": "The KB page wrapped every content section between KbBreadcrumb and KbFooter in <SmoothScrollProvider>.",
+      "wentTo": "NOWHERE, deliberately. It mounts Lenis inertial scroll and drives GSAP ScrollTrigger off it, retiming every scroll the visitor makes on the page. PUBLIC_UI.md section 1 admits motion only where it encodes a state change the visitor caused, and inertial scroll encodes none — it restyles an input the browser already handles, on a reference page whose job is to be read and cited. The v3 barrel ships no scroll hijack of its own, so removing the wrapper leaves native scroll, which is also what the provider itself fell back to under prefers-reduced-motion. Its second job, routing same-document hash anchors through lenis.scrollTo because Lenis can swallow native hash scroll, is a problem that only exists while Lenis is mounted, and it disappears with it. Nothing else on the route depended on the provider: no section on this page is scroll-bound, and the component stays on disk for the KB surfaces that still mount it, so ci:reachable-exports is unaffected."
+    },
+    {
+      "component": "KbBreadcrumb",
+      "wentTo": "V3Breadcrumb, surface tone. Same trail, current page still not a link. The surface tone also clears the fixed public header, since the trail is the first flow element of <main>."
+    },
+    {
+      "component": "KbFooter",
+      "wentTo": "V3Footer with V3_FOOTER_COLUMNS, the canonical lib/site-nav projection, rendered OUTSIDE <main>. The KB call passed towns={[]}, so no towns rail is lost. Placement is unchanged from the KB page, which also nested its footer inside <main>: HTML-AAM maps <footer> to role=contentinfo only when it is not inside sectioning content, and ci:default-chrome-footer counts footers without checking placement."
+    },
+    {
+      "component": "FAQBlock",
+      "wentTo": "The closing V3Quiet, which renders the same buildMarketFaq array as prose, plus FAQPage JSON-LD moved to MetadataBlock. FAQBlock emitted the markup itself through includeJsonLd and V3Quiet carries no structured data of its own, so the EMISSION SITE moved and the payload did not."
+    },
+    {
+      "component": "LeadCaptureBlock",
+      "wentTo": "AnnualInquirySheet (app/housing-market/annual-review/_v3/AnnualInquirySheet.client.tsx), wrapping V3Sheet on the same server action, submitMarketPageInquiry, variant 'inquiry', fields name / email / message. Three fields, no phone, so the page still ships no SMS-consent surface."
+    },
+    {
+      "component": "MarketSources",
+      "wentTo": "The Oregon Data Share citation is an edge in the methodology-and-coverage Quiet, which the route file's coverage comment already declared."
+    },
+    {
+      "component": "ContentSection (hero lede, Methodology plate, and the 'Keep reading' rail)",
+      "wentTo": "The hero lede's verdict sentence is the level-1 Instrument headline and its window and refresh sentences are that section's source line and stamp. The Methodology plate is the coverage Quiet, which carries MOS_METHODOLOGY_CLAUSE and MOS_THRESHOLD_CLAUSE inside each section's trace and the single-family and same-window claims as prose. The two 'Keep reading' links are the two Instrument ghost actions and the first two closing edges."
+    },
+    {
+      "component": "The region KPI grid and the per-city <table>, with the Price / PercentChange / TabularNumber / DaysCount primitives that filled them",
+      "wentTo": "The two Instruments and the two Ledgers, split by population so no section mixes clocks: the KB grid printed three live-inventory tiles beside five trailing-12-month tiles under one heading. Year-over-year change now rides each figure's LABEL rather than becoming a tile of its own, because the change is a property of the number above it and not a second measurement. The KB grid printed 'Not available' in a value slot when months of supply was absent; on this register the honest render of an unmeasured figure is no figure at all."
+    },
+    {
+      "component": "kb.css",
+      "wentTo": "Dropped. The v3 barrel owns its own styles, and the route imports no stylesheet."
+    }
+  ],
+  "requiredComponents": [
+    {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + WebPage + Article + Dataset + FAQPage JSON-LD, all five emitted here. V3Breadcrumb and V3Quiet carry no structured data of their own, on purpose, so one derivation feeds the visible copy and the markup. Article.dateModified and Dataset.dateModified are real refresh timestamps off the rows, never now(). Dataset ships only when there is at least one variable AND an as-of timestamp, and each variableMeasured value must equal the on-screen number (CLAUDE.md section 0).",
+      "blocking": true
+    },
+    {
+      "name": "KbNav",
+      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import, and ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design. ITS FILLED VALUATION CTA IS WIDTH-BOUND, AND THE PAGE NO LONGER LEANS ON IT: .topbar a.nav-cta in components/site/kb/kb.css is display:none until 880px and below that is reachable only inside the closed Menu+ overlay, so the sentence 'the sticky header carries a filled CTA at every scroll position' is false and is struck wherever it appeared. The page carries its own visible primary instead, the opening Instrument's action. MEASURED ON THE REPAIRED PAGE, first viewport at scrollY 0: 390 gives exactly one visible filled control, the page's own opening primary at y 758, with the header showing only the wordmark, SEARCH and MENU+. 1280 gives two, the page's primary plus this header's cream nav-cta at y 18, which is chrome debt this route cannot fix from the page file and which resolves when the header migrates to V3Chrome (one primary in the chrome, by its own contract).",
+      "blocking": true
+    },
+    {
+      "name": "KbSectionTracker",
+      "section": "Page-level analytics, pageType='market-report-annual', unchanged from the KB page. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent. It observes '.kb-root section[id], .v3 section[id]', so every v3 section id on this page still emits section_view.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Housing market > Annual review, current page never a link. Surface tone, because this page opens on an Instrument and not a dark Stage.",
+      "blocking": true
+    },
+    {
+      "name": "V3Instrument",
+      "section": "Pattern 1, TWICE, and the two never sit adjacent. Region now (id='market', level 1): the verdict headline plus months of supply, active single-family listings, median list price, and median days to pending, every one a door, under one trace from market_pulse_live geo_type='region' geo_slug='central-oregon' carrying MOS_METHODOLOGY_CLAUSE and MOS_THRESHOLD_CLAUSE, stamped with that row's own refreshedAt. Region trailing 12 months (id='closed-sales', level 2): median sale price, homes sold, median days on market, average sale to list, and median dollars per square foot, from market_stats_cache period_type='rolling_365d', each year-over-year change riding its figure's label, under a trace naming the window read off the cache row itself (formatted in UTC, so the printed window and the Dataset temporalCoverage built from the same two date-only columns are one window) and stamped with that row's updatedAt. THE OPENING ASK IS PRIMARY, AND THE PREMISE THAT ONCE MADE IT GHOST IS STRUCK AS FALSE: the header's filled valuation CTA is not carried at every scroll position, it is display:none until 880px and below that sits inside the closed Menu+ overlay, so a ghost opening ask shipped a first viewport with no visible filled control at 390 (PUBLIC_UI.md section 1: the count is of VISIBLE filled controls, and the chrome's CTA counts only where the chrome shows it). The level-2 ask stays ghost because it is a second filled control in no viewport and the page's conversion ask is the Sheet. DECLARED DEGRADES, BOTH: when the region pulse row does not return the opening section is a level-1 Quiet stating that fact instead of an Instrument asserting a verdict; when the trailing-12-month row publishes no figure the level-2 section is a Quiet (id='closed-sales') stating which of the two things happened, the row not returning or the row returning with nothing published, and keeping the city-reports door. That section never simply disappears: V3Instrument types figures as a non-empty tuple, and a vanished section would leave the two Ledgers adjacent, which the rhythm rule forbids.",
+      "blocking": true
+    },
+    {
+      "name": "V3Ledger",
+      "section": "Pattern 3, twice, never adjacent to each other. Active inventory by city (id='cities-now'): one row per report city that returned a live row carrying a published median, when = the active count, value = the median list price, detail = months of supply with the verdict that raw figure classifies to, href = that city's own report, stamp = the newest updated_at among the rows that actually rendered. Closed sales by city, year over year (id='cities-year'): one row per report city with a trailing-12-month row carrying a median, when = homes sold, value = the median sale price in whole dollars, detail = the year-over-year price change, median days on market, and the day-count change, stamp computed the same way from its own rows. Each Ledger renders an empty state naming what did not return rather than disappearing.",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "Pattern 6, twice, and once more for each section that degrades: the opening section becomes a level-1 Quiet when the region pulse row is absent, and the level-2 closed-sales section becomes a Quiet (id='closed-sales', eyebrow 'Trailing 12 months') when the trailing-12-month row publishes no figure, stating which of the two reads happened and carrying the weekly-city-reports door so no destination is lost with the figures. Methodology and coverage (id='methodology'): every claim the KB Methodology section made, the Oregon Data Share citation MarketSources used to render, the named non-MLS exemptions with the MLS city their listings file under, and an honest reason for every report city that earned no row above, each still linked to its own report. Questions and edges (id='faq'): the buildMarketFaq prose the FAQPage JSON-LD is built from, followed by the page's outbound edges, each shipping only when the answers above it actually made that claim, and including THE PAGE'S ONE VALUATION DOOR as a text edge carrying ?from=/housing-market/annual-review.",
+      "blocking": true
+    },
+    {
+      "name": "AnnualInquirySheet",
+      "section": "Pattern 5, once, in app/housing-market/annual-review/_v3/AnnualInquirySheet.client.tsx. The page's one on-page ask and its one primary. Wraps V3Sheet and calls the same server action the KB LeadCaptureBlock called: submitMarketPageInquiry from app/housing-market/actions.ts, variant 'inquiry', fields name / email / message. The capture contract is unchanged. The route owns its own sheet rather than importing a sibling's, so two separately-migrating pages are not coupled.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row, carrying no button. Rendered OUTSIDE <main>, because HTML-AAM maps <footer> to role=contentinfo only when it is not nested in sectioning content.",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "PublicNav",
+      "section": "renders from app/layout.tsx",
+      "note": "Resolves to KbNav today. Not in requiredComponents as itself because the gate checks the route file, and the KbNav entry above is the one the gate auto-satisfies."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Stage",
+      "reason": "Pattern 4 needs an owned video or photo and is never allowed over a number. This page is a citable reference whose first viewport is the answer, so it opens on an Instrument. A Stage would also put the route into ci:kb-breadcrumb-overlay's v3 dark-hero arm, which would then require tone=\"on-media\" on the breadcrumb."
+    },
+    {
+      "name": "V3Field",
+      "reason": "Pattern 2 is live inventory as a spatial surface. It opens Homes and embeds in Places. Here it would make the annual reference compete with /homes-for-sale, and it would push the page to five patterns, which the rhythm rule refuses."
+    },
+    {
+      "name": "KbMarketChart",
+      "reason": "Not deleted from this route and not rendered on it either: the KB annual review never mounted a chart. The pattern set is closed and holds no chart pattern. The longitudinal comparison this page publishes is the trailing 12 months against the same window one year earlier, which rides the figures' own labels. KbMarketChart.client.tsx stays on disk and stays under ci:market-chart-honesty for the city reports that do render it."
+    }
+  ],
+  "jsonLd": {
+    "required": [
+      {
+        "type": "BreadcrumbList",
+        "emittedBy": "MetadataBlock schemas array (breadcrumb entry)",
+        "gate": "G34"
+      },
+      {
+        "type": "WebPage",
+        "emittedBy": "MetadataBlock schemas array (webPage entry)",
+        "gate": "G34"
+      },
+      {
+        "type": "Article",
+        "emittedBy": "MetadataBlock schemas array (article entry)",
+        "gate": "G34",
+        "note": "dateModified is the region pulse row's real refreshedAt, never now(). datePublished is the route's own publication date and does not move with a cache refresh."
+      },
+      {
+        "type": "Dataset",
+        "emittedBy": "MetadataBlock schemas array (dataset entry)",
+        "gate": "G34",
+        "note": "The primary AI-citability signal. Emitted only when there is at least one variable AND an as-of timestamp. EVERY VALUE EQUALS THE NUMBER ON THE SCREEN (CLAUDE.md section 0), which is a rule about the rounding site: the median list price is rounded ONCE in the page (medianListDisplay, the brand's nearest-$1,000 list-price rule) and that same figure feeds both the Instrument and buildMarketFaq, so the payload cannot publish 729900 under a screen reading $730,000; months of supply is already on this rule inside buildMarketFaq (Number(displayMos)); the trailing-12-month median publishes through formatWholeDollars for the same reason. Variables are buildMarketFaq's region set plus the region trailing-12-month median and its year-over-year change, both shipping on the condition that puts that figure on screen, plus one year-over-year variable per report city THAT EARNED A ROW in the closed-sales Ledger: a variable for a city the page prints no figure for is a machine claim with nothing on screen to check it against. A null delta emits nothing, never a fabricated 0 percent. temporalCoverage is the cache row's own period, the same two columns the closed-sales trace prints in UTC so the human window and the machine window are one window."
+      },
+      {
+        "type": "FAQPage",
+        "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same faqs array the closing V3Quiet renders. On the KB page this came out of FAQBlock's includeJsonLd. The emitter moved, the payload's meaning did not.",
+        "gate": "G34",
+        "note": "buildMarketFaq is the single source for the visible FAQ, the FAQPage items, and the region Dataset variables, so the three surfaces cannot diverge. It receives the RAW months-of-supply figure and formats it through the same formatMonthsOfSupply the Instrument uses."
+      }
+    ]
+  },
+  "dataLayer": {
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts. market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A'. 10 to 15 minute freshness. Feeds the level-1 Instrument, buildMarketFaq, the inventory stamp, and Article.dateModified.",
+    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts. market_pulse_live city rows for REPORT_CITIES, property_type='A'. ONE call. Feeds the inventory Ledger and its own stamp, the newest updated_at among the rows that rendered.",
+    "getCityMarketDetail": "lib/data/market/getCityMarketDetail.ts, period_type='rolling_365d'. Once for the region and once per grid city. Trailing-12-month closed sales plus the yoy_* columns the same cache job computes against the same window one year earlier, read rather than re-derived so the page cannot drift from the job's methodology. 6 hour freshness.",
+    "submitMarketPageInquiry": "app/housing-market/actions.ts (route-local server action) into submitPageCTA. Bound to AnnualInquirySheet. Same action, same payload shape, same field names as the KB LeadCaptureBlock it replaces.",
+    "geoKeys": "REPORT_CITIES and NON_MLS_CITY_EXEMPTIONS come from lib/data/geo/report-cities.ts and are never retyped (ci:report-geo-registry). dbGeoSlug in _v3/annual-constants.ts is a per-city QUERY-key override, not a city list: both caches key La Pine as 'la pine' with a literal space, the lowercased MLS City value, while the public URL slug stays 'la-pine'.",
+    "note": "Every read is a DAL function from @/lib/data (G8), and none is wrapped in a swallowing catch: each is resilient-cached with its own documented fallback, so a catch here would hide a real outage behind a confident empty page. Nothing is fetched that the page does not render. Route-local constants and display helpers live in app/housing-market/annual-review/_v3/annual-constants.ts and the four pure section builders in app/housing-market/annual-review/_v3/annual-sections.ts, under ci:file-size-budget's own instruction to split rather than re-baseline. The page owns the reads, the one months-of-supply derivation, the JSON-LD, and the JSX. The sections module owns the pure turn from a DAL row into barrel-ready props and never fetches, never reads the clock, and never classifies a value the page has not already classified."
+  },
+  "sectionOrder": [
+    "MetadataBlock",
+    "KbSectionTracker",
+    "V3Breadcrumb",
+    "V3Instrument (level 1, region now) — or V3Quiet level 1 when the pulse row is absent",
+    "V3Ledger (active inventory by city)",
+    "V3Instrument (level 2, region trailing 12 months) - or V3Quiet when the trailing-12-month row publishes no figure",
+    "V3Ledger (closed sales by city, year over year)",
+    "V3Quiet (methodology and coverage)",
+    "AnnualInquirySheet (V3Sheet, broker inquiry)",
+    "V3Quiet (questions and outbound edges, carrying the valuation door)",
+    "V3Footer"
+  ]
+}

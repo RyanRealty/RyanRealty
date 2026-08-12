@@ -412,3 +412,243 @@ header prose that duplicated the parity contract was deleted rather than reworde
   primary a Sheet renders", so the Sheet is not the thing to change. The chrome unit decides
   whether the header's ask is a primary or a secondary; PUBLIC_UI.md's CTA table already says
   "Global chrome: primary buy path + secondary Value my home".
+
+---
+
+## 2026-08-12 — `/subdivisions/[slug]` ships on v3 (P9, plat node)
+
+**Route:** `app/subdivisions/[slug]/page.tsx`, 13 non-v3 import sites down to 2
+(`MetadataBlock`, `KbSectionTracker` — both wiring, neither visual language, barrel ships no
+equivalent). Order: Breadcrumb, Instrument L1 (or Quiet when the count is unknown), Field
+(always), Instrument L2 (conditional), Ledger (conditional), Quiet (always), Footer.
+
+**Rhythm proved for every dropout, not just the full page.** The two conditional sections are
+an Instrument and a Ledger, which cannot collide with each other, and the always-rendered
+Field sits before them with the always-rendered Quiet after them. That is also why the
+assigned schools render INSIDE the closing Quiet (`SubdivisionSchools` owns that section): a
+second Quiet would sit adjacent to the closing one whenever both conditionals dropped out, and
+`ci:subdivision-stats-integrity` requires `<SubdivisionSchools>` be rendered by name.
+
+**Four populations, four traces, four stamps.** All four sentences live in
+`app/subdivisions/[slug]/_v3/subdivision-traces.ts`. Two KB defects closed by writing them:
+the boundary RPC filters status only, so the plat's active count holds every property type
+while the Field is `propertyType: 'A'` — the KB page printed the first under a subtitle reading
+"Every active single-family listing". And the market band now reads ONE row
+(`_v3/subdivision-figures.ts`); the KB page took a median from whichever pulse row carried one
+and a days-to-pending from whichever carried that, so a community median could print beside a
+city days-to-pending under one heading.
+
+**Absent is not zero, extended to the registry path.** `getCommunityListings` timing out and a
+plat with nothing for sale both leave `[]`, and the count is that array's length, so the KB
+page published "0 homes for sale" under a live-MLS trace on every slow query. The read is now
+`withTimeoutFallbackResult` and the count is `null` on a miss, which is the guard the boundary
+path already carried.
+
+**Known defect carried forward, not introduced:** on the registry path the active count is
+`getCommunityListings(..., 14)`, capped at 14 rows. The value is unchanged from the KB page
+and the trace for that path now says the count stops at fourteen. Fixing it is a metric
+change and belongs to whoever owns that decision.
+
+**Gap reported to the barrel:** there is no map primitive, so `V3Field`'s `mapSlot` is filled
+by a route-local `_v3/SubdivisionFieldMap.client.tsx` (dynamic ssr:false, `useV3FieldBinding`,
+draws the recorded plat polygon plus one pin per plotted listing). Three routes have now
+written the same file. There is also no media-rail primitive, which is why `VideoTourRail` was
+dropped rather than restyled.
+
+**Deletions, all declared in `design_system/ryan-realty/ui_kits/subdivision/parity.json`:**
+KbHero's parent-city photo + caption + the `cityHero` read, its property search and
+voice-search button, its two-button CTA pair; KbSell's address-capture field and that whole
+section (destination and `?from=` attribution survive on the Instrument's ghost action);
+KbFeatured; VideoTourRail; LifestyleNearSection / PlaceParentsSection / KbExploreTowns as
+sections (every link is an edge in the closing Quiet); the stats strip inside the sales-history
+section; SmoothScrollProvider and `kb.css`. Three modules were orphaned by those deletions and
+deleted rather than left: `components/site/explore/SubdivisionExploreTail.tsx`,
+`components/site/VideoTourRail.tsx`, and `components/site/VideoSlider.client.tsx` (whose only
+importer was the rail).
+
+**Gate contract added:** `design_system/ryan-realty/ui_kits/subdivision/parity.json`, a new
+contract binding this route only (11 required components, 0 missing). The directory holds no
+`index.html`, so `ci:mockup-coverage` is unaffected.
+
+**Verified:** `tsc --noEmit` clean, every gate in the battery green except the three this unit
+does not own (`ci:file-size-budget` on `SellerLPForm.tsx`, `ci:hydration-safety` on
+`SellSectionTracker.client.tsx`, `ci:reachable-exports` on 12 orphans from the cities /
+communities / zip / sell units in flight). Browser-UA curl on localhost:3000 returned 200 for
+`sunrise-village`, `golden-butte`, `the-ridge`, `shevlin-bluffs`, `ridge-at-eagle-crest` and
+`skyliner-summit`, with real figures, one `<main>`, one `<footer>`, zero `v3-btn--primary` on
+the page, and BreadcrumbList + Place JSON-LD matching the KB payloads. **Transient 404s under
+load are a dev-server artifact, not the route:** during the run `/communities/tetherow` and
+`/zip/97701` (other units' routes) 404ed the same way and recovered on retry.
+
+---
+
+## 2026-08-12 — `/subdivisions/[slug]` repair pass (six defects, all found on the rendered page)
+
+A verifier read the migrated route in a browser rather than in the diff and found six. Every
+one passed `ci:gates`, which is the recipe's own warning made concrete: green is necessary,
+never sufficient.
+
+**1. A door that opened a different year than it named, plus the sentence claiming otherwise.**
+The Ledger made every year a link to `/housing-market/history?year=<year>`, and that page
+clamps: `Math.min(2030, Math.max(1998, …))`. A 1997 row opened 1998 aggregates under a note
+reading "Each year opens the Central Oregon closed-sales explorer at that year." **7,553 closed
+single-family sales across 497 plats predate 1998** (verified live: `public.listings`,
+`PropertyType='A'`, `StandardStatus like '%closed%'`, `ClosePrice > 0`; earliest year 1993), so
+this was on hundreds of pages, not an edge case. Years outside the explorer's range are now
+split out in `_v3/history-door.ts`, get no row, and are stated as a count in the note — the
+section total still covers every year the RPC returned, so no figure left the page. The KB
+table's rows were plain `<td>`s with no destination; both the door and the claim were
+introduced by the migration.
+
+**2. A synthesized zero under a live trace.** `parentPulseFigures` pushed the closings figure
+with no guard while the two figures above it were null-guarded.
+`lib/data/market/getMarketPulse.ts:60` reads `(row.sold_count_30d as number) ?? 0`, so a NULL
+column arrives as the number 0 and this page cannot tell it from a real zero — the exact hazard
+the page's own "ABSENT IS NOT ZERO" header names and applies to `activeCount`. The figure is
+now guarded, and `parentMarketTrace` composes its basis sentence from the figures that
+survived, so no trace names a number the page suppressed. **Left open for whoever owns the
+DAL:** `MarketPulse.closedLast30Days` should be `number | null`. Until it is, this route cannot
+publish a true zero, and it prefers fewer numbers to one wrong one (CLAUDE.md §0).
+
+**3. A read whose result could not reach the screen, under a comment saying it did.**
+`fetchSubdivMarketExtras` (two `getMarketPulse` queries, 3000ms each) ran in the page's
+`Promise.all`, but `parentFigures` was `[]` whenever the plat carried its own
+`market_stats_cache` row — two live queries per request, discarded. The parent read is now
+conditional and sits after that decision (migration-recipe §3.4).
+
+**4. An undeclared deletion of every listing photograph.** `parity.json` named only "KbFeatured's
+photo rail", while the boundary path rendered `PlaceMapListSplit` with a 72×54 photo per row
+(`PlaceMapListSplit.client.tsx:114`) and the deleted page advertised the map's photo stamps in
+its own subtitle. Three surfaces, declared as one. All three are now named in the contract with
+where the information went (the listing page behind each row). `V3FieldItem` carries no image
+field, so restoring a photo here needs a barrel change, not a page change.
+
+**5. Two thresholds restated in public copy with nothing binding them.** The schools sentence
+spelled "70 percent" and "ten"; both live as exported constants in
+`getSubdivisionSchools.ts`. The sentence is now built from `SCHOOL_MIN_AGREEMENT` and
+`SCHOOL_MIN_SAMPLES`, which is a compile-time binding and stronger than a gate.
+
+**6. A figure with no antecedent noun.** "The map plots all 26 that carry coordinates" sat under
+a count of 24 and an Instrument counting 26 of a *different* population. The sentence now names
+its population: "all 26 active single-family listings that carry coordinates."
+
+**The fixer wrote the gate** (§6, `feedback_gate_written_by_the_fixer`).
+`ci:subdivision-stats-integrity` gained three invariants, each break-tested — introduced the
+defect, watched it fire, restored, watched it pass:
+`HISTORY_MIN_YEAR`/`HISTORY_MAX_YEAR` are parsed out of the explorer's own clamp and compared
+(fired: "HISTORY_MIN_YEAR is 1997, the explorer clamps to 1998"); the Ledger must route through
+`splitByExplorerRange` + `historyYearHref` and may not build a raw `?year=` URL (fired); the
+closings push must sit inside a guard on `closedLast30Days` (fired); and the schools section
+must read both DAL constants and may not spell either in prose (fired twice).
+
+**Two route-local files** were added under `_v3/` (`history-door.ts`, `subdivision-registry.ts`);
+the registry helpers moved out of `page.tsx` to keep it under the `ci:file-size-budget` floor
+(595 → 582 LOC) rather than re-baselining, which is the gate's own instruction.
+
+**Verified on the rendered page, browser UA, localhost:3000, all HTTP 200:**
+`sunrise-village` — earliest year door is 1998, no 1997 link anywhere, note reads "The explorer
+runs from 1998 to 2030, so the 6 closings recorded here outside those years are in the total
+above and have no row", schools sentence reads "at least 70 percent of at least 10", zero
+`<img>` inside `<main>`. `tollgate` — parent band with all three figures and the full basis
+sentence. `hillman` (parent Terrebonne, whose pulse row carries `sold_count_30d = 0` and a NULL
+days-to-pending) — one figure, and the trace reads "List price comes from active inventory.
+These are Terrebonne figures, not plat-level ones", with no closings figure and no orphan
+clause; before the guard this page published "0 closed in the last 30 days". The door itself:
+`/housing-market/history?year=1998&city=Bend` renders "Active query 1998 · Bend". The two
+conditional branches were forced to render rather than reasoned about — `MAX_LISTED` temporarily
+2 printed "The map plots all 3 active single-family listings that carry coordinates", and
+`HISTORY_MIN_YEAR` temporarily 2027 printed the empty-Ledger branch with its stated reason
+instead of throwing. Both constants restored, gate green.
+
+**Not this unit's, unchanged:** `ci:file-size-budget` on `SellerLPForm.tsx` (+8) and
+`ci:reachable-exports` on the same 12 orphans from the cities / communities / zip / sell units.
+
+## 2026-08-12 — `/communities/[slug]` repair pass (five defects, one of them live in an H1)
+
+Five findings against the v3 community node, every one of them published copy, none of them
+visible to a gate. Fixed in `app/communities/[slug]/page.tsx`, its `_v3/` modules, and the
+parity contract.
+
+**1. Three values of one statistic on one page.** The Instrument printed months of supply
+through `Math.round(mos * 10) / 10` + `toFixed(1)` — the exact expression
+`lib/site/market-faq.ts` had replaced in this same changeset, for the reason written in its own
+comment. At a raw 4.02 the figure read 4.0 under a threshold clause saying 4 or less is a
+seller's market, while the FAQ answer and the Dataset variable, which go through
+`formatMonthsOfSupply`, both read 4.1. The page now calls the canonical formatter and the
+builder takes a preformatted string.
+
+**2. A verdict and a count that refuted each other, in the H1.** `/communities/vandevert-ranch`
+rendered "Vandevert Ranch homes for sale: a buyer's market" over "0 homes for sale" and "72.0
+months of supply", with the formula printed underneath. The pulse row computes the ratio from
+ITS own active count, and that has never been the count this page publishes: vandevert-ranch 12
+against 0, tetherow 20 against 36, broken-top 205 against 21 (verified against
+`market_pulse_live`, geo_type `neighborhood`, 2026-08-12). Tetherow's own 36 actives against the
+same denominator give 9.0 months, a buyer's market, under an H1 that said balanced. Months of
+supply and the H1 verdict now publish ONLY when the row's numerator is the count on screen —
+which is exactly the communities whose count came from that row. `/communities/three-rivers` is
+the one that still prints it: 91 actives, 16.1 months, "a buyer's market", the same 16.1 in the
+figure, the FAQ answer, and the Dataset variable. Every other community drops the figure, the
+verdict, the FAQ question, and the variable together, from the one `buildMarketFaq` call. Days
+to pending survives the same disagreement: no printed formula, no verdict, and its own named
+source in the trace.
+
+**3. Doors and denominators that named sets the page does not hold.** The count linked to
+`/homes-for-sale/<city>/<subdivision>`, which filters on the literal MLS SubdivisionName and
+published 30 where this page published 36 — the undercount the alias-aware count exists to
+correct, proved by this page's own link to 19504 Century Drive under the subdivision "Roald
+West". A tile-sourced count now links to the Field on this page, which holds those exact homes;
+the browse door stays with a label that names the search rather than claiming completeness. The
+footnote's new sentence "Every one of them is on the browse page" was false and is gone, its
+denominator is the list's own set rather than the plotted subset (which had named rows that are
+not on the map, and had gone silent entirely whenever fewer than 24 homes plotted), and the map
+discloses the plotted subset in its own note. The Field is also fed the COUNTED set now, so the
+count, the map, and the list cannot describe three populations.
+
+**4. An undeclared user-facing deletion: the freshness signal.** The KB page rendered "Market
+data updated <label>"; the migration replaced it with the Instrument's `updated` prop, which
+reads the live pair's stamp — null on the alias, boundary, and subdivision-name branches, so it
+never rendered on a resort or a plain subdivision while the Dataset went on publishing
+`dateModified`. The line is back in the closing block's note, off the same `asOfLabel`/`asOfIso`
+pair, and `parity.json` now names it (it was in no `removedComponents` entry).
+
+**5. Two more things left with the honeypot, and only the honeypot was declared.** The sheet had
+also lost "One email per new listing. Unsubscribe any time." and the post-success route to
+manage the subscription. `V3Sheet` has a sheet-level `trap` prop, so the honeypot is restored
+through the barrel and the sheet forwards the trap's own answer instead of a hardcoded
+`company: ''`; both disclosure lines are step prose; and the manage route is a door in the
+closing block, because V3Sheet renders prose rather than nodes. That last one is the section's
+one remaining barrel gap.
+
+**The fixer wrote the gates** (§6, `feedback_gates_not_prose`), both break-tested in both
+directions:
+
+- **G68**, check 3 of `ci:market-formula`: no public surface rounds months of supply itself.
+  Case-sensitive matching on purpose — under `/i` the guard `mos(?![a-z])` also rejects an
+  uppercase next character, so `mosRaw` and `mosDisplay`, the two identifiers the rule exists to
+  catch, fell silently out of scope. Frozen shrink-only ledger: 19 call sites across 14 files,
+  video and CMA included.
+- **G67**, `ci:alert-capture-disclosure`: every surface calling `submitSearchAlertSignup` renders
+  a honeypot (register-aware: the v3 `trap` prop or the KB hidden input), forwards its value,
+  states a send frequency in copy a visitor reads, and states an unsubscribe path. An earlier cut
+  accepted the bare token `daily` as the frequency statement, which every one of these files
+  carries as `buildAlertCreatePayload('daily')` — a code literal no visitor reads — so the rule
+  passed on all eight surfaces and meant nothing. Ledger names which requirement each of the five
+  pre-existing surfaces fails; `/communities` passes all four.
+
+**Verified on the rendered page, browser UA, localhost:3000, 17 community routes, all HTTP 200.**
+`tetherow`: H1 with no verdict, 36 / $1,475,000 / 20.5 days to pending, trace naming only days to
+pending from the pulse row with no months-of-supply formula or thresholds, "Listed here: the 24
+highest-priced of the 36 active single-family homes in Tetherow", no Months of Supply variable in
+the Dataset, `name="company"` inside `.v3-sheet-trap`, "Market data updated August 2026".
+`vandevert-ranch`: H1 with no verdict, "0 homes for sale", and the Field reading "No single-family
+home is listed for sale in Vandevert Ranch right now" instead of a sentence that read like an
+outage. `three-rivers`: all four surfaces agree at 16.1 and "a buyer's market", and its empty
+Field states why it is empty — the count came from a mart row that carries no listings, because
+its homes are not filed under its registry city. `eagle-crest` in one render: 95 in the
+Instrument, 95 on the map, 95 in the footnote, 95 in the FAQ.
+
+**Not this unit's, unchanged from the pre-edit baseline:** `ci:file-size-budget` on
+`SellerLPForm.tsx` (+8), `ci:design-tokens` on the same file, and `ci:reachable-exports` on the
+11 orphans from the cities / communities / zip / sell units. Reported, not touched: the browse
+route has no alias-aware mode, so `/homes-for-sale/<city>/<subdivision>` will keep publishing a
+smaller number than the community page until that route learns the alias set.

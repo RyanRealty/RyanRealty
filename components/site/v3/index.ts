@@ -121,6 +121,7 @@ export { V3Sheet } from './V3Sheet'
 export type {
   V3SheetProps,
   V3SheetStep,
+  V3SheetTrap,
   V3SheetField,
   V3SheetOption,
   V3SheetProse,

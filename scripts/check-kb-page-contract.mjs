@@ -89,8 +89,35 @@ for (const p of kbPages) {
   if (s.includes('buildMarketFaq')) {
     if (!/<MetadataBlock[\s/>]/.test(s))
       fails.push(`${p}: computes market FAQ/Dataset but does not render <MetadataBlock> (JSON-LD never emitted)`)
+    // WHAT THIS LOCKS IS THE FALLBACK, NOT ITS SPELLING (widened 2026-08-12).
+    // Two shapes carry a market-pulse fallback, and both keep the JSON-LD alive
+    // when the row is slow or missing:
+    //
+    //   buildMarketFaq(name, pulse ?? { ...verified figures })      the KB shape
+    //   pulse ? buildMarketFaq(name, pulse) : fallbackSet(...)      the branch shape
+    //
+    // Only the first was accepted, which failed the v3 neighborhood page for
+    // doing the STRICTER thing. buildMarketFaq's prose is written for the
+    // single-family population ("There are N active single-family listings in
+    // X"), so a page whose fallback numbers are a DIFFERENT population cannot
+    // route them through `??` without publishing them under the wrong name in the
+    // visible Q&A, the FAQPage markup and the Dataset variables at once — the
+    // §0 defect that repair closed on /cities/<city>/<neighborhood>. A page that
+    // branches can name what it actually read. Rejecting the branch shape pushed
+    // pages back toward the mislabel, so the rule now recognizes it.
+    //
+    // The branch arm must be a CALL, i.e. a builder that returns a set. The
+    // regression this rule exists to catch — `pulse ? buildMarketFaq(...) : null`,
+    // where the structured data simply vanishes — still fails. The branch arm is
+    // matched against COMMENT-STRIPPED source so prose describing a fallback
+    // cannot stand in for one; the two original arms keep reading the raw text
+    // exactly as before, so no page that passes today starts failing.
     const resilient =
-      /buildMarketFaq\([^)]*\bpulse\s*\?\?/.test(s) || /pulse\s*\?\?\s*\{[\s\S]*?\}/.test(s)
+      /buildMarketFaq\([^)]*\bpulse\s*\?\?/.test(s) ||
+      /pulse\s*\?\?\s*\{[\s\S]*?\}/.test(s) ||
+      /\bpulse\b\s*(?:!=\s*null\s*)?\?(?!\.)[\s\S]{0,300}?buildMarketFaq\([\s\S]{0,300}?:\s*[A-Za-z_$][\w$]*\s*\(/.test(
+        stripComments(s),
+      )
     if (!resilient)
       fails.push(
         `${p}: market structured data has no pulse-timeout fallback (pulse ?? snapshot) — JSON-LD vanishes on a slow/missing market row`,

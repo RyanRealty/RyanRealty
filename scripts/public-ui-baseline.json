@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 674,
-    "legacyPages": 83,
-    "mixedPages": 1
+    "nonV3ImportSites": 527,
+    "legacyPages": 73,
+    "mixedPages": 11
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -215,14 +215,14 @@
       "kb": 7
     },
     "app/cities/[slug]/[neighborhoodSlug]/page.tsx": {
-      "kb": 23,
-      "legacy": 3,
-      "explore": 2
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/cities/[slug]/page.tsx": {
-      "kb": 24,
-      "explore": 1,
-      "legacy": 3
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/cities/page.tsx": {
       "legacy": 2,
@@ -232,9 +232,9 @@
       "legacy": 1
     },
     "app/communities/[slug]/page.tsx": {
-      "kb": 26,
-      "explore": 2,
-      "legacy": 3
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/communities/page.tsx": {
       "legacy": 2,
@@ -281,13 +281,14 @@
       "primitives": 1
     },
     "app/housing-market/annual-review/page.tsx": {
-      "legacy": 5,
-      "kb": 6,
-      "primitives": 1
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/housing-market/central-oregon/page.tsx": {
-      "kb": 11,
-      "legacy": 5
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/housing-market/history/page.tsx": {
       "kb": 5,
@@ -323,8 +324,9 @@
       "legacy": 1
     },
     "app/months-of-supply/page.tsx": {
-      "legacy": 4,
-      "primitives": 1
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/motivated-sellers/[city]/page.tsx": {
       "legacy": 1,
@@ -351,8 +353,9 @@
       "legacy": 1
     },
     "app/oregon/[city]/page.tsx": {
-      "kb": 11,
-      "legacy": 1
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/our-homes/page.tsx": {
       "kb": 8
@@ -382,7 +385,8 @@
       "legacy": 1
     },
     "app/pulse/page.tsx": {
-      "kb": 6
+      "v3": 1,
+      "kb": 1
     },
     "app/reports/[slug]/page.tsx": {
       "kb": 6
@@ -430,9 +434,9 @@
       "kb": 4
     },
     "app/subdivisions/[slug]/page.tsx": {
-      "explore": 2,
-      "kb": 9,
-      "legacy": 2
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/team/[slug]/edit/page.tsx": {
       "legacy": 1
@@ -463,8 +467,9 @@
       "kb": 6
     },
     "app/zip/[zip]/page.tsx": {
-      "kb": 13,
-      "legacy": 2
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     }
   }
 }

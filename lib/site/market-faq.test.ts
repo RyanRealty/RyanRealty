@@ -33,33 +33,45 @@ describe('buildMarketFaq', () => {
   })
 
   // CLAUDE.md section 0: "Never round in a way that changes the narrative."
-  // Rounding months-of-supply BEFORE classifying it walks the verdict across a
-  // canonical boundary in both directions. These two cases are the boundary.
-  it('classifies the RAW months of supply and rounds only for display', () => {
+  // Rounding months-of-supply BEFORE classifying it walks the VERDICT across a
+  // canonical boundary in both directions; rounding it naively for display walks
+  // the DIGITS across the same boundary, so the answer printed "4 months of supply,
+  // which is a balanced market" and then appended a threshold sentence calling 4
+  // months or less a seller's market. These two cases are the boundary, and both
+  // halves are asserted: the verdict comes from the raw value, and the printed
+  // figure stays on the raw value's side of the threshold (formatMonthsOfSupply).
+  it('classifies the RAW months of supply and prints digits on the same side of the threshold', () => {
     const justOverFour = buildMarketFaq('Central Oregon', {
       monthsOfSupply: 4.02,
       refreshedAt: null,
     })
     const over = justOverFour.faqs.find((f) => f.question.includes("buyer's or seller's"))
-    expect(over?.answer).toContain('4 months of supply') // displayed rounded
+    expect(over?.answer).toContain('4.1 months of supply') // 4.02 never prints as 4.0
+    expect(over?.answer).not.toContain('4 months of supply, which')
     // Assert the VERDICT clause, not a bare substring: the shared threshold
     // sentence appended to this answer names all three verdicts by design, so a
     // substring check for "seller's market" now matches the explanation rather
     // than the classification it is meant to protect.
     expect(over?.answer).toContain('which is a balanced market') // classified raw: 4.02 > 4
     expect(over?.answer).not.toContain("which is a seller's market")
+    // The Dataset variable is the machine-readable copy of the sentence, so it
+    // carries the number the sentence shows, not a second rounding of the raw value.
     expect(
       justOverFour.datasetVariables.find((v) => v.name === 'Months of Supply')?.value,
-    ).toBe(4)
+    ).toBe(4.1)
 
     const justUnderSix = buildMarketFaq('Central Oregon', {
       monthsOfSupply: 5.97,
       refreshedAt: null,
     })
     const under = justUnderSix.faqs.find((f) => f.question.includes("buyer's or seller's"))
-    expect(under?.answer).toContain('6 months of supply') // displayed rounded
+    expect(under?.answer).toContain('5.9 months of supply') // 5.97 never prints as 6.0
+    expect(under?.answer).not.toContain('6 months of supply, which')
     expect(under?.answer).toContain('which is a balanced market') // classified raw: 5.97 < 6
     expect(under?.answer).not.toContain("which is a buyer's market")
+    expect(
+      justUnderSix.datasetVariables.find((v) => v.name === 'Months of Supply')?.value,
+    ).toBe(5.9)
   })
 
   it('visible numbers and dataset variables come from one source (cannot diverge)', () => {

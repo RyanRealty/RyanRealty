@@ -1,7 +1,7 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.6 plan. D8 locked (Matt). D4–D7 and D9 agent-locked toward the goals (Matt 2026-08-12: technical calls are ours). D1–D3 still open.
+**Status:** v0.7 plan. D1–D9 locked. Technical calls are agent-made.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -33,7 +33,8 @@ goes, even if it is shipped, gated, or "dialed in."
   behind a panel nobody opens, replace it.
 - **Still inviolable (not "existing code" — law and license):** draft-first
   to real people, suppression fail-closed, no invented numbers, no
-  prior-agent blame, OREF blanks stay licensed, SkySlope is not the SoR.
+  prior-agent blame, OREF blanks stay licensed. SkySlope is the **live file
+  until cutover** (D2). After cutover it is not the SoR.
 - **Process/IA locks named the jobs and destinations.** They did not freeze
   the implementation. Design amnesia already said this for chrome. It now
   applies to workflows, data joins, and "don't rebuild" advice in v0.
@@ -44,10 +45,10 @@ Matt will not answer technical shape questions. The agent makes the best call
 toward the goals, records it in this file, and keeps moving. Matt overrides
 if the call is wrong.
 
-**Matt still decides (stop):** outbound to real people, money/ads, OAuth logins
+**Matt still decides (stop):** outbound to real people (the actual send), money/ads, OAuth logins
 he must click, license/forms, named-artifact taste ("does this packet blow them
-away"), product meaning (what we send a buyer, what "Parallel" is, wake-up vs
-Today).
+away"). Product meaning that is still open: none of D1–D9. New product meaning
+gets a plain-language question, then a lock.
 
 **Agent decides (do not stop):** atom vs pattern, which quarry piece, schema/join,
 SEO title mechanics, default operating grants that still honor draft-first,
@@ -64,14 +65,14 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 |---|---|---|---|
 | A1 | **Prompt obesity.** Four iterations concatenated. An executing agent will skip the middle. | Constitution must fit one screen. Method lives here. | Split: short prompt → this file |
 | A2 | **Four loops, one week.** Copilot + Closings + expired/FSBO + buyer/newsletter is a quarter, not a grind tick. | Sequence or nothing ships. | P1 = copilot queue + one seller packet + one buyer signal. Forms after. |
-| A3 | **"Send them a CMA" for a buyer looking at a home.** Locked engine: CMA = sellers, BPO = buyers/offer, expired-audit = expired. A seller CMA on a listing a buyer is touring is the wrong artifact. | Silent override would fork the product. | **Matt decision D1** |
+| A3 | **"Send them a CMA" for a buyer looking at a home.** Locked engine: CMA = sellers, BPO = buyers/offer, expired-audit = expired. A seller CMA on a listing a buyer is touring is the wrong artifact. | Silent override would fork the product. | **D1 LOCKED (agent, Matt said make the call).** Ask first, in a short clear text. If they say yes, send a **buyer** packet (how it compares / what to think about offering) — never a seller CMA. |
 | A4 | **Newsletter is not the only buyer door.** Saved search, guest alerts, portal, listing inquiry, call/text, Meta already create buyer people. Building only newsletter orphans hotter signals. | Honor newsletter as the named capture. Do not delete the others. | Newsletter = curated edition + capture. Saved-search/portal = behavior SoR. Copilot reads both. |
 | A5 | **Behavior events exist; the product does not.** `visitor_events` already records listing_view / search / scroll / click / save. A contact panel can summarize them. That is quarry, not the copilot loop. If the join, the FUB-id leftover, or the panel-nobody-opens is why Matt cannot say "who is looking at what" in one sentence, replace the machine. | "Already tracked" is not "already useful." | Keep event facts if they are true. Rebuild the product surface (queue sentence, identity stitch, one-yes send) without loyalty to the current panel or join. |
-| A6 | **"Every scroll" will drown Today or feel like surveillance.** Matt's wake-ups are inbound-human (valuation, new lead, reply-on-thread). Hot-visitor was MERGE→broker-alert and was NOT in the wake list. | Unranked pings make the copilot unusable. | Rank: reply > looking-at-a-home (identified, repeated) > newsletter signup. Digest the rest. Honor GPC. |
+| A6 | **"Every scroll" will drown Today or feel like surveillance.** Matt's wake-ups were inbound-human. Hot-visitor was MERGE→broker-alert and was NOT in the wake list. | Unranked pings make the copilot unusable. | **D3 LOCKED (Matt: text me like a new lead).** Wake the assigned broker on an identified person looking at a **specific home**. Not every scroll. One ping per person+listing per session. Honor GPC. Text is short. |
 | A7 | **"Blow them away" / "designer's eye" is untestable.** Brand-voice gates banned words, not beauty. | Taste arguments will stall every packet. | Deliverable litmus: named exemplars (Tumalo CMA, approved newsletter shell, list-kit). If it is not in that league, it does not send. |
 | A8 | **Expired "how we will market THIS home" is not the generic services list.** `lib/cma/expired-audit.ts` layer 2 mirrors `/sell` "what every listing gets." List-kit is the real marketing machine. | C2 fails today by construction. | First packet = know-this-home (engine already has site intel) + this-home marketing plan (list-kit / sell plan, not a brochure). |
 | A9 | **TC "use soon" vs zero production envelopes.** July 2026 audit: `tc_envelopes` 0, `tc_principal_reviews` 0, no UI to create a deal, `/admin/deals` list reads stale SkySlope snapshot. Foundation is real. Daily use is not. | More schema is not the bottleneck. | First Closings slice: create-deal in UI + one licensed form fill/send/file to a Matt-owned email. Re-count live before building. |
-| A10 | **"Parallel" is undefined.** Could be TC_SYSTEM.md Phase 4 dual-file or a second vendor. | Wrong baseline. | **Matt decision D2** |
+| A10 | **"Parallel" is undefined.** Could be TC_SYSTEM.md Phase 4 dual-file or a second vendor. | Wrong baseline. | **D2 LOCKED (Matt).** SkySlope is the live TMS until in-house Closings is fully dialed, then cut over. Parallel = our system alongside, not a second vendor. Do not pretend in-house is the file today. |
 | A11 | **Speed vs beauty is not a conflict.** Litmus is kickoff speed (≤3 taps / ≤30s). Beauty is the artifact, draft-first. | Mixing them produces either slow kickoff or ugly PDFs. | Keep both. Copilot is fast. Packets are curated. |
 | A12 | **Identity hole.** Behavior joins `visitor_sessions` via `crm_person_id` / `fub_person_id` / email / `rr_vid`. A newsletter subscribe that never identifies the browser leaves browse history anonymous. | Loop D fails without stitch. | Newsletter signup must identify the session the same way seller LP + saved-search already do. |
 | A13 | **Worth-language vs SEO.** On-page CTA lock is "Value my home" / "Get my home's value." Search demand still uses "home worth." | Blunt rewrite of `<title>` can lose rankings. | CTA/headline/SMS = Value my home. Title/meta may keep demand language; call that out, do not silently smash SEO. |
@@ -91,6 +92,7 @@ It is the wrong shape for one agent session unless we sequence it. Findings:
 | A27 | **We flattened series into type.** Public v3 Instrument is a big number with no chart primitive in the barrel. Admin 11C replaced recharts sparklines with typographic figures + a plain polyline, citing "data is typographic." Market charts still live in KB (`KbMarketChart`, `MarketCoreCharts`, `PriceChart`). | A median without the line is not the market. Code that "has the number" is not visualization. | Series and comparisons get a chart. A singleton status stays type. Vanity KPI walls stay cut. |
 | A28 | **Code inspection cannot see a lying chart.** Gates catch hex, nesting, empty aria-labels. They do not catch a clipped Y-axis, a smear at 390, a tooltip that invents a number, or a sparkline that does not match the figure beside it. | Public OS already requires browser 390+1280. That is not yet a *chart* look. | Visual inspection is law: load the page, look at the chart, reconcile to the figure and the source. Screenshot or it did not happen. |
 | A29 | **A 7th public pattern would reopen P6.** The six are closed. Atoms may grow. | A "Chart" destination or a new OS is the death mode. | **D9 LOCKED (agent, 2026-08-12).** v3 chart **atom** inside Instrument (trend under the answer), not pattern 7. Admin charts use `--a-*`. Public session owns the public atom. |
+| A30 | **Identity lives in notes.** Matt has to read notes to learn "this person is an expired listing." Next step and "what are they doing right now" are not on the person. | A lead page that makes the broker hunt is the original "what am I supposed to do?" failure. | Person header always shows: who they are (expired / FSBO / buyer / …), **next step**, **what they're doing now**. Notes are history, not the label. |
 
 **Verdict:** The brief is right. The failure mode is either boiling the ocean
 **or** protecting yesterday's code. Sequence the loops. Keep only the machines
@@ -104,9 +106,18 @@ that already *are* the simple path. Cut the rest.
 
 "Tell me everyone I need to respond to." → Grok names the person, what they wrote or did, the one next action, the draft. Matt says yes. Grok does it. CRM records it.
 
-### Loop B — Closings (soon-use)
+**On the person, always, without opening notes:**
+- Who they are (expired listing, FSBO, buyer, …)
+- **What's the next step**
+- **What they're doing right now** (e.g. looking at 123 Main)
 
-SkySlope is the live file and the baseline (browser + API, read-only unless Matt names a mutation). In-house already has anticipate / envelope / seal / commissions / form blanks. Refine until a broker can pick a licensed form, fill it from the deal, send it, and file it. Easier than SkySlope. Brokers never build forms. New broker: access → own book → ground running.
+**Looking at a home wakes the phone** (D3): a short text to the assigned broker, same class as a new lead. Identified person + a specific home. Not every scroll.
+
+**SMS lock:** every text we send (to a lead or a broker) is clear, transparent, and concise. No extra stuff.
+
+### Loop B — Closings (SkySlope now, in-house until it wins)
+
+**D2 locked:** SkySlope is the primary transaction system today. We are building ours alongside it. We cut over when the full workflow is dialed. Until then SkySlope is the live file (browser + API, read-only unless Matt names a mutation). In-house already has anticipate / envelope / seal / commissions / form blanks — refine until a broker can pick a licensed form, fill it from the deal, send it, and file it, easier than SkySlope. Then cut over. Brokers never build forms. New broker: access → own book → ground running.
 
 ### Loop C — Known sellers (weekly, guaranteed stream)
 
@@ -114,7 +125,9 @@ Expired and FSBO are people we know are selling. First **message** and first **d
 
 ### Loop D — Buyers (newsletter + site behavior)
 
-Buyer leads come in when people sign up for the newsletter (named door). Newsletter is its own curated process — designer's eye, nothing ships that does not blow them away. In the back we see exactly what they looked at: homes, searches created, browse, scroll, clicks, learned-more. Copilot: "So-and-so is looking at this home." Matt: send a packet, or ask if they want one. Easy.
+Buyer leads come in when people sign up for the newsletter (named door). Newsletter is its own curated process — designer's eye, nothing ships that does not blow them away. In the back we see exactly what they looked at: homes, searches created, browse, scroll, clicks, learned-more.
+
+**D1 locked:** when they are looking at a home, we **ask first** in a short text, then send a **buyer** packet if they want it — not a seller CMA. Copilot still wakes the broker (D3). The ask to the lead is a yes from the broker, same as any other outbound.
 
 ### Loop E — Public site (the face, then forever refine)
 
@@ -183,6 +196,25 @@ Loop F still scores "how does this drive someone in" (including map-pack queries
 Never: "What's my home worth?" / "What is your home worth?"
 Always: **Value my home** or **Get my home's value** (Get your home's value when addressing them).
 
+### SMS lock
+
+Every text is **clear, transparent, and concise.** No extra stuff. Broker wake-ups and lead asks both obey this. Draft-first still binds on anything to a real person.
+
+Two different texts. Do not conflate them.
+
+- **Broker wake (D3):** `{name} is looking at {address}.` Person link. That is the whole message.
+- **Lead ask (D1):** after broker yes. We say we noticed the home, and ask if they want a short comparison / what to think about offering. If they say yes, send the buyer packet. No brochure, no seller CMA, no extra.
+
+### Person header lock
+
+Open a lead and the page answers three things without notes:
+
+1. Who they are (expired listing, FSBO, buyer, …)
+2. What's the next step
+3. What they're doing right now (e.g. looking at 123 Main)
+
+Notes are history. They are not the label.
+
 ### Beauty lock
 
 Everything we deliver is curated. Designer's eye. If it would not make them want to see what we are about, it does not go out.
@@ -243,7 +275,7 @@ is the thing we replace.
 | Own-book scope | `crm_people.assigned_broker` (Q4) | Paul/Rebecca see their book. Matt sees all. |
 | Prospecting worklist | `/admin/prospecting`, first-touch templates | Expired/FSBO stream machine |
 | TC foundation | `tc_*`, envelope engine, `/admin/forms`, ingest | Closings — unused in production |
-| SkySlope | Files API + Forms library API + Chrome session | Baseline + form blanks |
+| SkySlope | Files API + Forms library API + Chrome session | **Live TMS until cutover (D2).** Baseline + form blanks. Not a second SoR after cutover. |
 | Value my home lock | PUBLIC_SITE_UX_OVERHAUL + PUBLIC_PRODUCT decisions | CTA language — still violated in live copy |
 | GPC / suppression | `lib/crm/gpc.ts`, `lib/comms/guards.ts` | Fail-closed on watch + send |
 
@@ -256,7 +288,8 @@ is the thing we replace.
 - Reply-on-thread is **locked** to the wake rail and still only cell-forwards (`inbound-respond` §5.7).
 - No single ranked queue that speaks in Matt's sentence: everyone to respond to, plus "looking at this home."
 - Suggested reply exists; "yes → Grok sends" does not (broker still taps send in admin).
-- Visitor-hot is a fourth notification path, Matt-hardcoded, not assigned-broker.
+- Visitor-hot is a fourth notification path, Matt-hardcoded, not assigned-broker. D3 now requires a wake SMS like a new lead — join the wake rail, do not add a fifth inbox.
+- Person page does not lead with **next step** + **what they're doing now** + who they are (expired / FSBO / buyer). That is buried in notes.
 
 ### Known sellers (C)
 
@@ -271,7 +304,7 @@ is the thing we replace.
 - Newsletter subscribe + curated draft engine **exist**. Beauty bar is not gated.
 - Behavior exists on identified people. Newsletter-only email with no session identify = blind.
 - Copilot does not yet say "they're looking at 123 Main" with a one-yes send/ask.
-- Buyer packet on a specific home is unspecified (CMA vs BPO — D1).
+- Buyer packet is locked (D1): ask first, then a buyer comparison/offer packet — never a seller CMA. The packet itself is not built yet.
 - Listing alerts + portal are stronger *behavior* doors than newsletter; newsletter is the named *capture* door. Must join, not compete.
 
 ### Closings (B)
@@ -313,16 +346,13 @@ Until tokens are live, do not build a second publisher. Reconnect is the account
 
 ---
 
-## 4. Open decisions (Matt)
+## 4. Decisions
 
-**D1 — Buyer looking at a home: what do we send?**
-- (a) BPO / offer-strategy packet (locked engine meaning)
-- (b) A buyer-facing CMA on that listing (Matt's words)
-- (c) Ask first ("want us to send a value packet on 123 Main?") then (a) or (b)
+**D1 — Buyer looking at a home: what do we send?** **LOCKED (agent, Matt said make the call).** Ask first, in a short clear text (SMS lock). Shape: we noticed `{address}` — want a short comparison and what to think about offering? If they say yes, send a **buyer** packet. Never a seller CMA. The ask to the lead is a broker yes, same as any outbound.
 
-**D2 — What is "Parallel"?** Phase 4 dual-file with in-house TC, or a second vendor?
+**D2 — What is "Parallel"?** **LOCKED (Matt).** SkySlope is the primary TMS now. In-house Closings runs alongside until the full workflow is dialed, then we cut over. Not a second vendor. Until cutover, SkySlope is the live file.
 
-**D3 — Is "looking at this home" a wake-up SMS, or only a Today/copilot line?** Q1 wake-ups were inbound-human. Recommend: copilot/Today only unless they repeat-view or reply. Confirm.
+**D3 — Is "looking at this home" a wake-up SMS?** **LOCKED (Matt: B).** Text the assigned broker like a new lead. Identified person + a specific home. Not every scroll. One ping per person+listing per session. Short. Honor GPC. Shape: `{name} is looking at {address}.` + person link. Nothing else.
 
 **D4 — Newsletter vs saved-search as primary buyer capture.** **LOCKED (Matt named it; agent recorded).** Newsletter is the named capture. Saved-search/portal is the behavior graph. One person record.
 
@@ -336,10 +366,7 @@ Until tokens are live, do not build a second publisher. Reconnect is the account
 
 **D9 — Public chart: atom inside Instrument, or a 7th pattern?** **LOCKED (agent, technical).** Atom inside Instrument. The six patterns stay closed. A trend lives under the big answer. A 7th pattern would reopen P6. Public families must not delete a working KB chart without a v3 replacement in the same change. Flattening a series to a figure is a defect.
 
-Until D1–D3 are answered, build the queue + stitch + ask-first path. Do not auto-send a buyer CMA.
-G1 is GBP + Matt's primary IG + brand Facebook (D6). LinkedIn when that token is live.
-G3: first week per-item, then the D7 week-grant.
-D8 and D9 are locked. G4 and the public chart atom are unblocked on the decision.
+D1–D9 are locked. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. G4 and the public chart atom are unblocked on the decision.
 
 ---
 
@@ -361,7 +388,7 @@ If it does not, it is a candidate to cut or merge.
 Plus: **Chart** — if this is a series or a comparison, is it a chart (honest axes, source, empty state) or did we flatten it to a number?
 Plus: **Look** — was this data surface opened in a real browser at 390 and 1280 on live numbers this session? Code review is not the look.
 
-Loop C extra: Know / Market / Message / Voice / True / Stream.
+Loop A extra: Queue / Yes / Wake (D3) / Person (who / next / now) / SMS (short).
 Loop B extra: Libraries / Anticipate / Fill / Send / File / Onboard.
 Loop D extra: Capture (newsletter) / Identify (session stitch) / See (every home) / Recommend / Packet beauty.
 Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / Post (timed) / Learn (measured) / Local pack (GBP) / Home (Today: do / socials / deals / modify).
@@ -382,12 +409,15 @@ Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / 
 
 ### P1 — first complete loops (this is "start using it")
 
-1. **Copilot queue (A):** one ranked Today list: unreplied inbound + "looking at {address}" (identified, ranked) + CMA-ready + parked sequence. Sentence form. Assigned-broker scoped.
-2. **Yes-path for one SMS reply:** preload draft → Matt yes → `sendGovernedSms` → timeline. Do not build a new agent stack; reuse composer + reply-intent.
-3. **Seller first packet (C):** one expired (or FSBO) message + deliverable that (a) proves we know the house using existing site intel, (b) shows how we would market **this** house (list-kit / sell plan, not generic services). Still manual send.
-4. **Buyer see-back (D):** newsletter signup identifies the session; person shows homes/searches/scrolls; copilot can say "looking at {address}" and offer ask-or-send (blocked on D1).
-5. **Worth-copy inventory** (list path:line; public CTA rewrite is PUBLIC_PRODUCT, not this file's code).
-6. **Presence (G):** Matt reconnects brand GBP (and IG/FB if needed). One generate door that produces a real draft. One yes on Today. `publisher-sweep` posts it. A live GBP post or IG/FB post exists that we can open. Not a new brain.
+1. **Copilot queue (A):** one ranked Today list: unreplied inbound + "looking at {address}" (identified) + CMA-ready + parked sequence. Sentence form. Assigned-broker scoped.
+2. **Yes-path for one SMS reply:** preload draft → Matt yes → `sendGovernedSms` → timeline. Short, clear, no extra stuff.
+3. **Person header:** open a lead → who they are (expired / FSBO / buyer) + **next step** + **what they're doing now**. Notes are not the label.
+4. **Looking-at wake (D3):** identified person + a specific home → short SMS to the assigned broker, same class as a new lead. One per person+listing per session.
+5. **Buyer ask (D1):** after broker yes, a short ask to the lead; if they want it, a buyer packet — not a seller CMA.
+6. **Seller first packet (C):** one expired (or FSBO) message + deliverable that (a) proves we know the house, (b) shows how we would market **this** house. Still manual send.
+7. **Buyer see-back (D):** newsletter signup identifies the session; person shows homes/searches/scrolls.
+8. **Worth-copy inventory** (list path:line; public CTA rewrite is PUBLIC_PRODUCT).
+9. **Presence (G):** Matt reconnects brand GBP (and IG/FB if needed). One generate door. One yes. A live post we can open.
 
 ### P2 — make it a brokerage, not a demo
 
@@ -435,7 +465,10 @@ Loop G extra: Generate (calendar) / Variant (per channel) / Approve (one yes) / 
 | Slice | Done when | Blocked on |
 |---|---|---|
 | **A1** Copilot queue sentence | Matt can ask "who do I respond to" and the list is true (inbound + looking-at + ready docs) | None for a read-only prototype; write path needs composer reuse |
-| **A2** Yes → send one SMS | Timeline `sms_out`, suppression held, sequence paused | Matt yes on that send |
+| **A2** Yes → send one SMS | Timeline `sms_out`, suppression held, sequence paused. Text is short and clear. | Matt yes on that send |
+| **A3** Person header | Open an expired (or any lead): who they are, next step, what they're doing now — without notes | None |
+| **A4** Looking-at wake | Identified listing_view → short SMS to assigned broker, one per person+home per session | D3 locked. Join the existing wake rail. |
+| **A5** Buyer ask | After broker yes, lead gets a short ask; yes → buyer packet, not a seller CMA | D1 locked |
 | **C1** One expired blow-away packet | Message + PDF on a real expired in-scope listing, manual send, no generic services hero | Matt review of packet |
 | **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
 | **E1** Public giant push | Dedicated session: `run public product` until P9 legacy pages → 0 | **Already in flight.** Do not start a second E1. See §7b live status. |
@@ -668,17 +701,26 @@ IMPLEMENTATION AMNESIA: existing code and existing process must not keep us
 from the right thing. Jobs stay. Current how is a quarry — steal what is
 already the simple machine, replace what is in the way. "We already have it"
 is not a veto. Still inviolable: draft-first, suppression, no invented
-numbers, no prior-agent blame, licensed forms, SkySlope is not the SoR.
+numbers, no prior-agent blame, licensed forms. SkySlope is the live TMS until
+cutover (D2); then it is not the SoR.
+
+WHO DECIDES: Matt — OAuth clicks, money/ads, license, named-artifact taste,
+and product meaning asked in plain language. Agent — technical shape, recorded
+here. Do not stop to ask atom-vs-pattern. D1–D9 are locked.
 
 NORTH STAR — seven loops, one person record, one generation of code
   A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
-  B Closings: licensed forms → fill from deal → send → file. SkySlope is live baseline
-    (browser+API, read-only). In-house should become the file we actually use. Soon.
+    On a person, always, no notes required: who they are, next step, what they're
+    doing now. Looking at a home wakes the assigned broker like a new lead (D3).
+    SMS: clear, transparent, concise. No extra stuff.
+    Wake: "{name} is looking at {address}." Ask: noticed the home; want a comparison?
+  B Closings: SkySlope is primary until in-house is dialed, then cut over (D2).
+    Licensed forms → fill from deal → send → file. Brokers never build forms.
   C Known sellers: expired + FSBO. First message + first packet blow them away:
     know THIS home, market THIS home. Manual first touch.
-  D Buyers: newsletter is the named capture and a curated, beautiful edition.
-    Back office sees every home they viewed, searches they saved, browse/scroll/click.
-    Copilot: "So-and-so is looking at this home" → send or ask to send a packet.
+  D Buyers: newsletter is the named capture. Back office sees every home they
+    viewed. Looking at a home: ask first in a short text, then a buyer packet
+    if they want it — never a seller CMA (D1). Broker yes before the ask.
   E Public site: wrap the locked v3 UI across every public page (Public Product OS
     P9 grind — already in flight; do not start a second session on those files),
     then forever refine. Do not start a third redesign.
@@ -705,6 +747,7 @@ FUNNEL: on every page, how does this drive a buyer or seller in. If it does not,
 cut or merge.
 
 VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
+SMS: clear, transparent, concise. No extra stuff.
 BEAUTY: outbound blows them away. Admin is a finished instrument (ADMIN_UI), not a
 marketing page. If it would not make them want to see what we're about, it does not send.
 CHARTS: a series or comparison is a chart — honest axes, source, empty state.
@@ -720,11 +763,10 @@ disk, then the skills that match the loop you are scoring.
 
 Score every locked process: best / simple / clear / e2e / funnel / chart / look — on the job, then
 say whether the current how should be kept or replaced.
-Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/C1/D1/B1/E1/F1/G1/G2/G3/G4/V1/V2.
-Stop for Matt on D1–D3, OAuth logins, money/ads, license, and named-artifact taste.
-Technical shape (atom vs pattern, quarry piece, SEO title mechanics, D7-class
-operating grants) is decided in this file toward the goals. Do not ask. Record it.
-D4–D9 are locked. Then wait only on D1–D3.
+Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/A3/A4/A5/C1/D1/B1/E1/F1/G1/G2/G3/G4/V1/V2.
+Stop for Matt on OAuth logins, money/ads, license, and named-artifact taste.
+Technical shape is decided in this file toward the goals. Do not ask. Record it.
+D1–D9 are locked. Then wait only on those stop classes.
 ```
 
 ---
@@ -740,3 +782,4 @@ D4–D9 are locked. Then wait only on D1–D3.
 - 2026-08-12 — D8 LOCKED (Matt): his Instagram is the primary IG. Brand FB/LI/GBP are the brokerage. Each broker hooks up their own Instagram, Facebook, LinkedIn, and the rest of the live set. Variants, never the same file twice. GBP is not per-broker. G4 unblocked on the decision.
 - 2026-08-12 — v0.6 charts + look. Series must be charts; visual inspection in a real browser is law (code review is not the look). v3 has no chart atom; admin 11C dropped sparklines. D9: recommend atom inside Instrument, not pattern 7. Slices V1/V2. Public chart work stays with the public session.
 - 2026-08-12 — Who decides: Matt will not answer technical shape. Agent makes the best call toward the goals and records it. D9 LOCKED: v3 chart atom inside Instrument, not pattern 7. Also agent-locked D4 (newsletter capture), D5 (worth-language in title/meta only), D6 (GBP+IG+FB+LI live; YT/X reconnect; Threads/ND/Pin parked), D7 (first week per-item, then 7-day grant). Stop only on D1–D3, OAuth, money, license, named taste.
+- 2026-08-12 — v0.7 D1–D3 locked. D2: SkySlope is live TMS until in-house is dialed, then cut over. D3: looking-at-a-home wakes the broker like a new lead (identified home, not every scroll). D1 (agent): ask first in a short text, then a buyer packet — never a seller CMA. SMS lock: clear, transparent, concise. Wake = `{name} is looking at {address}.` Ask = noticed the home; want a comparison? Person header: who they are, next step, what they're doing now — not in notes. Slices A3/A4/A5.

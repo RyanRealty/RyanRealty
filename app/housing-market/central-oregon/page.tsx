@@ -1,192 +1,164 @@
 /**
- * Central Oregon region market report — KB (kinetic-brutalist) design.
+ * /housing-market/central-oregon - the Central Oregon region report, on the
+ * components/site/v3 barrel.
  *
- * Converted from Wave 2 site blocks to the KB section library (Phase 9,
- * docs/KB_CONVERGENCE_ROADMAP.md). Reuses components/site/kb/* AS-IS; no fork.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Market
+ * destinations open on Instrument. Four of the six patterns, no two adjacent alike.
+ * The section order, the sections this migration DELETED from the KB page, and the
+ * per-section reasoning are the parity contract, not this comment:
+ * design_system/ryan-realty/ui_kits/market-report-region/parity.json.
  *
- * THE PAGE CONTRACT: KB design + SEO (pageMetadata + MetadataBlock JSON-LD:
- * BreadcrumbList/WebPage/Dataset/FAQPage) + KbSectionTracker pageType="market-report".
- * Every figure live and traced to a @/lib/data source (§0).
+ * THE RHYTHM HOLDS IN THE DEGRADED STATES TOO. A section that disappears when its read
+ * comes back empty takes its half of the alternation with it, so the sections that
+ * would otherwise leave two of a kind touching are unconditional and each one has a
+ * declared empty form: the opening becomes a level-1 Quiet, the cities and closed-sales
+ * Ledgers state a zero-row read in their own words, and the FAQ Quiet says it has no
+ * answers instead of vanishing. Two sections stay conditional because their neighbours
+ * are already unlike each other. The pace Instrument sits between a Quiet and a Ledger,
+ * and the guides Ledger between a Quiet and the Sheet.
  *
- * Section order:
- *   1. MetadataBlock    — BreadcrumbList + WebPage + Dataset JSON-LD (AI-citability G34)
- *   2. KbNav            — KB chrome
- *   3. KbSectionTracker — page-level analytics (pageType="market-report")
- *   4. KbBreadcrumb     — Home > Housing market > Central Oregon
- *   5. SmoothScrollProvider wrapper
- *   6. KbHero           — region eyebrow + glance lede
- *   7. KbMarketHud      — region KbMarketData (§0-traced figures + yearSeries)
- *   8. KbExploreTowns   — per-city tiles with live active counts
- *   9. KbArticles       — related reports/guides from blog_posts
- *  10. FAQBlock         — region FAQ (includeJsonLd=true → FAQPage JSON-LD)
- *  11. KbSell           — seller conversion
- *  12. KbFooter         — full sitemap close
+ * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata,
+ * MetadataBlock JSON-LD (BreadcrumbList, WebPage, Dataset, FAQPage), a rendered
+ * KbSectionTracker with pageType="market-report", revalidate 300, and the route.
+ * MetadataBlock and KbSectionTracker stay on the KB register deliberately: both are
+ * wiring, neither is visual language, and the barrel ships no equivalent.
  *
- * Data accuracy (CLAUDE.md §0):
- *   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
- *                   property_type='A'. Freshness 10-15 min. Source: getMarketPulse.
- *   priceHistory  — market_stats_cache region rows. Source: getPriceHistory.
- *   citySnapshots — market_pulse_live, geo_type='city', cityLabels in CITY_LABELS.
- *                   ONE call. Source: getMarketPulseCitySnapshots.
- *   blogPosts     — blog_posts, published, newest first. Source: getRecentBlogPosts.
- *   Dataset.dateModified = regionPulse.refreshedAt (real DB timestamp, never now()).
- *   buildMarketFaq is the single source feeding FAQ, FAQPage JSON-LD, and
- *   Dataset variableMeasured, so the three surfaces cannot diverge.
+ * The six invariants this file is written to hold, each enforced at its own site:
  *
- * Parity contract: design_system/ryan-realty/ui_kits/market-report-region/parity.json
+ *  1. ONE DERIVATION, IT CLASSIFIES THE RAW VALUE, AND IT PRINTS ON THE SAME SIDE OF
+ *     THE THRESHOLD IT CLASSIFIED. marketVerdict reads mosRaw, the screen reads mosRaw
+ *     through formatMonthsOfSupply, and buildMarketFaq gets mosRaw and repeats those
+ *     two steps in that order. Rounding BEFORE classifying is what the ordering
+ *     prevents: 4.02 rounds to 4.0, `4.0 <= 4` prints "a seller's market", and
+ *     lib/market/classify.ts calls it balanced. Rounding for DISPLAY reopens the same
+ *     contradiction from the other end, which is the whole reason
+ *     lib/format/months-of-supply.ts exists (design-audit P2). Naive rounding prints
+ *     "4.0" beside a headline reading "a balanced market" and, one line below both,
+ *     MOS_THRESHOLD_CLAUSE reading "4 months of supply or less is a seller's market":
+ *     three surfaces in one viewport, one of them contradicting the other two, on a
+ *     licensed-broker page. The formatter prints 4.1 for a stored 4.02 and 5.9 for a
+ *     stored 5.97, so the digits never cross a boundary the raw value did not. The KB
+ *     page derived the band a third time inside its hero lede with the thresholds
+ *     inlined, but both places it PRINTED the figure went through this formatter, and
+ *     that half of its discipline is carried across here.
+ *  2. ONE GUARD PER FIGURE, SHARED WITH ITS CONSUMER. Every region figure ships on the
+ *     condition buildMarketFaq applies to that same figure (`!= null && > 0`, not
+ *     merely non-null), so the Instrument can never print a figure the shared builder
+ *     declined to answer for and the Dataset carries no variable behind. At a stored 0
+ *     that is the difference between "$0 / median list price", linked to the listings
+ *     browse path under a live-MLS source line, and no figure at all. The KB lede
+ *     guarded only on non-null and would have printed "A seller's market" beside
+ *     "0.0 months of supply" with no FAQ answer behind it.
+ *  3. ONE TRACE PER POPULATION, ONE STAMP PER TRACE, AND THE TRACE COVERS EVERY FIGURE
+ *     ITS SECTION PRINTS AND NOTHING IT DOES NOT. Four populations reach this page and
+ *     no section borrows another's figures or another's clock. The region row alone
+ *     carries two: an active-inventory median and count beside a pace figure and a
+ *     30-day closing count, both computed from homes that CLOSED. The page used to
+ *     print all five under one line that named only the active set. It now gives the
+ *     closed pair its own Instrument (id="pace"), because splitting the section is the
+ *     honest fix and widening the line was not: the widened line ran thirteen lines at
+ *     390 and pushed the section's ask below the fold, trading one defect for the one
+ *     next to it. The cities Ledger cannot be split the same way, since each row
+ *     interleaves both populations, so its source line names both. A trace narrower
+ *     than the figures is a figure with no trace at all, and a trace wider than them is
+ *     a claim with nothing behind it, so each one is assembled from the figures that
+ *     actually rendered.
+ *  4. ABSENT IS NOT ZERO (CLAUDE.md section 0). A covered city with no live row is
+ *     not printed as "0 active" under a live-MLS source line.
+ *  5. THIS PAGE CARRIES ITS OWN VISIBLE PRIMARY (PUBLIC_UI.md section 1). The rule
+ *     counts VISIBLE filled controls, and the chrome's CTA counts only where the
+ *     chrome actually shows it. The header's filled valuation CTA (`.nav-cta`,
+ *     components/site/kb/kb.css) is `display:none` until 880px, and its twin sits in
+ *     the closed Menu+ overlay below that, so "the header carries the primary at every
+ *     scroll position" is FALSE at 390px. That premise was the stated ground for a
+ *     ghost ask here until 2026-08-12, and it shipped a first viewport with no ask at
+ *     all. The Instrument's action is therefore `primary`, and it is the only filled
+ *     control on the page above the inquiry Sheet. The closing Quiet repeats the
+ *     valuation door as a text edge, which is never filled, and V3Footer carries no
+ *     button. One visible primary in the first viewport at 390 and at 1280.
+ *  6. EVERY VALUATION DOOR CARRIES ITS ORIGIN, AND ONE BUILDER MAKES IT. Both doors
+ *     come from `valuationHref(PAGE_PATH)` (lib/site/valuation-href.ts), the one way
+ *     to build a valuation link on a content surface. It appends
+ *     `?from=/housing-market/central-oregon` and keeps the spine's anchor last. The KB
+ *     pages assembled that query string inline, one page at a time, and the first v3
+ *     wave dropped it on four routes at once for exactly that reason (2026-07-15
+ *     conversion audit, migration-recipe.md addendum 2026-08-11). This page previously
+ *     built its own string against /sell/valuation, which ia-lock.md schedules for a
+ *     301 into the single intake spine at /sell#get-value, and a 301 drops the query
+ *     string with it. Carrying the parameter is this page's half of the contract.
+ *     Reading it is the spine's half, and the spine's form posts a hardcoded pagePath
+ *     today, which is a defect filed against that unit rather than a claim made here.
+ *
+ * DATES RENDER IN PACIFIC, a change from the KB page, stated rather than absorbed.
+ * The KB guides rail formatted with `timeZone: 'UTC'` and formatDate is pinned to
+ * America/Los_Angeles, so a post published between 00:00 and 08:00 UTC now shows the
+ * previous calendar day, which is the correct day in the market this page covers.
+ * ci:date-format requires the canonical formatter, so the trade is not optional. The
+ * KB methodology trace already formatted in Pacific, so that stamp is unchanged.
  */
 
 import type { Metadata } from 'next'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import {
   getMarketPulse,
   getMarketPulseCitySnapshots,
-  getPriceHistory,
   getRecentBlogPosts,
 } from '@/lib/data'
 import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
+import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { buildYearSeries } from '@/lib/kb/year-series'
-import { getSurfaceImage } from '@/lib/data/media/getSurfaceImages'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import type { KbMarketData, KbTownItem } from '@/components/site/kb/types'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
-import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
-import { KbArticles } from '@/components/site/kb/KbArticles'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { MarketSources } from '@/components/site/MarketSources'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { ContentSection } from '@/components/site/ContentSection'
-import { LeadCaptureBlock } from '@/components/site/LeadCaptureBlock'
-import { submitMarketPageInquiry } from '@/app/housing-market/actions'
+import { marketVerdict } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { CoMarketSizeStrip } from '@/components/site/analytics/CoMarketSizeStrip'
-import '@/components/site/kb/kb.css'
+import { formatDate } from '@/lib/format/date'
+import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Ledger,
+  V3Quiet,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { RegionInquirySheet } from './_v3/RegionInquirySheet.client'
+import {
+  CITY_LABELS,
+  CLOSED_SALES_FROM_YEAR,
+  CLOSED_SALES_TO_YEAR,
+  HISTORY_PATH,
+  MARKET_CONSEQUENCE,
+  PAGE_PATH,
+} from './_v3/region-constants'
+import { buildRegionInstruments } from './_v3/region-figures'
+import {
+  buildCityLedger,
+  buildClosedLedger,
+  buildExploreItems,
+  buildGuideRows,
+} from './_v3/region-sections'
 
 export const revalidate = 300
 
-// ---------------------------------------------------------------------------
-// City label → slug map (drives KbExploreTowns items + Dataset spatialCoverage)
-// ---------------------------------------------------------------------------
+/**
+ * The valuation door's href, both places this page opens one (invariant 6).
+ *
+ * Built by lib/site/valuation-href.ts, which is the ONE builder for a valuation link
+ * on a content surface (migration-recipe.md addendum, 2026-08-11). This page used to
+ * assemble the string inline as `${valuationPath()}?from=…`, which is the convention
+ * that four routes silently dropped in one wave: an inline query string is invisible
+ * to whoever rewrites the section next. It also pointed at /sell/valuation, which
+ * ia-lock.md schedules for a 301 into the one intake spine at /sell#get-value, and a
+ * 301 drops the query string with it.
+ */
+const VALUATION_HREF = valuationHref(PAGE_PATH)
 
-const CITY_LABELS = [
-  'Bend',
-  'Redmond',
-  'Sisters',
-  'Sunriver',
-  'La Pine',
-  'Tumalo',
-  'Prineville',
-  'Terrebonne',
-]
-
-const CITY_SLUG: Record<string, string> = {
-  'Bend': 'bend',
-  'Redmond': 'redmond',
-  'Sisters': 'sisters',
-  'Sunriver': 'sunriver',
-  'La Pine': 'la-pine',
-  'Tumalo': 'tumalo',
-  'Prineville': 'prineville',
-  'Terrebonne': 'terrebonne',
-}
-
-// ---------------------------------------------------------------------------
-// Market narrative — data-driven from verified region pulse figures.
-// Restored from the pre-KB page (ContentSection summary + §0 methodology trace).
-// Every sentence derives from a single market_pulse_live region row; no stat
-// is fabricated (a missing field is omitted, never estimated — §0).
-// ---------------------------------------------------------------------------
-
-function buildRegionNarrative(
-  pulse: {
-    activeCount: number
-    medianListPrice: number | null
-    monthsOfSupply: number | null
-    medianDaysToPending: number | null
-  } | null,
-  refreshedAt: string | null,
-): { what: string; method: string } {
-  if (!pulse) {
-    return {
-      what: 'Live market data for Central Oregon is being compiled. Check back shortly.',
-      method: '',
-    }
-  }
-
-  const mos = pulse.monthsOfSupply
-  const dom = pulse.medianDaysToPending
-
-  let verdict = 'a balanced market'
-  if (mos != null) {
-    if (mos <= 4) verdict = "a seller's market"
-    else if (mos >= 6) verdict = "a buyer's market"
-  }
-
-  // design-audit #123: this block previously restated the exact same four
-  // numbers (active count, MoS, median, days-to-pending) as the hero sentence
-  // and the HUD's own KPI tiles above it, verbatim, a fourth time on the same
-  // scroll. Those figures are covered live in both places already, so this
-  // narrative now adds interpretation (what the verdict means to a buyer or
-  // seller) instead of parroting numbers a visitor already saw twice.
-  const parts: string[] = []
-
-  if (mos != null) {
-    // The verdict is a FACT: it falls out of months of supply against the
-    // thresholds in CLAUDE.md §0, and check-market-formula.mjs enforces the
-    // mapping.
-    //
-    // The sentence after it is what the verdict means for someone deciding to
-    // buy or sell. An earlier pass put Matt's name on it to satisfy VOICE.md
-    // rule 3, which was the wrong fix: Matt, 2026-08-06, "Don't ever put direct
-    // quotes for me in anything." Rule 3 wants a judgment owned, not a
-    // quotation invented, and a mechanical consequence of the supply number is
-    // not really a judgment at all. So it states the consequence plainly, in
-    // the brokerage's voice, and nobody is quoted.
-    parts.push(`Central Oregon is in ${verdict} right now.`)
-    if (verdict === "a seller's market") {
-      parts.push('Well-priced homes are moving fast, and sellers have more room to hold their price.')
-    } else if (verdict === "a buyer's market") {
-      parts.push('Buyers have more inventory to choose from and more room to negotiate on price and terms.')
-    } else {
-      parts.push('Neither side has a structural edge, so pricing and presentation decide the outcome.')
-    }
-  }
-
-  // active count + median list price already appear in the hero sentence and
-  // the HUD KPI tiles — not repeated here (design-audit #123).
-  if (mos == null && dom != null && dom > 0) {
-    parts.push(`Homes are going pending in a median of ${dom} days across the region.`)
-  }
-
-  const what = parts.join(' ')
-
-  // design-audit #119: this trace prints on the page for a human reader (not
-  // just JSON-LD), so it names what the data IS in plain terms rather than
-  // the raw table/column identifiers (market_pulse_live, property_type = A,
-  // geo_type = region) that used to render here. Same underlying facts.
-  const method = refreshedAt
-    ? `Source: live single-family listings for the Central Oregon region, ` +
-      `refreshed ${new Date(refreshedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' })}. ` +
-      `City comparisons use the same live single-family data for each city. ` +
-      `${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE} ` +
-      `Source: Oregon Data Share via Ryan Realty.`
-    : ''
-
-  return { what, method }
-}
-
-// ---------------------------------------------------------------------------
-// Metadata
-// ---------------------------------------------------------------------------
-
+// Metadata - unchanged from the KB page.
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Central Oregon market report',
@@ -205,170 +177,139 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 export default async function CentralOregonRegionPage() {
-  // -------------------------------------------------------------------------
-  // Data — all via @/lib/data (G8). No @/app/actions/* imports.
+  // Data, all through the DAL (G8). No catch-and-swallow: every function below is
+  // resilient-cached and answers a transient failure with its own documented
+  // fallback, so a `.catch(() => null)` here would only hide a real outage behind a
+  // confident empty page. Nothing is fetched that this page does not render.
   //
-  // §0 trace:
-  //   regionPulse   — market_pulse_live, geo_type='region', geo_slug='central-oregon',
-  //                   property_type='A'. Freshness 10-15 min.
-  //   priceHistory  — market_stats_cache, geo_type='region', geo_slug='central-oregon',
-  //                   interval='monthly', 60 months.
-  //   citySnapshots — market_pulse_live, geo_type='city', geo_label IN CITY_LABELS,
-  //                   property_type='A'. ONE call replaces legacy ~12-call fan-out.
-  //   blogPosts     — blog_posts, status='published', newest first. Up to 3.
-  // -------------------------------------------------------------------------
-  const [regionPulse, priceHistory, citySnapshots, blogPosts, heroPhoto, coMarketSeries] = await Promise.all([
-    getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
-    getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
-    getMarketPulseCitySnapshots(CITY_LABELS).catch(() => []),
-    // design-audit #110: offset:3 so this page's guide rail doesn't show the
-    // literal same 3 posts as the /housing-market hub's rail (offset:0).
-    getRecentBlogPosts({ limit: 3, offset: 3 }).catch(() => []),
-    // Distinct hero photo from the /housing-market hub — different seed.
-    getSurfaceImage('hero', { geoTags: ['central-oregon'], seed: 'housing-market-central-oregon-report' }).catch(() => null),
-    getCoMarketAnnualSeries({ fromYear: 2016, toYear: 2024, typeScope: 'all' }).catch(() => []),
+  // getRecentBlogPosts keeps offset 3 so this page's guide rail does not repeat the
+  // /housing-market hub's three posts.
+  const [regionPulse, citySnapshots, blogPosts, closedSeries] = await Promise.all([
+    getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
+    getMarketPulseCitySnapshots(CITY_LABELS),
+    getRecentBlogPosts({ limit: 3, offset: 3 }),
+    getCoMarketAnnualSeries({
+      fromYear: CLOSED_SALES_FROM_YEAR,
+      toYear: CLOSED_SALES_TO_YEAR,
+      typeScope: 'all',
+    }),
   ])
 
-  // Drop the in-progress current month — partial-month spike is misleading.
-  const currentMonthKey = new Date()
-    .toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
-    .slice(0, 7)
-  const completePriceMonths = priceHistory.filter(
-    (p) => p.periodStart.slice(0, 7) !== currentMonthKey,
-  )
+  // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
+  // display it, and hand the RAW value to buildMarketFaq so the shared builder
+  // repeats the same two steps in the same order.
+  //
+  // formatMonthsOfSupply, not Math.round: the naive round is what puts "4.0" under a
+  // "balanced market" headline and above a threshold sentence that calls 4.0 or less a
+  // seller's market. lib/format/months-of-supply.ts exists for exactly that boundary
+  // and the KB market HUD printed the figure through it in both places it showed it.
+  const mosRaw =
+    regionPulse?.monthsOfSupply != null && regionPulse.monthsOfSupply > 0
+      ? regionPulse.monthsOfSupply
+      : null
+  const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
+  const verdict = marketVerdict(mosRaw)
 
-  // -------------------------------------------------------------------------
-  // §0: Dataset.dateModified = pulse.refreshedAt (real refresh ts from
-  // market_pulse_live). Never a hardcoded or derived date.
-  // -------------------------------------------------------------------------
-  const refreshedAt = regionPulse?.refreshedAt ?? null
-
-  // -------------------------------------------------------------------------
-  // buildMarketFaq — SINGLE source for FAQ, FAQPage JSON-LD, and
-  // Dataset variableMeasured. All three surfaces draw from one verified pulse.
-  // -------------------------------------------------------------------------
-  // Pulse-timeout fallback (G52 page-contract): the Dataset + FAQPage JSON-LD must
-  // survive a slow or missing region market row, so feed buildMarketFaq a
-  // pulse-or-fallback input rather than a bare nullable pulse. Null fields degrade
-  // gracefully inside buildMarketFaq (a stat with no value is omitted, never
-  // fabricated — §0); the structured-data block itself never vanishes.
+  // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
+  // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
+  // the page contract requires (G52): the structured data survives a slow or missing
+  // region row instead of vanishing. A null field produces no question and no
+  // variable, never a fabricated one.
   const pulse = regionPulse
+    ? {
+        activeCount: regionPulse.activeCount,
+        medianListPrice: regionPulse.medianListPrice,
+        monthsOfSupply: mosRaw,
+        medianDaysToPending: regionPulse.medianDaysToPending,
+        refreshedAt: regionPulse.refreshedAt,
+      }
+    : null
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     'Central Oregon',
     pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null },
   )
+  const refreshedAt = regionPulse?.refreshedAt ?? null
 
-  // -------------------------------------------------------------------------
-  // KbMarketData — §0 traced. Every field maps to a single DAL source.
-  //   active / closed30 / medianList / daysToPending / monthsSupply
-  //     → regionPulse (market_pulse_live, geo_type='region')
-  //   trend         → completePriceMonths last 13 (market_stats_cache)
-  //   byTown        → citySnapshots (market_pulse_live city rows)
-  //   countyMedian  → regionPulse.medianListPrice (same region row)
-  //   yearSeries    → buildYearSeries(completePriceMonths, 5)
-  // -------------------------------------------------------------------------
-  const monthLabel = (iso?: string) =>
-    iso
-      ? new Date(iso).toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
-      : ''
+  // The region row's TWO Instruments, built in ./_v3/region-figures.ts. Every figure is
+  // a door where a node behind it shows that figure's window (PUBLIC-PRODUCT-OS calls
+  // dead text naming a linkable thing a defect), every one ships on the guard
+  // buildMarketFaq applies to the same figure (invariant 2), and each section's trace is
+  // assembled from the figures that section actually rendered (invariant 3). Split out
+  // under ci:file-size-budget's own instruction, alongside the Ledger builders.
+  const region = buildRegionInstruments(regionPulse, mosText)
+  const [firstLiveFigure, ...restLiveFigures] = region.live.figures
+  const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
 
-  const marketData: KbMarketData = {
-    active: regionPulse?.activeCount ?? null,
-    closed30: regionPulse?.closedLast30Days ?? null,
-    new30: null,
-    medianList: regionPulse?.medianListPrice ?? null,
-    saleToList: null,
-    daysToPending: regionPulse?.medianDaysToPending ?? null,
-    monthsSupply: regionPulse?.monthsOfSupply ?? null,
-    trend: completePriceMonths
-      .slice(-13)
-      .filter((p) => p.medianSalePrice != null)
-      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
-    byTown: citySnapshots
-      .filter((s) => s.median_list_price != null)
-      .map((s) => ({ name: s.geo_label, median: s.median_list_price as number })),
-    countyMedian: regionPulse?.medianListPrice ?? null,
-    yearSeries: buildYearSeries(completePriceMonths, 5),
+  // The three Ledgers, built in ./_v3/region-sections.ts. Pure turns from a DAL row
+  // into barrel-ready props, split out under ci:file-size-budget's own instruction,
+  // and each returns its rows WITH the stamp computed from those same rows (invariant
+  // 3) and, for the cities, the covered places it could not source (invariant 4).
+  const cityLedger = buildCityLedger(citySnapshots)
+  const [firstCityRow, ...restCityRows] = cityLedger.rows
+  const closedLedger = buildClosedLedger(closedSeries)
+  const [firstClosedRow, ...restClosedRows] = closedLedger.rows
+  const [firstGuideRow, ...restGuideRows] = buildGuideRows(blogPosts)
+
+  // The market summary, carried over from the KB ContentSection. The verdict itself
+  // is the Instrument headline and the formula and thresholds are in that section's
+  // trace, both from lib/market/classify.ts, so what is left here is the consequence
+  // of the verdict and the page's provenance. This block also guarantees the two
+  // Ledgers around it are never adjacent, which is why its outbound edge ships
+  // unconditionally.
+  const summaryItems: V3QuietItem[] = []
+  const consequence = MARKET_CONSEQUENCE[verdict.kind]
+  if (consequence) {
+    summaryItems.push({
+      kind: 'prose',
+      term: 'What the supply number means',
+      body: consequence,
+    })
+  }
+  summaryItems.push({
+    kind: 'prose',
+    term: 'Methodology',
+    body: [
+      `Live single-family listings for the Central Oregon region${
+        refreshedAt ? `, refreshed ${formatDate(refreshedAt)}` : ''
+      }. City comparisons use the same live single-family inventory for each city, and each city's pace figure is the median list-to-pending time of its own single-family sales closed in the last 90 days.`,
+      'Closed-sales dollar volume and units come from closed MLS sales across the Central Oregon service area, all property types, not from active list inventory.',
+      'Source: Oregon Data Share via Ryan Realty.',
+    ],
+  })
+  summaryItems.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
+
+  // The FAQ block's own outbound edges. PUBLIC_UI.md section 3 pattern 6 defines
+  // Quiet as the block that "carries the graph's outbound edges", and answers naming
+  // the region, months of supply, active inventory, and city pace while linking
+  // nowhere are the dead-text defect one pattern up. Each edge ships only when the
+  // answers above it actually made that claim.
+  const faqEdges: V3QuietItem[] = [
+    { label: 'Central Oregon housing market hub', href: '/housing-market' },
+  ]
+  if (region.activeCount != null) {
+    faqEdges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
+  }
+  if (mosText != null) {
+    faqEdges.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
+  }
+  if (firstClosedRow) {
+    faqEdges.push({ label: 'Closed sales explorer', href: HISTORY_PATH })
   }
 
-  // -------------------------------------------------------------------------
-  // KbHero lede — data-driven from the region pulse.
-  // -------------------------------------------------------------------------
-  // KbHero's stat template already renders the count ("N homes for sale …"),
-  // the median, and days-to-pending from the data prop — the lede must not
-  // repeat them (they rendered twice in one paragraph). Completes:
-  // "N homes for sale {lead} Median list $X. Pending in Y days."
-  const ledeParts: string[] = []
-  if (regionPulse && regionPulse.activeCount > 0) {
-    ledeParts.push('across the whole region.')
-  }
-  if (regionPulse?.monthsOfSupply != null) {
-    // Classify the RAW value, not the rounded display value (design-audit
-    // P2, CLAUDE.md §0 — see app/housing-market/page.tsx for the same fix).
-    // MoS band is a formula fact (CLAUDE.md §0 thresholds), not a broker quote.
-    const raw = regionPulse.monthsOfSupply
-    let band = 'balanced'
-    if (raw <= 4) band = "seller's"
-    else if (raw >= 6) band = "buyer's"
-    ledeParts.push(`${formatMonthsOfSupply(raw)} months of supply. A ${band} market.`)
-  }
-  const lede =
-    ledeParts.join(' ') ||
-    'Single-family inventory, median list price, and pace for Central Oregon, refreshed every 15 minutes.'
+  // The closing edges, built in ./_v3/region-sections.ts: every internal link the KB
+  // region page carried through its footer rail, the outbound MLS citation MarketSources
+  // used to render, the page's second valuation door, and any covered city with no live
+  // row. That second door is a text edge, never a filled control, so it repeats the ask
+  // for a reader who scrolled past the Instrument without adding a competing primary to
+  // any viewport, and it is the same VALUATION_HREF so the two cannot drift.
+  const exploreItems = buildExploreItems(VALUATION_HREF, cityLedger.footnotes)
 
-  // -------------------------------------------------------------------------
-  // Market narrative + methodology trace — restored from the pre-KB page.
-  // Data-driven prose from the verified region pulse. The methodology trace is
-  // a §0 AI-citability surface (names the source, the MoS formula, and the
-  // seller/balanced/buyer thresholds) that the KB conversion had dropped.
-  // -------------------------------------------------------------------------
-  const { what: narrativeWhat, method: narrativeMethod } = buildRegionNarrative(
-    regionPulse,
-    refreshedAt,
-  )
-
-  // -------------------------------------------------------------------------
-  // City tiles — KbExploreTowns from the same citySnapshots (§0).
-  // Each slug links to /housing-market/<city-slug> (market report), not /cities.
-  // -------------------------------------------------------------------------
-  const cityTowns: KbTownItem[] = citySnapshots
-    .filter((s) => CITY_SLUG[s.geo_label] !== undefined)
-    .map((s) => ({
-      name: s.geo_label,
-      href: `/housing-market/${CITY_SLUG[s.geo_label] ?? s.geo_slug.replace(/\s+/g, '-')}`,
-      activeCount: s.active_count,
-      medianPrice: s.median_list_price,
-      img: '',
-    }))
-
-  // -------------------------------------------------------------------------
-  // Blog / guide articles (KbArticles). Falls back to empty (renders null).
-  // -------------------------------------------------------------------------
-  const articlePosts = blogPosts.map((p) => ({
-    title: p.title,
-    href: `/blog/${p.slug}`,
-    excerpt: p.excerpt,
-    imageUrl: p.heroImageUrl,
-    dateLabel: p.publishedAt
-      ? new Date(p.publishedAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          timeZone: 'UTC',
-        })
-      : null,
-  }))
-
-  // -------------------------------------------------------------------------
-  // JSON-LD schemas — BreadcrumbList + WebPage + Dataset.
-  // FAQPage is emitted by FAQBlock (includeJsonLd=true) below (G34).
-  // §0: dateModified is the real refreshedAt from market_pulse_live, never now().
-  // -------------------------------------------------------------------------
+  // JSON-LD. BreadcrumbList + WebPage + Dataset + FAQPage, all from MetadataBlock.
+  // The KB page emitted FAQPage from inside FAQBlock. V3Breadcrumb and V3Quiet carry
+  // no structured data of their own, so the same payloads are emitted here from the
+  // same arrays the sections render. dateModified is the real refreshedAt from
+  // market_pulse_live, never now().
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -388,12 +329,22 @@ export default async function CentralOregonRegionPage() {
   ]
 
   if (datasetVariables.length > 0 && refreshedAt) {
+    // The description names the metrics the payload actually carries, read off
+    // datasetVariables rather than typed alongside it. The KB sentence hardcoded four
+    // metric names while the variable list is derived one figure at a time, so a null
+    // column left the payload describing a measurement it did not contain - a claim
+    // outrunning its payload, which is the same defect class as a wrong number.
+    const metricNames = datasetVariables.map((variable) => variable.name.toLowerCase())
+    const metricList =
+      metricNames.length === 1
+        ? metricNames[0]
+        : `${metricNames.slice(0, -1).join(', ')}, and ${metricNames[metricNames.length - 1]}`
     schemas.push({
       type: 'dataset',
       name: `Central Oregon, Oregon real estate market statistics${asOfLabel ? `, ${asOfLabel}` : ''}`,
       description:
         'Live single-family home market data for Central Oregon. ' +
-        'Includes region median list price, active inventory, months of supply, and median days to pending. ' +
+        `Includes ${metricList}. ` +
         'Sourced from Oregon Data Share via Ryan Realty.',
       url: '/housing-market/central-oregon',
       dateModified: asOfIso ?? undefined,
@@ -402,144 +353,222 @@ export default async function CentralOregonRegionPage() {
     })
   }
 
+  if (faqs.length > 0) {
+    schemas.push({ type: 'faqPage', items: faqs })
+  }
+
   return (
-    <main className="kb-root">
-      {/* AI-citability structured data: BreadcrumbList + WebPage + Dataset.
-          KbBreadcrumb has no JSON-LD of its own. FAQPage emitted by FAQBlock. */}
-      <MetadataBlock schemas={schemas} />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <MetadataBlock schemas={schemas} />
 
-      <KbSectionTracker pageType="market-report" />
+        <KbSectionTracker pageType="market-report" />
 
-      {/* BreadcrumbList visual — Home > Housing market > Central Oregon */}
-      <KbBreadcrumb overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Housing market', href: '/housing-market' },
-          { label: 'Central Oregon' },
-        ]}
-      />
-
-      <SmoothScrollProvider>
-        {/* Hero — region eyebrow + data-driven glance lede */}
-        <KbHero
-          data={{
-            activeCount: regionPulse?.activeCount ?? null,
-            medianListPrice: regionPulse?.medianListPrice ?? null,
-            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
-          }}
-          eyebrow="Central Oregon · Oregon"
-          titleTop="Central Oregon"
-          titleBottom="market report"
-          lead={lede}
-          posterSrc={heroPhoto ?? undefined}
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Housing market', href: '/housing-market' },
+            { label: 'Central Oregon' },
+          ]}
         />
 
-        {/* Market HUD — region KbMarketData. §0: all figures from market_pulse_live
-            (region row) and market_stats_cache (price history). yearSeries built
-            from completePriceMonths via buildYearSeries, same pattern as city page. */}
-        <KbMarketHud data={marketData} eyebrow="Central Oregon · The market" geoName="Central Oregon" asOf={pulse?.refreshedAt ?? null} />
+        {firstLiveFigure ? (
+          <V3Instrument
+            id="market"
+            level={1}
+            eyebrow={v3Text('Central Oregon, Oregon')}
+            headline={v3Text(
+              `Central Oregon market report${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
+            )}
+            figures={[firstLiveFigure, ...restLiveFigures]}
+            source={v3Text(region.live.trace)}
+            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
+            // PRIMARY, and it is the page's only filled control above the Sheet
+            // (invariant 5). It was a ghost until 2026-08-12 on the premise that the
+            // sticky header carries a filled valuation CTA; measured at 390 that CTA
+            // is display:none and its twin sits in the closed Menu+ overlay, so the
+            // ghost left the first viewport with no ask at all. `from` is invariant 6.
+            action={{
+              label: v3Text('Get a free written valuation'),
+              href: VALUATION_HREF,
+              variant: 'primary',
+            }}
+          />
+        ) : (
+          <V3Quiet
+            id="market"
+            heading="Central Oregon market report"
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: 'No live figures right now',
+                body: 'The Central Oregon market row did not return on this refresh, so this page is not printing a median, an inventory count, or a verdict. The city reports below carry their own live rows.',
+              },
+            ]}
+          />
+        )}
 
-        {/* Closed-sales $ volume (all types) — distinct from SFR pulse HUD. §0 via marts. */}
-        {coMarketSeries.length > 0 ? (
-          <CoMarketSizeStrip series={coMarketSeries} highlightYear={2024} />
-        ) : null}
+        {firstCityRow ? (
+          <V3Ledger
+            id="cities"
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Cities and towns')}
+            rows={[firstCityRow, ...restCityRows]}
+            // The trace covers BOTH populations the row prints (invariant 3). The
+            // count and the median are active single-family inventory; days to
+            // pending is not an attribute of an active listing at all, it is the
+            // median list-to-pending time of single-family homes that CLOSED in the
+            // last 90 days, computed per city by refresh_market_pulse(). The KB tiles
+            // this Ledger replaces printed only the count and the median, so the
+            // inherited source line was never written to cover a pace figure.
+            source={v3Text(
+              'live MLS through Oregon Data Share, one row per city. The count and the median list price are active single-family listings. Days to pending is the median list-to-pending time of single-family homes that closed in the last 90 days',
+            )}
+            updated={cityLedger.stamp ? v3Text(formatDate(cityLedger.stamp)) : undefined}
+            action={{ label: v3Text('Every Central Oregon city'), href: '/cities' }}
+          />
+        ) : (
+          <V3Ledger
+            id="cities"
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Cities and towns')}
+            rows={[]}
+            emptyMessage={v3Text(
+              'No city returned a live single-family market row on this refresh.',
+            )}
+          />
+        )}
 
-        {/* City tiles — per-city active counts from ONE getMarketPulseCitySnapshots
-            call. §0: every count is the exact active_count from market_pulse_live. */}
-        {cityTowns.length > 0 ? (
-          <KbExploreTowns
-            towns={cityTowns}
-            eyebrow="Central Oregon"
-            title="Cities and towns"
-            sectionId="cities"
-            cta={{ href: '/cities', label: 'Every Central Oregon city' }}
+        <V3Quiet
+          id="summary"
+          eyebrow="Market data"
+          heading="Central Oregon market summary"
+          items={summaryItems}
+        />
+
+        {/* THE SECOND POPULATION GETS ITS OWN SECTION (invariant 3). Days to pending
+            and the 30-day closing count come off the same market_pulse_live row as the
+            figures above, but they are measured on homes that CLOSED, so they get their
+            own heading, their own source line, and no share of the active-inventory
+            trace. Level 2, no action: the page's one filled ask belongs to the section
+            that opens it. It sits between the summary Quiet and the closed-sales Ledger
+            because both are closed-sales facts, and Quiet-Instrument-Ledger keeps the
+            rhythm. When it has no figures the neighbours are Quiet and Ledger, which is
+            a legal pair, so its absence breaks nothing. */}
+        {firstPaceFigure ? (
+          <V3Instrument
+            id="pace"
+            level={2}
+            eyebrow={v3Text('Closed sales')}
+            headline={v3Text('The pace of the Central Oregon market')}
+            figures={[firstPaceFigure, ...restPaceFigures]}
+            source={v3Text(region.pace.trace)}
+            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
           />
         ) : null}
 
-        {/* Guide articles — recent published blog posts, region-aware. */}
-        {articlePosts.length > 0 ? (
-          <KbArticles
-            posts={articlePosts}
-            eyebrow="Guides and insights"
-            heading="Central Oregon real estate, explained"
-            subtitle="Local housing news, neighborhood deep dives, and buyer and seller guides for Central Oregon."
+        {firstClosedRow ? (
+          <V3Ledger
+            id="closed-sales"
+            eyebrow={v3Text('Closed sales')}
+            heading={v3Text('Size of the market')}
+            note={v3Text(
+              'Dollar volume and units of closed sales, all property types, not only active list inventory.',
+            )}
+            rows={[firstClosedRow, ...restClosedRows]}
+            source={v3Text(
+              `closed MLS sales through Oregon Data Share, Central Oregon service-area cities, all property types, calendar years ${CLOSED_SALES_FROM_YEAR} through ${CLOSED_SALES_TO_YEAR}. ${ANALYTICS_METHODOLOGY_V1}`,
+            )}
+            updated={closedLedger.stamp ? v3Text(formatDate(closedLedger.stamp)) : undefined}
+            action={{
+              label: v3Text('Closed sales explorer'),
+              href: HISTORY_PATH,
+            }}
+          />
+        ) : (
+          // The declared degraded form, and it is why this section is unconditional.
+          // Rhythm is part of the contract ("no two adjacent alike"), and a section
+          // that vanishes takes its half of the alternation with it: without this
+          // branch a closed-sales series that returns nothing puts the summary Quiet
+          // directly against the FAQ Quiet. It also keeps the page honest about a
+          // zero-row read — absent is not zero, and the message states what the query
+          // did rather than implying the market had no closings.
+          <V3Ledger
+            id="closed-sales"
+            eyebrow={v3Text('Closed sales')}
+            heading={v3Text('Size of the market')}
+            rows={[]}
+            emptyMessage={v3Text(
+              `No calendar year between ${CLOSED_SALES_FROM_YEAR} and ${CLOSED_SALES_TO_YEAR} returned closed-sales volume on this refresh.`,
+            )}
+            action={{
+              label: v3Text('Closed sales explorer'),
+              href: HISTORY_PATH,
+            }}
+          />
+        )}
+
+        {/* Unconditional for the same reason as the section above: when the region
+            row does not return, buildMarketFaq answers nothing, and a vanishing FAQ
+            would put the closed-sales Ledger directly against the guides Ledger. The
+            degraded form states why there are no answers instead of asserting them,
+            and it still carries the block's outbound edges, which is what pattern 6
+            is for. */}
+        <V3Quiet
+          id="faq"
+          eyebrow="Common questions"
+          heading="Central Oregon real estate questions"
+          items={
+            faqs.length > 0
+              ? [
+                  ...faqs.map((item) => ({
+                    kind: 'prose' as const,
+                    term: item.question,
+                    body: item.answer,
+                  })),
+                  ...faqEdges,
+                ]
+              : [
+                  {
+                    kind: 'prose' as const,
+                    term: 'No answers on this refresh',
+                    body: 'These answers are read from the live Central Oregon market row, which did not return, so this page is not stating a median, an inventory count, or a verdict in question form either.',
+                  },
+                  ...faqEdges,
+                ]
+          }
+        />
+
+        {firstGuideRow ? (
+          <V3Ledger
+            id="guides"
+            eyebrow={v3Text('Guides and insights')}
+            heading={v3Text('Central Oregon real estate, explained')}
+            note={v3Text(
+              'Local housing data, neighborhood deep dives, and buyer and seller guides for Central Oregon.',
+            )}
+            rows={[firstGuideRow, ...restGuideRows]}
+            action={{ label: v3Text('All guides'), href: '/blog' }}
           />
         ) : null}
 
-        {/* FAQ — region Q&A from buildMarketFaq (single source with Dataset vars).
-            includeJsonLd=true auto-emits FAQPage JSON-LD (G34). */}
-        {faqs.length > 0 ? (
-          <section id="faq" aria-label="Central Oregon real estate questions">
-            <FAQBlock
-              items={faqs}
-              eyebrow="Common questions"
-              title="Central Oregon real estate questions"
-              intro="Direct answers based on live MLS data."
-              includeJsonLd={true}
-              tone="muted"
-            />
-          </section>
-        ) : null}
+        <RegionInquirySheet />
 
-        {/* Market narrative + methodology trace (restored from the pre-KB page).
-            §0 AI-citability: data-driven summary plus the source/formula/threshold
-            trace that lets an AI assistant cite the page with provenance. */}
-        {/* Narrative plate — offset verdict + methodology footer (E6 craft). */}
-        {narrativeWhat ? (
-          <ContentSection
-            eyebrow="Market data"
-            title="Central Oregon market summary"
-            tone="default"
-            divider
-            width="wide"
-          >
-            <div className="grid gap-6 lg:grid-cols-12 lg:gap-10">
-              <div className="border-l-4 border-primary pl-5 lg:col-span-7">
-                <p className="text-lg leading-relaxed text-foreground md:text-xl">
-                  {narrativeWhat}
-                </p>
-              </div>
-              {narrativeMethod ? (
-                <div className="border border-border bg-muted/30 p-5 text-xs leading-relaxed text-muted-foreground lg:col-span-5">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-foreground">
-                    Methodology
-                  </p>
-                  <p className="mt-2">{narrativeMethod}</p>
-                </div>
-              ) : null}
-            </div>
-          </ContentSection>
-        ) : null}
-
-        {/* Broker inquiry lead-capture (restored from the pre-KB page). KbSell
-            below routes a seller address to /sell/valuation, but the general
-            "ask a broker a question" path — for buyers and anyone weighing a
-            move — was dropped in the KB conversion. inquiry variant writes via
-            the same submitMarketPageInquiry server action the old page used
-            (name/email/message only, so no phone form = no SMS-consent surface). */}
-        <LeadCaptureBlock
-          variant="inquiry"
-          onSubmit={submitMarketPageInquiry}
-          eyebrow="Talk to a broker"
-          title="Questions about the Central Oregon market?"
-          intro="Tell us what you are weighing. A local broker will follow up with specifics for your situation."
-          submitLabel="Ask a broker"
-          tone="muted"
+        <V3Quiet
+          id="explore"
+          eyebrow="More resources"
+          heading="Explore Central Oregon real estate"
+          items={exploreItems}
         />
+      </main>
 
-        {/* Sell CTA — feeds off region pulse figures */}
-        <KbSell
-          data={{
-            medianListPrice: regionPulse?.medianListPrice ?? null,
-            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
-            soldCount30d: regionPulse?.closedLast30Days ?? null,
-          }}
-          eyebrow="Sell in Central Oregon"
-        />
-
-        <MarketSources sources={['ods']} />
-        <KbFooter towns={cityTowns} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. The KB page nested KbFooter the same way, and
+          ci:default-chrome-footer counts footers without checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

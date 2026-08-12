@@ -68,6 +68,7 @@ import {
   VALUATION_FORM,
   type NavLink,
 } from '@/lib/site-nav'
+import { valuationHref } from '@/lib/site/valuation-href'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
 import './tokens.css'
 import './V3Chrome.css'
@@ -183,8 +184,16 @@ const SAVED =
     ? { href: ACCOUNT_GROUP.links[0].href, label: ACCOUNT_GROUP.label }
     : null
 
-/** The one primary action in the chrome, straight off the locked spine. */
-const CTA = { href: VALUATION_FORM.href, label: v3Text(VALUATION_FORM.label) }
+/**
+ * The one primary action in the chrome, straight off the locked spine. Only the
+ * LABEL is fixed at module scope: the href is built per render by
+ * valuationHref(path) so the ask carries `?from=<originating path>` into the
+ * seller action's sourceUrl. The chrome renders on every migrated route, so a
+ * module-level href would report one destination for all of them and the
+ * program's KPI — completed valuations per page — would have nothing to key on
+ * (migration-recipe.md, 2026-08-11 addendum 1).
+ */
+const CTA = { label: v3Text(VALUATION_FORM.label) }
 
 /**
  * Fixed accessible names. Built through v3Text so a blank one throws at import
@@ -534,7 +543,7 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
             </Link>
           ) : null}
 
-          <V3Button href={CTA.href} className="v3-chrome__cta">
+          <V3Button href={valuationHref(path)} className="v3-chrome__cta">
             {CTA.label}
           </V3Button>
 

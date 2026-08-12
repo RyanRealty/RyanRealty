@@ -49,6 +49,22 @@
  * boundary satisfies both, and it is the same boundary components/ui provides for the
  * product surfaces.
  *
+ * THE TRAP IS THE ONE CONTROL NOBODY IS MEANT TO FILL, AND IT IS A PROP, NOT A STEP.
+ * `trap` renders a honeypot inside the form: a text input a human never sees, never
+ * tabs to, and never hears, that a scripted post fills because the DOM says it exists.
+ * It is sheet-level rather than a field variant on purpose. A step's `field` is the ONE
+ * question that step asks, and spending that slot on a trap would either delete a real
+ * question or add a step asking nothing, both of which break the pattern's defining
+ * rule. A honeypot is not a question; it is a property of the working surface, which is
+ * where it now lives. It is still built through the same two constructors as every
+ * other control, with a real name element, so the control boundary holds literally: the
+ * wrapper carries aria-hidden and tabIndex -1, so the pair is out of the accessibility
+ * tree and out of the tab order rather than nameless inside them. Its answer rides in
+ * `onAdvance().answers` under its own name, never in the echo and never in a validity
+ * check, because a filled trap is the caller's signal to fake a success, not a refusal
+ * to show a visitor. A trap whose name collides with a field's is dropped, since a
+ * collision would overwrite a real answer with a value no human typed.
+ *
  * WHAT IS MECHANICAL HERE, AND WHAT IS NOT. An earlier revision claimed the type made a
  * nameless control impossible, through `NonNullable<ReactNode>` on the region name and
  * `label: string` on the field. It did not. `NonNullable<T>` is `T & {}`, and ReactNode
@@ -252,6 +268,18 @@ export type V3SheetStep = {
   source?: string
 }
 
+/**
+ * A honeypot. `name` is the key the value arrives under in `onAdvance().answers`, and
+ * it is also what a bot reads when it decides to fill: use the name the trap is meant
+ * to bait, `company` or `website`, not an invented one. `label` names the control in
+ * the DOM so the control boundary is satisfied literally; nobody reads it, because the
+ * wrapper is aria-hidden.
+ */
+export type V3SheetTrap = {
+  name: string
+  label: string
+}
+
 export type V3SheetAdvance = {
   /** The step the visitor is leaving. Always a step that was actually rendered. */
   fromStepId: string
@@ -274,6 +302,11 @@ export type V3SheetProps = {
   eyebrow?: string
   /** The steps, in order. One is rendered at a time. */
   steps: readonly V3SheetStep[]
+  /**
+   * A honeypot rendered inside the form on every step. Omit it and the sheet renders
+   * none. See the header: it is a property of the surface, not one of its questions.
+   */
+  trap?: V3SheetTrap
   /** Controlled mode. Pass the id of the step to show, and drive it from onAdvance. */
   currentStepId?: string
   /** Uncontrolled mode. The step to open on. Defaults to the first step. */
@@ -644,6 +677,32 @@ function normalizeSteps(steps: readonly V3SheetStep[]): ReadyStep[] {
   return out
 }
 
+/**
+ * Refuses a trap that cannot be rendered honestly: no key to carry the value, no name
+ * element to build, or a key a real question already owns. The last one matters most —
+ * a collision would let a bot's value overwrite a visitor's answer on the way to the
+ * caller, which is worse than having no trap at all.
+ */
+function normalizeTrap(
+  raw: V3SheetTrap | undefined,
+  steps: readonly ReadyStep[],
+): V3SheetTrap | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+
+  const name = text(raw.name)
+  const label = text(raw.label)
+  if (!name || !label) {
+    warn(`dropped the trap: it carries no ${!name ? 'name' : 'label'}.`)
+    return undefined
+  }
+  if (steps.some((s) => s.field?.name === name)) {
+    warn(`dropped the trap "${name}": a question already answers under that name.`)
+    return undefined
+  }
+
+  return { name, label }
+}
+
 /* -------------------------------------------------------------------------- */
 /* Validity                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -894,6 +953,7 @@ export function V3Sheet({
   headingLevel = 2,
   eyebrow,
   steps,
+  trap,
   currentStepId,
   defaultStepId,
   defaultAnswers,
@@ -915,6 +975,7 @@ export function V3Sheet({
   const contextLine = text(eyebrow)
 
   const ready = useMemo(() => normalizeSteps(steps), [steps])
+  const bait = useMemo(() => normalizeTrap(trap, ready), [trap, ready])
 
   const isControlled = currentStepId !== undefined
   const [internalStepId, setInternalStepId] = useState<string>(() => {
@@ -1186,6 +1247,31 @@ export function V3Sheet({
         <p className="v3-sheet-question" id={questionId} ref={questionRef} tabIndex={-1}>
           {step.label}
         </p>
+
+        {/* The honeypot. aria-hidden and tabIndex -1 keep the pair out of the
+            accessibility tree and out of the tab order; the CSS keeps it off the
+            screen without display:none, which a scripted filler would skip. It
+            renders on every step, so a bot that only posts the last form still
+            trips it, and its value lives in `answers` like any other. */}
+        {bait ? (
+          <div className="v3-sheet-trap" aria-hidden="true">
+            {nameElement({
+              id: `${uid}-trap-label`,
+              htmlFor: `${uid}-trap`,
+              children: bait.label,
+            })}
+            {lineControl({
+              id: `${uid}-trap`,
+              name: bait.name,
+              type: 'text',
+              tabIndex: -1,
+              autoComplete: 'off',
+              value: answers[bait.name] ?? '',
+              onChange: (e) =>
+                setAnswers((prev) => ({ ...prev, [bait.name]: e.target.value })),
+            })}
+          </div>
+        ) : null}
 
         {field && sharedControl ? (
           field.kind === 'choice' ? (

@@ -1,0 +1,134 @@
+{
+  "route": "app/oregon/[city]/page.tsx",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). This directory holds no index.html and never did: the route shipped in W12 as a light KB page composed from the KB section library, with a `// @no-parity` comment in the source that no gate ever read (ci:mockup-parity binds by the existence of a parity.json naming the route, and `no-parity` has zero matches across scripts/). That comment is deleted and this contract replaces it, so the route's section list is mechanical instead of prose. ci:mockup-coverage is not affected: it fails a ui_kits directory holding an index.html with no parity.json, never the reverse.",
+  "competitiveTarget": "The out-of-market referral tier, about 60 indexable URLs with earned search equity. Beat every statewide portal's city page on honesty rather than on inventory: the live count and median with the trace and stamp under them, a block that says plainly this is not our market, every listing a door, and one introduction offer. No portal tells a visitor to work with someone else.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9, wave 2). Rhythm: FOUR of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Instrument level 1 (the place answer), Quiet (the honest block), Ledger (live listings), Sheet (the referral), Ledger (other Oregon markets), Footer. SECTION IDS ARE PART OF THIS CONTRACT: top, about, listings, referral, other-markets are the ids the KB page emitted, and KbSectionTracker keys section_view on the id, so renaming one is an analytics deletion. Two populations sit on this page (the geo snapshot's per-city row, and the listing tile cache) and neither section prints a figure the other's trace covers or borrows the other's stamp; the listing Ledger carries no stamp because the tile cache exposes no refresh timestamp and a listing's own modified date is not a refresh claim. Prices render through formatPrice, which rounds to the nearest $1,000 and reproduces character for character the strings the KB register printed through kbMoneyFull, so no figure on this page moved. The middleware double-308 boundary depends on one thing here and it is unchanged: an unknown slug reaches notFound() from the guard that runs before anything streams (measured after the migration: /cities/medford 308s here, /oregon/bend 308s back, a junk slug renders the not-found page — with HTTP 200 rather than 404, which production already did on the KB build and which this route does not control). ONE PRIMARY PER VIEWPORT holds where a caller can hold it: the Instrument's ask is a ghost, so the first viewport at 1280 carries exactly one filled control, the fixed header's. Scrolled to the Sheet, the header CTA and the Sheet's own advance are both filled, because V3Sheet hardcodes variant='primary' on its advance (V3Sheet.tsx, the submit V3Button inside the step form) and no prop reaches it — the same state /housing-market shipped in. ONE BARREL CHANGE BELONGS TO THIS MIGRATION, and it is the pressure valve components/site/v3/index.ts describes rather than an exception to it: V3Sheet gained a `trap` prop, a sheet-level honeypot, because the referral form's `company` field is the server action's only bot deterrent and a step's single `field` slot is reserved for the one question that step asks. Nothing here is hand-rolled, so the raw-primitive rule is untouched. KB-era deletions this migration made, each listed with its reason in the deletions block below; the honeypot is NOT among them and must not become one.",
+  "requiredComponents": [
+    {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + Place + Dataset JSON-LD, meaning unchanged from the KB page: the same three schemas, the same variableMeasured, the same unitText. Emitted here because V3Breadcrumb, like KbBreadcrumb before it, carries no structured data of its own.",
+      "blocking": true
+    },
+    {
+      "name": "KbNav",
+      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design.",
+      "blocking": true
+    },
+    {
+      "name": "KbSectionTracker",
+      "section": "Page-level analytics, pageType='out-of-area-city'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent. It observes '.kb-root section[id], .v3 section[id]', which is why <main> carries V3_ROOT_CLASS.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Cities > <city>, the same trail and the same labels the KB page rendered, current page never a link. Surface tone: this page opens on an Instrument, not a dark Stage, so the KB `overlay` prop has no counterpart and none is needed. The surface tone clears the fixed public header by default, which is what the KB page needed `overlay` for.",
+      "blocking": true
+    },
+    {
+      "name": "V3Instrument",
+      "section": "Pattern 1, level 1, id='top'. The place answer: active listings across all property types, active single-family listings, and the median single-family list price, all three from ONE geo snapshot row, under one trace that names the population and the filter, stamped with that row's own refreshedAt. The active count is a door into /homes-for-sale/<city>; the other two have no node of their own and carry no href rather than a fake one. Its ask is a GHOST pointing at #referral, because the fixed public header already carries a filled CTA at every scroll position (PUBLIC_UI.md section 1).",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "Pattern 6, id='about'. The honest block: the three paragraphs the KB KbAbout carried, verbatim, saying this is outside our market and what we do instead. It also carries the five home-market towns the prose names as real links, because pattern 6 is defined as the block that carries the graph's outbound edges and a paragraph naming Bend, Redmond, Sisters, Sunriver and La Pine while linking nowhere is the dead-text defect. The same component is the level-1 fallback when the snapshot row does not return, so the page states the absence instead of asserting a figure.",
+      "blocking": true
+    },
+    {
+      "name": "V3Ledger",
+      "section": "Pattern 3, twice. id='listings': one figure row per live active listing, value column = list price, every row a door into the listing detail page, with the listing feed's own trace and no borrowed stamp. A row needs both a price and a street address, because the value column is a figure and formatPrice answers a missing price with an em dash that would read as one under a live-MLS trace; rows are deduped on street address, which the KB rail did too. id='other-markets': plain rows for the other top out-of-area cities, each carrying its active count and, when the snapshot published one, its median; a city with no published median says so in its own row and keeps its link either way. Its stamp is the newest refreshedAt among the rows actually rendered.",
+      "blocking": true
+    },
+    {
+      "name": "OutOfAreaReferralSheet",
+      "section": "Pattern 5, once, id='referral', in app/oregon/[city]/_v3/OutOfAreaReferralSheet.client.tsx. The page's one on-page ask. Wraps V3Sheet and calls the same server action with the same five payload keys: submitOutOfAreaReferral, citySlug / name / email / notes / company. The capture contract is unchanged, honeypot included: `company` is carried on V3Sheet's `trap` prop, which renders the input off-screen, out of the tab order and out of the accessibility tree. It is the action's only bot deterrent (no rate limit, no captcha), so its `if (input.company?.trim()) return { ok: true }` branch is the whole defence against a scripted POST creating a CRM person, an origin note, a 240-minute broker task and a queued broker SMS.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row, replacing KbFooter, which this page rendered with towns={[]}. Rendered OUTSIDE <main>, because HTML-AAM maps <footer> to role=contentinfo only when it is not nested in sectioning content.",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "PublicNav",
+      "section": "renders from app/layout.tsx",
+      "note": "Resolves to KbNav today. /oregon/<city> is in lib/site/chrome-routes.ts, so the default SiteFooter is hidden and the route owns its footer."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Stage",
+      "reason": "Pattern 4 needs an OWNED photo or video of the place and is never allowed over a number. There is no owned media for Medford or Klamath Falls, which is exactly why the KB hero pointed at a Central Oregon photo on every out-of-area city page. Opening on an Instrument removes that misattribution instead of re-housing it."
+    },
+    {
+      "name": "V3Field",
+      "reason": "Pattern 2 is live inventory as a spatial surface. Using it here would take the page to five patterns, which the rhythm rule refuses, and without a real map slot it would render a coordinate plot as this referral page's most prominent element. The listings are a Ledger: on this tier every listing needs to be a door, not a pin."
+    }
+  ],
+  "deletions": [
+    {
+      "what": "KbHero, and with it the poster image /images/homepage/smith-rock-terrebonne.jpg",
+      "why": "The hero rendered a Central Oregon photograph at the top of every out-of-area city page, so a Medford page opened on a picture of Smith Rock. The page's whole claim is that this is not our market. Pattern 4 requires owned media of the place, none exists, and the answer belongs in the first viewport, so the opening is an Instrument. The hero's three figures survive in it, now with a trace and a stamp they never had."
+    },
+    {
+      "what": "KbAbout's `facts` rail (active listings, single-family active, median list, 'Our home market: Central Oregon')",
+      "why": "TWO of the four were the same snapshot figures the hero printed, twice on one page with no trace under either: 'Active listings' and 'Median list (SFR)'. KbHero renders exactly those two from the data it was passed (data.activeCount and kbMoneyFull(data.medianListPrice)); the old page passed medianDaysToPending: null and no medianDomActive, so the hero's only other clause never rendered. Those two figures print once now, in the Instrument, under the trace that covers them. 'Single-family active' is a separate case and the duplication argument does not reach it: it appeared exactly once on the KB page, in this rail. It moved for the other reason the rail failed, which is that it carried no source trace and no freshness stamp under a live-inventory figure, and this page's snapshot figures now sit as one set under one trace and one stamp. It survives as the Instrument's second figure, with one honest difference: the rail printed a zero and the Instrument omits a zero figure rather than printing one beneath a live-MLS trace. The fourth is a sentence, and the honest block's first paragraph already says it."
+    },
+    {
+      "what": "KbFeatured, and with it every listing photo, the tour and background-video badges, and resolveFeaturedItems",
+      "why": "The barrel ships no photo-card pattern, and the frozen barrel is not reachable from a route migration. The rail also required a photo to render a home at all (resolve-featured-items drops any tile with no photoUrl), so photo-less listings were invisible on a page whose job is showing what is actually for sale; the Ledger shows every priced, addressed listing. Dropping resolveFeaturedItems also removes an N-per-listing getListingVideos fetch whose only output was rail ordering. REPORTED AS A BARREL GAP."
+    },
+    {
+      "what": "The land-scale sqft outlier filter (tiles over 20,000 sqft) that resolveFeaturedItems applied",
+      "why": "It existed to stop a raw satellite-parcel tile from leading a price-DESC rail. This list is newest-first and states sqft in the row, so filtering would hide real inventory rather than protect an ordering. The address dedupe it also applied is kept, in the page."
+    },
+    {
+      "what": "KbExploreTowns' per-town median and count chips",
+      "why": "Not deleted — moved. The other-markets Ledger prints both figures per city and adds what the KB rail never had: the source trace and the freshness stamp for that population."
+    },
+    {
+      "what": "SmoothScrollProvider (Lenis) and components/site/kb/kb.css",
+      "why": "The v3 register carries its own token layer and its own motion ladder. A page-level smooth-scroll wrapper is KB-register machinery, and importing the KB stylesheet on a v3 page is two token layers on one document."
+    },
+    {
+      "what": "components/site/kb/KbOutOfAreaReferral.client.tsx, and the four .comm-alerts-form-stack rules kb.css carried for it (kb.css end-of-file block, W12)",
+      "why": "This route was its only importer, so migrating the capture onto V3Sheet left the file reachable from nothing, which ci:reachable-exports fails by design and which is how a second copy of a form starts drifting from the one that ships. Its whole behaviour moved: the same three questions in the same order, the same field names, the same 'Connect me' label, the same confirmation sentence, the same fine print, the same server action with all five keys, and the honeypot it carried is now V3Sheet's `trap`. The CSS block went with it because it styled nothing else (grep: comm-alerts-form-stack, comm-alerts-field, comm-alerts-textarea had exactly one consumer) and it sat at end-of-file, so removing it shifts no baselined rule above it; ci:css-layers is unchanged at 8 live offenders."
+    },
+    {
+      "what": "The KB form's single-screen stacked layout",
+      "why": "Pattern 5 is progressive by definition: one question visible at a time on 390. Same three fields, same names, same order of importance, asked one at a time. The KB button label ('Connect me'), the confirmation sentence, and the fine print are carried across verbatim."
+    }
+  ],
+  "jsonLd": {
+    "required": [
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry): Home, Oregon -> /cities, <city> -> /oregon/<slug>" },
+      { "type": "Place", "emittedBy": "MetadataBlock schemas array (place entry), address {state: OR, country: US}" },
+      {
+        "type": "Dataset",
+        "emittedBy": "MetadataBlock schemas array (dataset entry). variableMeasured is active listings (all property types) in listings, active single-family listings in listings, and the median active single-family list price in USD, the last one emitted only when the snapshot published a median."
+      }
+    ],
+    "note": "Meaning, wording, units and emission conditions are byte-identical to the KB page. The figures in the markup are the same snapshot fields the Instrument prints. One carried-across split, stated so it does not read as drift: the Dataset publishes the UNROUNDED median while the Instrument prints it rounded to the nearest $1,000, which is what the KB page did through usd() and kbMoneyFull. The visible figure follows the brand rounding rule; the machine payload stays equal to the source row."
+  },
+  "dataLayer": {
+    "getOutOfAreaCity": "lib/data/geo/getOutOfAreaCities.ts. One row of the cached geo snapshot index (geo_snapshot_mv, geo_type='city', active_all_count >= 1, minus the Central Oregon service area and feed noise). Called in generateMetadata and again as the page's FIRST await, where a miss is notFound() before anything streams — the middleware's 308 boundary depends on that 404.",
+    "getListingTiles": "lib/data/listings/. listing_tile_mv, city = <city name>, status active, limit 12, sort newest. Feeds the listings Ledger. Wrapped in withTimeoutFallback(5000) exactly as before.",
+    "getIndexableOutOfAreaCities": "lib/data/geo/getOutOfAreaCities.ts. The indexable top set (>= 5 active, top 25 by count). Feeds generateStaticParams AND the other-markets Ledger. Wrapped in withTimeoutFallback(4000) exactly as before.",
+    "isIndexableOutOfAreaCity": "lib/data/geo/getOutOfAreaCities.ts. Decides noindex in generateMetadata. The indexability policy lives in lib/out-of-area-cities.ts and this route does not restate it.",
+    "submitOutOfAreaReferral": "app/actions/out-of-area-referral.ts. Bound to OutOfAreaReferralSheet. Same action, same payload keys, same tags, same non-enrolling behaviour.",
+    "note": "Every read is a DAL function (G8), each resilient-cached with its own documented fallback, so a catch here would hide a real outage behind a confident empty page. Two reads, both rendered: nothing is fetched that the page does not show. Nothing aggregates raw listings at request time."
+  },
+  "sectionOrder": [
+    "MetadataBlock",
+    "KbSectionTracker",
+    "V3Breadcrumb",
+    "V3Instrument (level 1, id=top, the place answer)",
+    "V3Quiet (id=about, the honest block + home-market edges)",
+    "V3Ledger (id=listings, live active listings)",
+    "OutOfAreaReferralSheet (V3Sheet, id=referral)",
+    "V3Ledger (id=other-markets, other Oregon cities)",
+    "V3Footer"
+  ]
+}

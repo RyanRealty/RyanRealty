@@ -1,8 +1,28 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.6 (Grok 2026-08-12) — technical calls are agent-made. D9 locked: chart atom. D8 Matt-locked. Stop only D1–D3 / OAuth / money / license / taste. `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F or public `_v3/`. Admin Product phase still P12.**
+> **NEWEST SUBJECT: Broker OS plan v0.7 (Grok 2026-08-12) — D1–D9 locked. Person = next step + what they're doing now. SMS short. SkySlope live until cutover. `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`. Planning only. Do not mix with 11F or public `_v3/`.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.6 (who-decides)
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.7
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**No product code this session.** D1–D9 are locked.
+
+**Matt this pass:** D2 SkySlope is primary TMS until in-house Closings is dialed,
+then cut over (not a second vendor). D3 looking-at-a-home **wakes the phone** like
+a new lead. Person page must show next step + what they're doing now + who they
+are (expired etc.) without notes. SMS: clear, transparent, concise.
+
+**Agent this pass:** D1 = ask first (short text), then a **buyer** packet if they
+want it — never a seller CMA. Wake SMS: `{name} is looking at {address}.` Identified
+person + specific home, one per person+listing per session (not every scroll).
+
+**Still Matt:** OAuth reconnects, money/ads, license, named-artifact taste.
+
+**Loop E:** public P9 still in flight. Do not `git add -A`.
+
+**Next:** A1 queue, A3 person header, A4 wake, A5 buyer ask — when Matt says go.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.6 (who-decides)
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **No product code this session.** Matt: technical questions are the agent's call

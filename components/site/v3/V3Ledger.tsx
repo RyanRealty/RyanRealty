@@ -87,6 +87,19 @@ type V3LedgerRowBase = {
   /** React key when two rows can share an href. Defaults to href. */
   id?: string
   /**
+   * A verified photograph OF THE THING THE ROW NAMES. Optional, and the option is
+   * the point: a place ledger may only show a picture when it has one it can
+   * vouch for, so the absence of a photo is the honest state and never a
+   * stand-in. Callers resolve it from a verified registry or from a real listing
+   * inside the place's own boundary; nothing here fetches, picks, or falls back.
+   *
+   * `src` only. The photo is DECORATIVE by construction — the row's accessible
+   * name is `what`, the row is already one link, and a second name on the image
+   * would make a screen reader read every row twice — so it renders `alt=""` and
+   * takes no alt text from the caller.
+   */
+  media?: { src: string }
+  /**
    * Only when the row text is shorter than the name a screen reader needs. Never a
    * substitute for `what`.
    */
@@ -290,11 +303,29 @@ export function V3Ledger(props: V3LedgerProps) {
                 aria-label={row.ariaLabel}
               >
                 <span className="v3-ledger__when">{row.when}</span>
-                <span className="v3-ledger__what">
-                  {row.what}
-                  {row.detail ? (
-                    <span className="v3-ledger__detail">{row.detail}</span>
+                <span
+                  className={cn('v3-ledger__what', row.media && 'v3-ledger__what--media')}
+                >
+                  {row.media ? (
+                    /* Plain img, not next/image: these are owned files under public/
+                       and remote MLS photo URLs in the same column, and the row must
+                       render identically for both without depending on image-host
+                       configuration. Decorative by construction — see `media`. */
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      className="v3-ledger__thumb"
+                      src={row.media.src}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : null}
+                  <span className="v3-ledger__label">
+                    {row.what}
+                    {row.detail ? (
+                      <span className="v3-ledger__detail">{row.detail}</span>
+                    ) : null}
+                  </span>
                 </span>
                 {row.value ? (
                   <span className="v3-ledger__value">{row.value}</span>
