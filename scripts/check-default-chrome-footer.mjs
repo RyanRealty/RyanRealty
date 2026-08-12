@@ -38,6 +38,7 @@ const NO_FOOTER_PREFIXES = [
   'app/lp/', // LPs are conversion-focused, no marketing chrome
   'app/sign/', // distraction-free e-signature surface
   'app/concept/', // KB design previews carry their own chrome
+  'app/dev/', // dev-only design prototypes: noindex, unlinked, own chrome by definition
 ]
 
 /** Redirect-only pages — they never render UI, so they need no footer. */
