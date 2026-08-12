@@ -1,8 +1,29 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.9 (Grok 2026-08-12) — D10 Grok Imagine is the camera. Park the video zoo. First build still A3/A4/A1. Do not mix with 11F or leftover public WIP.**
+> **NEWEST SUBJECT: Broker OS plan v0.10 (Grok 2026-08-12) — third audit + D11 voice pending Matt. First build still A3/A4/A1. Do not rewrite VOICE.md until D11 answers. Do not mix with 11F or leftover public WIP.**
 > Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.9
+# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.10
+
+`docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
+**No product code this session.** D1–D10 locked. **D11 (public voice) pending Matt.**
+
+**Third audit:** A46 voice machine already failed (beige gates, corny rule-3 quotes).
+A47 closed person labels. A48 A4 ships with A1. A49 buyer packet sections named.
+A51 Imagine wrappers still old names; listing-tour still Replicate. A55
+`/admin/social` is a traffic report.
+
+**D11 recommended:** one short law, named exemplars, tiny punctuation/conduct gate.
+Retire Buffett-as-law as a gate. Kill rule 3. Do not rewrite `VOICE.md` until the
+seven questions are answered.
+
+**First build (when Matt says go):** A3 person header, A4 wake rewrite **with** A1
+queue. Voice rewrite is a separate slice after D11.
+
+**Still Matt:** D11 seven questions; say go; money/ads; license; named-artifact taste.
+
+**Loop E:** do not `git add -A`.
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.9
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 **No product code this session.** D1–D10 locked.

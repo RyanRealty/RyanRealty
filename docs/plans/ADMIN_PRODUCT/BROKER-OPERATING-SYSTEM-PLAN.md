@@ -1,7 +1,7 @@
 # Broker Operating System — plan of record
 
 **Started:** 2026-08-12 (Grok, planning only — no product code this session)
-**Status:** v0.9 plan. D1–D10 locked. Plan itself adversarially audited. Technical calls are agent-made. Complete enough to build A3/A4/A1 — not a finished OS.
+**Status:** v0.10 plan. D1–D10 locked. D11 (public voice) pending Matt. Third adversarial pass recorded. Technical calls are agent-made. Complete enough to build A3/A4/A1 — not a finished OS. Do not rewrite `VOICE.md` until D11 answers land.
 **Home:** `docs/plans/ADMIN_PRODUCT/` (G44 covered by the ADMIN_PRODUCT package row)
 **Jobs vs mechanics:** IA destinations and KEEP jobs still name the work. How we
 currently do them is not sacred. See §Implementation amnesia.
@@ -47,8 +47,9 @@ if the call is wrong.
 
 **Matt still decides (stop):** outbound to real people (the actual send), money/ads, OAuth logins
 he must click, license/forms, named-artifact taste ("does this packet blow them
-away"). Product meaning that is still open: none of D1–D10. New product meaning
-gets a plain-language question, then a lock.
+away"), and **D11 voice** (the seven questions in §4). Product meaning that is
+still open: D11. D1–D10 stay locked. New product meaning gets a plain-language
+question, then a lock.
 
 **Agent decides (do not stop):** atom vs pattern, which quarry piece, schema/join,
 SEO title mechanics, default operating grants that still honor draft-first,
@@ -117,6 +118,28 @@ A1–A30 attacked the stacked prompts. They did not attack the plan that grew ou
 | A45 | **A generated house is not the listing.** Photoreal AI "this home" is slop and a license hole. | First listing video that isn't 123 Main is a beauty and truth failure. | Listing motion = Imagine **image-to-video of the real MLS photo**. Never text-to-video a fake exterior and caption it as the property. |
 
 **v0.8 verdict:** The plan is complete as a **plan of record for meaning**. It is not a finished brokerage OS, and it was not fully audited until this pass. Further constitution is the failure mode. The best outcome now is to build A3/A4/A1 against these dispositions, not to add Loop H.
+
+### 0c. Third adversarial pass (v0.10 — will it actually work?)
+
+A1–A45 attacked the brief and then the plan. They did not ask whether the shipped
+loops would still sound like us, or whether a few remaining holes would make the
+first week fail in production. This pass does. It does not reopen D1–D10.
+
+| # | Attack | Why it matters | Disposition |
+|---|---|---|---|
+| A46 | **Voice is a second OS, and it already failed once.** 2026-08-05 was "once and for all": nuke old lists, Buffett letters as law, one file `VOICE.md`. GOV.UK mechanics became what gates could check → site went beige (removed 2026-08-06). Shape bans were retired because Buffett uses them. Rule 3 ("judgment in a quote under a name") fought "never invent quotes" and produced fake-Matt lines that were reverted. `.cursor/rules/blog-voice.mdc` is a second voice file. This plan only locks Value my home. Social, SMS, newsletter, blog, and site will keep drifting. | A working copilot that overexplains, sounds corny, or leans on em dashes is the same product failure as a missing queue. Regex cannot catch "corny." Piling constructions is how we got beige. | **D11 pending Matt.** Replace the voice machine: one short law, named exemplars, tiny mechanical gate (punctuation + invented quotes + Value my home). Retire Buffett-as-law as a gate. Kill rule 3 quotes. Kill the long word lists unless Matt keeps a tiny pander/urgency set. Do not rewrite `VOICE.md` until the seven questions are answered. Code comments stay out. |
+| A47 | **Dual-intent taxonomy is not a closed list.** A3 says "expired / FSBO / buyer / …". Tags exist (`audience:*`, `seller:*`). The header will invent labels, or notes will win again. | Two records, or one vague label, hides the truth A38 already named. | **Agent lock.** Closed set, multiple OK: `Expired listing` · `FSBO` · `Buyer` · `Seller` · `Client`. Dual-intent is two labels on one person, not a sixth type and not a second record. Source = tags + live work + latest `listing_view`. Broker does not type the label. |
+| A48 | **A wake SMS without Today looking-at is a missed phone.** D3 texts the broker. If they do not look at the text, the queue still hides the person. | SMS is the poke. The job is "tell me everyone I need to respond to." | A4 and A1 ship together. Today shows looking-at. Do not ship the rewrite of `queueReturnVisitAlert` as a text-only feature. |
+| A49 | **The buyer packet has no template.** D1 says what it is not (seller CMA, lender BPO). A5 will stall or silently reuse one of those. | Wrong artifact on a hot buyer is the original A3/A34 failure. | Name the sections now, not the beauty: (1) how this home compares (comps, days, price vs band), (2) what to think about offering. Know-this-home engine. Matt taste-stops the first PDF. Do not invent a third valuation OS. |
+| A50 | **The calendar cannot learn while `measured` stays 0.** CAP-015 writer exists (`measurement-status.ts`). If no live row flips, G3 "optimal hours" is theater. | A22 already said this. Building G3 on empty bias repeats it. | Do not build a new optimizer. Confirm one executed post writes `content_performance` and flips `measured`. Then G3. Default hours until that row exists. |
+| A51 | **Imagine wrappers and listing-tour still the old camera.** `lib/grok-image.ts` = `grok-imagine-image`. `lib/grok-video.ts` = `grok-imagine-video`. `video/listing-tour/scripts/prepare-tour.ts` still imports Replicate for i2v. | D10 said upgrade, don't add a second client. A listing tour that still calls Wan/Replicate is the zoo. | G5 upgrades wrappers to `grok-imagine-image-quality` + `grok-imagine-video-1.5`. Listing-tour i2v points at Imagine on next touch. Do not add a second client. |
+| A52 | **Two (really three) Grok talkers.** Broker SMS agent, copilot drafts, social caption generators. Three voices. | Public-facing copy will not stay consistent if each runtime has its own prompt novel. | One public-facing law (D11). Anything a person reads goes through it. Admin instrument copy is out unless it is forwarded or sent. |
+| A53 | **v3 barrel has no chart atom.** D9 locked. `components/site/v3/index.ts` still exports Instrument as a big number. KB still holds the real market charts. | A Market migration can ship without the line. | Public session owns the atom. Do not build it here. Flattening a series is still a defect. |
+| A54 | **Newsletter beauty is ungated.** The engine is the healthiest admin loop. An ugly or corny edition can still drain after approve. | Voice gates ≠ designer's eye. | Draft-first stays. Beauty is Matt's eye, not a regex. D11 applies to the prose. |
+| A55 | **`/admin/social` is a traffic report.** `next.config.ts` rewrites it to `/admin/analytics/social` (GA4 + visitor_sessions). OAuth callbacks land there. G4 connect UI is not that page. | A broker who "connects Instagram" and lands on a sessions chart will think the product is broken. | Settings = connect. Today = calendar. `analytics/social` stays a report. Do not make the rewrite the product. |
+| A56 | **Regex cannot catch corny or overexplain.** `voice-constructions.cjs` still grows by "we found this by eye." Agents write to pass the gate. That is how the site went beige. | A once-and-for-all voice that is a novel of regex will fail the same way again. | Mechanical gate after D11: punctuation + invented quotes + Value my home + (optional) a tiny pander/urgency list. Taste = named exemplars + "would Matt send this?" Delete `.cursor/rules/blog-voice.mdc` as a second canon when D11 lands. |
+
+**v0.10 verdict:** Meaning still holds. First build is still **A3 / A4 / A1**. The new hole that would make the whole OS sound wrong is voice. Lock D11 from Matt's answers, then stop writing constitution. Do not start Loop H. Do not rewrite public copy in this session.
 
 ---
 
@@ -213,10 +236,52 @@ Two GBP jobs, one loop:
 
 Loop F still scores "how does this drive someone in" (including map-pack queries). Loop G owns the operating machine so presence does not die in a reconnect checklist.
 
-### Voice lock — valuation
+### Voice lock — valuation (subset of D11)
 
 Never: "What's my home worth?" / "What is your home worth?"
 Always: **Value my home** or **Get my home's value** (Get your home's value when addressing them).
+
+### Voice lock — public-facing (D11 pending)
+
+This is the once-and-for-all replacement for the 2026-08-05 machine. It is **not
+locked** until Matt answers the seven questions in §4. Until then, do not rewrite
+`VOICE.md`, do not delete gates, do not start a site-wide copy pass.
+
+**What failed last time.** We tried to encode taste as regex. Buffett-as-law plus
+GOV.UK mechanics plus construction bans plus word lists produced beige (agents
+wrote to pass the gate) or corny (rule 3 invented quotes). A second file
+(`.cursor/rules/blog-voice.mdc`) drifted from the canon. Colons are not in
+`PUNCTUATION` in `scripts/brand-voice-vocabulary.cjs`, but the blog rule still
+talks about "dramatic colons."
+
+**Recommended machine (pending yes):**
+
+1. **One short law, one file.** Honest, simple, transparent. Write to one person.
+   Say the fact. Then stop. Never pander, never sermon, never self-praise, never
+   overexplain. Never invent a quote. Live numbers. Value my home.
+2. **Retire Buffett-as-law as a gate.** Letters can stay optional reading. The law
+   is Matt's sentence, not a fifty-year corpus agents cannot check.
+3. **Kill rule 3.** If he did not say it, no quotes. Judgment is a short sentence
+   or we cut it.
+4. **Punctuation (he named it):** no em dash, no en dash, no semicolon, no `!`.
+   Colon only as a label or list (`Beds: 3`), never as a dramatic beat
+   (`Here's the thing:`).
+5. **Shrink or kill word lists.** Do not ban words "to be safe." Keep only what
+   Matt keeps in the D11 answers.
+6. **Named exemplars** he would actually send (site, SMS, caption, newsletter,
+   packet). Review test: "does this sound like those?"
+7. **Mechanical gate stays tiny:** punctuation + invented quotes + Value my home
+   + (optional) a few pander/urgency phrases. Not a novel of regex.
+8. **Scope:** anything a member of the public reads. Code comments out. Admin
+   instrument copy out unless it is forwarded or sent. MLS remarks stay out
+   (format-specific) unless Matt pulls them in. Flyers/signage stay out.
+   Ads stay parked.
+
+**Surfaces in:** site, SMS, email, newsletter, blog, social captions, GBP posts,
+packets, video on-screen text we author, public error/empty states.
+
+**Surfaces out:** code, comments, commit messages, logs, internal docs, admin UI
+(unless sent), someone else's words (reviews, other brokers' remarks, MLS fields).
 
 ### SMS lock
 
@@ -231,7 +296,7 @@ Two different texts. Do not conflate them.
 
 Open a lead and the page answers three things without notes:
 
-1. **Who they are** — labels, more than one is OK (`Expired listing · looking at homes`)
+1. **Who they are** — closed set, more than one is OK: `Expired listing` · `FSBO` · `Buyer` · `Seller` · `Client`. Dual-intent is two labels on one person (`Expired listing · Buyer`), not a sixth type. Source = tags + live work + latest `listing_view`. Broker does not type the label.
 2. **What's the next step** — the copilot recommendation (broker can override)
 3. **What they're doing right now** — latest identified `listing_view` (live session, else last 24h, else "not on the site")
 
@@ -304,6 +369,7 @@ is the thing we replace.
 | TC foundation | `tc_*`, envelope engine, `/admin/forms`, ingest | Closings — unused in production |
 | SkySlope | Files API + Forms library API + Chrome session | **Live TMS until cutover (D2).** Baseline + form blanks. Not a second SoR after cutover. |
 | Value my home lock | PUBLIC_SITE_UX_OVERHAUL + PUBLIC_PRODUCT decisions | CTA language — still violated in live copy |
+| Voice canon (2026-08-05) | `marketing_brain_skills/brand-voice/VOICE.md` + `scripts/brand-voice-vocabulary.cjs` + `scripts/voice-constructions.cjs` + `.cursor/rules/blog-voice.mdc` | **Quarry to replace after D11.** Steal: one-file intent, never-invent-quotes, Value my home, punctuation. Cut: Buffett-as-law as a gate, rule 3 quotes, construction zoo, second blog file, long word lists. |
 | GPC / suppression | `lib/crm/gpc.ts`, `lib/comms/guards.ts` | Fail-closed on watch + send |
 
 ---
@@ -316,7 +382,8 @@ is the thing we replace.
 - No single ranked queue that speaks in Matt's sentence: everyone to respond to, plus "looking at this home."
 - Suggested reply exists; "yes → Grok sends" does not (broker still taps send in admin).
 - Visitor-hot is a fourth notification path, Matt-hardcoded, not assigned-broker. D3 now requires a wake SMS like a new lead — **rewrite `queueReturnVisitAlert`** (already on the wake rail, wrong text, per-day, FUB-keyed). Do not add a fifth inbox.
-- Person page does not lead with **next step** + **what they're doing now** + who they are (expired / FSBO / buyer). That is buried in notes.
+- Person page does not lead with **next step** + **what they're doing now** + who they are. That is buried in notes. Closed label set (agent lock): `Expired listing` · `FSBO` · `Buyer` · `Seller` · `Client`. Multiple OK.
+- A4 without A1 is a missed phone: the wake SMS is the poke; Today must also show looking-at.
 
 ### Known sellers (C)
 
@@ -331,7 +398,7 @@ is the thing we replace.
 - Newsletter subscribe + curated draft engine **exist**. Beauty bar is not gated.
 - Behavior exists on identified people. Newsletter-only email with no session identify = blind.
 - Copilot does not yet say "they're looking at 123 Main" with a one-yes send/ask.
-- Buyer packet is locked (D1): ask first, then a buyer comparison/offer packet — never a seller CMA. The packet itself is not built yet.
+- Buyer packet is locked (D1): ask first, then a buyer comparison/offer packet — never a seller CMA, never a lender BPO. The packet itself is not built. Sections named now: (1) how this home compares (comps, days, price vs band), (2) what to think about offering. Matt taste-stops the first PDF.
 - Listing alerts + portal are stronger *behavior* doors than newsletter; newsletter is the named *capture* door. Must join, not compete.
 
 ### Closings (B)
@@ -341,6 +408,13 @@ is the thing we replace.
 - Form libraries ingested (~111 versions, July audit) but template→fill→send is not a daily path.
 - Zero production envelopes. CRM person ↔ tc_deal still unbridged.
 - SkySlope remains the working file.
+
+### Voice (public-facing — D11 pending)
+
+- The 2026-08-05 "once and for all" is still the machine, and it failed: beige from gates, corny from rule 3, a second blog file, punctuation fights (colons).
+- This plan only locked Value my home. SMS, social, newsletter, blog, site, and packets do not share one short law.
+- Regex cannot catch overexplain or corny. Growing `voice-constructions.cjs` is how we got beige.
+- Do not rewrite `VOICE.md` or start a copy pass until Matt answers the seven D11 questions.
 
 ### Beauty
 
@@ -368,6 +442,7 @@ Do not start a chart-library program. Steal recharts + the honest KB charts. Add
 - GBP health cron / digest / photo pipeline are useless until OAuth is live. Name-stuffing the GBP title is a suspension trigger — never.
 - List-kit already is the listing-launch generate path (video + flyers + carousel + single). It is not wired as a calendar slot a new broker can run.
 - Today does not show social health or deals as lanes. The 11 destinations name the jobs; the home does not yet *feel* like a brokerage cockpit.
+- `/admin/social` rewrites to `/admin/analytics/social`, a traffic report. Settings is the connect door. Today is the calendar. Do not make the rewrite the product.
 
 Until tokens are live, do not build a second publisher. Reconnect is the account owner (Matt for brand GBP; each broker for their own IG/LI). Agents prepare the checklist only.
 
@@ -399,7 +474,17 @@ Park: Replicate Kling / Hailuo / Luma / Veo / Wan / Seedance, Vertex Veo / Image
 
 Not Imagine (keep): Remotion for live numbers and brand-locked motion; list-kit compositors for type on real MLS photos; FFmpeg / first-frame; owned camera and drone. Listing motion is **i2v of the real photo**, never a generated house captioned as the property. If Imagine drifts (we already watched it re-paint vector stills), fall back to still + Remotion. Type and prices are composited in code, never baked into a prompt.
 
-D1–D10 are locked. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. Produce is Imagine (D10), not a model zoo.
+**D11 — Public voice, once and for all?** **PENDING MATT.** Recommended machine is in the Voice lock above. Do not rewrite `VOICE.md` until these seven answers land. Then one file, one law, tiny gate, named exemplars. Kill the rest.
+
+1. **Punctuation.** No em dash, no en dash, no semicolon, no `!`. Colon only as a label or list (`Beds: 3`), never as a dramatic beat (`Here's the thing:`). Yes or no?
+2. **Retire Buffett-as-law.** The law is honest, simple, transparent: fact, then stop. Letters can stay optional reading. They are not a gate. Yes or no?
+3. **Kill rule 3.** If you did not say it, no quotes. Interpretation is a short sentence or we cut it. Yes or no?
+4. **Word lists.** Kill the long bans. Keep only Value my home + never invent quotes, **or** also keep a tiny pander/fake-urgency list, **or** exemplars only. Which?
+5. **Five exemplars** you would actually send: one site sentence, one SMS, one IG caption, one newsletter line, one packet sentence. Will you write them, or review drafts?
+6. **Admin UI copy.** Out (instrument language) unless the words are forwarded or sent. Yes or no?
+7. **MLS remarks.** Stay out (format-specific). Yes or no?
+
+D1–D10 are locked. D11 is the open product-meaning stop. Do not auto-send a buyer CMA; the D1 path is ask-first after a broker yes. G1 is GBP + Matt's primary IG + brand Facebook (D6). G3: first week per-item, then the D7 week-grant. Produce is Imagine (D10), not a model zoo. Voice copy passes wait on D11.
 
 ---
 
@@ -439,8 +524,9 @@ Loop G extra: Generate (Imagine, D10) / Variant (per channel) / Approve (one yes
 | Social publish | 5 | 2 | 2 | 2 | 4 | 1 | no | Tokens first. Then the calendar door. |
 | GBP | 5 | 1 | 3 | 1 | 5 | 1 | no | Matt OAuth. Then the same yes-path. |
 | Public v3 | 5 | 3 | 4 | 3 | 5 | 1 | in flight | Grind P9. Add the D9 atom. Do not start OS #3. |
+| Public voice | 5 | 1 | 2 | 2 | 5 | — | no | Replace the 2026-08-05 machine after D11. Keep punctuation + invented quotes + Value my home. |
 
-A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the person page and the wake text, this week.
+A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the person page, the wake text, and the voice machine.
 
 ---
 
@@ -455,6 +541,7 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 - No social post without a fresh stamp (calendar grant counts; silence does not)
 - No invented number on a chart axis, tooltip, or sparkline
 - No data surface shipped that was only grepped — look at it
+- No invented quote. No "what's my home worth" on a CTA we would tap. After D11: no em dash / semicolon / `!` in public prose.
 
 ### P1 — first complete loops (this is "start using it")
 
@@ -504,6 +591,8 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 - Flattening a time series to a single figure and calling it Instrument
 - Kling / Veo / Hailuo / Luma / Wan / Seedance / Synthesia / Fal as a second generative camera
 - A generated house captioned as the listing
+- Buffett-as-law as a gate, rule 3 invented quotes, a second voice file, a novel of construction regex
+- `/admin/social` as the connect UI (it is a traffic report)
 
 ### P4 — later
 
@@ -517,8 +606,8 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 |---|---|---|
 | **A1** Copilot queue sentence | Matt can ask "who do I respond to" and the list is true (inbound + looking-at + ready docs) | None for a read-only prototype; write path needs composer reuse |
 | **A2** Yes → send one SMS | Timeline `sms_out`, suppression held, sequence paused. Text is short and clear. | Matt yes on that send |
-| **A3** Person header | Open an expired (or any lead): who they are, next step, what they're doing now — without notes | None |
-| **A4** Looking-at wake | Identified listing_view → `{name} is looking at {address}.` Rewrite `queueReturnVisitAlert`. One per person+home per session | D3 locked. Same rail. Broker SMS opt-in still applies. |
+| **A3** Person header | Open an expired (or any lead): who they are (closed set, multiple OK), next step, what they're doing now — without notes | None |
+| **A4** Looking-at wake | Identified listing_view → `{name} is looking at {address}.` Rewrite `queueReturnVisitAlert`. One per person+home per session. **Ship with A1** so Today also shows looking-at. | D3 locked. Same rail. Broker SMS opt-in still applies. |
 | **A5** Buyer ask | After broker yes, lead gets a short ask that names the home (no "we watched you"); yes → buyer packet, not seller CMA, not lender BPO | D1 locked. Packet is taste (Matt). |
 | **C1** One expired blow-away packet | Message + PDF on a real expired in-scope listing, manual send, no generic services hero | Matt review of packet |
 | **D1** Newsletter identity + home list | Subscribe in a browser that browsed listings → person shows those homes | Confirm subscribe identify path |
@@ -531,11 +620,13 @@ A 2 on Clear or Simple with a 5 on Best means **replace the how**. That is the p
 | **G5** Imagine is the camera | One listing still → Imagine i2v (1.5) → stored MP4 → draft on Today. Wrappers on `grok-imagine-video-1.5` / `grok-imagine-image-quality`. No Replicate call on the path. | D10. `XAI_API_KEY` already set. Matt taste on the clip. |
 | **V1** Chart inventory | Path:line of every public, admin, and packet surface that displays a series as type/table only, plus every live chart that was not browser-looked-at. | None. Planning/evidence. Do not migrate public charts in a broker session. |
 | **V2** One honest chart, looked at | One series (recommend: `/housing-market` trend or admin overview sparkline) is a real chart, 390 + 1280, figure reconciles to the line, source on screen. | Public half = public session (D9 locked: atom). Admin half can run here. |
+| **Voice** One law, one file | `VOICE.md` is the short law. Buffett-as-law is not a gate. Rule 3 is gone. `blog-voice.mdc` is deleted. Mechanical gate is punctuation + invented quotes + Value my home (+ optional tiny pander/urgency). Five named exemplars in the file. | **D11 answers.** Do not start this slice before they land. Not mixed with A3/A4/A1. |
 
 Do not start B1 until A1/C1/D1 are specified with evidence. Closings is "soon," not "before the copilot can talk."
 G1 tokens are already live. G2/G5 share Today's yes-path with A2; do not build a third approve button. Produce is Imagine (D10).
 G3 is the north star slice; it is not the first slice. One live Imagine post comes first or the calendar is a slideshow.
 V1 can run in the planning pass. V2 public waits on the other process's barrel.
+Voice waits on D11. First build is still A3 / A4 / A1.
 
 ---
 
@@ -844,7 +935,7 @@ cutover (D2); then it is not the SoR.
 
 WHO DECIDES: Matt — OAuth clicks, money/ads, license, named-artifact taste,
 and product meaning asked in plain language. Agent — technical shape, recorded
-here. Do not stop to ask atom-vs-pattern. D1–D10 are locked.
+here. Do not stop to ask atom-vs-pattern. D1–D10 are locked. D11 voice is pending Matt.
 
 NORTH STAR — seven loops, one person record, one generation of code
   A Copilot: "Tell me everyone I need to respond to" → recommend → Matt yes → do it → CRM.
@@ -887,6 +978,10 @@ FUNNEL: on every page, how does this drive a buyer or seller in. If it does not,
 cut or merge.
 
 VOICE: never "what's my home worth." Always "Value my home" / "Get my home's value."
+  Public-facing copy is honest, simple, transparent. Fact, then stop. Never pander,
+  never sermon, never invent a quote. D11 pending: one short law, named exemplars,
+  tiny punctuation gate. Do not rewrite VOICE.md until those answers land.
+  Code comments are out. Admin UI is out unless the words are sent.
 SMS: clear, transparent, concise. No extra stuff.
 BEAUTY: outbound blows them away. Admin is a finished instrument (ADMIN_UI), not a
 marketing page. If it would not make them want to see what we're about, it does not send.
@@ -904,9 +999,9 @@ disk, then the skills that match the loop you are scoring.
 Score every locked process: best / simple / clear / e2e / funnel / chart / look — on the job, then
 say whether the current how should be kept or replaced.
 Deliver: snapshot, scorecard, loop gaps, ranked P0–P4, first slices A1/A2/A3/A4/A5/C1/D1/B1/E1/F1/G1/G2/G3/G4/G5/V1/V2.
-Stop for Matt on OAuth logins, money/ads, license, and named-artifact taste.
+Stop for Matt on OAuth logins, money/ads, license, named-artifact taste, and D11 voice.
 Technical shape is decided in this file toward the goals. Do not ask. Record it.
-D1–D10 are locked. Scorecard is in this file. First build is A3 person header, A4 rewrite of queueReturnVisitAlert, A1 queue. Produce is Grok Imagine. Then wait only on those stop classes.
+D1–D10 are locked. D11 is pending. Scorecard is in this file. First build is A3 person header, A4 rewrite of queueReturnVisitAlert (with A1 so Today shows looking-at), A1 queue. Produce is Grok Imagine. Voice rewrite waits on D11. Then wait only on those stop classes.
 ```
 
 ---
@@ -925,3 +1020,4 @@ D1–D10 are locked. Scorecard is in this file. First build is A3 person header,
 - 2026-08-12 — v0.7 D1–D3 locked. D2: SkySlope is live TMS until in-house is dialed, then cut over. D3: looking-at-a-home wakes the broker like a new lead (identified home, not every scroll). D1 (agent): ask first in a short text, then a buyer packet — never a seller CMA. SMS lock: clear, transparent, concise. Wake = `{name} is looking at {address}.` Ask = noticed the home; want a comparison? Person header: who they are, next step, what they're doing now — not in notes. Slices A3/A4/A5.
 - 2026-08-12 — v0.8 adversarial audit of the *plan* (not only the brief). Complete as meaning, not as a built OS. Return-visit alert already exists and is the wrong text (A32). Lead ask does not narrate the watch (A33). Buyer packet ≠ lender BPO (A34). Person header has sources, not typed fields (A35). Cutover is a checklist (A37). First build is A3/A4/A1. Scorecard filled. Stop writing constitution.
 - 2026-08-12 — v0.9 D10: Grok Imagine is the only generative camera (`grok-imagine-video-1.5` + `grok-imagine-image-quality`). Park Kling/Veo/Hailuo/Luma/Wan/Seedance/Fal/Synthesia. Keep Remotion + list-kit compositors + FFmpeg. Listing motion = i2v of the real MLS photo. §7f is the produce canon. Slice G5. IG @ryanrealtybend already live.
+- 2026-08-12 — v0.10 third audit + voice. A46: the 2026-08-05 voice machine already failed (beige gates, corny rule-3 quotes, second blog file). D11 pending Matt (seven questions). Recommended: one short law, named exemplars, tiny punctuation/conduct gate; retire Buffett-as-law as a gate; kill rule 3. A47 closed person labels. A48 A4 ships with A1. A49 buyer packet sections named. A51 wrappers still old model names; listing-tour still Replicate. A55 `/admin/social` is a traffic report. First build still A3/A4/A1. Do not rewrite `VOICE.md` this pass.
