@@ -76,7 +76,7 @@ export const MAP_SEARCH: NavLink = {
 /** Global chrome valuation CTA — on-page form on /sell (Matt Wave 0). */
 export const VALUATION_FORM: NavLink = {
   href: '/sell#get-value',
-  label: "Get your home's value",
+  label: 'Value my home',
 }
 
 /** Ad-funnel LP only — never use in primary chrome. */
