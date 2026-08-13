@@ -1,6 +1,6 @@
 'use server'
 
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { getAuthLimiter } from '@/lib/rate-limit'
 import {
   hasNarrowingFilter,
@@ -15,6 +15,7 @@ import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 
 /**
  * Anonymous "get listing alerts for this search" capture (public).
@@ -37,6 +38,8 @@ export async function submitSearchAlertSignup(input: {
   filters: Record<string, unknown>
   /** Honeypot, a hidden field humans never fill. */
   company?: string
+  /** VisitTracker session id. READ on the client, never minted here. */
+  sessionId?: string
 }): Promise<SearchAlertResult> {
   // 1. Honeypot. A filled hidden field means a bot. Pretend success, do nothing.
   if (typeof input.company === 'string' && input.company.trim() !== '') {
@@ -108,31 +111,50 @@ export async function submitSearchAlertSignup(input: {
       sourceUrl: searchUrl,
       message: `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
     })
-    fubPersonId = result.ok ? result.personId : null
-    if (fubPersonId) {
-      await canonicallyTagLead({
-        fubPersonId,
-        audience: 'buyer',
-        source: 'idx-registration',
-        tier: 'warm',
-        originContext: {
-          source: 'saved-search',
-          sourceLabel: 'Listing-alert signup',
-          landingPage: searchUrl,
+    const nativeId = result.ok ? result.personId : null
+    fubPersonId = nativeId
+    if (nativeId) {
+      try {
+        await canonicallyTagLead({
+          fubPersonId: nativeId,
           audience: 'buyer',
+          source: 'idx-registration',
           tier: 'warm',
-          want: `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
-        },
-      })
-      // Notify the assigned broker so a signup is never missed — a native
-      // crm_tasks row with a near-due reminder (replaces the dead FUB
-      // createRealtimeTask). Awaited so the serverless freeze cannot drop it.
-      await createNativeTask({
-        personId: fubPersonId,
-        name: `New listing-alert signup: ${summary}`,
-        type: 'Follow Up',
-        dueInMinutes: 5,
-      })
+          originContext: {
+            source: 'saved-search',
+            sourceLabel: 'Listing-alert signup',
+            landingPage: searchUrl,
+            audience: 'buyer',
+            tier: 'warm',
+            want: `Listing alerts for ${name}${summary ? `, ${summary}` : ''}`,
+          },
+        })
+        // Notify the assigned broker so a signup is never missed — a native
+        // crm_tasks row with a near-due reminder (replaces the dead FUB
+        // createRealtimeTask). Awaited so the serverless freeze cannot drop it.
+        await createNativeTask({
+          personId: nativeId,
+          name: `New listing-alert signup: ${summary}`,
+          type: 'Follow Up',
+          dueInMinutes: 5,
+        })
+      } catch {
+        // Best-effort. Tag/task blip must not skip the browser stitch.
+      }
+      // 5b. Anonymous-to-known stitch. Cookie rr_vid covers callers that omit
+      //     sessionId; a valid uuid v4 also backfills visitor_sessions.
+      //     Best-effort: stitch failure must not fail the signup.
+      try {
+        const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+        await stitchFormSubmitIdentity({
+          personId: nativeId,
+          email,
+          rrVid,
+          sessionId: input.sessionId,
+        })
+      } catch {
+        // Best-effort. Identifying the browser must never fail the signup.
+      }
     }
   } catch {
     // Best-effort. Never block the signup or the durable persistence.

@@ -45,6 +45,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
@@ -83,6 +84,7 @@ export function NeighborhoodAlertsSheet({ cityName, neighborhoodName }: Props) {
           filters: { city: cityName, propertyType: 'A' },
           // The trap's value, not a constant. See the header.
           company: answers[TRAP.name] ?? '',
+          sessionId: readRrSessionId(), // hydration-safe
         })
         if (result.ok) {
           // F2 residual (label + href only; no email) so return visits show the

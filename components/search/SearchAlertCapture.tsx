@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { getFiltersSummary } from '@/lib/search-filters'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import { cn } from '@/lib/utils'
@@ -280,7 +281,12 @@ export function SearchAlertCapture({
     setState('idle')
     setError('')
     startTransition(async () => {
-      const res = await submitSearchAlertSignup({ email, filters, company })
+      const res = await submitSearchAlertSignup({
+        email,
+        filters,
+        company,
+        sessionId: readRrSessionId(), // hydration-safe
+      })
       if (res.ok) {
         // F2 residual: label + browse href only (no email/token) for return visits.
         rememberGuestWatch(buildGuestWatchFromFilters(filters)) // hydration-safe: event/effect storage only

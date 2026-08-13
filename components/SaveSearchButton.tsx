@@ -11,7 +11,7 @@ import {
   SAVED_SEARCH_ARRAY_QUERY_KEYS,
   readArrayParam,
 } from '@/components/search/SearchAlertCapture'
-import { trackEvent } from '@/lib/tracking'
+import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import { buildSearchSavePayload, countActiveSearchParams } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
@@ -128,7 +128,12 @@ export default function SaveSearchButton({ user, pathContext }: Props) {
       }
       stringFilters[key] = typeof value === 'boolean' ? (value ? '1' : '0') : String(value)
     }
-    const res = await submitSearchAlertSignup({ email, filters: stringFilters, company })
+    const res = await submitSearchAlertSignup({
+      email,
+      filters: stringFilters,
+      company,
+      sessionId: readRrSessionId(), // hydration-safe
+    })
     if (res.ok) {
       setStatus('done')
       // F2 residual for return visits (label + href only; no email).

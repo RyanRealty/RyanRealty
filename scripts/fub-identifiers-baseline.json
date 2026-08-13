@@ -1,6 +1,6 @@
 {
   "note": "TRACK3 fub identifier ratchet — counts may only shrink. Full rename is separate work.",
-  "total": 801,
+  "total": 795,
   "files": [
     "app/actions/admin-email.ts",
     "app/actions/agent-attribution-read.ts",
@@ -80,7 +80,6 @@
     "lib/comms/sendGovernedSms.ts",
     "lib/crm/assigned-broker.ts",
     "lib/crm/attributed-links.ts",
-    "lib/crm/broker-alerts.ts",
     "lib/crm/bulk-handlers/assign-saved-search.ts",
     "lib/crm/bulk-handlers/email-cohort.ts",
     "lib/crm/constants.ts",
@@ -147,5 +146,5 @@
     "lib/seller-lead-alert.ts",
     "lib/visitor-backfill.ts"
   ],
-  "generatedAt": "2026-08-10T05:06:31.219Z"
+  "generatedAt": "2026-08-13T14:33:31.169Z"
 }

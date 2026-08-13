@@ -44,6 +44,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/site/v3'
 import { submitSearchAlertSignup } from '@/app/actions/search-alert-capture'
+import { readRrSessionId } from '@/lib/tracking'
 import { buildAlertCreatePayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import {
@@ -85,6 +86,7 @@ export function ZipAlertsSheet({
           // so this is the empty string for every real person and a value only a
           // script can produce otherwise.
           company: answers.company ?? '',
+          sessionId: readRrSessionId(), // hydration-safe
         })
         if (result.ok) {
           rememberGuestWatch( // hydration-safe: event/effect storage only
