@@ -587,6 +587,15 @@ describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () =
   })
 })
 
+describe('SearchFilters does not duplicate the collapsed alert ask (E-SEARCH-CHIP)', () => {
+  it('keeps Save this search and drops the navy Get alerts chip', () => {
+    const filters = readSrc('components/search/SearchFilters.tsx')
+    expect(filters).toMatch(/<SaveSearchButton user=\{signedIn\} \/>/)
+    expect(filters).not.toMatch(/>\s*Get alerts\s*</)
+    expect(filters).not.toMatch(/focusSearchAlertCapture/)
+  })
+})
+
 describe('map craft: selection + zoom storytelling + basemap', () => {
   it('selects list card when a map pin opens (stronger than hover)', () => {
     const view = readSrc('components/search/MapSearchView.tsx')

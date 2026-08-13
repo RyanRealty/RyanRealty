@@ -129,17 +129,6 @@ const PRICE_PRESETS = [
   { label: '$1.5M+', min: 1500000, max: undefined },
 ]
 
-/** Scroll to the inline alert capture strip and focus its email field (client-only). */
-function focusSearchAlertCapture() {
-  const root = document.getElementById('search-alert-capture')
-  if (!root) return
-  root.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  const email = root.querySelector<HTMLInputElement>('input[type="email"], input[name="email"]')
-  if (email) {
-    window.setTimeout(() => email.focus({ preventScroll: true }), 350)
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -531,19 +520,10 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         {/* Voice search — speaks the same registry the screen panel renders */}
         <VoiceSearchButton onTranscript={applyNaturalQuery} className="shrink-0" />
 
-        {/* Save search — captures every live URL param, registry filters included. */}
+        {/* Save search — captures every live URL param, registry filters included.
+            Guest listing-alert capture lives in SearchAlertCapture (collapsed
+            "Get listing alerts"). Do not add a second navy Get-alerts chip. */}
         <SaveSearchButton user={signedIn} />
-
-        {/* Get alerts — scroll to inline capture strip (id set on SearchAlertCapture). */}
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          onClick={focusSearchAlertCapture}
-          className="shrink-0"
-        >
-          Get alerts
-        </Button>
 
         {/* View toggle (split / list / map) — desktop only, quiet chrome.
             MapSearchView owns the mobile List/Map switcher (design-audit P2). */}
