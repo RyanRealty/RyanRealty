@@ -398,7 +398,7 @@ export default async function HeathAtTetherowPage() {
             </span>
           </Link>
           <Button asChild size="sm" className="hidden sm:inline-flex">
-            <Link href="#cma">What is my Heath home worth?</Link>
+            <Link href="#cma">Value my home</Link>
           </Button>
         </div>
       </header>
@@ -435,7 +435,7 @@ export default async function HeathAtTetherowPage() {
               act without scrolling. Jumps to the CMA form below. */}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button asChild size="lg" variant="secondary">
-              <Link href="#cma">What is my Heath home worth?</Link>
+              <Link href="#cma">Value my home</Link>
             </Button>
             <a href={`tel:${CONTACT.phoneFubTel}`} className="text-sm font-medium text-primary-foreground/90 tabular-nums hover:underline">
               Or call {CONTACT.phoneFub}

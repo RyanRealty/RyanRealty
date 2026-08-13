@@ -46,7 +46,7 @@ export function TetherowStickyCta() {
               className="text-[18px] font-semibold leading-[1.2] sm:text-[18px]"
               style={{ fontFamily: 'var(--rr-font-display)' }}
             >
-              Find out what your Tetherow home is worth
+              Get your home’s value
             </div>
             <div className="mt-0.5 hidden text-[12px] leading-[1.4] opacity-70 sm:block">
               Free 12-page value report. Signed by a Bend principal broker. No phone follow-up

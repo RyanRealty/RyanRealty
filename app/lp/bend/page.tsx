@@ -895,7 +895,7 @@ export default async function BendCityPage() {
           <div className="cta-row">
             <div className="cta-card">
               <div className="bend-eyebrow" style={{ color: 'rgba(250,248,244,0.72)' }}>Sellers</div>
-              <h3>What is your Bend home worth?</h3>
+              <h3>Get your home’s value</h3>
               <p>
                 A 12-page value report on your neighborhood and price tier, built on closed Bend
                 sales. Signed by a Bend principal broker.
