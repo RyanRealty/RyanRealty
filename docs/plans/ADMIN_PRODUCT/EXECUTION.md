@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). P10 `d5ebc4db` READY.
-Ratchet **129 / 0 / 71**, kb 73. Public wrap B=0. Next: standing refine / G2 draft on Today (no publish).
+**Updated:** 2026-08-13 (Grok, Go running). G2 `def67a92` READY.
+Ratchet **129 / 0 / 71**, kb 73. Public wrap B=0. G2 draft on Today (no publish). Next: standing refine. G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
 
 ---
 
@@ -73,7 +73,7 @@ A4+A1 · E-CHART (serial on the barrel — one agent, not beside another barrel 
 **Wave 2** (after wave-1 lands that they depend on):
 E-PLACES-REFINE · E-MARKET-REFINE (needs E-CHART) · E-CUT (301/noindex per cut-list)
 
-**Wave 3:** P10 · F1 (both landed. Wrap B=0.)
+**Wave 3:** P10 · F1 · G2 (all landed. Wrap B=0. G2 is draft-only on Today.)
 
 Cap: one agent per open lease in the current wave. Do not open a second agent
 on the same glob. Listing detail owns `components/site/listing-detail/**`.
@@ -115,6 +115,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-MARKET-REFINE | **landed** `c29d5b51` | Hub, central-oregon, annual-review, months-of-supply. D9: median-sale overlay is `Instrument.chart` (straight SVG, year series). Inquiry sheets keep `submitMarketPageInquiry`. Ratchet held 139 / 3 / 69. Look 390+1280 `/housing-market`: one chrome, H1 Central Oregon housing market: a balanced market, live figures, chart in the Instrument. `/housing-market/annual-review` same chart atom. |
 | F1 query battery | **landed** `9e11ce83` | Three Loop F queries + GSC extras map to survivor URLs in `/llms.txt` + JSON-LD. G67 `ci:ai-query-battery`. `/reports` hop gone from the map. `/sell` and `/sell/valuation` emit Service + FAQPage. Ratchet held 139 / 3 / 69. Look 390+1280 `/about`, `/sell`, `/sell/valuation`, `/communities/northwest-crossing`: one chrome, H1s, Value my home on sell/valuation. Chrome CTA still Get your home's value. Cookie banner residual. SellerLPForm still See what your home is worth (not this lease). |
 | P10 wrap | **landed** `d5ebc4db` | B=0. Reports slug inverted onto `/housing-market/reports/[slug]`. Hub v3-wrapped. Frozen Heath LP excluded from B only (`scripts/lib/frozen-noindex-lps.mjs`). Ratchet 139/3/69 → 129/0/71, kb 84→73. Tokens 209→208. Static-params 17→14. Deleted orphan `KbSell`. Look 390+1280 `/housing-market/reports` H1 Central Oregon market reports: a balanced market, live figures, Value my home. Weekly report H1 the CMS title. `/reports` 308s to the hub. Heath still noindex. |
+| G2 draft on Today | **landed** `def67a92` | Produce a draft on `/admin/today` (live listing i2v or GBP still). Lands on Drafts ready for approval. `humanApprovedAt` stays null. `publish_payload.approved` is false. No `/api/social/publish`. No Replicate. See draft still goes to `/admin/approval-queue`. No new approve button. Clip taste still Matt’s. Signed-out 390+1280 look: Admin sign in (`next=/admin/today`). Signed-in produce look still needs a session (same leftover as A3/A4/A5). Live post is a hard stop. |
 
 Chrome is live. The 119 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -228,7 +229,8 @@ from the baseline if it drifts.
 | **A5** | lead ask text | **landed** `a237a340` READY | Names the home. Does not say we watched them. Draft in composer. Packet is taste. |
 | **C1** | expired packet | taste | Matt stops the PDF. |
 | **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | **landed** `317d88de` | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
-| **G1–G4** | social / GBP / calendar | after A3 or in parallel if files disjoint | Tokens already live. Produce is Imagine. Week-grant is not in Go. |
+| **G2** | Imagine draft on Today | **landed** `def67a92` READY | Produce a draft. Does not stamp yes. Does not post. Admin signed-in 390+1280 look still needs a session. |
+| **G1 / G3 / G4** | live post / week-grant / Paul+Rebecca OAuth | **not in Go** | Hard stops. Tokens already live. Produce is Imagine. Week-grant and OAuth click wait on Matt. |
 | **F1** | `/llms.txt` + JSON-LD + G34/G39/G67 | **landed** `9e11ce83` READY | Named queries cite survivor URLs. Map: `lib/seo/ai-query-map.json`. Live `/llms.txt` lists About, Reviews, Value my home, NWX 3/2. Google still has to recrawl. |
 | **P10** | public wrap closing gates | **landed** `d5ebc4db` READY | B=0. Call: invert reports slug + v3 hub wrap + named frozen-LP B-exclusion. Mixed leftover: ReportsByCityView, ReportsIndexContent, MetadataBlock, KbSectionTracker. Did not restyle heath. |
 
