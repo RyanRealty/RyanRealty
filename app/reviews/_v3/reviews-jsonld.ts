@@ -1,5 +1,5 @@
 /**
- * Review JSON-LD for /reviews, built from the SAME TESTIMONIALS the page
+ * Review JSON-LD for /reviews, built from the SAME quotes the page
  * renders so SERP rich results match what is on screen.
  *
  * Deliberately NO aggregateRating: an aggregate rating of the business,
@@ -7,19 +7,25 @@
  * Google's structured-data policy.
  */
 
-import { TESTIMONIALS } from '@/lib/testimonials'
+import type { ReviewQuote } from './review-quotes'
 
-export const RENDERED_STAR_RATING = 5
+function ratingValue(rating: number): number {
+  if (!Number.isFinite(rating)) return 5
+  return Math.min(5, Math.max(1, Math.round(rating)))
+}
 
-export function buildReviewsJsonLd(siteUrl: string): Record<string, unknown> {
-  const reviews = TESTIMONIALS.map((t) => ({
+export function buildReviewsJsonLd(
+  siteUrl: string,
+  quotes: readonly ReviewQuote[],
+): Record<string, unknown> {
+  const reviews = quotes.map((t) => ({
     '@type': 'Review',
     author: { '@type': 'Person', name: t.author },
     reviewBody: t.quote,
-    datePublished: t.date,
+    ...(t.date ? { datePublished: t.date } : {}),
     reviewRating: {
       '@type': 'Rating',
-      ratingValue: RENDERED_STAR_RATING,
+      ratingValue: ratingValue(t.rating),
       bestRating: 5,
       worstRating: 1,
     },

@@ -1,20 +1,24 @@
 /**
- * /reviews - Google reviews, on the components/site/v3 barrel.
- *
- * // @data-free — TESTIMONIALS is a static verified set, not a DAL read.
+ * /reviews - Google reviews as written, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Quiet (every review, verbatim) then Ledger (contact, team, homes).
+ * Look (2026-08-13): Reviews = Google quotes first. The first viewport is
+ * live GBP text as written (ReviewsQuotes), then Ledger (contact, team, homes),
+ * then Quiet (Google + Value my home). PUBLIC_UI.md opens About on Quiet +
+ * Sheet. Quotes are Quiet's job (verbatim proof) at inventory weight, compact
+ * like AboutFaces so a quote is on screen at 390. The family's Sheet stays on
+ * /contact and /team/[slug].
  *
  * Reviews are quoted as written. Brand-voice laws do not rewrite client text.
  * No aggregateRating on this page (self-serving on our own site).
+ * No star HUD, no paraphrase, no ticker.
  *
  * D11: no invented quote. MLS remarks N/A.
  */
 
 import type { Metadata } from 'next'
-import { TESTIMONIALS, GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
-import { formatDate } from '@/lib/format/date'
+import { getReviews } from '@/lib/data'
+import { GOOGLE_REVIEWS_URL } from '@/lib/testimonials'
 import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
@@ -26,38 +30,38 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
-  type V3QuietItem,
 } from '@/components/site/v3'
 import { buildReviewsJsonLd } from './_v3/reviews-jsonld'
+import { toReviewQuotes } from './_v3/review-quotes'
+import { ReviewsQuotes } from './_v3/ReviewsQuotes'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
+const ROUTE_PATH = '/reviews'
 
-export const metadata: Metadata = {
-  title: `${TESTIMONIALS.length} client reviews · Ryan Realty`,
-  description: `${TESTIMONIALS.length} verified Google reviews from buyers and sellers across Central Oregon. Full text on this page.`,
-  alternates: { canonical: `${siteUrl}/reviews` },
-  openGraph: {
-    title: `${TESTIMONIALS.length} client reviews | Ryan Realty`,
-    url: `${siteUrl}/reviews`,
-    type: 'website',
-    images: [{ url: ogImage, width: 1200, height: 630 }],
-  },
-  twitter: { card: 'summary_large_image', images: [ogImage] },
+export const revalidate = 3600
+
+export async function generateMetadata(): Promise<Metadata> {
+  const quotes = toReviewQuotes((await getReviews(50)).reviews)
+  const n = quotes.length
+  return {
+    title: `${n} client reviews · Ryan Realty`,
+    description: `${n} verified Google reviews from buyers and sellers across Central Oregon. Full text on this page.`,
+    alternates: { canonical: `${siteUrl}${ROUTE_PATH}` },
+    openGraph: {
+      title: `${n} client reviews | Ryan Realty`,
+      url: `${siteUrl}${ROUTE_PATH}`,
+      type: 'website',
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+    },
+    twitter: { card: 'summary_large_image', images: [ogImage] },
+  }
 }
 
-export default function ReviewsPage() {
-  const reviewsJsonLd = buildReviewsJsonLd(siteUrl)
-
-  const reviewItems: V3QuietItem[] = TESTIMONIALS.map((t) => {
-    const stamp = formatDate(t.date, { month: 'short', day: undefined, year: 'numeric' })
-    const when = stamp && stamp !== '\u2014' ? `Verified ${t.source} review, ${stamp}` : `Verified ${t.source} review`
-    return {
-      kind: 'prose' as const,
-      term: t.author,
-      body: [t.quote, when],
-    }
-  })
+export default async function ReviewsPage() {
+  const quotes = toReviewQuotes((await getReviews(50)).reviews)
+  const reviewsJsonLd = buildReviewsJsonLd(siteUrl, quotes)
+  const heading = `${quotes.length} Google reviews`
 
   return (
     <>
@@ -69,22 +73,21 @@ export default function ReviewsPage() {
         <V3SectionTracker pageType="media" />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Reviews' }]} />
 
-        <V3Quiet
-          id="reviews"
-          eyebrow="Ryan Realty · Google reviews"
-          heading={`${TESTIMONIALS.length} Google reviews`}
-          headingLevel={1}
-          items={[
-            {
-              kind: 'prose',
-              body: 'From buyers and sellers across Central Oregon. Quoted as written, with names.',
-            },
-            { label: 'View reviews on Google', href: GOOGLE_REVIEWS_URL },
-            ...reviewItems,
-            { label: 'Read more on Google', href: GOOGLE_REVIEWS_URL },
-            { label: 'Value my home', href: valuationHref('/reviews') },
-          ]}
-        />
+        {quotes.length > 0 ? (
+          <ReviewsQuotes
+            quotes={quotes}
+            eyebrow="Ryan Realty · Google"
+            heading={heading}
+          />
+        ) : (
+          <V3Quiet
+            id="reviews"
+            eyebrow="Ryan Realty · Google"
+            heading="Google reviews"
+            headingLevel={1}
+            items={[{ label: 'View reviews on Google', href: GOOGLE_REVIEWS_URL }]}
+          />
+        )}
 
         <V3Ledger
           id="next"
@@ -109,6 +112,15 @@ export default function ReviewsPage() {
               what: v3Text('Homes for sale'),
               detail: v3Text('Central Oregon listings'),
             },
+          ]}
+        />
+
+        <V3Quiet
+          id="edges"
+          ariaLabel="Reviews and valuation"
+          items={[
+            { label: 'View reviews on Google', href: GOOGLE_REVIEWS_URL },
+            { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
           ]}
         />
       </main>

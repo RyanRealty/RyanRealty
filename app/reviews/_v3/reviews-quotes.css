@@ -1,0 +1,75 @@
+/* Route-local opening for /reviews. Google quotes as written, first viewport.
+   Not a seventh pattern: Quiet's job (verbatim proof) at inventory weight,
+   compact like AboutFaces so the first quote is on screen at 390.
+   Tokens come from components/site/v3/tokens.css via V3_ROOT_CLASS. */
+
+.v3.reviews-quotes {
+  max-width: var(--v3-measure);
+  margin: 0 auto;
+  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-xl);
+}
+
+.reviews-quotes__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  margin-bottom: var(--v3-space-sm);
+}
+
+.reviews-quotes__heading {
+  margin: 0;
+}
+
+.reviews-quotes__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: var(--v3-measure-text);
+}
+
+.reviews-quotes__item {
+  margin: 0;
+  padding: var(--v3-space-md) 0;
+  border-top: 1px solid var(--v3-edge);
+}
+
+.reviews-quotes__item:last-child {
+  border-bottom: 1px solid var(--v3-edge);
+}
+
+.reviews-quotes__quote {
+  margin: 0;
+  font-style: normal;
+  font-size: var(--v3-size-body-lg);
+  line-height: var(--v3-leading-body);
+  color: var(--v3-ink);
+}
+
+.reviews-quotes__para {
+  margin: 0;
+}
+
+.reviews-quotes__para + .reviews-quotes__para {
+  margin-top: var(--v3-space-sm);
+}
+
+.reviews-quotes__who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v3-space-3xs);
+  margin: var(--v3-space-sm) 0 0;
+}
+
+.reviews-quotes__author {
+  font-style: normal;
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-medium);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink);
+}
+
+.reviews-quotes__meta {
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
