@@ -345,14 +345,13 @@ export function ListingHero({
         </div>
         ) : null}
 
-        {/* Video mute + pause affordances. WCAG 2.2.2 requires a way to stop
-            motion that autoplays longer than 5s — mute alone doesn't satisfy
-            that (design-audit P2, accessibility). */}
+        {/* Video mute + pause. Parked top-right of the media so UNMUTE never
+            sits on the address / price / beds-baths-sqft row (Look 2026-08-13). */}
         {!mapOpen && hasVideo ? (
           <div
             style={{
               position: 'absolute',
-              bottom: 'clamp(22px,3.5vw,48px)',
+              top: 'clamp(12px,2vw,20px)',
               right: 'clamp(18px,3.5vw,56px)',
               zIndex: 5,
               display: 'inline-flex',
@@ -547,6 +546,27 @@ function VideoLayer({
 // the host's own error page (e.g. a network-filtered "connection not secure"
 // page) as the entire hero. The poster photo now sits behind the iframe as a
 // base layer, and an embed load error hides the iframe so the photo shows.
+function isPlayerReadyMessage(event: MessageEvent, src: string): boolean {
+  const origin = String(event.origin || '')
+  const fromVimeo = origin.includes('vimeo.com') && src.includes('vimeo.com')
+  const fromYoutube =
+    (origin.includes('youtube.com') || origin.includes('youtube-nocookie.com')) &&
+    (src.includes('youtube.com') || src.includes('youtu.be'))
+  if (!fromVimeo && !fromYoutube) return false
+  let data: unknown = event.data
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data)
+    } catch {
+      return false
+    }
+  }
+  if (!data || typeof data !== 'object') return false
+  const rec = data as Record<string, unknown>
+  const eventName = typeof rec.event === 'string' ? rec.event : ''
+  return eventName === 'ready' || eventName === 'play' || eventName === 'onReady'
+}
+
 function IframeHeroLayer({
   video,
   posterUrl,
@@ -557,6 +577,17 @@ function IframeHeroLayer({
   altBase: string
 }) {
   const [failed, setFailed] = useState(false)
+  const [ready, setReady] = useState(false)
+  const embedSrc = getAutoplayEmbedUrl(video)
+
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (isPlayerReadyMessage(event, embedSrc)) setReady(true)
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [embedSrc])
+
   const baseStyle: React.CSSProperties = {
     position: 'absolute',
     inset: 0,
@@ -568,16 +599,26 @@ function IframeHeroLayer({
     <>
       {posterUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={posterUrl} alt={altBase} style={{ ...baseStyle, objectPosition: 'center 38%' }} />
+        <img
+          src={posterUrl}
+          alt={altBase}
+          style={{ ...baseStyle, objectPosition: 'center 38%', zIndex: 1 }}
+        />
       ) : null}
       {failed ? null : (
         <iframe
-          src={getAutoplayEmbedUrl(video)}
+          src={embedSrc}
           title={`Listing video for ${altBase}`}
           allow={['accelerometer', 'autoplay', 'clipboard-write', 'encrypted-media', 'gyroscope', 'picture-in-picture', 'fullscreen'].join('; ')}
           allowFullScreen
           onError={() => setFailed(true)}
-          style={{ ...baseStyle, border: 0 }}
+          style={{
+            ...baseStyle,
+            border: 0,
+            zIndex: 2,
+            opacity: ready ? 1 : 0,
+            transition: 'opacity 200ms ease-out',
+          }}
         />
       )}
     </>

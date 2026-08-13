@@ -1,28 +1,24 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 1 public Look (`/homes-for-sale`). Do not start Track 2. Do not resume leftover-page ratchet.**
-> Prior: Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
+> **NEWEST SUBJECT: Track 1 public Look (listing detail). Do not start Track 2. Do not start Places.**
+> Prior: Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
 
-# Current — 2026-08-13 (Grok, Track 1 `/homes-for-sale`) — search Look GREEN
+# Current — 2026-08-13 (Grok, Track 1 listing detail) — listing Look GREEN
 
-**Track:** 1 only. Search slice. Do not start Track 2. Do not start leftover ratchet. Do not start listing/places/about.
+**Track:** 1 only. Listing-detail slice. Do not start Track 2. Do not start Places, leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
 
-**Piece A landed:** leftover LP worth CTAs → Value my home / Get my home’s value / Get your home’s value. SHA `76f6a996`.
+**Listing URL:** `/homes-for-sale/bend/20172-soft-breeze-220222292` (Active SFR, Spark photo, marketing video). Brookside `/homes-for-sale/bend/19305-brookside-220221862` is photo-only and still live.
 
-**`/homes-for-sale` Look:** GREEN at 390 and 1280, local and production. List-first on mobile so the first viewport is a house photo/card, not a map-only void. Map is one tap. MLS photos load. Card opens a real listing URL. Chrome CTA stays Value my home.
+**Listing Look:** GREEN at 390 and 1280. Real MLS aerial of this house (Spark CDN). UNMUTE is top-right of the hero, not on beds/baths/sqft. Poster stays until Vimeo/YouTube actually signals ready (blocked embed no longer covers the house). Gallery opens (1 of 50). Chrome CTA stays Value my home. v3 chrome kept.
 
-**SHA:** feat `8f8d1717`. Production READY on `8f8d1717`.
+**SHA:** pending this land.
 
-**Screenshots:**
-- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-390.png`
-- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-1280.png`
-- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-390-prod.png`
-- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-1280-prod.png`
+**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-listing/`
 
-**Next public route (do not start):** listing detail. Then places, open houses, about, reviews, market.
+**Next public route (do not start):** Places (`/cities`, city, community). Then open houses, about, reviews, market.
 
-**Not this land:** `stash@{0}`. Do not `git add -A`.
+**Not this land:** `stash@{0}`. Do not `git add -A`. Track 2 not started.
 
-**Skills read:** public-product-os (quarry + locks), frontend-design, PUBLIC_PRODUCT/decisions.md, VOICE.md.
+**Skills read:** public-product-os (quarry + locks), frontend-design, PUBLIC_PRODUCT/decisions.md.
 
 # Prior — 2026-08-13 (Grok, Track 1 `/sell`) — E-SELL-WORTH Look GREEN
 
