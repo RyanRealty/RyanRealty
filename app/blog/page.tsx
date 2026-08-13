@@ -1,69 +1,48 @@
 /**
- * Blog index — KB (kinetic-brutalist) design, Phase 9 page-class migration
- * (docs/KB_CONVERGENCE_ROADMAP.md). RESTYLED IN PLACE: every section, data fetch,
- * form, link, image, stat, and JSON-LD from the prior shadcn version is preserved.
- * Only the presentation moved to the KB look (navy + cream surfaces, Amboqia
- * display headings, hard --edge borders, .section/.wrap rhythm, mono labels). Styling
- * reuses shared kb.css classes + inline var(--navy) tokens — no inline <style> (D32),
- * no forked KB component, no kb.css edit, no off-ladder Tailwind, no raw hex.
+ * /blog — Central Oregon market writing index, on the components/site/v3 barrel.
  *
- * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
- * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
- * HideChrome is only for the not-found footer edge case / CSS hide if still used.
- * KbArticles isn't used for the grid because it can't carry the per-post category /
- * author / read-time metadata this page shows — so the grid reuses the KbArticles
- * .art-* card classes in place instead of dropping content.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Instrument (the index answer) -> Ledger (the posts) -> Quiet (categories,
+ * popular, pagination). Three of the six patterns.
+ *
+ * THE PAGE CONTRACT: generateMetadata (canonical, OG, Twitter, robots via
+ * shouldNoIndexBlogIndex), Blog + ItemList JSON-LD, BreadcrumbList, a rendered
+ * KbSectionTracker with pageType="blog", the three parallel reads
+ * (getBlogCategories, getPublishedBlogPosts, getPopularBlogSlugs) plus the
+ * session and identity-bridge reads that pin this route dynamic.
+ *
+ * DROPPED: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, the featured
+ * photo grid and art-card layout. Every post that used to render still renders,
+ * as a Ledger row (title, date, category, excerpt). ShareButton stays as an
+ * island above the list.
  */
-import type { CSSProperties } from 'react'
+
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import Image from 'next/image'
 import { getPublishedBlogPosts, getPopularBlogSlugs } from '@/lib/data'
 import { getBlogCategories } from '@/app/actions/blog'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { shouldNoIndexBlogIndex } from '@/lib/seo-routing'
 import ShareButton from '@/components/ShareButton'
-import { generateBreadcrumbSchema } from '@/lib/structured-data'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import { formatDate } from '@/lib/format/date'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { valuationHref } from '@/lib/site/valuation-href'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Ledger,
+  V3Quiet,
+  type V3LedgerPlainRow,
+  type V3QuietItem,
+} from '@/components/site/v3'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
-
-// KB tokens (all from kb.css). Kept as inline style values so the page stays on the
-// brand palette without raw hex or off-ladder Tailwind arbitrary utilities.
-const NAVY = 'var(--navy)'
-const NAVY_70 = 'var(--navy-70)'
-const NAVY_12 = 'var(--navy-12)'
-const CREAM = 'var(--cream)'
-const EDGE_NAVY = 'var(--edge) solid var(--navy)'
-const PLATE = 'var(--navy)' // image-placeholder plate (on-palette navy token)
-
-const metaRow: CSSProperties = {
-  color: NAVY_70,
-  fontSize: '.66rem',
-  fontWeight: 600,
-  letterSpacing: '.12em',
-  textTransform: 'uppercase',
-  fontVariantNumeric: 'tabular-nums',
-}
-const catPill = (active: boolean): CSSProperties => ({
-  border: '1px solid var(--navy)',
-  background: active ? NAVY : 'transparent',
-  color: active ? CREAM : NAVY,
-  padding: '9px 15px',
-  fontSize: '.72rem',
-  fontWeight: 700,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-})
 
 type BlogSearchParams = { category?: string; page?: string }
 
@@ -102,12 +81,9 @@ type PageProps = { searchParams: Promise<BlogSearchParams> }
 
 export default async function BlogIndexPage({ searchParams }: PageProps) {
   const params = await searchParams
-  const category = params.category ?? 'All'
+  const category = params.category?.trim() || 'All'
   const page = Math.max(1, parseInt(params.page ?? '1', 10))
   const offset = (page - 1) * 12
-  // Session + identity-bridge reads kept (they pin this route's dynamic
-  // rendering mode); the FUB page-view mirror they fed was deleted with the
-  // FUB decommission — first-party visitor_sessions covers page views now.
   const [categories, { posts, total }, popularSlugs] = await Promise.all([
     getBlogCategories(),
     getPublishedBlogPosts({ category: category === 'All' ? null : category, limit: 12, offset }),
@@ -116,8 +92,64 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
     getPersonIdFromCookie(),
   ])
   const totalPages = Math.ceil(total / 12)
-  const featured = posts[0]
-  const gridPosts = page === 1 ? posts.slice(1) : posts
+
+  const postRows: V3LedgerPlainRow[] = []
+  for (const post of posts) {
+    const title = post.title?.trim()
+    const slug = post.slug?.trim()
+    if (!title || !slug) continue
+    const excerpt = post.excerpt?.trim()
+    const when = post.published_at ? formatDate(post.published_at) : post.category?.trim() || 'Guide'
+    postRows.push({
+      href: `/blog/${slug}`,
+      when: v3Text(when),
+      what: v3Text(title),
+      detail: excerpt
+        ? v3Text(excerpt)
+        : post.category
+          ? v3Text(`${post.category} · ${post.read_time_min} min read`)
+          : v3Text(`${post.read_time_min} min read`),
+      id: slug,
+    })
+  }
+  const [firstPost, ...restPosts] = postRows
+
+  const categoryItems: V3QuietItem[] = categories
+    .map((cat) => cat.trim())
+    .filter((cat): cat is string => Boolean(cat))
+    .map((cat) => ({
+      label: cat === category ? `${cat} (showing)` : cat,
+      href: cat === 'All' ? '/blog' : `/blog?category=${encodeURIComponent(cat)}`,
+    }))
+
+  const popularItems: V3QuietItem[] = []
+  for (const post of popularSlugs.slice(0, 5)) {
+    const title = post.title?.trim()
+    const slug = post.slug?.trim()
+    if (!title || !slug) continue
+    popularItems.push({ label: title, href: `/blog/${slug}` })
+  }
+
+  const pageItems: V3QuietItem[] = []
+  if (totalPages > 1) {
+    pageItems.push({
+      kind: 'prose',
+      term: 'Pages',
+      body: `Page ${page} of ${totalPages}`,
+    })
+    if (page > 1) {
+      pageItems.push({
+        label: 'Previous page',
+        href: `/blog?page=${page - 1}${category !== 'All' ? `&category=${encodeURIComponent(category)}` : ''}`,
+      })
+    }
+    if (page < totalPages) {
+      pageItems.push({
+        label: 'Next page',
+        href: `/blog?page=${page + 1}${category !== 'All' ? `&category=${encodeURIComponent(category)}` : ''}`,
+      })
+    }
+  }
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -126,8 +158,6 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
     url: `${siteUrl}/blog`,
     description:
       'How homes are selling in Bend and the towns around it. Monthly numbers, neighborhood context, and what changed.',
-    // Machine-readable article list — lets AI engines enumerate + cite posts
-    // without scraping the HTML grid.
     mainEntity: {
       '@type': 'ItemList',
       itemListElement: posts.map((p, i) => ({
@@ -140,243 +170,91 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
   }
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="blog" />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            generateBreadcrumbSchema([
-              { name: 'Home', url: siteUrl },
-              { name: 'Blog', url: `${siteUrl}/blog` },
-            ])
-          ),
-        }}
-      />
-      <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Blog' }]} />
-      <SmoothScrollProvider>
-        {/* Hero — same title/subtitle as the prior ContentPageHero, now in the KB
-            hero. videoSrc=null → the reports hero photo renders as a still. The hero
-            already carries Browse + Sell CTAs (the prior page's Market Reports /
-            Guides CTAs are reachable from the KbNav menu directory). */}
-        <KbHero
-          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · From the brokerage"
-          titleTop="Central Oregon"
-          titleBottom="market writing."
-          lead="How homes are selling in Bend and the towns around it. Monthly numbers, neighborhood context, and what changed."
-          videoSrc={null}
-          posterSrc={CONTENT_HERO_IMAGES.reports}
-          mediaCaption="Central Oregon · Old Mill District"
-          showSearch={false}
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="blog" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <MetadataBlock
+          schemas={[
+            {
+              type: 'breadcrumb',
+              items: [
+                { name: 'Home', url: '/' },
+                { name: 'Blog', url: '/blog' },
+              ],
+            },
+          ]}
+        />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Blog' }]} />
+
+        <V3Instrument
+          id="writing"
+          level={1}
+          eyebrow={v3Text('Central Oregon')}
+          headline={v3Text('Central Oregon market writing')}
+          figures={[
+            {
+              value: v3Text(total.toLocaleString('en-US')),
+              label: v3Text(category === 'All' ? 'published posts' : `posts in ${category}`),
+              href: '/blog',
+            },
+          ]}
+          source={v3Text(
+            'published rows from blog_posts, newest first, twelve per page. Category filters read the same table',
+          )}
+          action={{
+            label: v3Text('Value my home'),
+            href: valuationHref('/blog'),
+            variant: 'primary',
+          }}
         />
 
-        {/* Latest posts header + share */}
-        <section className="section articles" id="latest" aria-labelledby="blog-latest-h">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Latest posts</span>
-              <h2 id="blog-latest-h" className="sec-title display">
-                All Posts
-              </h2>
-            </div>
+        <ShareButton
+          url={`${siteUrl}/blog`}
+          title="Central Oregon market writing"
+          text="How homes are selling in Bend and the towns around it, from Ryan Realty."
+          trackContext="blog_index"
+          variant="default"
+        />
 
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-5">
-              <nav
-                className="flex flex-nowrap gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible"
-                aria-label="Categories"
-              >
-                {categories.map((cat) => {
-                  const active = category === cat
-                  return (
-                    <Link
-                      key={cat}
-                      href={cat === 'All' ? '/blog' : `/blog?category=${encodeURIComponent(cat)}`}
-                      className="inline-block shrink-0 transition-colors"
-                      style={catPill(active)}
-                      aria-current={active ? 'true' : undefined}
-                    >
-                      {cat}
-                    </Link>
-                  )
-                })}
-              </nav>
-              <ShareButton
-                url={`${siteUrl}/blog`}
-                title="Central Oregon market writing"
-                text="How homes are selling in Bend and the towns around it, from Ryan Realty."
-                trackContext="blog_index"
-                variant="default"
-              />
-            </div>
+        {firstPost ? (
+          <V3Ledger
+            id="latest"
+            eyebrow={v3Text('Latest posts')}
+            heading={v3Text(category === 'All' ? 'All posts' : category)}
+            rows={[firstPost, ...restPosts]}
+          />
+        ) : (
+          <V3Ledger
+            id="latest"
+            eyebrow={v3Text('Latest posts')}
+            heading={v3Text(category === 'All' ? 'All posts' : category)}
+            rows={[]}
+            emptyMessage={v3Text('No posts in this category yet.')}
+            action={{ label: v3Text('View all posts'), href: '/blog' }}
+          />
+        )}
 
-            {/* Featured post — page 1 only */}
-            {featured && page === 1 && (
-              <article className="mt-10" style={{ borderTop: EDGE_NAVY }}>
-                <Link href={`/blog/${featured.slug}`} className="group grid grid-cols-1 lg:grid-cols-2">
-                  {featured.hero_image_url && (
-                    <div
-                      className="relative aspect-[2/1] overflow-hidden lg:aspect-auto"
-                      style={{ borderBottom: EDGE_NAVY, background: PLATE, minHeight: 340 }}
-                    >
-                      <Image
-                        src={featured.hero_image_url}
-                        alt={featured.title || 'Featured blog post'}
-                        fill
-                        className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                        sizes="(max-width: 768px) 100vw, 1024px"
-                        priority
-                      />
-                    </div>
-                  )}
-                  <div className="flex flex-col justify-center py-8 lg:py-10 lg:pl-10">
-                    {featured.category && (
-                      <span
-                        className="uppercase tabular-nums"
-                        style={{ color: NAVY_70, fontSize: '.62rem', fontWeight: 700, letterSpacing: '.16em' }}
-                      >
-                        {featured.category}
-                      </span>
-                    )}
-                    <h3
-                      className="display mt-3"
-                      style={{ fontSize: 'clamp(2rem,5vw,3.4rem)', lineHeight: 0.9, letterSpacing: '-.01em' }}
-                    >
-                      {featured.title}
-                    </h3>
-                    {featured.excerpt && (
-                      <p
-                        className="mt-4 font-medium"
-                        style={{ color: NAVY_70, fontSize: 'clamp(1rem,1.7vw,1.2rem)', lineHeight: 1.5, maxWidth: '54ch' }}
-                      >
-                        {featured.excerpt}
-                      </p>
-                    )}
-                    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2" style={metaRow}>
-                      {featured.author_name && <span>{featured.author_name}</span>}
-                      {featured.published_at && (
-                        <time dateTime={featured.published_at}>
-                          {formatDate(featured.published_at)}
-                        </time>
-                      )}
-                    </div>
-                    <span className="art-read mt-4">
-                      Read the post <span className="arr">&rarr;</span>
-                    </span>
-                  </div>
-                </Link>
-              </article>
-            )}
+        <V3Quiet
+          id="explore"
+          eyebrow="Index"
+          heading="Categories and recent posts"
+          items={[
+            ...categoryItems,
+            ...popularItems,
+            ...pageItems,
+            { label: 'Central Oregon housing market', href: '/housing-market' },
+            { label: 'Value my home', href: valuationHref('/blog') },
+          ]}
+        />
+      </main>
 
-            {/* Post grid — preserves category, title, excerpt, author, date, read-time */}
-            {gridPosts.length > 0 ? (
-              <div className="art-grid">
-                {gridPosts.map((post) => (
-                  <article key={post.id} className="art-card">
-                    <Link href={`/blog/${post.slug}`} className="flex h-full flex-col">
-                      <div className="art-media">
-                        {post.hero_image_url ? (
-                          <Image
-                            src={post.hero_image_url}
-                            alt={post.title || 'Blog post image'}
-                            fill
-                            className="art-img object-cover"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          />
-                        ) : (
-                          <span className="art-noimg" aria-hidden="true" />
-                        )}
-                        {post.category ? <span className="art-date mono-num">{post.category}</span> : null}
-                      </div>
-                      <div className="art-body">
-                        <h3 className="art-title display">{post.title}</h3>
-                        {post.excerpt && <p className="art-excerpt">{post.excerpt}</p>}
-                        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2" style={metaRow}>
-                          {post.author_name && <span>{post.author_name}</span>}
-                          {post.published_at && (
-                            <time dateTime={post.published_at}>
-                              {formatDate(post.published_at)}
-                            </time>
-                          )}
-                          <span>{post.read_time_min} min read</span>
-                        </div>
-                        <span className="art-read">
-                          Read the post <span className="arr">&rarr;</span>
-                        </span>
-                      </div>
-                    </Link>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <p className="py-10 font-medium" style={{ color: NAVY_70, fontSize: '1.05rem' }}>
-                No posts in this category yet.{' '}
-                <Link href="/blog" className="underline" style={{ color: NAVY, textUnderlineOffset: 3 }}>
-                  View all posts
-                </Link>
-                .
-              </p>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <nav className="mt-12 flex flex-wrap items-center justify-center gap-4" aria-label="Pagination">
-                {page > 1 && (
-                  <Link
-                    href={`/blog?page=${page - 1}${category !== 'All' ? `&category=${encodeURIComponent(category)}` : ''}`}
-                    className="btn alt"
-                  >
-                    Previous
-                  </Link>
-                )}
-                <span
-                  className="uppercase tabular-nums"
-                  style={{ color: NAVY_70, fontSize: '.72rem', fontWeight: 700, letterSpacing: '.14em' }}
-                >
-                  Page {page} of {totalPages}
-                </span>
-                {page < totalPages && (
-                  <Link
-                    href={`/blog?page=${page + 1}${category !== 'All' ? `&category=${encodeURIComponent(category)}` : ''}`}
-                    className="btn alt"
-                  >
-                    Next
-                  </Link>
-                )}
-              </nav>
-            )}
-
-            {/* Popular posts */}
-            {popularSlugs.length > 0 ? (
-              <aside className="mt-14 pt-6" style={{ borderTop: EDGE_NAVY }} aria-labelledby="blog-popular-h">
-                <h3
-                  id="blog-popular-h"
-                  className="uppercase"
-                  style={{ color: NAVY_70, fontSize: '.7rem', fontWeight: 700, letterSpacing: '.18em' }}
-                >
-                  Recent posts
-                </h3>
-                <ul className="mt-4 flex list-none flex-col" style={{ borderTop: `1px solid ${NAVY_12}` }}>
-                  {popularSlugs.slice(0, 5).map((post) => (
-                    <li key={post.slug} style={{ borderBottom: `1px solid ${NAVY_12}` }}>
-                      <Link
-                        href={`/blog/${post.slug}`}
-                        className="block py-3.5 text-base font-semibold transition-[padding] hover:pl-2 focus-visible:pl-2 focus-visible:outline-none"
-                        style={{ color: NAVY }}
-                      >
-                        {post.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </aside>
-            ) : null}
-          </div>
-        </section>
-
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. The KB page nested KbFooter the same way, and
+          ci:default-chrome-footer counts footers without checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

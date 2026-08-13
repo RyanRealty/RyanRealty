@@ -1,44 +1,71 @@
-// @no-parity — data-archive surface on the shared KB pattern; no bespoke mockup contract.
+// @no-parity — data-archive surface on the shared v3 pattern; no bespoke mockup contract.
 /**
  * /housing-market/reports/archive/[city] — the decade market archive for one
- * report city (W8.5).
+ * report city (W8.5), on the components/site/v3 barrel.
  *
  * The live CONSUMER of the W2.6 monthly-cache backfill: it reads the full monthly
- * market_stats_cache series (2016 → present) through getCityArchive and renders
+ * market_stats_cache series (2016 to present) through getCityArchive and renders
  * per-year aggregate statistics. Static route (generateStaticParams over the
  * REPORT_CITIES registry), so a bad slug is a 404, not a soft-empty page.
  *
- * Placement: the canonical reports namespace is /housing-market/reports (the bare
- * /reports/* paths 308-redirect here, next.config.ts). A STATIC `archive` segment
- * sits beside the existing /housing-market/reports/[slug] weekly-report route
- * without colliding (static beats dynamic).
+ * D9: CityArchiveSection is a year table (chart inventory A19) and stays an
+ * island so the price column can remain a range of monthly medians, not a
+ * fabricated yearly median. Homes sold by year is a real series and passes
+ * `chart` on Instrument. Do not flatten that series to a figure.
  *
- * §0: every figure comes from getCityArchive (one monthly-cache read). ODS §5-4
- * A.4: aggregate-only (year, count, monthly-median range) — never an individual
- * sold listing. §7-3 source line rides in CityArchiveSection.
+ * DROPPED: KbBreadcrumb, KbFooter, SmoothScrollProvider, MarketSources (the
+ * Oregon Data Share citation is a Quiet edge). The en-dash year span is now
+ * "to".
  *
- * Data ONLY through @/lib/data (G8). No @/app/actions/* imports.
+ * Data ONLY through @/lib/data (G8).
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getCityArchive } from '@/lib/data/market/getCityArchive'
+import { getCityArchive, type CityArchive } from '@/lib/data/market/getCityArchive'
 import { REPORT_CITIES, REPORT_CITY_SLUGS } from '@/lib/data/geo/report-cities'
-import { CityArchiveSection } from '@/components/reports/CityArchiveSection'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { MarketSources } from '@/components/site/MarketSources'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Quiet,
+  type V3ChartProps,
+  type V3ChartPoint,
+  type V3InstrumentFigure,
+} from '@/components/site/v3'
+import { valuationHref } from '@/lib/site/valuation-href'
+import { ArchiveYearTable } from './_v3/ArchiveYearTable'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
+function buildArchiveSoldChart(archive: CityArchive): V3ChartProps | undefined {
+  const points: V3ChartPoint[] = [...archive.years]
+    .sort((a, b) => a.year - b.year)
+    .flatMap((year) => {
+      if (year.homesSold <= 0) return []
+      return [
+        {
+          value: year.homesSold,
+          tick: v3Text(String(year.year)),
+          label: v3Text(year.homesSold.toLocaleString('en-US')),
+          at: year.year,
+        },
+      ]
+    })
+  if (points.length < 2) return undefined
+  return {
+    caption: v3Text(`Closed single-family sales by year, ${archive.label}`),
+    series: [{ name: v3Text('Homes sold'), points }],
+  }
+}
+
 type PageProps = { params: Promise<{ city: string }> }
 
-/** Pre-generate the archive for every report city. */
 export function generateStaticParams(): Array<{ city: string }> {
   return REPORT_CITY_SLUGS.map((city) => ({ city }))
 }
@@ -64,86 +91,121 @@ export default async function CityArchivePage({ params }: PageProps) {
   const archive = await getCityArchive(city)
   if (!archive) notFound()
 
+  const yearsCovered = archive.years.filter((y) => y.homesSold > 0).length
   const span =
     archive.earliestYear != null && archive.latestYear != null && archive.earliestYear !== archive.latestYear
-      ? `${archive.earliestYear}–${archive.latestYear}`
-      : String(archive.latestYear ?? archive.earliestYear ?? '')
+      ? `${archive.earliestYear} to ${archive.latestYear}`
+      : archive.latestYear != null
+        ? String(archive.latestYear)
+        : archive.earliestYear != null
+          ? String(archive.earliestYear)
+          : null
 
   const canonical = `${siteUrl}/housing-market/reports/archive/${archive.slug}`
+  const liveHref = `/housing-market/${archive.slug}`
 
-  // Dataset JSON-LD — variableMeasured sourced ONLY from the archive figures.
+  const figures: V3InstrumentFigure[] = [
+    {
+      value: v3Text(archive.totalSold.toLocaleString('en-US')),
+      label: v3Text('closed single-family sales'),
+      href: liveHref,
+    },
+  ]
+  if (yearsCovered > 0) {
+    figures.push({
+      value: v3Text(String(yearsCovered)),
+      label: v3Text('years with recorded closes'),
+      href: liveHref,
+    })
+  }
+  const [firstFigure, ...restFigures] = figures
+
   const datasetVariables: Array<{ name: string; value: string | number; unitText?: string }> = [
     { name: 'Total closed single-family sales', value: archive.totalSold },
-    { name: 'Years covered', value: archive.years.filter((y) => y.homesSold > 0).length },
+    { name: 'Years covered', value: yearsCovered },
   ]
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="reports" />
-      <MetadataBlock
-        schema={{
-          type: 'dataset',
-          name: `${archive.label} single-family home sales archive`,
-          description:
-            `Closed single-family home sales for ${archive.label}, Oregon by year, with the range of ` +
-            `monthly median sale prices. Sourced from Oregon Data Share via Ryan Realty.`,
-          url: canonical,
-          temporalCoverage:
-            archive.earliestYear != null && archive.latestYear != null
-              ? `${archive.earliestYear}/${archive.latestYear}`
-              : undefined,
-          spatialCoverageName: `${archive.label}, OR`,
-          variableMeasured: datasetVariables,
-        }}
-      />
-      <KbBreadcrumb
-        belowNav
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Market reports', href: '/housing-market/reports' },
-          { label: archive.label, href: `/housing-market/${archive.slug}` },
-          { label: 'Sales archive' },
-        ]}
-      />
-      <SmoothScrollProvider>
-        <section className="section" id="archive-hero" aria-label="Market archive header">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Market archive {span ? `· ${span}` : ''}</span>
-            </div>
-            <div className="pt-7">
-              <h1 className="display" style={{ fontSize: 'clamp(2.2rem,7vw,4.6rem)', lineHeight: 0.92 }}>
-                {archive.label}
-                <br />
-                home sales by year
-              </h1>
-              <p
-                className="mono-num mt-4"
-                style={{ color: 'var(--navy-70)', fontSize: 'clamp(1rem,1.6vw,1.2rem)', letterSpacing: '.02em' }}
-              >
-                A decade of single-family closings.
-              </p>
-              <div className="flex flex-wrap items-center gap-3" style={{ marginTop: 'clamp(20px,3vw,30px)' }}>
-                <Link href={`/housing-market/${archive.slug}`} className="btn alt">
-                  Current market <span className="arr">→</span>
-                </Link>
-                <Link
-                  href="/housing-market/reports"
-                  className="btn alt"
-                  style={{ background: 'transparent', color: 'var(--navy)' }}
-                >
-                  All reports <span className="arr">→</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="reports" />
+        <MetadataBlock
+          schemas={[
+            {
+              type: 'breadcrumb',
+              items: [
+                { name: 'Home', url: '/' },
+                { name: 'Market reports', url: '/housing-market/reports' },
+                { name: archive.label, url: liveHref },
+                { name: 'Sales archive', url: canonical },
+              ],
+            },
+            {
+              type: 'dataset',
+              name: `${archive.label} single-family home sales archive`,
+              description:
+                `Closed single-family home sales for ${archive.label}, Oregon by year, with the range of ` +
+                `monthly median sale prices. Sourced from Oregon Data Share via Ryan Realty.`,
+              url: canonical,
+              temporalCoverage:
+                archive.earliestYear != null && archive.latestYear != null
+                  ? `${archive.earliestYear}/${archive.latestYear}`
+                  : undefined,
+              spatialCoverageName: `${archive.label}, OR`,
+              variableMeasured: datasetVariables,
+            },
+          ]}
+        />
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Market reports', href: '/housing-market/reports' },
+            { label: archive.label, href: liveHref },
+            { label: 'Sales archive' },
+          ]}
+        />
 
-        <CityArchiveSection archive={archive} />
+        {firstFigure ? (
+          <V3Instrument
+            id="archive"
+            level={1}
+            eyebrow={v3Text(span ? `Market archive ${span}` : 'Market archive')}
+            headline={v3Text(`${archive.label} home sales by year`)}
+            figures={[firstFigure, ...restFigures]}
+            source={v3Text(
+              'closed single-family sales through Oregon Data Share, monthly market_stats_cache rows rolled to calendar years. The price column in the table below is the range of monthly medians, not a median of medians',
+            )}
+            action={{
+              label: v3Text('Current market'),
+              href: liveHref,
+              variant: 'primary',
+            }}
+            chart={buildArchiveSoldChart(archive)}
+          />
+        ) : null}
 
-        <MarketSources sources={['ods']} />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+        <ArchiveYearTable archive={archive} />
+
+        <V3Quiet
+          id="explore"
+          eyebrow="More resources"
+          heading="Keep reading"
+          items={[
+            { label: `${archive.label} market report`, href: liveHref },
+            { label: 'All reports', href: '/housing-market/reports' },
+            { label: 'Closed sales explorer', href: '/housing-market/history' },
+            { label: 'Value my home', href: valuationHref(`/housing-market/reports/archive/${archive.slug}`) },
+            { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
+          ]}
+        />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. The KB page nested KbFooter the same way, and
+          ci:default-chrome-footer counts footers without checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

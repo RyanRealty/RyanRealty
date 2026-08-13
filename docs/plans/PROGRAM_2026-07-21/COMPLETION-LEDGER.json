@@ -650,7 +650,7 @@
         "migrations": [],
         "paths": [
           "app/housing-market/[...slug]/page.tsx",
-          "components/site/kb/KbTimeframeStats.client.tsx",
+          "app/housing-market/[...slug]/_v3/city-view.tsx",
           "lib/data/market/getCityMarketDetail.ts",
           "next.config.ts"
         ]

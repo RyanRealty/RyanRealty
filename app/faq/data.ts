@@ -2,7 +2,7 @@
  * app/faq/data.ts — canonical FAQ content for Ryan Realty (Bend, Central Oregon).
  *
  * SINGLE SOURCE OF TRUTH for:
- *   - app/faq/page.tsx (the hub — grouped accordions + FAQPage JSON-LD)
+ *   - app/faq/page.tsx (the hub — every answer visible as Quiet prose + FAQPage JSON-LD)
  *   - app/faq/[slug]/page.tsx (one standalone, indexable page per question)
  *   - the GBP Q&A seed when posted via the UI runbook
  *

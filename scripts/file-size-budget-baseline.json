@@ -20,7 +20,6 @@
     "app/api/social/publish/route.ts": 872,
     "app/communities/[slug]/page.tsx": 735,
     "app/dashboard/marketing/page.tsx": 1163,
-    "app/housing-market/[...slug]/page.tsx": 894,
     "app/lp/bend/page.tsx": 1037,
     "app/lp/buyer-listing-alerts/page.tsx": 657,
     "app/lp/central-oregon-golf/page.tsx": 1461,

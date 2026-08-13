@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 262,
-    "legacyPages": 35,
-    "mixedPages": 45
+    "nonV3ImportSites": 202,
+    "legacyPages": 26,
+    "mixedPages": 54
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -171,10 +171,14 @@
       "legacy": 1
     },
     "app/blog/[slug]/page.tsx": {
-      "kb": 5
+      "legacy": 1,
+      "kb": 1,
+      "v3": 1
     },
     "app/blog/page.tsx": {
-      "kb": 6
+      "legacy": 1,
+      "kb": 1,
+      "v3": 1
     },
     "app/builders/[slug]/page.tsx": {
       "kb": 6,
@@ -278,17 +282,19 @@
       "legacy": 1
     },
     "app/faq/[slug]/page.tsx": {
-      "kb": 5,
-      "legacy": 1
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/faq/page.tsx": {
-      "kb": 6,
-      "legacy": 1
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/housing-market/[...slug]/page.tsx": {
-      "legacy": 16,
-      "kb": 12,
-      "primitives": 1
+      "legacy": 1,
+      "kb": 1,
+      "v3": 1
     },
     "app/housing-market/annual-review/page.tsx": {
       "v3": 1,
@@ -301,8 +307,9 @@
       "kb": 1
     },
     "app/housing-market/history/page.tsx": {
-      "kb": 5,
-      "primitives": 1
+      "legacy": 1,
+      "kb": 1,
+      "v3": 1
     },
     "app/housing-market/page.tsx": {
       "v3": 1,
@@ -310,8 +317,9 @@
       "kb": 1
     },
     "app/housing-market/reports/archive/[city]/page.tsx": {
-      "legacy": 2,
-      "kb": 5
+      "legacy": 1,
+      "kb": 1,
+      "v3": 1
     },
     "app/join/page.tsx": {
       "legacy": 1,
@@ -408,7 +416,8 @@
     },
     "app/reports/sales/[city]/[period]/page.tsx": {
       "legacy": 1,
-      "kb": 5
+      "kb": 1,
+      "v3": 1
     },
     "app/resources/page.tsx": {
       "kb": 6
@@ -470,7 +479,9 @@
       "legacy": 1
     },
     "app/tools/appreciation/page.tsx": {
-      "kb": 6
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/tools/mortgage-calculator/page.tsx": {
       "kb": 6

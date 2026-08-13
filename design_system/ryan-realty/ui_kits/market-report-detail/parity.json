@@ -1,204 +1,107 @@
 {
   "route": "app/housing-market/[...slug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/market-report/index.html",
-  "competitiveTarget": "Beat Zillow / Redfin / Windermere geo market pages. KB kinetic-brutalist chrome for city scope: live per-city stat band + yearSeries overlay chart + sibling-city tiles + market FAQ plus FAQPage JSON-LD + Dataset JSON-LD for AI citability. Subdivision scope retains wave-2 render (no KB subdivision pattern yet).",
-  "note": "Catch-all route for /housing-market/<city> (KB render, Phase 9) and /housing-market/<city>/<community> (legacy wave-2 render, preserved intact). City scope mirrors the region report (central-oregon/page.tsx) with city-scoped KbMarketData. Subdivision scope kept on wave-2 deliberately — no KB convergence roadmap wave covers subdivision market reports. Both scopes share the same JSON-LD (BreadcrumbList + WebPage + Dataset + FAQPage) via MetadataBlock + FAQBlock.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
+  "competitiveTarget": "Beat Zillow / Redfin / Windermere geo market pages. The answer in the first viewport (verdict, live figures, one source trace, one stamp, the monthly median series as Instrument.chart), sibling cities as Ledger doors, FAQ from the same buildMarketFaq array as FAQPage JSON-LD, and a single on-page ask.",
+  "note": "Migrated off the dual KB/legacy register onto the v3 barrel 2026-08-13 (E-MARKET-REST). Both branches share V3Footer outside main. Rhythm: Breadcrumb, Instrument level 1 (chart on the Instrument, D9), Ledger (sibling cities), Quiet (FAQ), Sheet (inquiry), Quiet (edges), Footer. City chart is the newest-three-year monthly overlay from buildYearSeries, falling back to one chronological monthly line. Community chart is the 12-month median sale series when six or more complete months exist. Do not flatten those series to a figure. YTD / this-month / 12-month closed medians are Instrument figures, not a tabbed KB island. The verdict classifies the RAW months-of-supply value through marketVerdict(); formatMonthsOfSupply is display only. FAQPage JSON-LD moved from FAQBlock includeJsonLd onto MetadataBlock. Capture contract unchanged: GeoInquirySheet calls submitMarketPageInquiry with variant inquiry and fields name / email / message. KB-era deletions, city: KbHero, KbExploreTowns, KbArticles, FAQBlock, LeadCaptureBlock, KbSell, KbFooter, SmoothScrollProvider, MarketSources, KbMarketHud, KbMarketChart, KbTimeframeStats. Community deletions: PageBreadcrumb, HeroBlock, MarketSnapshot, MarketDetailStats, PriceBandTable stub, CityComparisonTable, ContentSection, FAQBlock, LeadCaptureBlock, RelatedAreas, CTABar, SiteFooter, DisplayHeading, buildNarrative, PriceChart. Closed-sales fields from the monthly cache row surface as Instrument figures on the community branch. marketHealthLabel is not printed.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
-      "section": "BreadcrumbList + WebPage + Dataset JSON-LD (G34 AI-citability). dateModified equals pulse.refreshedAt from market_pulse_live, never hardcoded. variableMeasured from buildMarketFaq. Rendered in BOTH city and subdivision scopes.",
+      "section": "BreadcrumbList + WebPage + Dataset + FAQPage JSON-LD. All four are emitted here: V3Breadcrumb and V3Quiet carry no structured data of their own. dateModified equals pulse.refreshedAt. variableMeasured from buildMarketFaq. FAQPage items are the same faqs array V3Quiet renders.",
       "blocking": true
     },
     {
       "name": "KbNav",
-      "section": "KB chrome navigation — city scope only.",
+      "section": "The public header, mounted by app/layout.tsx through V3Chrome / PublicNav. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header.",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "Page-level analytics tracker. pageType='market-report'. City scope only.",
+      "section": "Page-level analytics, pageType='market-report'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "Visual breadcrumb: Home > Housing market > {cityName}. No JSON-LD (MetadataBlock owns BreadcrumbList). City scope only.",
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Housing market > {city} [> {community}]. Surface tone. Current page never a link.",
       "blocking": true
     },
     {
-      "name": "SmoothScrollProvider",
-      "section": "Lenis smooth scroll wrapper around all KB sections. City scope only.",
+      "name": "CityMarketView",
+      "section": "City branch body in app/housing-market/[...slug]/_v3/city-view.tsx. Instrument with chart, sibling-city Ledger, FAQ Quiet, Sheet, closing Quiet. Renders V3Instrument, V3Ledger, V3Quiet.",
       "blocking": true
     },
     {
-      "name": "KbHero",
-      "section": "City hero: eyebrow '{cityName} · Oregon', titleTop=cityName, titleBottom='market report', data-driven lede from pulse. City scope only.",
+      "name": "CommunityMarketView",
+      "section": "Community branch body in app/housing-market/[...slug]/_v3/community-view.tsx. Instrument (live pulse plus closed-sales cache fields plus 12-month chart), city-comparison Ledger, FAQ Quiet, Sheet, closing Quiet.",
       "blocking": true
     },
     {
-      "name": "KbMarketHud",
-      "section": "City KbMarketData. §0-traced: active/closed30/medianList/daysToPending/monthsSupply from pulse; trend from completePriceMonths last 13; byTown from citySnapshots; yearSeries from buildYearSeries(completePriceMonths, 5). Pulse-timeout fallback via pulse ?? {…}. City scope only.",
+      "name": "GeoInquirySheet",
+      "section": "Pattern 5, once, in app/housing-market/[...slug]/_v3/GeoInquirySheet.client.tsx. Serves both branches. Wraps V3Sheet and calls submitMarketPageInquiry, variant inquiry, fields name / email / message. Capture contract unchanged.",
       "blocking": true
     },
     {
-      "name": "KbExploreTowns",
-      "section": "Sibling Central Oregon city tiles from ONE getMarketPulseCitySnapshots call, excluding current city. Links to /housing-market/<city-slug>. eyebrow 'Central Oregon', sectionId='cities'. City scope only.",
-      "blocking": true
-    },
-    {
-      "name": "FAQBlock",
-      "section": "Market FAQ from buildMarketFaq. includeJsonLd=true auto-emits FAQPage JSON-LD (G34). tone='muted'. Rendered in BOTH scopes.",
-      "blocking": true
-    },
-    {
-      "name": "KbSell",
-      "section": "Seller conversion block fed by pulse: medianListPrice, medianDaysToPending, closedLast30Days. eyebrow 'Sell in {cityName}'. City scope only.",
-      "blocking": true
-    },
-    {
-      "name": "KbFooter",
-      "section": "Full sitemap close. towns prop = siblingCities (same KbTownItem[] as KbExploreTowns). City scope only.",
-      "blocking": true
-    },
-    {
-      "name": "PageBreadcrumb",
-      "section": "Home > Housing market > {cityName} > {communityName}, includeJsonLd=false. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "DisplayHeading",
-      "section": "Hero H1 '{geoName} housing market' in Amboqia Boriango via HeroBlock. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "HeroBlock",
-      "section": "Full-bleed hero with city photo, display H1, and data-driven lede. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "MarketSnapshot",
-      "section": "4-stat cards from market_pulse_live. Shows parent-city stats for subdivision scope. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "PriceChart",
-      "section": "12-month median sale price trend from getPriceHistory. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "MarketDetailStats",
-      "section": "Fuller closed-sales stats from getCityMarketDetail. Subdivision scope only (legacy wave-2). City scope surfaces the same getCityMarketDetail data inside the KbMarketHud sale-to-list KPI rather than as a separate table, so the closed-sales detail is not lost in the KB render.",
-      "blocking": true
-    },
-    {
-      "name": "PriceBandTable",
-      "section": "Inventory-by-price-band table, stubbed with items=[]. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "CityComparisonTable",
-      "section": "Per-city comparison table from getMarketPulseCitySnapshots. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "ContentSection",
-      "section": "Market narrative from MoS verdict and live stats. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "LeadCaptureBlock",
-      "section": "Broker inquiry form, variant='inquiry', tone='muted', onSubmit=submitMarketPageInquiry (FUB person + event + Meta CAPI). Rendered in BOTH scopes: city KB render wraps it in a <section id='ask-a-broker'> before KbSell so a buyer or general-question visitor keeps an on-page capture path (KbSell alone is a seller-only address handoff to /sell/valuation); subdivision scope renders it inline in the legacy wave-2 stack.",
-      "blocking": true
-    },
-    {
-      "name": "RelatedAreas",
-      "section": "Nearby Central Oregon cities with activeCount from market_pulse_live. cols=4. Subdivision scope only (legacy wave-2).",
-      "blocking": true
-    },
-    {
-      "name": "CTABar",
-      "section": "Broker contact band, tone='navy'. primary '/contact' Schedule a call. Subdivision scope only (legacy wave-2).",
+      "name": "V3Footer",
+      "section": "Chrome. Canonical sitemap projection (V3_FOOTER_COLUMNS) plus the legal row. Rendered OUTSIDE <main> so the footer maps to contentinfo. Both branches. No SiteFooter, no KbFooter.",
       "blocking": true
     }
   ],
-  "optionalComponents": [
-    {
-      "name": "KbArticles",
-      "section": "Recent blog posts from getRecentBlogPosts({ limit: 3 }). Renders null when empty. City scope only.",
-      "blocking": false
-    }
-  ],
+  "optionalComponents": [],
   "layoutComponents": [
     {
-      "name": "SiteHeader",
-      "section": "Hidden for kb-root pages (city scope) via HideChrome in app/layout.tsx. Present for subdivision scope.",
-      "note": "KbNav provides KB chrome for city scope."
-    },
-    {
-      "name": "SiteFooter",
-      "section": "Hidden for kb-root pages (city scope). Present for subdivision scope.",
-      "note": "KbFooter provides KB footer for city scope."
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx",
+      "note": "Not a page-level import. Do not remount."
     }
   ],
   "deferredComponents": [
     {
-      "name": "KbAbout",
-      "reason": "City-scope KB market report focuses on market data. KbAbout lives on /cities/[slug]."
+      "name": "V3Stage",
+      "reason": "Pattern 4 needs an owned video or photo and is never allowed over a number. This route opens on the answer."
     },
     {
-      "name": "KbListingMap",
-      "reason": "Listing map deferred; /cities/[slug] owns the map tile."
-    },
-    {
-      "name": "KbFeatured",
-      "reason": "Featured listings deferred; /cities/[slug] owns the featured listing feed."
-    },
-    {
-      "name": "KbTestimonials",
-      "reason": "Testimonials deferred from the market report page."
-    },
-    {
-      "name": "KbTeam",
-      "reason": "Team section deferred from the market report page."
+      "name": "KbMarketHud",
+      "reason": "HUD chrome dropped. The year overlay it contained is Instrument.chart."
     }
   ],
   "jsonLd": {
     "required": [
-      {
-        "type": "BreadcrumbList",
-        "emittedBy": "MetadataBlock schemas array (breadcrumb entry)",
-        "gate": "G34",
-        "note": "Both scopes."
-      },
-      {
-        "type": "WebPage",
-        "emittedBy": "MetadataBlock schemas array (webPage entry)",
-        "gate": "G34",
-        "note": "Both scopes."
-      },
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry)", "gate": "G34", "note": "Both scopes." },
+      { "type": "WebPage", "emittedBy": "MetadataBlock schemas array (webPage entry)", "gate": "G34", "note": "Both scopes." },
       {
         "type": "Dataset",
-        "emittedBy": "MetadataBlock schemas array (dataset entry)",
-        "gate": "G34",
-        "note": "Primary AI-citability signal. Both scopes. dateModified must equal pulse.refreshedAt from market_pulse_live. Each variableMeasured value must equal the on-screen number (CLAUDE.md §0). Emitted only when datasetVariables.length > 0 AND refreshedAt is present."
+        "emittedBy": "MetadataBlock schemas array (dataset entry), variableMeasured from buildMarketFaq, dateModified from the real market_pulse_live refreshedAt. Emitted only when there is at least one variable AND a refresh timestamp.",
+        "gate": "G34"
       },
       {
         "type": "FAQPage",
-        "emittedBy": "FAQBlock includeJsonLd=true",
-        "gate": "G34",
-        "note": "Both scopes. buildMarketFaq is the single source for FAQ items, FAQPage JSON-LD, and Dataset variableMeasured."
+        "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same faqs array V3Quiet renders. On the KB page this came out of FAQBlock includeJsonLd.",
+        "gate": "G34"
       }
     ]
   },
   "dataLayer": {
-    "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live geo_type='city' or 'subdivision', 10 to 15 min freshness.",
-    "getPriceHistory": "lib/data/market/getPriceHistory.ts, market_stats_cache monthly. limit=60 city scope, limit=24 subdivision scope.",
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts, market_pulse_live, geo_type from resolveGeo, 10 to 15 min freshness.",
+    "getPriceHistory": "lib/data/market/getPriceHistory.ts, market_stats_cache monthly. limit=60 city, limit=24 community. In-progress current month dropped via zonedDateKey.",
     "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts, market_pulse_live city rows for COMPARISON_CITY_LABELS. ONE call per render.",
-    "getCityMarketDetail": "lib/data/market/getCityMarketDetail.ts, market_stats_cache full projection, 6h freshness. City scope feeds the KbMarketHud sale-to-list KPI (avg_sale_to_list_ratio ×100); subdivision scope feeds the legacy MarketDetailStats section.",
-    "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, blog_posts published newest first, limit=3. City scope only.",
-    "buildYearSeries": "lib/kb/year-series.ts. Groups completePriceMonths into up to 5 calendar-year lines for KbMarketHud. City scope only.",
-    "buildMarketFaq": "lib/site/market-faq.ts. Both scopes. Fed pulse ?? {activeCount: null, medianListPrice: null, refreshedAt: null} for timeout resilience (G52).",
-    "note": "All DAL functions imported from @/lib/data (G8 compliant). submitMarketPageInquiry imported from @/app/housing-market/actions for subdivision lead capture (approved pattern)."
+    "getCityMarketDetailByTimeframe": "lib/data/market/getCityMarketDetail.ts. City: YTD / month / 12-month medians as Instrument figures. Community: monthly row closed-sales figures on the Instrument.",
+    "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, published newest first, limit=3. City scope only, closing Quiet edges.",
+    "buildYearSeries": "lib/kb/year-series.ts. Groups completePriceMonths into up to 5 calendar-year lines, newest three of which plot as Instrument.chart. City scope only.",
+    "buildMarketFaq": "lib/site/market-faq.ts. Both scopes. Fed pulse ?? {activeCount: null, medianListPrice: null, refreshedAt: null} so Dataset/FAQPage survive a missing row (G52).",
+    "submitMarketPageInquiry": "app/housing-market/actions.ts, bound to GeoInquirySheet. Same action, same payload shape, same field names as the KB LeadCaptureBlock it replaces.",
+    "note": "Every read is a DAL function from @/lib/data (G8). None is wrapped in a swallowing catch at the page. Route-local constants live in _v3/geo-constants.ts so the route file stays under the ci:file-size-budget floor. That file is NOT a geo registry."
   },
+  "sectionOrder": [
+    "MetadataBlock",
+    "KbSectionTracker",
+    "V3Breadcrumb",
+    "V3Instrument (level 1, geo answer + chart) via CityMarketView or CommunityMarketView",
+    "V3Ledger (sibling / comparison cities)",
+    "V3Quiet (FAQ from buildMarketFaq)",
+    "GeoInquirySheet (V3Sheet, broker inquiry)",
+    "V3Quiet (outbound edges + Oregon Data Share)",
+    "V3Footer"
+  ],
   "generateStaticParams": {
     "required": true,
     "coreSlugs": [

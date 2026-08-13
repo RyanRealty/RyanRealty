@@ -1,60 +1,47 @@
-// @no-parity — no standalone mockup; reuses the KB section library and the
-// app/blog/[slug]/page.tsx + app/parks/[slug]/page.tsx article/detail pattern.
+// @no-parity — no standalone mockup; reuses the FAQ hub's v3 Quiet + Sheet.
 // @data-free
 /**
- * /faq/[slug]. Standalone, indexable page for a single Ryan Realty FAQ answer.
+ * /faq/[slug]. Standalone, indexable page for a single Ryan Realty FAQ answer,
+ * on the components/site/v3 barrel.
  *
  * WHY THIS ROUTE EXISTS: the /faq hub bundles every question into one long
  * page. A search result, a Google featured snippet, or an AI answer engine
  * can only cite the hub's URL, never a single question. This route gives
  * each question its own canonical URL, its own H1, and its own
- * single-question FAQPage JSON-LD, so an individual answer can rank and be
- * cited on its own (task: audit item 15, part (b)).
+ * single-question FAQPage JSON-LD.
  *
  * Content is NOT duplicated. app/faq/data.ts is the single canonical source
- * for both this route and app/faq/page.tsx (the hub). Marked @data-free for
- * scripts/check-page-dal.mjs: every FAQ answer is a static in-repo array,
- * there is no Supabase read on this route.
- *
- * KB (kinetic-brutalist) design, matching the rest of the migrated site:
- * KbNav (solid, no hero photo, same treatment as a blog post), KbBreadcrumb,
- * SmoothScrollProvider, KbFooter. Layout follows the article template used by
- * app/blog/[slug]/page.tsx (header + prose body + related items + CTA), scaled
- * down for a single answer instead of a full article. Styling is Tailwind
- * classes plus inline style objects (CSSProperties), the same approach the
- * blog detail page uses, not a raw CSS <style> block.
+ * for both this route and app/faq/page.tsx. Marked @data-free for
+ * scripts/check-page-dal.mjs: every FAQ answer is a static in-repo array.
  *
  * generateStaticParams + dynamicParams = false: the FAQ list is a fixed,
  * small, code-owned set, so every /faq/[slug] page is fully static (SSG) at
- * build time. No revalidate needed. A slug outside the known set 404s.
+ * build time. A slug outside the known set 404s.
+ *
+ * DROPPED: KbBreadcrumb, KbFooter, SmoothScrollProvider, the Talk to us /
+ * Latest market report button row, the related-question card grid. Related
+ * questions are a Ledger. The ask is the same Sheet the hub uses.
  */
 
-import type { CSSProperties } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Ledger,
+  V3Quiet,
+  type V3LedgerPlainRow,
+} from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { valuationHref } from '@/lib/site/valuation-href'
 import { getFaqBySlug, getFaqSlugs, getRelatedFaq } from '../data'
-import '@/components/site/kb/kb.css'
-
-// KB tokens (all from kb.css) as inline style values, matching
-// app/blog/[slug]/page.tsx. Keeps the page on the brand palette without raw
-// hex or off-ladder Tailwind arbitrary utilities.
-const NAVY = 'var(--navy)'
-const NAVY_70 = 'var(--navy-70)'
-const NAVY_12 = 'var(--navy-12)'
-const CREAM = 'var(--cream)'
-const EDGE_NAVY = 'var(--edge) solid var(--navy)'
-
-const eyebrowStyle: CSSProperties = { color: NAVY_70 }
-const catCardStyle: CSSProperties = { borderColor: NAVY_12, background: CREAM }
-const catLabelStyle: CSSProperties = { color: NAVY_70 }
+import { FaqInquirySheet } from '../_v3/FaqInquirySheet.client'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -84,6 +71,20 @@ export default async function FaqAnswerPage({ params }: Props) {
   const related = getRelatedFaq(item, 3)
   const categoryAnchor = item.category.toLowerCase().replace(/\s+/g, '-')
 
+  const relatedRows: V3LedgerPlainRow[] = []
+  for (const row of related) {
+    const question = row.question?.trim()
+    const id = row.id?.trim()
+    if (!question || !id) continue
+    relatedRows.push({
+      href: `/faq/${id}`,
+      when: v3Text(row.category),
+      what: v3Text(question),
+      id,
+    })
+  }
+  const [firstRelated, ...restRelated] = relatedRows
+
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
@@ -97,116 +98,58 @@ export default async function FaqAnswerPage({ params }: Props) {
   ]
 
   return (
-    <main className="kb-root">
-      {/* solid: this route has no hero photo, the same treatment as a blog article */}
-      <KbSectionTracker pageType="faq_answer" />
-      <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb
-        belowNav
-        trail={[{ label: 'Home', href: '/' }, { label: 'FAQ', href: '/faq' }, { label: item.category, href: `/faq#${categoryAnchor}` }]}
-      />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="faq_answer" />
+        <MetadataBlock schemas={schemas} />
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'FAQ', href: '/faq' },
+            { label: item.category, href: `/faq#${categoryAnchor}` },
+            { label: item.question },
+          ]}
+        />
 
-      <SmoothScrollProvider>
-        <section className="section" id="faq-answer" aria-label={item.question}>
-          <div className="wrap">
-            <article className="mx-auto w-full pb-4 pt-12" style={{ color: NAVY, maxWidth: 880 }}>
-              <span
-                className="inline-flex items-center gap-2 text-xs font-semibold uppercase"
-                style={{ ...eyebrowStyle, letterSpacing: '.14em' }}
-              >
-                {item.category} · Central Oregon FAQ
-              </span>
+        <V3Quiet
+          id="faq-answer"
+          heading={item.question}
+          headingLevel={1}
+          eyebrow={`${item.category} · Central Oregon FAQ`}
+          items={[{ kind: 'prose', body: item.answer }]}
+        />
 
-              <h1
-                className="display mt-4"
-                style={{ fontSize: 'clamp(2.1rem,5.6vw,3.8rem)', lineHeight: 0.98, letterSpacing: '-.01em', maxWidth: '22ch' }}
-              >
-                {item.question}
-              </h1>
+        {firstRelated ? (
+          <V3Ledger
+            id="related"
+            eyebrow={v3Text('Keep reading')}
+            heading={v3Text('Related questions')}
+            rows={[firstRelated, ...restRelated]}
+            action={{ label: v3Text('All frequently asked questions'), href: '/faq' }}
+          />
+        ) : null}
 
-              <p
-                className="mt-6 max-w-prose font-medium"
-                style={{ fontSize: 'clamp(1.02rem,1.6vw,1.2rem)', lineHeight: 1.6, color: NAVY_70 }}
-              >
-                {item.answer}
-              </p>
+        <FaqInquirySheet />
 
-              <div className="mt-8 flex flex-wrap items-center gap-3 pb-2">
-                <Link href="/contact" className="btn alt">
-                  Talk to us <span className="arr">→</span>
-                </Link>
-                <Link
-                  href="/housing-market/reports"
-                  className="btn alt"
-                  style={{ background: 'transparent', color: NAVY }}
-                >
-                  Latest market report <span className="arr">→</span>
-                </Link>
-              </div>
-            </article>
-          </div>
-        </section>
+        <V3Quiet
+          id="explore"
+          eyebrow="More resources"
+          heading="Keep reading"
+          items={[
+            { label: 'All frequently asked questions', href: '/faq' },
+            { label: 'Central Oregon housing market', href: '/housing-market' },
+            { label: 'Market report index', href: '/housing-market/reports' },
+            { label: 'Value my home', href: valuationHref(`/faq/${slug}`) },
+          ]}
+        />
+      </main>
 
-        {related.length > 0 ? (
-          <section className="section" id="related" aria-label="Related questions">
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">Keep reading</span>
-                <h2 className="sec-title display">Related questions</h2>
-              </div>
-              <ul
-                className="mt-8 grid grid-cols-1 border-l border-t sm:grid-cols-3"
-                style={{ borderColor: NAVY_12, listStyle: 'none' }}
-              >
-                {related.map((r) => (
-                  <li key={r.id}>
-                    <Link
-                      href={`/faq/${r.id}`}
-                      className="group flex h-full flex-col gap-2.5 p-6 transition-colors"
-                      style={catCardStyle}
-                    >
-                      <span
-                        className="text-xs font-semibold uppercase transition-colors"
-                        style={{ ...catLabelStyle, letterSpacing: '.1em' }}
-                      >
-                        {r.category}
-                      </span>
-                      <span className="text-base font-semibold leading-snug" style={{ color: NAVY }}>
-                        {r.question}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6">
-                <Link
-                  href="/faq"
-                  className="inline-flex items-center gap-2 pb-0.5 text-sm font-semibold"
-                  style={{ color: NAVY, borderBottom: `1px solid ${NAVY_12}` }}
-                >
-                  All frequently asked questions <span className="arr">→</span>
-                </Link>
-              </p>
-            </div>
-          </section>
-        ) : (
-          <section className="section" id="back-to-faq" aria-label="All FAQs">
-            <div className="wrap" style={{ borderTop: `1px solid ${NAVY_12}`, paddingTop: '24px' }}>
-              <p>
-                <Link
-                  href="/faq"
-                  className="inline-flex items-center gap-2 pb-0.5 text-sm font-semibold"
-                  style={{ color: NAVY, borderBottom: `1px solid ${NAVY_12}` }}
-                >
-                  All frequently asked questions <span className="arr">→</span>
-                </Link>
-              </p>
-            </div>
-          </section>
-        )}
-
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. The KB page nested KbFooter the same way, and
+          ci:default-chrome-footer counts footers without checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
