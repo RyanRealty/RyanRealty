@@ -69,9 +69,9 @@ const EXEMPT = [
   /^app\/lp\//, // standalone landing pages are intentionally crumb-less
   /^app\/(sell|buy)\/\[intent\]\//, // intent LPs render LeadLandingPage (carries the crumb)
   /^app\/listing\/by-(address|key)\//, // render ListingDetailPage (carries the crumb)
-  /^app\/housing-market\/reports\/\[slug\]\//, // re-export of app/reports/[slug] (+ the geoName redirect)
-  /^app\/housing-market\/reports\/page\.tsx$/, // KB reports hub (KbBreadcrumb, not PageBreadcrumb)
+  /^app\/housing-market\/reports\/\[slug\]\/\[geoName\]\//, // re-export of the geoName redirect
   /^app\/reports\/page\.tsx$/, // E-CUT redirect-only into /housing-market/reports
+  /^app\/reports\/\[slug\]\/page\.tsx$/, // E-CUT redirect-only into /housing-market/reports/[slug]
   /^app\/area-guides\/page\.tsx$/, // E-CUT redirect-only into /cities
   /^app\/areas\/\[slug\]\/page\.tsx$/, // E-CUT redirect-only into /homes-for-sale
   /^app\/builders(\/\[slug\])?\/page\.tsx$/, // E-CUT redirect-only into new-construction search

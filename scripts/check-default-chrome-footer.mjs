@@ -51,6 +51,7 @@ const REDIRECT_ONLY = new Set([
   'app/builders/page.tsx', // E-CUT: 301 /builders into new-construction search
   'app/builders/[slug]/page.tsx', // E-CUT: 301 /builders/[slug] into new-construction search
   'app/reports/page.tsx', // E-CUT: 301 /reports into /housing-market/reports
+  'app/reports/[slug]/page.tsx', // E-CUT: 308 /reports/[slug] into /housing-market/reports/[slug]
   'app/resources/page.tsx', // E-CUT: 301 /resources into /housing-market
   'app/pulse/page.tsx', // E-CUT: 301 /pulse into /activity
   'app/reports/[slug]/[geoName]/page.tsx', // permanentRedirect to /housing-market

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-13T08:02:07.117Z",
-  "total": 209,
+  "generatedAt": "2026-08-13T10:27:33.257Z",
+  "total": 208,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/api/cma/[slug]/gmail-draft/route.ts": 1,
@@ -32,7 +32,6 @@
     "app/lp/tetherow/heath/_components/HeathAssetPerformance.tsx": 1,
     "app/lp/tetherow/heath/_components/HeathCmaForm.tsx": 1,
     "app/lp/tetherow/page.tsx": 5,
-    "app/reports/[slug]/page.tsx": 1,
     "app/search/[...slug]/loading.tsx": 1,
     "app/search/og/[...slug]/route.tsx": 2,
     "app/signup/page.tsx": 2,

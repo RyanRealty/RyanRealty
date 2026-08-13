@@ -45,6 +45,15 @@
  * imports any non-v3 register fails immediately, whatever the totals did. New
  * public surfaces are built from the barrel or they are not built.
  *
+ * FROZEN NOINDEX LPs (P10 wrap)
+ * B ignores the named list in scripts/lib/frozen-noindex-lps.mjs. Those pages
+ * stay visually untouched. The list is LP + noindex only, tested, and cannot
+ * grow without a why that names noindex plus a page that actually declares
+ * robots.index=false. A public page not on the list still counts toward B,
+ * even if it is noindex — that is the hole a heuristic exclusion would open.
+ * Frozen pages still count toward A. A new frozen LP with non-v3 imports
+ * still grows A, which may only shrink.
+ *
  * SCOPE
  * app/**\/page.tsx, minus app/admin (its own ratchet, ci:admin-ui), app/api,
  * app/dev (prototypes are where a language is allowed to be tried), and the
@@ -75,6 +84,11 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { join, relative, resolve, dirname, sep } from 'node:path'
 import ts from 'typescript'
+import {
+  FROZEN_NOINDEX_LPS,
+  isFrozenNoindexLp,
+  frozenNoindexLpFailures,
+} from './lib/frozen-noindex-lps.mjs'
 
 const ROOT = process.cwd()
 const BASELINE_PATH = 'scripts/public-ui-baseline.json'
@@ -198,11 +212,16 @@ const v3Of = (tally) => tally?.v3 ?? 0
 let nonV3ImportSites = 0
 let legacyPages = 0
 let mixedPages = 0
+let frozenLegacySkipped = 0
 for (const page of pages) {
   const tally = counts[page]
   const nonV3 = nonV3Of(tally)
   const v3 = v3Of(tally)
   nonV3ImportSites += nonV3
+  if (isFrozenNoindexLp(page)) {
+    if (nonV3 > 0 && v3 === 0) frozenLegacySkipped += 1
+    continue
+  }
   if (nonV3 > 0 && v3 === 0) legacyPages += 1
   if (nonV3 > 0 && v3 > 0) mixedPages += 1
 }
@@ -231,8 +250,15 @@ const RATCHETED = ['nonV3ImportSites', 'legacyPages']
 /* -------------------------------------------------------------------------- */
 
 if (WRITE) {
+  const frozenWriteFails = frozenNoindexLpFailures(ROOT)
+  if (frozenWriteFails.length) {
+    console.error('public-ui ratchet: frozen noindex LP list is invalid:')
+    for (const f of frozenWriteFails) console.error(`  ${f}`)
+    process.exit(1)
+  }
   if (existsSync(join(ROOT, BASELINE_PATH)) && !ALLOW_GROWTH) {
-    const prior = JSON.parse(readFileSync(join(ROOT, BASELINE_PATH), 'utf8')).totals ?? {}
+    const priorDoc = JSON.parse(readFileSync(join(ROOT, BASELINE_PATH), 'utf8'))
+    const prior = priorDoc.totals ?? {}
     const grew = RATCHETED.filter(
       (k) => typeof prior[k] === 'number' && totals[k] > prior[k],
     )
@@ -244,6 +270,19 @@ if (WRITE) {
       )
       process.exit(1)
     }
+    const priorFrozen = priorDoc.frozenNoindexLps
+    if (Array.isArray(priorFrozen)) {
+      const extra = FROZEN_NOINDEX_LPS.map((r) => r.file).filter((f) => !priorFrozen.includes(f))
+      if (extra.length) {
+        console.error('public-ui ratchet: refusing to re-seed, the frozen noindex LP list grew:')
+        for (const f of extra) console.error(`  ${f}`)
+        console.error(
+          'B-exclusions may only shrink. Adding a hole is a wrap-gate change: named why, ' +
+            'robots noindex, a test, and --allow-growth.',
+        )
+        process.exit(1)
+      }
+    }
   }
   const seed = {
     note:
@@ -253,7 +292,8 @@ if (WRITE) {
       'the barrel while its chrome waits necessarily raises it. Per page, once a page ' +
       'imports the barrel its non-v3 count may never grow. knownPages is the new-page ' +
       'tripwire: a public page absent from it that imports a non-v3 register fails ' +
-      'regardless of totals. ' +
+      'regardless of totals. frozenNoindexLps is the named B-exclusion (noindex LPs ' +
+      'only); that list may only shrink. ' +
       'Re-seed after a P9 roll with `node scripts/check-public-ui.mjs --write-baseline`.',
     generated_by: 'check-public-ui.mjs --write-baseline',
     registers: {
@@ -264,6 +304,7 @@ if (WRITE) {
       v3: 'components/site/v3 (the destination register, not debt)',
     },
     totals,
+    frozenNoindexLps: FROZEN_NOINDEX_LPS.map((r) => r.file),
     knownPages: pages,
     pages: counts,
   }
@@ -291,6 +332,22 @@ const knownPages = new Set(baseline.knownPages ?? [])
 /* -------------------------------------------------------------------------- */
 
 const failures = []
+
+const frozenFails = frozenNoindexLpFailures(ROOT)
+for (const f of frozenFails) failures.push(`frozen noindex LP: ${f}`)
+
+const baseFrozen = baseline.frozenNoindexLps
+if (Array.isArray(baseFrozen)) {
+  const allowed = new Set(baseFrozen)
+  for (const row of FROZEN_NOINDEX_LPS) {
+    if (!allowed.has(row.file)) {
+      failures.push(
+        `frozen noindex LP list grew (${row.file}). B-exclusions may only shrink. ` +
+          'A new hole needs a named noindex why, a test, and --allow-growth.',
+      )
+    }
+  }
+}
 
 const LABEL = {
   nonV3ImportSites: 'A. non-v3 register import sites',
@@ -370,6 +427,9 @@ console.log(
 )
 console.log(
   `  C. mixed pages         : ${mixedPages}  (baseline ${baseTotals.mixedPages ?? '?'}, ${delta(mixedPages, baseTotals.mixedPages)})`,
+)
+console.log(
+  `  frozen noindex LPs     : ${FROZEN_NOINDEX_LPS.length} named (B skips ${frozenLegacySkipped} leftover-legacy among them)`,
 )
 
 const byRegister = {}

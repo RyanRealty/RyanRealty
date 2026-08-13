@@ -246,6 +246,38 @@ const CHECKS = [
     all: ["'@type': 'Review'", 'reviewBody'],
     why: 'Review nodes must carry reviewBody. Do not add aggregateRating on our own site.',
   },
+  {
+    file: 'app/housing-market/reports/page.tsx',
+    label: 'reports hub: BreadcrumbList + WebPage via MetadataBlock',
+    all: ['MetadataBlock', "type: 'breadcrumb'", "type: 'webPage'", 'KbSectionTracker'],
+    why:
+      'The reports hub MUST emit BreadcrumbList + WebPage JSON-LD via MetadataBlock so\n' +
+      '  AI engines can cite the canonical /housing-market/reports surface. Dataset lives\n' +
+      '  next to the streamed range rows in ReportsIslands.',
+  },
+  {
+    file: 'app/housing-market/reports/_v3/hub-sections.ts',
+    label: 'reports hub Dataset builder: verified city variables',
+    all: ["type: 'dataset'", 'variableMeasured'],
+    why:
+      'Dataset variableMeasured MUST be built from fetched city rows, never a hardcoded list.',
+  },
+  {
+    file: 'app/housing-market/reports/_v3/ReportsIslands.tsx',
+    label: 'reports hub Dataset: emitted beside the range rows',
+    all: ['MetadataBlock', 'ReportsByCityView', 'buildRangeDataset'],
+    why:
+      'The range-table island MUST emit Dataset JSON-LD from the verified city rows it\n' +
+      '  fetched, next to ReportsByCityView.',
+  },
+  {
+    file: 'app/housing-market/reports/[slug]/page.tsx',
+    label: 'weekly report: Report JSON-LD + breadcrumb',
+    all: ["@type': 'Report'", 'MetadataBlock', 'getMarketReportBySlug'],
+    why:
+      'Weekly report pages MUST emit schema.org Report JSON-LD from live report data\n' +
+      '  plus a BreadcrumbList, on the canonical /housing-market/reports/[slug] URL.',
+  },
 ]
 
 const errors = []

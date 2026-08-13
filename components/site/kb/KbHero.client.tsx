@@ -1,4 +1,5 @@
 'use client'
+// reachability: entry-point ci:seo-shell reads this file for Layer A H1 defaults. No page mounts it.
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'

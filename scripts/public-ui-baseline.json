@@ -1,5 +1,5 @@
 {
-  "note": "Public UI ratchet (ci:public-ui). Non-v3 design-register imports on public pages. nonV3ImportSites and legacyPages may only SHRINK. mixedPages is TRACKED, not gated: it is the visible migration front, and a roll that moves a family onto the barrel while its chrome waits necessarily raises it. Per page, once a page imports the barrel its non-v3 count may never grow. knownPages is the new-page tripwire: a public page absent from it that imports a non-v3 register fails regardless of totals. Re-seed after a P9 roll with `node scripts/check-public-ui.mjs --write-baseline`.",
+  "note": "Public UI ratchet (ci:public-ui). Non-v3 design-register imports on public pages. nonV3ImportSites and legacyPages may only SHRINK. mixedPages is TRACKED, not gated: it is the visible migration front, and a roll that moves a family onto the barrel while its chrome waits necessarily raises it. Per page, once a page imports the barrel its non-v3 count may never grow. knownPages is the new-page tripwire: a public page absent from it that imports a non-v3 register fails regardless of totals. frozenNoindexLps is the named B-exclusion (noindex LPs only); that list may only shrink. Re-seed after a P9 roll with `node scripts/check-public-ui.mjs --write-baseline`.",
   "generated_by": "check-public-ui.mjs --write-baseline",
   "registers": {
     "kb": "components/site/kb/*",
@@ -9,10 +9,13 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 139,
-    "legacyPages": 3,
-    "mixedPages": 69
+    "nonV3ImportSites": 129,
+    "legacyPages": 0,
+    "mixedPages": 71
   },
+  "frozenNoindexLps": [
+    "app/lp/tetherow/heath/page.tsx"
+  ],
   "knownPages": [
     "app/about/page.tsx",
     "app/accessibility/page.tsx",
@@ -301,6 +304,11 @@
       "legacy": 1,
       "kb": 1
     },
+    "app/housing-market/reports/[slug]/page.tsx": {
+      "legacy": 1,
+      "kb": 1,
+      "v3": 1
+    },
     "app/housing-market/reports/archive/[city]/page.tsx": {
       "legacy": 1,
       "kb": 1,
@@ -308,7 +316,8 @@
     },
     "app/housing-market/reports/page.tsx": {
       "legacy": 1,
-      "kb": 7
+      "kb": 1,
+      "v3": 1
     },
     "app/join/page.tsx": {
       "legacy": 1,
@@ -391,9 +400,6 @@
     "app/privacy/page.tsx": {
       "v3": 1,
       "kb": 1
-    },
-    "app/reports/[slug]/page.tsx": {
-      "kb": 6
     },
     "app/reports/sales/[city]/[period]/page.tsx": {
       "legacy": 1,
