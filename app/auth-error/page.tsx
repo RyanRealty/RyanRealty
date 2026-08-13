@@ -1,13 +1,36 @@
-import Link from 'next/link'
+/**
+ * /auth-error - sign-in failure, on the v3 barrel.
+ *
+ * // @data-free utility page. No DAL.
+ *
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet recovery. No form. No sales Sheet. Layout chrome already carries
+ * the wordmark.
+ *
+ * VISITOR OBJECTIVE: See why sign-in failed and try again or go home.
+ * MACHINE OBJECTIVE: Keep the next-path plumbing to /login and /admin/login.
+ * Noindex.
+ * EXITS: /login, /admin/login, /
+ *
+ * D11: no virtue names. No invented quote. Who is talking: We.
+ */
+
+// @data-free static utility page, no DAL access needed.
 import type { Metadata } from 'next'
-import { H1 } from '@/components/site/primitives'
-import SiteFooter from '@/components/site/SiteFooter'
+import {
+  V3_ROOT_CLASS,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Quiet,
+  V3SectionTracker,
+} from '@/components/site/v3'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const callbackUrl = `${(process.env.NEXT_PUBLIC_SITE_URL || 'https://yoursite.com').replace(/\/$/, '')}/auth/callback`
 
 export const metadata: Metadata = {
   title: 'Sign-in issue',
-  description: 'We couldn’t sign you in. Try again or return home.',
+  description: 'We could not sign you in. Try again or return home.',
   alternates: { canonical: `${siteUrl}/auth-error` },
   robots: 'noindex, follow',
 }
@@ -22,32 +45,41 @@ export default async function AuthErrorPage({ searchParams }: Props) {
       : next && next.startsWith('/')
         ? `/login?next=${encodeURIComponent(next)}`
         : '/login'
+  let decodedMessage = 'We could not sign you in.'
+  if (message) {
+    try {
+      decodedMessage = decodeURIComponent(message)
+    } catch {
+      decodedMessage = message
+    }
+  }
+
   return (
     <>
-    <main className="mx-auto max-w-lg px-4 py-16 text-center">
-      <H1 className="text-xl text-foreground">Sign-in issue</H1>
-      <p className="mt-2 text-muted-foreground">
-        {message ? (() => { try { return decodeURIComponent(message) } catch { return message } })() : 'We couldn’t sign you in.'}
-      </p>
-      <p className="mt-2 text-sm text-muted-foreground">
-        If you use Google sign-in, add <code className="rounded bg-muted px-1 text-xs break-all">{(process.env.NEXT_PUBLIC_SITE_URL || 'https://yoursite.com').replace(/\/$/, '')}/auth/callback</code> under Supabase → Authentication → URL Configuration → Redirect URLs.
-      </p>
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-        <Link
-          href={tryAgainHref}
-          className="inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Try again
-        </Link>
-        <Link
-          href="/"
-          className="inline-block rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted"
-        >
-          Back to home
-        </Link>
-      </div>
-    </main>
-    <SiteFooter />
+      <main className={V3_ROOT_CLASS}>
+        <V3SectionTracker pageType="utility" />
+        <V3Quiet
+          id="auth-error"
+          heading="Sign-in issue"
+          headingLevel={1}
+          items={[
+            { kind: 'prose', body: decodedMessage },
+            {
+              kind: 'prose',
+              body: `If you use Google sign-in, add ${callbackUrl} under Supabase Authentication, URL Configuration, Redirect URLs.`,
+            },
+            { label: 'Try again', href: tryAgainHref },
+            { label: 'Back to home', href: '/' },
+          ]}
+        />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

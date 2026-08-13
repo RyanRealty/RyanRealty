@@ -1,8 +1,29 @@
+/**
+ * /forgot-password - password reset, on the v3 barrel.
+ *
+ * // @data-free utility page. No DAL.
+ *
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet (what this is) then the leftover ForgotPasswordForm island. No sales
+ * Sheet. Layout chrome already carries the wordmark. Do not re-typeset it here.
+ *
+ * VISITOR OBJECTIVE: Get a reset link to the email on the account.
+ * MACHINE OBJECTIVE: Keep the reset-email capture contract unchanged. Noindex.
+ * EXITS: /login
+ *
+ * D11: no virtue names. No invented quote. Who is talking: We.
+ */
+
+// @data-free static utility page, no DAL access needed.
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
-import { H1 } from '@/components/site/primitives'
-import SiteFooter from '@/components/site/SiteFooter'
+import {
+  V3_ROOT_CLASS,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Quiet,
+  V3SectionTracker,
+} from '@/components/site/v3'
 
 export const metadata: Metadata = {
   title: 'Reset Password',
@@ -13,26 +34,29 @@ export const metadata: Metadata = {
 export default function ForgotPasswordPage() {
   return (
     <>
-    <main className="mx-auto flex min-h-[60vh] max-w-md flex-col justify-center px-4 py-16">
-      <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
-        <div className="mb-6 flex justify-center">
-          <Link href="/" className="text-xl font-bold text-primary">
-            Ryan Realty
-          </Link>
+      <main className={V3_ROOT_CLASS}>
+        <V3SectionTracker pageType="utility" />
+        <V3Quiet
+          id="forgot-password"
+          heading="Reset password"
+          headingLevel={1}
+          items={[
+            { kind: 'prose', body: 'Enter your email and we will send a reset link.' },
+            { label: 'Back to sign in', href: '/login' },
+          ]}
+        />
+        {/* Leftover shadcn island. Do not rebuild ForgotPasswordForm this lease. */}
+        <div className="mx-auto max-w-md px-4 pb-16">
+          <ForgotPasswordForm />
         </div>
-        <H1 className="text-center text-xl text-foreground">Reset password</H1>
-        <p className="mt-1 text-center text-sm text-muted-foreground">
-          Enter your email and we&apos;ll send a reset link
-        </p>
-        <ForgotPasswordForm />
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          <Link href="/login" className="font-medium text-accent-foreground hover:underline">
-            Back to sign in
-          </Link>
-        </p>
-      </div>
-    </main>
-    <SiteFooter />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }
