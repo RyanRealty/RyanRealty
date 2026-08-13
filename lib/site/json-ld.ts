@@ -38,6 +38,7 @@ export type SchemaInput =
   | ArticleInput
   | EventInput
   | ItemListInput
+  | ServiceInput
 
 /** A single named, verified statistic — feeds Place.additionalProperty + Dataset.variableMeasured. */
 export type StatValue = { name: string; value: string | number; unitText?: string }
@@ -206,6 +207,18 @@ export type ItemListInput = {
   type: 'itemList'
   name?: string
   items: ReadonlyArray<{ name: string; url: string }>
+}
+
+/** A service the brokerage offers (valuation CMA, not a SoftwareApplication tool). */
+export type ServiceInput = {
+  type: 'service'
+  name: string
+  description?: string
+  url?: string
+  serviceType?: string
+  areaServed?: string
+  /** Point provider at the sitewide Organization (#organization). */
+  providerOrganization?: boolean
 }
 
 // ─── Builder ──────────────────────────────────────────────────────────
@@ -422,6 +435,20 @@ export function buildJsonLd(input: SchemaInput): Record<string, unknown> {
           name: item.name,
           url: absoluteUrl(item.url),
         })),
+      })
+
+    case 'service':
+      return prune({
+        '@context': 'https://schema.org',
+        '@type': 'Service',
+        name: input.name,
+        description: input.description,
+        url: absoluteUrl(input.url),
+        serviceType: input.serviceType,
+        provider: input.providerOrganization ? { '@id': `${site}#organization` } : undefined,
+        areaServed: input.areaServed
+          ? { '@type': 'Place', name: input.areaServed }
+          : undefined,
       })
   }
 }

@@ -136,6 +136,28 @@ export const VALUE_STEPS = [
   },
 ] as const
 
+export const VALUATION_FAQ_ITEMS = [
+  {
+    question: "How do I get my home's value in Bend?",
+    answer:
+      'Use Value my home on this page. We send a written comparative market analysis from recent closed sales and current listings near your address. No listing agreement.',
+  },
+  {
+    question: 'What is in the written CMA?',
+    answer:
+      'Three closed comps, three active comps, and the list-price range those six support.',
+  },
+  {
+    question: 'How long does it take?',
+    answer: 'A written CMA in 24 hours.',
+  },
+  {
+    question: 'Does this cost anything?',
+    answer:
+      'No. The comparative market analysis is free. If you later list with us, that is a separate signed agreement. The listing fee is 3% of the sale price.',
+  },
+] as const
+
 export const SELL_REVIEW_AUTHORS = [
   'Audra Hedberg',
   'Douglas Grant',

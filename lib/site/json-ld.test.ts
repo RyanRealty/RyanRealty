@@ -97,4 +97,21 @@ describe('buildJsonLd', () => {
     const r = buildJsonLd({ type: 'article', headline: 'H', url: 'https://example.com/x' })
     expect(r.url).toBe('https://example.com/x')
   })
+
+  it('service points provider at #organization and names the area', () => {
+    const r = buildJsonLd({
+      type: 'service',
+      name: 'Value my home',
+      serviceType: 'Comparative market analysis',
+      url: '/sell/valuation',
+      areaServed: 'Bend, Oregon',
+      providerOrganization: true,
+    })
+    expect(r['@type']).toBe('Service')
+    expect(r.name).toBe('Value my home')
+    expect(r.serviceType).toBe('Comparative market analysis')
+    expect(rec(r.provider)?.['@id']).toMatch(/#organization$/)
+    expect(rec(r.areaServed)).toMatchObject({ '@type': 'Place', name: 'Bend, Oregon' })
+    expect(String(r.url)).toMatch(/\/sell\/valuation$/)
+  })
 })

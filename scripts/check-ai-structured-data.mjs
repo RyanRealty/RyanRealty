@@ -216,6 +216,36 @@ const CHECKS = [
       'The listing page MUST pass listing.status to the realEstateListing JSON-LD\n' +
       '  builder as availability so the Offer node reflects live status.',
   },
+  {
+    file: 'app/sell/page.tsx',
+    label: 'sell: Service + FAQPage via MetadataBlock',
+    all: ['MetadataBlock', "type: 'service'", "type: 'faqPage'"],
+    why:
+      'The Sell door MUST emit Service (Value my home) + FAQPage JSON-LD so AI\n' +
+      '  assistants can cite the page for "get my home\'s value in Bend".',
+  },
+  {
+    file: 'app/sell/valuation/page.tsx',
+    label: 'valuation: Service + WebPage + FAQPage via MetadataBlock',
+    all: ['MetadataBlock', "type: 'service'", "type: 'webPage'", "type: 'faqPage'"],
+    why:
+      'The written-CMA leftover MUST emit Service + WebPage + FAQPage, not breadcrumb\n' +
+      '  alone, so "get my home\'s value" has a citable schema target.',
+  },
+  {
+    file: 'app/reviews/page.tsx',
+    label: 'reviews: Review nodes, no aggregateRating',
+    all: ['buildReviewsJsonLd'],
+    why:
+      'The reviews page MUST emit Review JSON-LD from the same testimonials it renders.\n' +
+      '  aggregateRating stays banned (Google self-serving-review policy).',
+  },
+  {
+    file: 'app/reviews/_v3/reviews-jsonld.ts',
+    label: 'reviews builder: Review bodies, no aggregateRating',
+    all: ["'@type': 'Review'", 'reviewBody'],
+    why: 'Review nodes must carry reviewBody. Do not add aggregateRating on our own site.',
+  },
 ]
 
 const errors = []

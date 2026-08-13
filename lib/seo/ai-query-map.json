@@ -1,0 +1,211 @@
+{
+  "note": "F1 query → citable URL map. Assistants and Google should cite these survivor paths (never a 308 hop). Consumed by app/llms.txt/route.ts and scripts/check-ai-query-battery.mjs.",
+  "hopForbiddenPathnames": [
+    "/reports",
+    "/search",
+    "/area-guides",
+    "/listings"
+  ],
+  "pillars": [
+    {
+      "section": "listings",
+      "label": "3-bedroom, 2-bath homes in Northwest Crossing, Bend",
+      "path": "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2"
+    },
+    {
+      "section": "tools",
+      "label": "Value my home",
+      "path": "/sell"
+    },
+    {
+      "section": "brokerage",
+      "label": "About Ryan Realty",
+      "path": "/about"
+    },
+    {
+      "section": "brokerage",
+      "label": "Client reviews",
+      "path": "/reviews"
+    },
+    {
+      "section": "brokerage",
+      "label": "Brokers",
+      "path": "/team"
+    },
+    {
+      "section": "brokerage",
+      "label": "Value my home",
+      "path": "/sell"
+    },
+    {
+      "section": "brokerage",
+      "label": "Written home valuation",
+      "path": "/sell/valuation"
+    },
+    {
+      "section": "brokerage",
+      "label": "Contact",
+      "path": "/contact"
+    }
+  ],
+  "queries": [
+    {
+      "id": "best-broker-bend",
+      "source": "f1",
+      "query": "Show me the best broker in Bend",
+      "intent": "brokerage-identity",
+      "citablePaths": ["/about", "/team", "/reviews"],
+      "why": "Licenses, who closes, and verbatim Google reviews. We do not claim best.",
+      "jsonLd": [
+        {
+          "file": "app/about/page.tsx",
+          "all": ["AboutPage", "aboutOrganization", "faqPage"]
+        },
+        {
+          "file": "app/team/page.tsx",
+          "all": ["CollectionPage", "aboutOrganization"]
+        },
+        {
+          "file": "app/reviews/_v3/reviews-jsonld.ts",
+          "all": ["Review", "reviewBody"],
+          "forbidden": ["aggregateRating"]
+        }
+      ],
+      "llmsSubstrings": ["/about", "/reviews", "/team"]
+    },
+    {
+      "id": "nwx-3bed-2bath",
+      "source": "f1",
+      "query": "I need a 3-bedroom, 2-bath in Northwest Crossing",
+      "intent": "filtered-inventory-plus-place",
+      "citablePaths": [
+        "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2",
+        "/communities/northwest-crossing"
+      ],
+      "why": "The listings URL applies beds=3 and baths=2 on the Northwest Crossing browse path. The community page answers what Northwest Crossing is.",
+      "jsonLd": [
+        {
+          "file": "app/communities/[slug]/page.tsx",
+          "all": ["MetadataBlock", "buildMarketFaq"]
+        },
+        {
+          "file": "app/search/[...slug]/page-filters.ts",
+          "all": ["minBeds: sp.beds", "minBaths: sp.baths"]
+        }
+      ],
+      "llmsSubstrings": [
+        "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2",
+        "northwest-crossing"
+      ]
+    },
+    {
+      "id": "home-value-bend",
+      "source": "f1",
+      "query": "Get my home's value in Bend",
+      "intent": "seller-valuation",
+      "citablePaths": ["/sell", "/sell/valuation"],
+      "why": "Value my home intake on /sell, written CMA leftover on /sell/valuation. Visitor-facing copy is Value my home, never the worth-question.",
+      "jsonLd": [
+        {
+          "file": "app/sell/page.tsx",
+          "all": ["MetadataBlock", "type: 'faqPage'", "type: 'service'"]
+        },
+        {
+          "file": "app/sell/valuation/page.tsx",
+          "all": ["MetadataBlock", "type: 'service'", "type: 'webPage'", "type: 'faqPage'"]
+        }
+      ],
+      "llmsSubstrings": ["/sell", "/sell/valuation", "Value my home"]
+    },
+    {
+      "id": "gsc-ryan-realty",
+      "source": "gsc",
+      "query": "ryan realty",
+      "intent": "brand",
+      "citablePaths": ["/about", "/team"],
+      "why": "GSC top query (2026-08 window). Brand search cites the about page and the broker roster.",
+      "jsonLd": [
+        {
+          "file": "app/about/page.tsx",
+          "all": ["AboutPage"]
+        }
+      ],
+      "llmsSubstrings": ["/about"]
+    },
+    {
+      "id": "gsc-matt-ryan",
+      "source": "gsc",
+      "query": "matt ryan real estate",
+      "intent": "broker-identity",
+      "citablePaths": ["/team", "/about"],
+      "why": "GSC top query. Team page is who closes. About carries licenses.",
+      "jsonLd": [
+        {
+          "file": "app/team/page.tsx",
+          "all": ["CollectionPage"]
+        }
+      ],
+      "llmsSubstrings": ["/team"]
+    },
+    {
+      "id": "gsc-eagle-crest",
+      "source": "gsc",
+      "query": "eagle crest oregon",
+      "intent": "community",
+      "citablePaths": ["/communities/eagle-crest"],
+      "why": "GSC top query. Eagle Crest is a registry community page with live inventory and FAQ.",
+      "jsonLd": [
+        {
+          "file": "app/communities/[slug]/page.tsx",
+          "all": ["MetadataBlock"]
+        }
+      ],
+      "llmsSubstrings": ["/communities/"]
+    },
+    {
+      "id": "gsc-sunriver-hoa",
+      "source": "gsc",
+      "query": "sunriver hoa fees",
+      "intent": "community",
+      "citablePaths": ["/communities/sunriver"],
+      "why": "GSC top query. Sunriver community page is the place that can cite HOA facts from the registry, not a hop URL.",
+      "jsonLd": [
+        {
+          "file": "app/communities/[slug]/page.tsx",
+          "all": ["MetadataBlock"]
+        }
+      ],
+      "llmsSubstrings": ["/communities/"]
+    },
+    {
+      "id": "gsc-black-butte",
+      "source": "gsc",
+      "query": "black butte ranch homes for sale",
+      "intent": "community-listings",
+      "citablePaths": ["/communities/black-butte-ranch"],
+      "why": "GSC impressions. Community page is the citable place answer. Browse undercounts alias subdivisions, so we do not cite a literal-name listings hop as the place page.",
+      "jsonLd": [
+        {
+          "file": "app/communities/[slug]/page.tsx",
+          "all": ["MetadataBlock"]
+        }
+      ],
+      "llmsSubstrings": ["/communities/"]
+    },
+    {
+      "id": "gsc-brasada",
+      "source": "gsc",
+      "query": "brasada ranch homes for sale",
+      "intent": "community-listings",
+      "citablePaths": ["/communities/brasada-ranch"],
+      "why": "GSC impressions. Brasada Ranch is a registry community.",
+      "jsonLd": [
+        {
+          "file": "app/communities/[slug]/page.tsx",
+          "all": ["MetadataBlock"]
+        }
+      ],
+      "llmsSubstrings": ["/communities/"]
+    }
+  ]
+}

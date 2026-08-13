@@ -190,6 +190,16 @@ export default async function SellPage() {
         { name: 'Sell', url: ROUTE_PATH },
       ],
     },
+    {
+      type: 'service',
+      name: 'Value my home',
+      serviceType: 'Comparative market analysis',
+      description:
+        'A written comparative market analysis for a Central Oregon home. Three closed comps, three active comps, and the list-price range those six support.',
+      url: ROUTE_PATH,
+      areaServed: 'Bend, Oregon',
+      providerOrganization: true,
+    },
     { type: 'faqPage', items: FAQ_ITEMS },
   ]
 

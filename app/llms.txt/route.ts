@@ -5,6 +5,7 @@ import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSu
 import { subdivisionLlmsLines } from '@/lib/data/subdivisions/subdivision-index'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'
 import { GOLF_COURSES } from '@/data/golf/courses'
+import aiQueryMap from '@/lib/seo/ai-query-map.json' assert { type: 'json' }
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -94,6 +95,12 @@ export async function GET() {
   // the shared line builder (never a copy of the URL logic).
   const subdivisionLines = lines(subdivisionLlmsLines(subdivisions, SITE_URL))
 
+  const pillarLines = (section: string) =>
+    (aiQueryMap.pillars as Array<{ section: string; label: string; path: string }>)
+      .filter((p) => p.section === section)
+      .map((p) => `- ${p.label}: ${SITE_URL}${p.path}`)
+      .join('\n')
+
   const body = `# Ryan Realty Central Oregon Real Estate
 
 > Ryan Realty serves Central Oregon buyers and sellers with live listings, market reports, and neighborhood guidance.
@@ -104,6 +111,7 @@ export async function GET() {
 - Redmond homes for sale: ${SITE_URL}/homes-for-sale/redmond
 - Sisters homes for sale: ${SITE_URL}/homes-for-sale/sisters
 - Open houses: ${SITE_URL}/open-houses
+${pillarLines('listings')}
 
 ## Price Drops
 - Price Drop Radar (Central Oregon): ${SITE_URL}/price-drops
@@ -113,8 +121,7 @@ export async function GET() {
 
 ## Market Data
 - Housing market hub: ${SITE_URL}/housing-market
-- Market reports: ${SITE_URL}/reports
-- Market reports: ${SITE_URL}/housing-market${reportLines}
+- Market reports: ${SITE_URL}/housing-market/reports${reportLines}
 
 ## Local Areas
 - Cities: ${SITE_URL}/cities
@@ -152,10 +159,10 @@ export async function GET() {
 - Mortgage calculator: ${SITE_URL}/tools/mortgage-calculator
 - Rental property calculator: ${SITE_URL}/tools/rental-property-calculator
 - Home appreciation tool: ${SITE_URL}/tools/appreciation
+${pillarLines('tools')}
 
 ## Brokerage
-- Team: ${SITE_URL}/team
-- Contact: ${SITE_URL}/contact
+${pillarLines('brokerage')}
 `
 
   return new NextResponse(body, {

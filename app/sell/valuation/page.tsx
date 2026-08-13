@@ -44,6 +44,7 @@ import {
   VALUATION_STAGE_EYEBROW,
   SELL_POSTER,
   VALUE_STEPS,
+  VALUATION_FAQ_ITEMS,
   FORM_ANCHOR,
   ROUTE_PATH,
 } from '../_v3/sell-constants'
@@ -70,14 +71,35 @@ export default function SellValuationPage() {
       <main className={V3_ROOT_CLASS}>
         <KbSectionTracker pageType="sell-valuation" />
         <MetadataBlock
-          schema={{
-            type: 'breadcrumb',
-            items: [
-              { name: 'Home', url: '/' },
-              { name: 'Sell', url: ROUTE_PATH },
-              { name: 'Home valuation', url: VALUATION_ROUTE },
-            ],
-          }}
+          schemas={[
+            {
+              type: 'breadcrumb',
+              items: [
+                { name: 'Home', url: '/' },
+                { name: 'Sell', url: ROUTE_PATH },
+                { name: 'Home valuation', url: VALUATION_ROUTE },
+              ],
+            },
+            {
+              type: 'webPage',
+              name: 'Home valuation in Central Oregon',
+              description:
+                'A written comparative market analysis for your Central Oregon home. Three closed comps, three active comps, and the list-price range those six support.',
+              url: VALUATION_ROUTE,
+              aboutOrganization: true,
+            },
+            {
+              type: 'service',
+              name: 'Value my home',
+              serviceType: 'Comparative market analysis',
+              description:
+                'A written comparative market analysis for a Central Oregon home. Three closed comps, three active comps, and the list-price range those six support.',
+              url: VALUATION_ROUTE,
+              areaServed: 'Bend, Oregon',
+              providerOrganization: true,
+            },
+            { type: 'faqPage', items: [...VALUATION_FAQ_ITEMS] },
+          ]}
         />
         <V3Breadcrumb
           tone="on-media"
@@ -115,6 +137,11 @@ export default function SellValuationPage() {
               kind: 'prose' as const,
               term: step.title,
               body: step.body,
+            })),
+            ...VALUATION_FAQ_ITEMS.map((item) => ({
+              kind: 'prose' as const,
+              term: item.question,
+              body: item.answer,
             })),
             {
               kind: 'prose' as const,

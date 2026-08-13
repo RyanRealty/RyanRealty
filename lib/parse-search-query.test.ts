@@ -409,3 +409,26 @@ describe('address-shaped queries (user report 2026-07-12)', () => {
     expect(parseSearchQuery('panoramic views under 900k').viewTypes).toBe('Panoramic')
   })
 })
+
+describe('resort community vs architectural style (F1)', () => {
+  it('"Northwest Crossing" is the Bend community, not style=Northwest', () => {
+    const r = parseSearchQuery('I need a 3-bedroom, 2-bath in Northwest Crossing')
+    expect(r).toMatchObject({
+      beds: '3',
+      baths: '2',
+      subdivision: 'NorthWest Crossing',
+      city: 'Bend',
+    })
+    expect(r.architecturalStyles).toBeUndefined()
+    expect(r.keywords ?? '').not.toMatch(/crossing/i)
+    expect(searchHrefForQuery('3-bedroom, 2-bath in Northwest Crossing')).toBe(
+      '/homes-for-sale/bend/northwest-crossing?beds=3&baths=2',
+    )
+  })
+
+  it('bare "sunriver" stays a city, not a subdivision path', () => {
+    expect(parseSearchQuery('homes in sunriver')).toEqual({ city: 'Sunriver' })
+    expect(searchHrefForQuery('homes in sunriver')).toContain('city=Sunriver')
+    expect(searchHrefForQuery('homes in sunriver')).not.toContain('/sunriver/sunriver')
+  })
+})

@@ -20,6 +20,8 @@
  */
 
 import { SEARCH_FIELDS } from '@/lib/search/field-registry'
+import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { homesForSalePath } from '@/lib/slug'
 
 export type ParsedSearch = Record<string, string>
 
@@ -127,6 +129,16 @@ function buildMatchers(): CompiledMatcher[] {
     if (!phrase || claimed.has(phrase)) return
     claimed.add(phrase)
     matchers.push({ phrase, re: phraseToRegex(phrase), action })
+  }
+
+  // Resort labels before style voice so "Northwest Crossing" is not architecturalStyles=Northwest.
+  const cityNames = new Set(CITY_PATTERNS.map(([, n]) => n.toLowerCase()))
+  for (const c of getAllResortCommunities()) {
+    const params = { subdivision: c.label, city: c.city }
+    for (const phrase of [c.label, c.slug.replace(/-/g, ' ')]) {
+      if (cityNames.has(phrase.toLowerCase())) continue
+      add(phrase, { kind: 'params', params })
+    }
   }
 
   // Multi-value sub-type synonyms claim first (see SUBTYPE_SET_PHRASES).
@@ -463,16 +475,18 @@ export function parseSearchQuery(raw: string): ParsedSearch {
     },
   )
 
-  // Pass 5 — city.
-  for (const [re, name] of CITY_PATTERNS) {
-    let matched = false
-    state.work = state.work.replace(re, (m) => {
-      matched = true
-      return ' '.repeat(m.length)
-    })
-    if (matched) {
-      out.city = name
-      break
+  // Pass 5 — city (do not overwrite a community-supplied city).
+  if (!out.city) {
+    for (const [re, name] of CITY_PATTERNS) {
+      let matched = false
+      state.work = state.work.replace(re, (m) => {
+        matched = true
+        return ' '.repeat(m.length)
+      })
+      if (matched) {
+        out.city = name
+        break
+      }
     }
   }
 
@@ -561,22 +575,24 @@ export function describeParsedSearch(parsed: ParsedSearch): string[] {
   else if (parsed.statusFilter === 'pending') chips.push('Pending')
   if (parsed.propertySubType) chips.push(parsed.propertySubType)
   if (parsed.propertyType) chips.push(parsed.propertyType)
+  if (parsed.subdivision) chips.push(parsed.subdivision)
   if (parsed.city) chips.push(parsed.city)
   if (parsed.keywords) chips.push(parsed.keywords)
 
   return chips
 }
 
-/** Build the /homes-for-sale URL for a plain-language query. */
+/** /homes-for-sale URL for a plain-language query. Path-scopes city+subdivision. */
 export function searchHrefForQuery(raw: string): string {
   const parsed = parseSearchQuery(raw)
-  // /homes-for-sale speaks status=Active|Pending|Sold; the parser's canonical
-  // statusFilter vocab would be silently ignored there ("sold homes in bend"
-  // showing active homes — review finding 2026-07-11).
-  const { statusFilter, ...rest } = parsed
+  const { statusFilter, city, subdivision, ...rest } = parsed
   if (statusFilter === 'closed') rest.status = 'Sold'
   else if (statusFilter === 'pending') rest.status = 'Pending'
-  const params = new URLSearchParams(rest)
-  const qs = params.toString()
-  return qs ? `/homes-for-sale?${qs}` : '/homes-for-sale'
+  if (!(city && subdivision)) {
+    if (city) rest.city = city
+    if (subdivision) rest.subdivision = subdivision
+  }
+  const qs = new URLSearchParams(rest).toString()
+  const base = city && subdivision ? homesForSalePath(city, subdivision) : '/homes-for-sale'
+  return qs ? `${base}?${qs}` : base
 }
