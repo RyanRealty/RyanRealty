@@ -19,9 +19,8 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata,
  * MetadataBlock JSON-LD (BreadcrumbList, WebPage, Dataset, FAQPage), a rendered
- * KbSectionTracker with pageType="market-report", revalidate 300, and the route.
- * MetadataBlock and KbSectionTracker stay on the KB register deliberately: both are
- * wiring, neither is visual language, and the barrel ships no equivalent.
+ * V3SectionTracker with pageType="market-report", revalidate 300, and the route.
+ * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * The six invariants this file is written to hold, each enforced at its own site:
  *
@@ -123,10 +122,10 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionInquirySheet } from './_v3/RegionInquirySheet.client'
 import {
   CITY_LABELS,
@@ -368,7 +367,7 @@ export default async function CentralOregonRegionPage() {
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <KbSectionTracker pageType="market-report" />
+        <V3SectionTracker pageType="market-report" />
 
         <V3Breadcrumb
           trail={[

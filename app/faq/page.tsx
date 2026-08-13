@@ -9,7 +9,7 @@
  *
  * THE PAGE CONTRACT, carried across: export const metadata (title, description,
  * canonical, OpenGraph, Twitter), FAQPage JSON-LD through MetadataBlock, a
- * rendered KbSectionTracker with pageType="faq", and the route. Content is
+ * rendered V3SectionTracker with pageType="faq", and the route. Content is
  * still app/faq/data.ts, shared with /faq/[slug] and the GBP Q&A seed.
  *
  * DROPPED: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, FaqAccordion
@@ -30,10 +30,10 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Quiet,
+  V3SectionTracker,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { getFaqGroupedByCategory } from './data'
@@ -91,7 +91,7 @@ export default async function FAQPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="faq" />
+        <V3SectionTracker pageType="faq" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'FAQ' }]} />
 

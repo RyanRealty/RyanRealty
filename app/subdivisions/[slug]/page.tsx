@@ -22,11 +22,10 @@
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata
  * with the same title, description, path and indexability rule, MetadataBlock JSON-LD
  * (BreadcrumbList plus Place, same payloads, same hasMap condition), a rendered
- * KbSectionTracker with pageType="subdivision", revalidate 60, dynamicParams,
- * generateStaticParams returning [], and the route with its params. MetadataBlock and
- * KbSectionTracker stay on their old registers deliberately. Both are wiring, neither
- * is visual language, and the barrel ships no equivalent. They are this route's whole
- * remaining non-v3 import count, 13 down to 2.
+ * V3SectionTracker with pageType="subdivision", revalidate 60, dynamicParams,
+ * generateStaticParams returning [], and the route with its params.
+ * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a
+ * v3 island, not a seventh pattern.
  *
  * FOUR POPULATIONS, FOUR TRACES, FOUR STAMPS (CLAUDE.md section 0). Every sentence
  * that describes one lives in _v3/subdivision-traces.ts, and no section prints a
@@ -91,10 +90,10 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
   type V3FieldItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
@@ -435,7 +434,7 @@ export default async function SubdivisionPage({ params }: Props) {
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <KbSectionTracker pageType="subdivision" />
+        <V3SectionTracker pageType="subdivision" />
 
         <V3Breadcrumb
           trail={[

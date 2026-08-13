@@ -102,6 +102,14 @@ function layoutOwnsPublicNav() {
   )
 }
 
+function importsComponent(src, name) {
+  // Match either:  import { ComponentName }   or  import ComponentName
+  const pattern = new RegExp(
+    `import\\s+(?:\\{[^}]*\\b${escapeRegex(name)}\\b[^}]*\\}|${escapeRegex(name)}(?:\\s*,|\\s+from))`,
+  )
+  return pattern.test(src)
+}
+
 function checkPage(contract) {
   const pagePath = join(ROOT, contract.route)
   if (!existsSync(pagePath)) {
@@ -115,14 +123,13 @@ function checkPage(contract) {
   const publicNavGlobal = layoutOwnsPublicNav()
   const missing = []
   for (const comp of contract.requiredComponents) {
-    // Match either:  import { ComponentName }   or  import ComponentName
-    const pattern = new RegExp(
-      `import\\s+(?:\\{[^}]*\\b${escapeRegex(comp.name)}\\b[^}]*\\}|${escapeRegex(comp.name)}(?:\\s*,|\\s+from))`,
-    )
-    if (pattern.test(src)) continue
+    if (importsComponent(src, comp.name)) continue
     // KbNav lives in layout via PublicNav — do not require page-level import.
     if ((comp.name === 'KbNav' || comp.name === 'PublicNav') && publicNavGlobal) continue
     if (comp.name === 'V3Chrome' && publicNavGlobal) continue
+    // Section tracking is analytics wiring. Either register's tracker satisfies
+    // a contract that still lists KbSectionTracker (same rule as ci:kb-page-contract).
+    if (comp.name === 'KbSectionTracker' && importsComponent(src, 'V3SectionTracker')) continue
     missing.push(comp)
   }
   return { ok: missing.length === 0, missing }

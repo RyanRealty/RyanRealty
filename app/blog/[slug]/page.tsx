@@ -7,7 +7,7 @@
  *
  * THE PAGE CONTRACT: generateMetadata (seo_title, seo_description, OG image
  * rules unchanged), Article JSON-LD via generateBlogSchema, BreadcrumbList,
- * KbSectionTracker pageType="blog_post", getBlogPostBySlug + getRelatedBlogPosts,
+ * V3SectionTracker pageType="blog_post", getBlogPostBySlug + getRelatedBlogPosts,
  * session and identity-bridge reads, the HTML body (dangerouslySetInnerHTML),
  * matchGeoLinksForPost, ShareButton (top of the island and bottom), author bio.
  *
@@ -31,7 +31,6 @@ import ShareButton from '@/components/ShareButton'
 import { formatDate } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -40,6 +39,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
@@ -150,7 +150,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="blog_post" />
+        <V3SectionTracker pageType="blog_post" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
         <MetadataBlock
           schemas={[

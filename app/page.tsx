@@ -10,11 +10,10 @@
  * design_system/ryan-realty/ui_kits/homepage-v6/parity.json.
  *
  * THE PAGE CONTRACT, carried across unchanged: metadata title leading
- * "Homes for Sale", canonical origin, revalidate 60, KbSectionTracker
+ * "Homes for Sale", canonical origin, revalidate 60, V3SectionTracker
  * pageType="homepage". No page-level JSON-LD (layout still emits Organization
  * / WebSite). MetadataBlock is not added because this route never computed
- * a market FAQ set. KbSectionTracker stays on the KB register: analytics wiring,
- * not visual language.
+ * a market FAQ set. V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * D11 LOCK (Layer A), literals in this file so ci:seo-shell can see them:
  *   H1: Homes for Sale in Central Oregon
@@ -64,11 +63,11 @@ import {
   V3Field,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import type { KbMarketData } from '@/components/site/kb/types'
 import { HomeAlertSheet } from './_v3/HomeAlertSheet.client'
@@ -221,7 +220,7 @@ export default async function Home() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="homepage" />
+        <V3SectionTracker pageType="homepage" />
 
         {firstRegionFigure ? (
           <V3Instrument

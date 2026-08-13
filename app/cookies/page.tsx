@@ -25,9 +25,9 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 const siteUrl = getCanonicalSiteUrl()
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -165,7 +165,7 @@ export default function CookiePolicyPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="legal" />
+        <V3SectionTracker pageType="legal" />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cookies' }]} />
 
         <V3Quiet

@@ -13,10 +13,10 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (BreadcrumbList, WebPage, Dataset,
- * FAQPage), a rendered KbSectionTracker with pageType="market-report",
+ * FAQPage), a rendered V3SectionTracker with pageType="market-report",
  * generateStaticParams over the 11 core slugs, dynamicParams true,
- * revalidate 300, and the route. MetadataBlock and KbSectionTracker stay on
- * the KB register deliberately: both are wiring, neither is visual language.
+ * revalidate 300, and the route. MetadataBlock stays on the legacy register
+ * (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * D9: city year overlay and community 12-month median sale pass `chart` on
  * Instrument (E-CHART atom). Do not flatten a series to a figure. Do not add
@@ -54,12 +54,12 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { zonedDateKey } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3SectionTracker,
 } from '@/components/site/v3'
 import { COMPARISON_CITY_LABELS, CORE_CITY_SLUGS, resolveGeo } from './_v3/geo-constants'
 import {
@@ -223,7 +223,7 @@ export default async function HousingMarketGeoPage({ params }: Props) {
     <>
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
-        <KbSectionTracker pageType="market-report" />
+        <V3SectionTracker pageType="market-report" />
         <V3Breadcrumb trail={crumbTrail} />
 
         {isCity ? (

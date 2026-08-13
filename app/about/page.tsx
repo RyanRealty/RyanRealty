@@ -10,10 +10,9 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (AboutPage + aboutOrganization +
- * BreadcrumbList + FAQPage), a rendered KbSectionTracker with pageType="about",
- * revalidate 3600, and the route. MetadataBlock and KbSectionTracker stay on
- * the non-v3 register deliberately: both are wiring, neither is visual language,
- * and the barrel ships no equivalent.
+ * BreadcrumbList + FAQPage), a rendered V3SectionTracker with pageType="about",
+ * revalidate 3600, and the route. MetadataBlock stays on the legacy register
+ * (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * D11: the mission sentence is the one virtue-word exception, exact words, We.
  * No invented quote. MLS remarks N/A.
@@ -43,12 +42,12 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   ABOUT_CITY_LABELS,
   ABOUT_CITY_SLUG,
@@ -214,7 +213,7 @@ export default async function AboutPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="about" />
+        <V3SectionTracker pageType="about" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 

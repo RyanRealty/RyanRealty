@@ -11,11 +11,10 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata
  * (both the canonical and the noindex branch), MetadataBlock JSON-LD (BreadcrumbList,
- * Place, Dataset with the same five variables), a rendered KbSectionTracker with
+ * Place, Dataset with the same five variables), a rendered V3SectionTracker with
  * pageType="zip", revalidate 60, dynamicParams false, generateStaticParams over the
  * same ten ZIPs in the same order, and the listing-alert capture payload.
- * MetadataBlock and KbSectionTracker stay on the KB register deliberately: both are
- * wiring, neither is visual language, and the barrel ships no equivalent.
+ * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * THE DATA ACCURACY RULES THIS FILE IS WRITTEN TO HOLD (CLAUDE.md section 0):
  *
@@ -86,13 +85,13 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3FieldItem,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { ZipAlertsSheet } from './_v3/ZipAlertsSheet.client'
@@ -406,7 +405,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <KbSectionTracker pageType="zip" />
+        <V3SectionTracker pageType="zip" />
 
         <V3Breadcrumb
           trail={[

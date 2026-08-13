@@ -3,7 +3,7 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: metadata title "What just moved
  * on the list", canonical /activity, force-dynamic, getActivityFeed({ limit: 24 }),
- * CollectionPage + BreadcrumbList JSON-LD, KbSectionTracker pageType="feed",
+ * CollectionPage + BreadcrumbList JSON-LD, V3SectionTracker pageType="feed",
  * AdUnit slot 1001003002 (monetization leftover).
  *
  * KB-era deletions: KbHero, KbActivity, KbFooter, SmoothScrollProvider,
@@ -31,8 +31,8 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { activityRows } from './_v3/activity-rows'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -81,7 +81,7 @@ export default async function ActivityPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="feed" />
+        <V3SectionTracker pageType="feed" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <script
           type="application/ld+json"

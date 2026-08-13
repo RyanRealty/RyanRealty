@@ -7,7 +7,7 @@
  *
  * THE PAGE CONTRACT: metadata title/description/canonical, revalidate 1800,
  * CollectionPage + ItemList of the 14 registry communities, Dataset from the
- * same aggregate the Instrument prints, KbSectionTracker pageType="index".
+ * same aggregate the Instrument prints, V3SectionTracker pageType="index".
  * Capture: submitSearchAlertSignup with city="" and propertyType A.
  *
  * KB-era deletions: KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
@@ -39,10 +39,10 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { firstSentence } from '@/app/cities/_v3/cities-index-constants'
@@ -214,7 +214,7 @@ export default async function CommunitiesPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="index" />
+        <V3SectionTracker pageType="index" />
         <MetadataBlock schemas={schemas} />
         <script
           type="application/ld+json"

@@ -27,6 +27,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
@@ -57,7 +58,6 @@ import ListingTracker from '@/components/listing/ListingTracker'
 import { ListingAttribution } from '@/components/listing/ListingAttribution'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { listingQuietLinks, listingSimilarLedgerRows } from './_v3/listing-nearby'
 
 void _PhotoGalleryLightboxImport
@@ -441,7 +441,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
           beds={listing.beds ?? undefined}
           baths={listing.baths ?? undefined}
         />
-        <KbSectionTracker pageType="listing" />
+        <V3SectionTracker pageType="listing" />
         <V3Breadcrumb
           trail={[
             { label: 'Home', href: '/' },

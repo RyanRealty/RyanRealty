@@ -7,7 +7,7 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: pageMetadata title/description/path,
  * revalidate 1800, CollectionPage + ItemList JSON-LD, Dataset from the same region
- * pulse the Instrument prints, KbSectionTracker pageType="index", MetadataBlock
+ * pulse the Instrument prints, V3SectionTracker pageType="index", MetadataBlock
  * breadcrumb. Capture: submitSearchAlertSignup with city="" and propertyType A.
  *
  * KB-era deletions: KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
@@ -50,10 +50,10 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import {
   FEATURED_CITY_SLUGS,
@@ -265,7 +265,7 @@ export default async function CitiesPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="index" />
+        <V3SectionTracker pageType="index" />
         <MetadataBlock schemas={schemas} />
         <script
           type="application/ld+json"

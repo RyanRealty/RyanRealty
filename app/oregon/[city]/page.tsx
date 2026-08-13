@@ -19,15 +19,14 @@
  * generateMetadata through pageMetadata with the same title, description, path and
  * noindex policy (lib/out-of-area-cities.ts decides indexability, not this file); the
  * MetadataBlock JSON-LD triple (BreadcrumbList, Place, Dataset) with the same
- * variableMeasured and the same units; a rendered KbSectionTracker with
+ * variableMeasured and the same units; a rendered V3SectionTracker with
  * pageType="out-of-area-city"; the capture contract (`submitOutOfAreaReferral`, keys
  * citySlug / name / email / notes / company, the last being the honeypot that is the
  * action's only bot deterrent, carried across on V3Sheet's `trap` prop); and the
  * SECTION IDS the KB page emitted — top,
  * about, listings, referral, other-markets — so every section_view key and every deep
- * link survives the register change. MetadataBlock and KbSectionTracker stay on their
- * own registers deliberately: both are wiring, neither is visual language, and the
- * barrel ships no equivalent.
+ * link survives the register change. MetadataBlock stays on the legacy register
+ * (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * THE MIDDLEWARE BOUNDARY IS UNCHANGED. middleware.ts 308s a non-service-area
  * /cities/<slug> here and 308s a service-area /oregon/<slug> back to /cities/<slug>.
@@ -91,13 +90,13 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { OutOfAreaReferralSheet } from './_v3/OutOfAreaReferralSheet.client'
 
 type Params = { city: string }
@@ -326,7 +325,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <KbSectionTracker pageType="out-of-area-city" />
+        <V3SectionTracker pageType="out-of-area-city" />
 
         <V3Breadcrumb
           trail={[

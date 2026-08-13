@@ -16,8 +16,8 @@
  * my home. D9: city Ledger stays type; the range table is an island, not a
  * flattened series. D11: copy states the fact.
  *
- * MetadataBlock and KbSectionTracker stay on their registers: wiring, not
- * visual language. pageType='market-reports'.
+ * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a
+ * v3 island, not a seventh pattern. pageType='market-reports'.
  */
 
 import type { Metadata } from 'next'
@@ -26,7 +26,6 @@ import { marketVerdict, MOS_METHODOLOGY_CLAUSE } from '@/lib/market/classify'
 import { formatDate } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -35,6 +34,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
 import { ReportsInquirySheet } from './_v3/ReportsInquirySheet.client'
 import { CityHeadlineSection, RangeTableSection, SalesAndWeeklySection } from './_v3/ReportsIslands'
@@ -86,7 +86,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="market-reports" />
+        <V3SectionTracker pageType="market-reports" />
         <MetadataBlock
           schemas={[
             {

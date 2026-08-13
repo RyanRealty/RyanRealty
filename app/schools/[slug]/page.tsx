@@ -7,7 +7,7 @@
  *
  * THE PAGE CONTRACT: generateStaticParams from CO_SCHOOLS, dynamicParams false,
  * revalidate 300, generateMetadata from the registry only, School subtype +
- * BreadcrumbList JSON-LD, KbSectionTracker pageType="schools". getSchoolDetail
+ * BreadcrumbList JSON-LD, V3SectionTracker pageType="schools". getSchoolDetail
  * degrades on a listings timeout so prerender cannot 500 the deploy
  * (check-prerender-db-safety). Academic stats print only when the registry
  * carries a cited value.
@@ -36,10 +36,10 @@ import {
   V3Instrument,
   V3Field,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import {
@@ -221,7 +221,7 @@ export default async function SchoolDetailPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="schools" />
+        <V3SectionTracker pageType="schools" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[

@@ -70,9 +70,8 @@ for (const p of kbPages) {
     /export\s+const\s+metadata\b/.test(s) || /export\s+(?:async\s+)?function\s+generateMetadata\b/.test(s)
   // Tracker must be RENDERED, not merely imported — an unused import tracks nothing.
   // Either register's tracker satisfies the contract: section tracking is analytics
-  // wiring, not visual language. The v3 barrel ships no tracker today, so a migrated
-  // page keeps rendering <KbSectionTracker> (recorded in
-  // docs/plans/PUBLIC_PRODUCT/decisions.md, 2026-08-12).
+  // wiring, not visual language. Public pages mount V3SectionTracker; KbSectionTracker
+  // remains a re-export for leftover noindex LPs.
   const hasTrackerRendered =
     /<KbSectionTracker[\s/>]/.test(s) || /<V3SectionTracker[\s/>]/.test(s)
   if (!hasSeo) fails.push(`${p}: missing SEO metadata (export const metadata OR generateMetadata)`)

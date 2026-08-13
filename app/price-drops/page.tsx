@@ -8,10 +8,9 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: metadata through pageMetadata,
  * MetadataBlock JSON-LD (BreadcrumbList + Dataset + webPage), a rendered
- * KbSectionTracker with pageType="price-drops", TrackSearchView, revalidate 1800,
+ * V3SectionTracker with pageType="price-drops", TrackSearchView, revalidate 1800,
  * getPriceDrops({ limit: 48, days: 7 }) with no .catch() empty swallow.
- * MetadataBlock and KbSectionTracker stay on their registers: wiring, not
- * visual language.
+ * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * EMPTY WINDOW: getPriceDrops is resilient-cached and can answer with an empty
  * array plus a now() stamp. That empty render is not a fact about the market.
@@ -49,11 +48,11 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from './_v3/PriceDropAlertsSheet.client'
 import {
@@ -174,7 +173,7 @@ export default async function PriceDropsRegionPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="price-drops" />
+        <V3SectionTracker pageType="price-drops" />
         <TrackSearchView resultsCount={total} />
         <MetadataBlock schemas={schemas} />
 

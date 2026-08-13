@@ -9,7 +9,7 @@
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata (title "Home Valuation in Central Oregon", keywords may keep
  * search-demand "what is my home worth Bend"), MetadataBlock breadcrumb
- * JSON-LD, KbSectionTracker pageType="sell-valuation", the route, and the
+ * JSON-LD, V3SectionTracker pageType="sell-valuation", the route, and the
  * capture contract. ValuationForm still calls submitValuationRequest with the
  * same field names. This page is a second intake beside /sell#get-value. The
  * lease keeps it. It does not 301 it. E-CUT owns that cut.
@@ -27,7 +27,6 @@ import type { Metadata } from 'next'
 import ValuationForm from '@/app/home-valuation/ValuationForm'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { CONTACT } from '@/lib/brand/contact'
 import {
   V3_ROOT_CLASS,
@@ -36,6 +35,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Stage,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
 import { SellCapture } from '../_v3/SellCapture'
 import {
@@ -69,7 +69,7 @@ export default function SellValuationPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="sell-valuation" />
+        <V3SectionTracker pageType="sell-valuation" />
         <MetadataBlock
           schemas={[
             {

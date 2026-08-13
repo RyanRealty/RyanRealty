@@ -8,7 +8,7 @@
  *
  * THE PAGE CONTRACT: generateStaticParams from CO_TRAILS, dynamicParams false,
  * revalidate 300, generateMetadata from the registry, Place + FAQPage +
- * breadcrumb via MetadataBlock, KbSectionTracker pageType="trails".
+ * breadcrumb via MetadataBlock, V3SectionTracker pageType="trails".
  * getTrailDetail and getTrailLineGeoJSON degrade on a timeout
  * (check-prerender-db-safety). Trail linework comes from public.trail_lines.
  *
@@ -42,10 +42,10 @@ import {
   V3Instrument,
   V3Field,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import {
@@ -187,7 +187,7 @@ export default async function TrailDetailPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="trails" />
+        <V3SectionTracker pageType="trails" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[

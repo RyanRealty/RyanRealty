@@ -30,7 +30,6 @@ import { formatDate } from '@/lib/format/date'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -39,6 +38,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
 } from '@/components/site/v3'
 import { HistoryFilterSheet } from './_v3/HistoryFilterSheet.client'
@@ -142,7 +142,7 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="market-report" />
+        <V3SectionTracker pageType="market-report" />
         <MetadataBlock
           schemas={[
             {

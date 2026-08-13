@@ -9,7 +9,7 @@
  * THE PAGE CONTRACT: generateStaticParams from CO_EVENTS, dynamicParams false,
  * revalidate 300, generateMetadata from the registry, Event JSON-LD ONLY when
  * nextConfirmedDate exists, FAQPage from buildEventFaq, breadcrumb via
- * MetadataBlock, KbSectionTracker pageType="events". getEventDetail degrades on
+ * MetadataBlock, V3SectionTracker pageType="events". getEventDetail degrades on
  * a listings timeout (check-prerender-db-safety).
  *
  * KB-era deletions: photo hero / EVENT_HERO_CREDITS, VenueMap, KbFeatured,
@@ -38,10 +38,10 @@ import {
   V3Instrument,
   V3Field,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import {
@@ -194,7 +194,7 @@ export default async function EventDetailPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="events" />
+        <V3SectionTracker pageType="events" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[

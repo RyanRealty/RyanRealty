@@ -8,12 +8,10 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata (title "Sell Your Home in Central Oregon"), MetadataBlock
- * JSON-LD (BreadcrumbList + FAQPage), KbSectionTracker pageType="sell",
+ * JSON-LD (BreadcrumbList + FAQPage), V3SectionTracker pageType="sell",
  * revalidate 300, route /sell, and the capture contract. SellerLPForm still
  * posts through submitSellerLPForm with pagePath="/sell" and formId get-value.
- * MetadataBlock and KbSectionTracker stay on the KB/legacy registers
- * deliberately: both are wiring, neither is visual language, and the barrel
- * ships no equivalent.
+ * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * D11: visible CTA copy is "Value my home". The form's own heading is owned by
  * SellerLPForm (untouched this lease). Title/meta keep search-demand language.
@@ -57,11 +55,11 @@ import {
   V3Quiet,
   V3Sheet,
   V3Stage,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import SellerLPForm from '@/app/lp/seller-home-value/SellerLPForm'
 import { SellCapture } from './_v3/SellCapture'
 import {
@@ -209,7 +207,7 @@ export default async function SellPage() {
     <>
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
-        <KbSectionTracker pageType="sell" />
+        <V3SectionTracker pageType="sell" />
 
         <V3Breadcrumb
           tone="on-media"

@@ -12,10 +12,10 @@
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata forwarding to
  * pageMetadata, generateStaticParams over the resort registry, dynamicParams,
  * revalidate 60, both canonical-slug redirects, MetadataBlock JSON-LD
- * (BreadcrumbList, Place, Dataset, FAQPage), a rendered KbSectionTracker, and
- * CommunityPageTracker with the same five props. MetadataBlock and
- * KbSectionTracker stay on their old register deliberately: both are wiring,
- * neither is visual language, and the barrel ships no equivalent.
+ * (BreadcrumbList, Place, Dataset, FAQPage), a rendered V3SectionTracker, and
+ * CommunityPageTracker with the same five props. MetadataBlock stays on the
+ * legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh
+ * pattern.
  *
  * THE DATA INVARIANTS, all preserved, each enforced at its own site:
  *
@@ -125,10 +125,10 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
   type V3FieldItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
@@ -549,7 +549,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           activeCount={activeCount}
           medianPrice={medianListPrice}
         />
-        <KbSectionTracker pageType="community" />
+        <V3SectionTracker pageType="community" />
         <MetadataBlock schemas={communitySchemas} />
 
         <V3Breadcrumb

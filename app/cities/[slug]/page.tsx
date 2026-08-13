@@ -20,8 +20,8 @@
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata,
  * generateStaticParams over PRIMARY_CITIES with dynamicParams, revalidate 60, the route
  * and its params, MetadataBlock JSON-LD, a rendered CityPageTracker, and a rendered
- * KbSectionTracker with pageType="city". MetadataBlock and KbSectionTracker stay on
- * their registers deliberately: both are wiring, neither is visual language.
+ * V3SectionTracker with pageType="city". MetadataBlock stays on the legacy
+ * register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * The invariants this file is written to hold, each enforced at its own site:
  *
@@ -103,9 +103,9 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
@@ -447,7 +447,7 @@ export default async function CityDetailPage({ params }: Props) {
           medianPrice={pulse?.medianListPrice ?? null}
           communityCount={communityCount}
         />
-        <KbSectionTracker pageType="city" />
+        <V3SectionTracker pageType="city" />
         <MetadataBlock schemas={citySchemas} />
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />

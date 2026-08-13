@@ -9,8 +9,9 @@
  * THE PAGE CONTRACT, carried across unchanged: metadata title "Mortgage
  * Calculator for Home Buyers", SoftwareApplication JSON-LD, searchParams
  * pre-fill (price/down/rate/term), getCalculatorDefaults seeds, MortgageCalculator
- * math and field names, KbSectionTracker pageType="tools". MetadataBlock and
- * KbSectionTracker stay on their registers: wiring, not visual language.
+ * math and field names, V3SectionTracker pageType="tools". MetadataBlock stays
+ * on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a
+ * seventh pattern.
  *
  * SoftwareApplication stays a page-level script. MetadataBlock has no
  * SoftwareApplication input type, and ci:ai-structured-data pins the literal
@@ -40,11 +41,11 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import MortgageCalculator from './MortgageCalculator'
 import { CalculatorSheet } from './_v3/CalculatorSheet'
 import { DEFAULT_HOME_PRICE, MORTGAGE_TRACE, ROUTE_PATH } from './_v3/mortgage-constants'
@@ -147,7 +148,7 @@ export default async function MortgageCalculatorPage({ searchParams }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="tools" />
+        <V3SectionTracker pageType="tools" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
         <MetadataBlock schemas={schemas} />
 

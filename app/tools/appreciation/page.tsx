@@ -8,7 +8,7 @@
  * math works, plus the valuation door). Two of the six patterns.
  *
  * THE PAGE CONTRACT: export const metadata (canonical + OG + Twitter),
- * WebApplication JSON-LD, KbSectionTracker pageType="tools", the
+ * WebApplication JSON-LD, V3SectionTracker pageType="tools", the
  * AppreciationCalculator island (singleton hold-period math, not a year
  * path), the consent-gated AdUnit (slot 1001003001, horizontal).
  *
@@ -30,9 +30,9 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { valuationHref } from '@/lib/site/valuation-href'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -74,7 +74,7 @@ export default function AppreciationToolPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="tools" />
+        <V3SectionTracker pageType="tools" />
         <MetadataBlock
           schemas={[
             {

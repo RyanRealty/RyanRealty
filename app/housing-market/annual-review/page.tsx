@@ -23,15 +23,14 @@
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata (same title, description, path, keywords), the canonical path,
  * revalidate 300, the route, the MetadataBlock JSON-LD payloads (BreadcrumbList,
- * WebPage, Article, Dataset, FAQPage), a rendered KbSectionTracker with
+ * WebPage, Article, Dataset, FAQPage), a rendered V3SectionTracker with
  * pageType="market-report-annual", and the capture contract
  * (submitMarketPageInquiry, variant 'inquiry', fields name/email/message).
  * ONE CAPTURE AFFORDANCE IS NOT CARRIED ACROSS: KbSell's address-prefill input,
  * with the three proof figures beside it. It is deleted outright, declared in the
  * parity contract's `deletions` block with where each of the three figures went,
  * and it is the reason the two seller doors below still carry `?from=`.
- * MetadataBlock and KbSectionTracker stay on their non-v3 registers deliberately:
- * both are wiring, neither is visual language, and the barrel ships no equivalent.
+ * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  * FAQPage moved its EMISSION SITE, not its payload — the KB page emitted it from
  * inside FAQBlock, and V3Quiet carries no structured data of its own, so the
  * identical `faqs` array is emitted from MetadataBlock here.
@@ -144,10 +143,10 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { AnnualInquirySheet } from './_v3/AnnualInquirySheet.client'
 import {
   CANONICAL_PATH,
@@ -454,7 +453,7 @@ export default async function AnnualReviewPage() {
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <KbSectionTracker pageType="market-report-annual" />
+        <V3SectionTracker pageType="market-report-annual" />
 
         <V3Breadcrumb
           trail={[

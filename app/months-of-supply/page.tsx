@@ -19,7 +19,7 @@
  * is byte-identical: BreadcrumbNav dropped any crumb with no href, so the current
  * page was never in the list, and it still is not.
  *
- * MetadataBlock stays on the flat legacy register and KbSectionTracker on the KB
+ * MetadataBlock stays on the flat legacy register and V3SectionTracker on the KB
  * register deliberately: both are wiring, neither is visual language, and the barrel
  * ships no equivalent. Those two imports are this page's entire remaining non-v3
  * count (5 -> 2).
@@ -169,12 +169,12 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   MOS_CITY_LABELS,
   MOS_CITY_REPORT,
@@ -444,7 +444,7 @@ export default async function MonthsOfSupplyPage() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(definedTermJsonLd) }}
         />
 
-        <KbSectionTracker pageType="market-definition" />
+        <V3SectionTracker pageType="market-definition" />
 
         <V3Breadcrumb
           trail={[

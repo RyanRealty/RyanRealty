@@ -8,7 +8,7 @@
  *
  * THE PAGE CONTRACT, carried across: generateMetadata with the canonical-slug
  * fix, BrokerAttributionSetter, RealEstateAgent JSON-LD on worksFor (brokerage
- * aggregate, not the individual), BreadcrumbList, KbSectionTracker
+ * aggregate, not the individual), BreadcrumbList, V3SectionTracker
  * pageType="broker", revalidate 60, reviewBelongsOnPage, 977 zip filter,
  * photo-only tiles.
  *
@@ -33,10 +33,10 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { BrokerValuationSheet } from './_v3/BrokerValuationSheet.client'
 import { namesBroker, reviewBelongsOnPage } from './_v3/review-filter'
 import { brokerageTileToRow, brokerSaleToRow, factualFallbackBio, HEADSHOT } from './_v3/sale-rows'
@@ -217,7 +217,7 @@ export default async function TeamMemberPage({ params }: Props) {
             }),
           }}
         />
-        <KbSectionTracker pageType="broker" />
+        <V3SectionTracker pageType="broker" />
         <MetadataBlock
           schemas={[
             {

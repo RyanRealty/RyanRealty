@@ -12,11 +12,9 @@
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata (same title, same description, same guard, same canonical path),
  * MetadataBlock JSON-LD (BreadcrumbList, Neighborhood Place, Dataset, FAQPage),
- * a rendered KbSectionTracker with pageType="neighborhood", generateStaticParams
+ * a rendered V3SectionTracker with pageType="neighborhood", generateStaticParams
  * returning [] with dynamicParams, revalidate 60, and the route's two params.
- * MetadataBlock and KbSectionTracker stay on their old registers deliberately:
- * both are wiring, neither is visual language, and the barrel ships no
- * equivalent of either.
+ * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * THE PLACE LADDER STILL CLIMBS. Up is the breadcrumb (Home · city ·
  * neighborhood) and the city rows in the closing Quiet block; down is the
@@ -140,11 +138,11 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigures,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { NeighborhoodAlertsSheet } from './_v3/NeighborhoodAlertsSheet.client'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
@@ -459,7 +457,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       <main className={V3_ROOT_CLASS}>
         <MetadataBlock schemas={schemas} />
 
-        <KbSectionTracker pageType="neighborhood" />
+        <V3SectionTracker pageType="neighborhood" />
 
         <V3Breadcrumb
           trail={[

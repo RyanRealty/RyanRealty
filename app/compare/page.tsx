@@ -10,7 +10,7 @@
  * THE PAGE CONTRACT, carried across unchanged: robots noindex,follow, revalidate
  * 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND
  * listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList
- * JSON-LD, KbSectionTracker pageType="compare". Shared /compare?ids= links keep
+ * JSON-LD, V3SectionTracker pageType="compare". Shared /compare?ids= links keep
  * resolving.
  *
  * Dual objectives (page-inventory.json): put the shortlist side by side, then
@@ -29,7 +29,6 @@ import type { Metadata } from 'next'
 import { getListingTiles, getListingDetailPhotos } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   V3Breadcrumb,
@@ -37,6 +36,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Heading,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -145,7 +145,7 @@ export default async function ComparePage({
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="compare" />
+        <V3SectionTracker pageType="compare" />
 
         <MetadataBlock
           schema={{

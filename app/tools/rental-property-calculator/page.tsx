@@ -10,9 +10,8 @@
  * Calculator", SoftwareApplication JSON-LD, FAQPage JSON-LD from the same FAQ
  * array the Quiet block renders, searchParams pre-fill (price/rent/taxes/down/rate),
  * getCalculatorDefaults rate seed, RentalCalculator math (cash flow, cap rate,
- * cash-on-cash, 30-year projection, PDF, submitRentalLead), KbSectionTracker
- * pageType="tools". MetadataBlock and KbSectionTracker stay on their registers:
- * wiring, not visual language.
+ * cash-on-cash, 30-year projection, PDF, submitRentalLead), V3SectionTracker
+ * pageType="tools". MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * SoftwareApplication stays a page-level script. MetadataBlock has no
  * SoftwareApplication input type.
@@ -41,11 +40,11 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import RentalCalculator from '@/components/tools/RentalCalculator'
 import { CalculatorSheet } from './_v3/CalculatorSheet'
 import { FAQ, RENTAL_TRACE, ROUTE_PATH } from './_v3/rental-constants'
@@ -134,7 +133,7 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="tools" />
+        <V3SectionTracker pageType="tools" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
         <MetadataBlock schemas={schemas} />
 

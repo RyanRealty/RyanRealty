@@ -4,7 +4,7 @@
  * THE PAGE CONTRACT, carried across unchanged: metadata title "Luxury Homes in
  * Bend, Oregon", canonical /luxury-homes-bend, revalidate 900, LUX_MIN =
  * 1_500_000, propertyType A, getListingTiles + getListingTilesCount,
- * KbSectionTracker pageType="luxury-homes-bend".
+ * V3SectionTracker pageType="luxury-homes-bend".
  *
  * KB-era deletions: the hardcoded-hex film hero, the raw listing cards, the
  * raw community chips, KbFooter, @no-breadcrumb (this is a content page, so it
@@ -26,8 +26,8 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { LUX_MIN, LUX_COMMUNITIES, luxuryRows } from './_v3/luxury-rows'
 
 export const revalidate = 900
@@ -65,7 +65,7 @@ export default async function LuxuryHomesBendPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="luxury-homes-bend" />
+        <V3SectionTracker pageType="luxury-homes-bend" />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Luxury homes' }]} />
 
         {count > 0 ? (

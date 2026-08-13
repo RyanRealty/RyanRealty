@@ -7,7 +7,7 @@
  *
  * THE PAGE CONTRACT: generateMetadata (canonical, OG, Twitter, robots via
  * shouldNoIndexBlogIndex), Blog + ItemList JSON-LD, BreadcrumbList, a rendered
- * KbSectionTracker with pageType="blog", the three parallel reads
+ * V3SectionTracker with pageType="blog", the three parallel reads
  * (getBlogCategories, getPublishedBlogPosts, getPopularBlogSlugs) plus the
  * session and identity-bridge reads that pin this route dynamic.
  *
@@ -27,7 +27,6 @@ import ShareButton from '@/components/ShareButton'
 import { formatDate } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -37,6 +36,7 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
@@ -172,7 +172,7 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="blog" />
+        <V3SectionTracker pageType="blog" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <MetadataBlock
           schemas={[

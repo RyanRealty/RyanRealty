@@ -33,10 +33,10 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -100,7 +100,7 @@ export default async function FaqAnswerPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="faq_answer" />
+        <V3SectionTracker pageType="faq_answer" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[

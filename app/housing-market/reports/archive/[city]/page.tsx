@@ -25,7 +25,6 @@ import { notFound } from 'next/navigation'
 import { getCityArchive, type CityArchive } from '@/lib/data/market/getCityArchive'
 import { REPORT_CITIES, REPORT_CITY_SLUGS } from '@/lib/data/geo/report-cities'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -34,6 +33,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
   type V3ChartProps,
   type V3ChartPoint,
   type V3InstrumentFigure,
@@ -128,7 +128,7 @@ export default async function CityArchivePage({ params }: PageProps) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="reports" />
+        <V3SectionTracker pageType="reports" />
         <MetadataBlock
           schemas={[
             {

@@ -7,7 +7,7 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: pageMetadata title/description/
  * path, revalidate 300, getSurfaceImage hero, BreadcrumbList + WebPage +
- * FAQPage JSON-LD, KbSectionTracker pageType="buy", listing-alert capture via
+ * FAQPage JSON-LD, V3SectionTracker pageType="buy", listing-alert capture via
  * submitSearchAlertSignup (email + propertyType A + company honeypot), exits
  * to /homes-for-sale, /buy/[intent], /open-houses, /price-drops, /contact.
  *
@@ -29,7 +29,6 @@
 import { getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -39,6 +38,7 @@ import {
   V3Ledger,
   V3Quiet,
   V3Stage,
+  V3SectionTracker,
 } from '@/components/site/v3'
 import { BuyAlertsSheet } from './_v3/BuyAlertsSheet.client'
 import {
@@ -77,7 +77,7 @@ export default async function BuyPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="buy" />
+        <V3SectionTracker pageType="buy" />
 
         <MetadataBlock
           schemas={[

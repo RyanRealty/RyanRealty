@@ -12,7 +12,7 @@
  * EXITS: /homes-for-sale, /cities, /housing-market, /blog
  *
  * THE PAGE CONTRACT: revalidate 3600, getSiteIndexLinks(), noStore() when
- * generatedAt === null, CollectionPage JSON-LD, KbSectionTracker
+ * generatedAt === null, CollectionPage JSON-LD, V3SectionTracker
  * pageType="site_index".
  *
  * D11: no virtue names. No invented quote. No rendered ranking counts.
@@ -31,9 +31,9 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 export const revalidate = 3600
 
@@ -132,7 +132,7 @@ export default async function SiteIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="site_index" />
+        <V3SectionTracker pageType="site_index" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

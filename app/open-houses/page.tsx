@@ -7,9 +7,9 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (BreadcrumbList + Event nodes), a rendered
- * KbSectionTracker with pageType="open-houses", TrackSearchView, revalidate 60,
- * the route, and searchParam filters. MetadataBlock and KbSectionTracker stay
- * on their registers: wiring, not visual language.
+ * V3SectionTracker with pageType="open-houses", TrackSearchView, revalidate 60,
+ * the route, and searchParam filters. MetadataBlock stays on the legacy
+ * register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * WINDOW: today through six days out, Pacific, unless the visitor passes
  * dateFrom/dateTo. The KB page said "this week" while getOpenHousesWithListings
@@ -46,11 +46,11 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { OpenHouseAlertsSheet } from './_v3/OpenHouseAlertsSheet.client'
 import {
@@ -177,7 +177,7 @@ export default async function OpenHousesPage({
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="open-houses" />
+        <V3SectionTracker pageType="open-houses" />
         <TrackSearchView resultsCount={count} />
         <MetadataBlock schemas={schemas} />
 

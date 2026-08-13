@@ -24,9 +24,9 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 
 export const revalidate = 3600
@@ -88,7 +88,7 @@ export default function VenuesIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="venues" />
+        <V3SectionTracker pageType="venues" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[{ label: 'Home', href: '/' }, { label: 'Live music & shows' }]}

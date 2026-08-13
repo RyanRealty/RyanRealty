@@ -9,7 +9,7 @@
  *
  * THE PAGE CONTRACT, carried across: export const metadata, revalidate 3600,
  * getSurfaceImage, webPage + BreadcrumbList + FAQPage JSON-LD,
- * KbSectionTracker pageType="join".
+ * V3SectionTracker pageType="join".
  *
  * D11: no virtue names. No invented quote. No invented split.
  */
@@ -27,10 +27,10 @@ import {
   V3Ledger,
   V3Quiet,
   V3Stage,
+  V3SectionTracker,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   HOW_IT_WORKS,
   JOIN_CONTACT_HREF,
@@ -93,7 +93,7 @@ export default async function JoinPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="join" />
+        <V3SectionTracker pageType="join" />
         <MetadataBlock
           schemas={[
             {

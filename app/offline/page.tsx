@@ -24,8 +24,8 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { TryAgainButton } from './TryAgain.client'
 
 export const metadata: Metadata = {
@@ -38,7 +38,7 @@ export default function OfflinePage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="utility" />
+        <V3SectionTracker pageType="utility" />
         <V3Quiet
           id="offline"
           heading="You are offline"

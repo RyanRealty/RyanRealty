@@ -8,9 +8,8 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: export const metadata through
  * pageMetadata, MetadataBlock JSON-LD (CollectionPage + aboutOrganization +
- * BreadcrumbList), a rendered KbSectionTracker with pageType="team", and the
- * route. MetadataBlock and KbSectionTracker stay on the non-v3 register
- * deliberately: both are wiring, neither is visual language.
+ * BreadcrumbList), a rendered V3SectionTracker with pageType="team", and the
+ * route. MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * D11: no virtue names. No invented quote. Reviews are verbatim from
  * getReviews, with TESTIMONIALS as the empty-pool fallback.
@@ -32,11 +31,11 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { brokerLedgerRow, TEAM_FAQ_ITEMS, TEAM_RANK } from './_v3/team-constants'
 
 export const metadata: Metadata = pageMetadata({
@@ -124,7 +123,7 @@ export default async function TeamPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="team" />
+        <V3SectionTracker pageType="team" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Team' }]} />
 

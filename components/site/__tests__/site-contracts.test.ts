@@ -125,7 +125,7 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/<MetadataBlock\b/)
     expect(src).toMatch(/type:\s*'realEstateListing'/)
     expect(src).toMatch(/type:\s*'breadcrumb'/)
-    expect(src).toMatch(/<KbSectionTracker[\s/>]/)
+    expect(src).toMatch(/<V3SectionTracker[\s/>]/)
     expect(src).toMatch(/pageType=["']listing["']/)
     expect(src).toMatch(/<ListingLikeThisAlerts\b/)
     expect(src).toMatch(/<PriceCtaStrip\b/)
@@ -399,7 +399,7 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/className=\{V3_ROOT_CLASS\}/)
     expect(src).not.toMatch(/className="kb-root"/)
     expect(src).toMatch(/<CommunityPageTracker/)
-    expect(src).toMatch(/<KbSectionTracker pageType="community"/)
+    expect(src).toMatch(/<V3SectionTracker pageType="community"/)
     expect(src).toMatch(/<MetadataBlock schemas=\{communitySchemas\}/)
     // resilient JSON-LD, resolved ONCE. The FAQ + Dataset take the same
     // `medianListPrice` the Instrument renders (shorthand property), so the
@@ -500,5 +500,19 @@ describe('design directive contracts', () => {
     // wired into the gate chain
     const pkg = readSrc('package.json')
     expect(pkg).toMatch(/ci:resort-definitions/)
+  })
+
+  it('V3SectionTracker is a dual-sink island, not a seventh pattern', () => {
+    const src = readSrc('components/site/v3/V3SectionTracker.client.tsx')
+    const barrel = readSrc('components/site/v3/index.ts')
+    expect(barrel).toMatch(/export \{ V3SectionTracker \} from '\.\/V3SectionTracker\.client'/)
+    expect(barrel).toMatch(/not a seventh pattern/)
+    expect(src).toMatch(/\.kb-root section\[id\], \.v3 section\[id\]/)
+    expect(src).toMatch(/intersectionRatio >= 0\.55/)
+    expect(src).toMatch(/location\.href/)
+    expect(src).toMatch(/trackEvent\('section_view'/)
+    expect(src).toMatch(/\/api\/visitors\/track/)
+    expect(src).toMatch(/milestones = \[25, 50, 75, 100\]/)
+    expect(src).toMatch(/pageType/)
   })
 })

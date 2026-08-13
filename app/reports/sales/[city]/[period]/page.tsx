@@ -27,7 +27,6 @@ import { PRIMARY_CITIES } from '@/lib/cities'
 import { cityEntityKey, listingDetailPath } from '@/lib/slug'
 import SalesReportCharts from '@/components/reports/SalesReportCharts'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { formatDate } from '@/lib/format/date'
 import { formatPriceExact } from '@/lib/format/money'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -40,6 +39,7 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
@@ -209,7 +209,7 @@ export default async function SalesReportPage({ params }: PageProps) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="reports" />
+        <V3SectionTracker pageType="reports" />
         <MetadataBlock
           schemas={[
             {

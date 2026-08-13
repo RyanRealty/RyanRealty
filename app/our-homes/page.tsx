@@ -3,7 +3,7 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: metadata title, canonical
  * /our-homes, force-dynamic, getBrokerageListings (ListOfficeName ILIKE
- * '%Ryan Realty%'), SHOWN_LISTINGS = 12, KbSectionTracker pageType="info".
+ * '%Ryan Realty%'), SHOWN_LISTINGS = 12, V3SectionTracker pageType="info".
  *
  * KB-era deletions: KbHero, KbFeatured, KbFooter, SmoothScrollProvider, the
  * raw CTA row, the restyled empty-state section, the "List your home on this
@@ -25,8 +25,8 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { ourHomesRows, SHOWN_LISTINGS } from './_v3/our-homes-rows'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -60,7 +60,7 @@ export default async function OurHomesPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="info" />
+        <V3SectionTracker pageType="info" />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Our homes' }]} />
 
         {total > 0 ? (

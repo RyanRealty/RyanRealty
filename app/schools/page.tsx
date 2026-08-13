@@ -5,7 +5,7 @@
  * Ledger (every school), Sheet (SFR alerts), Quiet, Footer outside main.
  *
  * THE PAGE CONTRACT: pageMetadata, revalidate 3600, breadcrumb + webPage
- * JSON-LD via MetadataBlock, KbSectionTracker pageType="schools". Data through
+ * JSON-LD via MetadataBlock, V3SectionTracker pageType="schools". Data through
  * @/lib/data. Academic stats stay nullable. Capture: submitSearchAlertSignup
  * with city="" and propertyType A.
  *
@@ -29,9 +29,9 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import type { SchoolLevel } from '@/data/co-schools'
 
@@ -87,7 +87,7 @@ export default function SchoolsIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="schools" />
+        <V3SectionTracker pageType="schools" />
         <MetadataBlock
           schemas={[
             {

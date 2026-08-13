@@ -24,13 +24,13 @@ import { sanitizeHtml } from '@/lib/sanitize'
 import { formatDate } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import {
   V3_ROOT_CLASS,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
 import { ReportsInquirySheet } from '../_v3/ReportsInquirySheet.client'
 
@@ -90,7 +90,7 @@ export default async function ReportPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="market-reports" />
+        <V3SectionTracker pageType="market-reports" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reportSchema) }} />
         <MetadataBlock
           schemas={[

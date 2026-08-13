@@ -35,8 +35,8 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -77,7 +77,7 @@ export default async function BrokerSelfEditPage({ params }: Props) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="utility" />
+        <V3SectionTracker pageType="utility" />
         <V3Breadcrumb
           trail={[
             { label: 'Home', href: '/' },

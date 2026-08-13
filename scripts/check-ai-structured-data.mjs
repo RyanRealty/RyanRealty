@@ -249,7 +249,7 @@ const CHECKS = [
   {
     file: 'app/housing-market/reports/page.tsx',
     label: 'reports hub: BreadcrumbList + WebPage via MetadataBlock',
-    all: ['MetadataBlock', "type: 'breadcrumb'", "type: 'webPage'", 'KbSectionTracker'],
+    all: ['MetadataBlock', "type: 'breadcrumb'", "type: 'webPage'", 'V3SectionTracker'],
     why:
       'The reports hub MUST emit BreadcrumbList + WebPage JSON-LD via MetadataBlock so\n' +
       '  AI engines can cite the canonical /housing-market/reports surface. Dataset lives\n' +

@@ -6,7 +6,7 @@
  * Quiet, Footer outside main.
  *
  * THE PAGE CONTRACT: pageMetadata, revalidate 3600, breadcrumb + webPage
- * CollectionPage + itemList via MetadataBlock, KbSectionTracker pageType="events".
+ * CollectionPage + itemList via MetadataBlock, V3SectionTracker pageType="events".
  *
  * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
  * events.css card grid, RegionalSfrAlertsBand, per-category H2 sections (category
@@ -31,9 +31,9 @@ import {
   V3Instrument,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 
 export const revalidate = 3600
@@ -96,7 +96,7 @@ export default function EventsIndexPage() {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="events" />
+        <V3SectionTracker pageType="events" />
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb
           trail={[{ label: 'Home', href: '/' }, { label: 'Central Oregon events' }]}

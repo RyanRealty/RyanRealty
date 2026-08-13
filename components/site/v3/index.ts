@@ -179,6 +179,22 @@ export { V3Breadcrumb } from './V3Breadcrumb'
 export type { V3BreadcrumbProps, V3Crumb } from './V3Breadcrumb'
 
 /* -------------------------------------------------------------------------- */
+/* TRACKING ISLAND — not a seventh pattern                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Section + scroll tracking. Chrome surrounds a page; this island records it.
+ * Same contract as the retired kb tracker: observe `.v3 section[id]` and
+ * `.kb-root section[id]`, fire `section_view` at 55% and scroll-depth
+ * 25/50/75/100, dual-sink `trackEvent` + `/api/visitors/track` with full
+ * `location.href`. Tracking must never break the page. Not a visual pattern.
+ * Growing the closed set of six is a change to the locked visual language.
+ */
+export { V3SectionTracker } from './V3SectionTracker.client'
+
+export type { V3SectionTrackerProps } from './V3SectionTracker.client'
+
+/* -------------------------------------------------------------------------- */
 /* Deliberately NOT exported                                                   */
 /* -------------------------------------------------------------------------- */
 

@@ -8,7 +8,7 @@
  *
  * THE PAGE CONTRACT, carried across: export const metadata, ContactPage +
  * BreadcrumbList + FAQPage JSON-LD, getPageContent, getSession,
- * getPersonIdFromCookie, listing tile for ?listingKey=, KbSectionTracker
+ * getPersonIdFromCookie, listing tile for ?listingKey=, V3SectionTracker
  * pageType="info".
  *
  * D11: no virtue names. No invented quote.
@@ -33,10 +33,10 @@ import {
   V3_FOOTER_COLUMNS,
   V3Ledger,
   V3Quiet,
+  V3SectionTracker,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { ContactSheet } from './_v3/ContactSheet.client'
 import { CONTACT_FAQ_ITEMS } from './_v3/contact-constants'
 import { brokerLedgerRow, TEAM_RANK } from '@/app/team/_v3/team-constants'
@@ -149,7 +149,7 @@ export default async function ContactPage({ searchParams }: PageProps) {
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="info" />
+        <V3SectionTracker pageType="info" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />

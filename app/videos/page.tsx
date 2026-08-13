@@ -5,7 +5,7 @@
  * title/description/canonical/OG), ItemList + BreadcrumbList + CollectionPage
  * JSON-LD, one VideoObject per embeddable tour (raw <script>, VideoObject is
  * not in SchemaInput), city chips as real <Link>s with aria-current,
- * revalidate 300, KbSectionTracker pageType="media".
+ * revalidate 300, V3SectionTracker pageType="media".
  *
  * LEFTOVERS, not v3 atoms: HideAwareVideoGrid (inline play) and VideoFeedClient
  * (vertical feed at ?view=feed). No video-grid atom exists. Declared the same
@@ -39,8 +39,8 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3SectionTracker,
 } from '@/components/site/v3'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { CITY_CHIPS, resolveCity, resolveView, resolveStart } from './_v3/videos-constants'
 import { tilesToFeedItems } from './_v3/feed-items'
 
@@ -236,7 +236,7 @@ export default async function VideosPage({
     return (
       <>
         <main className={V3_ROOT_CLASS}>
-          <KbSectionTracker pageType="media" />
+          <V3SectionTracker pageType="media" />
           {jsonLd}
           {feedItems.length > 0 ? (
             <>
@@ -303,7 +303,7 @@ export default async function VideosPage({
   return (
     <>
       <main className={V3_ROOT_CLASS}>
-        <KbSectionTracker pageType="media" />
+        <V3SectionTracker pageType="media" />
         {jsonLd}
         <V3Breadcrumb trail={crumbTrail} />
 
