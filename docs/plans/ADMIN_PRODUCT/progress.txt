@@ -718,6 +718,8 @@ NOT IN SCOPE
 
 2026-08-13T22:45:00Z TRACK 1 OPEN HOUSES LOOK GREEN. feat 96a26b1b READY. /open-houses + /open-houses/bend first viewport is houses, not figures only. Next: About (faces). Track 2 not started.
 
+2026-08-13T23:40:00Z TRACK 1 REVIEWS LOOK GREEN. feat c07f5638 READY. /reviews first viewport is live Google quotes as written. CTA Value my home. Next: Market (figures + chart allowed). Track 2 not started.
+
 
 
 
