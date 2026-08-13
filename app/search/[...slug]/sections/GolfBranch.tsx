@@ -1,4 +1,4 @@
-import { KbFooter } from '../../../../components/site/kb/KbFooter.client'
+import { V3Footer, V3_FOOTER_COLUMNS } from '@/components/site/v3'
 import { cityEntityKey, homesForSalePath, listingTileHref } from '../../../../lib/slug'
 import { type ListingCardData } from '@/components/site/ListingCard'
 import { GolfLanding } from '@/components/site/golf/GolfLanding'
@@ -51,10 +51,7 @@ export async function renderGolfLanding(city: string) {
         totalHomes={0}
         allHomesHref={allHomesHref}
       />
-      {/* design-audit NAV-1: KbFooter replaces the suppressed SiteFooter. */}
-      <div className="kb-root">
-        <KbFooter towns={[]} />
-      </div>
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

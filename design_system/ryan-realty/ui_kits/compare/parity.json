@@ -1,32 +1,33 @@
 {
   "route": "app/compare/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/compare/index.html",
-  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface. KB (kinetic-brutalist) design system: navy header band with Amboqia display H1, cream comparison surface, hard --edge borders, KbNav + KbFooter chrome.",
-  "note": "KB conversion 2026-06-18 (Phase 9 convergence) — RESTYLED IN PLACE, no content dropped. KbNav + KbFooter carry chrome (HideChrome to suppress default SiteHeader/SiteFooter is a shared-component edit deferred to the orchestrator). The interactive comparison surface (photo row + side-by-side feature Table + best-in-class highlighting + Google Maps locations embed + Copy Link/Download PDF actions + empty/loading state) is unchanged in CompareClient — only the page-level chrome and header were restyled to KB. Data still via @/lib/data DAL only (getListingTiles by listNumbers AND listingKeys + getListingDetailPhotos). robots noindex,follow preserved; route is NOT in the sitemap. Breadcrumb JSON-LD only (no WebPage JSON-LD on a noindex utility route). No KbHero — a stock cinematic hero is off-brand for a utility tool; a compact navy header band carries the breadcrumb + H1 + intro. AICompare is built but not wired — see inline wire-or-delete note in page.tsx.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target. Comparison is a Sheet job. CompareClient is the interactive working surface (photos, feature table, best-in-class, map, copy link, PDF). The barrel Sheet's static compare block cannot host that without dropping those controls, so CompareClient stays and the page chrome moves to v3. Not a sixth pattern.",
+  "competitiveTarget": "Utility comparison page: side-by-side property table. noindex — not an SEO surface.",
+  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /compare chrome onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb belowNav=false. V3Footer outside <main>. Page contract carried unchanged: robots noindex,follow, revalidate 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList JSON-LD, KbSectionTracker pageType=compare. Shared /compare?ids= links keep resolving. Dual objectives unchanged. Capture does not live on this route. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, navy header band. AICompare is built but not wired — HOLD, same note as before. MetadataBlock and KbSectionTracker stay on non-v3 registers.",
   "requiredComponents": [
     {
-      "name": "KbNav",
-      "section": "top nav — transparent over the navy header band, flips to navy on scroll; full site directory overlay",
-      "blocking": true
-    },
-    {
       "name": "KbSectionTracker",
-      "section": "tracking — section_view + scroll_depth events (page contract G52), pageType=compare",
+      "section": "Tracking — section_view + scroll_depth events (page contract G52), pageType=compare. Analytics wiring, not visual language.",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD — BreadcrumbList structured data (Home > Compare)",
+      "section": "JSON-LD — BreadcrumbList structured data (Home > Compare). No WebPage JSON-LD on a noindex utility route.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "breadcrumb strip — Home / Compare properties (KB chrome equivalent of the old PageBreadcrumb)",
+      "name": "V3Breadcrumb",
+      "section": "Home / Compare homes. Surface tone, belowNav=false because chrome is sticky in flow.",
       "blocking": true
     },
     {
-      "name": "SmoothScrollProvider",
-      "section": "Lenis + GSAP ScrollTrigger scroll layer",
+      "name": "V3Heading",
+      "section": "H1 Compare homes. Display face via the barrel atom.",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "Empty state when ?ids= is missing: how to add homes, plus a Search homes exit.",
       "blocking": true
     },
     {
@@ -35,27 +36,22 @@
       "blocking": true
     },
     {
-      "name": "KbFooter",
-      "section": "footer — contact, sitemap, legal",
+      "name": "V3Footer",
+      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main>.",
       "blocking": true
     }
   ],
   "layoutComponents": [
     {
-      "name": "SiteHeader",
-      "section": "renders from app/layout.tsx",
-      "note": "to be suppressed by HideChrome for KB routes — deferred to orchestrator. KbNav already renders the correct KB chrome."
-    },
-    {
-      "name": "SiteFooter",
-      "section": "renders from app/layout.tsx",
-      "note": "to be suppressed by HideChrome for KB routes — deferred to orchestrator. KbFooter already renders the correct KB chrome."
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx, position:sticky in flow",
+      "note": "ci:mockup-parity auto-satisfies a V3Chrome requiredComponent via layout. This page does not remount it."
     }
   ],
   "deferredComponents": [
     {
-      "name": "HideChrome",
-      "reason": "Shared-component edit needed to suppress the default SiteHeader/SiteFooter on the KB chrome pages. Deferred to orchestrator — KbNav + KbFooter already render the correct KB chrome."
+      "name": "AICompare",
+      "reason": "Built but not wired. Wire-or-delete is a HOLD from the compare-homes process, not this lease."
     }
   ]
 }

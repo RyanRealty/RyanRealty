@@ -1,50 +1,56 @@
 {
   "route": "app/buy/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/buy/index.html",
-  "competitiveTarget": "Beat generic buyer-intent pages: honest value props (live MLS data, local licensed broker, no hand-offs), a specific process walkthrough, buyer strategy sub-pages, and a clear listing-alerts CTA. Zero invented stats.",
-  "note": "Phase 9 page-class migration to the KB (kinetic-brutalist) design system, RESTYLED IN PLACE. The page keeps every section, the getSurfaceImage hero DAL fetch, all value props, the process walkthrough, the buyer-guide sub-pages, the CTA band, the full 6-item FAQ, and the BreadcrumbList + WebPage + FAQPage JSON-LD. Presentation moved to KB: KB shell (KbNav + KbFooter + SmoothScrollProvider + KbSectionTracker), KbBreadcrumb, and KB-styled in-place sections (hero/value-props/process/guides/CTA/FAQ) using the .section/.wrap/.sec-head rhythm + Amboqia display headings + hard --edge borders. HideChrome hides the default SiteHeader/SiteFooter for /buy. MetadataBlock owns the canonical FAQPage schema, so the in-place FAQ renders no duplicate JSON-LD. Lead path unchanged: /lp/buyer-listing-alerts (FUB buyer workflow), no embedded form.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target. /buy has no inventory, so it opens on Stage (owned photo) then Ledger, Quiet, Sheet. Four of the six, no two adjacent alike.",
+  "competitiveTarget": "Beat generic buyer-intent pages: live MLS search as the next step, a specific process walkthrough, buyer strategy sub-pages, and a listing-alerts ask. Zero invented stats.",
+  "note": "E-HOMES-SEARCH 2026-08-13. Migrated /buy onto the v3 barrel. Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount it. V3Breadcrumb tone=on-media overlays the Stage (ci:kb-breadcrumb-overlay). V3Footer outside <main>. Page contract carried unchanged: pageMetadata title/description/path, revalidate 300, getSurfaceImage hero, BreadcrumbList + WebPage + FAQPage JSON-LD, KbSectionTracker pageType=buy, listing-alert capture via submitSearchAlertSignup (email + propertyType A + company honeypot), exits to /homes-for-sale, /buy/[intent], /open-houses, /price-drops, /contact. Dual objectives unchanged. KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root, kb.css, RegionalSfrAlertsBand / KbCommunityAlerts markup, six hero chips (Search homes stays as the Stage primary; the rest moved to the closing Quiet), the no-hand-off pitch. MetadataBlock and KbSectionTracker stay on non-v3 registers (JSON-LD + analytics, not visual language). /buy/[intent] still renders LeadLandingPage and is out of this lease.",
   "requiredComponents": [
     {
-      "name": "KbNav",
-      "section": "KB top chrome — replaces SiteHeader for /buy",
-      "blocking": true
-    },
-    {
-      "name": "KbBreadcrumb",
-      "section": "Home > Buy breadcrumb (KB, overlay over the hero)",
-      "blocking": true
-    },
-    {
-      "name": "SmoothScrollProvider",
-      "section": "KB Lenis + GSAP scroll layer wrapping the body",
+      "name": "MetadataBlock",
+      "section": "JSON-LD — BreadcrumbList + WebPage + FAQPage (canonical). V3Breadcrumb and V3Quiet carry no structured data of their own.",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "KB per-section view + scroll-depth tracking (pageType='buy')",
+      "section": "Page-level analytics, pageType='buy'. Kept on the KB register: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
       "blocking": true
     },
     {
-      "name": "MetadataBlock",
-      "section": "JSON-LD — BreadcrumbList + WebPage + FAQPage (canonical)",
+      "name": "V3Breadcrumb",
+      "section": "Home > Buy, tone=on-media, belowNav=false, over the Stage photo. Chrome is sticky in flow so the trail does not need the fixed-header offset.",
       "blocking": true
     },
     {
-      "name": "KbFooter",
-      "section": "KB footer — replaces SiteFooter for /buy",
+      "name": "V3Stage",
+      "section": "Pattern 4, once, heading level 1. Owned photo from getSurfaceImage. Headline keeps the money-route head term. Primary action: Search homes → /homes-for-sale. At 390 the chrome CTA sits in the menu, so this is the visible filled control in the first viewport.",
+      "blocking": true
+    },
+    {
+      "name": "V3Ledger",
+      "section": "Pattern 3, once: first-time, relocation, and investment guides. Every row is a door into /buy/[intent].",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "Pattern 6, twice: how a purchase works (facts + the same FAQ items the FAQPage JSON-LD uses), then exits. Sheet sits between them so two Quiets are not adjacent.",
+      "blocking": true
+    },
+    {
+      "name": "BuyAlertsSheet",
+      "section": "Pattern 5, once, in app/buy/_v3/BuyAlertsSheet.client.tsx. Wraps V3Sheet and calls submitSearchAlertSignup with email + filters.propertyType A + company honeypot. Guest-watch residual and alert_create stay.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main>.",
       "blocking": true
     }
   ],
   "layoutComponents": [
     {
-      "name": "KbNav",
-      "section": "rendered by the route (KB chrome)",
-      "note": "default SiteHeader hidden via HideChrome for /buy"
-    },
-    {
-      "name": "KbFooter",
-      "section": "rendered by the route (KB chrome)",
-      "note": "default SiteFooter hidden via HideChrome for /buy"
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx, position:sticky in flow",
+      "note": "ci:mockup-parity auto-satisfies a V3Chrome requiredComponent via layout. This page does not remount it."
     }
   ]
 }

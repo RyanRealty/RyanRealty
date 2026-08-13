@@ -1,47 +1,43 @@
 /**
- * Compare page (/compare) — KB (kinetic-brutalist) design, Phase 9 of the KB
- * convergence program (docs/KB_CONVERGENCE_ROADMAP.md).
+ * /compare — Homes shortlist tool, on the components/site/v3 barrel.
  *
- * RESTYLED IN PLACE — every piece of the prior Wave 3 page is preserved:
- *   - The DAL fetch (getListingTiles by listNumbers AND listingKeys, dedup,
- *     getListingDetailPhotos hero resolution, listings mapping) is byte-for-byte
- *     the same. No data path was dropped.
- *   - CompareClient (the interactive comparison surface — photo row, the
- *     side-by-side feature Table, the best-in-class highlighting, the Google
- *     Maps locations embed, Copy Link + Download PDF actions, the empty/loading
- *     state) is rendered unchanged inside a KB cream section. Its logic is intact.
- *   - The page H1 "Compare properties" (Amboqia display) and the conditional
- *     intro copy (shown when no ids are present) are preserved.
- *   - MetadataBlock BreadcrumbList JSON-LD is preserved.
- *   - The Home > Compare breadcrumb is preserved (KbBreadcrumb is the KB chrome
- *     equivalent of the old PageBreadcrumb — same Home / Compare trail).
- *   - metadata (robots: noindex, follow — this route is NOT in the sitemap),
- *     revalidate = 60, the daysOnMarket helper + its retention note, and the
- *     AICompare wire-or-delete investigation note are all preserved.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Comparison is a Sheet job.
+ * CompareClient is the interactive working surface (photos, feature table,
+ * best-in-class, map, copy link, PDF). The barrel Sheet's static compare block
+ * cannot host that without dropping those controls, so CompareClient stays and
+ * the page chrome moves to v3. Not a sixth pattern.
  *
- * KB shell: <main className="kb-root"> + KbFooter (bottom) + SmoothScrollProvider
- *   + KbSectionTracker pageType="compare" + kb.css.
- * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
- * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
- * HideChrome is only for the not-found footer edge case / CSS hide if still used.
+ * THE PAGE CONTRACT, carried across unchanged: robots noindex,follow, revalidate
+ * 60, canonical /compare, DAL fetch (getListingTiles by listNumbers AND
+ * listingKeys, dedup, getListingDetailPhotos), CompareClient props, BreadcrumbList
+ * JSON-LD, KbSectionTracker pageType="compare". Shared /compare?ids= links keep
+ * resolving.
  *
- * No KbHero: /compare is a noindex utility tool, not a marketing surface, so a
- * cinematic stock hero would be off-brand and would add content the page never
- * had. Instead a compact navy KB header band carries the breadcrumb + H1 +
- * intro, giving the fixed transparent topbar a dark surface to read against.
+ * Dual objectives (page-inventory.json): put the shortlist side by side, then
+ * inspect the winner. Capture does not live on this route.
  *
- * Parity contract: design_system/ryan-realty/ui_kits/compare/parity.json (KB set).
+ * Chrome: layout mounts V3Chrome (sticky, in flow). This page does not remount
+ * it. V3Breadcrumb belowNav={false}. V3Footer outside <main>.
+ *
+ * KB-era deletions: SmoothScrollProvider, KbBreadcrumb, KbFooter, kb-root,
+ * kb.css, navy header band.
+ *
+ * Parity: design_system/ryan-realty/ui_kits/compare/parity.json.
  */
 
 import type { Metadata } from 'next'
 import { getListingTiles, getListingDetailPhotos } from '@/lib/data'
 import CompareClient, { type CompareListingData } from '@/components/compare/CompareClient'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+import {
+  V3_ROOT_CLASS,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Heading,
+  V3Quiet,
+} from '@/components/site/v3'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -76,9 +72,6 @@ function daysOnMarket(d: string | null | undefined): number | null {
   return days >= 0 ? days : null
 }
 
-// Suppress unused-variable lint warning. The helper is retained so it can
-// be wired to listing-history data when the compare table adds a
-// "listed date" row in a future sprint.
 void daysOnMarket
 
 export default async function ComparePage({
@@ -111,7 +104,7 @@ export default async function ComparePage({
     })
 
     const photoArrays = await Promise.all(
-      deduped.map((t) => getListingDetailPhotos(t.listingKey).catch(() => []))
+      deduped.map((t) => getListingDetailPhotos(t.listingKey).catch(() => [])),
     )
     const photoMap = new Map<string, string>()
     deduped.forEach((t, idx) => {
@@ -150,109 +143,54 @@ export default async function ComparePage({
   }
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="compare" />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="compare" />
 
-      <MetadataBlock
-        schema={{
-          type: 'breadcrumb',
-          items: [
-            { name: 'Home', url: '/' },
-            { name: 'Compare', url: '/compare' },
-          ],
-        }}
-      />
+        <MetadataBlock
+          schema={{
+            type: 'breadcrumb',
+            items: [
+              { name: 'Home', url: '/' },
+              { name: 'Compare', url: '/compare' },
+            ],
+          }}
+        />
 
-      <SmoothScrollProvider>
-        {/* Navy KB header band — carries the breadcrumb (overlay, cream-on-navy),
-            the page eyebrow, the Amboqia display H1, and the conditional intro.
-            Gives the fixed transparent topbar a dark surface to read against. */}
-        <section
-          className="section"
-          id="compare-header"
-          aria-label="Compare homes"
-          style={{ background: 'var(--navy)', color: 'var(--cream)' }}
-        >
-          <KbBreadcrumb
-            overlay
-            trail={[{ label: 'Home', href: '/' }, { label: 'Compare homes' }]}
+        <V3Breadcrumb
+          belowNav={false}
+          trail={[{ label: 'Home', href: '/' }, { label: 'Compare homes' }]}
+        />
+
+        <header id="compare-header">
+          <V3Heading level={1}>Compare homes</V3Heading>
+        </header>
+
+        {ids.length === 0 ? (
+          <V3Quiet
+            id="compare-empty"
+            heading="Up to four homes"
+            items={[
+              {
+                kind: 'prose',
+                body: 'Add homes from any search or listing page. Up to 4 at a time: price, size, beds, baths, and the rest.',
+              },
+              { label: 'Search homes', href: '/homes-for-sale' },
+            ]}
           />
-          <div className="wrap" style={{ paddingTop: 'clamp(96px, 14vh, 150px)', paddingBottom: 'clamp(36px, 6vw, 64px)' }}>
-            <span className="eyebrow" style={{ color: 'var(--cream-70)', display: 'block', marginBottom: '16px' }}>
-              Side by side · up to 4 homes
-            </span>
-            <h1
-              className="display"
-              style={{ fontSize: 'clamp(2.4rem, 8vw, 5.2rem)', maxWidth: '14ch' }}
-            >
-              Compare homes
-            </h1>
-            {ids.length === 0 && (
-              <p
-                style={{
-                  marginTop: '20px',
-                  maxWidth: '52ch',
-                  color: 'var(--cream-70)',
-                  fontSize: 'clamp(1rem, 1.6vw, 1.15rem)',
-                  lineHeight: 1.5,
-                }}
-              >
-                Add homes from any search or listing page. Up to 4 at a time: price, size, beds, baths, and the rest.
-              </p>
-            )}
-          </div>
-        </section>
+        ) : null}
 
-        {/* Comparison surface — CompareClient owns the interactive table, photo
-            row, locations map, Copy Link + Download PDF actions, and the
-            empty/loading state. Rendered unchanged inside a KB cream section. */}
-        <section
-          className="section"
-          id="compare-table"
-          aria-label="Property comparison"
-          style={{ background: 'var(--cream)', color: 'var(--navy)' }}
-        >
-          <div className="wrap" style={{ paddingTop: 'clamp(32px, 5vw, 56px)', paddingBottom: 'clamp(40px, 6vw, 72px)' }}>
-            <CompareClient listings={listings} />
-          </div>
+        <section id="compare-table" aria-label="Property comparison">
+          <CompareClient listings={listings} />
         </section>
+      </main>
 
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
-
-/*
- * AICompare investigation note (for Matt's decision)
- * ────────────────────────────────────────────────────
- * components/compare/AICompare.tsx is a built, self-contained client
- * component that:
- *   - Accepts ComparisonListing[] (a slightly different shape than
- *     CompareListingData — it uses pricePerSqft and lotAcres rather than
- *     price/lotSizeAcres from CompareListingData).
- *   - POSTs to /api/ai/chat (which exists at app/api/ai/chat/route.ts).
- *   - Renders a Skeleton loading state using the design-system primitive.
- *   - Returns null when fewer than 2 listings are present.
- *
- * SAFE TO WIRE? Conditionally yes. Two items need Matt's decision:
- *
- *   1. TYPE MISMATCH: AICompare.ComparisonListing uses { lotAcres, pricePerSqft }
- *      but CompareListingData (the server-side shape) uses { lotSizeAcres }.
- *      Wiring requires a small adapter (2-3 lines in this file).
- *
- *   2. BRAND VOICE: the AI response from /api/ai/chat is unfiltered —
- *      it may generate prose that violates CLAUDE.md §3 (banned words,
- *      em-dashes, etc.). The response is rendered raw in a <div className="prose">.
- *      Before wiring, the /api/ai/chat handler (or a wrapper) needs a
- *      brand-voice system prompt.
- *
- *   3. COST: each comparison triggers a Claude API call. With no auth gate
- *      on /compare, this route is open to anonymous requests. Rate-limiting
- *      or an auth check should wrap the button before production launch.
- *
- * RECOMMENDATION: HOLD — do not wire yet. Fix the brand-voice system prompt
- * in /api/ai/chat and add a rate-limit, then wire. The component itself is
- * ready; the infrastructure around it needs the guard rails first.
- * If Matt wants to disable this permanently, DELETE AICompare.tsx and this note.
- */

@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 527,
-    "legacyPages": 73,
-    "mixedPages": 11
+    "nonV3ImportSites": 513,
+    "legacyPages": 69,
+    "mixedPages": 14
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -184,7 +184,8 @@
     },
     "app/buy/page.tsx": {
       "legacy": 1,
-      "kb": 6
+      "kb": 1,
+      "v3": 1
     },
     "app/central-oregon/events/[slug]/page.tsx": {
       "legacy": 3,
@@ -242,7 +243,8 @@
     },
     "app/compare/page.tsx": {
       "legacy": 1,
-      "kb": 5
+      "kb": 1,
+      "v3": 1
     },
     "app/contact/page.tsx": {
       "kb": 6
@@ -414,12 +416,11 @@
       "kb": 7
     },
     "app/search/[...slug]/page.tsx": {
-      "kb": 1,
-      "primitives": 1,
-      "legacy": 2
+      "v3": 1,
+      "legacy": 1
     },
     "app/search/page.tsx": {
-      "kb": 2
+      "v3": 1
     },
     "app/sell/page.tsx": {
       "legacy": 4,

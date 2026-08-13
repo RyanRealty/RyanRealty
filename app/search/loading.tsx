@@ -12,8 +12,8 @@ export default function Loading() {
       aria-busy="true"
       aria-label="Loading search results"
     >
-      {/* Sticky filter chrome — mirrors SearchFilters docked under KbNav */}
-      <div className="sticky top-16 z-20 w-full shrink-0 border-b border-border bg-card shadow-sm">
+      {/* Filter chrome — docks under sticky V3Chrome (search-filter-dock) */}
+      <div className="search-filter-dock w-full shrink-0 border-b border-border bg-card shadow-sm">
         {/* Row 1: omnibox + sort/view/save placeholders */}
         <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
           <Skeleton className="h-10 min-w-[200px] flex-1 rounded-lg" />

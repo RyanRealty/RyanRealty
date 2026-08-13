@@ -1,6 +1,5 @@
 import { type ListingCardData } from '@/components/site/ListingCard'
 import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
-import { Body } from '@/components/site/primitives'
 import SearchListingsToolbar from '../../../../components/SearchListingsToolbar'
 import { listingTileHref } from '../../../../lib/slug'
 import { type getListingsWithAdvanced } from '../../../actions/listings'
@@ -34,9 +33,9 @@ export function ListingsResults({
   priceChangeKeys: Set<string>
 }) {
   return !city && !hasFilterOnly ? (
-    <Body className="mt-10">Select a city or subdivision to see listings.</Body>
+    <p className="mt-10">Select a city or subdivision to see listings.</p>
   ) : listings.length === 0 ? (
-    <Body className="mt-10">No homes match this search right now. Adjust the filters or explore a related search below.</Body>
+    <p className="mt-10">No homes match this search right now. Adjust the filters or try a related search below.</p>
   ) : (
     <div className="mt-6">
       <SearchListingsToolbar

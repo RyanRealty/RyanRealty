@@ -21,11 +21,11 @@ import { buildShapeSetForSearch, decodeMapPolygon, decodeMapShapes, type DrawnSh
 import { stripGeoScope } from '@/components/search/geo-scope'
 import { slugify } from '@/lib/slug'
 import { cn } from '@/lib/utils'
-// design-audit NAV-1: KbNav (the single search nav) comes from app/search/layout.tsx.
-// The list view still renders a KbFooter so MLS reciprocity + legal survive the
-// SiteFooter suppression on /homes-for-sale/** (lib/site/chrome-routes.ts).
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import '@/components/site/kb/kb.css'
+import {
+  V3_ROOT_CLASS,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+} from '@/components/site/v3'
 
 /** Compute a [west,south,east,north] bbox from a GeoJSON Polygon/MultiPolygon. */
 function bboxFromGeometry(
@@ -371,9 +371,10 @@ export default async function SearchPage({
   const isAppFrame = view === 'map' || view === 'split'
 
   return (
-    <div className={cn('w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen pt-16')}>
-      {/* KbNav (the single search nav) is rendered by app/search/layout.tsx so it
-          is uniform across the index + city-form pages (design-audit NAV-1). */}
+    <>
+    <main className={cn(V3_ROOT_CLASS, 'w-full bg-muted', isAppFrame ? 'search-app-frame' : 'min-h-screen')}>
+      {/* V3Chrome is sticky in flow on app/layout.tsx. Do not remount it.
+          Search is the Homes Field (MapSearchView), not header chrome. */}
       <SplitViewBodyLock active={isAppFrame} />
       <h1 className="sr-only">{h1Text}</h1>
       {/* @no-breadcrumb — see the file header. A Home > self trail conveys nothing
@@ -384,9 +385,7 @@ export default async function SearchPage({
         subdivision={filters.subdivision ?? undefined}
         resultsCount={resultsCount}
       />
-      {/* top-16 docks the filter row below the fixed 64px KbNav (design-audit
-          NAV-1); top-0 would slide it under the bar on any scrolled state. */}
-      <div className={cn('sticky top-16 z-20 w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
+      <div className={cn('search-filter-dock w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
       {/* Guest listing-alert capture for all views.
@@ -456,14 +455,12 @@ export default async function SearchPage({
           </div>
         )}
       </div>
-      {/* design-audit NAV-1: the app-frame (map/split) is viewport-fit and shows
-          no footer; the scrolling LIST view keeps a footer so the MLS reciprocity
-          attribution + legal links survive the SiteFooter suppression. */}
-      {isAppFrame ? null : (
-        <div className="kb-root">
-          <KbFooter towns={[]} />
-        </div>
-      )}
-    </div>
+    </main>
+    {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+        when it is NOT nested in sectioning content. Map/split is viewport-fit
+        and shows none. The V3Footer token stays in source for
+        ci:default-chrome-footer / ci:kb-shared-shell. */}
+    {isAppFrame ? null : <V3Footer columns={V3_FOOTER_COLUMNS} />}
+    </>
   )
 }

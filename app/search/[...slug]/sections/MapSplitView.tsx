@@ -17,8 +17,8 @@ import { stripGeoScope } from '@/components/search/geo-scope'
 import { ALL_SEARCH_URL_PARAMS } from '@/lib/search/field-registry'
 import type { SearchFiltersInitial } from '@/components/search/SearchFilters'
 import MapSearchView from '@/components/search/MapSearchView'
-import { Container } from '@/components/site/primitives'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import { cn } from '@/lib/utils'
+import { V3_ROOT_CLASS, V3Breadcrumb } from '@/components/site/v3'
 import SearchFilterBar from '../../../../components/SearchFilterBar'
 import { SearchAlertCapture } from '@/components/search/SearchAlertCapture'
 import { withTimeout } from '../fetch-guards'
@@ -271,19 +271,18 @@ export async function renderMapSplitView(props: {
   if (sp.propertyType) guestAlertFilters.propertyType = String(sp.propertyType)
   if (sp.keywords) guestAlertFilters.keywords = String(sp.keywords)
 
-  // design-audit NAV-1: clear the 64px fixed KbNav. search-app-frame sizes the
-  // shell to remaining viewport and flex-fills nested .map-search-shell (MapSearchView).
+  // V3Chrome is sticky in flow. search-app-frame (search-frame.css) sizes the
+  // shell to remaining viewport and flex-fills nested .map-search-shell.
+  // No footer on the app-frame. Search is the Homes Field, not header chrome.
   return (
-    <main className="search-app-frame w-full bg-muted">
-      <div className="shrink-0 border-b border-primary/20 bg-primary">
-        <Container className="flex items-center justify-between gap-3 py-3">
-          {searchBreadcrumbItems.length > 1 ? (
-            <BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} />
-          ) : (
-            <span />
-          )}
-          {gridViewCta}
-        </Container>
+    <main className={cn(V3_ROOT_CLASS, 'search-app-frame w-full bg-muted')}>
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 py-2 sm:px-6">
+        {searchBreadcrumbItems.length > 1 ? (
+          <V3Breadcrumb belowNav={false} trail={searchBreadcrumbItems} />
+        ) : (
+          <span />
+        )}
+        {gridViewCta}
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="shrink-0 border-b border-border bg-card">

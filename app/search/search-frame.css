@@ -1,0 +1,21 @@
+/**
+ * Search app-frame sizing after E-CHROME.
+ *
+ * V3Chrome is position:sticky and holds its own space in flow (min-height
+ * 3.5rem). The old .search-app-frame rule in app/globals.css still subtracts
+ * a 64px FIXED overlay (`height: calc(100dvh - 64px); margin-top: 64px`),
+ * which double-counts the bar and leaves a gap. This file wins on the nested
+ * search layout import. Do not remount chrome here. Search is the Homes Field.
+ */
+@layer base {
+  .search-app-frame {
+    height: calc(100dvh - 3.5rem);
+    margin-top: 0;
+  }
+
+  .search-filter-dock {
+    position: sticky;
+    top: 3.5rem;
+    z-index: 20;
+  }
+}

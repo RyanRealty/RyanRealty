@@ -7,18 +7,14 @@ import {
   getListingsWithAdvanced,
 } from '../../actions/listings'
 import { getSession } from '../../actions/auth'
-// design-audit NAV-1: KbNav comes from app/search/layout.tsx; these scrolling
-// branches render a KbFooter so MLS reciprocity + legal survive the SiteFooter
-// suppression on /homes-for-sale/** (lib/site/chrome-routes.ts).
-import { KbFooter } from '../../../components/site/kb/KbFooter.client'
 import { SearchAlertCapture } from '../../../components/search/SearchAlertCapture'
 import { getCityContent, getSubdivisionBlurb } from '../../../lib/city-content'
 import { cityEntityKey, getSubdivisionDisplayName, homesForSalePath, listingDetailPath } from '../../../lib/slug'
 import { getPopularSearchesForCity, getAllCityHomesLink } from '../../../lib/popular-searches'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon } from '@hugeicons/core-free-icons'
-import { Container, Body, H1 } from '@/components/site/primitives'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import {
   buildPresetFaq,
@@ -30,7 +26,13 @@ import {
 import { getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
 import SearchFilterBar from '../../../components/SearchFilterBar'
 import ShareButton from '../../../components/ShareButton'
-import { BreadcrumbNav } from '@/components/site/BreadcrumbNav'
+import {
+  V3_ROOT_CLASS,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Heading,
+} from '@/components/site/v3'
 import SearchPageJsonLd from './SearchPageJsonLd'
 import ResortCommunityJsonLd from './ResortCommunityJsonLd'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -366,9 +368,10 @@ export default async function SearchPage({
   }).toString()}`
 
   return (
-    <main className="min-h-screen bg-background pt-16">
+    <>
+      <main className={cn(V3_ROOT_CLASS, 'min-h-screen bg-background')}>
       {searchBreadcrumbItems.length > 1 && (
-        <div className="border-b border-primary/20 bg-primary"><Container className="py-3"><BreadcrumbNav tone="on-navy" items={searchBreadcrumbItems} includeJsonLd={false} /></Container></div>
+        <V3Breadcrumb belowNav={false} trail={searchBreadcrumbItems} />
       )}
 
       {/* Guest listing-alert capture — anonymous visitors only. Signed-in users
@@ -384,7 +387,7 @@ export default async function SearchPage({
         />
       )}
 
-      <Container className="py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         {city && (
           <>
             <ResultsStamp />
@@ -468,17 +471,15 @@ export default async function SearchPage({
       {/* 2. Clean header — H1 + one-line data-grounded intro + share. */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-2xl">
-          <H1>{headerTitle}</H1>
+          <V3Heading level={1}>{headerTitle}</V3Heading>
           {presetDepth ? (
-            // Preset editorial intro carries the verified count plus labeled
-            // city-wide context, so it replaces the bare count line.
-            <Body size="large" className="mt-3 tabular-nums">
+            <p className="mt-3 tabular-nums">
               {presetDepth.intro}
-            </Body>
+            </p>
           ) : headerIntro ? (
-            <Body size="large" className="mt-3 tabular-nums">
+            <p className="mt-3 tabular-nums">
               {headerIntro}
-            </Body>
+            </p>
           ) : null}
         </div>
         <div className="flex items-center gap-2">
@@ -568,10 +569,11 @@ export default async function SearchPage({
         subdivision={subdivision}
         preset={preset}
       />
-      </Container>
-      <div className="kb-root">
-        <KbFooter towns={[]} />
       </div>
     </main>
+    {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+        when it is NOT nested in sectioning content. */}
+    <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
