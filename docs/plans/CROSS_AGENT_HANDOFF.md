@@ -2,21 +2,23 @@
 > **NEWEST SUBJECT: Track 1 public Look (`/sell` E-SELL-WORTH). Do not start Track 2. Do not resume leftover-page ratchet.**
 > Prior: Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14 (Grok 2026-08-12). Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-13 (Grok, Track 1 `/sell`) — E-SELL-WORTH Look GREEN locally
+# Current — 2026-08-13 (Grok, Track 1 `/sell`) — E-SELL-WORTH Look GREEN
 
 **Track:** 1 only. `/sell` slice. Do not start Track 2. Do not start leftover ratchet. Do not start search/listing/places.
 
 **Homepage still holds:** production `/` still has `v3-field__photo`, `/cities/bend|redmond|sisters`, and “See homes for sale”. No relative plot. Did not rework `/`.
 
-**`/sell` Look:** GREEN at 390 and 1280. Worth-question gone. Address-only step 1 in the first viewport. Stage action is ghost; the filled page primary is **Get my home’s value** on the capture submit. Chrome still shows site-wide filled **Value my home**. H1 not clipped. Same Look on `/sell/valuation`. LP form copy is Value my home / Get your home’s value.
+**`/sell` Look:** GREEN at 390 and 1280, local and production. Worth-question gone. Address-only step 1 in the first viewport. Stage action is ghost; the filled page primary is **Get my home’s value** on the capture submit. Chrome still shows site-wide filled **Value my home**. H1 not clipped. Same Look on `/sell/valuation`. LP form copy is Value my home / Get your home’s value.
 
-**Screenshots (local):**
-- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-390.png`
-- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-1280.png`
-- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/valuation-390.png`
-- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/valuation-1280.png`
+**SHA:** feat `52f74fae`. Token fix `702cff04`. Production READY on `702cff04`.
 
-**SHA:** feat land this session (`feat(public): sell CTAs are value my home, not a worth question`). Production SHA + READY after `deploy:verify`. Prod screenshots after READY.
+**Screenshots:**
+- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-390.png`
+- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-1280.png`
+- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/valuation-390.png`
+- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/valuation-1280.png`
+- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-390-prod.png`
+- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-1280-prod.png`
 
 **Next public route (do not start):** `/homes-for-sale` search. Then listing detail, then places. Track 1 §3 remaining: search, listing, places, open houses, about, reviews, market.
 
