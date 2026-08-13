@@ -18,6 +18,7 @@ import {
   dismissTriageToday,
   completeTaskToday,
 } from './actions'
+import { ProduceDraftForm } from './ProduceDraftForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,11 +29,22 @@ async function readyApprovals() {
   const sb = createServiceClient()
   const { data } = await sb
     .from('marketing_brain_actions')
-    .select('id, action_type, target, created_at')
+    .select('id, action_type, target, created_at, payload')
     .eq('status', 'ready')
     .order('created_at', { ascending: true })
     .limit(8)
   return data ?? []
+}
+
+function draftHeadline(row: {
+  action_type: string
+  target: string | null
+  payload: unknown
+}): string {
+  const payload =
+    row.payload && typeof row.payload === 'object' ? (row.payload as Record<string, unknown>) : {}
+  const headline = typeof payload.headline === 'string' ? payload.headline.trim() : ''
+  return headline || row.target || row.action_type
 }
 
 export default async function TodayPage() {
@@ -83,6 +95,11 @@ export default async function TodayPage() {
           )}
         </VerdictLine>
       </div>
+
+      <section aria-label="Produce a draft">
+        <SectionHead>Produce a draft</SectionHead>
+        <ProduceDraftForm />
+      </section>
 
       {lookingAt.length > 0 && (
         <section aria-label="Looking at a home">
@@ -192,7 +209,7 @@ export default async function TodayPage() {
                 key={a.id}
                 kind="Approve"
                 kindTone="slow"
-                title={a.action_type}
+                title={draftHeadline(a)}
                 context={a.target ?? undefined}
                 action={
                   <Link href="/admin/approval-queue">
