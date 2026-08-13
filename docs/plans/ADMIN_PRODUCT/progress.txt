@@ -655,3 +655,11 @@ NOT IN SCOPE
 2026-08-13T01:20:00Z v0.14 GO CONTRACT. Matt asked if Go can run the entire plan end to end with max parallel. Answer: autonomous envelope yes; live send/post/OAuth/license/taste/money no; Closings cutover not in Go. Waves on EXECUTION.md. Clean worktrees from origin/main. Serial land. Cap one agent per lease.
 
 2026-08-12T23:50:00Z E-CHROME LANDED c19b15bd. Layout PublicNav → V3Chrome. Production READY. Look 390+1280: one v3-chrome header, filled CTA both widths (Get your home's value), Sell links in the menu, /admin has no public bar. ci:public-ui held 527/73/11 (kb 399 is page imports, not the layout). Bundle -47.5 KB. Wave 1 families unblocked. Next serial land: G5, V1, A3, E-VOICE. Do not join SignInPrompt leftover.
+
+2026-08-13T00:04:00Z G5 LANDED 317d88de. lib/grok-image.ts → grok-imagine-image-quality. lib/grok-video.ts → grok-imagine-video-1.5 (1080p allowed). No API call. Listing-tour still Replicate until next touch. Clip taste remains a hard stop.
+
+2026-08-13T00:09:00Z V1 LANDED 076c2dd0. docs/plans/ADMIN_PRODUCT/chart-inventory.md: 24 series-as-type, 18 live charts not looked-at. Top public atom needs: housing-market hub, central-oregon, cities, communities, homepage KbMarketHud leftover. E-CHART is the prerequisite.
+
+2026-08-13T00:26:00Z A3 LANDED 56a1ccc0. Person header: who (closed labels), next, now. PersonIdentityHeader split so page.tsx stays under the 600 LOC floor. Token SCAN_DIRS updated. Admin look still needs a signed-in 390+1280 pass.
+
+2026-08-13T00:38:00Z E-VOICE LANDED 0ad6a0c2. VOICE.md is the D11 law. blog-voice.mdc deleted. Gate shrunk to punctuation + invented quotes + Value my home. Eight live worth-CTAs rewritten (MegaMenu, MobileNav, HomeValuationCta, sell, resources, tetherow LP, public-v3 prototype). Brand-voice baseline 10→6. Wave 0 complete. Next: wave 1 family leases, serial land, E-CHART on the barrel.

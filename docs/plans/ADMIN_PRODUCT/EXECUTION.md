@@ -4,8 +4,7 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-12 (Grok, Go running). **E-CHROME landed** `c19b15bd`, production READY.
-Wave 0 remainder (G5, V1, A3, E-VOICE) lands next, serial. Wave 1 families are unblocked.
+**Updated:** 2026-08-13 (Grok, Go running). **Wave 0 landed.** Chrome live. Wave 1 families open.
 
 ---
 
@@ -91,11 +90,15 @@ file is required, the first agent to need it takes the lease and the other waits
 | Public mixed pages (v3 body + leftover register) | **11** | same |
 | Of 527, kb chrome | **399** | same, register `kb` |
 | Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb footers/heroes |
-| E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held (399 is page imports, not the layout). |
-| Broker A3 / A4 / A1 | A3 built, not landed | local `e0f2a855`. A4+A1 not started |
-| Voice.md rewrite | built, not landed | local `936f290f`. Conductor drops this file's edits on land |
-| V1 chart inventory | built, not landed | local `41fcc336` → `docs/plans/ADMIN_PRODUCT/chart-inventory.md` |
-| G5 Imagine wrappers | built, not landed | local `f460f475`. No API call |
+| E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
+| G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
+| V1 chart inventory | **landed** `076c2dd0` | `docs/plans/ADMIN_PRODUCT/chart-inventory.md`. 24 series-as-type, 18 live charts. E-CHART is next. |
+| A3 person header | **landed** `56a1ccc0` | Who / Next / Now on `/admin/people/[id]`. Split `PersonIdentityHeader` for the 600 LOC floor. Admin look needs a signed-in pass. |
+| E-VOICE | **landed** `0ad6a0c2` | D11 law in `VOICE.md`. `blog-voice.mdc` deleted. Gate is punctuation + invented quotes + Value my home. Eight live worth-CTAs rewritten so the gate could land. Baseline 10→6. |
+
+Chrome is live. The 399 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
+
+Look residual (not this lease): at 390 a leftover `SignInPrompt` dialog covers the page. Dirty tree, do not join.
 
 Chrome is live. The 399 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -197,18 +200,18 @@ from the baseline if it drifts.
 | **E-SAVED** | `app/account/**` leftover | 2 | **open** (wave 1) | Saved is an affordance, not a sixth marketing destination. |
 | **E-SYSTEM** | legal + unsubscribe + offline + cma-drafts + team edit + site-index + noindex LPs | 15 | **open** (wave 1) | Quiet. Do not over-design. Dual objectives still required. |
 | **E-CUT** | CUT-CANDIDATE leftovers: area-guides, areas, builders, reports hub, resources, pulse | 8 | wave 2 | Honor `cut-list.md` + GSC. Migrate only what we keep. 301 or noindex the rest. Do not spend a v3 pass on a page we are killing. |
-| **E-CHART** | `components/site/v3/` chart atom inside Instrument | — | **open** (serial on barrel) | D9. Needed before Market refine can tell the truth. Inventory: `docs/plans/ADMIN_PRODUCT/chart-inventory.md` (lands with V1). |
-| **E-VOICE** | `marketing_brain_skills/brand-voice/VOICE.md` + delete `.cursor/rules/blog-voice.mdc` + tiny gate | — | built, not landed | First voice slice. Not a site-wide copy sweep. Drop EXECUTION.md from that commit. |
+| **E-CHART** | `components/site/v3/` chart atom inside Instrument | — | **open** (serial on barrel) | D9. Inventory landed `076c2dd0`. Needed before Market refine can tell the truth. |
+| **E-VOICE** | `marketing_brain_skills/brand-voice/VOICE.md` + delete `.cursor/rules/blog-voice.mdc` + tiny gate | — | **landed** `0ad6a0c2` | D11 law. Gate is punctuation + invented quotes + Value my home. Not a site-wide copy sweep. Eight worth-CTAs rewritten to land the gate. |
 
 ### Broker — disjoint from public (may build during chrome)
 
 | Id | Lease | Status | Done when |
 |---|---|---|---|
-| **A3** | admin person header | built, not landed | Open a lead, no notes: who (closed labels), next step, what they're doing now. |
+| **A3** | admin person header | **landed** `56a1ccc0` | Who (closed labels), next step, now. `PersonIdentityHeader`. Admin look still needs a signed-in 390+1280 pass. |
 | **A4+A1** | `queueReturnVisitAlert` rewrite + Today looking-at | **open** (wave 1) | `{name} is looking at {address}.` Key `crm_people.id`. Today shows looking-at. |
 | **A5** | lead ask text | after A4 rail | Names the home. Does not say we watched them. Packet is taste. |
 | **C1** | expired packet | taste | Matt stops the PDF. |
-| **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | built, not landed | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
+| **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | **landed** `317d88de` | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
 | **G1–G4** | social / GBP / calendar | after A3 or in parallel if files disjoint | Tokens already live. Produce is Imagine. Week-grant is not in Go. |
 
 ### Do not lease
