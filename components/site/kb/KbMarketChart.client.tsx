@@ -1,4 +1,5 @@
 'use client'
+// reachability: entry-point ci:market-chart-honesty reads this file. No page mounts it after E-HOME-HUD.
 
 import { useEffect, useMemo, useRef, useState, useId } from 'react'
 import { gsap } from 'gsap'

@@ -5,8 +5,7 @@
  * destinations open on Instrument then Field. Five of the six patterns, no two
  * adjacent alike. D11 lead + the on-page alert Sheet outrank the four-pattern
  * preference, the same way city pages spend a fifth slot on Matt-issued
- * product. The section order, the sections this migration DELETED, and the
- * leftover HUD are the parity contract:
+ * product. The section order is the parity contract:
  * design_system/ryan-realty/ui_kits/homepage-v6/parity.json.
  *
  * THE PAGE CONTRACT, carried across unchanged: metadata title leading
@@ -20,23 +19,25 @@
  *   Lead: Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list
  *   prices and days on market.
  *
- * DATES RENDER IN PACIFIC. The KB HUD month labels used
- * `toLocaleDateString(..., { timeZone: 'UTC' })`. formatDate is pinned to
- * America/Los_Angeles, so a periodStart between 00:00 and 08:00 UTC now shows
- * the previous calendar month-day in Pacific, which is the correct day in the
- * market this page covers. ci:date-format requires the canonical formatter.
+ * DATES RENDER IN PACIFIC. liveStamp uses formatDate. Chart month ticks are
+ * built in market-charts (same as the market hub). The in-progress Pacific
+ * month is dropped via zonedDateKey before buildRegionMedianChart so a
+ * partial month cannot draw as a dip.
  *
- * LEFTOVER, not a v3 atom: KbMarketHud (trend, byTown, yearSeries). Flattening
- * that series is a D9 defect. The chart atom is E-CHART's lease. kb.css stays
- * for that leftover. Do not invent a chart primitive here.
+ * SERIES: year overlay on the level-1 Instrument (buildRegionMedianChart).
+ * Not a flattened polyline. Not a seventh pattern. E-CHART owns the atom.
+ * This page mounts it. Do not remount V3Chrome. Do not add NewsletterSignup
+ * to the footer.
  *
  * KB-era deletions this migration made: KbHero film split H1 (titleTop /
  * titleBottom), KbExploreTowns, KbCommunities (and its autoplay community
  * videos), KbFeatured 9-card grid, KbListingMap (3000-pin region box),
  * KbTicker, KbSell, KbTestimonials, KbTeam, SmoothScrollProvider, KbFooter
- * (replaced by V3Footer outside main). Orphaned modules deleted with this
- * change: KbCommunities.client.tsx, KbTicker.client.tsx. curateFeaturedTiles
- * stays: it now feeds the Field so it is not a new orphan.
+ * (replaced by V3Footer outside main). KbMarketHud.client.tsx is gone: this
+ * page was its last mount. KbMarketChart stays on disk for
+ * ci:market-chart-honesty. Orphaned modules deleted with E-HOMES-HOME:
+ * KbCommunities.client.tsx, KbTicker.client.tsx. curateFeaturedTiles stays:
+ * it feeds the Field so it is not a new orphan.
  *
  * Chrome: app/layout.tsx mounts V3Chrome. This page does not remount it.
  * V3Footer sits outside <main> so HTML-AAM maps it to contentinfo.
@@ -47,13 +48,13 @@ import {
   getRegionPulse,
   getMarketPulseCitySnapshots,
   getListingTiles,
-  getMarketStatsCacheRowForGeo,
   getPriceHistory,
 } from '@/lib/data'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
-import { buildYearSeries } from '@/lib/kb/year-series'
 import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
+import { zonedDateKey } from '@/lib/format/date'
+import { buildRegionMedianChart, dropInProgressMonth } from '@/app/housing-market/_v3/market-charts'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -68,8 +69,6 @@ import {
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
-import type { KbMarketData } from '@/components/site/kb/types'
 import { HomeAlertSheet } from './_v3/HomeAlertSheet.client'
 import {
   D11_TOWNS,
@@ -83,8 +82,7 @@ import {
   HOME_FIELD_TRACE,
 } from './_v3/home-constants'
 import { homeFieldItems } from './_v3/home-field-items'
-import { livePrice, liveStamp, liveMonthLabel } from './_v3/live-format'
-import '@/components/site/kb/kb.css'
+import { livePrice, liveStamp } from './_v3/live-format'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -115,11 +113,10 @@ export const metadata: Metadata = {
 export default async function Home() {
   // No catch-and-swallow: every function below is resilient-cached and answers
   // a transient failure with its own documented fallback.
-  const [pulse, citySnapshots, tiles, mktStats, priceHist] = await Promise.all([
+  const [pulse, citySnapshots, tiles, priceHist] = await Promise.all([
     getRegionPulse(),
     getMarketPulseCitySnapshots([...D11_TOWNS]),
     getListingTiles({ status: 'active', propertyType: 'A', limit: HOME_TILE_FETCH }),
-    getMarketStatsCacheRowForGeo({ geoType: 'region', geoSlug: 'central-oregon' }),
     getPriceHistory('region', 'central-oregon', 'monthly', 60),
   ])
 
@@ -131,6 +128,10 @@ export default async function Home() {
 
   const curated = curateFeaturedTiles(tiles, townMedians, HOME_FIELD_LIMIT)
   const fieldItems = homeFieldItems(curated, HOME_FIELD_LIMIT)
+
+  const homeChart = buildRegionMedianChart(
+    dropInProgressMonth(priceHist, zonedDateKey(new Date()).slice(0, 7)),
+  )
 
   const regionFigures: V3InstrumentFigure[] = []
   if (pulse != null) {
@@ -180,32 +181,6 @@ export default async function Home() {
     .sort()
     .at(-1)
 
-  const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
-  const marketData: KbMarketData = {
-    active: pulse?.activeCount ?? null,
-    closed30: pulse?.soldCount30d ?? null,
-    new30: pulse?.newCount30d ?? null,
-    medianList: pulse?.medianListPrice ?? null,
-    saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
-    daysToPending: pulse?.medianDaysToPending ?? null,
-    monthsSupply: pulse?.monthsOfSupply ?? null,
-    trend: priceHist
-      .slice(-13)
-      .filter((p) => p.medianSalePrice != null)
-      .flatMap((p) => {
-        const label = liveMonthLabel(p.periodStart)
-        if (!label || p.medianSalePrice == null) return []
-        return [{ label, value: p.medianSalePrice }]
-      }),
-    byTown: D11_TOWNS.flatMap((label) => {
-      const median = snapshotByLabel.get(label)?.median_list_price
-      if (median == null) return []
-      return [{ name: label, median }]
-    }),
-    countyMedian: pulse?.medianListPrice ?? null,
-    yearSeries: buildYearSeries(priceHist, 5),
-  }
-
   const exploreItems: V3QuietItem[] = [
     ...HOME_COMMUNITY_EDGES.map((edge) => ({ label: edge.label, href: edge.href })),
     { label: 'Video tours of homes for sale', href: '/videos' },
@@ -236,6 +211,7 @@ export default async function Home() {
               href: listingsBrowsePath(),
               variant: 'primary',
             }}
+            chart={homeChart}
           />
         ) : (
           <V3Quiet
@@ -315,8 +291,6 @@ export default async function Home() {
           heading="Communities, market, and selling"
           items={exploreItems}
         />
-
-        <KbMarketHud data={marketData} asOf={pulse?.updatedAt ?? null} />
       </main>
 
       {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only

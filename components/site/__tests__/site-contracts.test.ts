@@ -444,24 +444,21 @@ describe('design directive contracts', () => {
     )
   })
 
-  it('D99 — Market HUD does not pair a median-SALE delta with the median-LIST headline (§0)', () => {
-    const hud = readSrc('components/site/kb/KbMarketHud.client.tsx')
-    // the list-price headline block must not render a "median sale" delta pill
-    const headlineBlock = hud.slice(hud.indexOf('Median list price'), hud.indexOf('Median list price') + 400)
-    expect(headlineBlock).not.toMatch(/median sale/i)
-    // the sale-trend change, when shown, is attached to the median-close chart caption
-    expect(hud).toMatch(/over the window/)
+  it('D99 — homepage Instrument keeps list figures off the sale-series caption (§0)', () => {
+    const page = readSrc('app/page.tsx')
+    expect(page).not.toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)
+    expect(page).toMatch(/median list price/)
+    expect(page).toMatch(/chart=\{homeChart\}/)
+    const charts = readSrc('app/housing-market/_v3/market-charts.ts')
+    expect(charts).toMatch(/Median sale price by month, recent years/)
   })
 
-  it('D101 — market chart is the reusable interactive KbMarketChart (toggle years, axis, a11y)', () => {
-    const hud = readSrc('components/site/kb/KbMarketHud.client.tsx')
-    expect(hud).toMatch(/<KbMarketChart/)
-    const chart = readSrc('components/site/kb/KbMarketChart.client.tsx')
-    expect(chart).toMatch(/aria-pressed/) // year toggle chips
-    expect(chart).toMatch(/onKeyDown/) // keyboard cursor
-    expect(chart).toMatch(/kbmc-sr/) // screen-reader data table
-    expect(chart).toMatch(/loading/) // loading state
-    expect(chart).toMatch(/Not enough/) // empty state
+  it('D101 — homepage market series is the E-CHART year overlay on Instrument', () => {
+    const page = readSrc('app/page.tsx')
+    expect(page).toMatch(/buildRegionMedianChart/)
+    expect(page).toMatch(/dropInProgressMonth/)
+    expect(page).toMatch(/chart=\{homeChart\}/)
+    expect(page).not.toMatch(/from ['"]@\/components\/site\/kb\/KbMarketChart/)
   })
 
   it('D102 — KbFeatured has no remaining page mount (E-CUT retired /area-guides)', () => {

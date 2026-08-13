@@ -8,8 +8,7 @@
  * revalidate 300, V3SectionTracker pageType="media".
  *
  * LEFTOVERS, not v3 atoms: HideAwareVideoGrid (inline play) and VideoFeedClient
- * (vertical feed at ?view=feed). No video-grid atom exists. Declared the same
- * way the homepage keeps KbMarketHud.
+ * (vertical feed at ?view=feed). No video-grid atom exists.
  *
  * KB-era deletions: KbHero ("Walk the house / before you go."), SmoothScrollProvider,
  * KbFooter, naked-verb H2 "Pick a city". H1 is search-first: "Video tours of

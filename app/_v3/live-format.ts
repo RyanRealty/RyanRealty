@@ -24,10 +24,3 @@ export function liveStamp(iso: string | null | undefined): V3Text | undefined {
   if (!s || s === EMPTY_DATE) return undefined
   return v3Text(s)
 }
-
-export function liveMonthLabel(iso: string | null | undefined): string | null {
-  if (!iso) return null
-  const s = formatDate(iso, { month: 'short', year: 'numeric', day: undefined })
-  if (!s || s === EMPTY_DATE) return null
-  return s
-}
