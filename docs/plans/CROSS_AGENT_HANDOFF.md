@@ -1,8 +1,26 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Broker OS plan v0.14 (Grok 2026-08-12) — Go = autonomous envelope. Hard stops: send/post/OAuth/license/taste/money. Waves on EXECUTION.md. Say go.**
-> Prior: Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
+> **NEWEST SUBJECT: Track 1 public Look (homepage first). Do not start Track 2. Do not resume leftover-page ratchet.**
+> Prior: Broker OS plan v0.14 (Grok 2026-08-12). Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-12 (Grok, local) — Broker OS plan v0.14
+# Current — 2026-08-13 (Grok, Track 1 `/`) — E-HOME-JOBS Look GREEN locally
+
+**Track:** 1 only. Homepage first. Do not start Track 2. Do not start leftover ratchet.
+
+**SHA:** `a241f1ae` (`feat(public): homepage first viewport is homes and towns`)
+
+**`/` Look:** GREEN at 390 and 1280 (local first viewport). Search/inventory door (`See homes for sale`), six D11 town doors with live active counts, three-plus live MLS photographs that open the listing. Chart is on Instrument L2 under the jobs. Chrome CTA stays Value my home. Relative plot is gone from this Field.
+
+**Screenshots:**
+- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-390.png`
+- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-1280.png`
+
+**Next:** `/sell` E-SELL-WORTH (Value my home / Get my home’s value, address-only step 1, one filled primary in the first 390 viewport). Only after this SHA is production READY.
+
+**Not this land:** `stash@{0}` leftover dirt (`app/dev/sell-film/*`, PUBLIC_SITE_UX_OVERHAUL leftovers, SellerLPForm, SignInPrompt, brand motion). Do not `git add -A`.
+
+**Skills read:** public-product-os (quarry + locks), frontend-design, design_system/ryan-realty, admin-product-os (awareness only).
+
+# Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.14
 
 `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md` is the plan of record.
 `docs/plans/ADMIN_PRODUCT/EXECUTION.md` is the only "where we are."
