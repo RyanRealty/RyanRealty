@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). E-MARKET-REST `24a6090d` READY.
-Ratchet 202 / 26 / 54. kb import sites 165→119.
+**Updated:** 2026-08-13 (Grok, Go running). E-HOMES-TOOLS `6e781cc7` READY
+(product `54a10f5c` + percent-figure fix). Ratchet 194 / 24 / 56. kb import sites 119→109.
 
 ---
 
@@ -86,10 +86,10 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **202** | `scripts/public-ui-baseline.json` |
-| Public legacy pages (no v3) | **26** | same |
-| Public mixed pages (v3 body + leftover register) | **54** | same |
-| Of 527, kb chrome | **119** | same, register `kb` |
+| Public non-v3 imports | **194** | `scripts/public-ui-baseline.json` |
+| Public legacy pages (no v3) | **24** | same |
+| Public mixed pages (v3 body + leftover register) | **56** | same |
+| Of 527, kb chrome | **109** | same, register `kb` |
 | Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb trackers / MetadataBlock |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
@@ -106,8 +106,9 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-PLACES-REST | **landed** `98588ccb` | Cities, communities, parks, schools, central-oregon events/trails/venues/golf on the barrel. Capture still `submitSearchAlertSignup` with company trap and disclosure. Maps are `PlaceFieldMap`. Deleted NeighborhoodMap, VenueMap, AreaMarketBand, CommunityIndexBrowser, RegionalSfrAlertsBand. Ratchet 383→296, 54→41, mixed 27→40 (tracked). kb 274→198. shadcn 198→197. tokens 242→241. |
 | E-HOMES-HOME | **landed** `559b9233` | Homepage, our-homes, luxury, videos, feed (301 → `/videos?view=feed`), activity on the barrel. D11 H1 and lead are literals. Capture still `submitSearchAlertSignup` with company trap and disclosure. KbMarketHud leftover (D9). Deleted KbCommunities, KbTicker, KbCommunityAlerts, KbTeam, KbTestimonials. Ratchet 296→262, 41→35, mixed 40→45 (tracked). kb 198→165. shadcn 197→196. Bundle 9.19 MB. Look 390+1280 `/`: one chrome, H1, D11 lead, live MLS figures, Value my home. |
 | E-MARKET-REST | **landed** `24a6090d` | Blog, FAQ, housing-market catch-all, history, reports archive, sales reports, appreciation on the barrel. Inquiry sheets keep `submitMarketPageInquiry`. D9: city year overlay and archive sold-by-year pass `chart`. Deleted FaqAccordion, PriceChart, MarketDetailStats, and the leftover geo-report islands. Ratchet 262→202, 35→26, mixed 45→54 (tracked). kb 165→119. shadcn 196→192. tokens 241→228. Bundle 9.09 MB. Look 390+1280 `/housing-market/bend`: one chrome, H1, live figures, chart, Value my home. Hub / central-oregon / annual-review stay E-MARKET-REFINE. |
+| E-HOMES-TOOLS | **landed** `6e781cc7` | Mortgage + rental calculators on the barrel. Calculator math stays as islands inside a sheet wrapper (V3Sheet has no ReactNode slot). Value my home on Instrument + Quiet. Ratchet 202→194, 26→24, mixed 54→56 (tracked). kb 119→109. Bundle 9.17 MB. Look 390+1280 `/tools/mortgage-calculator`: one chrome, H1, Value my home, starting insurance **0.35%** (IEEE junk fixed after first READY). Chrome CTA still Get your home's value. Cookie banner residual. |
 
-Chrome is live. The 119 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
+Chrome is live. The 109 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
 Look residual (not this lease): at 390 a leftover `SignInPrompt` dialog covers the page. Dirty tree, do not join.
 
@@ -197,7 +198,7 @@ from the baseline if it drifts.
 | **E-HOMES-DETAIL** | `app/listing/**` | 1 | **landed** `fd1d1d09` READY | Money page on the barrel. JSON-LD + capture stay. Look 390+1280 on a live listing: one chrome, tour CTA, capture, Quiet Value my home. |
 | **E-HOMES-SIGNALS** | `app/open-houses/**`, `app/price-drops/**`, `app/motivated-sellers/**` | 6 | **landed** `24835c31` READY | Open houses + price drops on the barrel. Motivated-sellers 308s to price-drops. Capture stays. |
 | **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | mixed leftover | **landed** `559b9233` READY | D11 H1/lead locked. KbMarketHud leftover (D9). `/feed` folds into `/videos?view=feed`. Look 390+1280 on `/`. |
-| **E-HOMES-TOOLS** | `app/tools/mortgage-calculator/**`, `app/tools/rental-property-calculator/**` | 2 | **open** (wave 1) | Appreciation stays with Market. |
+| **E-HOMES-TOOLS** | `app/tools/mortgage-calculator/**`, `app/tools/rental-property-calculator/**` | leftover island | **landed** `6e781cc7` READY | Appreciation stays with Market. Calculator islands declared leftover. Look 390+1280: insurance 0.35%. |
 | **E-PLACES-REST** | `app/cities/page.tsx`, `app/communities/page.tsx`, `app/central-oregon/**`, `app/parks/**`, `app/schools/**` | 13 | **landed** `98588ccb` READY | Indexes + lifestyle. Detail cities/communities/subdivisions/zip/oregon remain mixed quarry (E-PLACES-REFINE). |
 | **E-PLACES-REFINE** | `app/cities/[slug]/**`, `app/communities/[slug]/**`, `app/subdivisions/[slug]/**`, `app/zip/**`, `app/oregon/**` | 6 mixed | quarry, after rest | Claude wave 2. Look. Rework if clunky. Do not re-migrate from scratch unless amnesia says the `_v3/` module is wrong. |
 | **E-MARKET-REST** | `app/blog/**`, `app/faq/**`, `app/housing-market/history/**`, `app/housing-market/[...slug]/**`, `app/housing-market/reports/**`, `app/reports/sales/**`, `app/tools/appreciation/**` | mixed leftover | **landed** `24a6090d` READY | Catch-all and content. D9 chart on city/archive. Hub / central-oregon / annual-review stay refine. Look 390+1280 on `/housing-market/bend`. |
