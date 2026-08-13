@@ -1,30 +1,32 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 1 public Look (`/sell` E-SELL-WORTH). Do not start Track 2. Do not resume leftover-page ratchet.**
-> Prior: Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14 (Grok 2026-08-12). Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
+> **NEWEST SUBJECT: Track 1 public Look (`/homes-for-sale`). Do not start Track 2. Do not resume leftover-page ratchet.**
+> Prior: Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
 
-# Current — 2026-08-13 (Grok, Track 1 `/sell`) — E-SELL-WORTH Look GREEN
+# Current — 2026-08-13 (Grok, Track 1 `/homes-for-sale`) — search Look GREEN locally
 
-**Track:** 1 only. `/sell` slice. Do not start Track 2. Do not start leftover ratchet. Do not start search/listing/places.
+**Track:** 1 only. Search slice. Do not start Track 2. Do not start leftover ratchet. Do not start listing/places/about.
 
-**Homepage still holds:** production `/` still has `v3-field__photo`, `/cities/bend|redmond|sisters`, and “See homes for sale”. No relative plot. Did not rework `/`.
+**Piece A landed:** leftover LP worth CTAs → Value my home / Get my home’s value / Get your home’s value. SHA `76f6a996`. Files: `app/lp/tetherow/page.tsx`, `TetherowStickyCta.tsx`, `app/lp/tetherow/heath/page.tsx`, `app/lp/bend/page.tsx`. `/lp/*` still noindex.
 
-**`/sell` Look:** GREEN at 390 and 1280, local and production. Worth-question gone. Address-only step 1 in the first viewport. Stage action is ghost; the filled page primary is **Get my home’s value** on the capture submit. Chrome still shows site-wide filled **Value my home**. H1 not clipped. Same Look on `/sell/valuation`. LP form copy is Value my home / Get your home’s value.
+**`/homes-for-sale` Look:** GREEN at 390 and 1280 locally. List-first on mobile so the first viewport is a house photo/card, not a map-only void. Map is one tap. MLS photos load (`cdn.resize.sparkplatform.com`). Card opens `/homes-for-sale/bend/19305-brookside-220221862`. Chrome CTA stays Value my home.
 
-**SHA:** feat `52f74fae`. Token fix `702cff04`. Production READY on `702cff04`.
+**Screenshots (local):**
+- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-390.png`
+- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-1280.png`
 
-**Screenshots:**
-- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-390.png`
-- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-1280.png`
-- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/valuation-390.png`
-- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/valuation-1280.png`
-- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-390-prod.png`
-- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-1280-prod.png`
+**SHA:** feat land this session (`feat(public): search first viewport shows a house`). Production SHA + READY after `deploy:verify`. Prod screenshots after READY.
 
-**Next public route (do not start):** `/homes-for-sale` search. Then listing detail, then places. Track 1 §3 remaining: search, listing, places, open houses, about, reviews, market.
+**Next public route (do not start):** listing detail. Then places, open houses, about, reviews, market.
 
-**Not this land:** `stash@{0}` leftover dirt (`app/dev/sell-film/*`, PUBLIC_SITE_UX_OVERHAUL leftovers). Do not `git add -A`. Leftover worth CTAs on `/lp/tetherow`, `/lp/tetherow/heath`, `/lp/bend` inventoried, not fixed.
+**Not this land:** `stash@{0}`. Do not `git add -A`.
 
-**Skills read:** public-product-os (quarry + locks), frontend-design, VOICE.md, design_system/ryan-realty.
+**Skills read:** public-product-os (quarry + locks), frontend-design, PUBLIC_PRODUCT/decisions.md, VOICE.md.
+
+# Prior — 2026-08-13 (Grok, Track 1 `/sell`) — E-SELL-WORTH Look GREEN
+
+**SHA:** feat `52f74fae`. Token fix `702cff04`. Production READY on `702cff04`. Piece A leftover LP CTAs `76f6a996`.
+
+**`/sell` Look:** GREEN at 390 and 1280, local and production. Worth-question gone. Address-only step 1. Screenshots in `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/`.
 
 # Prior — 2026-08-13 (Grok, Track 1 `/`) — E-HOME-JOBS Look GREEN
 

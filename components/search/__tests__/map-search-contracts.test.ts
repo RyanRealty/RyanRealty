@@ -81,6 +81,10 @@ describe('MapSearchView orchestrator', () => {
     expect(src).toMatch(/ToggleGroupItem value="map"/)
   })
 
+  it('defaults mobile to list so 390 is not a map-only void', () => {
+    expect(src).toMatch(/useState<'list' \| 'map'>\('list'\)/)
+  })
+
   it('renders the search-as-you-move toggle control', () => {
     expect(src).toMatch(/Search as I move the map/)
   })

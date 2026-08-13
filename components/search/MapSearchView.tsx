@@ -309,9 +309,9 @@ export default function MapSearchView({
   /** Pin/list selection (stronger than hover) — map popup open ↔ list card ring + scroll. */
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [drawnShapes, setDrawnShapes] = useState<DrawnShape[]>(initialDrawn)
-  // Map-first on mobile (SEARCH_UX_WAVE3 P11 Target UX). List expands the
-  // bottom sheet; Map hides the sheet and shows the canvas count pill.
-  const [mobileView, setMobileView] = useState<'list' | 'map'>('map')
+  // List-first on mobile so the first 390 viewport shows a house, not a
+  // map-only void. Map is one tap on the List/Map toggle.
+  const [mobileView, setMobileView] = useState<'list' | 'map'>('list')
   // Window the CARD list so the SSR payload + hydration cost stays small even
   // when the viewport returns hundreds of homes. The MAP still gets every pin
   // (mapListings below) — only the heavy cards are paged in. "Show more" reveals
@@ -933,7 +933,7 @@ export default function MapSearchView({
           {loading ? 'Updating results…' : 'Results updated'}
         </span>
       </div>
-      {/* Mobile map-first: result count rides the canvas from the SAME totalCount
+      {/* Mobile map canvas: result count rides the canvas from the SAME totalCount
           as the pins (§0). Hidden when the list sheet is expanded (no double count).
           Never claim "0 homes" when the fetch was degraded (P9). */}
       <p
@@ -957,7 +957,7 @@ export default function MapSearchView({
 
   return (
     <div className="map-search-shell flex w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
-      {/* Mobile segmented toggle — map-first default; List expands sheet over map. */}
+      {/* Mobile segmented toggle — list-first default; Map hides the sheet. */}
       <div className="flex shrink-0 border-b border-border bg-card lg:hidden">
         <ToggleGroup
           type="single"
@@ -980,32 +980,26 @@ export default function MapSearchView({
         </ToggleGroup>
       </div>
 
-      {/* List + map, ONE mount each. Desktop: side-by-side. Mobile (P11): map
-          always fills; list is a bottom sheet (expanded on List, hidden on Map
-          with canvas count pill). Never double-render panels. */}
+      {/* List + map, ONE mount each. Desktop: side-by-side. Mobile: list-first
+          fills the shell so a house is in the first 390 viewport; Map hides the
+          list and shows the canvas. Never double-render panels. */}
       <div className="relative flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* Map — full-bleed under the sheet on mobile; flex-1 rail partner on desktop. */}
-        <div className="absolute inset-0 min-h-0 min-w-0 lg:static lg:relative lg:order-2 lg:min-h-0 lg:flex-1">
+        {/* Map — full-bleed under the list on mobile; flex-1 rail partner on desktop. */}
+        <div className="absolute inset-0 z-0 min-h-0 min-w-0 lg:static lg:relative lg:z-auto lg:order-2 lg:min-h-0 lg:flex-1">
           {mapPanel}
         </div>
 
-        {/* List rail / mobile bottom sheet.
-            Map mode: sheet hidden (count pill on canvas). List mode: ~75vh sheet.
-            Desktop: always the left rail. */}
+        {/* List rail / mobile list pane.
+            List mode: covers the map so overlays cannot sit on the photo.
+            Map mode: pane hidden (count pill on canvas). Desktop: left rail. */}
         <div
           className={cn(
-            'z-20 min-h-0 flex-col bg-card',
-            // Mobile bottom sheet
-            'absolute bottom-0 left-0 right-0 max-h-[85vh] rounded-t-2xl border-t border-border shadow-lg transition-[height] duration-300 ease-out',
-            mobileView === 'list' ? 'flex h-[75vh]' : 'hidden',
-            // Desktop left rail (in-flow; stretch with map via flex-row)
-            'lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:w-[420px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none'
+            'z-10 min-h-0 flex-col bg-card',
+            'absolute inset-0',
+            mobileView === 'list' ? 'flex' : 'hidden',
+            'lg:static lg:order-1 lg:z-auto lg:flex lg:h-auto lg:max-h-none lg:w-[420px] lg:min-w-[360px] lg:max-w-[480px] lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-border lg:shadow-none lg:transition-none lg:inset-auto'
           )}
         >
-          {/* Drag handle affordance — mobile only */}
-          <div className="flex shrink-0 justify-center pt-2 pb-1 lg:hidden" aria-hidden>
-            <div className="h-1.5 w-10 rounded-full bg-muted-foreground/30" />
-          </div>
           {listPanel}
         </div>
       </div>
