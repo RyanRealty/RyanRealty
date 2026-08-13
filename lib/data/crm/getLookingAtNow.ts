@@ -12,6 +12,7 @@ import {
   BROKER_ALERT_MAILBOXES,
   collapseLookingAtByPerson,
   formatLookingAtAddress,
+  lookingAtAskHref,
   lookingAtTodayTitle,
   type LookingAtRaw,
 } from '@/lib/crm/looking-at'
@@ -23,6 +24,8 @@ export type LookingAtNowItem = {
   address: string
   occurredAt: string
   deepLink: string
+  /** Person composer with the D1 ask prefilled. Draft only. Never a send. */
+  askHref: string
   title: string
 }
 
@@ -180,6 +183,7 @@ export async function getLookingAtNow(brokerScope: string | null): Promise<Looki
       address: row.address,
       occurredAt: row.occurredAt,
       deepLink: `/admin/people/${row.personId}`,
+      askHref: lookingAtAskHref(row.personId, row.address),
       title: lookingAtTodayTitle(personName, row.address),
     })
     if (items.length >= ROW_CAP) break

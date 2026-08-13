@@ -1,7 +1,11 @@
 /**
- * Looking-at wake (D3 / A4) — pure copy + keying.
+ * Looking-at wake (D3 / A4) and lead ask (D1 / A5) — pure copy + keying.
  *
- * Locked SMS: `{name} is looking at {address}.` plus the person link.
+ * Broker wake SMS: `{name} is looking at {address}.` plus the person link.
+ * Lead ask (after broker yes): names the home and asks if they want a short
+ * comparison. Does not say we watched them. Draft-only: a `?reply=` composer
+ * preload. Never a send. Packet PDF is a later taste stop.
+ *
  * Key: crm_people.id (not FUB). One ping per person+listing per session.
  * Unidentified / no specific home / no address = no queue.
  * Same rail as other broker alerts. No fifth inbox.
@@ -44,6 +48,38 @@ export function lookingAtAlertBody(name: string, address: string, personId: numb
 export function lookingAtTodayTitle(name: string, address: string): string {
   const who = name.trim() || 'Someone'
   return `${who} is looking at ${address.trim()}.`
+}
+
+/**
+ * Locked lead ask (D1 / A5). Names the home. Does not narrate the watch.
+ * Public-facing: D11 — one person, no em dash / semicolon / !.
+ * Composer preload only. Never a send.
+ */
+export function lookingAtAskBody(address: string): string {
+  const home = address.trim()
+  if (!home) return ''
+  return `${home}. Want a short comparison and what to think about offering?`
+}
+
+/** Composer deep link. Fills the SMS box. Does not send. */
+export function lookingAtAskHref(personId: number, address: string): string {
+  const body = lookingAtAskBody(address)
+  if (!body) return `/admin/people/${personId}#comms`
+  const params = new URLSearchParams()
+  params.set('reply', body.slice(0, 2000))
+  return `/admin/people/${personId}?${params.toString()}#comms`
+}
+
+/** Person header Ask: only when the named home is still the now-view. */
+export function lookingAtAskHrefIfRecent(
+  personId: number,
+  listingStreet: string | null | undefined,
+  recent: boolean,
+): string | null {
+  if (!recent) return null
+  const street = formatLookingAtAddress({ street: listingStreet })
+  if (!street) return null
+  return lookingAtAskHref(personId, street)
 }
 
 export function lookingAtCanQueue(input: {

@@ -40,6 +40,7 @@ import { renderCrmMerge, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
 import { getSignatureForMailbox } from '@/lib/crm/email-signature'
 import { mapPersonWhoLabels } from '@/lib/crm/person-who-labels'
+import { lookingAtAskHrefIfRecent } from '@/lib/crm/looking-at'
 import {
   composePersonNextStep,
   composePersonNowLine,
@@ -206,6 +207,7 @@ export default async function PersonPage({
     sequenceWaiting: awaitingStep,
   })
   const nowLine = composePersonNowLine({ latestListingView, nowMs })
+  const askHref = lookingAtAskHrefIfRecent(idNum, latestListingView?.listingStreet, listingViewIsRecent(latestListingView, nowMs))
 
   // ── B2 fold: daily-use machinery (renders only when the person is in the
   // acting broker's scope — getCrmPersonFull returns the empty bundle
@@ -445,8 +447,8 @@ export default async function PersonPage({
       />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        <Link href={`/admin/messages?c=${card.personId}`}>
-          <Button>Message</Button>
+        <Link href={askHref ?? `/admin/messages?c=${card.personId}`}>
+          <Button>{askHref ? 'Ask' : 'Message'}</Button>
         </Link>
         {card.phone ? (
           <a href={`tel:${card.phone}`} className="av2-btn av2-btn--quiet" style={{ textDecoration: 'none' }}>

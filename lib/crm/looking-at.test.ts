@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import { parseSuggestedReply } from '@/components/admin/crm/composer-preload'
 import {
   addressFromListingUrl,
   collapseLookingAtByPerson,
   formatLookingAtAddress,
   listingKeyFromPageUrl,
   lookingAtAlertBody,
+  lookingAtAskBody,
+  lookingAtAskHref,
+  lookingAtAskHrefIfRecent,
   lookingAtCanQueue,
   lookingAtDedupeKind,
   lookingAtTodayTitle,
@@ -46,6 +50,55 @@ describe('lookingAtTodayTitle', () => {
   it('matches the SMS first line so a missed text is not a missed person', () => {
     const body = lookingAtAlertBody('Jane Doe', '123 Main St', 42)
     expect(lookingAtTodayTitle('Jane Doe', '123 Main St')).toBe(body.split('\n')[0])
+  })
+})
+
+describe('lookingAtAskBody', () => {
+  it('is the locked D1 ask: names the home, wants a comparison', () => {
+    expect(lookingAtAskBody('123 Main St')).toBe(
+      '123 Main St. Want a short comparison and what to think about offering?',
+    )
+  })
+
+  it('does not narrate surveillance', () => {
+    const body = lookingAtAskBody('123 Main St')
+    expect(body).not.toMatch(/watch|noticed|brows|saw you|looking at|on (our|the) site|track|visit/i)
+  })
+
+  it('obeys D11 punctuation and does not name virtues', () => {
+    const body = lookingAtAskBody('123 Main St')
+    expect(body).not.toMatch(/[—–;!]/)
+    expect(body).not.toMatch(/authentic|genuine|honest|simple|transparent|trusted|dedicated/i)
+  })
+
+  it('is empty when there is no home to name', () => {
+    expect(lookingAtAskBody('  ')).toBe('')
+  })
+})
+
+describe('lookingAtAskHref', () => {
+  it('is a composer preload, not a send', () => {
+    const href = lookingAtAskHref(42, '123 Main St')
+    expect(href.startsWith('/admin/people/42?')).toBe(true)
+    expect(href).toContain('reply=')
+    expect(href.endsWith('#comms')).toBe(true)
+    expect(href).not.toMatch(/twilio|sendGoverned|sms_out|\/api\//i)
+  })
+
+  it('is null when the view is stale or unnamed', () => {
+    expect(lookingAtAskHrefIfRecent(42, '123 Main St', false)).toBeNull()
+    expect(lookingAtAskHrefIfRecent(42, '  ', true)).toBeNull()
+    expect(lookingAtAskHrefIfRecent(42, '123 Main St', true)).toBe(lookingAtAskHref(42, '123 Main St'))
+  })
+
+  it('round-trips through the composer preload parser', () => {
+    const href = lookingAtAskHref(42, '123 Main St')
+    const parsed = parseSuggestedReply(new URL(`https://ryan-realty.com${href}`).search)
+    expect(parsed).toEqual({
+      channel: 'sms',
+      body: lookingAtAskBody('123 Main St'),
+      subject: null,
+    })
   })
 })
 

@@ -1,7 +1,8 @@
 // @no-parity — internal admin surface, no public mockup contract
 // Today: inbound, looking-at (A1), parked sequence steps, ready approvals,
 // CMA drafts to review, due tasks. Looking-at is the same sentence as the
-// D3 wake SMS so a missed text is not a missed person.
+// D3 wake SMS so a missed text is not a missed person. Ask (A5) opens the
+// person composer with the D1 lead ask prefilled. Draft only. Never a send.
 import Link from 'next/link'
 import { formatTriageAge, getInboundTriage } from '@/lib/data/crm/getInboundTriage'
 import { getLookingAtNow } from '@/lib/data/crm/getLookingAtNow'
@@ -102,8 +103,8 @@ export default async function TodayPage() {
                 }
                 age={formatTriageAge(row.occurredAt, nowMs)}
                 action={
-                  <Link href={row.deepLink}>
-                    <Button variant="quiet">Open</Button>
+                  <Link href={row.askHref}>
+                    <Button variant="quiet">Ask</Button>
                   </Link>
                 }
               />
