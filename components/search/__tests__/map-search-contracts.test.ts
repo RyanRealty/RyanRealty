@@ -546,6 +546,45 @@ describe('SearchAlertCapture is path-aware (slug-page filters)', () => {
     expect(mapSplit).toMatch(/variant="inline"/)
     expect(mapSplit).toMatch(/underFilterBar/)
   })
+
+  it('guest default is collapsed: no email field until Get listing alerts', () => {
+    expect(src).toMatch(/const \[expanded, setExpanded\] = useState\(false\)/)
+    expect(src).toMatch(/Get listing alerts/)
+    expect(src).toMatch(/\{!expanded \?/)
+    expect(src).toMatch(/name="company"/)
+    expect(src).toMatch(/readRrSessionId\(\)/)
+    expect(src).toMatch(/submitSearchAlertSignup/)
+    expect(src).toMatch(/Free\. Unsubscribe any time/)
+    expect(src).toMatch(/Free\. One email per new match\. Unsubscribe any time/)
+    expect(src).not.toMatch(/<Dialog[\s>]/)
+    expect(src).not.toMatch(/from '@\/components\/ui\/dialog'/)
+    // inline must not pick up sticky/z-30 (layout-safe on the app frame)
+    expect(src).toMatch(/!isInline &&\s*\n\s*'sticky top-0 z-30/)
+  })
+})
+
+describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () => {
+  const page = readSrc('app/search/page.tsx')
+
+  it('keeps one composed h1 that is not sr-only', () => {
+    expect(page).toMatch(
+      /const h1Text = \[filters\.subdivision, filters\.city \? `\$\{filters\.city\}` : null, 'Homes for Sale'\]/,
+    )
+    expect(page).not.toMatch(/<h1 className="sr-only">/)
+    expect(page.match(/<h1\b/g)?.length).toBe(1)
+  })
+
+  it('puts that h1 in the filter dock as one compact line', () => {
+    const dock = page.slice(page.indexOf('search-filter-dock'))
+    const dockBlock = dock.slice(0, dock.indexOf('<SearchAlertCapture'))
+    expect(dockBlock).toMatch(/<h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">/)
+    expect(dockBlock).toMatch(/\{h1Text\}/)
+    expect(dockBlock).toMatch(/<SearchFilters /)
+  })
+
+  it('does not force V3Footer onto map/split', () => {
+    expect(page).toMatch(/\{isAppFrame \? null : <V3Footer columns=\{V3_FOOTER_COLUMNS\} \/>\}/)
+  })
 })
 
 describe('map craft: selection + zoom storytelling + basemap', () => {

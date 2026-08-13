@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { flushSync } from 'react-dom'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
 import type { FormEvent } from 'react'
 import Link from 'next/link'
@@ -34,6 +35,9 @@ import {
  * - sticky — list view: docks under filters in normal document flow (sticky bar)
  * - inline — map/split: compact non-sticky strip under filters (layout-safe;
  *   sticky on app-frame overlapped the filter chip row)
+ *
+ * Guest default is collapsed: one quiet "Get listing alerts" control. The email
+ * field, honeypot, disclosure, and submit live behind a click, not a modal.
  */
 
 /**
@@ -135,8 +139,10 @@ export function SearchAlertCapture({
   const [state, setState] = useState<'idle' | 'done' | 'error'>('idle')
   const [error, setError] = useState('')
   const [dismissed, setDismissed] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const [pending, startTransition] = useTransition()
   const isInline = variant === 'inline'
+  const rootRef = useRef<HTMLDivElement>(null)
   /** F2 residual from a prior guest signup in this browser (no PII). */
   const [priorWatch, setPriorWatch] = useState<GuestWatchResidual | null>(null)
 
@@ -176,6 +182,27 @@ export function SearchAlertCapture({
     if (signedIn) return
     setPriorWatch(readGuestWatch()) // hydration-safe: event/effect storage only
   }, [signedIn])
+
+  useEffect(() => {
+    if (!expanded) return
+    const emailField = rootRef.current?.querySelector<HTMLInputElement>('input[name="email"]')
+    emailField?.focus()
+  }, [expanded])
+
+  // SearchFilters "Get alerts" scrolls this node into view and then looks for
+  // the email field. Expand first so that focus lands after the form mounts.
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || expanded) return
+    const proto = HTMLElement.prototype.scrollIntoView
+    el.scrollIntoView = ((arg?: boolean | ScrollIntoViewOptions) => {
+      flushSync(() => setExpanded(true))
+      proto.call(el, arg as ScrollIntoViewOptions)
+    }) as HTMLElement['scrollIntoView']
+    return () => {
+      el.scrollIntoView = proto
+    }
+  }, [expanded])
 
   // Signed-in users already have the save-search affordance. This is for guests.
   if (signedIn || dismissed) return null
@@ -305,6 +332,7 @@ export function SearchAlertCapture({
 
   return (
     <div
+      ref={rootRef}
       id="search-alert-capture"
       className={cn(
         'w-full border-b border-border bg-card',
@@ -315,6 +343,25 @@ export function SearchAlertCapture({
         isInline && 'shrink-0 bg-card'
       )}
     >
+      {!expanded ? (
+        <div
+          className={cn(
+            'mx-auto flex max-w-7xl items-center px-4 py-1 sm:px-6',
+            isInline && 'px-3 py-1 sm:px-4'
+          )}
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(true)}
+            aria-expanded={false}
+          >
+            Get listing alerts
+          </Button>
+        </div>
+      ) : (
+        <>
       <div
         className={cn(
           'mx-auto flex max-w-7xl flex-col gap-2 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-6',
@@ -415,6 +462,8 @@ export function SearchAlertCapture({
           {error}
         </div>
       ) : null}
+        </>
+      )}
     </div>
   )
 }

@@ -376,7 +376,6 @@ export default async function SearchPage({
       {/* V3Chrome is sticky in flow on app/layout.tsx. Do not remount it.
           Search is the Homes Field (MapSearchView), not header chrome. */}
       <SplitViewBodyLock active={isAppFrame} />
-      <h1 className="sr-only">{h1Text}</h1>
       {/* @no-breadcrumb — see the file header. A Home > self trail conveys nothing
           and cost ~11% of the mobile viewport on the site's highest-traffic page. */}
       <ResultsStamp />
@@ -386,6 +385,9 @@ export default async function SearchPage({
         resultsCount={resultsCount}
       />
       <div className={cn('search-filter-dock w-full border-b border-border bg-card shadow-sm', isAppFrame && 'shrink-0')}>
+        <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
+          {h1Text}
+        </h1>
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
       {/* Guest listing-alert capture for all views.
