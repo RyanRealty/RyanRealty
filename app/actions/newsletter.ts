@@ -34,16 +34,9 @@ function asSegment(v: FormDataEntryValue | null | undefined): NewsletterSegment 
 }
 
 // ── PUBLIC: subscribe ────────────────────────────────────────────────────────
-
-/** Public newsletter signup (footer / CTA form). No auth. */
-export async function subscribeNewsletterAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
-  const email = String(formData.get('email') ?? '').trim()
-  const name = String(formData.get('name') ?? '').trim() || null
-  const source = String(formData.get('source') ?? 'site')
-  const segment = asSegment(formData.get('segment'))
-  const r = await subscribeToNewsletter({ email, name, source, segment })
-  return { ok: r.ok, error: r.error }
-}
+// Public signup lives in newsletter-subscribe.ts (identity stitch). Do not
+// re-export it from this 'use server' file — Next only allows async function
+// exports here.
 
 // ── ADMIN gate helper ────────────────────────────────────────────────────────
 async function requireAdmin(): Promise<{ ok: true; email: string; role: string } | { ok: false }> {

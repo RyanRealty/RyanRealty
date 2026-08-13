@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { subscribeNewsletterAction } from '@/app/actions/newsletter'
+import { subscribeNewsletterAction } from '@/app/actions/newsletter-subscribe'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Body } from '@/components/site/primitives'
+import { readRrSessionId } from '@/lib/tracking'
 
 /**
  * NewsletterSignup — compact public email signup for the site footer band.
@@ -23,6 +24,7 @@ import { Body } from '@/components/site/primitives'
 
 export function NewsletterSignup({ source = 'site-footer' }: { source?: string }) {
   const [email, setEmail] = useState('')
+  const [company, setCompany] = useState('') // honeypot, humans never see this
   const [status, setStatus] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle')
   const [message, setMessage] = useState('')
 
@@ -35,6 +37,9 @@ export function NewsletterSignup({ source = 'site-footer' }: { source?: string }
     const formData = new FormData()
     formData.set('email', email.trim())
     formData.set('source', source)
+    formData.set('company', company)
+    const sessionId = readRrSessionId() // hydration-safe
+    if (sessionId) formData.set('sessionId', sessionId)
 
     try {
       const result = await subscribeNewsletterAction(formData)
@@ -75,6 +80,17 @@ export function NewsletterSignup({ source = 'site-footer' }: { source?: string }
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="kb-tool-skin mt-4 flex flex-col gap-2 rounded-xl bg-card p-3 sm:flex-row sm:items-center">
+          {/* Honeypot: visually + a11y hidden, not tab-reachable. Bots fill it. */}
+          <Input
+            type="text"
+            name="company"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            value={company}
+            onChange={(event) => setCompany(event.target.value)}
+            className="sr-only h-px w-px"
+          />
           <div className="flex-1">
             <Label htmlFor="newsletter-email" className="sr-only">
               Email address

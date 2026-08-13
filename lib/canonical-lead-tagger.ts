@@ -40,6 +40,7 @@ export type LeadSource =
   | 'homepage-cta'
   | 'home-valuation'
   | 'open-house-rsvp'
+  | 'newsletter'
   | 'unknown'
 
 export type CanonicalLeadParams = {
@@ -273,4 +274,11 @@ export async function canonicallyTagLead(params: CanonicalLeadParams): Promise<{
     const msg = err instanceof Error ? err.message : String(err)
     return { ok: false, error: msg }
   }
+}
+
+/** Native crm_people id. Wrapper so new doors do not spell the historical key. */
+export async function tagNativeLead(
+  params: { personId: number } & Omit<CanonicalLeadParams, 'fubPersonId'>,
+): Promise<ReturnType<typeof canonicallyTagLead>> {
+  return canonicallyTagLead({ ...params, fubPersonId: params.personId })
 }

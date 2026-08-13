@@ -285,3 +285,36 @@ export async function backfillSessionToFub(params: {
     errors,
   }
 }
+
+const FORM_SUBMIT_SESSION_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/**
+ * Form-submit identify using the native crm_people id. Callers must not
+ * spell the historical fubPersonId key — this wrapper is the TRACK3 seam
+ * so new capture doors do not grow the identifier surface.
+ */
+export async function stitchFormSubmitIdentity(params: {
+  personId: number
+  email: string
+  rrVid: string | null
+  sessionId?: string | null
+}): Promise<void> {
+  const sessionId =
+    params.sessionId && FORM_SUBMIT_SESSION_RE.test(params.sessionId) ? params.sessionId : null
+  if (sessionId) {
+    await backfillSessionToFub({
+      sessionId,
+      fubPersonId: params.personId,
+      email: params.email,
+      identifiedVia: 'form_submit',
+    })
+  }
+  await stitchVisitorIdentity({
+    rrVid: params.rrVid,
+    fubPersonId: params.personId,
+    email: params.email,
+    sessionId,
+    source: 'form_submit',
+  })
+}
