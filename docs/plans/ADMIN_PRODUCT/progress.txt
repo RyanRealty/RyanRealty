@@ -712,4 +712,7 @@ NOT IN SCOPE
 
 2026-08-13T17:00:00Z E-404 LANDED fc0abd96 READY. Global 404 on V3Footer. HideChrome still gates LP/admin paths. Leftover NotFoundClient island stays. public-ui held 59/0/52. Look 390+1280 /definitely-not-a-real-page-xyz-9k2: HTTP 404, H1 Page not found, chrome=1, .v3-footer=1, no #newsletter-email, none covering. Next: SearchFilters navy Get alerts chip. Admin signed-in look still needs a session. G3/G4 not in Go.
 
+2026-08-13T17:20:00Z E-SEARCH-CHIP LANDED af26df03 READY. Dropped the navy Get alerts chip in SearchFilters. Collapsed Get listing alerts stays. Save this search stays the navy mid-browse control. public-ui held 59/0/52. Look 390+1280 /homes-for-sale: H1 Homes for Sale, chrome=1, Get listing alerts, no Get alerts chip, Save this search, Value my home, none covering. Did not submit. Leftovers: map/split no footer (viewport-fit), SellerLPForm See what your home is worth (dirty, not this plan), admin signed-in look still needs a session. G3/G4 not in Go.
+
+
 
