@@ -710,3 +710,6 @@ NOT IN SCOPE
 
 2026-08-13T16:45:01Z E-SEARCH-REFINE LANDED 0c49237a READY. Search H1 visible in the filter dock (font-display). Guest capture collapsed to Get listing alerts. No email field until click. Did not submit. Map/split still has no footer (viewport-fit leftover). Ratchet held 59/0/52. Look 390+1280 /homes-for-sale: H1 Homes for Sale, chrome=1, Get listing alerts, Value my home, none covering. Leftovers: SearchFilters navy Get alerts chip, app/not-found SiteFooter, admin signed-in look still needs a session. G3/G4 not in Go.
 
+2026-08-13T17:00:00Z E-404 LANDED fc0abd96 READY. Global 404 on V3Footer. HideChrome still gates LP/admin paths. Leftover NotFoundClient island stays. public-ui held 59/0/52. Look 390+1280 /definitely-not-a-real-page-xyz-9k2: HTTP 404, H1 Page not found, chrome=1, .v3-footer=1, no #newsletter-email, none covering. Next: SearchFilters navy Get alerts chip. Admin signed-in look still needs a session. G3/G4 not in Go.
+
+

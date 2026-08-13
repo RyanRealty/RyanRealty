@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). HEAD `0c49237a` READY.
-Ratchet **59 / 0 / 52**, kb 3. Chrome CTA is Value my home. Next: standing leftovers (`app/not-found` SiteFooter, SearchFilters navy Get alerts chip, map/split has no footer on purpose). G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
+**Updated:** 2026-08-13 (Grok, Go running). HEAD `fc0abd96` READY.
+Ratchet **59 / 0 / 52**, kb 3. Chrome CTA is Value my home. Next: standing leftovers (SearchFilters navy Get alerts chip, map/split has no footer on purpose). G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
 
 ---
 
@@ -122,6 +122,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-TRACKER | **landed** `ff803bbf` | 70 public pages mount `V3SectionTracker`. Ratchet 129/0/71 → **59/0/52**, kb 73→3. Mockup parity accepts either tracker. Look 390+1280 `/` `/about` `/homes-for-sale` `/housing-market`: one chrome, Value my home, H1s, none covering. Tip `22904591` is the parallel ci:gates runner on top of this. |
 | E-AUTH | **landed** `ce0a4ed3` | login / signup / forgot-password / auth-error on V3Footer. Leftover LoginForm / SignupForm / ForgotPasswordForm islands stay. Tokens 208→202. AUTH_INTERNAL so A/B did not move. Look 390+1280 `/login`: H1 Sign in, chrome=1, `.v3-footer`=1, no navy SiteFooter, no `#newsletter-email`. |
 | E-SEARCH-REFINE | **landed** `0c49237a` | Search H1 is visible in the filter dock (`font-display`). Guest capture defaults collapsed: Get listing alerts, no email field until click. Map/split footer still absent (viewport-fit leftover). Ratchet held 59/0/52. Look 390+1280 `/homes-for-sale`: H1 Homes for Sale, chrome=1, Get listing alerts, no covering. Did not submit. SearchFilters still has a navy Get alerts chip. |
+| E-404 | **landed** `fc0abd96` | Global 404 on V3Footer. HideChrome still gates LP/admin paths. Leftover NotFoundClient island stays. Ratchet held 59/0/52 (not a page.tsx). Look 390+1280 junk URL: HTTP 404, H1 Page not found, chrome=1, `.v3-footer`=1, no `#newsletter-email`, none covering. |
 
 Chrome is live. Mixed routes sit under v3 chrome; they are quarry, not done. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -245,6 +246,7 @@ from the baseline if it drifts.
 | **E-TRACKER** | V3SectionTracker on public pages | **landed** `ff803bbf` READY | Ratchet 59/0/52, kb 3. Look 390+1280 four routes. |
 | **E-AUTH** | leftover auth pages SiteFooter → V3Footer | **landed** `ce0a4ed3` READY | `/login` `/signup` `/forgot-password` `/auth-error`. Look 390+1280 `/login`. |
 | **E-SEARCH-REFINE** | search H1 + collapsed guest alerts | **landed** `0c49237a` READY | Visible H1. Collapsed Get listing alerts. Map/split footer stays off. Look 390+1280 `/homes-for-sale`. |
+| **E-404** | global 404 SiteFooter → V3Footer | **landed** `fc0abd96` READY | HideChrome stays. NotFoundClient leftover. Look 390+1280 junk URL. |
 
 ### Do not lease
 
