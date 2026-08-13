@@ -667,3 +667,5 @@ NOT IN SCOPE
 2026-08-13T02:25:00Z A4+A1 LANDED 86695f6e READY. queueReturnVisitAlert is the locked two-line SMS keyed on crm_people.id, one ping per person+listing per session. Unidentified / no home = no queue. Today first lane is the same sentence. Open is quiet. Lane heads use SectionHead. Queue only: no Twilio, no drain, no live SMS. Admin look still needs a signed-in 390+1280 pass. Next land: E-CHART on the barrel.
 
 2026-08-13T02:43:00Z E-CHART LANDED d554ba7e READY. V3Chart is the series atom inside Instrument. Straight SVG segments, gap lifts, caller-formatted labels, no chart library, not a seventh pattern. No public page mounts it yet. E-MARKET-REFINE unblocked. Next land: wave 1 family pages.
+
+2026-08-13T03:05:00Z E-HOMES-SEARCH LANDED 79e34778 READY. Search index, search slug, /buy, /compare on the v3 barrel. Capture contract unchanged (submitSearchAlertSignup + company trap + frequency + unsubscribe). public-ui 527→513 non-v3, 73→69 legacy, mixed 11→14 tracked. Look 390+1280 still needed. Next land: listing detail.

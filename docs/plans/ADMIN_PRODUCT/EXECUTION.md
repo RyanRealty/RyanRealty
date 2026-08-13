@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). **Wave 0 landed.** A4+A1
-`86695f6e` READY. E-CHART `d554ba7e` READY. Wave 1 public families next.
+**Updated:** 2026-08-13 (Grok, Go running). A4+A1 `86695f6e`. E-CHART
+`d554ba7e`. E-HOMES-SEARCH `79e34778` READY. Ratchet 513 / 69 / 14.
 
 ---
 
@@ -86,9 +86,9 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **527** | `scripts/public-ui-baseline.json` |
-| Public legacy pages (no v3) | **73** | same |
-| Public mixed pages (v3 body + leftover register) | **11** | same |
+| Public non-v3 imports | **513** | `scripts/public-ui-baseline.json` |
+| Public legacy pages (no v3) | **69** | same |
+| Public mixed pages (v3 body + leftover register) | **14** | same |
 | Of 527, kb chrome | **399** | same, register `kb` |
 | Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb footers/heroes |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
@@ -98,6 +98,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-VOICE | **landed** `0ad6a0c2` | D11 law in `VOICE.md`. `blog-voice.mdc` deleted. Gate is punctuation + invented quotes + Value my home. Eight live worth-CTAs rewritten so the gate could land. Baseline 10→6. |
 | A4+A1 looking-at | **landed** `86695f6e` | Locked SMS `{name} is looking at {address}.` Key `crm_people.id`. One ping per person+listing per session. Today first lane. Queue only. No live SMS. Admin look still needs a signed-in 390+1280 pass. |
 | E-CHART | **landed** `d554ba7e` | `V3Chart` atom inside Instrument. Straight SVG segments, caller-formatted labels, no library. Not a seventh pattern. No family page mounts it yet. E-MARKET-REFINE unblocked. |
+| E-HOMES-SEARCH | **landed** `79e34778` | Search / buy / compare on the barrel. Ratchet 527→513, 73→69. Mixed 11→14 (tracked). Look 390+1280 still needed. |
 
 Chrome is live. The 399 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -185,7 +186,7 @@ from the baseline if it drifts.
 
 | Id | Lease (pages) | n leftover | Status | Notes |
 |---|---|---|---|---|
-| **E-HOMES-SEARCH** | `app/search/**`, `app/buy/**`, `app/compare/**` | 4 | **open** (wave 1) | Search is the Homes surface (`/homes-for-sale` rewrites here). |
+| **E-HOMES-SEARCH** | `app/search/**`, `app/buy/**`, `app/compare/**` | 4 | **landed** `79e34778` READY | Search is the Homes Field. Ratchet 527→513, 73→69. Look still needed. |
 | **E-HOMES-DETAIL** | `app/listing/**` | 1 | **open** (wave 1) | Money page. Extra care. Every CTA + JSON-LD stays. |
 | **E-HOMES-SIGNALS** | `app/open-houses/**`, `app/price-drops/**`, `app/motivated-sellers/**` | 6 | **open** (wave 1) | Claude named these. |
 | **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | 6 | **open** (wave 1) | Homepage H1/lead already locked (D11). 16 kb imports on `app/page.tsx` today. Live H1 is still the film line, not the lock. |
