@@ -52,7 +52,17 @@ checkFamily('event', path.join(ROOT, 'data/co-events.ts'))
 checkFamily('venue', path.join(ROOT, 'data/co-venues.ts'))
 checkFamily('trail', path.join(ROOT, 'data/co-trails.ts'))
 
-// ── One <h1> per detail template ──
+// ── One page H1 per detail template ──
+// Literal <h1> is the old KB hero. V3Instrument level={1} emits <h1> via
+// V3Heading. A Quiet headingLevel={1} is the no-figures fallback. Count all
+// three so a v3 page is not failed for leaving the literal tag behind.
+function countPageH1(src) {
+  const literal = (src.match(/<h1[\s>]/g) || []).length
+  const instrument = (src.match(/<V3Instrument\b[\s\S]*?\blevel=\{1\}/g) || []).length
+  const quiet = (src.match(/\bheadingLevel=\{1\}/g) || []).length
+  return literal + instrument + quiet
+}
+
 for (const t of [
   'app/central-oregon/events/[slug]/page.tsx',
   'app/central-oregon/venues/[slug]/page.tsx',
@@ -60,8 +70,8 @@ for (const t of [
   'app/central-oregon/trails/[slug]/page.tsx',
 ]) {
   const src = fs.readFileSync(path.join(ROOT, t), 'utf8')
-  const h1s = (src.match(/<h1[\s>]/g) || []).length
-  if (h1s !== 1) fail.push(`${t}: has ${h1s} <h1> tags (must be exactly 1 for accessibility)`)
+  const h1s = countPageH1(src)
+  if (h1s !== 1) fail.push(`${t}: has ${h1s} page H1s (must be exactly 1 for accessibility)`)
 }
 
 console.log('content-metadata gate (G-META)')

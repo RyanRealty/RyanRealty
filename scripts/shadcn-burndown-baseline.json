@@ -1,5 +1,5 @@
 {
-  "count": 198,
+  "count": 197,
   "files": [
     "app/alerts/unsubscribe/page.tsx",
     "app/buy/loading.tsx",
@@ -82,7 +82,6 @@
     "components/city/CityNeighborhoods.tsx",
     "components/community/CommunityCTA.tsx",
     "components/community/CommunityCard.tsx",
-    "components/community/CommunityIndexBrowser.tsx",
     "components/community/CommunityListings.tsx",
     "components/community/CommunityMap.tsx",
     "components/community/CommunityVacationRentalBlock.tsx",

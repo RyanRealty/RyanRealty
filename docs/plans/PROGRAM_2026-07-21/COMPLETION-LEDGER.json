@@ -50,7 +50,7 @@
         "migrations": [],
         "paths": [
           "components/listing/ListingTracker.tsx",
-          "components/site/experience/useEngagementTracking.ts"
+          "components/site/kb/KbSectionTracker.client.tsx"
         ]
       },
       "proofPath": "contract test lib/event-taxonomy.contract.test.ts pins FirstPartyEventType (7) subset of ALLOWED_EVENT_TYPES (9), bites when a client type is added (proven); scroll_depth dual-sinked first-party in ListingTracker.tsx + useEngagementTracking.ts. End-to-end confirmed: producers -> fireFirstPartyEvent (consent-gated) -> /api/visitors/track accepts scroll_depth -> visitor_events.scroll_depth_pct -> consumed per-person by Contact-360 timeline (app/actions/crm.ts) + visitor session detail. GA4 dual-sink intact, no consent bypass, tsc clean.",

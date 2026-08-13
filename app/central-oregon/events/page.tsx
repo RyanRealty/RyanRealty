@@ -1,37 +1,40 @@
-// @no-parity — content-engine route, replicates the /parks index KB register in
-// code (docs/CONTENT_ENGINE_SPEC.md §4), not a Wave-3 mockup contract.
+// @no-parity — content-engine route, not a Wave-3 mockup contract.
 /**
- * /central-oregon/events — Central Oregon events hub, KB (kinetic-brutalist)
- * design. The first spoke of the content engine's events pipeline
- * (docs/CONTENT_ENGINE_SPEC.md §12).
+ * /central-oregon/events — events hub on the v3 barrel.
  *
- * Lists every recurring anchor event in the registry (data/co-events.ts):
- * confirmed-upcoming dates first (soonest first), then the annual anchors whose
- * next date the organizer has not yet published. Every date is verified + cited
- * (CLAUDE.md §0) — a page never shows a guessed date. The hub emits an ItemList
- * (the listicle schema AI answer engines cite most) plus breadcrumb + webPage.
+ * Order: Breadcrumb, Instrument (registry count), Ledger (every event), Sheet,
+ * Quiet, Footer outside main.
  *
- * Matches the /parks index register exactly (KbNav + KbHero + card grid). Data
- * ONLY through @/lib/data (Gate G8).
+ * THE PAGE CONTRACT: pageMetadata, revalidate 3600, breadcrumb + webPage
+ * CollectionPage + itemList via MetadataBlock, KbSectionTracker pageType="events".
+ *
+ * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
+ * events.css card grid, RegionalSfrAlertsBand, per-category H2 sections (category
+ * moved to the Ledger when column).
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { getEventsForIndex, getEventsByCategory, getEventsCount } from '@/lib/data'
-import { EVENT_CATEGORY_LABEL, type CoEvent } from '@/data/co-events'
-import { formatEventDate, shortEventDate } from '@/lib/events-format'
+import { getEventsForIndex, getEventsCount } from '@/lib/data'
+import { EVENT_CATEGORY_LABEL } from '@/data/co-events'
+import { shortEventDate } from '@/lib/events-format'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import '@/components/site/kb/kb.css'
-import './events.css'
+import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Ledger,
+  V3Quiet,
+  type V3LedgerPlainRow,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 
 export const revalidate = 3600
 
@@ -44,37 +47,32 @@ export function generateMetadata(): Metadata {
   })
 }
 
-function EventCard({ event }: { event: CoEvent }) {
-  const when = formatEventDate(event.nextConfirmedDate, event.endDate)
-  const shortWhen = shortEventDate(event.nextConfirmedDate)
-  return (
-    <li>
-      <a className="ev-card" href={`/central-oregon/events/${event.slug}`}>
-        <span className="ev-card-cat mono-num">{EVENT_CATEGORY_LABEL[event.category]}</span>
-        <span className="ev-card-name display">{event.name}</span>
-        <span className="ev-card-meta">
-          <span className="ev-card-when mono-num">{shortWhen ?? event.recurrence}</span>
-          <span className="ev-card-where">
-            {event.venue.includes(event.city) ? event.venue : `${event.venue}, ${event.city}`}
-          </span>
-        </span>
-        {when ? <span className="ev-card-full mono-num">{when}</span> : null}
-      </a>
-    </li>
-  )
-}
-
 export default function EventsIndexPage() {
   const { upcoming, anchors } = getEventsForIndex()
-  const categories = getEventsByCategory()
   const total = getEventsCount()
+  const listed = [...upcoming, ...anchors]
 
-  const itemListItems = [...upcoming, ...anchors].map((e) => ({
+  const rows: V3LedgerPlainRow[] = []
+  for (const event of listed) {
+    const name = event.name.trim()
+    const slug = event.slug.trim()
+    if (!name || !slug) continue
+    const when = shortEventDate(event.nextConfirmedDate) ?? event.recurrence
+    const where = event.venue.includes(event.city) ? event.venue : `${event.venue}, ${event.city}`
+    rows.push({
+      href: `/central-oregon/events/${slug}`,
+      when: v3Text(when.trim() || EVENT_CATEGORY_LABEL[event.category]),
+      what: v3Text(name),
+      detail: v3Text(`${EVENT_CATEGORY_LABEL[event.category]} · ${where}`),
+      id: slug,
+    })
+  }
+  const [firstRow, ...restRows] = rows
+
+  const itemListItems = listed.map((e) => ({
     name: e.name,
     url: `/central-oregon/events/${e.slug}`,
   }))
-
-  const catId = (c: string) => `cat-${c}`
 
   const schemas: SchemaInput[] = [
     {
@@ -96,108 +94,72 @@ export default function EventsIndexPage() {
   ]
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="events" />
-      <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb
-        overlay
-        trail={[{ label: 'Home', href: '/' }, { label: 'Central Oregon events' }]}
-      />
-
-      <SmoothScrollProvider>
-        <KbHero
-          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Events"
-          titleTop="Confirmed dates,"
-          titleBottom="homes by the venue."
-          lead={`${total} festivals, races, and seasonal events across Bend, Redmond, Sisters, and Sunriver. Each page has the next confirmed date and the homes for sale near the venue.`}
-          videoSrc={null}
-          posterSrc={CONTENT_HERO_IMAGES.events}
-          statless
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="events" />
+        <MetadataBlock schemas={schemas} />
+        <V3Breadcrumb
+          trail={[{ label: 'Home', href: '/' }, { label: 'Central Oregon events' }]}
         />
 
-        {upcoming.length > 0 ? (
-          <section className="section about" id="upcoming" aria-label="Upcoming events">
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">Confirmed dates</span>
-                <h2 className="sec-title display">Coming up</h2>
-              </div>
-              <ul className="ev-grid">
-                {upcoming.map((event) => (
-                  <EventCard key={event.slug} event={event} />
-                ))}
-              </ul>
-            </div>
-          </section>
-        ) : null}
+        <V3Instrument
+          id="events"
+          level={1}
+          eyebrow={v3Text('Central Oregon')}
+          headline={v3Text('Confirmed dates, and homes by the venue')}
+          figures={[
+            {
+              value: v3Text(total.toLocaleString('en-US')),
+              label: v3Text('events in the registry'),
+              href: '#event-list',
+            },
+          ]}
+          source={v3Text(
+            'verified events registry (data/co-events.ts). A date prints only when the organizer has published one. Nothing here is a live MLS figure.',
+          )}
+          action={{
+            label: v3Text('Value my home'),
+            href: valuationHref('/central-oregon/events'),
+          }}
+        />
 
-        {/* Browse by category — jump chips + a section per category. */}
-        {categories.length > 0 ? (
-          <section className="section about" id="browse" aria-label="Browse events by category">
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">Browse</span>
-                <h2 className="sec-title display">By category</h2>
-              </div>
-              <nav className="ev-chips" aria-label="Event categories">
-                {categories.map((g) => (
-                  <a key={g.category} className="ev-chip" href={`#${catId(g.category)}`}>
-                    {EVENT_CATEGORY_LABEL[g.category]}
-                    <span className="ev-chip-n mono-num">{g.events.length}</span>
-                  </a>
-                ))}
-              </nav>
-            </div>
-          </section>
-        ) : null}
+        {firstRow ? (
+          <V3Ledger
+            id="event-list"
+            eyebrow={v3Text('Calendar')}
+            heading={v3Text('Central Oregon events')}
+            rows={[firstRow, ...restRows]}
+          />
+        ) : (
+          <V3Ledger
+            id="event-list"
+            heading={v3Text('Central Oregon events')}
+            rows={[]}
+            emptyMessage={v3Text('The events calendar is being updated. See parks or cities in the meantime.')}
+          />
+        )}
 
-        {categories.map((g) => (
-          <section
-            key={g.category}
-            className="section about"
-            id={catId(g.category)}
-            aria-label={`${EVENT_CATEGORY_LABEL[g.category]} events`}
-          >
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">{g.events.length} in Central Oregon</span>
-                <h2 className="sec-title display">{EVENT_CATEGORY_LABEL[g.category]}</h2>
-              </div>
-              <ul className="ev-grid">
-                {g.events.map((event) => (
-                  <EventCard key={event.slug} event={event} />
-                ))}
-              </ul>
-            </div>
-          </section>
-        ))}
+        <RegionalAlertSheet placeLabel="Central Oregon" city="" />
 
-        {upcoming.length === 0 && anchors.length === 0 ? (
-          <section className="section about" id="events" aria-label="Events">
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">Central Oregon</span>
-                <h2 className="sec-title display">Events</h2>
-              </div>
-              <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
-                The events calendar is being updated. Browse{' '}
-                <Link className="ev-inline-link" href="/parks">
-                  Central Oregon parks
-                </Link>{' '}
-                or{' '}
-                <Link className="ev-inline-link" href="/cities">
-                  cities
-                </Link>{' '}
-                in the meantime.
-              </p>
-            </div>
-          </section>
-        ) : null}
+        <V3Quiet
+          id="explore"
+          eyebrow="Next"
+          heading="Keep exploring Central Oregon"
+          items={[
+            { label: 'Parks', href: '/parks' },
+            { label: 'Cities', href: '/cities' },
+            { label: 'Search homes', href: listingsBrowsePath() },
+            { label: 'Value my home', href: valuationHref('/central-oregon/events') },
+          ]}
+        />
+      </main>
 
-        <RegionalSfrAlertsBand id="get-alerts" showLpSecondary={false} />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

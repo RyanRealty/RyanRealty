@@ -1,30 +1,33 @@
-// @no-parity — content-engine route, replicates the /central-oregon/events KB
-// register in code (docs/CONTENT_ENGINE_SPEC.md §11a), not a Wave-3 mockup.
+// @no-parity — content-engine route, not a Wave-3 mockup.
 /**
- * /central-oregon/trails — Central Oregon trails hub, KB design.
+ * /central-oregon/trails — trails hub on the v3 barrel.
  *
- * Central Oregon is a trail town. This lists the marquee hiking and mountain-bike
- * trails, grouped by use, each linking to a detail page that pairs the trailhead
- * with the live homes for sale nearby (the moat). Trail facts are verified +
- * cited (CLAUDE.md §0). Data ONLY through @/lib/data (Gate G8).
+ * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
+ * events.css cards, RegionalSfrAlertsBand, separate hiking/biking H2 sections
+ * (use moved to the Ledger when column).
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getTrailsForIndex, getTrailsCount } from '@/lib/data'
-import { TRAIL_USE_LABEL, type CoTrail } from '@/data/co-trails'
+import { TRAIL_USE_LABEL } from '@/data/co-trails'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import '@/components/site/kb/kb.css'
-import '../events/events.css'
+import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Ledger,
+  V3Quiet,
+  type V3LedgerPlainRow,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 
 export const revalidate = 3600
 
@@ -37,33 +40,31 @@ export function generateMetadata(): Metadata {
   })
 }
 
-function TrailCard({ trail }: { trail: CoTrail }) {
-  const dist =
-    typeof trail.lengthMiles === 'number'
-      ? `${trail.lengthMiles} mi${trail.distanceNote ? ` ${trail.distanceNote}` : ''}`
-      : trail.landManager
-  return (
-    <li>
-      <a className="ev-card" href={`/central-oregon/trails/${trail.slug}`}>
-        <span className="ev-card-cat mono-num">
-          {TRAIL_USE_LABEL[trail.use]} · {dist}
-        </span>
-        <span className="ev-card-name display">{trail.name}</span>
-        <span className="ev-card-meta">
-          <span className="ev-card-where">{trail.city}</span>
-        </span>
-      </a>
-    </li>
-  )
-}
-
 export default function TrailsIndexPage() {
   const { hiking, biking } = getTrailsForIndex()
   const total = getTrailsCount()
+  const listed = [...hiking, ...biking].filter(
+    (t, i, arr) => arr.findIndex((x) => x.slug === t.slug) === i,
+  )
 
-  const listItems = [...hiking, ...biking]
-    .filter((t, i, arr) => arr.findIndex((x) => x.slug === t.slug) === i)
-    .map((t) => ({ name: t.name, url: `/central-oregon/trails/${t.slug}` }))
+  const rows: V3LedgerPlainRow[] = []
+  for (const trail of listed) {
+    const name = trail.name.trim()
+    const slug = trail.slug.trim()
+    if (!name || !slug) continue
+    const dist =
+      typeof trail.lengthMiles === 'number'
+        ? `${trail.lengthMiles} mi${trail.distanceNote ? ` ${trail.distanceNote}` : ''}`
+        : trail.landManager
+    rows.push({
+      href: `/central-oregon/trails/${slug}`,
+      when: v3Text(TRAIL_USE_LABEL[trail.use]),
+      what: v3Text(name),
+      detail: v3Text(`${trail.city} · ${dist}`),
+      id: slug,
+    })
+  }
+  const [firstRow, ...restRows] = rows
 
   const schemas: SchemaInput[] = [
     {
@@ -81,80 +82,78 @@ export default function TrailsIndexPage() {
         'Hiking and mountain-bike trails across Central Oregon, each with the homes for sale nearby.',
       url: '/central-oregon/trails',
     },
-    { type: 'itemList', name: 'Central Oregon trails', items: listItems },
+    {
+      type: 'itemList',
+      name: 'Central Oregon trails',
+      items: listed.map((t) => ({ name: t.name, url: `/central-oregon/trails/${t.slug}` })),
+    },
   ]
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="trails" />
-      <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Trails' }]} />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="trails" />
+        <MetadataBlock schemas={schemas} />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Trails' }]} />
 
-      <SmoothScrollProvider>
-        <KbHero
-          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Trails"
-          titleTop="Trailheads,"
-          titleBottom="and homes nearby."
-          lead={`${total} hiking and mountain-bike trails, from Pilot Butte in Bend to the alpine lakes under South Sister and the walls at Smith Rock. Each page has the trailhead, the facts, and the homes for sale nearby.`}
-          videoSrc={null}
-          posterSrc={CONTENT_HERO_IMAGES.trails}
-          statless
+        <V3Instrument
+          id="trails"
+          level={1}
+          eyebrow={v3Text('Central Oregon')}
+          headline={v3Text('Trailheads, and homes nearby')}
+          figures={[
+            {
+              value: v3Text(total.toLocaleString('en-US')),
+              label: v3Text('trails in the registry'),
+              href: '#trail-list',
+            },
+          ]}
+          source={v3Text(
+            'verified trails registry (data/co-trails.ts). Length prints only when the registry carries a number. Nothing here is a live MLS figure.',
+          )}
+          action={{
+            label: v3Text('Value my home'),
+            href: valuationHref('/central-oregon/trails'),
+          }}
         />
 
-        {hiking.length > 0 ? (
-          <section className="section about" id="hiking" aria-label="Hiking trails">
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">On foot</span>
-                <h2 className="sec-title display">Hiking trails</h2>
-              </div>
-              <ul className="ev-grid">
-                {hiking.map((t) => (
-                  <TrailCard key={t.slug} trail={t} />
-                ))}
-              </ul>
-            </div>
-          </section>
-        ) : null}
+        {firstRow ? (
+          <V3Ledger
+            id="trail-list"
+            eyebrow={v3Text('On foot and on two wheels')}
+            heading={v3Text('Central Oregon trails')}
+            rows={[firstRow, ...restRows]}
+          />
+        ) : (
+          <V3Ledger
+            id="trail-list"
+            heading={v3Text('Central Oregon trails')}
+            rows={[]}
+            emptyMessage={v3Text('The trail guide is being updated. See events in the meantime.')}
+          />
+        )}
 
-        {biking.length > 0 ? (
-          <section className="section about" id="biking" aria-label="Mountain bike trails">
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">On two wheels</span>
-                <h2 className="sec-title display">Mountain-bike trails</h2>
-              </div>
-              <ul className="ev-grid">
-                {biking.map((t) => (
-                  <TrailCard key={t.slug} trail={t} />
-                ))}
-              </ul>
-            </div>
-          </section>
-        ) : null}
+        <RegionalAlertSheet placeLabel="Central Oregon" city="" />
 
-        {total === 0 ? (
-          <section className="section about" id="trails" aria-label="Trails">
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">Central Oregon</span>
-                <h2 className="sec-title display">Trails</h2>
-              </div>
-              <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
-                The trail guide is being updated. Browse{' '}
-                <Link className="ev-inline-link" href="/central-oregon/events">
-                  Central Oregon events
-                </Link>{' '}
-                in the meantime.
-              </p>
-            </div>
-          </section>
-        ) : null}
+        <V3Quiet
+          id="explore"
+          eyebrow="Next"
+          heading="Keep exploring Central Oregon"
+          items={[
+            { label: 'Events', href: '/central-oregon/events' },
+            { label: 'Parks', href: '/parks' },
+            { label: 'Search homes', href: listingsBrowsePath() },
+            { label: 'Value my home', href: valuationHref('/central-oregon/trails') },
+          ]}
+        />
+      </main>
 
-        <RegionalSfrAlertsBand id="get-alerts" showLpSecondary={false} />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

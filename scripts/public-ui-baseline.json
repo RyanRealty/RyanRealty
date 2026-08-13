@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 383,
-    "legacyPages": 54,
-    "mixedPages": 27
+    "nonV3ImportSites": 296,
+    "legacyPages": 41,
+    "mixedPages": 40
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -189,32 +189,39 @@
       "v3": 1
     },
     "app/central-oregon/events/[slug]/page.tsx": {
-      "legacy": 3,
-      "kb": 7
+      "legacy": 1,
+      "v3": 1,
+      "kb": 1
     },
     "app/central-oregon/events/page.tsx": {
       "legacy": 1,
-      "kb": 7
+      "v3": 1,
+      "kb": 1
     },
     "app/central-oregon/golf/[slug]/page.tsx": {
-      "legacy": 3,
-      "kb": 7
+      "legacy": 1,
+      "v3": 1,
+      "kb": 1
     },
     "app/central-oregon/trails/[slug]/page.tsx": {
-      "legacy": 3,
-      "kb": 7
+      "legacy": 1,
+      "v3": 1,
+      "kb": 1
     },
     "app/central-oregon/trails/page.tsx": {
       "legacy": 1,
-      "kb": 7
+      "v3": 1,
+      "kb": 1
     },
     "app/central-oregon/venues/[slug]/page.tsx": {
-      "legacy": 3,
-      "kb": 7
+      "legacy": 1,
+      "v3": 1,
+      "kb": 1
     },
     "app/central-oregon/venues/page.tsx": {
       "legacy": 1,
-      "kb": 7
+      "v3": 1,
+      "kb": 1
     },
     "app/cities/[slug]/[neighborhoodSlug]/page.tsx": {
       "v3": 1,
@@ -227,8 +234,9 @@
       "kb": 1
     },
     "app/cities/page.tsx": {
-      "legacy": 2,
-      "kb": 6
+      "legacy": 1,
+      "v3": 1,
+      "kb": 1
     },
     "app/cma-drafts/[id]/page.tsx": {
       "legacy": 1
@@ -239,8 +247,9 @@
       "kb": 1
     },
     "app/communities/page.tsx": {
-      "legacy": 2,
-      "kb": 6
+      "legacy": 1,
+      "v3": 1,
+      "kb": 1
     },
     "app/compare/page.tsx": {
       "legacy": 1,
@@ -363,12 +372,14 @@
       "kb": 16
     },
     "app/parks/[slug]/page.tsx": {
-      "legacy": 2,
-      "kb": 7
+      "legacy": 1,
+      "v3": 1,
+      "kb": 1
     },
     "app/parks/page.tsx": {
       "legacy": 1,
-      "kb": 7
+      "v3": 1,
+      "kb": 1
     },
     "app/price-drops/[city]/page.tsx": {
       "v3": 1,
@@ -408,11 +419,13 @@
     },
     "app/schools/[slug]/page.tsx": {
       "legacy": 1,
-      "kb": 7
+      "v3": 1,
+      "kb": 1
     },
     "app/schools/page.tsx": {
       "legacy": 1,
-      "kb": 7
+      "v3": 1,
+      "kb": 1
     },
     "app/search/[...slug]/page.tsx": {
       "v3": 1,

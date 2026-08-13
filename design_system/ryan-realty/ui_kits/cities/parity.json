@@ -1,17 +1,12 @@
 {
   "route": "app/cities/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
-  "competitiveTarget": "Beat portal city-directory pages — a real editorial destination with verified per-city photography and a live regional pulse, not a link farm. Now in the kinetic-brutalist design language.",
-  "note": "KB (kinetic-brutalist) design — Phase 9 page-class migration. RESTYLED IN PLACE from the Experience System Geo hub v3.2: every section, stat, sentence, link, image, and JSON-LD preserved, only the presentation moved onto the KB visual language (navy #102742 + cream #faf8f4 surfaces, Amboqia display place names, hard --edge borders, .mono-num stats, the .section/.wrap rhythm). Structure: live region pulse hero (getRegionPulse — active count, median list, months-of-supply verdict) -> featured city editorial rows (full-width, alternating photo/content, VERIFIED cityHero() photography with labeled regional fallback, live per-city stat bands from getMarketPulseCitySnapshots with geo_snapshot_mv fallback, one honest editorial sentence per city from getCityContent, links to city page + homes-for-sale + open houses) -> other-areas compact ledger -> navy search CTA. CollectionPage + ItemList rendered inline + Breadcrumb JSON-LD (MetadataBlock). KbSectionTracker replaces EngagedSection telemetry (every .kb-root section[id] fires section_view). KbNav + KbFooter carry chrome (default SiteHeader/SiteFooter hidden for /cities via HideChrome). Body in main.kb-root + SmoothScrollProvider.",
+  "competitiveTarget": "Beat portal city-directory pages with a live regional pulse and a ledger of Central Oregon cities, not a link farm.",
+  "note": "v3 barrel (E-PLACES-REST). Places open on Instrument. Section order: Breadcrumb, Instrument (region pulse), Ledger (cities), Sheet (SFR alerts), Quiet (edges), Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. KB-era deletions: KbNav remount, KbFooter, KbBreadcrumb, SmoothScrollProvider, kb.css, RegionalSfrAlertsBand, MarketSources, per-city homes-for-sale and open-houses links on the index, em-dash empty placeholders, inline verdictFromMos. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company). D11 CTA: Value my home.",
   "requiredComponents": [
     {
-      "name": "KbNav",
-      "section": "chrome — transparent-over-hero top bar + full-screen menu. Inside .kb-root.",
-      "blocking": true
-    },
-    {
       "name": "KbSectionTracker",
-      "section": "tracking — section_view telemetry on every .kb-root section[id] (replaces EngagedSection). pageType=index.",
+      "section": "tracking — section_view telemetry. pageType=index. Wiring, not visual language.",
       "blocking": true
     },
     {
@@ -20,58 +15,70 @@
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "breadcrumb — KB-styled Home > Cities (visual; JSON-LD is in MetadataBlock).",
+      "name": "V3Breadcrumb",
+      "section": "breadcrumb — Home / Cities. JSON-LD is in MetadataBlock.",
       "blocking": true
     },
     {
-      "name": "SmoothScrollProvider",
-      "section": "KB shell — Lenis smooth scroll + GSAP wrapping the section stack.",
+      "name": "V3Instrument",
+      "section": "region pulse — live active count, median list, months of supply. marketVerdict classifies the raw MoS.",
       "blocking": true
     },
     {
-      "name": "KbFooter",
-      "section": "footer — dual-audience close + sitemap (towns=[]).",
+      "name": "V3Ledger",
+      "section": "city rows — featured plus the rest of the index. Ledger media only when cityHero() is verified.",
+      "blocking": true
+    },
+    {
+      "name": "RegionalAlertSheet",
+      "section": "SFR listing-alert capture. Same action and filters as the retired RegionalSfrAlertsBand.",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "edges — communities, housing market, search, valuation, Oregon Data Share.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "footer outside main so the element is a contentinfo landmark.",
       "blocking": true
     },
     {
       "name": "getRegionPulse",
-      "section": "hero — LIVE region stats (active count, median list, months-of-supply verdict). Honest em-dash empties.",
+      "section": "Instrument — live region stats (active count, median list, months of supply).",
       "blocking": true
     },
     {
       "name": "getMarketPulseCitySnapshots",
-      "section": "featured rows — live per-city stat bands (active / median / median DOM / verdict).",
+      "section": "Ledger — live per-city active count and median.",
       "blocking": true
     },
     {
       "name": "cityHero",
-      "section": "featured rows — VERIFIED per-city photography from the Family 4 curation registry; unverified cities get the labeled regional fallback.",
+      "section": "Ledger media — verified per-city photography only. Unverified cities get no photo.",
       "blocking": true
     },
     {
       "name": "getCityContent",
-      "section": "featured rows — one honest editorial sentence per city (hand-written content first, verifiable geographic fact fallback).",
+      "section": "Ledger detail — one sentence per featured city from hand-written content.",
       "blocking": true
     }
   ],
   "layoutComponents": [
     {
-      "name": "SiteHeader",
-      "section": "hidden on /cities via HideChrome — KbNav renders instead.",
-      "note": "Not in requiredComponents because the gate checks the route file."
-    },
-    {
-      "name": "SiteFooter",
-      "section": "hidden on /cities via HideChrome — KbFooter renders instead.",
-      "note": "Not in requiredComponents because the gate checks the route file."
+      "name": "V3Chrome",
+      "section": "layout-owned public header. Pages must not remount it.",
+      "note": "Not in requiredComponents because the gate checks the route file. app/layout.tsx mounts it."
     }
   ],
   "removedComponents": [
-    "PageBreadcrumb (replaced by KbBreadcrumb)",
-    "EngagedSection (telemetry now via KbSectionTracker + per-section ids)",
-    "Container / DisplayHeading / H2 / Eyebrow primitives (replaced by KB .wrap / .display / .sec-head / .sec-index)",
-    "Primary-cities name-and-number ledger (already replaced in v3.2 by full editorial rows with verified photography and live stat bands)",
-    "Low-opacity Bend photo wash behind the hero (the hero is the live region pulse on navy)"
+    "KbNav (never remount; layout owns chrome)",
+    "KbFooter (replaced by V3Footer outside main)",
+    "KbBreadcrumb (replaced by V3Breadcrumb)",
+    "SmoothScrollProvider",
+    "RegionalSfrAlertsBand (same capture, V3Sheet markup via RegionalAlertSheet)",
+    "MarketSources (Oregon Data Share citation is the Instrument source line plus a Quiet edge)",
+    "HideChrome / SiteHeader / SiteFooter pairing on this route"
   ]
 }

@@ -1,43 +1,56 @@
-// @no-parity — content-engine route, replicates the event detail KB register in
-// code (docs/CONTENT_ENGINE_SPEC.md §11b), not a Wave-3 mockup contract.
+// @no-parity — content-engine route, not a Wave-3 mockup contract.
 /**
- * /central-oregon/venues/[slug] — venue detail page, KB design.
+ * /central-oregon/venues/[slug] — venue detail on the v3 barrel.
  *
- * The durable "shows" page: a per-venue hero, an original write-up, a prominent
- * link OUT to the venue's own live calendar (we never scrape a lineup, §7), a
- * venue map, the live homes for sale nearby (the moat), and an FAQ + FAQPage
- * schema. Data ONLY through @/lib/data (Gate G8).
+ * Places open on Instrument then Field. Order: Breadcrumb, Instrument (nearby
+ * homes), Field (venue pin + list), Sheet (city SFR alerts), Quiet (facts, FAQ,
+ * calendar outbound, related, edges), Footer outside main.
+ *
+ * THE PAGE CONTRACT: generateStaticParams from CO_VENUES, dynamicParams false,
+ * revalidate 300, generateMetadata from the registry, Place subtype + FAQPage +
+ * breadcrumb via MetadataBlock, KbSectionTracker pageType="venues".
+ * getVenueDetail degrades on a listings timeout (check-prerender-db-safety).
+ * We never scrape a lineup. The calendar URL is an outbound Quiet edge.
+ *
+ * KB-era deletions: photo hero / VENUE_HERO_CREDITS, VenueMap, KbFeatured,
+ * AreaMarketBand, KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
+ * events.css, contact CTA band.
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { getVenueDetail, type VenueHomeTile } from '@/lib/data'
+import { getVenueDetail } from '@/lib/data'
 import { CO_VENUES, getVenueBySlug, VENUE_TYPE_LABEL, type CoVenue } from '@/data/co-venues'
-import { EVENT_CATEGORY_LABEL, type CoEvent } from '@/data/co-events'
-import { VENUE_HERO_CREDITS } from '@/data/venue-hero-credits'
 import { buildVenueFaq, venueKindLabel } from '@/lib/venues-format'
-import { shortEventDate } from '@/lib/events-format'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { VenueMap, type VenuePin } from '@/components/site/VenueMap'
-import { AreaMarketBand } from '@/components/site/AreaMarketBand'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
-import { kbMoneyFull, type KbFeaturedItem } from '@/components/site/kb/types'
-import { CONTENT_HERO_IMAGES } from '@/lib/content-page-hero-images'
 import type { SchemaInput } from '@/lib/site/json-ld'
+import { valuationHref } from '@/lib/site/valuation-href'
 import { CONTACT } from '@/lib/brand/contact'
-import '@/components/site/kb/kb.css'
-import '../../events/events.css'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Field,
+  V3Quiet,
+  type V3InstrumentFigure,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import {
+  nearbyFieldItems,
+  fieldMapPins,
+  medianListLabel,
+  faqQuietItems,
+} from '@/app/central-oregon/_v3/nearby-field-items'
 
 export const dynamicParams = false
 export const revalidate = 300
-
-const MAX_CARDS = 12
 
 const SCHEMA_TYPE: Record<CoVenue['kind'], 'MusicVenue' | 'PerformingArtsTheater' | 'EventVenue'> = {
   music: 'MusicVenue',
@@ -63,27 +76,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   })
 }
 
-function homeToFeatured(home: VenueHomeTile): KbFeaturedItem {
-  return {
-    price: home.price,
-    address: home.addressLine,
-    sub: '',
-    city: home.cityLine,
-    beds: home.beds,
-    baths: home.baths,
-    sqft: home.sqft,
-    img: home.photoUrl ?? '',
-    href: home.href,
-    video: home.video,
-    tour: home.hasTour,
-  }
-}
-
-function homeToPin(home: VenueHomeTile): VenuePin | null {
-  if (typeof home.lat !== 'number' || typeof home.lng !== 'number') return null
-  return { lat: home.lat, lng: home.lng, href: home.href, price: home.price }
-}
-
 export default async function VenueDetailPage({ params }: Props) {
   const { slug } = await params
 
@@ -98,16 +90,29 @@ export default async function VenueDetailPage({ params }: Props) {
   const eventsHere = detail?.eventsHere ?? []
   const cityMarket = detail?.cityMarket ?? null
 
-  const hero = VENUE_HERO_CREDITS[slug]
-  const heroSrc = hero?.image ?? CONTENT_HERO_IMAGES.venues
-
-  const cards = homes.slice(0, MAX_CARDS)
-  const mapPins = homes.map(homeToPin).filter((p): p is VenuePin => p !== null)
+  const fieldItems = nearbyFieldItems(homes)
+  const pins = fieldMapPins(fieldItems)
   const seeAllHref = `/search?city=${encodeURIComponent(venue.city)}`
   const hasGeo = typeof venue.lat === 'number' && typeof venue.lng === 'number'
-
-  const medianLabel = stats.medianListPrice != null ? kbMoneyFull(stats.medianListPrice) : null
+  const venueName = venue.name.trim()
+  const medianLabel = medianListLabel(stats.medianListPrice)
   const faq = buildVenueFaq(venue, { count: stats.count, medianLabel, cityMarket })
+
+  const figures: V3InstrumentFigure[] = [
+    {
+      value: v3Text(stats.count.toLocaleString('en-US')),
+      label: v3Text('homes for sale nearby'),
+      href: seeAllHref,
+    },
+  ]
+  if (medianLabel) {
+    figures.push({
+      value: v3Text(medianLabel),
+      label: v3Text('median list price of those homes'),
+      href: seeAllHref,
+    })
+  }
+  const [firstFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -130,258 +135,126 @@ export default async function VenueDetailPage({ params }: Props) {
     { type: 'faqPage', items: faq },
   ]
 
+  const quietItems: V3QuietItem[] = []
+  if (venue.blurb.trim()) {
+    quietItems.push({ kind: 'prose', term: venueName, body: venue.blurb.trim() })
+  }
+  quietItems.push({ kind: 'prose', term: 'What is on', body: venueKindLabel(venue) })
+  if (typeof venue.capacity === 'number') {
+    quietItems.push({
+      kind: 'prose',
+      term: 'Capacity',
+      body: `${venue.capacity.toLocaleString('en-US')} people.`,
+    })
+  }
+  quietItems.push({
+    kind: 'prose',
+    term: 'Where',
+    body: `${venue.name}, ${venue.city}, Oregon.`,
+  })
+  quietItems.push(...faqQuietItems(faq))
+  if (venue.calendarUrl.trim()) {
+    quietItems.push({
+      label: eventsHere.length > 0 ? `Full calendar at ${venueName}` : `Upcoming shows at ${venueName}`,
+      href: venue.calendarUrl.trim(),
+    })
+  }
+  if (venue.officialUrl.trim()) {
+    quietItems.push({ label: 'Official site', href: venue.officialUrl.trim() })
+  }
+  for (const e of eventsHere) {
+    const n = e.name.trim()
+    const s = e.slug.trim()
+    if (!n || !s) continue
+    quietItems.push({ label: n, href: `/central-oregon/events/${s}` })
+  }
+  quietItems.push({ label: `${venue.city} market`, href: `/cities/${venue.geoSlug}` })
+  for (const v of relatedVenues) {
+    const n = v.name.trim()
+    const s = v.slug.trim()
+    if (!n || !s) continue
+    quietItems.push({ label: n, href: `/central-oregon/venues/${s}` })
+  }
+  quietItems.push({ label: 'All Central Oregon venues', href: '/central-oregon/venues' })
+  quietItems.push({ label: `Homes in ${venue.city}`, href: seeAllHref })
+  quietItems.push({ label: 'Value my home', href: valuationHref(`/central-oregon/venues/${slug}`) })
+  quietItems.push({ label: 'Meet the team', href: '/contact' })
+  quietItems.push({ label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` })
+
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="venues" />
-      <MetadataBlock schemas={schemas} />
-      <KbBreadcrumb
-        overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Live music & shows', href: '/central-oregon/venues' },
-          { label: venue.name },
-        ]}
-      />
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="venues" />
+        <MetadataBlock schemas={schemas} />
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Live music & shows', href: '/central-oregon/venues' },
+            { label: venueName },
+          ]}
+        />
 
-      <SmoothScrollProvider>
-        {/* Photo hero */}
-        <header className="ev-photo-hero" style={{ backgroundImage: `url(${heroSrc})` }} aria-label={venue.name}>
-          <div className="ev-photo-hero-scrim" aria-hidden />
-          <div className="wrap ev-photo-hero-inner">
-            <div className="ev-hero-eyebrow on-photo eyebrow">
-              <span className="dot" /> {VENUE_TYPE_LABEL[venue.venueType]} · {venue.city}
-            </div>
-            <h1 className="ev-hero-h on-photo display">{venue.name}</h1>
-          </div>
-          {hero ? (
-            <a className="ev-photo-hero-credit" href={hero.creditUrl} target="_blank" rel="noopener noreferrer">
-              Photo: {hero.credit}
-            </a>
-          ) : null}
-        </header>
-
-        {/* Intro — blurb + facts + the primary "see upcoming shows" action */}
-        <section className="section ev-intro" aria-label="About this venue">
-          <div className="wrap">
-            <p className="ev-hero-blurb">{venue.blurb}</p>
-
-            <div className="ev-when">
-              <div className="ev-fact">
-                <span className="ev-fact-lbl">What is on</span>
-                <span className="ev-fact-val">{venueKindLabel(venue)}</span>
-              </div>
-              {venue.capacity ? (
-                <div className="ev-fact">
-                  <span className="ev-fact-lbl">Capacity</span>
-                  <span className="ev-fact-val">{venue.capacity.toLocaleString()}</span>
-                </div>
-              ) : null}
-              <div className="ev-fact">
-                <span className="ev-fact-lbl">Where</span>
-                <span className="ev-fact-val">{venue.name}</span>
-                <span className="ev-fact-sub">
-                  <a className="ev-inline-link" href={`/cities/${venue.geoSlug}`}>
-                    {venue.city}, Oregon
-                  </a>
-                </span>
-              </div>
-            </div>
-
-            <a className="ev-shows" href={venue.calendarUrl} target="_blank" rel="noopener noreferrer">
-              {eventsHere.length > 0
-                ? `See the full calendar at ${venue.name}`
-                : `See upcoming shows at ${venue.name}`}{' '}
-              <span className="arr">→</span>
-            </a>
-
-            <p className="ev-source mono-num">
-              Venue details verified {venue.lastVerified}
-              {' · '}
-              <a className="ev-source-link" href={venue.officialUrl} target="_blank" rel="noopener noreferrer">
-                Official site
-              </a>
-            </p>
-          </div>
-        </section>
-
-        {/* On stage here — OUR event pages held at this venue (not the venue's
-            external calendar). */}
-        {eventsHere.length > 0 ? (
-          <section className="section about" id="on-stage" aria-label={`Events at ${venue.name}`}>
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">On our calendar</span>
-                <h2 className="sec-title display">On stage here</h2>
-              </div>
-              <ul className="ev-grid">
-                {eventsHere.map((e: CoEvent) => {
-                  const shortWhen = shortEventDate(e.nextConfirmedDate)
-                  return (
-                    <li key={e.slug}>
-                      <a className="ev-card" href={`/central-oregon/events/${e.slug}`}>
-                        <span className="ev-card-cat mono-num">{EVENT_CATEGORY_LABEL[e.category]}</span>
-                        <span className="ev-card-name display">{e.name}</span>
-                        <span className="ev-card-meta">
-                          <span className="ev-card-when mono-num">{shortWhen ?? e.recurrence}</span>
-                        </span>
-                      </a>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          </section>
+        {firstFigure ? (
+          <V3Instrument
+            id="venue"
+            level={1}
+            eyebrow={v3Text(`${VENUE_TYPE_LABEL[venue.venueType]} · ${venue.city}`)}
+            headline={v3Text(venueName)}
+            figures={[firstFigure, ...restFigures]}
+            source={v3Text(
+              'active single-family listings (PropertyType A) within about 1.5 miles of the venue, from the MLS. A listings timeout renders this venue with a zero count and lets ISR retry.',
+            )}
+            action={{
+              label: v3Text('Value my home'),
+              href: valuationHref(`/central-oregon/venues/${slug}`),
+            }}
+          />
         ) : null}
 
-        {/* Venue map + nearby home pins */}
-        {hasGeo ? (
-          <section className="section ev-map-section" aria-label={`${venue.name} on the map`}>
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">{venue.city}</span>
-                <h2 className="sec-title display">Homes nearby</h2>
-              </div>
-              <p className="ev-map-intro">
-                The active single-family homes for sale within about 1.5 miles of {venue.name}, from
-                our listings. The marked point is the venue, not a listing.
-              </p>
-            </div>
-            <VenueMap
-              venue={{ lat: venue.lat as number, lng: venue.lng as number, name: venue.name }}
-              listings={mapPins}
-              zoom={14}
-              height={480}
-            />
-          </section>
-        ) : null}
+        <V3Field
+          id="homes"
+          ariaLabel={`Homes for sale near ${venueName}`}
+          items={fieldItems}
+          count={{
+            value: stats.count.toLocaleString('en-US'),
+            label: `homes for sale near ${venueName}`,
+            source:
+              'active single-family listings within about 1.5 miles of the venue, from the MLS. The rows below are a slice of that set.',
+          }}
+          mapSlot={
+            hasGeo ? (
+              <PlaceFieldMap
+                pins={pins}
+                placeName={venueName}
+                centerLonLat={[venue.lng as number, venue.lat as number]}
+                placePin={{ lat: venue.lat as number, lng: venue.lng as number, title: venueName }}
+              />
+            ) : undefined
+          }
+          mapNote={
+            hasGeo
+              ? 'The marked point is the venue. Pins are active single-family homes within about 1.5 miles.'
+              : undefined
+          }
+          footNote={
+            stats.count > fieldItems.length
+              ? `Showing ${fieldItems.length} of ${stats.count.toLocaleString('en-US')} homes. The count above is the full nearby set.`
+              : undefined
+          }
+          emptyMessage={`No active single-family listings within about 1.5 miles of ${venueName} in the latest pull.`}
+        />
 
-        {/* Nearby-homes stat band */}
-        <section className="section ev-stats" aria-label={`Homes near ${venue.name}`}>
-          <div className="wrap">
-            <div className="ev-stat-grid">
-              <div className="ev-stat">
-                <span className="ev-stat-lbl mono-lab">Homes for sale nearby</span>
-                <span className="ev-stat-val display">{stats.count.toLocaleString()}</span>
-                <span className="ev-stat-sub">
-                  Active single-family homes within about 1.5 miles of {venue.name}
-                </span>
-              </div>
-              <div className="ev-stat">
-                <span className="ev-stat-lbl mono-lab">Median list price</span>
-                <span className="ev-stat-val display">{medianLabel ?? '—'}</span>
-                <span className="ev-stat-sub">Across those homes, rounded to the nearest thousand</span>
-              </div>
-            </div>
-          </div>
-        </section>
+        <RegionalAlertSheet placeLabel={venue.city} city={venue.city} />
 
-        {/* Home cards */}
-        {cards.length > 0 ? (
-          <>
-            <KbFeatured items={cards.map(homeToFeatured)} eyebrow={`Homes for sale near ${venue.name}`} />
-            {stats.count > cards.length ? (
-              <section className="section ev-seeall" aria-label="More homes">
-                <div className="wrap">
-                  <a className="ev-link" href={seeAllHref}>
-                    See more homes in {venue.city} <span className="arr">→</span>
-                  </a>
-                </div>
-              </section>
-            ) : null}
-          </>
-        ) : (
-          <section className="section about" id="no-homes" aria-label="No active homes">
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">Homes for sale</span>
-                <h2 className="sec-title display">None nearby right now</h2>
-              </div>
-              <p className="about-p" style={{ paddingTop: 'clamp(24px,3vw,36px)' }}>
-                There are no active single-family listings within about 1.5 miles of {venue.name} at
-                the moment. Inventory changes often. Browse current homes in {venue.city}.
-              </p>
-              <p style={{ marginTop: '18px' }}>
-                <a className="ev-link" href={seeAllHref}>
-                  Browse homes in {venue.city} <span className="arr">→</span>
-                </a>
-              </p>
-            </div>
-          </section>
-        )}
+        <V3Quiet id="about" eyebrow="This venue" heading={`${venueName} details`} items={quietItems} />
+      </main>
 
-        {/* Live city market read — the real-estate moat. */}
-        {cityMarket ? <AreaMarketBand market={cityMarket} citySlug={venue.geoSlug} /> : null}
-
-        {/* FAQ */}
-        <section className="section about ev-faq" id="faq" aria-label="Common questions">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Good to know</span>
-              <h2 className="sec-title display">Common questions</h2>
-            </div>
-            <dl className="ev-faq-list">
-              {faq.map((item) => (
-                <div className="ev-faq-item" key={item.question}>
-                  <dt className="ev-faq-q">{item.question}</dt>
-                  <dd className="ev-faq-a">{item.answer}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
-
-        {/* Other venues in the same city */}
-        {relatedVenues.length > 0 ? (
-          <section className="section about" id="more-venues" aria-label={`Other venues in ${venue.city}`}>
-            <div className="wrap">
-              <div className="sec-head">
-                <span className="sec-index">More venues</span>
-                <h2 className="sec-title display">Other venues in {venue.city}</h2>
-              </div>
-              <ul className="ev-grid">
-                {relatedVenues.map((v: CoVenue) => (
-                  <li key={v.slug}>
-                    <a className="ev-card" href={`/central-oregon/venues/${v.slug}`}>
-                      <span className="ev-card-cat mono-num">{VENUE_TYPE_LABEL[v.venueType]}</span>
-                      <span className="ev-card-name display">{v.name}</span>
-                      <span className="ev-card-meta">
-                        <span className="ev-card-where">{v.city}</span>
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-              <p style={{ marginTop: '22px' }}>
-                <Link className="ev-link" href="/central-oregon/venues">
-                  All Central Oregon venues <span className="arr">→</span>
-                </Link>
-              </p>
-            </div>
-          </section>
-        ) : null}
-
-        {/* CTA band */}
-        <section className="section ev-cta" aria-label="Contact the team">
-          <div className="wrap">
-            <span className="ev-cta-eyebrow mono-lab">Living near {venue.name}</span>
-            <h2 className="ev-cta-h display">Talk to a Ryan Realty broker.</h2>
-            <p className="ev-cta-body">
-              We work across {venue.city} and the rest of Central Oregon. Tell us what matters to you,
-              and we will show you the homes that fit.
-            </p>
-            <div className="ev-cta-row">
-              <a className="btn" href="/contact">
-                Meet the team <span className="arr">→</span>
-              </a>
-              <a className="btn ghost" href={`tel:${CONTACT.phoneDirectTel}`}>
-                Call {CONTACT.phoneDirect}
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
