@@ -33,7 +33,7 @@ export default function ValuationForm() {
     setLoading(true)
     setState({})
     const formData = new FormData(e.currentTarget)
-    if (!formData.get('address')) formData.set('address', address.trim())
+    formData.set('address', address.trim())
     const result = await submitValuationRequest(formData)
     setLoading(false)
     setState(result)
@@ -98,7 +98,6 @@ export default function ValuationForm() {
 
   return (
     <form onSubmit={handleSubmit} className="kb-tool-skin space-y-4" id="home_valuation">
-      <input type="hidden" name="address" value={address} />
       <Button
         type="button"
         variant="link"
