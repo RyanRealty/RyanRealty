@@ -6,6 +6,7 @@ import { getSavedCitySlugs } from '@/app/actions/saved-cities'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RemoveSavedCityButton from './RemoveSavedCityButton'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'Saved cities',
@@ -26,6 +27,7 @@ export default async function SavedCitiesPage() {
   const savedSlugs = await getSavedCitySlugs()
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="min-w-0">
@@ -80,5 +82,6 @@ export default async function SavedCitiesPage() {
         )}
       </section>
     </div>
+    </AccountFrame>
   )
 }

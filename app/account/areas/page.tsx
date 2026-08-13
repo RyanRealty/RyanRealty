@@ -10,6 +10,7 @@ import AreaControls, { type AreaListRow } from '@/components/account/areas/AreaC
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { listingsBrowsePath } from '@/lib/slug'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'My areas',
@@ -37,6 +38,7 @@ export default async function AreasPage() {
   }))
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -69,5 +71,6 @@ export default async function AreasPage() {
         )}
       </section>
     </div>
+    </AccountFrame>
   )
 }

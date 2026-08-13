@@ -7,6 +7,7 @@ import { parseEntityKey, listingsBrowsePath } from '@/lib/slug'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import RemoveSavedCommunityButton from './RemoveSavedCommunityButton'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'Saved communities',
@@ -22,6 +23,7 @@ export default async function SavedCommunitiesPage() {
   const savedKeys = await getSavedCommunityKeys()
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="min-w-0">
@@ -82,5 +84,6 @@ export default async function SavedCommunitiesPage() {
         )}
       </section>
     </div>
+    </AccountFrame>
   )
 }

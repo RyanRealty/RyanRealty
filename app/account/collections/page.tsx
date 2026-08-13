@@ -9,6 +9,7 @@ import CreateCollectionForm from '@/components/dashboard/CreateCollectionForm'
 import CollectionDeleteButton from '@/components/dashboard/CollectionDeleteButton'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'Collections',
@@ -31,6 +32,7 @@ export default async function AccountCollectionsPage() {
   const photoByKey = new Map(previewTiles.map((t) => [t.listingKey, t.photoUrl]))
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -108,5 +110,6 @@ export default async function AccountCollectionsPage() {
         )}
       </section>
     </div>
+    </AccountFrame>
   )
 }

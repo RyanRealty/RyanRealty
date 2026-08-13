@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { estimatedMonthlyPayment, formatMonthlyPayment, DEFAULT_DISPLAY_RATE, DEFAULT_DISPLAY_DOWN_PCT, DEFAULT_DISPLAY_TERM_YEARS } from '@/lib/mortgage'
 import { listingsBrowsePath } from '@/lib/slug'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'Saved homes',
@@ -42,6 +43,7 @@ export default async function SavedHomesPage() {
   const displayPrefs = prefs ?? { downPaymentPercent: DEFAULT_DISPLAY_DOWN_PCT, interestRate: DEFAULT_DISPLAY_RATE, loanTermYears: DEFAULT_DISPLAY_TERM_YEARS }
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -95,5 +97,6 @@ export default async function SavedHomesPage() {
         )}
       </section>
     </div>
+    </AccountFrame>
   )
 }

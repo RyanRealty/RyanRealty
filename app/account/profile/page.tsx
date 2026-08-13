@@ -4,6 +4,7 @@ import { getSession } from '@/app/actions/auth'
 import { getProfile } from '@/app/actions/profile'
 import { Card } from '@/components/ui/card'
 import ProfileForm from './ProfileForm'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'Profile',
@@ -20,6 +21,7 @@ export default async function ProfilePage() {
   const email = session.user.email ?? ''
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="min-w-0">
@@ -46,5 +48,6 @@ export default async function ProfilePage() {
         </Card>
       </section>
     </div>
+    </AccountFrame>
   )
 }

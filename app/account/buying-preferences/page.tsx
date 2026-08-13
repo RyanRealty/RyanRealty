@@ -4,6 +4,7 @@ import { getSession } from '@/app/actions/auth'
 import { getBuyingPreferences } from '@/app/actions/buying-preferences'
 import { Card } from '@/components/ui/card'
 import BuyingPreferencesForm from './BuyingPreferencesForm'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'Buying preferences',
@@ -17,6 +18,7 @@ export default async function BuyingPreferencesPage() {
   const prefs = await getBuyingPreferences()
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="min-w-0">
@@ -38,5 +40,6 @@ export default async function BuyingPreferencesPage() {
         </Card>
       </section>
     </div>
+    </AccountFrame>
   )
 }

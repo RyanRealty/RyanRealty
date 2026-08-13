@@ -8,6 +8,7 @@ import { getNewsletterMembershipForUserEmail } from '@/lib/data/newsletter/perLe
 import { Card } from '@/components/ui/card'
 import DashboardNotificationPrefs from '@/components/dashboard/DashboardNotificationPrefs'
 import { NewsletterToggle } from './NewsletterToggle'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'Notifications',
@@ -30,6 +31,7 @@ export default async function AccountNotificationsPage() {
   const newsletterCanSubscribe = membership.canSubscribe
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="min-w-0">
@@ -72,5 +74,6 @@ export default async function AccountNotificationsPage() {
         </Card>
       </section>
     </div>
+    </AccountFrame>
   )
 }

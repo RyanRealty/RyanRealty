@@ -13,7 +13,7 @@ export default function UnhideButton({ listingKey }: Props) {
 
   function handleUnhide() {
     startTransition(async () => {
-      await unhideListing(listingKey)
+      await unhideListing(listingKey) // hydration-safe: event/effect storage only
       router.refresh()
     })
   }

@@ -9,8 +9,8 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 194,
-    "legacyPages": 24,
+    "nonV3ImportSites": 192,
+    "legacyPages": 22,
     "mixedPages": 56
   },
   "knownPages": [
@@ -149,10 +149,10 @@
       "legacy": 1
     },
     "app/account/collections/[id]/page.tsx": {
-      "legacy": 1
+      "v3": 1
     },
     "app/account/hidden/page.tsx": {
-      "legacy": 1
+      "v3": 1
     },
     "app/activity/page.tsx": {
       "v3": 1,

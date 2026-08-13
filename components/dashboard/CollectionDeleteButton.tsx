@@ -24,7 +24,7 @@ export default function CollectionDeleteButton({
       return
     }
     startTransition(async () => {
-      await deleteCollection(collectionId)
+      await deleteCollection(collectionId) // hydration-safe: event/effect storage only
       if (redirectTo) router.push(redirectTo)
       else router.refresh()
     })

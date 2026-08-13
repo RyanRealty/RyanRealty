@@ -24,8 +24,8 @@ export default function CollectionListingButton({
 
   function handleClick() {
     startTransition(async () => {
-      if (mode === 'add') await addToCollection(collectionId, listingKey)
-      else await removeFromCollection(collectionId, listingKey)
+      if (mode === 'add') await addToCollection(collectionId, listingKey) // hydration-safe: event/effect storage only
+      else await removeFromCollection(collectionId, listingKey) // hydration-safe: event/effect storage only
       router.refresh()
     })
   }

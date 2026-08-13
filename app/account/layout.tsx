@@ -4,9 +4,6 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import WelcomeBanner from '@/components/WelcomeBanner'
 import AccountNav from '@/components/account/AccountNav'
-// Default-chrome footer. The root layout no longer renders SiteFooter globally —
-// routes that show it render it themselves (scripts/check-default-chrome-footer.mjs).
-import SiteFooter from '@/components/site/SiteFooter'
 
 // CR4: noindex the entire /account/* subtree — private user pages must never be indexed.
 export const metadata: Metadata = {
@@ -25,12 +22,11 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   return (
     <>
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-5xl px-4 pt-8 sm:px-6 sm:pt-10">
         <WelcomeBanner />
         <AccountNav />
-        {children}
       </div>
-      <SiteFooter />
+      {children}
     </>
   )
 }

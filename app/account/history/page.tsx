@@ -18,6 +18,7 @@ import {
   DEFAULT_DISPLAY_TERM_YEARS,
 } from '@/lib/mortgage'
 import { listingDetailPath, listingsBrowsePath } from '@/lib/slug'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 
 export const metadata: Metadata = {
   title: 'Viewing history',
@@ -56,6 +57,7 @@ export default async function AccountHistoryPage() {
   const userEmail = session.user.email ?? null
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       {/* ── Header ── */}
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -167,5 +169,6 @@ export default async function AccountHistoryPage() {
         </>
       )}
     </div>
+    </AccountFrame>
   )
 }

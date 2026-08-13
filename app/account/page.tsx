@@ -17,6 +17,7 @@ import { getListingsByKeys } from '@/app/actions/listings'
 import { listAreasForUser } from '@/lib/data'
 import { getUserActivityEvents, getUserActivitySummary } from '@/lib/data/activity/getUserEvents'
 import { getPortalHomeLists, getSavedSearchInsights, totalNewSince } from '@/app/account/portal-data'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
 import ListingTile from '@/components/ListingTile'
 import ExportMyDataButton from '@/components/ExportMyDataButton'
 import PortalTabs from '@/components/account/portal/PortalTabs'
@@ -558,6 +559,7 @@ export default async function AccountPage({ searchParams }: PageProps) {
   )
 
   return (
+    <AccountFrame>
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
@@ -583,5 +585,6 @@ export default async function AccountPage({ searchParams }: PageProps) {
         }}
       />
     </div>
+    </AccountFrame>
   )
 }

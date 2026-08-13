@@ -1,15 +1,35 @@
+/**
+ * /account/collections/[id] — private Saved affordance, on the v3 barrel.
+ *
+ * Saved is an affordance, not a sixth marketing destination. No Stage, no
+ * Instrument, no capture Sheet, no invented homepage. Dual objectives
+ * (page-inventory.json): visitor: work a specific shortlist and step into any
+ * home. machine: turn curated shortlist state into listing-detail re-entries.
+ * Exits: listing detail, /compare, /account/collections.
+ *
+ * THE PAGE CONTRACT, carried across: getSession gate, getCollectionById,
+ * getSavedListingKeys for addable homes, getListingTiles, CollectionDeleteButton,
+ * CollectionListingButton mode="add" and mode="remove", noindex via account layout.
+ *
+ * Chrome: root layout mounts V3Chrome. This page does not remount it. V3Footer
+ * sits outside <main> via AccountFrame. No V3Breadcrumb (AccountNav is the trail).
+ * No on-page Value my home: the sticky chrome already carries that ask.
+ *
+ * KB-era deletion: ListingCard from the legacy components/site register. Homes
+ * are Ledger doors. Add and remove stay working controls on the same keys.
+ */
+
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
 import { getCollectionById } from '@/app/actions/collections'
 import { getSavedListingKeys } from '@/app/actions/saved-listings'
 import { getListingTiles } from '@/lib/data'
-import { tileToCardData } from '@/lib/site/listing-card'
-import ListingCard, { type ListingCardData } from '@/components/site/ListingCard'
+import { v3Text, V3Ledger, V3Quiet } from '@/components/site/v3'
 import CollectionDeleteButton from '@/components/dashboard/CollectionDeleteButton'
 import CollectionListingButton from '@/components/dashboard/CollectionListingButton'
-import { Card } from '@/components/ui/card'
+import { AccountFrame } from '@/app/account/_v3/AccountFrame'
+import { tileLabel, tileToSavedLedgerRow } from '@/app/account/_v3/listing-rows'
 
 export const metadata: Metadata = {
   title: 'Collection',
@@ -26,90 +46,111 @@ export default async function CollectionDetailPage({ params }: { params: Promise
   const { data: collection } = await getCollectionById(id)
   if (!collection) notFound()
 
-  // Homes in this collection.
   const inTiles = collection.listing_keys.length
     ? await getListingTiles({ listingKeys: collection.listing_keys, status: 'all', limit: 200 })
     : []
-  const inCards: ListingCardData[] = inTiles
-    .map((t) => tileToCardData(t))
-    .filter((c): c is ListingCardData => c !== null)
+  const inRows = inTiles.map(tileToSavedLedgerRow).filter((row): row is NonNullable<typeof row> => row !== null)
+  const [firstIn, ...restIn] = inRows
 
-  // Saved homes the user could still add (not already in the collection).
   const savedKeys = await getSavedListingKeys()
   const addableKeys = savedKeys.filter((k) => !collection.listing_keys.includes(k))
   const addableTiles = addableKeys.length
     ? await getListingTiles({ listingKeys: addableKeys, status: 'all', limit: 200 })
     : []
-  const addableCards: ListingCardData[] = addableTiles
-    .map((t) => tileToCardData(t))
-    .filter((c): c is ListingCardData => c !== null)
+  const addableRows = addableTiles
+    .map(tileToSavedLedgerRow)
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+  const [firstAddable, ...restAddable] = addableRows
+
+  const name = collection.name.trim() || 'Collection'
+  const description = collection.description?.trim()
+  const countLabel = `${inTiles.length} ${inTiles.length === 1 ? 'home' : 'homes'}`
 
   return (
-    <div className="space-y-8">
-      {/* ── Header ── */}
-      <header className="space-y-3">
-        <Link
-          href="/account/collections"
-          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
-        >
-          ← All collections
-        </Link>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="break-words text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              {collection.name}
-            </h1>
-            {collection.description ? (
-              <p className="mt-1 break-words text-sm text-muted-foreground">{collection.description}</p>
-            ) : null}
-            <p className="mt-1 text-sm tabular-nums text-muted-foreground">
-              {inCards.length} {inCards.length === 1 ? 'home' : 'homes'}
-            </p>
-          </div>
-          <CollectionDeleteButton collectionId={collection.id} redirectTo="/account/collections" />
-        </div>
-      </header>
+    <AccountFrame>
+      <V3Quiet
+        id="collection"
+        eyebrow="Collection"
+        heading={name}
+        headingLevel={1}
+        items={[
+          ...(description ? [{ kind: 'prose' as const, body: description }] : []),
+          { kind: 'prose', body: countLabel },
+          { label: 'All collections', href: '/account/collections' },
+          { label: 'Saved homes', href: '/account/saved-homes' },
+          { label: 'Compare homes', href: '/compare' },
+        ]}
+      />
 
-      {/* ── Homes in this collection ── */}
-      <section>
-        {inCards.length === 0 ? (
-          <Card className="flex flex-col items-center gap-2 px-4 py-10 text-center">
-            <p className="text-sm font-medium text-foreground">This collection is empty.</p>
-            <p className="max-w-sm text-sm text-muted-foreground">Add homes from your saved list below.</p>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {inCards.map((card) => (
-              <div key={card.listingKey}>
-                <ListingCard listing={card} />
-                <div className="mt-2">
-                  <CollectionListingButton collectionId={collection.id} listingKey={card.listingKey} mode="remove" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      <CollectionDeleteButton collectionId={collection.id} redirectTo="/account/collections" />
 
-      {/* ── Add from saved homes ── */}
-      {addableCards.length > 0 ? (
-        <section className="border-t border-border pt-8">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">Add from your saved homes</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Saved homes that aren&apos;t in this collection yet.
-          </p>
-          <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {addableCards.map((card) => (
-              <div key={card.listingKey}>
-                <ListingCard listing={card} />
-                <div className="mt-2">
-                  <CollectionListingButton collectionId={collection.id} listingKey={card.listingKey} mode="add" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      {firstIn ? (
+        <V3Ledger
+          id="in-collection"
+          heading={v3Text('Homes in this collection')}
+          rows={[firstIn, ...restIn]}
+        />
+      ) : (
+        <V3Ledger
+          id="in-collection"
+          heading={v3Text('Homes in this collection')}
+          rows={[]}
+          emptyMessage={v3Text(
+            inTiles.length === 0
+              ? 'This collection is empty. Add homes from your saved list below.'
+              : 'Homes in this collection did not return an address in this refresh.',
+          )}
+        />
+      )}
+
+      {inTiles.length > 0 ? (
+        <ul className="mt-4 space-y-2">
+          {inTiles.map((tile) => {
+            const listingKey = (tile.listingKey || tile.listNumber || '').toString().trim()
+            if (!listingKey) return null
+            return (
+              <li key={listingKey} className="flex min-h-11 items-center justify-between gap-3">
+                <span className="min-w-0 truncate text-sm text-muted-foreground">{tileLabel(tile)}</span>
+                <CollectionListingButton collectionId={collection.id} listingKey={listingKey} mode="remove" />
+              </li>
+            )
+          })}
+        </ul>
       ) : null}
-    </div>
+
+      {addableTiles.length > 0 ? (
+        <>
+          <V3Quiet
+            id="add-intro"
+            heading="Add from your saved homes"
+            items={[
+              {
+                kind: 'prose',
+                body: 'Saved homes that are not in this collection yet.',
+              },
+            ]}
+          />
+          {firstAddable ? (
+            <V3Ledger
+              id="addable"
+              heading={v3Text('Saved homes you can add')}
+              rows={[firstAddable, ...restAddable]}
+            />
+          ) : null}
+          <ul className="mt-4 space-y-2">
+            {addableTiles.map((tile) => {
+              const listingKey = (tile.listingKey || tile.listNumber || '').toString().trim()
+              if (!listingKey) return null
+              return (
+                <li key={listingKey} className="flex min-h-11 items-center justify-between gap-3">
+                  <span className="min-w-0 truncate text-sm text-muted-foreground">{tileLabel(tile)}</span>
+                  <CollectionListingButton collectionId={collection.id} listingKey={listingKey} mode="add" />
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      ) : null}
+    </AccountFrame>
   )
 }
