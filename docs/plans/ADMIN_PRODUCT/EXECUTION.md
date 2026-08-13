@@ -4,7 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). **Wave 0 landed.** Chrome live. Wave 1 families open.
+**Updated:** 2026-08-13 (Grok, Go running). **Wave 0 landed.** A4+A1 landed
+`86695f6e` READY. Wave 1 public families building. Next land: E-CHART.
 
 ---
 
@@ -32,7 +33,7 @@ Closings replaces SkySlope, or a packet is declared beautiful.
 | Live social/GBP post, week-grant, Paul/Rebecca OAuth | Draft-first + OAuth click | Draft + connect URL |
 | Expired / buyer **packet PDF** taste (C1, A5 packet) | Beauty bar | The PDF |
 | Imagine clip taste (G5 ship, not the wrapper) | Beauty bar | The MP4 draft |
-| Licensed form send, SkySlope mutation, cutover | License. SkySlope is the live file (D2) | Nothing until A3/A4/A1 exist |
+| Licensed form send, SkySlope mutation, cutover | License. SkySlope is the live file (D2) | A3/A4/A1 exist. Still no mutation. |
 | Money / ads | Parked | — |
 
 Closings (B1), ads, and G3's standing week-grant are **not** in Go. Building
@@ -95,10 +96,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | V1 chart inventory | **landed** `076c2dd0` | `docs/plans/ADMIN_PRODUCT/chart-inventory.md`. 24 series-as-type, 18 live charts. E-CHART is next. |
 | A3 person header | **landed** `56a1ccc0` | Who / Next / Now on `/admin/people/[id]`. Split `PersonIdentityHeader` for the 600 LOC floor. Admin look needs a signed-in pass. |
 | E-VOICE | **landed** `0ad6a0c2` | D11 law in `VOICE.md`. `blog-voice.mdc` deleted. Gate is punctuation + invented quotes + Value my home. Eight live worth-CTAs rewritten so the gate could land. Baseline 10→6. |
-
-Chrome is live. The 399 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
-
-Look residual (not this lease): at 390 a leftover `SignInPrompt` dialog covers the page. Dirty tree, do not join.
+| A4+A1 looking-at | **landed** `86695f6e` | Locked SMS `{name} is looking at {address}.` Key `crm_people.id`. One ping per person+listing per session. Today first lane. Queue only. No live SMS. Admin look still needs a signed-in 390+1280 pass. |
 
 Chrome is live. The 399 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -208,8 +206,8 @@ from the baseline if it drifts.
 | Id | Lease | Status | Done when |
 |---|---|---|---|
 | **A3** | admin person header | **landed** `56a1ccc0` | Who (closed labels), next step, now. `PersonIdentityHeader`. Admin look still needs a signed-in 390+1280 pass. |
-| **A4+A1** | `queueReturnVisitAlert` rewrite + Today looking-at | **open** (wave 1) | `{name} is looking at {address}.` Key `crm_people.id`. Today shows looking-at. |
-| **A5** | lead ask text | after A4 rail | Names the home. Does not say we watched them. Packet is taste. |
+| **A4+A1** | `queueReturnVisitAlert` rewrite + Today looking-at | **landed** `86695f6e` READY | `{name} is looking at {address}.` Key `crm_people.id`. Today first lane. Queue only. No live SMS. Admin look still needs a signed-in pass. |
+| **A5** | lead ask text | after A4 rail (rail landed) | Names the home. Does not say we watched them. Packet is taste. |
 | **C1** | expired packet | taste | Matt stops the PDF. |
 | **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | **landed** `317d88de` | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
 | **G1–G4** | social / GBP / calendar | after A3 or in parallel if files disjoint | Tokens already live. Produce is Imagine. Week-grant is not in Go. |
