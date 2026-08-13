@@ -45,6 +45,7 @@ const NO_FOOTER_PREFIXES = [
 
 /** Redirect-only pages — they never render UI, so they need no footer. */
 const REDIRECT_ONLY = new Set([
+  'app/feed/page.tsx', // P3 lock: 301 /feed into /videos?view=feed
   'app/reports/[slug]/[geoName]/page.tsx', // permanentRedirect to /housing-market
   'app/housing-market/reports/[slug]/[geoName]/page.tsx', // re-exports the redirect above
   'app/listing/by-key/[listingKey]/page.tsx', // permanentRedirect to canonical listing URL

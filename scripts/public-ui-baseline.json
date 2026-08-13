@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 296,
-    "legacyPages": 41,
-    "mixedPages": 40
+    "nonV3ImportSites": 262,
+    "legacyPages": 35,
+    "mixedPages": 45
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -155,7 +155,8 @@
       "legacy": 1
     },
     "app/activity/page.tsx": {
-      "kb": 7
+      "v3": 1,
+      "kb": 1
     },
     "app/alerts/unsubscribe/page.tsx": {
       "primitives": 1,
@@ -284,10 +285,6 @@
       "kb": 6,
       "legacy": 1
     },
-    "app/feed/page.tsx": {
-      "legacy": 2,
-      "kb": 1
-    },
     "app/housing-market/[...slug]/page.tsx": {
       "legacy": 16,
       "kb": 12,
@@ -331,7 +328,8 @@
       "primitives": 1
     },
     "app/luxury-homes-bend/page.tsx": {
-      "kb": 3
+      "v3": 1,
+      "kb": 1
     },
     "app/marketing/request/page.tsx": {
       "primitives": 1,
@@ -366,10 +364,12 @@
       "kb": 1
     },
     "app/our-homes/page.tsx": {
-      "kb": 8
+      "v3": 1,
+      "kb": 1
     },
     "app/page.tsx": {
-      "kb": 16
+      "v3": 1,
+      "kb": 4
     },
     "app/parks/[slug]/page.tsx": {
       "legacy": 1,
@@ -479,8 +479,9 @@
       "kb": 6
     },
     "app/videos/page.tsx": {
-      "legacy": 2,
-      "kb": 6
+      "legacy": 3,
+      "v3": 1,
+      "kb": 1
     },
     "app/zip/[zip]/page.tsx": {
       "v3": 1,

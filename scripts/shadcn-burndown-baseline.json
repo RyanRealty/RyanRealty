@@ -1,5 +1,5 @@
 {
-  "count": 197,
+  "count": 196,
   "files": [
     "app/alerts/unsubscribe/page.tsx",
     "app/buy/loading.tsx",
@@ -187,7 +187,6 @@
     "components/site/VideoFeedClient.tsx",
     "components/site/golf/GolfCommunityCards.tsx",
     "components/site/golf/GolfHomesGrid.tsx",
-    "components/site/kb/KbCommunityAlerts.client.tsx",
     "components/site/listing-detail/ListingHero.tsx",
     "components/site/listing-detail/ListingVideoEmbed.tsx",
     "components/site/nav/MegaMenu.tsx",

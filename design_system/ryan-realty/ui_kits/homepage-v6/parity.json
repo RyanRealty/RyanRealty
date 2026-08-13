@@ -1,36 +1,90 @@
 {
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
-  "status": "rebuilt-2026-06-14",
-  "note": "Homepage rebuilt to match site standard sections. Hero (drone flyover, locked) + CityGrid + RelatedAreas (communities) + FeaturedListings + MarketSnapshot + ArticleGrid + CTABar. All V6 bespoke terminal sections removed. Search fixed to /homes-for-sale?keywords=.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED v6 Linear mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
+  "competitiveTarget": "Beat Zillow / Redmond-area brokerage homepages. The answer in the first viewport (D11 H1, live inventory count, median list, days to pending, one source trace), a map+list of live homes, six D11 towns as doors, one listing-alert ask, leftover market HUD series until E-CHART ships a chart atom.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-HOMES-HOME). Rhythm: five of the six patterns, no two adjacent alike, chrome exempt. D11 lead + the on-page alert Sheet outrank the four-pattern preference. Order is Instrument level 1 (D11 H1 Homes for Sale in Central Oregon), Quiet (D11 lead, no heading), Field (curated sample of 24, count is the region pulse total), Ledger (six D11 towns), HomeAlertSheet (V3Sheet, same capture as KbCommunityAlerts), Quiet (edges), leftover KbMarketHud, Footer outside main. The opening Instrument's action is PRIMARY: at 390 the chrome CTA sits inside the collapsed menu. KbMarketHud is a declared leftover (trend / byTown / yearSeries). Flattening that series is a D9 defect. The chart atom is E-CHART's lease. The KB-era deletions this migration made: KbHero film split H1 (titleTop/titleBottom), KbExploreTowns, KbCommunities and its autoplay community videos, KbFeatured 9-card grid, KbListingMap 3000-pin region box, KbTicker, KbSell, KbTestimonials, KbTeam, SmoothScrollProvider, KbFooter. Orphaned modules deleted with this change: components/site/kb/KbCommunities.client.tsx, components/site/kb/KbTicker.client.tsx. curateFeaturedTiles stays and now feeds the Field.",
   "requiredComponents": [
     {
-      "name": "HomepageV6Hero",
-      "section": "drone-flyover hero + ask bar + live chip"
+      "name": "KbSectionTracker",
+      "section": "Page-level analytics, pageType='homepage'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
+      "blocking": true
     },
     {
-      "name": "CityGrid",
-      "section": "browse by city — 8 city photo cards"
+      "name": "V3Instrument",
+      "section": "Pattern 1, level 1. D11 H1 'Homes for Sale in Central Oregon', live active count / median list / median days to pending from getRegionPulse, every figure a door, source is the MLS trace not the D11 lead. Ask is primary 'See homes for sale'.",
+      "blocking": true
     },
     {
-      "name": "RelatedAreas",
-      "section": "browse by neighborhood / community"
+      "name": "V3Quiet",
+      "section": "Pattern 6, twice. First: D11 lead as prose, no heading, ariaLabel only. Second: community / market / value / team / reviews / our-homes edges.",
+      "blocking": true
     },
     {
-      "name": "FeaturedListings",
-      "section": "active Central Oregon listings grid"
+      "name": "V3Field",
+      "section": "Pattern 2. Curated sample of 24 photographed priced homes (curateFeaturedTiles). Count is the region pulse active total with its own trace. Footnote states the rows are a sample.",
+      "blocking": true
     },
     {
-      "name": "MarketSnapshot",
-      "section": "region-level 4-stat market band"
+      "name": "V3Ledger",
+      "section": "Pattern 3. Six D11 towns from getMarketPulseCitySnapshots. A town with no live median is dropped, not printed as zero.",
+      "blocking": true
     },
     {
-      "name": "ArticleGrid",
-      "section": "recent blog guides"
+      "name": "HomeAlertSheet",
+      "section": "Pattern 5, app/_v3/HomeAlertSheet.client.tsx. Same capture as KbCommunityAlerts: submitSearchAlertSignup, email + filters { propertyType: 'A' } + company trap, guest-watch + alert_create. Disclosure: One email per new listing. Unsubscribe any time.",
+      "blocking": true
     },
     {
-      "name": "CTABar",
-      "section": "seller CTA — what's my home worth?"
+      "name": "KbMarketHud",
+      "section": "LEFTOVER. Trend, byTown, yearSeries. Not a v3 atom. E-CHART owns the chart primitive. Removing it would flatten a series (D9).",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main> so HTML-AAM maps <footer> to contentinfo.",
+      "blocking": true
     }
+  ],
+  "layoutComponents": [
+    {
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx",
+      "note": "This page must not remount V3Chrome. ci:kb-shared-shell fails any page that renders <V3Chrome>."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Stage",
+      "reason": "The homepage's first viewport is the D11 answer, not a dark opening. A Stage would also put this route inside ci:kb-breadcrumb-overlay's dark-hero arm."
+    },
+    {
+      "name": "V3Breadcrumb",
+      "reason": "Homepage is breadcrumb-exempt (scripts/check-breadcrumb.mjs). A Home-only trail is a dead edge."
+    }
+  ],
+  "jsonLd": {
+    "required": [],
+    "note": "This route never emitted page-level JSON-LD. Layout still emits Organization / WebSite. Meaning unchanged."
+  },
+  "dataLayer": {
+    "getRegionPulse": "lib/data/market/getRegionPulse.ts. market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A'. Feeds the level-1 Instrument and the HUD 30d windows (newCount30d, soldCount30d). Do not substitute getMarketPulse's 7d/closedLast30Days into those HUD fields.",
+    "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts. geo_label IN D11_TOWNS. Feeds the town Ledger and HUD byTown.",
+    "getListingTiles": "lib/data/listings/getListingTiles.ts. status=active, propertyType=A, limit 200. Curated to 24 Field rows.",
+    "getMarketStatsCacheRowForGeo": "sale-to-list for the leftover HUD.",
+    "getPriceHistory": "monthly region series for HUD trend + yearSeries.",
+    "submitSearchAlertSignup": "app/actions/search-alert-capture.ts. Bound to HomeAlertSheet. Same action, same payload shape, same field names as KbCommunityAlerts.",
+    "note": "Every read is a DAL function from @/lib/data (G8). None is wrapped in a swallowing catch. getCitiesForIndex and getCommunitiesForIndex are dropped: towns come from pulse snapshots, community hrefs are the four canonical slugs."
+  },
+  "sectionOrder": [
+    "KbSectionTracker",
+    "V3Instrument (level 1, D11 H1)",
+    "V3Quiet (D11 lead)",
+    "V3Field (curated inventory sample)",
+    "V3Ledger (D11 towns)",
+    "HomeAlertSheet (V3Sheet, listing alerts)",
+    "V3Quiet (outbound edges)",
+    "KbMarketHud (leftover series)",
+    "V3Footer"
   ]
 }

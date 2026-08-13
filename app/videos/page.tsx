@@ -1,74 +1,76 @@
+/**
+ * /videos — video tours of homes for sale, on the v3 barrel.
+ *
+ * THE PAGE CONTRACT, carried across unchanged: generateMetadata (city-aware
+ * title/description/canonical/OG), ItemList + BreadcrumbList + CollectionPage
+ * JSON-LD, one VideoObject per embeddable tour (raw <script>, VideoObject is
+ * not in SchemaInput), city chips as real <Link>s with aria-current,
+ * revalidate 300, KbSectionTracker pageType="media".
+ *
+ * LEFTOVERS, not v3 atoms: HideAwareVideoGrid (inline play) and VideoFeedClient
+ * (vertical feed at ?view=feed). No video-grid atom exists. Declared the same
+ * way the homepage keeps KbMarketHud.
+ *
+ * KB-era deletions: KbHero ("Walk the house / before you go."), SmoothScrollProvider,
+ * KbFooter, naked-verb H2 "Pick a city". H1 is search-first: "Video tours of
+ * homes for sale".
+ *
+ * /feed folds here as ?view=feed (P3 keep /videos, fold /feed). The /feed
+ * route 301s. start= is preserved.
+ *
+ * Chrome: layout owns V3Chrome. V3Footer outside main.
+ */
+
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getListingTiles, getCityListings, type ListingTile } from '@/lib/data'
 import { tileToCardData } from '@/lib/site/listing-card'
-import HideAwareVideoGrid, { type HideAwareVideoItem } from '@/components/site/HideAwareVideoGrid'
-import type { ListingCardData } from '@/components/site/ListingCard'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
 import { cn } from '@/lib/utils'
-import '@/components/site/kb/kb.css'
-
-/**
- * /videos — "Watch homes on video" destination.
- *
- * KB (kinetic-brutalist) design — Phase 9 page-class migration (media class).
- * Restyled IN PLACE. Every piece of content is preserved:
- *   - generateMetadata (city-aware title/description/canonical/OG)
- *   - ItemList JSON-LD over the video-tour homes (AEO)
- *   - the city filter chips (All Central Oregon + six cities), restyled as KB
- *     pills, still real <Link>s with aria-current on the active city
- *   - the inline-playing video grid (VideoListingCard — logic untouched)
- *   - the honest empty state with the fallback link to /homes-for-sale
- *   - export const revalidate = 300
- *
- * The region-wide home of every active / pending listing that carries a video
- * tour. Unlike the old lightbox client, this is a SERVER component that reads
- * the FAST tile path (listing_tile_mv via the DAL — getListingTiles /
- * getCityListings), maps each tile to the ONE card shape, and renders
- * VideoListingCard so the tour PLAYS inline in the grid (no navigation, no
- * lightbox) using the same listing-detail player + normalizeEmbed host rules.
- *
- * Optional `?city=` narrows the grid to one city (chips below the header). The
- * page revalidates every 5 min so new video listings surface without a deploy.
- */
+import HideAwareVideoGrid, { type HideAwareVideoItem } from '@/components/site/HideAwareVideoGrid'
+import { VideoFeedClient } from '@/components/site/VideoFeedClient'
+import type { ListingCardData } from '@/components/site/ListingCard'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Quiet,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { CITY_CHIPS, resolveCity, resolveView, resolveStart } from './_v3/videos-constants'
+import { tilesToFeedItems } from './_v3/feed-items'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
 
 export const revalidate = 300
 
-/** Cities offered as filter chips. Labels are the canonical display names; the
- *  value is what getCityListings filters on (the MLS City string). */
-const CITY_CHIPS = ['Bend', 'Redmond', 'Sisters', 'La Pine', 'Prineville', 'Sunriver'] as const
-
-/** Resolve the `city` searchParam to one of the offered chips (case-insensitive),
- *  so a stray value can't poison the canonical or the DAL filter. */
-function resolveCity(raw: string | string[] | undefined): string | null {
-  const value = Array.isArray(raw) ? raw[0] : raw
-  if (!value) return null
-  const match = CITY_CHIPS.find((c) => c.toLowerCase() === value.trim().toLowerCase())
-  return match ?? null
-}
-
-type SearchParams = { city?: string | string[] }
+type SearchParams = { city?: string | string[]; view?: string | string[]; start?: string | string[] }
 
 export async function generateMetadata({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>
 }): Promise<Metadata> {
-  const city = resolveCity((await searchParams).city)
+  const sp = await searchParams
+  const city = resolveCity(sp.city)
+  const view = resolveView(sp.view)
   const title = city
     ? `Video tours of ${city} homes for sale | Central Oregon`
     : 'Video tours of homes for sale | Bend, Oregon'
   const description = city
     ? `Full video tours of homes for sale in ${city}, Oregon. Walk the floor plan, the light, and the lot before you book a showing.`
     : 'Full video tours of homes for sale across Bend, Redmond, Sisters, and Central Oregon. Walk the floor plan, the light, and the lot before you book a showing.'
-  const canonical = city ? `${siteUrl}/videos?city=${encodeURIComponent(city)}` : `${siteUrl}/videos`
+  const canonical =
+    view === 'feed'
+      ? `${siteUrl}/videos?view=feed`
+      : city
+        ? `${siteUrl}/videos?city=${encodeURIComponent(city)}`
+        : `${siteUrl}/videos`
   return {
     title,
     description,
@@ -90,19 +92,19 @@ export default async function VideosPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const city = resolveCity((await searchParams).city)
+  const sp = await searchParams
+  const city = resolveCity(sp.city)
+  const view = resolveView(sp.view)
+  const startKey = resolveStart(sp.start)
 
   const filter = {
     status: 'active-and-pending' as const,
     hasVirtualTour: true,
     sort: 'newest' as const,
-    limit: 36,
+    limit: view === 'feed' ? 60 : 36,
   }
   const tiles: ListingTile[] = city ? await getCityListings(city, filter) : await getListingTiles(filter)
 
-  // Carry BOTH RETS identifiers per item so the hidden-home subtraction matches
-  // whichever the store recorded (dual-key). `cards` is derived from the same
-  // items so the JSON-LD below stays in step with the rendered grid.
   const videoItems: HideAwareVideoItem[] = tiles
     .map((t): HideAwareVideoItem | null => {
       const card = tileToCardData(t, { kind: 'video', label: 'Video tour' })
@@ -110,33 +112,22 @@ export default async function VideosPage({
     })
     .filter((x): x is HideAwareVideoItem => x !== null)
   const cards: ListingCardData[] = videoItems.map((v) => v.card)
+  const feedItems = tilesToFeedItems(tiles)
 
-  // KbHero prefixes with "N homes with a video tour" when count > 0, so the
-  // lead continues that sentence. At zero the prefix drops and the lead stands alone.
-  const lede = cards.length > 0
-    ? city
-      ? `in ${city} right now. Press play and walk the floor plan, the light, and the lot.`
-      : 'across Bend, Redmond, Sisters, and Central Oregon. Press play and walk the floor plan, the light, and the lot.'
-    : city
-      ? `No ${city} listings have a full video tour right now.`
-      : 'No listings have a full video tour right now.'
-  const heading = city ? `Video tours of ${city} homes` : 'Video tours of homes for sale'
-  const canonicalUrl = city ? `${siteUrl}/videos?city=${encodeURIComponent(city)}` : `${siteUrl}/videos`
+  const heading = city ? `Video tours of ${city} homes for sale` : 'Video tours of homes for sale'
+  const canonicalUrl =
+    view === 'feed'
+      ? `${siteUrl}/videos?view=feed`
+      : city
+        ? `${siteUrl}/videos?city=${encodeURIComponent(city)}`
+        : `${siteUrl}/videos`
 
-  // Make a card URL absolute for schema.org (it prefers absolute URLs). MLS /
-  // CDN media (photoUrl, tourUrl) is already absolute and passes through; the
-  // listing href is a site-relative path and gets the canonical origin.
   const absoluteUrl = (u: string | null | undefined): string | undefined => {
     if (!u) return undefined
     if (u.startsWith('http://') || u.startsWith('https://')) return u
     return `${siteUrl}${u.startsWith('/') ? '' : '/'}${u}`
   }
 
-  // AEO: one schema.org VideoObject per home that carries a real, embeddable
-  // tour URL — built ONLY from data already on the card (name, the poster the
-  // card shows as thumbnailUrl, the real tour URL as contentUrl/embedUrl). The
-  // MLS feed carries no upload date, so uploadDate is omitted rather than
-  // fabricated. Cards without a tourUrl are excluded (no video, no VideoObject).
   const videoObjects = cards
     .map((c) => {
       const contentUrl = absoluteUrl(c.tourUrl)
@@ -155,13 +146,19 @@ export default async function VideosPage({
     })
     .filter((v): v is NonNullable<typeof v> => v !== null)
 
-  return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="media" />
+  const crumbTrail = city
+    ? [
+        { label: 'Home', href: '/' },
+        { label: 'Video tours', href: '/videos' },
+        { label: city },
+      ]
+    : [
+        { label: 'Home', href: '/' },
+        { label: 'Video tours' },
+      ]
 
-      {/* AEO: the video-tour homes as a structured ItemList so an answer engine
-          can surface "homes for sale with video tours in <area>". Mirrors the
-          pattern in components/site/VideoHomesSection.tsx. */}
+  const jsonLd = (
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -186,9 +183,6 @@ export default async function VideosPage({
           }),
         }}
       />
-
-      {/* BreadcrumbList — mirrors the app/schools/page.tsx pattern (Home → Video
-          tours [→ city]). Absolute item URLs so parsers resolve cross-page. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -214,9 +208,6 @@ export default async function VideosPage({
           }),
         }}
       />
-
-      {/* WebPage — the page entity itself, as a CollectionPage (this is a
-          collection of video-tour homes). Same node sibling data pages carry. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -224,15 +215,13 @@ export default async function VideosPage({
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: heading,
-            description: lede,
+            description: city
+              ? `Full video tours of homes for sale in ${city}, Oregon.`
+              : 'Full video tours of homes for sale across Bend, Redmond, Sisters, and Central Oregon.',
             url: canonicalUrl,
           }),
         }}
       />
-
-      {/* One VideoObject per home with a real, embeddable tour — emitted so an
-          answer engine / Google Video indexing can surface each home's tour.
-          Skipped entirely when no listing carries a tour URL. */}
       {videoObjects.map((video) => (
         <script
           key={video.contentUrl}
@@ -240,118 +229,174 @@ export default async function VideosPage({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(video) }}
         />
       ))}
+    </>
+  )
 
-      <KbBreadcrumb overlay
-        trail={
-          city
-            ? [
-                { label: 'Home', href: '/' },
-                { label: 'Video tours', href: '/videos' },
-                { label: city },
-              ]
-            : [
-                { label: 'Home', href: '/' },
-                { label: 'Video tours' },
-              ]
-        }
-      />
+  if (view === 'feed') {
+    return (
+      <>
+        <main className={V3_ROOT_CLASS}>
+          <KbSectionTracker pageType="media" />
+          {jsonLd}
+          {feedItems.length > 0 ? (
+            <>
+              <V3Instrument
+                id="feed"
+                level={1}
+                eyebrow={v3Text('Central Oregon')}
+                headline={v3Text('Video tours of homes for sale')}
+                figures={[
+                  {
+                    value: v3Text(String(feedItems.length)),
+                    label: v3Text(
+                      feedItems.length === 1 ? 'home with a video tour' : 'homes with a video tour',
+                    ),
+                    href: listingsBrowsePath(),
+                  },
+                ]}
+                source={v3Text(
+                  'live MLS through Oregon Data Share, active and pending listings that carry a video tour',
+                )}
+                action={{
+                  label: v3Text('See homes for sale'),
+                  href: listingsBrowsePath(),
+                  variant: 'primary',
+                }}
+              />
+              <VideoFeedClient items={feedItems} startKey={startKey} />
+              <V3Quiet
+                id="explore"
+                heading="Tour the homes"
+                items={[
+                  { label: 'See homes for sale', href: listingsBrowsePath() },
+                  { label: 'Value my home', href: valuationHref('/videos') },
+                  { label: 'Grid of video tours', href: '/videos' },
+                ]}
+              />
+            </>
+          ) : (
+            <V3Quiet
+              id="feed"
+              heading="Video tours of homes for sale"
+              headingLevel={1}
+              items={[
+                {
+                  kind: 'prose',
+                  term: 'No video tours yet',
+                  body: 'New tours land here as homes come on the market across Central Oregon.',
+                },
+                { label: 'See homes for sale', href: listingsBrowsePath() },
+                { label: 'Value my home', href: valuationHref('/videos') },
+              ]}
+            />
+          )}
+        </main>
+        {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+            when it is NOT nested in sectioning content, and <main> is sectioning
+            content, so inside it the element is a generic and the page ships no
+            contentinfo landmark. */}
+        <V3Footer columns={V3_FOOTER_COLUMNS} />
+      </>
+    )
+  }
 
-      <SmoothScrollProvider>
-        {/* Hero — same H1 + lede as the prior ContentPageHero, on the KB display
-            type. activeCount surfaces the live count of video-tour homes. */}
-        <KbHero
-          data={{ activeCount: cards.length, medianListPrice: null, medianDaysToPending: null }}
-          countNoun={cards.length === 1 ? 'home with a video tour' : 'homes with a video tour'}
-          eyebrow={city ? `${city} · Oregon · Video tours` : 'Central Oregon · Video tours'}
-          titleTop={city ? `Walk ${city} homes` : 'Walk the house'}
-          titleBottom="before you go."
-          lead={lede}
-          videoSrc={null}
-          posterSrc="/images/lp/hero-pond.jpg"
-        />
+  return (
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="media" />
+        {jsonLd}
+        <V3Breadcrumb trail={crumbTrail} />
 
-        {/* City filter chips — KB pills. The active city is the solid navy pill;
-            the rest are hard-edged outline pills. "All" clears the filter back
-            to the region-wide grid. Real <Link>s with aria-current. */}
-        <section className="section" id="city-filter" aria-label="Filter video tours by city">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Filter by city</span>
-              <h2 className="sec-title display">
-                Pick a city
-              </h2>
-            </div>
-            <nav aria-label="Filter video tours by city" className="flex flex-wrap items-center gap-2 pt-6">
+        {cards.length > 0 ? (
+          <V3Instrument
+            id="tours"
+            level={1}
+            eyebrow={v3Text(city ? `${city}, Oregon` : 'Central Oregon')}
+            headline={v3Text(heading)}
+            figures={[
+              {
+                value: v3Text(String(cards.length)),
+                label: v3Text(cards.length === 1 ? 'home with a video tour' : 'homes with a video tour'),
+                href: listingsBrowsePath(),
+              },
+            ]}
+            source={v3Text(
+              'live MLS through Oregon Data Share, active and pending listings that carry a video tour',
+            )}
+            action={{
+              label: v3Text('See homes for sale'),
+              href: listingsBrowsePath(),
+              variant: 'primary',
+            }}
+          />
+        ) : (
+          <V3Quiet
+            id="tours"
+            heading={heading}
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: city ? `No ${city} video tours right now` : 'No video tours right now',
+                body: 'New tours land here as homes come on the market.',
+              },
+              { label: 'See homes for sale', href: listingsBrowsePath() },
+              { label: 'Value my home', href: valuationHref('/videos') },
+            ]}
+          />
+        )}
+
+        <nav aria-label="Filter video tours by city" className="flex flex-wrap items-center gap-2 px-4 py-4">
+          <Link
+            href="/videos"
+            aria-current={city ? undefined : 'page'}
+            className={cn(
+              'inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+              city
+                ? 'border border-border bg-background text-foreground hover:bg-secondary'
+                : 'bg-primary text-primary-foreground',
+            )}
+          >
+            All Central Oregon
+          </Link>
+          {CITY_CHIPS.map((c) => {
+            const active = c === city
+            return (
               <Link
-                href="/videos"
-                aria-current={city ? undefined : 'page'}
+                key={c}
+                href={`/videos?city=${encodeURIComponent(c)}`}
+                aria-current={active ? 'page' : undefined}
                 className={cn(
                   'inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-                  city
-                    ? 'border border-border bg-background text-foreground hover:bg-secondary'
-                    : 'bg-primary text-primary-foreground',
+                  active
+                    ? 'bg-primary text-primary-foreground pointer-events-none'
+                    : 'border border-border bg-background text-foreground hover:bg-secondary',
                 )}
               >
-                All Central Oregon
+                {c}
               </Link>
-              {CITY_CHIPS.map((c) => {
-                const active = c === city
-                return (
-                  <Link
-                    key={c}
-                    href={`/videos?city=${encodeURIComponent(c)}`}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-                      active
-                        ? 'bg-primary text-primary-foreground pointer-events-none'
-                        : 'border border-border bg-background text-foreground hover:bg-secondary',
-                    )}
-                  >
-                    {c}
-                  </Link>
-                )
-              })}
-            </nav>
-          </div>
-        </section>
+            )
+          })}
+        </nav>
 
-        {/* The inline-playing video grid (cards.length > 0) or the honest empty
-            state. VideoListingCard logic is untouched — each tile plays the tour
-            in place or degrades to a link to listing detail. */}
-        <section className="section" id="video-grid" aria-label="Homes with video tours">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">
-                {cards.length} {cards.length === 1 ? 'home' : 'homes'} · video tour
-              </span>
-              <h2 className="sec-title display">
-                {city ? `${city} homes on video` : 'Homes on video'}
-              </h2>
-            </div>
+        {videoItems.length > 0 ? <HideAwareVideoGrid items={videoItems} /> : null}
 
-            {videoItems.length > 0 ? (
-              <HideAwareVideoGrid items={videoItems} />
-            ) : (
-              <div className="mt-8 border border-border bg-background p-10 text-center">
-                <p className="font-display text-xl text-foreground">
-                  {city
-                    ? `No ${city} listings have a video tour right now.`
-                    : 'No listings have a video tour right now.'}
-                </p>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  New tours land here as homes come on the market.
-                </p>
-                <Link href="/homes-for-sale" className="btn alt mt-5">
-                  See every home for sale <span className="arr">→</span>
-                </Link>
-              </div>
-            )}
-          </div>
-        </section>
+        <V3Quiet
+          id="explore"
+          heading="Tour the homes"
+          items={[
+            { label: 'See homes for sale', href: listingsBrowsePath() },
+            { label: 'Value my home', href: valuationHref('/videos') },
+            { label: 'Vertical video feed', href: '/videos?view=feed' },
+          ]}
+        />
+      </main>
 
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

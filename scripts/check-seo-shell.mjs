@@ -60,9 +60,25 @@ const MONEY_PATHS = [
 const REQUIRED = [
   {
     file: 'app/page.tsx',
+    // The FACT this locks is the D11 homepage H1 and lead, not the prop that
+    // carries them. KB spelled the H1 as titleTop/titleBottom; the v3 register
+    // has no such prop, its patterns take `headline` (V3InstrumentProps.headline)
+    // and the empty branch uses Quiet `heading=`. Writing a prop literally named
+    // titleTop on a v3 page to satisfy a regex would be gate-gaming, so the check
+    // accepts either register's spelling.
+    // BOTH ARMS ARE EXACT LITERALS. The v3 arm pins
+    // headline={v3Text('Homes for Sale in Central Oregon')} (VOICE.md D11) and
+    // the D11 lead sentence must appear as a literal in this file (the gate does
+    // not scan app/_v3/).
     checks: [
-      { re: /titleTop\s*=\s*["']Central Oregon["']/, msg: 'H1 titleTop must be exact "Central Oregon"' },
-      { re: /titleBottom\s*=\s*["']Homes for Sale["']/, msg: 'H1 titleBottom must be exact "Homes for Sale"' },
+      {
+        re: /titleTop\s*=\s*["']Central Oregon["'][\s\S]{0,800}titleBottom\s*=\s*["']Homes for Sale["']|headline=\{v3Text\('Homes for Sale in Central Oregon'\)\}|heading\s*=\s*["']Homes for Sale in Central Oregon["']/,
+        msg: 'H1 must be the D11 lock: KB titleTop="Central Oregon" + titleBottom="Homes for Sale", or v3 headline={v3Text(\'Homes for Sale in Central Oregon\')} / heading="Homes for Sale in Central Oregon"',
+      },
+      {
+        re: /Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne\. Live list prices and days on market\./,
+        msg: 'D11 homepage lead must appear as an exact literal in app/page.tsx',
+      },
       { re: /title:\s*['"]Homes for Sale/i, msg: 'metadata title must lead with "Homes for Sale"' },
     ],
   },
