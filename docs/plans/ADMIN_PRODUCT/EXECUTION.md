@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). E-ABOUT `b48a8e82` READY.
-Ratchet 383 / 54 / 27. kb page imports 320→274.
+**Updated:** 2026-08-13 (Grok, Go running). E-PLACES-REST `98588ccb` READY.
+Ratchet 296 / 41 / 40. kb page imports 274→198.
 
 ---
 
@@ -86,10 +86,10 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **383** | `scripts/public-ui-baseline.json` |
-| Public legacy pages (no v3) | **54** | same |
-| Public mixed pages (v3 body + leftover register) | **27** | same |
-| Of 527, kb chrome | **274** | same, register `kb` |
+| Public non-v3 imports | **296** | `scripts/public-ui-baseline.json` |
+| Public legacy pages (no v3) | **41** | same |
+| Public mixed pages (v3 body + leftover register) | **40** | same |
+| Of 527, kb chrome | **198** | same, register `kb` |
 | Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb trackers / MetadataBlock |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
@@ -102,9 +102,10 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-HOMES-DETAIL | **landed** `fd1d1d09` | Listing money page on the barrel. JSON-LD RealEstateListing + BreadcrumbList stay on the page MetadataBlock. Capture still `submitSearchAlertSignup` with company trap and disclosure. Similar homes are a Ledger. Value my home is a Quiet link. Ratchet 513→505, 69→68, mixed 14→15 (tracked). Look 390+1280 on 61281 McRoberts: one `v3-chrome`, filled Schedule a tour, capture Sheet, Quiet Value my home, sidebar broker at 1280. SignInPrompt leftover is not this lease. |
 | E-SELL | **landed** `1276088f` | `/sell` and `/sell/valuation` on the barrel. SellerLPForm + ValuationForm capture stay. 3% plan is a Sheet. H1 still Sell your home in Central Oregon. Ratchet 505→490, 68→66, mixed 15→17 (tracked). Brand-voice 6→3. Look 390+1280: one chrome, H1, Value my home, capture form. SellerLPForm still says "See what your home is worth" (not this lease). |
 | E-HOMES-SIGNALS | **landed** `24835c31` | Open houses and price drops on the barrel. Motivated-sellers 308s into price-drops. Capture still `submitSearchAlertSignup` with company trap and disclosure. Ratchet 490→432, 66→60, mixed 17→21 (tracked). kb 372→320. HTML look: one chrome, H1s, Value my home, disclosure. |
-| E-ABOUT | **landed** `b48a8e82` | `/about`, `/team`, `/team/[slug]`, `/contact`, `/reviews`, `/join` on the barrel. Mission sentence is the D11 exception. ContactSheet keeps `submitContactForm`. Broker valuation keeps `submitBrokerSellerLead`. Ratchet 432→383, 60→54, mixed 21→27 (tracked). kb 320→274. shadcn 200→198. |
+| E-ABOUT | **landed** `b48a8e82` | `/about`, `/team`, `/team/[slug]`, `/contact`, `/reviews`, `/join` on the barrel. Mission sentence is the D11 exception. ContactSheet keeps `submitContactForm`. Broker valuation keeps `submitBrokerSellerLead`. Ratchet 432→383, 60→54, mixed 21→27 (tracked). kb 320→274. shadcn 200→198. Look 390+1280: one chrome, H1s, mission, contact Sheet. Join has no Value my home (recruiting footer). Chrome CTA still says Get your home's value (not this lease). Cookie banner residual. |
+| E-PLACES-REST | **landed** `98588ccb` | Cities, communities, parks, schools, central-oregon events/trails/venues/golf on the barrel. Capture still `submitSearchAlertSignup` with company trap and disclosure. Maps are `PlaceFieldMap`. Deleted NeighborhoodMap, VenueMap, AreaMarketBand, CommunityIndexBrowser, RegionalSfrAlertsBand. Ratchet 383→296, 54→41, mixed 27→40 (tracked). kb 274→198. shadcn 198→197. tokens 242→241. |
 
-Chrome is live. The 274 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
+Chrome is live. The 198 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
 Look residual (not this lease): at 390 a leftover `SignInPrompt` dialog covers the page. Dirty tree, do not join.
 
@@ -195,7 +196,7 @@ from the baseline if it drifts.
 | **E-HOMES-SIGNALS** | `app/open-houses/**`, `app/price-drops/**`, `app/motivated-sellers/**` | 6 | **landed** `24835c31` READY | Open houses + price drops on the barrel. Motivated-sellers 308s to price-drops. Capture stays. |
 | **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | 6 | **open** (wave 1) | Homepage H1/lead already locked (D11). 16 kb imports on `app/page.tsx` today. Live H1 is still the film line, not the lock. |
 | **E-HOMES-TOOLS** | `app/tools/mortgage-calculator/**`, `app/tools/rental-property-calculator/**` | 2 | **open** (wave 1) | Appreciation stays with Market. |
-| **E-PLACES-REST** | `app/cities/page.tsx`, `app/communities/page.tsx`, `app/central-oregon/**`, `app/parks/**`, `app/schools/**` | 13 | **open** (wave 1) | Indexes + lifestyle. Detail cities/communities/subdivisions/zip/oregon are mixed quarry. |
+| **E-PLACES-REST** | `app/cities/page.tsx`, `app/communities/page.tsx`, `app/central-oregon/**`, `app/parks/**`, `app/schools/**` | 13 | **landed** `98588ccb` READY | Indexes + lifestyle. Detail cities/communities/subdivisions/zip/oregon remain mixed quarry (E-PLACES-REFINE). |
 | **E-PLACES-REFINE** | `app/cities/[slug]/**`, `app/communities/[slug]/**`, `app/subdivisions/[slug]/**`, `app/zip/**`, `app/oregon/**` | 6 mixed | quarry, after rest | Claude wave 2. Look. Rework if clunky. Do not re-migrate from scratch unless amnesia says the `_v3/` module is wrong. |
 | **E-MARKET-REST** | `app/blog/**`, `app/faq/**`, `app/housing-market/history/**`, `app/housing-market/[...slug]/**`, `app/housing-market/reports/**`, `app/reports/sales/**`, `app/tools/appreciation/**` | 9 | **open** (wave 1) | Catch-all and content. |
 | **E-MARKET-REFINE** | `app/housing-market/page.tsx`, `central-oregon`, `annual-review`, `app/months-of-supply/**` | 4 mixed | quarry, after E-CHART (atom landed `d554ba7e`) | Claude waves 1–2. Chart atom (D9) before flattening any series. Look at every chart. |
