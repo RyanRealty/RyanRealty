@@ -1,52 +1,60 @@
-// @data-free — pure client-side calculator, fetches no data (price/down/rate/term pre-fill comes from searchParams)
 /**
- * /tools/mortgage-calculator — free monthly-payment estimator for Central Oregon
- * buyers.
+ * /tools/mortgage-calculator — monthly payment estimator, on the
+ * components/site/v3 barrel.
  *
- * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
- * PLACE from the prior ContentPageHero + Card layout. Every piece of content is
- * preserved: SoftwareApplication JSON-LD, the searchParams pre-fill
- * (price/down/rate/term), the interactive MortgageCalculator client component
- * (shadcn inputs/select — logic untouched), the hero H1 + subtitle + the two
- * CTAs (Browse Listings / Get a Home Valuation), and the full three-paragraph
- * "How to use this calculator" explainer plus its valuation CTA. Only the
- * presentation changed — the page now wears the KB shell (KbNav, KbHero,
- * Amboqia display, hard-edge cream surfaces, KbFooter).
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Rhythm: three of six,
+ * no two adjacent alike. Order is Breadcrumb, Instrument level 1, Sheet
+ * (calculator island), Quiet, Footer.
  *
- * SEO: export const metadata (canonical + OG + Twitter) + SoftwareApplication
- * JSON-LD. PAGE CONTRACT: KB design + SEO + tracking (KbSectionTracker
- * pageType="tools").
+ * THE PAGE CONTRACT, carried across unchanged: metadata title "Mortgage
+ * Calculator for Home Buyers", SoftwareApplication JSON-LD, searchParams
+ * pre-fill (price/down/rate/term), getCalculatorDefaults seeds, MortgageCalculator
+ * math and field names, KbSectionTracker pageType="tools". MetadataBlock and
+ * KbSectionTracker stay on their registers: wiring, not visual language.
+ *
+ * SoftwareApplication stays a page-level script. MetadataBlock has no
+ * SoftwareApplication input type, and ci:ai-structured-data pins the literal
+ * on this file.
+ *
+ * ONE PRIMARY PER VIEWPORT, counting visible filled controls. At 390 the
+ * chrome CTA sits in the collapsed menu, so the Instrument ask is primary.
+ * Label is Value my home (D11). valuationHref carries ?from=.
+ *
+ * KB-era deletions: KbHero (poster, no search), KbFooter, SmoothScrollProvider,
+ * kb.css, the dedicated Browse / Get a home value estimate button row (those
+ * doors now live on the Instrument and in Quiet).
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import MortgageCalculator from './MortgageCalculator'
 import { getCalculatorDefaults } from '@/lib/data'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
+import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import type { SchemaInput } from '@/lib/site/json-ld'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Quiet,
+  type V3InstrumentFigure,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+import MortgageCalculator from './MortgageCalculator'
+import { CalculatorSheet } from './_v3/CalculatorSheet'
+import { DEFAULT_HOME_PRICE, MORTGAGE_TRACE, ROUTE_PATH } from './_v3/mortgage-constants'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const ogImage = `${siteUrl}/api/og?type=default`
-
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Mortgage Calculator for Home Buyers',
   description:
     'Estimate your monthly house payment from price, down payment, interest rate, and loan term. Central Oregon tax and insurance defaults included.',
-  alternates: { canonical: `${siteUrl}/tools/mortgage-calculator` },
-  openGraph: {
-    title: 'Mortgage Calculator for Home Buyers | Ryan Realty',
-    description:
-      'Estimate your monthly house payment from price, down payment, interest rate, and loan term. Central Oregon tax and insurance defaults included.',
-    url: `${siteUrl}/tools/mortgage-calculator`,
-    type: 'website',
-    images: [{ url: ogImage, width: 1200, height: 630 }],
-  },
-  twitter: { card: 'summary_large_image', images: [ogImage] },
-}
+  path: ROUTE_PATH,
+})
 
 type Props = {
   searchParams: Promise<{
@@ -57,128 +65,156 @@ type Props = {
   }>
 }
 
-const softwareLd = {
-  '@context': 'https://schema.org',
-  '@type': 'SoftwareApplication',
-  name: 'Mortgage Calculator',
-  applicationCategory: 'FinanceApplication',
-  operatingSystem: 'Web',
-  url: `${siteUrl}/tools/mortgage-calculator`,
-  description:
-    'Free mortgage calculator for Central Oregon home buyers. Estimate monthly payment from home price, down payment, interest rate, and loan term.',
-  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  provider: { '@type': 'RealEstateAgent', name: 'Ryan Realty', url: siteUrl },
+function formatPctPoints(n: number): string {
+  return `${n}%`
 }
 
 export default async function MortgageCalculatorPage({ searchParams }: Props) {
   const [sp, calcDefaults] = await Promise.all([searchParams, getCalculatorDefaults()])
   const initialPrice = sp.price ? parseInt(sp.price, 10) : undefined
   const initialDown = sp.down != null ? parseInt(sp.down, 10) : undefined
-  // URL param takes precedence; fall back to app_config mortgage_rate
   const initialRate = sp.rate != null ? parseFloat(sp.rate) : calcDefaults.mortgageRate
   const initialTerm = sp.term != null ? parseInt(sp.term, 10) : undefined
 
-  // Derive dollar-amount defaults from app_config rate percentages.
-  // Base: default home price ($500k) — matches the component's fallback.
-  const defaultHomePrice = initialPrice ?? 500000
+  const defaultHomePrice = initialPrice ?? DEFAULT_HOME_PRICE
   const defaultPropertyTaxYear = Math.round((defaultHomePrice * calcDefaults.taxRatePct) / 100 / 50) * 50
   const defaultInsuranceYear = Math.round((defaultHomePrice * calcDefaults.insuranceRatePct) / 100 / 50) * 50
 
+  const siteUrl = getCanonicalSiteUrl()
+  const softwareLd = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Mortgage Calculator',
+    applicationCategory: 'FinanceApplication',
+    operatingSystem: 'Web',
+    url: `${siteUrl}${ROUTE_PATH}`,
+    description:
+      'Free mortgage calculator for Central Oregon home buyers. Estimate monthly payment from home price, down payment, interest rate, and loan term.',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    provider: { '@type': 'RealEstateAgent', name: 'Ryan Realty', url: siteUrl },
+  }
+
+  const figures: V3InstrumentFigure[] = []
+  if (calcDefaults.mortgageRate > 0) {
+    figures.push({
+      value: v3Text(formatPctPoints(calcDefaults.mortgageRate)),
+      label: v3Text('starting interest rate'),
+      href: '#calculator',
+    })
+  }
+  if (calcDefaults.taxRatePct > 0) {
+    figures.push({
+      value: v3Text(formatPctPoints(calcDefaults.taxRatePct)),
+      label: v3Text('starting property tax rate'),
+      href: '#calculator',
+    })
+  }
+  if (calcDefaults.insuranceRatePct > 0) {
+    figures.push({
+      value: v3Text(formatPctPoints(calcDefaults.insuranceRatePct)),
+      label: v3Text('starting insurance rate'),
+      href: '#calculator',
+    })
+  }
+  const [firstFigure, ...restFigures] = figures
+
+  const schemas: SchemaInput[] = [
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Mortgage calculator', url: ROUTE_PATH },
+      ],
+    },
+  ]
+
+  const edgeItems: V3QuietItem[] = [
+    {
+      kind: 'prose',
+      term: 'How it works',
+      body: 'Enter price, down payment, rate, and term. Tax and insurance start at Central Oregon defaults you can change. PMI is 0.5 percent of the loan per year when the down payment is below 20 percent.',
+    },
+    {
+      kind: 'prose',
+      term: 'What the total is',
+      body: 'An estimate, not a lender quote. Your payment will follow the rate your lender offers, the tax on that property, and the insurance you buy. HOA dues are not in this total.',
+    },
+    { label: 'Homes for sale in Central Oregon', href: listingsBrowsePath() },
+    { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
+    { label: 'Rental property calculator', href: '/tools/rental-property-calculator' },
+  ]
+
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="tools" />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
-      <KbBreadcrumb overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Tools' },
-          { label: 'Mortgage calculator' },
-        ]}
-      />
-      <SmoothScrollProvider>
-        {/* Hero — same H1 + subtitle as the prior ContentPageHero, in the KB
-            Amboqia display. The prior CTAs (Browse Listings / Get a Home
-            Valuation) are preserved as a dedicated CTA row below the hero. */}
-        <KbHero
-          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Before you offer"
-          titleTop="Mortgage Calculator"
-          titleBottom="for Home Buyers"
-          lead="Enter price, down payment, rate, and term. Taxes and insurance start at Central Oregon defaults you can change. The total is an estimate, not a lender quote."
-          showSearch={false}
-          videoSrc={null}
-          posterSrc="/images/kb/redmond-downtown-aerial.jpg"
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="tools" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
+        <MetadataBlock schemas={schemas} />
+
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Tools' },
+            { label: 'Mortgage calculator' },
+          ]}
         />
 
-        {/* The calculator — interactive shadcn client component, logic untouched.
-            Wrapped in a KB section + hard-edge cream card so it sits on the
-            navy-on-cream surface. */}
-        <section className="section" id="calculator" aria-label="Mortgage calculator">
-          <div className="wrap">
-            <div className="sec-head" style={{ borderColor: 'var(--navy)' }}>
-              <span className="sec-index">Estimate</span>
-              <h2 className="sec-title display">Your monthly<br />payment</h2>
-            </div>
-            <div
-              className="kb-tool-card"
-              style={{ border: 'var(--edge) solid var(--navy)', padding: 'clamp(16px,3vw,28px)', marginTop: 28 }}
-            >
-              <MortgageCalculator
-                initialHomePrice={initialPrice}
-                initialDownPaymentPct={initialDown}
-                initialInterestRate={initialRate}
-                initialLoanTermYears={initialTerm}
-                initialPropertyTaxYear={defaultPropertyTaxYear}
-                initialInsuranceYear={defaultInsuranceYear}
-                bare
-              />
-            </div>
-          </div>
-        </section>
+        {firstFigure ? (
+          <V3Instrument
+            id="answer"
+            level={1}
+            eyebrow={v3Text('Central Oregon · before you offer')}
+            headline={v3Text('Mortgage calculator for home buyers')}
+            figures={[firstFigure, ...restFigures]}
+            source={v3Text(MORTGAGE_TRACE)}
+            action={{
+              label: v3Text('Value my home'),
+              href: valuationHref(ROUTE_PATH),
+              variant: 'primary',
+            }}
+          />
+        ) : (
+          <V3Quiet
+            id="answer"
+            heading="Mortgage calculator for home buyers"
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: 'Starting rates are not on this page right now',
+                body: 'The calculator below still runs on the numbers you type.',
+              },
+              { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
+            ]}
+          />
+        )}
 
-        {/* How to use this calculator — full explainer copy preserved verbatim,
-            plus the valuation CTA. */}
-        <section className="section" id="how-to-use" aria-label="How to use this calculator">
-          <div className="wrap">
-            <div className="sec-head" style={{ borderColor: 'var(--navy)' }}>
-              <span className="sec-index">Guide</span>
-              <h2 className="sec-title display">How to use<br />this calculator</h2>
-            </div>
-            <div className="ov-prose" style={{ paddingTop: 24, color: 'var(--navy)' }}>
-              <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 16 }}>
-                Enter the home price and down payment percentage to set the loan amount. Adjust the interest
-                rate and loan term to match the scenario you want to model. The property tax and home insurance
-                fields default to Central Oregon estimates and are editable assumptions. PMI applies automatically
-                when the down payment is below 20 percent and is calculated at 0.5 percent of the loan amount
-                per year.
-              </p>
-              <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 16 }}>
-                The monthly total is an estimate, not a lender quote. Your actual payment will reflect the
-                rate your lender offers, the exact tax assessment on the property, your insurance policy
-                premium, and any HOA dues not included here.
-              </p>
-              <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 0 }}>
-                Once you land on a monthly payment that works, browse homes in that range. If you are
-                selling your current home to fund the purchase, get a value estimate on that property too.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 mt-6">
-              <a href="/homes-for-sale" className="btn alt">
-                Browse homes in this range <span className="arr">&rarr;</span>
-              </a>
-              <Link
-                href="/sell/valuation"
-                className="btn alt"
-                style={{ background: 'transparent', color: 'var(--navy)' }}
-              >
-                Get a home value estimate <span className="arr">&rarr;</span>
-              </Link>
-            </div>
-          </div>
-        </section>
+        <CalculatorSheet
+          id="calculator"
+          headingId="calculator-heading"
+          eyebrow="Estimate"
+          heading="Your monthly payment"
+        >
+          <MortgageCalculator
+            initialHomePrice={initialPrice}
+            initialDownPaymentPct={initialDown}
+            initialInterestRate={initialRate}
+            initialLoanTermYears={initialTerm}
+            initialPropertyTaxYear={defaultPropertyTaxYear}
+            initialInsuranceYear={defaultInsuranceYear}
+            bare
+          />
+        </CalculatorSheet>
 
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+        <V3Quiet id="how-to-use" heading="How to use this calculator" items={edgeItems} />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 202,
-    "legacyPages": 26,
-    "mixedPages": 54
+    "nonV3ImportSites": 194,
+    "legacyPages": 24,
+    "mixedPages": 56
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -484,10 +484,14 @@
       "kb": 1
     },
     "app/tools/mortgage-calculator/page.tsx": {
-      "kb": 6
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/tools/rental-property-calculator/page.tsx": {
-      "kb": 6
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/videos/page.tsx": {
       "legacy": 3,

@@ -1,54 +1,61 @@
-// @no-parity — utility calculator tool, no mockup contract (same as /tools/mortgage-calculator)
-// @data-free — pure client-side calculator, fetches no data (rent/MLS pre-fill is a future enhancement)
 /**
- * /tools/rental-property-calculator — free rental underwriting tool for Bend and
- * Central Oregon investors.
+ * /tools/rental-property-calculator — rental underwriting tool, on the
+ * components/site/v3 barrel.
  *
- * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
- * PLACE from the prior ContentPageHero + Card layout. Every piece of content is
- * preserved: SoftwareApplication JSON-LD, the four-question FAQPage JSON-LD (now
- * ALSO surfaced visibly so answer engines and readers see the same content), the
- * searchParams pre-fill (price/rent/taxes/down/rate), the interactive
- * RentalCalculator client component (shadcn inputs/select + 30-year projection —
- * logic untouched), the hero H1 + subtitle + the two CTAs (Browse Homes for Sale
- * / Talk to an Agent), and the full three-paragraph "How to use this calculator"
- * explainer plus its broker CTA. Only the presentation changed — the page now
- * wears the KB shell (KbNav, KbHero, Amboqia display, hard-edge cream surfaces,
- * KbFooter).
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Rhythm: three of six,
+ * no two adjacent alike. Order is Breadcrumb, Instrument level 1, Sheet
+ * (calculator island), Quiet, Footer.
  *
- * SEO: export const metadata (canonical + OG + Twitter) + SoftwareApplication +
- * FAQPage JSON-LD. PAGE CONTRACT: KB design + SEO + tracking (KbSectionTracker
- * pageType="tools").
+ * THE PAGE CONTRACT, carried across unchanged: metadata title "Rental Property
+ * Calculator", SoftwareApplication JSON-LD, FAQPage JSON-LD from the same FAQ
+ * array the Quiet block renders, searchParams pre-fill (price/rent/taxes/down/rate),
+ * getCalculatorDefaults rate seed, RentalCalculator math (cash flow, cap rate,
+ * cash-on-cash, 30-year projection, PDF, submitRentalLead), KbSectionTracker
+ * pageType="tools". MetadataBlock and KbSectionTracker stay on their registers:
+ * wiring, not visual language.
+ *
+ * SoftwareApplication stays a page-level script. MetadataBlock has no
+ * SoftwareApplication input type.
+ *
+ * ONE PRIMARY PER VIEWPORT, counting visible filled controls. At 390 the
+ * chrome CTA sits in the collapsed menu, so the Instrument ask is primary.
+ * Label is Value my home (D11). valuationHref carries ?from=.
+ *
+ * KB-era deletions: KbHero, KbFooter, SmoothScrollProvider, kb.css, the
+ * dedicated Browse / Talk to an agent button row (those doors now live in
+ * Quiet), the separate how-to KB section (folded into Quiet with the FAQ).
  */
 
 import type { Metadata } from 'next'
-import RentalCalculator from '@/components/tools/RentalCalculator'
 import { getCalculatorDefaults } from '@/lib/data'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { pageMetadata } from '@/lib/site/page-metadata'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
+import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import type { SchemaInput } from '@/lib/site/json-ld'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Quiet,
+  type V3InstrumentFigure,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+import RentalCalculator from '@/components/tools/RentalCalculator'
+import { CalculatorSheet } from './_v3/CalculatorSheet'
+import { FAQ, RENTAL_TRACE, ROUTE_PATH } from './_v3/rental-constants'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-const ogImage = `${siteUrl}/api/og?type=default`
-
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'Rental Property Calculator',
   description:
     'See whether rent covers the mortgage, taxes, insurance, and reserves on a Bend or Central Oregon rental. Cash flow, cap rate, cash-on-cash, and a long hold projection.',
-  alternates: { canonical: `${siteUrl}/tools/rental-property-calculator` },
-  openGraph: {
-    title: 'Rental Property Calculator | Ryan Realty',
-    description:
-      'See whether rent covers the costs on a Central Oregon rental. Cash flow, cap rate, cash-on-cash return, and a long hold projection.',
-    url: `${siteUrl}/tools/rental-property-calculator`,
-    type: 'website',
-    images: [{ url: ogImage, width: 1200, height: 630 }],
-  },
-  twitter: { card: 'summary_large_image', images: [ogImage] },
-}
+  path: ROUTE_PATH,
+})
 
 type Props = {
   searchParams: Promise<{
@@ -60,28 +67,9 @@ type Props = {
   }>
 }
 
-// AEO: a free finance tool + the calculator's key concepts as an FAQ, so answer
-// engines can surface "rental property calculator" and "what is cap rate / cash
-// flow / cash-on-cash". Answers match the engine in lib/rental-analysis.ts.
-// The same Q&A pairs render visibly in the FAQ section below.
-const FAQ: { q: string; a: string }[] = [
-  {
-    q: 'What is cash flow on a rental property?',
-    a: 'Cash flow is what is left each month after the mortgage, property taxes, insurance, management, and maintenance reserves are paid out of the rent. Positive cash flow means the rent covers every cost with money to spare.',
-  },
-  {
-    q: 'What is cap rate?',
-    a: 'Cap rate is the annual net operating income divided by the purchase price, shown as a percent. It measures the yield of the property independent of how you finance it.',
-  },
-  {
-    q: 'What is cash-on-cash return?',
-    a: 'Cash-on-cash return compares your annual cash flow to the cash you put in, including the down payment, closing costs, and any upfront work. It shows the yearly return on the actual dollars you invested.',
-  },
-  {
-    q: 'Are these rental numbers a guarantee?',
-    a: 'No. The figures are estimates based on the numbers you enter, not investment advice or a guarantee of rent, value, or return. A Ryan Realty broker can pull real rent comps and help you underwrite a specific property.',
-  },
-]
+function formatPctPoints(n: number): string {
+  return `${n}%`
+}
 
 export default async function RentalPropertyCalculatorPage({ searchParams }: Props) {
   const [sp, calcDefaults] = await Promise.all([searchParams, getCalculatorDefaults()])
@@ -89,178 +77,130 @@ export default async function RentalPropertyCalculatorPage({ searchParams }: Pro
   const initialRent = sp.rent ? parseInt(sp.rent, 10) : undefined
   const initialPropertyTaxesYear = sp.taxes ? parseInt(sp.taxes, 10) : undefined
   const initialDownPaymentPct = sp.down != null ? parseInt(sp.down, 10) : undefined
-  // URL param takes precedence; fall back to app_config mortgage_rate
   const initialInterestRate = sp.rate != null ? parseFloat(sp.rate) : calcDefaults.mortgageRate
 
-  const toolUrl = `${siteUrl}/tools/rental-property-calculator`
+  const siteUrl = getCanonicalSiteUrl()
   const softwareLd = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Rental Property Calculator',
     applicationCategory: 'FinanceApplication',
     operatingSystem: 'Web',
-    url: toolUrl,
+    url: `${siteUrl}${ROUTE_PATH}`,
     description:
       'Free rental property calculator for Bend and Central Oregon. See monthly cash flow, cap rate, cash-on-cash return, total cash needed, and a 30-year projection.',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     provider: { '@type': 'RealEstateAgent', name: 'Ryan Realty', url: siteUrl },
   }
-  const faqLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQ.map((item) => ({
-      '@type': 'Question',
-      name: item.q,
-      acceptedAnswer: { '@type': 'Answer', text: item.a },
-    })),
+
+  const figures: V3InstrumentFigure[] = []
+  if (calcDefaults.mortgageRate > 0) {
+    figures.push({
+      value: v3Text(formatPctPoints(calcDefaults.mortgageRate)),
+      label: v3Text('starting interest rate'),
+      href: '#calculator',
+    })
   }
+  const [firstFigure, ...restFigures] = figures
+
+  const schemas: SchemaInput[] = [
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Rental property calculator', url: ROUTE_PATH },
+      ],
+    },
+    { type: 'faqPage', items: FAQ },
+  ]
+
+  const quietItems: V3QuietItem[] = [
+    ...FAQ.map((item) => ({
+      kind: 'prose' as const,
+      term: item.question,
+      body: item.answer,
+    })),
+    {
+      kind: 'prose',
+      term: 'How it works',
+      body: 'Start with price and rent. Set down payment, rate, and term to match the loan you plan to use. Operating expenses start as editable defaults. Cash flow is what is left after the mortgage, taxes, insurance, management, and reserves.',
+    },
+    { label: 'Homes for sale in Central Oregon', href: listingsBrowsePath() },
+    { label: 'Contact us', href: '/contact' },
+    { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
+    { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
+  ]
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="tools" />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
-      <KbBreadcrumb overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Tools' },
-          { label: 'Rental property calculator' },
-        ]}
-      />
-      <SmoothScrollProvider>
-        {/* Hero — same H1 + subtitle as the prior ContentPageHero, in the KB
-            Amboqia display. The prior CTAs (Browse Homes for Sale / Talk to an
-            Agent) are preserved as a dedicated CTA row below the hero. */}
-        <KbHero
-          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Central Oregon · Before you buy a rental"
-          titleTop="Rental Property"
-          titleBottom="Calculator"
-          lead="Price, financing, rent, and expenses. You get cash flow, cap rate, cash-on-cash return, and how equity builds on a long hold."
-          videoSrc={null}
-          posterSrc="/images/lp/hero-pond.jpg"
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="tools" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareLd) }} />
+        <MetadataBlock schemas={schemas} />
+
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Tools' },
+            { label: 'Rental property calculator' },
+          ]}
         />
 
-        {/* CTA row preserved from the prior hero (Browse Homes for Sale · Talk to an Agent) */}
-        <section className="section" id="tool-cta" aria-label="Browse and contact">
-          <div className="wrap">
-            <div className="flex flex-wrap items-center gap-3 py-2">
-              <a href="/homes-for-sale" className="btn alt">
-                Browse homes for sale <span className="arr">&rarr;</span>
-              </a>
-              <a
-                href="/contact"
-                className="btn alt"
-                style={{ background: 'transparent', color: 'var(--navy)' }}
-              >
-                Talk to an agent <span className="arr">&rarr;</span>
-              </a>
-            </div>
-          </div>
-        </section>
+        {firstFigure ? (
+          <V3Instrument
+            id="answer"
+            level={1}
+            eyebrow={v3Text('Central Oregon · before you buy a rental')}
+            headline={v3Text('Rental property calculator')}
+            figures={[firstFigure, ...restFigures]}
+            source={v3Text(RENTAL_TRACE)}
+            action={{
+              label: v3Text('Value my home'),
+              href: valuationHref(ROUTE_PATH),
+              variant: 'primary',
+            }}
+          />
+        ) : (
+          <V3Quiet
+            id="answer"
+            heading="Rental property calculator"
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: 'Starting rate is not on this page right now',
+                body: 'The calculator below still runs on the numbers you type.',
+              },
+              { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
+            ]}
+          />
+        )}
 
-        {/* The calculator — interactive shadcn client component, logic untouched
-            (cash flow, cap rate, cash-on-cash, total cash, 30-year projection).
-            Wrapped in a KB section + hard-edge cream card. */}
-        <section className="section" id="calculator" aria-label="Rental property calculator">
-          <div className="wrap">
-            <div className="sec-head" style={{ borderColor: 'var(--navy)' }}>
-              <span className="sec-index">Underwrite</span>
-              <h2 className="sec-title display">Run the<br />numbers</h2>
-            </div>
-            <div
-              className="kb-tool-card"
-              style={{ border: 'var(--edge) solid var(--navy)', padding: 'clamp(16px,3vw,28px)', marginTop: 28 }}
-            >
-              <RentalCalculator
-                initialPrice={initialPrice}
-                initialRent={initialRent}
-                initialPropertyTaxesYear={initialPropertyTaxesYear}
-                initialDownPaymentPct={initialDownPaymentPct}
-                initialInterestRate={initialInterestRate}
-              />
-            </div>
-          </div>
-        </section>
+        <CalculatorSheet
+          id="calculator"
+          headingId="calculator-heading"
+          eyebrow="Underwrite"
+          heading="Run the numbers"
+        >
+          <RentalCalculator
+            initialPrice={initialPrice}
+            initialRent={initialRent}
+            initialPropertyTaxesYear={initialPropertyTaxesYear}
+            initialDownPaymentPct={initialDownPaymentPct}
+            initialInterestRate={initialInterestRate}
+            embedded
+          />
+        </CalculatorSheet>
 
-        {/* How to use this calculator — full explainer copy preserved verbatim,
-            plus the broker CTA. */}
-        <section className="section" id="how-to-use" aria-label="How to use this calculator">
-          <div className="wrap">
-            <div className="sec-head" style={{ borderColor: 'var(--navy)' }}>
-              <span className="sec-index">Guide</span>
-              <h2 className="sec-title display">How to use<br />this calculator</h2>
-            </div>
-            <div className="ov-prose" style={{ paddingTop: 24, color: 'var(--navy)' }}>
-              <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 16 }}>
-                Start with the purchase price and the rent you expect to collect. Set your down payment, interest
-                rate, and loan term to match the financing you plan to use. The operating-expense fields carry
-                editable defaults for Central Oregon, property taxes near 0.75 percent of price, management at 8
-                percent of rent, and reserves for maintenance and capital repairs. Adjust each one to fit the
-                property.
-              </p>
-              <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 16 }}>
-                The results panel updates as you type. Cash flow is what is left each month after the mortgage,
-                taxes, insurance, management, and reserves. Cap rate measures yield independent of financing.
-                Cash-on-cash compares your annual cash flow to the cash you put in. Open the 30-year projection to
-                see how rent, value, and equity grow over time.
-              </p>
-              <p style={{ fontSize: 'clamp(1rem,1.5vw,1.15rem)', lineHeight: 1.6, marginBottom: 0 }}>
-                These figures are estimates, not investment advice or a guarantee of rent, value, or return. When
-                you find a property worth a closer look, a Ryan Realty broker can pull real rent comps and help you
-                underwrite it.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 mt-6">
-              <a href="/contact" className="btn alt">
-                Talk to a Ryan Realty broker <span className="arr">&rarr;</span>
-              </a>
-            </div>
-          </div>
-        </section>
+        <V3Quiet id="faq" heading="Cash flow, cap rate, and more" items={quietItems} />
+      </main>
 
-        {/* FAQ — the same four Q&A pairs carried in the FAQPage JSON-LD, now
-            surfaced visibly for readers and answer engines. */}
-        <section className="section" id="faq" aria-label="Rental calculator questions">
-          <div className="wrap">
-            <div className="sec-head" style={{ borderColor: 'var(--navy)' }}>
-              <span className="sec-index">Questions</span>
-              <h2 className="sec-title display">Cash flow,<br />cap rate &amp; more</h2>
-            </div>
-            <dl style={{ paddingTop: 24, maxWidth: '72ch' }}>
-              {FAQ.map((item, i) => (
-                <div
-                  key={item.q}
-                  style={{
-                    borderTop: 'var(--edge) solid var(--navy-12)',
-                    paddingTop: 22,
-                    paddingBottom: 22,
-                    ...(i === FAQ.length - 1 ? { borderBottom: 'var(--edge) solid var(--navy-12)' } : {}),
-                  }}
-                >
-                  <dt
-                    className="display"
-                    style={{ fontSize: 'clamp(1.15rem,2.4vw,1.55rem)', lineHeight: 1.1, marginBottom: 10 }}
-                  >
-                    {item.q}
-                  </dt>
-                  <dd
-                    style={{
-                      color: 'var(--navy-70)',
-                      fontSize: 'clamp(1rem,1.5vw,1.12rem)',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {item.a}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
-
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
