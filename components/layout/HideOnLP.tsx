@@ -45,10 +45,10 @@ export default function HideOnLP({ children }: { children: React.ReactNode }) {
  * re-mount KbNav; do not "fix double chrome" by adding HideChrome around a
  * second header — remove the second mount instead.
  *
- * Still exported because app/not-found.tsx wraps SiteFooter here (404s can
- * land on any pathname; the gate keeps the default footer off KB/LP/admin
+ * Still exported because app/not-found.tsx wraps V3Footer here (404s can
+ * land on any pathname; the gate keeps the public footer off LP/admin
  * paths). shouldHideDefaultChrome in @/lib/site/chrome-routes remains the
- * predicate. SiteFooter on real pages is route-owned
+ * predicate. Footers on real pages are route-owned
  * (scripts/check-default-chrome-footer.mjs) — never re-mount a global hidden
  * footer in layout.
  *
