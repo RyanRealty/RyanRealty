@@ -123,7 +123,7 @@ run_chain_and_build() {
   # GitHub Actions CI was red on every push from Jun 24 to Jul 17 while local
   # hooks stayed green. Zero-error policy; warnings pass.
   echo "push: eslint (matches CI lint-and-build) in $workdir…"
-  ( cd "$workdir" && npm run lint ) || die 1 \
+  ( cd "$workdir" && npm run lint -- --cache --cache-location .eslintcache ) || die 1 \
     "✗ eslint FAILED — push aborted. This is the same lint CI runs, fix the errors." \
     "  NOTHING landed on the remote. Your commits are still local."
   echo "✓ eslint OK"
@@ -250,7 +250,7 @@ else
   git -C "$VERIFY_DIR" checkout -f --detach "$SHA"
   # Deterministic tree: drop everything the checkout didn't put there, keeping
   # the expensive persistent state (deps, build cache, env).
-  git -C "$VERIFY_DIR" clean -fdx -e node_modules -e .next -e .env.local >/dev/null
+  git -C "$VERIFY_DIR" clean -fdx -e node_modules -e .next -e .env.local -e .eslintcache >/dev/null
 fi
 
 # Build-time env (untracked config, not code state — same values Vercel holds).

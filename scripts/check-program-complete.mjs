@@ -55,8 +55,9 @@ if (!rows) fail('ledger has no "rows" array.')
 // --- Build the expanded ci:gates chain text once (to prove a gate is wired) ---
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
 const scripts = pkg.scripts ?? {}
-let expandedChain = scripts['ci:gates'] ?? ''
-for (const tok of (scripts['ci:gates'] ?? '').match(/ci:[\w:-]+/g) ?? []) {
+const gatesChain = scripts['ci:gates:chain'] ?? scripts['ci:gates'] ?? ''
+let expandedChain = gatesChain
+for (const tok of gatesChain.match(/ci:[\w:-]+/g) ?? []) {
   expandedChain += '\n' + (scripts[tok] ?? '')
 }
 

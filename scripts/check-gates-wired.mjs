@@ -30,7 +30,7 @@ const BASELINE_PATH = 'scripts/gates-wired-baseline.json'
 
 const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
 const scripts = pkg.scripts ?? {}
-const gatesChain = scripts['ci:gates'] ?? ''
+const gatesChain = scripts['ci:gates:chain'] ?? scripts['ci:gates'] ?? ''
 
 let workflowText = ''
 try {
@@ -52,7 +52,8 @@ try {
 // Helper/dev variants are not gates themselves — they support a gate.
 const isVariant = (k) => /:(report|baseline|refresh|start|postbuild|worklist|next)$/.test(k)
 // The chain + its postbuild are the runner, not a gate to wire.
-const isRunner = (k) => k === 'ci:gates' || k === 'ci:gates:postbuild'
+const isRunner = (k) =>
+  k === 'ci:gates' || k === 'ci:gates:postbuild' || k === 'ci:gates:chain'
 
 // Generators / refreshers that write an artifact and do NOT exit non-zero on
 // failure — not pass/fail gates, so not required to be wired. Keep TINY.
