@@ -15,19 +15,9 @@
  * `buildAlertCreatePayload('daily')`. Nothing about what reaches
  * `listing_alerts` or `crm_people` moved. Only the markup did.
  *
- * ONE FIELD DID NOT SURVIVE, AND IT IS NOT A SILENT DROP. KbCommunityAlerts
- * rendered a `company` honeypot: a visually hidden text input humans never fill,
- * which the action treats as a bot signal. `V3SheetField` has four kinds
- * (text/email/tel/number, textarea, select, choice) and no hidden variant, and
- * `.design-token-lint-ignore` states that components/site/v3 owns the raw input
- * "that every other public file is then forbidden to hand-roll", so this file
- * cannot render one itself. The action's `company` parameter is optional and an
- * omitted value takes the same branch an unfilled honeypot took, so the capture
- * still works; what is lost is the catch on a bot that fills every field. The
- * remaining spam controls on this path are untouched (per-IP rate limit failing
- * closed in production, email validation, native dedup, the compliance gate).
- * A hidden-field kind in V3Sheet is the barrel gap that closes it, and it is
- * reported as such.
+ * THE HONEYPOT IS A SHEET-LEVEL `trap` named `company`. Its value rides in
+ * onAdvance().answers and is forwarded to the action. Hardcoding `company: ''`
+ * is the same as having no trap.
  *
  * Client because the answer, the step, and the send are all visitor-caused
  * state. Controlled on purpose, the same discipline MarketInquirySheet states:
@@ -68,6 +58,7 @@ export function CityAlertSheet({ cityName }: { cityName: string }) {
         const result = await submitSearchAlertSignup({
           email: answers.email ?? '',
           filters,
+          company: answers.company ?? '',
         })
         if (result.ok) {
           rememberGuestWatch( // hydration-safe: event/effect storage only
@@ -150,6 +141,7 @@ export function CityAlertSheet({ cityName }: { cityName: string }) {
       eyebrow="New listings"
       heading={`Get new ${cityName} listings by email`}
       steps={steps}
+      trap={{ name: 'company', label: 'Company' }}
       currentStepId={currentStepId}
       showEcho={false}
       showProgress={false}

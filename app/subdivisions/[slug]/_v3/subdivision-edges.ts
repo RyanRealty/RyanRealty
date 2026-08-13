@@ -17,6 +17,7 @@
 import type { V3QuietItem } from '@/components/site/v3'
 import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
 import type { LifestyleNearItem } from '@/lib/explore/lifestyle-near'
+import { valuationHref } from '@/lib/site/valuation-href'
 
 export type EdgeInput = {
   displayName: string
@@ -29,6 +30,8 @@ export type EdgeInput = {
   peerPlats: ReadonlyArray<{ name: string; href: string }>
   /** Where "every home for sale here" goes, built by the page from lib/slug. */
   browseHref: string
+  /** This plat's own path. The valuation origin. */
+  pagePath: string
 }
 
 function milesLabel(distanceMiles: number): string {
@@ -48,6 +51,7 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
     lifestyleItems,
     peerPlats,
     browseHref,
+    pagePath,
   } = input
 
   const seen = new Set<string>()
@@ -87,7 +91,7 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
   push(`Every ${displayName} home for sale`, browseHref)
   push('All Central Oregon communities', '/communities')
   push('All Central Oregon cities', '/cities')
-  push('Sell your home', '/sell')
+  push('Value my home', valuationHref(pagePath))
   push('Oregon Data Share', 'https://www.oregondatashare.com')
 
   return edges

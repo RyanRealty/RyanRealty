@@ -1,11 +1,8 @@
 {
-  "count": 182,
+  "count": 179,
   "files": [
     "app/buy/loading.tsx",
-    "app/cities/[slug]/[neighborhoodSlug]/error.tsx",
-    "app/cities/[slug]/error.tsx",
     "app/cities/error.tsx",
-    "app/communities/[slug]/error.tsx",
     "app/compare/error.tsx",
     "app/dashboard/error.tsx",
     "app/dashboard/marketing/_components/EmptyState.tsx",

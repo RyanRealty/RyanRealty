@@ -128,7 +128,7 @@ export function ZipAlertsSheet({
       // The KB band printed this line beside the field on every render, and a
       // form that asks for an address states the frequency and the exit before
       // it takes one.
-      'One email per new listing. Unsubscribe from any of them.',
+      'One email per new listing. Unsubscribe any time.',
     ],
     field: {
       kind: 'email',

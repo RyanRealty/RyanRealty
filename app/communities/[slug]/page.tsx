@@ -131,8 +131,8 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
-import { CommunityFieldMap } from './_v3/CommunityFieldMap.client'
-import type { CommunityFieldMapPin } from './_v3/CommunityFieldMapImpl'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
 import {
   buildClosedFigures,
@@ -386,16 +386,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     lat: t.lat,
     lng: t.lng,
   }))
-  const pins: CommunityFieldMapPin[] = rows
-    .filter((r) => r.lat != null && r.lng != null && r.id)
-    .map((r) => ({
-      id: r.id,
-      href: r.href,
-      priceLabel: r.priceLabel,
-      title: r.title,
-      lat: Number(r.lat),
-      lng: Number(r.lng),
-    }))
+  const pins = fieldMapPins(rows)
   const fieldItems = rows.slice(0, FIELD_LIST_CAP)
 
   // The county plat union (the TRUE footprint) ALWAYS draws when present; the
@@ -663,7 +654,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           }
           mapSlot={
             hasMap ? (
-              <CommunityFieldMap
+              <PlaceFieldMap
                 pins={pins}
                 boundary={polygonGeometry}
                 placeName={community.name}

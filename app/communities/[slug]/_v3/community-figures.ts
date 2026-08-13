@@ -304,7 +304,7 @@ export function buildExploreEdges(input: {
     })),
     { label: 'Every Central Oregon community', href: '/communities' },
     { label: 'Central Oregon housing market', href: '/housing-market' },
-    { label: 'Sell a home here', href: valuationHref(input.pagePath) },
+    { label: 'Value my home', href: valuationHref(input.pagePath) },
     { label: 'Talk to a broker', href: '/contact' },
   ]
 }

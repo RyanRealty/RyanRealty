@@ -11,6 +11,11 @@
  * an empty Ledger saying no sales exist. An empty result here is the absence of
  * an answer, not the answer zero (CLAUDE.md section 0).
  *
+ * D9: the yearly series is a chart, not a seventh figure. When the plat-stats
+ * Instrument already holds that chart, this file is Ledger only. When that
+ * Instrument is absent, the series mounts here as Instrument.chart, then the
+ * year rows. Flattening the years into a single figure is the defect D9 names.
+ *
  * ODS rule 5-4 A.4: aggregates only. Year, count, median. Never an individual
  * sold address or price, which is VOW-only data. Rule 7-3: the section carries
  * the ODS trace, which lives in _v3/subdivision-traces.ts with the page's other
@@ -33,7 +38,14 @@
  * aggregates and shared this section's source line.
  */
 
-import { v3Text, V3Ledger, type V3LedgerFigureRow } from '@/components/site/v3'
+import {
+  v3Text,
+  V3Instrument,
+  V3Ledger,
+  type V3ChartProps,
+  type V3InstrumentFigure,
+  type V3LedgerFigureRow,
+} from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { MAX_YEAR_ROWS, salesHistoryTrace } from './_v3/subdivision-traces'
@@ -50,9 +62,16 @@ interface Props {
   history: SubdivisionSalesYear[]
   /** The plat's city, when the page resolved one. Narrows the year door. */
   cityName: string
+  /**
+   * Yearly closed-count series. Present only when the plat-stats Instrument did
+   * not already take it. Two Instruments in a row would break the rhythm rule,
+   * which is why the page moves the parent-market band below this section when
+   * this chart mounts here.
+   */
+  chart?: V3ChartProps
 }
 
-export function SubdivisionSalesHistory({ displayName, history, cityName }: Props) {
+export function SubdivisionSalesHistory({ displayName, history, cityName, chart }: Props) {
   if (history.length === 0) return null
 
   const { openable, outsideClosed, outsideYears } = splitByExplorerRange(history)
@@ -94,26 +113,10 @@ export function SubdivisionSalesHistory({ displayName, history, cityName }: Prop
   const rangeBit = `The explorer runs from ${HISTORY_MIN_YEAR} to ${HISTORY_MAX_YEAR}`
 
   const [first, ...rest] = rows
-
-  if (!first) {
-    // Every closed year this plat has sits outside the range the explorer opens,
-    // so the Ledger has no row it can make a door. The figures still reach the
-    // reader through the note, and the empty state states the reason.
-    return (
-      <V3Ledger
-        id="sales-history"
-        eyebrow={v3Text(`${displayName} · Sales history`)}
-        heading={v3Text(`Closed sales in ${displayName}`)}
-        note={v3Text(`${totalsSentence} They fall in ${outsideYearBit} of closings.`)}
-        rows={[]}
-        emptyMessage={v3Text(
-          `${rangeBit}, and every closing recorded in ${displayName} is outside those years, so no ` +
-            `row here has a year to open.`,
-        )}
-        source={v3Text(salesHistoryTrace(displayName))}
-        action={{ label: v3Text('Closed sales explorer'), href: HISTORY_PATH, variant: 'ghost' }}
-      />
-    )
+  const explorerAction = {
+    label: v3Text('Closed sales explorer'),
+    href: HISTORY_PATH,
+    variant: 'ghost' as const,
   }
 
   const note =
@@ -124,15 +127,53 @@ export function SubdivisionSalesHistory({ displayName, history, cityName }: Prop
       : `${totalsSentence} Each row opens the Central Oregon closed-sales explorer at that year, ` +
         `which covers a wider area than this plat.`
 
-  return (
+  const ledger = !first ? (
     <V3Ledger
       id="sales-history"
       eyebrow={v3Text(`${displayName} · Sales history`)}
-      heading={v3Text(`Closed sales in ${displayName}`)}
+      heading={v3Text(chart ? 'Sales by year' : `Closed sales in ${displayName}`)}
+      note={v3Text(`${totalsSentence} They fall in ${outsideYearBit} of closings.`)}
+      rows={[]}
+      emptyMessage={v3Text(
+        `${rangeBit}, and every closing recorded in ${displayName} is outside those years, so no ` +
+          `row here has a year to open.`,
+      )}
+      source={v3Text(salesHistoryTrace(displayName))}
+      action={chart ? undefined : explorerAction}
+    />
+  ) : (
+    <V3Ledger
+      id="sales-history"
+      eyebrow={v3Text(`${displayName} · Sales history`)}
+      heading={v3Text(chart ? 'Sales by year' : `Closed sales in ${displayName}`)}
       note={v3Text(note)}
       rows={[first, ...rest]}
       source={v3Text(salesHistoryTrace(displayName))}
-      action={{ label: v3Text('Closed sales explorer'), href: HISTORY_PATH, variant: 'ghost' }}
+      action={chart ? undefined : explorerAction}
     />
+  )
+
+  if (!chart) return ledger
+
+  const closedFigure: V3InstrumentFigure = {
+    value: v3Text(totalClosed.toLocaleString('en-US')),
+    label: v3Text(totalClosed === 1 ? 'closed sale on record' : 'closed sales on record'),
+    href: HISTORY_PATH,
+  }
+
+  return (
+    <>
+      <V3Instrument
+        id="sales-history-chart"
+        level={2}
+        eyebrow={v3Text(`${displayName} · Sales history`)}
+        headline={v3Text(`Closed sales in ${displayName}`)}
+        figures={[closedFigure]}
+        source={v3Text(salesHistoryTrace(displayName))}
+        chart={chart}
+        action={explorerAction}
+      />
+      {ledger}
+    </>
   )
 }

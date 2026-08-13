@@ -98,8 +98,6 @@ const REQUIREMENTS = [
 // are back in the copy beside the field, so that surface now passes every
 // requirement rather than being excused from two.
 const LEDGER = {
-  'app/cities/[slug]/_v3/CityAlertSheet.client.tsx': ['honeypot'],
-  'app/zip/[zip]/_v3/ZipAlertsSheet.client.tsx': ['honeypot', 'company-wired', 'unsubscribe'],
   'components/SaveSearchButton.tsx': ['frequency', 'unsubscribe'],
   'components/site/listing-detail/RoomRestyle.client.tsx': ['frequency', 'unsubscribe'],
 }

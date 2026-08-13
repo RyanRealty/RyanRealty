@@ -33,9 +33,10 @@
  * Nothing here rounds except through lib/format, and nothing here fetches.
  */
 
-import { v3Text, type V3InstrumentFigure } from '@/components/site/v3'
+import { v3Text, type V3InstrumentFigure, type V3ChartProps, type V3ChartPoint } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import type { MarketPulse, MarketStats } from '@/lib/data'
+import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 
 /**
  * The plat's own closed statistics. The guard is the KB section's own guard, a
@@ -129,4 +130,29 @@ export function parentPulseFigures(
     covers.closed = true
   }
   return { figures, covers }
+}
+
+/**
+ * Yearly closed-count series for Instrument.chart (D9). Fewer than two years
+ * is not a line. Caption is the trace for this series. The rolling-period
+ * figures on the same Instrument keep their own source line.
+ */
+export function subdivisionSalesChart(
+  displayName: string,
+  history: readonly SubdivisionSalesYear[],
+): V3ChartProps | undefined {
+  const points: V3ChartPoint[] = [...history]
+    .filter((row) => row.closedCount > 0)
+    .sort((a, b) => a.year - b.year)
+    .map((row) => ({
+      value: row.closedCount,
+      tick: v3Text(String(row.year)),
+      label: v3Text(row.closedCount.toLocaleString('en-US')),
+      at: row.year,
+    }))
+  if (points.length < 2) return undefined
+  return {
+    caption: v3Text(`Closed single-family sales by year, ${displayName}`),
+    series: [{ name: v3Text('Homes sold'), points }],
+  }
 }

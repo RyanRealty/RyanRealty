@@ -5,10 +5,8 @@
  * no structured data of their own, on purpose, so one derivation feeds the visible
  * copy and the markup and the two cannot disagree (CLAUDE.md section 0).
  *
- * `hasMap` is GONE, declared rather than absorbed. It asserted a map of the place at
- * this URL and was true while the page rendered a Google map. The barrel ships no map
- * primitive, so V3Field draws its own relative plot and labels itself as not a map;
- * publishing hasMap over that would be a claim the page no longer supports. It
+ * `hasMap` ships when the Field's map slot holds PlaceFieldMap (pins with
+ * coordinates). It left when this route had only V3Field's relative plot. It
  * returns with the map.
  *
  * It lives beside the route rather than inside it for the reason city-constants.ts
@@ -59,6 +57,8 @@ export function buildCitySchemas(input: {
   cityName: string
   slug: string
   faq: MarketFaq
+  /** True when PlaceFieldMap is in the Field slot with at least one pin. */
+  hasMap: boolean
 }): SchemaInput[] {
   const { cityName, slug, faq } = input
   const { faqs, datasetVariables, asOfIso, asOfLabel } = faq
@@ -80,6 +80,7 @@ export function buildCitySchemas(input: {
       url: `/cities/${slug}`,
       address: { city: cityName, state: 'OR', country: 'US' },
       containedInPlace: 'Central Oregon',
+      hasMap: input.hasMap ? `/cities/${slug}` : undefined,
       additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
     },
   ]

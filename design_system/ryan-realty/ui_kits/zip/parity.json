@@ -8,7 +8,7 @@
     "KbHero: the dark photo hero, its property-search field, and its voice-search button. With it goes the getSurfaceImage('hero') read, because nothing renders a photo now. The hero's lede figures survive as the Instrument's figures.",
     "KbMarketHud: the market HUD. Its four live tile figures survive in the Instrument. Its 13-month trend chart and 5-year year-series do NOT: they were the PARENT CITY's price history, a different population from this page, and the KB page relabeled them rather than dropping them. The getPriceHistory read, the buildYearSeries call, and ZIP_CITY_SLUG (which existed only to address that city row) are deleted with it. Its footnote also printed the full months-of-supply methodology and threshold sentence on a page whose monthsSupply was null.",
     "KbFeatured: the 14-tile featured rail, its listing photography, its background-video and tour badges, and the resolveFeaturedItems + getListingVideos work behind them. The Field's rows carry the same homes as text. Its 'See all {n} {city} homes for sale' label is also gone, which fixes a mislabeled figure: {n} was the ZIP's active count printed beside the CITY's name.",
-    "KbListingMap: replaced by app/zip/[zip]/_v3/ZipFieldMap.client.tsx in the Field's map slot. Same population and same framing. Dropped with the KB component: the marker clusterer, close-zoom photo-stamp icons, the InfoWindow card, and the region town and peak labels.",
+    "KbListingMap: replaced by PlaceFieldMap (app/central-oregon/_v3/PlaceFieldMap.client.tsx) in the Field's map slot. Same population and same framing. Dropped with the KB component: the marker clusterer, close-zoom photo-stamp icons, the InfoWindow card, and the region town and peak labels. The route-local ZipFieldMap pair was deleted once this shared map existed.",
     "KbCommunityAlerts: replaced by ZipAlertsSheet on V3Sheet. The capture contract is unchanged (see dataLayer), including the hidden `company` honeypot, which is a real control again through V3Sheet's sheet-level `trap` prop after shipping briefly as a hardcoded empty string. All five defences run: honeypot, per-IP rate limit, email validation, native dedup, compliance gate. The email control accepts 254 characters, the bound the server action itself applies. The standing disclosure ('One email per new listing. Unsubscribe from any of them.') sits beside the field at the point of capture, as the KB band printed it. Dropped: the 'Sign in to manage alerts' link in the confirmation fine print.",
     "KbSell: the seller band and its address-prefill field. The ask survives as the Instrument's FILLED action, built by valuationHref('/zip/{zip}') so the link carries ?from= from the one helper instead of a string assembled in the route. The address-prefill input itself is not carried across: V3Instrument's action is a link, and the barrel has no field the pattern could hold. What ?from= reaches today is stated in the route file beside the link, because the helper's destination is /sell#get-value and app/sell/page.tsx hands its form a hardcoded pagePath.",
     "MarketSources: the Oregon Data Share citation band. Every source line on the page now names Oregon Data Share inside the trace for the figures it covers.",
@@ -48,8 +48,8 @@
       "blocking": true
     },
     {
-      "name": "ZipFieldMap",
-      "section": "The real Google map in the Field's map slot, at app/zip/[zip]/_v3/ZipFieldMap.client.tsx (next/dynamic ssr:false around ZipFieldMapImpl). The barrel ships no map primitive and takes the map as a slot on purpose. It reads the same items the list renders through useV3FieldBinding(), so a pin and a row cannot disagree, hovering either lights the other, and a pin opens the listing. THE MAP INSTANCE IS REACT STATE, not a ref: @react-google-maps/api hands it to onLoad after the mounting render, so held in a ref it was invisible to the effect that builds the markers and that effect took its early return and never ran again. The route shipped a correctly framed basemap with ZERO pins on it, which also made the Field's 'Select a pin to open that home' note point at nothing. Verified in a browser at 390 and 1280 after the fix. All map ink comes from lib/maps, so no hex is authored under app/.",
+      "name": "PlaceFieldMap",
+      "section": "The real Google map in the Field's map slot, shared at app/central-oregon/_v3/PlaceFieldMap.client.tsx. Pins come from fieldMapPins(fieldItems), the same set the list renders. Hovering a row lights its pin through useV3FieldBinding. Place.hasMap ships when at least one pin plots. The route-local ZipFieldMap pair is gone.",
       "blocking": true
     },
     {
@@ -121,7 +121,7 @@
     "KbSectionTracker",
     "V3Breadcrumb",
     "V3Instrument (level 1, the ZIP's answer) OR V3Quiet (degraded read)",
-    "V3Field (map plus list, ZipFieldMap in the slot)",
+    "V3Field (map plus list, PlaceFieldMap in the slot)",
     "V3Ledger (neighborhoods in this ZIP)",
     "ZipAlertsSheet (V3Sheet, listing alerts, #get-alerts)",
     "V3Ledger (homes for sale nearby)",

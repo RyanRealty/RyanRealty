@@ -256,10 +256,8 @@ export function placeDescription(placeName: string, cityName: string, hasPulse: 
  * at least one question. An empty payload under a full description is the same
  * defect as a wrong number.
  *
- * `hasMap` is deliberately absent from the Place. It pointed at this page
- * because this page rendered a boundary map; the barrel ships no map primitive,
- * the map is gone (declared in parity.json), and a hasMap claim over a page with
- * no map is a false statement in structured data.
+ * `hasMap` ships when PlaceFieldMap is in the Field slot (pins or a recorded
+ * polygon). It left when this route had only V3Field's relative plot.
  */
 export function neighborhoodSchemas(args: {
   placeName: string
@@ -267,6 +265,8 @@ export function neighborhoodSchemas(args: {
   citySlug: string
   neighborhoodSlug: string
   hasPulse: boolean
+  /** True when the Field slot holds a Google map. */
+  hasMap: boolean
   /** In-boundary pins, for the Place centroid. Unchanged from the KB page. */
   pins: ReadonlyArray<{ lat: number; lng: number }>
   faqs: MarketFaqResult['faqs']
@@ -305,6 +305,7 @@ export function neighborhoodSchemas(args: {
       address: { city: cityName, state: 'OR', country: 'US' },
       containedInPlace: cityName,
       geo,
+      hasMap: args.hasMap ? url : undefined,
       additionalProperty: datasetVariables.length > 0 ? datasetVariables : undefined,
     },
   ]

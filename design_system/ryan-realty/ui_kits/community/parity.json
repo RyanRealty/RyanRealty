@@ -47,8 +47,8 @@
       "blocking": true
     },
     {
-      "name": "CommunityFieldMap",
-      "section": "The real map, in V3Field's mapSlot, at app/communities/[slug]/_v3/CommunityFieldMap.client.tsx with its ssr:false impl beside it. Route-local because every existing map in the repo either carries its own section chrome (a second heading inside a section that already has one) or holds no binding. This one draws only what it is handed: a pin per item with coordinates, and the community outline ONLY when the page decided the boundary is trustworthy. It reads and writes V3Field's highlight through useV3FieldBinding, so pointing at a row enlarges its pin and pointing at a pin lights its row.",
+      "name": "PlaceFieldMap",
+      "section": "The real map, in V3Field's mapSlot, shared at app/central-oregon/_v3/PlaceFieldMap.client.tsx. Pins are every plotted tile (fieldMapPins(rows)), and the community outline draws ONLY when the page decided the boundary is trustworthy. It reads and writes V3Field's highlight through useV3FieldBinding. The route-local CommunityFieldMap pair is gone.",
       "blocking": true
     },
     {
@@ -88,7 +88,7 @@
     "KbHero — the community hero photo and its stat row. Places open on Instrument (PUBLIC_UI.md section 3); the photo survives as the OG image.",
     "KbResortOverview + KbAbout — the authored depth, rebuilt as the first V3Quiet block through _v3/place-knowledge.ts. Every fact it rendered is still rendered.",
     "KbFeatured + KbTicker — the poster rail and the price tape. The Field's rows are the same listings, each a door, with the price beside the address.",
-    "PlaceInventoryMap (and through it PlaceMapListSplit + KbListingMap) — replaced by V3Field with CommunityFieldMap in its slot, which is the same map-plus-list job with the binding the Field pattern requires.",
+    "PlaceInventoryMap (and through it PlaceMapListSplit + KbListingMap) — replaced by V3Field with PlaceFieldMap in its slot, which is the same map-plus-list job with the binding the Field pattern requires.",
     "KbMarketHud + MarketCoreCharts + KbMarketChart — the market HUD and both chart modules. The barrel has no chart primitive and the pattern set is closed, so the charts are DELETED here rather than reproduced. For most communities the trend series was the parent CITY's anyway (the community's own close history is too thin for a multi-year line), and the city market report that owns those charts is a door from every closed-sale figure and from the closing block. The gap is reported to the P9 orchestrator: a chart primitive is the barrel's largest missing piece.",
     "KbCommunities — the other-resorts rail. A door to /communities carries it.",
     "KbOpenHouses — the open-house list. City-scoped; a door to /open-houses/<city> carries it.",
@@ -152,7 +152,7 @@
     "MetadataBlock",
     "V3Breadcrumb",
     "V3Instrument (level 1, the place answer)",
-    "V3Field (homes, with CommunityFieldMap in the map slot)",
+    "V3Field (homes, with PlaceFieldMap in the map slot)",
     "V3Instrument (level 2, closed sales)",
     "V3Quiet (living in the place)",
     "CommunityAlertSheet (V3Sheet, listing alerts)",

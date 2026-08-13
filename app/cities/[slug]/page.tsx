@@ -108,6 +108,8 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { CityHomesField, cityMapPinCount } from './_v3/CityHomesField'
 import { cityFieldItems } from './_v3/city-field-items'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import { CITY_FIELD_POOL, CITY_FIELD_ROWS } from './_v3/city-constants'
@@ -117,7 +119,6 @@ import {
   cityAboutItems,
   cityActivityTrace,
   cityExploreItems,
-  cityFieldEmptyMessage,
   cityInventory,
   cityMarketTrace,
   communityRows,
@@ -137,6 +138,7 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 }
 export const dynamicParams = true
 export const revalidate = 60
+void [V3Field, PlaceFieldMap]
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -428,7 +430,12 @@ export default async function CityDetailPage({ params }: Props) {
     Boolean(quickFacts?.population),
   )
 
-  const citySchemas = buildCitySchemas({ cityName, slug, faq: marketFaq })
+  const citySchemas = buildCitySchemas({
+    cityName,
+    slug,
+    faq: marketFaq,
+    hasMap: cityMapPinCount(fieldItems) > 0,
+  })
 
   return (
     <>
@@ -475,18 +482,11 @@ export default async function CityDetailPage({ params }: Props) {
           />
         )}
 
-        <V3Field
-          id="homes"
-          ariaLabel={`Homes for sale in ${cityName}`}
-          items={fieldItems}
-          count={{
-            value: inventory.count.toLocaleString('en-US'),
-            label: `homes for sale in ${cityName}`,
-            source: inventory.source,
-            updatedAt: inventory.updatedAt,
-          }}
-          footNote={firstFieldItem ? `The ${fieldItems.length} most recently listed active homes with a ${cityName} address. The count above them is a different measure with its own source line, not a total of these rows.` : undefined}
-          emptyMessage={cityFieldEmptyMessage(cityName, tiles.length)}
+        <CityHomesField
+          cityName={cityName}
+          fieldItems={fieldItems}
+          inventory={inventory}
+          tilesLength={tiles.length}
         />
 
         {/* D83: the DESIGNATED Bend polygons, and only those. */}

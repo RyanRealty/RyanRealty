@@ -146,6 +146,8 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { NeighborhoodAlertsSheet } from './_v3/NeighborhoodAlertsSheet.client'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import {
   aboutItems,
   BANNED_DESCRIPTION_RE,
@@ -361,6 +363,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const countIsHonest =
     boundaryRead.ok && tilesRead.ok && boundary.polygon != null && boundary.pins.length < BOUNDARY_PIN_CAP
   const rows = fieldItems(tiles)
+  const mapPins = fieldMapPins(rows)
+  const hasGoogleMap = mapPins.length > 0 || Boolean(boundary.polygon)
   const emptyMessage = fieldEmptyMessage(placeName, {
     boundaryOk: boundaryRead.ok,
     hasPolygon: boundary.polygon != null,
@@ -417,7 +421,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     ...edge(`Open houses in ${cityName}`, `/open-houses/${citySlug}`),
     ...edge('Recent price drops', '/price-drops'),
     ...blogPosts.flatMap((p) => edge(p.title, p.slug?.trim() ? `/blog/${p.slug}` : null)),
-    ...edge('Sell your home', '/sell'),
+    ...edge('Value my home', valuationHref(`/cities/${citySlug}/${neighborhoodSlug}`)),
     // The destination the KB alert block's post-submit line carried. A terminal
     // V3Sheet step takes prose and no links, so the anchor could not survive
     // inside the Sheet. It survives here, in the block that holds this page's
@@ -442,6 +446,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     citySlug,
     neighborhoodSlug,
     hasPulse: pulse != null,
+    hasMap: hasGoogleMap,
     pins: boundary.pins,
     faqs,
     datasetVariables,
@@ -476,7 +481,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           // display:none below 880px, so on the width most visitors arrive on
           // this is the page's only filled seller ask above the Sheet.
           action={{
-            label: v3Text(`Value my ${placeName} home`),
+            label: v3Text('Value my home'),
             href: valuationHref(`/cities/${citySlug}/${neighborhoodSlug}`),
           }}
         />
@@ -485,6 +490,20 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           id="homes"
           ariaLabel={`Homes for sale in ${placeName}`}
           items={rows}
+          mapSlot={
+            hasGoogleMap ? (
+              <PlaceFieldMap
+                pins={mapPins}
+                boundary={boundary.polygon ?? undefined}
+                placeName={placeName}
+              />
+            ) : undefined
+          }
+          mapNote={
+            mapPins.length > 0
+              ? `Every ${placeName} home listed here that reports coordinates. Select a pin to open that home.`
+              : undefined
+          }
           count={
             countIsHonest
               ? {

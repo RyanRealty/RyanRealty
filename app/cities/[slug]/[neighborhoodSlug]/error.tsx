@@ -1,9 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { H1 } from '@/components/site/primitives'
+import { V3_ROOT_CLASS, V3Button, V3Quiet } from '@/components/site/v3'
 
 export default function NeighborhoodError({
   error,
@@ -17,24 +15,24 @@ export default function NeighborhoodError({
   }, [error])
 
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="max-w-md text-center">
-        <H1 className="text-2xl text-primary">This neighborhood didn’t load</H1>
-        <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Button
-            type="button"
-            onClick={reset}
-            className="rounded-lg bg-accent px-6 py-3 font-semibold text-primary hover:bg-accent/90"
-          >
-            Try again
-          </Button>
-          <Link
-            href="/cities"
-            className="rounded-lg border border-border bg-card px-6 py-3 font-semibold text-primary hover:bg-muted"
-          >
-            View all cities
-          </Link>
-        </div>
+    <main className={V3_ROOT_CLASS}>
+      <V3Quiet
+        heading="This neighborhood did not load"
+        headingLevel={1}
+        items={[
+          {
+            kind: 'prose',
+            body: 'We could not load this neighborhood. Try again, or see the city list.',
+          },
+        ]}
+      />
+      <div className="flex flex-wrap gap-3 px-5 pb-16">
+        <V3Button type="button" onClick={reset}>
+          Try again
+        </V3Button>
+        <V3Button href="/cities" variant="ghost">
+          See all cities
+        </V3Button>
       </div>
     </main>
   )

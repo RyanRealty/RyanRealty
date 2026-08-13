@@ -427,7 +427,7 @@ export function cityExploreItems(
     { label: `${cityName} market report`, href: `/housing-market/${slug}` },
     { label: `Open houses in ${cityName}`, href: `/open-houses/${slug}` },
     { label: 'Every Central Oregon city', href: '/cities' },
-    { label: "Get your home's value", href: links.valuation },
+    { label: 'Value my home', href: links.valuation },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
   if (hasPopulation) items.push({ label: 'U.S. Census Bureau', href: 'https://www.census.gov' })

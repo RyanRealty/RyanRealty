@@ -62,7 +62,8 @@
 
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
-import { subdivisionListingsPath, valuationPath } from '@/lib/slug'
+import { subdivisionListingsPath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
 import { getCommunityListings } from '@/app/actions/communities'
 import { getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
 import { getListingsWithVideos } from '@/app/actions/videos'
@@ -94,11 +95,12 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { SubdivisionFieldMap, type SubdivisionFieldPin } from './_v3/SubdivisionFieldMap.client'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
 import { SubdivisionSchools } from './SubdivisionSchools'
 import { buildSubdivisionEdges } from './_v3/subdivision-edges'
-import { parentPulseFigures, platStatsFigures } from './_v3/subdivision-figures'
+import { parentPulseFigures, platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
 import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
 import { fallbackFieldRows, toFieldEntry, type FieldEntry } from './_v3/subdivision-rows'
 import {
@@ -313,14 +315,7 @@ export default async function SubdivisionPage({ params }: Props) {
     const entry = toFieldEntry(tile, videoKeys.has(tile.listingKey))
     if (entry) plotted.push(entry)
   }
-  const mapPins: SubdivisionFieldPin[] = plotted.map((entry) => ({
-    id: entry.id,
-    href: entry.href,
-    priceLabel: entry.priceLabel,
-    title: entry.title,
-    lat: entry.lat,
-    lng: entry.lng,
-  }))
+  const mapPins = fieldMapPins(plotted)
 
   // Registry path where the tile fetch returned nothing: the rows fall back to
   // the subdivision-name fetch, which is a different query and says so.
@@ -389,6 +384,7 @@ export default async function SubdivisionPage({ params }: Props) {
   const statsPeriodLabel = subdivisionStats ? PERIOD_LABEL[subdivisionStats.periodType] : ''
   const [firstPlatFigure, ...restPlatFigures] = platFigures
   const [firstParentFigure, ...restParentFigures] = parentFigures
+  const salesChart = subdivisionSalesChart(displayName, salesHistory)
 
   // The closing block outbound edges.
   const edges = buildSubdivisionEdges({
@@ -401,6 +397,7 @@ export default async function SubdivisionPage({ params }: Props) {
     lifestyleItems: lifestyleForCentroid(mapCentroid(mapTiles)),
     peerPlats: peerPlatsForResort(resortSlug, slug),
     browseHref: subdivisionListingsPath(cityName, displayName),
+    pagePath: `/subdivisions/${slug}`,
   })
 
   // JSON-LD. Same types, same payloads, same hasMap condition as the KB page.
@@ -482,14 +479,11 @@ export default async function SubdivisionPage({ params }: Props) {
               },
             ]}
             source={v3Text(activeCountTrace(platScope))}
-            // Ghost by PUBLIC_UI.md section 1. The sticky public header carries a
-            // filled valuation CTA at every scroll position of this page, so a
-            // solid button here would put two primaries in one viewport. The
-            // from= parameter is the KbSell attribution contract, carried across.
+            // PRIMARY at 390: the chrome CTA sits in the menu. Value my home,
+            // via valuationHref so the lead keeps this plat as its origin.
             action={{
-              label: v3Text('Get a free written valuation'),
-              href: `${valuationPath()}?from=/subdivisions/${slug}`,
-              variant: 'ghost',
+              label: v3Text('Value my home'),
+              href: valuationHref(`/subdivisions/${slug}`),
             }}
           />
         )}
@@ -500,7 +494,7 @@ export default async function SubdivisionPage({ params }: Props) {
           items={fieldItems}
           mapSlot={
             hasMap ? (
-              <SubdivisionFieldMap pins={mapPins} boundary={mapPolygon} placeName={displayName} />
+              <PlaceFieldMap pins={mapPins} boundary={mapPolygon} placeName={displayName} />
             ) : undefined
           }
           // The count is what THIS section shows, not a second answer to the
@@ -547,8 +541,18 @@ export default async function SubdivisionPage({ params }: Props) {
                 ? v3Text(formatDate(subdivisionStats.refreshedAt))
                 : undefined
             }
+            chart={salesChart}
           />
-        ) : firstParentFigure && parentPulse ? (
+        ) : null}
+
+        <SubdivisionSalesHistory
+          displayName={displayName}
+          history={salesHistory}
+          cityName={cityName}
+          chart={firstPlatFigure ? undefined : salesChart}
+        />
+
+        {!firstPlatFigure && firstParentFigure && parentPulse ? (
           <V3Instrument
             id="market"
             level={2}
@@ -561,12 +565,6 @@ export default async function SubdivisionPage({ params }: Props) {
             }
           />
         ) : null}
-
-        <SubdivisionSalesHistory
-          displayName={displayName}
-          history={salesHistory}
-          cityName={cityName}
-        />
 
         <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} edges={edges} />
       </main>

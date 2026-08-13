@@ -62,9 +62,10 @@
  *     markup carries 489,450. That split is carried across deliberately rather than
  *     introduced: the visible figure follows the brand's rounding rule and the machine
  *     payload stays equal to the source row.
- *  5. ONE PRIMARY PER VIEWPORT (PUBLIC_UI.md section 1). app/layout.tsx mounts the fixed
- *     public header, which carries a filled CTA, so the Instrument's ask is a GHOST that
- *     points at the referral Sheet further down the page.
+ *  5. ONE PRIMARY PER VIEWPORT (PUBLIC_UI.md section 1). The header's filled CTA is
+ *     display:none below 880px, so the Instrument's ask is PRIMARY at 390. It points
+ *     at the referral Sheet further down the page. That is the ask this node earns.
+ *     Value my home is the wrong primary here: this city is outside our market.
  */
 
 import { notFound } from 'next/navigation'
@@ -211,7 +212,7 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
   const headline = `Homes for sale in ${city.name}, Oregon`
   const snapshotTrace =
     `live listings from the statewide Oregon MLS feed, pre-aggregated as one snapshot row for ${city.name}. ` +
-    'The count covers all property types; the median covers active single-family listings only.'
+    'The count covers all property types. The median covers active single-family listings only.'
 
   // ── Live listings. A row needs a price and an address, because the value column
   // is a figure and the row text is its name: formatPrice answers a missing price
@@ -344,12 +345,11 @@ export default async function OutOfAreaCityPage({ params }: { params: Promise<Pa
             figures={[firstFigure, ...restFigures]}
             source={v3Text(snapshotTrace)}
             updated={city.refreshedAt ? v3Text(formatDate(city.refreshedAt)) : undefined}
-            // Ghost by PUBLIC_UI.md section 1: the fixed public header carries a
-            // filled CTA at every scroll position of this page.
+            // PRIMARY at 390: the chrome CTA sits in the menu. The ask this
+            // node earns is the referral, not a Central Oregon valuation.
             action={{
               label: v3Text('Get a broker introduction'),
               href: '#referral',
-              variant: 'ghost',
             }}
           />
         ) : (

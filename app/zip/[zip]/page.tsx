@@ -93,8 +93,9 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { ZipAlertsSheet } from './_v3/ZipAlertsSheet.client'
-import { ZipFieldMap } from './_v3/ZipFieldMap.client'
 import {
   CANONICAL_ZIPS,
   ZIP_AREA,
@@ -258,7 +259,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // which already separates a feed that did not answer from a ZIP with nothing for
   // sale. The middle branch covers the third case the unconditional string also got
   // wrong: listings that exist and report no coordinates.
-  const plottedCount = fieldItems.filter((item) => item.lat != null && item.lng != null).length
+  const mapPins = fieldMapPins(fieldItems)
+  const plottedCount = mapPins.length
   const mapNote: string | undefined =
     plottedCount > 0
       ? `Every listing in ${zip} that reports coordinates. Select a pin to open that home.`
@@ -387,6 +389,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       description: `Browse active single-family listings in ZIP code ${zip}, ${area}, Central Oregon.`,
       url: zipPageUrl,
       address: { postalCode: zip, state: 'OR', country: 'US' },
+      hasMap: plottedCount > 0 ? zipPageUrl : undefined,
     },
     {
       type: 'dataset',
@@ -442,7 +445,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
             // link goes through the shared helper instead of naming a
             // destination of its own.
             action={{
-              label: v3Text('Get a written valuation'),
+              label: v3Text('Value my home'),
               href: valuationHref(zipPageUrl),
             }}
           />
@@ -468,7 +471,11 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           // The real Google map, in the slot the pattern reserves for it. It reads
           // the same items this list renders, through the Field's own binding, so a
           // pin and a row cannot disagree about what is for sale.
-          mapSlot={<ZipFieldMap />}
+          mapSlot={
+            mapPins.length > 0 ? (
+              <PlaceFieldMap pins={mapPins} placeName={`ZIP ${zip}`} />
+            ) : undefined
+          }
           count={
             activeCount != null
               ? {
