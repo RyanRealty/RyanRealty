@@ -28,12 +28,14 @@ export function openHouseFieldItems(houses: readonly OpenHouseListing[]): V3Fiel
         : null
     if (!priceLabel || !/\$/.test(priceLabel)) continue
 
+    const photoSrc = oh.photoUrl?.trim()
     items.push({
       id: oh.id,
       href: oh.href,
       priceLabel,
       title: street,
       ...(specs ? { meta: specs } : {}),
+      ...(photoSrc ? { photoSrc } : {}),
       lat: oh.lat,
       lng: oh.lng,
     })

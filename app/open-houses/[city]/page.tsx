@@ -1,9 +1,10 @@
 /**
  * /open-houses/[city] - city-scoped open houses, on the v3 barrel.
  *
- * Same contract as the region page. generateMetadata title still leads with
- * "Open Houses in". dynamicParams stays true so a real city slug that is not
- * in SITE_CITY_SLUGS still resolves through getCityFromSlug.
+ * Same contract as the region page. First screenful is the Field of
+ * photographed open houses, then Instrument. generateMetadata title still
+ * leads with "Open Houses in". dynamicParams stays true so a real city slug
+ * that is not in SITE_CITY_SLUGS still resolves through getCityFromSlug.
  *
  * KB-era deletions: KbHero, KbOpenHouses, KbListingMap, KbCommunityAlerts markup,
  * KbSell, KbFooter, SmoothScrollProvider. Capture contract kept on the Sheet.
@@ -196,6 +197,27 @@ export default async function OpenHousesCityPage({
           ]}
         />
 
+        <V3Field
+          id="calendar"
+          ariaLabel={`Open houses in ${cityName} this week`}
+          items={fieldItems}
+          count={
+            fieldItems.length > 0
+              ? {
+                  value: fieldItems.length.toLocaleString('en-US'),
+                  label: fieldItems.length === 1 ? `home in ${cityName}` : `homes in ${cityName}`,
+                  source: OH_FIELD_TRACE,
+                }
+              : undefined
+          }
+          footNote={
+            fieldItems.some((item) => item.photoSrc)
+              ? 'Each photograph opens the listing.'
+              : undefined
+          }
+          emptyMessage={`No open house in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
+        />
+
         {firstFigure ? (
           <V3Instrument
             id="answer"
@@ -225,22 +247,6 @@ export default async function OpenHousesCityPage({
             ]}
           />
         )}
-
-        <V3Field
-          id="calendar"
-          ariaLabel={`Open houses in ${cityName} this week`}
-          items={fieldItems}
-          count={
-            fieldItems.length > 0
-              ? {
-                  value: fieldItems.length.toLocaleString('en-US'),
-                  label: fieldItems.length === 1 ? `home in ${cityName}` : `homes in ${cityName}`,
-                  source: OH_FIELD_TRACE,
-                }
-              : undefined
-          }
-          emptyMessage={`No open house in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
-        />
 
         <OpenHouseAlertsSheet placeLabel={cityName} city={cityName} />
 

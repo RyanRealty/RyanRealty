@@ -2,8 +2,9 @@
  * /open-houses - this week's open houses, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes curated mode.
- * Rhythm: four of six, no two adjacent alike. Order is Breadcrumb, Instrument
- * level 1, Field, Sheet, Quiet, Footer.
+ * Rhythm: four of six, no two adjacent alike. Order is Breadcrumb, Field
+ * (photographed open houses that open the listing), Instrument level 1
+ * (count + median under the jobs), Sheet, Quiet, Footer.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (BreadcrumbList + Event nodes), a rendered
@@ -183,6 +184,27 @@ export default async function OpenHousesPage({
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Open houses' }]} />
 
+        <V3Field
+          id="calendar"
+          ariaLabel="Open houses on the calendar this week"
+          items={fieldItems}
+          count={
+            fieldItems.length > 0
+              ? {
+                  value: fieldItems.length.toLocaleString('en-US'),
+                  label: fieldItems.length === 1 ? 'home on this list' : 'homes on this list',
+                  source: OH_FIELD_TRACE,
+                }
+              : undefined
+          }
+          footNote={
+            fieldItems.some((item) => item.photoSrc)
+              ? 'Each photograph opens the listing.'
+              : undefined
+          }
+          emptyMessage="No open house on this pull has both a street and a list price, so this list has nothing to name."
+        />
+
         {firstFigure ? (
           <V3Instrument
             id="answer"
@@ -212,22 +234,6 @@ export default async function OpenHousesPage({
             ]}
           />
         )}
-
-        <V3Field
-          id="calendar"
-          ariaLabel="Open houses on the calendar this week"
-          items={fieldItems}
-          count={
-            fieldItems.length > 0
-              ? {
-                  value: fieldItems.length.toLocaleString('en-US'),
-                  label: fieldItems.length === 1 ? 'home on this list' : 'homes on this list',
-                  source: OH_FIELD_TRACE,
-                }
-              : undefined
-          }
-          emptyMessage="No open house on this pull has both a street and a list price, so this list has nothing to name."
-        />
 
         <OpenHouseAlertsSheet
           placeLabel="Central Oregon"

@@ -171,4 +171,16 @@ describe('openHouseFieldItems', () => {
     expect(JSON.stringify(items)).not.toContain('\u2014')
     expect(JSON.stringify(items)).not.toContain('\u2013')
   })
+
+  it('passes a live listing photograph onto the Field row', () => {
+    const items = openHouseFieldItems([house({ photoUrl: '/hero.jpg' })])
+    expect(items).toHaveLength(1)
+    expect(items[0].photoSrc).toBe('/hero.jpg')
+  })
+
+  it('omits photoSrc when the join carried no photograph', () => {
+    const items = openHouseFieldItems([house({ photoUrl: '   ' })])
+    expect(items).toHaveLength(1)
+    expect(items[0].photoSrc).toBeUndefined()
+  })
 })
