@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). A5 `a237a340` READY.
-Ratchet held 178 / 8 / 70 (admin lease). Wave 2 public still building.
+**Updated:** 2026-08-13 (Grok, Go running). E-CUT `c472e240` READY.
+Ratchet 178→139 / 8→3 / mixed 70→69. kb 119→84. Wave 2 refine still building.
 
 ---
 
@@ -86,10 +86,10 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **178** | `scripts/public-ui-baseline.json` |
-| Public legacy pages (no v3) | **8** | same |
-| Public mixed pages (v3 body + leftover register) | **70** | same |
-| Of 527, kb chrome | **119** | same, register `kb` |
+| Public non-v3 imports | **139** | `scripts/public-ui-baseline.json` |
+| Public legacy pages (no v3) | **3** | same |
+| Public mixed pages (v3 body + leftover register) | **69** | same |
+| Of 527, kb chrome | **84** | same, register `kb` |
 | Public v3-only pages | **3** | collections/[id], hidden, search index — other pages still import kb trackers / MetadataBlock |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
@@ -110,6 +110,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-HOMES-TOOLS | **landed** `6e781cc7` | Mortgage + rental calculators on the barrel. Calculator math stays as islands inside a sheet wrapper (V3Sheet has no ReactNode slot). Value my home on Instrument + Quiet. Ratchet 202→194, 26→24, mixed 54→56 (tracked). kb 119→109. Bundle 9.17 MB. Look 390+1280 `/tools/mortgage-calculator`: one chrome, H1, Value my home, starting insurance **0.35%** (IEEE junk fixed after first READY). Chrome CTA still Get your home's value. Cookie banner residual. |
 | E-SAVED | **landed** `cb3b8854` | Leftover `/account/*` on the barrel. Saved stays a signed-in affordance, not a sixth marketing destination. `collections/[id]` and `hidden` left ListingCard for Quiet + Ledger. Other account pages wrapped in AccountFrame so V3Footer sits outside main. No V3Chrome remount. No on-page Value my home (sticky chrome already asks). Ratchet 194→192, 24→22, mixed 56 held. kb held 109. Signed-out `/account` noindex, meta-refresh to `/login?next=/account`. Signed-in 390+1280 of the v3 body still needs a session. Login page itself is leftover (not this lease). |
 | E-SYSTEM | **landed** `00a3daee` | Legal, unsubscribe, offline, cma-drafts, team edit, site-index, noindex LPs on the barrel. Quiet. Dual objectives kept. SMS consent copy stays in `/privacy`. LPs (`/lp/bend`, tetherow, central-oregon-golf) are noindex,nofollow. Did not edit `SellerLPForm.tsx`. `check-commit-compiles` now streams `git archive \| tar` so a ~480MB tree cannot deadlock node. Ratchet 192→178, 22→8, mixed 56→70 (tracked). kb 109→119. Bundle 9.19 MB. Look 390+1280 `/privacy`: one chrome, H1 Privacy and cookies. `/offline` H1 You are offline. Chrome CTA still Get your home's value. Cookie banner residual. |
+| E-CUT | **landed** `c472e240` | Cut leftover area-guides, areas, builders, reports hub, resources, pulse. Page stub + next.config 308. noindex + canonical at the survivor. `/reports` hub body inverted onto `/housing-market/reports` (still KB, not a v3 pass). Hop-free: `/best-neighborhoods-bend-oregon` → `/cities`, `/pulse-video-demo` → `/activity`. Nav Areas → `/cities`. Ratchet 178→139, 8→3, mixed 70→69 (tracked). kb 119→84. Bundle 8.88 MB. Look 390+1280: `/area-guides` lands on `/cities` (H1 Central Oregon cities: a balanced market), `/pulse` lands on `/activity` (H1 What just moved on the list). One chrome both widths. Leftovers: `/housing-market/reports` KB, `ReportsIndexContent` TilesSlider island, `/buy` Area guides Quiet hop, VisitTracker area-guides regex, layout comment on deleted pulse-brand-cards. |
 
 Chrome is live. The 119 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -210,7 +211,7 @@ from the baseline if it drifts.
 | **E-SELL** | `app/sell/page.tsx`, `app/sell/valuation/**` | 2 | **landed** `1276088f` READY | Valuation spine. 3% plan as Sheet. Capture unchanged. Look still needed. `app/dev/sell-film` is a prototype, not this lease. |
 | **E-SAVED** | `app/account/**` leftover | leftover shadcn | **landed** `cb3b8854` READY | Saved is an affordance, not a sixth marketing destination. Signed-in look still needs a session. |
 | **E-SYSTEM** | legal + unsubscribe + offline + cma-drafts + team edit + site-index + noindex LPs | leftover tracker | **landed** `00a3daee` READY | Quiet. Dual objectives kept. LPs noindex. Did not edit SellerLPForm. Look 390+1280 `/privacy`. |
-| **E-CUT** | CUT-CANDIDATE leftovers: area-guides, areas, builders, reports hub, resources, pulse | 8 | wave 2 | Honor `cut-list.md` + GSC. Migrate only what we keep. 301 or noindex the rest. Do not spend a v3 pass on a page we are killing. |
+| **E-CUT** | CUT-CANDIDATE leftovers: area-guides, areas, builders, reports hub, resources, pulse | 0 | **landed** `c472e240` READY | 308 + noindex stubs. Survivors: `/cities`, `/homes-for-sale`, `/housing-market/reports`, `/housing-market`, `/activity`. Did not restyle the reports hub. Look 390+1280 `/area-guides` and `/pulse`. |
 | **E-CHART** | `components/site/v3/` chart atom inside Instrument | — | **landed** `d554ba7e` READY | D9. `V3Chart` under Instrument. Straight segments, caller labels, no library. Families may pass `chart`. |
 | **E-VOICE** | `marketing_brain_skills/brand-voice/VOICE.md` + delete `.cursor/rules/blog-voice.mdc` + tiny gate | — | **landed** `0ad6a0c2` | D11 law. Gate is punctuation + invented quotes + Value my home. Not a site-wide copy sweep. Eight worth-CTAs rewritten to land the gate. |
 
