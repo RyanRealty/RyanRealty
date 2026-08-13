@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). G2 `def67a92` READY.
-Ratchet **129 / 0 / 71**, kb 73. Public wrap B=0. G2 draft on Today (no publish). Next: standing refine. G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
+**Updated:** 2026-08-13 (Grok, Go running). HEAD `22904591` READY.
+Ratchet **59 / 0 / 52**, kb 3. Chrome CTA is Value my home. Next: standing leftovers (`/login` SiteFooter, search has no footer, search H1 is sr-only, search Get-alerts capture). G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
 
 ---
 
@@ -86,11 +86,11 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **129** | `scripts/public-ui-baseline.json` |
+| Public non-v3 imports | **59** | `scripts/public-ui-baseline.json` |
 | Public legacy pages (no v3) | **0** | same. Frozen noindex LP `app/lp/tetherow/heath` is a named B-exclusion; still counts toward A. |
-| Public mixed pages (v3 body + leftover register) | **71** | same, tracked not gated |
-| Of 527, kb chrome | **73** | same, register `kb` |
-| Public v3-only pages | **3** | collections/[id], hidden, search index — other pages still import kb trackers / MetadataBlock |
+| Public mixed pages (v3 body + leftover register) | **52** | same, tracked not gated |
+| kb import sites | **3** | same, register `kb`. Homepage `KbMarketHud` leftover (D9). |
+| Public v3-only pages | **74** | E-TRACKER swapped page trackers onto `V3SectionTracker`. Remaining A is MetadataBlock / leftover islands, not the tracker. |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
 | V1 chart inventory | **landed** `076c2dd0` | `docs/plans/ADMIN_PRODUCT/chart-inventory.md`. 24 series-as-type, 18 live charts. E-CHART landed. |
@@ -116,6 +116,10 @@ file is required, the first agent to need it takes the lease and the other waits
 | F1 query battery | **landed** `9e11ce83` | Three Loop F queries + GSC extras map to survivor URLs in `/llms.txt` + JSON-LD. G67 `ci:ai-query-battery`. `/reports` hop gone from the map. `/sell` and `/sell/valuation` emit Service + FAQPage. Ratchet held 139 / 3 / 69. Look 390+1280 `/about`, `/sell`, `/sell/valuation`, `/communities/northwest-crossing`: one chrome, H1s, Value my home on sell/valuation. Chrome CTA still Get your home's value. Cookie banner residual. SellerLPForm still See what your home is worth (not this lease). |
 | P10 wrap | **landed** `d5ebc4db` | B=0. Reports slug inverted onto `/housing-market/reports/[slug]`. Hub v3-wrapped. Frozen Heath LP excluded from B only (`scripts/lib/frozen-noindex-lps.mjs`). Ratchet 139/3/69 → 129/0/71, kb 84→73. Tokens 209→208. Static-params 17→14. Deleted orphan `KbSell`. Look 390+1280 `/housing-market/reports` H1 Central Oregon market reports: a balanced market, live figures, Value my home. Weekly report H1 the CMS title. `/reports` 308s to the hub. Heath still noindex. |
 | G2 draft on Today | **landed** `def67a92` | Produce a draft on `/admin/today` (live listing i2v or GBP still). Lands on Drafts ready for approval. `humanApprovedAt` stays null. `publish_payload.approved` is false. No `/api/social/publish`. No Replicate. See draft still goes to `/admin/approval-queue`. No new approve button. Clip taste still Matt’s. Signed-out 390+1280 look: Admin sign in (`next=/admin/today`). Signed-in produce look still needs a session (same leftover as A3/A4/A5). Live post is a hard stop. |
+| D4 newsletter stitch | **landed** `168bfec1` | Public newsletter finds-or-creates one CRM person and stitches `rr_vid` + session. No fake CRM lead in the look. V3Footer still has no newsletter ask (one primary CTA). `/login` leftover SiteFooter still has `#newsletter-email`. |
+| Search-alert stitch | **landed** `fd34a499` | Listing-alert signup stitches through `stitchFormSubmitIdentity`. Callers pass `readRrSessionId()`. Did not submit a live alert. fub-identifiers 801→795. Look 390+1280 `/homes-for-sale` `/open-houses` `/`: one chrome, capture still present, none covering. |
+| E-CTA | **landed** `34b17bed` | Chrome `VALUATION_FORM.label` is Value my home. href `/sell#get-value`. Look 390+1280 `/` and `/homes-for-sale`: chrome CTA Value my home, one chrome, none covering. SellerLPForm still See what your home is worth (not this lease). |
+| E-TRACKER | **landed** `ff803bbf` | 70 public pages mount `V3SectionTracker`. Ratchet 129/0/71 → **59/0/52**, kb 73→3. Mockup parity accepts either tracker. Look 390+1280 `/` `/about` `/homes-for-sale` `/housing-market`: one chrome, Value my home, H1s, none covering. Tip `22904591` is the parallel ci:gates runner on top of this. |
 
 Chrome is live. The 119 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -232,7 +236,11 @@ from the baseline if it drifts.
 | **G2** | Imagine draft on Today | **landed** `def67a92` READY | Produce a draft. Does not stamp yes. Does not post. Admin signed-in 390+1280 look still needs a session. |
 | **G1 / G3 / G4** | live post / week-grant / Paul+Rebecca OAuth | **not in Go** | Hard stops. Tokens already live. Produce is Imagine. Week-grant and OAuth click wait on Matt. |
 | **F1** | `/llms.txt` + JSON-LD + G34/G39/G67 | **landed** `9e11ce83` READY | Named queries cite survivor URLs. Map: `lib/seo/ai-query-map.json`. Live `/llms.txt` lists About, Reviews, Value my home, NWX 3/2. Google still has to recrawl. |
-| **P10** | public wrap closing gates | **landed** `d5ebc4db` READY | B=0. Call: invert reports slug + v3 hub wrap + named frozen-LP B-exclusion. Mixed leftover: ReportsByCityView, ReportsIndexContent, MetadataBlock, KbSectionTracker. Did not restyle heath. |
+| **P10** | public wrap closing gates | **landed** `d5ebc4db` READY | B=0. Call: invert reports slug + v3 hub wrap + named frozen-LP B-exclusion. Mixed leftover after E-TRACKER: ReportsByCityView, ReportsIndexContent, MetadataBlock. Did not restyle heath. |
+| **D4** | newsletter identity stitch | **landed** `168bfec1` READY | One person record. No fake lead. `/login` leftover newsletter is not this door. |
+| **Search-stitch** | listing-alert identity stitch | **landed** `fd34a499` READY | Same wrapper as D4. Did not submit. |
+| **E-CTA** | chrome CTA label | **landed** `34b17bed` READY | Value my home. Look 390+1280 `/` and `/homes-for-sale`. |
+| **E-TRACKER** | V3SectionTracker on public pages | **landed** `ff803bbf` READY | Ratchet 59/0/52, kb 3. Look 390+1280 four routes. |
 
 ### Do not lease
 
