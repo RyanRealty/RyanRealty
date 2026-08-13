@@ -1,15 +1,11 @@
-import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
+import { ListingLikeThisSheet } from '@/components/site/listing-detail/ListingLikeThisSheet.client'
 import { ListingAlertCoach } from '@/components/site/listing-detail/ListingAlertCoach.client'
-import { priceBandAroundListPrice } from '@/lib/search/price-band'
 
 /**
- * Listing-detail B1 capture: city + price band (+ beds) for "homes like this."
+ * Listing-detail B1 capture: city + price band (+ beds) for homes like this.
  * Server-safe wrapper so app/listing page stays under the file-size budget.
- * `#listing-like-alerts` is the anchor for PriceCtaStrip + RoomRestyle + coach (E4).
- *
- * E4 craft: quiet full-width section so the strip reads as part of the page
- * rhythm, not a bolted-on card under the footer. Soft coach mounts here too
- * (keeps listing page.tsx under LOC budget; one alerts surface owns both).
+ * `#listing-like-alerts` is the anchor for PriceCtaStrip + RoomRestyle + coach.
+ * The Sheet owns that id.
  */
 export function ListingLikeThisAlerts({
   city,
@@ -23,29 +19,7 @@ export function ListingLikeThisAlerts({
   if (!city) return null
   return (
     <>
-      <section
-        id="listing-like-alerts"
-        aria-label={`Listing alerts for ${city}`}
-        style={{
-          borderTop: '3px solid var(--navy)',
-          scrollMarginTop: '5.5rem',
-        }}
-      >
-        <KbCommunityAlerts
-          communityName={city}
-          city={city}
-          subdivision=""
-          extraFilters={{
-            // SFR default: "homes like this" on residential inventory pages.
-            propertyType: 'A',
-            ...priceBandAroundListPrice(listPrice),
-            ...(beds != null && beds > 0 ? { beds: String(beds) } : {}),
-          }}
-          headline={`${city} homes like this`}
-          body={`Email when a new single-family home lists in ${city} near this price${beds != null && beds > 0 ? ` with ${beds}+ beds` : ''}. Free. Pause from any email.`}
-        />
-      </section>
-      {/* F4 soft next-step coach - 5s dwell, links to #listing-like-alerts */}
+      <ListingLikeThisSheet city={city} listPrice={listPrice} beds={beds} />
       <ListingAlertCoach city={city} />
     </>
   )

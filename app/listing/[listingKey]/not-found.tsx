@@ -1,49 +1,31 @@
-import Link from 'next/link'
-import '@/components/site/kb/kb.css'
+import { V3_ROOT_CLASS, V3Footer, V3_FOOTER_COLUMNS, V3Quiet } from '@/components/site/v3'
+import { valuationHref } from '@/lib/site/valuation-href'
 
 /**
- * design-audit STA-4: notFound() on an invalid/sold/stale /listing/<key> used
- * to render the generic app/not-found.tsx with weak framing. PublicNav still
- * provides the global header; this route-level not-found frames a missing
- * listing as sold/off-market with a clear way forward (do not re-mount KbNav).
+ * Invalid, sold, or stale /listing/<key>. PublicNav still provides the header.
+ * Do not remount V3Chrome. One V3Footer outside main.
  */
 export default function ListingNotFound() {
   return (
-    <main className="kb-root" style={{ minHeight: '100vh', background: 'var(--cream)', color: 'var(--navy)' }}>
-      <section
-        style={{
-          maxWidth: 680,
-          margin: '0 auto',
-          padding: '180px 24px 140px',
-          textAlign: 'center',
-        }}
-      >
-        <p className="eyebrow" style={{ color: 'var(--navy)', opacity: 0.6, marginBottom: 16 }}>
-          <span className="dot" style={{ background: 'var(--navy)' }} /> Listing unavailable
-        </p>
-        <h1 className="display" style={{ fontSize: 'clamp(2rem,6vw,3.4rem)', lineHeight: 1.02, margin: '0 0 18px' }}>
-          This home may no longer be on the market
-        </h1>
-        <p style={{ fontSize: '1.05rem', lineHeight: 1.6, opacity: 0.8, margin: '0 auto 32px', maxWidth: 520 }}>
-          It may have sold or been taken off the market. Here is where to look next for homes in Central Oregon.
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-          <Link href="/homes-for-sale" className="btn">
-            Browse homes for sale <span className="arr">→</span>
-          </Link>
-          <Link href="/housing-market" className="btn alt">
-            See recent market activity <span className="arr">→</span>
-          </Link>
-          <Link href="/contact" className="btn alt">
-            Talk to a broker <span className="arr">→</span>
-          </Link>
-        </div>
-        <p style={{ marginTop: 40 }}>
-          <Link href="/" style={{ color: 'var(--navy)', fontWeight: 600 }}>
-            Go to the homepage
-          </Link>
-        </p>
-      </section>
-    </main>
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <V3Quiet
+          id="missing"
+          heading="This home may no longer be on the market"
+          headingLevel={1}
+          items={[
+            {
+              kind: 'prose',
+              body: 'It may have sold or been taken off the market. Here is where to look next.',
+            },
+            { label: 'Homes for sale', href: '/homes-for-sale' },
+            { label: 'Central Oregon housing market', href: '/housing-market/central-oregon' },
+            { label: 'Value my home', href: valuationHref('/listing') },
+            { label: 'Talk to a broker', href: '/contact' },
+          ]}
+        />
+      </main>
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

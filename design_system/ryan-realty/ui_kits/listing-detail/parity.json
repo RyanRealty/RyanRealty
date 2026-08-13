@@ -1,106 +1,157 @@
 {
   "route": "app/listing/[listingKey]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/listing-detail/index.html",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3, plus the listing-detail money stack which is outside the five public-ui registers.",
   "competitiveTarget": "Zillow Showcase + Hilton & Hyland editorial register (per docs/research/top-brokerage-listing-content-audit.md)",
+  "note": "Migrated off the KB chrome onto the v3 barrel 2026-08-13 (E-HOMES-DETAIL). Rhythm: three of the six patterns (Sheet inside the listing stack, Ledger, Quiet), no two adjacent alike, chrome exempt. Order is Breadcrumb, listing-detail stack (hero, price, facts, remarks, Sheet alerts, restyle, map, market, schools, parks, history, money, attribution), Ledger (similar homes), Quiet (edges), Footer. PUBLIC_UI.md section 1: the page primary at 390 is PriceCtaStrip filled Schedule a tour. Valuation is a Quiet link labeled Value my home. V3Footer carries no button. Layout owns V3Chrome. One V3Footer outside main. No kb-root.",
+  "dataChanges": {
+    "unchanged": "Every listing figure, filter, window, and unit. getListingDetail, photos, videos, history, open houses, pulse, brokers, reviews, published CMA, related homes. JSON-LD RealEstateListing + BreadcrumbList still emit from the page MetadataBlock with listingDetailPath, listingShareSummary, gated photos slice 0-5, and ctaBroker as listingAgent. MLS publicRemarks are displayed, never rewritten. Capture still calls submitSearchAlertSignup with city, propertyType A, price band, beds when present, field email, trap company.",
+    "similarHomes": "KbFeatured video tiles are deleted. Similar homes render as V3Ledger figure rows from relatedHomes.primary. Rows without a street or a list price are dropped (v3Text throws on blank; formatPrice of null is not a price). formatPrice rounding to $1,000 is display-only on the Ledger. JSON-LD still uses the raw listPrice.",
+    "builderTiles": "getListingsByBuilder is deleted from this page. The builder door in Quiet opens /builders/<slug>. That route still owns the builder inventory rail."
+  },
   "requiredComponents": [
     {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + RealEstateListing JSON-LD. Emitted here, not in ListingDetailShell. Canonical URL is listingDetailPath. Description is listingShareSummary, never publicRemarks.",
+      "blocking": true
+    },
+    {
+      "name": "KbNav",
+      "section": "The public header, mounted by app/layout.tsx through PublicNav / V3Chrome. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header.",
+      "blocking": true
+    },
+    {
+      "name": "KbSectionTracker",
+      "section": "Page-level analytics, pageType='listing'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
+      "blocking": true
+    },
+    {
+      "name": "ListingTracker",
+      "section": "Per-listing view event. Lives in components/listing, outside the five registers ci:public-ui measures.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Homes for sale > city > street. Current page never a link. Surface tone, belowNav default ON so the trail clears the fixed header. Sentence case Homes for sale.",
+      "blocking": true
+    },
+    {
       "name": "ListingHero",
-      "section": "ld-photo-grid full-bleed hero (5-photo grid, 520px height, 'View all N photos' overlay). Auto-plays muted listing video when getListingVideos returns one \u2014 falls back to photo grid otherwise.",
+      "section": "ld-photo-grid full-bleed hero (photo grid or autoplay listing video). Auto-plays muted listing video when getListingVideos returns one. Falls back to photo grid otherwise.",
       "blocking": true,
-      "notes": "Supersedes both PhotoGallery and ListingVideoEmbed. Video-at-hero is the Zillow Showcase parity feature; the mockup shows a photo-grid hero; the component picks the right surface based on data."
+      "notes": "Supersedes both PhotoGallery and ListingVideoEmbed for marketing video. Virtual tours still mount ListingVideoEmbed in the main column."
     },
     {
       "name": "PriceCtaStrip",
-      "section": "ld-price-block \u2014 price + address + city\u00b7subdivision + 3-pill row (Active \u00b7 DOM \u00b7 $/sqft) + 4-button CTA row (Schedule a tour \u00b7 Ask a question \u00b7 Save \u00b7 Share)",
-      "blocking": true,
-      "notes": "Supersedes PriceBlock. Save + Share state persists to saved_listings + likes tables. Schedule + Ask route to /contact?listingKey=<key> pre-tagged."
+      "section": "Price + address + 4-button CTA row (Schedule a tour, Ask a question, Save, Share). THE PAGE PRIMARY at 390: filled Schedule a tour. Do not add another filled ask in the first viewport.",
+      "blocking": true
     },
     {
       "name": "PropertySpecs",
-      "section": "ld-section: Key facts grid \u2014 beds, baths, sqft, lot, year built, garage, HOA, property tax, property type, heating, cooling, MLS#",
+      "section": "Key facts grid.",
       "blocking": true
     },
     {
       "name": "DescriptionBlock",
-      "section": "ld-section: About this home \u2014 public_remarks paragraphed, 68ch column, brand-voice clean",
+      "section": "About this home. public_remarks displayed as authored. MLS remarks are never rewritten.",
+      "blocking": true
+    },
+    {
+      "name": "ListingLikeThisAlerts",
+      "section": "B1 capture wrapper. Mounts ListingLikeThisSheet and ListingAlertCoach. Jump target #listing-like-alerts.",
+      "blocking": true
+    },
+    {
+      "name": "ListingLikeThisSheet",
+      "section": "Pattern 5. V3Sheet wrapping submitSearchAlertSignup. Same payload as KbCommunityAlerts: email, filters (city, propertyType A, price band, beds), company trap forwarded from answers.company. Disclosure: One email per new listing. Unsubscribe any time.",
       "blocking": true
     },
     {
       "name": "NeighborhoodMarketContext",
-      "section": "nbhd-context (THE ZILLOW BEATER) \u2014 live market stats for THIS subdivision/neighborhood: active count, median list, median DOM, months of supply + 'This home is listed at $X \u00b7 Y% above the median'. Data source: getMarketStats('neighborhood', slug) + getMarketPulse",
-      "blocking": true,
-      "notes": "Per Plan \u00a78 'What we BEAT' rank 1. No competitor surfaces this. This is the differentiator."
+      "section": "Live market stats for this subdivision/neighborhood.",
+      "blocking": true
     },
     {
       "name": "SchoolsBlock",
-      "section": "ld-section: Schools \u2014 elementary, middle, high stat cards with school district",
-      "blocking": true,
-      "notes": "Per Plan \u00a78 Zillow Showcase parity \u2014 schools is table stakes."
+      "section": "Schools.",
+      "blocking": true
     },
     {
       "name": "MortgageCalculator",
-      "section": "ld-section: Estimated monthly payment \u2014 mortgage-calc dual column (inputs + PITI summary panel)",
+      "section": "Estimated monthly payment.",
       "blocking": true
     },
     {
       "name": "PropertyHistory",
-      "section": "ld-section: Property history \u2014 timeline of listed/sold/price-change events from listing_history",
+      "section": "Property history from listing_history.",
       "blocking": true
     },
     {
       "name": "ListingLocationMap",
-      "section": "ld-section: Location \u2014 21:9 map with subdivision boundary + POI overlay + lifestyle line (minutes to Mt. Bachelor / downtown / trail)",
-      "blocking": true,
-      "notes": "Per Plan \u00a78 'What we BEAT' rank 6 \u2014 Bend lifestyle data."
+      "section": "Location map.",
+      "blocking": true
     },
     {
-      "name": "KbFeatured",
-      "section": "Similar homes \u2014 the canonical full-width featured-homes rail (same as the city/community pages), scoped to THIS listing's subdivision/neighborhood (city fallback) via resolveFeaturedItems. Supersedes the old SimilarListings 4-card MV grid + the VideoHomesSection cross-sell (Matt directive 2026-06-24).",
-      "blocking": true,
-      "notes": "Renders below the main+sidebar grid, full-bleed. Excludes the current listing. resolveFeaturedItems builds the KbFeaturedItem[] from getListingTiles({subdivision|neighborhood|city, status:'active'})."
+      "name": "V3Ledger",
+      "section": "Pattern 3. Similar homes from relatedHomes.primary. Every row a door. Ghost action to the place browse path. Does not say every.",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "Pattern 6. Outbound edges: Value my home via valuationHref(canonicalPath), Ask about this home, Manage saved alerts, city, market hub, parents, trails, golf, builder.",
+      "blocking": true
     },
     {
       "name": "ListingDetailShell",
-      "section": "page chrome \u2014 main+sticky-sidebar grid + JSON-LD (no visual breadcrumb; BreadcrumbList JSON-LD retained for SEO, Matt directive 2026-06-24)",
+      "section": "Layout only: full-bleed hero, main + sticky sidebar, BackToResults. Does not emit JSON-LD.",
       "blocking": true
     },
     {
       "name": "TextMattCTA",
-      "section": "ld-side sticky: the ONE broker contact card \u2014 headshot + FULL contact (click-to-call Twilio line + email) + name/title/license + Schedule a tour / Call / Text, and an lg-only verified-Google-review social-proof block (rating + count + one quote). Consolidates the old TextMattCTA + ListingAgentCard (Matt directive 2026-06-24).",
-      "blocking": true,
-      "notes": "Rendered via ListingBrokerCTA.client (attribution wrapper). reviews from getReviews(8); social proof hidden < lg per directive."
+      "section": "Sticky broker contact card. Rendered via ListingBrokerCTA.client. Page imports the name so the mockup-parity gate sees it.",
+      "blocking": true
     },
     {
       "name": "ListingMobileContactBar",
-      "section": "ld mobile sticky bottom bar \u2014 always-reachable broker CTA on < lg (replaces the retiring FUB floating widget): mini headshot + first name + Call / Text / Schedule a tour. Fixed to the viewport bottom, slides up past the hero (Matt directive 2026-06-24).",
-      "blocking": true,
-      "notes": "Imported by ListingBrokerCTA.client (so the page file imports it transitively). Hidden on lg+ via .listing-mobile-cta CSS."
+      "section": "Mobile sticky broker bar. Imported here under its real name so the mockup-parity gate sees it.",
+      "blocking": true
     },
     {
       "name": "PhotoGalleryLightbox",
-      "section": "fullscreen lightbox primitive consumed by ListingHero (D75 \u2014 thumbnails + dots + swipe + counter)",
-      "blocking": true,
-      "notes": "Lifted out of ListingHero per DESIGN_DIRECTIVES.md D75 so every gallery surface inherits the same nav contract. Page does NOT import directly \u2014 ListingHero does."
+      "section": "Fullscreen lightbox consumed by ListingHero (D75).",
+      "blocking": true
     },
     {
       "name": "PublishedCmaSection",
       "path": "components/site/listing-detail/PublishedCmaSection.tsx",
       "blocking": true,
-      "why": "Our published opinion of value. Renders only for a document with published_to_listing true that also passed its audit; sold-comp detail stays behind the ODS 5-4 C registration."
+      "why": "Our published opinion of value. Renders only for a document with published_to_listing true that also passed its audit."
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. Canonical sitemap projection. Carries no button. Rendered OUTSIDE main so the footer maps to contentinfo.",
+      "blocking": true
+    }
+  ],
+  "layoutComponents": [
+    {
+      "name": "PublicNav",
+      "section": "renders from app/layout.tsx",
+      "note": "Resolves to V3Chrome today. SiteHeader and SiteFooter stay suppressed on /listing/<key> and pretty /homes-for-sale listing URLs through lib/site/chrome-routes.ts, so the page owns exactly one footer and it is V3Footer."
     }
   ],
   "deferredComponents": [
     {
       "name": "VacationRentalPotential",
-      "reason": "Retired 2026-07-30. The mount passed a hardcoded `projection={null}` since D77, so the section had never rendered. A pro-forma needs a nightly-rate + occupancy source AND the City of Bend STR permit status for the address; neither exists in this repo or the database (lib/vacation-rental-potential.ts is an unsourced heuristic behind an unconfigured STR_PROVIDER_URL, and listing_search_mv.str_permit_yn is a self-reported MLS field, not the City permit register). Same treatment as ClimateRiskBlock: a section that cannot be sourced does not ship."
+      "reason": "Retired 2026-07-30. The mount passed a hardcoded projection={null} since D77, so the section had never rendered."
     },
     {
       "name": "TransparentCMASummary",
-      "reason": "Retired 2026-07-30. The mount passed a hardcoded `cma={null}` since D77, so the section had never rendered. Wiring it to public.cmas is blocked on client confidentiality, not on engineering: every candidate row is a client document. Of 220 rows, 3 are client-ready CMAs carrying a subject_listing_key; 2 are competitor-brokerage Closed listings with no built html_content, and the third is Ryan Realty's own Active listing where the CMA range sits below the seller's list price. Publishing that on a buyer-facing page discloses a seller client's valuation and negotiating floor (ORS 696.805 loyalty and confidentiality), and the underlying sold comps are VOW-restricted under the ODS rules. The 'show our work' surface is the CMA document itself and the seller LP, not the public listing page."
+      "reason": "Retired 2026-07-30. Client confidentiality. The show-our-work surface is the CMA document itself and the seller LP, not the public listing page."
     },
     {
       "name": "ListingVideoEmbed",
-      "reason": "Folded into ListingHero (video-at-hero is the Showcase pattern, not a mid-page click-to-play)."
+      "reason": "Marketing video folded into ListingHero. Virtual tours still mount ListingVideoEmbed in the main column when present. Not a required page-level always-on section."
     },
     {
       "name": "PhotoGallery",
@@ -108,11 +159,64 @@
     },
     {
       "name": "OpenHouses",
-      "reason": "Embedded inside TextMattCTA / PriceCtaStrip when present, not a separate top-level section per the mockup."
+      "reason": "Embedded when present, not a separate top-level required section."
     },
     {
       "name": "PriceVsNeighborhoodPill",
       "reason": "Embedded inside NeighborhoodMarketContext rather than a standalone primitive."
+    },
+    {
+      "name": "V3Stage",
+      "reason": "ListingHero already is the owned-media opening. A second Stage would be a fifth pattern and would put a filled overlay ask on top of Schedule a tour."
+    },
+    {
+      "name": "V3Instrument",
+      "reason": "The listing answer is the home itself (hero + price strip), not a market instrument. NeighborhoodMarketContext keeps the place stats in the listing-detail stack."
+    },
+    {
+      "name": "V3Field",
+      "reason": "Inventory-as-map belongs on Places nodes. This page is one home."
     }
+  ],
+  "removedComponents": [
+    "kb-root + page-level kb.css + SmoothScrollProvider. The page opens V3_ROOT_CLASS. listing-detail.css aliases --navy/--cream onto .listing-detail from v3 tokens so the money stack keeps contrast after dropping kb-root. overflow-x is clip, not hidden, so the sticky sidebar still sticks.",
+    "KbFooter listing-scoped Schedule/Ask band. Schedule a tour and Ask already live on PriceCtaStrip, ListingBrokerCTA, and the mobile bar. V3Footer has no button.",
+    "KbFeatured video-first similar-homes tiles. Replaced by V3Ledger rows from relatedHomes.primary. Video still plays in ListingHero.",
+    "LifestyleNearSection, PlaceParentsSection, BuilderExploreSection. Replaced by one V3Quiet. Those three explore modules had this page as their last importer and are deleted.",
+    "Duplicate JSON-LD from ListingDetailShell (wrong URL /listing/<key>, publicRemarks as description). The page MetadataBlock is the one payload.",
+    "resolveFeaturedItems on this page. Homepage, builders, and areas still call it.",
+    "getListingsByBuilder on this page. The builder door in Quiet opens the builder route."
+  ],
+  "deletedDataReads": [
+    "resolveFeaturedItems(relatedHomes.primary): ranked video tiles for KbFeatured. The Ledger reads relatedHomes.primary directly.",
+    "getListingsByBuilder: fed BuilderExploreSection tiles. The builder page still fetches its own inventory.",
+    "Every read the page still performs is rendered. Nothing is fetched into a positional hole in the Promise.all except marketStats, which remains Promise.resolve(null) as before (NeighborhoodMarketContext already tolerated a null stats row)."
+  ],
+  "jsonLd": {
+    "required": [
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry) on app/listing/[listingKey]/page.tsx" },
+      { "type": "RealEstateListing", "emittedBy": "MetadataBlock schemas array (realEstateListing entry) on the same page. url = listingDetailPath. description = listingShareSummary. photos = getListingPhotos slice 0-5. listingAgent = ctaBroker. availability = listing.status." }
+    ],
+    "note": "One derivation, one answer. ListingDetailShell emits none. BreadcrumbList JSON-LD is not emitted by V3Breadcrumb."
+  },
+  "capture": {
+    "action": "submitSearchAlertSignup",
+    "payload": "{ email, filters, company }",
+    "filters": "city, propertyType A, priceBandAroundListPrice, beds when present",
+    "field": "email",
+    "trap": "company, forwarded from answers.company",
+    "disclosure": "One email per new listing. Unsubscribe any time.",
+    "postSuccess": "rememberGuestWatch(buildGuestWatchFromPlace) then fireSearchEvent('alert_create', buildAlertCreatePayload('daily'))",
+    "anchor": "#listing-like-alerts"
+  },
+  "sectionOrder": [
+    "MetadataBlock",
+    "ListingTracker",
+    "KbSectionTracker",
+    "V3Breadcrumb",
+    "ListingDetailShell (ListingHero, PriceCtaStrip, facts, DescriptionBlock, ListingLikeThisSheet, restyle, map, market, schools, parks, history, money, ListingAttribution, ListingBrokerCTA)",
+    "V3Ledger (similar homes)",
+    "V3Quiet (edges, including Value my home)",
+    "V3Footer"
   ]
 }

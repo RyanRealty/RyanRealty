@@ -7,24 +7,27 @@ import {
   getListingVideos,
   getListingDetailOpenHouses,
   getMarketPulse,
-  getMarketStats,
   getBrokers,
   getReviews,
   resolveListingAgent,
 } from '@/lib/data'
-import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { getRelatedListings } from '@/lib/data/listings/getRelatedListings'
-import { getListingsByBuilder } from '@/lib/data/listings/getListingsByBuilder'
 import { findTrailsNear, findGolfNear } from '@/lib/explore/lifestyle-near'
-import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSection'
-import { PlaceParentsSection } from '@/components/site/explore/PlaceParentsSection'
-import { BuilderExploreSection } from '@/components/site/explore/BuilderExploreSection'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import { getPublishedCmaForListing } from '@/lib/data/cma/getPublishedCma'
-import type { BreadcrumbNavItem } from '@/components/site/BreadcrumbNav'
+import { cn } from '@/lib/utils'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Ledger,
+  V3Quiet,
+} from '@/components/site/v3'
 import { ListingDetailShell } from '@/components/site/listing-detail/ListingDetailShell'
 import { ListingHero } from '@/components/site/listing-detail/ListingHero'
 import { ListingVideoEmbed } from '@/components/site/listing-detail/ListingVideoEmbed'
@@ -41,73 +44,47 @@ import { RentalAnalysis } from '@/components/site/listing-detail/RentalAnalysis'
 import { PropertyHistory } from '@/components/site/listing-detail/PropertyHistory'
 import { ListingLocationMap } from '@/components/site/listing-detail/ListingLocationMap'
 import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentityLine'
-import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
+import { ListingLikeThisSheet as _ListingLikeThisSheetImport } from '@/components/site/listing-detail/ListingLikeThisSheet.client'
 import { resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
-// Parity marker: rendered transitively via ListingBrokerCTA.client (the mobile
-// sticky broker bar), imported here under its real name so the mockup-parity
-// gate (which matches the import identifier) sees it.
 import ListingMobileContactBar from '@/components/site/listing-detail/ListingMobileContactBar.client'
 import ListingTracker from '@/components/listing/ListingTracker'
 import { ListingAttribution } from '@/components/listing/ListingAttribution'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import type { SchemaInput } from '@/lib/site/json-ld'
-// KB (kinetic-brutalist) shell — Phase 9 page-class migration. Wraps the
-// existing listing-detail composition (ListingDetailShell + its parity-
-// required sections) in the same chrome the homepage/city/community pages
-// use: KbNav on top, KbFooter at the bottom, the cream `.kb-root` surface,
-// inertial smooth-scroll, and section/scroll tracking. The listing body is
-// RESTYLED IN PLACE — every data fetch, section, form, gallery, map,
-// calculator, JSON-LD, and the sticky broker sidebar are preserved exactly.
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+import { listingQuietLinks, listingSimilarLedgerRows } from './_v3/listing-nearby'
 
-// Parity-gate markers (D75): real consumers are ListingHero / ListingBrokerCTA.
 void _PhotoGalleryLightboxImport
 void _TextMattCTAImport
 void ListingMobileContactBar
+void _ListingLikeThisSheetImport
 
 /**
- * Listing-detail composition, ordered to the buyer decision sequence
- * (reordered 2026-07-30; alerts early 2026-08-10): see it, price it,
- * check the facts, read the story, capture intent, tour it, place it,
- * judge the market, schools and parks, history, run the money, then
- * who to call.
+ * /listing/[listingKey]. The Homes money page, on the v3 barrel for chrome
+ * and nearby edges. The listing-detail stack (hero, price, facts, remarks,
+ * capture, map, market, schools, money) stays. Visual language:
+ * design_system/public/PUBLIC_UI.md. Gate contract:
+ * design_system/ryan-realty/ui_kits/listing-detail/parity.json.
  *
- *   hero        ListingHero (photo-grid OR autoplay-video)
- *   main        PriceCtaStrip · OpenHouses · PropertySpecs · DescriptionBlock
- *               · ListingLikeThisAlerts (#listing-like-alerts + coach)
- *               · RoomRestyle · ListingVideoEmbed · ListingLocationMap
- *               · NeighborhoodMarketContext · SchoolsBlock · ParksNearbyBlock
- *               · PropertyHistory · MortgageCalculator · RentalAnalysis
- *               · ListingAttribution (ODS §5-3)
- *   sidebar     ListingBrokerCTA (TextMattCTA + ListingMobileContactBar)
- *   full-width  KbFeatured - homes for sale in this area
+ * Chrome: V3_ROOT_CLASS on main, V3Breadcrumb, one V3Footer outside main.
+ * Layout owns the public header. Do not remount it here.
  *
- * Two sections were retired here 2026-07-30: VacationRentalPotential (no
- * nightly-rate, occupancy, or City of Bend STR-permit source exists) and
- * TransparentCMASummary (every public.cmas row is a confidential client
- * document). Neither had ever rendered - both took a hardcoded null prop.
+ * Capture and JSON-LD are unchanged: submitSearchAlertSignup via
+ * ListingLikeThisSheet, MetadataBlock RealEstateListing + BreadcrumbList
+ * from listingDetailPath + listingShareSummary. MLS remarks are not rewritten.
  *
- * The mockup-parity CI gate verifies every requiredComponent in
- * design_system/ryan-realty/ui_kits/listing-detail/parity.json is
- * imported here. The route-smoke gate verifies the rendered page
- * returns 200 + non-blank against a real listing key.
+ * Primary at 390: PriceCtaStrip filled "Schedule a tour". Valuation is a Quiet
+ * link labeled Value my home. V3Footer carries no button.
  */
 
 type PageProps = { params: Promise<{ listingKey: string }> }
 
-// 5-min warm window: under ad traffic the vast majority of listing hits serve
-// from the ISR/data cache and never touch the Supabase pooler. On-demand
-// revalidation (cacheTag.listing) still invalidates instantly when a listing
-// changes, so this only lengthens the backstop, not real freshness.
 export const revalidate = 300
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -116,8 +93,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!listing) notFound()
 
   const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
-  // Comma between street and city ("63177 Iner Loop, Bend, OR 97701") — the
-  // comma-less form matched no county/Zillow record (design-audit P1, trust).
   const addressFull = [street, listing.city ? `${listing.city}, OR` : '', listing.postalCode ?? '']
     .filter(Boolean)
     .join(', ')
@@ -131,16 +106,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     address: addressFull || undefined,
     city: addressFull ? undefined : (listing.city ?? undefined),
   })
-  // Address only — the root layout title template owns the single brand suffix
-  // (" | Ryan Realty — Central Oregon Real Estate"). Adding "| Ryan Realty" here
-  // double-stamped the brand on every listing (the #1 ad-landing surface).
   const title = addressFull ? addressFull : `Listing ${listing.listingKey}`
 
-  // Canonical = the PUBLIC URL (matches the sitemap + internal links), NOT the
-  // internal /listing/<key> route. Pointing the canonical at /listing/<key>
-  // split indexing signal: the sitemap listed the pretty URL while the page
-  // told Google to index the raw-key one. Built with the same listingDetailPath
-  // helper the sitemap uses, so they agree.
   const canonicalSubdivision =
     listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
   const canonicalPath = listingDetailPath(
@@ -168,8 +135,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   })
 }
 
-// Save/unsave a listing from the price strip. Returns needsAuth for a signed-out
-// visitor so the client routes them to sign-in (the save -> account capture path).
 async function saveListingFromStrip(key: string): Promise<{ saved: boolean; needsAuth?: boolean }> {
   'use server'
   const { toggleSavedListing } = await import('@/app/actions/saved-listings')
@@ -183,26 +148,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const listing = await getListingDetail(listingKey)
   if (!listing) notFound()
 
-  // Place ladder + market grain (Exploration System). See CONTEXT.md.
   const { placeContext, marketGeo } = resolveListingPlaceAndMarket(listing)
-  const featuredGeoName = marketGeo?.name ?? listing.city ?? 'Nearby'
-  const featuredViewAllHref = marketGeo && marketGeo.geoType !== 'city' ? subdivisionListingsPath(listing.city, marketGeo.name) : homesForSalePath(listing.city)
+  const featuredGeoName = (marketGeo?.name ?? listing.city ?? 'Nearby').trim() || 'Nearby'
+  const featuredViewAllHref =
+    marketGeo && marketGeo.geoType !== 'city'
+      ? subdivisionListingsPath(listing.city, marketGeo.name)
+      : homesForSalePath(listing.city)
 
-  // Every arm is timeout-guarded (not just .catch): the listing page is the #1
-  // ad-landing surface, and an unbounded pooler stall on any of these used to
-  // hang the render to FUNCTION_INVOCATION_TIMEOUT / "Something went wrong".
-  // Each section degrades independently. Enforced by the db-timeout-guard gate.
-  // "Similar homes" = active homes in THIS listing's place (subdivision first,
-  // then neighborhood, then city) — the same canonical featured-homes rail the
-  // city/community pages use, not a bespoke MV. Scope mirrors marketGeo.
   const nearbyScope =
     marketGeo?.geoType === 'community'
       ? { subdivision: marketGeo.name, city: listing.city ?? undefined }
       : marketGeo?.geoType === 'neighborhood'
-      ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
-      : { city: listing.city ?? undefined }
+        ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
+        : { city: listing.city ?? undefined }
 
-  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma, builderTiles] =
+  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -241,40 +201,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
       withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
       withTimeoutFallback(getPublishedCmaForListing(listing.listingKey), null, 3000, 'listing:publishedCma'),
-      listing.builderName
-        ? withTimeoutFallback(
-            getListingsByBuilder({
-              builderName: listing.builderName,
-              city: listing.city,
-              excludeKey: listing.listingKey,
-              limit: 8,
-            }),
-            [],
-            3500,
-            'listing:builder',
-          )
-        : Promise.resolve([]),
     ])
 
   const listingWithPhotos = { ...listing, photos }
 
-  // Primary rail = place + similar merge; second rail = pure similar when it
-  // adds homes the primary set doesn't already show (avoid double tile walls).
-  // One inventory rail only (experience rule: no two card grids in a row).
-  // Ranking already merges similar_listings_mv + place proximity.
-  const featuredItems = await withTimeoutFallback(
-    resolveFeaturedItems(relatedHomes.primary.slice(0, 12), 12),
-    [],
-    3000,
-    'listing:featured',
-  )
-
   const { isListingSaved } = await import('@/app/actions/saved-listings')
   const initialSaved = await isListingSaved(listing.listingKey).catch(() => false)
-  // Resolve the fallback contact broker by the STABLE principal flag, not a slug
-  // string: the slug was renamed 'matt-ryan' -> 'matthew-ryan' (commit 6cb0202),
-  // which silently nulled `matt` and made the whole sticky CTA sidebar disappear.
-  // Prefer the principal, then known slug variants, then email, then any broker.
   const matt =
     brokers.find((b) => b.isPrincipal) ??
     brokers.find((b) => b.slug === 'matthew-ryan' || b.slug === 'matt-ryan') ??
@@ -283,11 +215,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
     null
   const ctaBroker = listingAgent ?? matt
 
-  // The sticky card shows ONE broker who may not be the person a given review
-  // names, so the social-proof quote must be broker-agnostic. Drop any review
-  // that names a broker (first/last name), keeping the brokerage count + average
-  // intact. "ryan" is excluded from the tokens — it's the brokerage name, not a
-  // person — and "matt" is added for the Matthew short form.
   const brokerNameTokens = new Set<string>(['matt'])
   for (const b of brokers) {
     for (const part of b.fullName.split(/\s+/)) {
@@ -307,25 +234,14 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
   const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
 
-  // Trail AFTER the Home root — ListingDetailShell renders it through the
-  // canonical PageBreadcrumb, which bakes Home in (P1-1 canon).
-  const breadcrumbs: BreadcrumbNavItem[] = [
-    { label: 'Homes for sale', href: '/homes-for-sale' },
-    ...(listing.city && cityHref ? [{ label: listing.city, href: cityHref }] : []),
-    { label: street || `Listing ${listingKey}` },
-  ]
-
   const marketHubHref = marketGeo
     ? marketGeo.geoType === 'community'
       ? `/communities/${marketGeo.geoSlug}`
       : marketGeo.geoType === 'neighborhood' && listing.citySlug
-      ? `/cities/${listing.citySlug}/${marketGeo.geoSlug}`
-      : `/cities/${marketGeo.geoSlug}`
+        ? `/cities/${listing.citySlug}/${marketGeo.geoSlug}`
+        : `/cities/${marketGeo.geoSlug}`
     : '/housing-market'
 
-  // Videos and virtual tours are DIFFERENT media (Matt). A marketing video (or
-  // the photo grid) is the hero; interactive 3D / virtual tours get their own
-  // viewer in the main column so a tour-only listing still leads with photos.
   const virtualTours = videos.filter((v) => v.isVirtualTour)
   const reelVideos = videos.filter((v) => !v.isVirtualTour)
   const hero = (
@@ -357,14 +273,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
           }))}
         />
       ) : null}
-      {/* Facts before prose: a buyer scans the spec grid, then reads the
-          remarks. Reordered 2026-07-30 to the buyer decision sequence. */}
       <PropertySpecs listing={listingWithPhotos} />
       <DescriptionBlock publicRemarks={listingWithPhotos.publicRemarks} />
-      {/* B1 alerts early (after facts + story) so high-intent visitors see the
-          form without scrolling past the full main stack + featured homes.
-          id="listing-like-alerts" is the jump target for PriceCtaStrip,
-          RoomRestyle next-step, and ListingAlertCoach. Single mount only. */}
       <ListingLikeThisAlerts
         city={listing.city}
         listPrice={listing.listPrice}
@@ -398,31 +308,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
       ) : null}
       <SchoolsBlock listing={listingWithPhotos} />
       <ParksNearbyBlock listing={listingWithPhotos} />
-      <LifestyleNearSection
-        lat={listing.lat}
-        lng={listing.lng}
-        items={
-          listing.lat != null && listing.lng != null
-            ? [
-                ...findTrailsNear(listing.lat, listing.lng, 10, 3),
-                ...findGolfNear(listing.lat, listing.lng, 15, 3),
-              ]
-            : []
-        }
-        eyebrow="Lifestyle"
-        title="Trails and golf nearby"
-      />
       {history.length > 0 ? <PropertyHistory history={history} mode="meaningful-only" /> : null}
-      {/* The money block: what it costs to own, then what it could earn. */}
       <MortgageCalculator
         listPrice={listing.listPrice}
         taxAnnualAmount={listing.taxAnnualAmount}
       />
       <RentalAnalysis listing={listing} />
-      {/* Our opinion of value. Renders ONLY for a document Matt published per
-          row (published_to_listing) that also passed its own audit — the guard
-          lives in getPublishedCmaForListing, never here. Sold-comp detail stays
-          behind the registration the section's CTA opens (ODS 5-4 C). */}
       <PublishedCmaSection cma={publishedCma} />
       <ListingAttribution
         listAgentName={listing.listAgentName}
@@ -434,9 +325,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
   )
 
   const sidebar = ctaBroker ? (
-    // ONE consolidated sticky card: the contact broker (the resolved Ryan Realty
-    // listing agent when known, else the assigned/principal broker) with full
-    // contact info + lg-only review social proof, plus the mobile sticky bar.
     <ListingBrokerCTA
       defaultBroker={ctaBroker}
       brokers={brokers}
@@ -446,15 +334,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
     />
   ) : null
 
-  // -------------------------------------------------------------------------
-  // JSON-LD — RealEstateListing + BreadcrumbList.
-  // Values come exclusively from the already-fetched listing object (§0).
-  // Media suppression: listing.photoUrl is already null when suppressed, and
-  // photos[] comes from getListingPhotos which also respects the flag —
-  // so we use the same gated sources here without any additional guard.
-  // -------------------------------------------------------------------------
-  // Canonical path — same helper + same inputs the generateMetadata export uses
-  // so the JSON-LD url matches the sitemap + canonical link exactly.
   const canonicalSubdivisionForLd =
     listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
   const canonicalPath = listingDetailPath(
@@ -520,8 +399,6 @@ export default async function ListingDetailPage({ params }: PageProps) {
       lotSizeSqft: listing.lotSizeSqft ?? undefined,
       yearBuilt: listing.yearBuilt ?? undefined,
       listPrice: listing.listPrice ?? undefined,
-      // Photos: already gated by media_suppressed in getListingPhotos().
-      // Cap at 5 per schema.org convention (matching the builder's own slice).
       photos: photos.length > 0 ? photos.slice(0, 5).map((p) => p.url) : undefined,
       listingAgent: ctaBroker
         ? {
@@ -534,46 +411,64 @@ export default async function ListingDetailPage({ params }: PageProps) {
     },
   ]
 
+  const similarRows = listingSimilarLedgerRows(relatedHomes.primary.slice(0, 12))
+  const [firstSimilar, ...restSimilar] = similarRows
+  const nearbyTrails =
+    listing.lat != null && listing.lng != null ? findTrailsNear(listing.lat, listing.lng, 10, 3) : []
+  const nearbyGolf =
+    listing.lat != null && listing.lng != null ? findGolfNear(listing.lat, listing.lng, 15, 3) : []
+  const quietItems = listingQuietLinks({
+    canonicalPath,
+    listingKey: listing.listingKey,
+    cityHref,
+    cityName: listing.city,
+    parentPlaces: placeContext.parents.map((p) => ({ href: p.href, label: p.label })),
+    nearbyTrails,
+    nearbyGolf,
+    builderName: listing.builderName ?? null,
+  })
+
   return (
-    <main className="kb-root">
-      <MetadataBlock schemas={listingJsonLdSchemas} />
-      <ListingTracker
-        listingKey={listing.listingKey}
-        listingId={listing.listingKey}
-        price={listing.listPrice ?? undefined}
-        community={listing.communityName ?? listing.subdivisionName ?? undefined}
-        city={listing.city ?? undefined}
-        beds={listing.beds ?? undefined}
-        baths={listing.baths ?? undefined}
-      />
-      <KbSectionTracker pageType="listing" />
-      <SmoothScrollProvider>
-        <ListingDetailShell
-          listing={listingWithPhotos}
-          breadcrumbs={breadcrumbs}
-          hero={hero}
-          main={main}
-          sidebar={sidebar}
+    <>
+      <main className={cn(V3_ROOT_CLASS, 'listing-detail')}>
+        <MetadataBlock schemas={listingJsonLdSchemas} />
+        <ListingTracker
+          listingKey={listing.listingKey}
+          listingId={listing.listingKey}
+          price={listing.listPrice ?? undefined}
+          community={listing.communityName ?? listing.subdivisionName ?? undefined}
+          city={listing.city ?? undefined}
+          beds={listing.beds ?? undefined}
+          baths={listing.baths ?? undefined}
         />
-        {featuredItems.length > 0 ? (
-          <KbFeatured
-            items={featuredItems}
-            eyebrow={`${featuredGeoName} · For sale`}
-            viewAllHref={featuredViewAllHref}
-            viewAllLabel={`See every ${featuredGeoName} home for sale`}
+        <KbSectionTracker pageType="listing" />
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Homes for sale', href: '/homes-for-sale' },
+            ...(listing.city && cityHref ? [{ label: listing.city, href: cityHref }] : []),
+            { label: street || `Listing ${listingKey}` },
+          ]}
+        />
+        <ListingDetailShell hero={hero} main={main} sidebar={sidebar} />
+        {firstSimilar ? (
+          <V3Ledger
+            id="similar"
+            eyebrow={v3Text(featuredGeoName)}
+            heading={v3Text(`${featuredGeoName} homes for sale`)}
+            rows={[firstSimilar, ...restSimilar]}
+            source={v3Text('Spark MLS. Active inventory.')}
+            action={{
+              label: v3Text(`${featuredGeoName} homes for sale`),
+              href: featuredViewAllHref,
+            }}
           />
         ) : null}
-        {/* Ledger parents after the inventory rail (not a second card grid). */}
-        <PlaceParentsSection
-          parents={placeContext.parents}
-          eyebrow="Keep exploring"
-          title="This home sits inside"
-        />
-        {listing.builderName && builderTiles.length > 0 ? (
-          <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
+        {quietItems.length > 0 ? (
+          <V3Quiet id="nearby" heading="Keep looking" items={quietItems} />
         ) : null}
-        <KbFooter towns={[]} listingKey={listing.listingKey} />
-      </SmoothScrollProvider>
-    </main>
+      </main>
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

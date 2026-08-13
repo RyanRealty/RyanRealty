@@ -117,6 +117,43 @@ describe('design directive contracts', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 
+  it('listing-detail v3 chrome: one main, footer outside, JSON-LD and capture stay', () => {
+    const src = readSrc('app/listing/[listingKey]/page.tsx')
+    expect(src).toMatch(/\bV3_ROOT_CLASS\b/)
+    expect(src).toMatch(/<V3Footer\b/)
+    expect(src).toMatch(/<V3Breadcrumb\b/)
+    expect(src).toMatch(/<MetadataBlock\b/)
+    expect(src).toMatch(/type:\s*'realEstateListing'/)
+    expect(src).toMatch(/type:\s*'breadcrumb'/)
+    expect(src).toMatch(/<KbSectionTracker[\s/>]/)
+    expect(src).toMatch(/pageType=["']listing["']/)
+    expect(src).toMatch(/<ListingLikeThisAlerts\b/)
+    expect(src).toMatch(/<PriceCtaStrip\b/)
+    expect(src).not.toMatch(/["'`]kb-root["'`]/)
+    expect(src).not.toMatch(/<V3Chrome\b/)
+    expect(src).not.toMatch(/<KbFooter\b/)
+    expect(src).not.toMatch(/<SmoothScrollProvider\b/)
+    expect(src).not.toMatch(/<KbFeatured\b/)
+  })
+
+  it('ListingDetailShell is layout-only and does not emit JSON-LD', () => {
+    const src = readSrc('components/site/listing-detail/ListingDetailShell.tsx')
+    expect(src).not.toMatch(/MetadataBlock/)
+    expect(src).not.toMatch(/realEstateListing/)
+    expect(src).toMatch(/<BackToResults/)
+  })
+
+  it('listing like-this sheet keeps the capture contract', () => {
+    const src = readSrc('components/site/listing-detail/ListingLikeThisSheet.client.tsx')
+    expect(src).toMatch(/submitSearchAlertSignup/)
+    expect(src).toMatch(/trap=\{\{\s*name:\s*['"]company['"]/)
+    expect(src).toMatch(/company:\s*answers\.company/)
+    expect(src).toMatch(/One email per new listing/)
+    expect(src).toMatch(/Unsubscribe any time/)
+    expect(src).toMatch(/id=["']listing-like-alerts["']/)
+    expect(src).not.toMatch(/company:\s*['"]{2}/)
+  })
+
   it('D78 — city hero active count comes from getMarketPulse, not geo_snapshot all-count', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
     // Hero activeCount must derive from the market pulse (same source as

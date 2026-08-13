@@ -77,12 +77,13 @@ const CHECKS = [
       '  city + community depth.',
   },
   {
-    file: 'components/site/listing-detail/ListingDetailShell.tsx',
+    file: 'app/listing/[listingKey]/page.tsx',
     label: 'listing: RealEstateListing + BreadcrumbList',
-    all: ['MetadataBlock'],
+    all: ['MetadataBlock', 'realEstateListing', "type: 'breadcrumb'"],
     why:
-      'The listing detail shell MUST emit the RealEstateListing + BreadcrumbList JSON-LD\n' +
-      '  via MetadataBlock (the listing page renders this shell).',
+      'The listing page MUST emit RealEstateListing + BreadcrumbList JSON-LD via\n' +
+      '  MetadataBlock (canonical listingDetailPath, listingShareSummary). The shell is\n' +
+      '  layout-only and must not emit a second payload.',
   },
   {
     file: 'app/blog/[slug]/page.tsx',
@@ -214,13 +215,12 @@ const CHECKS = [
       '  always advertising a live for-sale price on closed or withdrawn homes.',
   },
   {
-    file: 'components/site/listing-detail/ListingDetailShell.tsx',
-    label: 'listing shell: status field included in Pick<>',
-    all: ['status'],
+    file: 'app/listing/[listingKey]/page.tsx',
+    label: 'listing page: status field on RealEstateListing',
+    all: ['availability', 'listing.status'],
     why:
-      'ListingDetailShell MUST include status in its Pick<ListingDetail, ...> so\n' +
-      '  it can pass the listing status to the realEstateListing JSON-LD builder\n' +
-      '  and emit the correct availability on the Offer node.',
+      'The listing page MUST pass listing.status to the realEstateListing JSON-LD\n' +
+      '  builder as availability so the Offer node reflects live status.',
   },
 ]
 
