@@ -83,16 +83,20 @@ beforeAll(() => {
   copyFileSync(PUSH_SCRIPT, join(staleDir, 'scripts', 'push-with-gates.sh'))
   copyFileSync(STAMP_SCRIPT, join(staleDir, 'scripts', 'stamp-gates-marker.mjs'))
   writeFileSync(
+    join(staleDir, 'stub-ok.cjs'),
+    "console.log('stub OK')\n",
+  )
+  writeFileSync(
     join(staleDir, 'package.json'),
     JSON.stringify(
       {
         name: 'push-fixture',
         version: '0.0.0',
         scripts: {
-          'ci:gates': "node -e \"console.log('stub ci:gates OK')\"",
-          lint: "node -e \"console.log('stub lint OK')\"",
-          build: "node -e \"console.log('stub build OK')\"",
-          'ci:bundle-budget': "node -e \"console.log('stub bundle-budget OK')\"",
+          'ci:gates': 'node stub-ok.cjs',
+          lint: 'node stub-ok.cjs',
+          build: 'node stub-ok.cjs',
+          'ci:bundle-budget': 'node stub-ok.cjs',
         },
       },
       null,

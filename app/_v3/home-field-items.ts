@@ -2,9 +2,9 @@
  * Tile -> V3FieldItem for the homepage inventory Field.
  *
  * Same honesty as app/cities/[slug]/_v3/city-field-items.ts: a tile earns a row
- * when it carries a price and an address. formatPrice(null) is a placeholder,
- * not a figure, so those tiles are dropped. The Field's count still states the
- * region total from its own pulse query.
+ * when it carries a price, an address, and a live MLS photograph. formatPrice(null)
+ * is a placeholder, not a figure, so those tiles are dropped. The Field's count
+ * still states the region total from its own pulse query.
  */
 
 import type { V3FieldItem } from '@/components/site/v3'
@@ -25,6 +25,7 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3
       .join(' ')
       .trim()
     if (!street) continue
+    if (!tile.photoUrl || tile.photoUrl.trim().length === 0) continue
 
     const meta = [
       tile.beds != null ? `${tile.beds} bd` : null,
@@ -44,6 +45,7 @@ export function homeFieldItems(tiles: readonly ListingTile[], limit: number): V3
       ),
       priceLabel,
       title: street,
+      photoSrc: tile.photoUrl,
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,

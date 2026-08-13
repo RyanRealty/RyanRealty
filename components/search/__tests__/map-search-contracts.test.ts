@@ -175,22 +175,24 @@ describe('hidden homes are excluded from the SSR city browse grid too (W7.2, 202
 })
 
 describe('price-drops browse grids also subtract hidden homes (W7.2, 2026-07-22)', () => {
-  // /price-drops and /price-drops/[city] are nav-linked browse grids of active
-  // price-reduced inventory (functionally a preset search). They rendered a raw
-  // <ListingCard> grid, so a home hidden on /search reappeared there (flagged by
-  // the W7.2 verifier). Both now route through HideAwareListingGrid, keeping the
-  // KB grid styling via gridClassName. The ci:hidden-exclusion-surfaces gate
-  // enforces the no-raw-ListingCard invariant; these pin the dual-key wiring.
+  // /price-drops and /price-drops/[city] list documented asking-price cuts on
+  // the v3 Field. Hidden-home subtraction for search still lives on /search
+  // (HideAwareListingGrid + ci:hidden-exclusion-surfaces). These pages must
+  // not regress to a raw ListingCard grid.
   for (const file of ['app/price-drops/page.tsx', 'app/price-drops/[city]/page.tsx']) {
     const src = readSrc(file)
-    it(`${file} renders through HideAwareListingGrid with dual-key items and no raw ListingCard`, () => {
-      expect(src).toMatch(/import HideAwareListingGrid, \{ type HideAwareItem \} from '@\/components\/search\/HideAwareListingGrid'/)
-      expect(src).toMatch(/<HideAwareListingGrid/)
-      expect(src).toMatch(/ListingKey: drop\.listingKey/)
-      expect(src).toMatch(/ListNumber: drop\.listNumber/)
+    it(`${file} renders cuts through V3Field and no raw ListingCard`, () => {
+      expect(src).toMatch(/import \{\s*[\s\S]*V3Field[\s\S]*\} from '@\/components\/site\/v3'/)
+      expect(src).toMatch(/<V3Field/)
       expect(src).not.toMatch(/<ListingCard[\s/>]/)
     })
   }
+
+  it('price-drop Field rows open the listing via listingDetailPath', () => {
+    const src = readSrc('app/price-drops/_v3/drops-field-items.ts')
+    expect(src).toMatch(/listingDetailPath\(/)
+    expect(src).toMatch(/mlsNumber: drop\.listNumber/)
+  })
 })
 
 describe('HideAwareListingGrid keeps a surface\'s own grid styling', () => {

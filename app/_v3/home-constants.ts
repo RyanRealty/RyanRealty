@@ -49,5 +49,3 @@ export const HOME_PULSE_TRACE =
 export const HOME_TOWN_TRACE =
   'live MLS through Oregon Data Share, active single-family listings, one row per city'
 
-export const HOME_FIELD_TRACE =
-  'live MLS through Oregon Data Share, active single-family homes, Central Oregon region'

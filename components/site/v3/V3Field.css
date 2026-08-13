@@ -86,6 +86,72 @@
   height: 100%;
 }
 
+/* MLS photographs as the inventory surface. Height follows the mosaic, not a
+   4/3 empty box, so three homes fit the first viewport at 390. */
+.v3-field__map--photos {
+  aspect-ratio: auto;
+  overflow: visible;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.v3-field__map--photos > :only-child {
+  height: auto;
+}
+
+.v3-field__photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--v3-space-xs);
+}
+
+.v3-field__photo {
+  display: grid;
+  gap: var(--v3-space-2xs);
+  min-width: 0;
+  color: var(--v3-ink);
+  text-decoration: none;
+  border-radius: var(--v3-radius-sm);
+}
+
+.v3-field__photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-wash);
+  border: 1px solid var(--v3-edge);
+}
+
+.v3-field__photo.is-active img,
+.v3-field__photo:focus-visible img {
+  box-shadow: inset 0 0 0 2px var(--v3-ink);
+}
+
+.v3-field__photo-cap {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
+}
+
+.v3-field__photo-price {
+  font-size: var(--v3-size-body-sm);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.v3-field__photo-title {
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (min-width: 56.25rem) {
   .v3-field__map {
     position: sticky;
@@ -200,6 +266,26 @@
   transition:
     background var(--v3-dur-state) var(--v3-ease-out),
     box-shadow var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.v3-field__row--has-photo {
+  grid-template-columns: var(--v3-tap) minmax(0, 1fr);
+  column-gap: var(--v3-space-sm);
+  align-items: center;
+}
+
+.v3-field__thumb {
+  width: var(--v3-tap);
+  height: var(--v3-tap);
+  object-fit: cover;
+  border-radius: var(--v3-radius-sm);
+  background: var(--v3-wash);
+}
+
+.v3-field__copy {
+  display: grid;
+  gap: var(--v3-space-3xs);
+  min-width: 0;
 }
 
 .v3-field__item:last-child .v3-field__row {

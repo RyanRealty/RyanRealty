@@ -30,8 +30,8 @@ const FILES = [
   'scripts/lib/walk.mjs',
   // The compliant subject: every rule satisfied, through the v3 register.
   'app/communities/[slug]/_v3/CommunityAlertSheet.client.tsx',
-  // The other compliant register: a KB block with its own hidden input.
-  'components/site/kb/KbCommunityAlerts.client.tsx',
+  // Second compliant surface (homepage). KbCommunityAlerts is gone.
+  'app/_v3/HomeAlertSheet.client.tsx',
 ]
 
 function run() {

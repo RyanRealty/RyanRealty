@@ -22,12 +22,14 @@
  *
  * The map is a SLOT, not a dependency. Production passes the real Google map
  * (as `mapSlot` or as children), and the map reads and writes the same binding
- * through `useV3FieldBinding()` or the render-prop form. When no slot is passed,
- * the frame plots the items that carry coordinates so the pattern still shows
- * its shape. That plot is a relative plot, not a map, and the component says so
- * itself: `PLOT_DISCLOSURE` renders under the plot whenever a pin is drawn,
- * with no prop to switch it off. A caller can add its own line through
- * `mapNote`; a caller cannot ship the pins without the label.
+ * through `useV3FieldBinding()` or the render-prop form. When no slot is passed
+ * and three or more items carry `photoSrc`, the frame is those MLS photographs,
+ * each a door into the listing — that is the Homes inventory surface. When no
+ * slot is passed and the set has no photographs, the frame plots coordinates so
+ * the pattern still shows its shape. That plot is a relative plot, not a map,
+ * and the component says so itself: `PLOT_DISCLOSURE` renders under the plot
+ * whenever a pin is drawn, with no prop to switch it off. A caller can add its
+ * own line through `mapNote`; a caller cannot ship the pins without the label.
  *
  * Barrel law honored here:
  *  - No import from components/site/kb, components/site (flat legacy),
@@ -69,6 +71,12 @@ export type V3FieldItem = {
   lat?: number | null
   /** Real longitude, when the feed reports one. */
   lng?: number | null
+  /**
+   * Live MLS photograph URL. When three or more items carry one and no map
+   * slot is passed, those photographs become the spatial surface (each a door
+   * into the listing) instead of the relative plot.
+   */
+  photoSrc?: string
 }
 
 /**
@@ -174,6 +182,17 @@ type PlottedPin = { item: V3FieldItem; left: number; top: number }
  */
 const PLOT_DISCLOSURE =
   'Relative positions inside this set, not a map. On-screen distance and direction are not to scale.'
+
+/** Enough live photographs to be an inventory surface, not a lonely thumbnail. */
+const PHOTO_SURFACE_MIN = 3
+/** First-viewport mosaic. The list still holds the rest of the set. */
+const PHOTO_SURFACE_MAX = 6
+
+function hasListingPhoto(
+  item: V3FieldItem,
+): item is V3FieldItem & { photoSrc: string } {
+  return typeof item.photoSrc === 'string' && item.photoSrc.trim().length > 0
+}
 
 /** The inset that keeps an edge pin off the frame edge, and the box it leaves. */
 const PLOT_INSET_PCT = 10
@@ -285,16 +304,24 @@ export function V3Field({
       ? false
       : true
 
+  const photoItems = useMemo(() => items.filter(hasListingPhoto), [items])
+  const usePhotoSurface =
+    hasSlot === false && photoItems.length >= PHOTO_SURFACE_MIN
+  const mosaic = usePhotoSurface ? photoItems.slice(0, PHOTO_SURFACE_MAX) : []
+
   const { pins, missing } = useMemo(
-    () => (hasSlot ? { pins: [] as PlottedPin[], missing: 0 } : plotItems(items)),
-    [hasSlot, items],
+    () =>
+      hasSlot || usePhotoSurface
+        ? { pins: [] as PlottedPin[], missing: 0 }
+        : plotItems(items),
+    [hasSlot, usePhotoSurface, items],
   )
   // The disclosure is bound to the pins, not to the caller: if this frame drew
   // a pseudo-map, the line that says it is not a map renders with it. No pins
   // means nothing to mislabel, and the missing-coordinates note below covers
-  // the set that carried no geography at all.
-  const showPlotDisclosure = hasSlot === false && pins.length > 0
-  const showMissingNote = hasSlot === false && missing > 0
+  // the set that carried no geography at all. Photographs are not that plot.
+  const showPlotDisclosure = hasSlot === false && usePhotoSurface === false && pins.length > 0
+  const showMissingNote = hasSlot === false && usePhotoSurface === false && missing > 0
 
   return (
     <V3FieldBindingContext.Provider value={binding}>
@@ -313,9 +340,44 @@ export function V3Field({
 
         <div className="v3-field__frame" onMouseLeave={() => setActive(null)}>
           <div className="v3-field__col">
-            <div className="v3-field__map">
+            <div
+              className={cn(
+                'v3-field__map',
+                usePhotoSurface && 'v3-field__map--photos',
+              )}
+            >
               {hasSlot ? (
                 mapContent
+              ) : usePhotoSurface ? (
+                <div className="v3-field__photos">
+                  {mosaic.map((item, index) => (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      className={cn(
+                        'v3-field__photo',
+                        active === item.id && 'is-active',
+                      )}
+                      aria-label={`${item.priceLabel}, ${item.title}`}
+                      onMouseEnter={() => setActive(item.id)}
+                      onFocus={() => setActive(item.id)}
+                      onBlur={() => setActive(null)}
+                    >
+                      <img
+                        src={item.photoSrc}
+                        alt=""
+                        width={480}
+                        height={360}
+                        loading={index < 3 ? 'eager' : 'lazy'}
+                        fetchPriority={index < 3 ? 'high' : 'auto'}
+                      />
+                      <span className="v3-field__photo-cap">
+                        <span className="v3-field__photo-price">{item.priceLabel}</span>
+                        <span className="v3-field__photo-title">{item.title}</span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               ) : (
                 /* The plot duplicates the list, so it is hidden from assistive
                    technology and holds nothing focusable. The list is the
@@ -357,16 +419,32 @@ export function V3Field({
                 <li key={item.id} className="v3-field__item">
                   <Link
                     href={item.href}
-                    className={cn('v3-field__row', active === item.id && 'is-active')}
+                    className={cn(
+                      'v3-field__row',
+                      hasListingPhoto(item) && 'v3-field__row--has-photo',
+                      active === item.id && 'is-active',
+                    )}
                     onMouseEnter={() => setActive(item.id)}
                     onFocus={() => setActive(item.id)}
                     onBlur={() => setActive(null)}
                   >
-                    <span className="v3-field__price">{item.priceLabel}</span>
-                    <span className="v3-field__title">{item.title}</span>
-                    {item.meta ? (
-                      <span className="v3-field__meta">{item.meta}</span>
+                    {hasListingPhoto(item) ? (
+                      <img
+                        className="v3-field__thumb"
+                        src={item.photoSrc}
+                        alt=""
+                        width={88}
+                        height={88}
+                        loading="lazy"
+                      />
                     ) : null}
+                    <span className="v3-field__copy">
+                      <span className="v3-field__price">{item.priceLabel}</span>
+                      <span className="v3-field__title">{item.title}</span>
+                      {item.meta ? (
+                        <span className="v3-field__meta">{item.meta}</span>
+                      ) : null}
+                    </span>
                   </Link>
                 </li>
               ))}

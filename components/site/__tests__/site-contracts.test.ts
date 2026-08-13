@@ -242,12 +242,11 @@ describe('design directive contracts', () => {
     // and blank, not a regional stand-in: a wrong-place photo beside a named place
     // is the exact defect D86 exists to prevent.
     expect(shared).toMatch(/hero\.verified \? hero\.src : ''/)
-    // The LABELED regional fallback still ships where a city photo is still full
-    // bleed — the cities index — and it is still gated on `verified`.
+    // Cities index: unverified cities omit the photo (null), they do not
+    // invent a labeled regional fallback as a fake city image.
     const index = readSrc('app/cities/page.tsx')
     expect(index).toMatch(/cityHero\s*\(/)
-    expect(index).toMatch(/hero\.verified \? null :/)
-    expect(index).toMatch(/Regional view/)
+    expect(index).toMatch(/hero\.verified \? hero\.src : null/)
     // the unverified seeded-pool resolvers must stay out of this page
     expect(src).not.toMatch(/getGeoTileImages|getSurfaceImage|pickGeoImage/)
     // never hardcode a landing-page image as city HERO/tile imagery. The curated

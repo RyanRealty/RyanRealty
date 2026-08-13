@@ -14,6 +14,12 @@
  * / WebSite). MetadataBlock is not added because this route never computed
  * a market FAQ set. V3SectionTracker is a v3 island, not a seventh pattern.
  *
+ * E-HOME-JOBS (2026-08-13): first viewport is homes and towns, not the HUD.
+ * Level-1 Instrument carries the D11 H1, six town doors (live active counts),
+ * and See homes for sale. Field is live MLS photographs that open the listing,
+ * not the relative plot. Chart atom stays on a level-2 Instrument UNDER those
+ * jobs. Chrome CTA stays Value my home.
+ *
  * D11 LOCK (Layer A), literals in this file so ci:seo-shell can see them:
  *   H1: Homes for Sale in Central Oregon
  *   Lead: Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list
@@ -24,10 +30,10 @@
  * month is dropped via zonedDateKey before buildRegionMedianChart so a
  * partial month cannot draw as a dip.
  *
- * SERIES: year overlay on the level-1 Instrument (buildRegionMedianChart).
- * Not a flattened polyline. Not a seventh pattern. E-CHART owns the atom.
- * This page mounts it. Do not remount V3Chrome. Do not add NewsletterSignup
- * to the footer.
+ * SERIES: year overlay on the level-2 Instrument (buildRegionMedianChart),
+ * under the homes-and-towns jobs. Not a flattened polyline. Not a seventh
+ * pattern. E-CHART owns the atom. This page mounts it. Do not remount
+ * V3Chrome. Do not add NewsletterSignup to the footer.
  *
  * KB-era deletions this migration made: KbHero film split H1 (titleTop /
  * titleBottom), KbExploreTowns, KbCommunities (and its autoplay community
@@ -79,7 +85,6 @@ import {
   HOME_TILE_FETCH,
   HOME_PULSE_TRACE,
   HOME_TOWN_TRACE,
-  HOME_FIELD_TRACE,
 } from './_v3/home-constants'
 import { homeFieldItems } from './_v3/home-field-items'
 import { livePrice, liveStamp } from './_v3/live-format'
@@ -133,6 +138,19 @@ export default async function Home() {
     dropInProgressMonth(priceHist, zonedDateKey(new Date()).slice(0, 7)),
   )
 
+  const townFigures: V3InstrumentFigure[] = []
+  for (const label of D11_TOWNS) {
+    const snapshot = snapshotByLabel.get(label)
+    const slug = D11_TOWN_SLUG[label]
+    if (!snapshot) continue
+    townFigures.push({
+      value: v3Text(snapshot.active_count.toLocaleString('en-US')),
+      label: v3Text(label),
+      href: `/cities/${slug}`,
+    })
+  }
+  const [firstTownFigure, ...restTownFigures] = townFigures
+
   const regionFigures: V3InstrumentFigure[] = []
   if (pulse != null) {
     regionFigures.push({
@@ -182,6 +200,10 @@ export default async function Home() {
     .at(-1)
 
   const exploreItems: V3QuietItem[] = [
+    {
+      kind: 'prose',
+      body: 'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.',
+    },
     ...HOME_COMMUNITY_EDGES.map((edge) => ({ label: edge.label, href: edge.href })),
     { label: 'Video tours of homes for sale', href: '/videos' },
     { label: 'Central Oregon housing market', href: '/housing-market' },
@@ -197,7 +219,22 @@ export default async function Home() {
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker pageType="homepage" />
 
-        {firstRegionFigure ? (
+        {firstTownFigure ? (
+          <V3Instrument
+            id="homes"
+            level={1}
+            eyebrow={v3Text('Central Oregon')}
+            headline={v3Text('Homes for Sale in Central Oregon')}
+            figures={[firstTownFigure, ...restTownFigures]}
+            source={v3Text(HOME_TOWN_TRACE)}
+            updated={liveStamp(cityRefreshedAt)}
+            action={{
+              label: v3Text('See homes for sale'),
+              href: listingsBrowsePath(),
+              variant: 'primary',
+            }}
+          />
+        ) : firstRegionFigure ? (
           <V3Instrument
             id="homes"
             level={1}
@@ -228,34 +265,13 @@ export default async function Home() {
           />
         )}
 
-        <V3Quiet
-          id="lead"
-          ariaLabel="Towns on this list"
-          items={[
-            {
-              kind: 'prose',
-              body: 'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.',
-            },
-          ]}
-        />
-
         <V3Field
           id="listed"
           ariaLabel="Homes for sale in Central Oregon"
           items={fieldItems}
-          count={
-            pulse != null
-              ? {
-                  value: pulse.activeCount.toLocaleString('en-US'),
-                  label: 'homes for sale in Central Oregon',
-                  source: HOME_FIELD_TRACE,
-                  updatedAt: pulse.updatedAt || null,
-                }
-              : undefined
-          }
           footNote={
             fieldItems.length > 0
-              ? `Map shows ${fieldItems.length} homes from the live list. The count above is the region total, not a total of these rows.`
+              ? `Listed here: ${fieldItems.length} photographed homes from the live list. Each photograph opens the listing.`
               : undefined
           }
           emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
@@ -282,6 +298,24 @@ export default async function Home() {
             )}
           />
         )}
+
+        {firstTownFigure && firstRegionFigure ? (
+          <V3Instrument
+            id="market"
+            level={2}
+            eyebrow={v3Text('Central Oregon')}
+            headline={v3Text('Median sale prices')}
+            figures={[firstRegionFigure, ...restRegionFigures]}
+            source={v3Text(HOME_PULSE_TRACE)}
+            updated={liveStamp(pulse?.updatedAt ?? null)}
+            action={{
+              label: v3Text('Housing market'),
+              href: '/housing-market',
+              variant: 'ghost',
+            }}
+            chart={homeChart}
+          />
+        ) : null}
 
         <HomeAlertSheet />
 

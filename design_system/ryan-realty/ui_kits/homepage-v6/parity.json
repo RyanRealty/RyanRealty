@@ -2,8 +2,8 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED v6 Linear mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "competitiveTarget": "Beat Zillow / Redmond-area brokerage homepages. The answer in the first viewport (D11 H1, live inventory count, median list, days to pending, year-overlay median-sale series on the same Instrument, one source trace), a map+list of live homes, six D11 towns as doors, one listing-alert ask.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-HOMES-HOME). E-HOME-HUD (same day) put the market series on the existing level-1 Instrument via chart={homeChart} from buildRegionMedianChart and deleted KbMarketHud.client.tsx (this page was its last mount). KbMarketChart stays on disk for ci:market-chart-honesty. Rhythm: five of the six patterns, no two adjacent alike, chrome exempt. D11 lead + the on-page alert Sheet outrank the four-pattern preference. Order is Instrument level 1 (D11 H1 Homes for Sale in Central Oregon, year overlay of completed monthly median sale prices, in-progress Pacific month dropped), Quiet (D11 lead, no heading), Field (curated sample of 24, count is the region pulse total), Ledger (six D11 towns), HomeAlertSheet (V3Sheet, same capture as KbCommunityAlerts), Quiet (edges), Footer outside main. The opening Instrument's action is PRIMARY: at 390 the chrome CTA sits inside the collapsed menu. Flattening the series is a D9 defect. The chart atom is E-CHART's. The KB-era deletions this migration made: KbHero film split H1 (titleTop/titleBottom), KbExploreTowns, KbCommunities and its autoplay community videos, KbFeatured 9-card grid, KbListingMap 3000-pin region box, KbTicker, KbSell, KbTestimonials, KbTeam, SmoothScrollProvider, KbFooter, KbMarketHud. Orphaned modules deleted with this change: components/site/kb/KbCommunities.client.tsx, components/site/kb/KbTicker.client.tsx. curateFeaturedTiles stays and now feeds the Field.",
+  "competitiveTarget": "Beat Zillow / Redmond-area brokerage homepages. First viewport at 390 and 1280: search or inventory door, towns as tappable doors, at least three live MLS listing photographs that open the listing. Chart stays under those jobs.",
+  "note": "E-HOME-JOBS 2026-08-13. First viewport is homes and towns, not the market HUD. Order: Instrument level 1 (D11 H1 Homes for Sale in Central Oregon, six D11 towns as figure doors with live active counts, primary See homes for sale), Field (photographed homes, each a door, no relative plot), Ledger (six D11 towns with medians), Instrument level 2 (region pulse figures plus year overlay via buildRegionMedianChart), HomeAlertSheet, Quiet (D11 lead plus edges), Footer outside main. Chrome CTA stays Value my home. Chart is not deleted. Ticker, team dump, and horizontal review rails stay gone.",
   "requiredComponents": [
     {
       "name": "KbSectionTracker",
@@ -12,7 +12,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, level 1. D11 H1 'Homes for Sale in Central Oregon', live active count / median list / median days to pending from getRegionPulse, every figure a door, source is the MLS trace not the D11 lead. Ask is primary 'See homes for sale'. Year overlay mounts on this same Instrument via chart={homeChart}. Not a second Instrument.",
+      "section": "Pattern 1, twice. Level 1 opens with D11 H1 and six town doors (live active counts). Ask is primary See homes for sale. Level 2 under the jobs holds region pulse figures and the year overlay via chart={homeChart}. Not a seventh pattern.",
       "blocking": true
     },
     {
@@ -22,12 +22,12 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice. First: D11 lead as prose, no heading, ariaLabel only. Second: community / market / value / team / reviews / our-homes edges.",
+      "section": "Pattern 6. D11 lead as prose plus community / market / value / team / reviews / our-homes edges.",
       "blocking": true
     },
     {
       "name": "V3Field",
-      "section": "Pattern 2. Curated sample of 24 photographed priced homes (curateFeaturedTiles). Count is the region pulse active total with its own trace. Footnote states the rows are a sample.",
+      "section": "Pattern 2. Curated photographed homes (curateFeaturedTiles). Each photograph is a door into the listing. No relative plot on this route.",
       "blocking": true
     },
     {
@@ -77,12 +77,12 @@
   },
   "sectionOrder": [
     "KbSectionTracker",
-    "V3Instrument (level 1, D11 H1, year overlay via buildRegionMedianChart)",
-    "V3Quiet (D11 lead)",
-    "V3Field (curated inventory sample)",
+    "V3Instrument (level 1, D11 H1, town doors, See homes for sale)",
+    "V3Field (photographed inventory, listing doors)",
     "V3Ledger (D11 towns)",
+    "V3Instrument (level 2, region pulse, year overlay via buildRegionMedianChart)",
     "HomeAlertSheet (V3Sheet, listing alerts)",
-    "V3Quiet (outbound edges)",
+    "V3Quiet (D11 lead plus outbound edges)",
     "V3Footer"
   ]
 }
