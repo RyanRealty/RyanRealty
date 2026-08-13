@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). E-HOMES-DETAIL `fd1d1d09` READY.
-Ratchet 505 / 68 / 15. kb page imports 399→383.
+**Updated:** 2026-08-13 (Grok, Go running). E-SELL `1276088f` READY.
+Ratchet 490 / 66 / 17. kb page imports 383→372.
 
 ---
 
@@ -86,10 +86,10 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **505** | `scripts/public-ui-baseline.json` |
-| Public legacy pages (no v3) | **68** | same |
-| Public mixed pages (v3 body + leftover register) | **15** | same |
-| Of 527, kb chrome | **383** | same, register `kb` |
+| Public non-v3 imports | **490** | `scripts/public-ui-baseline.json` |
+| Public legacy pages (no v3) | **66** | same |
+| Public mixed pages (v3 body + leftover register) | **17** | same |
+| Of 527, kb chrome | **372** | same, register `kb` |
 | Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb footers/heroes |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
@@ -99,9 +99,10 @@ file is required, the first agent to need it takes the lease and the other waits
 | A4+A1 looking-at | **landed** `86695f6e` | Locked SMS `{name} is looking at {address}.` Key `crm_people.id`. One ping per person+listing per session. Today first lane. Queue only. No live SMS. Admin look still needs a signed-in 390+1280 pass. |
 | E-CHART | **landed** `d554ba7e` | `V3Chart` atom inside Instrument. Straight SVG segments, caller-formatted labels, no library. Not a seventh pattern. No family page mounts it yet. E-MARKET-REFINE unblocked. |
 | E-HOMES-SEARCH | **landed** `79e34778` | Search / buy / compare on the barrel. Ratchet 527→513, 73→69. Mixed 11→14 (tracked). Look 390+1280 still needed. |
-| E-HOMES-DETAIL | **landed** `fd1d1d09` | Listing money page on the barrel. JSON-LD RealEstateListing + BreadcrumbList stay on the page MetadataBlock. Capture still `submitSearchAlertSignup` with company trap and disclosure. Similar homes are a Ledger. Value my home is a Quiet link. Ratchet 513→505, 69→68, mixed 14→15 (tracked). Look 390+1280 still needed. |
+| E-HOMES-DETAIL | **landed** `fd1d1d09` | Listing money page on the barrel. JSON-LD RealEstateListing + BreadcrumbList stay on the page MetadataBlock. Capture still `submitSearchAlertSignup` with company trap and disclosure. Similar homes are a Ledger. Value my home is a Quiet link. Ratchet 513→505, 69→68, mixed 14→15 (tracked). Look 390+1280 on 61281 McRoberts: one `v3-chrome`, filled Schedule a tour, capture Sheet, Quiet Value my home, sidebar broker at 1280. SignInPrompt leftover is not this lease. |
+| E-SELL | **landed** `1276088f` | `/sell` and `/sell/valuation` on the barrel. SellerLPForm + ValuationForm capture stay. 3% plan is a Sheet. H1 still Sell your home in Central Oregon. Ratchet 505→490, 68→66, mixed 15→17 (tracked). Brand-voice 6→3. Look 390+1280 still needed. |
 
-Chrome is live. The 383 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
+Chrome is live. The 372 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
 Look residual (not this lease): at 390 a leftover `SignInPrompt` dialog covers the page. Dirty tree, do not join.
 
@@ -188,7 +189,7 @@ from the baseline if it drifts.
 | Id | Lease (pages) | n leftover | Status | Notes |
 |---|---|---|---|---|
 | **E-HOMES-SEARCH** | `app/search/**`, `app/buy/**`, `app/compare/**` | 4 | **landed** `79e34778` READY | Search is the Homes Field. Ratchet 527→513, 73→69. Look still needed. |
-| **E-HOMES-DETAIL** | `app/listing/**` | 1 | **landed** `fd1d1d09` READY | Money page on the barrel. JSON-LD + capture stay. Look 390+1280 still needed. |
+| **E-HOMES-DETAIL** | `app/listing/**` | 1 | **landed** `fd1d1d09` READY | Money page on the barrel. JSON-LD + capture stay. Look 390+1280 on a live listing: one chrome, tour CTA, capture, Quiet Value my home. |
 | **E-HOMES-SIGNALS** | `app/open-houses/**`, `app/price-drops/**`, `app/motivated-sellers/**` | 6 | **open** (wave 1) | Claude named these. |
 | **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | 6 | **open** (wave 1) | Homepage H1/lead already locked (D11). 16 kb imports on `app/page.tsx` today. Live H1 is still the film line, not the lock. |
 | **E-HOMES-TOOLS** | `app/tools/mortgage-calculator/**`, `app/tools/rental-property-calculator/**` | 2 | **open** (wave 1) | Appreciation stays with Market. |
@@ -197,7 +198,7 @@ from the baseline if it drifts.
 | **E-MARKET-REST** | `app/blog/**`, `app/faq/**`, `app/housing-market/history/**`, `app/housing-market/[...slug]/**`, `app/housing-market/reports/**`, `app/reports/sales/**`, `app/tools/appreciation/**` | 9 | **open** (wave 1) | Catch-all and content. |
 | **E-MARKET-REFINE** | `app/housing-market/page.tsx`, `central-oregon`, `annual-review`, `app/months-of-supply/**` | 4 mixed | quarry, after E-CHART (atom landed `d554ba7e`) | Claude waves 1–2. Chart atom (D9) before flattening any series. Look at every chart. |
 | **E-ABOUT** | `app/about/**`, `app/team/**`, `app/contact/**`, `app/reviews/**`, `app/join/**` | 6 | **open** (wave 1) | About mission sentence is the one virtue-word exception. |
-| **E-SELL** | `app/sell/page.tsx`, `app/sell/valuation/**` | 2 | **open** (wave 1) | Valuation spine. 3% plan already locked. `app/dev/sell-film` is a prototype, not this lease. |
+| **E-SELL** | `app/sell/page.tsx`, `app/sell/valuation/**` | 2 | **landed** `1276088f` READY | Valuation spine. 3% plan as Sheet. Capture unchanged. Look still needed. `app/dev/sell-film` is a prototype, not this lease. |
 | **E-SAVED** | `app/account/**` leftover | 2 | **open** (wave 1) | Saved is an affordance, not a sixth marketing destination. |
 | **E-SYSTEM** | legal + unsubscribe + offline + cma-drafts + team edit + site-index + noindex LPs | 15 | **open** (wave 1) | Quiet. Do not over-design. Dual objectives still required. |
 | **E-CUT** | CUT-CANDIDATE leftovers: area-guides, areas, builders, reports hub, resources, pulse | 8 | wave 2 | Honor `cut-list.md` + GSC. Migrate only what we keep. 301 or noindex the rest. Do not spend a v3 pass on a page we are killing. |
