@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). **Wave 0 landed.** A4+A1 landed
-`86695f6e` READY. Wave 1 public families building. Next land: E-CHART.
+**Updated:** 2026-08-13 (Grok, Go running). **Wave 0 landed.** A4+A1
+`86695f6e` READY. E-CHART `d554ba7e` READY. Wave 1 public families next.
 
 ---
 
@@ -93,10 +93,11 @@ file is required, the first agent to need it takes the lease and the other waits
 | Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb footers/heroes |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
-| V1 chart inventory | **landed** `076c2dd0` | `docs/plans/ADMIN_PRODUCT/chart-inventory.md`. 24 series-as-type, 18 live charts. E-CHART is next. |
+| V1 chart inventory | **landed** `076c2dd0` | `docs/plans/ADMIN_PRODUCT/chart-inventory.md`. 24 series-as-type, 18 live charts. E-CHART landed. |
 | A3 person header | **landed** `56a1ccc0` | Who / Next / Now on `/admin/people/[id]`. Split `PersonIdentityHeader` for the 600 LOC floor. Admin look needs a signed-in pass. |
 | E-VOICE | **landed** `0ad6a0c2` | D11 law in `VOICE.md`. `blog-voice.mdc` deleted. Gate is punctuation + invented quotes + Value my home. Eight live worth-CTAs rewritten so the gate could land. Baseline 10→6. |
 | A4+A1 looking-at | **landed** `86695f6e` | Locked SMS `{name} is looking at {address}.` Key `crm_people.id`. One ping per person+listing per session. Today first lane. Queue only. No live SMS. Admin look still needs a signed-in 390+1280 pass. |
+| E-CHART | **landed** `d554ba7e` | `V3Chart` atom inside Instrument. Straight SVG segments, caller-formatted labels, no library. Not a seventh pattern. No family page mounts it yet. E-MARKET-REFINE unblocked. |
 
 Chrome is live. The 399 kb imports are still **on pages**. Family leases drop them. Eleven mixed routes now sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -192,13 +193,13 @@ from the baseline if it drifts.
 | **E-PLACES-REST** | `app/cities/page.tsx`, `app/communities/page.tsx`, `app/central-oregon/**`, `app/parks/**`, `app/schools/**` | 13 | **open** (wave 1) | Indexes + lifestyle. Detail cities/communities/subdivisions/zip/oregon are mixed quarry. |
 | **E-PLACES-REFINE** | `app/cities/[slug]/**`, `app/communities/[slug]/**`, `app/subdivisions/[slug]/**`, `app/zip/**`, `app/oregon/**` | 6 mixed | quarry, after rest | Claude wave 2. Look. Rework if clunky. Do not re-migrate from scratch unless amnesia says the `_v3/` module is wrong. |
 | **E-MARKET-REST** | `app/blog/**`, `app/faq/**`, `app/housing-market/history/**`, `app/housing-market/[...slug]/**`, `app/housing-market/reports/**`, `app/reports/sales/**`, `app/tools/appreciation/**` | 9 | **open** (wave 1) | Catch-all and content. |
-| **E-MARKET-REFINE** | `app/housing-market/page.tsx`, `central-oregon`, `annual-review`, `app/months-of-supply/**` | 4 mixed | quarry, after E-CHART | Claude waves 1–2. Chart atom (D9) before flattening any series. Look at every chart. |
+| **E-MARKET-REFINE** | `app/housing-market/page.tsx`, `central-oregon`, `annual-review`, `app/months-of-supply/**` | 4 mixed | quarry, after E-CHART (atom landed `d554ba7e`) | Claude waves 1–2. Chart atom (D9) before flattening any series. Look at every chart. |
 | **E-ABOUT** | `app/about/**`, `app/team/**`, `app/contact/**`, `app/reviews/**`, `app/join/**` | 6 | **open** (wave 1) | About mission sentence is the one virtue-word exception. |
 | **E-SELL** | `app/sell/page.tsx`, `app/sell/valuation/**` | 2 | **open** (wave 1) | Valuation spine. 3% plan already locked. `app/dev/sell-film` is a prototype, not this lease. |
 | **E-SAVED** | `app/account/**` leftover | 2 | **open** (wave 1) | Saved is an affordance, not a sixth marketing destination. |
 | **E-SYSTEM** | legal + unsubscribe + offline + cma-drafts + team edit + site-index + noindex LPs | 15 | **open** (wave 1) | Quiet. Do not over-design. Dual objectives still required. |
 | **E-CUT** | CUT-CANDIDATE leftovers: area-guides, areas, builders, reports hub, resources, pulse | 8 | wave 2 | Honor `cut-list.md` + GSC. Migrate only what we keep. 301 or noindex the rest. Do not spend a v3 pass on a page we are killing. |
-| **E-CHART** | `components/site/v3/` chart atom inside Instrument | — | **open** (serial on barrel) | D9. Inventory landed `076c2dd0`. Needed before Market refine can tell the truth. |
+| **E-CHART** | `components/site/v3/` chart atom inside Instrument | — | **landed** `d554ba7e` READY | D9. `V3Chart` under Instrument. Straight segments, caller labels, no library. Families may pass `chart`. |
 | **E-VOICE** | `marketing_brain_skills/brand-voice/VOICE.md` + delete `.cursor/rules/blog-voice.mdc` + tiny gate | — | **landed** `0ad6a0c2` | D11 law. Gate is punctuation + invented quotes + Value my home. Not a site-wide copy sweep. Eight worth-CTAs rewritten to land the gate. |
 
 ### Broker — disjoint from public (may build during chrome)

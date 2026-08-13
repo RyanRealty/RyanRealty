@@ -665,3 +665,5 @@ NOT IN SCOPE
 2026-08-13T00:38:00Z E-VOICE LANDED 0ad6a0c2. VOICE.md is the D11 law. blog-voice.mdc deleted. Gate shrunk to punctuation + invented quotes + Value my home. Eight live worth-CTAs rewritten (MegaMenu, MobileNav, HomeValuationCta, sell, resources, tetherow LP, public-v3 prototype). Brand-voice baseline 10→6. Wave 0 complete. Next: wave 1 family leases, serial land, E-CHART on the barrel.
 
 2026-08-13T02:25:00Z A4+A1 LANDED 86695f6e READY. queueReturnVisitAlert is the locked two-line SMS keyed on crm_people.id, one ping per person+listing per session. Unidentified / no home = no queue. Today first lane is the same sentence. Open is quiet. Lane heads use SectionHead. Queue only: no Twilio, no drain, no live SMS. Admin look still needs a signed-in 390+1280 pass. Next land: E-CHART on the barrel.
+
+2026-08-13T02:43:00Z E-CHART LANDED d554ba7e READY. V3Chart is the series atom inside Instrument. Straight SVG segments, gap lifts, caller-formatted labels, no chart library, not a seventh pattern. No public page mounts it yet. E-MARKET-REFINE unblocked. Next land: wave 1 family pages.
