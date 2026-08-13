@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). E-HOMES-TOOLS `6e781cc7` READY
-(product `54a10f5c` + percent-figure fix). Ratchet 194 / 24 / 56. kb import sites 119→109.
+**Updated:** 2026-08-13 (Grok, Go running). E-SAVED `cb3b8854` READY.
+Ratchet 192 / 22 / 56. kb import sites held at 109.
 
 ---
 
@@ -86,11 +86,11 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **194** | `scripts/public-ui-baseline.json` |
-| Public legacy pages (no v3) | **24** | same |
+| Public non-v3 imports | **192** | `scripts/public-ui-baseline.json` |
+| Public legacy pages (no v3) | **22** | same |
 | Public mixed pages (v3 body + leftover register) | **56** | same |
 | Of 527, kb chrome | **109** | same, register `kb` |
-| Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb trackers / MetadataBlock |
+| Public v3-only pages | **3** | collections/[id], hidden, search index — other pages still import kb trackers / MetadataBlock |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
 | V1 chart inventory | **landed** `076c2dd0` | `docs/plans/ADMIN_PRODUCT/chart-inventory.md`. 24 series-as-type, 18 live charts. E-CHART landed. |
@@ -107,6 +107,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-HOMES-HOME | **landed** `559b9233` | Homepage, our-homes, luxury, videos, feed (301 → `/videos?view=feed`), activity on the barrel. D11 H1 and lead are literals. Capture still `submitSearchAlertSignup` with company trap and disclosure. KbMarketHud leftover (D9). Deleted KbCommunities, KbTicker, KbCommunityAlerts, KbTeam, KbTestimonials. Ratchet 296→262, 41→35, mixed 40→45 (tracked). kb 198→165. shadcn 197→196. Bundle 9.19 MB. Look 390+1280 `/`: one chrome, H1, D11 lead, live MLS figures, Value my home. |
 | E-MARKET-REST | **landed** `24a6090d` | Blog, FAQ, housing-market catch-all, history, reports archive, sales reports, appreciation on the barrel. Inquiry sheets keep `submitMarketPageInquiry`. D9: city year overlay and archive sold-by-year pass `chart`. Deleted FaqAccordion, PriceChart, MarketDetailStats, and the leftover geo-report islands. Ratchet 262→202, 35→26, mixed 45→54 (tracked). kb 165→119. shadcn 196→192. tokens 241→228. Bundle 9.09 MB. Look 390+1280 `/housing-market/bend`: one chrome, H1, live figures, chart, Value my home. Hub / central-oregon / annual-review stay E-MARKET-REFINE. |
 | E-HOMES-TOOLS | **landed** `6e781cc7` | Mortgage + rental calculators on the barrel. Calculator math stays as islands inside a sheet wrapper (V3Sheet has no ReactNode slot). Value my home on Instrument + Quiet. Ratchet 202→194, 26→24, mixed 54→56 (tracked). kb 119→109. Bundle 9.17 MB. Look 390+1280 `/tools/mortgage-calculator`: one chrome, H1, Value my home, starting insurance **0.35%** (IEEE junk fixed after first READY). Chrome CTA still Get your home's value. Cookie banner residual. |
+| E-SAVED | **landed** `cb3b8854` | Leftover `/account/*` on the barrel. Saved stays a signed-in affordance, not a sixth marketing destination. `collections/[id]` and `hidden` left ListingCard for Quiet + Ledger. Other account pages wrapped in AccountFrame so V3Footer sits outside main. No V3Chrome remount. No on-page Value my home (sticky chrome already asks). Ratchet 194→192, 24→22, mixed 56 held. kb held 109. Signed-out `/account` noindex, meta-refresh to `/login?next=/account`. Signed-in 390+1280 of the v3 body still needs a session. Login page itself is leftover (not this lease). |
 
 Chrome is live. The 109 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -205,7 +206,7 @@ from the baseline if it drifts.
 | **E-MARKET-REFINE** | `app/housing-market/page.tsx`, `central-oregon`, `annual-review`, `app/months-of-supply/**` | 4 mixed | quarry, after E-CHART (atom landed `d554ba7e`) | Claude waves 1–2. Chart atom (D9) before flattening any series. Look at every chart. |
 | **E-ABOUT** | `app/about/**`, `app/team/**`, `app/contact/**`, `app/reviews/**`, `app/join/**` | 6 | **landed** `b48a8e82` READY | Mission sentence is the D11 exception. `/team/[slug]/edit` stays with E-SYSTEM. |
 | **E-SELL** | `app/sell/page.tsx`, `app/sell/valuation/**` | 2 | **landed** `1276088f` READY | Valuation spine. 3% plan as Sheet. Capture unchanged. Look still needed. `app/dev/sell-film` is a prototype, not this lease. |
-| **E-SAVED** | `app/account/**` leftover | 2 | **open** (wave 1) | Saved is an affordance, not a sixth marketing destination. |
+| **E-SAVED** | `app/account/**` leftover | leftover shadcn | **landed** `cb3b8854` READY | Saved is an affordance, not a sixth marketing destination. Signed-in look still needs a session. |
 | **E-SYSTEM** | legal + unsubscribe + offline + cma-drafts + team edit + site-index + noindex LPs | 15 | **open** (wave 1) | Quiet. Do not over-design. Dual objectives still required. |
 | **E-CUT** | CUT-CANDIDATE leftovers: area-guides, areas, builders, reports hub, resources, pulse | 8 | wave 2 | Honor `cut-list.md` + GSC. Migrate only what we keep. 301 or noindex the rest. Do not spend a v3 pass on a page we are killing. |
 | **E-CHART** | `components/site/v3/` chart atom inside Instrument | — | **landed** `d554ba7e` READY | D9. `V3Chart` under Instrument. Straight segments, caller labels, no library. Families may pass `chart`. |
