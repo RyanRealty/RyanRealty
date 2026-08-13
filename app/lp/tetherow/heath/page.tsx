@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: ['/lp/tetherow/img/tetherow-aerial-course.jpg'],
   },
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false },
 }
 
 // ──────────────────────────────────────────────────────────────────────────

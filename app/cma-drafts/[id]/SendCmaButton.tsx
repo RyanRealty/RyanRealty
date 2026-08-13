@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { V3Button } from '@/components/site/v3'
 
 export function SendCmaButton({
   deliveryId,
@@ -37,22 +38,11 @@ export function SendCmaButton({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <button
-        type="button"
-        onClick={handleSend}
-        disabled={busy}
-        className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-base font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-4 focus-visible:ring-primary/30 disabled:opacity-60"
-      >
-        {busy ? 'Sending…' : 'Send to lead now'}
-      </button>
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
-      <p className="text-xs text-muted-foreground">
-        Sends from Ryan Realty with the assigned broker as the reply-to. A note
-        is recorded on the contact so the conversation stays attributed.
-      </p>
+    <div className="v3">
+      <V3Button type="button" onClick={handleSend} disabled={busy}>
+        {busy ? 'Sending' : 'Send to the lead now'}
+      </V3Button>
+      {error ? <p>{error}</p> : null}
     </div>
   )
 }

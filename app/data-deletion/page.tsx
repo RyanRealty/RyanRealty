@@ -1,10 +1,37 @@
-// @no-parity static legal/utility page (same pattern as /privacy, /terms, /cookies), no mockup contract
+/**
+ * /data-deletion - delete account and personal data, on the v3 barrel.
+ *
+ * // @data-free static legal page. Renders constant copy. No DAL.
+ *
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet legal page. One Quiet then Ledger. No sales Sheet.
+ *
+ * VISITOR OBJECTIVE: File a data-deletion request, including revoking
+ * Facebook/Google app access, through a clearly named channel with a
+ * stated 30-day SLA.
+ * MACHINE OBJECTIVE: Satisfy the Meta/Google app data-deletion-URL
+ * requirement (this URL is externally pinned).
+ * EXITS: /privacy, /
+ *
+ * D11: no virtue names. No invented quote.
+ */
+
 // @data-free static legal page, renders constant copy, no data layer needed
 import type { Metadata } from 'next'
-import { H1 } from '@/components/site/primitives'
-import SiteFooter from '@/components/site/SiteFooter'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Ledger,
+  V3Quiet,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+const siteUrl = getCanonicalSiteUrl()
 const ogImage = `${siteUrl}/api/og?type=default`
 const contactEmail = process.env.NEXT_PUBLIC_SITE_OWNER_EMAIL ?? 'admin@ryan-realty.com'
 
@@ -23,84 +50,81 @@ export const metadata: Metadata = {
   robots: 'noindex, follow',
 }
 
-const SECTION_CLASS = 'mt-8'
-const H2_CLASS = 'text-lg font-semibold text-primary'
-const P_CLASS = 'mt-2 text-sm text-muted-foreground'
-const UL_CLASS = 'mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground'
+const ITEMS: V3QuietItem[] = [
+  {
+    kind: 'prose',
+    body: 'You can have your Ryan Realty account and your personal data deleted at any time. This page explains what we store and how to remove it.',
+  },
+  {
+    kind: 'prose',
+    term: 'What we store',
+    body: 'When you sign in to ryan-realty.com (with Google, Facebook, or email), we store your name, your email, and your activity on the site such as saved homes, saved searches, and the listings you have viewed. When you are signed in we also keep a contact record in our own client-relationship system, so our team can follow up on the homes you care for.',
+  },
+  {
+    kind: 'prose',
+    term: 'How to request deletion',
+    body: `Email ${contactEmail} from the address tied to your account, with the subject line Delete my data. We will confirm your identity, delete your account and the personal data tied to it, and email you when it is done. We complete deletion requests within 30 days.`,
+  },
+  {
+    kind: 'prose',
+    term: 'If you signed in with Facebook or Google',
+    body: [
+      'You can also remove the access you granted our app at any time. This stops future sign-ins. To also delete the data we already hold, email us as described above.',
+      'Facebook: open Settings and privacy, then Settings, then Apps and websites, and remove Ryan Realty Website Login.',
+      'Google: go to myaccount.google.com/permissions and remove Ryan Realty.',
+    ],
+  },
+  {
+    kind: 'prose',
+    term: 'What gets deleted',
+    body: 'Your account record, your profile (name and email), your saved searches, saved homes, and viewing history, and your contact record in our client-relationship system. We may keep a limited record where the law requires it, for example a completed real estate transaction, along with de-identified analytics that cannot be used to identify you.',
+  },
+  { label: `Email ${contactEmail} to delete my data`, href: `mailto:${contactEmail}?subject=Delete my data` },
+  { label: 'Google app permissions', href: 'https://myaccount.google.com/permissions' },
+]
 
 export default function DataDeletionPage() {
   return (
     <>
-    <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <H1 className="text-2xl tracking-tight text-primary">Delete your data</H1>
-      <p className="mt-2 text-sm text-muted-foreground">Last updated: June 2, 2026</p>
-      <p className="mt-4 text-primary">
-        You can have your Ryan Realty account and your personal data deleted at any time. This page
-        explains what we store and how to remove it.
-      </p>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="legal" />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Delete your data' }]} />
 
-      <section className={SECTION_CLASS}>
-        <h2 className={H2_CLASS}>What we store</h2>
-        <p className={P_CLASS}>
-          When you sign in to ryan-realty.com (with Google, Facebook, or email), we store your name,
-          your email, and your activity on the site such as saved homes, saved searches, and the
-          listings you have viewed. When you are signed in we also keep a contact record in our own
-          client-relationship system, so our team can follow up on the homes you care for.
-        </p>
-      </section>
+        <V3Quiet
+          id="data-deletion"
+          eyebrow="Updated June 2, 2026"
+          heading="Delete your data"
+          headingLevel={1}
+          items={ITEMS}
+        />
 
-      <section className={SECTION_CLASS}>
-        <h2 className={H2_CLASS}>How to request deletion</h2>
-        <p className={P_CLASS}>
-          Email{' '}
-          <a href={`mailto:${contactEmail}?subject=Delete my data`} className="text-accent-foreground underline hover:no-underline">{contactEmail}</a>{' '}
-          from the address tied to your account, with the subject line Delete my data. We will confirm
-          your identity, delete your account and the personal data tied to it, and email you when it
-          is done. We complete deletion requests within 30 days.
-        </p>
-      </section>
+        <V3Ledger
+          id="policy-set"
+          eyebrow={v3Text('Related')}
+          heading={v3Text('Privacy')}
+          rows={[
+            {
+              href: '/privacy',
+              when: v3Text('Privacy'),
+              what: v3Text('Privacy policy'),
+              detail: v3Text('How we collect, use, and protect your information'),
+            },
+            {
+              href: '/',
+              when: v3Text('Home'),
+              what: v3Text('Ryan Realty home'),
+              detail: v3Text('Back to Central Oregon listings'),
+            },
+          ]}
+        />
+      </main>
 
-      <section className={SECTION_CLASS}>
-        <h2 className={H2_CLASS}>If you signed in with Facebook or Google</h2>
-        <p className={P_CLASS}>
-          You can also remove the access you granted our app at any time. This stops future sign-ins.
-          To also delete the data we already hold, email us as described above.
-        </p>
-        <ul className={UL_CLASS}>
-          <li>
-            <strong>Facebook:</strong> open Settings and privacy, then Settings, then Apps and
-            websites, and remove Ryan Realty Website Login.
-          </li>
-          <li>
-            <strong>Google:</strong> go to{' '}
-            <a href="https://myaccount.google.com/permissions" className="text-accent-foreground underline hover:no-underline" target="_blank" rel="noopener noreferrer">myaccount.google.com/permissions</a>{' '}
-            and remove Ryan Realty.
-          </li>
-        </ul>
-      </section>
-
-      <section className={SECTION_CLASS}>
-        <h2 className={H2_CLASS}>What gets deleted</h2>
-        <p className={P_CLASS}>
-          Your account record, your profile (name and email), your saved searches, saved homes, and
-          viewing history, and your contact record in our client-relationship system. We may keep a limited record
-          where the law requires it, for example a completed real estate transaction, along with
-          de-identified analytics that cannot be used to identify you.
-        </p>
-      </section>
-
-      <section className={SECTION_CLASS}>
-        <h2 className={H2_CLASS}>Contact</h2>
-        <p className={P_CLASS}>
-          Questions on deleting your data? Email{' '}
-          <a href={`mailto:${contactEmail}`} className="text-accent-foreground underline hover:no-underline">{contactEmail}</a>.
-          See our{' '}
-          <a href="/privacy" className="text-accent-foreground underline hover:no-underline">privacy policy</a>{' '}
-          for how we collect, use, and protect your information.
-        </p>
-      </section>
-    </main>
-    <SiteFooter />
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

@@ -43,8 +43,8 @@ export const metadata: Metadata = {
     url: `${siteUrl}/lp/bend/`,
     images: [`${siteUrl}/lp/bend/img/bend-hero.jpg`],
   },
+  robots: { index: false, follow: false },
 }
-
 type Kpis = {
   sold_count: number | null
   median_sale_price: number | null

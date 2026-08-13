@@ -1,10 +1,37 @@
-import type { Metadata } from 'next'
-import Link from 'next/link'
-import EqualHousing from '@/components/legal/EqualHousing'
-import { H1, H2 } from '@/components/site/primitives'
-import SiteFooter from '@/components/site/SiteFooter'
+/**
+ * /fair-housing - Equal Housing Opportunity, on the v3 barrel.
+ *
+ * // @data-free static legal page. Renders constant copy. No DAL.
+ *
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet legal page. One Quiet then Ledger. No sales Sheet.
+ * Equal Housing mark stays: it is the HUD identifier, not a second language.
+ *
+ * VISITOR OBJECTIVE: Understand the brokerage’s fair-housing commitment and
+ * the correct complaint channel, routed to HUD.
+ * MACHINE OBJECTIVE: Keep the license’s fair-housing compliance surface intact.
+ * EXITS: HUD complaint URL, /
+ *
+ * D11: no virtue names. No invented quote.
+ */
 
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+// @data-free static legal page, no DAL access needed.
+import type { Metadata } from 'next'
+import EqualHousing from '@/components/legal/EqualHousing'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Ledger,
+  V3Quiet,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+
+const siteUrl = getCanonicalSiteUrl()
 const ogImage = `${siteUrl}/api/og?type=default`
 const HUD_URL = 'https://www.hud.gov/program_offices/fair_housing_equal_opp'
 const HUD_PHONE = '1-800-669-9777'
@@ -24,69 +51,73 @@ export const metadata: Metadata = {
   robots: 'noindex, follow',
 }
 
+const ITEMS: V3QuietItem[] = [
+  {
+    kind: 'prose',
+    term: 'Equal Housing Opportunity',
+    body: 'Ryan Realty follows the Fair Housing Act and all applicable state and local laws. We do not discriminate on the basis of race, color, religion, sex, national origin, familial status, or disability.',
+  },
+  {
+    kind: 'prose',
+    term: 'Fair Housing Act',
+    body: 'The Fair Housing Act prohibits discrimination in the sale, rental, or financing of housing based on: race, color, religion, sex, national origin, familial status, and disability. We apply those protections to every client and every visitor.',
+  },
+  {
+    kind: 'prose',
+    term: 'Oregon law',
+    body: 'Oregon law provides additional protected classes. We comply with all Oregon fair housing and civil rights requirements.',
+  },
+  {
+    kind: 'prose',
+    term: 'If you believe you have been discriminated against',
+    body: `The U.S. Department of Housing and Urban Development (HUD) investigates fair housing complaints. Contact HUD at ${HUD_PHONE}.`,
+  },
+  {
+    kind: 'prose',
+    term: 'How we work',
+    body: 'Equal housing opportunity is the baseline here. Every client gets the same service, without discrimination.',
+  },
+  { label: 'HUD Fair Housing', href: HUD_URL },
+  { label: `Call HUD ${HUD_PHONE}`, href: `tel:${HUD_PHONE.replace(/\D/g, '')}` },
+]
+
 export default function FairHousingPage() {
   return (
     <>
-    <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <div className="flex flex-col items-center text-center">
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="legal" />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Fair housing' }]} />
+
         <EqualHousing size="large" className="text-primary" />
-        <H1 className="mt-6 text-3xl text-primary">Fair housing</H1>
-      </div>
 
-      <section className="mt-10 space-y-6 text-sm text-primary">
-        <div>
-          <H2 className="text-lg text-foreground">Equal Housing Opportunity</H2>
-          <p className="mt-2">
-            Ryan Realty follows the Fair Housing Act and all applicable state and local laws. We do not discriminate on the basis of race, color, religion, sex, national origin, familial status, or disability.
-          </p>
-        </div>
+        <V3Quiet
+          id="fair-housing"
+          heading="Fair housing"
+          headingLevel={1}
+          items={ITEMS}
+        />
 
-        <div>
-          <H2 className="text-lg text-foreground">Fair Housing Act</H2>
-          <p className="mt-2">
-            The Fair Housing Act prohibits discrimination in the sale, rental, or financing of housing based on: race, color, religion, sex, national origin, familial status, and disability. We apply those protections to every client and every visitor.
-          </p>
-        </div>
+        <V3Ledger
+          id="next"
+          eyebrow={v3Text('Next')}
+          heading={v3Text('Back to the site')}
+          rows={[
+            {
+              href: '/',
+              when: v3Text('Home'),
+              what: v3Text('Ryan Realty home'),
+              detail: v3Text('Central Oregon listings'),
+            },
+          ]}
+        />
+      </main>
 
-        <div>
-          <H2 className="text-lg text-foreground">Oregon law</H2>
-          <p className="mt-2">
-            Oregon law provides additional protected classes. We comply with all Oregon fair housing and civil rights requirements.
-          </p>
-        </div>
-
-        <div>
-          <H2 className="text-lg text-foreground">If you believe you have been discriminated against</H2>
-          <p className="mt-2">
-            The U.S. Department of Housing and Urban Development (HUD) investigates fair housing complaints. You may contact HUD:
-          </p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>
-              <a href={HUD_URL} target="_blank" rel="noopener noreferrer" className="text-accent-foreground underline hover:no-underline">
-                HUD Fair Housing
-              </a>
-            </li>
-            <li>
-              <a href={`tel:${HUD_PHONE.replace(/\D/g, '')}`} className="text-accent-foreground underline hover:no-underline">
-                {HUD_PHONE}
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <H2 className="text-lg text-foreground">How we work</H2>
-          <p className="mt-2">
-            Equal housing opportunity is the baseline here. Every client gets the same service, without discrimination.
-          </p>
-        </div>
-      </section>
-
-      <p className="mt-10 text-center">
-        <Link href="/" className="text-accent-foreground underline hover:no-underline">Back to home</Link>
-      </p>
-    </main>
-    <SiteFooter />
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

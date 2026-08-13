@@ -1,38 +1,62 @@
-'use client'
+/**
+ * /offline - PWA recovery, on the v3 barrel.
+ *
+ * // @data-free utility page. No DAL.
+ *
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet recovery. Minimal. No sales Sheet.
+ *
+ * VISITOR OBJECTIVE: When the connection, not the site, is the problem, see
+ * an honest recoverable state with a retry instead of a raw browser error.
+ * MACHINE OBJECTIVE: Keep a network-blipped session recoverable so it returns
+ * to the exploration graph instead of dying.
+ * EXITS: /
+ *
+ * P3 lock: PWA offline is minimal recovery only.
+ *
+ * D11: no virtue names. No invented quote.
+ */
 
-import Link from 'next/link'
-import { Button } from "@/components/ui/button"
-import { H1 } from '@/components/site/primitives'
-import SiteFooter from '@/components/site/SiteFooter'
+// @data-free static utility page, no DAL access needed.
+import type { Metadata } from 'next'
+import {
+  V3_ROOT_CLASS,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Quiet,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { TryAgainButton } from './TryAgain.client'
+
+export const metadata: Metadata = {
+  title: 'Offline',
+  description: 'You are currently offline. Return when you are back online.',
+  robots: 'noindex, nofollow',
+}
 
 export default function OfflinePage() {
   return (
     <>
-    <main id="main-content" className="mx-auto max-w-md px-4 py-16 text-center">
-      <H1 className="text-2xl text-primary">You&apos;re offline</H1>
-      <p className="mt-4 text-muted-foreground">
-        This page needs a connection.
-      </p>
-      <p className="mt-6">
-        <Button
-          type="button"
-          onClick={() => {
-            if (typeof navigator !== 'undefined' && navigator.onLine) {
-              window.location.reload()
-            }
-          }}
-          className="rounded bg-primary px-4 py-2 text-primary-foreground hover:opacity-90"
-        >
-          Try again
-        </Button>
-      </p>
-      <p className="mt-6">
-        <Link href="/" className="text-accent-foreground underline hover:no-underline">
-          Go to homepage
-        </Link>
-      </p>
-    </main>
-    <SiteFooter />
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="utility" />
+        <V3Quiet
+          id="offline"
+          heading="You are offline"
+          headingLevel={1}
+          items={[
+            { kind: 'prose', body: 'This page needs a connection.' },
+            { label: 'Go to homepage', href: '/' },
+          ]}
+        />
+        <TryAgainButton />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

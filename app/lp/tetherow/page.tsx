@@ -76,7 +76,7 @@ export const metadata: Metadata = {
     url: cfg.meta.canonical,
     images: [{ url: cfg.hero_image }],
   },
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false },
 }
 
 export default async function TetherowLandingPage() {

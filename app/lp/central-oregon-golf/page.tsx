@@ -79,8 +79,8 @@ export const metadata: Metadata = {
     description: '30 courses, 14 architects, 300 days of sunshine.',
     images: [`${siteUrl}/lp/central-oregon-golf/img/tetherow-hero.jpg`],
   },
+  robots: { index: false, follow: false },
 }
-
 const NAVY = '#102742'
 const CREAM = '#faf8f4'
 

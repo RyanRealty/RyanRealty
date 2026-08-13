@@ -1,73 +1,75 @@
 /**
- * /marketing/request — the page brokers land on from the link in every
- * marketing@ reply signature. Pick what you want, fill in a couple of
- * fields, hit "Build my email," and your email client opens with the
- * request pre-written and addressed to marketing@ryan-realty.com.
+ * /marketing/request: brokers land here from the marketing@ reply signature.
  *
- * No auth gate (linked from email). No backend writes. The marketing
- * inbox itself enforces the allowlist; this page is purely a mailto:
- * builder so brokers do not have to remember what they can ask for.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet (what this is) then the existing RequestBuilder (capture contract
+ * unchanged: send into the queue or mailto). No public sales Sheet.
  *
- * To update the menu of deliverables: edit ./deliverables.ts.
+ * VISITOR OBJECTIVE: A Ryan Realty broker picks a deliverable and gets a
+ * pre-written, pre-addressed request.
+ * MACHINE OBJECTIVE: Feed well-formed requests into the marketing inbox
+ * pipeline. URL is pinned by email signatures.
+ * EXITS: mailto:marketing@ryan-realty.com
+ *
+ * THE PAGE CONTRACT: robots noindex nofollow, getSession +
+ * getPersonIdFromCookie (dynamic mode), RequestBuilder two intakes.
+ *
+ * D11: no virtue names. No invented quote. No !.
  */
+
 import type { Metadata } from 'next'
 import RequestBuilder from './RequestBuilder'
-import { H1 } from '@/components/site/primitives'
-import SiteFooter from '@/components/site/SiteFooter'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+import {
+  V3_ROOT_CLASS,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Quiet,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 export const metadata: Metadata = {
   title: 'Marketing request | Ryan Realty',
   description:
-    'Here is what the Ryan Realty marketing team can build for you. Listing kits, market reports, social posts, ads, blog posts, and more. Pick what you need and we will draft it.',
+    'Listing kits, market reports, social posts, ads, and blog posts the Ryan Realty marketing team can draft. Pick what you need.',
   robots: { index: false, follow: false },
 }
 
 export default async function MarketingRequestPage() {
-  // Session + identity-bridge reads kept (they pin this route's dynamic
-  // rendering mode); the FUB page-view mirror they fed was deleted with the
-  // FUB decommission — first-party visitor_sessions covers page views now.
   await Promise.all([getSession(), getPersonIdFromCookie()])
 
   return (
     <>
-    <main className="min-h-screen bg-background">
-      <section className="border-b border-border bg-card">
-        <div className="mx-auto max-w-3xl px-6 py-12">
-          <p className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
-            Ryan Realty marketing
-          </p>
-          <H1 className="mt-2 text-4xl sm:text-5xl">
-            Here&rsquo;s what we can build for you.
-          </H1>
-          <p className="mt-4 text-base text-muted-foreground">
-            Pick anything you need. The team gets the request, drafts it, and replies on the email
-            thread with the draft for your review. Most items land in your inbox within a day. Market
-            reports and full listing kits take a little longer.
-          </p>
-        </div>
-      </section>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="utility" />
+        <V3Quiet
+          id="marketing-request"
+          eyebrow="Ryan Realty marketing"
+          heading="What we can build"
+          headingLevel={1}
+          items={[
+            {
+              kind: 'prose',
+              body: 'Pick what you need. The team gets the request, drafts it, and replies on the email thread. Most items land in your inbox within a day. Market reports and full listing kits take longer.',
+            },
+            {
+              kind: 'prose',
+              body: 'Need something that is not on this list? Email marketing@ryan-realty.com and describe it.',
+            },
+            { label: 'Email marketing@ryan-realty.com', href: 'mailto:marketing@ryan-realty.com' },
+          ]}
+        />
 
-      <section className="mx-auto max-w-3xl px-6 py-10">
         <RequestBuilder />
-      </section>
+      </main>
 
-      <section className="border-t border-border bg-card">
-        <div className="mx-auto max-w-3xl px-6 py-8 text-sm text-muted-foreground">
-          <p>
-            Need something that is not on this list? Email{' '}
-            <a href="mailto:marketing@ryan-realty.com" className="text-primary underline-offset-4 hover:underline">
-              marketing@ryan-realty.com
-            </a>{' '}
-            directly and describe what you have in mind. The team reviews every request.
-          </p>
-        </div>
-      </section>
-    </main>
-    <SiteFooter />
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

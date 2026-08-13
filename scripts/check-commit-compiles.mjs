@@ -134,21 +134,16 @@ if (mode === 'head') {
 
   process.stdout.write('   Materializing HEAD tree... ');
   try {
-    const archiveResult = spawnSync('git', ['archive', 'HEAD', '--', ...excludeArgs], {
-      cwd: REPO_ROOT,
-      maxBuffer: 512 * 1024 * 1024, // 512 MB — enough for the filtered tree
-    });
-    if (archiveResult.status !== 0) {
-      console.error('FAIL\n' + (archiveResult.stderr?.toString() ?? ''));
-      process.exit(1);
-    }
-    // Pipe archive output into tar
-    const tarResult = spawnSync('tar', ['-x', '-C', TMP], {
-      input: archiveResult.stdout,
-      maxBuffer: 512 * 1024 * 1024,
-    });
-    if (tarResult.status !== 0) {
-      console.error('FAIL\n' + (tarResult.stderr?.toString() ?? ''));
+    // Stream git-archive into tar. Buffering the archive in node (spawnSync
+    // maxBuffer) then feeding tar's stdin deadlocks: tar's close() waits for
+    // EOF while node waits for tar to exit. Hit on a ~480MB filtered tree.
+    const piped = spawnSync(
+      'sh',
+      ['-c', 'git archive HEAD -- "$@" | tar -x -C "$0"', TMP, ...excludeArgs],
+      { cwd: REPO_ROOT, stdio: ['ignore', 'inherit', 'inherit'] },
+    );
+    if (piped.status !== 0) {
+      console.error('FAIL\n' + (piped.stderr?.toString() ?? `git archive | tar exited ${piped.status}`));
       process.exit(1);
     }
     console.log('done');

@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 192,
-    "legacyPages": 22,
-    "mixedPages": 56
+    "nonV3ImportSites": 178,
+    "legacyPages": 8,
+    "mixedPages": 70
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -145,8 +145,8 @@
       "kb": 1
     },
     "app/accessibility/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/account/collections/[id]/page.tsx": {
       "v3": 1
@@ -159,8 +159,8 @@
       "kb": 1
     },
     "app/alerts/unsubscribe/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/area-guides/page.tsx": {
       "legacy": 1,
@@ -244,7 +244,8 @@
       "kb": 1
     },
     "app/cma-drafts/[id]/page.tsx": {
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/communities/[slug]/page.tsx": {
       "v3": 1,
@@ -266,20 +267,20 @@
       "kb": 1
     },
     "app/cookies/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/data-deletion/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/dmca/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/fair-housing/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/faq/[slug]/page.tsx": {
       "v3": 1,
@@ -340,8 +341,8 @@
       "kb": 1
     },
     "app/marketing/request/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/months-of-supply/page.tsx": {
       "v3": 1,
@@ -349,12 +350,12 @@
       "kb": 1
     },
     "app/newsletter/unsubscribe/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/offline/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/open-houses/[city]/page.tsx": {
       "v3": 1,
@@ -400,8 +401,8 @@
       "kb": 1
     },
     "app/privacy/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/pulse/page.tsx": {
       "v3": 1,
@@ -454,7 +455,8 @@
       "v3": 1
     },
     "app/site-index/page.tsx": {
-      "kb": 4
+      "v3": 1,
+      "kb": 1
     },
     "app/subdivisions/[slug]/page.tsx": {
       "v3": 1,
@@ -462,7 +464,8 @@
       "kb": 1
     },
     "app/team/[slug]/edit/page.tsx": {
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/team/[slug]/page.tsx": {
       "legacy": 1,
@@ -475,8 +478,8 @@
       "kb": 1
     },
     "app/terms/page.tsx": {
-      "primitives": 1,
-      "legacy": 1
+      "v3": 1,
+      "kb": 1
     },
     "app/tools/appreciation/page.tsx": {
       "v3": 1,

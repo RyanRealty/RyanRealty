@@ -1,7 +1,25 @@
+/**
+ * /team/[slug]/edit - broker self-service profile, on the v3 barrel.
+ *
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet (what this is) then the existing save form (capture contract
+ * unchanged). No sales Sheet.
+ *
+ * VISITOR OBJECTIVE: A Ryan Realty broker updates their own public profile
+ * (bio, phone, tagline, socials) without asking an admin.
+ * MACHINE OBJECTIVE: Keep the team trust surfaces accurate at zero admin
+ * cost. Noindex, auth-gated. Never part of the visitor graph.
+ * EXITS: /team/[slug]
+ *
+ * THE PAGE CONTRACT: generateMetadata robots noindex nofollow,
+ * requireBrokerSelfServiceSlug, updateCurrentBrokerProfile fields unchanged.
+ *
+ * D11: no virtue names. No invented quote. Admin-simple on this surface.
+ */
+
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import SiteFooter from '@/components/site/SiteFooter'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,16 +28,24 @@ import {
   requireBrokerSelfServiceSlug,
   updateCurrentBrokerProfile,
 } from '@/app/actions/broker-self'
+import { getCanonicalSiteUrl } from '@/lib/share-metadata'
+import {
+  V3_ROOT_CLASS,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Quiet,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 type Props = { params: Promise<{ slug: string }> }
-const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   return {
     title: 'Edit Broker Profile',
     description: 'Broker self service profile editing',
-    alternates: { canonical: `${siteUrl}/team/${encodeURIComponent(slug)}/edit` },
+    alternates: { canonical: `${getCanonicalSiteUrl()}/team/${encodeURIComponent(slug)}/edit` },
     robots: { index: false, follow: false },
   }
 }
@@ -46,55 +72,80 @@ export default async function BrokerSelfEditPage({ params }: Props) {
     if (!result.ok) throw new Error(result.error ?? 'Failed to save profile')
   }
 
+  const publicHref = `/team/${encodeURIComponent(slug)}`
+
   return (
     <>
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      {/* heading-display-ok: internal broker self-service tool, noindex */}
-      <h1 className="text-3xl font-semibold text-foreground">Edit your profile</h1>
-      <p className="mt-2 text-muted-foreground">Update your public bio, contact phone, and social links.</p>
-      <form action={saveAction} className="mt-8 space-y-5 rounded-lg border border-border bg-card p-6">
-        <div className="grid gap-2">
-          <Label htmlFor="tagline">Tagline</Label>
-          <Input id="tagline" name="tagline" defaultValue={broker.tagline ?? ''} />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" name="phone" defaultValue={broker.phone ?? ''} />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea id="bio" name="bio" defaultValue={broker.bio ?? ''} className="min-h-[180px]" />
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div className="grid gap-2">
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="utility" />
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Team', href: '/team' },
+            { label: 'Edit profile' },
+          ]}
+        />
+
+        <V3Quiet
+          id="edit-profile"
+          heading="Edit your profile"
+          headingLevel={1}
+          items={[
+            {
+              kind: 'prose',
+              body: 'Update your public bio, contact phone, and social links.',
+            },
+            { label: 'View public profile', href: publicHref },
+          ]}
+        />
+
+        <form action={saveAction} className="flex flex-col gap-4">
+          <div>
+            <Label htmlFor="tagline">Tagline</Label>
+            <Input id="tagline" name="tagline" defaultValue={broker.tagline ?? ''} />
+          </div>
+          <div>
+            <Label htmlFor="phone">Phone</Label>
+            <Input id="phone" name="phone" defaultValue={broker.phone ?? ''} />
+          </div>
+          <div>
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea id="bio" name="bio" defaultValue={broker.bio ?? ''} />
+          </div>
+          <div>
             <Label htmlFor="social_instagram">Instagram</Label>
             <Input id="social_instagram" name="social_instagram" defaultValue={broker.social_instagram ?? ''} />
           </div>
-          <div className="grid gap-2">
+          <div>
             <Label htmlFor="social_facebook">Facebook</Label>
             <Input id="social_facebook" name="social_facebook" defaultValue={broker.social_facebook ?? ''} />
           </div>
-          <div className="grid gap-2">
+          <div>
             <Label htmlFor="social_linkedin">LinkedIn</Label>
             <Input id="social_linkedin" name="social_linkedin" defaultValue={broker.social_linkedin ?? ''} />
           </div>
-          <div className="grid gap-2">
+          <div>
             <Label htmlFor="social_youtube">YouTube</Label>
             <Input id="social_youtube" name="social_youtube" defaultValue={broker.social_youtube ?? ''} />
           </div>
-          <div className="grid gap-2">
+          <div>
             <Label htmlFor="social_tiktok">TikTok</Label>
             <Input id="social_tiktok" name="social_tiktok" defaultValue={broker.social_tiktok ?? ''} />
           </div>
-          <div className="grid gap-2">
+          <div>
             <Label htmlFor="social_x">X</Label>
             <Input id="social_x" name="social_x" defaultValue={broker.social_x ?? ''} />
           </div>
-        </div>
-        <Button type="submit">Save profile</Button>
-      </form>
-    </main>
-    <SiteFooter />
+          <Button type="submit">Save profile</Button>
+        </form>
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }

@@ -1,32 +1,48 @@
 /**
- * CMA draft review page.
+ * CMA draft review page, on the v3 barrel.
  *
  * Reached by the assigned broker via the signed link in the auto-CMA review
  * email (sent by `lib/cma-delivery.ts` `processCmaDelivery`). Token in the
- * `?token=` query is HMAC-verified — no admin login required so the broker
- * can act from their phone in seconds.
+ * `?token=` query is HMAC-verified. No admin login.
  *
- * Renders:
- *   • lead identity (name, email, phone, timeline classification)
- *   • CMA value + range + confidence
- *   • signed link to download the generated PDF
- *   • the drafted email-to-lead body (HTML preview)
- *   • a Send-to-lead button (POSTs to /api/cma-drafts/<id>/send)
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet (status) then Instrument (the number) then Quiet (lead and email).
+ * Send stays the existing POST. No sales Sheet.
  *
- * If `status='sent'` already, shows the post-send confirmation instead.
+ * VISITOR OBJECTIVE: The assigned broker reviews the auto-drafted CMA from
+ * their phone and sends it to the lead in one tap.
+ * MACHINE OBJECTIVE: Move a queued CMA from draft to delivered inside the
+ * 24-hour promise via the HMAC-signed review link.
+ * EXITS: none on the public graph (noindex broker tool).
+ *
+ * THE PAGE CONTRACT: force-dynamic, robots noindex nofollow, HMAC token,
+ * signed PDF URL, SendCmaButton POST to /api/cma-drafts/<id>/send.
+ *
+ * D11: no virtue names. No invented quote. Figures through lib/format
+ * (formatPriceExact, formatDateTime) at the call line.
  */
 
 import { notFound } from 'next/navigation'
-
 import { createServiceClient } from '@/lib/supabase/service'
 import { verifyDeliveryToken } from '@/lib/cma-delivery-tokens'
-
+import { formatPriceExact } from '@/lib/format/money'
+import { formatDateTime } from '@/lib/format/date'
 import { SendCmaButton } from './SendCmaButton'
-import SiteFooter from '@/components/site/SiteFooter'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Quiet,
+  type V3InstrumentFigure,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 export const dynamic = 'force-dynamic'
 export const metadata = {
-  title: 'Review and send CMA — Ryan Realty',
+  title: 'Review and send CMA | Ryan Realty',
   robots: { index: false, follow: false },
 }
 
@@ -53,15 +69,6 @@ type DeliveryRow = {
   created_at: string
 }
 
-function formatUsd(n: number | null | undefined): string {
-  if (typeof n !== 'number' || !Number.isFinite(n) || n <= 0) return '—'
-  return n.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  })
-}
-
 export default async function CmaDraftReviewPage({
   params,
   searchParams,
@@ -75,17 +82,27 @@ export default async function CmaDraftReviewPage({
 
   const verification = verifyDeliveryToken(id, tokenStr ?? null)
   if (!verification.ok) {
+    const reason =
+      verification.reason === 'expired'
+        ? 'This review link has expired. Have the broker request a fresh link from the admin queue.'
+        : 'This review link is not valid. Have the broker request a fresh link from the admin queue.'
     return (
       <>
-      <main className="mx-auto max-w-xl px-6 py-16">
-        {/* heading-display-ok: internal broker-only tool, noindex */}
-        <h1 className="text-2xl font-semibold text-primary">Link not valid</h1>
-        <p className="mt-3 text-foreground/80">
-          This review link {verification.reason === 'expired' ? 'has expired' : "isn't valid"}.
-          Have the broker request a fresh link from the admin queue.
-        </p>
-      </main>
-      <SiteFooter />
+        <main className={V3_ROOT_CLASS}>
+          <KbSectionTracker pageType="utility" />
+          <V3Quiet
+            id="cma-draft"
+            heading="Link not valid"
+            headingLevel={1}
+            items={[{ kind: 'prose', body: reason }]}
+          />
+        </main>
+        {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+            when it is NOT nested in sectioning content, and <main> is sectioning
+            content, so inside it the element is a generic and the page ships no
+            contentinfo landmark. ci:default-chrome-footer counts footers without
+            checking placement. */}
+        <V3Footer columns={V3_FOOTER_COLUMNS} />
       </>
     )
   }
@@ -94,7 +111,7 @@ export default async function CmaDraftReviewPage({
   const { data: row } = await sb
     .from('cma_deliveries')
     .select(
-      'id, status, lead_email, lead_name, lead_phone, lead_timeline, lead_classification, raw_address, cma_estimated_value, cma_value_low, cma_value_high, cma_confidence, pdf_storage_path, assigned_broker_name, assigned_broker_email, email_subject, email_body_html, email_body_text, sent_at, created_at'
+      'id, status, lead_email, lead_name, lead_phone, lead_timeline, lead_classification, raw_address, cma_estimated_value, cma_value_low, cma_value_high, cma_confidence, pdf_storage_path, assigned_broker_name, assigned_broker_email, email_subject, email_body_html, email_body_text, sent_at, created_at',
     )
     .eq('id', id)
     .maybeSingle()
@@ -102,7 +119,6 @@ export default async function CmaDraftReviewPage({
   if (!row) return notFound()
   const r = row as DeliveryRow
 
-  // Signed PDF URL (5-minute lifetime; regenerated on every page load).
   let pdfDownloadUrl: string | null = null
   if (r.pdf_storage_path) {
     const { data: signed } = await sb.storage
@@ -111,152 +127,127 @@ export default async function CmaDraftReviewPage({
     pdfDownloadUrl = signed?.signedUrl ?? null
   }
 
+  const heading =
+    r.status === 'sent'
+      ? 'CMA sent'
+      : r.status === 'no_match'
+        ? 'No MLS match. Manual CMA needed'
+        : 'Review and send the CMA'
+
+  const who = (r.lead_name ?? r.lead_email).trim() || 'Lead'
+  const address = r.raw_address.trim() || 'Address withheld'
+
+  const quietLead: V3QuietItem[] = [
+    { kind: 'prose', term: 'Lead', body: `${who}. ${address}` },
+    { kind: 'prose', term: 'Email', body: r.lead_email },
+    { kind: 'prose', term: 'Phone', body: (r.lead_phone ?? '').trim() || 'None on file' },
+    {
+      kind: 'prose',
+      term: 'Timeline',
+      body: `${r.lead_timeline ?? 'unspecified'} (${r.lead_classification ?? 'unknown'})`,
+    },
+  ]
+
+  const figures: V3InstrumentFigure[] = []
+  if (r.cma_estimated_value != null && Number.isFinite(r.cma_estimated_value) && r.cma_estimated_value > 0) {
+    figures.push({
+      value: v3Text(formatPriceExact(r.cma_estimated_value)),
+      label: v3Text('estimated value'),
+    })
+  }
+  if (r.cma_value_low != null && Number.isFinite(r.cma_value_low) && r.cma_value_low > 0) {
+    figures.push({
+      value: v3Text(formatPriceExact(r.cma_value_low)),
+      label: v3Text('range low'),
+    })
+  }
+  if (r.cma_value_high != null && Number.isFinite(r.cma_value_high) && r.cma_value_high > 0) {
+    figures.push({
+      value: v3Text(formatPriceExact(r.cma_value_high)),
+      label: v3Text('range high'),
+    })
+  }
+  const [firstFigure, ...restFigures] = figures
+
+  const sentStamp = r.sent_at ? formatDateTime(r.sent_at) : null
+  const quietAfter: V3QuietItem[] = []
+  if (r.email_subject?.trim()) {
+    quietAfter.push({ kind: 'prose', term: 'Subject', body: r.email_subject.trim() })
+  }
+  if (r.assigned_broker_email?.trim()) {
+    quietAfter.push({
+      kind: 'prose',
+      term: 'From',
+      body: r.assigned_broker_email.trim(),
+    })
+  }
+  if (pdfDownloadUrl) {
+    quietAfter.push({ label: 'Open the generated PDF', href: pdfDownloadUrl })
+  }
+  if (r.status === 'sent') {
+    quietAfter.push({
+      kind: 'prose',
+      body: sentStamp
+        ? `Sent to ${r.lead_email} on ${sentStamp}. This send is recorded on the lead.`
+        : `Sent to ${r.lead_email}. This send is recorded on the lead.`,
+    })
+  } else if (r.status === 'no_match') {
+    quietAfter.push({
+      kind: 'prose',
+      body: 'We could not match this address to an MLS property record, so the auto-CMA did not run. Open the lead in the CRM to send a manual CMA.',
+    })
+  }
+
+  const confidence = (r.cma_confidence ?? '').trim()
+  const source =
+    'auto-CMA delivery row for this token, estimated value and range from cma_deliveries. Exact dollars, not rounded to thousands.' +
+    (confidence ? ` Confidence ${confidence}.` : '')
+  const leadItems = firstFigure ? quietLead : [...quietLead, ...quietAfter]
+
   return (
     <>
-    <main className="mx-auto max-w-3xl px-6 py-12 sm:py-16">
-      <header className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-wider text-primary/70">
-          Ryan Realty · Auto-CMA
-        </p>
-        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
-          {r.status === 'sent'
-            ? 'CMA sent'
-            : r.status === 'no_match'
-              ? 'No MLS match — manual CMA needed'
-              : 'Review and send the CMA'}
-        </h1>
-        <p className="mt-2 text-foreground/70">
-          {r.lead_name ?? r.lead_email} · {r.raw_address}
-        </p>
-      </header>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="utility" />
+        <V3Quiet
+          id="cma-draft"
+          eyebrow="Ryan Realty auto-CMA"
+          heading={heading}
+          headingLevel={1}
+          items={leadItems}
+        />
 
-      {/* ── Lead identity ── */}
-      <section className="rounded-2xl border border-primary/10 bg-card p-6 shadow-sm">
-        {/* heading-display-ok: internal broker-only tool, noindex */}
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-primary/70">
-          Lead
-        </h2>
-        <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Dt label="Name" value={r.lead_name ?? '—'} />
-          <Dt label="Email" value={r.lead_email} mono />
-          <Dt label="Phone" value={r.lead_phone ?? '—'} mono />
-          <Dt
-            label="Timeline"
-            value={`${r.lead_timeline ?? 'unspecified'} (${r.lead_classification ?? 'unknown'})`}
+        {firstFigure ? (
+          <V3Instrument
+            id="cma-value"
+            level={2}
+            headline={v3Text(address)}
+            figures={[firstFigure, ...restFigures]}
+            source={v3Text(source)}
           />
-        </dl>
-      </section>
+        ) : null}
 
-      {/* ── CMA result ── */}
-      <section className="mt-6 rounded-2xl border border-primary/10 bg-card p-6 shadow-sm">
-        {/* heading-display-ok: internal broker-only tool, noindex */}
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-primary/70">
-          CMA estimate
-        </h2>
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Estimated value
-            </p>
-            <p className="mt-1 font-display text-3xl font-semibold tabular-nums text-primary">
-              {formatUsd(r.cma_estimated_value)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Range</p>
-            <p className="mt-1 tabular-nums text-foreground">
-              {formatUsd(r.cma_value_low)} - {formatUsd(r.cma_value_high)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Confidence
-            </p>
-            <p className="mt-1 capitalize text-foreground">{r.cma_confidence ?? '—'}</p>
-          </div>
-        </div>
-        {pdfDownloadUrl && (
-          <p className="mt-4">
-            <a
-              href={pdfDownloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
-            >
-              Open the generated PDF →
-            </a>
-          </p>
-        )}
-      </section>
+        {firstFigure && quietAfter.length > 0 ? (
+          <V3Quiet id="cma-mail" heading="Email to the lead" items={quietAfter} />
+        ) : null}
 
-      {/* ── Draft email preview ── */}
-      {r.email_body_html && (
-        <section className="mt-6 rounded-2xl border border-primary/10 bg-card p-6 shadow-sm">
-          {/* heading-display-ok: internal broker-only tool, noindex */}
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-primary/70">
-            Email to the lead
-          </h2>
-          <dl className="mt-3 mb-4 grid grid-cols-1 gap-2 text-sm">
-            <Dt label="To" value={r.lead_email} mono />
-            <Dt label="From" value={r.assigned_broker_email ?? 'Ryan Realty'} mono />
-            <Dt label="Subject" value={r.email_subject ?? '—'} />
-          </dl>
+        {r.email_body_html ? (
           <div
-            className="rounded-xl border border-primary/10 bg-background p-5"
+            className="v3"
             dangerouslySetInnerHTML={{ __html: r.email_body_html }}
           />
-        </section>
-      )}
+        ) : null}
 
-      {/* ── Action area ── */}
-      <section className="mt-8">
-        {r.status === 'sent' ? (
-          <div className="rounded-2xl border border-primary/10 bg-card p-6 text-foreground/85">
-            <p>
-              Sent to <strong>{r.lead_email}</strong> on{' '}
-              {r.sent_at ? new Date(r.sent_at).toLocaleString() : 'recently'}.
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              A FUB note has been recorded against this lead.
-            </p>
-          </div>
-        ) : r.status === 'no_match' ? (
-          <div className="rounded-2xl border border-warning/30 bg-warning/5 p-6 text-foreground/85">
-            <p>
-              We couldn&rsquo;t match this address to an MLS property record, so the auto-CMA
-              didn&rsquo;t run.
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Open the lead in the CRM to send a manual CMA.
-            </p>
-          </div>
-        ) : (
+        {r.status !== 'sent' && r.status !== 'no_match' ? (
           <SendCmaButton deliveryId={id} token={tokenStr ?? ''} />
-        )}
-      </section>
-    </main>
-    <SiteFooter />
-    </>
-  )
-}
+        ) : null}
+      </main>
 
-function Dt({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string
-  value: string
-  mono?: boolean
-}) {
-  return (
-    <div>
-      <dt className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </dt>
-      <dd className={`mt-0.5 ${mono ? 'font-mono text-sm' : 'text-base'} text-foreground`}>
-        {value}
-      </dd>
-    </div>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

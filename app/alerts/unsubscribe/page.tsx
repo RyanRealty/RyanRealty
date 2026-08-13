@@ -1,18 +1,33 @@
+/**
+ * /alerts/unsubscribe - listing-alert opt-out, on the v3 barrel.
+ *
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Quiet utility page. Confirm on POST, never GET. No sales Sheet.
+ *
+ * VISITOR OBJECTIVE: Stop these alert emails in one tap, one question.
+ * MACHINE OBJECTIVE: Execute a compliance-clean exit that preserves trust,
+ * and offer the road back into browsing rather than a dead end.
+ * EXITS: /homes-for-sale
+ *
+ * THE PAGE CONTRACT: deactivation on POST, token from searchParams,
+ * robots noindex nofollow, deactivateListingAlertByToken.
+ *
+ * D11: no virtue names. No invented quote. No !.
+ */
+
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import { deactivateListingAlertByToken } from '@/lib/data'
-import { Button } from '@/components/ui/button'
-import { H1 } from '@/components/site/primitives'
-import SiteFooter from '@/components/site/SiteFooter'
-
-/**
- * Unsubscribe confirmation for listing alerts (the token link at the bottom of
- * every alert email points here). The deactivation happens on a POST (the
- * confirm button), never on GET, so an email client prefetching the link
- * cannot accidentally unsubscribe the recipient. Reading searchParams makes
- * the page request-time rendered.
- */
+import {
+  V3_ROOT_CLASS,
+  V3Button,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Quiet,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 
 export const metadata: Metadata = {
   title: 'Manage listing alerts',
@@ -21,8 +36,6 @@ export const metadata: Metadata = {
 
 async function confirmUnsubscribe(token: string, _formData: FormData) {
   'use server'
-  // One token namespace: every alert (guest or signed-in) lives in the unified
-  // listing_alerts table, so a single deactivate covers both legacy flows.
   if (token) {
     await deactivateListingAlertByToken(token)
   }
@@ -38,46 +51,58 @@ export default async function UnsubscribeAlertsPage({
   const isDone = done === '1'
   const cleanToken = (token ?? '').trim()
 
+  let heading = 'Manage listing alerts'
+  let items: V3QuietItem[]
+  let form: ReactNode = null
+
+  if (isDone) {
+    heading = 'You are unsubscribed'
+    items = [
+      {
+        kind: 'prose',
+        body: 'You will not get any more listing-alert emails for that search. You can start new alerts any time from search.',
+      },
+      { label: 'Back to search', href: '/search' },
+    ]
+  } else if (cleanToken) {
+    heading = 'Stop these listing alerts?'
+    items = [
+      {
+        kind: 'prose',
+        body: 'We will stop emailing you new matches for this search. You can set up alerts again any time.',
+      },
+    ]
+    form = (
+      <form action={confirmUnsubscribe.bind(null, cleanToken)}>
+        <V3Button type="submit" variant="ghost">
+          Yes, stop these alerts
+        </V3Button>
+      </form>
+    )
+  } else {
+    items = [
+      {
+        kind: 'prose',
+        body: 'This link is missing its unsubscribe code. To stop a listing alert, use the link at the bottom of the alert email.',
+      },
+      { label: 'Back to search', href: '/search' },
+    ]
+  }
+
   return (
     <>
-    <main className="bg-background">
-      <div className="mx-auto flex max-w-xl flex-col items-start gap-4 px-4 py-16 sm:px-6">
-        {isDone ? (
-          <>
-            <H1 className="text-2xl">You’re unsubscribed</H1>
-            <p className="text-muted-foreground">
-              You won’t get any more listing-alert emails for that search. You can start new alerts
-              any time from the search page.
-            </p>
-            <Button asChild>
-              <Link href="/search">Back to search</Link>
-            </Button>
-          </>
-        ) : cleanToken ? (
-          <>
-            <H1 className="text-2xl">Stop these listing alerts?</H1>
-            <p className="text-muted-foreground">
-              We’ll stop emailing you new matches for this search. You can set up alerts again any time.
-            </p>
-            <form action={confirmUnsubscribe.bind(null, cleanToken)}>
-              <Button type="submit">Yes, stop these alerts</Button>
-            </form>
-          </>
-        ) : (
-          <>
-            <H1 className="text-2xl">Manage listing alerts</H1>
-            <p className="text-muted-foreground">
-              This link is missing its unsubscribe code. To stop a listing alert, use the link at the
-              bottom of the alert email.
-            </p>
-            <Button asChild>
-              <Link href="/search">Back to search</Link>
-            </Button>
-          </>
-        )}
-      </div>
-    </main>
-    <SiteFooter />
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="utility" />
+        <V3Quiet id="unsubscribe" heading={heading} headingLevel={1} items={items} />
+        {form}
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
     </>
   )
 }
