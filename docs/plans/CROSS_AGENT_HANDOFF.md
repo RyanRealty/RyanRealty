@@ -10,9 +10,9 @@
 
 **Listing Look:** GREEN at 390 and 1280. Real MLS aerial of this house (Spark CDN). UNMUTE is top-right of the hero, not on beds/baths/sqft. Poster stays until Vimeo/YouTube actually signals ready (blocked embed no longer covers the house). Gallery opens (1 of 50). Chrome CTA stays Value my home. v3 chrome kept.
 
-**SHA:** pending this land.
+**SHA:** feat `8040a829`. Production READY on `8040a829`.
 
-**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-listing/`
+**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-listing/` (390/1280 local + prod).
 
 **Next public route (do not start):** Places (`/cities`, city, community). Then open houses, about, reviews, market.
 
