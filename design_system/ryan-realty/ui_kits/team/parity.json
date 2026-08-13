@@ -1,85 +1,94 @@
 {
   "route": "app/team/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/team/index.html",
-  "competitiveTarget": "Beat generic brokerage team pages: real broker names, direct-broker accountability, transparent-PNG headshots, and verified Google reviews, inside the KB chrome.",
-  "note": "Phase 9 KB migration. Team index uses KB chrome (KbNav, KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, KbFooter, KbSectionTracker). No fabricated stats, rankings, or review text. getBrokers() is the sole broker-data source and now feeds the KbAbout verified-license ledger (restored from the pre-KB BrokerProfileRow). TESTIMONIALS/getReviews feed KbTestimonials. FAQBlock restores the pre-KB agent-choice intent FAQ + FAQPage JSON-LD. Per-broker profiles at /team/[slug] each carry filtered reviews (reviewBelongsOnPage) and getBrokerSales track records inside the same KB chrome.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
+  "competitiveTarget": "Beat generic brokerage team pages: real broker names, Oregon licenses, transparent-PNG headshots, verbatim Google reviews, and a door to each /team/[slug] profile.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-ABOUT). Rhythm: two of the six patterns (Quiet, Ledger), no two adjacent alike, chrome exempt. Order is Breadcrumb, Quiet (who you work with, headingLevel 1), Ledger (three brokers from getBrokers, Matt-Rebecca-Paul rank), Quiet (verbatim reviews + FAQ + edges), Footer. No Sheet on the index: the family's Sheets live on /contact and /team/[slug]. Primary ask is /contact. Reviews: getReviews(24) sorted so non-Matt-named reviews surface first (design-audit #156), TESTIMONIALS fallback when the live pool is empty. No invented quotes. KB-era deletions: KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
   "requiredComponents": [
     {
+      "name": "MetadataBlock",
+      "section": "CollectionPage + aboutOrganization + BreadcrumbList + FAQPage JSON-LD.",
+      "blocking": true
+    },
+    {
       "name": "KbNav",
-      "section": "site chrome — KB top bar (replaces default SiteHeader on this route)",
+      "section": "The public header, mounted by app/layout.tsx through PublicNav / V3Chrome. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header.",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "tracking — section_view + scroll_depth events (page contract)",
+      "section": "Page-level analytics, pageType='team'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language.",
       "blocking": true
     },
     {
-      "name": "MetadataBlock",
-      "section": "JSON-LD — CollectionPage + BreadcrumbList structured data",
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Team. Surface tone. Current page never a link.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "breadcrumb — Home / Team hierarchy strip",
+      "name": "V3Quiet",
+      "section": "Pattern 6, twice. Opening: one-broker-to-close fact and doors to /contact and /reviews. Closing: verbatim reviews (live pool or TESTIMONIALS), the same FAQ array the FAQPage JSON-LD uses, and outbound edges.",
       "blocking": true
     },
     {
-      "name": "SmoothScrollProvider",
-      "section": "motion — Lenis + GSAP ScrollTrigger layer",
+      "name": "V3Ledger",
+      "section": "Pattern 3, once. One plain row per broker from getBrokers, ordered Matt, Rebecca, Paul. Headshot from headshotPng when present. Each row is a door to /team/[slug]. License in the detail line. Empty branch uses emptyMessage.",
       "blocking": true
     },
     {
-      "name": "KbHero",
-      "section": "hero — full-bleed Old Mill poster and direct-broker headline (no group team photo in hero)",
-      "blocking": true
-    },
-    {
-      "name": "KbAbout",
-      "section": "intro prose — direct-broker accountability copy + verified Oregon license ledger (restored from pre-KB BrokerProfileRow; getBrokers() data, no fabricated stats)",
-      "blocking": true
-    },
-    {
-      "name": "KbTeam",
-      "section": "broker grid — three portrait cards, each linking to /team/[slug]",
-      "blocking": true
-    },
-    {
-      "name": "KbTestimonials",
-      "section": "social proof — verified Google reviews from getReviews() or TESTIMONIALS",
-      "blocking": true
-    },
-    {
-      "name": "KbSell",
-      "section": "seller CTA — address-capture, routes to /sell/valuation",
-      "blocking": true
-    },
-    {
-      "name": "FAQBlock",
-      "section": "agent-choice intent FAQ — restored from the pre-KB /team page; shared FAQBlock emits FAQPage JSON-LD (same pattern as the community KB page)",
-      "blocking": true
-    },
-    {
-      "name": "KbFooter",
-      "section": "site chrome — KB footer (replaces default SiteFooter on this route)",
+      "name": "V3Footer",
+      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main> so the footer maps to role=contentinfo.",
       "blocking": true
     }
   ],
+  "layoutComponents": [
+    {
+      "name": "PublicNav",
+      "section": "renders from app/layout.tsx",
+      "note": "Resolves to V3Chrome today. The KbNav entry above is the one the gate auto-satisfies."
+    }
+  ],
+  "deferredComponents": [
+    {
+      "name": "V3Sheet",
+      "reason": "Capture lives on /contact and on each /team/[slug] BrokerValuationSheet. The index does not add a form."
+    },
+    {
+      "name": "V3Stage",
+      "reason": "No owned team photo. Opening on Stage would require tone=on-media on the breadcrumb over a Quiet first viewport."
+    },
+    {
+      "name": "V3Instrument",
+      "reason": "This page publishes people, not a market answer. Licenses sit on the Ledger rows."
+    },
+    {
+      "name": "V3Field",
+      "reason": "Pattern 2 is live inventory. It opens Homes."
+    }
+  ],
+  "removedComponents": [
+    "KbHero — Old Mill poster and 'the broker you call' poetry H1.",
+    "KbAbout — intro prose and license ledger, rebuilt as Quiet + Ledger.",
+    "KbTeam — broker grid, rebuilt as V3Ledger rows from getBrokers.",
+    "KbTestimonials — rebuilt as V3Quiet prose from getReviews / TESTIMONIALS.",
+    "KbSell — address capture. Index ask is /contact.",
+    "FAQBlock — rebuilt as V3Quiet prose from TEAM_FAQ_ITEMS.",
+    "SmoothScrollProvider.",
+    "KbFooter — replaced by V3Footer outside <main>.",
+    "kb-root and the kb.css import."
+  ],
   "perBrokerPage": {
     "route": "app/team/[slug]/page.tsx",
-    "note": "Per-broker profile page shares the same KB chrome. Key invariants: (1) reviewBelongsOnPage() filters every review — a broker's page never shows another broker's named review. (2) getBrokerSales() provides per-broker closings (both sides); fallback is getBrokerageListingTiles() brokerage record. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) KbHero poster = broker headshot. (5) KbAbout = verified bio + license + closings facts. (6) KbFeatured = track-record tiles. (7) KbTestimonials = filtered reviews.",
+    "note": "Per-broker profile on the v3 barrel. Invariants: (1) reviewBelongsOnPage filters every review. (2) getBrokerSales provides per-broker closings (both sides); fallback is getBrokerageListingTiles. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) 977 zip filter on closings. (5) photo-only ledger tiles. (6) BrokerValuationSheet posts the same submitBrokerSellerLead object (variant seller, fields address / name / email / phone / timeline / notes). (7) SmsConsentDisclosure renders because the sheet collects a phone; the action does not read smsConsent. (8) Direct call/text/email from live phone/email only.",
     "requiredComponents": [
-      { "name": "KbNav", "section": "site chrome", "blocking": true },
-      { "name": "KbSectionTracker", "section": "tracking", "blocking": true },
-      { "name": "MetadataBlock", "section": "JSON-LD breadcrumb", "blocking": true },
-      { "name": "KbBreadcrumb", "section": "breadcrumb", "blocking": true },
-      { "name": "SmoothScrollProvider", "section": "motion layer", "blocking": true },
-      { "name": "KbHero", "section": "hero — broker headshot poster + identity", "blocking": true },
-      { "name": "KbAbout", "section": "bio — verified broker bio + quick facts", "blocking": true },
-      { "name": "KbFeatured", "section": "track record — own sales or brokerage record", "blocking": true },
-      { "name": "KbTestimonials", "section": "filtered reviews — per-broker attribution only", "blocking": true },
-      { "name": "KbSell", "section": "seller CTA", "blocking": true },
-      { "name": "KbFooter", "section": "site chrome", "blocking": true }
+      { "name": "KbNav", "section": "layout-owned public header", "blocking": true },
+      { "name": "KbSectionTracker", "section": "tracking, pageType=broker", "blocking": true },
+      { "name": "MetadataBlock", "section": "BreadcrumbList JSON-LD", "blocking": true },
+      { "name": "V3Breadcrumb", "section": "Home / Team / Name", "blocking": true },
+      { "name": "V3Quiet", "section": "bio + facts, then filtered reviews, then call/text/email", "blocking": true },
+      { "name": "V3Ledger", "section": "closings with recorded ClosePrice via formatPriceExact", "blocking": true },
+      { "name": "BrokerValuationSheet", "section": "Pattern 5, same capture contract as LeadCaptureBlock seller", "blocking": true },
+      { "name": "V3Footer", "section": "outside main", "blocking": true }
     ]
   }
 }

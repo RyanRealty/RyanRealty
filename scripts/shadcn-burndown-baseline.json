@@ -1,5 +1,5 @@
 {
-  "count": 200,
+  "count": 198,
   "files": [
     "app/alerts/unsubscribe/page.tsx",
     "app/buy/loading.tsx",
@@ -8,7 +8,6 @@
     "app/cities/error.tsx",
     "app/communities/[slug]/error.tsx",
     "app/compare/error.tsx",
-    "app/contact/ContactForm.tsx",
     "app/dashboard/error.tsx",
     "app/dashboard/marketing/_components/EmptyState.tsx",
     "app/dashboard/marketing/inbox/page.tsx",
@@ -27,7 +26,6 @@
     "app/offline/page.tsx",
     "app/reports/ReportsIndexContent.tsx",
     "app/reports/sales/[city]/[period]/page.tsx",
-    "app/reviews/ReviewsCollapse.client.tsx",
     "app/reviews/loading.tsx",
     "app/search/[...slug]/loading.tsx",
     "app/search/[...slug]/page.tsx",

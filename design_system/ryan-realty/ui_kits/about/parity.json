@@ -1,81 +1,83 @@
 {
   "route": "app/about/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/about/index.html",
-  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, concrete origin story, real Google reviews, and direct-broker accountability — zero marketing-speak (CLAUDE.md Data Accuracy + brand voice).",
-  "note": "KB (kinetic-brutalist) conversion 2026-06-18 (Phase 9 convergence). KbNav + KbFooter carry chrome. HideChrome for default SiteHeader/SiteFooter is a shared-component edit — deferred to orchestrator. Reviews now wired from TESTIMONIALS (24 verified Google 5-star reviews). Voice: show, don't say — no stated virtues, no headcount/smallness, no overt category claims (VOICE.md Five Laws). Every verified fact: Ryan Realty LLC (OREA 201253677, founded June 2023), Matt PB OR #201206613, fire service + Red Erickson mentor from verified broker bio. Region pulse feeds KbSell live numbers. Hero uses getSurfaceImage central-oregon with Old Mill fallback. Restored 2026-06-18 (post-KB content-loss audit): the service-area city grid (now KbExploreTowns fed by getCitiesForIndex) and the verified-facts FAQ + FAQPage JSON-LD (now FAQBlock) that the KB conversion had dropped. Superseded 2026-07-08 (design-audit #169): KbTeam (the full 3-broker grid) removed from requiredComponents — it duplicated /team's own content verbatim (same cards, same 'Work with X' links), and /team is the canonical roster page. Replaced with a 'Meet the team' CTA section linking to /team.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
+  "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, a concrete origin, live city inventory, and direct-broker doors. Zero marketing-speak except the locked D11 mission sentence.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-ABOUT). Rhythm: three of the six patterns (Quiet, Instrument, Ledger), no two adjacent alike, chrome exempt. Order is Breadcrumb, Quiet (mission + origin, headingLevel 1), Instrument (founded / firm license / principal broker), Ledger (service-area cities from market_pulse_live), Quiet (FAQ and edges), Footer. PUBLIC_UI.md opens About on Quiet + Sheet. The family's Sheet lives on /contact and /team/[slug], where the capture forms already were. A new on-page form here would be a new capture contract. The ask on this page is the valuation door with ?from=/about. D11: the mission sentence is the one virtue-word exception, exact words, We. City rows skip a missing median rather than printing zero under a live-MLS source line. Dates render in Pacific through formatDate. KB-era deletions this migration made: KbHero (including property search), KbAbout, KbExploreTowns, KbTestimonials, KbArticles, KbSell, KbTeam (already removed from this page 2026-07-08), FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
   "requiredComponents": [
     {
+      "name": "MetadataBlock",
+      "section": "AboutPage + aboutOrganization + BreadcrumbList + FAQPage JSON-LD. V3Quiet and V3Instrument carry no structured data of their own.",
+      "blocking": true
+    },
+    {
       "name": "KbNav",
-      "section": "top nav — transparent over hero, flips to navy on scroll; full site directory overlay",
+      "section": "The public header, mounted by app/layout.tsx through PublicNav / V3Chrome. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header.",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "tracking — section_view + scroll_depth events (page contract G52)",
+      "section": "Page-level analytics, pageType='about'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
       "blocking": true
     },
     {
-      "name": "MetadataBlock",
-      "section": "JSON-LD — Organization/AboutPage + BreadcrumbList structured data",
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > About. Surface tone (this page opens on Quiet, not a dark Stage). Current page never a link.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "breadcrumb strip — Home / About",
+      "name": "V3Quiet",
+      "section": "Pattern 6, twice. Opening: the locked D11 mission sentence, origin facts (Matt, fire service, Red Erickson, June 2023), doors to /team /reviews /contact. Closing: the same FAQ array the FAQPage JSON-LD uses, plus outbound edges and any city that had no publishable median.",
       "blocking": true
     },
     {
-      "name": "SmoothScrollProvider",
-      "section": "Lenis + GSAP ScrollTrigger scroll layer",
+      "name": "V3Instrument",
+      "section": "Pattern 1, once. Founded date, firm license OREA 201253677, principal broker license linking /team/matthew-ryan. Source line names Oregon Real Estate Agency. Ask is Value my home via valuationHref('/about'), variant primary, because at 390 the chrome valuation CTA sits inside the collapsed menu.",
       "blocking": true
     },
     {
-      "name": "KbHero",
-      "section": "hero — brand eyebrow, 'Homes here deserve more than a sign.' H1, Central Oregon photo",
+      "name": "V3Ledger",
+      "section": "Pattern 3, once. One figure row per service-area city that returned a live market_pulse_live row carrying a median list price. Value column is formatPrice of that median. Trace names live MLS through Oregon Data Share, single-family, city rows from market_pulse_live. Stamp is formatDate of the newest updated_at. Empty branch uses emptyMessage.",
       "blocking": true
     },
     {
-      "name": "KbAbout",
-      "section": "story — concrete origin (Matt, fire service, mentor Red Erickson, June 2023) + data-led approach + quick-facts ledger (OREA license, founding date, service area)",
-      "blocking": true
-    },
-    {
-      "name": "KbExploreTowns",
-      "section": "service area — 'Where we work' city ledger (Bend, Redmond, Sisters, Sunriver, La Pine, Terrebonne) with live active counts + median from getCitiesForIndex (geo_snapshot_mv). Restores the pre-KB CityGrid in KB style.",
-      "blocking": true
-    },
-    {
-      "name": "KbTestimonials",
-      "section": "testimonials — 8 verified Google reviews from TESTIMONIALS (24 total, 5.0 avg, pulled 2026-06-13)",
-      "blocking": true
-    },
-    {
-      "name": "KbSell",
-      "section": "seller CTA — address capture to /sell/valuation; live region pulse numbers (median, DOM, sold 30d)",
-      "blocking": true
-    },
-    {
-      "name": "FAQBlock",
-      "section": "common questions — verified-facts-only FAQ (brokers, founding, same-broker-to-close, service area, valuation) rendered as a semantic <dl> + schema.org FAQPage JSON-LD. Restores the pre-KB FAQ section + structured data (same component the KB city pages use).",
-      "blocking": true
-    },
-    {
-      "name": "KbFooter",
-      "section": "footer — contact, sitemap, legal",
+      "name": "V3Footer",
+      "section": "Chrome. V3_FOOTER_COLUMNS. Rendered OUTSIDE <main> so the footer maps to role=contentinfo.",
       "blocking": true
     }
   ],
-  "optionalComponents": [
+  "layoutComponents": [
     {
-      "name": "KbArticles",
-      "section": "guides and insights — getRecentBlogPosts(); renders null when no posts exist",
-      "blocking": false
+      "name": "PublicNav",
+      "section": "renders from app/layout.tsx",
+      "note": "Resolves to V3Chrome today. The KbNav entry above is the one the gate auto-satisfies."
     }
   ],
   "deferredComponents": [
     {
-      "name": "HideChrome",
-      "reason": "Shared-component edit needed to suppress the default SiteHeader/SiteFooter on the KB chrome pages. Deferred to orchestrator — KbNav + KbFooter already render the correct KB chrome."
+      "name": "V3Sheet",
+      "reason": "About destinations open on Quiet + Sheet, but the capture forms already live on /contact and /team/[slug]. Adding a Sheet here would be a new capture contract."
+    },
+    {
+      "name": "V3Stage",
+      "reason": "Pattern 4 needs owned media and is never allowed over a number. Opening on Stage would also require tone=on-media on the breadcrumb over a Quiet first viewport."
+    },
+    {
+      "name": "V3Field",
+      "reason": "Pattern 2 is live inventory as a spatial surface. It opens Homes. Using it here would compete with /homes-for-sale."
     }
+  ],
+  "removedComponents": [
+    "KbHero — brand eyebrow, poetry H1, Central Oregon photo, property search.",
+    "KbAbout — origin story and facts, rebuilt as the opening V3Quiet plus the Instrument.",
+    "KbExploreTowns — city ledger, rebuilt as V3Ledger from getMarketPulseCitySnapshots.",
+    "KbTestimonials — eight Google reviews. Canonical set lives on /reviews. Door in the closing Quiet.",
+    "KbArticles — getRecentBlogPosts rail. Dropped; the read is gone.",
+    "KbSell — address prefill to /sell/valuation. Replaced by valuationHref('/about') on the Instrument.",
+    "KbTeam — already removed 2026-07-08 as a duplicate of /team.",
+    "FAQBlock — rebuilt as V3Quiet prose from the same ABOUT_FAQ_ITEMS array MetadataBlock emits as FAQPage.",
+    "SmoothScrollProvider — Lenis + GSAP. v3 motion is CSS tokens.",
+    "KbFooter — replaced by V3Footer outside <main>.",
+    "kb-root and the kb.css import."
   ]
 }

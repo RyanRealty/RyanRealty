@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 432,
-    "legacyPages": 60,
-    "mixedPages": 21
+    "nonV3ImportSites": 383,
+    "legacyPages": 54,
+    "mixedPages": 27
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -140,8 +140,9 @@
   ],
   "pages": {
     "app/about/page.tsx": {
-      "legacy": 2,
-      "kb": 12
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/accessibility/page.tsx": {
       "primitives": 1,
@@ -247,7 +248,8 @@
       "v3": 1
     },
     "app/contact/page.tsx": {
-      "kb": 6
+      "v3": 1,
+      "kb": 1
     },
     "app/cookies/page.tsx": {
       "primitives": 1,
@@ -307,7 +309,8 @@
     },
     "app/join/page.tsx": {
       "legacy": 1,
-      "kb": 6
+      "v3": 1,
+      "kb": 1
     },
     "app/listing/[listingKey]/page.tsx": {
       "v3": 1,
@@ -400,7 +403,8 @@
       "kb": 6
     },
     "app/reviews/page.tsx": {
-      "kb": 6
+      "v3": 1,
+      "kb": 1
     },
     "app/schools/[slug]/page.tsx": {
       "legacy": 1,
@@ -439,12 +443,14 @@
       "legacy": 1
     },
     "app/team/[slug]/page.tsx": {
-      "legacy": 2,
-      "kb": 11
+      "legacy": 1,
+      "v3": 1,
+      "kb": 1
     },
     "app/team/page.tsx": {
-      "legacy": 2,
-      "kb": 11
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/terms/page.tsx": {
       "primitives": 1,

@@ -1,49 +1,45 @@
 /**
- * /contact — Contact Ryan Realty (Central Oregon).
+ * /contact - write a broker, on the components/site/v3 barrel.
  *
- * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
- * PLACE from the prior ContentPageHero + two-column layout. Every piece of
- * content is preserved:
- *   - The ContactForm (interactive: name/email/phone/inquiry-select/message,
- *     server action submit, fbq + trackEvent on success, listingKey carry-
- *     through, and the load-bearing <SmsConsentDisclosure>). Untouched logic.
- *   - The getPageContent('contact') DAL call (CMS title override).
- *   - The default-inquiry derivation from ?inquiry / ?listingKey / ?intent.
- *   - The session + FUB page-view tracking side-effect.
- *   - ContactPage + BreadcrumbList + FAQPage JSON-LD (all three preserved).
- *   - The Office block: name, "Central Oregon", call-or-text tel link, email,
- *     service area sentence, the visible response-time promise, the three
- *     broker portraits, and the "Meet the team" link.
- *   - The hero copy. (The floating Meet-the-team / View-listings CTA pair was
- *     removed per design-audit P3 — it duplicated the office-card link.)
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * About destinations open on Quiet + Sheet. Order: Quiet (how to reach us),
+ * Sheet (the form, same submitContactForm fields), Ledger (brokers), Quiet
+ * (FAQ and edges).
  *
- * Only the presentation changed — the page now wears the KB shell (KbNav,
- * KbHero, KbFooter, SmoothScrollProvider, KbSectionTracker) and the Amboqia
- * display / hard-edge cream surfaces of the rest of the migrated site.
+ * THE PAGE CONTRACT, carried across: export const metadata, ContactPage +
+ * BreadcrumbList + FAQPage JSON-LD, getPageContent, getSession,
+ * getPersonIdFromCookie, listing tile for ?listingKey=, KbSectionTracker
+ * pageType="info".
  *
- * SEO: export const metadata (canonical + OG + Twitter) preserved. JSON-LD
- * preserved. PAGE CONTRACT: KB design + SEO + tracking (KbSectionTracker
- * pageType="info").
+ * D11: no virtue names. No invented quote.
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import ContactForm from './ContactForm'
 import { getPageContent } from '@/app/actions/site-pages'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
-import { getListingTiles } from '@/lib/data'
+import { getBrokers, getListingTiles } from '@/lib/data'
 import { formatPrice } from '@/lib/format/money'
 import { listingTileHref } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { CONTACT } from '@/lib/brand/contact'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { valuationHref } from '@/lib/site/valuation-href'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Ledger,
+  V3Quiet,
+  type V3LedgerPlainRow,
+  type V3QuietItem,
+} from '@/components/site/v3'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+import { ContactSheet } from './_v3/ContactSheet.client'
+import { CONTACT_FAQ_ITEMS } from './_v3/contact-constants'
+import { brokerLedgerRow, TEAM_RANK } from '@/app/team/_v3/team-constants'
 
 const contactOgImage = `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')}/api/og?type=default`
 
@@ -69,31 +65,48 @@ export const metadata: Metadata = {
 export default async function ContactPage({ searchParams }: PageProps) {
   // Session + identity-bridge reads kept (they pin this route's dynamic
   // rendering mode); the FUB page-view mirror they fed was deleted with the
-  // FUB decommission — first-party visitor_sessions covers page views now.
-  const [params, pageContent] = await Promise.all([
+  // FUB decommission. First-party visitor_sessions covers page views now.
+  const [params, pageContent, brokers] = await Promise.all([
     searchParams,
     getPageContent('contact'),
+    getBrokers(),
     getSession(),
     getPersonIdFromCookie(),
   ])
-  // Listing tour/question CTAs land here with ?listingKey= (+ intent=tour|question).
-  // Default to a buyer/property inquiry and carry the listing through to FUB.
   const defaultInquiry = params.inquiry ?? (params.listingKey ? 'Buying' : undefined)
-  const intent = params.intent === 'tour' ? 'tour' as const : params.intent === 'question' ? 'question' as const : undefined
-  // Show the buyer WHICH home their tour/question is about (design-audit P1 —
-  // the hottest intent moment used to land on a blank generic form).
+  const intent =
+    params.intent === 'tour' ? ('tour' as const) : params.intent === 'question' ? ('question' as const) : undefined
+
   const listingTile = params.listingKey
-    ? (await getListingTiles({ listingKeys: [params.listingKey], status: 'all', limit: 1 }).catch(() => []))[0] ?? null
+    ? ((await getListingTiles({ listingKeys: [params.listingKey], status: 'all', limit: 1 }).catch(() => []))[0] ??
+      null)
     : null
-  // CMS can override the hero title. Generic "Contact Us" (default CMS and
-  // common seed) is corporate beige; use a plain action line instead. Split
-  // the last word onto the second display line.
+
   const cmsTitle = pageContent?.title?.trim() ?? ''
-  const contactTitle =
-    !cmsTitle || /^contact(\s+us)?$/i.test(cmsTitle) ? 'Call, text, or write' : cmsTitle
-  const contactTitleWords = contactTitle.split(/\s+/)
-  const contactTitleTop = contactTitleWords.length > 1 ? contactTitleWords.slice(0, -1).join(' ') : contactTitle
-  const contactTitleBottom = contactTitleWords.length > 1 ? contactTitleWords[contactTitleWords.length - 1] : ''
+  const contactTitle = !cmsTitle || /^contact(\s+us)?$/i.test(cmsTitle) ? 'Call, text, or write' : cmsTitle
+
+  const listingSummary = listingTile
+    ? [
+        [listingTile.streetNumber, listingTile.streetName, listingTile.streetSuffix].filter(Boolean).join(' '),
+        listingTile.city,
+        listingTile.listPrice != null && formatPrice(listingTile.listPrice) !== '\u2014'
+          ? formatPrice(listingTile.listPrice)
+          : '',
+        listingTile.beds != null ? `${listingTile.beds} bd` : '',
+        listingTile.baths != null ? `${listingTile.baths} ba` : '',
+      ]
+        .filter((part) => part && part.trim())
+        .join(', ')
+    : undefined
+
+  const orderedBrokers = [...brokers].sort(
+    (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
+  )
+  const brokerRows = orderedBrokers
+    .map((b) => brokerLedgerRow(b))
+    .filter((row): row is V3LedgerPlainRow => row !== null)
+  const [firstBroker, ...restBrokers] = brokerRows
+
   const baseUrl = getCanonicalSiteUrl()
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -105,173 +118,87 @@ export default async function ContactPage({ searchParams }: PageProps) {
     { name: 'Home', url: baseUrl },
     { name: 'Contact', url: `${baseUrl}/contact` },
   ])
-  const faqJsonLd = generateFAQSchema([
+  const faqJsonLd = generateFAQSchema([...CONTACT_FAQ_ITEMS])
+
+  const listingHref = listingTile ? listingTileHref(listingTile) : null
+  const introItems: V3QuietItem[] = [
     {
-      question: 'What areas does Ryan Realty serve?',
-      answer: 'Ryan Realty serves Central Oregon including Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding communities.',
+      kind: 'prose',
+      body: 'A broker replies within one business day. Calling or texting gets you an answer sooner.',
     },
-    {
-      question: 'How do I schedule a showing?',
-      answer: 'Send the form on this page or call the office. A broker replies within one business day to set a time for the showing.',
-    },
-    {
-      question: 'How quickly will I hear back after contacting Ryan Realty?',
-      answer: 'A broker replies within one business day. Calling or texting gets you an answer sooner.',
-    },
-  ])
+    ...(listingHref
+      ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
+      : []),
+    { label: 'Call or text', href: `tel:${CONTACT.phoneFubTel}` },
+    { label: CONTACT.email.primary, href: `mailto:${CONTACT.email.primary}` },
+    { label: 'Broker profiles', href: '/team' },
+  ]
+
+  const faqItems: V3QuietItem[] = [
+    ...CONTACT_FAQ_ITEMS.map((item) => ({
+      kind: 'prose' as const,
+      term: item.question,
+      body: item.answer,
+    })),
+    { label: 'Broker profiles', href: '/team' },
+    { label: 'About Ryan Realty', href: '/about' },
+    { label: 'Client reviews', href: '/reviews' },
+    { label: 'Value my home', href: valuationHref('/contact') },
+  ]
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="info" />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
-      <KbBreadcrumb overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Contact' },
-        ]}
-      />
-      <SmoothScrollProvider>
-        {/* Hero — CMS-overridable title + subtitle, in the KB Amboqia display. */}
-        <KbHero
-          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="info" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Contact' }]} />
+
+        <V3Quiet
+          id="contact"
           eyebrow="Ryan Realty · Central Oregon"
-          titleTop={contactTitleTop}
-          titleBottom={contactTitleBottom}
-          lead="A broker replies within one business day. Calling or texting gets you an answer sooner."
-          showSearch={false}
-          cta={{ href: '#contact-form', label: 'Send a message' }}
-          ctaSecondary={null}
-          videoSrc={null}
-          posterSrc="/images/kb/three-sisters-sunrise.jpg"
+          heading={contactTitle}
+          headingLevel={1}
+          items={introItems}
         />
 
-        {/* The floating Meet-the-team / View-listings CTA pair above the form was
-            removed (design-audit P3) — it duplicated the office card's link and
-            diluted the one action that matters here, the form. */}
+        <ContactSheet
+          defaultInquiryType={defaultInquiry}
+          listingKey={params.listingKey}
+          intent={intent}
+          listingSummary={listingSummary || undefined}
+        />
 
-        {/* Form + Office — the prior two-column layout, restyled in KB. The form
-            (interactive, with SMS consent) and the office details are preserved.
-            The form is boxed in a hard navy edge; the office is the ledger. */}
-        <section className="section" id="contact-form" aria-label="Contact form and office">
-          <div className="wrap">
-            <div className="grid gap-10 lg:grid-cols-2">
-              <div
-                className="bg-card p-6 sm:p-8"
-                style={{ border: 'var(--edge) solid var(--navy)' }}
-              >
-                <span className="sec-index" style={{ display: 'block', marginBottom: '14px' }}>
-                  {intent === 'tour' ? 'Schedule a tour' : intent === 'question' ? 'Ask about this home' : 'Send a message'}
-                </span>
-                {listingTile ? (
-                  <Link
-                    href={listingTileHref(listingTile)}
-                    className="mb-5 flex items-center gap-4 p-3"
-                    style={{ border: '1px solid var(--navy-12)' }}
-                  >
-                    {listingTile.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={listingTile.photoUrl}
-                        alt={[listingTile.streetNumber, listingTile.streetName, listingTile.streetSuffix].filter(Boolean).join(' ')}
-                        className="h-16 w-24 shrink-0 object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="h-16 w-24 shrink-0" style={{ background: 'var(--navy)' }} aria-hidden />
-                    )}
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold" style={{ color: 'var(--navy)' }}>
-                        {[listingTile.streetNumber, listingTile.streetName, listingTile.streetSuffix].filter(Boolean).join(' ')}
-                        {listingTile.city ? `, ${listingTile.city}` : ''}
-                      </p>
-                      <p className="mono-num text-sm" style={{ color: 'var(--navy-70)' }}>
-                        {listingTile.listPrice != null ? formatPrice(listingTile.listPrice) : ''}
-                        {listingTile.beds != null ? ` · ${listingTile.beds} bd` : ''}
-                        {listingTile.baths != null ? ` · ${listingTile.baths} ba` : ''}
-                      </p>
-                    </div>
-                  </Link>
-                ) : null}
-                <ContactForm
-                  defaultInquiryType={defaultInquiry}
-                  listingKey={params.listingKey}
-                  intent={intent}
-                  hideListingNote={!!listingTile}
-                />
-              </div>
-              <div>
-                <span className="sec-index" style={{ display: 'block', marginBottom: '14px' }}>
-                  Office
-                </span>
-                <h2 className="font-display" style={{ fontSize: 'clamp(2rem,6vw,3.2rem)', lineHeight: 0.95 }}>
-                  Ryan Realty
-                </h2>
-                <p className="mt-3" style={{ color: 'var(--navy-70)' }}>
-                  Central Oregon
-                </p>
-                <div className="mt-6">
-                  <p className="mono-num text-xs uppercase tracking-wider" style={{ color: 'var(--navy-70)' }}>
-                    Call or text
-                  </p>
-                  <a
-                    href={`tel:${CONTACT.phoneFubTel}`}
-                    className="font-display text-2xl hover:underline"
-                    style={{ color: 'var(--navy)' }}
-                  >
-                    {CONTACT.phoneFub}
-                  </a>
-                </div>
-                <div className="mt-4">
-                  <p className="mono-num text-xs uppercase tracking-wider" style={{ color: 'var(--navy-70)' }}>
-                    Email
-                  </p>
-                  <a
-                    href="mailto:matt@ryan-realty.com"
-                    className="text-base font-semibold hover:underline"
-                    style={{ color: 'var(--navy)' }}
-                  >
-                    matt@ryan-realty.com
-                  </a>
-                </div>
-                <p className="mt-6 text-sm leading-relaxed" style={{ color: 'var(--navy-70)' }}>
-                  Serving Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and surrounding
-                  communities across Central Oregon.
-                </p>
-                {/* The response promise used to live only in the invisible FAQPage
-                    JSON-LD — surfaced visibly per design-audit P2 (same approved copy). */}
-                <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--navy-70)' }}>
-                  A broker replies within one business day. Calling or texting gets you an answer
-                  sooner.
-                </p>
-                {/* The people who answer — transparent broker portraits float on the
-                    cream surface (never boxed, per the design-system composite rule). */}
-                <div className="mt-8 flex items-end gap-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/brokers/ryan-matt.png" alt="Matt Ryan, Principal Broker" className="h-28 w-auto" loading="lazy" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/brokers/stevenson-paul.png" alt="Paul Stevenson, Broker" className="h-28 w-auto" loading="lazy" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/images/brokers/peterson-rebecca.png" alt="Rebecca Peterson, Broker" className="h-28 w-auto" loading="lazy" />
-                </div>
-                <p className="mt-2 text-sm" style={{ color: 'var(--navy-70)' }}>
-                  Matt Ryan · Paul Stevenson · Rebecca Peterson
-                </p>
-                <div className="sec-cta">
-                  <Link href="/team" className="btn alt">
-                    Broker profiles <span className="arr">→</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {firstBroker ? (
+          <V3Ledger
+            id="office"
+            eyebrow={v3Text('Who answers')}
+            heading={v3Text('The brokers')}
+            note={v3Text('Bend, Redmond, Sisters, Sunriver, La Pine, Prineville, and the surrounding communities.')}
+            rows={[firstBroker, ...restBrokers]}
+            action={{ label: v3Text('Broker profiles'), href: '/team' }}
+          />
+        ) : (
+          <V3Ledger
+            id="office"
+            eyebrow={v3Text('Who answers')}
+            heading={v3Text('The brokers')}
+            rows={[]}
+            emptyMessage={v3Text('Broker profiles did not return in this refresh.')}
+            action={{ label: v3Text('Broker profiles'), href: '/team' }}
+          />
+        )}
 
-        {/* hideCta: the footer's "Let's talk" band asks the visitor to get in
-            touch — redundant on the contact page itself (design-audit P3). */}
-        <KbFooter towns={[]} hideCta />
-      </SmoothScrollProvider>
-    </main>
+        <V3Quiet id="faq" eyebrow="Common questions" heading="Before you write" items={faqItems} />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

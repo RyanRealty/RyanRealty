@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-09T19:27:48.629Z",
+  "generatedAt": "2026-08-13T04:21:27.760Z",
   "format": "file:line:ruleId — each entry is one violation; both the set (no new entries) and total (count ceiling) must not grow.",
-  "total": 92,
+  "total": 91,
   "violations": [
     "app/admin/(protected)/crm/reporting/agent-goals/AgentGoalsYearSelect.tsx:24:clock-new-date",
     "app/components/admin/AdminUsersList.tsx:131:locale-date",
@@ -90,7 +90,6 @@
     "components/reports/SalesReportCharts.tsx:78:locale-date",
     "components/search/MarketSnapshotChart.tsx:15:locale-date",
     "components/site/kb/KbSectionTracker.client.tsx:9:impure-helper",
-    "components/site/listing-detail/PriceCtaStrip.tsx:155:impure-helper",
     "components/tc/pdf-sign/SignFlow.tsx:140:clock-new-date",
     "components/tc/pdf-sign/SignFlow.tsx:140:locale-date",
     "components/ui/calendar.tsx:203:locale-date",

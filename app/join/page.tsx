@@ -1,48 +1,44 @@
 /**
- * Join page (/join) — broker recruiting.
+ * /join - broker recruiting, on the components/site/v3 barrel.
  *
- * KB (kinetic-brutalist) design — Phase 9 page-class migration. Restyled IN
- * PLACE. Every piece of content from the prior site-v2 build is preserved:
- *   - export const metadata + revalidate (SEO gate)
- *   - getSurfaceImage('hero', …) DAL call for the hero photo
- *   - webPage + BreadcrumbList JSON-LD (MetadataBlock)
- *   - FAQPage JSON-LD (MetadataBlock, type 'faqPage')
- *   - hero headline + lede + the three chips (Start the conversation / See how
- *     we market listings / Meet the brokers) as a KB CTA row
- *   - the four LISTING_SUPPORT cards (Production handled / Pricing from live
- *     data / Its own page + distribution / A written report every week)
- *   - the four "How the brokerage works" copy blocks, with the /housing-market
- *     internal link preserved
- *   - the CTABar copy (Start the conversation + get-in-touch + call CTAs)
- *   - all six FAQ items
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * Opens on Stage (owned office photo, one line, one action) because this page
+ * has an owned asset and ci:kb-breadcrumb-overlay pairs V3Stage with
+ * tone="on-media". Then Ledger (listing support doors) then Quiet (how it
+ * works, FAQ, edges). No valuation ask. Footer columns drop /sell#get-value.
  *
- * The shadcn site-v2 blocks (HeroBlock, ContentSection, CTABar, FAQBlock,
- * primitives) are replaced by the KB shell + KB visual classes/tokens. No copy,
- * no data fetch, no JSON-LD, no link is dropped. The page reuses only the
- * shared KB classes from kb.css (.section/.wrap/.sec-head/.sec-title/.display/
- * .btn/.mono-num/.listings) plus inline token styles — no per-page <style>
- * block, no forked component.
+ * THE PAGE CONTRACT, carried across: export const metadata, revalidate 3600,
+ * getSurfaceImage, webPage + BreadcrumbList + FAQPage JSON-LD,
+ * KbSectionTracker pageType="join".
  *
- * VOICE (CLAUDE.md): the recruit is an intelligent professional. No smallness
- * positioning, no pandering, no self-described virtues. The pitch is what the
- * brokerage actually operates. Commission split is stated as a conversation,
- * never an invented number. DATA ACCURACY: no closing counts, no agent count,
- * no invented split, no production figures — only process facts already stated
- * on /sell plus verifiable named entities.
+ * D11: no virtue names. No invented quote. No invented split.
  */
 
-import type { CSSProperties } from 'react'
-import Link from 'next/link'
 import { getSurfaceImage } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { CONTACT } from '@/lib/brand/contact'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Ledger,
+  V3Quiet,
+  V3Stage,
+  type V3LedgerPlainRow,
+  type V3QuietItem,
+} from '@/components/site/v3'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import '@/components/site/kb/kb.css'
+import {
+  HOW_IT_WORKS,
+  JOIN_CONTACT_HREF,
+  JOIN_FAQ_ITEMS,
+  LISTING_SUPPORT,
+  OLD_MILL_HERO,
+  joinFooterColumns,
+} from './_v3/join-constants'
 
 export const revalidate = 3600
 
@@ -60,146 +56,6 @@ export const metadata = pageMetadata({
   ],
 })
 
-const OLD_MILL_HERO = '/images/office/ryan-realty-bend-office-interior-01.jpg'
-
-const LISTING_SUPPORT = [
-  {
-    title: 'Film, 3D, and photos in 48 hours',
-    body: 'A listing film, a 3D walkthrough, and professional photography within 48 hours of a signed agreement. Produced by the brokerage on every listing, at every price point. Not a cost you carry.',
-  },
-  {
-    title: 'CMA from live MLS data',
-    body: 'A written CMA with three closed comps, three active comps, and the four levers that move the price, built from live MLS data on ryan-realty.com. Your seller sees every number.',
-  },
-  {
-    title: 'Its own page plus full syndication',
-    body: 'Every listing gets its own page on ryan-realty.com, MLS syndication across Central Oregon, and posts on @ryanrealtybend across Instagram, Facebook, TikTok, and YouTube.',
-  },
-  {
-    title: 'Written seller report every week',
-    body: 'Each week a listing is on market, the seller gets a written update: showings, online traffic, where the views came from, and feedback.',
-  },
-] as const
-
-const HOW_IT_WORKS = [
-  {
-    lead: 'You keep the client, start to finish.',
-    body: 'No call center. No shared lead pool you compete inside. No hand-off to a closing coordinator the client never met. The broker who takes the call is the broker at the table.',
-  },
-  {
-    lead: 'A principal broker on every file.',
-    body: 'Matt Ryan is the principal broker. A question on a contingency, a contract, or a hard close gets answered by a licensed principal broker, not a queue.',
-  },
-  {
-    // The /housing-market internal link is preserved by splitting the copy
-    // around it; rendered inline in the JSX below.
-    lead: 'Central Oregon is the whole map.',
-    bodyBefore:
-      'Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the resort communities. The market data on ',
-    bodyAfter: ' updates from the MLS daily. That is the same data you price from.',
-    link: { href: '/housing-market', label: 'ryan-realty.com' },
-  },
-  {
-    lead: 'The split is set with you.',
-    body: 'Based on the business you bring and the business you want to build. The first conversation covers the numbers directly. There is no single published split, because there is not one.',
-  },
-] as const
-
-const FAQ_ITEMS = [
-  {
-    question: 'Do you work with brokers who are new to the industry?',
-    answer:
-      'Yes. Whether you have a new license or twenty years in the business, the first conversation is the same: what you want to build and how the brokerage helps you build it. A principal broker supervises every transaction either way.',
-  },
-  {
-    question: 'What happens to my current clients and pipeline?',
-    answer:
-      'They come with you. You keep the relationship from the first call to the closing table. Nothing in the model puts a call center or another broker between you and your client.',
-  },
-  {
-    question: 'What is the commission split?',
-    answer:
-      'It is set with you, based on your business. There is no single published split because there is not one. The first conversation covers the numbers directly.',
-  },
-  {
-    question: 'Do I have to produce my own listing marketing?',
-    answer:
-      'No. The listing film, the 3D walkthrough, the photography, the listing page, the social posts, and the weekly seller report are produced by the brokerage, on every listing.',
-  },
-  {
-    question: 'Where does Ryan Realty work?',
-    answer:
-      'Central Oregon only: Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the resort communities.',
-  },
-  {
-    question: 'How do I start?',
-    answer:
-      'Send a note through the contact form or call. The first conversation is with a broker, not a recruiter, and there is no script.',
-  },
-] as const
-
-// Inline token styles — KB tokens only (no off-brand hex). Module-scope objects
-// keep the JSX readable and satisfy the no-<style>-element rule (D32).
-const ledeStyle: CSSProperties = {
-  maxWidth: '52ch',
-  color: 'var(--navy-70)',
-  fontSize: 'clamp(1rem,1.7vw,1.18rem)',
-  lineHeight: 1.55,
-  fontWeight: 500,
-}
-const cardTitleStyle: CSSProperties = {
-  fontSize: 'clamp(1.15rem,2.4vw,1.45rem)',
-  fontWeight: 700,
-  lineHeight: 1.12,
-  letterSpacing: '-0.01em',
-  color: 'var(--navy)',
-}
-const cardBodyStyle: CSSProperties = {
-  marginTop: 11,
-  maxWidth: '46ch',
-  color: 'var(--navy-70)',
-  fontSize: 'clamp(.95rem,1.5vw,1.05rem)',
-  lineHeight: 1.6,
-  fontWeight: 500,
-}
-const cardIdxStyle: CSSProperties = {
-  display: 'block',
-  fontFamily: 'var(--font-amboqia-safe),serif',
-  fontSize: '1.5rem',
-  lineHeight: 1,
-  color: 'var(--navy)',
-  opacity: 0.45,
-  marginBottom: 14,
-}
-const howLeadStyle: CSSProperties = {
-  fontSize: 'clamp(1.1rem,2.2vw,1.35rem)',
-  fontWeight: 700,
-  lineHeight: 1.18,
-  color: 'var(--cream)',
-}
-const howBodyStyle: CSSProperties = {
-  marginTop: 11,
-  maxWidth: '48ch',
-  color: 'var(--cream-70)',
-  fontSize: 'clamp(.95rem,1.5vw,1.05rem)',
-  lineHeight: 1.6,
-  fontWeight: 500,
-}
-const faqQStyle: CSSProperties = {
-  fontFamily: 'var(--font-amboqia-safe),serif',
-  fontSize: 'clamp(1.3rem,3vw,1.9rem)',
-  lineHeight: 1.02,
-  letterSpacing: '-0.01em',
-  color: 'var(--navy)',
-}
-const faqAStyle: CSSProperties = {
-  color: 'var(--navy-70)',
-  maxWidth: '54ch',
-  fontSize: 'clamp(.97rem,1.5vw,1.08rem)',
-  lineHeight: 1.62,
-  fontWeight: 500,
-}
-
 export default async function JoinPage() {
   const heroSrc = await getSurfaceImage('hero', {
     geoTags: ['central-oregon'],
@@ -207,252 +63,105 @@ export default async function JoinPage() {
     fallback: OLD_MILL_HERO,
   })
 
+  const supportRows: V3LedgerPlainRow[] = LISTING_SUPPORT.map((item, index) => ({
+    href: item.href,
+    when: v3Text(String(index + 1).padStart(2, '0')),
+    what: v3Text(item.title),
+    detail: v3Text(item.body),
+    id: item.title,
+  }))
+  const [firstSupport, ...restSupport] = supportRows
+
+  const quietItems: V3QuietItem[] = [
+    ...HOW_IT_WORKS.map((item) => ({
+      kind: 'prose' as const,
+      term: item.lead,
+      body: item.body,
+    })),
+    { label: 'Central Oregon housing market', href: '/housing-market' },
+    ...JOIN_FAQ_ITEMS.map((item) => ({
+      kind: 'prose' as const,
+      term: item.question,
+      body: item.answer,
+    })),
+    { label: 'Talk about joining', href: JOIN_CONTACT_HREF },
+    { label: `Call ${CONTACT.phoneDirect}`, href: `tel:${CONTACT.phoneDirectTel}` },
+    { label: 'Listing marketing plan', href: '/sell#marketing-plan' },
+    { label: 'Broker profiles', href: '/team' },
+  ]
+
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="join" />
-
-      <MetadataBlock
-        schemas={[
-          {
-            type: 'webPage',
-            name: 'Join Ryan Realty',
-            description:
-              'Broker recruiting for Ryan Realty, a Bend, Oregon brokerage that markets every listing and keeps each broker with their client from first call to closing.',
-            url: '/join',
-          },
-          {
-            type: 'breadcrumb',
-            items: [
-              { name: 'Home', url: '/' },
-              { name: 'Join the team', url: '/join' },
-            ],
-          },
-        ]}
-      />
-      {/* FAQPage JSON-LD preserved from the prior FAQBlock (it emitted this
-          schema automatically). The visible FAQ below carries no schema, so it
-          lives here once. */}
-      <MetadataBlock schema={{ type: 'faqPage', items: FAQ_ITEMS }} />
-
-      <KbBreadcrumb overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'Join the team' },
-        ]}
-      />
-
-      <SmoothScrollProvider>
-        {/* Hero — same headline + lede as the prior HeroBlock. Recruiting page
-            has no live market data, so the HUD numbers are null (the KbHero
-            sub-row degrades gracefully to "Homes for sale" + lead with no
-            invented figures). The poster is the resolved surface image, or the
-            canonical Old Mill hero as a fallback. */}
-        <KbHero
-          data={{ activeCount: null, medianListPrice: null, medianDaysToPending: null }}
-          eyebrow="Join Ryan Realty · Brokers"
-          titleTop="Film, 3D tour,"
-          titleBottom="weekly report."
-          lead="On every listing you bring, at every price point. Pricing from live MLS data. You keep the client from first call to close."
-          videoSrc={null}
-          posterSrc={heroSrc ?? OLD_MILL_HERO}
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="join" />
+        <MetadataBlock
+          schemas={[
+            {
+              type: 'webPage',
+              name: 'Join Ryan Realty',
+              description:
+                'Broker recruiting for Ryan Realty, a Bend, Oregon brokerage that markets every listing and keeps each broker with their client from first call to closing.',
+              url: '/join',
+            },
+            {
+              type: 'breadcrumb',
+              items: [
+                { name: 'Home', url: '/' },
+                { name: 'Join the team', url: '/join' },
+              ],
+            },
+            {
+              type: 'faqPage',
+              items: [...JOIN_FAQ_ITEMS],
+            },
+          ]}
+        />
+        <V3Breadcrumb
+          tone="on-media"
+          belowNav
+          trail={[{ label: 'Home', href: '/' }, { label: 'Join the team' }]}
         />
 
-        {/* Primary next steps for a recruiting visitor. */}
-        <section className="section" id="join-cta" aria-label="Talk about joining">
-          <div className="wrap">
-            <div className="flex flex-wrap items-center gap-3 py-3">
-              <Link href="/contact?inquiry=Join%20the%20team" className="btn alt">
-                Talk about joining <span className="arr">→</span>
-              </Link>
-              <Link
-                href="/sell#marketing-plan"
-                className="btn alt"
-                style={{ background: 'transparent', color: 'var(--navy)' }}
-              >
-                Listing marketing plan <span className="arr">→</span>
-              </Link>
-              <Link
-                href="/team"
-                className="btn alt"
-                style={{ background: 'transparent', color: 'var(--navy)' }}
-              >
-                Broker profiles <span className="arr">→</span>
-              </Link>
-            </div>
-          </div>
-        </section>
+        <V3Stage
+          id="join"
+          headingLevel={1}
+          eyebrow="Join Ryan Realty · Brokers"
+          headline="Film, 3D, and a weekly report"
+          posterSrc={heroSrc ?? OLD_MILL_HERO}
+          action={{ label: 'Talk about joining', href: JOIN_CONTACT_HREF }}
+        />
 
-        {/* What your listings get — the four LISTING_SUPPORT cards. Restyled
-            onto a KB hard-edge grid (cream .listings surface). Empty-safe: the
-            array is a constant, always four cards. */}
-        <section className="section listings" id="listing-support" aria-label="What your listings get">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">What your listings get</span>
-              <h2 className="sec-title display">
-                The brokerage runs
-                <br />
-                the marketing
-              </h2>
-            </div>
-            <p className="pt-6" style={ledeStyle}>
-              Same plan on every listing, the one a seller can read on the sell page. Produced for
-              you. Not a line item you cover, and not a weekend you lose.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 mt-8" style={{ borderTop: 'var(--edge) solid var(--navy)' }}>
-              {LISTING_SUPPORT.map((item, i) => (
-                <div
-                  key={item.title}
-                  className="py-7 md:px-9"
-                  style={{ borderBottom: 'var(--edge) solid var(--navy)' }}
-                >
-                  <span className="mono-num" style={cardIdxStyle}>
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
-                  <h3 style={cardTitleStyle}>{item.title}</h3>
-                  <p style={cardBodyStyle}>{item.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {firstSupport ? (
+          <V3Ledger
+            id="listing-support"
+            eyebrow={v3Text('What your listings get')}
+            heading={v3Text('The brokerage runs the marketing')}
+            note={v3Text(
+              'Same plan on every listing, the one a seller can read on the sell page. Produced for you.',
+            )}
+            rows={[firstSupport, ...restSupport]}
+            action={{
+              label: v3Text('Talk about joining'),
+              href: JOIN_CONTACT_HREF,
+              variant: 'ghost',
+            }}
+          />
+        ) : null}
 
-        {/* How the brokerage works — navy surface, the four copy blocks from the
-            prior ContentSection. The /housing-market internal link is preserved
-            inline in the third block. The .sec-head border resolves to cream on
-            navy via currentColor. */}
-        <section
-          className="section"
+        <V3Quiet
           id="how-it-works"
-          aria-label="How the brokerage works"
-          style={{ background: 'var(--navy)', color: 'var(--cream)', paddingBottom: 54 }}
-        >
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index" style={{ color: 'var(--cream-70)' }}>
-                How the brokerage works
-              </span>
-              <h2 className="sec-title display">
-                One broker on the deal.
-                <br />A principal broker on call.
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              {HOW_IT_WORKS.map((item) => (
-                <div
-                  key={item.lead}
-                  className="py-7 md:px-10"
-                  style={{ borderBottom: '1px solid var(--cream-40)' }}
-                >
-                  <h3 style={howLeadStyle}>{item.lead}</h3>
-                  <p style={howBodyStyle}>
-                    {'link' in item ? (
-                      <>
-                        {item.bodyBefore}
-                        <Link
-                          href={item.link.href}
-                          style={{
-                            color: 'var(--cream)',
-                            textDecoration: 'underline',
-                            textUnderlineOffset: 3,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {item.link.label}
-                        </Link>
-                        {item.bodyAfter}
-                      </>
-                    ) : (
-                      item.body
-                    )}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+          eyebrow="How the brokerage works"
+          heading="One broker on the deal"
+          items={quietItems}
+        />
+      </main>
 
-        {/* Start the conversation — the prior CTABar (navy tone). Both CTAs
-            preserved (get in touch + call). */}
-        <section
-          className="section"
-          id="get-in-touch"
-          aria-label="Talk about joining"
-          style={{ background: 'var(--navy)', color: 'var(--cream)' }}
-        >
-          <div className="wrap">
-            <div style={{ maxWidth: '60ch', paddingTop: 'clamp(46px,7vw,80px)', paddingBottom: 'clamp(46px,7vw,80px)' }}>
-              <span className="sec-index" style={{ display: 'block', marginBottom: 16, color: 'var(--cream-70)' }}>
-                Ready to talk numbers
-              </span>
-              <h2
-                className="display"
-                style={{
-                  fontSize: 'clamp(2.4rem,9vw,5.5rem)',
-                  lineHeight: 0.88,
-                  color: 'var(--cream)',
-                  marginBottom: 18,
-                }}
-              >
-                Call or
-                <br />
-                write
-              </h2>
-              <p
-                style={{
-                  maxWidth: '46ch',
-                  marginBottom: 26,
-                  color: 'var(--cream-70)',
-                  fontSize: 'clamp(1rem,2vw,1.18rem)',
-                  lineHeight: 1.5,
-                  fontWeight: 500,
-                }}
-              >
-                The first conversation is with a broker, not a recruiter. There is no script. Split,
-                support, and how you work get covered directly.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/contact?inquiry=Join%20the%20team" className="btn ghost">
-                  Send a note <span className="arr">→</span>
-                </Link>
-                <a href={`tel:${CONTACT.phoneDirectTel}`} className="btn ghost">
-                  Call {CONTACT.phoneDirect}
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Common questions — the six FAQ items. Native <dl> for semantics; the
-            FAQPage JSON-LD is emitted once above via MetadataBlock. Cream
-            surface. */}
-        <section
-          className="section listings"
-          id="faq"
-          aria-label="Joining Ryan Realty, common questions"
-        >
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Common questions</span>
-              <h2 className="sec-title display">Joining Ryan Realty</h2>
-            </div>
-            <dl className="mt-8" style={{ borderTop: 'var(--edge) solid var(--navy)' }}>
-              {FAQ_ITEMS.map((item) => (
-                <div
-                  key={item.question}
-                  className="py-6 md:grid md:grid-cols-[1fr_1.2fr] md:gap-x-10"
-                  style={{ borderBottom: '1px solid var(--navy-12)' }}
-                >
-                  <dt style={faqQStyle}>{item.question}</dt>
-                  <dd className="mt-3 md:mt-0" style={faqAStyle}>{item.answer}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
-
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={joinFooterColumns(V3_FOOTER_COLUMNS)} />
+    </>
   )
 }

@@ -1,41 +1,43 @@
 /**
- * Team index (/team) — KB (kinetic-brutalist) design, Phase 9 of the
- * convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME section
- * library as the homepage + city/community pages (components/site/kb/*), fed the
- * team DAL, never forked (ci:kb-single-source G50).
- * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
- * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
- * HideChrome is only for the not-found footer edge case / CSS hide if still used.
+ * /team - broker roster, on the components/site/v3 barrel.
  *
- * THE PAGE CONTRACT: KB design + SEO (export const metadata + MetadataBlock
- * JSON-LD: CollectionPage/Breadcrumb) + tracking (KbSectionTracker pageType="team").
- * Every broker figure comes from getBrokers() (§0 — no fabricated stats).
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * About-family destinations open on Quiet. This page is Quiet (who you work
+ * with) then Ledger (the three brokers) then Quiet (reviews and FAQ). The
+ * family's Sheet lives on /contact and /team/[slug]. Primary ask is /contact.
  *
- * Section stack: (global PublicNav) · breadcrumb · hero · about · testimonials ·
- * team grid · sell · faq · footer.
+ * THE PAGE CONTRACT, carried across unchanged: export const metadata through
+ * pageMetadata, MetadataBlock JSON-LD (CollectionPage + aboutOrganization +
+ * BreadcrumbList), a rendered KbSectionTracker with pageType="team", and the
+ * route. MetadataBlock and KbSectionTracker stay on the non-v3 register
+ * deliberately: both are wiring, neither is visual language.
  *
- * Parity contract: design_system/ryan-realty/ui_kits/team/parity.json (KB set).
+ * D11: no virtue names. No invented quote. Reviews are verbatim from
+ * getReviews, with TESTIMONIALS as the empty-pool fallback.
+ *
+ * Parity: design_system/ryan-realty/ui_kits/team/parity.json
  */
 
 import type { Metadata } from 'next'
-import { getBrokers } from '@/lib/data/brokers/getBrokers'
-import { getReviews } from '@/lib/data'
+import { getBrokers, getReviews } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbAbout } from '@/components/site/kb/KbAbout'
-import { KbTeam } from '@/components/site/kb/KbTeam.client'
-import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import type { KbReview } from '@/components/site/kb/types'
+import type { SchemaInput } from '@/lib/site/json-ld'
 import { TESTIMONIALS } from '@/lib/testimonials'
-import { CONTACT } from '@/lib/brand/contact'
-import '@/components/site/kb/kb.css'
+import { valuationHref } from '@/lib/site/valuation-href'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Ledger,
+  V3Quiet,
+  type V3LedgerPlainRow,
+  type V3QuietItem,
+} from '@/components/site/v3'
+import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { brokerLedgerRow, TEAM_FAQ_ITEMS, TEAM_RANK } from './_v3/team-constants'
 
 export const metadata: Metadata = pageMetadata({
   title: 'Our team · Ryan Realty, Bend Oregon',
@@ -51,71 +53,18 @@ export const metadata: Metadata = pageMetadata({
   ],
 })
 
-// Agent-choice intent FAQ ("bend oregon realtor", "bend real estate agent" —
-// target-query benchmark 2026-06-10). Restored in the KB migration via the
-// shared FAQBlock (which also emits its own FAQPage JSON-LD), same pattern as
-// the community KB page. DATA ACCURACY (§0): every answer reuses facts already
-// approved on live /team and /about copy. No new claims.
-const TEAM_FAQ_ITEMS = [
-  {
-    question: 'What does working directly with a broker mean?',
-    answer:
-      'You work with one broker from the first call to the closing table. There is no hand-off to a junior agent or a transaction desk, and the broker who prices your home is the one who answers your calls.',
-  },
-  {
-    question: 'What does my listing get?',
-    answer:
-      'Every Ryan Realty listing gets cinematic video, a 3D walkthrough, and a price built from live Central Oregon market data. The same treatment at every price point.',
-  },
-  {
-    question: 'Which areas do Ryan Realty brokers cover?',
-    answer:
-      'Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, and Terrebonne, plus the resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch.',
-  },
-  {
-    question: 'How do I start?',
-    answer: `Call ${CONTACT.phoneDirect} or schedule a time through the contact page. You talk directly with a broker, not a call center.`,
-  },
-] as const
-
 export default async function TeamPage() {
-  // design-audit #156: getReviews(8) alone pulled the 8 most recent reviews,
-  // which happened to be 100% Matt-named -- on a page presenting three
-  // brokers, that reads as if only one has real client relationships. The
-  // underlying pool is genuinely Matt-heavy (22 of 24 reviews name him, 1
-  // names Rebecca, 0 name Paul -- an honest reflection of who has closed the
-  // most transactions), so this can't be perfectly balanced. Pull the wider
-  // pool and prioritize the rare non-Matt-only reviews instead of just
-  // taking the top 8 by recency.
-  const [brokers, reviews] = await Promise.all([
-    getBrokers(),
-    getReviews(24),
-  ])
+  const [brokers, reviews] = await Promise.all([getBrokers(), getReviews(24)])
 
-  // Display order locked to Matt, Rebecca, Paul (Matt directive). Rank by first
-  // name so it holds regardless of the DB sort_order.
-  const RANK: Record<string, number> = { matt: 0, matthew: 0, rebecca: 1, paul: 2 }
   const orderedBrokers = [...brokers].sort(
-    (a, b) => (RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (RANK[b.slug.split('-')[0] ?? ''] ?? 9),
+    (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
   )
 
-  // Verified-credential ledger for the KbAbout block. The KB team grid (KbTeam)
-  // shows only name/role/photo; the old /team index also surfaced each broker's
-  // Oregon license number. Restore that trust credential here, straight from
-  // getBrokers() (§0 — verified data only, no invented stats). Renders the
-  // broker name + title as the label and the licensed OR number as the value.
-  const brokerFacts = orderedBrokers
-    .filter((b) => b.licenseNumber)
-    .map((b) => ({
-      label: `${b.fullName} · ${b.title}`,
-      value: `OR ${b.licenseNumber}`,
-    }))
+  const brokerRows = orderedBrokers
+    .map((b) => brokerLedgerRow(b))
+    .filter((row): row is V3LedgerPlainRow => row !== null)
+  const [firstBroker, ...restBrokers] = brokerRows
 
-  // Prioritize the rare reviews that name a broker OTHER than Matt (even if
-  // Matt is also mentioned), then broker-neutral reviews, then Matt-only
-  // reviews last, so the shared team-wide testimonials section doesn't read
-  // as Matt-only (design-audit #156). Stable within each tier (keeps
-  // recency order from getReviews).
   const namesMatt = (text: string) => /\bmatt(hew)?\b/i.test(text)
   const namesOtherBroker = (text: string) => /\brebecca\b/i.test(text) || /\bpaul\b/i.test(text)
   const sortedReviews = [
@@ -124,94 +73,114 @@ export default async function TeamPage() {
     ...reviews.reviews.filter((r) => !namesOtherBroker(r.text) && namesMatt(r.text)),
   ]
 
-  // Map the live reviews pool to KbReview shape for KbTestimonials.
-  const kbReviews: KbReview[] = sortedReviews.map((r) => ({
-    quote: r.text,
-    author: r.reviewerName ?? 'Verified Ryan Realty client',
+  const liveReviewItems: V3QuietItem[] = sortedReviews.slice(0, 8).map((r) => {
+    const author = r.reviewerName?.trim()
+    return author
+      ? { kind: 'prose' as const, term: author, body: r.text }
+      : { kind: 'prose' as const, body: r.text }
+  })
+  const fallbackReviewItems: V3QuietItem[] = TESTIMONIALS.slice(0, 8).map((t) => ({
+    kind: 'prose' as const,
+    term: t.author,
+    body: t.quote,
   }))
+  const reviewItems = liveReviewItems.length > 0 ? liveReviewItems : fallbackReviewItems
 
-  // Fall back to TESTIMONIALS when the live pool is empty (e.g. DB cold start).
-  const testimonialsToShow: KbReview[] =
-    kbReviews.length > 0
-      ? kbReviews.slice(0, 8)
-      : TESTIMONIALS.slice(0, 8).map((t) => ({ quote: t.quote, author: t.author }))
+  const faqItems: V3QuietItem[] = [
+    ...TEAM_FAQ_ITEMS.map((item) => ({
+      kind: 'prose' as const,
+      term: item.question,
+      body: item.answer,
+    })),
+    { label: 'Call, text, or write', href: '/contact' },
+    { label: 'Client reviews', href: '/reviews' },
+    { label: 'About Ryan Realty', href: '/about' },
+    { label: 'Value my home', href: valuationHref('/team') },
+  ]
+
+  const schemas: SchemaInput[] = [
+    {
+      type: 'webPage',
+      pageType: 'CollectionPage',
+      aboutOrganization: true,
+      name: 'The Ryan Realty Team',
+      description:
+        'The licensed Oregon brokers behind Ryan Realty in Bend, serving buyers and sellers across Central Oregon.',
+      url: '/team',
+    },
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'Team', url: '/team' },
+      ],
+    },
+    {
+      type: 'faqPage',
+      items: [...TEAM_FAQ_ITEMS],
+    },
+  ]
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="team" />
-      <MetadataBlock
-        schemas={[
-          {
-            type: 'webPage',
-            pageType: 'CollectionPage',
-            aboutOrganization: true,
-            name: 'The Ryan Realty Team',
-            description:
-              'The licensed Oregon brokers behind Ryan Realty in Bend, serving buyers and sellers across Central Oregon.',
-            url: '/team',
-          },
-          {
-            type: 'breadcrumb',
-            items: [
-              { name: 'Home', url: '/' },
-              { name: 'Team', url: '/team' },
-            ],
-          },
-        ]}
-      />
-      <KbBreadcrumb
-        overlay
-        trail={[{ label: 'Home', href: '/' }, { label: 'Team' }]}
-      />
-      <SmoothScrollProvider>
-        <KbHero
-          data={{
-            activeCount: null,
-            medianListPrice: null,
-            medianDaysToPending: null,
-          }}
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="team" />
+        <MetadataBlock schemas={schemas} />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Team' }]} />
+
+        <V3Quiet
+          id="team"
           eyebrow="Ryan Realty · Bend, Oregon"
-          titleTop="The broker you call"
-          titleBottom="is the broker you get."
-          lead="No hand-offs, no transaction desk, no junior agent learning on your deal."
-          showSearch={false}
-          videoSrc={null}
-          posterSrc="/images/hero/hero-old-mill-master-4k.jpg"
-          posterAlt="Old Mill District, Bend, Oregon"
-        />
-        <KbAbout
-          eyebrow="The team"
-          heading="One broker from first call to close."
-          paragraphs={[
-            'No hand-off to a junior agent. No transaction desk between you and the person pricing the home.',
-            'Call any broker on the number on their card. That is who answers.',
+          heading="The brokers"
+          headingLevel={1}
+          items={[
+            {
+              kind: 'prose',
+              body: 'The broker you first speak to is the broker who works your purchase or sale through to close. Call the number on their card. That is who answers.',
+            },
+            { label: 'Call, text, or write', href: '/contact' },
+            { label: 'Client reviews', href: '/reviews' },
+            { label: 'Value my home', href: valuationHref('/team') },
           ]}
-          facts={brokerFacts}
         />
-        {/* design-audit #154: the roster (this page's whole reason for
-            existing) rendered AFTER the reviews section, buried below the
-            fold on a page titled "the team." Roster comes right after the
-            intro, reviews (social proof) follow it. */}
-        <KbTeam />
-        <KbTestimonials reviews={testimonialsToShow} />
-        <KbSell
-          data={{
-            medianListPrice: null,
-            medianDaysToPending: null,
-            soldCount30d: null,
-          }}
-        />
-        <section id="faq" aria-label="Working with a Bend broker: common questions">
-          <FAQBlock
-            eyebrow="Choosing a broker"
-            title="Working with a Bend broker"
-            items={TEAM_FAQ_ITEMS}
-            tone="default"
+
+        {firstBroker ? (
+          <V3Ledger
+            id="brokers"
+            eyebrow={v3Text('Licensed in Oregon')}
+            heading={v3Text('Who you work with')}
+            rows={[firstBroker, ...restBrokers]}
+            action={{ label: v3Text('Call, text, or write'), href: '/contact', variant: 'primary' }}
           />
-        </section>
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+        ) : (
+          <V3Ledger
+            id="brokers"
+            eyebrow={v3Text('Licensed in Oregon')}
+            heading={v3Text('Who you work with')}
+            rows={[]}
+            emptyMessage={v3Text('Broker profiles did not return in this refresh.')}
+            action={{ label: v3Text('Call, text, or write'), href: '/contact', variant: 'primary' }}
+          />
+        )}
+
+        <V3Quiet
+          id="reviews-faq"
+          eyebrow="Clients and questions"
+          heading="Working with a Bend broker"
+          items={[
+            ...reviewItems,
+            { label: 'All Google reviews', href: '/reviews' },
+            ...faqItems,
+          ]}
+        />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
-

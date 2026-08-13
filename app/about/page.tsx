@@ -1,107 +1,64 @@
 /**
- * Brokerage profile page (/about) — KB (kinetic-brutalist) design, Phase 9
- * of the KB convergence program (docs/KB_CONVERGENCE_ROADMAP.md).
+ * /about - brokerage profile, on the components/site/v3 barrel.
  *
- * Reuses the SAME section library as the homepage, city, and community pages
- * (components/site/kb/*) — single source of truth, never forked (ci:kb-single-source G50).
- * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
- * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
- * HideChrome is only for the not-found footer edge case / CSS hide if still used.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
+ * About destinations open on Quiet + Sheet. This page opens on Quiet (who we
+ * are) then Instrument (verified licenses) then Ledger (service area) then
+ * Quiet (FAQ and edges). The family's Sheet lives on /contact and /team/[slug],
+ * where the capture forms already were. A new on-page form here would be a new
+ * capture contract. The ask on this page is the valuation door, with ?from=/about.
  *
- * Voice (CLAUDE.md §3 + VOICE.md Five Laws): show, don't say. No stated virtues,
- * no headcount/smallness positioning, no overt category claims. Every claim is
- * a verified fact.
+ * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
+ * pageMetadata, MetadataBlock JSON-LD (AboutPage + aboutOrganization +
+ * BreadcrumbList + FAQPage), a rendered KbSectionTracker with pageType="about",
+ * revalidate 3600, and the route. MetadataBlock and KbSectionTracker stay on
+ * the non-v3 register deliberately: both are wiring, neither is visual language,
+ * and the barrel ships no equivalent.
  *
- * DATA ACCURACY (CLAUDE.md §0):
- *   - Ryan Realty LLC, Bend, Oregon. Founded June 2023 (OREA 201253677, 2023-06-21).
- *   - Matt Ryan, Principal Broker OR #201206613; fire service before founding;
- *     mentor Hjalmar "Red" Erickson — from Matt's verified broker bio.
- *   - Reviews: TESTIMONIALS from lib/testimonials.ts (verified Google GBP, 24 reviews,
- *     5.0 average, pulled 2026-06-13 via GBP API). Mapped to KbReview shape.
- *   - Region pulse: getRegionPulse() for KbSell data numbers.
- *   - Blog posts: getRecentBlogPosts() for KbArticles.
- *   - Service area: getCitiesForIndex() (geo_snapshot_mv) for the KbExploreTowns ledger.
- *   - FAQ: verified-facts-only FAQ_ITEMS rendered by FAQBlock (+ FAQPage JSON-LD).
- *   - Hero photo: getSurfaceImage('hero', central-oregon) with Old Mill fallback.
+ * D11: the mission sentence is the one virtue-word exception, exact words, We.
+ * No invented quote. MLS remarks N/A.
  *
- * PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md):
- *   KB design + SEO (pageMetadata + MetadataBlock JSON-LD: Organization/AboutPage/
- *   Breadcrumb + FAQPage) + tracking (KbSectionTracker). Every figure live (§0).
+ * DATES RENDER IN PACIFIC, a change from the KB page, stated rather than absorbed.
+ * The KB articles rail (now deleted) formatted with timeZone UTC. formatDate is
+ * pinned to America/Los_Angeles. The city Ledger stamp uses formatDate.
  *
- * Section stack: (global PublicNav) · KbBreadcrumb · KbHero · KbAbout ·
- *   KbExploreTowns · KbTestimonials · team-link (CTA to /team, design-audit
- *   #169 -- /team already owns the full broker grid) · KbArticles · KbSell ·
- *   FAQBlock · KbFooter.
- *
- * Parity contract: design_system/ryan-realty/ui_kits/about/parity.json (KB set).
+ * Parity: design_system/ryan-realty/ui_kits/about/parity.json
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { getBrokers, getMarketPulseCitySnapshots } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import type { SchemaInput } from '@/lib/site/json-ld'
+import { formatDate } from '@/lib/format/date'
+import { formatPrice } from '@/lib/format/money'
+import { listingsBrowsePath, teamPath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import { BRAND, BROKERS } from '@/lib/brand/contact'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Ledger,
+  V3Quiet,
+  type V3InstrumentFigure,
+  type V3LedgerFigureRow,
+  type V3QuietItem,
+} from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { getSurfaceImage, getRecentBlogPosts, getRegionPulse } from '@/lib/data'
-import { getCitiesForIndex } from '@/app/actions/cities'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbAbout } from '@/components/site/kb/KbAbout'
-import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
-import { KbTestimonials } from '@/components/site/kb/KbTestimonials.client'
-import { KbArticles } from '@/components/site/kb/KbArticles'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
-import { FAQBlock } from '@/components/site/FAQBlock'
-import { TESTIMONIALS } from '@/lib/testimonials'
-import type { KbReview, KbTownItem } from '@/components/site/kb/types'
-import '@/components/site/kb/kb.css'
+import {
+  ABOUT_CITY_LABELS,
+  ABOUT_CITY_SLUG,
+  ABOUT_FAQ_ITEMS,
+  ABOUT_MISSION,
+  FIRM_LICENSE,
+} from './_v3/about-constants'
+import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 
 const ROUTE_PATH = '/about'
-const OLD_MILL_HERO = '/images/office/ryan-realty-bend-office-interior-01.jpg'
-
-// Service-area ledger — the Central Oregon cities we cover, with live active
-// counts + median from getCitiesForIndex (geo_snapshot_mv, §0). Reuses the
-// homepage town set + photography so the KB Explore ledger matches the brand.
-const TOWN_ORDER = ['bend', 'redmond', 'sisters', 'sunriver', 'la-pine', 'terrebonne'] as const
-const TOWN_IMG: Record<string, string> = {
-  bend: '/images/kb/bend-drake-park-aerial.jpg',
-  redmond: '/images/kb/redmond-downtown-aerial.jpg',
-  sisters: '/images/kb/sisters-downtown-three-peaks.jpg',
-  sunriver: '/images/kb/sunriver-deschutes-river.jpg',
-  'la-pine': '/images/kb/vandevert-ranch.jpg',
-  terrebonne: '/images/kb/smith-rock-terrebonne.jpg',
-}
-
-// FAQ — verified facts only (no testimonial language, no stated virtues).
-// FAQBlock renders the visible <dl> AND the schema.org FAQPage JSON-LD.
-const FAQ_ITEMS = [
-  {
-    question: 'Who are the brokers?',
-    answer:
-      'Matt Ryan (Principal Broker, OR #201206613), Paul Stevenson, and Rebecca Ryser Peterson.',
-  },
-  {
-    question: 'When did Ryan Realty start?',
-    answer: 'Matt Ryan opened Ryan Realty in June 2023, based in Bend, Oregon.',
-  },
-  {
-    question: 'Will I work with the same broker from start to finish?',
-    answer:
-      'Yes. The broker you first talk to is the broker who works your purchase or sale through to close. There is no hand-off to a junior agent or a transaction desk.',
-  },
-  {
-    question: 'What areas do you cover?',
-    answer:
-      'Bend, Redmond, Sisters, Sunriver, La Pine, Tumalo, Prineville, Terrebonne, and the surrounding resort communities including Tetherow, Pronghorn, Eagle Crest, and Brasada Ranch.',
-  },
-  {
-    question: 'How do I get a home valuation?',
-    answer:
-      'Request one through the home value form. A broker prepares a comparative market analysis from recent comparable sales and gives you a price range, with the comps that support it.',
-  },
-] as const
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
@@ -122,203 +79,222 @@ export async function generateMetadata(): Promise<Metadata> {
 export const revalidate = 3600
 
 export default async function AboutPage() {
-  const [heroSrc, blogPosts, regionPulse, cities] = await Promise.all([
-    withTimeoutFallback(
-      getSurfaceImage('hero', {
-        geoTags: ['central-oregon'],
-        seed: ROUTE_PATH,
-        fallback: OLD_MILL_HERO,
-      }),
-      OLD_MILL_HERO,
-      3500,
-      'about:hero',
-    ),
-    withTimeoutFallback(
-      getRecentBlogPosts({ limit: 3 }),
-      [],
-      3000,
-      'about:blog',
-    ),
-    withTimeoutFallback(
-      getRegionPulse(),
-      null,
-      3000,
-      'about:regionPulse',
-    ),
-    withTimeoutFallback(
-      getCitiesForIndex(),
-      [],
-      3000,
-      'about:cities',
-    ),
+  const [citySnapshots, brokers] = await Promise.all([
+    getMarketPulseCitySnapshots([...ABOUT_CITY_LABELS]),
+    getBrokers(),
   ])
 
-  // Service-area towns — KbExploreTowns ledger fed by the live city snapshot
-  // (geo_snapshot_mv via getCitiesForIndex). Restores the old CityGrid
-  // "Where we work" section in KB style; renders null when empty.
-  const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
-  const towns: KbTownItem[] = TOWN_ORDER.map((slug) => {
-    const c = cityBySlug.get(slug)
-    if (!c) return null
-    return {
-      name: c.name,
-      activeCount: c.activeCount,
-      medianPrice: c.medianPrice,
+  const snapshotByLabel = new Map(citySnapshots.map((s) => [s.geo_label, s]))
+  const cityRows: V3LedgerFigureRow[] = []
+  const rowed = new Set<string>()
+  for (const label of ABOUT_CITY_LABELS) {
+    const slug = ABOUT_CITY_SLUG[label]
+    const snapshot = snapshotByLabel.get(label)
+    if (!slug || !snapshot || snapshot.median_list_price == null) continue
+    rowed.add(label)
+    const price = formatPrice(snapshot.median_list_price)
+    if (price === '\u2014') continue
+    cityRows.push({
       href: `/cities/${slug}`,
-      img: TOWN_IMG[slug],
+      when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
+      what: v3Text(label),
+      value: v3Text(price),
+      id: slug,
+    })
+  }
+  const [firstCityRow, ...restCityRows] = cityRows
+
+  const cityFootnotes = ABOUT_CITY_LABELS.filter((label) => !rowed.has(label)).map((label) => {
+    const snapshot = snapshotByLabel.get(label)
+    if (!snapshot) return { label, fact: `${label} returned no market row in the latest sync` }
+    if (snapshot.active_count === 0) {
+      return { label, fact: `${label} shows no active single-family listings` }
     }
-  }).filter((t): t is KbTownItem => t !== null)
+    return {
+      label,
+      fact: `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median`,
+    }
+  })
 
-  // Map TESTIMONIALS (KbReview-compatible) — verified Google reviews, verbatim.
-  const reviews: KbReview[] = TESTIMONIALS.slice(0, 8).map((t) => ({
-    quote: t.quote,
-    author: t.author,
-  }))
+  const cityRefreshedAt = citySnapshots
+    .map((s) => s.updated_at)
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .sort()
+    .at(-1)
+  const cityStamp = cityRefreshedAt ? formatDate(cityRefreshedAt) : ''
+  const cityUpdated = cityStamp && cityStamp !== '\u2014' ? v3Text(cityStamp) : undefined
 
-  // Blog articles for KbArticles.
-  const articlePosts = blogPosts.map((p) => ({
-    title: p.title,
-    href: `/blog/${p.slug}`,
-    excerpt: p.excerpt,
-    imageUrl: p.heroImageUrl,
-    dateLabel: p.publishedAt
-      ? new Date(p.publishedAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          timeZone: 'UTC',
-        })
-      : null,
-  }))
+  const orderedBrokers = [...brokers].sort(
+    (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
+  )
 
-  // KbSell data from the region pulse (live Central Oregon figures).
-  const sellData = {
-    medianListPrice: regionPulse?.medianListPrice ?? null,
-    medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
-    soldCount30d: regionPulse?.soldCount30d ?? null,
+  const originItems: V3QuietItem[] = [
+    { kind: 'prose', body: ABOUT_MISSION },
+    {
+      kind: 'prose',
+      term: 'How it started',
+      body: [
+        `Matt Ryan opened Ryan Realty in Bend in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from Hjalmar "Red" Erickson.`,
+        'When the comps do not support the price you want, we say so before you sign anything. Every listing gets a video, a 3D walkthrough, and its own page here.',
+        'The broker you first speak to is the broker who works your purchase or sale through to close. No hand-off.',
+      ],
+    },
+    { label: 'Broker profiles', href: '/team' },
+    { label: 'Client reviews', href: '/reviews' },
+    { label: 'Call, text, or write', href: '/contact' },
+  ]
+
+  const licenseFigures: V3InstrumentFigure[] = [
+    { value: v3Text(BRAND.foundedLabel), label: v3Text('founded') },
+    { value: v3Text(FIRM_LICENSE), label: v3Text('firm license') },
+    {
+      value: v3Text(`OR #${BROKERS.matt.license}`),
+      label: v3Text('principal broker'),
+      href: teamPath(BROKERS.matt.slug),
+    },
+  ]
+  const [firstLicense, ...restLicense] = licenseFigures
+
+  const faqItems: V3QuietItem[] = [
+    ...ABOUT_FAQ_ITEMS.map((item) => ({
+      kind: 'prose' as const,
+      term: item.question,
+      body: item.answer,
+    })),
+    { label: 'Broker profiles', href: '/team' },
+    { label: 'Client reviews', href: '/reviews' },
+    { label: 'Call, text, or write', href: '/contact' },
+    { label: 'Value my home', href: valuationHref(ROUTE_PATH) },
+    { label: 'Homes for sale', href: listingsBrowsePath() },
+    { label: 'Central Oregon housing market', href: '/housing-market' },
+  ]
+  for (const city of cityFootnotes) {
+    faqItems.push({
+      kind: 'prose',
+      term: `${city.label} inventory`,
+      body: city.fact,
+    })
+    faqItems.push({
+      label: `${city.label} homes`,
+      href: `/cities/${ABOUT_CITY_SLUG[city.label]}`,
+    })
   }
 
-  // About section — the origin story and what every listing gets.
-  // Concrete facts only, and the limitation stated before the upside
-  // (VOICE.md rule 6). The prior version closed paragraph one on a coined
-  // maxim ("the job is about the people on the other side of the table, not
-  // the transaction") — us being pleased with ourselves, rule 8.
-  const aboutParagraphs = [
-    'Matt Ryan opened Ryan Realty in Bend in June 2023, after years in the fire service. He learned the business from Hjalmar “Red” Erickson.',
-    'When the comps do not support the price you want, we say so before you sign anything. The active inventory, median price, days on market, and months of supply published on this site are the same figures we bring to that conversation. Every listing also gets a video, a 3D walkthrough, and its own page here.',
-    'The broker you first speak to is the broker who works your purchase or sale through to close. No hand-off.',
+  const schemas: SchemaInput[] = [
+    {
+      type: 'webPage',
+      pageType: 'AboutPage',
+      aboutOrganization: true,
+      name: 'About Ryan Realty',
+      description:
+        'Ryan Realty is based in Bend, Oregon. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding Central Oregon communities.',
+      url: '/about',
+    },
+    {
+      type: 'breadcrumb',
+      items: [
+        { name: 'Home', url: '/' },
+        { name: 'About', url: '/about' },
+      ],
+    },
+    {
+      type: 'faqPage',
+      items: [...ABOUT_FAQ_ITEMS],
+    },
   ]
 
-  // Quick-facts ledger — verified identifiers and founding date.
-  const aboutFacts = [
-    { label: 'Founded', value: 'June 2023' },
-    { label: 'License', value: 'OREA 201253677' },
-    { label: 'Principal Broker', value: 'OR #201206613' },
-    { label: 'Based in', value: 'Bend, Oregon' },
-    { label: 'Service area', value: 'Central Oregon' },
-  ]
+  const brokerDoors: V3QuietItem[] = orderedBrokers.flatMap((b) => {
+    const name = b.fullName?.trim()
+    const slug = b.slug?.trim()
+    if (!name || !slug) return []
+    const title = b.title?.trim()
+    return [{ label: title ? `${name}, ${title}` : name, href: teamPath(slug) }]
+  })
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="about" />
-      <MetadataBlock
-        schemas={[
-          {
-            type: 'webPage',
-            pageType: 'AboutPage',
-            aboutOrganization: true,
-            name: 'About Ryan Realty',
-            description:
-              'Ryan Realty is based in Bend, Oregon. We cover Bend, Redmond, Sisters, Sunriver, and the surrounding Central Oregon communities.',
-            url: '/about',
-          },
-          {
-            type: 'breadcrumb',
-            items: [
-              { name: 'Home', url: '/' },
-              { name: 'About', url: '/about' },
-            ],
-          },
-        ]}
-      />
-      <KbBreadcrumb
-        overlay
-        trail={[
-          { label: 'Home', href: '/' },
-          { label: 'About' },
-        ]}
-      />
-      <SmoothScrollProvider>
-        <KbHero
-          data={{
-            activeCount: null,
-            medianListPrice: null,
-            medianDaysToPending: null,
-          }}
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="about" />
+        <MetadataBlock schemas={schemas} />
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
+
+        <V3Quiet
+          id="about"
           eyebrow="Ryan Realty · Bend, Oregon"
-          titleTop="Open since June 2023."
-          titleBottom="In Bend."
-          lead="Matt Ryan is the principal broker. Every listing gets a video, a 3D walkthrough, and a price built from the comps that closed nearby."
-          showSearch={false}
-          videoSrc={null}
-          posterSrc={heroSrc ?? OLD_MILL_HERO}
+          heading="About Ryan Realty"
+          headingLevel={1}
+          items={originItems}
         />
 
-        <KbAbout
-          eyebrow="Ryan Realty · Founded 2023"
-          heading="How Ryan Realty started."
-          paragraphs={aboutParagraphs}
-          facts={aboutFacts}
-        />
-
-        <KbExploreTowns
-          towns={towns}
-          eyebrow="Service area"
-          title="Where we work."
-          sectionId="service-area"
-          cta={{ href: '/homes-for-sale', label: 'Search homes across Central Oregon' }}
-        />
-
-        <KbTestimonials reviews={reviews} />
-
-        {/* design-audit #169: this used to render the full KbTeam grid,
-            identical to /team's own content (same 3 broker cards, same
-            "Work with X" links). /team already owns that job -- point here
-            instead of duplicating it. */}
-        <section className="section" id="team-link" aria-label="Meet the team">
-          <div className="wrap">
-            <div className="sec-head">
-              <span className="sec-index">Who you work with</span>
-              <h2 className="sec-title display">Matt Ryan, Paul Stevenson, Rebecca Peterson.</h2>
-            </div>
-            <div className="sec-cta">
-              <Link href="/team" className="btn alt">
-                Read the broker profiles <span className="arr">&rarr;</span>
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {articlePosts.length > 0 ? (
-          <KbArticles
-            posts={articlePosts}
-            eyebrow="Guides and insights"
-            heading="Bend and Central Oregon housing news."
-            subtitle="Neighborhood guides, market notes, and buyer and seller how-tos."
+        {firstLicense ? (
+          <V3Instrument
+            id="record"
+            level={2}
+            eyebrow={v3Text('Verified record')}
+            headline={v3Text('Open since June 2023')}
+            figures={[firstLicense, ...restLicense]}
+            source={v3Text(
+              'Oregon Real Estate Agency. Ryan Realty LLC firm license and the principal broker license on file.',
+            )}
+            action={{
+              label: v3Text('Value my home'),
+              href: valuationHref(ROUTE_PATH),
+              variant: 'primary',
+            }}
           />
         ) : null}
 
-        <KbSell data={sellData} eyebrow="Sell with us" />
+        {firstCityRow ? (
+          <V3Ledger
+            id="service-area"
+            eyebrow={v3Text('Service area')}
+            heading={v3Text('Where we work')}
+            note={v3Text(
+              'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live single-family list prices.',
+            )}
+            rows={[firstCityRow, ...restCityRows]}
+            source={v3Text(
+              'live MLS through Oregon Data Share, single-family homes, city rows from market_pulse_live',
+            )}
+            updated={cityUpdated}
+            action={{
+              label: v3Text('Search homes across Central Oregon'),
+              href: listingsBrowsePath(),
+            }}
+          />
+        ) : (
+          <V3Ledger
+            id="service-area"
+            eyebrow={v3Text('Service area')}
+            heading={v3Text('Where we work')}
+            rows={[]}
+            emptyMessage={v3Text('City inventory did not return in this refresh.')}
+            action={{
+              label: v3Text('Search homes across Central Oregon'),
+              href: listingsBrowsePath(),
+            }}
+          />
+        )}
 
-        <FAQBlock
+        <V3Quiet
+          id="faq"
           eyebrow="Common questions"
-          title="Working with Ryan Realty"
-          items={FAQ_ITEMS}
-          tone="muted"
+          heading="Working with Ryan Realty"
+          items={[
+            ...faqItems,
+            ...(brokerDoors.length > 0
+              ? [{ kind: 'prose' as const, term: 'Who you work with', body: 'Matt Ryan, Paul Stevenson, Rebecca Peterson.' }, ...brokerDoors]
+              : []),
+          ]}
         />
+      </main>
 
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
