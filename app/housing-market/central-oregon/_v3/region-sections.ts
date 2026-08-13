@@ -200,7 +200,6 @@ export function buildExploreItems(
     { label: 'Sell your home', href: '/sell' },
     { label: 'Get a free written valuation', href: valuationHrefValue },
     { label: 'Buying and selling guides', href: '/blog' },
-    { label: 'Area guides', href: '/area-guides' },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
   if (footnotes.length > 0) {

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-12T21:51:21.220Z",
+  "generatedAt": "2026-08-13T08:02:05.778Z",
   "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 196,
+  "count": 193,
   "names": [
     "components/ActivityFeedCard.tsx",
     "components/ActivityFeedSlider.tsx",
@@ -32,8 +32,6 @@
     "components/admin/expired/ExpiredOutreachRow.client.tsx",
     "components/admin/fsbo/FsboActions.client.tsx",
     "components/admin/hooks/useIdempotentAction.ts",
-    "components/area-guides/ExploreByCitySlider.tsx",
-    "components/area-guides/ResortCommunitiesSlider.tsx",
     "components/broker/BrokerBio.tsx",
     "components/broker/BrokerCard.tsx",
     "components/broker/BrokerContactForm.tsx",
@@ -130,7 +128,6 @@
     "components/neighborhood/NeighborhoodOverview.tsx",
     "components/open-houses/OpenHouseSection.tsx",
     "components/open-houses/OpenHousesClient.tsx",
-    "components/pulse/PulseHero.tsx",
     "components/reports/FreshnessBadge.tsx",
     "components/reports/LivePulseBanner.tsx",
     "components/reports/MarketHealthGauge.tsx",

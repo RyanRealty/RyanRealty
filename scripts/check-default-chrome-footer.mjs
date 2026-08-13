@@ -46,6 +46,13 @@ const NO_FOOTER_PREFIXES = [
 /** Redirect-only pages — they never render UI, so they need no footer. */
 const REDIRECT_ONLY = new Set([
   'app/feed/page.tsx', // P3 lock: 301 /feed into /videos?view=feed
+  'app/area-guides/page.tsx', // E-CUT: 301 /area-guides into /cities
+  'app/areas/[slug]/page.tsx', // E-CUT: 301 /areas/[slug] into /homes-for-sale
+  'app/builders/page.tsx', // E-CUT: 301 /builders into new-construction search
+  'app/builders/[slug]/page.tsx', // E-CUT: 301 /builders/[slug] into new-construction search
+  'app/reports/page.tsx', // E-CUT: 301 /reports into /housing-market/reports
+  'app/resources/page.tsx', // E-CUT: 301 /resources into /housing-market
+  'app/pulse/page.tsx', // E-CUT: 301 /pulse into /activity
   'app/reports/[slug]/[geoName]/page.tsx', // permanentRedirect to /housing-market
   'app/housing-market/reports/[slug]/[geoName]/page.tsx', // re-exports the redirect above
   'app/listing/by-key/[listingKey]/page.tsx', // permanentRedirect to canonical listing URL

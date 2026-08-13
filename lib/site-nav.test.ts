@@ -16,7 +16,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     expect(KB_TOP_LINKS.map((l) => l.label)).toEqual(['Buy', 'Areas', 'Market', 'Sell', 'About'])
     expect(KB_TOP_LINKS.map((l) => l.href)).toEqual([
       '/homes-for-sale',
-      '/area-guides',
+      '/cities',
       '/housing-market',
       '/sell',
       '/about',

@@ -213,7 +213,7 @@ const GOLF_IMAGE_BY_SLUG: Record<string, string> = {
 /** Static buyer/seller guide routes — the Learn fallback when no blog data. */
 const STATIC_GUIDES: MegaMenuGuide[] = [
   { title: 'Buyer and seller guides', href: '/blog', date: null },
-  { title: 'Resources', href: '/resources', date: null },
+  { title: 'Housing market', href: '/housing-market', date: null },
   { title: 'Frequently asked questions', href: '/faq', date: null },
   { title: 'Video library', href: '/videos', date: null },
 ]

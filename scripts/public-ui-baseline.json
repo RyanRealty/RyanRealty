@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 178,
-    "legacyPages": 8,
-    "mixedPages": 70
+    "nonV3ImportSites": 139,
+    "legacyPages": 3,
+    "mixedPages": 69
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -162,14 +162,6 @@
       "v3": 1,
       "kb": 1
     },
-    "app/area-guides/page.tsx": {
-      "legacy": 1,
-      "kb": 8
-    },
-    "app/areas/[slug]/page.tsx": {
-      "kb": 9,
-      "legacy": 1
-    },
     "app/blog/[slug]/page.tsx": {
       "legacy": 1,
       "kb": 1,
@@ -179,14 +171,6 @@
       "legacy": 1,
       "kb": 1,
       "v3": 1
-    },
-    "app/builders/[slug]/page.tsx": {
-      "kb": 6,
-      "legacy": 1
-    },
-    "app/builders/page.tsx": {
-      "kb": 5,
-      "legacy": 1
     },
     "app/buy/page.tsx": {
       "legacy": 1,
@@ -322,6 +306,10 @@
       "kb": 1,
       "v3": 1
     },
+    "app/housing-market/reports/page.tsx": {
+      "legacy": 1,
+      "kb": 7
+    },
     "app/join/page.tsx": {
       "legacy": 1,
       "v3": 1,
@@ -404,24 +392,13 @@
       "v3": 1,
       "kb": 1
     },
-    "app/pulse/page.tsx": {
-      "v3": 1,
-      "kb": 1
-    },
     "app/reports/[slug]/page.tsx": {
       "kb": 6
-    },
-    "app/reports/page.tsx": {
-      "legacy": 1,
-      "kb": 7
     },
     "app/reports/sales/[city]/[period]/page.tsx": {
       "legacy": 1,
       "kb": 1,
       "v3": 1
-    },
-    "app/resources/page.tsx": {
-      "kb": 6
     },
     "app/reviews/page.tsx": {
       "v3": 1,

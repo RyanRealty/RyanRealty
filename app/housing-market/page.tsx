@@ -363,7 +363,6 @@ export default async function HousingMarketHubPage() {
     { label: 'Recent price drops', href: '/price-drops' },
     { label: 'Sell your home', href: '/sell' },
     { label: 'Buying and selling guides', href: '/blog' },
-    { label: 'Area guides', href: '/area-guides' },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]
   if (cityFootnotes.length > 0) {

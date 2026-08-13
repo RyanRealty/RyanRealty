@@ -24,7 +24,6 @@
 export const KB_ROUTES: RegExp[] = [
   /^\/about$/,
   /^\/activity$/,
-  /^\/area-guides$/,
   /^\/blog(\/[^/]+)?$/,
   /^\/buy(\/[^/]+)?$/, // /buy + /buy/<intent> lead landing (KB)
   /^\/cities(\/[^/]+(\/[^/]+)?)?$/, // /cities, /cities/<slug>, /cities/<slug>/<neighborhood>
@@ -40,11 +39,8 @@ export const KB_ROUTES: RegExp[] = [
   /^\/our-homes$/,
   /^\/parks(\/[^/]+)?$/,
   /^\/price-drops(\/[^/]+)?$/,
-  /^\/pulse$/,
-  /^\/reports$/,
   /^\/reports\/[^/]+$/, // /reports/<slug> + /reports/explore; NOT /reports/<slug>/<geoName> (2 segments)
   /^\/reports\/sales\/[^/]+\/[^/]+$/,
-  /^\/resources$/,
   /^\/reviews$/,
   /^\/schools(\/[^/]+)?$/,
   /^\/sell(\/[^/]+)?$/, // /sell + /sell/valuation + /sell/<intent> lead landing (KB)

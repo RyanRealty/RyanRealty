@@ -26,7 +26,7 @@
  *     preset slugs verified against lib/search-presets.ts)
  *   - /communities + /communities/<slug> (app/communities/[slug])
  *   - /cities + /cities/<slug> (app/cities/[slug])
- *   - /area-guides, /schools, /parks, /central-oregon/*, /lp/central-oregon-golf
+ *   - /cities, /schools, /parks, /central-oregon/*, /lp/central-oregon-golf
  *   - /housing-market + /housing-market/<city> (app/housing-market/*)
  *   - /sell, /sell/valuation (app/sell/*)
  *   - /team, /about, /contact, /reviews, /join (real pages)
@@ -187,12 +187,11 @@ export const MENU: MenuEntry[] = [
   {
     // Places + lifestyle + guides (blog/faq). Matches KB_TOP_NAV Areas group.
     label: 'Areas',
-    href: '/area-guides',
+    href: '/cities',
     columns: [
       {
         heading: 'Places',
         links: [
-          { label: 'Area guides', href: '/area-guides' },
           { label: 'All cities', href: '/cities' },
           { label: 'Bend', href: '/cities/bend' },
           { label: 'Redmond', href: '/cities/redmond' },
@@ -227,8 +226,8 @@ export const MENU: MenuEntry[] = [
       eyebrow: 'Central Oregon',
       title: 'Know the area before you buy',
       body: 'City guides, communities, schools, parks, and what life is like here.',
-      ctaLabel: 'Browse area guides',
-      ctaHref: '/area-guides',
+      ctaLabel: 'Browse cities',
+      ctaHref: '/cities',
     },
   },
   {

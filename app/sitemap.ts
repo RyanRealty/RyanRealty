@@ -146,9 +146,7 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     // and triggered Search Console "submitted but noindex" warnings. To make the
     // two LPs organically discoverable, remove their page-level noindex instead.
     { url: `${baseUrl}/videos`, lastModified: now, changeFrequency: 'weekly', priority: 0.5 },
-    { url: `${baseUrl}/resources`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${baseUrl}/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${baseUrl}/pulse`, lastModified: now, changeFrequency: 'daily', priority: 0.6 },
     { url: `${baseUrl}/feed`, lastModified: now, changeFrequency: 'daily', priority: 0.55 },
     { url: `${baseUrl}/tools/mortgage-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${baseUrl}/tools/rental-property-calculator`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },

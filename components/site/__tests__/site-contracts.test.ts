@@ -464,10 +464,10 @@ describe('design directive contracts', () => {
     expect(chart).toMatch(/Not enough/) // empty state
   })
 
-  it('D102 — featured grid never orphans a tiny tile (count capped to fill the module)', () => {
-    const feat = readSrc('components/site/kb/KbFeatured.client.tsx')
-    expect(feat).toMatch(/\[12, 9, 6, 3\]\.find/)
-    expect(feat).toMatch(/shown\.map/)
+  it('D102 — KbFeatured has no remaining page mount (E-CUT retired /area-guides)', () => {
+    const areaGuides = readSrc('app/area-guides/page.tsx')
+    expect(areaGuides).toMatch(/permanentRedirect\(['"]\/cities['"]\)/)
+    expect(areaGuides).not.toMatch(/<KbFeatured\b/)
   })
 
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {

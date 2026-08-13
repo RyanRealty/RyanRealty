@@ -119,7 +119,6 @@ const MOS_ROUNDING_LEDGER = {
   'lib/youtube-market-report/citation-builder.ts': 1,
   'lib/youtube-market-report/generate-script.ts': 2,
   'lib/youtube-market-report/scene-builders.ts': 3,
-  'components/pulse/PulseHero.tsx': 1,
   'components/site/PriceBandTable.tsx': 1,
 }
 

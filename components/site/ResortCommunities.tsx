@@ -141,7 +141,7 @@ export default async function ResortCommunities() {
             </Body>
           </Stack>
           <Link
-            href="/area-guides"
+            href="/communities"
             className="shrink-0 text-sm font-semibold text-primary underline-offset-2 hover:underline"
           >
             View all communities →

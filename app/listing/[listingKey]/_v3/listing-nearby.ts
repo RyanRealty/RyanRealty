@@ -1,6 +1,6 @@
 import { v3Text, type V3LedgerFigureRow, type V3QuietItem } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
-import { listingTileHref, slugify } from '@/lib/slug'
+import { listingTileHref } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import type { ListingTile } from '@/lib/data/types/listing'
 
@@ -67,7 +67,7 @@ export function listingQuietLinks(input: {
   for (const course of input.nearbyGolf) push(course.href, course.name)
   if (input.builderName?.trim()) {
     const name = input.builderName.trim()
-    push(`/builders/${slugify(name)}`, `${name} homes`)
+    push('/homes-for-sale?newConstruction=1', `${name} homes`)
   }
   return items
 }

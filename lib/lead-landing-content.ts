@@ -218,8 +218,8 @@ export const BUY_INTENT_PAGES: Record<string, LeadLandingConfig> = {
     heroImageUrl: 'https://images.unsplash.com/photo-1530538987395-032d1800fdd4?auto=format&fit=crop&w=2200&q=80',
     imageAlt: 'Mountain town neighborhood at golden hour',
     primaryCtaLabel: 'Get my relocation plan',
-    secondaryCtaLabel: 'Explore area guides',
-    secondaryCtaHref: '/area-guides',
+    secondaryCtaLabel: 'Browse cities',
+    secondaryCtaHref: '/cities',
     trustBullets: [
       'A short list of towns and neighborhoods from your priorities',
       'Virtual tours and in-person days when you are here',

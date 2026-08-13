@@ -109,9 +109,8 @@ export const KB_TOP_NAV: TopNavGroup[] = [
   },
   {
     label: 'Areas',
-    href: '/area-guides',
+    href: '/cities',
     children: [
-      { href: '/area-guides', label: 'Area guides' },
       { href: '/cities', label: 'All cities' },
       ...CITY_LINKS,
       { href: '/communities', label: 'All communities' },
@@ -139,7 +138,6 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/blog', label: 'Blog and guides' },
       { href: '/faq', label: 'FAQ' },
-      { href: '/resources', label: 'Resources' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
       { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
       { href: '/tools/appreciation', label: 'Appreciation tool' },
@@ -205,7 +203,6 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
   {
     title: 'Areas',
     links: [
-      { href: '/area-guides', label: 'Area guides' },
       { href: '/cities', label: 'All cities' },
       ...CITY_LINKS,
       { href: '/communities', label: 'All communities' },
@@ -227,7 +224,6 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/months-of-supply', label: 'Months of supply' },
       { href: '/blog', label: 'Blog and guides' },
       { href: '/faq', label: 'FAQ' },
-      { href: '/resources', label: 'Resources' },
       { href: '/tools/mortgage-calculator', label: 'Mortgage calculator' },
       { href: '/tools/rental-property-calculator', label: 'Rental calculator' },
       { href: '/tools/appreciation', label: 'Appreciation tool' },
@@ -286,7 +282,6 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       { href: '/cities/sunriver', label: 'Sunriver homes' },
       { href: '/cities/la-pine', label: 'La Pine homes' },
       { href: '/communities', label: 'All communities' },
-      { href: '/area-guides', label: 'Area guides' },
       { href: '/schools', label: 'Schools' },
       { href: '/parks', label: 'Parks' },
       { href: '/central-oregon/trails', label: 'Trails' },
@@ -352,7 +347,6 @@ export const FOOTER_NAV: FooterGroup[] = [
       { href: '/communities', label: 'All communities' },
       { href: '/communities/tetherow', label: 'Tetherow' },
       { href: '/communities/broken-top', label: 'Broken Top' },
-      { href: '/area-guides', label: 'Area guides' },
     ],
   },
   {

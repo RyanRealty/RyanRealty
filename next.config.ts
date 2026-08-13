@@ -215,7 +215,7 @@ const nextConfig: NextConfig = {
       { source: '/homes-for-sale/in/listing/:listingKey', destination: '/homes-for-sale/listing/:listingKey', permanent: true },
       { source: '/homes-for-sale/in/:path*', destination: '/homes-for-sale/:path*', permanent: true },
       { source: '/home-valuation', destination: '/sell/valuation', permanent: true },
-      // Content hub: editorial lives on /blog. Keep /area-guides as the geo hub.
+      // Content hub: editorial lives on /blog. Geo chooser is /cities.
       { source: '/guides', destination: '/blog', permanent: true },
       { source: '/guides/:slug', destination: '/blog/:slug', permanent: true },
       // /sell/plan retired 2026-06-04: orphan legacy page (sitemap-only, zero inbound
@@ -227,6 +227,13 @@ const nextConfig: NextConfig = {
       { source: '/agents', destination: '/team', permanent: true },
       { source: '/agents/:slug', destination: '/team/:slug', permanent: true },
       { source: '/reports', destination: '/housing-market/reports', permanent: true },
+      // E-CUT: leftover CUT-CANDIDATE public pages fold into living destinations.
+      { source: '/area-guides', destination: '/cities', permanent: true },
+      { source: '/areas/:slug', destination: '/homes-for-sale', permanent: true },
+      { source: '/builders', destination: '/homes-for-sale?newConstruction=1', permanent: true },
+      { source: '/builders/:slug', destination: '/homes-for-sale?newConstruction=1', permanent: true },
+      { source: '/resources', destination: '/housing-market', permanent: true },
+      { source: '/pulse', destination: '/activity', permanent: true },
       // W8.4: the custom-filter explore tool is retired in favor of the
       // pre-generated /housing-market/[geo] reports (with the timeframe selector).
       // Both explore routes redirect to the housing-market hub. ci:no-explore-route
@@ -258,7 +265,7 @@ const nextConfig: NextConfig = {
 
       // Old WordPress static pages.
       { source: '/sellers', destination: '/sell', permanent: true },
-      { source: '/best-neighborhoods-bend-oregon', destination: '/area-guides', permanent: true },
+      { source: '/best-neighborhoods-bend-oregon', destination: '/cities', permanent: true },
 
       // Landing pages linked/advertised but never built — keep funnel traffic on a
       // live LP instead of a dead end (307: revisit if these LPs ship later).
@@ -269,7 +276,7 @@ const nextConfig: NextConfig = {
       { source: '/lp/listings/:listingKey', destination: '/listing/:listingKey', permanent: true },
 
       // Removed demo route still drawing traffic → the live Market Pulse page.
-      { source: '/pulse-video-demo', destination: '/pulse', permanent: true },
+      { source: '/pulse-video-demo', destination: '/activity', permanent: true },
 
       // Admin route moved under the (protected) group.
       { source: '/admin/social', destination: '/admin/analytics/social', permanent: false },

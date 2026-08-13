@@ -507,7 +507,7 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
 
   const reports: SearchSuggestionReport[] = []
   if (/\b(report|market)\b/.test(qLower)) {
-    reports.push({ label: 'Market reports', href: '/reports' })
+    reports.push({ label: 'Market reports', href: '/housing-market/reports' })
   }
   for (const c of cities.slice(0, 3)) {
     reports.push({

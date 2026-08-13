@@ -172,8 +172,6 @@ const eslintConfig = defineConfig([
     // targets:
     //   - components/ui/chart.tsx: vendored shadcn primitive whose per-chart
     //     CSS-variable <style> block is upstream-owned. Do not refactor it.
-    //   - components/pulse/*: self-contained @keyframes for the like/pulse
-    //     micro-animations (scoped, not design-system typography redefinition).
     //   - app/lp/*: standalone landing pages with bespoke scoped <style>.
     //   - data/golf/*: a data-loader module (reads market_stats_cache +
     //     listings); treated as a data layer per Matt 2026-06-03.
@@ -181,8 +179,6 @@ const eslintConfig = defineConfig([
     // query still errors and forces a conscious addition to this list.
     files: [
       "components/ui/chart.tsx",
-      "components/pulse/HeartBurst.tsx",
-      "components/pulse/PulseCard.tsx",
       "app/lp/bend/page.tsx",
       "app/lp/central-oregon-golf/page.tsx",
       "app/lp/tetherow/page.tsx",

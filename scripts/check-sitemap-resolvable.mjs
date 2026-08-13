@@ -83,7 +83,7 @@ const FAMILIES = [
   { id: 'lp', roots: ['lp'], resolvers: ['app/lp/tetherow/page.tsx', 'app/lp/bend/page.tsx', 'app/lp/tetherow/heath/page.tsx', 'app/lp/central-oregon-golf/page.tsx'] },
   { id: 'tools', roots: ['tools'], resolvers: ['app/tools/mortgage-calculator/page.tsx', 'app/tools/rental-property-calculator/page.tsx', 'app/tools/appreciation/page.tsx'] },
   // Static single-page families (each is a bare /segment -> app/segment/page.tsx).
-  { id: 'static-singles', roots: ['about', 'contact', 'our-homes', 'videos', 'resources', 'faq', 'pulse', 'feed', 'reviews', 'join', 'privacy', 'terms', 'accessibility', 'fair-housing', 'dmca', 'activity'], resolvers: ['app/about/page.tsx', 'app/contact/page.tsx', 'app/our-homes/page.tsx', 'app/videos/page.tsx', 'app/resources/page.tsx', 'app/faq/page.tsx', 'app/pulse/page.tsx', 'app/feed/page.tsx', 'app/reviews/page.tsx', 'app/join/page.tsx', 'app/privacy/page.tsx', 'app/terms/page.tsx', 'app/accessibility/page.tsx', 'app/fair-housing/page.tsx', 'app/dmca/page.tsx', 'app/activity/page.tsx'] },
+  { id: 'static-singles', roots: ['about', 'contact', 'our-homes', 'videos', 'faq', 'feed', 'reviews', 'join', 'privacy', 'terms', 'accessibility', 'fair-housing', 'dmca', 'activity'], resolvers: ['app/about/page.tsx', 'app/contact/page.tsx', 'app/our-homes/page.tsx', 'app/videos/page.tsx', 'app/faq/page.tsx', 'app/feed/page.tsx', 'app/reviews/page.tsx', 'app/join/page.tsx', 'app/privacy/page.tsx', 'app/terms/page.tsx', 'app/accessibility/page.tsx', 'app/fair-housing/page.tsx', 'app/dmca/page.tsx', 'app/activity/page.tsx'] },
 ]
 
 const problems = []
