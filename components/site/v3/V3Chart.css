@@ -1,0 +1,156 @@
+/* ===========================================================================
+   V3Chart. Layout for the series atom Instrument mounts (D9). Not a pattern.
+
+   Every color, size, and stroke comes from ./tokens.css. No raw color is
+   declared here. The plot is a static SVG. PUBLIC_UI.md section 5 allows a
+   long sequence only when the visitor controls it by scrolling, and a chart
+   arriving is not that, so there is no draw-in and no mount count. Reduced
+   motion is already the finished state.
+
+   Straight segments, navy on cream, a dashed muted stroke for a second
+   series. No pie, no 3D, no grid, no spline.
+   =========================================================================== */
+
+.v3.v3-chart {
+  position: relative;
+  margin: 0;
+  min-width: 0;
+}
+
+.v3 .v3-chart__caption {
+  margin: 0 0 var(--v3-space-sm);
+  font-size: var(--v3-size-eyebrow);
+  font-weight: var(--v3-weight-medium);
+  letter-spacing: var(--v3-track-eyebrow);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__empty {
+  margin: 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-sm) var(--v3-space-md);
+  margin: 0 0 var(--v3-space-sm);
+  padding: 0;
+  list-style: none;
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--v3-space-2xs);
+}
+
+.v3 .v3-chart__swatch {
+  display: inline-block;
+  width: var(--v3-space-md);
+  border-top: var(--v3-chart-stroke) solid var(--v3-ink);
+}
+
+.v3 .v3-chart__key--1 .v3-chart__swatch {
+  border-top-width: var(--v3-chart-stroke-context);
+  border-top-style: dashed;
+  border-top-color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__key--2 .v3-chart__swatch {
+  border-top-width: var(--v3-chart-stroke-context);
+  border-top-style: dotted;
+  border-top-color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__frame {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: var(--v3-space-xs);
+  row-gap: var(--v3-space-2xs);
+}
+
+.v3 .v3-chart__y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: var(--v3-space-3xs) 0;
+  font-size: var(--v3-size-label);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: var(--v3-track-label);
+  line-height: var(--v3-leading-control);
+  color: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__plot {
+  height: var(--v3-chart-plot);
+  min-width: 0;
+}
+
+.v3 .v3-chart__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.v3 .v3-chart__axis-line {
+  fill: none;
+  stroke: var(--v3-edge);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3 .v3-chart__line {
+  fill: none;
+  stroke: var(--v3-ink);
+  stroke-width: var(--v3-chart-stroke);
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.v3 .v3-chart__line--1 {
+  stroke: var(--v3-ink-muted);
+  stroke-width: var(--v3-chart-stroke-context);
+  stroke-dasharray: 5 4;
+}
+
+.v3 .v3-chart__line--2 {
+  stroke: var(--v3-ink-muted);
+  stroke-width: var(--v3-chart-stroke-context);
+  stroke-dasharray: 1.5 3;
+}
+
+.v3 .v3-chart__x {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--v3-space-sm);
+  font-size: var(--v3-size-label);
+  letter-spacing: var(--v3-track-label);
+  text-transform: uppercase;
+  color: var(--v3-ink-muted);
+}
+
+/* The numbers, for a reader who cannot see the line. Clipped, not display:none,
+   so they stay in the accessibility tree. */
+.v3 .v3-chart__data {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

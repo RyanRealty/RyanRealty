@@ -63,6 +63,14 @@ export type {
   V3HeadingProps,
 } from './atoms'
 
+/**
+ * The series atom. Instrument mounts it under the figures (D9). Not a seventh
+ * pattern. A family page passes a preformatted series on `V3Instrument.chart`.
+ */
+export { V3Chart } from './V3Chart'
+
+export type { V3ChartProps, V3ChartSeries, V3ChartPoint } from './V3Chart'
+
 /* -------------------------------------------------------------------------- */
 /* Pattern 1 — INSTRUMENT: the answer, big                                     */
 /* -------------------------------------------------------------------------- */

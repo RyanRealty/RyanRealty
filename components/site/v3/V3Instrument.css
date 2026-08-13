@@ -106,6 +106,14 @@
   color: var(--v3-ink);
 }
 
+/* The series under the figures. A second hairline, because the trend is not
+   another figure in the row. It is the path those figures sit on. */
+.v3.v3-instrument .v3-instrument__chart {
+  margin-top: var(--v3-space-lg);
+  padding-top: var(--v3-space-lg);
+  border-top: 1px solid var(--v3-edge);
+}
+
 .v3.v3-instrument .v3-instrument__source {
   margin-top: var(--v3-space-lg);
 }

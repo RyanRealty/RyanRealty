@@ -3,9 +3,10 @@
  *
  * Visual language: design_system/public/PUBLIC_UI.md (locked 2026-08-11), pattern 1.
  * One verdict, number, or range in Amboqia, the supporting figures under a single
- * hairline, the section 0 trace beneath, and the one ask the data earns. No ornament
+ * hairline, the series as a chart under those figures when the caller has one (D9),
+ * the section 0 trace beneath, and the one ask the data earns. No ornament
  * precedes the answer. Opens Market nodes, carries a place market band, and reports the
- * valuation result.
+ * valuation result. A series is never flattened to a figure.
  *
  * Provenance, stated exactly. The geometry is derived from that document. The moving
  * prototype at app/dev/public-v3/ demonstrates the same pattern and imports nothing from
@@ -20,9 +21,9 @@
  * on screen is the one the caller traced to a query.
  *
  * Barrel law honored here:
- *  - Imports only ./atoms, next/link, and @/lib/utils. Nothing from components/site/kb,
- *    components/site (flat), components/site/primitives, components/site/explore, or
- *    components/ui.
+ *  - Imports only ./atoms, ./V3Chart, next/link, and @/lib/utils. Nothing from
+ *    components/site/kb, components/site (flat), components/site/primitives,
+ *    components/site/explore, or components/ui.
  *  - Every name-bearing string is `V3Text`, not `string`. `string` accepts `''`, and an
  *    empty headline renders a region whose aria-labelledby points at an empty h1, which
  *    is a region with no accessible name at all. `headline=""`, `source=""`, and an
@@ -62,6 +63,7 @@ import {
   type V3ButtonVariant,
   type V3Text,
 } from './atoms'
+import { V3Chart, type V3ChartProps } from './V3Chart'
 import './tokens.css'
 import './V3Instrument.css'
 
@@ -167,6 +169,12 @@ export type V3InstrumentProps = {
   /** The next step this answer earns, if it earns one. */
   action?: V3InstrumentAction
   /**
+   * The series under the figures. D9: a trend lives under the big answer, not
+   * as a seventh pattern. Omit when the instrument is a singleton status.
+   * Flattening a series into figures and skipping this prop is a defect.
+   */
+  chart?: V3ChartProps
+  /**
    * 1 when the Instrument opens the page and carries its answer. 2 for a market band
    * inside a page another pattern opened. Required, because a page can carry two
    * Instruments and only one of them is the page's answer.
@@ -200,6 +208,7 @@ export function V3Instrument({
   updated,
   eyebrow,
   action,
+  chart,
   level,
   id,
   className,
@@ -275,6 +284,12 @@ export function V3Instrument({
           )
         })}
       </div>
+
+      {chart ? (
+        <div className="v3-instrument__chart">
+          <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
+        </div>
+      ) : null}
 
       <V3SourceLine source={trace} className="v3-instrument__source" />
 

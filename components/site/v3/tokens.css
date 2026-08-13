@@ -178,6 +178,13 @@
   --v3-dur-sequence: 900ms;
   --v3-ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
   --v3-travel: 10px;
+
+  /* Chart plot (V3Chart, the series atom Instrument mounts). Height is the
+     plot only, not the caption. Stroke stays in px so non-scaling-stroke
+     stays honest when the SVG stretches to the frame. */
+  --v3-chart-plot: 11rem;
+  --v3-chart-stroke: 1.75px;
+  --v3-chart-stroke-context: 1.25px;
 }
 
 /* ---------------------------------------------------------------------------
