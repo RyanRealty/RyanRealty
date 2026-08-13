@@ -1,20 +1,20 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 1 public Look (Market — figures + chart allowed). Do not start Track 2.**
-> Prior: Track 1 Reviews GREEN. Track 1 About GREEN. Track 1 Open houses GREEN. Track 1 Places GREEN. Track 1 listing GREEN. Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
+> **NEWEST SUBJECT: Track 1 public Look (§4 SEO / analytics / GSC / LLM — surfaces we already ship). Do not start Track 2.**
+> Prior: Track 1 Market GREEN. Track 1 Reviews GREEN. Track 1 About GREEN. Track 1 Open houses GREEN. Track 1 Places GREEN. Track 1 listing GREEN. Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
 
-# Current — 2026-08-13 (Grok, Track 1 Reviews) — Reviews Look GREEN on production
+# Current — 2026-08-13 (Grok, Track 1 Market) — Market Look GREEN on production
 
-**Track:** 1 only. Reviews slice closed. Next is Market (figures + chart allowed). Do not start Track 2. Do not start leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
+**Track:** 1 only. Market slice closed (already green, docs evidence only). Next is Track 1 §4 SEO / analytics / GSC / LLM surfaces we already ship. Do not start Track 2. Do not start leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
 
-**Reviews URL:** `/reviews`
+**Market URL:** `/housing-market` (chrome Market destination from `lib/site-nav.ts`).
 
-**Reviews Look:** GREEN at 390 and 1280. First viewport is live Google quotes as written (MJB, then E Oster; Audra also on 1280). Attribution stays. No star HUD, no paraphrase, no ticker. Chrome CTA stays Value my home. v3 chrome kept. Nav is Homes · Places · Market · Sell · About.
+**Market Look:** GREEN at 390 and 1280. First viewport is live pulse figures and the chart atom (median list, homes for sale, months of supply, days to pending, year-overlay median sale). Not a HUD dead end. Not homes-first. Chrome CTA stays Value my home. v3 chrome kept. Nav is Homes · Places · Market · Sell · About.
 
-**SHA:** feat `c07f5638`. Production READY (ryan-realty.com `/reviews` serves `reviews-quotes`). Docs evidence this commit.
+**SHA:** feat `c07f5638` (Reviews). Production READY on `c07f5638`. Market hub already shipped on that production tree. Docs evidence this commit. No Market code change.
 
-**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-reviews/` (390/1280/1400 local + 390/1280 prod).
+**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-market/` (390/1280/1400 prod).
 
-**Next public route:** Market (figures + chart allowed). Do not start it from this land.
+**Next public route:** Track 1 §4 SEO / analytics / GSC / LLM. Do not start it from this land.
 
 **Not this land:** `stash@{0}`. Do not `git add -A`. Track 2 not started.
 

@@ -720,6 +720,8 @@ NOT IN SCOPE
 
 2026-08-13T23:40:00Z TRACK 1 REVIEWS LOOK GREEN. feat c07f5638 READY. /reviews first viewport is live Google quotes as written. CTA Value my home. Next: Market (figures + chart allowed). Track 2 not started.
 
+2026-08-13T23:50:00Z TRACK 1 MARKET LOOK GREEN. Already green on production `c07f5638` READY. `/housing-market` first viewport is live pulse figures ($731,000 median list / 1,845 for sale / 5.8 MoS / 23 DTP) plus the year-overlay chart atom. CTA Value my home. No code change. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-market/. Next: Track 1 §4 SEO / analytics / GSC / LLM. Track 2 not started.
+
 
 
 

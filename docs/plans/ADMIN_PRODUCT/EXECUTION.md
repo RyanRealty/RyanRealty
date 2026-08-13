@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Track 1 Reviews GREEN). HEAD `c07f5638` READY.
-Ratchet **56 / 0 / 51**, kb 0. Chrome CTA is Value my home. Next public Look: Market (figures + chart allowed). Do not start Track 2. G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
+**Updated:** 2026-08-13 (Grok, Track 1 Market GREEN). HEAD `c07f5638` READY.
+Ratchet **56 / 0 / 51**, kb 0. Chrome CTA is Value my home. Next public Look: Track 1 §4 SEO / analytics / GSC / LLM (surfaces we already ship). Do not start Track 2. G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
 
 ---
 

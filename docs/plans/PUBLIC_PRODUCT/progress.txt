@@ -26,3 +26,5 @@
 2026-08-13T23:05:00Z TRACK 1 ABOUT LOOK GREEN. feat bc680a7a READY. /about first viewport is Matt, Rebecca, and Paul as canonical /images/brokers/*.png cutouts. No card, no wash, no box. CTA Value my home. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-about/. Next: Reviews (Google quotes first). Track 2 not started.
 
 2026-08-13T23:40:00Z TRACK 1 REVIEWS LOOK GREEN. feat c07f5638 READY. /reviews first viewport is live Google quotes as written (MJB, E Oster; Audra on 1280). Attribution stays. No star HUD, no paraphrase, no ticker. CTA Value my home. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-reviews/. Next: Market (figures + chart allowed). Track 2 not started.
+
+2026-08-13T23:50:00Z TRACK 1 MARKET LOOK GREEN. Already green. Production `c07f5638` READY. `/housing-market` first viewport is live figures and the chart atom (Instrument + V3Chart year overlay). CTA Value my home. v3 chrome kept. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-market/. Next: Track 1 §4 SEO / analytics / GSC / LLM. Track 2 not started.
