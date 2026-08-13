@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). HEAD `af26df03` READY.
-Ratchet **59 / 0 / 52**, kb 3. Chrome CTA is Value my home. Next: standing leftovers (map/split has no footer on purpose, SellerLPForm copy, admin signed-in look). G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
+**Updated:** 2026-08-13 (Grok, Go running). HEAD `47ec374c` READY.
+Ratchet **56 / 0 / 51**, kb 0. Chrome CTA is Value my home. Next: standing leftovers (map/split has no footer on purpose, SellerLPForm copy, admin signed-in look). G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
 
 ---
 
@@ -86,11 +86,11 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **59** | `scripts/public-ui-baseline.json` |
+| Public non-v3 imports | **56** | `scripts/public-ui-baseline.json` |
 | Public legacy pages (no v3) | **0** | same. Frozen noindex LP `app/lp/tetherow/heath` is a named B-exclusion; still counts toward A. |
-| Public mixed pages (v3 body + leftover register) | **52** | same, tracked not gated |
-| kb import sites | **3** | same, register `kb`. Homepage `KbMarketHud` leftover (D9). |
-| Public v3-only pages | **74** | E-TRACKER swapped page trackers onto `V3SectionTracker`. Remaining A is MetadataBlock / leftover islands, not the tracker. |
+| Public mixed pages (v3 body + leftover register) | **51** | same, tracked not gated |
+| kb import sites | **0** | same, register `kb`. Homepage HUD is gone. |
+| Public v3-only pages | **75** | Remaining A is MetadataBlock / leftover islands, not kb chrome. |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
 | V1 chart inventory | **landed** `076c2dd0` | `docs/plans/ADMIN_PRODUCT/chart-inventory.md`. 24 series-as-type, 18 live charts. E-CHART landed. |
@@ -124,6 +124,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-SEARCH-REFINE | **landed** `0c49237a` | Search H1 is visible in the filter dock (`font-display`). Guest capture defaults collapsed: Get listing alerts, no email field until click. Map/split footer still absent (viewport-fit leftover). Ratchet held 59/0/52. Look 390+1280 `/homes-for-sale`: H1 Homes for Sale, chrome=1, Get listing alerts, no covering. Did not submit. Navy Get alerts chip removed in E-SEARCH-CHIP. |
 | E-404 | **landed** `fc0abd96` | Global 404 on V3Footer. HideChrome still gates LP/admin paths. Leftover NotFoundClient island stays. Ratchet held 59/0/52 (not a page.tsx). Look 390+1280 junk URL: HTTP 404, H1 Page not found, chrome=1, `.v3-footer`=1, no `#newsletter-email`, none covering. |
 | E-SEARCH-CHIP | **landed** `af26df03` | Dropped the navy Get alerts chip in SearchFilters. Collapsed Get listing alerts stays. Save this search stays the navy mid-browse control. Ratchet held 59/0/52. Look 390+1280 `/homes-for-sale`: H1 Homes for Sale, chrome=1, Get listing alerts, no Get alerts chip, Save this search, no covering. Did not submit. |
+| E-HOME-HUD | **landed** `47ec374c` | Homepage year overlay on the existing level-1 Instrument (`buildRegionMedianChart`). Deleted leftover `KbMarketHud`. Ratchet **59/0/52 → 56/0/51**, kb 3→0. Look 390+1280 `/`: H1 Homes for Sale in Central Oregon, chrome=1, footer=1, chart SVG, no HUD, Value my home, none covering. |
 
 Chrome is live. Mixed routes sit under v3 chrome; they are quarry, not done. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -214,7 +215,7 @@ from the baseline if it drifts.
 | **E-HOMES-SEARCH** | `app/search/**`, `app/buy/**`, `app/compare/**` | 4 | **landed** `79e34778` READY | Search is the Homes Field. Ratchet 527→513, 73→69. Look still needed. |
 | **E-HOMES-DETAIL** | `app/listing/**` | 1 | **landed** `fd1d1d09` READY | Money page on the barrel. JSON-LD + capture stay. Look 390+1280 on a live listing: one chrome, tour CTA, capture, Quiet Value my home. |
 | **E-HOMES-SIGNALS** | `app/open-houses/**`, `app/price-drops/**`, `app/motivated-sellers/**` | 6 | **landed** `24835c31` READY | Open houses + price drops on the barrel. Motivated-sellers 308s to price-drops. Capture stays. |
-| **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | mixed leftover | **landed** `559b9233` READY | D11 H1/lead locked. KbMarketHud leftover (D9). `/feed` folds into `/videos?view=feed`. Look 390+1280 on `/`. |
+| **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | mixed leftover | **landed** `559b9233` READY | D11 H1/lead locked. HUD leftover closed by E-HOME-HUD. `/feed` folds into `/videos?view=feed`. Look 390+1280 on `/`. |
 | **E-HOMES-TOOLS** | `app/tools/mortgage-calculator/**`, `app/tools/rental-property-calculator/**` | leftover island | **landed** `6e781cc7` READY | Appreciation stays with Market. Calculator islands declared leftover. Look 390+1280: insurance 0.35%. |
 | **E-PLACES-REST** | `app/cities/page.tsx`, `app/communities/page.tsx`, `app/central-oregon/**`, `app/parks/**`, `app/schools/**` | 13 | **landed** `98588ccb` READY | Indexes + lifestyle. Detail cities/communities/subdivisions/zip/oregon remain mixed quarry (E-PLACES-REFINE). |
 | **E-PLACES-REFINE** | `app/cities/[slug]/**`, `app/communities/[slug]/**`, `app/subdivisions/[slug]/**`, `app/zip/**`, `app/oregon/**` | leftover mixed | **landed** `1c10fe0c` READY | Maps → `PlaceFieldMap`. Capture stays `submitSearchAlertSignup`. MetadataBlock + KbSectionTracker leftover. Look 390+1280 `/cities/bend` and `/oregon/portland`. |
@@ -249,6 +250,7 @@ from the baseline if it drifts.
 | **E-SEARCH-REFINE** | search H1 + collapsed guest alerts | **landed** `0c49237a` READY | Visible H1. Collapsed Get listing alerts. Map/split footer stays off. Look 390+1280 `/homes-for-sale`. |
 | **E-404** | global 404 SiteFooter → V3Footer | **landed** `fc0abd96` READY | HideChrome stays. NotFoundClient leftover. Look 390+1280 junk URL. |
 | **E-SEARCH-CHIP** | SearchFilters navy Get alerts chip | **landed** `af26df03` READY | Chip gone. Get listing alerts + Save this search remain. Look 390+1280 `/homes-for-sale`. |
+| **E-HOME-HUD** | homepage KbMarketHud → Instrument.chart | **landed** `47ec374c` READY | Year overlay. kb 3→0. Look 390+1280 `/`. |
 
 ### Do not lease
 
