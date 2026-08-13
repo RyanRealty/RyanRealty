@@ -66,7 +66,7 @@ type Props = {
 }
 
 function formatPctPoints(n: number): string {
-  return `${n}%`
+  return `${Number(n.toFixed(4))}%`
 }
 
 export default async function MortgageCalculatorPage({ searchParams }: Props) {
