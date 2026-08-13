@@ -434,13 +434,12 @@ describe('design directive contracts', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/UNRELIABLE_BOUNDARY_SLUGS/)
     expect(src).toMatch(/isBoundaryReliable\(slug\)/)
-    // 2026-07-29 (Matt): the county plat union — the TRUE footprint — ALWAYS
-    // draws when present; the unreliable-hull baseline gates ONLY the stored
-    // boundary polygon. The old ordering nulled both for baseline slugs, so
-    // caldera-springs/crosswater/BBR shipped maps with no boundary at all.
-    expect(src).toMatch(
-      /resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\) \?\? null/,
-    )
+    // Places Look 2026-08-13: the Field is photographed homes, not PlaceFieldMap.
+    // The plat-union draw expression left with the map. Boundary reliability still
+    // gates which tiles feed the count (in-polygon vs subdivision-name narrowing).
+    expect(src).toMatch(/hasMap: false/)
+    expect(src).toMatch(/boundaryReliable && boundaryListingKeys\.length > 0/)
+    expect(src).toMatch(/usedSubdivisionNarrowing/)
   })
 
   it('D99 — homepage Instrument keeps list figures off the sale-series caption (§0)', () => {

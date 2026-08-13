@@ -1,9 +1,10 @@
 /**
  * /cities — Central Oregon cities index, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Places open on Instrument.
- * Section order: Breadcrumb, Instrument (region pulse), Ledger (cities), Sheet
- * (SFR alerts), Quiet (edges), Footer outside main.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. First screenful opens the
+ * Field of photographed homes, then Instrument (region pulse). Section order:
+ * Breadcrumb, Field, Instrument, Ledger (cities), Sheet (SFR alerts), Quiet
+ * (edges), Footer outside main.
  *
  * THE PAGE CONTRACT, carried across unchanged: pageMetadata title/description/path,
  * revalidate 1800, CollectionPage + ItemList JSON-LD, Dataset from the same region
@@ -24,7 +25,7 @@
 import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
-import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
+import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots, getListingTiles } from '@/lib/data'
 import { getCityContent } from '@/lib/city-content'
 import { cityHero } from '@/lib/geo-images'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -48,6 +49,7 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
+  V3Field,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
@@ -61,6 +63,7 @@ import {
   CITY_SENTENCE_FALLBACK,
   firstSentence,
 } from './_v3/cities-index-constants'
+import { homeFieldItems } from '@/app/_v3/home-field-items'
 
 export const revalidate = 1800
 
@@ -74,12 +77,14 @@ export const metadata: Metadata = pageMetadata({
 })
 
 export default async function CitiesPage() {
-  const [allCities, allSnapshots, regionPulse, citySnapshots] = await Promise.all([
+  const [allCities, allSnapshots, regionPulse, citySnapshots, tiles] = await Promise.all([
     getCitiesForIndex(),
     getAllCitySnapshots(),
     getRegionPulse(),
     getMarketPulseCitySnapshots([...FEATURED_PULSE_LABELS]),
+    getListingTiles({ status: 'active', propertyType: 'A', limit: 80 }),
   ])
+  const fieldItems = homeFieldItems(tiles, 12)
 
   const sortedCities = sortCitiesWithPrimaryFirst(allCities)
   const visibleCities = sortedCities.slice(0, 60)
@@ -292,6 +297,18 @@ export default async function CitiesPage() {
         />
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities' }]} />
+
+        <V3Field
+          id="listed"
+          ariaLabel="Homes for sale in Central Oregon"
+          items={fieldItems}
+          footNote={
+            fieldItems.length > 0
+              ? `Listed here: photographed homes from the live list. Each photograph opens the listing.`
+              : undefined
+          }
+          emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
+        />
 
         {firstRegionFigure ? (
           <V3Instrument

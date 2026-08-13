@@ -3,10 +3,10 @@
  * or plain MLS subdivision, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Places
- * open on Instrument (the place answer) then Field (inventory as a spatial
- * surface). Four of the six patterns, no two adjacent alike. The section order,
- * the sections this migration DELETED, and the per-section reasoning are the
- * parity contract, not this comment:
+ * first screenful opens the Field of photographed homes, then Instrument (the
+ * place answer). Four of the six patterns, no two adjacent alike. The section
+ * order, the sections this migration DELETED, and the per-section reasoning are
+ * the parity contract, not this comment:
  * design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata forwarding to
@@ -131,8 +131,6 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
 import {
   buildClosedFigures,
@@ -222,7 +220,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const communityGeoKey = `${cityName.toLowerCase().trim()}:${community.subdivision.toLowerCase().trim()}`
   const neighborhoodSlug = slug
 
-  const [snapshot, pulse, stats, boundaryMapData, resortBoundary, citySfrTiles, richContent] =
+  const [snapshot, pulse, stats, boundaryMapData, _resortBoundary, citySfrTiles, richContent] =
     await Promise.all([
       // Always-present community snapshot — the JSON-LD and Place fallback source. (§0)
       withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
@@ -261,6 +259,7 @@ export default async function CommunityDetailPage({ params }: Props) {
       : {}
 
   // ── BOUNDARY RELIABILITY (invariant 2) ────────────────────────────────────
+  void _resortBoundary
   const boundaryReliable = isBoundaryReliable(slug)
   const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
 
@@ -371,29 +370,26 @@ export default async function CommunityDetailPage({ params }: Props) {
   // Pins are every tile carrying coordinates; the list is the highest-priced
   // FIELD_LIST_CAP of them, which is the cap the prior dual pane used.
   const ordered = [...fieldTiles].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
-  const rows: V3FieldItem[] = ordered.map((t) => ({
-    id: t.listingKey,
-    href: listingTileHref(t),
-    priceLabel: formatPrice(t.listPrice),
-    title: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ') || 'Listing',
-    meta: [
-      t.beds != null ? `${t.beds} bd` : null,
-      t.baths != null ? `${t.baths} ba` : null,
-      t.sqft != null ? `${t.sqft.toLocaleString('en-US')} sqft` : null,
-    ]
-      .filter(Boolean)
-      .join(' · '),
-    lat: t.lat,
-    lng: t.lng,
-  }))
-  const pins = fieldMapPins(rows)
+  const rows: V3FieldItem[] = ordered.flatMap((t) => {
+    if (!t.photoUrl || t.photoUrl.trim().length === 0) return []
+    return [{
+      id: t.listingKey,
+      href: listingTileHref(t),
+      priceLabel: formatPrice(t.listPrice),
+      title: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ') || 'Listing',
+      photoSrc: t.photoUrl,
+      meta: [
+        t.beds != null ? `${t.beds} bd` : null,
+        t.baths != null ? `${t.baths} ba` : null,
+        t.sqft != null ? `${t.sqft.toLocaleString('en-US')} sqft` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      lat: t.lat,
+      lng: t.lng,
+    }]
+  })
   const fieldItems = rows.slice(0, FIELD_LIST_CAP)
-
-  // The county plat union (the TRUE footprint) ALWAYS draws when present; the
-  // unreliable-hull baseline gates ONLY the stored polygon. The old order nulled
-  // both for baseline slugs, which left caldera, crosswater, and BBR mapless.
-  const polygonGeometry = resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null) ?? null
-  const hasMap = pins.length > 0 || Boolean(polygonGeometry) || Boolean(registryEntry?.center_lon_lat)
 
   const browseHref = homesForSalePath(cityName, community.subdivision)
   const cityReportHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
@@ -492,7 +488,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     name: community.name,
     cityName,
     citySlug,
-    hasMap,
+    hasMap: false,
     centerLonLat: registryEntry?.center_lon_lat ?? null,
     datasetVariables,
     asOfIso,
@@ -561,6 +557,39 @@ export default async function CommunityDetailPage({ params }: Props) {
           ]}
         />
 
+        <V3Field
+          id="homes"
+          ariaLabel={`Homes for sale in ${community.name}`}
+          items={fieldItems}
+          // A VERIFIED ZERO, A COUNT WITHOUT ITS LISTINGS, AND A FAILED FETCH ARE
+          // THREE DIFFERENT FACTS, and the one sentence said the third about all
+          // three. The count above is gated on a non-empty source, so a published 0
+          // is a real zero and "nothing came back on this refresh" beside it reads
+          // as an outage the page is not having; and a count that came from a mart
+          // row (three-rivers publishes 91 with no tile behind it, because its
+          // homes are not filed under its registry city) is not an outage either.
+          // Since a tile-sourced count equals the row count by construction, an
+          // empty list under a positive count means the count came from a row.
+          emptyMessage={
+            activeCount === 0
+              ? `No single-family home is listed for sale in ${community.name} right now.`
+              : activeCount == null
+                ? `No active single-family listing in ${community.name} came back on this refresh.`
+                : `The inventory count on this page comes from the ${community.name} market row, which carries the number without the listings behind it.`
+          }
+          // The list's denominator is the LIST's set, and the map's is the map's.
+          // The old note counted the 24 against `pins`, which is the plotted
+          // subset, so a home with no coordinates was named by a sentence it was
+          // not in, and when fewer than 24 homes plotted the condition went false
+          // and the page listed 24 of N silently. It also promised every listed
+          // home is on the browse page, which the alias-aware set makes untrue.
+          footNote={
+            fieldItems.length > 0
+              ? `Listed here: photographed homes in ${community.name}. Each photograph opens the listing.`
+              : undefined
+          }
+        />
+
         {firstLiveFigure ? (
           <V3Instrument
             id="market"
@@ -604,65 +633,6 @@ export default async function CommunityDetailPage({ params }: Props) {
             ]}
           />
         )}
-
-        <V3Field
-          id="homes"
-          ariaLabel={`Homes for sale in ${community.name}`}
-          items={fieldItems}
-          count={
-            pins.length > 0
-              ? {
-                  value: pins.length.toLocaleString('en-US'),
-                  label: 'homes on this map',
-                  source: `${live.trace}, plotted at the coordinates the feed reports`,
-                }
-              : undefined
-          }
-          // A VERIFIED ZERO, A COUNT WITHOUT ITS LISTINGS, AND A FAILED FETCH ARE
-          // THREE DIFFERENT FACTS, and the one sentence said the third about all
-          // three. The count above is gated on a non-empty source, so a published 0
-          // is a real zero and "nothing came back on this refresh" beside it reads
-          // as an outage the page is not having; and a count that came from a mart
-          // row (three-rivers publishes 91 with no tile behind it, because its
-          // homes are not filed under its registry city) is not an outage either.
-          // Since a tile-sourced count equals the row count by construction, an
-          // empty list under a positive count means the count came from a row.
-          emptyMessage={
-            activeCount === 0
-              ? `No single-family home is listed for sale in ${community.name} right now.`
-              : activeCount == null
-                ? `No active single-family listing in ${community.name} came back on this refresh.`
-                : `The count above comes from the ${community.name} market row, which carries the number without the listings behind it.`
-          }
-          // The list's denominator is the LIST's set, and the map's is the map's.
-          // The old note counted the 24 against `pins`, which is the plotted
-          // subset, so a home with no coordinates was named by a sentence it was
-          // not in, and when fewer than 24 homes plotted the condition went false
-          // and the page listed 24 of N silently. It also promised every listed
-          // home is on the browse page, which the alias-aware set makes untrue.
-          mapNote={
-            rows.length > pins.length
-              ? pins.length === 0
-                ? `No home in this set reports coordinates, so none of them are plotted.`
-                : `The map plots the ${pins.length.toLocaleString('en-US')} of these ${rows.length.toLocaleString('en-US')} homes whose coordinates the feed reports.`
-              : undefined
-          }
-          footNote={
-            fieldItems.length < rows.length
-              ? `Listed here: the ${fieldItems.length} highest-priced of the ${rows.length.toLocaleString('en-US')} active single-family homes in ${community.name}.`
-              : undefined
-          }
-          mapSlot={
-            hasMap ? (
-              <PlaceFieldMap
-                pins={pins}
-                boundary={polygonGeometry}
-                placeName={community.name}
-                centerLonLat={registryEntry?.center_lon_lat ?? undefined}
-              />
-            ) : undefined
-          }
-        />
 
         {firstClosedFigure ? (
           <V3Instrument

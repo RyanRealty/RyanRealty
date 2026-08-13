@@ -1,10 +1,26 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 1 public Look (listing detail). Do not start Track 2. Do not start Places.**
-> Prior: Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
+> **NEWEST SUBJECT: Track 1 public Look (Places). Do not start Track 2. Do not start open houses.**
+> Prior: Track 1 listing GREEN. Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
 
-# Current — 2026-08-13 (Grok, Track 1 listing detail) — listing Look GREEN
+# Current — 2026-08-13 (Grok, Track 1 Places) — Places Look GREEN locally, landing
 
-**Track:** 1 only. Listing-detail slice. Do not start Track 2. Do not start Places, leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
+**Track:** 1 only. Places slice (`/cities`, `/cities/bend`, `/communities/tetherow`). Do not start Track 2. Do not start open houses, leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
+
+**Places Look:** GREEN at 390 and 1280 on all three routes. First screenful is photographed MLS homes that open listings. Instrument sits below the Field. Chrome CTA stays Value my home. v3 chrome kept. No AI houses.
+
+**URLs:** `/cities`, `/cities/bend`, `/communities/tetherow`.
+
+**SHA:** feat this land (`feat(public): places first screenful opens a real home`). Production READY filled after `deploy:verify`.
+
+**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-places/` (390/1280 local; prod after verify).
+
+**Next public route (do not start):** Open houses. Then about, reviews, market.
+
+**Not this land:** `stash@{0}`. Do not `git add -A`. Track 2 not started.
+
+**Skills read:** public-product-os (quarry + locks), frontend-design, PUBLIC_PRODUCT/decisions.md.
+
+# Prior — 2026-08-13 (Grok, Track 1 listing detail) — listing Look GREEN
 
 **Listing URL:** `/homes-for-sale/bend/20172-soft-breeze-220222292` (Active SFR, Spark photo, marketing video). Brookside `/homes-for-sale/bend/19305-brookside-220221862` is photo-only and still live.
 
@@ -13,8 +29,6 @@
 **SHA:** feat `8040a829`. Production READY on `8040a829`.
 
 **Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-listing/` (390/1280 local + prod).
-
-**Next public route (do not start):** Places (`/cities`, city, community). Then open houses, about, reviews, market.
 
 **Not this land:** `stash@{0}`. Do not `git add -A`. Track 2 not started.
 

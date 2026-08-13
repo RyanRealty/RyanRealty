@@ -2,9 +2,9 @@
  * /cities/[slug] - the city node, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Places
- * destinations open on Instrument (the place verdict) then Field (the inventory). The
- * section order and the per-section reasoning are the parity contract, not this
- * comment: design_system/ryan-realty/ui_kits/city/parity.json.
+ * first screenful opens the Field of photographed homes, then Instrument (the
+ * place verdict). The section order and the per-section reasoning are the
+ * parity contract, not this comment: design_system/ryan-realty/ui_kits/city/parity.json.
  *
  * LEDGER IS THE PATTERN THIS ROUTE SPENDS ITS FIFTH SLOT ON, DELIBERATELY. An earlier
  * revision of this migration deferred V3Ledger to hold the page inside the four-of-six
@@ -108,8 +108,7 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { CityHomesField, cityMapPinCount } from './_v3/CityHomesField'
+import { CityHomesField } from './_v3/CityHomesField'
 import { cityFieldItems } from './_v3/city-field-items'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
 import { CITY_FIELD_POOL, CITY_FIELD_ROWS } from './_v3/city-constants'
@@ -138,7 +137,7 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 }
 export const dynamicParams = true
 export const revalidate = 60
-void [V3Field, PlaceFieldMap]
+void V3Field
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -434,7 +433,7 @@ export default async function CityDetailPage({ params }: Props) {
     cityName,
     slug,
     faq: marketFaq,
-    hasMap: cityMapPinCount(fieldItems) > 0,
+    hasMap: false,
   })
 
   return (
@@ -452,6 +451,13 @@ export default async function CityDetailPage({ params }: Props) {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities', href: '/cities' }, { label: cityName }]} />
 
+        <CityHomesField
+          cityName={cityName}
+          fieldItems={fieldItems}
+          inventory={inventory}
+          tilesLength={tiles.length}
+        />
+
         {firstMarketFigure ? (
           <V3Instrument
             id="market"
@@ -463,8 +469,6 @@ export default async function CityDetailPage({ params }: Props) {
             figures={[firstMarketFigure, ...restMarketFigures]}
             source={v3Text(cityMarketTrace(cityName))}
             updated={pulse?.refreshedAt ? v3Text(formatDate(pulse.refreshedAt)) : undefined}
-            // PRIMARY by invariant 5: this is the page's own visible filled control,
-            // and at 390 it is the only one in the first viewport.
             action={{
               label: v3Text(`See every ${cityName} home for sale`),
               href: homesForSalePath(cityName),
@@ -476,18 +480,9 @@ export default async function CityDetailPage({ params }: Props) {
             id="market"
             heading={`${cityName} homes for sale`}
             headingLevel={1}
-            // Keyed on THIS PAGE'S market read, never on the figure array: a row that
-            // returns carrying nulls has returned. See marketAbsenceItems.
             items={marketAbsenceItems(cityName, pulse != null, Boolean(firstFieldItem))}
           />
         )}
-
-        <CityHomesField
-          cityName={cityName}
-          fieldItems={fieldItems}
-          inventory={inventory}
-          tilesLength={tiles.length}
-        />
 
         {/* D83: the DESIGNATED Bend polygons, and only those. */}
         {firstNbh ? (

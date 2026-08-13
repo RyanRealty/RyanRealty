@@ -1,15 +1,10 @@
 /**
- * City inventory Field plus its map slot. Lives next to the page so the city
- * route stays under the 600-line floor after PlaceFieldMap landed on it.
+ * City inventory Field. Lives next to the page so the city route stays under
+ * the 600-line floor. Photographs are the surface: no map slot, so V3Field
+ * opens on live MLS photos that go to listings.
  */
 import { V3Field, type V3FieldItem } from '@/components/site/v3'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { cityFieldEmptyMessage } from './city-sections'
-
-export function cityMapPinCount(fieldItems: readonly V3FieldItem[]): number {
-  return fieldMapPins(fieldItems).length
-}
 
 export function CityHomesField({
   cityName,
@@ -23,20 +18,11 @@ export function CityHomesField({
   tilesLength: number
 }) {
   const [firstFieldItem] = fieldItems
-  const mapPins = fieldMapPins(fieldItems)
   return (
     <V3Field
       id="homes"
       ariaLabel={`Homes for sale in ${cityName}`}
       items={fieldItems}
-      mapSlot={
-        mapPins.length > 0 ? <PlaceFieldMap pins={mapPins} placeName={cityName} /> : undefined
-      }
-      mapNote={
-        mapPins.length > 0
-          ? `Every ${cityName} home listed here that reports coordinates. Select a pin to open that home.`
-          : undefined
-      }
       count={{
         value: inventory.count.toLocaleString('en-US'),
         label: `homes for sale in ${cityName}`,

@@ -25,8 +25,8 @@ import { listingDetailPath } from '@/lib/slug'
  * the honest answer to both, and the Field's count above the frame still states
  * the real total from its own query.
  *
- * Coordinates pass through as-is. Absent is not zero here either: a listing with
- * no lat/lng is listed and not plotted, and V3Field says so itself.
+ * Photographs are required: V3Field's mosaic only opens when enough rows carry
+ * `photoSrc`, and a house with no photo cannot be the first-screenful door.
  */
 export function cityFieldItems(tiles: readonly ListingTile[], limit: number): V3FieldItem[] {
   const items: V3FieldItem[] = []
@@ -34,6 +34,7 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit: number): V3
   for (const tile of tiles) {
     if (items.length >= limit) break
     if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) continue
+    if (!tile.photoUrl || tile.photoUrl.trim().length === 0) continue
 
     const street = [tile.streetNumber, tile.streetName, tile.streetSuffix]
       .filter((part) => typeof part === 'string' && part.trim().length > 0)
@@ -59,6 +60,7 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit: number): V3
       ),
       priceLabel: formatPrice(tile.listPrice),
       title: street,
+      photoSrc: tile.photoUrl,
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,
