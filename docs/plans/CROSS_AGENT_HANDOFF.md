@@ -2,19 +2,21 @@
 > **NEWEST SUBJECT: Track 1 public Look (`/homes-for-sale`). Do not start Track 2. Do not resume leftover-page ratchet.**
 > Prior: Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
 
-# Current — 2026-08-13 (Grok, Track 1 `/homes-for-sale`) — search Look GREEN locally
+# Current — 2026-08-13 (Grok, Track 1 `/homes-for-sale`) — search Look GREEN
 
 **Track:** 1 only. Search slice. Do not start Track 2. Do not start leftover ratchet. Do not start listing/places/about.
 
-**Piece A landed:** leftover LP worth CTAs → Value my home / Get my home’s value / Get your home’s value. SHA `76f6a996`. Files: `app/lp/tetherow/page.tsx`, `TetherowStickyCta.tsx`, `app/lp/tetherow/heath/page.tsx`, `app/lp/bend/page.tsx`. `/lp/*` still noindex.
+**Piece A landed:** leftover LP worth CTAs → Value my home / Get my home’s value / Get your home’s value. SHA `76f6a996`.
 
-**`/homes-for-sale` Look:** GREEN at 390 and 1280 locally. List-first on mobile so the first viewport is a house photo/card, not a map-only void. Map is one tap. MLS photos load (`cdn.resize.sparkplatform.com`). Card opens `/homes-for-sale/bend/19305-brookside-220221862`. Chrome CTA stays Value my home.
+**`/homes-for-sale` Look:** GREEN at 390 and 1280, local and production. List-first on mobile so the first viewport is a house photo/card, not a map-only void. Map is one tap. MLS photos load. Card opens a real listing URL. Chrome CTA stays Value my home.
 
-**Screenshots (local):**
-- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-390.png`
-- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-1280.png`
+**SHA:** feat `8f8d1717`. Production READY on `8f8d1717`.
 
-**SHA:** feat land this session (`feat(public): search first viewport shows a house`). Production SHA + READY after `deploy:verify`. Prod screenshots after READY.
+**Screenshots:**
+- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-390.png`
+- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-1280.png`
+- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-390-prod.png`
+- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-search/search-1280-prod.png`
 
 **Next public route (do not start):** listing detail. Then places, open houses, about, reviews, market.
 
