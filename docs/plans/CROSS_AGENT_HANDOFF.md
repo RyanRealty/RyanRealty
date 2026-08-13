@@ -1,20 +1,18 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 1 public Look (Places). Do not start Track 2. Do not start open houses.**
-> Prior: Track 1 listing GREEN. Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
+> **NEWEST SUBJECT: Track 1 public Look (Open houses). Do not start Track 2.**
+> Prior: Track 1 Places GREEN. Track 1 listing GREEN. Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
 
-# Current — 2026-08-13 (Grok, Track 1 Places) — Places Look GREEN locally, landing
+# Current — 2026-08-13 (Grok, Track 1 Places) — Places Look GREEN on production
 
-**Track:** 1 only. Places slice (`/cities`, `/cities/bend`, `/communities/tetherow`). Do not start Track 2. Do not start open houses, leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
+**Track:** 1 only. Places slice closed. Next is Open houses. Do not start Track 2. Do not start leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
 
-**Places Look:** GREEN at 390 and 1280 on all three routes. First screenful is photographed MLS homes that open listings. Instrument sits below the Field. Chrome CTA stays Value my home. v3 chrome kept. No AI houses.
+**Places Look:** GREEN at 390 and 1280 on `/cities`, `/cities/bend`, `/communities/tetherow`. First screenful is photographed MLS homes that open listings. Instrument sits below the Field. Chrome CTA stays Value my home. v3 chrome kept. No AI houses.
 
-**URLs:** `/cities`, `/cities/bend`, `/communities/tetherow`.
+**SHA:** feat `f2652459`. Production READY on `f2652459`.
 
-**SHA:** feat this land (`feat(public): places first screenful opens a real home`). Production READY filled after `deploy:verify`.
+**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-places/` (390/1280 local + prod).
 
-**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-places/` (390/1280 local; prod after verify).
-
-**Next public route (do not start):** Open houses. Then about, reviews, market.
+**Next public route:** Open houses — calendar with houses, not figures only. Known gap: `openHouseFieldItems` omits `photoSrc` even though `assembleOpenHouses` already has `photoUrl`; Instrument L1 (count + median) currently opens above the Field.
 
 **Not this land:** `stash@{0}`. Do not `git add -A`. Track 2 not started.
 
