@@ -22,3 +22,5 @@
 2026-08-12T23:00:00Z FOLDED INTO BROKER OS. Plan of record is docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md v0.13. Where we are: docs/plans/ADMIN_PRODUCT/EXECUTION.md. This program's state.json/work-queue.json are not authority. Process/IA/visual locks still bind. Implementation is quarry (11 mixed routes are not done; 0 v3-only pages because layout still mounts PublicNav). Next land on go: E-CHROME. Do not start Public Product OS 2.
 
 2026-08-13T22:45:00Z TRACK 1 OPEN HOUSES LOOK GREEN. feat 96a26b1b READY. /open-houses and /open-houses/bend first viewport is photographed open houses that open the listing. Field before Instrument. CTA Value my home. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-open-houses/. Next: About (faces). Track 2 not started.
+
+2026-08-13T23:05:00Z TRACK 1 ABOUT LOOK GREEN. feat bc680a7a READY. /about first viewport is Matt, Rebecca, and Paul as canonical /images/brokers/*.png cutouts. No card, no wash, no box. CTA Value my home. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-about/. Next: Reviews (Google quotes first). Track 2 not started.

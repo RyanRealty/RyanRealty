@@ -1,22 +1,30 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 1 public Look (About — faces). Do not start Track 2.**
-> Prior: Track 1 Open houses GREEN. Track 1 Places GREEN. Track 1 listing GREEN. Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
+> **NEWEST SUBJECT: Track 1 public Look (Reviews — Google quotes first). Do not start Track 2.**
+> Prior: Track 1 About GREEN. Track 1 Open houses GREEN. Track 1 Places GREEN. Track 1 listing GREEN. Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
 
-# Current — 2026-08-13 (Grok, Track 1 Open houses) — Open houses Look GREEN on production
+# Current — 2026-08-13 (Grok, Track 1 About) — About Look GREEN on production
 
-**Track:** 1 only. Open houses slice closed. Next is About (faces). Do not start Track 2. Do not start leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
+**Track:** 1 only. About slice closed. Next is Reviews (Google quotes first, as written). Do not start Track 2. Do not start leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL.
 
-**Open houses Look:** GREEN at 390 and 1280 on `/open-houses` and `/open-houses/bend`. First screenful is photographed open houses that open the listing. When/calendar stays on the card. Instrument (count + median) sits under the Field. Chrome CTA stays Value my home. v3 chrome kept.
+**About Look:** GREEN at 390 and 1280 on `/about`. First viewport is the live brokers (Matt Ryan, Rebecca Ryser Peterson, Paul Stevenson) as canonical transparent PNGs. No card, no wash, no box. Chrome CTA stays Value my home. v3 chrome kept.
 
-**SHA:** feat `96a26b1b`. Production READY on `96a26b1b`.
+**SHA:** feat `bc680a7a`. Production READY on `bc680a7a`.
 
-**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-open-houses/` (390/1280 local + prod).
+**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-about/` (390/1280/1400 local + 390/1280 prod).
 
-**Next public route:** About — faces. Do not start it from this land.
+**Next public route:** Reviews — Google quotes first. Do not start it from this land.
 
 **Not this land:** `stash@{0}`. Do not `git add -A`. Track 2 not started.
 
 **Skills read:** public-product-os (quarry + locks), frontend-design, PUBLIC_PRODUCT/decisions.md.
+
+# Prior — 2026-08-13 (Grok, Track 1 Open houses) — Open houses Look GREEN on production
+
+**Open houses Look:** GREEN at 390 and 1280 on `/open-houses` and `/open-houses/bend`. First screenful is photographed open houses that open the listing. When/calendar stays on the card. Instrument (count + median) sits under the Field. Chrome CTA stays Value my home. v3 chrome kept.
+
+**SHA:** feat `96a26b1b`. Production READY on `96a26b1b`. Docs evidence `73ea1d56`.
+
+**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-open-houses/` (390/1280 local + prod).
 
 # Prior — 2026-08-13 (Grok, Track 1 Places) — Places Look GREEN on production
 
