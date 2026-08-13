@@ -3,26 +3,41 @@
 import { useState } from 'react'
 import { submitValuationRequest } from './actions'
 import { trackEvent } from '@/lib/tracking'
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { H2 } from '@/components/site/primitives'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
+type Step = 'address' | 'contact'
+
 export default function ValuationForm() {
+  const [step, setStep] = useState<Step>('address')
+  const [address, setAddress] = useState('')
   const [state, setState] = useState<{ error?: string; success?: boolean; cmaSent?: boolean; eventId?: string }>({})
   const [loading, setLoading] = useState(false)
+
+  function advanceFromAddress(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const v = address.trim()
+    if (!v) {
+      setState({ error: 'Property address is required' })
+      return
+    }
+    setState({})
+    setStep('contact')
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
     setState({})
     const formData = new FormData(e.currentTarget)
+    if (!formData.get('address')) formData.set('address', address.trim())
     const result = await submitValuationRequest(formData)
     setLoading(false)
     setState(result)
     if (result.success && result.eventId) {
-      // Fire fbq with matching eventId for CAPI dedup
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'Lead', {
           content_name: 'home_valuation',
@@ -36,33 +51,65 @@ export default function ValuationForm() {
     return (
       <div className="rounded-xl border border-success/30 bg-success/10 p-8 text-center">
         <H2 className="text-xl text-success">
-          {state.cmaSent ? "We've emailed your valuation" : "Request received"}
+          {state.cmaSent ? 'We have emailed your valuation' : 'Request received'}
         </H2>
         <p className="mt-2 text-success">
           {state.cmaSent
-            ? "Check your inbox for your Comparative Market Analysis. If you don't see it, check spam or reply to this email and we'll resend."
-            : "We'll prepare your home valuation and send it to you shortly. You can also expect a quick call from our team to answer any questions."}
+            ? 'Check your inbox for your Comparative Market Analysis. If you do not see it, check spam or reply to this email and we will resend.'
+            : 'We will prepare your home valuation and send it to you shortly. You can also expect a quick call from our team to answer any questions.'}
         </p>
       </div>
     )
   }
 
+  if (step === 'address') {
+    return (
+      <form onSubmit={advanceFromAddress} className="kb-tool-skin space-y-4" id="home_valuation" noValidate>
+        <div>
+          <Label htmlFor="val-address" className="block text-sm font-medium text-foreground">
+            Property address
+          </Label>
+          <Input
+            id="val-address"
+            name="address"
+            type="text"
+            autoComplete="street-address"
+            required
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="mt-1 block w-full"
+            placeholder="123 Main St, Bend, OR 97701"
+          />
+        </div>
+        {state.error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {state.error}
+          </p>
+        ) : null}
+        <Button type="submit" size="lg" className="w-full text-base font-semibold">
+          Get my home’s value
+        </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          A broker emails your written valuation within 24 hours, with the comps behind the number. No obligation.
+        </p>
+      </form>
+    )
+  }
+
   return (
     <form onSubmit={handleSubmit} className="kb-tool-skin space-y-4" id="home_valuation">
-      <div>
-        <Label htmlFor="val-address" className="block text-sm font-medium text-foreground">
-          Property address <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="val-address"
-          name="address"
-          type="text"
-          autoComplete="street-address"
-          required
-          className="mt-1 block w-full"
-          placeholder="123 Main St, Bend, OR 97701"
-        />
-      </div>
+      <input type="hidden" name="address" value={address} />
+      <Button
+        type="button"
+        variant="link"
+        className="h-auto justify-start p-0"
+        onClick={() => {
+          setState({})
+          setStep('address')
+        }}
+      >
+        Edit address
+      </Button>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="val-name" className="block text-sm font-medium text-foreground">
@@ -79,7 +126,7 @@ export default function ValuationForm() {
         </div>
         <div>
           <Label htmlFor="val-email" className="block text-sm font-medium text-foreground">
-            Email <span className="text-destructive">*</span>
+            Email
           </Label>
           <Input
             id="val-email"
@@ -88,7 +135,7 @@ export default function ValuationForm() {
             autoComplete="email"
             required
             className="mt-1 block w-full"
-            placeholder="you@example.com"
+            placeholder="you@email.com"
           />
         </div>
       </div>
@@ -105,13 +152,11 @@ export default function ValuationForm() {
           placeholder="(541) 555-0123"
         />
       </div>
-      {state.error && (
+      {state.error ? (
         <p className="text-sm text-destructive" role="alert">
           {state.error}
         </p>
-      )}
-      {/* Consent sits ABOVE the submit so a top-to-bottom fill sees the opt-in
-          before hitting the button (design-audit P2 — SMS is fail-closed). */}
+      ) : null}
       <SmsConsentDisclosure />
       <Button
         type="submit"
@@ -119,10 +164,8 @@ export default function ValuationForm() {
         size="lg"
         className="w-full text-base font-semibold disabled:opacity-70"
       >
-        {loading ? 'Sending…' : 'Get my home value'}
+        {loading ? 'Sending' : 'Get my home’s value'}
       </Button>
-      {/* What happens next — the not-knowing (instant number? phone call?) is
-          the classic valuation-form abandonment reason (design-audit P2). */}
       <p className="text-center text-sm text-muted-foreground">
         A broker emails your written valuation within 24 hours, with the comps behind the number. No obligation.
       </p>

@@ -21,9 +21,10 @@
  * MOS_METHODOLOGY_CLAUSE + MOS_THRESHOLD_CLAUSE. Rounding before classifying
  * is what this ordering prevents.
  *
- * One primary per viewport after chrome: the sticky header already carries a
- * filled valuation CTA, so the Instrument ask is ghost. V3Stage hardcodes
- * primary. That two-primary collision is chrome's, not a per-page workaround.
+ * One filled primary in the first 390 viewport: the capture Sheet submit.
+ * Stage action is ghost so chrome + Stage + form do not stack three filled
+ * Value my home buttons. Stage is compact so the H1 clears chrome and the
+ * address step shares the first viewport.
  */
 
 import type { Metadata } from 'next'
@@ -216,11 +217,11 @@ export default async function SellPage() {
 
         <V3Stage
           headingLevel={1}
-          height="tall"
+          height="compact"
           eyebrow={SELL_STAGE_EYEBROW}
           headline="Sell your home in Central Oregon"
           posterSrc={posterSrc}
-          action={{ label: 'Value my home', href: FORM_ANCHOR }}
+          action={{ label: 'Value my home', href: FORM_ANCHOR, variant: 'ghost' }}
         />
 
         <SellCapture eyebrow="Free. No listing agreement." ariaLabel="Get your home's value">

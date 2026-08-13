@@ -69,7 +69,7 @@ const TIMELINE_OPTIONS: { value: SellerLPTimeline; label: string; sub: string }[
 // ?reason= handed off from /sell prefills the right one. Captured for tailored
 // follow-up, never used to pressure.
 const REASON_OPTIONS: { value: string; label: string }[] = [
-  { value: 'curious', label: 'Just curious what it is worth' },
+  { value: 'curious', label: 'Just curious' },
   { value: 'downsizing', label: 'Downsizing or retiring' },
   { value: 'more-space', label: 'Need more space' },
   { value: 'relocating', label: 'Relocating for work' },
@@ -268,7 +268,7 @@ export default function SellerLPForm({
         id={formId}
         onSubmit={advanceFromAddress}
         className="mx-auto w-full max-w-xl scroll-mt-24"
-        aria-label="Get your Bend home value"
+        aria-label="Get your Bend home’s value"
         noValidate
       >
         <Label htmlFor={`${formId}-seller-lp-address`} className="sr-only">
@@ -298,7 +298,7 @@ export default function SellerLPForm({
           disabled={pending}
           className="mt-3 h-16 w-full rounded-xl bg-primary text-lg font-semibold text-primary-foreground shadow-xl transition-colors hover:bg-primary/90 disabled:opacity-70"
         >
-          {pending ? 'Working…' : isListNow ? 'Book my free consultation →' : 'Get my home value →'}
+          {pending ? 'Working…' : isListNow ? 'Book my free consultation' : 'Get my home’s value'}
         </Button>
       </form>
     )
@@ -323,8 +323,8 @@ export default function SellerLPForm({
               ? 'Welcome back. Book your free consultation.'
               : 'Book a free consultation'
             : knownVisitor
-              ? 'Welcome back. See what your home is worth.'
-              : 'See what your home is worth'}
+              ? 'Welcome back. Get your home’s value.'
+              : 'Get your home’s value'}
         </h2>
         <div className="mt-5">
           <Label htmlFor={`${formId}-seller-lp-address-card`} className="sr-only">
@@ -356,7 +356,7 @@ export default function SellerLPForm({
           disabled={pending}
           className="mt-5 h-14 w-full rounded-xl bg-primary text-lg font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
         >
-          {pending ? 'Working…' : isListNow ? 'Book my free consultation →' : 'Get my home value →'}
+          {pending ? 'Working…' : isListNow ? 'Book my free consultation' : 'Get my home’s value'}
         </Button>
       </form>
     )
@@ -389,7 +389,7 @@ export default function SellerLPForm({
         {isListNow ? 'How should we reach you?' : 'Where should we send it?'}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Two quick fields and it&apos;s on its way. Phone is optional, and we promise not to call during dinner.
+        Two quick fields and it is on its way. Phone is optional.
       </p>
 
       <div className="mt-5 grid gap-4">
@@ -478,7 +478,7 @@ export default function SellerLPForm({
             <span className="text-sm font-normal text-muted-foreground">(optional)</span>
           </legend>
           <p className="mt-1 text-sm text-muted-foreground">
-            Optional. Helps us tailor the report. &ldquo;Just curious&rdquo; is a fine answer.
+            Optional. Helps us tailor the report. Just curious is a fine answer.
           </p>
           <Select value={reason} onValueChange={setReason}>
             <SelectTrigger

@@ -112,11 +112,11 @@ export default function SellValuationPage() {
 
         <V3Stage
           headingLevel={1}
-          height="tall"
+          height="compact"
           eyebrow={VALUATION_STAGE_EYEBROW}
           headline="Home valuation in Central Oregon"
           posterSrc={SELL_POSTER}
-          action={{ label: 'Value my home', href: VALUATION_FORM_ANCHOR }}
+          action={{ label: 'Value my home', href: VALUATION_FORM_ANCHOR, variant: 'ghost' }}
         />
 
         <SellCapture

@@ -23,12 +23,12 @@ import {
 } from './data'
 
 export const metadata: Metadata = {
-  title: 'What Would Your Home Bring Today? | Ryan Realty',
+  title: 'Get your home’s value in Bend | Ryan Realty',
   description:
     'A real number from recent local Bend sales, not an algorithm. Prepared by a local broker.',
   robots: { index: false, follow: false },
   openGraph: {
-    title: 'What Would Your Home Bring Today?',
+    title: 'Get your home’s value in Bend',
     description:
       'A real number from recent local Bend sales, not an algorithm. Prepared by a local broker.',
     type: 'website',
@@ -57,7 +57,7 @@ const HERO_VARIANTS: Record<string, HeroVariant> = {
   mountain: {
     img: '/images/lp/hero-mountain.jpg',
     alt: 'A snow-capped Cascade peak reflected in a still alpine lake at dawn',
-    h1: 'What Is Your Bend Home Worth?',
+    h1: 'Get your Bend home’s value',
     sub: 'A real number from closed sales near you, not an online guess.',
   },
   oos: {
@@ -76,7 +76,7 @@ const HERO_VARIANTS: Record<string, HeroVariant> = {
 const DEFAULT_HERO: HeroVariant = {
   img: '/images/lp/hero-banner.jpg',
   alt: 'Aerial view of the Old Mill District smokestacks and the Deschutes River in Bend, Oregon',
-  h1: 'What Would Your Home Bring Today?',
+  h1: 'Get your home’s value',
   sub: 'What buyers are paying for homes like yours, from recent Central Oregon sales. A number from a local broker, not an algorithm.',
 }
 
@@ -599,7 +599,7 @@ export default async function SellerHomeValuePage({
             scroll
             className="flex-1 border-[3px] border-[#102742] bg-[#102742] px-4 py-3 text-center text-sm font-bold uppercase tracking-[0.1em] text-[#faf8f4]"
           >
-            Get my home value
+            Get my home’s value
           </Link>
           <a
             href={`tel:${BROKER_PHONE_TEL}`}

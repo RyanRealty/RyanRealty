@@ -63,6 +63,11 @@ export type V3StageAction = {
   label: string
   /** Where it goes. A Stage action is always a destination, never a toggle. */
   href: string
+  /**
+   * Defaults to primary. Ghost when the filled primary in this viewport is
+   * already another control (the capture Sheet on /sell).
+   */
+  variant?: 'primary' | 'ghost'
 }
 
 /**
@@ -112,8 +117,8 @@ export type V3StageProps = {
    * 2 when it sits inside a page that already has its h1. Defaults to 2.
    */
   headingLevel?: 1 | 2
-  /** 'tall' when the next section should peek under the fold on 390. */
-  height?: 'standard' | 'tall'
+  /** 'tall' when the next section should peek under the fold on 390. 'compact' when the next section (the ask) must fit in the first 390 viewport. */
+  height?: 'standard' | 'tall' | 'compact'
   id?: string
   className?: string
 }
@@ -193,6 +198,7 @@ export function V3Stage<H extends string, L extends string>({
         'v3-stage',
         `v3-stage--${overlayStrength}`,
         height === 'tall' && 'v3-stage--tall',
+        height === 'compact' && 'v3-stage--compact',
         className,
       )}
       aria-labelledby={headingId}
@@ -241,7 +247,7 @@ export function V3Stage<H extends string, L extends string>({
         {/* onMedia is not decoration here: it is what makes the control
             identifiable on footage at all (see the on-media primary in
             ./V3Stage.css). A Stage action is always on media by definition. */}
-        <V3Button href={action.href} variant="primary" onMedia>
+        <V3Button href={action.href} variant={action.variant ?? 'primary'} onMedia>
           {action.label}
         </V3Button>
       </div>

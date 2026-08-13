@@ -74,6 +74,16 @@
   }
 }
 
+/* Compact: H1 + the capture Sheet share the first 390 viewport. Padding-top
+   clears the on-media breadcrumb so the H1 is not clipped. */
+.v3.v3-stage--compact {
+  min-height: 0;
+}
+
+.v3.v3-stage--compact .v3-stage-copy {
+  padding-top: 5.5rem;
+}
+
 /* Layer 1: the media. Poster always present; video, when the visitor allows
    motion, covers it with the identical frame so the swap is invisible. */
 .v3 .v3-stage-media {

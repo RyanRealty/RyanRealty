@@ -1,26 +1,36 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 1 public Look (homepage first). Do not start Track 2. Do not resume leftover-page ratchet.**
-> Prior: Broker OS plan v0.14 (Grok 2026-08-12). Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
+> **NEWEST SUBJECT: Track 1 public Look (`/sell` E-SELL-WORTH). Do not start Track 2. Do not resume leftover-page ratchet.**
+> Prior: Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14 (Grok 2026-08-12). Admin Product OS — 11F (Claude). PHASE 11 COMPLETE — 143/143 pages on v2 (2026-08-07).
 
-# Current — 2026-08-13 (Grok, Track 1 `/`) — E-HOME-JOBS Look GREEN locally
+# Current — 2026-08-13 (Grok, Track 1 `/sell`) — E-SELL-WORTH Look GREEN locally
 
-**Track:** 1 only. Homepage first. Do not start Track 2. Do not start leftover ratchet.
+**Track:** 1 only. `/sell` slice. Do not start Track 2. Do not start leftover ratchet. Do not start search/listing/places.
 
-**SHA:** `a241f1ae` homepage feat. Production HEAD `10f26536` READY (includes the feat).
+**Homepage still holds:** production `/` still has `v3-field__photo`, `/cities/bend|redmond|sisters`, and “See homes for sale”. No relative plot. Did not rework `/`.
 
-**`/` Look:** GREEN at 390 and 1280, local and production. Search/inventory door (`See homes for sale`), six D11 town doors with live active counts, three-plus live MLS photographs that open the listing. Chart is on Instrument L2 under the jobs. Chrome CTA stays Value my home. Relative plot is gone from this Field.
+**`/sell` Look:** GREEN at 390 and 1280. Worth-question gone. Address-only step 1 in the first viewport. Stage action is ghost; the filled page primary is **Get my home’s value** on the capture submit. Chrome still shows site-wide filled **Value my home**. H1 not clipped. Same Look on `/sell/valuation`. LP form copy is Value my home / Get your home’s value.
 
-**Screenshots:**
-- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-390.png`
-- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-1280.png`
-- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-390-prod.png`
-- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-1280-prod.png`
+**Screenshots (local):**
+- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-390.png`
+- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/sell-1280.png`
+- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/valuation-390.png`
+- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-sell-worth/valuation-1280.png`
 
-**Next:** `/sell` E-SELL-WORTH (Value my home / Get my home’s value, address-only step 1, one filled primary in the first 390 viewport). Do not start Track 2.
+**SHA:** feat land this session (`feat(public): sell CTAs are value my home, not a worth question`). Production SHA + READY after `deploy:verify`. Prod screenshots after READY.
 
-**Not this land:** `stash@{0}` leftover dirt (`app/dev/sell-film/*`, PUBLIC_SITE_UX_OVERHAUL leftovers, SellerLPForm, SignInPrompt, brand motion). Do not `git add -A`.
+**Next public route (do not start):** `/homes-for-sale` search. Then listing detail, then places. Track 1 §3 remaining: search, listing, places, open houses, about, reviews, market.
 
-**Skills read:** public-product-os (quarry + locks), frontend-design, design_system/ryan-realty, admin-product-os (awareness only).
+**Not this land:** `stash@{0}` leftover dirt (`app/dev/sell-film/*`, PUBLIC_SITE_UX_OVERHAUL leftovers). Do not `git add -A`. Leftover worth CTAs on `/lp/tetherow`, `/lp/tetherow/heath`, `/lp/bend` inventoried, not fixed.
+
+**Skills read:** public-product-os (quarry + locks), frontend-design, VOICE.md, design_system/ryan-realty.
+
+# Prior — 2026-08-13 (Grok, Track 1 `/`) — E-HOME-JOBS Look GREEN
+
+**SHA:** `a241f1ae` homepage feat. Production HEAD `10f26536` READY (includes the feat). Later `44a3fbe7` is docs/screenshots.
+
+**`/` Look:** GREEN at 390 and 1280, local and production. Search/inventory door (`See homes for sale`), six D11 town doors, three-plus live MLS photographs. Chart on Instrument L2. Chrome CTA Value my home.
+
+**Screenshots:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/` (`home-390.png`, `home-1280.png`, `home-390-prod.png`, `home-1280-prod.png`).
 
 # Prior — 2026-08-12 (Grok, local) — Broker OS plan v0.14
 

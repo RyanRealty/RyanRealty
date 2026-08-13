@@ -293,8 +293,8 @@ export const MENU: MenuEntry[] = [
     ],
     promo: {
       eyebrow: 'Sellers',
-      title: 'What is your home worth?',
-      body: 'Get a free valuation, without the high pressure.',
+      title: 'Value my home',
+      body: 'Get a written valuation from recent local sales.',
       ctaLabel: 'Free home valuation',
       ctaHref: '/sell/valuation',
     },

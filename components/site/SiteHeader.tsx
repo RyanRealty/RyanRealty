@@ -118,7 +118,7 @@ export default async function SiteHeader() {
           {/* Global chrome valuation CTA points at the form (/sell/valuation).
               Ad LPs keep /lp/seller-home-value for paid attribution only. */}
           <CTAButton href="/sell/valuation" tone="on-navy" size="md" className="hidden sm:inline-flex whitespace-nowrap">
-            What’s my home worth
+            Value my home
           </CTAButton>
           <MobileNav menu={MENU} navData={navData} />
         </div>

@@ -24,7 +24,7 @@ export const SITE_PAGES: SitePageEntry[] = [
   { label: 'Price drops', href: '/price-drops', keywords: ['price', 'drop', 'reduced'] },
   { label: 'Our listings', href: '/our-homes', keywords: ['ryan', 'realty', 'listings'] },
   { label: 'Sell your home', href: '/sell', keywords: ['sell', 'seller', 'listing'] },
-  { label: "What's my home worth", href: '/sell/valuation', keywords: ['valuation', 'value', 'worth', 'estimate'] },
+  { label: 'Value my home', href: '/sell/valuation', keywords: ['valuation', 'value', 'worth', 'estimate'] },
   { label: 'Sell on a deadline', href: '/motivated-sellers', keywords: ['deadline', 'fast', 'relocation'] },
   { label: 'Housing market', href: '/housing-market', keywords: ['market', 'stats', 'trends'] },
   { label: 'Market reports', href: '/housing-market/reports', keywords: ['market', 'report', 'data'] },
