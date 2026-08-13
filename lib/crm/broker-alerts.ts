@@ -18,6 +18,14 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recentHealthAlertExists, insertHealthAlert } from '@/lib/data/crm/healthAlertQueue'
 import { getBrokerTelephony } from '@/lib/data/crm/getBrokerTelephony'
+import {
+  BROKER_ALERT_MAILBOXES,
+  addressFromListingUrl,
+  formatLookingAtAddress,
+  lookingAtAlertBody,
+  lookingAtCanQueue,
+  lookingAtDedupeKind,
+} from '@/lib/crm/looking-at'
 
 const ALERT_PHONE_BY_BROKER: Record<string, string | undefined> = {
   matt: process.env.TWILIO_FORWARD_MATT,
@@ -26,68 +34,32 @@ const ALERT_PHONE_BY_BROKER: Record<string, string | undefined> = {
 }
 
 /**
- * Live-visit alert: an identified lead is on the site RIGHT NOW. Texts the
- * assigned broker with what they are viewing plus the deep link to the CRM
- * person page, where the live-activity banner + composers let the broker
- * contact them in the moment. Throttled to one text per person per day via
- * the date-stamped dedupe kind.
+ * Looking-at wake (D3): identified person + a specific home. Same rail as a
+ * new-lead alert. One ping per person+listing per session. Key is
+ * crm_people.id. Unidentified = no SMS. Unassigned broker → Matt (inside
+ * queueBrokerAlert). Overnight OK. Broker SMS opt-in still applies.
+ * GPC is fail-closed at /api/visitors/track (no event, no call).
+ * Draft-first: this only QUEUES. It does not send.
  */
-const BROKER_MAILBOXES = new Set(['matt@ryan-realty.com', 'rebeccapeterson@ryan-realty.com', 'paul@ryan-realty.com'])
-
-/** Plain-language "why are they here" from the page they are on. */
-function describeWhy(path: string, title?: string | null): string {
-  const p = path.toLowerCase()
-  const t = title?.trim() ? ` "${title.trim().slice(0, 60)}"` : ''
-  if (/\/listing|\/homes\/|\/property|\/mls/.test(p)) return `looking at a listing${t}`
-  if (/sell|home-valuation|home-value|whats-my-home|what-is-my-home/.test(p)) return `on a home-value / sell page, seller intent${t}`
-  if (/search|homes-for-sale|\/map/.test(p)) return `browsing the home search${t}`
-  if (/\/cmas?\/|\/drafts\/cma/.test(p)) return `viewing their CMA report${t}`
-  if (p === '/' || p === '') return `on your homepage${t}`
-  return `viewing ${path}${t}`
-}
-
-/** Plain-language "from where" they arrived — utm channel first, then referrer. */
-function describeFrom(referrer?: string | null, utmSource?: string | null, utmMedium?: string | null, utmCampaign?: string | null): string {
-  const camp = utmCampaign?.trim() ? ` (${utmCampaign.trim()})` : ''
-  const s = (utmSource ?? '').toLowerCase()
-  if (s) {
-    const med = (utmMedium ?? '').toLowerCase()
-    if (s.includes('facebook') || s.includes('instagram') || s === 'fb' || s === 'ig') return `a Facebook or Instagram ad${camp}`
-    if (s.includes('google') && (med.includes('cpc') || med.includes('paid'))) return `a Google ad${camp}`
-    if (med.includes('email') || s.includes('email') || s.includes('klaviyo') || s.includes('fub')) return `a link in one of your emails${camp}`
-    return `${utmSource}${camp}`
-  }
-  const r = (referrer ?? '').trim().toLowerCase()
-  if (!r) return `direct, they typed the address or used a saved bookmark`
-  try {
-    const host = new URL(r.startsWith('http') ? r : `https://${r}`).hostname.replace(/^www\./, '')
-    if (host.includes('google')) return `a Google search`
-    if (host.includes('bing')) return `a Bing search`
-    if (host.includes('facebook') || host.includes('instagram') || host.startsWith('fb.') || host.includes('l.facebook')) return `Facebook or Instagram`
-    if (host.includes('fub.direct') || host.includes('followupboss')) return `a link in one of your emails or texts`
-    if (host.endsWith('ryan-realty.com') || host.includes('ryanrealty')) return `another page on your own site`
-    return host
-  } catch {
-    return r.slice(0, 60)
-  }
-}
-
 export async function queueReturnVisitAlert(params: {
-  fubPersonId: number
-  who: string
-  pageUrl: string
-  pageTitle?: string | null
-  referrer?: string | null
-  utmSource?: string | null
-  utmMedium?: string | null
-  utmCampaign?: string | null
+  crmPersonId: number
+  sessionId: string
+  listingKey: string
+  address?: string | null
+  pageUrl?: string | null
+  who?: string | null
 }): Promise<boolean> {
   try {
+    const crmPersonId = Number(params.crmPersonId)
+    const sessionId = params.sessionId?.trim() ?? ''
+    const listingKey = params.listingKey?.trim() ?? ''
+    if (!Number.isFinite(crmPersonId) || crmPersonId <= 0 || !sessionId || !listingKey) return false
+
     const sb = createServiceClient()
     const { data: person } = await sb
       .from('crm_people')
       .select('id,name,assigned_broker')
-      .eq('fub_legacy_id', params.fubPersonId)
+      .eq('id', crmPersonId)
       .maybeSingle()
     if (!person) return false
     // Brokers browsing their own site are not leads. No self-texts.
@@ -96,21 +68,40 @@ export async function queueReturnVisitAlert(params: {
       .select('value')
       .eq('person_id', person.id as number)
       .eq('kind', 'email')
-    if ((emails ?? []).some((e) => BROKER_MAILBOXES.has(String(e.value).toLowerCase()))) return false
-    const day = new Date().toISOString().slice(0, 10)
-    const name = (person.name as string | null) ?? params.who
-    const path = params.pageUrl.replace(/^https?:\/\/[^/]+/, '') || '/'
-    const body = [
-      `${name} is back on your site right now.`,
-      `Why: ${describeWhy(path, params.pageTitle)}`,
-      `From: ${describeFrom(params.referrer, params.utmSource, params.utmMedium, params.utmCampaign)}`,
-      `Open the lead: https://ryan-realty.com/admin/people/${person.id}`,
-    ].join('\n')
+    if ((emails ?? []).some((e) => BROKER_ALERT_MAILBOXES.has(String(e.value).toLowerCase()))) {
+      return false
+    }
+
+    let address = formatLookingAtAddress({ street: params.address })
+    if (!address) {
+      const { data: listing } = await sb
+        .from('listings')
+        .select('StreetNumber,StreetName')
+        .eq('ListNumber', listingKey)
+        .maybeSingle()
+      address = formatLookingAtAddress({
+        streetNumber: (listing?.StreetNumber as string | null) ?? null,
+        streetName: (listing?.StreetName as string | null) ?? null,
+      })
+    }
+    if (!address) address = addressFromListingUrl(params.pageUrl, listingKey)
+    if (
+      !lookingAtCanQueue({
+        crmPersonId: person.id as number,
+        sessionId,
+        listingKey,
+        address,
+      })
+    ) {
+      return false
+    }
+
+    const name = ((person.name as string | null) ?? params.who ?? '').trim() || 'Someone'
     return queueBrokerAlert({
       broker: person.assigned_broker as string | null,
       personId: person.id as number,
-      kind: `return-visit:${day}`,
-      body,
+      kind: lookingAtDedupeKind(sessionId, listingKey),
+      body: lookingAtAlertBody(name, address as string, person.id as number),
     })
   } catch (err) {
     console.warn('[broker-alerts] return-visit queue error:', err)

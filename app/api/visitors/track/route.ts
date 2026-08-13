@@ -462,7 +462,7 @@ export async function POST(request: NextRequest) {
   //    or skip both.
   const { data: sessRow, error: readSessErr } = await supabase
     .from('visitor_sessions')
-    .select('engagement_score, intent_tags, fub_person_id, first_seen_at, identified_at')
+    .select('engagement_score, intent_tags, fub_person_id, crm_person_id, first_seen_at, identified_at')
     .eq('session_id', sessionId)
     .maybeSingle()
 
@@ -472,37 +472,33 @@ export async function POST(request: NextRequest) {
 
   const session = sessRow ?? null
 
-  // ─── Identified-lead live-visit alert ────────────────────────────────────
-  // Once a session is identified (fub_person_id backfilled after a form
-  // submit), fire the broker alert for the lead's browsing. The old FUB
-  // activity mirror (trackListingView / trackPropertySearch / trackPageView)
-  // was a dead no-op after the 2026-06-24 decommission and was deleted —
-  // first-party visitor_events already carries the per-person browsing the
-  // dashboards read. Gated to analytics/all consent (skipped under essential).
-  const fubPersonId =
-    !minimalOnly && session && typeof session.fub_person_id === 'number' ? session.fub_person_id : null
-  if (fubPersonId && (eventType === 'listing_view' || eventType === 'page_view')) {
-    // Live-visit broker text with the CRM deep link — server-side so it fires
-    // on every identified page view (the old client-side return detector was
-    // unreliable). queueReturnVisitAlert dedupes to one text per person per
-    // day and skips broker self-visits. Never blocks the response.
+  // ─── Looking-at wake (D3) ────────────────────────────────────────────────
+  // Identified person (crm_people.id) + a specific home. GPC already dropped
+  // this request above (fail-closed). Essential consent strips listing meta
+  // so listingKey is empty and we skip. Unidentified = no SMS. Same rail —
+  // queueReturnVisitAlert only inserts; it does not send. One ping per
+  // person+listing per session.
+  const crmPersonId =
+    !minimalOnly && session && typeof session.crm_person_id === 'number' ? session.crm_person_id : null
+  if (crmPersonId && eventType === 'listing_view') {
     try {
-      const { queueReturnVisitAlert } = await import('@/lib/crm/broker-alerts')
-      await withTimeoutFallback(
-        queueReturnVisitAlert({
-          fubPersonId,
-          who: 'A lead',
-          pageUrl,
-          pageTitle: body.pageTitle ?? null,
-          referrer: body.referrer ?? null,
-          utmSource: campaign?.source ?? null,
-          utmMedium: campaign?.medium ?? null,
-          utmCampaign: campaign?.campaign ?? null,
-        }),
-        false,
-        2000,
-        'crm:return-visit-alert',
-      )
+      const { listingKeyFromPageUrl } = await import('@/lib/crm/looking-at')
+      const listingKey = (listing?.mlsNumber ?? listingKeyFromPageUrl(pageUrl) ?? '').trim()
+      if (listingKey) {
+        const { queueReturnVisitAlert } = await import('@/lib/crm/broker-alerts')
+        await withTimeoutFallback(
+          queueReturnVisitAlert({
+            crmPersonId,
+            sessionId,
+            listingKey,
+            address: listing?.street?.trim() || null,
+            pageUrl,
+          }),
+          false,
+          2000,
+          'crm:return-visit-alert',
+        )
+      }
     } catch (err) {
       console.warn('[visitors/track] return-visit alert failed:', err)
     }

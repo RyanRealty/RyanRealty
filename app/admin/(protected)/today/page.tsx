@@ -1,18 +1,16 @@
 // @no-parity — internal admin surface, no public mockup contract
-// Today (P9 roll:today, IA lock 2026-08-05): the ONE action queue answering
-// "what am I supposed to do right now" — inbound triage, parked sequence
-// steps, ready approvals, CMA drafts to review, due tasks. First admin
-// destination on the locked v2 language (design_system/admin/ADMIN_UI.md).
-// Absorbs the broker-dashboard's queue jobs; KPI/feed jobs land in Oversight
-// (frozen cut-list). Legacy shell chrome remains until the shell family rolls.
+// Today: inbound, looking-at (A1), parked sequence steps, ready approvals,
+// CMA drafts to review, due tasks. Looking-at is the same sentence as the
+// D3 wake SMS so a missed text is not a missed person.
 import Link from 'next/link'
 import { formatTriageAge, getInboundTriage } from '@/lib/data/crm/getInboundTriage'
+import { getLookingAtNow } from '@/lib/data/crm/getLookingAtNow'
 import { getTaskQueue } from '@/lib/data/crm/getTaskQueue'
 import { getBrokerActionQueue } from '@/lib/data/crm/getBrokerActionQueue'
 import { listCmasForAdmin } from '@/lib/data'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { createServiceClient } from '@/lib/supabase/service'
-import { Button, QueueRow, VerdictLine } from '@/components/admin/v2'
+import { Button, QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
   confirmParkedStepToday,
   skipParkedStepToday,
@@ -42,8 +40,9 @@ export default async function TodayPage() {
   const brokerScope = ctx.role === 'superuser' ? null : ctx.brokerSlug
   const nowMs = Date.now()
 
-  const [triage, parked, tasks, cmas, approvals] = await Promise.all([
+  const [triage, lookingAt, parked, tasks, cmas, approvals] = await Promise.all([
     getInboundTriage(brokerScope),
+    getLookingAtNow(brokerScope),
     getBrokerActionQueue({ brokerSlug: brokerScope }),
     getTaskQueue({ brokerScope, view: 'today' }),
     listCmasForAdmin({ limit: 50, offset: 0 }),
@@ -62,7 +61,8 @@ export default async function TodayPage() {
     (r) => r.status === 'draft' && r.built_at && !r.build_error,
   )
   const dueTasks = tasks.rows.slice(0, 8)
-  const total = triage.length + parked.length + cmaDrafts.length + approvals.length + dueTasks.length
+  const total =
+    lookingAt.length + triage.length + parked.length + cmaDrafts.length + approvals.length + dueTasks.length
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -83,9 +83,38 @@ export default async function TodayPage() {
         </VerdictLine>
       </div>
 
+      {lookingAt.length > 0 && (
+        <section aria-label="Looking at a home">
+          <SectionHead>Looking at a home</SectionHead>
+          <ul className="av2-queue">
+            {lookingAt.map((row) => (
+              <QueueRow
+                key={`looking:${row.personId}:${row.listingKey}`}
+                kind="Looking"
+                kindTone="accent"
+                title={
+                  <>
+                    <Link href={row.deepLink} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+                      {row.personName}
+                    </Link>
+                    {` is looking at ${row.address}.`}
+                  </>
+                }
+                age={formatTriageAge(row.occurredAt, nowMs)}
+                action={
+                  <Link href={row.deepLink}>
+                    <Button variant="quiet">Open</Button>
+                  </Link>
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
       {triage.length > 0 && (
         <section aria-label="Inbound">
-          <h2 className="av2-lane-head">Inbound</h2>
+          <SectionHead>Inbound</SectionHead>
           <ul className="av2-queue">
             {triage.map((t) => (
               <QueueRow
@@ -118,7 +147,7 @@ export default async function TodayPage() {
 
       {parked.length > 0 && (
         <section aria-label="Waiting on you">
-          <h2 className="av2-lane-head">Sequence steps waiting on you</h2>
+          <SectionHead>Sequence steps waiting on you</SectionHead>
           <ul className="av2-queue">
             {parked.map((p) => (
               <QueueRow
@@ -155,7 +184,7 @@ export default async function TodayPage() {
 
       {approvals.length > 0 && (
         <section aria-label="Approvals">
-          <h2 className="av2-lane-head">Drafts ready for approval</h2>
+          <SectionHead>Drafts ready for approval</SectionHead>
           <ul className="av2-queue">
             {approvals.map((a) => (
               <QueueRow
@@ -177,7 +206,7 @@ export default async function TodayPage() {
 
       {cmaDrafts.length > 0 && (
         <section aria-label="Valuations to review">
-          <h2 className="av2-lane-head">CMA drafts to review</h2>
+          <SectionHead>CMA drafts to review</SectionHead>
           <ul className="av2-queue">
             {cmaDrafts.map((c) => (
               <QueueRow
@@ -199,7 +228,7 @@ export default async function TodayPage() {
 
       {dueTasks.length > 0 && (
         <section aria-label="Tasks due">
-          <h2 className="av2-lane-head">Due today</h2>
+          <SectionHead>Due today</SectionHead>
           <ul className="av2-queue">
             {dueTasks.map((t) => (
               <QueueRow

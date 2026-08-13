@@ -87,7 +87,6 @@
       "h2": 1
     },
     "app/admin/(protected)/today/page.tsx": {
-      "h2": 5,
       "input": 6
     },
     "app/admin/(protected)/valuations/page.tsx": {
