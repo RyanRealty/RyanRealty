@@ -1,17 +1,92 @@
 {
   "route": "app/price-drops/page.tsx",
-  "description": "Price-Drop Radar region-wide page — KB (kinetic-brutalist) chrome. KbHero count + KbFeatured poster grid of the biggest reductions + KbListingMap, full HideAwareListingGrid sweep (the per-user hidden-aware ListingCard grid — W7.2), neighborhood mini-table, per-city chip nav, Dataset + ItemList JSON-LD. KbBreadcrumb is the visible breadcrumb (MetadataBlock owns the BreadcrumbList JSON-LD).",
-  "locked": "2026-06-18",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). There is no index.html in this directory. The visual target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-HOMES-SIGNALS). Rhythm: FOUR of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Instrument level 1, Field, Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Instrument and is still four patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: an empty resilient-cache fallback is opted out of ISR with noStore(), and Dataset / updated / count figures are omitted rather than published as 0. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search.",
+  "deletions": [
+    "KbHero: the dark photo hero and its live-glance counts. The counts survive as Instrument figures when the pull is non-empty.",
+    "KbFeatured: the poster grid of the biggest percent reductions. Those homes are Field rows now, sorted by lastDropPct descending.",
+    "KbListingMap: replaced by the Field's built-in plot of rows that carry coordinates.",
+    "HideAwareListingGrid: the per-user hidden-aware ListingCard grid (W7.2). Hidden-home subtraction stays on /search. This page is a curated 7-day cut list, not a browse of for-sale inventory, and it does not import a raw listing renderer.",
+    "Neighborhood mini-table: the 7-day pull grouped by subdivision. Field row meta still names displaySubdivision when the feed has a readable name.",
+    "City chip sections: the filter-nav and every-city chip rows. City doors live in the closing Quiet.",
+    "KbCommunityAlerts markup: replaced by PriceDropAlertsSheet on V3Sheet. Capture contract unchanged (see dataLayer), including the company honeypot.",
+    "KbSell: the seller band. The ask survives as the Instrument's filled Value my home action via valuationHref('/price-drops').",
+    "CTABar: the closing talk-to-a-broker bar. Not carried. The page's primary is the valuation ask.",
+    "DisplayHeading / PageBreadcrumb hidden parity hacks on the city route.",
+    "SmoothScrollProvider: the Lenis wrapper. The v3 register does not hijack scroll.",
+    "Badge and Table from components/ui.",
+    "KbFooter and KbBreadcrumb: replaced by V3Footer and V3Breadcrumb."
+  ],
   "requiredComponents": [
-    { "name": "MetadataBlock", "from": "@/components/site/MetadataBlock" },
-    { "name": "KbNav", "from": "@/components/site/kb/KbNav.client" },
-    { "name": "KbSectionTracker", "from": "@/components/site/kb/KbSectionTracker.client" },
-    { "name": "KbBreadcrumb", "from": "@/components/site/kb/KbBreadcrumb" },
-    { "name": "KbHero", "from": "@/components/site/kb/KbHero.client" },
-    { "name": "KbFeatured", "from": "@/components/site/kb/KbFeatured.client" },
-    { "name": "KbSell", "from": "@/components/site/kb/KbSell.client" },
-    { "name": "KbFooter", "from": "@/components/site/kb/KbFooter.client" },
-    { "name": "HideAwareListingGrid", "from": "@/components/search/HideAwareListingGrid" },
-    { "name": "CTABar", "from": "@/components/site/CTABar" }
+    {
+      "name": "MetadataBlock",
+      "section": "BreadcrumbList + Dataset + webPage JSON-LD when the window is non-empty. Dataset is omitted on an empty pull so a now() fallback cannot stamp freshness. Required by ci:ai-structured-data for this route by name (MetadataBlock + getPriceDrops).",
+      "blocking": true
+    },
+    {
+      "name": "KbNav",
+      "section": "The public header, mounted by app/layout.tsx. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header.",
+      "blocking": true
+    },
+    {
+      "name": "KbSectionTracker",
+      "section": "Page-level analytics, pageType='price-drops'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language.",
+      "blocking": true
+    },
+    {
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home > Price drops.",
+      "blocking": true
+    },
+    {
+      "name": "V3Instrument",
+      "section": "Pattern 1, once, level 1, when the pull has at least one sourced figure. H1 'Price drops in Central Oregon'. Figures from the same getPriceDrops call: count (only if total > 0), compact total reduced (only if > 0), median drop percent (only if not null). Ask is filled Value my home. At 390 the chrome CTA sits in the collapsed menu, so this is the visible primary.",
+      "blocking": true
+    },
+    {
+      "name": "V3Field",
+      "section": "Pattern 2, once. The week's cuts as map plus list, sorted by drop percent. Rows without a street or a list price are dropped. Count uses the Field population and the same trace.",
+      "blocking": true
+    },
+    {
+      "name": "PriceDropAlertsSheet",
+      "section": "Pattern 5, once, in app/price-drops/_v3/PriceDropAlertsSheet.client.tsx. Wraps V3Sheet. Capture contract unchanged (see dataLayer).",
+      "blocking": true
+    },
+    {
+      "name": "V3Quiet",
+      "section": "Pattern 6. Closing edges (window, homes for sale, open houses, city doors). Also the empty-window H1 branch, where it replaces Instrument.",
+      "blocking": true
+    },
+    {
+      "name": "V3Footer",
+      "section": "Chrome. Rendered OUTSIDE <main> so the footer maps to contentinfo.",
+      "blocking": true
+    }
+  ],
+  "jsonLd": {
+    "required": [
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry): Home, Price drops" },
+      {
+        "type": "Dataset",
+        "emittedBy": "MetadataBlock schemas array (dataset entry) ONLY when total > 0. Variables: Price reductions (7-day window), Total asking-price cuts when > 0, Median drop when not null. dateModified is the pull's fetchedAt, never a now() fallback."
+      },
+      { "type": "webPage", "emittedBy": "MetadataBlock schemas array, only when total > 0, description carries the live count." }
+    ]
+  },
+  "dataLayer": {
+    "getPriceDrops": "lib/data/listings/getPriceDrops.ts. { limit: 48, days: 7 }. No .catch() empty swallow. Empty result calls noStore() so ISR cannot pin a blank week. THE ONLY READ ON THIS PAGE.",
+    "submitSearchAlertSignup": "app/actions/search-alert-capture.ts, bound to PriceDropAlertsSheet. UNCHANGED CONTRACT: { email, filters: { propertyType: 'A' } (region) or { city } (city page), company }.",
+    "note": "Route-local constants and Field/JSON-LD builders live in app/price-drops/_v3/ so the route file stays under the ci:file-size-budget floor."
+  },
+  "sectionOrder": [
+    "MetadataBlock",
+    "KbSectionTracker",
+    "V3Breadcrumb",
+    "V3Instrument (level 1) OR V3Quiet (empty window)",
+    "V3Field",
+    "PriceDropAlertsSheet (V3Sheet, listing alerts)",
+    "V3Quiet (edges)",
+    "V3Footer"
   ]
 }

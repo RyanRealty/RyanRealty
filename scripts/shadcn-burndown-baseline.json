@@ -1,5 +1,5 @@
 {
-  "count": 201,
+  "count": 200,
   "files": [
     "app/alerts/unsubscribe/page.tsx",
     "app/buy/loading.tsx",
@@ -25,7 +25,6 @@
     "app/marketing/request/RequestBuilder.tsx",
     "app/newsletter/unsubscribe/page.tsx",
     "app/offline/page.tsx",
-    "app/price-drops/page.tsx",
     "app/reports/ReportsIndexContent.tsx",
     "app/reports/sales/[city]/[period]/page.tsx",
     "app/reviews/ReviewsCollapse.client.tsx",

@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 490,
-    "legacyPages": 66,
-    "mixedPages": 17
+    "nonV3ImportSites": 432,
+    "legacyPages": 60,
+    "mixedPages": 21
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -330,14 +330,6 @@
       "legacy": 1,
       "kb": 1
     },
-    "app/motivated-sellers/[city]/page.tsx": {
-      "legacy": 1,
-      "kb": 7
-    },
-    "app/motivated-sellers/page.tsx": {
-      "legacy": 1,
-      "kb": 7
-    },
     "app/newsletter/unsubscribe/page.tsx": {
       "primitives": 1,
       "legacy": 1
@@ -347,12 +339,14 @@
       "legacy": 1
     },
     "app/open-houses/[city]/page.tsx": {
-      "kb": 10,
-      "legacy": 1
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/open-houses/page.tsx": {
-      "kb": 10,
-      "legacy": 1
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/oregon/[city]/page.tsx": {
       "v3": 1,
@@ -374,13 +368,14 @@
       "kb": 7
     },
     "app/price-drops/[city]/page.tsx": {
-      "legacy": 3,
-      "primitives": 1,
-      "kb": 11
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/price-drops/page.tsx": {
-      "legacy": 2,
-      "kb": 11
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/privacy/page.tsx": {
       "primitives": 1,

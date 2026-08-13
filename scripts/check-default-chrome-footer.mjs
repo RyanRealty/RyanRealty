@@ -48,6 +48,8 @@ const REDIRECT_ONLY = new Set([
   'app/reports/[slug]/[geoName]/page.tsx', // permanentRedirect to /housing-market
   'app/housing-market/reports/[slug]/[geoName]/page.tsx', // re-exports the redirect above
   'app/listing/by-key/[listingKey]/page.tsx', // permanentRedirect to canonical listing URL
+  'app/motivated-sellers/page.tsx', // IA lock: 308 into /price-drops
+  'app/motivated-sellers/[city]/page.tsx', // IA lock: 308 into /price-drops/[city]
 ])
 
 /** Pages that legitimately render BOTH KbFooter and SiteFooter (one per branch). */

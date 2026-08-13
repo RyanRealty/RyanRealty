@@ -1,36 +1,69 @@
 /**
- * Open Houses index — KB (kinetic-brutalist) design, Phase 9 convergence.
- * Reuses the KB section library (components/site/kb/*) and the existing
- * open-houses data action. No parity.json exists for this route; noted below.
+ * /open-houses - this week's open houses, on the components/site/v3 barrel.
  *
- * NOTE: No parity.json found for /open-houses. Rewrite uses KB chrome only.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes curated mode.
+ * Rhythm: four of six, no two adjacent alike. Order is Breadcrumb, Instrument
+ * level 1, Field, Sheet, Quiet, Footer.
  *
- * Section stack: nav · section-tracker · metadata · breadcrumb · hero ·
- * open-houses · sell · footer.
+ * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
+ * pageMetadata, MetadataBlock JSON-LD (BreadcrumbList + Event nodes), a rendered
+ * KbSectionTracker with pageType="open-houses", TrackSearchView, revalidate 60,
+ * the route, and searchParam filters. MetadataBlock and KbSectionTracker stay
+ * on their registers: wiring, not visual language.
  *
- * §0: all counts via getOpenHousesWithListings + getRegionPulse from @/lib/data.
+ * WINDOW: today through six days out, Pacific, unless the visitor passes
+ * dateFrom/dateTo. The KB page said "this week" while getOpenHousesWithListings
+ * defaulted to Sat-Sun. The copy and the query now name the same window.
+ *
+ * DATES RENDER IN PACIFIC. The KB when-label used timeZone UTC.
+ *
+ * ONE PRIMARY PER VIEWPORT, counting visible filled controls. At 390 the
+ * chrome CTA sits in the collapsed menu, so the Instrument ask is primary.
+ * Label is Value my home (D11). valuationHref carries ?from=.
+ *
+ * KB-era deletions: KbHero (search + voice), KbOpenHouses 12-tile cap, KbListingMap,
+ * KbCommunityAlerts markup (capture contract kept on the Sheet), KbSell, KbFooter,
+ * SmoothScrollProvider, region pulse read that rendered only on KbSell.
  */
 
 import type { Metadata } from 'next'
-import { getOpenHousesWithListings } from '@/app/actions/open-houses'
-import type { OpenHouseWithListing } from '@/app/actions/open-houses'
-import { getRegionPulse } from '@/lib/data'
-import { listingTileHref, listingDetailPath, listingsBrowsePath } from '@/lib/slug'
+import {
+  getUpcomingOpenHouses,
+  getListingTiles,
+  getHeroPhotosByListingKeys,
+} from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import { formatPrice } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
-import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
-import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Field,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Quiet,
+  type V3InstrumentFigure,
+  type V3QuietItem,
+} from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
-import '@/components/site/kb/kb.css'
+import { OpenHouseAlertsSheet } from './_v3/OpenHouseAlertsSheet.client'
+import {
+  OH_CITY_SLUGS,
+  OH_FIELD_TRACE,
+  OH_TRACE,
+  addIsoDays,
+  cityLabel,
+  pacificTodayIso,
+} from './_v3/oh-constants'
+import { assembleOpenHouses, medianPositive } from './_v3/oh-listings'
+import { openHouseFieldItems } from './_v3/oh-field-items'
+import { openHouseEventSchemas } from './_v3/oh-jsonld'
 
 export const revalidate = 60
 
@@ -40,49 +73,6 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       "This week's open houses in Bend, Redmond, Sisters, La Pine, and across Central Oregon. Times, addresses, and prices from the regional MLS.",
     path: '/open-houses',
-  })
-}
-
-/** Format a 24h time string and event date into a short human label. */
-function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
-  const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  })
-  const t = (s: string | null) => {
-    if (!s) return ''
-    const [h, m] = s.split(':')
-    const hr = Number(h)
-    const ap = hr >= 12 ? 'pm' : 'am'
-    const h12 = hr % 12 === 0 ? 12 : hr % 12
-    return m && m !== '00' ? `${h12}:${m}${ap}` : `${h12}${ap}`
-  }
-  const range = start && end ? `${t(start)}-${t(end)}` : start ? t(start) : ''
-  return [day, range].filter(Boolean).join(' · ')
-}
-
-/** Build the Event ItemList JSON-LD preserved from the original page. */
-function buildEventJsonLd(openHouses: OpenHouseWithListing[]): string {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const events = openHouses.slice(0, 20).map((oh) => ({
-    '@type': 'Event',
-    name: `Open House at ${oh.unparsed_address || [oh.street_number, oh.street_name].filter(Boolean).join(' ') || 'Property'}`,
-    startDate: `${oh.event_date}T${(oh.start_time ?? '09:00').toString().slice(0, 5)}:00`,
-    endDate: `${oh.event_date}T${(oh.end_time ?? '12:00').toString().slice(0, 5)}:00`,
-    location: {
-      '@type': 'Place',
-      address: oh.unparsed_address || [oh.street_number, oh.street_name, oh.city, oh.state, oh.postal_code].filter(Boolean).join(', '),
-    },
-    url: `${siteUrl}${listingDetailPath(
-      oh.listing_key,
-      { streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city, state: oh.state, postalCode: oh.postal_code },
-      { city: oh.city, subdivision: oh.subdivision_name },
-      { mlsNumber: oh.list_number }
-    )}`,
-  }))
-  return JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    itemListElement: events.map((e, i) => ({ '@type': 'ListItem', position: i + 1, item: e })),
   })
 }
 
@@ -97,69 +87,69 @@ type SearchParams = {
   baths?: string
 }
 
-export default async function OpenHousesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+export default async function OpenHousesPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
   const sp = await searchParams
-  const filters = {
-    dateFrom: sp.dateFrom?.trim(),
-    dateTo: sp.dateTo?.trim(),
-    community: sp.community ? sp.community.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
-    city: sp.city?.trim(),
-    minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
-    maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
-    beds: sp.beds ? Number(sp.beds) : undefined,
-    baths: sp.baths ? Number(sp.baths) : undefined,
+  const todayIso = pacificTodayIso()
+  const dateFrom = sp.dateFrom?.trim() || todayIso
+  const dateTo = sp.dateTo?.trim() || addIsoDays(todayIso, 6)
+  const cityFilter = sp.city?.trim()
+  const community = sp.community
+    ? sp.community.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined
+  const minPrice = sp.minPrice ? Number(sp.minPrice) : undefined
+  const maxPrice = sp.maxPrice ? Number(sp.maxPrice) : undefined
+  const beds = sp.beds ? Number(sp.beds) : undefined
+  const baths = sp.baths ? Number(sp.baths) : undefined
+
+  const rows = await getUpcomingOpenHouses({
+    dateFromIso: dateFrom,
+    dateToIso: dateTo,
+    todayIso,
+    city: cityFilter,
+  })
+  const listingKeys = [...new Set(rows.map((r) => r.listing_key))]
+  const [tiles, heroes] =
+    listingKeys.length > 0
+      ? await Promise.all([
+          getListingTiles({ listingKeys: listingKeys.slice(0, 5000), status: 'all', limit: 500 }),
+          getHeroPhotosByListingKeys(listingKeys),
+        ])
+      : [[], new Map<string, string>()]
+
+  const openHouses = assembleOpenHouses(rows, tiles, heroes, {
+    community,
+    city: cityFilter,
+    minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
+    maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
+    beds: Number.isFinite(beds) ? beds : undefined,
+    baths: Number.isFinite(baths) ? baths : undefined,
+  })
+
+  const count = openHouses.length
+  const fieldItems = openHouseFieldItems(openHouses)
+  const medianList = medianPositive(openHouses.map((oh) => oh.listPrice))
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
+  const figures: V3InstrumentFigure[] = []
+  if (count > 0) {
+    figures.push({
+      value: v3Text(count.toLocaleString('en-US')),
+      label: v3Text(count === 1 ? 'open house this week' : 'open houses this week'),
+      href: '#calendar',
+    })
   }
-
-  const [openHouses, regionPulse] = await Promise.all([
-    withTimeoutFallback(getOpenHousesWithListings(filters), [], 4000, 'open-houses:list'),
-    withTimeoutFallback(getRegionPulse(), null, 3000, 'open-houses:regionPulse'),
-  ])
-
-  // §0: count from live data, not a hard-coded number.
-  const openHouseCount = openHouses.length
-
-  // Map to KB open-house items.
-  const openHouseItems = openHouses.slice(0, 12).map((oh) => ({
-    href: listingTileHref({
-      listingKey: oh.listing_key, streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city,
-    }),
-    photoUrl: oh.photo_url,
-    price: oh.list_price,
-    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
-    cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
-    beds: oh.beds_total,
-    baths: oh.baths_full,
-    sqft: oh.living_area,
-    whenLabel: openHouseWhen(oh.event_date, oh.start_time, oh.end_time),
-  }))
-
-  const eventJsonLd = openHouses.length > 0 ? buildEventJsonLd(openHouses) : null
-
-  // Restored from the pre-KB page's map view: every geolocated open house as a
-  // Point feature so the KbListingMap renders the full calendar on the terrain,
-  // not just the 12 tiles in the rail. Same FeatureCollection shape the homepage
-  // map uses. The whenLabel rides in the address line so a clicked dot still
-  // reads as an open house.
-  const mapFeatures = openHouses
-    .filter((oh) => oh.latitude != null && oh.longitude != null)
-    .map((oh) => ({
-      type: 'Feature' as const,
-      geometry: {
-        type: 'Point' as const,
-        coordinates: [Number(oh.longitude), Number(oh.latitude)] as [number, number],
-      },
-      properties: {
-        p: oh.list_price,
-        bd: oh.beds_total,
-        ba: oh.baths_full,
-        sf: oh.living_area,
-        a: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
-        sub: oh.subdivision_name ?? '',
-        city: oh.city ?? '',
-        img: oh.photo_url ?? '',
-      },
-    }))
-  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
+  if (medianList != null) {
+    figures.push({
+      value: v3Text(formatPrice(medianList)),
+      label: v3Text('median list price on this calendar'),
+      href: '#calendar',
+    })
+  }
+  const [firstFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -169,80 +159,91 @@ export default async function OpenHousesPage({ searchParams }: { searchParams: P
         { name: 'Open houses', url: '/open-houses' },
       ],
     },
+    ...openHouseEventSchemas(openHouses, siteUrl),
+  ]
+
+  const cityItems: V3QuietItem[] = OH_CITY_SLUGS.map((slug) => ({
+    label: cityLabel(slug),
+    href: `/open-houses/${slug}`,
+  }))
+
+  const edgeItems: V3QuietItem[] = [
+    { kind: 'prose', term: 'The window', body: 'Today through six days out, Pacific, unless you pass dates on the URL. One soonest open house per listing. Builder spec and model homes stay off this list.' },
+    { label: 'All Central Oregon homes for sale', href: listingsBrowsePath() },
+    { label: 'Price drops this week', href: '/price-drops' },
+    ...cityItems,
   ]
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="open-houses" />
-      <TrackSearchView resultsCount={openHouseCount} />
-      <MetadataBlock schemas={schemas} />
-      {/* Preserved Event ItemList JSON-LD from the original page */}
-      {eventJsonLd ? (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: eventJsonLd }} />
-      ) : null}
-      <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Open houses' }]} />
-      <SmoothScrollProvider>
-        {/* Lead with the open-house count, not total regional inventory. §0:
-            the feed is week-scoped (not Saturday-only), so the count line says
-            "this week." H1 frames the page as a calendar, not "Open houses in." */}
-        <KbHero
-          data={{
-            activeCount: openHouseCount || null,
-            medianListPrice: null,
-            medianDaysToPending: null,
-          }}
-          countNoun={openHouseCount === 1 ? 'open house' : 'open houses'}
-          eyebrow="Central Oregon · Open house calendar"
-          titleTop="Open houses in"
-          titleBottom="Central Oregon"
-          // design-audit STA-1: with a count the hero reads "N open houses …"
-          // At zero the count prefix drops, so the lead must stand alone.
-          lead={
-            openHouseCount
-              ? 'on the calendar this week across Bend, Redmond, Sisters, and Central Oregon.'
-              : 'Nothing is on the calendar this week yet. Here is everything for sale right now.'
-          }
-          videoSrc={null}
-          posterSrc="/images/kb/sunriver-deschutes-river.jpg"
-        />
-        <KbOpenHouses
-          items={openHouseItems}
-          eyebrow="Central Oregon · This week"
-          heading="On the calendar"
-          viewAllHref={listingsBrowsePath()}
-          viewAllLabel="See all homes for sale"
-        />
-        {mapFeatures.length > 0 ? (
-          <KbListingMap
-            geojson={mapGeo}
-            totalActive={mapFeatures.length}
-            fitToFeatures
-            showRegionMarkers={false}
-            eyebrow="Central Oregon · On the map"
-            title={'Open houses\non the map'}
-            subtitle="Every open house with a pin. Price, beds, and street on each one."
-            countNoun="open houses"
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="open-houses" />
+        <TrackSearchView resultsCount={count} />
+        <MetadataBlock schemas={schemas} />
+
+        <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Open houses' }]} />
+
+        {firstFigure ? (
+          <V3Instrument
+            id="answer"
+            level={1}
+            eyebrow={v3Text('Central Oregon · this week')}
+            headline={v3Text('Open houses in Central Oregon')}
+            figures={[firstFigure, ...restFigures]}
+            source={v3Text(OH_TRACE)}
+            action={{
+              label: v3Text('Value my home'),
+              href: valuationHref('/open-houses'),
+              variant: 'primary',
+            }}
           />
-        ) : null}
-        {/* Buyer conversion — inline region capture (B1 residual). Same
-            listing_alerts product as city OH pages; propertyType A = SFR
-            narrowing so hasNarrowingFilter passes without inventing a city. */}
-        <KbCommunityAlerts
-          communityName="Central Oregon"
+        ) : (
+          <V3Quiet
+            id="answer"
+            heading="Open houses in Central Oregon"
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: 'Nothing on the calendar this week',
+                body: 'No upcoming open house landed in the live MLS OpenHouses field for the Central Oregon service area in this window. The homes-for-sale list is still live.',
+              },
+              { label: 'All Central Oregon homes for sale', href: listingsBrowsePath() },
+            ]}
+          />
+        )}
+
+        <V3Field
+          id="calendar"
+          ariaLabel="Open houses on the calendar this week"
+          items={fieldItems}
+          count={
+            fieldItems.length > 0
+              ? {
+                  value: fieldItems.length.toLocaleString('en-US'),
+                  label: fieldItems.length === 1 ? 'home on this list' : 'homes on this list',
+                  source: OH_FIELD_TRACE,
+                }
+              : undefined
+          }
+          emptyMessage="No open house on this pull has both a street and a list price, so this list has nothing to name."
+        />
+
+        <OpenHouseAlertsSheet
+          placeLabel="Central Oregon"
           city=""
           extraFilters={{ propertyType: 'A' }}
-          headline="Central Oregon"
-          body="Enter your email. When a single-family home hits the market in Bend, Redmond, Sisters, Sunriver, or nearby, you hear first. This open-house calendar stays live for the week."
         />
-        <KbSell
-          data={{
-            medianListPrice: regionPulse?.medianListPrice ?? null,
-            medianDaysToPending: regionPulse?.medianDaysToPending ?? null,
-            soldCount30d: regionPulse?.soldCount30d ?? null,
-          }}
-        />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+
+        <V3Quiet id="edges" heading="Keep looking" items={edgeItems} />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }

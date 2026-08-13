@@ -160,29 +160,47 @@ const REQUIRED = [
   },
   {
     file: 'app/open-houses/page.tsx',
+    // The FACT this locks is the head term, not the prop that carries it. KB
+    // spelled the H1 as titleTop; the v3 register takes `headline` (and the
+    // empty branch uses Quiet `heading=`). Both arms are exact literals.
     checks: [
-      { re: /titleTop\s*=\s*["']Open houses in["']/i, msg: 'open-houses H1 titleTop must be "Open houses in"' },
+      {
+        re: /titleTop\s*=\s*["']Open houses in["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?['"]Open houses in Central Oregon\b|heading\s*=\s*["']Open houses in Central Oregon\b/i,
+        msg: 'open-houses H1 must carry the head term: KB titleTop="Open houses in", or a v3 headline/heading literal opening "Open houses in Central Oregon"',
+      },
       { re: /title:\s*['"]Open Houses/i, msg: 'open-houses metadata title must lead with "Open Houses"' },
     ],
   },
   {
     file: 'app/open-houses/[city]/page.tsx',
     checks: [
-      { re: /titleTop\s*=\s*["']Open houses in["']/i, msg: 'city open-houses H1 titleTop must be "Open houses in"' },
+      {
+        re: /titleTop\s*=\s*["']Open houses in["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?`Open houses in \$\{cityName\}|heading\s*=\s*`Open houses in \$\{cityName\}/i,
+        msg: 'city open-houses H1 must carry the head term: KB titleTop="Open houses in", or a v3 headline/heading template literal reading `Open houses in ${cityName}`',
+      },
       { re: /title:\s*[`'"]Open Houses in/i, msg: 'city open-houses title must lead with "Open Houses in"' },
     ],
   },
   {
     file: 'app/price-drops/page.tsx',
+    // Same translation as the market hub: lock the head term, not the prop.
+    // KB titleTop was exact "Price Drops". v3 headlines are sentence case, so
+    // the v3 arm pins "Price drops in Central Oregon". Empty Quiet uses heading=.
     checks: [
-      { re: /titleTop\s*=\s*["']Price Drops["']/, msg: 'price-drops H1 titleTop must be exact "Price Drops"' },
+      {
+        re: /titleTop\s*=\s*["']Price Drops["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?['"]Price drops in Central Oregon\b|heading\s*=\s*["']Price drops in Central Oregon\b/,
+        msg: 'price-drops H1 must carry the head term: KB titleTop="Price Drops", or a v3 headline/heading literal opening "Price drops in Central Oregon"',
+      },
       { re: /title:\s*['"]Price Drops/i, msg: 'price-drops metadata title must lead with "Price Drops"' },
     ],
   },
   {
     file: 'app/price-drops/[city]/page.tsx',
     checks: [
-      { re: /titleTop\s*=\s*["']Price Drops["']/, msg: 'city price-drops H1 titleTop must be exact "Price Drops"' },
+      {
+        re: /titleTop\s*=\s*["']Price Drops["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?`Price drops in \$\{cityName\}|heading\s*=\s*`Price drops in \$\{cityName\}/,
+        msg: 'city price-drops H1 must carry the head term: KB titleTop="Price Drops", or a v3 headline/heading template literal reading `Price drops in ${cityName}`',
+      },
       { re: /title:\s*[`'"]Price Drops in/i, msg: 'city price-drops title must lead with "Price Drops in"' },
     ],
   },
@@ -275,6 +293,9 @@ function extractLayerAShell(src) {
   // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
   pushAll(/<V3Heading\b[^>]*>([\s\S]*?)<\/V3Heading>/g, 1)
   pushAll(/\bheadline\s*=\s*\{?\s*(?:v3Text\(\s*)?(["'`])([\s\S]*?)\1/g, 2)
+  // Quiet empty-state H1s use `heading=` (V3QuietProps.heading). Without this
+  // the banned-poetry scan misses the branch that replaces Instrument.
+  pushAll(/\bheading\s*=\s*(["'`])([\s\S]*?)\1/g, 2)
   // aria-label="…"
   pushAll(/\baria-label\s*=\s*(["'`])([\s\S]*?)\1/g, 2)
   // headerTitle assignment blob (search routes)

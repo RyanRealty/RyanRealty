@@ -1,101 +1,78 @@
 /**
- * Open Houses city page — KB (kinetic-brutalist) design, Phase 9 convergence.
- * Reuses the KB section library (components/site/kb/*) and the existing
- * open-houses + market-pulse data actions. No parity.json exists for this
- * route; noted below.
+ * /open-houses/[city] - city-scoped open houses, on the v3 barrel.
  *
- * NOTE: No parity.json found for /open-houses/[city]. Rewrite uses KB chrome only.
+ * Same contract as the region page. generateMetadata title still leads with
+ * "Open Houses in". dynamicParams stays true so a real city slug that is not
+ * in SITE_CITY_SLUGS still resolves through getCityFromSlug.
  *
- * Section stack: nav · section-tracker · metadata · breadcrumb · hero ·
- * open-houses · map · sell · footer.
- *
- * The map (KbListingMap) restores the map view the pre-KB OpenHousesClient
- * rendered: every open house with coordinates as a navy/cream pin, uncapped
- * (the editorial KbOpenHouses board caps at 12; the map shows the full set).
- *
- * §0: all counts via getOpenHousesWithListings + getMarketPulse from @/lib/data.
+ * KB-era deletions: KbHero, KbOpenHouses, KbListingMap, KbCommunityAlerts markup,
+ * KbSell, KbFooter, SmoothScrollProvider. Capture contract kept on the Sheet.
  */
 
-import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getOpenHousesWithListings } from '@/app/actions/open-houses'
-import type { OpenHouseWithListing } from '@/app/actions/open-houses'
+import type { Metadata } from 'next'
 import { getCityFromSlug } from '@/app/actions/listings'
-import { getMarketPulse } from '@/lib/data'
-import { listingTileHref, listingDetailPath } from '@/lib/slug'
+import {
+  getUpcomingOpenHouses,
+  getListingTiles,
+  getHeroPhotosByListingKeys,
+} from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
-import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { homesForSalePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import { formatPrice } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
-import { KbHero } from '@/components/site/kb/KbHero.client'
-import { KbOpenHouses } from '@/components/site/kb/KbOpenHouses.client'
-import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { KbSell } from '@/components/site/kb/KbSell.client'
-import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
-import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import {
+  V3_ROOT_CLASS,
+  v3Text,
+  V3Breadcrumb,
+  V3Field,
+  V3Footer,
+  V3_FOOTER_COLUMNS,
+  V3Instrument,
+  V3Quiet,
+  type V3InstrumentFigure,
+  type V3QuietItem,
+} from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import TrackSearchView from '@/components/tracking/TrackSearchView'
-import '@/components/site/kb/kb.css'
+import { OpenHouseAlertsSheet } from '../_v3/OpenHouseAlertsSheet.client'
+import {
+  OH_CITY_SLUGS,
+  OH_FIELD_TRACE,
+  OH_TRACE,
+  addIsoDays,
+  cityLabel,
+  pacificTodayIso,
+} from '../_v3/oh-constants'
+import { assembleOpenHouses, medianPositive } from '../_v3/oh-listings'
+import { openHouseFieldItems } from '../_v3/oh-field-items'
+import { openHouseEventSchemas } from '../_v3/oh-jsonld'
 
 export const dynamicParams = true
 export const revalidate = 60
+
+export function generateStaticParams(): Array<{ city: string }> {
+  return OH_CITY_SLUGS.map((slug) => ({ city: slug }))
+}
 
 type Props = { params: Promise<{ city: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city: citySlug } = await params
   const cityName = await getCityFromSlug(citySlug)
-  if (!cityName) return pageMetadata({ title: 'Open Houses in Central Oregon', description: "This week's open houses across Central Oregon.", path: `/open-houses/${citySlug}` })
+  if (!cityName) {
+    return pageMetadata({
+      title: 'Open Houses in Central Oregon',
+      description: "This week's open houses across Central Oregon.",
+      path: `/open-houses/${citySlug}`,
+    })
+  }
   return pageMetadata({
     title: `Open Houses in ${cityName}, Oregon`,
     description: `This week's open houses in ${cityName}, Oregon. Times, addresses, and prices from the regional MLS.`,
     path: `/open-houses/${citySlug}`,
-  })
-}
-
-/** Format a 24h time string and event date into a short human label. */
-function openHouseWhen(eventDate: string, start: string | null, end: string | null): string {
-  const day = new Date(eventDate + 'T12:00:00Z').toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC',
-  })
-  const t = (s: string | null) => {
-    if (!s) return ''
-    const [h, m] = s.split(':')
-    const hr = Number(h)
-    const ap = hr >= 12 ? 'pm' : 'am'
-    const h12 = hr % 12 === 0 ? 12 : hr % 12
-    return m && m !== '00' ? `${h12}:${m}${ap}` : `${h12}${ap}`
-  }
-  const range = start && end ? `${t(start)}-${t(end)}` : start ? t(start) : ''
-  return [day, range].filter(Boolean).join(' · ')
-}
-
-/** Build the Event ItemList JSON-LD preserved from the original city page. */
-function buildEventJsonLd(openHouses: OpenHouseWithListing[], cityName: string): string {
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-  const events = openHouses.slice(0, 20).map((oh) => ({
-    '@type': 'Event',
-    name: `Open House at ${oh.unparsed_address || [oh.street_number, oh.street_name].filter(Boolean).join(' ') || 'Property'}`,
-    startDate: `${oh.event_date}T${(oh.start_time ?? '09:00').toString().slice(0, 5)}:00`,
-    endDate: `${oh.event_date}T${(oh.end_time ?? '12:00').toString().slice(0, 5)}:00`,
-    location: {
-      '@type': 'Place',
-      name: cityName,
-      address: oh.unparsed_address || [oh.street_number, oh.street_name, oh.city, oh.state, oh.postal_code].filter(Boolean).join(', '),
-    },
-    url: `${siteUrl}${listingDetailPath(
-      oh.listing_key,
-      { streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city, state: oh.state, postalCode: oh.postal_code },
-      { city: oh.city, subdivision: oh.subdivision_name },
-      { mlsNumber: oh.list_number }
-    )}`,
-  }))
-  return JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'ItemList',
-    itemListElement: events.map((e, i) => ({ '@type': 'ListItem', position: i + 1, item: e })),
   })
 }
 
@@ -121,67 +98,63 @@ export default async function OpenHousesCityPage({
   if (!cityName) notFound()
 
   const sp = await searchParams
-  const filters = {
-    dateFrom: sp.dateFrom?.trim(),
-    dateTo: sp.dateTo?.trim(),
-    community: sp.community ? sp.community.split(',').map((s) => s.trim()).filter(Boolean) : undefined,
+  const todayIso = pacificTodayIso()
+  const dateFrom = sp.dateFrom?.trim() || todayIso
+  const dateTo = sp.dateTo?.trim() || addIsoDays(todayIso, 6)
+  const community = sp.community
+    ? sp.community.split(',').map((s) => s.trim()).filter(Boolean)
+    : undefined
+  const minPrice = sp.minPrice ? Number(sp.minPrice) : undefined
+  const maxPrice = sp.maxPrice ? Number(sp.maxPrice) : undefined
+  const beds = sp.beds ? Number(sp.beds) : undefined
+  const baths = sp.baths ? Number(sp.baths) : undefined
+
+  const rows = await getUpcomingOpenHouses({
+    dateFromIso: dateFrom,
+    dateToIso: dateTo,
+    todayIso,
     city: cityName,
-    minPrice: sp.minPrice ? Number(sp.minPrice) : undefined,
-    maxPrice: sp.maxPrice ? Number(sp.maxPrice) : undefined,
-    beds: sp.beds ? Number(sp.beds) : undefined,
-    baths: sp.baths ? Number(sp.baths) : undefined,
+  })
+  const listingKeys = [...new Set(rows.map((r) => r.listing_key))]
+  const [tiles, heroes] =
+    listingKeys.length > 0
+      ? await Promise.all([
+          getListingTiles({ listingKeys: listingKeys.slice(0, 5000), status: 'all', limit: 500 }),
+          getHeroPhotosByListingKeys(listingKeys),
+        ])
+      : [[], new Map<string, string>()]
+
+  const openHouses = assembleOpenHouses(rows, tiles, heroes, {
+    community,
+    city: cityName,
+    minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
+    maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
+    beds: Number.isFinite(beds) ? beds : undefined,
+    baths: Number.isFinite(baths) ? baths : undefined,
+  })
+
+  const count = openHouses.length
+  const fieldItems = openHouseFieldItems(openHouses)
+  const medianList = medianPositive(openHouses.map((oh) => oh.listPrice))
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const path = `/open-houses/${citySlug}`
+
+  const figures: V3InstrumentFigure[] = []
+  if (count > 0) {
+    figures.push({
+      value: v3Text(count.toLocaleString('en-US')),
+      label: v3Text(count === 1 ? `open house in ${cityName}` : `open houses in ${cityName}`),
+      href: '#calendar',
+    })
   }
-
-  // market_pulse_live stores city geo_slug SPACE-separated (e.g. "la pine")
-  const geoSlug = citySlug.replace(/-/g, ' ')
-
-  const [openHouses, pulse] = await Promise.all([
-    withTimeoutFallback(getOpenHousesWithListings(filters), [], 4000, 'open-houses-city:list'),
-    withTimeoutFallback(getMarketPulse({ geoType: 'city', geoSlug }), null, 3000, 'open-houses-city:pulse'),
-  ])
-
-  // §0: count from live data.
-  const openHouseCount = openHouses.length
-
-  // Map to KB open-house items.
-  const openHouseItems = openHouses.slice(0, 12).map((oh) => ({
-    href: listingTileHref({
-      listingKey: oh.listing_key, streetNumber: oh.street_number, streetName: oh.street_name, city: oh.city,
-    }),
-    photoUrl: oh.photo_url,
-    price: oh.list_price,
-    address: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
-    cityLine: [oh.city, oh.subdivision_name].filter(Boolean).join(' · '),
-    beds: oh.beds_total,
-    baths: oh.baths_full,
-    sqft: oh.living_area,
-    whenLabel: openHouseWhen(oh.event_date, oh.start_time, oh.end_time),
-  }))
-
-  // Map geo — every open house with coordinates (uncapped). Restores the map
-  // view the pre-KB OpenHousesClient rendered, in the KB navy/cream basemap.
-  const mapFeatures = openHouses
-    .filter((oh) => oh.latitude != null && oh.longitude != null)
-    .map((oh) => ({
-      type: 'Feature' as const,
-      geometry: {
-        type: 'Point' as const,
-        coordinates: [Number(oh.longitude), Number(oh.latitude)] as [number, number],
-      },
-      properties: {
-        p: oh.list_price,
-        bd: oh.beds_total,
-        ba: oh.baths_full,
-        sf: oh.living_area,
-        a: oh.unparsed_address ?? [oh.street_number, oh.street_name].filter(Boolean).join(' '),
-        sub: oh.subdivision_name ?? '',
-        city: oh.city ?? '',
-        img: oh.photo_url ?? '',
-      },
-    }))
-  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
-
-  const eventJsonLd = openHouses.length > 0 ? buildEventJsonLd(openHouses, cityName) : null
+  if (medianList != null) {
+    figures.push({
+      value: v3Text(formatPrice(medianList)),
+      label: v3Text('median list price on this calendar'),
+      href: '#calendar',
+    })
+  }
+  const [firstFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -189,78 +162,97 @@ export default async function OpenHousesCityPage({
       items: [
         { name: 'Home', url: '/' },
         { name: 'Open houses', url: '/open-houses' },
-        { name: cityName, url: `/open-houses/${citySlug}` },
+        { name: cityName, url: path },
       ],
     },
+    ...openHouseEventSchemas(openHouses, siteUrl),
+  ]
+
+  const siblingItems: V3QuietItem[] = OH_CITY_SLUGS.filter((slug) => slug !== citySlug).map((slug) => ({
+    label: cityLabel(slug),
+    href: `/open-houses/${slug}`,
+  }))
+
+  const edgeItems: V3QuietItem[] = [
+    { kind: 'prose', term: 'The window', body: `Today through six days out, Pacific. Open houses with a ${cityName} address. One soonest open house per listing.` },
+    { label: 'All Central Oregon open houses', href: '/open-houses' },
+    { label: `Homes for sale in ${cityName}`, href: homesForSalePath(cityName) },
+    { label: `Price drops in ${cityName}`, href: `/price-drops/${citySlug}` },
+    ...siblingItems,
   ]
 
   return (
-    <main className="kb-root">
-      <KbSectionTracker pageType="open-houses-city" />
-      <TrackSearchView city={cityName} resultsCount={openHouseCount} />
-      <MetadataBlock schemas={schemas} />
-      {/* Preserved Event ItemList JSON-LD from the original city page */}
-      {eventJsonLd ? (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: eventJsonLd }} />
-      ) : null}
-      <KbBreadcrumb overlay trail={[{ label: 'Home', href: '/' }, { label: 'Open houses', href: '/open-houses' }, { label: cityName }]} />
-      <SmoothScrollProvider>
-        <KbHero
-          data={{
-            // §0: count open houses on the calendar, not city-wide active inventory.
-            activeCount: openHouseCount || null,
-            medianListPrice: pulse?.medianListPrice ?? null,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
-          }}
-          countNoun={openHouseCount === 1 ? 'open house' : 'open houses'}
-          eyebrow={`${cityName} · Open house calendar`}
-          titleTop="Open houses in"
-          titleBottom={cityName}
-          lead={
-            openHouseCount
-              ? `on the calendar in ${cityName} this week.`
-              : `Nothing is on the calendar in ${cityName} this week yet.`
-          }
-          videoSrc={null}
-          posterSrc="/images/kb/sunriver-deschutes-river.jpg"
+    <>
+      <main className={V3_ROOT_CLASS}>
+        <KbSectionTracker pageType="open-houses-city" />
+        <TrackSearchView city={cityName} resultsCount={count} />
+        <MetadataBlock schemas={schemas} />
+
+        <V3Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Open houses', href: '/open-houses' },
+            { label: cityName },
+          ]}
         />
-        <KbOpenHouses
-          items={openHouseItems}
-          eyebrow={`${cityName} · This week`}
-          heading="On the calendar"
-          viewAllHref="/open-houses"
-        />
-        {/* Map — every open house on the real terrain (restores the pre-KB map view) */}
-        {mapFeatures.length > 0 ? (
-          <KbListingMap
-            geojson={mapGeo}
-            totalActive={mapFeatures.length}
-            // C-02: without countNoun the badge reads "N active listings" over
-            // open-house data — a mislabel, not just a count mismatch.
-            countNoun={mapFeatures.length === 1 ? 'open house' : 'open houses'}
-            fitToFeatures
-            showRegionMarkers={false}
-            eyebrow={cityName}
-            title={'Open houses\non the map'}
-            subtitle={`Every open house in ${cityName} with a pin.`}
+
+        {firstFigure ? (
+          <V3Instrument
+            id="answer"
+            level={1}
+            eyebrow={v3Text(`${cityName} · this week`)}
+            headline={v3Text(`Open houses in ${cityName}`)}
+            figures={[firstFigure, ...restFigures]}
+            source={v3Text(OH_TRACE)}
+            action={{
+              label: v3Text('Value my home'),
+              href: valuationHref(path),
+              variant: 'primary',
+            }}
           />
-        ) : null}
-        {/* Buyer conversion — inline city-scoped listing_alerts capture (B1). */}
-        <KbCommunityAlerts
-          communityName={cityName}
-          city={cityName}
-          subdivision=""
-          body={`Save a search for ${cityName}. New matches land in your inbox as they list.`}
+        ) : (
+          <V3Quiet
+            id="answer"
+            heading={`Open houses in ${cityName}`}
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: `Nothing on the calendar in ${cityName} this week`,
+                body: `No upcoming open house landed in the live MLS OpenHouses field for ${cityName} in this window.`,
+              },
+              { label: 'All Central Oregon open houses', href: '/open-houses' },
+            ]}
+          />
+        )}
+
+        <V3Field
+          id="calendar"
+          ariaLabel={`Open houses in ${cityName} this week`}
+          items={fieldItems}
+          count={
+            fieldItems.length > 0
+              ? {
+                  value: fieldItems.length.toLocaleString('en-US'),
+                  label: fieldItems.length === 1 ? `home in ${cityName}` : `homes in ${cityName}`,
+                  source: OH_FIELD_TRACE,
+                }
+              : undefined
+          }
+          emptyMessage={`No open house in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
         />
-        <KbSell
-          data={{
-            medianListPrice: pulse?.medianListPrice ?? null,
-            medianDaysToPending: pulse?.medianDaysToPending ?? null,
-            soldCount30d: pulse?.closedLast30Days ?? null,
-          }}
-        />
-        <KbFooter towns={[]} />
-      </SmoothScrollProvider>
-    </main>
+
+        <OpenHouseAlertsSheet placeLabel={cityName} city={cityName} />
+
+        <V3Quiet id="edges" heading="Keep looking" items={edgeItems} />
+      </main>
+
+      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
+          when it is NOT nested in sectioning content, and <main> is sectioning
+          content, so inside it the element is a generic and the page ships no
+          contentinfo landmark. ci:default-chrome-footer counts footers without
+          checking placement. */}
+      <V3Footer columns={V3_FOOTER_COLUMNS} />
+    </>
   )
 }
