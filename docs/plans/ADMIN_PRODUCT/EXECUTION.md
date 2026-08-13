@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). E-SYSTEM `00a3daee` READY.
-Ratchet 178 / 8 / 70. kb import sites 109→119 (legal/utility gained KbSectionTracker leftover).
+**Updated:** 2026-08-13 (Grok, Go running). A5 `a237a340` READY.
+Ratchet held 178 / 8 / 70 (admin lease). Wave 2 public still building.
 
 ---
 
@@ -97,6 +97,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | A3 person header | **landed** `56a1ccc0` | Who / Next / Now on `/admin/people/[id]`. Split `PersonIdentityHeader` for the 600 LOC floor. Admin look needs a signed-in pass. |
 | E-VOICE | **landed** `0ad6a0c2` | D11 law in `VOICE.md`. `blog-voice.mdc` deleted. Gate is punctuation + invented quotes + Value my home. Eight live worth-CTAs rewritten so the gate could land. Baseline 10→6. |
 | A4+A1 looking-at | **landed** `86695f6e` | Locked SMS `{name} is looking at {address}.` Key `crm_people.id`. One ping per person+listing per session. Today first lane. Queue only. No live SMS. Admin look still needs a signed-in 390+1280 pass. |
+| A5 ask text | **landed** `a237a340` | Composer preload `{address}. Want a short comparison and what to think about offering?` Today + person Ask is a `?reply=` link. Draft only. No Twilio. Packet PDF still taste. Admin look still needs a signed-in pass. |
 | E-CHART | **landed** `d554ba7e` | `V3Chart` atom inside Instrument. Straight SVG segments, caller-formatted labels, no library. Not a seventh pattern. No family page mounts it yet. E-MARKET-REFINE unblocked. |
 | E-HOMES-SEARCH | **landed** `79e34778` | Search / buy / compare on the barrel. Ratchet 527→513, 73→69. Mixed 11→14 (tracked). Look 390+1280 still needed. |
 | E-HOMES-DETAIL | **landed** `fd1d1d09` | Listing money page on the barrel. JSON-LD RealEstateListing + BreadcrumbList stay on the page MetadataBlock. Capture still `submitSearchAlertSignup` with company trap and disclosure. Similar homes are a Ledger. Value my home is a Quiet link. Ratchet 513→505, 69→68, mixed 14→15 (tracked). Look 390+1280 on 61281 McRoberts: one `v3-chrome`, filled Schedule a tour, capture Sheet, Quiet Value my home, sidebar broker at 1280. SignInPrompt leftover is not this lease. |
@@ -219,7 +220,7 @@ from the baseline if it drifts.
 |---|---|---|---|
 | **A3** | admin person header | **landed** `56a1ccc0` | Who (closed labels), next step, now. `PersonIdentityHeader`. Admin look still needs a signed-in 390+1280 pass. |
 | **A4+A1** | `queueReturnVisitAlert` rewrite + Today looking-at | **landed** `86695f6e` READY | `{name} is looking at {address}.` Key `crm_people.id`. Today first lane. Queue only. No live SMS. Admin look still needs a signed-in pass. |
-| **A5** | lead ask text | after A4 rail (rail landed) | Names the home. Does not say we watched them. Packet is taste. |
+| **A5** | lead ask text | **landed** `a237a340` READY | Names the home. Does not say we watched them. Draft in composer. Packet is taste. |
 | **C1** | expired packet | taste | Matt stops the PDF. |
 | **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | **landed** `317d88de` | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
 | **G1–G4** | social / GBP / calendar | after A3 or in parallel if files disjoint | Tokens already live. Produce is Imagine. Week-grant is not in Go. |
