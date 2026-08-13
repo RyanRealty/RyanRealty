@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). F1 `9e11ce83` READY.
-Ratchet held 139 / 3 / 69. kb 84. Wave 3 F1 landed. Next: P10 remaining gates.
+**Updated:** 2026-08-13 (Grok, Go running). P10 `d5ebc4db` READY.
+Ratchet **129 / 0 / 71**, kb 73. Public wrap B=0. Next: standing refine / G2 draft on Today (no publish).
 
 ---
 
@@ -73,7 +73,7 @@ A4+A1 · E-CHART (serial on the barrel — one agent, not beside another barrel 
 **Wave 2** (after wave-1 lands that they depend on):
 E-PLACES-REFINE · E-MARKET-REFINE (needs E-CHART) · E-CUT (301/noindex per cut-list)
 
-**Wave 3:** P10 · F1 (F1 landed `9e11ce83`. P10 next.)
+**Wave 3:** P10 · F1 (both landed. Wrap B=0.)
 
 Cap: one agent per open lease in the current wave. Do not open a second agent
 on the same glob. Listing detail owns `components/site/listing-detail/**`.
@@ -86,10 +86,10 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **139** | `scripts/public-ui-baseline.json` |
-| Public legacy pages (no v3) | **3** | same |
-| Public mixed pages (v3 body + leftover register) | **69** | same |
-| Of 527, kb chrome | **84** | same, register `kb` |
+| Public non-v3 imports | **129** | `scripts/public-ui-baseline.json` |
+| Public legacy pages (no v3) | **0** | same. Frozen noindex LP `app/lp/tetherow/heath` is a named B-exclusion; still counts toward A. |
+| Public mixed pages (v3 body + leftover register) | **71** | same, tracked not gated |
+| Of 527, kb chrome | **73** | same, register `kb` |
 | Public v3-only pages | **3** | collections/[id], hidden, search index — other pages still import kb trackers / MetadataBlock |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
@@ -114,6 +114,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-PLACES-REFINE | **landed** `1c10fe0c` | City / neighborhood / community / subdivision / zip / oregon detail leftover mixed onto v3. Maps are shared `PlaceFieldMap`. City alerts trap `company` and disclose in children. D9 subdivision yearly series is `Instrument.chart`. Oregon primary is Get a broker introduction. Ratchet held 139 / 3 / 69. shadcn 182→179. City page stayed under 600 via `CityHomesField`. Look 390+1280 `/cities/bend`: one chrome, H1 Bend homes for sale: a seller's market, live figures. `/oregon/portland`: H1 Homes for sale in Portland, Oregon, Get a broker introduction, We don't work in Portland. |
 | E-MARKET-REFINE | **landed** `c29d5b51` | Hub, central-oregon, annual-review, months-of-supply. D9: median-sale overlay is `Instrument.chart` (straight SVG, year series). Inquiry sheets keep `submitMarketPageInquiry`. Ratchet held 139 / 3 / 69. Look 390+1280 `/housing-market`: one chrome, H1 Central Oregon housing market: a balanced market, live figures, chart in the Instrument. `/housing-market/annual-review` same chart atom. |
 | F1 query battery | **landed** `9e11ce83` | Three Loop F queries + GSC extras map to survivor URLs in `/llms.txt` + JSON-LD. G67 `ci:ai-query-battery`. `/reports` hop gone from the map. `/sell` and `/sell/valuation` emit Service + FAQPage. Ratchet held 139 / 3 / 69. Look 390+1280 `/about`, `/sell`, `/sell/valuation`, `/communities/northwest-crossing`: one chrome, H1s, Value my home on sell/valuation. Chrome CTA still Get your home's value. Cookie banner residual. SellerLPForm still See what your home is worth (not this lease). |
+| P10 wrap | **landed** `d5ebc4db` | B=0. Reports slug inverted onto `/housing-market/reports/[slug]`. Hub v3-wrapped. Frozen Heath LP excluded from B only (`scripts/lib/frozen-noindex-lps.mjs`). Ratchet 139/3/69 → 129/0/71, kb 84→73. Tokens 209→208. Static-params 17→14. Deleted orphan `KbSell`. Look 390+1280 `/housing-market/reports` H1 Central Oregon market reports: a balanced market, live figures, Value my home. Weekly report H1 the CMS title. `/reports` 308s to the hub. Heath still noindex. |
 
 Chrome is live. The 119 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -229,7 +230,7 @@ from the baseline if it drifts.
 | **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | **landed** `317d88de` | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
 | **G1–G4** | social / GBP / calendar | after A3 or in parallel if files disjoint | Tokens already live. Produce is Imagine. Week-grant is not in Go. |
 | **F1** | `/llms.txt` + JSON-LD + G34/G39/G67 | **landed** `9e11ce83` READY | Named queries cite survivor URLs. Map: `lib/seo/ai-query-map.json`. Live `/llms.txt` lists About, Reviews, Value my home, NWX 3/2. Google still has to recrawl. |
-| **P10** | public wrap closing gates | **open** | Admin P10 already shipped. Public wrap: `ci:public-ui` legacy pages still 3 (`housing-market/reports` KB leftover, `reports/[slug]` implementation, frozen `/lp/tetherow/heath`). Plan: B → 0 then closing gates. Do not restyle the frozen LP. Technical shape is the agent's call. Record the call on this board. |
+| **P10** | public wrap closing gates | **landed** `d5ebc4db` READY | B=0. Call: invert reports slug + v3 hub wrap + named frozen-LP B-exclusion. Mixed leftover: ReportsByCityView, ReportsIndexContent, MetadataBlock, KbSectionTracker. Did not restyle heath. |
 
 ### Do not lease
 
