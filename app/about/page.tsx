@@ -2,11 +2,12 @@
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * About destinations open on Quiet + Sheet. This page opens on Quiet (who we
- * are) then Instrument (verified licenses) then Ledger (service area) then
- * Quiet (FAQ and edges). The family's Sheet lives on /contact and /team/[slug],
- * where the capture forms already were. A new on-page form here would be a new
- * capture contract. The ask on this page is the valuation door, with ?from=/about.
+ * Look (2026-08-13): About = faces. The first viewport is the live brokers'
+ * canonical transparent PNGs (no card, no wash, no box). Quiet (origin) then
+ * Instrument (verified licenses) then Ledger (service area) then Quiet (FAQ).
+ * PUBLIC_UI.md opens About on Quiet + Sheet. The Sheet stays on /contact and
+ * /team/[slug]. A new on-page form here would be a new capture contract. The
+ * ask on this page is the valuation door, with ?from=/about.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (AboutPage + aboutOrganization +
@@ -55,6 +56,8 @@ import {
   ABOUT_MISSION,
   FIRM_LICENSE,
 } from './_v3/about-constants'
+import { AboutFaces } from './_v3/AboutFaces'
+import { aboutFaceFromBroker, type AboutFace } from './_v3/about-faces'
 import { TEAM_RANK } from '@/app/team/_v3/team-constants'
 
 const ROUTE_PATH = '/about'
@@ -127,11 +130,14 @@ export default async function AboutPage() {
     (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
   )
 
+  const faces = orderedBrokers
+    .map((b) => aboutFaceFromBroker(b))
+    .filter((face): face is AboutFace => face !== null)
+
   const originItems: V3QuietItem[] = [
     { kind: 'prose', body: ABOUT_MISSION },
     {
       kind: 'prose',
-      term: 'How it started',
       body: [
         `Matt Ryan opened Ryan Realty in Bend in ${BRAND.foundedLabel}, after years in the fire service. He learned the business from Hjalmar "Red" Erickson.`,
         'When the comps do not support the price you want, we say so before you sign anything. Every listing gets a video, a 3D walkthrough, and its own page here.',
@@ -217,11 +223,16 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        <V3Quiet
-          id="about"
+        <AboutFaces
+          people={faces}
           eyebrow="Ryan Realty · Bend, Oregon"
           heading="About Ryan Realty"
-          headingLevel={1}
+        />
+
+        <V3Quiet
+          id="about"
+          heading="How it started"
+          headingLevel={2}
           items={originItems}
         />
 

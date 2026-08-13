@@ -3,7 +3,7 @@
   "mockup": "design_system/ryan-realty/ui_kits/about/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
   "competitiveTarget": "Beat generic national-brokerage profile pages by leading with verified facts, a concrete origin, live city inventory, and direct-broker doors. Zero marketing-speak except the locked D11 mission sentence.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-ABOUT). Rhythm: three of the six patterns (Quiet, Instrument, Ledger), no two adjacent alike, chrome exempt. Order is Breadcrumb, Quiet (mission + origin, headingLevel 1), Instrument (founded / firm license / principal broker), Ledger (service-area cities from market_pulse_live), Quiet (FAQ and edges), Footer. PUBLIC_UI.md opens About on Quiet + Sheet. The family's Sheet lives on /contact and /team/[slug], where the capture forms already were. A new on-page form here would be a new capture contract. The ask on this page is the valuation door with ?from=/about. D11: the mission sentence is the one virtue-word exception, exact words, We. City rows skip a missing median rather than printing zero under a live-MLS source line. Dates render in Pacific through formatDate. KB-era deletions this migration made: KbHero (including property search), KbAbout, KbExploreTowns, KbTestimonials, KbArticles, KbSell, KbTeam (already removed from this page 2026-07-08), FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
+  "note": "Look 2026-08-13: About = faces. Order is Breadcrumb, AboutFaces (live broker cutouts, H1), Quiet (mission + origin), Instrument (founded / firm license / principal broker), Ledger (service-area cities from market_pulse_live), Quiet (FAQ and edges), Footer. PUBLIC_UI.md opens About on Quiet + Sheet. Faces are Stage's job (owned media) without V3Stage's full-bleed frame, which would box the transparent PNGs. The family's Sheet lives on /contact and /team/[slug]. A new on-page form here would be a new capture contract. The ask is the valuation door with ?from=/about. D11: the mission sentence is the one virtue-word exception, exact words, We. City rows skip a missing median rather than printing zero under a live-MLS source line. Dates render in Pacific through formatDate. KB-era deletions this migration made: KbHero (including property search), KbAbout, KbExploreTowns, KbTestimonials, KbArticles, KbSell, KbTeam (already removed from this page 2026-07-08), FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -22,12 +22,17 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome. Home > About. Surface tone (this page opens on Quiet, not a dark Stage). Current page never a link.",
+      "section": "Chrome. Home > About. Surface tone (this page opens on cream faces, not a dark Stage). Current page never a link.",
+      "blocking": true
+    },
+    {
+      "name": "AboutFaces",
+      "section": "First viewport. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts, each a door to /team/[slug]. No card, no wash, no rectangular box. H1 lives here.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice. Opening: the locked D11 mission sentence, origin facts (Matt, fire service, Red Erickson, June 2023), doors to /team /reviews /contact. Closing: the same FAQ array the FAQPage JSON-LD uses, plus outbound edges and any city that had no publishable median.",
+      "section": "Pattern 6, twice. After the faces: the locked D11 mission sentence, origin facts (Matt, fire service, Red Erickson, June 2023), doors to /team /reviews /contact. Closing: the same FAQ array the FAQPage JSON-LD uses, plus outbound edges and any city that had no publishable median.",
       "blocking": true
     },
     {
@@ -60,7 +65,7 @@
     },
     {
       "name": "V3Stage",
-      "reason": "Pattern 4 needs owned media and is never allowed over a number. Opening on Stage would also require tone=on-media on the breadcrumb over a Quiet first viewport."
+      "reason": "Pattern 4 needs owned media and is never allowed over a number. V3Stage is one full-bleed frame with a navy scrim, which would put a rectangle behind the transparent broker PNGs. AboutFaces does that owned-media job on cream instead."
     },
     {
       "name": "V3Field",
