@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). E-PLACES-REST `98588ccb` READY.
-Ratchet 296 / 41 / 40. kb page imports 274→198.
+**Updated:** 2026-08-13 (Grok, Go running). E-HOMES-HOME `559b9233` READY.
+Ratchet 262 / 35 / 45. kb import sites 198→165.
 
 ---
 
@@ -86,10 +86,10 @@ file is required, the first agent to need it takes the lease and the other waits
 
 | Meter | Now | Source |
 |---|---|---|
-| Public non-v3 imports | **296** | `scripts/public-ui-baseline.json` |
-| Public legacy pages (no v3) | **41** | same |
-| Public mixed pages (v3 body + leftover register) | **40** | same |
-| Of 527, kb chrome | **198** | same, register `kb` |
+| Public non-v3 imports | **262** | `scripts/public-ui-baseline.json` |
+| Public legacy pages (no v3) | **35** | same |
+| Public mixed pages (v3 body + leftover register) | **45** | same |
+| Of 527, kb chrome | **165** | same, register `kb` |
 | Public v3-only pages | **0** | same — layout mounts `V3Chrome`; pages still import kb trackers / MetadataBlock |
 | E-CHROME | **landed** `c19b15bd` | prod READY. Look 390+1280: one `v3-chrome` header, filled CTA both widths, menu has Sell links, `/admin` has no public bar. Ratchet held. |
 | G5 wrappers | **landed** `317d88de` | `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No API call. Clip taste still a hard stop. |
@@ -104,8 +104,9 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-HOMES-SIGNALS | **landed** `24835c31` | Open houses and price drops on the barrel. Motivated-sellers 308s into price-drops. Capture still `submitSearchAlertSignup` with company trap and disclosure. Ratchet 490→432, 66→60, mixed 17→21 (tracked). kb 372→320. HTML look: one chrome, H1s, Value my home, disclosure. |
 | E-ABOUT | **landed** `b48a8e82` | `/about`, `/team`, `/team/[slug]`, `/contact`, `/reviews`, `/join` on the barrel. Mission sentence is the D11 exception. ContactSheet keeps `submitContactForm`. Broker valuation keeps `submitBrokerSellerLead`. Ratchet 432→383, 60→54, mixed 21→27 (tracked). kb 320→274. shadcn 200→198. Look 390+1280: one chrome, H1s, mission, contact Sheet. Join has no Value my home (recruiting footer). Chrome CTA still says Get your home's value (not this lease). Cookie banner residual. |
 | E-PLACES-REST | **landed** `98588ccb` | Cities, communities, parks, schools, central-oregon events/trails/venues/golf on the barrel. Capture still `submitSearchAlertSignup` with company trap and disclosure. Maps are `PlaceFieldMap`. Deleted NeighborhoodMap, VenueMap, AreaMarketBand, CommunityIndexBrowser, RegionalSfrAlertsBand. Ratchet 383→296, 54→41, mixed 27→40 (tracked). kb 274→198. shadcn 198→197. tokens 242→241. |
+| E-HOMES-HOME | **landed** `559b9233` | Homepage, our-homes, luxury, videos, feed (301 → `/videos?view=feed`), activity on the barrel. D11 H1 and lead are literals. Capture still `submitSearchAlertSignup` with company trap and disclosure. KbMarketHud leftover (D9). Deleted KbCommunities, KbTicker, KbCommunityAlerts, KbTeam, KbTestimonials. Ratchet 296→262, 41→35, mixed 40→45 (tracked). kb 198→165. shadcn 197→196. Bundle 9.19 MB. Look 390+1280 `/`: one chrome, H1, D11 lead, live MLS figures, Value my home. |
 
-Chrome is live. The 198 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
+Chrome is live. The 165 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
 Look residual (not this lease): at 390 a leftover `SignInPrompt` dialog covers the page. Dirty tree, do not join.
 
@@ -194,7 +195,7 @@ from the baseline if it drifts.
 | **E-HOMES-SEARCH** | `app/search/**`, `app/buy/**`, `app/compare/**` | 4 | **landed** `79e34778` READY | Search is the Homes Field. Ratchet 527→513, 73→69. Look still needed. |
 | **E-HOMES-DETAIL** | `app/listing/**` | 1 | **landed** `fd1d1d09` READY | Money page on the barrel. JSON-LD + capture stay. Look 390+1280 on a live listing: one chrome, tour CTA, capture, Quiet Value my home. |
 | **E-HOMES-SIGNALS** | `app/open-houses/**`, `app/price-drops/**`, `app/motivated-sellers/**` | 6 | **landed** `24835c31` READY | Open houses + price drops on the barrel. Motivated-sellers 308s to price-drops. Capture stays. |
-| **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | 6 | **open** (wave 1) | Homepage H1/lead already locked (D11). 16 kb imports on `app/page.tsx` today. Live H1 is still the film line, not the lock. |
+| **E-HOMES-HOME** | `app/page.tsx`, `app/our-homes/**`, `app/luxury-homes-bend/**`, `app/videos/**`, `app/feed/**`, `app/activity/**` | mixed leftover | **landed** `559b9233` READY | D11 H1/lead locked. KbMarketHud leftover (D9). `/feed` folds into `/videos?view=feed`. Look 390+1280 on `/`. |
 | **E-HOMES-TOOLS** | `app/tools/mortgage-calculator/**`, `app/tools/rental-property-calculator/**` | 2 | **open** (wave 1) | Appreciation stays with Market. |
 | **E-PLACES-REST** | `app/cities/page.tsx`, `app/communities/page.tsx`, `app/central-oregon/**`, `app/parks/**`, `app/schools/**` | 13 | **landed** `98588ccb` READY | Indexes + lifestyle. Detail cities/communities/subdivisions/zip/oregon remain mixed quarry (E-PLACES-REFINE). |
 | **E-PLACES-REFINE** | `app/cities/[slug]/**`, `app/communities/[slug]/**`, `app/subdivisions/[slug]/**`, `app/zip/**`, `app/oregon/**` | 6 mixed | quarry, after rest | Claude wave 2. Look. Rework if clunky. Do not re-migrate from scratch unless amnesia says the `_v3/` module is wrong. |
