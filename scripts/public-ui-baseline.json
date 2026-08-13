@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 505,
-    "legacyPages": 68,
-    "mixedPages": 15
+    "nonV3ImportSites": 490,
+    "legacyPages": 66,
+    "mixedPages": 17
   },
   "knownPages": [
     "app/about/page.tsx",
@@ -423,13 +423,14 @@
       "v3": 1
     },
     "app/sell/page.tsx": {
-      "legacy": 4,
-      "kb": 7
+      "v3": 1,
+      "legacy": 1,
+      "kb": 1
     },
     "app/sell/valuation/page.tsx": {
       "legacy": 1,
-      "primitives": 1,
-      "kb": 6
+      "kb": 1,
+      "v3": 1
     },
     "app/site-index/page.tsx": {
       "kb": 4

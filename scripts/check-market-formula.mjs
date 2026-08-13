@@ -121,7 +121,6 @@ const MOS_ROUNDING_LEDGER = {
   'lib/youtube-market-report/scene-builders.ts': 3,
   'components/pulse/PulseHero.tsx': 1,
   'components/site/PriceBandTable.tsx': 1,
-  'components/site/sell/SellMarketContext.tsx': 1,
 }
 
 const displayScope = [...walkFiles('app'), ...walkFiles('lib'), ...walkFiles('components')].filter(

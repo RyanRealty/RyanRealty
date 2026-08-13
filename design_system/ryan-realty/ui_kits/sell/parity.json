@@ -1,109 +1,122 @@
 {
   "route": "app/sell/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/sell/index.html",
-  "competitiveTarget": "Beat generic 'list with us' pages: the ask (address-capture form) in the hero, proof directly after it (live MLS track record, real sold homes, verbatim Google reviews), honest value props, and every valuation CTA anchored to the on-page form, with zero invented results or 'verifiable results' claims (D99).",
-  "note": "Conversion-first rework 2026-07-11 on the KB (kinetic-brutalist) base. The proven /lp/seller-home-value two-step form (SellerLPForm: Places autocomplete, partial-lead capture, FUB workflow + broker assignment + CMA queue) now renders INSIDE KbHero via formSlot with pagePath='/sell' attribution \u2014 the page is no longer form-less. The page leads with the SERVICE story (Matt 2026-07-11: selling a home is not just the home's value): value props, process, marketing plan, and fee come first; SellProof (live getBrokerageTrackRecord ledger + Sold Stories cards with verbatim paired reviews) and KbTestimonials (seller-side verified Google reviews) follow as supporting proof. All internal valuation CTAs (SellValuationCTA, CTABar, sticky mobile bar) anchor to #get-value instead of navigating to the LP. Prior history: KB conversion 2026-06-18 (Phase 9); 'How it works' ContentSection removed 2026-07 (duplicate of SellProcess); early-CTA strip removed 2026-07-11 (superseded by the hero form). Current-market line is live getMarketPulse(Bend) at an 8s ISR-revalidation timeout (the prior 3.5s budget silently blanked the live numbers), classified by canonical MoS thresholds. HideChrome remains deferred to the orchestrator.",
+  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3. Sell opens Stage then Sheet.",
+  "competitiveTarget": "Beat generic list-with-us pages: the ask in the first working surface (SellerLPForm, Places autocomplete, pagePath=/sell), live Bend figures with a source trace, one 3% plan with the full Enhanced inclusion list, and every valuation CTA anchored to #get-value. Zero invented results. D11: Value my home / Get your home's value, never What's my home worth on a control.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: four of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, primary Value my home), Sheet-equivalent SellCapture wrapping SellerLPForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. KB-era deletions: KbHero, KbBreadcrumb, KbFooter, KbTestimonials, SmoothScrollProvider, LifestyleStrip, CTABar, FAQBlock, SellProof sold-story cards, SellValueProps, SellerSituations, SellProcess, SellPlanSingle, SellCommission, SellMarketContext, SellValuationCTA, the sticky mobile bar, and the same-broker / no hand-off FAQ. Eight sell/* modules plus LifestyleStrip (last importer was /sell) were orphaned by the page rewrite and deleted in this commit. Capture is not a deletion: SellerLPForm still posts the same payload with pagePath=/sell and formId get-value.",
   "requiredComponents": [
     {
       "name": "KbNav",
-      "section": "top nav \u2014 transparent over hero, flips to navy on scroll; full site directory overlay",
+      "section": "The public header, mounted by app/layout.tsx through V3Chrome. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. Chrome already landed (E-CHROME).",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "tracking \u2014 section_view + scroll_depth events (page contract G52)",
+      "section": "Page-level analytics, pageType='sell'. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent.",
       "blocking": true
     },
     {
       "name": "MetadataBlock",
-      "section": "JSON-LD \u2014 BreadcrumbList + FAQPage structured data",
+      "section": "JSON-LD BreadcrumbList + FAQPage. V3Breadcrumb and V3Quiet carry no structured data of their own. FAQPage items are the same FAQ_ITEMS array the Quiet block renders.",
       "blocking": true
     },
     {
-      "name": "KbBreadcrumb",
-      "section": "breadcrumb strip \u2014 Home / Sell",
+      "name": "V3Breadcrumb",
+      "section": "Chrome. Home / Sell. tone=on-media because the page opens on a dark V3Stage (ci:kb-breadcrumb-overlay).",
       "blocking": true
     },
     {
-      "name": "SmoothScrollProvider",
-      "section": "Lenis + GSAP ScrollTrigger scroll layer",
-      "blocking": true
-    },
-    {
-      "name": "KbHero",
-      "section": "hero \u2014 'This is how your home gets sold.' service-first H1 + the address-capture form in the hero (formSlot, KB-styled navy/cream) + phone note",
+      "name": "V3Stage",
+      "section": "Pattern 4, opens the page. headingLevel 1, height tall so the capture Sheet peeks under the fold on 390. H1 is the seo-shell head term. Action label Value my home, href #get-value.",
       "blocking": true
     },
     {
       "name": "SellerLPForm",
-      "section": "the ask \u2014 two-step seller form (Places autocomplete \u2192 contact/timeline), partial-lead capture, FUB seller workflow; pagePath='/sell' attribution; formId anchor #get-value",
+      "section": "The ask. Two-step seller form (Places autocomplete, partial-lead, CMA queue). pagePath='/sell' attribution. formId anchor #get-value. Capture contract unchanged.",
       "blocking": true
     },
     {
-      "name": "SellProof",
-      "section": "proof \u2014 live MLS track-record ledger (getBrokerageTrackRecord) + real sold homes with broker attribution and verbatim paired Google reviews",
+      "name": "V3Instrument",
+      "section": "Pattern 1, level 2 (Stage already emitted the h1). Bend pulse figures, each a door, under the Bend pulse trace. Ask is ghost Value my home.",
       "blocking": true
     },
     {
-      "name": "KbTestimonials",
-      "section": "verified Google reviews \u2014 seller-side 'In their words' grid; verbatim quotes, no repeats with SellProof cards",
+      "name": "V3Sheet",
+      "section": "Pattern 5, the one 3% plan as plan-detail blocks. No field, no matrix, no 2.5/3.5. Enhanced inclusions only.",
       "blocking": true
     },
     {
-      "name": "SellValueProps",
-      "section": "value props \u2014 three differentiation cards (priced on real data, one broker start to finish, marketed by someone who knows the market)",
+      "name": "V3Quiet",
+      "section": "Pattern 6. Seller FAQ as prose from the same FAQ_ITEMS the FAQPage JSON-LD uses, track-record proof as prose with its own MLS closed-sale trace, verbatim Google reviews, outbound doors including Value my home and valuationHref('/sell').",
       "blocking": true
     },
     {
-      "name": "SellProcess",
-      "section": "process \u2014 three concrete steps from valuation request to closing table",
+      "name": "V3Footer",
+      "section": "Chrome. V3_FOOTER_COLUMNS. No button. Rendered OUTSIDE main.",
       "blocking": true
-    },
+    }
+  ],
+  "layoutComponents": [
     {
-      "name": "SellPlanSingle",
-      "section": "the one plan \u2014 3% of the sale price with the comprehensive inclusions expandable by group. Replaced SellMarketingPlan 2026-08-11: Matt locked ONE marketed plan, so the three-tier comparison (2.5 / 3 / 3.5) is off the public site and its component is no longer part of this contract.",
-      "blocking": true
-    },
-    {
-      "name": "SellCommission",
-      "section": "the fee \u2014 3% to list, no add-ons; buyer-agent compensation explained; no contract to get the CMA",
-      "blocking": true
-    },
-    {
-      "name": "SellMarketContext",
-      "section": "live Bend market context line \u2014 getMarketPulse, MoS classification, link to /housing-market; renders a factual non-numeric trust line when data is unavailable",
-      "blocking": true
-    },
-    {
-      "name": "SellValuationCTA",
-      "section": "mid-page valuation CTA band \u2014 'Tell us your address' -> /lp/seller-home-value, trust bullets, phone CTA",
-      "blocking": true
-    },
-    {
-      "name": "CTABar",
-      "section": "valuation conversion band \u2014 'Get a free home valuation' -> /lp/seller-home-value",
-      "blocking": true
-    },
-    {
-      "name": "FAQBlock",
-      "section": "seller FAQ \u2014 verified facts only (cost, pricing method, no hand-offs, service area) + FAQPage JSON-LD",
-      "blocking": true
-    },
-    {
-      "name": "LifestyleStrip",
-      "section": "why buyers come here \u2014 approved active-lifestyle photo grid from getLifestyleImages; renders null when the pool is empty",
-      "blocking": true
-    },
-    {
-      "name": "KbFooter",
-      "section": "footer \u2014 dual-audience close, contact, sitemap, legal",
-      "blocking": true
+      "name": "V3Chrome",
+      "section": "renders from app/layout.tsx",
+      "note": "Landed E-CHROME. Not remounted on this page."
     }
   ],
   "deferredComponents": [
     {
-      "name": "HideChrome",
-      "reason": "Shared-component edit needed to suppress the default SiteHeader/SiteFooter on the KB chrome pages. Deferred to orchestrator \u2014 KbNav + KbFooter already render the correct KB chrome."
+      "name": "V3Field",
+      "reason": "Pattern 2 is live inventory as a spatial surface. It opens Homes. Using it here would compete with /homes-for-sale and would push the page to five patterns."
+    },
+    {
+      "name": "V3Ledger",
+      "reason": "Sold-story cards used to be a third proof rail. Rhythm allows four patterns. Proof now lives as Instrument figures plus Quiet prose. A Ledger of sold homes would be a fifth pattern."
     }
+  ],
+  "removedComponents": [
+    "KbHero",
+    "KbBreadcrumb",
+    "KbFooter",
+    "KbTestimonials",
+    "SmoothScrollProvider",
+    "LifestyleStrip",
+    "CTABar",
+    "FAQBlock",
+    "SellProof",
+    "SellValueProps",
+    "SellerSituations",
+    "SellProcess",
+    "SellPlanSingle",
+    "SellCommission",
+    "SellMarketContext",
+    "SellValuationCTA"
+  ],
+  "jsonLd": {
+    "required": [
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry)" },
+      {
+        "type": "FAQPage",
+        "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same FAQ_ITEMS array V3Quiet renders"
+      }
+    ],
+    "note": "One derivation for the FAQ. Visible Quiet answers and FAQPage items are the same array. No Dataset on this route (the KB page never emitted one)."
+  },
+  "dataLayer": {
+    "getMarketPulse": "lib/data/market/getMarketPulse.ts. market_pulse_live, geo_type='city', geo_slug='bend', property_type='A'. Feeds the Instrument.",
+    "getSurfaceImage": "lib/data/media/getSurfaceImages.ts. Distinct approved hero for /sell, fallback tetherow-golf-aerial. Feeds V3Stage posterSrc. No homepage Old Mill video on this route: a Stage with a poster is complete, and /sell was already on a distinct still so it would not reuse the homepage banner.",
+    "getBrokerageTrackRecord": "lib/data/track-record.ts. Closed Ryan Realty list-side sales. Feeds Quiet proof prose, not the Bend Instrument.",
+    "SellerLPForm": "app/lp/seller-home-value/SellerLPForm.tsx into app/lp/seller-home-value/actions.ts. Bound to SellCapture. Same action, same payload, same field names, pagePath=/sell.",
+    "note": "Every read is a DAL function from @/lib/data (G8). Nothing is fetched that the page does not render. getCityMarketDetail, getLifestyleImages, and getSoldStories were dropped with the sections that consumed them. Route-local constants live in app/sell/_v3/sell-constants.ts."
+  },
+  "sectionOrder": [
+    "MetadataBlock",
+    "KbSectionTracker",
+    "V3Breadcrumb",
+    "V3Stage",
+    "SellCapture (SellerLPForm)",
+    "V3Instrument (Bend pulse) or V3Quiet empty",
+    "V3Sheet (3% plan)",
+    "V3Quiet (FAQ, proof, doors)",
+    "V3Footer"
   ]
 }

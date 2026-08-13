@@ -141,8 +141,20 @@ const REQUIRED = [
   },
   {
     file: 'app/sell/page.tsx',
+    // The FACT this locks is the head term, not the prop that carries it. KB
+    // spelled the H1 as titleTop/titleBottom; the v3 register has no such prop,
+    // its patterns take `headline` (V3StageProps.headline). Writing a prop
+    // literally named titleTop on a v3 page to satisfy a regex would be
+    // gate-gaming. BOTH ARMS ARE EXACT LITERALS. v3 headlines are sentence
+    // case (design_system/public/PUBLIC_UI.md), so the KB arm keeps the old
+    // titleTop and the v3 arm pins the sentence-case string the page opens
+    // with. Change the page's H1 and this must change with it.
+    // docs/plans/PUBLIC_PRODUCT/gate-contracts.md section 3.2.
     checks: [
-      { re: /titleTop\s*=\s*["']Sell your home in["']/i, msg: 'sell H1 titleTop must be "Sell your home in"' },
+      {
+        re: /titleTop\s*=\s*["']Sell your home in["']|headline\s*=\s*\{?\s*(?:v3Text\(\s*)?[`'"]Sell your home in Central Oregon\b/,
+        msg: 'sell H1 must carry the head term: KB titleTop="Sell your home in", or a v3 headline literal opening "Sell your home in Central Oregon"',
+      },
       { re: /title:\s*['"]Sell Your Home/i, msg: 'sell metadata title must lead with "Sell Your Home"' },
     ],
   },

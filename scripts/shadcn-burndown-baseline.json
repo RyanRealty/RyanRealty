@@ -1,5 +1,5 @@
 {
-  "count": 204,
+  "count": 201,
   "files": [
     "app/alerts/unsubscribe/page.tsx",
     "app/buy/loading.tsx",
@@ -33,7 +33,6 @@
     "app/search/[...slug]/loading.tsx",
     "app/search/[...slug]/page.tsx",
     "app/search/loading.tsx",
-    "app/sell/valuation/page.tsx",
     "app/team/[slug]/edit/page.tsx",
     "app/tools/mortgage-calculator/MortgageCalculator.tsx",
     "components/ActivityFeedCard.tsx",
@@ -197,8 +196,6 @@
     "components/site/listing-detail/ListingVideoEmbed.tsx",
     "components/site/nav/MegaMenu.tsx",
     "components/site/providers/RootProvider.tsx",
-    "components/site/sell/SellPlanComparison.client.tsx",
-    "components/site/sell/SellValueProps.tsx",
     "components/tools/AppreciationCalculator.tsx",
     "components/tools/RentalCalculator.tsx",
     "components/tools/RentalLeadForm.tsx",
