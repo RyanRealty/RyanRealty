@@ -6,15 +6,17 @@
 
 **Track:** 1 only. Homepage first. Do not start Track 2. Do not start leftover ratchet.
 
-**SHA:** `a241f1ae` (`feat(public): homepage first viewport is homes and towns`)
+**SHA:** `a241f1ae` homepage feat. Production HEAD `10f26536` READY (includes the feat).
 
-**`/` Look:** GREEN at 390 and 1280 (local first viewport). Search/inventory door (`See homes for sale`), six D11 town doors with live active counts, three-plus live MLS photographs that open the listing. Chart is on Instrument L2 under the jobs. Chrome CTA stays Value my home. Relative plot is gone from this Field.
+**`/` Look:** GREEN at 390 and 1280, local and production. Search/inventory door (`See homes for sale`), six D11 town doors with live active counts, three-plus live MLS photographs that open the listing. Chart is on Instrument L2 under the jobs. Chrome CTA stays Value my home. Relative plot is gone from this Field.
 
 **Screenshots:**
-- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-390.png`
-- `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-1280.png`
+- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-390.png`
+- local `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-1280.png`
+- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-390-prod.png`
+- prod `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-e-home-jobs/home-1280-prod.png`
 
-**Next:** `/sell` E-SELL-WORTH (Value my home / Get my home’s value, address-only step 1, one filled primary in the first 390 viewport). Only after this SHA is production READY.
+**Next:** `/sell` E-SELL-WORTH (Value my home / Get my home’s value, address-only step 1, one filled primary in the first 390 viewport). Do not start Track 2.
 
 **Not this land:** `stash@{0}` leftover dirt (`app/dev/sell-film/*`, PUBLIC_SITE_UX_OVERHAUL leftovers, SellerLPForm, SignInPrompt, brand motion). Do not `git add -A`.
 
