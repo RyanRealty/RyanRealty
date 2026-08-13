@@ -50,6 +50,9 @@ export type CityLedger = {
  * cannot source is a figure it does not print. Cities the query did not return keep
  * their link in the page's closing Quiet block instead.
  *
+ * D9 leftover: each city is a door into its own report. A line through cities
+ * invents a sequence. V3Chart is a trend atom, so this Ledger stays type.
+ *
  * The three footnote cases are not the same claim: no row came back at all, a row
  * came back with nothing active, or a row came back active but with no median. The
  * KB page rendered Tumalo as "0 active" under a live-MLS source line.
@@ -116,6 +119,12 @@ export type ClosedLedger = {
  * stamp stay together and never borrow the pulse's. Newest first, because the latest
  * full year is the one the visitor came for; every row is a door into the closed-sales
  * explorer, which reads `year`.
+ *
+ * D9 leftover: each year is a door into the explorer. A closed-count chart
+ * would live under an Instrument, and that Instrument would sit next to the
+ * pace Instrument, two of a kind. Keep as Ledger. buildClosedCountChart
+ * exists when a later lease splits the rhythm. Do not flatten the years
+ * to a figure.
  *
  * Only a mart row carries a real computed_at. getCoMarketAnnual falls back to a live
  * aggregate that stamps now(), which would print "updated today" over a set of closed
@@ -198,7 +207,7 @@ export function buildExploreItems(
     { label: 'Open houses this week', href: '/open-houses' },
     { label: 'Recent price drops', href: '/price-drops' },
     { label: 'Sell your home', href: '/sell' },
-    { label: 'Get a free written valuation', href: valuationHrefValue },
+    { label: 'Value my home', href: valuationHrefValue },
     { label: 'Buying and selling guides', href: '/blog' },
     { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },
   ]

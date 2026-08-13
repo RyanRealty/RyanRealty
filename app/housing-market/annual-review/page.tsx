@@ -128,12 +128,12 @@
 
 import type { Metadata } from 'next'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { getMarketPulse, getMarketPulseCitySnapshots, getCityMarketDetail } from '@/lib/data'
+import { getMarketPulse, getMarketPulseCitySnapshots, getCityMarketDetail, getPriceHistory } from '@/lib/data'
 import { REPORT_CITIES, NON_MLS_CITY_EXEMPTIONS } from '@/lib/data/geo/report-cities'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput, StatValue } from '@/lib/site/json-ld'
-import { formatDate } from '@/lib/format/date'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import {
   V3_ROOT_CLASS,
@@ -165,6 +165,7 @@ import {
   buildInventoryLedger,
   buildRegionFigures,
   buildYearLedger,
+  buildAnnualCharts,
   type MissingCity,
 } from './_v3/annual-sections'
 
@@ -193,7 +194,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AnnualReviewPage() {
-  const [regionPulse, regionDetail, citySnapshots, cityDetails] = await Promise.all([
+  const [regionPulse, regionDetail, citySnapshots, cityDetails, priceHistory] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     getCityMarketDetail({ geoType: 'region', geoSlug: REGION_GEO_SLUG, periodType: PERIOD_TYPE }),
     getMarketPulseCitySnapshots(REPORT_CITIES.map((c) => c.label)),
@@ -202,6 +203,7 @@ export default async function AnnualReviewPage() {
         getCityMarketDetail({ geoType: 'city', geoSlug: dbGeoSlug(c.slug), periodType: PERIOD_TYPE }),
       ),
     ),
+    getPriceHistory('region', REGION_GEO_SLUG, 'monthly', 60),
   ])
 
   // Stamps are the REAL refresh timestamps off the rows, never now(). The region
@@ -272,6 +274,7 @@ export default async function AnnualReviewPage() {
   const [firstClosedFigure, ...restClosedFigures] = closed.figures
   const year = buildYearLedger(GRID_CITIES, cityDetails)
   const [firstYearRow, ...restYearRows] = year.rows
+  const annualCharts = buildAnnualCharts(priceHistory, zonedDateKey(new Date()).slice(0, 7))
 
   // Dataset variableMeasured — region core stats (from buildMarketFaq, so the FAQ
   // and the Dataset never disagree) plus one YoY price-change variable per report
@@ -396,7 +399,7 @@ export default async function AnnualReviewPage() {
   // block. Both carry this page as their origin (invariant 5). Text edges, so
   // neither adds a second filled control to the viewport the Sheet's primary owns.
   edges.push({ label: 'Sell your home in Central Oregon', href: SELL_SPINE_HREF })
-  edges.push({ label: 'Get a free written valuation', href: WRITTEN_VALUATION_HREF })
+  edges.push({ label: 'Value my home', href: WRITTEN_VALUATION_HREF })
 
   // JSON-LD — BreadcrumbList + WebPage + Article + Dataset + FAQPage, all from
   // MetadataBlock. dateModified is the real refreshedAt from market_pulse_live.
@@ -475,6 +478,7 @@ export default async function AnnualReviewPage() {
             source={v3Text(regionTrace)}
             updated={inventoryAsOf ? v3Text(formatDate(inventoryAsOf)) : undefined}
             action={{ label: v3Text('Live Central Oregon market report'), href: REGION_REPORT_PATH }}
+            chart={annualCharts.region}
           />
         ) : (
           <V3Quiet
@@ -527,6 +531,7 @@ export default async function AnnualReviewPage() {
               href: CITY_REPORTS_PATH,
               variant: 'ghost',
             }}
+            chart={annualCharts.trailing}
           />
         ) : (
           <V3Quiet

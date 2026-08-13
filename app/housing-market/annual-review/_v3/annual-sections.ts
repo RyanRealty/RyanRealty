@@ -41,7 +41,15 @@ import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPrice } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
-import { v3Text, type V3InstrumentFigure, type V3LedgerFigureRow } from '@/components/site/v3'
+import { v3Text, type V3ChartProps, type V3InstrumentFigure, type V3LedgerFigureRow } from '@/components/site/v3'
+import {
+  buildMonthlyMedianChart,
+  buildRegionMedianChart,
+  dropInProgressMonth,
+  lastCompleteMonths,
+  withChartId,
+  type MedianMonth,
+} from '../../_v3/market-charts'
 import {
   formatCount,
   formatDayDelta,
@@ -120,6 +128,10 @@ export function buildRegionFigures(
 /* Section 2 — live inventory by report city (market_pulse_live)               */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * D9 leftover: each city is a door into its own report. A line through cities
+ * invents a sequence. V3Chart is a trend atom, so this Ledger stays type.
+ */
 export function buildInventoryLedger(
   cities: readonly ReportCity[],
   snapshots: readonly MarketPulseSnapshot[],
@@ -305,6 +317,10 @@ export function buildClosedInstrument(detail: MarketDetail | null): ClosedInstru
 /* Section 4 — trailing 12 months by report city (market_stats_cache)          */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * D9 leftover: each city is a door into its own report. Year-over-year change
+ * already rides the row. A line through cities invents a sequence.
+ */
 export function buildYearLedger(
   cities: readonly ReportCity[],
   details: readonly (MarketDetail | null)[],
@@ -346,4 +362,27 @@ export function buildYearLedger(
   })
 
   return { rows, stamp: stamps.sort().at(-1), missing }
+}
+
+/**
+ * Region overlay on the live Instrument, last-12-month line on the trailing
+ * Instrument. Two charts share the page, so each carries a figure id. The
+ * page drops the in-progress month (zonedDateKey) before calling. Labels
+ * are already through formatPriceCompact.
+ */
+export function buildAnnualCharts(
+  monthly: readonly MedianMonth[],
+  currentMonthKey: string,
+): { region: V3ChartProps | undefined; trailing: V3ChartProps | undefined } {
+  const complete = dropInProgressMonth(monthly, currentMonthKey)
+  return {
+    region: withChartId(buildRegionMedianChart(complete), 'region-median'),
+    trailing: withChartId(
+      buildMonthlyMedianChart(
+        lastCompleteMonths(complete, 12),
+        'Median sale price, last 12 completed months',
+      ),
+      'trailing-median',
+    ),
+  }
 }

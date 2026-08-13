@@ -6,7 +6,9 @@ Quarry grepped on disk: `KbMarketChart`, `MarketCoreCharts`, `PriceChart`, `Sale
 
 **Rule used (D9 / A27):** a series or a comparison gets a chart. A singleton status stays type. Flattening a series to a figure is a defect. Public charts become a v3 **atom inside Instrument**, not pattern 7. Admin charts resolve `--a-*` at runtime (recharts cannot take `var()`). Packets are print craft, same honesty.
 
-**Barrel gap (not a surface):** `components/site/v3/V3Instrument.tsx:251` renders `v3-instrument__figures` only. `components/site/v3/index.ts` exports no chart atom.
+**Barrel:** E-CHART landed `d554ba7e`. `V3Instrument` mounts `V3Chart` when the caller passes `chart`. Families may pass `chart`. Not a seventh pattern.
+
+**E-MARKET-REFINE (2026-08-13):** rows A1, A3, A6, A8 now pass `chart` on Instrument (region year overlay on hub + central-oregon + annual live; last-12-month line on annual trailing). Leftover on this lease: A2, A4, A5, A7, A9, A10 stay type (city doors, closed-year doors, MoS by city with no MoS series). Singletons A27 unchanged.
 
 **Not findings (on disk, no mounted public/admin/packet surface):**
 
@@ -27,7 +29,7 @@ Quarry grepped on disk: `KbMarketChart`, `MarketCoreCharts`, `PriceChart`, `Sale
 
 | Class | Rows |
 |---|---|
-| Series (or comparison) as type/table only | **24** |
+| Series (or comparison) as type/table only | **20** (24 inventoried; A1 A3 A6 A8 now `V3Instrument.chart`) |
 | Live charts, not browser-looked-at | **18** |
 
 ---
@@ -38,16 +40,16 @@ Each row is a mounted surface. `path:line` is the render. `needs` is D9: public 
 
 | # | path:line | plane | series vs singleton | current rendering | needs |
 |---|---|---|---|---|---|
-| 1 | `app/housing-market/page.tsx:434` | public | series flattened to singleton figures (region median / inventory / MoS; no year overlay) | type-only (`V3Instrument`) | v3 atom |
-| 2 | `app/housing-market/page.tsx:468` | public | comparison (cities × current median / count) | type/table (`V3Ledger`) | v3 atom |
-| 3 | `app/housing-market/central-oregon/page.tsx:376` | public | series flattened to singleton figures (region live band) | type-only (`V3Instrument`) | v3 atom |
-| 4 | `app/housing-market/central-oregon/page.tsx:413` | public | comparison (cities × live inventory) | type/table (`V3Ledger`) | v3 atom |
-| 5 | `app/housing-market/central-oregon/page.tsx:472` | public | series (closed volume/units by calendar year) | type/table (`V3Ledger`) | v3 atom |
-| 6 | `app/housing-market/annual-review/page.tsx:465` | public | series flattened to singleton figures (region now) | type-only (`V3Instrument`) | v3 atom |
-| 7 | `app/housing-market/annual-review/page.tsx:495` | public | comparison (active inventory by city) | type/table (`V3Ledger`) | v3 atom |
-| 8 | `app/housing-market/annual-review/page.tsx:517` | public | series flattened to trailing-12m figures | type-only (`V3Instrument`) | v3 atom |
-| 9 | `app/housing-market/annual-review/page.tsx:544` | public | comparison (closed sales by city, year over year) | type/table (`V3Ledger`) | v3 atom |
-| 10 | `app/months-of-supply/page.tsx:488` | public | comparison (MoS by city) | type/table (`V3Ledger`) | v3 atom |
+| 1 | `app/housing-market/page.tsx` | public | region monthly median (year overlay) | **done** `V3Instrument.chart` (E-MARKET-REFINE) | looked: caller-formatted labels |
+| 2 | `app/housing-market/page.tsx` | public | comparison (cities × current median / count) | type/table (`V3Ledger`) | leftover: each city is a door |
+| 3 | `app/housing-market/central-oregon/page.tsx` | public | region monthly median (year overlay) | **done** `V3Instrument.chart` (E-MARKET-REFINE) | looked: caller-formatted labels |
+| 4 | `app/housing-market/central-oregon/page.tsx` | public | comparison (cities × live inventory) | type/table (`V3Ledger`) | leftover: each city is a door |
+| 5 | `app/housing-market/central-oregon/page.tsx` | public | series (closed volume/units by calendar year) | type/table (`V3Ledger`) | leftover: year doors; Instrument would sit next to pace |
+| 6 | `app/housing-market/annual-review/page.tsx` | public | region monthly median (year overlay) | **done** `V3Instrument.chart` id `region-median` | looked: caller-formatted labels |
+| 7 | `app/housing-market/annual-review/page.tsx` | public | comparison (active inventory by city) | type/table (`V3Ledger`) | leftover: each city is a door |
+| 8 | `app/housing-market/annual-review/page.tsx` | public | last 12 completed months (one line) | **done** `V3Instrument.chart` id `trailing-median` | looked: caller-formatted labels |
+| 9 | `app/housing-market/annual-review/page.tsx` | public | comparison (closed sales by city, year over year) | type/table (`V3Ledger`) | leftover: each city is a door |
+| 10 | `app/months-of-supply/page.tsx` | public | comparison (MoS by city) | type/table (`V3Ledger`) | leftover: `getPriceHistory` has no MoS series |
 | 11 | `app/pulse/page.tsx:384` | public | series flattened to singleton live snapshot | type-only (`V3Instrument`) | v3 atom |
 | 12 | `app/cities/[slug]/page.tsx:449` | public | series flattened to singleton place figures | type-only (`V3Instrument`) | v3 atom |
 | 13 | `app/cities/[slug]/[neighborhoodSlug]/page.tsx:467` | public | series flattened to singleton place figures | type-only (`V3Instrument`) | v3 atom |
@@ -94,10 +96,10 @@ Each row is a mounted surface. `path:line` is the render. `needs` is D9: public 
 
 ## Top 5 public surfaces that need the v3 atom
 
-1. **`app/housing-market/page.tsx:434`** — Market hub. Region median / inventory / MoS as Instrument figures. No year overlay. V2’s recommended first honest chart lives here.
-2. **`app/housing-market/central-oregon/page.tsx:376`** — Region report. Same flattening, plus a year ledger at `:472` that is still type.
-3. **`app/cities/[slug]/page.tsx:449`** — Place market. The city node that used to carry `KbMarketHud` now prints the latest pulse as type.
-4. **`app/communities/[slug]/page.tsx:574`** — Community place + trailing-12m sold at `:677`. Two flattened series on the same page.
-5. **`app/page.tsx:231`** — Homepage still mounts leftover `KbMarketHud` / `KbMarketChart`. D9: public charts are the v3 atom inside Instrument, not a KB chart that survives a later home migration.
+1. **`app/cities/[slug]/page.tsx`** — Place market. The city node that used to carry `KbMarketHud` now prints the latest pulse as type.
+2. **`app/communities/[slug]/page.tsx`** — Community place + trailing-12m sold. Two flattened series on the same page.
+3. **`app/page.tsx`** — Homepage still mounts leftover `KbMarketHud` / `KbMarketChart`. D9: public charts are the v3 atom inside Instrument, not a KB chart that survives a later home migration.
+4. **`app/subdivisions/[slug]/page.tsx`** plus `SubdivisionSalesHistory` year ledger.
+5. **`app/pulse/page.tsx`** — live snapshot flattened to type.
 
-Lease E-CHART (`components/site/v3/` atom) is the prerequisite. Do not flatten any further series. Do not add pattern 7.
+Hub / central-oregon / annual-review overlays are E-MARKET-REFINE. Do not flatten any further series. Do not add pattern 7.

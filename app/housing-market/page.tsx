@@ -15,12 +15,17 @@
  *
  * The five invariants this file is written to hold, each enforced at its own site:
  *
- *  1. ONE DERIVATION, AND IT CLASSIFIES THE RAW VALUE. marketVerdict reads mosRaw,
- *     the screen reads mosRaw rounded to one decimal, and buildMarketFaq gets mosRaw
- *     and repeats those two steps in that order. Rounding BEFORE classifying is what
- *     this ordering prevents: 4.02 rounds to 4.0, `4.0 <= 4` prints "a seller's
- *     market", and lib/market/classify.ts calls it balanced. 5.97 does the same into
- *     "buyer's". CLAUDE.md section 0: never round in a way that changes the narrative.
+ *  1. ONE DERIVATION, IT CLASSIFIES THE RAW VALUE, AND IT PRINTS ON THE SAME SIDE OF
+ *     THE THRESHOLD IT CLASSIFIED. marketVerdict reads mosRaw, the screen reads mosRaw
+ *     through formatMonthsOfSupply, and buildMarketFaq gets mosRaw and repeats those
+ *     two steps in that order. Rounding BEFORE classifying is what the ordering
+ *     prevents: 4.02 rounds to 4.0, `4.0 <= 4` prints "a seller's market", and
+ *     lib/market/classify.ts calls it balanced. Rounding for DISPLAY reopens the same
+ *     contradiction from the other end, which is why lib/format/months-of-supply.ts
+ *     exists. Naive rounding prints "4.0" beside a balanced verdict and, one line
+ *     below both, MOS_THRESHOLD_CLAUSE reading "4 months of supply or less is a
+ *     seller's market". The formatter prints 4.1 for a stored 4.02 and 5.9 for a
+ *     stored 5.97, so the digits never cross a boundary the raw value did not.
  *  2. ONE GUARD PER FIGURE, SHARED WITH ITS CONSUMER. mosRaw is null unless the stored
  *     value is above 0, which is buildMarketFaq's own condition, so the H1 cannot
  *     assert a verdict the shared builder declined to answer.
@@ -49,6 +54,7 @@ import {
   getMarketPulse,
   getMarketPulseCitySnapshots,
   getRecentBlogPosts,
+  getPriceHistory,
 } from '@/lib/data'
 import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
@@ -62,8 +68,10 @@ import {
   MOS_THRESHOLD_CLAUSE,
 } from '@/lib/market/classify'
 import { formatPrice } from '@/lib/format/money'
-import { formatDate } from '@/lib/format/date'
-import { listingsBrowsePath, valuationPath } from '@/lib/slug'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -74,7 +82,6 @@ import {
   V3Ledger,
   V3Quiet,
   type V3InstrumentFigure,
-  type V3LedgerFigureRow,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
@@ -88,6 +95,8 @@ import {
   HISTORY_PATH,
   HISTORY_TYPE_CODES,
 } from './_v3/hub-constants'
+import { buildCityLedger } from './_v3/hub-sections'
+import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
 
 export const revalidate = 300
 
@@ -115,22 +124,26 @@ export default async function HousingMarketHubPage() {
   // resilient-cached and answers a transient failure with its own documented
   // fallback, so a `.catch(() => null)` here would only hide a real outage behind a
   // confident empty page. Nothing is fetched that this page does not render.
-  const [regionPulse, citySnapshots, blogPosts, closedYear] = await Promise.all([
+  const [regionPulse, citySnapshots, blogPosts, closedYear, priceHistory] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
     getMarketPulseCitySnapshots(CITY_LABELS),
     getRecentBlogPosts({ limit: 3 }),
     getCoMarketAnnual({ year: CLOSED_SALES_YEAR, typeScope: 'all' }),
+    getPriceHistory('region', 'central-oregon', 'monthly', 60),
   ])
 
-  // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, round only to
+  // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
   // display it, and hand the RAW value to buildMarketFaq so the shared builder
   // repeats the same two steps in the same order.
   const mosRaw =
     regionPulse?.monthsOfSupply != null && regionPulse.monthsOfSupply > 0
       ? regionPulse.monthsOfSupply
       : null
-  const mosDisplay = mosRaw == null ? null : Math.round(mosRaw * 10) / 10
+  const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
   const verdict = marketVerdict(mosRaw)
+  const regionChart = buildRegionMedianChart(
+    dropInProgressMonth(priceHistory, zonedDateKey(new Date()).slice(0, 7)),
+  )
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
@@ -233,9 +246,9 @@ export default async function HousingMarketHubPage() {
       href: listingsBrowsePath(),
     })
   }
-  if (mosDisplay != null) {
+  if (mosText != null) {
     regionFigures.push({
-      value: v3Text(mosDisplay.toFixed(1)),
+      value: v3Text(mosText),
       label: v3Text('months of supply'),
       href: '/months-of-supply',
     })
@@ -255,60 +268,12 @@ export default async function HousingMarketHubPage() {
     ' ' +
     MOS_THRESHOLD_CLAUSE
 
-  // City rows. A city earns a row when the live query returned one AND that row
-  // carries a median list price, because the Ledger's value column is a figure and a
-  // figure this page cannot source is a figure it does not print. Cities the query
-  // did not return keep their link in the closing Quiet block instead.
-  const snapshotByLabel = new Map(citySnapshots.map((s) => [s.geo_label, s]))
-  const cityRows: V3LedgerFigureRow[] = []
-  const rowed = new Set<string>()
-  for (const label of CITY_LABELS) {
-    const slug = CITY_SLUG[label]
-    const snapshot = snapshotByLabel.get(label)
-    if (!slug || !snapshot || snapshot.median_list_price == null) continue
-    rowed.add(label)
-    cityRows.push({
-      href: `/housing-market/${slug}`,
-      when: v3Text(`${snapshot.active_count.toLocaleString('en-US')} for sale`),
-      what: v3Text(label),
-      detail:
-        snapshot.median_days_to_pending != null
-          ? v3Text(`${snapshot.median_days_to_pending} days to pending`)
-          : undefined,
-      value: v3Text(formatPrice(snapshot.median_list_price)),
-      id: slug,
-    })
-  }
-  cityRows.sort((a, b) => String(a.what).localeCompare(String(b.what)))
-  const [firstCityRow, ...restCityRows] = cityRows
-
-  // A covered city that earned no row still keeps its door, and the reason it has no
-  // figure is stated from its own data (invariant 4). Three cases, and they are not
-  // the same claim: no row came back at all, a row came back with nothing active, or
-  // a row came back active but with no median. Tumalo is the live one, and the KB
-  // page rendered it as "0 active" under a live-MLS source line.
-  const cityFootnotes = CITY_LABELS.filter(
-    (label) => CITY_SLUG[label] !== undefined && !rowed.has(label),
-  ).map((label) => {
-    const snapshot = snapshotByLabel.get(label)
-    if (!snapshot) return { label, fact: `${label} returned no market row in the latest sync` }
-    if (snapshot.active_count === 0) {
-      return { label, fact: `${label} shows no active single-family listings` }
-    }
-    return {
-      label,
-      fact: `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median`,
-    }
-  })
-
-  // The city Ledger's own freshness stamp, from the city rows themselves. The region
-  // row refreshes on its own schedule, so borrowing its timestamp would date one
-  // query's figures with another query's clock.
-  const cityRefreshedAt = citySnapshots
-    .map((s) => s.updated_at)
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .sort()
-    .at(-1)
+  // City rows. D9 leftover lives on the builder: each city is a door, and a
+  // line through cities invents a sequence V3Chart is not for.
+  const cityLedger = buildCityLedger(citySnapshots)
+  const [firstCityRow, ...restCityRows] = cityLedger.rows
+  const cityFootnotes = cityLedger.footnotes
+  const cityRefreshedAt = cityLedger.stamp
 
   // Guides. Plain rows, no value column, so the Ledger carries no source line: a blog
   // post is not a figure. A row with no title is DROPPED rather than handed to
@@ -343,7 +308,7 @@ export default async function HousingMarketHubPage() {
   if (regionPulse != null) {
     faqEdges.push({ label: 'Browse homes for sale', href: listingsBrowsePath() })
   }
-  if (mosDisplay != null) {
+  if (mosText != null) {
     faqEdges.push({ label: 'Months of supply, defined', href: '/months-of-supply' })
   }
   if (closed) {
@@ -443,10 +408,11 @@ export default async function HousingMarketHubPage() {
             // Secondary by invariant 5. The sticky header already carries a filled
             // valuation CTA at every scroll position of this page.
             action={{
-              label: v3Text('Get a free written valuation'),
-              href: valuationPath(),
+              label: v3Text('Value my home'),
+              href: valuationHref('/housing-market'),
               variant: 'ghost',
             }}
+            chart={regionChart}
           />
         ) : (
           <V3Quiet
@@ -488,6 +454,9 @@ export default async function HousingMarketHubPage() {
         )}
 
         {closed && closedVolumeLabel ? (
+          // D9 leftover on purpose (A27): one closed calendar year is a
+          // singleton status, not a series. The explorer behind the figures
+          // is the door.
           <V3Instrument
             id="closed-sales"
             level={2}

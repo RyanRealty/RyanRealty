@@ -455,6 +455,8 @@ export default async function MonthsOfSupplyPage() {
         />
 
         {firstRegionFigure ? (
+          // D9 leftover on purpose (A27): the term plus today's region MoS is a
+          // singleton status. getPriceHistory has no months-of-supply series.
           <V3Instrument
             id="months-of-supply"
             level={1}
@@ -485,6 +487,8 @@ export default async function MonthsOfSupplyPage() {
         />
 
         {firstCityRow ? (
+          // D9 leftover: each city is a door. A line through cities invents a
+          // sequence, and getPriceHistory has no MoS series to plot.
           <V3Ledger
             id="by-city"
             eyebrow={v3Text('Central Oregon')}
@@ -524,6 +528,8 @@ export default async function MonthsOfSupplyPage() {
         )}
 
         {worked ? (
+          // D9 leftover on purpose (A27): the worked identity rearranges two
+          // live numbers. It is not a time series.
           <V3Instrument
             id="worked-example"
             level={2}

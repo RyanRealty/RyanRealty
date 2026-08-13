@@ -102,6 +102,7 @@ import {
   getMarketPulse,
   getMarketPulseCitySnapshots,
   getRecentBlogPosts,
+  getPriceHistory,
 } from '@/lib/data'
 import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
 import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
@@ -110,7 +111,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
-import { formatDate } from '@/lib/format/date'
+import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
@@ -142,6 +143,7 @@ import {
   buildExploreItems,
   buildGuideRows,
 } from './_v3/region-sections'
+import { buildRegionMedianChart, dropInProgressMonth } from '../_v3/market-charts'
 
 export const revalidate = 300
 
@@ -185,7 +187,7 @@ export default async function CentralOregonRegionPage() {
   //
   // getRecentBlogPosts keeps offset 3 so this page's guide rail does not repeat the
   // /housing-market hub's three posts.
-  const [regionPulse, citySnapshots, blogPosts, closedSeries] = await Promise.all([
+  const [regionPulse, citySnapshots, blogPosts, closedSeries, priceHistory] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
     getMarketPulseCitySnapshots(CITY_LABELS),
     getRecentBlogPosts({ limit: 3, offset: 3 }),
@@ -194,6 +196,7 @@ export default async function CentralOregonRegionPage() {
       toYear: CLOSED_SALES_TO_YEAR,
       typeScope: 'all',
     }),
+    getPriceHistory('region', 'central-oregon', 'monthly', 60),
   ])
 
   // THE ONE DERIVATION (invariants 1 and 2). Classify the raw value, format only to
@@ -210,6 +213,9 @@ export default async function CentralOregonRegionPage() {
       : null
   const mosText = mosRaw == null ? null : formatMonthsOfSupply(mosRaw)
   const verdict = marketVerdict(mosRaw)
+  const regionChart = buildRegionMedianChart(
+    dropInProgressMonth(priceHistory, zonedDateKey(new Date()).slice(0, 7)),
+  )
 
   // buildMarketFaq - the single source for the visible FAQ, the FAQPage JSON-LD, and
   // the Dataset variableMeasured. The pulse-or-fallback input is the timeout fallback
@@ -389,10 +395,11 @@ export default async function CentralOregonRegionPage() {
             // is display:none and its twin sits in the closed Menu+ overlay, so the
             // ghost left the first viewport with no ask at all. `from` is invariant 6.
             action={{
-              label: v3Text('Get a free written valuation'),
+              label: v3Text('Value my home'),
               href: VALUATION_HREF,
               variant: 'primary',
             }}
+            chart={regionChart}
           />
         ) : (
           <V3Quiet
