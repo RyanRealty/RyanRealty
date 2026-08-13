@@ -4,8 +4,8 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Go running). E-MARKET-REFINE `c29d5b51` READY.
-Ratchet held 139 / 3 / 69. kb 84. Wave 2 public complete. Next: Wave 3 P10 · F1.
+**Updated:** 2026-08-13 (Grok, Go running). F1 `9e11ce83` READY.
+Ratchet held 139 / 3 / 69. kb 84. Wave 3 F1 landed. Next: P10 remaining gates.
 
 ---
 
@@ -73,7 +73,7 @@ A4+A1 · E-CHART (serial on the barrel — one agent, not beside another barrel 
 **Wave 2** (after wave-1 lands that they depend on):
 E-PLACES-REFINE · E-MARKET-REFINE (needs E-CHART) · E-CUT (301/noindex per cut-list)
 
-**Wave 3:** P10 · F1
+**Wave 3:** P10 · F1 (F1 landed `9e11ce83`. P10 next.)
 
 Cap: one agent per open lease in the current wave. Do not open a second agent
 on the same glob. Listing detail owns `components/site/listing-detail/**`.
@@ -113,6 +113,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-CUT | **landed** `c472e240` | Cut leftover area-guides, areas, builders, reports hub, resources, pulse. Page stub + next.config 308. noindex + canonical at the survivor. `/reports` hub body inverted onto `/housing-market/reports` (still KB, not a v3 pass). Hop-free: `/best-neighborhoods-bend-oregon` → `/cities`, `/pulse-video-demo` → `/activity`. Nav Areas → `/cities`. Ratchet 178→139, 8→3, mixed 70→69 (tracked). kb 119→84. Bundle 8.88 MB. Look 390+1280: `/area-guides` lands on `/cities` (H1 Central Oregon cities: a balanced market), `/pulse` lands on `/activity` (H1 What just moved on the list). One chrome both widths. Leftovers: `/housing-market/reports` KB, `ReportsIndexContent` TilesSlider island, `/buy` Area guides Quiet hop, VisitTracker area-guides regex, layout comment on deleted pulse-brand-cards. |
 | E-PLACES-REFINE | **landed** `1c10fe0c` | City / neighborhood / community / subdivision / zip / oregon detail leftover mixed onto v3. Maps are shared `PlaceFieldMap`. City alerts trap `company` and disclose in children. D9 subdivision yearly series is `Instrument.chart`. Oregon primary is Get a broker introduction. Ratchet held 139 / 3 / 69. shadcn 182→179. City page stayed under 600 via `CityHomesField`. Look 390+1280 `/cities/bend`: one chrome, H1 Bend homes for sale: a seller's market, live figures. `/oregon/portland`: H1 Homes for sale in Portland, Oregon, Get a broker introduction, We don't work in Portland. |
 | E-MARKET-REFINE | **landed** `c29d5b51` | Hub, central-oregon, annual-review, months-of-supply. D9: median-sale overlay is `Instrument.chart` (straight SVG, year series). Inquiry sheets keep `submitMarketPageInquiry`. Ratchet held 139 / 3 / 69. Look 390+1280 `/housing-market`: one chrome, H1 Central Oregon housing market: a balanced market, live figures, chart in the Instrument. `/housing-market/annual-review` same chart atom. |
+| F1 query battery | **landed** `9e11ce83` | Three Loop F queries + GSC extras map to survivor URLs in `/llms.txt` + JSON-LD. G67 `ci:ai-query-battery`. `/reports` hop gone from the map. `/sell` and `/sell/valuation` emit Service + FAQPage. Ratchet held 139 / 3 / 69. Look 390+1280 `/about`, `/sell`, `/sell/valuation`, `/communities/northwest-crossing`: one chrome, H1s, Value my home on sell/valuation. Chrome CTA still Get your home's value. Cookie banner residual. SellerLPForm still See what your home is worth (not this lease). |
 
 Chrome is live. The 119 kb imports are still **on pages**. Family leases drop them. Mixed routes sit under v3 chrome; they are quarry, not done. Sibling routes in those families are still fully legacy. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -227,6 +228,8 @@ from the baseline if it drifts.
 | **C1** | expired packet | taste | Matt stops the PDF. |
 | **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | **landed** `317d88de` | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
 | **G1–G4** | social / GBP / calendar | after A3 or in parallel if files disjoint | Tokens already live. Produce is Imagine. Week-grant is not in Go. |
+| **F1** | `/llms.txt` + JSON-LD + G34/G39/G67 | **landed** `9e11ce83` READY | Named queries cite survivor URLs. Map: `lib/seo/ai-query-map.json`. Live `/llms.txt` lists About, Reviews, Value my home, NWX 3/2. Google still has to recrawl. |
+| **P10** | public wrap closing gates | **open** | Admin P10 already shipped. Public wrap: `ci:public-ui` legacy pages still 3 (`housing-market/reports` KB leftover, `reports/[slug]` implementation, frozen `/lp/tetherow/heath`). Plan: B → 0 then closing gates. Do not restyle the frozen LP. Technical shape is the agent's call. Record the call on this board. |
 
 ### Do not lease
 
