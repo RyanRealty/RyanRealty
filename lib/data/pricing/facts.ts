@@ -7,6 +7,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 import type { PricingSale, SubdivisionCell } from '@/lib/pricing/match'
 import type { HoaClass, LotClass, ProductKey, SewerClass, StoryClass, WaterClass } from '@/lib/pricing/classes'
@@ -187,10 +188,11 @@ export async function getPricingSubdivisionCells(citySlug: string): Promise<Map<
 export async function getListingWaterSource(listingKey: string): Promise<unknown> {
   const sb = client()
   if (!sb || !listingKey.trim()) return null
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const { data, error } = await sb
     .from('listings')
     .select('water, details->WaterSource')
-    .eq('ListingKey', listingKey.trim())
+    .eq('ListingKey', canonicalKey)
     .maybeSingle()
   if (error || !data) return null
   const fromDetails = (data as { WaterSource?: unknown }).WaterSource
