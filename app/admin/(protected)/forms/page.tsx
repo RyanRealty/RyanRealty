@@ -20,8 +20,7 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
-import { loadFormLibraryBoard } from '@/app/actions/tc-form-catalog'
-import type { FormFreshness } from '@/lib/data'
+import { getTcFormLibraryBoard, type FormFreshness } from '@/lib/data'
 import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
 import { CheckFormCatalog } from './CheckFormCatalog'
 
@@ -111,7 +110,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
   await requireAdminPage('transactions.edit')
   const { q, lib: expanded, fresh: freshRaw } = await searchParams
   const fresh = parseFresh(freshRaw)
-  const libraries = await loadFormLibraryBoard(q)
+  const libraries = await getTcFormLibraryBoard(q)
 
   const populated = libraries.filter((l) => l.forms.length > 0)
   const total = libraries.reduce((s, l) => s + l.forms.length, 0)

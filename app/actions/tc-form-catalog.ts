@@ -2,21 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { checkAdminAction } from '@/lib/admin/require-admin'
-import { applyFormCatalogSnapshots, getTcFormLibraryBoard } from '@/lib/data/tc/form-catalog'
-import type { CatalogApplyResult, TcFormLibraryBoard } from '@/lib/data/tc/form-catalog'
+import { applyFormCatalogSnapshots } from '@/lib/data/tc/form-catalog'
+import type { CatalogApplyResult } from '@/lib/data/tc/form-catalog'
 
-export type { CatalogApplyResult, TcFormLibraryBoard }
-
-export async function loadFormLibraryBoard(search?: string): Promise<TcFormLibraryBoard[]> {
-  const gate = await checkAdminAction('transactions.edit')
-  if (!gate.ok) return []
-  try {
-    return await getTcFormLibraryBoard(search)
-  } catch (err) {
-    console.error('[loadFormLibraryBoard]', err)
-    return []
-  }
-}
+export type { CatalogApplyResult }
 
 export async function applyFormCatalogJson(
   jsonText: string,
