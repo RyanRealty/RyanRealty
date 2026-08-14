@@ -19,18 +19,21 @@
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, creative-brain, public-product-os (orient), git-commit.mdc.
 
-# Concurrent — 2026-08-14 (Grok, CMA use + pricing pages) — shipping RPR contrast
+# Concurrent — 2026-08-14 (Grok, CMA use + pricing pages) — READY `11f78637`
 
 **Track:** Make the CMA document beat the packet Chris actually sent. Sample: RPR 30-pager for 56628 Sunstone Loop (Caldera Springs), 2026-08-12.
+
+**SHA:** product `11f78637` on `origin/main`. Production READY. No schema.
 
 **RPR vs live cache (same day, verified):**
 - RPR: ZIP 97707, 8.68 MoS labeled seller's, AVM $2,423,333, stale CMA $2,499,000 (2026-03-17), 4 AVM "comps" + 1 close, $0 adjustments.
 - Caldera Springs cache: 39 closed / 365d, median $1,790,000, 22.15 MoS, buyer's. Listing city is Bend (3.62 MoS, median $722,000). Old CMA builder would have used Bend.
 
-**Wired this pass (local, not pushed yet):**
+**Wired:**
 - `resolveCmaMarketTargets` — resort neighborhood cache first, city fallback.
 - Phase suffix on resort aliases (`Caldera Springs Phase One`).
 - Cover + pricing: closed MLS sales only, automated estimates not used, market is the community not the ZIP.
+- Market board (`render-market-page.ts`): these sales / this market / under contract / for sale now. Trend chart only when six priced months exist.
 - Zoning / rental boards and pricing explanation from `78ed727e` stay.
 
 **Do not `git add -A`.** Imagery Current / page-grade / chrome-seller-ask / admin inbox stay out.
