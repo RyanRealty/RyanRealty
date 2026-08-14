@@ -90,7 +90,7 @@ function getConsent(): ConsentState | null {
 }
 
 function setConsentState(state: ConsentState) {
-  const expires = new Date()
+  const expires = new Date() // hydration-safe: cookie write on click, not render
   expires.setFullYear(expires.getFullYear() + CONSENT_EXPIRY_YEARS)
   document.cookie = `${COOKIE_CONSENT_KEY}=${encodeURIComponent(JSON.stringify(state))}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`
 }
@@ -140,8 +140,8 @@ export function getOrCreateVisitId(): string | null {
     .find((row) => row.startsWith(name + '='))
     ?.split('=')[1]
   if (existing) return existing
-  const id = crypto.randomUUID?.() ?? `v_${Date.now()}_${Math.random().toString(36).slice(2)}`
-  const expires = new Date()
+  const id = crypto.randomUUID?.() ?? `v_${Date.now()}_${Math.random().toString(36).slice(2)}` // hydration-safe: cookie write, not render
+  const expires = new Date() // hydration-safe: cookie write, not render
   expires.setFullYear(expires.getFullYear() + 1)
   document.cookie = `${name}=${id}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`
   return id

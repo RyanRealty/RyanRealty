@@ -63,7 +63,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     }
     void saveSellerPartialLead({
       address: v,
-      sessionId: readRrSessionId(),
+      sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
       source: 'seller-lp',
       pagePath,
     })
@@ -80,7 +80,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         email: email.trim(),
         phone: phone.trim(),
         timeline: (timeline || undefined) as SellerLPTimeline | undefined,
-        sessionId: readRrSessionId(),
+        sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
         source: 'seller-lp',
         pagePath,
       })
