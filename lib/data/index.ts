@@ -812,3 +812,6 @@ export {
   SEARCH_AREAS_CACHE_TAG,
 } from './areas/searchAreas'
 export type { SearchAreaRow, SearchAreaOwnerKind } from './areas/searchAreas'
+
+export { getPreferredOrefSaleAgreement } from './tc/getPreferredOrefSaleAgreement'
+export type { PreferredOrefForm } from './tc/getPreferredOrefSaleAgreement'
