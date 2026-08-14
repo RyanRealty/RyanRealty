@@ -1,20 +1,18 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 1 §4 SEO / LLM done. Do not start Track 2.**
-> Prior: Track 1 Market GREEN. Track 1 Reviews GREEN. Track 1 About GREEN. Track 1 Open houses GREEN. Track 1 Places GREEN. Track 1 listing GREEN. Track 1 search GREEN. Track 1 `/sell` E-SELL-WORTH GREEN. Track 1 `/` E-HOME-JOBS GREEN. Broker OS plan v0.14.
+> **NEWEST SUBJECT: Track 2 ranked plan complete. No A/B/C build until a later session says go.**
+> Prior: Track 1 §4 SEO/LLM done. Track 1 Market GREEN. Reviews GREEN. About GREEN. Open houses GREEN. Places GREEN. Listing GREEN. Search GREEN. `/sell` GREEN. `/` GREEN.
 
-# Current — 2026-08-13 (Grok, Track 1 §4 SEO/LLM) — dialed, not invented
+# Current — 2026-08-13 (Grok, Track 2 audit) — ranked plan P0–P4
 
-**Track:** 1 only. §4 SEO / analytics / GSC / LLM closed. Do not start Track 2. Do not start leftover ratchet, sell-film, or PUBLIC_SITE_UX_OVERHAUL. Ads not this lease.
+**Track:** 2 planning audit only. No code, migrations, deploys, SkySlope writes, or outbound.
 
-**What shipped:** llms.txt golf hub no longer cites noindex `/lp/central-oregon-golf`. Sitemap no longer submits `/lp/*` or `/feed`. NWX 3/2 map lists the indexable browse path. Gates forbid `/lp/` on the AI map and sitemap.
+**Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`
 
-**Evidence:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-seo-llm/EVIDENCE.md`
+**First slices (plan only):** A copilot yes-path (draft unblocked, send Matt-gated) · C expired/FSBO blow-away rewrite (rewrite unblocked, send + taste Matt-gated) · B one OREF fill → Matt email → seal (fill unblocked, send Matt-gated). Build order when go: A draft, then C rewrite, then B fill.
 
-**SHA:** feat `fec2d0eb`. Production READY after deploy:verify.
+**Not this land:** `stash@{0}`. Do not `git add -A`. Do not start leftover ratchet or sell-film.
 
-**Not this land:** `stash@{0}`. Do not `git add -A`. Track 2 not started. Chrome Golf still points at the paid LP.
-
-**Skills read:** public-product-os (quarry + locks), PUBLIC_PRODUCT/decisions.md, CLAUDE.md §2.
+**Skills read:** admin-product-os (orient, did not grind queue), crm-e2e, ia-lock, process-registry, prospecting + tc-close PDS.
 
 # Prior — 2026-08-13 (Grok, Track 1 Open houses) — Open houses Look GREEN on production
 
