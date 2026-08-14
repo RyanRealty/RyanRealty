@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   adjustCompAlongMarket,
+  estimateClosePrice,
   predictedCloseFromAdjusted,
   reconcileAskAndComps,
   trimPpsfOutliers,
@@ -143,6 +144,42 @@ describe('predictedCloseFromAdjusted', () => {
     expect(
       predictedCloseFromAdjusted(2000, [{ ppsfTimeAdjusted: 350 }, { ppsfTimeAdjusted: 360 }]),
     ).toBeNull()
+  })
+})
+
+describe('estimateClosePrice n<3', () => {
+  const points = [
+    { month: '2025-12-01', ppsf: 350, n: 40 },
+    { month: '2026-01-01', ppsf: 350, n: 40 },
+  ]
+
+  it('refuses comps-implied numbers on an unlisted subject with two sales', () => {
+    const out = estimateClosePrice({
+      subject: { ...subject, lastListPrice: null },
+      subjectStory: 'one',
+      comps: [sale(), sale({ listingKey: 'C2' })],
+      compStories: ['one', 'one'],
+      points,
+      asOf: '2026-01-15',
+      market: null,
+    })
+    expect(out.predictedClose).toBeNull()
+    expect(out.recommendedList).toBeNull()
+    expect(out.pricing).toBeNull()
+  })
+
+  it('keeps the ask haircut on a listed subject with two sales', () => {
+    const out = estimateClosePrice({
+      subject,
+      subjectStory: 'one',
+      comps: [sale(), sale({ listingKey: 'C2' })],
+      compStories: ['one', 'one'],
+      points,
+      asOf: '2026-01-15',
+      market: null,
+    })
+    expect(out.predictedClose).toBe(686_000)
+    expect(out.pricing).toBeNull()
   })
 })
 

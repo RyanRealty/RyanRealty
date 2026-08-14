@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CmaSubject } from '@/lib/cma/types'
-import { cmaSubjectToPricing } from '@/lib/pricing/select'
+import { cmaSubjectToPricing, pickCompSource } from '@/lib/pricing/select'
 
 function subject(over: Partial<CmaSubject> = {}): CmaSubject {
   return {
@@ -51,5 +51,16 @@ describe('cmaSubjectToPricing', () => {
     const out = cmaSubjectToPricing(subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73 }))
     expect(out.ruralAcreage).toBe(true)
     expect(out.marketArea).toBeNull()
+  })
+})
+
+describe('pickCompSource', () => {
+  it('stays on the facts set when facts ran, even if n is under 3', () => {
+    expect(pickCompSource({ factsReady: true, comps: [{}, {}] })).toBe('facts')
+    expect(pickCompSource({ factsReady: true, comps: [] })).toBe('facts')
+  })
+
+  it('uses the listings ladder only when facts are not ready', () => {
+    expect(pickCompSource({ factsReady: false, comps: [] })).toBe('listings')
   })
 })

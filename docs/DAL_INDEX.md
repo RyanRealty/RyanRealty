@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-08-14T13:32:49.612Z
+**Generated:** 2026-08-14T15:47:13.648Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -3222,7 +3222,7 @@ Companion files:
 
 **Tables:** `tc_form_libraries`, `tc_form_versions`, `tc_form_catalog_items`, `tc_form_catalog_checks`
 
-**Selected columns:** `id`, `library_id`, `form_number`, `name`, `effective_date`, `page_count`, `field_map`, `field_map_source`, `signer_profile`, `blank_pdf_storage_path`, `source_form_id`, `source_version_id`, `version_label`, `update_available`, `pending_version_label`, `retired_at`, `disposition`, `held_form_version_id`, `code`, `license_note`, `source_library_id`, `last_catalog_at`, `last_catalog_published_count`
+**Selected columns:** `id`, `library_id`, `form_number`, `name`, `effective_date`, `page_count`, `field_map`, `field_map_source`, `signer_profile`, `blank_pdf_storage_path`, `source_form_id`, `source_version_id`, `version_label`, `update_available`, `pending_version_label`, `retired_at`, `disposition`, `held_form_version_id`
 
 ---
 

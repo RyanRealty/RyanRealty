@@ -55,6 +55,37 @@ export async function GET(request: Request) {
     concessionsUpdated += Number(conc?.updated ?? 0)
     if (conc?.done) break
   }
+  let newConstructionStamped = 0
+  const { data: ynStamp, error: ynErr } = await supabase.rpc('stamp_sale_pricing_new_construction')
+  if (ynErr) {
+    console.error('[refresh-sale-pricing-facts] new_construction', ynErr.message)
+    return NextResponse.json({ ok: false, error: ynErr.message, upserted }, { status: 500 })
+  }
+  newConstructionStamped = Number(ynStamp ?? 0)
+  let waterReclassUpdated = 0
+  for (let i = 0; i < 8; i++) {
+    const { data: water, error: waterErr } = await supabase.rpc('backfill_sale_pricing_water_reclass', {
+      p_limit: 400,
+    })
+    if (waterErr) {
+      console.error('[refresh-sale-pricing-facts] water_reclass', waterErr.message)
+      return NextResponse.json({ ok: false, error: waterErr.message, upserted }, { status: 500 })
+    }
+    waterReclassUpdated += Number(water?.updated ?? 0)
+    if (water?.done) break
+  }
+  let newConstructionBackfilled = 0
+  for (let i = 0; i < 8; i++) {
+    const { data: yn, error: ynFillErr } = await supabase.rpc('backfill_sale_pricing_new_construction_yn', {
+      p_limit: 800,
+    })
+    if (ynFillErr) {
+      console.error('[refresh-sale-pricing-facts] new_construction_yn', ynFillErr.message)
+      return NextResponse.json({ ok: false, error: ynFillErr.message, upserted }, { status: 500 })
+    }
+    newConstructionBackfilled += Number(yn?.updated ?? 0)
+    if (yn?.done) break
+  }
   const { data: idx, error: idxErr } = await supabase.rpc('refresh_pricing_indexes')
   if (idxErr) {
     console.error('[refresh-sale-pricing-facts] index', idxErr.message)
@@ -64,6 +95,9 @@ export async function GET(request: Request) {
     ok: true,
     upserted,
     concessionsUpdated,
+    newConstructionStamped,
+    waterReclassUpdated,
+    newConstructionBackfilled,
     done,
     indexes: idx,
     duration_ms: Date.now() - started,

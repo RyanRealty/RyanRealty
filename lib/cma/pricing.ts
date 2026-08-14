@@ -22,6 +22,7 @@
  */
 
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 
 const MS_PER_MONTH = 30.44 * 86_400_000
 const SIZE_ADJ_FACTOR = 0.5
@@ -113,7 +114,7 @@ export function computePricing(
   opts: { sellerImprovementsTotal?: number | null; priceOverride?: number | null } = {},
 ): CmaPricing | null {
   const subjectSqft = subject.sqft ?? 0
-  if (adjusted.length === 0 || subjectSqft <= 0) return null
+  if (adjusted.length < PRICING_MIN_COMPS || subjectSqft <= 0) return null
   const notes: string[] = []
 
   // Surface the time-adjustment safety rail in the audit trail: when a comp's

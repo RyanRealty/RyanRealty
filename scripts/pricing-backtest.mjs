@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /**
- * As-of-sale backtest against random closed SFR. Predicts close from comps
- * that already closed before the subject, walking the market-path index.
- * No look-ahead. Prints MAPE and % within 5% / 10%.
+ * As-of-sale backtest against closed SFR. Comps-path only: last ask is
+ * read for the under-ask report, never passed into estimateClosePrice.
+ * Predicted close is est.predictedClose. No method1/method3 fallback.
+ * No look-ahead. Prints MAPE and the 15 biggest under-ask residuals.
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isRuralAcreage } from '../lib/cma/comp-tiers.ts'
+import { resolveMarketArea } from '../lib/cma/market-area.ts'
 import { classifyStory, citySlug } from '../lib/pricing/classes.ts'
 import { walkPricingLadder } from '../lib/pricing/match.ts'
 import { estimateClosePrice } from '../lib/pricing/estimate.ts'
@@ -18,7 +21,9 @@ const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABA
   auth: { persistSession: false },
 })
 
-const SAMPLE = Number(process.env.PRICING_BACKTEST_N || 60)
+const SAMPLE = Number(process.env.PRICING_BACKTEST_N || 200)
+const FACT_SELECT =
+  'listing_key, list_number, street_number, street_name, city, city_slug, subdivision, subdivision_norm, latitude, longitude, product_class, beds, baths, sqft, year_built, lot_acres, lot_class, story_class, water_class, sewer_class, hoa_class, close_price, close_date, concessions_amount, concessions_yn, original_ask, last_ask, days_to_offer, cdom, drop_count, close_ppsf, photo_url, public_remarks, new_construction_yn, flag_new_construction'
 
 const { count: factsN } = await sb.from('sale_pricing_facts').select('listing_key', { count: 'exact', head: true })
 if (!factsN || factsN < 500) {
@@ -28,9 +33,7 @@ if (!factsN || factsN < 500) {
 
 const { data: subjects, error } = await sb
   .from('sale_pricing_facts')
-  .select(
-    'listing_key, list_number, street_number, street_name, city, city_slug, subdivision, subdivision_norm, latitude, longitude, product_class, beds, baths, sqft, year_built, lot_acres, lot_class, story_class, water_class, sewer_class, hoa_class, close_price, close_date, concessions_amount, concessions_yn, original_ask, last_ask, days_to_offer, cdom, drop_count, close_ppsf, photo_url, public_remarks',
-  )
+  .select(FACT_SELECT)
   .eq('product_class', 'detached')
   .gte('close_date', '2024-01-01')
   .lt('close_date', '2026-07-01')
@@ -50,6 +53,12 @@ function stride(arr, n) {
   return Array.from({ length: n }, (_, i) => arr[Math.floor(i * step)])
 }
 
+function newConstructionFlag(r) {
+  if (r.new_construction_yn === true || r.flag_new_construction === true) return true
+  if (r.new_construction_yn === false) return false
+  return null
+}
+
 const picked = stride(subjects ?? [], SAMPLE)
 const errors = []
 
@@ -60,9 +69,7 @@ for (const row of picked) {
   const [poolRes, idxRes, cellRes] = await Promise.all([
     sb
       .from('sale_pricing_facts')
-      .select(
-        'listing_key, list_number, street_number, street_name, city, city_slug, subdivision, subdivision_norm, latitude, longitude, product_class, beds, baths, sqft, year_built, lot_acres, lot_class, story_class, water_class, sewer_class, hoa_class, close_price, close_date, concessions_amount, concessions_yn, original_ask, last_ask, days_to_offer, cdom, drop_count, close_ppsf, photo_url, public_remarks',
-      )
+      .select(FACT_SELECT)
       .eq('city_slug', row.city_slug)
       .eq('product_class', 'detached')
       .lt('close_date', asOf)
@@ -115,7 +122,12 @@ for (const row of picked) {
     closePpsf: Number(r.close_ppsf),
     photoUrl: r.photo_url,
     publicRemarks: r.public_remarks,
+    newConstruction: newConstructionFlag(r),
   })
+  const lat = row.latitude != null ? Number(row.latitude) : null
+  const lng = row.longitude != null ? Number(row.longitude) : null
+  const marketArea = resolveMarketArea(lat, lng)
+  const lotAcres = row.lot_acres != null ? Number(row.lot_acres) : null
   const subject = {
     listingKey: row.listing_key,
     streetAddress: `${row.street_number ?? ''} ${row.street_name ?? ''}`.trim(),
@@ -123,12 +135,12 @@ for (const row of picked) {
     citySlug: row.city_slug,
     subdivision: row.subdivision,
     subdivisionNorm: row.subdivision_norm,
-    latitude: row.latitude != null ? Number(row.latitude) : null,
-    longitude: row.longitude != null ? Number(row.longitude) : null,
+    latitude: lat,
+    longitude: lng,
     beds: row.beds != null ? Number(row.beds) : null,
     baths: row.baths != null ? Number(row.baths) : null,
     sqft: Number(row.sqft),
-    lotAcres: row.lot_acres != null ? Number(row.lot_acres) : null,
+    lotAcres,
     yearBuilt: row.year_built != null ? Number(row.year_built) : null,
     storyClass: row.story_class ?? classifyStory(null),
     productClass: row.product_class,
@@ -136,7 +148,9 @@ for (const row of picked) {
     sewerClass: row.sewer_class,
     hoaClass: row.hoa_class,
     lotClass: row.lot_class,
-    ruralAcreage: Number(row.lot_acres ?? 0) >= 1,
+    ruralAcreage: isRuralAcreage({ lotAcres }, marketArea),
+    marketArea,
+    newConstruction: newConstructionFlag(row),
   }
   const cells = new Map()
   for (const c of cellRes.data ?? []) {
@@ -150,6 +164,7 @@ for (const row of picked) {
     saleToOriginal: p.median_sale_to_original != null ? Number(p.median_sale_to_original) : null,
     daysToOffer: p.median_days_to_offer != null ? Number(p.median_days_to_offer) : null,
   }))
+  const lastAsk = row.last_ask != null ? Number(row.last_ask) : null
   const cmaSubject = {
     listingKey: row.listing_key,
     mlsNumber: row.list_number,
@@ -172,7 +187,7 @@ for (const row of picked) {
     viewDescription: null,
     taxAnnual: null,
     standardStatus: 'Closed',
-    lastListPrice: row.last_ask != null ? Number(row.last_ask) : null,
+    lastListPrice: null,
     lastListDate: null,
     listingHistoryLine: null,
   }
@@ -185,9 +200,10 @@ for (const row of picked) {
     asOf,
     market: null,
   })
-  const predicted = est.predictedClose ?? est.pricing?.method3 ?? est.pricing?.method1Mid ?? null
+  const predicted = est.predictedClose
   const actual = Number(row.close_price)
   const err = predicted != null && actual > 0 ? (predicted - actual) / actual : null
+  const vsAsk = predicted != null && lastAsk != null && lastAsk > 0 ? (predicted - lastAsk) / lastAsk : null
   const actualConc = resolveConcessions({
     amount: row.concessions_amount != null ? Number(row.concessions_amount) : null,
     yn: row.concessions_yn,
@@ -202,15 +218,19 @@ for (const row of picked) {
     city: row.city,
     addr: subject.streetAddress,
     close: asOf,
+    lastAsk,
     actual,
     predicted,
     err,
+    vsAsk,
     actualNet,
     predictedNet,
     netErr,
     comps: match.comps.length,
     tiers: match.tiersUsed,
     regime: est.regime,
+    rural: subject.ruralAcreage,
+    marketArea,
   })
 }
 
@@ -232,18 +252,37 @@ function score(rows, key) {
 const close = score(errors, 'err')
 const net = score(errors, 'netErr')
 const starved = errors.filter((e) => e.comps < 3).length
+const refused = errors.filter((e) => e.predicted == null).length
+const underAsk = [...errors]
+  .filter((e) => e.vsAsk != null)
+  .sort((a, b) => a.vsAsk - b.vsAsk)
+  .slice(0, 15)
+  .map((e) => ({
+    addr: e.addr,
+    city: e.city,
+    lastAsk: e.lastAsk,
+    predicted: e.predicted,
+    actual: e.actual,
+    vsAsk: +e.vsAsk.toFixed(4),
+    err: e.err != null ? +e.err.toFixed(4) : null,
+    comps: e.comps,
+    tiers: e.tiers,
+    rural: e.rural,
+    marketArea: e.marketArea,
+  }))
 
 console.log(
   JSON.stringify(
     {
-      cite: 'docs/DATABASE_FOR_AI_AGENTS.md §0 sale_pricing_facts; ClosePrice is contract price; seller net = close minus resolved concessions',
+      cite: 'docs/DATABASE_FOR_AI_AGENTS.md §2b sale_pricing_facts; comps-path only; predictedClose; last_ask is report-only',
       fetched_at: new Date().toISOString(),
       facts: factsN,
       sample: errors.length,
       starved,
+      refused,
       close,
       seller_net: net,
-      rows: errors.slice(0, 15),
+      under_ask_15: underAsk,
     },
     null,
     2,

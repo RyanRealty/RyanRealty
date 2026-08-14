@@ -148,6 +148,17 @@ describe('computePricing', () => {
     expect(computePricing(subject({ sqft: null }), [], market)).toBeNull()
   })
 
+  it('refuses a price on one or two sales', () => {
+    const one = adjustComps(subject(), [comp({ closePrice: 700000 })], market)
+    const two = adjustComps(
+      subject(),
+      [comp({ closePrice: 690000 }), comp({ closePrice: 710000 })],
+      market,
+    )
+    expect(computePricing(subject(), one, market)).toBeNull()
+    expect(computePricing(subject(), two, market)).toBeNull()
+  })
+
   it('does not flag a tight comp set for review', () => {
     const adjusted = adjustComps(subject(), comps, market)
     const pricing = computePricing(subject(), adjusted, market)

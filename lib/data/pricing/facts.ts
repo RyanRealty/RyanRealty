@@ -54,6 +54,8 @@ const FACT_COLS = [
   'close_ppsf',
   'photo_url',
   'public_remarks',
+  'new_construction_yn',
+  'flag_new_construction',
 ].join(', ')
 
 function rowToSale(r: Record<string, unknown>): PricingSale | null {
@@ -98,6 +100,12 @@ function rowToSale(r: Record<string, unknown>): PricingSale | null {
     closePpsf: Number(r.close_ppsf ?? closePrice / sqft),
     photoUrl: typeof r.photo_url === 'string' ? r.photo_url : null,
     publicRemarks: typeof r.public_remarks === 'string' ? r.public_remarks : null,
+    newConstruction:
+      r.new_construction_yn === true || r.flag_new_construction === true
+        ? true
+        : r.new_construction_yn === false
+          ? false
+          : null,
   }
 }
 

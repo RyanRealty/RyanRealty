@@ -186,16 +186,18 @@ export function plausibleListedClose(closePrice: number, lastAsk: number | null 
   return closePrice >= lastAsk * IMPLAUSIBLE_CLOSE_RATIO
 }
 
-/** 0–2 years from as-of. Null year and no MLS flag stay unknown. */
+/** 0–2 years from as-of wins over NewConstructionYN=false. Null year and no flag stay unknown. */
 export function isNewBuild(
   yearBuilt: number | null | undefined,
   asOfYear: number,
   flag?: boolean | null,
 ): boolean | null {
+  const byYear =
+    yearBuilt != null && yearBuilt >= 1850 ? asOfYear - yearBuilt <= 2 : null
+  if (byYear === true) return true
   if (flag === true) return true
   if (flag === false) return false
-  if (yearBuilt == null || yearBuilt < 1850) return null
-  return asOfYear - yearBuilt <= 2
+  return byYear
 }
 
 export function newConstructionCompatible(a: boolean | null, b: boolean | null): boolean {

@@ -72,17 +72,25 @@ Agent leftovers that do not need Matt. CRM Pipeline islands deleted (redirects s
 
 **Still open, not Matt-gated:** other OREF maps (need measured blanks), SkySlope live file, `crm-deals` mutations with no UI, pre-2024 YN drain (cron), one-click form PDF pull.
 
-# Concurrent — 2026-08-14 (Grok, pricing matcher cuts) — READY `caa92e2a`
+# Concurrent — 2026-08-14 (Grok, pricing audit fixes) — local, pushing
 
-Under-ask autopsy: the homes furthest below ask were mostly richer-product comps, not cheap lists. Matcher now refuses n&lt;3, drops close&lt;10% of last ask, reads subject water from PK-bounded WaterSource (Private alone = unknown), cuts neighborhood once the search leaves the subdivision, does not treat 1-acre-in-city as rural, keeps new construction off a resale, and widens same-sub GLA to ±30% before a mile ring.
+Adversarial audit of the matcher cuts. Five product holes closed:
 
-**Backtest** (200 listed detached, CloseDate 2024-01-01..2026-07-01, comps-path only): priced 176, refused 24, MAPE 10.5%, median abs 7.7%, 57.4% within 10%. Fresca / Longview / King Saul / Clairaway no longer look like fake bargains. Craftsman still −20% on a fair Awbrey Village set. Highway 20 and Debron still mix within a wide rural or same-polygon custom set.
+1. Facts-ready never falls back to the listings ladder (`pickCompSource`). CMA `build.ts` already fails below 3 comps.
+2. SQL `pricing_classify_water` matches JS: Private-only is unknown. Hosted drain flipped 25,483 stored `well` rows to `unknown`. Live split: public 98,528 / unknown 29,471 / well 21,403. Queue empty.
+3. `computePricing` returns null when n&lt;3. Unlisted thin sets print no recommended list. Listed thin sets still get last ask × 0.98.
+4. `isNewBuild`: year 0–2 wins over `NewConstructionYN=false`. Facts now carry `new_construction_yn` (18,271 true / 93,021 false / 38,110 null). Cron stamps recent rows and drains leftover nulls.
+5. Repo `scripts/pricing-backtest.mjs` is comps-path only (no last ask into the estimate, no method1/method3 fallback). Default n=200. Prints the 15 biggest under-ask residuals.
 
-**SHA:** `caa92e2a` on `origin/main`. Production READY `dpl_DJye9CfMg4N5inp8wTCvfuShXSbc` (aliases include ryan-realty.com). No new pricing migration. Docs tip `dd4a747a` was CANCELED (ignore / superseded).
+**Backtest** (200 detached, CloseDate 2024-01-01..2026-07-01, comps-path, `predictedClose` only): priced 184, refused 16, MAPE 11.5%, median abs 8.8%, 56.5% within 10%. Biggest under-ask now: Quartz (Redmond, similar-sub+city), Kiesow (Boyd Acres same-sub), Walnut pair (Redmond same-sub), Bachelor (rural Bend). Those are remaining matcher misses, not the old listings-ladder inventions.
 
-**Leftover:** Highway 20 / no-mesh rural still picks 2021 Tumalo custom. Debron mixes tract vs custom inside the Awbrey Butte polygon. Pre-2024 concessions YN drain. 400-sale ClosePrice + seller-net backtest reprint.
+**Hosted:** `20260814152953` applied on `dwvlophlbvvygjfxcrhm` and recorded in `supabase_migrations.schema_migrations`.
 
-**Do not `git add -A`.** Page-grade / public-product-os dirty files stay out.
+**Leftover (after 1–5, not this land):** Debron tract vs custom inside Awbrey Butte. Highway 20 / no-mesh rural. Quality stop treats `subdivision-*-wide` as a quality rung. `plausibleListedClose` is a 10% lower bound only. Missing coords pass mile rings. 1-acre in Redmond/Sisters (no mesh) is still rural.
+
+**Do not `git add -A`.** Page-grade / public-product-os / chrome-seller-ask dirty files stay out.
+
+**Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, TDD, database-canonical-reference, DATABASE_FOR_AI_AGENTS §0/§2b/§4, supabase skill, git-commit.mdc.
 
 # Concurrent — 2026-08-14 (Grok, seller net) — READY `104c01cc`
 

@@ -206,10 +206,15 @@ export function matchToCompSelection(
   }
 }
 
+/** Facts ran → stay on facts even when n is 0–2. CMA build already fails below 3. */
+export function pickCompSource(match: { factsReady: boolean; comps?: unknown[] }): 'facts' | 'listings' {
+  return match.factsReady ? 'facts' : 'listings'
+}
+
 export async function selectCompsPreferringFacts(subject: CmaSubject): Promise<CompSelection> {
   const { selectComps } = await import('@/lib/cma/comps')
   const match = await selectPricingComps(subject)
-  if (match.factsReady && match.comps.length >= PRICING_MIN_COMPS) {
+  if (pickCompSource(match) === 'facts') {
     return matchToCompSelection(subject, match)
   }
   return selectComps(subject)

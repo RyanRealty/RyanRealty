@@ -23,7 +23,10 @@ import { execFileSync } from 'node:child_process'
  */
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const SANDBOX = join(tmpdir(), 'rr-entity-scope-gate-sandbox')
+const SANDBOX = join(
+  tmpdir(),
+  `rr-entity-scope-gate-sandbox-${process.pid}-${Math.random().toString(16).slice(2)}`,
+)
 const GATE = join(SANDBOX, 'scripts/check-entity-scope.mjs')
 const BASELINE = join(SANDBOX, 'scripts/entity-scope-baseline.json')
 const ADMIN = join(SANDBOX, 'app/admin/(protected)')

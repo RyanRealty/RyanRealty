@@ -157,6 +157,14 @@ describe('new-construction match', () => {
     expect(newConstructionCompatible(true, true)).toBe(true)
     expect(newConstructionCompatible(true, null)).toBe(true)
   })
+
+  it('does not let NewConstructionYN=false override a 0–2 year build', () => {
+    expect(isNewBuild(2025, 2026, false)).toBe(true)
+    expect(isNewBuild(2013, 2026, false)).toBe(false)
+    expect(isNewBuild(2013, 2026, true)).toBe(true)
+    expect(isNewBuild(null, 2026, false)).toBe(false)
+    expect(isNewBuild(null, 2026, null)).toBeNull()
+  })
 })
 
 describe('subdivision sentinel', () => {
