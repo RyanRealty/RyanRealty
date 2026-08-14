@@ -19,11 +19,13 @@
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, creative-brain, public-product-os (orient), git-commit.mdc.
 
-# Concurrent — 2026-08-14 (Grok, CMA use + pricing pages) — shipping
+# Concurrent — 2026-08-14 (Grok, CMA use + pricing pages) — READY `78ed727e`
 
 **Track:** Make the CMA document match the 3480 Downloads baseline, then beat it. Owners ask two questions: can I rent this, and can I develop it. Answer those through zoning. Explain how we priced.
 
-**Wired (local, not pushed yet):**
+**SHA:** `78ed727e` on `origin/main`. Production READY. No schema.
+
+**Wired:**
 - `lib/cma/render-use-of-property.ts` (`propertyUsePage`) — zone masthead, glance row, Build / Rent boards with full cited detail. STR stays under Rent.
 - `lib/cma/render-pricing-page.ts` — How this home is priced. Close = contract. Quality stop. 15% / 30% neighborhood cut. Three tiers. Three checks. No Method 1 jargon.
 - Collapsed one-liner `whatYouCanDoPage` removed from `lib/cma/render.ts`.
