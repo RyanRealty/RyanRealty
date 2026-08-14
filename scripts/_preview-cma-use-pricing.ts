@@ -13,7 +13,7 @@ import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 
 const SITE_URL = 'https://ryan-realty.com'
-const OUT = path.resolve('docs/plans/CMA/looks/2026-08-14-use-and-pricing')
+const OUT = path.resolve('docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-cma-use-and-pricing')
 
 const subject = {
   listingKey: '2025042521',

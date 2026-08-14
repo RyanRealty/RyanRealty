@@ -27,7 +27,7 @@
 - `lib/cma/render-use-of-property.ts` — zone masthead, glance row, Build / Rent boards with full cited detail. STR stays under Rent.
 - `lib/cma/render-pricing-page.ts` — How this home is priced. Close = contract. Quality stop. 15% / 30% neighborhood cut. Three tiers. Three checks. No Method 1 jargon.
 - Collapsed one-liner `whatYouCanDoPage` removed from `lib/cma/render.ts`.
-- Looks: `docs/plans/CMA/looks/2026-08-14-use-and-pricing/`
+- Looks: `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-cma-use-and-pricing/`
 
 **Do not `git add -A`.** Imagery Current / page-grade / chrome-seller-ask / admin inbox stay out.
 

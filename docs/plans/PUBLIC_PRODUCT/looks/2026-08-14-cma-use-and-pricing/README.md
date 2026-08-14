@@ -10,3 +10,5 @@ What changed in the generator:
 Preview uses the live Redmond R-2 resolver at 0.23 acres (3480 SW 45th facts). Existing stored CMAs do not change until rebuilt.
 
 Regenerate: `npx tsx scripts/_preview-cma-use-pricing.ts`
+
+Looks live under the Public Product package so they are not a rogue plan.
