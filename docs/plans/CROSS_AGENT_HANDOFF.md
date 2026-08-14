@@ -1,31 +1,33 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 2 P2 person↔deal live. Many CRM people on one tc_deal. Matt gates remain: Yes on Today, C copy taste, Email to Matt. No live sends.**
+> **NEWEST SUBJECT: Track 2 P2 remainder on local main (`7de19cfb`). Push + deploy:verify next. Matt gates remain: Yes on Today, C copy taste, Email to Matt, publish. No live sends.**
 > Prior: Track 2 A+C+B. Track 1 §4 SEO/LLM done. Track 1 Looks GREEN.
 
-# Current — 2026-08-14 (Grok, Track 2 P2 person↔deal) — on origin/main after push
+# Current — 2026-08-14 (Grok, Track 2 P2 /endtoend) — local main, push next
 
-**Track:** 2 P2 person↔deal. A transaction has more than one person. Dual-intent is still one `crm_people` row (unique `deal_id+person_id`). Two houses = two deals. Roles: buyer | seller | other. Person↔deal is many-to-one (many people, one file). No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land.
+**Track:** 2 P2 remainder. A broker can run the daily loops on one person and one file. Dual-intent is still one `crm_people` row (unique `deal_id+person_id`). Two houses = two deals. Roles: buyer | seller | other. No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land.
 
-**SHA:** `16d69b29` feat(admin): link many crm people to one tc deal. Production verify after push.
+**SHA:** `7de19cfb` fix(admin): fill OREF names from CRM parties. Includes person↔deal (`16d69b29`), Today approval Yes, inbound valuation C-bar, OREF 001 overlay. Production verify after push.
 
-**Hosted migration** `20260814010000_tc_deal_people.sql` applied on `dwvlophlbvvygjfxcrhm` (docs/DATABASE_FOR_AI_AGENTS.md §0 lookup + §2k note). Table `tc_deal_people` live: unique `(deal_id, person_id)`, role check, RLS on, service-role only.
+**Hosted migration** `20260814010000_tc_deal_people.sql` applied on `dwvlophlbvvygjfxcrhm` (docs/DATABASE_FOR_AI_AGENTS.md §0 lookup + §2k note). Table `tc_deal_people` live: unique `(deal_id, person_id)`, role check, RLS on, service-role only. Confirmed 0 rows.
 
 **Wired:**
-- `/admin/people/[id]` — existing deals link to `/admin/deals/{propertyKey}`; `StartDealForm` (prospect street+city else inbound parse; `defaultDealRoleFromWho`; related via `roleForRelated`)
-- `/admin/deals/[key]` — `DealParties` above `DealContacts`
+- `/admin/today` — inbound Yes (governed SMS). Ready draft Yes stamps via `approveNowAction` (no publish)
+- `/admin/people/[id]` — deals + `StartDealForm` (HiddenField person id)
+- `/admin/deals/[key]` — `DealParties` above `DealContacts`. OREF fill prefers CRM party names, then cycle jsonb. Empty 001 15-page map uses checked-in overlay
 - Closings — `getPartyNamesByDealIds` on `rowContext`
+- Inbound CMA send/report copy names THIS home + this-address plan
 
-**Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`
+**Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md` (End-to-end goal section)
 
-**Next leftover (not this land):**
+**Next leftover:**
 - Matt taste on C first-touch copy + packet
-- Empty OREF `field_map` (fill omits unknown/missing bindings)
-- Other P2 slices (`/admin/deals` still reads SkySlope mirror; inbound valuation packet; one approval yes)
-- Yes on Today and Email to Matt stay Matt-gated. Do not send.
+- Empty OREF maps on other form versions (overlay locked to 15-page 01/2026 sample)
+- SkySlope remains the live file until cutover
+- Yes on Today, Email to Matt, and publish stay Matt-gated. Do not send.
 
-**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Do not `git add -A`. Do not pop stash. Do not push `wt/*`. Did not start other P2 slices. Did not edit today/*, lib/cma/*, oref-fill*, prospecting first-touch, or the public site.
+**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Do not `git add -A`. Do not pop stash. Do not push `wt/*`. Did not start P3.
 
-**Skills read:** admin-product-os (orient only), tc-builder (awareness), database-canonical-reference SKILL, docs/DATABASE_FOR_AI_AGENTS.md §0, git-commit.mdc, supabase-migrations-auto.mdc, deploy-verify-before-done.mdc, supabase SKILL.
+**Skills read:** endtoend, admin-product-os (orient only), database-canonical-reference SKILL, docs/DATABASE_FOR_AI_AGENTS.md §0, git-commit.mdc, supabase-migrations-auto.mdc, deploy-verify-before-done.mdc.
 
 # Prior — 2026-08-13 (Grok, Track 1 Open houses) — Open houses Look GREEN on production
 
