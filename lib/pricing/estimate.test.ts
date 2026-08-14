@@ -140,10 +140,20 @@ describe('predictedCloseFromAdjusted', () => {
 })
 
 describe('reconcileAskAndComps', () => {
-  it('uses last ask times sale-to-ask when the ask agrees with the comps', () => {
+  it('uses last ask times 0.98 when the home is listed, even if the set sold over ask', () => {
+    const out = reconcileAskAndComps({
+      compClose: 700_000,
+      lastAsk: 1_200_000,
+      medianSaleToAsk: 1.1818,
+    })
+    expect(out.source).toBe('ask')
+    expect(out.close).toBe(1_176_000)
+  })
+
+  it('uses last ask times 0.98 when the ask agrees with the comps', () => {
     const out = reconcileAskAndComps({ compClose: 700_000, lastAsk: 710_000, medianSaleToAsk: 0.99 })
     expect(out.source).toBe('ask')
-    expect(out.close).toBe(703_000)
+    expect(out.close).toBe(696_000)
   })
 
   it('keeps the ask even when a tight set disagrees — comps do not override a listed ask', () => {

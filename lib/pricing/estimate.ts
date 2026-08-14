@@ -65,25 +65,28 @@ export function predictedCloseFromAdjusted(
 }
 
 /**
- * Listed homes: the last ask times the comparable sale-to-ask is the close.
- * Measured 2024–mid-2026 detached: last ask is inside 10% of close on 99.2%
- * of sales. Same-subdivision $/sqft medians only hit 73–80% — they must not
- * override a real ask. Comps still price an unlisted subject (no last ask).
- * An ask 40%+ above a tight same-subdivision set is flagged, not substituted.
+ * Listed homes: the close is last ask × 0.98. Comps do not pick the close
+ * and do not pick the multiplier. A thin same-subdivision set's sale-to-ask
+ * (one nearby sale at 1.18× its own ask) is how a $1.20M list became a
+ * $1.418M close estimate. Measured 2024–mid-2026 detached, last_ask × 0.98
+ * is inside 10% on 98.31% of 8,648 listed closes. Comp $/sqft still prices
+ * an unlisted subject. An ask 40%+ from a tight same-subdivision set is
+ * flagged, not substituted.
  */
+export const ASK_HAIRCUT = 0.98
 export const ASK_AGREE = 0.2
 export const ASK_OFF_MARKET = 0.4
 
 export function reconcileAskAndComps(opts: {
   compClose: number | null
   lastAsk: number | null | undefined
-  medianSaleToAsk: number | null
+  /** Unused for the close pick. Kept so callers can still pass a measured sto. */
+  medianSaleToAsk?: number | null
   /** Unused for the close pick. Kept so callers can still pass the flag. */
   qualitySet?: boolean
 }): { close: number | null; source: 'ask' | 'comps' | 'none'; offMarketAsk?: boolean } {
   const ask = opts.lastAsk != null && opts.lastAsk > 0 ? opts.lastAsk : null
-  const sto = opts.medianSaleToAsk != null && opts.medianSaleToAsk > 0 ? opts.medianSaleToAsk : 0.98
-  const askClose = ask != null ? round1000(ask * sto) : null
+  const askClose = ask != null ? round1000(ask * ASK_HAIRCUT) : null
   if (askClose == null && opts.compClose == null) return { close: null, source: 'none' }
   if (askClose == null) return { close: opts.compClose, source: 'comps' }
   const offMarketAsk =
@@ -200,27 +203,21 @@ export function estimateClosePrice(opts: {
   })
   const pricing = computePricing(opts.subject, adjusted, opts.market)
   const compClose = predictedCloseFromAdjusted(opts.subject.sqft ?? 0, adjusted)
-  const saleToAsk = opts.comps
-    .map((c) => (c.lastAsk && c.lastAsk > 0 ? c.closePrice / c.lastAsk : null))
-    .filter((n): n is number => n != null && n > 0)
-  const medianSaleToAsk = saleToAsk.length ? median(saleToAsk) : null
   const qualitySet =
     opts.comps.length >= 3 && opts.comps.every((c) => c.selectionTier.startsWith('subdivision-'))
   const reconciled = reconcileAskAndComps({
     compClose,
     lastAsk: opts.subject.lastListPrice,
-    medianSaleToAsk,
     qualitySet,
   })
   const predictedClose = reconciled.close
   attachSellerNet(pricing, opts.comps, predictedClose)
   if (pricing && predictedClose != null) {
-    const stoPct = ((medianSaleToAsk ?? 0.98) * 100).toFixed(1)
     pricing.notes.unshift(
       reconciled.source === 'ask'
-        ? `Close estimate is the last ask times the comparable set's median sale-to-ask (${stoPct}%), $${predictedClose.toLocaleString('en-US')}.${
+        ? `Close estimate is 98% of the last ask, $${predictedClose.toLocaleString('en-US')}.${
             reconciled.offMarketAsk
-              ? ' The last ask is more than 40% away from the same-subdivision close — review the list price before a seller signs it.'
+              ? ' The last ask is more than 40% away from the same-subdivision close. Review the list price before a seller signs it.'
               : ''
           }`
         : `Close estimate is the median time-adjusted price per square foot of the comparable set, applied to the subject's living area ($${predictedClose.toLocaleString('en-US')}). No last ask on the subject, so the comparable path is the close.`,
