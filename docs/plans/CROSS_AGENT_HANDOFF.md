@@ -19,20 +19,28 @@
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, creative-brain, public-product-os (orient), git-commit.mdc.
 
-# Concurrent — 2026-08-14 (Grok, public pricing product) — landing
+# Concurrent — 2026-08-14 (Grok, public pricing product) — READY `68a1123d`
 
 **Track:** Roll the matcher into one public product. Not another matcher-geography pass.
 
-**Wired in this session (not live until push + hosted migration + READY):**
+**SHA:** product `68a1123d` on `origin/main`. Production READY. Hosted `listing_pricing_reads` + `listing_pricing_reads_due` applied (`20260814171000`, SFR-only due `20260814174600`). 11 stamp rows after two cron drains.
+
+**Wired:**
 - `lib/pricing/public-contract.ts` — listed over/under, unlisted range, refuse (thin-set / new-construction / builder-phase / facts-not-ready / no-gla). Range band 0.09.
 - CMA `build_summary.public_listing_read` from the same contract. Document can still price new construction. Page must not.
-- `listing_pricing_reads` stamp + `listing_pricing_reads_due`. Cron append on refresh-sale-pricing-facts. Page reads the stamp only.
-- Listing page: published CMA wins. Else `LivePricingRead`. CTA is `PublishedCmaDownload` mode=request → same `crm_people` path. No second form.
+- Listing page reads the stamp only. Published CMA wins. CTA is `PublishedCmaDownload` mode=request → `crm_people` tagged `source:listing-pricing-read`. No second form.
 - Terms mention the listing-page market read.
+- Due function is SFR only. Condos / TICs / manufactured no longer starve the stamp queue.
+
+**Prod check (numbers match the stamp):**
+- Listed: 2533 Pine Terrace, Bend (`/listing/20210502210640934980000000`) — $1,089,000 to $1,305,000, 3% over the ask, n=3.
+- Refuse thin-set: 21483 Bunchgrass, Bend.
+- Refuse new construction: 620 Sprout, Sisters.
+- Looks: `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-listing-pricing-read/`
 
 **Do not `git add -A`.** Imagery Current / page-grade / chrome-seller-ask stay out.
 
-**Leftover after this lands:** builder-phase $/sqft (Walnut / Kiesow class) only. Public page refuses those addresses.
+**Leftover:** builder-phase $/sqft (Walnut / Kiesow class) only. Public page refuses those addresses. Cron still drains facts (`done: false`) and stamps 6 SFR per run until facts are done, then 24.
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, TDD, VOICE.md, DATABASE_FOR_AI_AGENTS §2b, git-commit.mdc.
 
