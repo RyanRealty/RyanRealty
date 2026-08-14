@@ -242,8 +242,12 @@ export type CmaMarketStatsRow = {
 
 /** Latest rolling_365d market_stats_cache row for the first matching geo slug.
  *  Callers pass both slug spellings ('la-pine' + 'la pine') — the cache carries
- *  both historically. */
-export async function getCmaMarketStatsRow(geoSlugs: string[]): Promise<CmaMarketStatsRow | null> {
+ *  both historically. Resort communities use geo_type='neighborhood'
+ *  (docs/DATABASE_FOR_AI_AGENTS.md §3a). */
+export async function getCmaMarketStatsRow(
+  geoSlugs: string[],
+  geoType: 'city' | 'neighborhood' = 'city',
+): Promise<CmaMarketStatsRow | null> {
   const sb = client()
   if (!sb || geoSlugs.length === 0) return null
   const { data, error } = await sb
@@ -252,7 +256,7 @@ export async function getCmaMarketStatsRow(geoSlugs: string[]): Promise<CmaMarke
       'geo_type, geo_slug, geo_label, period_start, period_end, sold_count, median_sale_price, median_dom, median_ppsf, median_price_per_sqft_closed, avg_sale_to_list_ratio, yoy_median_price_delta_pct, end_of_period_inventory, methodology_version, computed_at',
     )
     .in('geo_slug', geoSlugs)
-    .eq('geo_type', 'city')
+    .eq('geo_type', geoType)
     .eq('period_type', 'rolling_365d')
     .order('period_end', { ascending: false })
     .order('computed_at', { ascending: false })
@@ -275,15 +279,18 @@ export type CmaMarketPulseRow = {
   updated_at: string | null
 }
 
-/** Live pulse (active inventory) for the subject city, SFR only. */
-export async function getCmaMarketPulseRow(geoSlugs: string[]): Promise<CmaMarketPulseRow | null> {
+/** Live pulse (active inventory) for the subject geo, SFR only. */
+export async function getCmaMarketPulseRow(
+  geoSlugs: string[],
+  geoType: 'city' | 'neighborhood' = 'city',
+): Promise<CmaMarketPulseRow | null> {
   const sb = client()
   if (!sb || geoSlugs.length === 0) return null
   const { data, error } = await sb
     .from('market_pulse_live')
     .select('geo_slug, active_count, pending_count, median_list_price, months_of_supply, updated_at')
     .in('geo_slug', geoSlugs)
-    .eq('geo_type', 'city')
+    .eq('geo_type', geoType)
     .eq('property_type', 'A')
     .order('updated_at', { ascending: false })
     .limit(1)

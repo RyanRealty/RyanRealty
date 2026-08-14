@@ -17,6 +17,11 @@ describe('resortSlugForSubdivision', () => {
     expect(resortSlugForSubdivision(null)).toBeNull()
     expect(resortSlugForSubdivision('')).toBeNull()
   })
+  it('keeps a phase suffix on the same resort (RPR legal descriptions)', () => {
+    expect(resortSlugForSubdivision('Caldera Springs Phase One')).toBe('caldera-springs')
+    expect(resortSlugForSubdivision('Caldera Springs Phase 1')).toBe('caldera-springs')
+    expect(resortSlugForSubdivision('Kenwood Phase One')).toBeNull()
+  })
 })
 
 describe('resortCommunityCompatible', () => {

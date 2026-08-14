@@ -147,6 +147,35 @@ describe('print CMA cover — confidence never contradicts needsReview', () => {
     expect(html).toContain('High confidence')
   })
 
+  it('says closed MLS sales and names the community, not the ZIP', () => {
+    const { html } = renderCmaHtml({
+      ...byronArgs({ needsReview: false, reviewReason: null }),
+      market: {
+        geoSlug: 'caldera-springs',
+        geoLabel: 'Caldera Springs',
+        periodStart: '2025-08-14',
+        periodEnd: '2026-08-14',
+        soldCount365: 39,
+        medianSalePrice: 1790000,
+        medianDom: 72,
+        medianPpsf: 580,
+        saleToListRatio: 0.937,
+        yoyMedianPriceDeltaPct: 4.7,
+        activeCount: 48,
+        pendingCount: 12,
+        monthsOfSupply: 22.2,
+        mosFormula: 'market_pulse_live.months_of_supply',
+        marketVerdict: 'buyer',
+        methodologyVersion: 'v3-2026-05-07',
+        computedAt: '2026-08-14T20:00:00.000Z',
+        pulseUpdatedAt: '2026-08-14T20:00:00.000Z',
+      },
+    })
+    expect(html).toContain('closed MLS sales')
+    expect(html).toContain('Automated estimates are not used.')
+    expect(html).toContain('The market read is Caldera Springs, not the ZIP.')
+  })
+
   it('the pricing page confidence line also never shows High under needsReview', () => {
     const { html } = renderCmaHtml(byronArgs())
     expect(html).not.toMatch(/Confidence: <strong>High<\/strong>/)

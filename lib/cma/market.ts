@@ -1,9 +1,11 @@
 /**
- * CMA market context — verified conditions for the subject's city, pulled from
- * the cache tables (never aggregated from raw listings; CLAUDE.md database
- * rules). market_stats_cache rolling_365d supplies the closed-sale trend and
- * the YoY rate that drives the per-comp time adjustment; market_pulse_live
- * supplies live active inventory AND the canonical months of supply.
+ * CMA market context — verified conditions for the subject's market, pulled
+ * from the cache tables (never aggregated from raw listings; CLAUDE.md
+ * database rules). Resort subdivisions read geo_type='neighborhood' first
+ * (Caldera Springs, Tetherow, …). City is the fallback. market_stats_cache
+ * rolling_365d supplies the closed-sale trend and the YoY rate that drives
+ * the per-comp time adjustment; market_pulse_live supplies live inventory
+ * AND the canonical months of supply.
  *
  * Months of supply comes FROM market_pulse_live.months_of_supply — the §0
  * canonical figure (active / (closed_last_6_months / 6)) that every other
@@ -16,6 +18,7 @@
  */
 
 import { getCmaMarketStatsRow, getCmaMarketPulseRow } from '@/lib/data'
+import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import type { CmaMarketContext } from '@/lib/cma/types'
 
 function slugCandidates(city: string): string[] {
@@ -25,18 +28,58 @@ function slugCandidates(city: string): string[] {
   return Array.from(new Set([hyphen, lower]))
 }
 
+export type CmaMarketTarget = {
+  geoType: 'city' | 'neighborhood'
+  slugs: string[]
+}
+
+/**
+ * Resort homes (Caldera, Tetherow, …) read the neighborhood cache first.
+ * City-only was the RPR failure mode: a Caldera subject in Bend / 97707
+ * inherited Bend's 3.6-month seller's-market read instead of Caldera's own.
+ */
+export function resolveCmaMarketTargets(input: {
+  city: string
+  subdivision?: string | null
+}): { targets: CmaMarketTarget[] } {
+  const citySlugs = slugCandidates(input.city)
+  const resort = resortSlugForSubdivision(input.subdivision)
+  if (resort) {
+    return {
+      targets: [
+        { geoType: 'neighborhood', slugs: [resort] },
+        { geoType: 'city', slugs: citySlugs },
+      ],
+    }
+  }
+  return { targets: [{ geoType: 'city', slugs: citySlugs }] }
+}
+
 function num(v: unknown): number | null {
   if (v == null) return null
   const n = typeof v === 'number' ? v : Number(v)
   return Number.isFinite(n) ? n : null
 }
 
-export async function getCmaMarketContext(city: string): Promise<CmaMarketContext | null> {
-  const candidates = slugCandidates(city)
-  const [stats, pulse] = await Promise.all([
-    getCmaMarketStatsRow(candidates),
-    getCmaMarketPulseRow(candidates),
-  ])
+export async function getCmaMarketContext(
+  cityOrSubject: string | { city: string; subdivision?: string | null },
+): Promise<CmaMarketContext | null> {
+  const city = typeof cityOrSubject === 'string' ? cityOrSubject : cityOrSubject.city
+  const subdivision = typeof cityOrSubject === 'string' ? null : cityOrSubject.subdivision
+  const { targets } = resolveCmaMarketTargets({ city, subdivision })
+  let stats: Awaited<ReturnType<typeof getCmaMarketStatsRow>> = null
+  let pulse: Awaited<ReturnType<typeof getCmaMarketPulseRow>> = null
+  for (const target of targets) {
+    const [nextStats, nextPulse] = await Promise.all([
+      getCmaMarketStatsRow(target.slugs, target.geoType),
+      getCmaMarketPulseRow(target.slugs, target.geoType),
+    ])
+    if (nextStats) {
+      stats = nextStats
+      pulse = nextPulse
+      break
+    }
+  }
   if (!stats) return null
 
   const sold365 = num(stats.sold_count) ?? 0

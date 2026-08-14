@@ -176,7 +176,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
     </div>
     <div class="vb-range">${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}</div>
     ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
-    <div class="vb-detail">${a.comps.length} closed sales near your home, each adjusted for when it sold and how its size compares to yours. ${esc(p.confidenceReason)}</div>
+    <div class="vb-detail">${a.comps.length} closed MLS sales, each adjusted for when it sold and how its size compares to yours. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}, not the ZIP.` : ''} ${esc(p.confidenceReason)}</div>
   </div>
   ${subjectStatStrip(a.subject)}
   <div class="presented-by">

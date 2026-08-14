@@ -51,6 +51,8 @@ describe('pricingPage', () => {
     expect(html).toContain('How we priced this')
     expect(html).toContain('$655,000')
     expect(html).toContain('The close is the contract price.')
+    expect(html).toContain('Closed MLS sales only. Automated estimates are not used.')
+    expect(html).toContain('The market read is Redmond, not the ZIP.')
     expect(html).toContain('15 percent')
     expect(html).toContain('30 percent')
     expect(html).toContain('98.9 percent of list')

@@ -19,23 +19,25 @@
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, creative-brain, public-product-os (orient), git-commit.mdc.
 
-# Concurrent — 2026-08-14 (Grok, CMA use + pricing pages) — READY `78ed727e`
+# Concurrent — 2026-08-14 (Grok, CMA use + pricing pages) — shipping RPR contrast
 
-**Track:** Make the CMA document match the 3480 Downloads baseline, then beat it. Owners ask two questions: can I rent this, and can I develop it. Answer those through zoning. Explain how we priced.
+**Track:** Make the CMA document beat the packet Chris actually sent. Sample: RPR 30-pager for 56628 Sunstone Loop (Caldera Springs), 2026-08-12.
 
-**SHA:** `78ed727e` on `origin/main`. Production READY. No schema.
+**RPR vs live cache (same day, verified):**
+- RPR: ZIP 97707, 8.68 MoS labeled seller's, AVM $2,423,333, stale CMA $2,499,000 (2026-03-17), 4 AVM "comps" + 1 close, $0 adjustments.
+- Caldera Springs cache: 39 closed / 365d, median $1,790,000, 22.15 MoS, buyer's. Listing city is Bend (3.62 MoS, median $722,000). Old CMA builder would have used Bend.
 
-**Wired:**
-- `lib/cma/render-use-of-property.ts` (`propertyUsePage`) — zone masthead, glance row, Build / Rent boards with full cited detail. STR stays under Rent.
-- `lib/cma/render-pricing-page.ts` — How this home is priced. Close = contract. Quality stop. 15% / 30% neighborhood cut. Three tiers. Three checks. No Method 1 jargon.
-- Collapsed one-liner `whatYouCanDoPage` removed from `lib/cma/render.ts`.
-- Looks: `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-cma-use-and-pricing/`
+**Wired this pass (local, not pushed yet):**
+- `resolveCmaMarketTargets` — resort neighborhood cache first, city fallback.
+- Phase suffix on resort aliases (`Caldera Springs Phase One`).
+- Cover + pricing: closed MLS sales only, automated estimates not used, market is the community not the ZIP.
+- Zoning / rental boards and pricing explanation from `78ed727e` stay.
 
 **Do not `git add -A`.** Imagery Current / page-grade / chrome-seller-ask / admin inbox stay out.
 
-**Leftover:** existing stored CMAs keep their old HTML until rebuilt. Do not rebuild the hand-crafted 3480 row.
+**Leftover:** existing stored CMAs keep old HTML until rebuilt. Do not rebuild the hand-crafted 3480 row. Do not rebuild a live Sunstone CMA unless Matt asks.
 
-**Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, TDD, VOICE.md, frontend-design, CMA producer SKILL.md, PAGE_CONTRACT, git-commit.mdc.
+**Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, TDD, VOICE.md, frontend-design, CMA producer SKILL.md, PAGE_CONTRACT, DATABASE_FOR_AI_AGENTS §3a, git-commit.mdc.
 
 # Concurrent — 2026-08-14 (Grok, public pricing product) — READY `68a1123d`
 

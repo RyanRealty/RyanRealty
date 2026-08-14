@@ -56,10 +56,14 @@ function sellerNetBlock(p: CmaPricing): string {
 function howWePriced(n: number, market: CmaMarketContext | null): string {
   const bits = [
     `${n} closed ${n === 1 ? 'sale' : 'sales'}, each brought to today and to your living area.`,
+    'Closed MLS sales only. Automated estimates are not used.',
     'The close is the contract price. Concessions come off after that.',
     'A wide size match on the same street does not stop the search. A tight size match or a sale inside one mile does.',
     'In the same neighborhood we drop a subdivision whose typical dollar per foot is more than 15 percent off yours. Across the city that cut is 30 percent.',
   ]
+  if (market?.geoLabel) {
+    bits.push(`The market read is ${market.geoLabel}, not the ZIP.`)
+  }
   const stl = saleToListPct(market?.saleToListRatio ?? null)
   if (stl && market) {
     bits.push(`Recent ${market.geoLabel} sales have been closing at ${stl} percent of list.`)

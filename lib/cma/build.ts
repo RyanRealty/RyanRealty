@@ -160,7 +160,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     const curatedKeys = (input.compKeys ?? []).map((k) => k.trim()).filter(Boolean)
     const [selection, market, site] = await Promise.all([
       curatedKeys.length > 0 ? selectCompsByKeys(subject, curatedKeys) : selectCompsPreferringFacts(subject),
-      getCmaMarketContext(subject.city),
+      getCmaMarketContext(subject),
       resolveCmaSiteData(subject),
     ])
     compDiagnostics = selection.diagnostics

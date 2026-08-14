@@ -113,7 +113,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // 2. Comps + market context in parallel (shared CMA engine).
     const [selection, market, site] = await Promise.all([
       selectComps(subject),
-      getCmaMarketContext(subject.city),
+      getCmaMarketContext(subject),
       resolveCmaSiteData(subject),
     ])
     if (selection.comps.length < MIN_COMPS) {

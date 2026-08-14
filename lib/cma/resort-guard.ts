@@ -35,7 +35,13 @@ function buildAliasMap(): Map<string, string> {
 export function resortSlugForSubdivision(subdivision: string | null | undefined): string | null {
   if (!subdivision?.trim()) return null
   aliasMap ??= buildAliasMap()
-  return aliasMap.get(subdivision.trim().toLowerCase()) ?? null
+  const key = subdivision.trim().toLowerCase()
+  const exact = aliasMap.get(key)
+  if (exact) return exact
+  // County / RPR legal descriptions append a phase ("Caldera Springs Phase One").
+  const stripped = key.replace(/\s+phase\s+\w+$/i, '').trim()
+  if (stripped && stripped !== key) return aliasMap.get(stripped) ?? null
+  return null
 }
 
 /**

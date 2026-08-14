@@ -1,6 +1,9 @@
 # CMA use-of-property + pricing pages (2026-08-14)
 
-Baseline reviewed: `~/Downloads/CMA-3480-SW-45th-Redmond.pdf` (hand-crafted July 2026). That document priced clearly and had no zoning or rental answers.
+Baselines reviewed:
+
+- Hand-crafted July 2026 CMA (`CMA-3480-SW-45th-Redmond.pdf`). Priced clearly. No zoning or rental answers.
+- RPR packet Chris sent (`56628 Sunstone Loop`, 30 pages, 2026-08-12). That is the working sample in the field. It is an AVM plus ZIP 97707 charts, not a CMA. Four of five "comps" are off-market estimates with $0 adjustments. One closed sale. Refined value $2,423,333. Stale CMA value $2,499,000 from 2026-03-17. ZIP months of supply 8.68 labeled seller's market. Live Caldera Springs cache the same day: 39 closed, median $1,790,000, 22.15 months of supply, buyer's market. City=Bend on that listing would have pulled Bend's 3.62-month seller's-market read. The generator now reads the resort neighborhood first.
 
 What changed in the generator:
 
