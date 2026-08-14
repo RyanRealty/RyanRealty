@@ -25,6 +25,7 @@ import {
   storeImagineMedia,
 } from '@/lib/data/social/imagine-drafts'
 import { produceImagineDraft, type ImagineProduceAdapters } from '@/lib/social/imagine-produce'
+import { approveNowAction } from '../approval-queue/actions'
 
 export async function confirmParkedStepToday(formData: FormData): Promise<void> {
   const id = Number(formData.get('enrollmentId'))
@@ -101,6 +102,29 @@ function todayImagineAdapters(): ImagineProduceAdapters {
     insertPending: insertImagineDraftPending,
     markReady: markImagineDraftReady,
     killDraft: killImagineDraft,
+  }
+}
+
+/**
+ * Today Yes on a ready content draft. Matt's tap is the stamp.
+ * Reuses approveNowAction (same stamp as /admin/approval-queue).
+ * Does not publish. Does not send SMS.
+ */
+export async function approveReadyDraftToday(
+  formData: FormData,
+): Promise<{ error: string | null }> {
+  const auth = await checkAdminAction('today.view')
+  if (!auth.ok) return { error: auth.error }
+  const actionId = String(formData.get('actionId') ?? '').trim()
+  if (!actionId) return { error: 'A draft is required.' }
+  try {
+    const result = await approveNowAction(actionId)
+    if (result.error) return { error: result.error }
+    revalidatePath('/admin/today')
+    return { error: null }
+  } catch (err) {
+    console.error('[approveReadyDraftToday]', err)
+    return { error: 'Could not approve the draft.' }
   }
 }
 

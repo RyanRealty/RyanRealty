@@ -22,13 +22,14 @@ import {
 } from './actions'
 import { ProduceDraftForm } from './ProduceDraftForm'
 import { TodayInboundYesForm } from './TodayInboundYesForm'
+import { TodayApproveDraftForm } from './TodayApproveDraftForm'
 
 export const dynamic = 'force-dynamic'
 
 async function readyApprovals() {
   // Same read the approval queue page performs (service client precedent
-  // there); Today only SURFACES ready rows — the stamp itself happens on the
-  // approval surface, one tap away, until that family folds in.
+  // there). Yes on the row stamps via approveNowAction — the same approve
+  // as /admin/approval-queue. After Yes, status is no longer ready.
   const sb = createServiceClient()
   const { data } = await sb
     .from('marketing_brain_actions')
@@ -255,9 +256,12 @@ export default async function TodayPage() {
                 title={draftHeadline(a)}
                 context={a.target ?? undefined}
                 action={
-                  <Link href="/admin/approval-queue">
-                    <Button variant="quiet">See draft</Button>
-                  </Link>
+                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                    <TodayApproveDraftForm actionId={a.id} />
+                    <Link href="/admin/approval-queue">
+                      <Button variant="quiet">Open</Button>
+                    </Link>
+                  </span>
                 }
               />
             ))}
