@@ -16,10 +16,15 @@ import {
   upsertCmaRowBySlug,
   updateCmaRowFieldsBySlug,
   replaceCmaComps,
+  getPricingMarketIndex,
   type CmaCompInsert,
 } from '@/lib/data'
 import { resolveCmaSubject } from '@/lib/cma/subject'
-import { selectComps, selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
+import { selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
+import { selectCompsPreferringFacts } from '@/lib/pricing/select'
+import { adjustCompAlongMarket } from '@/lib/pricing/estimate'
+import { attachSellerNet } from '@/lib/pricing/seller-net'
+import { classifyStory, citySlug } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
 import { getCmaMarketContext } from '@/lib/cma/market'
@@ -154,7 +159,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // resolution is fail-open and never throws.
     const curatedKeys = (input.compKeys ?? []).map((k) => k.trim()).filter(Boolean)
     const [selection, market, site] = await Promise.all([
-      curatedKeys.length > 0 ? selectCompsByKeys(subject, curatedKeys) : selectComps(subject),
+      curatedKeys.length > 0 ? selectCompsByKeys(subject, curatedKeys) : selectCompsPreferringFacts(subject),
       getCmaMarketContext(subject.city),
       resolveCmaSiteData(subject),
     ])
@@ -247,8 +252,28 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // the Method 3 reconciliation weights: strong = full weight, weak = half
     // (bracketing only). Excludes were dropped before the math above.
     const tierByKey = new Map(judgment?.verdicts.map((v) => [v.listingKey, v.tier]) ?? [])
+    const marketIndex = selection.pricingSource === 'facts'
+      ? await getPricingMarketIndex(citySlug(subject.city))
+      : []
+    const asOf = new Date().toISOString().slice(0, 10)
+    const subjectStory = classifyStory(subject.levelsRaw, null)
     const priceSet = (set: typeof selection.comps) => {
-      const adj = adjustComps(subject, set, market).map((c) => {
+      const salesByKey = new Map((selection.pricingSales ?? []).map((s) => [s.listingKey, s]))
+      const usePath = marketIndex.length > 0 && set.every((c) => salesByKey.has(c.listingKey))
+      const adj = (usePath
+        ? set.map((c) => {
+            const sale = salesByKey.get(c.listingKey)!
+            return adjustCompAlongMarket({
+              subject,
+              subjectStory,
+              sale,
+              saleStory: sale.storyClass,
+              points: marketIndex,
+              asOf,
+            }).adjusted
+          })
+        : adjustComps(subject, set, market)
+      ).map((c) => {
         const tier = tierByKey.get(c.listingKey)
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
       })
@@ -256,6 +281,12 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         sellerImprovementsTotal: input.sellerImprovementsTotal ?? null,
         priceOverride: input.priceOverride ?? null,
       })
+      attachSellerNet(p, selection.pricingSales ?? set, p?.recommended ?? null)
+      if (p && usePath) {
+        p.notes.unshift(
+          `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
+        )
+      }
       // The comparability narrative renders with the pricing rationale — the
       // seller sees WHY comps were kept, down-weighted, or excluded.
       if (p && judgment) {
@@ -511,7 +542,9 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         expiredAudit = {
           findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
           services: buildServicesList(subject),
-          netSheet: buildNetSheet(pricing),
+          netSheet: buildNetSheet(pricing, {
+            expectedConcessions: pricing.sellerNet?.expectedConcessions ?? null,
+          }),
           feeLine: feeLine(),
         }
       }
@@ -725,6 +758,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         mls_number: c.mlsNumber,
         address: c.address,
         close_price: c.closePrice,
+        concessions_amount: c.concessionsAmount ?? null,
+        seller_net: c.sellerNet ?? null,
         close_date: c.closeDate,
         sqft: c.sqft,
         days_to_offer: c.daysToOffer,

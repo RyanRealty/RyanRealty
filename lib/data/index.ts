@@ -543,6 +543,13 @@ export {
 } from '@/lib/data/cma/builderReads'
 export type { CmaListingRow, CmaMarketStatsRow, CmaMarketPulseRow, CmaClosedSkinnyRow, CmaBandInventory, CmaSubdivisionSaleRow, CmaSubdivisionHistoryRow, CmaPriorSaleRow } from '@/lib/data/cma/builderReads'
 export {
+  countSalePricingFacts,
+  selectPricingFactsPool,
+  getPricingMarketIndex,
+  getPricingSubdivisionCells,
+  getListingWaterSource,
+} from '@/lib/data/pricing/facts'
+export {
   getCmaAdminRowBySlug,
   getCmaHtmlBySlug,
   getCmaAccessIdentity,

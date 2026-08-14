@@ -27,6 +27,7 @@
  */
 
 import { selectCmaCompsPool, selectCmaCompsByKeys } from '@/lib/data'
+import { resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import type { CmaListingRow } from '@/lib/data'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 import { saneYearBuilt } from '@/lib/cma/subject'
@@ -88,6 +89,10 @@ function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
     const ms = new Date(pendingTs).getTime() - new Date(onMarket).getTime()
     if (Number.isFinite(ms) && ms >= 0) daysToOffer = Math.round(ms / 86_400_000)
   }
+  const concessions = resolveConcessions({
+    amount: num(row['concessions_amount']),
+    closeDate,
+  })
   return {
     listingKey,
     mlsNumber: str(row['ListNumber']),
@@ -108,6 +113,8 @@ function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
     taxAnnual: num(row['tax_annual_amount']),
     listPrice: num(row['ListPrice']),
     closePrice,
+    concessionsAmount: concessions,
+    sellerNet: sellerNetFromPrice(closePrice, concessions),
     closeDate: closeDate.slice(0, 10),
     daysToOffer,
     domTotal: num(row['CumulativeDaysOnMarket']) ?? num(row['DaysOnMarket']),
@@ -137,6 +144,10 @@ export interface CompSelection {
   trace: string[]
   /** The structured, queryable half of the trace — persisted to build_summary. */
   diagnostics: CompSelectionDiagnostics
+  /** Set when comps came from sale_pricing_facts (market-path time adj). */
+  pricingSource?: 'facts' | 'listings'
+  /** Fact-row comps, kept so the builder can walk the monthly market path. */
+  pricingSales?: import('@/lib/pricing/match').SelectedPricingComp[]
 }
 
 function emptyDiagnostics(subject: CmaSubject, note: string | null): CompSelectionDiagnostics {

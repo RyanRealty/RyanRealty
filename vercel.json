@@ -202,6 +202,10 @@
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/cron/refresh-sale-pricing-facts",
+      "schedule": "20 */6 * * *"
+    },
+    {
       "path": "/api/cron/refresh-similar-listings",
       "schedule": "30 4 * * *"
     },

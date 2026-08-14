@@ -65,6 +65,13 @@ const LISTING_CMA_COLUMNS = [
   'association_fee_frequency',
   'hoa_monthly',
   'hoa_annual_cost',
+  // Utility + story raw fields — pricing ladder hard-matches water/sewer and
+  // soft-matches story. Typed `water` is usually null; facts refresh reads
+  // details.WaterSource. CMA subject still carries sewer + levels here.
+  'water',
+  'sewer',
+  'levels',
+  'concessions_amount',
 ].join(', ')
 
 export type CmaListingRow = Record<string, unknown>

@@ -136,6 +136,9 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     associationFeeFrequency: str(row['association_fee_frequency']),
     hoaMonthly: num(row['hoa_monthly']),
     hoaAnnualCost: num(row['hoa_annual_cost']),
+    waterRaw: row['water'] ?? null,
+    sewerRaw: row['sewer'] ?? null,
+    levelsRaw: row['levels'] ?? null,
   }
 }
 

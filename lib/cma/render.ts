@@ -277,7 +277,11 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
         <div class="addr">${esc(c.address)}</div>
         <div class="stats">${int(c.beds)} bd · ${dec(c.baths, 0)} ba · ${int(c.sqft)} sf${c.lotAcres != null ? ` · ${dec(c.lotAcres, 2)} ac` : ''}${c.yearBuilt ? ` · ${c.yearBuilt}` : ''}</div>
         <div class="price">${usd(c.closePrice)}</div>
-        <div class="when">${monthYear(c.closeDate)}${vsList ? ` · ${esc(vsList)}` : ''}</div>
+        <div class="when">${monthYear(c.closeDate)}${vsList ? ` · ${esc(vsList)}` : ''}${
+          c.concessionsAmount != null && c.concessionsAmount > 0
+            ? ` · concessions ${usd(c.concessionsAmount)}${c.sellerNet != null ? ` · net ${usd(c.sellerNet)}` : ''}`
+            : ''
+        }</div>
         ${c.competingArea ? `<div class="area-tag">Competing area · ${esc(c.competingArea)}</div>` : ''}
       </div>
     </div>`
@@ -293,6 +297,8 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
       <td class="num">${dateLong(c.closeDate)}</td>
       <td class="num">${usd(c.listPrice)}</td>
       <td class="num">${usd(c.closePrice)}</td>
+      <td class="num">${c.concessionsAmount != null ? usd(c.concessionsAmount) : '—'}</td>
+      <td class="num">${c.sellerNet != null ? usd(c.sellerNet) : '—'}</td>
       <td class="num">${usd(Math.round(c.closePrice / c.sqft))}</td>
       <td class="num">${int(c.beds)}/${dec(c.baths, 0)}</td>
       <td class="num">${int(c.sqft)}</td>
@@ -312,7 +318,7 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
   <div class="comp-grid">${cards}</div>
   <table class="comps">
     <thead>
-      <tr><th>Property</th><th class="num">Closed</th><th class="num">List $</th><th class="num">Close $</th><th class="num">$/sqft</th><th class="num">Bd/Ba</th><th class="num">Sqft</th><th class="num">Lot ac</th><th class="num">Year</th><th class="num">DTO (DOM)</th></tr>
+      <tr><th>Property</th><th class="num">Closed</th><th class="num">List $</th><th class="num">Close $</th><th class="num">Conc $</th><th class="num">Net $</th><th class="num">$/sqft</th><th class="num">Bd/Ba</th><th class="num">Sqft</th><th class="num">Lot ac</th><th class="num">Year</th><th class="num">DTO (DOM)</th></tr>
     </thead>
     <tbody>
       <tr class="subject">
@@ -320,6 +326,8 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
         <td class="num">—</td>
         <td class="num">${usd(a.pricing.recommended)}</td>
         <td class="num">—</td>
+        <td class="num">${a.pricing.sellerNet?.expectedConcessions != null ? usd(a.pricing.sellerNet.expectedConcessions) : '—'}</td>
+        <td class="num">${a.pricing.sellerNet?.predictedSellerNet != null ? usd(a.pricing.sellerNet.predictedSellerNet) : '—'}</td>
         <td class="num">${subjectPpsf != null ? usd(Math.round(subjectPpsf)) : '—'}</td>
         <td class="num">${int(s.beds)}/${dec(s.baths, 0)}</td>
         <td class="num">${int(s.sqft)}</td>
@@ -330,7 +338,7 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
       ${rows}
     </tbody>
   </table>
-  <p class="small" style="margin-top:8px;">The subject List $ column shows the recommended list price for context. An em dash marks a value that does not apply or is unavailable.</p>`,
+  <p class="small" style="margin-top:8px;">Close $ is the contract price. Conc $ is seller concessions. Net $ is close minus those concessions, before commission and closing costs. The subject List $ column shows the recommended list price for context. An em dash marks a value that does not apply or is unavailable.</p>`,
   }
 }
 
@@ -397,6 +405,8 @@ function compFlyerPage(a: RenderCmaArgs, comp: CmaAdjustedComp, index: number): 
   <div class="flyer-features">
     <div class="f"><div class="fl">List Price</div><div class="fv">${usd(comp.listPrice)}</div></div>
     <div class="f"><div class="fl">Sold Price</div><div class="fv">${usd(comp.closePrice)}</div></div>
+    <div class="f"><div class="fl">Seller concessions</div><div class="fv">${comp.concessionsAmount != null ? usd(comp.concessionsAmount) : '—'}</div></div>
+    <div class="f"><div class="fl">Seller net from price</div><div class="fv">${comp.sellerNet != null ? usd(comp.sellerNet) : '—'}</div></div>
     <div class="f"><div class="fl">Sold vs List</div><div class="fv">${vsList ? esc(vsList) : '—'}</div></div>
     <div class="f"><div class="fl">Close Date</div><div class="fv">${dateLong(comp.closeDate)}</div></div>
     <div class="f"><div class="fl">Days on Market</div><div class="fv">${comp.daysToOffer != null ? `${int(comp.daysToOffer)} to offer` : '—'}${comp.domTotal != null ? ` · DOM ${int(comp.domTotal)}` : ''}</div></div>
@@ -475,6 +485,7 @@ function pricingPage(a: RenderCmaArgs): PageDef {
       <div class="t-note">Ceiling of the supportable range with presentation and condition fully resolved.</div>
     </div>
   </div>
+  ${sellerNetBlock(p)}
   <h3 class="subhead" style="margin-top:14px;">Method 1 · Tiered price per square foot</h3>
   <p>The comps' time-adjusted $/sqft rates span ${usd(Math.round(p.method1Low / (s.sqft || 1)))} to ${usd(Math.round(p.method1High / (s.sqft || 1)))} at the 25th to 75th percentile. Applied to the subject's ${int(s.sqft)} sqft that brackets ${usd(p.method1Low)} to ${usd(p.method1High)}, with the median rate landing at ${usd(p.method1Mid)}.</p>
   ${
@@ -492,6 +503,20 @@ function pricingPage(a: RenderCmaArgs): PageDef {
   }
 }
 
+function sellerNetBlock(p: CmaPricing): string {
+  const n = p.sellerNet
+  if (!n || n.knownCount === 0) return ''
+  return `
+  <h3 class="subhead">Close price and seller net</h3>
+  <p>The list tiers above are contract prices. Seller concessions come off the close before commission and closing costs.</p>
+  <div class="stat-strip" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat"><div class="lbl">Close / list estimate</div><div class="val">${usd(p.recommended)}</div></div>
+    <div class="stat"><div class="lbl">Expected concessions</div><div class="val">${n.expectedConcessions != null ? usd(n.expectedConcessions) : '—'}</div></div>
+    <div class="stat"><div class="lbl">Seller net from price</div><div class="val">${n.predictedSellerNet != null ? usd(n.predictedSellerNet) : '—'}</div></div>
+  </div>
+  <p class="small">${n.givenCount} of ${n.knownCount} comparable sales reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
+}
+
 /** The pricing argument, in the seller's terms. Each line is a printed figure. */
 function whyBullets(a: RenderCmaArgs): string[] {
   const m = a.market
@@ -502,6 +527,12 @@ function whyBullets(a: RenderCmaArgs): string[] {
   if (m?.monthsOfSupply != null) out.push(`${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply. The tier grid reflects that reality rather than working against it.`)
   if (m?.medianDom != null) out.push(`The median ${esc(m.geoLabel)} sale is taking ${int(m.medianDom)} days. Pricing inside the supported range is what keeps a listing on the fast side of that number.`)
   out.push('Where a defensible dollar adjustment was not possible, the difference is disclosed and down-weighted instead of guessed.')
+  const net = a.pricing.sellerNet
+  if (net && net.givenCount > 0 && net.medianWhenGiven != null) {
+    out.push(
+      `${net.givenCount} of ${net.knownCount} comparable sales reported a seller concession, median ${usd(net.medianWhenGiven)} when given. That credit comes off the close before commission.`,
+    )
+  }
   return out
 }
 

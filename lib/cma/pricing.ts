@@ -72,10 +72,11 @@ export function adjustComps(
   subject: CmaSubject,
   comps: CmaComp[],
   market: CmaMarketContext | null,
+  asOfMs: number = Date.now(),
 ): CmaAdjustedComp[] {
   const subjectSqft = subject.sqft ?? 0
   const yoyPct = market?.yoyMedianPriceDeltaPct ?? null
-  const now = Date.now()
+  const now = asOfMs
   return comps.map((comp) => {
     const monthsSinceClose = Math.max(0, (now - new Date(comp.closeDate).getTime()) / MS_PER_MONTH)
     const rawTimeAdjustment =

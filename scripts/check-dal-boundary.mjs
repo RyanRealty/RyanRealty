@@ -68,6 +68,11 @@ const BANNED_TABLES = [
   'expired_listings',
   'cmas',
   'cma_comps',
+  'sale_pricing_facts',
+  'sale_pricing_price_steps',
+  'sale_pricing_seller_net',
+  'pricing_market_index',
+  'pricing_subdivision_cells',
   'guest_search_alerts',
   // Unified alert table (2026-07-07) — all access via lib/data/leads/listingAlerts.ts.
   // saved_searches stays unlisted: the legacy public-search feature in

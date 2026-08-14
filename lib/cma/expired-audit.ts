@@ -308,8 +308,12 @@ export function buildServicesList(subject?: ThisHomePlanSubject | null): string[
  * Seller net sheet at the expired rate. Our fees are facts; third-party costs
  * are labeled estimates. Every number computed here, shown with its formula.
  */
-export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
+export function buildNetSheet(
+  pricing: CmaPricing,
+  opts?: { expectedConcessions?: number | null },
+): ExpiredNetSheet {
   const price = pricing.recommended
+  const concessions = opts?.expectedConcessions ?? pricing.sellerNet?.expectedConcessions ?? null
 
   const listingFee = price * (EXPIRED_LISTING_FEE_PCT / 100)
   const buyerSide = price * (BUYER_BROKER_ASSUMPTION_PCT / 100)
@@ -319,6 +323,16 @@ export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
   const recordingMisc = 350
 
   const lines: ExpiredNetSheetLine[] = [
+    ...(concessions != null && concessions > 0
+      ? [
+          {
+            label: 'Seller concessions (median of the comparable closed sales, including sales that reported none)',
+            amount: -concessions,
+            isOurFee: false,
+            note: 'Close price is the contract price. This credit comes off that number before commission. It is the comparable-set median, not a quote on this home.',
+          } satisfies ExpiredNetSheetLine,
+        ]
+      : []),
     {
       label: `Listing fee at ${EXPIRED_LISTING_FEE_PCT}% (expired-listing rate. Our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%)`,
       amount: -listingFee,
@@ -352,7 +366,9 @@ export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
   ]
 
   const totalCosts = lines.reduce((s, l) => s + Math.abs(l.amount ?? 0), 0)
+  const concessionDollars = concessions != null && concessions > 0 ? concessions : 0
   const costOf = (p: number) =>
+    concessionDollars +
     p * (EXPIRED_LISTING_FEE_PCT / 100) +
     p * (BUYER_BROKER_ASSUMPTION_PCT / 100) +
     Math.round(Math.min(Math.max(p * 0.005, 2000), 6000)) +
@@ -367,6 +383,7 @@ export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
     netHighEnd: pricing.highEnd - costOf(pricing.highEnd),
     assumptions: [
       'Sale at the recommended list price. The conservative and high-end columns rerun the same costs at the ends of the supported range.',
+      'Close price is the contract price. Seller concessions, when shown, are the median of the comparable set and come off the close before commission.',
       'Property-tax prorations, HOA transfer fees, and any repair credits vary by closing date and negotiation, and are not included.',
       'Your mortgage payoff (if any) comes off the estimated net. Your lender provides the exact payoff figure.',
       'Every third-party line is an estimate. It is not a quote. This is not a closing statement.',

@@ -20,7 +20,8 @@
 | **Live active/pending inventory** for cities + region + neighborhoods | `market_pulse_live WHERE geo_type IN ('city','region','neighborhood') AND property_type='A'` | `active_count`, `pending_count`, `months_of_supply` | ≤ 10–15 min |
 | **Property details for one listing** | `listings WHERE "ListingKey" = ?` (note: PascalCase columns MUST be double-quoted — see §4) | every Spark MLS field | ≤ 10 min |
 | **Active listings in a community** | `listings WHERE "SubdivisionName" = ANY(<aliases from neighborhood_subdivisions>) AND "StandardStatus" IN ('Active','Coming Soon','Active Under Contract')` | see §3a for the aliases | ≤ 10 min |
-| **Comparable sales (CMA)** | `listings WHERE "StandardStatus"='Closed' AND "CloseDate" >= ... AND <filters>` | `"ClosePrice"`, `close_price_per_sqft`, `sale_to_list_ratio`, `days_to_pending` | ≤ 10 min |
+| **Comparable sales (CMA)** | **`sale_pricing_facts`** (all years, Central Oregon closed A) via `selectPricingFactsPool` / `selectPricingComps`. Fallback: `listings WHERE "StandardStatus"='Closed'` | close_price, concessions_amount, concessions_yn, seller_net (view `sale_pricing_seller_net`), close_ppsf, water/sewer/hoa/lot/story classes, original_ask, drop_count | facts refresh 6h; listings ≤ 10 min |
+| **Market-path time adjustment** | **`pricing_market_index`** (monthly median $/sqft per city, 1996+) | `month`, `n`, `median_ppsf`, `median_sale_to_original` | rebuilt after facts refresh |
 | **Polygon for a community** | `boundaries WHERE geo_type=<type> AND geo_slug=<slug>` | `polygon` (PostGIS geometry) | manual |
 | **Homes inside a boundary** (map pins + "homes for sale" cards on city/neighborhood/community pages) | `listing_boundary_xref_mv WHERE geo_type=<type> AND geo_slug=<slug> AND standard_status='Active'` — via the `listings_in_boundary` RPC, wrapped by the `getGeoBoundaryMapData` DAL. **NEVER `ST_Within` against `listings` at request time** (it blows the anon 3s timeout — see §4d). | `listing_key`, `lat`, `lng`, `list_price` | ≤ 15 min (refreshed by `/api/cron/refresh-mvs`) |
 | **Which subdivisions roll up into a community** | `neighborhood_subdivisions WHERE neighborhood_slug=<slug>` | `subdivision_label` (the MLS SubdivisionName values) | manual |
@@ -128,6 +129,11 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | `public.engagement_metrics` | 0 | Aggregated engagement signals per listing. |
 | `public.expired_listings` | 0 | Superuser-only prospecting list with owner contact info. |
 | `public.activity_events` | 385 | Sync change events (`new_listing`, `price_drop`, `status_pending`, `status_closed`). Feeds activity feeds + content engine. |
+| **`public.sale_pricing_facts`** | growing | **Pricing moat SoR.** One row per closed Central Oregon residential sale, **every year we have (1996+)**. No close-date floor. Classes (water/sewer/hoa/lot/story/product), journey (original ask, drops, pending), remark flags, `concessions_amount` + `concessions_yn`. Service-role only. Refresh: `refresh_sale_pricing_facts_batch`. Concessions YN backfill: `backfill_sale_pricing_concessions_yn`. |
+| **`public.sale_pricing_seller_net`** | view | Same rows plus `seller_net` = close_price minus resolved seller concessions. ClosePrice is the contract price. Concessions do not change it. |
+| `public.sale_pricing_price_steps` | growing | Deduped ListPrice path per sale, from `listing_history.raw`. |
+| **`public.pricing_market_index`** | monthly | City × month median $/sqft / sale-to-original / days-to-offer from facts. The long series for path time-adjustment. `market_stats_cache` monthly is only ~14 months — do not use it as the long index. |
+| `public.pricing_subdivision_cells` | last 36 mo | Subdivision median $/sqft for the gated / different-tier cut. |
 
 ### 2c. Market analytics (the cache — read these, don't compute) ⭐
 

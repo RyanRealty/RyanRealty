@@ -38,9 +38,28 @@ Timeline events live in `listing_history`:
 - Always use the COALESCE fallback chain above
 - Do NOT assume every closed listing has the explicit column populated
 
+## Seller concessions and seller net
+`ClosePrice` is the contract / sold price. It does **not** include a haircut for seller credits.
+
+Spark fields:
+- `Concessions` (YN: Yes / No) → `sale_pricing_facts.concessions_yn`
+- `ConcessionsAmount` → `listings.concessions_amount` / `sale_pricing_facts.concessions_amount`
+
+Rules (measured on Central Oregon detached, PK-bounded `details->>'Concessions'`):
+- Amount present → use those dollars (including $0)
+- YN `No` and blank amount → **$0**, not unknown
+- YN `Yes` and blank amount → unknown (do not invent)
+- 2024+ blank amount with no YN → treat as $0 (2024 and 2025 null-amount samples were 100% YN No)
+- 2022–2023 blank amount can be No, Yes-without-dollars, or missing YN — do not infer
+
+Seller net from price = `ClosePrice − resolved concessions`. That is not proceeds after commission or title. Those stay on the net sheet.
+
+Pricing comps: `sale_pricing_facts.close_price` (typed `"ClosePrice" > 0`). Never treat last ask as net.
+
 ## Key rules
 - Use `listing_history` for chronology/timeline
 - Use `listings.ClosePrice` (with fallback) for the actual final sold price
 - For CMA comp filtering: treat a listing as a valid comp if `StandardStatus ILIKE '%Closed%'` AND the COALESCE chain produces a non-null, positive price
 - Never compute stats from `listing_history.price` alone — it may be a mid-timeline snapshot
 - For median-style reporting in comp analytics, use `percentile_cont` (true median), not `avg()`.
+- Always carry concessions next to close price when the field is known. Close and seller net are different numbers.

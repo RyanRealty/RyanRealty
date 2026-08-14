@@ -43,6 +43,10 @@ export interface CmaSubject {
   associationFeeFrequency?: string | null
   hoaMonthly?: number | null
   hoaAnnualCost?: number | null
+  /** MLS water / sewer / levels raw values. Water is often null on the typed column. */
+  waterRaw?: unknown
+  sewerRaw?: unknown
+  levelsRaw?: unknown
 }
 
 export interface CmaComp {
@@ -66,6 +70,12 @@ export interface CmaComp {
   taxAnnual: number | null
   listPrice: number | null
   closePrice: number
+  /** Spark ConcessionsAmount. Null means not stored, not necessarily zero. */
+  concessionsAmount?: number | null
+  /** Spark Concessions YN. No + blank amount = $0. Yes + blank amount = unknown. */
+  concessionsYn?: string | null
+  /** ClosePrice minus resolved seller concessions. Null when concessions are unknown. */
+  sellerNet?: number | null
   closeDate: string
   daysToOffer: number | null
   domTotal: number | null
@@ -134,6 +144,18 @@ export interface CmaPricing {
   priceOverride: number | null
   improvementsValueAdd: number | null
   notes: string[]
+  /**
+   * ClosePrice is the contract price. Seller net from that price subtracts
+   * seller concessions only (commission and title are a separate net sheet).
+   */
+  sellerNet?: {
+    expectedConcessions: number | null
+    predictedSellerNet: number | null
+    knownCount: number
+    givenCount: number
+    medianWhenGiven: number | null
+    rate: number | null
+  }
 }
 
 export interface CmaBroker {
