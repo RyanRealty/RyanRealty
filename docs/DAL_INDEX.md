@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-08-14T13:28:52.650Z
+**Generated:** 2026-08-14T13:32:49.612Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -1160,20 +1160,6 @@ Companion files:
 
 ---
 
-### `lib/data/crm/getCrmDeal.ts`
-
-**Exports:** `getCrmDeal`
-
-**Tables:** `crm_deals`, `crm_deal_people`, `crm_deal_splits`, `crm_deal_files`
-
-**Selected columns:** `id`, `name`, `pipeline`, `stage`, `status`, `value`, `entered_stage_at`, `person_id`, `listing_key`, `role`, `person:crm_people(id`, `name)`, `deal_id`, `broker_slug`, `split_pct`, `split_dollars`, `notes`, `created_at`, `storage_path`, `url`, `uploaded_by`
-
-**Cache keys:** `crm-deal-detail`
-
-**Cache tags:** `'crm-deal-detail'`
-
----
-
 ### `lib/data/crm/getCrmFieldDefinitions.ts`
 
 **Exports:** `CRM_FIELD_TYPES`, `CRM_FIELD_DEFINITIONS_TAG`, `normalizeFieldType`, `normalizeFieldOptions`, `mapFieldDefinitionRow`, `getCrmFieldValue`, `getCrmFieldDefinitions`
@@ -1847,16 +1833,6 @@ Companion files:
 ### `lib/data/crm/leadSourceTaxonomy.ts`
 
 **Exports:** `ATTRIBUTABLE_CHANNELS`, `OUTREACH_CHANNELS`, `normalizeSource`, `classifyLeadSource`, `isAttributableLead`, `CHANNEL_LABEL`
-
----
-
-### `lib/data/crm/listDealsBoard.ts`
-
-**Exports:** `listDealsBoard`
-
-**Tables:** `crm_deals`
-
-**Selected columns:** `id`, `name`, `pipeline`, `stage`, `value`, `status`, `entered_stage_at`, `commission_dollars`, `close_date`, `actual_close_date`
 
 ---
 
@@ -3252,7 +3228,7 @@ Companion files:
 
 **Tables:** `tc_form_libraries`, `tc_form_versions`, `tc_cycles`, `tc_deals`, `tc_documents`, `crm_contact_points`, `tc_envelope_documents`
 
-**Selected columns:** `id`, `code`, `library_id`, `form_number`, `name`, `field_map`, `blank_pdf_storage_path`, `deal_id`, `sellers`, `buyers`, `listing_price`, `sale_price`, `mls_number`, `escrow_number`, `escrow_company`, `earnest_money`, `contract_acceptance_date`, `escrow_closing_date`, `actual_closing_date`, `broker_name`, `source_guid`, `address`, `city`, `state`, `zip`, `property_key`, `page_count`, `storage_path`, `cycle_id`, `classification`, `person_id`, `envelope_id`
+**Selected columns:** `id`, `code`, `library_id`, `form_number`, `name`, `field_map`, `blank_pdf_storage_path`, `update_available`, `deal_id`, `sellers`, `buyers`, `listing_price`, `sale_price`, `mls_number`, `escrow_number`, `escrow_company`, `earnest_money`, `contract_acceptance_date`, `escrow_closing_date`, `actual_closing_date`, `broker_name`, `source_guid`, `address`, `city`, `state`, `zip`, `property_key`, `page_count`, `storage_path`, `cycle_id`, `classification`, `person_id`, `envelope_id`
 
 ---
 
@@ -3382,11 +3358,8 @@ Companion files:
 | `crm_contact_points` | `decideNativeLeadAction()`, `nativeLeadName()`, `ensureNativeLead()`, `cleanTags()`, `enrichNativeLead()`, `createNativeTask()`, `shouldCreatePerson()`, `inboundLeadName()`, `findOrCreatePersonByPhone()`, `CRM_SUPPRESSIONS_TAG()`, `COMPLIANCE_REASON_MARKERS()`, `isComplianceReason()`, `normalizeSuppressionChannel()`, `clampLimit()`, `clampOffset()`, `resolveSuppressionValue()`, `buildSuppressionRows()`, `getCrmSuppressions()`, `getGroupReplyParticipants()`, `getLookingAtNow()`, `getPersonIdsByEmail()`, `getPersonPrimaryEmail()`, `getSendTarget()`, `normalizeEmail()`, `normalizePhone()`, `dedupeContactPoints()`, `resolvePersonIdentity()`, `searchCrmPeople()`, `loadPreferredOrefForm()`, `getOrefCycleForFill()`, `getOrefDealForFill()`, `getOrefFormVersionRow()`, `getOrefDocumentRow()`, `getMattMailboxPersonId()`, `getCycleDealId()`, `getOrefCycleForSeal()`, `getEnvelopeIdForDocument()` <br /> `lib/data/crm/ensureNativeLead.ts` · `lib/data/crm/findOrCreatePersonByPhone.ts` · `lib/data/crm/getCrmSuppressions.ts` · `lib/data/crm/getGroupReplyParticipants.ts` · `lib/data/crm/getLookingAtNow.ts` · `lib/data/crm/getPersonIdsByEmail.ts` · `lib/data/crm/getPersonPrimaryEmail.ts` · `lib/data/crm/getSendTarget.ts` · `lib/data/crm/resolvePersonIdentity.ts` · `lib/data/crm/searchCrmPeople.ts` · `lib/data/tc/oref-packet-reads.ts` |
 | `crm_conversation` | `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `INBOX_FOLDERS()`, `channelOfKind()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `matchesFolder()`, `getInboxFolderQueue()`, `getConversationThread()` <br /> `lib/data/crm/getInboxQueue.ts` |
 | `crm_conversation_state` | `TRIAGE_WEIGHTS()`, `TRIAGE_HALF_LIFE_HOURS()`, `SEQUENCE_RANK()`, `triageRank()`, `rankTriageItems()`, `mergeNeedsAction()`, `replySignal()`, `classifyDocEvent()`, `docSignal()`, `visitSignal()`, `isTriageTaskCandidate()`, `taskSignal()`, `formatTriageAge()`, `isSuppressedByStateTouch()`, `isUnreadStatus()`, `TRIAGE_WINDOW_HOURS()`, `getInboundTriage()`, `CONVERSATION_STATUSES()`, `isValidConversationStatus()`, `isAssignableBroker()`, `INBOX_FOLDERS()`, `channelOfKind()`, `effectiveStatus()`, `needsReply()`, `matchesScope()`, `deriveConversationFromMessages()`, `matchesFolder()`, `getInboxFolderQueue()`, `getConversationThread()` <br /> `lib/data/crm/getInboundTriage.ts` · `lib/data/crm/getInboxQueue.ts` |
-| `crm_deal_files` | `getCrmDeal()` <br /> `lib/data/crm/getCrmDeal.ts` |
-| `crm_deal_people` | `getCrmDeal()` <br /> `lib/data/crm/getCrmDeal.ts` |
-| `crm_deal_splits` | `getCrmDeal()` <br /> `lib/data/crm/getCrmDeal.ts` |
 | `crm_deal_stages` | `fetchClosedDealsByBroker()`, `getAgentGoalsReport()`, `getDealPipelines()`, `pipelineHasStage()`, `getMarketingUtmReport()` <br /> `lib/data/crm/agentActivityClosedDeals.ts` · `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getDealPipelines.ts` · `lib/data/crm/getMarketingUtmReport.ts` |
-| `crm_deals` | `fetchClosedDealsByBroker()`, `getAgentGoalsReport()`, `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentsForPerson()`, `getCalendarExtras()`, `getCalendarContactOptions()`, `getPersonNamesByIds()`, `getAppointmentTypes()`, `getAppointmentOutcomes()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getCrmDeal()`, `getDealScopeRow()`, `getMarketingUtmReport()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()`, `mergeTagOptions()`, `listDealsBoard()` <br /> `lib/data/crm/agentActivityClosedDeals.ts` · `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getAppointments.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getCrmDeal.ts` · `lib/data/crm/getDealScopeRow.ts` · `lib/data/crm/getMarketingUtmReport.ts` · `lib/data/crm/getPersonDetailExtras.ts` · `lib/data/crm/listDealsBoard.ts` |
+| `crm_deals` | `fetchClosedDealsByBroker()`, `getAgentGoalsReport()`, `CRM_APPOINTMENT_TYPES_TAG()`, `CRM_APPOINTMENT_OUTCOMES_TAG()`, `getAppointments()`, `getAppointmentsForPerson()`, `getCalendarExtras()`, `getCalendarContactOptions()`, `getPersonNamesByIds()`, `getAppointmentTypes()`, `getAppointmentOutcomes()`, `INBOUND_TIMELINE_KINDS()`, `DIGEST_ENROLLMENT_STATUSES()`, `crmContactUrl()`, `classifyAudience()`, `summarizeDigest()`, `buildSummarySentence()`, `getBrokerDigest()`, `summarizeWeeklyLeads()`, `summarizeActiveDeals()`, `getWeeklyPipelineDigest()`, `getDealScopeRow()`, `getMarketingUtmReport()`, `TIMELINE_TAB_KINDS()`, `getPersonDetailExtras()`, `mergeTagOptions()` <br /> `lib/data/crm/agentActivityClosedDeals.ts` · `lib/data/crm/getAgentGoalsReport.ts` · `lib/data/crm/getAppointments.ts` · `lib/data/crm/getBrokerDigest.ts` · `lib/data/crm/getDealScopeRow.ts` · `lib/data/crm/getMarketingUtmReport.ts` · `lib/data/crm/getPersonDetailExtras.ts` |
 | `crm_field_definitions` | `CRM_FIELD_TYPES()`, `CRM_FIELD_DEFINITIONS_TAG()`, `normalizeFieldType()`, `normalizeFieldOptions()`, `mapFieldDefinitionRow()`, `getCrmFieldValue()`, `getCrmFieldDefinitions()` <br /> `lib/data/crm/getCrmFieldDefinitions.ts` |
 | `crm_group_members` | `getCrmGroups()` <br /> `lib/data/crm/getCrmGroups.ts` |
 | `crm_groups` | `getCrmGroups()` <br /> `lib/data/crm/getCrmGroups.ts` |

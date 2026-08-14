@@ -1,6 +1,7 @@
 /**
  * Deduped listing-history → price path. The facts refresh runs the same rules
  * in SQL; this copy is the testable contract and the in-memory fallback.
+ * reachability: entry-point testable contract for sale_pricing_price_steps SQL
  */
 
 export type HistoryEvent = {

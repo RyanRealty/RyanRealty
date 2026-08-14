@@ -1,10 +1,9 @@
 'use server'
 
 /**
- * CRM deal server actions — mutations for /admin/crm/deals/[id].
- *
- * Reads go through lib/data/crm/getCrmDeal (cached DAL).
- * All mutations use the service client + require CRM access.
+ * CRM deal server actions — leftover mutations for the retired crm_deals store.
+ * The kanban UI is gone. Closings is /admin/closings. All mutations use the
+ * service client + require CRM access.
  */
 
 import { revalidatePath, revalidateTag } from 'next/cache'
