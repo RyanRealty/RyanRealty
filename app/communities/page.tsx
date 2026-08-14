@@ -6,6 +6,7 @@
 
 import type { Metadata } from 'next'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
+import { getAllResortCommunities } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { communityImage } from '@/lib/geo-images'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -25,7 +26,6 @@ import {
   type V3LedgerPlainRow,
 } from '@/components/site/v3'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
-import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { belongingLine, resortIndexRow } from './_v3/community-index-rows'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -52,16 +52,8 @@ export const metadata: Metadata = {
   },
 }
 
-type RegistryCommunity = {
-  slug: string
-  label: string
-  city: string
-  city_slug: string
-  is_resort: boolean
-}
-
 export default async function CommunitiesPage() {
-  const registry = resortCommunitiesRegistry.communities as ReadonlyArray<RegistryCommunity>
+  const registry = getAllResortCommunities()
   const allCommunities = await getCommunitiesForIndex()
 
   const resorts = await Promise.all(
