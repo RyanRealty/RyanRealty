@@ -6,7 +6,8 @@
  */
 
 import { createHash, randomUUID } from 'node:crypto'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { revalidatePath } from 'next/cache'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
@@ -26,10 +27,11 @@ type DbRow = Record<string, unknown>
 type Sb = SupabaseClient
 
 function getServiceSupabase(): Sb | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url?.trim() || !key?.trim()) return null
-  return createClient(url, key, { auth: { persistSession: false } })
+  try {
+    return createServiceClient()
+  } catch {
+    return null
+  }
 }
 
 async function requireEditor(): Promise<{ email: string } | { error: string }> {
