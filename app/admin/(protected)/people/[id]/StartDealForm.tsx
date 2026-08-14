@@ -1,4 +1,4 @@
-import { Button, SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
+import { Button, HiddenField, SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { DEAL_PERSON_ROLE_LABEL, type DealPersonRole } from '@/lib/tc/deal-people'
 import { startDealFromPerson } from '../../actions'
 
@@ -29,7 +29,7 @@ export function StartDealForm({
         Accepted offer. This person is one party. Add the others now or on the file.
       </p>
       <form action={startDealFromPerson} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input type="hidden" name="personId" value={personId} />
+        <HiddenField name="personId" value={personId} />
         <TextField
           label="Property address"
           name="address"

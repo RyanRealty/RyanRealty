@@ -7,6 +7,7 @@ import {
   defaultDealRoleFromWho,
   relatedPartiesForStartDeal,
 } from '@/lib/tc/deal-people'
+import { SectionHead } from '@/components/admin/v2'
 import { StartDealForm } from './StartDealForm'
 
 const STAGE_WORD: Record<string, string> = {
@@ -42,7 +43,7 @@ export function PersonDeals({
     <>
       {deals.length > 0 ? (
         <section aria-label="Deals">
-          <h2 className="av2-lane-head">Deals</h2>
+          <SectionHead>Deals</SectionHead>
           <ul className="av2-quietlist">
             {deals.map((d) => (
               <li key={d.dealId} className="av2-quiet">

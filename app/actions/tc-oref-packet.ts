@@ -1,7 +1,7 @@
 'use server'
 
 /**
- * Track 2 slice B — one OREF: fill from tc_* deal facts → email Matt → seal.
+ * Track 2 slice B: one OREF: fill from tc_* deal facts, email Matt, then seal.
  * No SkySlope client. No client send. Brokers never build forms.
  */
 
@@ -19,6 +19,7 @@ import {
   getOrefFormVersionRow,
   loadPreferredOrefForm,
 } from '@/lib/data/tc/oref-packet-reads'
+import { getDealParties } from '@/lib/data/tc/deal-people'
 import { revalidatePath } from 'next/cache'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
@@ -26,6 +27,7 @@ import {
   coverRowsFromFacts,
   dealFactsFromRows,
   mapDealFactsToFillValues,
+  mergePartyNamesIntoFacts,
   resolveOrefFieldMap,
 } from '@/lib/tc/oref-fill'
 import { buildFilledOrefPdf } from '@/lib/tc/oref-fill-pdf'
@@ -104,7 +106,8 @@ export async function fillOrefSaleAgreementFromDeal(
 
     const versionRow = await getOrefFormVersionRow(form.id)
 
-    const facts = dealFactsFromRows(deal as never, cycle as never)
+    const parties = await getDealParties(asString(deal.id))
+    const facts = mergePartyNamesIntoFacts(dealFactsFromRows(deal as never, cycle as never), parties)
     const resolved = resolveOrefFieldMap({
       formNumber: asString(versionRow?.form_number) || form.formNumber,
       pageCount: typeof versionRow?.page_count === 'number' ? versionRow.page_count : null,
@@ -140,7 +143,7 @@ export async function fillOrefSaleAgreementFromDeal(
     const { error: docErr } = await sb.from('tc_documents').insert({
       id: docId,
       cycle_id: cycleId,
-      name: `Filled OREF ${formNumber} — ${asString(deal.address)}`.slice(0, 140),
+      name: `Filled OREF ${formNumber}: ${asString(deal.address)}`.slice(0, 140),
       original_name: `OREF-${formNumber}-filled.pdf`,
       storage_path: storagePath,
       sha256,
@@ -158,7 +161,7 @@ export async function fillOrefSaleAgreementFromDeal(
       return { data: null, error: 'Could not file the filled PDF on the cycle.' }
     }
 
-    const envName = `OREF ${formNumber} for Matt — ${asString(deal.address)}`.slice(0, 140)
+    const envName = `OREF ${formNumber} for Matt: ${asString(deal.address)}`.slice(0, 140)
     const { data: env, error: envErr } = await sb
       .from('tc_envelopes')
       .insert({ cycle_id: cycleId, name: envName, status: 'draft', created_by: auth.email })
@@ -333,7 +336,7 @@ export async function sealOrefPacket(
     const { error: insErr } = await sb.from('tc_documents').insert({
       id: sealedId,
       cycle_id: cycle.id,
-      name: `Sealed — ${asString(doc.name)}`.slice(0, 140),
+      name: `Sealed: ${asString(doc.name)}`.slice(0, 140),
       original_name: 'OREF-sealed.pdf',
       storage_path: storagePath,
       sha256,

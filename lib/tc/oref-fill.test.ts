@@ -3,6 +3,7 @@ import {
   coverRowsFromFacts,
   dealFactsFromRows,
   mapDealFactsToFillValues,
+  mergePartyNamesIntoFacts,
   parseEarnestMoneyAmount,
   pickPreferredOrefForm,
   presentFactValues,
@@ -73,6 +74,23 @@ describe('dealFactsFromRows', () => {
     )
     expect(facts.buyers).toEqual(['Todd Chester', 'Ada Lovelace'])
     expect(facts.sellers).toEqual(['PMA Investments LLC'])
+  })
+})
+
+describe('mergePartyNamesIntoFacts', () => {
+  it('prefers named CRM parties and keeps cycle names when none are linked', () => {
+    const fromParties = mergePartyNamesIntoFacts(FULL, [
+      { role: 'buyer', name: 'Pat Buyer' },
+      { role: 'seller', name: 'Sam Seller' },
+      { role: 'other', name: 'Ada Agent' },
+    ])
+    expect(fromParties.buyers).toEqual(['Pat Buyer'])
+    expect(fromParties.sellers).toEqual(['Sam Seller'])
+    expect(fromParties.salePrice).toBe(435000)
+
+    const fallback = mergePartyNamesIntoFacts(FULL, [{ role: 'other', name: 'Ada Agent' }])
+    expect(fallback.buyers).toEqual(['Todd Chester'])
+    expect(fallback.sellers).toEqual(['PMA Investments LLC'])
   })
 })
 

@@ -1,6 +1,6 @@
 # Track 2 ranked plan — 2026-08-13
 
-**Pass:** slices A, C, B, and P2 person↔deal landed on `main`. No outbound from the agent. No SkySlope write. Matt still gates Yes on Today, C copy taste, and Email to Matt.
+**Pass:** slices A, C, B, and P2 (person↔deal, Today approval Yes, inbound valuation C-bar, OREF 001 overlay) landed on `main`. No outbound from the agent. No SkySlope write. Matt still gates Yes on Today, C copy taste, Email to Matt, and publish.
 **SoR:** this file. v0.14 in `BROKER-OPERATING-SYSTEM-PLAN.md` is quarry. Destinations stay locked.
 
 ---
@@ -30,16 +30,16 @@ Q1 Best · Q2 Simple · Q3 Clear · Q4 E2E. S1 Improve (next copilot / first-tou
 | identity-dedup | 4 | 3 | 3 | 3 | Keep merge path | Dual-intent labels from tags + live work | One person. Notes still win if header is skipped. |
 | suppression-guard | 5 | 4 | 4 | 5 | Never bypass | — | Fail-closed. P0 if any new send skips it. |
 | sequence-run | 4 | 3 | 3 | 4 | Pause on reply already | Parked steps already on Today | Quiet lead is a sequence, not a second inbox. |
-| cma-deliver | 4 | 3 | 4 | 4 | Keep engine | Address + comps already | Inbound valuation CTA is Value my home. Packet beauty is Loop C. |
+| cma-deliver | 4 | 3 | 4 | 4 | Keep engine | Address + comps already | Inbound packet names THIS home + this-address plan. Manual send. |
 | bpo-deliver | 3 | 3 | 3 | 3 | Stay lender/offer | — | MERGE→cma-deliver surface. Never a buyer packet. |
 | prospecting | 5 | 3 | 3 | 3 | Rewrite message + packet | THIS home’s DOM, ask, photos, list-kit plan | Detect / skip-trace / manual send work. Copy fails the bar. |
 | listing-alert-care | 4 | 3 | 4 | 4 | Keep | — | Buyer alerts. Not Loop C. |
 | visitor-escalate | 2 | 2 | 2 | 2 | Kill the extra email rail | Identified looking-at already wakes | MERGE leftover. Still a cron. |
-| content-approve | 4 | 2 | 2 | 3 | One yes on Today | — | Today surfaces `ready` rows. Stamp still lives on `/admin/approval-queue`. |
+| content-approve | 4 | 3 | 3 | 4 | One yes on Today | — | Today Yes stamps via approveNowAction. Does not publish. |
 | sync-ops | 4 | 3 | 3 | 4 | Keep | — | Not A/B/C. |
 | data-curate | 3 | 3 | 3 | 3 | MERGE→sync-ops | — | Oversight, not a loop. |
 | deal-track | 3 | 2 | 2 | 2 | One deal entity | Person ↔ `tc_deal` | CRM kanban is a leftover store. |
-| tc-close | 5 | 2 | 2 | 2 | One OREF fill → Matt email → seal | Deal facts already on `tc_*` | SkySlope is live. In-house is the comparison. |
+| tc-close | 5 | 3 | 3 | 3 | One OREF fill → Matt email → seal | Deal facts + CRM parties | SkySlope is live. 001 overlay fills when field_map is empty. |
 | weekly-sla-review | 3 | 3 | 3 | 3 | Oversight, not a wake | — | Human ritual. |
 | reporting-truth | 3 | 2 | 3 | 3 | Do not rebuild | — | Sprawl. P4. |
 | newsletter-run | 4 | 3 | 4 | 4 | Keep | Identity stitch landed | Loop D, not this build. |
@@ -68,6 +68,8 @@ North star: “Tell me everyone I need to respond to” → who they are, what t
 
 **Landed (slice A):** inbound row shows who (closed set), what they wrote, `composePersonNextStep`, and a recommended SMS. Yes → `sendTodayInboundReply` → `sendCrmSmsAction` → `sendGovernedSms` → `crm_timeline` `sms_out` → dismiss so the row leaves Today. Email rows stay Open (no Yes-send-SMS). Empty draft disables Yes. Never auto-send. Sequence stays paused.
 
+**Landed (P2 approval Yes):** a ready content row Yes stamps via `approveNowAction` (same as `/admin/approval-queue`). Does not publish. Does not text.
+
 **Do not confuse with `lib/agent`.** That is the broker texting the marketing line. Loop A is agent→broker over **client** work.
 
 ### Loop B — Closings
@@ -76,7 +78,7 @@ North star: licensed library → fill from deal → send → file sealed PDF →
 
 **On disk now:** `tc_form_versions` live (forms page: 111 versions, OREF 110/110). Anticipate / envelope / seal / commissions / PB sign-off exist. D2: SkySlope is the live file. `/admin/deals` dashboard still reads `skyslope_transactions`. `tc_deals.fub_person_ids` is dead. Person ↔ deal is `tc_deal_people` (many people, one file).
 
-**Landed (slice B):** one OREF from `tc_form_versions` → fill from deal facts → Matt-owned email → seal. No SkySlope write. Empty `field_map` omits unknown/missing bindings.
+**Landed (slice B + P2 overlay):** one OREF from `tc_form_versions` → fill from deal facts + `tc_deal_people` names → Matt-owned email → seal. Empty live `field_map` on 001 15-page 01/2026 uses the checked-in overlay. Missing facts stay blank. No SkySlope write.
 
 **Landed (P2 person↔deal):** `tc_deal_people` (unique `deal_id+person_id`, roles buyer|seller|other). Start a deal from the person. Parties on the deal page above lender/title contacts. Closings rows show party names. Dual-intent stays one person. Two houses = two deals.
 
@@ -107,7 +109,7 @@ FSBO (`fsbo-first-touch-v1`):
 | C3 MESSAGE | This-home analysis + this-address plan + link. Taste open. | Same. No brochure close. Taste open. | CTA is Value my home (Track 1). |
 | C4 VOICE | No prior-agent blame. | No blame. Brochure close. | Worth-question gone on the button. |
 | C5 TRUE | Engine traced. SMS invents nothing. | Same. | Same. |
-| C6 STREAM | Rewritten template (seed-body UPDATE). | Rewritten template (seed-body UPDATE). | Copy aligned. Packet not this pass. |
+| C6 STREAM | Rewritten template (seed-body UPDATE). | Rewritten template (seed-body UPDATE). | Packet copy aligned. Manual send. |
 
 **Landed (slice C):** first-touch SMS + packet rewrite names THIS house and a this-address list-kit plan (video, flyers, photo set). Seed bodies UPDATE only when they still match the old seed. Still manual send. Matt taste on the copy is still open.
 
@@ -168,17 +170,17 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 
 1. **A — Copilot yes-path.** **Landed.** Today inbound row: who, what they wrote, one next action, draft → yes → `sendGovernedSms` → timeline. Assigned-broker scoped.
 2. **C — Blow-away first touch.** **Landed (code).** Expired and FSBO first message + packet name this home + this-address plan. Manual send. Matt taste still open.
-3. **B — One OREF.** **Landed (code).** One form from `tc_form_versions` → fill from deal data → Matt-owned email → seal. No SkySlope mutation. Empty `field_map` leftover.
+3. **B — One OREF.** **Landed (code).** One form from `tc_form_versions` → fill from deal data + CRM parties → Matt-owned email → seal. No SkySlope mutation. 001 overlay when the live map is empty. Other form versions still omit.
 
 ### P2 — context that changes the action
 
 - Person ↔ `tc_deal`; create-deal from the person — **landed** (many people, one file)
 - `/admin/deals` list redirects to Closings (`tc_*`). SkySlope remains the live file until cutover
-- Inbound valuation first packet aligned to the C bar — landing this session
+- Inbound valuation first packet aligned to the C bar — **landed** (compose only, manual send)
 - Reply-on-thread is the Today row (already locked)
-- One approval yes on Today — landing this session
+- One approval yes on Today — **landed** (stamp only, does not publish)
 - Dual-intent stays one person (unique `deal_id+person_id`)
-- OREF 001 field overlay — landing this session
+- OREF 001 field overlay — **landed** (15-page 01/2026 sample only)
 
 ### P3 — strip bloat
 
@@ -202,10 +204,10 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 | Slice | Done when | Unblocked vs Matt-gated |
 |---|---|---|
 | **A** Queue → one recommended SMS → yes → governed send → timeline | Matt can say “everyone I need to respond to,” tap yes, and the CRM shows `sms_out` | **Landed.** Send is still Matt-gated every time (Yes is the stamp). |
-| **B** One OREF from `tc_form_versions` → fill → Matt-owned email → seal | Matt has a sealed PDF in his inbox from deal data | **Landed (code).** Email to Matt is a send (Matt-gated). No SkySlope write. Empty `field_map` leftover. |
+| **B** One OREF from `tc_form_versions` → fill → Matt-owned email → seal | Matt has a sealed PDF in his inbox from deal data | **Landed (code).** Email to Matt is a send (Matt-gated). Overlay covers empty 001 map. Other form versions still omit. |
 | **C** One expired (or FSBO) first-touch rewrite | Message + packet name THIS house and how we will market THIS house. Still manual. | **Landed (code).** Send and “is it beautiful?” are Matt-gated. |
 
-Build order: **A then C then B then P2 person↔deal landed.** This session finishes the rest of P2 end to end.
+Build order: **A then C then B then P2 remainder landed on local main.** Push + production verify next.
 
 ---
 

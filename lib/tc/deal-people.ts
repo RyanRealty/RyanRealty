@@ -95,6 +95,21 @@ export function relatedPartiesForStartDeal(
   return out
 }
 
+/** Buyer/seller names for form fill. Other is omitted. Blank names drop. */
+export function namesByDealRole(
+  parties: ReadonlyArray<{ role: DealPersonRole; name: string | null | undefined }>,
+): { buyers: string[]; sellers: string[] } {
+  const buyers: string[] = []
+  const sellers: string[] = []
+  for (const p of parties) {
+    const name = (p.name ?? '').trim()
+    if (!name) continue
+    if (p.role === 'buyer') buyers.push(name)
+    else if (p.role === 'seller') sellers.push(name)
+  }
+  return { buyers, sellers }
+}
+
 export function dedupeParties(
   parties: ReadonlyArray<{ personId: number; role: DealPersonRole }>,
 ): Array<{ personId: number; role: DealPersonRole }> {

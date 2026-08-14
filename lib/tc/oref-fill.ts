@@ -12,6 +12,7 @@
  * overlay in oref-001-field-map.ts (measured on the 01/2026 15-page sample).
  */
 
+import { namesByDealRole, type DealPersonRole } from './deal-people'
 import { isOref001OverlayApplicable, oref001OverlayFieldMap } from './oref-001-field-map'
 
 export const PREFERRED_OREF_LIBRARY = 'OREF'
@@ -225,6 +226,22 @@ export function dealFactsFromRows(
     actualClosingDate: cycle.actual_closing_date ? formatDealDate(cycle.actual_closing_date) : null,
     brokerName: nonEmpty(cycle.broker_name) ?? nonEmpty(deal.broker_name),
     earnestMoneyAmount: parseEarnestMoneyAmount(cycle.earnest_money),
+  }
+}
+
+/**
+ * Prefer CRM parties on the file. Cycle jsonb stays the fallback for
+ * SkySlope-mirrored names when no named buyer/seller is linked yet.
+ */
+export function mergePartyNamesIntoFacts(
+  facts: DealFacts,
+  parties: ReadonlyArray<{ role: DealPersonRole; name: string | null | undefined }>,
+): DealFacts {
+  const named = namesByDealRole(parties)
+  return {
+    ...facts,
+    buyers: named.buyers.length ? named.buyers : facts.buyers,
+    sellers: named.sellers.length ? named.sellers : facts.sellers,
   }
 }
 

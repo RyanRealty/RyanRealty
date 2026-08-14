@@ -182,3 +182,8 @@ export function SelectField({
     </FieldShell>
   )
 }
+
+/** Server-action form id. The primitive owns the raw input (ci:admin-ui rule A). */
+export function HiddenField({ name, value }: { name: string; value: string | number }) {
+  return <input type="hidden" name={name} value={String(value)} />
+}

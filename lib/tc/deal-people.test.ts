@@ -5,6 +5,7 @@ import {
   dedupeParties,
   isDealPersonRole,
   parseCityFromAddress,
+  namesByDealRole,
   propertyKeyForInhouseDeal,
   relatedPartiesForStartDeal,
   roleForRelated,
@@ -33,6 +34,20 @@ describe('deal-people', () => {
   it('builds a stable in-house property key', () => {
     const key = propertyKeyForInhouseDeal('20172 Soft Breeze Dr', 'a1b2c3d4-e5f6')
     expect(key).toBe('inhouse-20172-soft-breeze-dr-a1b2c3d4')
+  })
+
+  it('collects buyer and seller names and drops other and blanks', () => {
+    expect(
+      namesByDealRole([
+        { role: 'buyer', name: 'Todd Chester' },
+        { role: 'buyer', name: '  ' },
+        { role: 'seller', name: 'PMA Investments LLC' },
+        { role: 'other', name: 'Ada Agent' },
+      ]),
+    ).toEqual({
+      buyers: ['Todd Chester'],
+      sellers: ['PMA Investments LLC'],
+    })
   })
 
   it('dedupes parties and drops bad ids', () => {

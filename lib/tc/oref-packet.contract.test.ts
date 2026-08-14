@@ -77,4 +77,10 @@ describe('OREF packet path has no SkySlope client', () => {
       expect(src, rel).not.toMatch(SKYSLOPE_CLIENT)
     }
   })
+
+  it('fills buyer and seller names from CRM parties on the deal', () => {
+    const src = readFileSync(join(process.cwd(), 'app/actions/tc-oref-packet.ts'), 'utf8')
+    expect(src).toMatch(/getDealParties/)
+    expect(src).toMatch(/mergePartyNamesIntoFacts/)
+  })
 })
