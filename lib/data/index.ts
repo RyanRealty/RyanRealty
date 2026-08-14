@@ -533,7 +533,6 @@ export {
   selectCmaCompsByKeys,
   getCmaMarketStatsRow,
   getCmaMarketPulseRow,
-  getCmaMarketTrendRows,
   getCmaBrokerBySlugOrEmail,
   listActiveBrokersForCma,
   getCmaCityClosedSkinny,

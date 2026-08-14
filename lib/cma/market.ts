@@ -17,7 +17,7 @@
  * Verdict thresholds (CLAUDE.md §0): <= 4 seller's, 4-6 balanced, >= 6 buyer's.
  */
 
-import { getCmaMarketStatsRow, getCmaMarketPulseRow, getCmaMarketTrendRows } from '@/lib/data'
+import { getCmaMarketPulseRow, getCmaMarketStatsRow, getCmaMarketTrendRows } from '@/lib/data/cma/builderReads'
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import type { CmaMarketContext } from '@/lib/cma/types'
 
