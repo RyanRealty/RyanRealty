@@ -8,6 +8,17 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
+import {
+  getCycleDealId,
+  getEnvelopeIdForDocument,
+  getMattMailboxPersonId,
+  getOrefCycleForFill,
+  getOrefCycleForSeal,
+  getOrefDealForFill,
+  getOrefDocumentRow,
+  getOrefFormVersionRow,
+  loadPreferredOrefForm,
+} from '@/lib/data/tc/oref-packet-reads'
 import { revalidatePath } from 'next/cache'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 import { sendGovernedEmail } from '@/lib/comms/sendGovernedEmail'
@@ -15,9 +26,7 @@ import {
   coverRowsFromFacts,
   dealFactsFromRows,
   mapDealFactsToFillValues,
-  pickPreferredOrefForm,
   type FillableField,
-  type OrefFormCandidate,
 } from '@/lib/tc/oref-fill'
 import { buildFilledOrefPdf } from '@/lib/tc/oref-fill-pdf'
 import { MATT_OWNED_MAILBOX, planOrefMattEmail } from '@/lib/tc/oref-matt-email'
@@ -53,50 +62,6 @@ export type PreferredOrefForm = {
   fieldCount: number
 }
 
-export async function getPreferredOrefSaleAgreement(): Promise<{
-  data: PreferredOrefForm | null
-  error: string | null
-}> {
-  const gate = await checkAdminAction('transactions.view')
-  if (!gate.ok) return { data: null, error: gate.error }
-  const sb = getServiceSupabase()
-  if (!sb) return { data: null, error: 'Database is not configured.' }
-  const picked = await loadPreferredForm(sb)
-  if (!picked) return { data: null, error: 'No OREF sale agreement is in the form library.' }
-  return {
-    data: {
-      id: picked.id,
-      formNumber: picked.formNumber ?? '',
-      name: picked.name,
-      fieldCount: picked.fieldCount,
-    },
-    error: null,
-  }
-}
-
-async function loadPreferredForm(sb: Sb): Promise<OrefFormCandidate | null> {
-  const [{ data: libs }, { data: versions }] = await Promise.all([
-    sb.from('tc_form_libraries').select('id, code'),
-    sb
-      .from('tc_form_versions')
-      .select('id, library_id, form_number, name, field_map, blank_pdf_storage_path')
-      .is('retired_at', null),
-  ])
-  const codeById = new Map(((libs ?? []) as DbRow[]).map((l) => [asString(l.id), asString(l.code)]))
-  const candidates: OrefFormCandidate[] = ((versions ?? []) as DbRow[]).map((v) => {
-    const fields = Array.isArray(v.field_map) ? v.field_map : []
-    return {
-      id: asString(v.id),
-      libraryCode: codeById.get(asString(v.library_id)) ?? '',
-      formNumber: v.form_number == null ? null : asString(v.form_number),
-      name: asString(v.name),
-      fieldCount: fields.length,
-      blankPath: v.blank_pdf_storage_path ? asString(v.blank_pdf_storage_path) : null,
-    }
-  })
-  return pickPreferredOrefForm(candidates)
-}
-
 async function downloadBlank(sb: Sb, path: string): Promise<Uint8Array | null> {
   for (const bucket of ['tc-documents', 'tc-forms'] as const) {
     const { data, error } = await sb.storage.from(bucket).download(path)
@@ -124,40 +89,22 @@ export async function fillOrefSaleAgreementFromDeal(
     if (!sb) return { data: null, error: 'Database is not configured.' }
     if (!cycleId.trim()) return { data: null, error: 'Cycle is required.' }
 
-    const form = await loadPreferredForm(sb)
+    const form = await loadPreferredOrefForm()
     if (!form?.blankPath) return { data: null, error: 'No OREF sale agreement blank is on file.' }
 
-    const { data: cycle, error: cycleErr } = await sb
-      .from('tc_cycles')
-      .select(
-        'id, deal_id, sellers, buyers, listing_price, sale_price, mls_number, escrow_number, escrow_company, earnest_money, contract_acceptance_date, escrow_closing_date, actual_closing_date, broker_name, source_guid',
-      )
-      .eq('id', cycleId)
-      .maybeSingle()
-    if (cycleErr) {
-      console.error('[fillOrefSaleAgreementFromDeal]', cycleErr)
-      return { data: null, error: 'Could not read the cycle.' }
-    }
+    const cycleRes = await getOrefCycleForFill(cycleId)
+    if (cycleRes.error) return { data: null, error: cycleRes.error }
+    const cycle = cycleRes.data
     if (!cycle) return { data: null, error: 'Cycle not found.' }
 
-    const { data: deal, error: dealErr } = await sb
-      .from('tc_deals')
-      .select('id, address, city, state, zip, broker_name, property_key')
-      .eq('id', cycle.deal_id)
-      .maybeSingle()
-    if (dealErr) {
-      console.error('[fillOrefSaleAgreementFromDeal]', dealErr)
-      return { data: null, error: 'Could not read the deal.' }
-    }
+    const dealRes = await getOrefDealForFill(asString(cycle.deal_id))
+    if (dealRes.error) return { data: null, error: dealRes.error }
+    const deal = dealRes.data
     if (!deal) return { data: null, error: 'Deal not found.' }
 
-    const { data: versionRow } = await sb
-      .from('tc_form_versions')
-      .select('id, field_map, name, form_number')
-      .eq('id', form.id)
-      .maybeSingle()
+    const versionRow = await getOrefFormVersionRow(form.id)
 
-    const facts = dealFactsFromRows(deal, cycle)
+    const facts = dealFactsFromRows(deal as never, cycle as never)
     const fieldMap = (versionRow?.field_map ?? []) as FillableField[]
     const mapped = mapDealFactsToFillValues(facts, fieldMap)
     const coverRows = coverRowsFromFacts(facts)
@@ -272,29 +219,17 @@ export async function emailOrefPacketToMatt(
     if (!sb) return { error: 'Database is not configured.' }
     if (!documentId.trim()) return { error: 'Document is required.' }
 
-    const { data: doc, error: docErr } = await sb
-      .from('tc_documents')
-      .select('id, name, storage_path, cycle_id, classification')
-      .eq('id', documentId)
-      .maybeSingle()
-    if (docErr) {
-      console.error('[emailOrefPacketToMatt]', docErr)
-      return { error: 'Could not read the filled packet.' }
-    }
+    const docRes = await getOrefDocumentRow(documentId)
+    if (docRes.error) return { error: docRes.error }
+    const doc = docRes.data
     if (!doc?.storage_path) return { error: 'Filled packet not found.' }
 
     const { data: blob, error: dlErr } = await sb.storage.from('tc-documents').download(asString(doc.storage_path))
     if (dlErr || !blob) return { error: 'Could not load the filled PDF.' }
     const bytes = Buffer.from(await blob.arrayBuffer())
 
-    const { data: point } = await sb
-      .from('crm_contact_points')
-      .select('person_id')
-      .eq('kind', 'email')
-      .ilike('value', MATT_OWNED_MAILBOX)
-      .maybeSingle()
-    const personId = typeof point?.person_id === 'number' ? point.person_id : Number(point?.person_id)
-    if (!Number.isFinite(personId) || personId <= 0) {
+    const personId = await getMattMailboxPersonId(MATT_OWNED_MAILBOX)
+    if (personId == null) {
       return { error: 'Matt mailbox is not linked to a CRM person. Packet was not sent.' }
     }
 
@@ -316,9 +251,9 @@ export async function emailOrefPacketToMatt(
     })
     if (!sent.ok) return { error: sent.error }
 
-    const { data: cycle } = await sb.from('tc_cycles').select('deal_id').eq('id', doc.cycle_id).maybeSingle()
+    const emailedDealId = await getCycleDealId(asString(doc.cycle_id))
     await sb.from('tc_events').insert({
-      deal_id: cycle?.deal_id ?? null,
+      deal_id: emailedDealId,
       cycle_id: doc.cycle_id,
       document_id: documentId,
       actor: auth.email,
@@ -343,22 +278,12 @@ export async function sealOrefPacket(
     if (!sb) return { data: null, error: 'Database is not configured.' }
     if (!documentId.trim()) return { data: null, error: 'Document is required.' }
 
-    const { data: doc, error: docErr } = await sb
-      .from('tc_documents')
-      .select('id, name, storage_path, cycle_id')
-      .eq('id', documentId)
-      .maybeSingle()
-    if (docErr) {
-      console.error('[sealOrefPacket]', docErr)
-      return { data: null, error: 'Could not read the filled packet.' }
-    }
+    const docRes = await getOrefDocumentRow(documentId)
+    if (docRes.error) return { data: null, error: docRes.error }
+    const doc = docRes.data
     if (!doc?.storage_path) return { data: null, error: 'Filled packet not found.' }
 
-    const { data: cycle } = await sb
-      .from('tc_cycles')
-      .select('id, deal_id, source_guid')
-      .eq('id', doc.cycle_id)
-      .maybeSingle()
+    const cycle = await getOrefCycleForSeal(asString(doc.cycle_id))
     if (!cycle) return { data: null, error: 'Cycle not found.' }
 
     const { data: blob, error: dlErr } = await sb.storage.from('tc-documents').download(asString(doc.storage_path))
@@ -414,12 +339,8 @@ export async function sealOrefPacket(
       return { data: null, error: 'Could not file the sealed PDF.' }
     }
 
-    const { data: envDoc } = await sb
-      .from('tc_envelope_documents')
-      .select('envelope_id')
-      .eq('document_id', documentId)
-      .maybeSingle()
-    if (envDoc?.envelope_id) {
+    const envelopeIdForDoc = await getEnvelopeIdForDocument(documentId)
+    if (envelopeIdForDoc) {
       await sb
         .from('tc_envelopes')
         .update({
@@ -429,7 +350,7 @@ export async function sealOrefPacket(
           executed_document_id: sealedId,
           certificate_storage_path: storagePath,
         })
-        .eq('id', envDoc.envelope_id)
+        .eq('id', envelopeIdForDoc)
     }
 
     await sb.from('tc_events').insert({
