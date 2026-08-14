@@ -99,7 +99,10 @@ async function rasterizeBlankPages(out: PDFDocument, blankBytes: Uint8Array): Pr
     const ctx = canvas.getContext('2d')
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
-    await page.render({ canvasContext: ctx, viewport }).promise
+    await page.render({
+      canvasContext: ctx as unknown as CanvasRenderingContext2D,
+      viewport,
+    }).promise
     const jpg = canvas.toBuffer('image/jpeg', 82)
     const img = await out.embedJpg(jpg)
     const pdfPage = out.addPage([native.width, native.height])

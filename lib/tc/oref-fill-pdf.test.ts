@@ -71,7 +71,9 @@ describe('buildFilledOrefPdf', () => {
     const doc = await pdfjs.getDocument({ data: bytes, useSystemFonts: true }).promise
     const page = await doc.getPage(3)
     const tc = await page.getTextContent()
-    const text = tc.items.map((i: { str?: string }) => i.str ?? '').join(' ')
+    const text = tc.items
+      .map((i) => ('str' in i && typeof i.str === 'string' ? i.str : ''))
+      .join(' ')
     expect(text).toContain('218 SW 4th St')
     expect(text).toContain('Redmond')
     expect(text).toContain('Todd Chester')
@@ -98,7 +100,9 @@ describe('buildFilledOrefPdf', () => {
       expect(doc.numPages).toBe(16)
       const page = await doc.getPage(3)
       const tc = await page.getTextContent()
-      const text = tc.items.map((i: { str?: string }) => i.str ?? '').join(' ')
+      const text = tc.items
+      .map((i) => ('str' in i && typeof i.str === 'string' ? i.str : ''))
+      .join(' ')
       expect(text).toContain('218 SW 4th St')
       expect(text).toContain('Todd Chester')
       expect(text).toContain('$435,000')

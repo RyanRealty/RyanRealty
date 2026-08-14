@@ -1,6 +1,6 @@
 import { Button, HiddenField, SelectField, TextField, ToolbarCheck } from '@/components/admin/v2'
 import { DEAL_PERSON_ROLE_LABEL, type DealPersonRole } from '@/lib/tc/deal-people'
-import { startDealFromPerson } from '../../actions'
+import { startDealFromPerson } from '../actions'
 
 type Related = {
   personId: number
