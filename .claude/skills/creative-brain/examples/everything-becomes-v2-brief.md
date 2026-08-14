@@ -1,6 +1,6 @@
 # Piece Brief — Everything Becomes v2 (worked example — KILLED)
 
-**KILLED 2026-07-09 at doctrine level by the Reality Law:** this piece renders real-life items (elk, forest) photoreally via AI — the definition of slop per Matt's directive, regardless of craft quality. Kept as a tombstone: the brief machinery below is still the correct METHOD (every stage demonstrated), applied to the wrong WORLD. The concept survives only if rebuilt inside an authored stylized world (e.g. the navy-ink engraving universe: an etched elk whose ink-smoke becomes the etched world). See LESSONS.md #11.
+**HISTORICAL tombstone.** Killed 2026-07-09 under the Reality Law (LESSONS #11). That law was retired 2026-08-14 (LESSONS #15). Kept because the brief machinery is still the correct METHOD. A rebuild may use a reference-conditioned real-world lane or an authored stylized world. See SKILL law 1.
 
 *Original brief follows for method reference.*
 

@@ -15,7 +15,7 @@ Everything here was drawn from two bodies of work:
 | **`Brand/` kit from Rise Wise** (uploaded) | The real identity. Amboqia Boriango OTF (primary display), Azo Sans Medium TTF (accent), the blue-dog mascot, 14 numbered logo lockups, 2 Central Oregon landmark scenes (Tower Theater, Water Pageant), yard sign, postcard magnet, email banner, Instagram highlight covers, QR code, the "Its About Relationships" lockup, and the "For Sale / Building Community / 541.213.6706 / ryan-realty.com" yard sign template with brokerage phone and URL. |
 | **`RyanRealty/RyanRealty` repo** (github) | The shipped Next.js 16 + Tailwind v4 + shadcn/ui web platform. `app/globals.css` tokens (stone radix-nova base), the custom navy primary `oklch(0.270 0.058 253.912)`, the consumer homepage flow, icon libraries in use (Heroicons + HugeIcons), content voice, and the Deschutes-River hero photography. |
 
-Both live here as one system because they already share a designer's intent: **warm stone neutrals, single brand navy, documentary Central Oregon imagery, tabular data-first market copy**. The heritage layer adds the mascot, Americana illustrations, and the Amboqia display face; the web layer turns that into an accessible, production-shipped product surface.
+Both live here as one system because they already share a designer's intent: **warm stone neutrals, single brand navy, Central Oregon place imagery, tabular data-first market copy**. The heritage layer adds the mascot, Americana illustrations, and the Amboqia display face; the web layer turns that into an accessible, production-shipped product surface.
 
 ---
 

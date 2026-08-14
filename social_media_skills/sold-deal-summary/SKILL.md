@@ -484,7 +484,7 @@ Data-accuracy fails (1-6, 18): never auto-fix.  go straight to Matt for resoluti
 | sale_to_list_pct > 130 | Recompute returns >130% | Pause. Likely a price-improvement not reflected in `"ListPrice"`. Surface to Matt with price history. |
 | StandardStatus not Closed | Row shows `Active` / `Pending` / `Withdrawn` / `Expired` | Abort. Producer only acts on closes; the row may have been written from a misread audit signal. |
 | Listing agent not in three brokers | `ListAgentEmail` doesn't resolve to matt-ryan / paul-stevenson / rebecca-peterson | Surface to Matt. Likely a buyer-side close where Ryan Realty represented the buyer (needs a different action_type). Do not render. |
-| Hero photo missing | No `hero_photo` payload AND `"PhotoURL"` empty | Surface to Matt. Offer stock exterior or pause. No AI-fake property photos per `ANTI_SLOP_MANIFESTO`. |
+| Hero photo missing | No `hero_photo` payload AND `"PhotoURL"` empty | Surface to Matt. Offer a licensed exterior or pause. Do not invent this property. |
 | LinkedIn angle unrelated to listing context | Supplied `linkedin_angle` doesn't reference location / price tier / DOM / pct | Auto-derive a new angle from listing context (per Step 7). Note override in `scorecard.json`. |
 | Banned vocab on either deliverable | Grep returns ≥1 hit in `caption-ig.md` or `linkedin-post.md` | Auto-rewrite the offending sentence once. If still fails, surface to Matt with the specific banned word cited. |
 | Render failure | `ig-single-post` returns non-zero exit | Inherit the error from `ig-single-post`. Do not present a half-built bundle. |
@@ -516,7 +516,7 @@ Data-accuracy fails (1-6, 18): never auto-fix.  go straight to Matt for resoluti
 7. Never use emoji in either deliverable.
 8. Never publish a sold post without the listing agent's headshot (S2 requires it). If the
    agent can't be resolved, surface to Matt.  don't fall back to Jax.
-9. Never AI-generate the closing photo. Per `ANTI_SLOP_MANIFESTO`.
+9. Never invent the closing photo of this property. Camera or MLS.
 10. Never commit either deliverable before Matt's explicit approval. Per `CLAUDE.md` §0.5.
 11. Never reuse a sold-deal-summary from a prior close. Every close is a fresh data pull and a
     fresh angle.

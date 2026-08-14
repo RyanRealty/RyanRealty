@@ -184,8 +184,8 @@ Tabular numerals (`font-variant-numeric: tabular-nums`). Currency rounded to the
 `PROSE` · *Merged from: CLAUDE.md Design System v2, memory reference_broker_headshots*
 
 ### 2.7 AI imagery discipline
-AI generation is permitted only to animate authored, stylized worlds designed in-house. AI must never render photoreal real-world subjects passed off as footage. Real-life imagery comes from a camera or a license. Where AI content could read as real, it carries a digitally-created disclosure.
-`PROSE ⚠ NEEDS GATE` · *Merged from: .claude/skills/creative-brain*
+**Superseded 2026-08-14.** Live standard is `.claude/skills/creative-brain/SKILL.md` law 1: reference-conditioned Central Oregon place work is allowed; prompt-only scenic slop is refuse; do not invent a listing, a room, or the view from an address; charts render in code. Ads that could read as a real property still carry a digitally-created disclosure.
+`PROSE` · *Merged from: .claude/skills/creative-brain (2026-08-14)*
 
 ---
 

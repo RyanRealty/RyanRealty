@@ -13,9 +13,9 @@ This is how the brain gets APPLIED, not just known. Every piece runs these check
 
 - [ ] The idea survives one sentence (say it aloud; if it needs a second sentence, it isn't an idea yet) *(studio-pipeline: Clair)*
 - [ ] A hard formal constraint is chosen BEFORE the story, and the constraint is generative (it writes the piece: one line, one shot, one material, two colors) *(masters: law 1)*
-- [ ] **The reality test (kill-on-sight):** does ANY frame render real-life things via AI (photoreal animals, nature, buildings, people)? Dead, regardless of beauty. AI only moves authored stylized worlds we designed *(SKILL law 1, Matt directive 2026-07-09)*
+- [ ] **The reference test:** place frames have a real local still on disk (owned / licensed / Wikimedia) and a local would name the place. Prompt-only scenic is dead. Subject listing / view-from-this-address is camera or MLS. No people-as-residents. No type or numbers in a generated frame *(SKILL law 1, Matt 2026-08-14)*
 - [ ] The trope test: is this the first thing a model would produce for this kind of idea? If yes, dead *(LESSONS #1)*
-- [ ] The filmable test: could a camera capture this? Then license/shoot instead *(four laws)*
+- [ ] Provenance: if we already own the still or the motion, use it. Generating a new crop / season / aspect from that still is allowed *(SKILL law 2)*
 - [ ] The hang test: would it survive an Annecy shorts block, or only a feed?
 
 ## Stage 2 — LINEAGE

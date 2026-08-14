@@ -650,7 +650,7 @@ WHERE id = '<id>';
 1. **Never call the FB Marketplace API to auto-publish.** FB does not permit it for residential brokers as of 2026-05-14. The whole shape of this producer exists because of this constraint.
 2. **Never inherit figures from the action row's payload without re-verifying against Supabase in this session.**
 3. **Never ship a description with banned vocab unless `matt_override_banned_vocab=true` is explicit on the payload.**
-4. **Never substitute photos with AI / virtual-stage renders.** Hard fail per ANTI_SLOP_MANIFESTO.
+4. **Never substitute this listing's photos with invented rooms or views.** Marketplace gets the MLS stills. Virtual staging of a real room is a disclosure question, not a substitute for the photo.
 5. **Never set `status='executed'` based on a passing QA gate alone.** `executed` requires Matt's confirmed live URL.
 
 ---

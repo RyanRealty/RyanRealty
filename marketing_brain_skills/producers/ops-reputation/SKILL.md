@@ -200,7 +200,8 @@ Per `marketing_brain_skills/platforms/gbp/SKILL.md` §4 (Posts):
 - Post type: "What's New" for market data, listings, team news; "Offer" for
   specific promotions with start/end dates (rare for Ryan Realty)
 - Photo: required for max engagement; select from existing assets at
-  `design_system/ryan-realty/assets/` or `public/images/`; never AI-generated
+  `design_system/ryan-realty/assets/` or `public/images/`, or a reference-conditioned
+  place still. Do not invent a listing.
 - Lead with a specific, local, data-backed fact: "Bend's median sold price
   reached $695,000 in April.  the highest since Q3 2024."
 - Call to action: "Learn more at ryan-realty.com".  no phone number in body

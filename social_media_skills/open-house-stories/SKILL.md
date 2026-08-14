@@ -573,7 +573,7 @@ non-ship.
 | 6 | Date in future | `open_date_iso` strictly greater than `now()` at render time |
 | 7 | Listing eligible | `StandardStatus` is `Active` or `Coming Soon`.  never `Pending`, `Closed`, `Cancelled`, `Expired` |
 | 8 | Photos distinct | Frame 2 photo and frame 3 photo are different files (different SHA) |
-| 9 | Photo provenance | All photos traced in `provenance.json` to MLS or approved source. No AI-generated property photos |
+| 9 | Photo provenance | Listing photos traced in `provenance.json` to MLS. Do not invent this property. |
 | 10 | Font integrity | Amboqia, Geist, Azo Sans Medium all loaded from disk; no fallback in render |
 | 11 | Tabular numerals | Every price / count / day / time / pct has `font-variant-numeric: tabular-nums` |
 | 12 | Data verified | Every figure traces to `citations.json` with source, filter, fetched_at |

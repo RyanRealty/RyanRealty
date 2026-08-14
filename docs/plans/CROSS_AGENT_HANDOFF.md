@@ -1,8 +1,25 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Form-library catalog check (OREF / ODS / Oregon Realtors) on `/admin/forms`. Referral LIVE. Seller net READY. No live sends.**
-> Prior: Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`. Track 2 P3 leftovers READY `7392b788`.
+> **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
+> Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-14 (Grok, form catalog T2.1b) — LIVE `caa92e2a`
+# Current — 2026-08-14 (Grok, imagery canon) — local, not pushed
+
+**Track:** Kill the prohibitive "AI never renders real life" lock. We are better at this now.
+
+**Wired:**
+- Creative-brain law 1 is now: reference-conditioned Central Oregon place work is allowed. Prompt-only scenic slop is refuse. Do not invent a listing, a room, or the view from an address. No people-as-residents. Charts render in code.
+- CLAUDE.md banned-content #2, D38, design-system imagery, market-video i2v, producer hard-fails updated to the same use-class.
+- July Reality Law stays in LESSONS.md as history (why unconstrained photoreal failed). It is not a live ban.
+
+**Next leftover:**
+- Place bible + reference packs + image resolver. Banner table is still 0 rows.
+- Form catalog leftover: paste SkySlope JSON from the Mac Mini, then one-click PDF pull.
+
+**Not this land:** Do not `git add -A`. Page-grade / public-product-os / SESSION_BOOT dirty files stay out. No generated banners shipped this session.
+
+**Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, creative-brain, public-product-os (orient), git-commit.mdc.
+
+# Prior — 2026-08-14 (Grok, form catalog T2.1b) — LIVE `caa92e2a`
 
 **Track:** Transaction forms. Know when OREF, Oregon Data Share, or Oregon Realtors revise a form, and when a new published form exists, without downloading every blank.
 

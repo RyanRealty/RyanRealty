@@ -523,9 +523,9 @@ AI without disclosure, or a fair-housing hit.
 ## Banned-content gate (each one blocks a ship on its own)
 1. No generic real-estate language (§2 applies to captions, VO, on-screen text, and the post
    caption carrying the video).
-2. **No AI-generated image or clip passed off as a real photo of a real place.** If a frame is
-   AI-generated it is either obviously stylized or disclosed on-screen. Never AI-generate a
-   house, room, or view a buyer could mistake for the actual property.
+2. **Do not invent a listing.** Subject-property stills and the view from an address are
+   camera or MLS. Place chrome may be generated from a real local still. Prompt-only scenic
+   slop is refuse. Charts render in code. Standard: creative-brain law 1.
 3. VO is ElevenLabs Victoria only, with the pronunciations above.
 4. Music is beat-synced or absent. A bed that fights the edit is worse than silence.
 5. Every number is source-verified per §0 and present in `citations.json`.

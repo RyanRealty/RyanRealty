@@ -499,7 +499,7 @@ The producer transitions:
 | Missing payload field | template selected but required field absent | Surface to caller with the specific missing field; do not render |
 | Broker not resolved | `list_agent` doesn't map to matt-ryan / paul-stevenson / rebecca-peterson | Surface; offer fallback to Jax for brand-led variants, or ask Matt to disambiguate |
 | Hero photo missing | S1-S6 needs hero, payload has no `hero_photo` path or URL | Surface; offer to fetch from Spark / Supabase or pause |
-| AI-generated photo detected | `provenance.json` source flagged AI | Hard fail per ANTI_SLOP_MANIFESTO. Do not render |
+| Invented listing photo | AI frame offered as this property's room or view | Hard fail. Subject property is camera or MLS. Place chrome from a reference still is allowed |
 | Banned vocab on canvas | grep hit in headline / eyebrow / source line | Stop. Re-write the copy. Re-validate |
 | Font fallback at render | Amboqia / Geist / Azo Sans Medium not on disk | Stop. Report missing file. Do not ship with system fonts |
 | S10 stat without source | `stat_source` missing or stat doesn't trace to a primary source | Stop. Pull source. No "approximately" |
@@ -509,7 +509,7 @@ The producer transitions:
 
 ## 12. What not to do
 
-1. **Never use AI-generated property photos.** Hard fail per ANTI_SLOP_MANIFESTO.
+1. **Never invent the subject property.** Listing rooms and the view from this address are camera or MLS. Place chrome may be reference-conditioned.
 2. **Never substitute fonts.** If Amboqia or Geist or Azo Sans Medium isn't on disk, stop.
 3. **Never invent numbers.** Every stat traces. S10 requires `stat_source` and S8 requires
    `stat_period` for a reason.  without those, the post does not ship.

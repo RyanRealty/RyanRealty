@@ -5,7 +5,7 @@
 ## Idea
 - **One sentence:**
 - **Formal constraint (chosen before story):**
-- **Trope test / filmable test / hang test verdicts:**
+- **Trope test / reference test / hang test verdicts:**
 
 ## Feeling
 - **Target emotion (one):**

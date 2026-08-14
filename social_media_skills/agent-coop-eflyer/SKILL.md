@@ -197,8 +197,8 @@ discrepancy. This producer only ships agent-coop blasts for in-house listings.
 **Step 5.  Pick the hero photo.**
 
 Use `PhotoURL` array index 0 (the primary MLS hero shot). If `PhotoURL` is null or empty,
-surface to Matt.  a coop email without a hero photo is non-shippable. Do not fall back to AI
-or stock imagery per ANTI_SLOP_MANIFESTO.
+surface to Matt. A coop email without a hero photo is non-shippable. Do not invent this
+property. MLS hero only.
 
 Resize hero to 1200×675 (16:9). Cache locally at
 `out/agent-coop/<slug>/assets/hero-1200x675.jpg`. Confirm dimensions before continuing.
@@ -514,7 +514,7 @@ The producer transitions:
 | Resend sender domain unverified | `mail.ryan-realty.com` not verified | Surface dashboard link + DNS records. Still emit artifacts; flag Resend status in surface block. Matt sends manually from another verified address until propagation completes |
 | Subject line over 60 chars | length check fails after auto-derive | Drop prefix/city tokens, re-derive, re-check. Max 2 attempts before surfacing for Matt to pick a hook |
 | Banned vocab hit | grep returns ≥ 1 | Rewrite offending sentence. Re-validate. Max 2 auto-iterations |
-| Hero photo missing / watermarked | `PhotoURL[0]` null, 404, or visibly watermarked | Stop. Surface to Matt. Never fall back to AI / stock per ANTI_SLOP_MANIFESTO |
+| Hero photo missing / watermarked | `PhotoURL[0]` null, 404, or visibly watermarked | Stop. Surface to Matt. MLS hero only. Do not invent this property. |
 | Listing agent not in three-broker set | resolution fails | Set `status='killed'`. Coop blasts are in-house only |
 | Listing status not Active / Coming Soon | pending / closed / withdrawn / expired | Surface to Matt. Compliance flag.  don't render |
 | Outlook rendering broken | manual preview shows broken layout | Replace any flex/grid with `<table>`, inline more CSS, re-render. Outlook is the floor |
@@ -530,7 +530,7 @@ The producer transitions:
 
 1. Never send the email. Producer prepares artifacts only; Matt sends.
 2. Never include hashtags anywhere.  email is hashtag-stripping per CLAUDE.md "Voice + content."
-3. Never use AI-generated property photos per ANTI_SLOP_MANIFESTO. MLS hero only.
+3. Never invent this property. MLS hero only.
 4. Never re-typeset the wordmark. Always `logo-white.png`.
 5. Never use exclamation marks, em-dashes in body, or semicolons. Subject connector em-dash is the single allowed exception.
 6. Never use gold (`#D4AF37`, `#C8A864`). Navy + cream only.

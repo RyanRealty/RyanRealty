@@ -470,10 +470,9 @@ overlaid data points.
 - **Background:** cream `#faf8f4` for the bottom band; photo for the upper portion.
 - **Photo** (top of content area, full content width, height ~ 55% of content height,
   `object-fit: cover`, 14 px corner radius applied across the photo's bottom edge only):
-  - For `listing` topic: a listing photo from `"PhotoURL"` (MLS-traced, never AI).
-  - For `market_brief` / `neighborhood_insight`: documentary Central Oregon photography (warm-
-    lit landscape, downtown streetscape, Deschutes River, Smith Rock, etc.). Source-traced in
-    `provenance.json`.
+  - For `listing` topic: a listing photo from `"PhotoURL"` (MLS-traced. Do not invent the subject property).
+  - For `market_brief` / `neighborhood_insight`: Central Oregon place stills (camera, license,
+    or reference-conditioned generation). Source-traced in `provenance.json`.
 - **Caption** (Geist 600, 22 px, navy, `y = photo_bottom + 32, x = 56`, max 1 line):
   Short specific anchor. E.g. `12 acres on the western edge of Tumalo.` 8 words max.
 - **Data point list** (3 rows, `y = photo_bottom + 80`, vertical stack with `24 px` gap
@@ -892,8 +891,9 @@ WHERE id='<id>';
    round-fill, no LLM recall.
 3. **Do not substitute fonts.** If Amboqia Boriango, Geist, or Azo Sans Medium fail to embed,
    the render fails. No Playfair, no Georgia, no system fallback shipped as final.
-4. **Do not use AI-generated photos.** Hard fail per ANTI_SLOP_MANIFESTO. Listing photos must be
-   MLS-traced. Brand photos must be documentary and `provenance.json`-traced.
+4. **Do not invent a listing.** Subject-property photos are MLS-traced. Place chrome may be
+   a licensed still or reference-conditioned generation, traced in `provenance.json`. Prompt-only
+   scenic slop is refuse.
 5. **Do not use gold, fir, or sky in the deck.** The v2 palette is two-color: navy `#102742` and
    cream `#faf8f4`. Gold tokens (`#D4AF37`, `#C8A864`) belong to the legacy video system and are
    banned here.

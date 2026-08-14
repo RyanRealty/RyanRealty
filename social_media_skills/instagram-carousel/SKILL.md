@@ -503,9 +503,9 @@ If Amboqia fails to load at render time, stop. A Playfair fallback carousel does
    Avoid distant subject, excessive sky, or empty foreground. Apply `object-fit: cover` with
    a `1.10-1.30` zoom scale on the source image, centered on the subject.
 6. **No watermarks, no MLS overlay bugs from screen captures.** Source photos must be clean.
-7. **Market/neighborhood carousels:** use documentary Central Oregon photography (warm-lit
-   landscapes, Deschutes River aerials, downtown Bend streetscapes). No generic stock
-   cityscape photos from other markets.
+7. **Market/neighborhood carousels:** Central Oregon place stills (camera, license, or
+   reference-conditioned generation). No generic stock from other markets. No prompt-only
+   scenic slop.
 
 ---
 

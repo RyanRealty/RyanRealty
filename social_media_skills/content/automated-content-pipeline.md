@@ -298,7 +298,7 @@ SOCIAL MEDIA MANAGER/
 ## Hard Rules
 
 - Never publish without Matt's approval (draft stage is mandatory)
-- Never use AI-generated video of houses/interiors/people (real photos only for real estate content; AI video for abstract/nature/data viz only)
+- Do not invent a listing, a room, or the view from an address. Place chrome may be reference-conditioned. Do not generate people as residents.
 - DM CTA on every post
 - No logo in video frame
 - No agent names in shoutouts

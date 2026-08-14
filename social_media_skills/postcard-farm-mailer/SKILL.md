@@ -556,7 +556,7 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
 | Listing row missing | Supabase query returns 0 rows for `mls_id` | Stop. Set `status='killed'`. Report MLS# and query. |
 | List agent not resolved | `"ListAgentEmail"` doesn't map to one of three brokers | Stop. Surface; ask Matt to disambiguate or override. |
 | Hero photo missing or non-exterior | `"PhotoURL"` empty or first photo is interior | Surface; offer to fetch from Spark fallback or pause for Matt to pick a photo. |
-| AI-generated photo detected | `provenance.json` source flagged AI | Hard fail per ANTI_SLOP_MANIFESTO. Do not render. |
+| Invented listing photo | AI frame offered as this property's room or view | Hard fail. Subject property is camera or MLS. |
 | Banned vocab on canvas | grep hit on headline / ask copy / source line | Stop. Re-write copy. Re-validate. Max 2 iterations; then surface. |
 | Permit number missing | `app_config.usps_permit_number` unset | Render with `PERMIT NO. XXXX` placeholder; flag in surface format. Print order cannot proceed until permit is set. |
 | Office return address missing | `app_config.ryan_realty_office_address` unset | Stop. Surface; ask Matt to set the value in app_config. |
@@ -582,7 +582,7 @@ action, dispatched by the orchestrator AFTER `approved`. This producer does not 
    `541.703.3095`. Direct `541.213.6706` is front-side display only.
 3. **Never put text in the USPS address-block or IMb clear zones.** The mail sorter reads
    those rectangles.
-4. **Never use AI-generated property photos.** Hard fail per ANTI_SLOP_MANIFESTO.
+4. **Never invent the subject property.** Hero is camera or MLS. Do not generate this house.
 5. **Never re-typeset the wordmark.** Always use the pre-rendered PNG.
 6. **Never use exclamation marks** on the front or back.
 7. **Never use em-dashes or semicolons** in body copy. (Em-dash is allowed as a no-data

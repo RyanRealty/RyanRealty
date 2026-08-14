@@ -468,7 +468,7 @@ is OUT OF SCOPE for this orchestrator (those are handled by their own producers)
 - No banned words in any copy block
 - Broker footer present and accurate
 - `PublicRemarks` sanitized (banned words removed or block left blank)
-- No AI-generated property photos
+- Subject-property photos from `"PhotoURL"` only. Do not invent this house.
 - Heritage wordmark as pre-rendered image, never re-typeset
 - `design_review_checklist.json` all `pass`
 
@@ -629,7 +629,7 @@ pending → in_production → ready → approved → executed → measured
 
 1. **Never fabricate property facts.** If `BedroomsTotal` is null, show `. ` on the deliverable.
    Do not guess from photos or square footage.
-2. **Never use AI-generated property photos.** Every photo comes from `"PhotoURL"`. Per
+2. **Never invent this property.** Every listing photo comes from `"PhotoURL"`.
 3. **Never deliver a partial kit silently.** All 6 deliverable groups ship together. If one
    fails, fix it or surface it.  do not ship 5 of 6 and call it done.
 4. **Never push without Matt's approval.** A successful render, a passing QA gate, a complete

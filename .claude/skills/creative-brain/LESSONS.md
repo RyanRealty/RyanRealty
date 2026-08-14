@@ -24,3 +24,7 @@ Append-only. Every creative session that learns something adds it here with a da
 - The `reviews` table goes stale (was 32 days old; the actual latest GBP review had posted THE SAME DAY). Any "latest review" deliverable must run `scripts/ingest-gbp-reviews.mjs --apply --replace` first — `--apply` alone skips when rows exist.
 - Landscape→portrait smart-crop centered on x kills off-center focal points (lit fireplace cut from frame). `focus_x` param added to `build_beaumont_sold_carousel.py`; inspect every cropped interior before surfacing.
 - Vacant-house greige interiors are weak carousel material — lead with aerials/exteriors, keep at most two interiors (kitchen + lit fireplace), and let a verbatim review card carry the peak-end.
+
+## 2026-08-14 — Reality Law retired
+
+15. **THE REALITY LAW IS RETIRED (Matt: those rules are prohibitive; we are better at this now).** Lesson #11 stays as history of why unconstrained photoreal failed in July (porcelain elk, prompt-only Grok banners, "Ratas Rales"). It is no longer a kill-on-sight ban on rendering real places. The live standard is SKILL law 1: reference-conditioned Central Oregon place work is allowed; prompt-only scenic slop is refuse; do not invent a listing, a room, or the view from an address; do not generate people as residents; charts and numbers render in code. PLAYBOOK "reality test" is now the reference test.

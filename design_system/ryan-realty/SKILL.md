@@ -1,6 +1,6 @@
 ---
 name: ryan-realty
-description: Ryan Realty brand system — Bend, Oregon real estate. Two registers — heritage Americana (blue lab mascot "Jax", navy engraving-style illustrations, "It's About Relationships" tagline, yard signs/postcards) and modern web (shadcn/ui radix-nova + Geist + navy #102742 primary on warm stone). Amboqia Boriango is the primary display face. Plainspoken local voice, tabular numerals, Heroicons 2px stroke, documentary Central Oregon photography, no emoji. Three brokers — Matt Ryan (Principal), Paul Stevenson, Rebecca Peterson.
+description: Ryan Realty brand system — Bend, Oregon real estate. Two registers — heritage Americana (blue lab mascot "Jax", navy engraving-style illustrations, "It's About Relationships" tagline, yard signs/postcards) and modern web (shadcn/ui radix-nova + Geist + navy #102742 primary on warm stone). Amboqia Boriango is the primary display face. Plainspoken local voice, tabular numerals, Heroicons 2px stroke, Central Oregon place imagery (camera, license, or reference-conditioned generation), no emoji. Three brokers — Matt Ryan (Principal), Paul Stevenson, Rebecca Peterson.
 ---
 
 # Ryan Realty — Brand Skill
@@ -78,7 +78,7 @@ Let what we say create the tone. **Never describe the tone overtly.** Warmth, tr
 - **Hover:** `hover:border-primary/30 hover:shadow-md` on cards; `bg-primary/80` on primary. Press = `active:translate-y-px`.
 - **No decorative gradients.** Only the navy protection overlay on the hero image.
 - **Icons:** Heroicons first (24×24, 2px stroke, round), HugeIcons for filled, inline SVG last. Never emoji.
-- **Imagery:** warm documentary Central Oregon photography + navy heritage engravings + the blue-dog mascot. Never AI slop or generic stock.
+- **Imagery:** Central Oregon place stills (camera, license, or reference-conditioned generation) + navy heritage engravings + Jax. No prompt-only scenic slop. No generic out-of-market stock.
 - **Motion:** ease-out entrances, 200–400ms, ≤16px travel. 20s Ken Burns on hero. Respect `prefers-reduced-motion`.
 - **Layout:** `max-w-7xl` (1280px), `px-4 sm:px-6`, sections `py-12`, grids `gap-4`, cards `p-5`/`p-6`.
 
