@@ -2,7 +2,7 @@
   "route": "app/cities/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
   "competitiveTarget": "Beat portal city-directory pages with a live regional pulse and a ledger of Central Oregon cities, not a link farm.",
-  "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities, not a number hero and not a house-stamp dump. Section order: Breadcrumb, Ledger (cities), Instrument (region pulse below the fold), Sheet (SFR alerts), Quiet (edges), Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
+  "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities: name, median, months of supply, count. Not a city essay, not a number hero, not a house-stamp dump. Section order: Breadcrumb, Ledger (cities), Instrument (region pulse below the fold), Sheet (SFR alerts), Quiet (edges), Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
   "requiredComponents": [
     {
       "name": "KbSectionTracker",
@@ -57,11 +57,6 @@
     {
       "name": "cityHero",
       "section": "Ledger media \u2014 verified per-city photography only. Unverified cities get no photo.",
-      "blocking": true
-    },
-    {
-      "name": "getCityContent",
-      "section": "Ledger detail \u2014 one sentence per featured city from hand-written content.",
       "blocking": true
     },
     {
