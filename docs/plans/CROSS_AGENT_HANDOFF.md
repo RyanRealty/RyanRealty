@@ -10,7 +10,7 @@
 
 **Evidence:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-seo-llm/EVIDENCE.md`
 
-**SHA:** pending this land. Production READY after deploy:verify.
+**SHA:** feat `fec2d0eb`. Production READY after deploy:verify.
 
 **Not this land:** `stash@{0}`. Do not `git add -A`. Track 2 not started. Chrome Golf still points at the paid LP.
 

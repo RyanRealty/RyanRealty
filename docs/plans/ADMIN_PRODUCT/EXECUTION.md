@@ -4,7 +4,7 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Track 1 §4 SEO/LLM). Dialed llms.txt + sitemap off noindex `/lp/*` and `/feed`. Evidence `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-seo-llm/`. Track 1 §4 done. Do not start Track 2. G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
+**Updated:** 2026-08-13 (Grok, Track 1 §4 SEO/LLM). HEAD `fec2d0eb`. Dialed llms.txt + sitemap off noindex `/lp/*` and `/feed`. Evidence `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-seo-llm/`. Track 1 §4 done. Do not start Track 2. G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
 
 ---
 
