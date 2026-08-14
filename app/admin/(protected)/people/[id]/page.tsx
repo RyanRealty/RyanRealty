@@ -32,7 +32,7 @@ import { getGroupReplyParticipants } from '@/lib/data/crm/getGroupReplyParticipa
 import { getAppointmentsForPerson } from '@/lib/data/crm/getAppointments'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
 import { getPersonAwaitingBrokerStep } from '@/lib/data/crm/getBrokerActionQueue'
-import { getDealsForPerson } from '@/lib/data'
+import { getDealsForPerson } from '@/lib/data/tc/deal-people'
 import { isTriageTaskCandidate } from '@/lib/data/crm/getInboundTriage'
 import { extractAddressCandidate } from '@/lib/crm/seller-intent'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'

@@ -59,7 +59,8 @@ import { DealEnvelopes, type DealEnvelopesCycle } from './DealEnvelopes'
 import { FillOrefPacket } from './FillOrefPacket'
 import { DocumentName } from './DocumentName'
 import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
-import { getDealParties, getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
+import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
+import { getDealParties } from '@/lib/data/tc/deal-people'
 import { DealParties } from './DealParties'
 import {
   COMMISSION_STATUS,

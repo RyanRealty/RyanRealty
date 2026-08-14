@@ -3,12 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { checkAdminAction } from '@/lib/admin/require-admin'
+import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import {
   addPersonToDeal,
   createDealWithPeople,
   removePersonFromDeal,
-  searchPeopleByName,
-} from '@/lib/data'
+} from '@/lib/data/tc/deal-people'
 import { isDealPersonRole, type DealPersonRole } from '@/lib/tc/deal-people'
 
 function revalidateDeal(propertyKey: string, personIds: number[]) {
