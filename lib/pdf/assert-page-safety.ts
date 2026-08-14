@@ -30,6 +30,7 @@ import {
   marginsToPt,
   type Margins,
 } from '@/lib/pdf/page-contract'
+import { configurePdfjsWorker } from '@/lib/pdf/pdfjs-node'
 
 export type PageSafetyViolation = {
   /** 1-indexed physical sheet. */
@@ -86,6 +87,7 @@ async function extractRuns(data: Uint8Array): Promise<{ pages: TextRun[][]; size
   // Dynamic import: pdfjs is only needed when a PDF is actually produced, and
   // this keeps it out of cold-start on every other route.
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  configurePdfjsWorker(pdfjs)
   const doc = await pdfjs.getDocument({
     data,
     isEvalSupported: false,

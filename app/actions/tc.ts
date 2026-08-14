@@ -343,8 +343,10 @@ export async function createTcUploadUrl(
 /** PDF page count via pdfjs (pure JS, no canvas). Null on any parse failure. */
 async function pdfPageCount(buf: ArrayBuffer): Promise<number | null> {
   try {
-    const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
-    const doc = await getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const { configurePdfjsWorker } = await import('@/lib/pdf/pdfjs-node')
+    configurePdfjsWorker(pdfjs)
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false }).promise
     const n = doc.numPages
     await doc.destroy()
     return n

@@ -8,7 +8,8 @@
  * same stack as TC thumbnails) so overlays still land on the real blank.
  */
 import { createCanvas } from '@napi-rs/canvas'
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { configurePdfjsWorker } from '@/lib/pdf/pdfjs-node'
 import { PDFDocument, StandardFonts, rgb, type PDFFont } from 'pdf-lib'
 import { fieldRectToPdf } from './seal-pdf'
 import type { FillValue } from './oref-fill'
@@ -83,6 +84,7 @@ async function copyBlankWithPdfLib(out: PDFDocument, blankBytes: Uint8Array): Pr
 }
 
 async function rasterizeBlankPages(out: PDFDocument, blankBytes: Uint8Array): Promise<number> {
+  configurePdfjsWorker({ GlobalWorkerOptions })
   const data = new Uint8Array(blankBytes)
   const doc = await getDocument({
     data,

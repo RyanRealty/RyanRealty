@@ -323,9 +323,13 @@ const nextConfig: NextConfig = {
   },
   // Include CMA drafts + finalized assets so /api/cma/[slug]/pdf can read
   // them from disk inside the serverless function (avoids the SSO wall on
-  // preview deployments).
+  // preview deployments). The pdfjs worker is a dynamic import inside
+  // pdf.mjs (`webpackIgnore: true`) so NFT never sees it. Without this
+  // include, assertPdfPageSafety dies on Vercel after the PDF has already
+  // rendered ("Cannot find module .../pdf.worker.mjs").
   outputFileTracingIncludes: {
     'app/api/cma/[slug]/pdf/route': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
       './public/drafts/cma-*/cma.html',
       './public/drafts/cma-*/assets/*.png',
       './public/drafts/cma-*/assets/*.jpg',
@@ -336,6 +340,7 @@ const nextConfig: NextConfig = {
       './public/cmas/cma-*/assets/*.otf',
     ],
     'app/api/cma/[slug]/email/route': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
       './public/drafts/cma-*/cma.html',
       './public/drafts/cma-*/assets/*.png',
       './public/drafts/cma-*/assets/*.jpg',
@@ -344,6 +349,15 @@ const nextConfig: NextConfig = {
       './public/cmas/cma-*/assets/*.png',
       './public/cmas/cma-*/assets/*.jpg',
       './public/cmas/cma-*/assets/*.otf',
+    ],
+    'app/api/cma/[slug]/gmail-draft/route': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+    ],
+    'app/api/reports/export/route': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+    ],
+    'app/home-valuation/actions': [
+      './node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
     ],
   },
 }
