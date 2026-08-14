@@ -17,9 +17,14 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import {
   REFERRAL_CANDIDATE_TAG,
+  REFERRAL_INBOUND_TAG,
   GEO_UNCLASSIFIED_TAG,
   withReferredOutTag,
 } from '@/lib/referral-geo'
+import {
+  inboundReferralFromPerson,
+  type InboundReferralRow,
+} from '@/lib/crm/inbound-referral'
 
 export type ReferralCandidate = {
   personId: number
@@ -89,6 +94,35 @@ export async function listReferralCandidates(limit = 200): Promise<ReferralCandi
       cityInterest: cityInterestFromTags(tags),
     }
   })
+}
+
+export type { InboundReferralRow }
+
+/**
+ * Clients sent to us by another licensed broker (/refer-a-client).
+ * Tagged referral:inbound. Newest first.
+ */
+export async function listInboundReferrals(limit = 200): Promise<InboundReferralRow[]> {
+  const sb = createServiceClient()
+  const { data, error } = await sb
+    .from('crm_people')
+    .select('id, name, source, created_at, custom')
+    .overlaps('tags', [REFERRAL_INBOUND_TAG])
+    .order('created_at', { ascending: false })
+    .limit(Math.min(Math.max(limit, 1), 500))
+  if (error) {
+    console.warn('[listInboundReferrals] read failed:', error.message)
+    return []
+  }
+  return (data ?? []).map((row) =>
+    inboundReferralFromPerson({
+      id: row.id as number,
+      name: (row.name as string | null) ?? null,
+      source: (row.source as string | null) ?? null,
+      created_at: row.created_at as string,
+      custom: row.custom,
+    }),
+  )
 }
 
 /** All receivables, newest first. available:false until the migration lands. */

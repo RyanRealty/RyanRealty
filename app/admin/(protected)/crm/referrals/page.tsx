@@ -39,6 +39,7 @@ import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { requireAdminPage, requireAdminAction } from '@/lib/admin/require-admin'
 import {
+  listInboundReferrals,
   listReferralCandidates,
   listReferralReceivables,
   recordReferralReceivable,
@@ -66,9 +67,10 @@ export default async function CrmReferralsPage() {
   // (no session) or /admin/access-denied (no people.view capability).
   await requireAdminPage('people.view')
 
-  const [candidates, receivables] = await Promise.all([
+  const [candidates, receivables, inbound] = await Promise.all([
     listReferralCandidates(),
     listReferralReceivables(),
+    listInboundReferrals(),
   ])
   const referredPersonIds = new Set(receivables.rows.map((r) => r.personId))
   const queue = candidates.filter((c) => !referredPersonIds.has(c.personId))
@@ -76,19 +78,20 @@ export default async function CrmReferralsPage() {
   return (
     <div className="av2-scope" style={{ maxWidth: 768, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
-        <VerdictLine tone={queue.length > 0 ? 'attention' : 'ok'}>
-          {queue.length > 0 ? (
+        <VerdictLine tone={inbound.length > 0 || queue.length > 0 ? 'attention' : 'ok'}>
+          {inbound.length > 0 || queue.length > 0 ? (
             <>
               <b>
-                {queue.length.toLocaleString('en-US')} out-of-area{' '}
-                {queue.length === 1 ? 'lead is' : 'leads are'} waiting on a handoff.
+                {inbound.length.toLocaleString('en-US')} incoming{' '}
+                {inbound.length === 1 ? 'client' : 'clients'} from other agents.
               </b>{' '}
-              Each one is sitting in no sequence until you record where it went.
+              {queue.length.toLocaleString('en-US')} out-of-area{' '}
+              {queue.length === 1 ? 'lead is' : 'leads are'} waiting on a handoff.
             </>
           ) : (
             <>
-              <b>Nothing is waiting on a handoff.</b>{' '}
-              {receivables.rows.length.toLocaleString('en-US')}{' '}
+              <b>Nothing is waiting.</b>{' '}
+              {receivables.rows.length.toLocaleString('en-US')} outgoing{' '}
               {receivables.rows.length === 1 ? 'referral has' : 'referrals have'} been recorded.
             </>
           )}
@@ -108,6 +111,44 @@ export default async function CrmReferralsPage() {
           working the moment the migration lands.
         </p>
       )}
+
+      <section aria-label="Incoming from other agents">
+        <SectionHead>
+          Incoming from other agents — {inbound.length.toLocaleString('en-US')}
+        </SectionHead>
+        {inbound.length === 0 ? (
+          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: '0 0 8px' }}>
+            Empty. A licensed broker sending a Central Oregon client lands here from
+            /refer-a-client. Call the sending broker first. Do not contact the client
+            until the referral is in writing.
+          </p>
+        ) : (
+          <ul className="av2-quietlist">
+            {inbound.map((row) => (
+              <li key={row.personId} className="av2-quiet" style={{ display: 'block' }}>
+                <div className="av2-wordrow" style={{ marginBottom: 8 }}>
+                  <Link
+                    href={`/admin/people/${row.personId}`}
+                    style={{ color: 'var(--a-text)', fontWeight: 500, textDecoration: 'none' }}
+                  >
+                    {row.name}
+                  </Link>
+                  <StateWord state="waiting">
+                    {row.intent ?? 'intent unset'}
+                    {row.area ? ` · ${row.area}` : ''}
+                  </StateWord>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatDate(row.createdAt)}</span>
+                </div>
+                <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', margin: 0 }}>
+                  From {row.referringAgentName ?? 'unnamed broker'}
+                  {row.referringBrokerage ? `, ${row.referringBrokerage}` : ''}
+                  {row.referringAgentEmail ? ` · ${row.referringAgentEmail}` : ''}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section aria-label="Waiting on a handoff">
         <SectionHead>Waiting on a handoff — {queue.length.toLocaleString('en-US')}</SectionHead>

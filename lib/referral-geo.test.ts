@@ -7,6 +7,8 @@ import {
   withReferredOutTag,
   REFERRAL_CANDIDATE_TAG,
   REFERRAL_REFERRED_OUT_TAG,
+  REFERRAL_INBOUND_TAG,
+  REFERRING_AGENT_TAG,
   GEO_OUT_OF_AREA_TAG,
   GEO_OUT_OF_STATE_TAG,
   GEO_UNCLASSIFIED_TAG,
@@ -102,6 +104,10 @@ describe('geoReferralEnrollBlock', () => {
   })
   it('blocks unclassified property inquiries (fail-closed)', () => {
     expect(geoReferralEnrollBlock([GEO_UNCLASSIFIED_TAG, 'audience:buyer'])).toMatch(/unclassified/)
+  })
+  it('blocks inbound agent-referral clients and the sending agent', () => {
+    expect(geoReferralEnrollBlock([REFERRAL_INBOUND_TAG, 'audience:buyer'])).toMatch(/inbound/)
+    expect(geoReferralEnrollBlock([REFERRING_AGENT_TAG])).toMatch(/referring agent/)
   })
   it('does NOT block on the bare geo:out-of-area tag (legacy seller-LP geocode tag)', () => {
     // lib/lead-geocode.ts has stamped geo:out-of-area on seller leads since

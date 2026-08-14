@@ -51,6 +51,16 @@
       "section": "brokerage",
       "label": "Contact",
       "path": "/contact"
+    },
+    {
+      "section": "brokerage",
+      "label": "Refer a client to Central Oregon",
+      "path": "/refer-a-client"
+    },
+    {
+      "section": "brokerage",
+      "label": "Refer a client to Central Oregon",
+      "path": "/refer-a-client"
     }
   ],
   "queries": [

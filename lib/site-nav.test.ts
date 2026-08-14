@@ -30,7 +30,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
   it('puts brokerage pages in the About top-bar group', () => {
     const about = KB_TOP_NAV.find((g) => g.href === '/about')
     const hrefs = about?.children.map((l) => l.href) ?? []
-    for (const h of ['/about', '/team', '/reviews', '/contact']) {
+    for (const h of ['/about', '/team', '/reviews', '/contact', '/refer-a-client']) {
       expect(hrefs).toContain(h)
     }
     expect(KB_ABOUT_DROPDOWN.map((l) => l.href).sort()).toEqual(['/contact', '/reviews', '/team'])
@@ -83,7 +83,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
   it('footer About column carries team trust links', () => {
     const about = KB_FOOTER_COLUMNS.find((c) => c.heading === 'About')
     const hrefs = about?.links.map((l) => l.href) ?? []
-    for (const h of ['/about', '/team', '/reviews', '/contact']) {
+    for (const h of ['/about', '/team', '/reviews', '/contact', '/refer-a-client']) {
       expect(hrefs).toContain(h)
     }
   })

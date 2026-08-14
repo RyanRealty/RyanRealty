@@ -38,6 +38,16 @@ export const REFERRAL_CANDIDATE_TAG = 'referral:candidate'
 export const REFERRAL_REFERRED_OUT_TAG = 'referral:referred-out'
 
 /**
+ * Incoming broker-to-broker referral: another licensed agent sent US a
+ * Central Oregon client. Not the same as referral:candidate (those go OUT).
+ * Blocks auto-enroll until a broker accepts the file by hand.
+ */
+export const REFERRAL_INBOUND_TAG = 'referral:inbound'
+
+/** The sending agent. Never a consumer drip. */
+export const REFERRING_AGENT_TAG = 'role:referring-agent'
+
+/**
  * Idempotently append the Referred-Out disposition tag. Case-insensitive: if the
  * person already carries it (any casing), the array is returned unchanged so a
  * re-recorded handoff never duplicates it. Pure.
@@ -129,9 +139,10 @@ export function referralIntakeTags(scope: PropertyGeoScope, city?: string | null
  *
  * Returns a human-readable block reason when the person's tags mark them as a
  * referral candidate (`referral:candidate` — written by the W12 buyer-intake
- * classification and the /oregon/[city] capture form) or an unclassified
- * property inquiry (`geo:unclassified`) — none of which may enter the standard
- * drip sequences. Returns null for everyone else.
+ * classification and the /oregon/[city] capture form), an inbound agent
+ * referral (`referral:inbound` / `role:referring-agent` from /refer-a-client),
+ * or an unclassified property inquiry (`geo:unclassified`) — none of which may
+ * enter the standard drip sequences. Returns null for everyone else.
  *
  * Deliberately keyed on `referral:candidate`, NOT on the bare `geo:out-of-area`
  * tag: the seller-LP geocode path (lib/lead-geocode.ts buildGeoTags) has been
@@ -144,6 +155,12 @@ export function geoReferralEnrollBlock(tags: readonly string[] | null | undefine
   const lower = (tags ?? []).map((t) => t.toLowerCase())
   if (lower.includes(REFERRAL_CANDIDATE_TAG)) {
     return 'referral candidate (out-of-area — referral queue, no local drip)'
+  }
+  if (lower.includes(REFERRAL_INBOUND_TAG)) {
+    return 'inbound agent referral (call the sending broker before any drip)'
+  }
+  if (lower.includes(REFERRING_AGENT_TAG)) {
+    return 'referring agent (not a consumer lead)'
   }
   if (lower.includes(GEO_UNCLASSIFIED_TAG)) {
     return 'property geo unclassified (fail-closed: broker reviews before any drip)'

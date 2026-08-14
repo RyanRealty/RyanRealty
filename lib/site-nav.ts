@@ -163,6 +163,7 @@ export const KB_TOP_NAV: TopNavGroup[] = [
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact us' },
       { href: '/join', label: 'Join the team' },
+      { href: '/refer-a-client', label: 'Refer a client' },
     ],
   },
 ]
@@ -246,6 +247,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact us' },
       { href: '/join', label: 'Join the team' },
+      { href: '/refer-a-client', label: 'Refer a client' },
     ],
   },
   {
@@ -318,6 +320,7 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
       { href: '/reviews', label: 'Client reviews' },
       { href: '/contact', label: 'Contact' },
       { href: '/join', label: 'Join the team' },
+      { href: '/refer-a-client', label: 'Refer a client' },
     ],
   },
 ]
@@ -376,6 +379,7 @@ export const FOOTER_NAV: FooterGroup[] = [
       { href: '/contact', label: 'Contact' },
       { href: '/reviews', label: 'Client reviews' },
       { href: '/join', label: 'Join the team' },
+      { href: '/refer-a-client', label: 'Refer a client' },
     ],
   },
 ]

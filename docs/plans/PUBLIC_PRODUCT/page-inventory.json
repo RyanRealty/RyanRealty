@@ -1659,6 +1659,34 @@
         "verdict": "SAFE_TO_CUT"
       }
     },
+    "/refer-a-client": {
+      "process": "refer-out-of-area",
+      "file": "app/refer-a-client/page.tsx",
+      "destination": "about",
+      "visitor_objective": "A licensed broker sending a Central Oregon buyer or seller can hand the file to Ryan Realty and know the fee and the order of contact.",
+      "machine_objective": "Inbound referral captured: client in crm_people tagged referral:inbound, sending agent tagged role:referring-agent, broker alerted, no drip and no outbound until the referral is in writing.",
+      "exits": [
+        "/cities",
+        "/team",
+        "/contact",
+        "/housing-market",
+        "/join"
+      ]
+    },
+    "/refer-a-client": {
+      "process": "refer-out-of-area",
+      "file": "app/refer-a-client/page.tsx",
+      "destination": "about",
+      "visitor_objective": "A licensed broker sending a Central Oregon buyer or seller can hand the file to Ryan Realty and know the fee and the order of contact.",
+      "machine_objective": "Inbound referral captured: client in crm_people tagged referral:inbound, sending agent tagged role:referring-agent, broker alerted, no drip and no outbound until the referral is in writing.",
+      "exits": [
+        "/cities",
+        "/team",
+        "/contact",
+        "/housing-market",
+        "/join"
+      ]
+    },
     "/reviews": {
       "process": "contact-a-broker",
       "file": "app/reviews/page.tsx",

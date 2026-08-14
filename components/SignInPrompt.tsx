@@ -74,7 +74,11 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
   const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password'
   // Lead-form pages: a visitor mid tour-request/valuation/contact is the hottest
   // conversion moment on the site — never interrupt it with an OAuth modal.
-  const isLeadFormPage = pathname === '/contact' || pathname === '/sell/valuation'
+  const isLeadFormPage =
+    pathname === '/contact' ||
+    pathname === '/sell/valuation' ||
+    pathname === '/refer-a-client' ||
+    pathname === '/join'
   // Ad / marketing traffic (Matt directive 2026-06-02): a visitor arriving from a
   // paid click should never be asked to continue with Google or Facebook. Detect
   // the click ids plus any utm_* and suppress the auto-pop for that page load.

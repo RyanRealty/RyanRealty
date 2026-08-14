@@ -54,6 +54,7 @@ const CASES: Array<[string, LeadChannel, boolean]> = [
   ['meta-lead-form', 'social', true],
   ['Word of Mouth', 'referral', true],
   ['Referral', 'referral', true],
+  ['agent-referral', 'referral', true],
   ['Open House', 'referral', true],
   ['Manual Entry', 'manual', false],
   ['Manual entry', 'manual', false],
