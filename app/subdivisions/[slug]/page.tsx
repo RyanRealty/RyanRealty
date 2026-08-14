@@ -1,14 +1,9 @@
 /**
- * /subdivisions/<slug>, the plat node, on the components/site/v3 barrel.
- *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. A plat is
- * a Places node, and Places open on Instrument then Field. Four of the six
- * patterns. The section order is chosen so that the two conditional sections are
- * an Instrument and a Ledger, which cannot collide with each other, with the Field
- * before them and the closing Quiet after them, so no two adjacent sections share a
- * pattern in ANY combination of present and absent data. The section list, the
- * sections this migration DELETED, and the reasoning for each are the parity
- * contract, not this comment: design_system/ryan-realty/ui_kits/subdivision/parity.json.
+ * /subdivisions/<slug> — plat grain. Opens a Ledger of this plat's homes.
+ * Field only when pins are a real map. Giant 0 is forbidden. Empty Ledger if
+ * none. Parent community or city is the back door. Schools on the first path.
+ * The old line "Places open on Instrument then Field" is retired.
+ * Parity: design_system/ryan-realty/ui_kits/subdivision/parity.json.
  *
  * NO-404 CONTRACT, CARRIED ACROSS UNTOUCHED. For each incoming slug the page tries
  * three resolution paths in order and renders when ANY succeeds.
@@ -62,7 +57,6 @@
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { subdivisionListingsPath } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
 import { getCommunityListings } from '@/app/actions/communities'
 import { getGeoBoundaryMapData, getListingTiles, getMarketStats } from '@/lib/data'
 import { getListingsWithVideos } from '@/app/actions/videos'
@@ -89,6 +83,7 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
+  V3Ledger,
   V3Quiet,
   V3SectionTracker,
   type V3FieldItem,
@@ -101,11 +96,11 @@ import { SubdivisionSchools } from './SubdivisionSchools'
 import { buildSubdivisionEdges } from './_v3/subdivision-edges'
 import { parentPulseFigures, platStatsFigures, subdivisionSalesChart } from './_v3/subdivision-figures'
 import { resolveRegistryAlias, slugToTitle } from './_v3/subdivision-registry'
-import { fallbackFieldRows, toFieldEntry, type FieldEntry } from './_v3/subdivision-rows'
+import { fallbackFieldRows, platHomesMode, toFieldEntry, toLedgerRows, type FieldEntry } from './_v3/subdivision-rows'
 import {
-  activeCountTrace,
   fieldFallbackTrace,
   fieldTrace,
+  homesLedgerTrace,
   MAX_LISTED,
   parentMarketTrace,
   PERIOD_LABEL,
@@ -142,7 +137,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `Homes for Sale in ${name} | ${city}, Oregon`,
     description: `Active homes in ${name}, a subdivision in ${city}. Boundary map and live MLS listings.`,
     path: `/subdivisions/${slug}`,
-    noindex: !indexable,
+    noindex: indexable === false,
   })
 }
 
@@ -237,10 +232,10 @@ export default async function SubdivisionPage({ params }: Props) {
   // never guessed (section 0). Claimed only on a strict majority.
   const tileCityCounts = new Map<string, { citySlug: string | null; n: number }>()
   for (const t of mapTiles) {
-    if (!t.city) continue
+    if (t.city == null || t.city === '') continue
     const cur = tileCityCounts.get(t.city) ?? { citySlug: t.citySlug ?? null, n: 0 }
     cur.n += 1
-    if (!cur.citySlug && t.citySlug) cur.citySlug = t.citySlug
+    if (cur.citySlug == null && t.citySlug) cur.citySlug = t.citySlug
     tileCityCounts.set(t.city, cur)
   }
   const modalTileCity = [...tileCityCounts.entries()].sort((a, b) => b[1].n - a[1].n)[0]
@@ -429,6 +424,21 @@ export default async function SubdivisionPage({ params }: Props) {
     },
   ]
 
+  const homesMode = platHomesMode({
+    activeCount,
+    homeRows: fieldItems.length,
+    pinCount: plotted.length,
+  })
+  const homeRows = toLedgerRows(fieldItems)
+  const [firstHome, ...restHomes] = homeRows
+  const parentHref = resortSlug
+    ? `/communities/${resortSlug}`
+    : citySlug
+      ? `/cities/${citySlug}`
+      : '/communities'
+  const parentLabel = resortLabel ?? cityName
+  const showParentBand = firstPlatFigure == null && firstParentFigure != null && parentPulse != null
+
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -449,83 +459,61 @@ export default async function SubdivisionPage({ params }: Props) {
           ]}
         />
 
-        {activeCount == null ? (
+        {homesMode === 'field' ? (
+          <>
           <V3Quiet
             id="overview"
             heading={`Homes for sale in ${displayName}`}
             headingLevel={1}
-            items={[
-              {
-                kind: 'prose',
-                term: 'No count on this refresh',
-                body:
-                  `The inventory query for ${displayName} did not return, so this page is not ` +
-                  `publishing a number of homes for sale. Whatever listings it did reach are below.`,
-              },
-            ]}
+            items={[{ label: parentLabel, href: parentHref }]}
+          />
+          <V3Field
+            id="homes"
+            ariaLabel={`Homes for sale in ${displayName}`}
+            items={fieldItems}
+            mapSlot={
+              <PlaceFieldMap pins={mapPins} boundary={mapPolygon} placeName={displayName} />
+            }
+            count={{
+              value: fieldItems.length.toLocaleString('en-US'),
+              label: fieldItems.length === 1 ? 'home shown here' : 'homes shown here',
+              source: fieldSource,
+            }}
+            mapNote={mapPolygon ? `The outline is the recorded ${displayName} plat boundary.` : undefined}
+            footNote={
+              usingFallbackRows === false && plotted.length > fieldItems.length
+                ? `The map plots all ${plotted.length} active single-family listings that carry coordinates.`
+                : undefined
+            }
+          />
+          </>
+        ) : firstHome ? (
+          <V3Ledger
+            id="homes"
+            headingLevel={1}
+            eyebrow={v3Text(eyebrow)}
+            heading={v3Text(`Homes for sale in ${displayName}`)}
+            rows={[firstHome, ...restHomes]}
+            source={v3Text(homesLedgerTrace(platScope))}
+            action={parentHref ? { label: v3Text(parentLabel), href: parentHref, variant: 'ghost' } : undefined}
           />
         ) : (
-          <V3Instrument
-            id="overview"
-            level={1}
+          <V3Ledger
+            id="homes"
+            headingLevel={1}
             eyebrow={v3Text(eyebrow)}
-            headline={v3Text(`Homes for sale in ${displayName}`)}
-            figures={[
-              {
-                value: v3Text(activeCount.toLocaleString('en-US')),
-                label: v3Text(activeCount === 1 ? 'home for sale' : 'homes for sale'),
-                href: subdivisionListingsPath(cityName, displayName),
-              },
-            ]}
-            source={v3Text(activeCountTrace(platScope))}
-            // PRIMARY at 390: the chrome CTA sits in the menu. Value my home,
-            // via valuationHref so the lead keeps this plat as its origin.
-            action={{
-              label: v3Text('Value my home'),
-              href: valuationHref(`/subdivisions/${slug}`),
-            }}
+            heading={v3Text(`Homes for sale in ${displayName}`)}
+            rows={[]}
+            emptyMessage={v3Text(
+              homesMode === 'unknown'
+                ? `The inventory query for ${displayName} did not return, so this is not a claim that nothing is for sale.`
+                : `No single-family home is listed in ${displayName} right now.`,
+            )}
+            action={parentHref ? { label: v3Text(parentLabel), href: parentHref, variant: 'ghost' } : undefined}
           />
         )}
 
-        <V3Field
-          id="homes"
-          ariaLabel={`Homes for sale in ${displayName}`}
-          items={fieldItems}
-          mapSlot={
-            hasMap ? (
-              <PlaceFieldMap pins={mapPins} boundary={mapPolygon} placeName={displayName} />
-            ) : undefined
-          }
-          // The count is what THIS section shows, not a second answer to the
-          // question the Instrument above already answered. Those two numbers
-          // come from different queries with different filters, so a second
-          // "homes for sale" here would read as a contradiction of the first.
-          count={
-            fieldItems.length > 0
-              ? {
-                  value: fieldItems.length.toLocaleString('en-US'),
-                  label: fieldItems.length === 1 ? 'home shown here' : 'homes shown here',
-                  source: fieldSource,
-                }
-              : undefined
-          }
-          mapNote={mapPolygon ? `The outline is the recorded ${displayName} plat boundary.` : undefined}
-          // The noun is the whole point of this sentence. It is the only line
-          // that reconciles the list's count with the map's, and both of those
-          // sit a viewport away from the Instrument's count, which covers a
-          // THIRD population (every property type inside the plat). Without the
-          // population named, the reader gets three numbers and no antecedent.
-          footNote={
-            usingFallbackRows === false && plotted.length > fieldItems.length
-              ? `The map plots all ${plotted.length} active single-family listings that carry coordinates.`
-              : undefined
-          }
-          emptyMessage={
-            placeCity
-              ? `No active single-family listing in ${displayName} reached this page on this refresh. Homes in ${placeCity} are linked below.`
-              : `No active single-family listing in ${displayName} reached this page on this refresh. Nearby homes are linked below.`
-          }
-        />
+        <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} edges={edges} />
 
         {firstPlatFigure ? (
           <V3Instrument
@@ -551,7 +539,7 @@ export default async function SubdivisionPage({ params }: Props) {
           chart={firstPlatFigure ? undefined : salesChart}
         />
 
-        {!firstPlatFigure && firstParentFigure && parentPulse ? (
+        {showParentBand ? (
           <V3Instrument
             id="market"
             level={2}
@@ -565,7 +553,6 @@ export default async function SubdivisionPage({ params }: Props) {
           />
         ) : null}
 
-        <SubdivisionSchools displayName={displayName} schools={subdivisionSchools} edges={edges} />
       </main>
 
       {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only

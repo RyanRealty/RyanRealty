@@ -3,6 +3,8 @@ import type { PriceDrop } from '@/lib/data'
 import { formatPrice, formatPriceCompact } from '@/lib/format/money'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 
+export type PriceDropFieldItem = V3FieldItem & { overlay?: string }
+
 function namedPrice(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n) || n <= 0) return null
   const label = formatPrice(n)
@@ -21,9 +23,9 @@ function namedCompact(n: number | null | undefined): string | null {
  * with modest markdowns). A row that cannot name a street and a current price
  * is dropped, not defaulted.
  */
-export function priceDropFieldItems(drops: readonly PriceDrop[]): V3FieldItem[] {
+export function priceDropFieldItems(drops: readonly PriceDrop[]): PriceDropFieldItem[] {
   const sorted = [...drops].sort((a, b) => (b.lastDropPct ?? 0) - (a.lastDropPct ?? 0))
-  const items: V3FieldItem[] = []
+  const items: PriceDropFieldItem[] = []
 
   for (const drop of sorted) {
     const street = [drop.streetNumber, drop.streetName, drop.streetSuffix]
@@ -54,6 +56,8 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): V3FieldItem[] 
       .filter((part): part is string => part !== null && part !== '')
       .join(' · ')
 
+    const photoSrc = drop.photoUrl?.trim()
+
     items.push({
       id: drop.listingKey,
       href: listingDetailPath(
@@ -69,7 +73,9 @@ export function priceDropFieldItems(drops: readonly PriceDrop[]): V3FieldItem[] 
       ),
       priceLabel,
       title: street,
+      ...(pct ? { overlay: pct } : {}),
       ...(specs ? { meta: specs } : {}),
+      ...(photoSrc ? { photoSrc } : {}),
       lat: drop.lat,
       lng: drop.lng,
     })

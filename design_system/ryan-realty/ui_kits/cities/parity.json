@@ -2,7 +2,7 @@
   "route": "app/cities/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/cities/index.html",
   "competitiveTarget": "Beat portal city-directory pages with a live regional pulse and a ledger of Central Oregon cities, not a link farm.",
-  "note": "v3 barrel (E-PLACES-REST). First screenful opens the Field of photographed homes, then Instrument. Section order: Breadcrumb, Field (live MLS photos that open listings), Instrument (region pulse), Ledger (cities), Sheet (SFR alerts), Quiet (edges), Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. KB-era deletions: KbNav remount, KbFooter, KbBreadcrumb, SmoothScrollProvider, kb.css, RegionalSfrAlertsBand, MarketSources, per-city homes-for-sale and open-houses links on the index, em-dash empty placeholders, inline verdictFromMos. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company). D11 CTA: Value my home.",
+  "note": "PUBLIC_UI.md §3 city grain (2026-08-14). First screen is doors to cities, not a number hero and not a house-stamp dump. Section order: Breadcrumb, Ledger (cities), Instrument (region pulse below the fold), Sheet (SFR alerts), Quiet (edges), Footer outside main. Chrome is layout-owned V3Chrome. Do not remount it. Capture: submitSearchAlertSignup with city empty and propertyType A, via RegionalAlertSheet (trap name company).",
   "requiredComponents": [
     {
       "name": "KbSectionTracker",
@@ -20,18 +20,13 @@
       "blocking": true
     },
     {
-      "name": "V3Field",
-      "section": "photographed homes \u2014 live MLS photos from getListingTiles, each a door to a listing. Opens the first screenful so Instrument does not eat the Field.",
+      "name": "V3Ledger",
+      "section": "city doors \u2014 the opening. Featured plus the rest of the index. Ledger media only when cityHero() is verified. Next tap is a named city.",
       "blocking": true
     },
     {
       "name": "V3Instrument",
-      "section": "region pulse \u2014 live active count, median list, months of supply. marketVerdict classifies the raw MoS.",
-      "blocking": true
-    },
-    {
-      "name": "V3Ledger",
-      "section": "city rows \u2014 featured plus the rest of the index. Ledger media only when cityHero() is verified.",
+      "section": "region pulse below the fold \u2014 live active count, median list, months of supply. marketVerdict classifies the raw MoS. Not the first screen.",
       "blocking": true
     },
     {
@@ -70,13 +65,8 @@
       "blocking": true
     },
     {
-      "name": "getListingTiles",
-      "section": "Field \u2014 active SFR tiles with photographs for the opening mosaic.",
-      "blocking": true
-    },
-    {
-      "name": "homeFieldItems",
-      "section": "Field mapper \u2014 price, street, and photoUrl required. Same helper as the homepage mosaic.",
+      "name": "listingsBrowsePath",
+      "section": "Ledger and Instrument ghost door into the live list.",
       "blocking": true
     }
   ],

@@ -1,10 +1,10 @@
 /**
  * /cities/[slug] - the city node, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Places
- * first screenful opens the Field of photographed homes, then Instrument (the
- * place verdict). The section order and the per-section reasoning are the
- * parity contract, not this comment: design_system/ryan-realty/ui_kits/city/parity.json.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3 City. First screen is
+ * the Field of this city's houses. Verdict is a caption, never a number hero.
+ * Child neighborhoods and master-plans are doors below the fold. Section order
+ * is the parity contract: design_system/ryan-realty/ui_kits/city/parity.json.
  *
  * LEDGER IS THE PATTERN THIS ROUTE SPENDS ITS FIFTH SLOT ON, DELIBERATELY. An earlier
  * revision of this migration deferred V3Ledger to hold the page inside the four-of-six
@@ -48,18 +48,9 @@
  *     out of this route for the second half of that rule: its market sentence published
  *     the active count and the median a second time, untraced, inside a V3Quiet.
  *  5. ONE PRIMARY PER VIEWPORT, COUNTING VISIBLE FILLED CONTROLS (PUBLIC_UI.md
- *     section 1). This page used to demote its own ask on the ground that "the sticky
- *     public header carries a filled valuation CTA at every scroll position." That
- *     premise is false at 390: the header's nav-cta is display:none below 880px and its
- *     twin sits inside the collapsed menu, so the demotion shipped a first viewport
- *     with no ask at all. The opening Instrument's action is therefore PRIMARY and is
- *     the page's one filled control above the fold. Every Ledger action stays a ghost
- *     and V3Footer carries no button. At 880px and up the header's CTA is the second
- *     filled control in that viewport, which is the chrome unit's conflict to resolve
- *     (decisions.md), never a reason for a content page to ship no ask. DECLARED GAP:
- *     the stated-absence branch renders no Instrument and V3Quiet carries no action by
- *     contract, so that render has no filled control above the fold. The page will not
- *     invent a figure to earn an Instrument. Reported as a barrel gap.
+ *     section 1). The first viewport is the Field. The next tap is a house. The
+ *     Instrument ask sits below the fold. Every Ledger action stays a ghost and
+ *     V3Footer carries no button. Chrome seller CTA is the chrome unit's conflict.
  */
 
 import { notFound } from 'next/navigation'
@@ -107,18 +98,21 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { CityAlertSheet } from './_v3/CityAlertSheet.client'
 import { CityHomesField } from './_v3/CityHomesField'
 import { cityFieldItems } from './_v3/city-field-items'
 import { bendNeighborhoodPlaces } from './_v3/city-places'
-import { CITY_FIELD_POOL, CITY_FIELD_ROWS } from './_v3/city-constants'
+import { CITY_FIELD_POOL } from './_v3/city-constants'
 import {
   activityRows,
   articleRows,
   cityAboutItems,
   cityActivityTrace,
   cityExploreItems,
-  cityInventory,
+  cityFieldCaption,
+  cityFieldTrace,
   cityMarketTrace,
   communityRows,
   PLACE_COUNT_TRACE,
@@ -138,6 +132,7 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
 export const dynamicParams = true
 export const revalidate = 60
 void V3Field
+void PlaceFieldMap
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -209,7 +204,6 @@ export default async function CityDetailPage({ params }: Props) {
     communitySnapshots,
     blogPosts,
     activity,
-    mapTiles,
     resortRead,
   ] = await Promise.all([
     getMarketPulse({ geoType: 'city', geoSlug }),
@@ -236,16 +230,6 @@ export default async function CityDetailPage({ params }: Props) {
       3500,
       'city:activity',
     ),
-    // Coordinates for the boundary-verified neighborhood photos (D89). Bend only:
-    // it is the only city with designated neighborhood polygons.
-    isBend
-      ? withTimeoutFallback(
-          getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: 1500 }),
-          [],
-          4500,
-          'city:mapTiles',
-        )
-      : Promise.resolve([] as Awaited<ReturnType<typeof getCityListings>>),
     // UNCAPPED active SFR, paginated past PostgREST's 1000-row cap (Bend has ~1044):
     // the alias-aware counts must see the COMPLETE active set or they undercount every
     // resort whose older listings fall past page one. The Result variant is
@@ -281,19 +265,22 @@ export default async function CityDetailPage({ params }: Props) {
   const marketFaq = buildMarketFaq(cityName, marketFaqInput)
   const { faqs } = marketFaq
 
-  const inventory = cityInventory(cityName, pulse, snapshot)
-
-  // Every figure is a door, all three off the one pulse row under the identical
-  // predicate as that row's active_count, so one trace covers them.
   const figures = marketFigures(pulse, mosLabel, {
     marketReport: `/housing-market/${slug}`,
     monthsOfSupply: '/months-of-supply',
   })
   const [firstMarketFigure, ...restMarketFigures] = figures
 
-  // The Field's rows, newest first. NOT the same population as the count above them.
-  const fieldItems = cityFieldItems(tiles, CITY_FIELD_ROWS)
+  const fieldItems = cityFieldItems(tiles)
   const [firstFieldItem] = fieldItems
+  const fieldCaption = cityFieldCaption({
+    cityName,
+    count: fieldItems.length,
+    mosLabel,
+    verdictKind: verdict.kind,
+    verdictLabel: verdict.label,
+  })
+  const mapPins = fieldMapPins(fieldItems)
 
   /* ── The place ledgers ──────────────────────────────────────────────────── */
 
@@ -332,7 +319,7 @@ export default async function CityDetailPage({ params }: Props) {
   const bendNeighborhoodItems: CityPlaceItem[] = bendNeighborhoodPlaces({
     isBend,
     ledgerRows: bendNeighborhoods,
-    mapTiles,
+    mapTiles: tiles,
     communityImageByName: commImgByName,
   })
 
@@ -433,7 +420,7 @@ export default async function CityDetailPage({ params }: Props) {
     cityName,
     slug,
     faq: marketFaq,
-    hasMap: false,
+    hasMap: mapPins.length > 0,
   })
 
   return (
@@ -454,8 +441,9 @@ export default async function CityDetailPage({ params }: Props) {
         <CityHomesField
           cityName={cityName}
           fieldItems={fieldItems}
-          inventory={inventory}
           tilesLength={tiles.length}
+          caption={fieldCaption}
+          source={cityFieldTrace(cityName)}
         />
 
         {firstMarketFigure ? (

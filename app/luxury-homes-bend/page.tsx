@@ -3,32 +3,26 @@
  *
  * THE PAGE CONTRACT, carried across unchanged: metadata title "Luxury Homes in
  * Bend, Oregon", canonical /luxury-homes-bend, revalidate 900, LUX_MIN =
- * 1_500_000, propertyType A, getListingTiles + getListingTilesCount,
- * V3SectionTracker pageType="luxury-homes-bend".
+ * 1_500_000, propertyType A, getListingTiles, V3SectionTracker
+ * pageType="luxury-homes-bend".
  *
- * KB-era deletions: the hardcoded-hex film hero, the raw listing cards, the
- * raw community chips, KbFooter, @no-breadcrumb (this is a content page, so it
- * now carries Home → Luxury homes).
- *
- * Chrome: layout owns V3Chrome. V3Footer outside main.
+ * Opening is Field of these houses. Count is a caption of the set on screen.
  */
 
 import type { Metadata } from 'next'
-import { getListingTiles, getListingTilesCount } from '@/lib/data'
+import { getListingTiles } from '@/lib/data'
 import { homesForSalePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import {
   V3_ROOT_CLASS,
-  v3Text,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
-  V3Ledger,
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
-import { LUX_MIN, LUX_COMMUNITIES, luxuryRows } from './_v3/luxury-rows'
+import { LUX_MIN, LUX_COMMUNITIES, LUX_TRACE, luxuryFieldItems } from './_v3/luxury-rows'
+import { LuxuryHomesField } from './_v3/LuxuryHomesField'
 
 export const revalidate = 900
 
@@ -38,9 +32,6 @@ const LUX_FILTER = {
   minPrice: LUX_MIN,
   propertyType: 'A',
 }
-
-const LUX_TRACE =
-  'live MLS through Oregon Data Share, active single-family homes in Bend with list price at or above $1,500,000'
 
 export const metadata: Metadata = {
   title: 'Luxury Homes in Bend, Oregon',
@@ -55,12 +46,9 @@ export const metadata: Metadata = {
 }
 
 export default async function LuxuryHomesBendPage() {
-  const [tiles, count] = await Promise.all([
-    getListingTiles({ ...LUX_FILTER, sort: 'price-desc', limit: 12 }),
-    getListingTilesCount(LUX_FILTER),
-  ])
-  const rows = luxuryRows(tiles)
-  const [firstRow, ...restRows] = rows
+  const tiles = await getListingTiles({ ...LUX_FILTER, sort: 'price-desc', limit: 48 })
+  const items = luxuryFieldItems(tiles)
+  const count = items.length
 
   return (
     <>
@@ -69,29 +57,18 @@ export default async function LuxuryHomesBendPage() {
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Luxury homes' }]} />
 
         {count > 0 ? (
-          <V3Instrument
-            id="luxury"
-            level={1}
-            eyebrow={v3Text('Bend, Oregon')}
-            headline={v3Text('Homes in Bend above $1.5 million')}
-            figures={[
-              {
-                value: v3Text(count.toLocaleString('en-US')),
-                label: v3Text('single-family homes above $1.5 million'),
-                href: homesForSalePath('Bend'),
-              },
-            ]}
-            source={v3Text(LUX_TRACE)}
-            action={{
-              label: v3Text('See all active Bend homes'),
-              href: homesForSalePath('Bend'),
-              variant: 'primary',
-            }}
+          <LuxuryHomesField
+            heading="Bend homes above $1.5 million"
+            captionValue={count.toLocaleString('en-US')}
+            captionLabel={count === 1 ? 'home above $1.5 million' : 'homes above $1.5 million'}
+            source={LUX_TRACE}
+            items={items}
+            emptyMessage="No Bend home above $1.5 million in this refresh has a photo, a street address, and a list price."
           />
         ) : (
           <V3Quiet
-            id="luxury"
-            heading="Homes in Bend above $1.5 million"
+            id="homes"
+            heading="Bend homes above $1.5 million"
             headingLevel={1}
             items={[
               {
@@ -103,27 +80,6 @@ export default async function LuxuryHomesBendPage() {
               { label: 'Value my home', href: valuationHref('/luxury-homes-bend') },
               { label: 'Set up an alert', href: '/lp/buyer-listing-alerts' },
             ]}
-          />
-        )}
-
-        {firstRow ? (
-          <V3Ledger
-            id="listings"
-            eyebrow={v3Text('Bend')}
-            heading={v3Text('Active listings, high to low')}
-            rows={[firstRow, ...restRows]}
-            source={v3Text(LUX_TRACE)}
-            action={{ label: v3Text('See all active Bend homes'), href: homesForSalePath('Bend') }}
-          />
-        ) : (
-          <V3Ledger
-            id="listings"
-            eyebrow={v3Text('Bend')}
-            heading={v3Text('Active listings, high to low')}
-            rows={[]}
-            emptyMessage={v3Text(
-              'No Bend home above $1.5 million in this refresh has a photo, a street address, and a list price.',
-            )}
           />
         )}
 
@@ -140,8 +96,8 @@ export default async function LuxuryHomesBendPage() {
               label: c.label,
               href: `/communities/${c.slug}`,
             })),
+            { label: 'All active Bend homes', href: homesForSalePath('Bend') },
             { label: 'Value my home', href: valuationHref('/luxury-homes-bend') },
-            { label: 'Set up an alert', href: '/lp/buyer-listing-alerts' },
           ]}
         />
       </main>

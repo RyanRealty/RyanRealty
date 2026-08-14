@@ -26,12 +26,10 @@
 import {
   v3Text,
   type V3InstrumentFigure,
-  type V3InstrumentFigures,
   type V3FieldItem,
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingDetailPath } from '@/lib/slug'
@@ -166,18 +164,17 @@ export function livePulseTrace(
   placeName: string,
   opts: { showDaysToPending: boolean; showMonthsOfSupply: boolean },
 ): string {
-  let trace =
-    `${FEED}. Homes for sale and median list price count active and coming-soon listings ` +
-    `inside the recorded ${placeName} boundary, PropertyType A narrowed to the ${SFR_SUB_TYPE} subtype.`
-  if (opts.showDaysToPending) {
-    trace +=
-      ` Median days to pending is a different population: single-family sales that closed in the ` +
-      `last 90 days under the subdivision names recorded for ${placeName}.`
-  }
   if (opts.showMonthsOfSupply) {
-    trace += ` ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`
+    let trace = `${FEED}. Months of supply for single-family homes inside the recorded ${placeName} boundary.`
+    if (opts.showDaysToPending) {
+      trace += ` Median days to pending is single-family sales that closed in the last 90 days.`
+    }
+    return trace
   }
-  return trace
+  if (opts.showDaysToPending) {
+    return `${FEED}. Median days to pending is single-family sales that closed in the last 90 days under the subdivision names recorded for ${placeName}.`
+  }
+  return `${FEED}. Live single-family facts inside the recorded ${placeName} boundary.`
 }
 
 /**
@@ -207,10 +204,8 @@ export function liveFallbackTrace(placeName: string, cityName: string, pulseRead
  */
 export function fieldCountTrace(placeName: string): string {
   return (
-    `${FEED}, the regional MLS cooperative behind every listing and market figure on this page. ` +
-    `These are the active listings inside the recorded ${placeName} boundary polygon, PropertyType A, ` +
-    `a bucket that holds ${A_BUCKET_PROSE}. The single-family figure above counts only the ` +
-    `${SFR_SUB_TYPE} subtype of this same boundary, which is why the two numbers differ.`
+    `${FEED}. Active listings inside the recorded ${placeName} boundary, PropertyType A, ` +
+    `a bucket that holds ${A_BUCKET_PROSE}.`
   )
 }
 
@@ -247,10 +242,9 @@ export function shipsFigure(value: number | null | undefined): boolean {
  * for sale" is a contradiction the visitor can see; "2 single-family homes for
  * sale" over "16 active homes inside the boundary" is two facts. See SFR_SUB_TYPE.
  *
- * The return type is a NON-EMPTY TUPLE, not an array. The head is unconditional,
- * so the caller has no empty case to handle and no unreachable "no figures"
- * branch to write. An earlier revision handled one anyway, and the copy inside it
- * ("this page is not printing an inventory count") could never render.
+ * Pace only: months of supply first, then days to pending. Inventory and
+ * median list price stay off this set. The array may be empty, and the page
+ * then opens a Quiet instead of inventing a hero number.
  *
  * MONTHS OF SUPPLY GOES THROUGH formatMonthsOfSupply, THE ONE DISPLAY RULE, and
  * that is the whole reason this figure no longer has a suppression condition.
@@ -268,35 +262,23 @@ export function shipsFigure(value: number | null | undefined): boolean {
 export function liveFigures(
   pulse: LivePulse,
   links: { browse: string; cityReport: string; monthsOfSupply: string },
-): V3InstrumentFigures {
-  const head: V3InstrumentFigure = {
-    value: v3Text(pulse.activeCount.toLocaleString('en-US')),
-    label: v3Text('single-family homes for sale'),
-    href: links.browse,
-  }
-  const rest: V3InstrumentFigure[] = []
-  if (shipsFigure(pulse.medianListPrice) && pulse.medianListPrice != null) {
-    rest.push({
-      value: v3Text(formatPrice(pulse.medianListPrice)),
-      label: v3Text('median list price'),
-      href: links.browse,
-    })
-  }
-  if (shipsFigure(pulse.medianDaysToPending) && pulse.medianDaysToPending != null) {
-    rest.push({
-      value: v3Text(String(Math.round(pulse.medianDaysToPending))),
-      label: v3Text('median days to pending'),
-      href: links.cityReport,
-    })
-  }
+): V3InstrumentFigure[] {
+  const figures: V3InstrumentFigure[] = []
   if (shipsFigure(pulse.monthsOfSupply) && pulse.monthsOfSupply != null) {
-    rest.push({
+    figures.push({
       value: v3Text(formatMonthsOfSupply(pulse.monthsOfSupply)),
       label: v3Text('months of supply'),
       href: links.monthsOfSupply,
     })
   }
-  return [head, ...rest]
+  if (shipsFigure(pulse.medianDaysToPending) && pulse.medianDaysToPending != null) {
+    figures.push({
+      value: v3Text(String(Math.round(pulse.medianDaysToPending))),
+      label: v3Text('median days to pending'),
+      href: links.cityReport,
+    })
+  }
+  return figures
 }
 
 /**
@@ -307,28 +289,22 @@ export function liveFigures(
  * homes for sale"), its own trace (liveFallbackTrace), and no stamp, because
  * that read carries none.
  *
- * Same non-empty tuple, same reason.
+ * Median only when it ships. Empty when it does not. Inventory is not a hero.
  */
 export function liveFallbackFigures(
   neighborhood: { activeCount: number; medianPrice: number | null },
   browseHref: string,
-): V3InstrumentFigures {
-  const head: V3InstrumentFigure = {
-    value: v3Text(neighborhood.activeCount.toLocaleString('en-US')),
-    label: v3Text('homes for sale'),
-    href: browseHref,
+): V3InstrumentFigure[] {
+  if (shipsFigure(neighborhood.medianPrice) && neighborhood.medianPrice != null) {
+    return [
+      {
+        value: v3Text(formatPrice(neighborhood.medianPrice)),
+        label: v3Text('median list price'),
+        href: browseHref,
+      },
+    ]
   }
-  const rest: V3InstrumentFigure[] =
-    shipsFigure(neighborhood.medianPrice) && neighborhood.medianPrice != null
-      ? [
-          {
-            value: v3Text(formatPrice(neighborhood.medianPrice)),
-            label: v3Text('median list price'),
-            href: browseHref,
-          },
-        ]
-      : []
-  return [head, ...rest]
+  return []
 }
 
 export type SoldStats = {
@@ -406,6 +382,7 @@ export type FieldTile = {
   propertySubType?: string | null
   lat: number | null
   lng: number | null
+  photoUrl?: string | null
 }
 
 /**
@@ -426,11 +403,13 @@ export type FieldTile = {
  */
 export function fieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
   return [...tiles]
+    .filter((t) => Boolean(t.photoUrl?.trim()) && Boolean(t.listingKey?.trim()))
     .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .slice(0, FIELD_ROW_LIMIT)
     .flatMap((t) => {
       const key = t.listingKey?.trim()
-      if (!key) return []
+      const photo = t.photoUrl?.trim()
+      if (!key || !photo) return []
       const street = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
       const meta = [
         t.beds != null ? `${t.beds} bd` : null,
@@ -452,6 +431,7 @@ export function fieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
           priceLabel: t.listPrice != null && t.listPrice > 0 ? formatPrice(t.listPrice) : 'Price on request',
           title: street || t.subdivisionName?.trim() || 'Address withheld',
           meta: meta || undefined,
+          photoSrc: photo,
           lat: t.lat,
           lng: t.lng,
         } satisfies V3FieldItem,

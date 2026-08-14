@@ -1,13 +1,10 @@
 /**
- * /communities/<slug> — the Places node for a resort, master-planned community,
- * or plain MLS subdivision, on the components/site/v3 barrel.
- *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Places
- * first screenful opens the Field of photographed homes, then Instrument (the
- * place answer). Four of the six patterns, no two adjacent alike. The section
- * order, the sections this migration DELETED, and the per-section reasoning are
- * the parity contract, not this comment:
- * design_system/ryan-realty/ui_kits/community/parity.json.
+ * /communities/<slug> — master-plan grain. Tetherow is the exemplar, not a
+ * one-off. Opens Stage (owned place photo) then one Field. No owned asset →
+ * Instrument of belonging, then Field. Amenities, membership, STR, and child
+ * plats are doors. Not a neighborhood. Not a city stamp twin.
+ * The old line "Places first screenful opens the Field" is retired.
+ * Parity: design_system/ryan-realty/ui_kits/community/parity.json.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata forwarding to
  * pageMetadata, generateStaticParams over the resort registry, dynamicParams,
@@ -31,22 +28,12 @@
  *  3. ONE PAIR, ONE TRACE, ONE STAMP — resolveLivePair in _v3/community-figures.
  *  4. ABSENT IS NOT ZERO. Every source is guarded, and when all are silent the
  *     page says it has no live figures rather than publishing 0.
- *  5. ONE PRIMARY PER VIEWPORT, AND THE COUNT IS OF VISIBLE FILLED CONTROLS. This
- *     page carries its own: the opening Instrument's ask. The header's CTA counts
- *     only where the chrome actually shows it, which is not 390 — it is
- *     display:none below 880px and its drawer twin is visibility:hidden while the
- *     menu is closed, so "the header carries the primary" shipped a first viewport
- *     with no ask at all. Measured 2026-08-12 at 390x844, scrollY 0, tetherow:
- *     zero visible filled controls before this repair, one after; the page's own
- *     filled controls are two in 13,248px and they never share a viewport. On the
- *     degraded path — every live source silent, so the opening section is a Quiet — the
- *     page makes no ask, which is the rule and not an exception to it: the ask is
- *     earned by the answer above it, and there is no answer.
- *  6. ONE INVENTORY PER FIGURE SET, AND EVERY DOOR OPENS ON IT. A figure set under
- *     one headline describes one set of homes: the Field lists and plots the same
- *     homes the Instrument counts, months of supply publishes only when its own
- *     numerator is the count on screen, and a figure links only where that count
- *     is what is published. Each is enforced at its own site below.
+ *  5. ONE PRIMARY PER VIEWPORT. The opening is Stage (owned photo) or a
+ *     belonging Instrument, then one Field. The Stage action is the first house.
+ *     Chrome Value my home is not this page's ask.
+ *  6. ONE INVENTORY PER FIGURE SET. The Field lists and plots the same homes
+ *     its caption counts. Months of supply publishes only when its numerator is
+ *     that count.
  *
  * ONE PUBLISHED FIGURE CHANGED, because it was wrong: the reliable-boundary
  * branch published `listings_in_boundary`'s pin count under the label "Active
@@ -76,10 +63,7 @@
  *    dateModified publishes.
  *  - The alert sheet's honeypot and its frequency and unsubscribe disclosure are
  *    back, and the route to manage a subscription is a door in the closing block.
- *  - The opening Instrument's ask is FILLED, so the first viewport carries one
- *    visible primary at 390 as well as at 1280 (invariant 5).
- *  - The sell door goes through lib/site/valuation-href, so a valuation started
- *    here still says which page produced it.
+ *  - The opening is Stage then Field when an owned photo exists.
  *  - The Dataset's description is derived from the variables it publishes, so the
  *    sentence a crawler reads cannot name a metric the payload does not carry.
  *
@@ -107,15 +91,12 @@ import { GOLF_COURSES } from '@/data/golf/courses'
 import { cityResorts, resortActiveSfrCounts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { getDistrictForCity } from '@/data/co-schools'
-import { homesForSalePath, listingTileHref, slugify } from '@/lib/slug'
+import { homesForSalePath, slugify } from '@/lib/slug'
+import { communityImage } from '@/lib/geo-images'
 import { getCanonicalCityForSubdivision, getAllResortCommunities } from '@/lib/data/communities/registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
-import { marketVerdict } from '@/lib/market/classify'
-import { formatPrice } from '@/lib/format/money'
-import { formatDate } from '@/lib/format/date'
-import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -125,21 +106,24 @@ import {
   V3_FOOTER_COLUMNS,
   V3Instrument,
   V3Quiet,
+  V3Stage,
   V3SectionTracker,
-  type V3FieldItem,
 } from '@/components/site/v3'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import CommunityPageTracker from '@/components/community/CommunityPageTracker'
 import { CommunityAlertSheet } from './_v3/CommunityAlertSheet.client'
 import { buildCommunitySchemas, communityMetadataInput } from './_v3/community-metadata'
-import {
-  buildClosedFigures,
-  buildExploreEdges,
-  buildLiveFigures,
-  buildLiveTrace,
-  resolveLivePair,
-} from './_v3/community-figures'
+import { buildClosedFigures, buildExploreEdges, resolveLivePair } from './_v3/community-figures'
 import { buildPlaceKnowledge } from './_v3/place-knowledge'
+import {
+  belongingFigures,
+  belongingHeadline,
+  belongingTrace,
+  communityFieldItems,
+} from './_v3/community-opening'
+import { CommunityStage } from './_v3/CommunityStage'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   // Seed the curated resort-community set (finite, in-repo registry) so the
@@ -259,7 +243,6 @@ export default async function CommunityDetailPage({ params }: Props) {
       : {}
 
   // ── BOUNDARY RELIABILITY (invariant 2) ────────────────────────────────────
-  void _resortBoundary
   const boundaryReliable = isBoundaryReliable(slug)
   const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
 
@@ -354,9 +337,6 @@ export default async function CommunityDetailPage({ params }: Props) {
   // drives no verdict; its trace names the pulse row as its source.
   const mosPublishable =
     mosRaw != null && activeCount != null && pulse?.activeCount === activeCount ? mosRaw : null
-  const mosDisplay = mosPublishable == null ? null : formatMonthsOfSupply(mosPublishable)
-  const verdict = marketVerdict(mosPublishable)
-
   // ── THE FIELD: the homes, as a spatial surface ────────────────────────────
   // ONE SET, COUNTED AND SHOWN. The Field plots and lists the SAME homes the
   // Instrument counts, so the two can never publish two inventories: when the
@@ -367,29 +347,13 @@ export default async function CommunityDetailPage({ params }: Props) {
   // produce a count with no tiles at all, so `rows.length === activeCount`
   // whenever live.fromTiles and `rows` is empty whenever it is not.
   const fieldTiles = aliasAwareCount != null ? resortTiles : communityTiles
-  // Pins are every tile carrying coordinates; the list is the highest-priced
-  // FIELD_LIST_CAP of them, which is the cap the prior dual pane used.
-  const ordered = [...fieldTiles].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
-  const rows: V3FieldItem[] = ordered.flatMap((t) => {
-    if (!t.photoUrl || t.photoUrl.trim().length === 0) return []
-    return [{
-      id: t.listingKey,
-      href: listingTileHref(t),
-      priceLabel: formatPrice(t.listPrice),
-      title: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ') || 'Listing',
-      photoSrc: t.photoUrl,
-      meta: [
-        t.beds != null ? `${t.beds} bd` : null,
-        t.baths != null ? `${t.baths} ba` : null,
-        t.sqft != null ? `${t.sqft.toLocaleString('en-US')} sqft` : null,
-      ]
-        .filter(Boolean)
-        .join(' · '),
-      lat: t.lat,
-      lng: t.lng,
-    }]
-  })
-  const fieldItems = rows.slice(0, FIELD_LIST_CAP)
+  const fieldItems = communityFieldItems(fieldTiles, FIELD_LIST_CAP)
+  const mapPins = fieldMapPins(fieldItems)
+  const mapPolygon = _resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null)
+  const hasMap = mapPins.length > 0 || Boolean(mapPolygon)
+  const posterSrc = communityImage(slug)
+  const belongFigures = belongingFigures(richContent)
+  const [firstBelong, ...restBelong] = belongFigures
 
   const browseHref = homesForSalePath(cityName, community.subdivision)
   const cityReportHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
@@ -401,24 +365,6 @@ export default async function CommunityDetailPage({ params }: Props) {
   // door. When the count is a tile set, the set is on THIS page, in the Field, and
   // the Field is the door. When it came from a mart row instead, this page holds
   // no such list and the subdivision browse is the closest node that does.
-  const countHref = live.fromTiles ? '#homes' : browseHref
-
-  const liveFigures = buildLiveFigures({
-    activeCount,
-    medianListPrice,
-    mosDisplay,
-    medianDaysToPending: pulse?.medianDaysToPending ?? null,
-    countHref,
-    cityReportHref,
-  })
-  const [firstLiveFigure, ...restLiveFigures] = liveFigures
-  const liveTrace = buildLiveTrace({
-    communityName: community.name,
-    pairTrace: live.trace,
-    showsMonthsOfSupply: mosDisplay != null,
-    showsDaysToPending: pulse?.medianDaysToPending != null,
-  })
-
   const closedFigures = buildClosedFigures({
     medianSalePrice: stats?.medianSalePrice ?? null,
     soldCount: stats?.soldCount ?? null,
@@ -488,7 +434,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     name: community.name,
     cityName,
     citySlug,
-    hasMap: false,
+    hasMap,
     centerLonLat: registryEntry?.center_lon_lat ?? null,
     datasetVariables,
     asOfIso,
@@ -535,6 +481,13 @@ export default async function CommunityDetailPage({ params }: Props) {
     golfCourses: GOLF_COURSES.filter((c) => c.communitySlug === slug),
   })
 
+  const trail = [
+    { label: 'Home', href: '/' },
+    { label: 'Communities', href: '/communities' },
+    ...(cityName ? [{ label: cityName, href: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
+    { label: community.name },
+  ]
+
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -548,28 +501,72 @@ export default async function CommunityDetailPage({ params }: Props) {
         <V3SectionTracker pageType="community" />
         <MetadataBlock schemas={communitySchemas} />
 
-        <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: 'Communities', href: '/communities' },
-            ...(cityName ? [{ label: cityName, href: citySlug ? `/cities/${citySlug}` : '/cities' }] : []),
-            { label: community.name },
-          ]}
-        />
+        {posterSrc ? (
+          <CommunityStage
+            Stage={V3Stage}
+            trail={trail}
+            name={community.name}
+            cityName={cityName}
+            headline={belongingHeadline(community.name, richContent)}
+            posterSrc={posterSrc}
+            action={{
+              label: fieldItems[0]?.title || `See ${community.name} houses`,
+              href: fieldItems[0]?.href || '#homes',
+            }}
+          />
+        ) : firstBelong ? (
+          <>
+          <V3Breadcrumb trail={trail} />
+          <V3Instrument
+            id="place"
+            level={1}
+            eyebrow={v3Text(`${community.name} · ${cityName}`)}
+            headline={v3Text(belongingHeadline(community.name, richContent))}
+            figures={[firstBelong, ...restBelong]}
+            source={v3Text(belongingTrace(community.name))}
+            action={{
+              label: v3Text(`See ${community.name} houses`),
+              href: '#homes',
+              variant: 'ghost',
+            }}
+          />
+          </>
+        ) : (
+          <>
+          <V3Breadcrumb trail={trail} />
+          <V3Quiet
+            id="place"
+            heading={belongingHeadline(community.name, richContent)}
+            headingLevel={1}
+            items={[{ label: `See ${community.name} houses`, href: '#homes' }]}
+          />
+          </>
+        )}
 
         <V3Field
           id="homes"
           ariaLabel={`Homes for sale in ${community.name}`}
           items={fieldItems}
-          // A VERIFIED ZERO, A COUNT WITHOUT ITS LISTINGS, AND A FAILED FETCH ARE
-          // THREE DIFFERENT FACTS, and the one sentence said the third about all
-          // three. The count above is gated on a non-empty source, so a published 0
-          // is a real zero and "nothing came back on this refresh" beside it reads
-          // as an outage the page is not having; and a count that came from a mart
-          // row (three-rivers publishes 91 with no tile behind it, because its
-          // homes are not filed under its registry city) is not an outage either.
-          // Since a tile-sourced count equals the row count by construction, an
-          // empty list under a positive count means the count came from a row.
+          mapSlot={
+            hasMap ? (
+              <PlaceFieldMap
+                pins={mapPins}
+                boundary={mapPolygon ?? undefined}
+                placeName={community.name}
+                centerLonLat={registryEntry?.center_lon_lat ?? undefined}
+              />
+            ) : undefined
+          }
+          count={
+            activeCount != null
+              ? {
+                  value: activeCount.toLocaleString('en-US'),
+                  label: activeCount === 1 ? 'home for sale' : 'homes for sale',
+                  source: live.trace,
+                  updatedAt: live.stamp,
+                }
+              : undefined
+          }
           emptyMessage={
             activeCount === 0
               ? `No single-family home is listed for sale in ${community.name} right now.`
@@ -577,62 +574,21 @@ export default async function CommunityDetailPage({ params }: Props) {
                 ? `No active single-family listing in ${community.name} came back on this refresh.`
                 : `The inventory count on this page comes from the ${community.name} market row, which carries the number without the listings behind it.`
           }
-          // The list's denominator is the LIST's set, and the map's is the map's.
-          // The old note counted the 24 against `pins`, which is the plotted
-          // subset, so a home with no coordinates was named by a sentence it was
-          // not in, and when fewer than 24 homes plotted the condition went false
-          // and the page listed 24 of N silently. It also promised every listed
-          // home is on the browse page, which the alias-aware set makes untrue.
           footNote={
             fieldItems.length > 0
-              ? `Listed here: photographed homes in ${community.name}. Each photograph opens the listing.`
+              ? `Listed here: ${community.name} homes. Map and list are the same set.`
               : undefined
           }
         />
 
-        {firstLiveFigure ? (
-          <V3Instrument
-            id="market"
-            level={1}
-            eyebrow={v3Text(`${cityName}, Oregon`)}
-            headline={v3Text(
-              `${community.name} homes for sale${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
-            )}
-            figures={[firstLiveFigure, ...restLiveFigures]}
-            source={v3Text(liveTrace)}
-            updated={live.stamp ? v3Text(formatDate(live.stamp)) : undefined}
-            // THE PAGE'S ONE VISIBLE PRIMARY, and it is filled by invariant 5. It
-            // was a ghost on the reasoning that the sticky header holds the filled
-            // CTA; the header hides that control below 880px, so at 390 the first
-            // viewport shipped no ask. Measured 2026-08-12 on tetherow at scrollY
-            // 0: at 390x844 this is the only filled control on screen; at 1280x800
-            // it is joined by the chrome's own nav CTA, which is site chrome rather
-            // than this page's ask. The page itself carries exactly two filled
-            // controls in 13,248px — this one and the alert sheet's submit, 8,194px
-            // below it — so no viewport ever holds two of its asks.
-            //
-            // "Browse every X home" was a claim, and it was false: this door opens
-            // the literal-subdivision-name search, which publishes fewer homes than
-            // the alias-aware count above it. The label now names what the door
-            // opens — a search filtered to this community — and claims nothing
-            // about completeness. The complete set is the Field below.
-            action={{ label: v3Text(`Search ${community.name} homes`), href: browseHref }}
-          />
-        ) : (
+        {knowledgeItems.length > 0 ? (
           <V3Quiet
-            id="market"
-            heading={`${community.name} homes for sale`}
-            headingLevel={1}
-            items={[
-              {
-                kind: 'prose',
-                term: 'No live figures right now',
-                body: `The ${community.name} inventory query did not return on this refresh, so this page is not printing a count, a median, or a verdict. The city market report carries its own live rows.`,
-              },
-              { label: `${cityName} market report`, href: cityReportHref },
-            ]}
+            id="belonging"
+            eyebrow={`${community.name} · Belonging`}
+            heading={`Living in ${community.name}`}
+            items={knowledgeItems}
           />
-        )}
+        ) : null}
 
         {firstClosedFigure ? (
           <V3Instrument
@@ -645,15 +601,6 @@ export default async function CommunityDetailPage({ params }: Props) {
               `closed MLS sales through Oregon Data Share, ${community.name} single-family homes, rolling 365 days. Closed sales, not active inventory`,
             )}
             action={{ label: v3Text(`${cityName} market report`), href: cityReportHref, variant: 'ghost' }}
-          />
-        ) : null}
-
-        {knowledgeItems.length > 0 ? (
-          <V3Quiet
-            id="place"
-            eyebrow={`${community.name} · The place`}
-            heading={`Living in ${community.name}`}
-            items={knowledgeItems}
           />
         ) : null}
 

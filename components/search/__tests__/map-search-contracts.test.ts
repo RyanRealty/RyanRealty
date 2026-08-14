@@ -609,6 +609,8 @@ describe('map craft: selection + zoom storytelling + basemap', () => {
     expect(view).toMatch(/onMarkerClick/)
     expect(view).toMatch(/ring-offset-2/)
     expect(view).toMatch(/in this map view/)
+    expect(view).toMatch(/listCountPhrase/)
+    expect(view).toMatch(/lg:hidden/)
   })
 
   it('uses SuperCluster maxZoom and photo stamps at close zoom', () => {

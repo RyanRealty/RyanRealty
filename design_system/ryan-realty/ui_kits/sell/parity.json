@@ -2,8 +2,8 @@
   "route": "app/sell/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/sell/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3. Sell opens Stage then Sheet.",
-  "competitiveTarget": "Beat generic list-with-us pages: the ask in the first working surface (SellerLPForm, Places autocomplete, pagePath=/sell), live Bend figures with a source trace, one 3% plan with the full Enhanced inclusion list, and every valuation CTA anchored to #get-value. Zero invented results. D11: Value my home / Get your home's value, never What's my home worth on a control.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: four of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, primary Value my home), Sheet-equivalent SellCapture wrapping SellerLPForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. KB-era deletions: KbHero, KbBreadcrumb, KbFooter, KbTestimonials, SmoothScrollProvider, LifestyleStrip, CTABar, FAQBlock, SellProof sold-story cards, SellValueProps, SellerSituations, SellProcess, SellPlanSingle, SellCommission, SellMarketContext, SellValuationCTA, the sticky mobile bar, and the same-broker / no hand-off FAQ. Eight sell/* modules plus LifestyleStrip (last importer was /sell) were orphaned by the page rewrite and deleted in this commit. Capture is not a deletion: SellerLPForm still posts the same payload with pagePath=/sell and formId get-value.",
+  "competitiveTarget": "Beat generic list-with-us pages: the ask in the first working surface (SellValueForm, Places autocomplete, pagePath=/sell), live Bend figures with a source trace, one 3% plan with the full Enhanced inclusion list, and every valuation CTA anchored to #get-value. Zero invented results. D11: Value my home on the field submit, never What's my home worth on a control.",
+  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-SELL). Rhythm: four of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb (on-media), Stage (H1 Sell your home in Central Oregon, poster only, 3% listing plan as quiet eyebrow), Sheet-equivalent SellCapture wrapping SellValueForm (capture contract unchanged), Instrument level 2 (Bend pulse, ghost Value my home), V3Sheet (3% plan, Enhanced inclusions, no matrix), Quiet (FAQ + track-record prose + verbatim Google reviews + doors), Footer outside main. The verdict classifies the RAW months-of-supply value and the screen prints formatMonthsOfSupply. Track-record figures do not share the Bend pulse source line. Page-grade v2.4 sell-three-asks: Stage ghost hidden (primitive still requires action), address field empty with visible label, no card title restating the button. Capture is not a deletion: SellValueForm still posts the same payload with pagePath=/sell and formId get-value.",
   "requiredComponents": [
     {
       "name": "KbNav",
@@ -27,12 +27,12 @@
     },
     {
       "name": "V3Stage",
-      "section": "Pattern 4, opens the page. headingLevel 1, height compact so H1 clears chrome and the address step shares the first 390 viewport. H1 is the seo-shell head term. Action label Value my home, ghost, href #get-value. The filled primary is the capture submit.",
+      "section": "Pattern 4, opens the page. headingLevel 1, height compact so H1 clears chrome and the address step shares the first 390 viewport. H1 is the seo-shell head term. Quiet eyebrow is 3% listing plan. The primitive requires an action prop. The page hides it (sell-stage-poster) so the filled primary is the capture submit.",
       "blocking": true
     },
     {
-      "name": "SellerLPForm",
-      "section": "The ask. Two-step seller form (Places autocomplete, partial-lead, CMA queue). pagePath='/sell' attribution. formId anchor #get-value. Capture contract unchanged.",
+      "name": "SellValueForm",
+      "section": "The ask. Address field is the spine: visible label, empty field, submit Value my home. No card title, no placeholder. Places autocomplete, partial-lead, CMA queue. pagePath='/sell' attribution. formId anchor #get-value. Capture contract unchanged.",
       "blocking": true
     },
     {
@@ -105,7 +105,7 @@
     "getMarketPulse": "lib/data/market/getMarketPulse.ts. market_pulse_live, geo_type='city', geo_slug='bend', property_type='A'. Feeds the Instrument.",
     "getSurfaceImage": "lib/data/media/getSurfaceImages.ts. Distinct approved hero for /sell, fallback tetherow-golf-aerial. Feeds V3Stage posterSrc. No homepage Old Mill video on this route: a Stage with a poster is complete, and /sell was already on a distinct still so it would not reuse the homepage banner.",
     "getBrokerageTrackRecord": "lib/data/track-record.ts. Closed Ryan Realty list-side sales. Feeds Quiet proof prose, not the Bend Instrument.",
-    "SellerLPForm": "app/lp/seller-home-value/SellerLPForm.tsx into app/lp/seller-home-value/actions.ts. Bound to SellCapture. Same action, same payload, same field names, pagePath=/sell.",
+    "SellValueForm": "app/sell/_v3/SellValueForm.tsx into app/lp/seller-home-value/actions.ts. Bound to SellCapture. Same action, same payload, same field names, pagePath=/sell.",
     "note": "Every read is a DAL function from @/lib/data (G8). Nothing is fetched that the page does not render. getCityMarketDetail, getLifestyleImages, and getSoldStories were dropped with the sections that consumed them. Route-local constants live in app/sell/_v3/sell-constants.ts."
   },
   "sectionOrder": [
@@ -113,7 +113,7 @@
     "KbSectionTracker",
     "V3Breadcrumb",
     "V3Stage",
-    "SellCapture (SellerLPForm)",
+    "SellCapture (SellValueForm)",
     "V3Instrument (Bend pulse) or V3Quiet empty",
     "V3Sheet (3% plan)",
     "V3Quiet (FAQ, proof, doors)",

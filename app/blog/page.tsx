@@ -2,8 +2,9 @@
  * /blog — Central Oregon market writing index, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Instrument (the index answer) -> Ledger (the posts) -> Quiet (categories,
- * popular, pagination). Three of the six patterns.
+ * Market grain for this leaf: the posts are the page. Ledger of posts fills
+ * the fold. Count is a caption. Quiet holds categories, popular, pagination.
+ * Two of the six patterns.
  *
  * THE PAGE CONTRACT: generateMetadata (canonical, OG, Twitter, robots via
  * shouldNoIndexBlogIndex), Blog + ItemList JSON-LD, BreadcrumbList, a rendered
@@ -12,9 +13,9 @@
  * session and identity-bridge reads that pin this route dynamic.
  *
  * DROPPED: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, the featured
- * photo grid and art-card layout. Every post that used to render still renders,
- * as a Ledger row (title, date, category, excerpt). ShareButton stays as an
- * island above the list.
+ * photo grid and art-card layout, the Instrument count hero. Every post that
+ * used to render still renders, as a Ledger row (title, date, category, excerpt).
+ * ShareButton stays as an island below the list.
  */
 
 import type { Metadata } from 'next'
@@ -24,7 +25,6 @@ import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { shouldNoIndexBlogIndex } from '@/lib/seo-routing'
 import ShareButton from '@/components/ShareButton'
-import { formatDate } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -33,13 +33,13 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
+import { blogIndexCaption, blogIndexRow } from './_v3/blog-index-rows'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -95,22 +95,8 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
 
   const postRows: V3LedgerPlainRow[] = []
   for (const post of posts) {
-    const title = post.title?.trim()
-    const slug = post.slug?.trim()
-    if (!title || !slug) continue
-    const excerpt = post.excerpt?.trim()
-    const when = post.published_at ? formatDate(post.published_at) : post.category?.trim() || 'Guide'
-    postRows.push({
-      href: `/blog/${slug}`,
-      when: v3Text(when),
-      what: v3Text(title),
-      detail: excerpt
-        ? v3Text(excerpt)
-        : post.category
-          ? v3Text(`${post.category} · ${post.read_time_min} min read`)
-          : v3Text(`${post.read_time_min} min read`),
-      id: slug,
-    })
+    const row = blogIndexRow(post)
+    if (row) postRows.push(row)
   }
   const [firstPost, ...restPosts] = postRows
 
@@ -187,27 +173,27 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
         />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Blog' }]} />
 
-        <V3Instrument
-          id="writing"
-          level={1}
-          eyebrow={v3Text('Central Oregon')}
-          headline={v3Text('Central Oregon market writing')}
-          figures={[
-            {
-              value: v3Text(total.toLocaleString('en-US')),
-              label: v3Text(category === 'All' ? 'published posts' : `posts in ${category}`),
-              href: '/blog',
-            },
-          ]}
-          source={v3Text(
-            'published rows from blog_posts, newest first, twelve per page. Category filters read the same table',
-          )}
-          action={{
-            label: v3Text('Value my home'),
-            href: valuationHref('/blog'),
-            variant: 'primary',
-          }}
-        />
+        {firstPost ? (
+          <V3Ledger
+            id="latest"
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Central Oregon market writing')}
+            note={v3Text(blogIndexCaption(total, category))}
+            rows={[firstPost, ...restPosts]}
+          />
+        ) : (
+          <V3Ledger
+            id="latest"
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
+            heading={v3Text('Central Oregon market writing')}
+            note={v3Text(blogIndexCaption(total, category))}
+            rows={[]}
+            emptyMessage={v3Text('No posts in this category yet.')}
+            action={{ label: v3Text('View all posts'), href: '/blog' }}
+          />
+        )}
 
         <ShareButton
           url={`${siteUrl}/blog`}
@@ -216,24 +202,6 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
           trackContext="blog_index"
           variant="default"
         />
-
-        {firstPost ? (
-          <V3Ledger
-            id="latest"
-            eyebrow={v3Text('Latest posts')}
-            heading={v3Text(category === 'All' ? 'All posts' : category)}
-            rows={[firstPost, ...restPosts]}
-          />
-        ) : (
-          <V3Ledger
-            id="latest"
-            eyebrow={v3Text('Latest posts')}
-            heading={v3Text(category === 'All' ? 'All posts' : category)}
-            rows={[]}
-            emptyMessage={v3Text('No posts in this category yet.')}
-            action={{ label: v3Text('View all posts'), href: '/blog' }}
-          />
-        )}
 
         <V3Quiet
           id="explore"

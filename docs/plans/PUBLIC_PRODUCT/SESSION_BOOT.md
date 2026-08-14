@@ -19,6 +19,11 @@ are the complete program. The intent lives on disk — no chat history is requir
    `work-queue.json` as the next unit — they are stale.
 4. Print ≤5 bullets (board scoreboard, your lease, blockers) BEFORE work.
 5. Execute the leased unit on the board. Grind until a stop token.
+6. UX grind is `/page-grade` — rubric `PAGE-GRADE.md` v2.4, universe
+   `grade-universe.json`, ledger `grade-ledger.json`. Unique pages plus
+   one exemplar per template. Family strip at merge (one shop, five
+   place rhythms). Grade wave: no product code. Then fix every open class
+   and regrade. Not a 143-route dump. Not a second OS.
 
 **The live phase is on `docs/plans/ADMIN_PRODUCT/EXECUTION.md`.** `state.json.phase`
 below is history. A phase named in the ledger is what was true THEN, not now.

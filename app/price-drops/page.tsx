@@ -2,32 +2,19 @@
  * /price-drops - last 7 days of documented asking-price cuts, on the
  * components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes curated mode.
- * Rhythm: four of six, no two adjacent alike. Order is Breadcrumb, Instrument
- * level 1, Field, Sheet, Quiet, Footer.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes grain.
+ * Opening is Field of the cut houses. Count is a caption.
+ * Rhythm: Field, Sheet, Quiet. Chrome exempt.
  *
  * THE PAGE CONTRACT, carried across unchanged: metadata through pageMetadata,
  * MetadataBlock JSON-LD (BreadcrumbList + Dataset + webPage), a rendered
  * V3SectionTracker with pageType="price-drops", TrackSearchView, revalidate 1800,
  * getPriceDrops({ limit: 48, days: 7 }) with no .catch() empty swallow.
- * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * EMPTY WINDOW: getPriceDrops is resilient-cached and can answer with an empty
- * array plus a now() stamp. That empty render is not a fact about the market.
- * noStore() opts this render out of ISR so a cold cache cannot pin
- * "no reductions this week" for 30 minutes. Dataset, updated stamp, and any
- * count figure are omitted when drops.length === 0.
- *
- * ONE PRIMARY PER VIEWPORT, counting visible filled controls. At 390 the
- * chrome CTA sits in the collapsed menu, so the Instrument ask is primary.
- * Label is Value my home (D11). valuationHref carries ?from=.
- *
- * KB-era deletions: KbHero, KbFeatured, KbListingMap, HideAwareListingGrid
- * (hidden-home subtraction stays on /search), neighborhood mini-table (Field
- * rows keep subdivision in meta), city chip sections as their own pattern
- * (cities go in Quiet links), KbSell, CTABar, DisplayHeading/PageBreadcrumb
- * hidden parity hacks, SmoothScrollProvider, Badge/Table from components/ui.
- * KbCommunityAlerts markup is gone. Capture contract kept on the Sheet.
+ * array plus a now() stamp. noStore() opts this render out of ISR so a cold
+ * cache cannot pin "no reductions this week" for 30 minutes. Dataset, updated
+ * stamp, and any count figure are omitted when drops.length === 0.
  */
 
 import type { Metadata } from 'next'
@@ -35,21 +22,16 @@ import { unstable_noStore as noStore } from 'next/cache'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingsBrowsePath } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
 import { formatPriceCompact } from '@/lib/format/money'
-import { formatDate } from '@/lib/format/date'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   V3_ROOT_CLASS,
-  v3Text,
   V3Breadcrumb,
   V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Quiet,
   V3SectionTracker,
-  type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -57,13 +39,13 @@ import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from './_v3/PriceDropAlertsSheet.client'
 import {
   DROPS_CITY_SLUGS,
-  DROPS_FIELD_TRACE,
-  DROPS_TRACE,
   cityLabel,
+  dropsTrace,
   medianPositive,
 } from './_v3/drops-constants'
 import { priceDropFieldItems } from './_v3/drops-field-items'
 import { priceDropDatasetSchemas } from './_v3/drops-jsonld'
+import { PriceDropPhotos, PriceDropsOpening } from './_v3/PriceDropsField'
 
 export const revalidate = 1800
 
@@ -104,37 +86,6 @@ export default async function PriceDropsRegionPage() {
       : null
   const medianDropPctLabel =
     medianDropPct != null ? `${medianDropPct.toFixed(1)}%` : null
-  const stamp =
-    drops.length > 0
-      ? (() => {
-          const label = formatDate(fetchedAt)
-          return /\d/.test(label) ? label : null
-        })()
-      : null
-
-  const figures: V3InstrumentFigure[] = []
-  if (total > 0) {
-    figures.push({
-      value: v3Text(total.toLocaleString('en-US')),
-      label: v3Text(total === 1 ? 'price cut in the last 7 days' : 'price cuts in the last 7 days'),
-      href: '#cuts',
-    })
-  }
-  if (totalReducedLabel) {
-    figures.push({
-      value: v3Text(totalReducedLabel),
-      label: v3Text('asking-price cuts this week'),
-      href: '#cuts',
-    })
-  }
-  if (medianDropPctLabel) {
-    figures.push({
-      value: v3Text(medianDropPctLabel),
-      label: v3Text('median drop'),
-      href: '#cuts',
-    })
-  }
-  const [firstFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -170,6 +121,8 @@ export default async function PriceDropsRegionPage() {
     ...cityItems,
   ]
 
+  const captionCount = fieldItems.length
+
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -179,21 +132,23 @@ export default async function PriceDropsRegionPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Price drops' }]} />
 
-        {firstFigure ? (
-          <V3Instrument
-            id="answer"
-            level={1}
-            eyebrow={v3Text('Central Oregon · last 7 days')}
-            headline={v3Text('Price drops in Central Oregon')}
-            figures={[firstFigure, ...restFigures]}
-            source={v3Text(DROPS_TRACE)}
-            {...(stamp ? { updated: v3Text(stamp) } : {})}
-            action={{
-              label: v3Text('Value my home'),
-              href: valuationHref('/price-drops'),
-              variant: 'primary',
-            }}
-          />
+        {captionCount > 0 ? (
+          <>
+            <PriceDropsOpening
+              heading="Price drops in Central Oregon"
+              captionValue={captionCount.toLocaleString('en-US')}
+              captionLabel={captionCount === 1 ? 'price cut this week' : 'price cuts this week'}
+              source={dropsTrace('Central Oregon')}
+            />
+            <V3Field
+              id="cuts"
+              className="pd-homes-field"
+              ariaLabel="Homes with a price cut in the last 7 days"
+              items={fieldItems}
+              mapSlot={<PriceDropPhotos items={fieldItems} />}
+              emptyMessage="No price cut on this pull has both a street and a list price, so this list has nothing to name."
+            />
+          </>
         ) : (
           <V3Quiet
             id="answer"
@@ -209,22 +164,6 @@ export default async function PriceDropsRegionPage() {
             ]}
           />
         )}
-
-        <V3Field
-          id="cuts"
-          ariaLabel="Homes with a price cut in the last 7 days"
-          items={fieldItems}
-          count={
-            fieldItems.length > 0
-              ? {
-                  value: fieldItems.length.toLocaleString('en-US'),
-                  label: fieldItems.length === 1 ? 'home on this list' : 'homes on this list',
-                  source: DROPS_FIELD_TRACE,
-                }
-              : undefined
-          }
-          emptyMessage="No price cut on this pull has both a street and a list price, so this list has nothing to name."
-        />
 
         <PriceDropAlertsSheet
           placeLabel="Central Oregon"

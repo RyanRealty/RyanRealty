@@ -1,13 +1,11 @@
 /**
- * /cities/<city>/<neighborhood> — the neighborhood grain of the Places family,
- * on the components/site/v3 barrel.
+ * /cities/<city>/<neighborhood> — the neighborhood grain.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Places
- * open on Instrument (the place verdict) then Field (the inventory). Four of the
- * six patterns, no two adjacent alike. The section order, the sections this
- * migration DELETED from the KB page, and the per-section reasoning are the
- * parity contract, not this comment:
- * design_system/ryan-realty/ui_kits/neighborhood/parity.json.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3. Opens Instrument
+ * (this neighborhood's pace) then Field of its houses. Daily life (schools,
+ * parks) on the first path. Inventory is a Field caption, never the hero.
+ * The old line "Places open Instrument then Field" is retired.
+ * Parity: design_system/ryan-realty/ui_kits/neighborhood/parity.json.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata (same title, same description, same guard, same canonical path),
@@ -48,15 +46,9 @@
  *     number, and the page was already printing it in the closing Q&A.
  *  3. ABSENT IS NOT ZERO. A boundary read that timed out, a missing polygon, and
  *     a genuinely empty boundary are three different facts, and the Field says
- *     which one it is instead of rendering "0" under a live-MLS trace. The old
- *     page's own header comment records what this class of bug did here before.
- *     The converse holds too: this page has NO state in which it withholds the
- *     live inventory figure, so it carries no copy claiming otherwise. Both
- *     branches of the level-1 Instrument produce a non-empty tuple by
- *     construction (liveFigures and liveFallbackFigures), which is why there is
- *     no "no live figures right now" block here. There was one. It was
- *     unreachable, and unreachable copy asserting a behaviour the page does not
- *     have is a false statement with no render path that could correct it.
+ *     which one it is instead of rendering "0" under a live-MLS trace. Pace
+ *     figures may be absent. When they are, a Quiet says so. Inventory never
+ *     opens the page as a hero number.
  *  4. TWO COUNTS, TWO NAMES, AND THE PAGE SAYS WHY THEY DIFFER. The level-1
  *     figure and the Field's figure come off the SAME recorded polygon and the
  *     same feed. The only difference is the property population, and it is
@@ -139,13 +131,10 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
-  type V3InstrumentFigures,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { NeighborhoodAlertsSheet } from './_v3/NeighborhoodAlertsSheet.client'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import {
   aboutItems,
   BANNED_DESCRIPTION_RE,
@@ -161,6 +150,8 @@ import {
   shipsFigure,
   soldFigures,
 } from './_v3/neighborhood-sections'
+import { dailyLifeRows } from './_v3/neighborhood-daily-life'
+import { NeighborhoodActivityLedger } from './_v3/NeighborhoodActivityLedger'
 // Every sentence this page publishes ABOUT a figure. See that file's header for
 // the one rule they all obey: no claim may outrun its payload.
 import {
@@ -313,36 +304,19 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const browsePath = subdivisionListingsPath(cityName, placeName)
   const cityReportPath = `/housing-market/${citySlug}`
 
-  /* ── SECTION 1 · live inventory ─────────────────────────────────────────── */
-  // The months-of-supply figure ships whenever the row carries one. It goes
-  // through formatMonthsOfSupply, the canonical display rule buildMarketFaq and
-  // every other public surface already use, which is boundary-safe by
-  // construction: 4.02 prints 4.1 and 5.97 prints 5.9, so the printed digits can
-  // never cross a threshold the raw value did not, and the figure can never
-  // contradict the verdict the shared builder derives from the same row
-  // (invariant 2). The earlier revision rounded the figure itself and then
-  // suppressed it whenever that rounding disagreed with the raw classification —
-  // withholding, at mos = 4.02, a number the same page went on to publish in the
-  // closing Q&A off the same row.
+  /* ── SECTION 1 · pace ───────────────────────────────────────────────────── */
+  // Months of supply ships through formatMonthsOfSupply. The pace figure carries
+  // the verdict. Inventory is a Field caption, never the hero.
   const mosShips = shipsFigure(pulse?.monthsOfSupply)
 
-  // Both branches return a NON-EMPTY TUPLE, so this section always publishes and
-  // the page has no unreachable "no figures" state to describe (invariant 3).
-  const liveSet: V3InstrumentFigures = pulse
+  const liveSet = pulse
     ? liveFigures(pulse, { browse: browsePath, cityReport: cityReportPath, monthsOfSupply: '/months-of-supply' })
     : liveFallbackFigures(neighborhood, browsePath)
+  const [firstLive, ...restLive] = liveSet
 
-  // The trace and the stamp are chosen by the SAME branch that chose the
-  // figures, so a fallback population can never be published under the pulse's
-  // sentence or dated with the pulse's clock (invariant 1). The pulse trace also
-  // covers each figure SEPARATELY, because the four do not share a population:
-  // the count and the median are active-set facts, days-to-pending is measured on
-  // sales that closed in the last 90 days, and months of supply divides the first
-  // by a closed series, which the canonical methodology clause states in full. A
-  // trace naming only the active set left the days-to-pending figure published
-  // under a sentence that contradicted it. It is also kept SHORT: the barrel
-  // renders the trace between the figures and the ask, so every sentence here is
-  // first-viewport space on a money route (see livePulseTrace).
+  // Trace and stamp follow the same branch as the figures. The pulse line is
+  // short: the pace figure carries the verdict, and the MoS threshold essay
+  // stays off this page.
   const liveTrace = pulse
     ? livePulseTrace(placeName, {
         // shipsFigure is the SAME predicate liveFigures renders on, so the trace
@@ -361,8 +335,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const countIsHonest =
     boundaryRead.ok && tilesRead.ok && boundary.polygon != null && boundary.pins.length < BOUNDARY_PIN_CAP
   const rows = fieldItems(tiles)
-  const mapPins = fieldMapPins(rows)
-  const hasGoogleMap = mapPins.length > 0 || Boolean(boundary.polygon)
+  const hasGoogleMap = false
   const emptyMessage = fieldEmptyMessage(placeName, {
     boundaryOk: boundaryRead.ok,
     hasPolygon: boundary.polygon != null,
@@ -386,6 +359,16 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
 
   /* ── SECTION 4 · verified depth ─────────────────────────────────────────── */
   const about = aboutItems(richContent, neighborhood.description)
+  const [firstDaily, ...restDaily] = dailyLifeRows(richContent, cityName)
+  const hasDaily = firstDaily != null
+  const hasSold = firstSold != null && stats != null
+  const hasActivity = firstAct != null
+  const activityAfterSold = hasActivity && (hasSold || hasDaily === false)
+  const activityAfterAbout = hasActivity && hasSold === false && hasDaily && about.length > 0
+  const activityAfterSheet = hasActivity && hasSold === false && hasDaily && about.length === 0
+  const activitySource = activityIsScoped
+    ? `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings on homes inside the recorded ${placeName} boundary`
+    : `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings across ${cityName}. No event landed inside the recorded ${placeName} boundary on this refresh, so this feed is the city's, and it is labelled as the city's.`
 
   /* ── AI-citable verified Q&A + structured data ──────────────────────────── */
   // ONE DERIVATION PER BRANCH, AND EACH ONE NAMES THE POPULATION IT READ.
@@ -467,41 +450,40 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           ]}
         />
 
-        <V3Instrument
-          id="market"
-          level={1}
-          eyebrow={v3Text(`${placeName} · ${cityName}, Oregon`)}
-          headline={v3Text(`${placeName} homes for sale`)}
-          figures={liveSet}
-          source={v3Text(liveTrace)}
-          updated={liveStamp ? v3Text(formatDate(liveStamp)) : undefined}
-          // PRIMARY by invariant 5. The header's filled valuation CTA is
-          // display:none below 880px, so on the width most visitors arrive on
-          // this is the page's only filled seller ask above the Sheet.
-          action={{
-            label: v3Text('Value my home'),
-            href: valuationHref(`/cities/${citySlug}/${neighborhoodSlug}`),
-          }}
-        />
+        {firstLive ? (
+          <V3Instrument
+            id="market"
+            level={1}
+            eyebrow={v3Text(`${placeName} · ${cityName}, Oregon`)}
+            headline={v3Text(`${placeName} homes for sale`)}
+            figures={[firstLive, ...restLive]}
+            source={v3Text(liveTrace)}
+            updated={liveStamp ? v3Text(formatDate(liveStamp)) : undefined}
+            action={
+              rows[0]
+                ? { label: v3Text(rows[0].title), href: rows[0].href, variant: 'ghost' }
+                : { label: v3Text(`Save ${placeName}`), href: '#alerts', variant: 'ghost' }
+            }
+          />
+        ) : (
+          <V3Quiet
+            id="market"
+            heading={`${placeName} homes for sale`}
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: 'No pace figure on this refresh',
+                body: `The ${placeName} market row did not return a months-of-supply or days-to-pending figure, so this page is not printing one.`,
+              },
+            ]}
+          />
+        )}
 
         <V3Field
           id="homes"
           ariaLabel={`Homes for sale in ${placeName}`}
           items={rows}
-          mapSlot={
-            hasGoogleMap ? (
-              <PlaceFieldMap
-                pins={mapPins}
-                boundary={boundary.polygon ?? undefined}
-                placeName={placeName}
-              />
-            ) : undefined
-          }
-          mapNote={
-            mapPins.length > 0
-              ? `Every ${placeName} home listed here that reports coordinates. Select a pin to open that home.`
-              : undefined
-          }
           count={
             countIsHonest
               ? {
@@ -512,13 +494,18 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
                 }
               : undefined
           }
-          // Reconciles the rows on screen to the count above them, and claims
-          // nothing else. It used to say "The figure above opens the full set" —
-          // V3FieldProps.count carries no href and V3Figure renders no anchor, so
-          // that figure opens nothing.
           footNote={fieldFootNote(rows.length, tiles.length, countIsHonest)}
           emptyMessage={emptyMessage}
         />
+
+        {firstDaily ? (
+          <V3Ledger
+            id="daily-life"
+            eyebrow={v3Text(`${placeName} · Daily life`)}
+            heading={v3Text(`Schools and parks in ${placeName}`)}
+            rows={[firstDaily, ...restDaily]}
+          />
+        ) : null}
 
         {firstSold && stats ? (
           <V3Instrument
@@ -534,19 +521,13 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           />
         ) : null}
 
-        {/* D93: "Latest market activity", every row carrying its listing's own photo. */}
-        {firstAct ? (
-          <V3Ledger
-            id="activity"
-            eyebrow={v3Text(activityIsScoped ? `Live · ${placeName}` : `Live · ${cityName}`)}
-            heading={v3Text('Latest market activity')}
+        {activityAfterSold && firstAct ? (
+          <NeighborhoodActivityLedger
+            placeName={placeName}
+            cityName={cityName}
+            scoped={activityIsScoped}
             rows={[firstAct, ...restAct]}
-            source={v3Text(
-              activityIsScoped
-                ? `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings on homes inside the recorded ${placeName} boundary`
-                : `live MLS through Oregon Data Share, new listings, price changes, pendings, and closings across ${cityName}. No event landed inside the recorded ${placeName} boundary on this refresh, so this feed is the city's, and it is labelled as the city's.`,
-            )}
-            action={{ label: v3Text('Full market pulse'), href: '/housing-market' }}
+            source={activitySource}
           />
         ) : null}
 
@@ -554,7 +535,27 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           <V3Quiet id="about" eyebrow={`${placeName} · ${cityName}`} heading={`About ${placeName}`} items={about} />
         ) : null}
 
+        {activityAfterAbout && firstAct ? (
+          <NeighborhoodActivityLedger
+            placeName={placeName}
+            cityName={cityName}
+            scoped={activityIsScoped}
+            rows={[firstAct, ...restAct]}
+            source={activitySource}
+          />
+        ) : null}
+
         <NeighborhoodAlertsSheet cityName={cityName} neighborhoodName={placeName} />
+
+        {activityAfterSheet && firstAct ? (
+          <NeighborhoodActivityLedger
+            placeName={placeName}
+            cityName={cityName}
+            scoped={activityIsScoped}
+            rows={[firstAct, ...restAct]}
+            source={activitySource}
+          />
+        ) : null}
 
         {/* ONE SECTION, AND ITS NAME COVERS BOTH HALVES OF WHAT IS IN IT. Four
             verified questions, then roughly thirty outbound edges. An earlier

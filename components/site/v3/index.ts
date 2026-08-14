@@ -157,7 +157,7 @@ export type { V3QuietProps, V3QuietItem, V3QuietLink, V3QuietProse } from './V3Q
  * sections, so it is exempt from the rhythm rule and from "no two adjacent
  * sections share a pattern". It obeys everything else, including the one that
  * decides its shape: ONE primary CTA per viewport. That primary is the
- * valuation ask in V3Chrome, which is why V3Footer carries no button at all.
+ * valuation ask in V3Chrome on Sell, which is why V3Footer carries no button at all.
  *
  * Every destination in all three comes from lib/site-nav.ts, read at module
  * load. No href is typed inside these files, so a link cannot drift out of the

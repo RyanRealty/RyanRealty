@@ -1,0 +1,7 @@
+/* Sell Stage is poster + H1 + quiet 3% eyebrow. V3Stage still requires an
+   action prop (primitive unchanged). Hide that control so chrome Value my
+   home and the Sheet submit are one ask, not three. display:none drops it
+   from paint, tab order, and the accessibility tree. */
+.v3.v3-stage.sell-stage-poster .v3-stage-copy .v3-btn {
+  display: none;
+}

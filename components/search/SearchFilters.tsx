@@ -176,11 +176,9 @@ function statusLabel(v?: string): string | null {
 //
 // Uses the design-system Popover (radix), which PORTALS the panel to the
 // document body. That is the fix for the old hand-rolled absolute panel: the
-// Row-2 chip bar scrolls horizontally (overflow-x-auto), and per the CSS spec
-// an `overflow-x: auto` box computes `overflow-y` to `auto` as well — so the
-// old absolutely-positioned panel was CLIPPED to nothing the moment it tried
-// to open below the bar. A portaled Popover renders outside that clipping
-// context entirely, so the panel is always visible and interactive.
+// Filter panels portal to the document body. A portaled Popover stays
+// visible even when the trigger row wraps, so the panel is always
+// interactive.
 
 type FilterDropdownProps = {
   label: string
@@ -453,9 +451,10 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
     <div className="flex flex-col gap-0">
       {/* Row 1: omnibox + voice + save + get alerts. Sort lives on the count
           row (sibling). View toggle stays desktop-only and quieter at the end. */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6">
-        {/* Location search input — basis-full on phones so it is never squeezed. */}
-        <div className="relative min-w-0 basis-full sm:basis-auto sm:flex-1 sm:max-w-md">
+      <div className="flex items-center gap-2 px-4 py-2 sm:gap-3 sm:px-6 sm:py-3">
+        {/* Location + Save share one 390 row so the first house address
+            reaches the fold. Voice is sm+ only. */}
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
           <div className="flex min-w-0 items-center gap-2 rounded-lg bg-muted px-3.5 py-2 transition focus-within:ring-2 focus-within:ring-primary/30">
             <HugeiconsIcon icon={Search01Icon} className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             <Input
@@ -518,7 +517,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         </div>
 
         {/* Voice search — speaks the same registry the screen panel renders */}
-        <VoiceSearchButton onTranscript={applyNaturalQuery} className="shrink-0" />
+        <VoiceSearchButton onTranscript={applyNaturalQuery} className="hidden shrink-0 sm:inline-flex" />
 
         {/* Save search — captures every live URL param, registry filters included.
             Guest listing-alert capture lives in SearchAlertCapture (collapsed
@@ -555,11 +554,10 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
 
       <Separator />
 
-      {/* Row 2: primary filter chips only.
-          Horizontal-scroll affordance kept for mobile (overflow-x-auto). The
-          dropdown panels portal to <body> via Popover, so this scroll container
-          no longer clips them (the old absolute-div approach was clipped here). */}
-      <div className="no-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto px-3 py-2 sm:px-4">
+      {/* Row 2: filters are one control. 390 shows All filters only so pills
+          do not clip. sm+ shows the chip set plus All filters. */}
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:px-4">
+        <div className="hidden flex-wrap items-center gap-2 sm:contents">
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
@@ -775,8 +773,9 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
             />
           </div>
         </FilterDropdown>
+      </div>
 
-        {/* All filters sheet trigger */}
+        {/* All filters — the one 390 control. Chip set above is sm+ only. */}
         <Button
           type="button"
           variant={moreFilterCount > 0 ? 'default' : 'outline'}
@@ -832,7 +831,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
           un-removable below 640px, and Clear all was unreachable (W-UI audit
           T2, 2026-07-30). One scrollable row restores both affordances. */}
       {registryActive.length > 0 && (
-        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto border-t border-border px-3 py-2 sm:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-border px-3 py-2 sm:hidden">
           {registryActive.map(({ key, label, params }) => (
             <span key={key} className="shrink-0">
               <RegistryFilterChip label={label} onRemove={() => removeChip(params)} />

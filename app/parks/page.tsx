@@ -1,18 +1,18 @@
 /**
  * /parks — Central Oregon parks index, on the v3 barrel.
  *
- * Places open on Instrument. Order: Breadcrumb, Instrument (registry count),
- * Ledger (every park), Sheet (SFR alerts), Quiet, Footer outside main.
+ * Named park rows fill the fold. City is a label on the row. Count is a
+ * caption. Seller lives on Sell.
  *
  * THE PAGE CONTRACT: pageMetadata, revalidate 3600, breadcrumb + webPage
  * JSON-LD via MetadataBlock, V3SectionTracker pageType="parks". Data through
  * @/lib/data (getParks, getParksCount). Capture: submitSearchAlertSignup with
  * city="" and propertyType A.
  *
- * KB-era deletions: KbHero (owned parks photo, Places open on Instrument and
- * the Sheet is the capture), KbBreadcrumb, KbFooter, SmoothScrollProvider,
+ * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider,
  * kb.css, ParksIndexStyles card grid, RegionalSfrAlertsBand, per-city H2
- * sections (city grouping moved to the Ledger when column).
+ * sections (city grouping moved to the Ledger when column), the Instrument
+ * count hero.
  */
 
 import type { Metadata } from 'next'
@@ -27,11 +27,10 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
-  type V3LedgerFigureRow,
+  type V3LedgerPlainRow,
 } from '@/components/site/v3'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import type { ParkType } from '@/data/co-parks'
@@ -56,8 +55,9 @@ export function generateMetadata(): Metadata {
 export default function ParksIndexPage() {
   const cities = getParks()
   const total = getParksCount()
+  const caption = `${total.toLocaleString('en-US')} ${total === 1 ? 'park' : 'parks'}`
 
-  const rows: V3LedgerFigureRow[] = []
+  const rows: V3LedgerPlainRow[] = []
   for (const group of cities) {
     const city = group.city.trim()
     if (!city) continue
@@ -65,14 +65,15 @@ export default function ParksIndexPage() {
       const name = park.name.trim()
       const slug = park.slug.trim()
       if (!name || !slug) continue
-      const acres =
-        typeof park.acres === 'number' ? `${park.acres.toLocaleString('en-US')} acres` : TYPE_LABEL[park.type]
+      const parts = [TYPE_LABEL[park.type]]
+      if (typeof park.acres === 'number') {
+        parts.push(`${park.acres.toLocaleString('en-US')} acres`)
+      }
       rows.push({
         href: `/parks/${slug}`,
         when: v3Text(city),
         what: v3Text(name),
-        detail: v3Text(TYPE_LABEL[park.type]),
-        value: v3Text(acres),
+        detail: v3Text(parts.join(' · ')),
         id: slug,
       })
     }
@@ -104,48 +105,23 @@ export default function ParksIndexPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Parks' }]} />
 
-        <V3Instrument
-          id="parks"
-          level={1}
-          eyebrow={v3Text('Central Oregon')}
-          headline={v3Text('Parks, and the homes next to them')}
-          figures={[
-            {
-              value: v3Text(total.toLocaleString('en-US')),
-              label: v3Text('parks in the registry'),
-              href: '#park-list',
-            },
-          ]}
-          source={v3Text(
-            'verified park registry (data/co-parks.ts). State-park facts from Oregon State Parks, city parks from BPRD and city sites plus OpenStreetMap. Nothing here is a live MLS figure.',
-          )}
-          action={{
-            label: v3Text('Value my home'),
-            href: valuationHref('/parks'),
-          }}
-        />
-
         {firstRow ? (
           <V3Ledger
             id="park-list"
-            eyebrow={v3Text('By city')}
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Central Oregon parks')}
+            note={v3Text(caption)}
             rows={[firstRow, ...restRows]}
-            source={v3Text(
-              'the same verified park registry as the count above. Acreage is printed only when the registry carries a number.',
-            )}
-            action={{
-              label: v3Text('Search homes'),
-              href: listingsBrowsePath(),
-              variant: 'ghost',
-            }}
           />
         ) : (
           <V3Ledger
             id="park-list"
+            headingLevel={1}
             heading={v3Text('Central Oregon parks')}
+            note={v3Text(caption)}
             rows={[]}
-            emptyMessage={v3Text('The park registry is being updated. See cities or search homes in the meantime.')}
+            emptyMessage={v3Text('The park list is being updated. See cities or search homes in the meantime.')}
           />
         )}
 

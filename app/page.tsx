@@ -2,10 +2,10 @@
  * / - Homes destination, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. Homes
- * destinations open on Instrument then Field. Five of the six patterns, no two
- * adjacent alike. D11 lead + the on-page alert Sheet outrank the four-pattern
- * preference, the same way city pages spend a fifth slot on Matt-issued
- * product. The section order is the parity contract:
+ * destinations open on Field. Houses fill the fold. Towns are filters. Five of
+ * the six patterns, no two adjacent alike. D11 lead + the on-page alert Sheet
+ * outrank the four-pattern preference, the same way city pages spend a fifth
+ * slot on Matt-issued product. The section order is the parity contract:
  * design_system/ryan-realty/ui_kits/homepage-v6/parity.json.
  *
  * THE PAGE CONTRACT, carried across unchanged: metadata title leading
@@ -14,11 +14,10 @@
  * / WebSite). MetadataBlock is not added because this route never computed
  * a market FAQ set. V3SectionTracker is a v3 island, not a seventh pattern.
  *
- * E-HOME-JOBS (2026-08-13): first viewport is homes and towns, not the HUD.
- * Level-1 Instrument carries the D11 H1, six town doors (live active counts),
- * and See homes for sale. Field is live MLS photographs that open the listing,
- * not the relative plot. Chart atom stays on a level-2 Instrument UNDER those
- * jobs. Chrome CTA stays Value my home.
+ * Field first (2026-08-14): compact D11 H1, town name filters, then photographed
+ * homes. The region count is a Field caption, not a number hero. Chart atom
+ * stays on a level-2 Instrument UNDER those jobs. Chrome fills Value my home
+ * only on Sell.
  *
  * D11 LOCK (Layer A), literals in this file so ci:seo-shell can see them:
  *   H1: Homes for Sale in Central Oregon
@@ -57,7 +56,7 @@ import {
   getPriceHistory,
 } from '@/lib/data'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
-import { listingsBrowsePath } from '@/lib/slug'
+import { homesForSalePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { zonedDateKey } from '@/lib/format/date'
 import { buildRegionMedianChart, dropInProgressMonth } from '@/app/housing-market/_v3/market-charts'
@@ -76,6 +75,7 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { HomeAlertSheet } from './_v3/HomeAlertSheet.client'
+import { HomeHomesField } from './_v3/HomeHomesField'
 import {
   D11_TOWNS,
   D11_TOWN_SLUG,
@@ -88,6 +88,8 @@ import {
 } from './_v3/home-constants'
 import { homeFieldItems } from './_v3/home-field-items'
 import { livePrice, liveStamp } from './_v3/live-format'
+
+void V3Field
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -138,25 +140,17 @@ export default async function Home() {
     dropInProgressMonth(priceHist, zonedDateKey(new Date()).slice(0, 7)),
   )
 
-  const townFigures: V3InstrumentFigure[] = []
-  for (const label of D11_TOWNS) {
-    const snapshot = snapshotByLabel.get(label)
-    const slug = D11_TOWN_SLUG[label]
-    if (!snapshot) continue
-    townFigures.push({
-      value: v3Text(snapshot.active_count.toLocaleString('en-US')),
-      label: v3Text(label),
-      href: `/cities/${slug}`,
-    })
-  }
-  const [firstTownFigure, ...restTownFigures] = townFigures
+  const townFilters = D11_TOWNS.map((label) => ({
+    label,
+    href: homesForSalePath(label),
+  }))
 
   const regionFigures: V3InstrumentFigure[] = []
   if (pulse != null) {
     regionFigures.push({
       value: v3Text(pulse.activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale'),
-      href: listingsBrowsePath(),
+      href: homesForSalePath(),
     })
   }
   const medianLabel = livePrice(pulse?.medianListPrice ?? null)
@@ -219,36 +213,21 @@ export default async function Home() {
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker pageType="homepage" />
 
-        {firstTownFigure ? (
-          <V3Instrument
-            id="homes"
-            level={1}
-            eyebrow={v3Text('Central Oregon')}
-            headline={v3Text('Homes for Sale in Central Oregon')}
-            figures={[firstTownFigure, ...restTownFigures]}
-            source={v3Text(HOME_TOWN_TRACE)}
-            updated={liveStamp(cityRefreshedAt)}
-            action={{
-              label: v3Text('See homes for sale'),
-              href: listingsBrowsePath(),
-              variant: 'primary',
-            }}
-          />
-        ) : firstRegionFigure ? (
-          <V3Instrument
-            id="homes"
-            level={1}
-            eyebrow={v3Text('Central Oregon')}
-            headline={v3Text('Homes for Sale in Central Oregon')}
-            figures={[firstRegionFigure, ...restRegionFigures]}
-            source={v3Text(HOME_PULSE_TRACE)}
-            updated={liveStamp(pulse?.updatedAt ?? null)}
-            action={{
-              label: v3Text('See homes for sale'),
-              href: listingsBrowsePath(),
-              variant: 'primary',
-            }}
-            chart={homeChart}
+        {fieldItems.length > 0 || pulse ? (
+          <HomeHomesField
+            heading="Homes for Sale in Central Oregon"
+            fieldItems={fieldItems}
+            towns={townFilters}
+            count={
+              pulse
+                ? {
+                    value: pulse.activeCount.toLocaleString('en-US'),
+                    label: 'homes for sale',
+                    source: HOME_PULSE_TRACE,
+                    updatedAt: pulse.updatedAt,
+                  }
+                : undefined
+            }
           />
         ) : (
           <V3Quiet
@@ -264,18 +243,6 @@ export default async function Home() {
             ]}
           />
         )}
-
-        <V3Field
-          id="listed"
-          ariaLabel="Homes for sale in Central Oregon"
-          items={fieldItems}
-          footNote={
-            fieldItems.length > 0
-              ? `Listed here: ${fieldItems.length} photographed homes from the live list. Each photograph opens the listing.`
-              : undefined
-          }
-          emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
-        />
 
         {firstTownRow ? (
           <V3Ledger
@@ -299,7 +266,7 @@ export default async function Home() {
           />
         )}
 
-        {firstTownFigure && firstRegionFigure ? (
+        {firstRegionFigure ? (
           <V3Instrument
             id="market"
             level={2}

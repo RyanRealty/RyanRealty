@@ -1,14 +1,10 @@
 /**
  * /price-drops/[city] - city-scoped 7-day price cuts, on the v3 barrel.
  *
- * Same contract as the region page. generateMetadata title still leads with
+ * Same contract as the region page. Opening is Field of this city's cut
+ * houses. Count is a caption. generateMetadata title still leads with
  * "Price Drops in". generateStaticParams over SITE_CITY_SLUGS.
  * dynamicParams stays false so an unknown city slug 404s.
- *
- * KB-era deletions: KbHero, KbFeatured, KbListingMap, HideAwareListingGrid,
- * sibling city chips as their own pattern (they go in Quiet), KbSell, CTABar,
- * DisplayHeading/PageBreadcrumb hidden parity hacks, SmoothScrollProvider.
- * Capture contract kept on the Sheet.
  */
 
 import { notFound } from 'next/navigation'
@@ -17,21 +13,16 @@ import { unstable_noStore as noStore } from 'next/cache'
 import { getPriceDrops } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { homesForSalePath } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
 import { formatPriceCompact } from '@/lib/format/money'
-import { formatDate } from '@/lib/format/date'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   V3_ROOT_CLASS,
-  v3Text,
   V3Breadcrumb,
   V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Quiet,
   V3SectionTracker,
-  type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -39,13 +30,13 @@ import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { PriceDropAlertsSheet } from '../_v3/PriceDropAlertsSheet.client'
 import {
   DROPS_CITY_SLUGS,
-  DROPS_FIELD_TRACE,
-  DROPS_TRACE,
   cityLabel,
+  dropsTrace,
   medianPositive,
 } from '../_v3/drops-constants'
 import { priceDropFieldItems } from '../_v3/drops-field-items'
 import { priceDropDatasetSchemas } from '../_v3/drops-jsonld'
+import { PriceDropPhotos, PriceDropsOpening } from '../_v3/PriceDropsField'
 
 export const revalidate = 1800
 export const dynamicParams = false
@@ -107,37 +98,6 @@ export default async function PriceDropsCityPage({ params }: Props) {
       : null
   const medianDropPctLabel =
     medianDropPct != null ? `${medianDropPct.toFixed(1)}%` : null
-  const stamp =
-    drops.length > 0
-      ? (() => {
-          const label = formatDate(fetchedAt)
-          return /\d/.test(label) ? label : null
-        })()
-      : null
-
-  const figures: V3InstrumentFigure[] = []
-  if (total > 0) {
-    figures.push({
-      value: v3Text(total.toLocaleString('en-US')),
-      label: v3Text(total === 1 ? `price cut in ${cityName}` : `price cuts in ${cityName}`),
-      href: '#cuts',
-    })
-  }
-  if (totalReducedLabel) {
-    figures.push({
-      value: v3Text(totalReducedLabel),
-      label: v3Text('asking-price cuts this week'),
-      href: '#cuts',
-    })
-  }
-  if (medianDropPctLabel) {
-    figures.push({
-      value: v3Text(medianDropPctLabel),
-      label: v3Text('median drop'),
-      href: '#cuts',
-    })
-  }
-  const [firstFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -177,6 +137,8 @@ export default async function PriceDropsCityPage({ params }: Props) {
     ...siblingItems,
   ]
 
+  const captionCount = fieldItems.length
+
   return (
     <>
       <main className={V3_ROOT_CLASS}>
@@ -192,21 +154,24 @@ export default async function PriceDropsCityPage({ params }: Props) {
           ]}
         />
 
-        {firstFigure ? (
-          <V3Instrument
-            id="answer"
-            level={1}
-            eyebrow={v3Text(`${cityName} · last 7 days`)}
-            headline={v3Text(`Price drops in ${cityName}`)}
-            figures={[firstFigure, ...restFigures]}
-            source={v3Text(DROPS_TRACE)}
-            {...(stamp ? { updated: v3Text(stamp) } : {})}
-            action={{
-              label: v3Text('Value my home'),
-              href: valuationHref(path),
-              variant: 'primary',
-            }}
-          />
+        {captionCount > 0 ? (
+          <>
+            <PriceDropsOpening
+              heading={`Price drops in ${cityName}`}
+              headline={`Price drops in ${cityName}`}
+              captionValue={captionCount.toLocaleString('en-US')}
+              captionLabel={captionCount === 1 ? `price cut in ${cityName}` : `price cuts in ${cityName}`}
+              source={dropsTrace(cityName)}
+            />
+            <V3Field
+              id="cuts"
+              className="pd-homes-field"
+              ariaLabel={`Homes in ${cityName} with a price cut in the last 7 days`}
+              items={fieldItems}
+              mapSlot={<PriceDropPhotos items={fieldItems} />}
+              emptyMessage={`No price cut in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
+            />
+          </>
         ) : (
           <V3Quiet
             id="answer"
@@ -222,22 +187,6 @@ export default async function PriceDropsCityPage({ params }: Props) {
             ]}
           />
         )}
-
-        <V3Field
-          id="cuts"
-          ariaLabel={`Homes in ${cityName} with a price cut in the last 7 days`}
-          items={fieldItems}
-          count={
-            fieldItems.length > 0
-              ? {
-                  value: fieldItems.length.toLocaleString('en-US'),
-                  label: fieldItems.length === 1 ? `home in ${cityName}` : `homes in ${cityName}`,
-                  source: DROPS_FIELD_TRACE,
-                }
-              : undefined
-          }
-          emptyMessage={`No price cut in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
-        />
 
         <PriceDropAlertsSheet placeLabel={cityName} city={cityName} />
 

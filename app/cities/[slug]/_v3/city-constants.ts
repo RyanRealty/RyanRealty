@@ -12,25 +12,11 @@
  */
 
 /**
- * How many active listings the Field renders as rows and pins.
- *
- * 24 is the number the retired dual-pane list already showed
- * (splitRowsFromTiles caps at 24 in lib/explore/subdivision-page-extras.ts), so
- * the visible set is unchanged by the migration. The honest total renders above
- * the frame as the Field's count, with its own trace, and the browse door under
- * the answer opens the full set.
+ * One inventory pull for the city Field. The caption, the list, and the map
+ * pins are this set. The ask is 1500. A PostgREST page may still return 1000.
+ * The caption counts the listed set, never a larger pulse figure.
  */
-export const CITY_FIELD_ROWS = 24
-
-/**
- * The pool the 24 rows are chosen from. `sort: 'newest'` orders the query, so
- * the pool only has to be large enough to survive the coordinate filter in
- * cityFieldItems (a listing with no lat/lng is listed, never plotted, but it
- * still occupies a row). 60 covers the worst observed null-coordinate rate on a
- * city page with room to spare, and it is a 25x smaller read than the retired
- * 1500-row map pull.
- */
-export const CITY_FIELD_POOL = 60
+export const CITY_FIELD_POOL = 1500
 
 /** The one alert filter the city capture adds: single family (§0, PropertyType A). */
 export const CITY_ALERT_PROPERTY_TYPE = 'A'

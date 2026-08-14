@@ -2,12 +2,13 @@
  * /about - brokerage profile, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Look (2026-08-13): About = faces. The first viewport is the live brokers'
- * canonical transparent PNGs (no card, no wash, no box). Quiet (origin) then
- * Instrument (verified licenses) then Ledger (service area) then Quiet (FAQ).
- * PUBLIC_UI.md opens About on Quiet + Sheet. The Sheet stays on /contact and
- * /team/[slug]. A new on-page form here would be a new capture contract. The
- * ask on this page is the valuation door, with ?from=/about.
+ * Look (2026-08-14): About = faces. The first viewport is the live brokers'
+ * canonical transparent PNGs (no card, no wash, no box). Name is the door.
+ * Call and text sit on the face row. Quiet (origin) then Instrument (verified
+ * licenses) then Ledger (service area) then Quiet (FAQ). PUBLIC_UI.md opens
+ * About on Quiet + Sheet. The Sheet stays on /contact and /team/[slug]. A new
+ * on-page form here would be a new capture contract. Seller lives on Sell.
+ * The next tap is the name or the number.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (AboutPage + aboutOrganization +
@@ -16,7 +17,8 @@
  * (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * D11: the mission sentence is the one virtue-word exception, exact words, We.
- * No invented quote. MLS remarks N/A.
+ * It ships in the closing Quiet, never on the first screen. No invented quote.
+ * MLS remarks N/A.
  *
  * DATES RENDER IN PACIFIC, a change from the KB page, stated rather than absorbed.
  * The KB articles rail (now deleted) formatted with timeZone UTC. formatDate is
@@ -135,7 +137,6 @@ export default async function AboutPage() {
     .filter((face): face is AboutFace => face !== null)
 
   const originItems: V3QuietItem[] = [
-    { kind: 'prose', body: ABOUT_MISSION },
     {
       kind: 'prose',
       body: [
@@ -161,6 +162,7 @@ export default async function AboutPage() {
   const [firstLicense, ...restLicense] = licenseFigures
 
   const faqItems: V3QuietItem[] = [
+    { kind: 'prose', body: ABOUT_MISSION },
     ...ABOUT_FAQ_ITEMS.map((item) => ({
       kind: 'prose' as const,
       term: item.question,
@@ -223,11 +225,7 @@ export default async function AboutPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'About' }]} />
 
-        <AboutFaces
-          people={faces}
-          eyebrow="Ryan Realty · Bend, Oregon"
-          heading="About Ryan Realty"
-        />
+        <AboutFaces people={faces} heading="About Ryan Realty" />
 
         <V3Quiet
           id="about"
@@ -246,11 +244,6 @@ export default async function AboutPage() {
             source={v3Text(
               'Oregon Real Estate Agency. Ryan Realty LLC firm license and the principal broker license on file.',
             )}
-            action={{
-              label: v3Text('Value my home'),
-              href: valuationHref(ROUTE_PATH),
-              variant: 'primary',
-            }}
           />
         ) : null}
 

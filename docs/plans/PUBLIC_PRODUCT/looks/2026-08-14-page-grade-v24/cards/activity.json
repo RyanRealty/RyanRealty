@@ -1,0 +1,94 @@
+{
+  "route": "/activity",
+  "grain": "homes",
+  "thing": "the moves",
+  "verdict": "FAIL",
+  "auto_fails": [1, 2, 3, 5, 6, 10, 14, 16],
+  "axes": {
+    "job": 2,
+    "path": 2,
+    "opening": 2,
+    "distinct": 2,
+    "craft": 3,
+    "motion": 2,
+    "perf": null,
+    "honesty": 4,
+    "reach": 2,
+    "simple": 3,
+    "quiet": 2,
+    "beat": null
+  },
+  "path": {
+    "start": "Activity",
+    "now": "12",
+    "next": "?",
+    "finish": "?",
+    "back": "Home"
+  },
+  "copy_words": 36,
+  "clutter": 7,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Largest first-screen element is 12. Number-as-hero on a homes ledger. Zero event rows at 390 and 1280",
+      "better": "Ledger of the moves. 12 is a caption, never the opening. Each row is a door."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Field. Job is a live ledger. Actual is market Instrument: eyebrow, H1, giant 12, source, See homes for sale. LIVE MLS peeks under the cookie",
+      "better": "Ledger of newest moves. Video, price drops, sold are filters of this browse, not a number poster."
+    },
+    {
+      "sev": "P0",
+      "defect": "Sibling clone of /videos and /housing-market. Same CENTRAL OREGON eyebrow, serif H1, giant navy integer, source line. Stranger names a count, not moves",
+      "better": "This crop is the live ledger. Not a 12 hero. Not a market Instrument."
+    },
+    {
+      "sev": "P0",
+      "defect": "12 RECENT MLS MOVES. Source says newest first, cap 24. CO join has 24 in the cap and 139 in 24h. The 12 is not the named set",
+      "better": "The Ledger is the set. The caption names the rows on screen."
+    },
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home. Body primary is See homes for sale. Accept all is a third filled control. None opens a move",
+      "better": "Primary is a move row. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess: See homes for sale, Value my home, or Accept all. FINISH is not on the screen. No row to tap",
+      "better": "One next tap: a move. FINISH is I know it or I saved this."
+    },
+    {
+      "sev": "P0",
+      "defect": "Copy 36. Foci 7: chrome, cookie, eyebrow, H1, 12, See homes, LIVE MLS peek",
+      "better": "Cut the poster. The Ledger is the page. Cookie after the thing."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: map missing, solds or price drops missing, this city's market has no door. The moves themselves have no door",
+      "better": "Named Ledger rows. Price drop and sold are filters. Place market is a labeled exit."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. No house photo. Cookie covers Latest moves on the list. LIVE MLS is a label, not a row",
+      "better": "Rows on the fold. Photo or event name is the control."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/activity-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/activity-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/videos-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-390.png",
+    "390: Home / Activity. CENTRAL OREGON. H1 What just moved on the list. 12 RECENT MLS MOVES. Source: live MLS activity events joined to Central Oregon listings, newest first, cap 24. See homes for sale. LIVE MLS / Latest moves on the list peek. Chrome Value my home. Cookie. No event row. No house.",
+    "1280: same Instrument 12. Nav Homes Places Market Sell About. Saved + filled Value my home. LIVE MLS still a label. Cookie still on the fold. No ledger rows.",
+    "Locked opening PUBLIC_UI §3 Homes: Field. Visitor objective: watch what just happened as a live ledger I can act on. Exits: listing, homes-for-sale, sell, housing-market.",
+    "Honesty two shapes 2026-08-14: (1) activity_events newest 24 joined to CO cities = 24. (2) same join event_at > now()-24h = 139. Global 24h = 291. Page hero is 12. Source cap is 24.",
+    "Sibling DNA: videos-390 is CENTRAL OREGON + H1 + giant 36 + source + See homes. market-390 is CENTRAL OREGON + H1 + figure grid + chart. This crop is the videos Instrument with 12 instead of 36.",
+    "Copy 36: H1 + RECENT MLS MOVES + source minus place + Latest moves on the list + cookie body. Clutter 7.",
+    "Hunt 390: map = not there · solds/price drops = not there · Bend market = not there · a move row = not there",
+    "Not beat_on. Beat seats omitted, not guessed. perf not measured.",
+    "SEND: no. A 12 poster with no ledger is not a URL to text."
+  ]
+}

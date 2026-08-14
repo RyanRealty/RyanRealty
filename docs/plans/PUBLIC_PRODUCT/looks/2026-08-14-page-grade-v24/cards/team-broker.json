@@ -1,0 +1,80 @@
+{
+  "route": "/team/matt-ryan",
+  "grain": "about",
+  "thing": "this person",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 10, 14, 16],
+  "axes": {
+    "job": 2,
+    "path": 3,
+    "opening": 2,
+    "distinct": 5,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 7,
+    "reach": 3,
+    "simple": 4,
+    "quiet": 2,
+    "beat": null
+  },
+  "path": {
+    "start": "Matt Ryan",
+    "now": "a bio",
+    "next": "Value my home",
+    "finish": "",
+    "back": "Team"
+  },
+  "copy_words": 96,
+  "clutter": 8,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome on this broker is Value my home. Cookie Accept all is the other navy fill.",
+      "better": "The face is the primary. Tel on the face. Seller lives on Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Quiet + Sheet, faces first. 390 and 1280 folds are eyebrow, name, a long bio, title, license. No face. No Sheet.",
+      "better": "The face fills the fold. Name is already known. Call and text on the face row."
+    },
+    {
+      "sev": "P0",
+      "defect": "FINISH is blank. NEXT is the seller chrome, not a way to reach Matt.",
+      "better": "One filled control: the number."
+    },
+    {
+      "sev": "P0",
+      "defect": "Eight foci. 96 first-screen words. Bio occupies the fold.",
+      "better": "Chrome plus one face. Bio is Quiet under the face. Cookie off the first card."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: Matt's phone missing, a review missing, a sold as a door missing. 1280 peeks Homes closed under the cookie.",
+      "better": "Solds as named doors. Reviews as one door. Tel on the face."
+    },
+    {
+      "sev": "P2",
+      "defect": "Page is still. No face to judge. License is a caption, not a motion.",
+      "better": "Opening a sold is the motion. Face is large enough to send."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/team-broker-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/team-broker-1280.png",
+    "390: chrome Value my home filled. Home / Team / Matt Ryan. Eyebrow MATT · OWNER & PRINCIPAL BROKER. H1 Matt Ryan. Bio: fire service, Red Erickson, licensed in Oregon, Bend / Redmond / Sisters / Sunriver. Title Owner & Principal Broker. Oregon license #201206613. Cookie still up. No face. No tel. No form.",
+    "1280: same stack. About in nav. Homes closed starts under the cookie. Still no face on the fold.",
+    "Locked opening PUBLIC_UI §3 About: Quiet + Sheet, faces first. Actual: Quiet of bio. Face not in the 390 or 1280 first screen.",
+    "Copy 96 = breadcrumb, role eyebrow, bio minus place names, Title / Owner & Principal Broker, license label, cookie. Matt Ryan treated as the thing.",
+    "Clutter 8: chrome, Value my home, breadcrumb, eyebrow, H1, bio, title/license, cookie.",
+    "Occupancy 390: thing (the person as a face) is 0%. Type owns the fold.",
+    "Shelf: this person partial (name yes, face hide). Record hide on 390, peek on 1280. Reach them hide. Service area is a bio list, not place doors.",
+    "Hunt 3+: phone not on fold · review not on fold · sold = 1280 peek under cookie.",
+    "Honesty: license #201206613 prints. No boutique on this crop. No invented zero.",
+    "Visitor objective: judge this broker enough to want them. First screen is a paragraph.",
+    "Beat omitted — /team/matt-ryan is not in beat_on. perf null — not measured.",
+    "SEND: no. A buyer cannot be sent a broker URL that hides the face and the number."
+  ]
+}

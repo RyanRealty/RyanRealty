@@ -13,11 +13,57 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { cn } from '@/lib/utils'
 
 const COOKIE_CONSENT_KEY = 'ryan_realty_cookie_consent'
 const CONSENT_EXPIRY_YEARS = 1
 
+/** First-screen 390 stays clear this long. Chip only, never the filled bar. */
+export const COOKIE_NOTICE_FOLD_DELAY_MS = 3000
+/** First scroll past this reveals the legal bar. The visitor has seen the thing. */
+export const COOKIE_NOTICE_SCROLL_PX = 24
+
 export type ConsentState = { analytics: boolean; marketing: boolean }
+
+export type CookieNoticeSurface = 'hidden' | 'chip' | 'bar'
+
+export type CookieNoticeEvent =
+  | 'mount'
+  | 'scroll'
+  | 'delay'
+  | 'open-bar'
+  | 'chosen'
+  | 'consent-recorded'
+
+/**
+ * Occupancy machine for the consent surface. Mount never claims the fold.
+ * Scroll (the thing has been seen) earns the legal bar. The 3s delay earns
+ * only a corner chip so Accept all is never a first-viewport filled primary.
+ */
+export function nextCookieNoticeSurface(
+  surface: CookieNoticeSurface,
+  event: CookieNoticeEvent,
+  hasConsent: boolean,
+): CookieNoticeSurface {
+  if (hasConsent) return 'hidden'
+  switch (event) {
+    case 'mount':
+      return 'hidden'
+    case 'scroll':
+      return 'bar'
+    case 'delay':
+      return surface === 'bar' ? 'bar' : 'chip'
+    case 'open-bar':
+      return 'bar'
+    case 'chosen':
+    case 'consent-recorded':
+      return 'hidden'
+    default: {
+      const _exhaustive: never = event
+      return _exhaustive
+    }
+  }
+}
 
 /** The stored consent choice, or null when the visitor has not answered the
  *  banner yet. Callers that need to distinguish "no choice" (functional
@@ -102,41 +148,71 @@ export function getOrCreateVisitId(): string | null {
 }
 
 export default function CookieConsentBanner() {
-  const [visible, setVisible] = useState(false)
+  const [surface, setSurface] = useState<CookieNoticeSurface>('hidden')
   const [prefsOpen, setPrefsOpen] = useState(false)
   const [analytics, setAnalytics] = useState(true)
   const [marketing, setMarketing] = useState(true)
 
   useEffect(() => {
     const consent = getConsent()
-    if (consent === null) setVisible(true)
-    else {
+    if (consent !== null) {
       setAnalytics(consent.analytics)
       setMarketing(consent.marketing)
+      return
+    }
+
+    const apply = (event: CookieNoticeEvent) => {
+      setSurface((current) =>
+        nextCookieNoticeSurface(current, event, getConsent() !== null),
+      )
+    }
+
+    const onConsent = () => apply('consent-recorded')
+    window.addEventListener('cookie-consent', onConsent)
+
+    const onScroll = () => {
+      if (window.scrollY < COOKIE_NOTICE_SCROLL_PX) return
+      apply('scroll')
+      window.removeEventListener('scroll', onScroll)
+    }
+
+    if (window.scrollY >= COOKIE_NOTICE_SCROLL_PX) {
+      apply('scroll')
+    } else {
+      window.addEventListener('scroll', onScroll, { passive: true })
+    }
+
+    const timer = window.setTimeout(() => apply('delay'), COOKIE_NOTICE_FOLD_DELAY_MS)
+
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('cookie-consent', onConsent)
     }
   }, [])
 
   function acceptAll() {
     setConsentState({ analytics: true, marketing: true })
-    setVisible(false)
+    setSurface('hidden')
+    setPrefsOpen(false)
     window.dispatchEvent(new CustomEvent('cookie-consent', { detail: 'all' }))
   }
 
   function essentialOnly() {
     setConsentState({ analytics: false, marketing: false })
-    setVisible(false)
+    setSurface('hidden')
+    setPrefsOpen(false)
     window.dispatchEvent(new CustomEvent('cookie-consent', { detail: 'essential' }))
   }
 
   function savePreferences() {
     setConsentState({ analytics, marketing })
     setPrefsOpen(false)
-    setVisible(false)
+    setSurface('hidden')
     window.dispatchEvent(new CustomEvent('cookie-consent', { detail: analytics && marketing ? 'all' : 'essential' }))
   }
 
-  if (!visible && !prefsOpen) return null
-
+  if (surface === 'hidden' && !prefsOpen) return null
 
   return (
     <>
@@ -160,16 +236,37 @@ export default function CookieConsentBanner() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-    {visible && (
+    {surface === 'chip' && (
+    <div
+      role="region"
+      aria-label="Cookie notice"
+      data-cookie-notice="chip"
+      className={cn('fixed bottom-4 end-4 z-[90]')}
+    >
+      <Button
+        type="button"
+        variant="outline"
+        className="min-h-11"
+        onClick={() => setSurface((current) => nextCookieNoticeSurface(current, 'open-bar', false))}
+      >
+        Cookies
+      </Button>
+    </div>
+    )}
+    {surface === 'bar' && (
     /* role="region", not role="dialog": this is a persistent non-modal bar with
        no focus move or trap, so announcing it as a dialog misled screen readers
-       (design-audit P3). Compact layout: one short line + one row of three
-       equal buttons, so the bar stops covering the hero's proof line and CTA
-       pair on mobile first paint (design-audit P2). */
+       (design-audit P3). Shown only after first scroll or after the visitor
+       opens the delayed chip, so Accept all is never a first-viewport fill. */
     /* z-90: above the listing-detail sticky mobile CTA bar (kb.css
        .listing-mobile-cta, z-index 80) — the CTA used to slide up OVER the
        banner's own Accept/Manage/Essential buttons (design-audit P2). */
-    <div role="region" aria-label="Cookie notice" className="fixed bottom-0 left-0 right-0 z-[90] border-t border-border bg-card px-4 py-3 shadow-md sm:px-6">
+    <div
+      role="region"
+      aria-label="Cookie notice"
+      data-cookie-notice="bar"
+      className="fixed bottom-0 left-0 right-0 z-[90] border-t border-border bg-card px-4 py-3 shadow-md sm:px-6"
+    >
       <div className="mx-auto max-w-3xl">
         <p className="text-xs text-muted-foreground sm:text-sm">
           We use cookies to measure site traffic and target ads.{' '}

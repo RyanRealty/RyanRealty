@@ -395,11 +395,13 @@ export default async function SearchPage({
           Map/split: compact non-sticky inline under filters (shrink-0) — sticky
           on the app-frame previously overlapped the filter chip row. Guests also
           keep SaveSearchButton in SearchFilters (navy mid-browse control). */}
+      <div className="hidden sm:block">
       <SearchAlertCapture
         signedIn={!!session?.user}
         defaultCity={effectiveFilters.city ?? ''}
         variant={isAppFrame ? 'inline' : 'sticky'}
       />
+      </div>
       <div className={cn('w-full', isAppFrame && 'flex min-h-0 flex-1 flex-col')}>
         {view === 'map' && (
           <div className="map-search-shell w-full">

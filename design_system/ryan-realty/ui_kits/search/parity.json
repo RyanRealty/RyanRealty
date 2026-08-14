@@ -41,7 +41,8 @@
   "layoutContracts": [
     "3-row chrome intent: Row 1 omnibox + Save/Alerts CTAs; Row 2 primary filter chips; Row 3 results count + filter summary + sort",
     "Degraded search honesty: SSR/client timeout or fetch failure must not present as true zero inventory without a retry/degraded affordance",
-    "Count/sort row: dedicated visible stamp in split (N homes · scope/filters · sorted by…)",
+    "Count/sort row: dedicated visible stamp in split (N homes · scope/filters · sorted by…). 390 list names the list (N homes). in this map view only when the map is on screen.",
+    "390 filters are one All filters control. Chip set is sm+ so pills do not clip.",
     "Search-as-you-move: pan/zoom re-queries the visible area; list + markers stay in lockstep from ONE viewport fetch",
     "Split body: map + results side-by-side on desktop; intentional mobile list/map toggle (not dual conflicting chrome)",
     "V3Chrome is sticky in flow, not fixed. Search-app-frame height is calc(100dvh - 3.5rem) with margin-top 0. Filter dock sticks at top 3.5rem."

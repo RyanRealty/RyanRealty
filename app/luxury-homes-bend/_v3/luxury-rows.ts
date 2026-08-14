@@ -1,13 +1,12 @@
 /**
- * Luxury Bend listing rows. A row earns a place when it has a price, a street,
+ * Luxury Bend Field rows. A row earns a place when it has a price, a street,
  * and a photo. The $1.5M floor is applied by the DAL filter, not here.
  */
 
-import type { V3LedgerFigureRow } from '@/components/site/v3'
-import { v3Text } from '@/components/site/v3'
+import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data'
+import { formatPrice } from '@/lib/format/money'
 import { listingTileHref } from '@/lib/slug'
-import { livePrice } from '@/app/_v3/live-format'
 
 export const LUX_MIN = 1_500_000
 
@@ -19,11 +18,15 @@ export const LUX_COMMUNITIES = [
   { slug: 'northwest-crossing', label: 'NorthWest Crossing' },
 ] as const
 
-export function luxuryRows(tiles: readonly ListingTile[]): V3LedgerFigureRow[] {
-  const rows: V3LedgerFigureRow[] = []
+export const LUX_TRACE =
+  'live MLS through Oregon Data Share, active single-family homes in Bend with list price at or above $1,500,000'
+
+export function luxuryFieldItems(tiles: readonly ListingTile[]): V3FieldItem[] {
+  const items: V3FieldItem[] = []
   for (const tile of tiles) {
-    const price = livePrice(tile.listPrice)
-    if (!price) continue
+    if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) continue
+    const priceLabel = formatPrice(tile.listPrice)
+    if (!priceLabel || !/\$/.test(priceLabel)) continue
     const photo = tile.photoUrl?.trim()
     if (!photo) continue
     const street = [tile.streetNumber, tile.streetName, tile.streetSuffix]
@@ -31,15 +34,18 @@ export function luxuryRows(tiles: readonly ListingTile[]): V3LedgerFigureRow[] {
       .join(' ')
       .trim()
     if (!street) continue
+    const subdivision = tile.subdivisionName?.trim()
+    const namedSubdivision = subdivision && !/^n\/?a$/i.test(subdivision) ? subdivision : null
     const meta = [
       tile.beds != null ? `${Math.round(tile.beds)} bd` : null,
       tile.baths != null ? `${tile.baths} ba` : null,
       tile.sqft != null ? `${tile.sqft.toLocaleString('en-US')} sqft` : null,
+      namedSubdivision,
     ]
-      .filter((part): part is string => part !== null)
+      .filter((part): part is string => part !== null && part !== '')
       .join(' · ')
-    const sub = tile.subdivisionName?.trim()
-    rows.push({
+    items.push({
+      id: tile.listingKey,
       href: listingTileHref({
         listingKey: tile.listingKey,
         listNumber: tile.listNumber,
@@ -48,13 +54,13 @@ export function luxuryRows(tiles: readonly ListingTile[]): V3LedgerFigureRow[] {
         city: tile.city,
         subdivisionName: tile.subdivisionName,
       }),
-      when: v3Text(sub || 'Bend'),
-      what: v3Text(street),
-      detail: meta ? v3Text(meta) : undefined,
-      value: v3Text(price),
-      id: tile.listingKey,
-      media: { src: photo },
+      priceLabel,
+      title: street,
+      photoSrc: photo,
+      ...(meta ? { meta } : {}),
+      lat: tile.lat,
+      lng: tile.lng,
     })
   }
-  return rows
+  return items
 }

@@ -61,6 +61,18 @@ export function activeCountTrace(scope: PlatScope): string {
   return `${FEED}, active listings ${where}, every property type the plat holds.`
 }
 
+/** One line on the homes Ledger. The fourteen-row essay stays off the fold. */
+export function homesLedgerTrace(scope: PlatScope): string {
+  if (scope.kind === 'registry') {
+    return `${FEED}, active single-family listings under the ${scope.subdivisionName} name in ${scope.city}.`
+  }
+  const where =
+    scope.kind === 'boundary'
+      ? `inside the recorded ${scope.displayName} plat`
+      : `returned for ${scope.displayName}`
+  return `${FEED}, active single-family listings ${where}.`
+}
+
 /** Trace for the Field's rows and pins (population 2). */
 export function fieldTrace(scope: PlatScope, listedCap: number): string {
   const where =

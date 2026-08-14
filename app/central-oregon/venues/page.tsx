@@ -2,9 +2,11 @@
 /**
  * /central-oregon/venues — live-music and performing-arts hub on the v3 barrel.
  *
+ * Ledger of named venues fills the fold. Count is a caption. Seller lives on Sell.
+ *
  * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
  * events.css cards, RegionalSfrAlertsBand, separate music/theater H2 sections
- * (type moved to the Ledger when column).
+ * (type moved to the Ledger when column), the Instrument count hero.
  */
 
 import type { Metadata } from 'next'
@@ -21,7 +23,6 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
@@ -43,6 +44,7 @@ export function generateMetadata(): Metadata {
 export default function VenuesIndexPage() {
   const { music, performingArts } = getVenuesForIndex()
   const total = getVenuesCount()
+  const caption = `${total.toLocaleString('en-US')} ${total === 1 ? 'venue' : 'venues'}`
   const listed = [...music, ...performingArts].filter(
     (v, i, arr) => arr.findIndex((x) => x.slug === v.slug) === i,
   )
@@ -94,38 +96,21 @@ export default function VenuesIndexPage() {
           trail={[{ label: 'Home', href: '/' }, { label: 'Live music & shows' }]}
         />
 
-        <V3Instrument
-          id="venues"
-          level={1}
-          eyebrow={v3Text('Central Oregon')}
-          headline={v3Text('Where the shows are, and homes nearby')}
-          figures={[
-            {
-              value: v3Text(total.toLocaleString('en-US')),
-              label: v3Text('venues in the registry'),
-              href: '#venue-list',
-            },
-          ]}
-          source={v3Text(
-            'verified venues registry (data/co-venues.ts). Each venue links to its own live calendar. Nothing here is a live MLS figure.',
-          )}
-          action={{
-            label: v3Text('Value my home'),
-            href: valuationHref('/central-oregon/venues'),
-          }}
-        />
-
         {firstRow ? (
           <V3Ledger
             id="venue-list"
-            eyebrow={v3Text('On stage')}
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Central Oregon venues')}
+            note={v3Text(caption)}
             rows={[firstRow, ...restRows]}
           />
         ) : (
           <V3Ledger
             id="venue-list"
+            headingLevel={1}
             heading={v3Text('Central Oregon venues')}
+            note={v3Text(caption)}
             rows={[]}
             emptyMessage={v3Text('The venue guide is being updated. See events in the meantime.')}
           />

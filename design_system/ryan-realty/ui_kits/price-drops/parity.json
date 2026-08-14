@@ -1,7 +1,7 @@
 {
   "route": "app/price-drops/page.tsx",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). There is no index.html in this directory. The visual target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-HOMES-SIGNALS). Rhythm: FOUR of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Instrument level 1, Field, Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Instrument and is still four patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: an empty resilient-cache fallback is opted out of ISR with noStore(), and Dataset / updated / count figures are omitted rather than published as 0. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search.",
+  "note": "Homes grain fix 2026-08-14. Rhythm: THREE of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Field of the cut houses (count is a caption, never an Instrument hero), Sheet, Quiet, Footer. The empty window substitutes a Quiet for the Field and is still three patterns. Every figure comes from ONE getPriceDrops({ limit: 48, days: 7 }) call. Absent is not zero: an empty resilient-cache fallback is opted out of ISR with noStore(), and Dataset / updated / count figures are omitted rather than published as 0. Drop math is previous list price to current list price. Field rows sort by lastDropPct descending. HideAwareListingGrid is a declared deletion: hidden-home subtraction stays on /search.",
   "deletions": [
     "KbHero: the dark photo hero and its live-glance counts. The counts survive as Instrument figures when the pull is non-empty.",
     "KbFeatured: the poster grid of the biggest percent reductions. Those homes are Field rows now, sorted by lastDropPct descending.",
@@ -10,8 +10,9 @@
     "Neighborhood mini-table: the 7-day pull grouped by subdivision. Field row meta still names displaySubdivision when the feed has a readable name.",
     "City chip sections: the filter-nav and every-city chip rows. City doors live in the closing Quiet.",
     "KbCommunityAlerts markup: replaced by PriceDropAlertsSheet on V3Sheet. Capture contract unchanged (see dataLayer), including the company honeypot.",
-    "KbSell: the seller band. The ask survives as the Instrument's filled Value my home action via valuationHref('/price-drops').",
-    "CTABar: the closing talk-to-a-broker bar. Not carried. The page's primary is the valuation ask.",
+    "KbSell: the seller band. Seller ask lives on Sell. The house is the primary on this buyer Field.",
+    "CTABar: the closing talk-to-a-broker bar. Not carried.",
+    "V3Instrument number hero: 60 / $3.2M / 5.6% and the method essay. Count is a caption beside the Field.",
     "DisplayHeading / PageBreadcrumb hidden parity hacks on the city route.",
     "SmoothScrollProvider: the Lenis wrapper. The v3 register does not hijack scroll.",
     "Badge and Table from components/ui.",
@@ -39,13 +40,8 @@
       "blocking": true
     },
     {
-      "name": "V3Instrument",
-      "section": "Pattern 1, once, level 1, when the pull has at least one sourced figure. H1 'Price drops in Central Oregon'. Figures from the same getPriceDrops call: count (only if total > 0), compact total reduced (only if > 0), median drop percent (only if not null). Ask is filled Value my home. At 390 the chrome CTA sits in the collapsed menu, so this is the visible primary.",
-      "blocking": true
-    },
-    {
       "name": "V3Field",
-      "section": "Pattern 2, once. The week's cuts as map plus list, sorted by drop percent. Rows without a street or a list price are dropped. Count uses the Field population and the same trace.",
+      "section": "Pattern 2, once, opens the page. Photographed cut houses. Count is a caption of the Field population, never a number hero. Rows without a street or a list price are dropped. Sorted by drop percent.",
       "blocking": true
     },
     {
@@ -55,7 +51,7 @@
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6. Closing edges (window, homes for sale, open houses, city doors). Also the empty-window H1 branch, where it replaces Instrument.",
+      "section": "Pattern 6. Closing edges (window, homes for sale, open houses, city doors). Also the empty-window H1 branch, where it replaces Field.",
       "blocking": true
     },
     {
@@ -83,8 +79,7 @@
     "MetadataBlock",
     "KbSectionTracker",
     "V3Breadcrumb",
-    "V3Instrument (level 1) OR V3Quiet (empty window)",
-    "V3Field",
+    "V3Field OR V3Quiet (empty window)",
     "PriceDropAlertsSheet (V3Sheet, listing alerts)",
     "V3Quiet (edges)",
     "V3Footer"

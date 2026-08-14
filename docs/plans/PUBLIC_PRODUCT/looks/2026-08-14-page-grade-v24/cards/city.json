@@ -1,0 +1,107 @@
+{
+  "route": "/cities/bend",
+  "grain": "city",
+  "thing": "this city's houses",
+  "verdict": "FAIL",
+  "auto_fails": [1, 2, 3, 4, 14, 16, 18, 27],
+  "axes": {
+    "job": 3,
+    "path": 2,
+    "opening": 2,
+    "distinct": 3,
+    "craft": 3,
+    "motion": 2,
+    "perf": null,
+    "honesty": 6,
+    "reach": 3,
+    "simple": 3,
+    "quiet": 2,
+    "beat": 2
+  },
+  "path": {
+    "start": "Bend homes for sale",
+    "now": "494 then stamps",
+    "next": "?",
+    "finish": "?",
+    "back": "Home Cities Bend"
+  },
+  "copy_words": 25,
+  "clutter": 7,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home. Accept all is a second filled control. Neither is this city's job.",
+      "better": "Buyer primary is a house or Save Bend. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "494 is the hero. Navy serif ~145×91. House photos are 26.8% of the area below chrome.",
+      "better": "Field of Bend houses. 494 is a caption beside the Field, never the opening."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Field of this city's houses, verdict a caption. Actual is Instrument 494 then stamps. No map.",
+      "better": "One Field: map and list are the same Bend set. Verdict is a caption."
+    },
+    {
+      "sev": "P0",
+      "defect": "Wrong grain. Instrument then stamp Field is the neighborhood lock. Stamp grid plus list card is Tetherow's crop. City is not a captioned Field.",
+      "better": "City Field of Bend houses. Neighborhood keeps Instrument then Field. Child grains stay below the fold."
+    },
+    {
+      "sev": "P0",
+      "defect": "390 stamp photos ~111px (need ≥160). Addresses truncate (Breckenrid…, Saddlebac…, Sun Countr…). 1280 grid photos 189px (need ≥240).",
+      "better": "One large Field. Addresses wrap. No ellipsis."
+    },
+    {
+      "sev": "P0",
+      "defect": "Two lists of the same houses: 390 stamp grid plus the Breckenridge card; 1280 left grid plus right list.",
+      "better": "One Field. Map and list are the same set."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess (Value my home vs a stamp vs the card vs Accept all). FINISH is not on the screen.",
+      "better": "One next tap: a house. FINISH is I decided or alert on."
+    },
+    {
+      "sev": "P0",
+      "defect": "Must-win TRAIL vs Zillow Bend: their house cards fill the fold. Ours is 494 then 111px stamps. No verdict caption. No map.",
+      "better": "Houses fill the fold. Verdict is a caption. Child grains are doors below."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from the first screen: months of supply not there, a child neighborhood or master-plan not there, last-year median not there. Below-fold unknown.",
+      "better": "Named ledgers under the Field: pace, solds, around. Eight doors, not a Quiet dump."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. Cookie sits on the first list card. Crop is a serif inventory integer plus stamps.",
+      "better": "Pin and row are one set. Consent after the thing."
+    }
+  ],
+  "beat": {
+    "zillow": {
+      "thing_first": "TRAIL",
+      "known_path": "TRAIL",
+      "live_record": "TRAIL",
+      "quiet": "TRAIL",
+      "honesty": "TIE",
+      "must_win": "TRAIL"
+    }
+  },
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/city-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/city-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/zillow-bend-390-live.png",
+    "390: chrome Value my home filled; breadcrumb Home / Cities / Bend; giant 494; HOMES FOR SALE IN BEND; 3×2 stamps ~111px with truncated addresses; Breckenridge list card ($699,000, 2 bd · 2 ba · 1,865 sqft); cookie Accept all. Photo occupancy ~26.8% below chrome. Copy 25. Foci 7.",
+    "1280: same 494 hero. Left 3-col grid photos 189×189. Right list repeats Breckenridge, Mira, Saddleback, Sun Country. Cookie full width. Nav Homes Places Market Sell About plus filled Value my home. No map.",
+    "Locked opening PUBLIC_UI §3: City → Field of this city's houses. Verdict is a caption, never a number hero. Child neighborhoods and master-plans are doors below the fold.",
+    "Grain crop: home = six-city integers; neighborhood = Instrument 62 / $1,385,000 / 28.6; master-plan = stamp grid + list; this city = giant 494 + stamp grid + list. City wearing neighborhood Instrument then master-plan stamps.",
+    "Hunt: MoS = not there · child grain = not there · last-year median = not there. Below-fold unknown (first-screen PNGs only).",
+    "Zillow Bend 390: search Bend OR; For sale / Filters / Save search; house cards fill the fold ($1,099,000, 3 bds | 2 ba | 1,989 sqft, full address); 1,519 results; Map | Sort. Thing-first and must-win TRAIL.",
+    "Visitor objective: decide whether this city fits — what's for sale, what it costs, how fast it moves, what's around it.",
+    "perf not measured. Other Beat seats omitted (no equivalent PNG this seat).",
+    "SEND: no. A 494 poster and seller chrome is not a city a buyer would open."
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "route": "/months-of-supply",
+  "grain": "market",
+  "thing": "the number and the chart",
+  "verdict": "FAIL",
+  "auto_fails": [1, 10, 12, 14, 16],
+  "axes": {
+    "job": 6,
+    "path": 4,
+    "opening": 8,
+    "distinct": 6,
+    "craft": 5,
+    "motion": 2,
+    "perf": null,
+    "honesty": 6,
+    "reach": 5,
+    "simple": 4,
+    "quiet": 2,
+    "beat": 3
+  },
+  "path": {
+    "start": "Months of supply",
+    "now": "5.8 balanced",
+    "next": "?",
+    "finish": "I understand",
+    "back": "Housing market"
+  },
+  "copy_words": 70,
+  "clutter": 7,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home on a glossary fold. Accept all is a second fill. Central Oregon market report is a third control under the cookie.",
+      "better": "Primary is the number, then the market door. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess until the cookie moves. Two navy fills compete with the market-report door.",
+      "better": "One next: Central Oregon market report. Cookie off first paint."
+    },
+    {
+      "sev": "P0",
+      "defect": "Source prints market_pulse_live. Internal slug on the fold. Copy 70. Seven foci.",
+      "better": "Cut the slug. 5.8 is the number. Thresholds are a caption. Definition is one labeled block below."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt: two-year chart not there. Bend houses not there. Meaning is on the fold (the job). Actives here are 1,845; sibling market pages show 1,844.",
+      "better": "One cache row, one figure. Chart of MoS over time. Place door after the answer."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. Cookie covers the market-report door and the DEFINITION peek.",
+      "better": "Consent after the thing. The number stays the fold."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/months-of-supply-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/months-of-supply-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-390.png",
+    "390: breadcrumb Home / Housing market / Months of supply; eyebrow REAL ESTATE GLOSSARY; H1 Months of supply; 5.8 MONTHS OF SUPPLY IN CENTRAL OREGON; 1,845 ACTIVE SINGLE-FAMILY LISTINGS; Balanced market CENTRAL OREGON TODAY; source market_pulse_live through Oregon Data Share; formula last 6 months; thresholds ≤4 seller / 4–6 balanced / ≥6 buyer; updated Aug 14, 2026, 1:33 PM PT; Central Oregon market report button under cookie; Accept all.",
+    "1280: same three-stat row. Market-report button visible. DEFINITION starts under the cookie. Nav Market underlined. Still Value my home + cookie. No chart.",
+    "Locked opening PUBLIC_UI §3: Market → Instrument. Number and chart. Actual is Instrument of 5.8 + verdict. No chart. Pattern matches; chart is missing.",
+    "Honesty: 5.8 is balanced (4–6). Verdict matches. Stamp is on the fold. 1,845 vs 1,844 on /housing-market, /housing-market/central-oregon, /housing-market/annual-review, /housing-market/reports in this look set.",
+    "Copy 70. Clutter 7: chrome, Value my home, eyebrow, H1, numbers, source, cookie.",
+    "Hunt: two-year chart = not there · Bend houses = not there · meaning = 0 taps (the job). Geo door = Central Oregon market report, covered on 390. Below-fold unknown (first-screen PNGs only).",
+    "Visitor objective: learn what months of supply means and see the live regional value and verdict — formula from code, never retyped.",
+    "Beat not run (not in beat_on). Seats omitted. perf not measured.",
+    "SEND: no. The number is right. Seller chrome and a paragraph of slugs keep it off a text."
+  ]
+}

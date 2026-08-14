@@ -16,9 +16,12 @@
 
 import type { ListingRow } from '@/app/actions/communities'
 import type { ListingTile } from '@/lib/data'
-import type { V3FieldItem } from '@/components/site/v3'
+import { v3Text, type V3FieldItem, type V3LedgerFigureRow } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import { listingDetailPath } from '@/lib/slug'
+
+/** Pins at or above this count are a map. Below it, the plat is a list. */
+export const FIELD_MAP_MIN = 4
 
 /** A Field item that is known to carry coordinates, so it can also be a pin. */
 export type FieldEntry = V3FieldItem & { lat: number; lng: number }
@@ -57,6 +60,7 @@ export function toFieldEntry(tile: ListingTile, hasVideo: boolean): FieldEntry |
     priceLabel: tile.listPrice == null ? NO_PRICE : formatPrice(tile.listPrice),
     title: street || 'Listing',
     meta: metaLine(tile.beds, tile.baths, hasVideo),
+    photoSrc: tile.photoUrl?.trim() || undefined,
     lat: tile.lat,
     lng: tile.lng,
   }
@@ -89,9 +93,37 @@ export function fallbackFieldRows(
       priceLabel: row.ListPrice == null ? NO_PRICE : formatPrice(row.ListPrice),
       title: street || 'Listing',
       meta: metaLine(row.BedroomsTotal, row.BathroomsTotal, videoKeys.has(key)),
+      photoSrc: row.PhotoURL?.trim() || undefined,
       lat: row.Latitude,
       lng: row.Longitude,
     })
   }
   return out
+}
+
+export function toLedgerRows(items: readonly V3FieldItem[]): V3LedgerFigureRow[] {
+  return items.flatMap((item) => {
+    if (!item.href || !item.title) return []
+    return [
+      {
+        href: item.href,
+        when: v3Text(item.meta?.trim() || 'For sale'),
+        what: v3Text(item.title),
+        value: v3Text(item.priceLabel),
+        id: item.id,
+        ...(item.photoSrc ? { media: { src: item.photoSrc } } : {}),
+      },
+    ]
+  })
+}
+
+export function platHomesMode(input: {
+  activeCount: number | null
+  homeRows: number
+  pinCount: number
+}): 'unknown' | 'empty' | 'field' | 'ledger' {
+  if (input.activeCount == null) return 'unknown'
+  if (input.activeCount === 0 || input.homeRows === 0) return 'empty'
+  if (input.pinCount >= FIELD_MAP_MIN) return 'field'
+  return 'ledger'
 }

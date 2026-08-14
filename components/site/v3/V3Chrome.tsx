@@ -36,11 +36,10 @@
  * about in development, because dropping it would delete destinations, which is
  * the one thing this rebuild may not do.
  *
- * ONE PRIMARY CTA, and it is the valuation ask from VALUATION_FORM
- * (`/sell#get-value`, the locked intake spine). There is no second primary
- * anywhere in the chrome: the footer carries the same destination as an
- * ordinary column link, and the menu overlay carries it inside the Sell group,
- * so a visitor never sees two solid buttons competing in one viewport
+ * ONE FILLED ASK, and only on Sell: the valuation label from VALUATION_FORM
+ * (`/sell#get-value`). Buyer, place, market, about, and listing chrome do not
+ * fill Value my home (Page Grade 2026-08-14 wrong-job-chrome). The door stays
+ * in the Sell nav group. The footer never carries a second solid button
  * (PUBLIC_UI.md section 1, founding directive 3).
  *
  * WHAT THIS DELIBERATELY DOES NOT CARRY, versus KbNav:
@@ -69,6 +68,7 @@ import {
   type NavLink,
 } from '@/lib/site-nav'
 import { valuationHref } from '@/lib/site/valuation-href'
+import { chromeShowsSellerAsk } from '@/lib/site/chrome-seller-ask'
 import { shouldHidePublicChrome } from '@/lib/site/public-chrome-hide'
 import { V3Button, V3_ROOT_CLASS, v3Text, type V3Text } from './atoms'
 import './tokens.css'
@@ -186,13 +186,11 @@ const SAVED =
     : null
 
 /**
- * The one primary action in the chrome, straight off the locked spine. Only the
- * LABEL is fixed at module scope: the href is built per render by
- * valuationHref(path) so the ask carries `?from=<originating path>` into the
- * seller action's sourceUrl. The chrome renders on every migrated route, so a
- * module-level href would report one destination for all of them and the
- * program's KPI — completed valuations per page — would have nothing to key on
- * (migration-recipe.md, 2026-08-11 addendum 1).
+ * The filled seller ask. Only the LABEL is fixed at module scope: the href is
+ * built per render by valuationHref(path) so the ask carries
+ * `?from=<originating path>` into the seller action's sourceUrl. Rendered only
+ * when chromeShowsSellerAsk(path) is true (Sell). KPI attribution still keys
+ * off body valuation links on other routes.
  */
 const CTA = { label: v3Text(VALUATION_FORM.label) }
 
@@ -547,9 +545,11 @@ export function V3Chrome({ currentPath, id, className }: V3ChromeProps) {
             </Link>
           ) : null}
 
-          <V3Button href={valuationHref(path)} className="v3-chrome__cta">
-            {CTA.label}
-          </V3Button>
+          {chromeShowsSellerAsk(path) ? (
+            <V3Button href={valuationHref(path)} className="v3-chrome__cta">
+              {CTA.label}
+            </V3Button>
+          ) : null}
 
           <button
             ref={triggerRef}

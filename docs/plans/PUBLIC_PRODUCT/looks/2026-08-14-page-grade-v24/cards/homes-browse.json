@@ -1,0 +1,133 @@
+{
+  "route": "/homes-for-sale",
+  "grain": "homes",
+  "thing": "houses",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 4, 6, 8, 10, 14, 15, 16, 18],
+  "axes": {
+    "job": 4,
+    "path": 3,
+    "opening": 2,
+    "distinct": 6,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 3,
+    "reach": 4,
+    "simple": 4,
+    "quiet": 2,
+    "beat": 3
+  },
+  "path": {
+    "start": "Homes for Sale",
+    "now": "821+ map view",
+    "next": "unknown",
+    "finish": "unknown",
+    "back": "Bend For sale"
+  },
+  "copy_words": 28,
+  "clutter": 8,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Chrome Value my home is a visible filled control on this buyer page",
+      "better": "Buyer primary is the house or Save this search. Seller lives in Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Field. 390 opens H1, search, chip rail, count, then a house peek",
+      "better": "Houses fill the fold. Towns are filters. One Field: map and list are the same set."
+    },
+    {
+      "sev": "P0",
+      "defect": "Cookie covers the $4,200,000. Address never reaches the 390 fold",
+      "better": "Consent after the thing. Cookie is not a first-screen block."
+    },
+    {
+      "sev": "P0",
+      "defect": "390 reads 821+ homes in this map view with no map on the PNG",
+      "better": "One Field: map and list are the same set. The count names the set on screen."
+    },
+    {
+      "sev": "P0",
+      "defect": "Filter chips clip a fifth pill. Horizontal rail at 390",
+      "better": "Filters are one control, not a rail."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess: Value my home, Save this search, Accept all, or the house",
+      "better": "One buyer primary: the house."
+    },
+    {
+      "sev": "P0",
+      "defect": "in this map view explains a view that is not on the 390 screen",
+      "better": "Delete the sentence. The Field is the view."
+    },
+    {
+      "sev": "P0",
+      "defect": "Must-win trails Zillow and Compass at 390: no one-set map, houses do not fill, chip rail",
+      "better": "Map and list are one set. Houses fill the fold. Filters do not need a horizontal rail."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: map missing, solds/price drops missing, this city's market has no door",
+      "better": "Modes are filters of this browse. Place market is a labeled exit."
+    },
+    {
+      "sev": "P2",
+      "defect": "1280 split map+list exists and makes the count true; Value my home and cookie still tax the job",
+      "better": "Score 390 first. Keep the 1280 one-set Field. Drop seller chrome from this buyer page."
+    }
+  ],
+  "beat": {
+    "zillow": {
+      "thing_first": "TRAIL",
+      "known_path": "TRAIL",
+      "live_record": "TRAIL",
+      "quiet": "TRAIL",
+      "honesty": "TRAIL",
+      "speed": "?",
+      "continuity": "TIE",
+      "must_win": "TRAIL"
+    },
+    "compass": {
+      "thing_first": "TRAIL",
+      "known_path": "TRAIL",
+      "live_record": "TRAIL",
+      "quiet": "TRAIL",
+      "honesty": "TRAIL",
+      "speed": "?",
+      "continuity": "TIE",
+      "must_win": "TRAIL"
+    },
+    "redfin": {
+      "thing_first": "TIE",
+      "known_path": "TIE",
+      "live_record": "TIE",
+      "quiet": "WIN",
+      "honesty": "TRAIL",
+      "speed": "?",
+      "continuity": "ABSENT",
+      "must_win": "TRAIL"
+    }
+  },
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/homes-browse-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/homes-browse-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/zillow-bend-390-live.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/compass-bend-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/redfin-bend-390.png",
+    "390 occupancy: house photo y448–716 = 268px (≥160); thing+price ~308/788 ≈ 39% below chrome",
+    "390 filled: Value my home, Save this search, Accept all. Cookie covers $4,200,000. No address. No map. No Map FAB",
+    "390 copy 28: Homes for Sale + homes in this map view + New + cookie body/links. Clutter 8: chrome, seller CTA, H1, search+chips, save, count, house, cookie",
+    "390 chips: For sale, Price, Beds, Baths, fifth pill clipped — rail",
+    "1280: Split map+list on; 821+ homes in this map view · Bend is then true; addresses wrap (62333 McClain Drive, Bend, OR 97703 · Westgate); Value my home and cookie still on",
+    "Zillow Bend 390: one full house + next peek; For sale / Filters / Save search; Map|Sort FAB; 1519 results; address+beds on fold; no map-view lie",
+    "Compass Bend 390: two full house cards; Filters + Save Search; Map FAB; no chip rail; no cookie; addresses on fold",
+    "Redfin PNG is Boston browse, not Bend: app banner + cookie modal + large house + map icon. Geo seat ABSENT. Quiet WIN vs their banners. Must-win still TRAIL",
+    "Cascade / Stellar / Duren omitted — no equivalent browse PNG this firing",
+    "Hunt 390: map = not there · solds/price drops = no door · Bend market = no door",
+    "perf null — not measured"
+  ]
+}

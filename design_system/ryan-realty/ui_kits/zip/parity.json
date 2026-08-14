@@ -3,14 +3,14 @@
   "mockup": "design_system/ryan-realty/ui_kits/zip/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
   "competitiveTarget": "Long-tail SEO: 'homes for sale in {zip}'. Beat the portals on the same query by answering it in the first viewport with five live figures under ONE source trace, then handing over the whole ZIP as map plus list in one frame where every row and every pin is a door. No aggregator prints the query behind the number, and none of them says which figures it does not have.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-12 (P9). Rhythm: FOUR of the six patterns, no two adjacent alike, chrome exempt. Order is Breadcrumb, Instrument level 1, Field (map plus list), Ledger (neighborhoods), Sheet (listing alerts), Ledger (nearby), Footer. The degraded render substitutes a Quiet for the Instrument and is still four patterns, because the Instrument does not render in that branch. A ZIP has NO market_pulse_live and NO market_stats_cache row, so every figure on this page comes from ONE getZipListings call over active single-family tiles, and the trace under each section describes that one query. Absent is not zero: a failed read and an empty ZIP return the same empty array, so every figure is gated on the read's ok flag, including the new-listing count that the KB page published into the Dataset JSON-LD as 0 on a degraded read. Nothing carries a freshness stamp, because listing_tile_mv gives this read no refresh timestamp and a borrowed clock is worse than none. The active days-on-market median ships under its own label and is never called days to pending (ci:days-to-pending-source, the /zip defect it was written for). There is no months-of-supply figure at ZIP scope, so there is no verdict and no threshold sentence.",
+  "note": "PUBLIC_UI.md §3 (2026-08-14). Zip uses the city opening: Field of this ZIP's houses. Count is a caption, never a number hero. Child plats are doors below the fold. Order is Breadcrumb (Home / Cities / city / ZIP), Field (map plus list, one set), Instrument level 1 (pace below the fold, no inventory hero), Ledger (neighborhoods), Sheet (listing alerts), Ledger (nearby), Footer. ONE getZipListings call. Absent is not zero. No MoS at ZIP scope.",
   "deletions": [
     "KbHero: the dark photo hero, its property-search field, and its voice-search button. With it goes the getSurfaceImage('hero') read, because nothing renders a photo now. The hero's lede figures survive as the Instrument's figures.",
     "KbMarketHud: the market HUD. Its four live tile figures survive in the Instrument. Its 13-month trend chart and 5-year year-series do NOT: they were the PARENT CITY's price history, a different population from this page, and the KB page relabeled them rather than dropping them. The getPriceHistory read, the buildYearSeries call, and ZIP_CITY_SLUG (which existed only to address that city row) are deleted with it. Its footnote also printed the full months-of-supply methodology and threshold sentence on a page whose monthsSupply was null.",
     "KbFeatured: the 14-tile featured rail, its listing photography, its background-video and tour badges, and the resolveFeaturedItems + getListingVideos work behind them. The Field's rows carry the same homes as text. Its 'See all {n} {city} homes for sale' label is also gone, which fixes a mislabeled figure: {n} was the ZIP's active count printed beside the CITY's name.",
     "KbListingMap: replaced by PlaceFieldMap (app/central-oregon/_v3/PlaceFieldMap.client.tsx) in the Field's map slot. Same population and same framing. Dropped with the KB component: the marker clusterer, close-zoom photo-stamp icons, the InfoWindow card, and the region town and peak labels. The route-local ZipFieldMap pair was deleted once this shared map existed.",
     "KbCommunityAlerts: replaced by ZipAlertsSheet on V3Sheet. The capture contract is unchanged (see dataLayer), including the hidden `company` honeypot, which is a real control again through V3Sheet's sheet-level `trap` prop after shipping briefly as a hardcoded empty string. All five defences run: honeypot, per-IP rate limit, email validation, native dedup, compliance gate. The email control accepts 254 characters, the bound the server action itself applies. The standing disclosure ('One email per new listing. Unsubscribe from any of them.') sits beside the field at the point of capture, as the KB band printed it. Dropped: the 'Sign in to manage alerts' link in the confirmation fine print.",
-    "KbSell: the seller band and its address-prefill field. The ask survives as the Instrument's FILLED action, built by valuationHref('/zip/{zip}') so the link carries ?from= from the one helper instead of a string assembled in the route. The address-prefill input itself is not carried across: V3Instrument's action is a link, and the barrel has no field the pattern could hold. What ?from= reaches today is stated in the route file beside the link, because the helper's destination is /sell#get-value and app/sell/page.tsx hands its form a hardcoded pagePath.",
+    "KbSell: the seller band and its address-prefill field. Seller lives on Sell. The Instrument ghost is All homes in {zip} through zipSearchHref.",
     "MarketSources: the Oregon Data Share citation band. Every source line on the page now names Oregon Data Share inside the trace for the figures it covers.",
     "SmoothScrollProvider: the Lenis wrapper. The v3 register does not hijack scroll.",
     "KbFooter and KbBreadcrumb: replaced by V3Footer and V3Breadcrumb.",
@@ -34,17 +34,17 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome. Home > Homes for sale > {zip}. Surface tone: this page opens on an Instrument, not a dark Stage, and the surface tone clears the fixed public header by default.",
+      "section": "Chrome. Home > Cities > {city} > {zip}. Surface tone: this page opens on a Field, not a dark Stage.",
       "blocking": true
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, once, level 1. The page's answer: the H1 head term over five figures from the one tile read (active count, median list price, median price per sq ft, median days on market on ACTIVE listings, new in the last 30 days), under one trace. The active count is a door, and it goes through zipSearchHref (see doors). Price per sq ft publishes through formatPriceExact, not formatPrice, because formatPrice rounds to the nearest $1,000 and would erase a three-digit figure. The ask is a FILLED button. PUBLIC_UI.md section 1 counts VISIBLE filled controls, and at 390 the chrome's valuation CTA is display:none below 880px with its twin inside the closed menu overlay, so the earlier ghost demotion (justified here and in the route file by 'the header carries a filled CTA at every scroll position') shipped a first viewport with no ask at all. That premise was false and is struck. The page carries its own primary, and the only other filled control, the alert Sheet's submit, is four sections down.",
+      "section": "Pattern 1, once, level 1, BELOW the fold. H1 head term over median list, price per sq ft, days on market, and new-in-30. The inventory integer is the Field caption, not a hero here. Ask is a ghost into the same ZIP set.",
       "blocking": true
     },
     {
       "name": "V3Field",
-      "section": "Pattern 2, once. The ZIP's whole active inventory as map plus list in one frame, ordered by price. Every row is a door to that listing and the honest count carries the same trace as the Instrument. The count says 'listings', not 'homes', which is what the MLS feed counts: two entries for one physical address are two listings, so the list and the count agree. mapNote is BOUND TO THE PLOTTED SET, never written unconditionally: 'Select a pin' claims a pin exists, so it renders only when at least one item carries coordinates. With items but no coordinates the note says the map plots nothing; with no items at all the note is absent and emptyMessage carries the reason, which already separates a feed that did not answer from a ZIP with nothing for sale. The unconditional string told a degraded visitor to select a pin in the same frame that disclaimed an inventory.",
+      "section": "Pattern 2, once, the opening. The ZIP's whole active inventory as map plus list in one frame. Caption counts that same set. No V3Figure inventory hero.",
       "blocking": true
     },
     {
@@ -69,7 +69,7 @@
     },
     {
       "name": "V3Footer",
-      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Carries no button: the page's valuation primary is the Instrument's, in the first viewport where the ask is earned, and a second filled control at the foot of the page would put two in one viewport at the scroll position that reaches it. Rendered OUTSIDE <main>, because HTML-AAM maps <footer> to role=contentinfo only when it is not nested in sectioning content.",
+      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Carries no button. The first viewport is the Field. Rendered OUTSIDE <main>, because HTML-AAM maps <footer> to role=contentinfo only when it is not nested in sectioning content.",
       "blocking": true
     }
   ],
@@ -83,7 +83,7 @@
   "deferredComponents": [
     {
       "name": "V3Stage",
-      "reason": "Pattern 4 needs an owned video or photo and is never allowed over a number. A ZIP node's first viewport is the answer, so the opening is an Instrument. Adding a Stage would also pull this route into ci:kb-breadcrumb-overlay's dark-opening arm, which would then require tone=\"on-media\" on the breadcrumb."
+      "reason": "Pattern 4 needs an owned video or photo and is never allowed over a number. PUBLIC_UI.md §3 opens a ZIP on the Field of this ZIP's houses. Adding a Stage would also pull this route into ci:kb-breadcrumb-overlay's dark-opening arm, which would then require tone=\"on-media\" on the breadcrumb."
     }
   ],
   "routeContract": {
@@ -94,7 +94,7 @@
   },
   "jsonLd": {
     "required": [
-      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry): Home, Homes for sale, {zip}" },
+      { "type": "BreadcrumbList", "emittedBy": "MetadataBlock schemas array (breadcrumb entry): Home, Cities, {city}, {zip}" },
       { "type": "Place", "emittedBy": "MetadataBlock schemas array (place entry), with the ZIP as postalCode" },
       {
         "type": "Dataset",
@@ -104,7 +104,7 @@
     "note": "One derivation. The Instrument's figures and the Dataset's variables are computed once, from one query, in one place, so a figure and its variable can never come from different reads. They are not always the same STRING: the median list price prints through formatPrice, the site-wide display convention CLAUDE.md section 0 sanctions ('$474,500 to $475K is fine'), while the variable carries the unrounded value the query returned. Stated here so nobody reads 'one derivation' as a promise that the payload echoes the printed digits."
   },
   "doors": {
-    "valuation": "valuationHref('/zip/{zip}') from lib/site/valuation-href.ts. The ONE builder for a valuation link on a content surface, so the ?from= attribution cannot be dropped by the next rewrite of the section. Its destination is VALUATION_FORM.href.",
+    "valuation": "Seller lives on Sell. This route no longer mounts a valuation primary. The Instrument ghost and the Field rows go through zipSearchHref.",
     "helper": "zipSearchHref(zip, subdivision?) in app/zip/[zip]/_v3/zip-constants.ts",
     "url": "/homes-for-sale?postalCode={zip}&propertyType=A[&subdivision={name}]&view=list",
     "rule": "A count that links somewhere claims that somewhere holds it, so a figure's door is checked the way a number is. Every door out of a figure on this page carries this page's exact population — active, PropertyType 'A', postalCode = this ZIP — and each of the three params is load-bearing. postalCode is the real searchListingsAll filter, the same one the alert payload sends. propertyType=A is this page's scope: without it 97756 answers 474 against the page's 392 and 97754 answers 405 against 217, because a ZIP also holds land, manufactured, and income rows. view=list is what makes the count comparable: the default split view defaults its city to Bend (app/search/page.tsx) and counts only what the map viewport holds, which empties every non-Bend ZIP and clipped 97703 to 241 against its 256.",
@@ -120,8 +120,8 @@
     "MetadataBlock",
     "KbSectionTracker",
     "V3Breadcrumb",
-    "V3Instrument (level 1, the ZIP's answer) OR V3Quiet (degraded read)",
-    "V3Field (map plus list, PlaceFieldMap in the slot)",
+    "V3Field (map plus list, PlaceFieldMap in the slot, count as caption)",
+    "V3Instrument (level 1, pace below the fold) OR V3Quiet (degraded read)",
     "V3Ledger (neighborhoods in this ZIP)",
     "ZipAlertsSheet (V3Sheet, listing alerts, #get-alerts)",
     "V3Ledger (homes for sale nearby)",

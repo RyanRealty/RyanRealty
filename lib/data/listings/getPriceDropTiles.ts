@@ -10,8 +10,8 @@
  * doesn't poke `listings` directly.
  */
 
-import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
+import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { SERVICE_AREA_CITIES_PROPER } from '@/lib/data/listings/service-area'
 import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-status'
 import { PUBLIC_ACTIVE_OR_PREDICATE } from '@/lib/listing-status-public'
@@ -62,17 +62,55 @@ export type PriceDropTile = {
   price_drop_count: number | null
   DaysOnMarket: number | null
   total_price_change_pct: number | null
+  Latitude?: number | null
+  Longitude?: number | null
 }
 
 /**
- * Active listings with `price_drop_count > 0`, ordered by biggest-percent-drop
- * first. Optional city filter (case-sensitive equality on PascalCase `City`).
+ * Exact office-name candidates for an index hit on ListOfficeName.
+ * Leading-wildcard ILIKE '%Ryan Realty%' cannot use idx_listings_list_office_name
+ * and times out the anon 3s statement window, which the old wrapper cached as [].
  */
+export function brokerageOfficeNames(officeName: string): string[] {
+  const trimmed = officeName.trim()
+  if (!trimmed) return []
+  const names = [trimmed]
+  if (!/\bllc\b/i.test(trimmed)) names.push(`${trimmed} LLC`)
+  return names
+}
+
+/** Empty only when both query shapes are empty. One miss is not zero. */
+export function chooseBrokerageRows<T>(primary: readonly T[], secondary: readonly T[]): T[] {
+  if (primary.length > 0) return [...primary]
+  return [...secondary]
+}
+
+export function sortBrokerageListings(rows: readonly PriceDropTile[]): PriceDropTile[] {
+  const order = (s: string | null | undefined): number => {
+    if (isActiveStatus(s)) return 1
+    if (isPendingStatus(s)) return 2
+    if (isClosedStatus(s)) return 3
+    return 4
+  }
+  return [...rows].sort((a, b) => order(a.StandardStatus) - order(b.StandardStatus))
+}
+
+const BROKERAGE_PROJECTION = [
+  'ListingKey, ListNumber, ListPrice, OriginalListPrice, BedroomsTotal, BathroomsTotal',
+  'TotalLivingAreaSqFt, StreetNumber, StreetName, City, State, PostalCode, SubdivisionName',
+  'PhotoURL, StandardStatus, OnMarketDate, CloseDate, ClosePrice',
+  'ListAgentName, ListOfficeName',
+  'has_virtual_tour, virtual_tour_url',
+  'year_built, price_per_sqft, lot_size_acres, garage_spaces, pool_yn',
+  'estimated_monthly_piti, price_drop_count, DaysOnMarket, total_price_change_pct',
+  'Latitude, Longitude',
+].join(', ')
+
 /**
- * Active+Pending+Closed listings for a brokerage by ListOfficeName ILIKE.
+ * Active+Pending+Closed listings for a brokerage by exact ListOfficeName.
  * Excludes Cancelled/Withdrawn rows and rows missing a primary photo.
- * Reads from `listings` directly inside the DAL boundary because the
- * tile materialized view doesn't project ListOfficeName.
+ * Typed columns only — details->> plus a leading-wildcard ILIKE times out
+ * the anon 3s window on this table.
  */
 export async function getBrokerageListingTiles(options: {
   officeName: string
@@ -80,11 +118,13 @@ export async function getBrokerageListingTiles(options: {
 }): Promise<PriceDropTile[]> {
   const sb = supabaseAnon()
   if (!sb || !options.officeName?.trim()) return []
+  const names = brokerageOfficeNames(options.officeName)
+  if (names.length === 0) return []
   const limit = Math.min(Math.max(options.limit ?? 30, 1), 100)
   const { data, error } = await sb
     .from('listings')
-    .select(PROJECTION)
-    .ilike('ListOfficeName', `%${options.officeName.trim()}%`)
+    .select(BROKERAGE_PROJECTION)
+    .in('ListOfficeName', names)
     .not('permit_internet_yn', 'is', false) // IDX: seller internet opt-out
     .not('idx_participant', 'is', false) // IDX: listing broker not a participant
     .not('StandardStatus', 'ilike', '%Cancel%')
@@ -96,32 +136,76 @@ export async function getBrokerageListingTiles(options: {
   return (data ?? []) as unknown as PriceDropTile[]
 }
 
-/**
- * Cached brokerage listings for one office, sorted Active then Pending then
- * Closed. Wraps getBrokerageListingTiles (the raw fetch) with the status sort
- * and a 5-minute cache. Moved out of app/actions/listings.ts so pages read
- * brokerage inventory through the DAL boundary. Returns PriceDropTile[] (the
- * tile shape the fetch projects); brokerage listings change infrequently.
- */
-async function _getBrokerageListingsUncached(
-  officeName: string = 'Ryan Realty'
+const ON_MARKET_STATUSES = ['Active', 'Pending', 'Active Under Contract'] as const
+
+async function fetchBrokerageOnMarketByExactOffice(
+  names: string[],
+  limit: number,
 ): Promise<PriceDropTile[]> {
-  const rows = await getBrokerageListingTiles({ officeName, limit: 30 })
-  const order = (s: string | null | undefined): number => {
-    if (isActiveStatus(s)) return 1
-    if (isPendingStatus(s)) return 2
-    if (isClosedStatus(s)) return 3
-    return 4
-  }
-  return rows.sort((a, b) => order(a.StandardStatus) - order(b.StandardStatus))
+  const sb = supabaseAnon()
+  if (!sb) throw new Error('[getBrokerageListings] supabase anon client missing')
+  const { data, error } = await sb
+    .from('listings')
+    .select(BROKERAGE_PROJECTION)
+    .in('ListOfficeName', names)
+    .in('StandardStatus', [...ON_MARKET_STATUSES])
+    .eq('PropertyType', 'A')
+    .not('permit_internet_yn', 'is', false)
+    .not('idx_participant', 'is', false)
+    .order('ModificationTimestamp', { ascending: false })
+    .limit(limit)
+  if (error) throw new Error(`[getBrokerageListings] exact office: ${error.message}`)
+  return (data ?? []) as unknown as PriceDropTile[]
 }
 
-export const getBrokerageListings = unstable_cache(
+async function fetchBrokerageOnMarketByPrefix(
+  prefix: string,
+  limit: number,
+): Promise<PriceDropTile[]> {
+  const sb = supabaseAnon()
+  if (!sb) throw new Error('[getBrokerageListings] supabase anon client missing')
+  const { data, error } = await sb
+    .from('listings')
+    .select(BROKERAGE_PROJECTION)
+    .ilike('ListOfficeName', `${prefix}%`)
+    .in('StandardStatus', ['Active', 'Pending'])
+    .eq('PropertyType', 'A')
+    .not('permit_internet_yn', 'is', false)
+    .not('idx_participant', 'is', false)
+    .order('ModificationTimestamp', { ascending: false })
+    .limit(limit)
+  if (error) throw new Error(`[getBrokerageListings] prefix office: ${error.message}`)
+  return (data ?? []) as unknown as PriceDropTile[]
+}
+
+/**
+ * On-market SFR for one office. Two query shapes before empty: exact
+ * ListOfficeName (index) then prefix ILIKE with no leading wildcard.
+ * Typed columns only — details->> times out the anon role on this table.
+ * Throws on a DB error so makeResilientCached never caches a poison [].
+ */
+async function _getBrokerageListingsUncached(
+  officeName: string = 'Ryan Realty',
+): Promise<PriceDropTile[]> {
+  const names = brokerageOfficeNames(officeName)
+  if (names.length === 0) return []
+  const primary = await fetchBrokerageOnMarketByExactOffice(names, 30)
+  if (primary.length > 0) return sortBrokerageListings(primary)
+  const secondary = await fetchBrokerageOnMarketByPrefix(names[0]!, 30)
+  return sortBrokerageListings(chooseBrokerageRows(primary, secondary))
+}
+
+export const getBrokerageListings = makeResilientCached(
   _getBrokerageListingsUncached,
-  ['brokerage-listings'],
-  { revalidate: 300, tags: ['brokerage-listings'] }
+  ['brokerage-listings-v2'],
+  { revalidate: 300, tags: ['brokerage-listings'] },
+  [],
 )
 
+/**
+ * Active listings with `price_drop_count > 0`, ordered by biggest-percent-drop
+ * first. Optional city filter (case-sensitive equality on PascalCase `City`).
+ */
 export async function getPriceDropTiles(options?: {
   city?: string | null
   limit?: number

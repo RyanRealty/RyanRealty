@@ -2,15 +2,15 @@
 /**
  * /central-oregon/events — events hub on the v3 barrel.
  *
- * Order: Breadcrumb, Instrument (registry count), Ledger (every event), Sheet,
- * Quiet, Footer outside main.
+ * Order: Breadcrumb, Ledger (every event fills the fold), Sheet, Quiet,
+ * Footer outside main. Count is a caption. Seller lives on Sell.
  *
  * THE PAGE CONTRACT: pageMetadata, revalidate 3600, breadcrumb + webPage
  * CollectionPage + itemList via MetadataBlock, V3SectionTracker pageType="events".
  *
  * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
  * events.css card grid, RegionalSfrAlertsBand, per-category H2 sections (category
- * moved to the Ledger when column).
+ * moved to the Ledger when column), the Instrument count hero.
  */
 
 import type { Metadata } from 'next'
@@ -28,7 +28,6 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
@@ -51,6 +50,7 @@ export default function EventsIndexPage() {
   const { upcoming, anchors } = getEventsForIndex()
   const total = getEventsCount()
   const listed = [...upcoming, ...anchors]
+  const caption = `${total.toLocaleString('en-US')} ${total === 1 ? 'event' : 'events'}`
 
   const rows: V3LedgerPlainRow[] = []
   for (const event of listed) {
@@ -102,38 +102,21 @@ export default function EventsIndexPage() {
           trail={[{ label: 'Home', href: '/' }, { label: 'Central Oregon events' }]}
         />
 
-        <V3Instrument
-          id="events"
-          level={1}
-          eyebrow={v3Text('Central Oregon')}
-          headline={v3Text('Confirmed dates, and homes by the venue')}
-          figures={[
-            {
-              value: v3Text(total.toLocaleString('en-US')),
-              label: v3Text('events in the registry'),
-              href: '#event-list',
-            },
-          ]}
-          source={v3Text(
-            'verified events registry (data/co-events.ts). A date prints only when the organizer has published one. Nothing here is a live MLS figure.',
-          )}
-          action={{
-            label: v3Text('Value my home'),
-            href: valuationHref('/central-oregon/events'),
-          }}
-        />
-
         {firstRow ? (
           <V3Ledger
             id="event-list"
-            eyebrow={v3Text('Calendar')}
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Central Oregon events')}
+            note={v3Text(caption)}
             rows={[firstRow, ...restRows]}
           />
         ) : (
           <V3Ledger
             id="event-list"
+            headingLevel={1}
             heading={v3Text('Central Oregon events')}
+            note={v3Text(caption)}
             rows={[]}
             emptyMessage={v3Text('The events calendar is being updated. See parks or cities in the meantime.')}
           />

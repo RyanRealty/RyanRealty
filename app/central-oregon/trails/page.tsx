@@ -2,9 +2,11 @@
 /**
  * /central-oregon/trails — trails hub on the v3 barrel.
  *
+ * Ledger of named trails fills the fold. Count is a caption. Seller lives on Sell.
+ *
  * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider, kb.css,
  * events.css cards, RegionalSfrAlertsBand, separate hiking/biking H2 sections
- * (use moved to the Ledger when column).
+ * (use moved to the Ledger when column), the Instrument count hero.
  */
 
 import type { Metadata } from 'next'
@@ -21,7 +23,6 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
@@ -43,6 +44,7 @@ export function generateMetadata(): Metadata {
 export default function TrailsIndexPage() {
   const { hiking, biking } = getTrailsForIndex()
   const total = getTrailsCount()
+  const caption = `${total.toLocaleString('en-US')} ${total === 1 ? 'trail' : 'trails'}`
   const listed = [...hiking, ...biking].filter(
     (t, i, arr) => arr.findIndex((x) => x.slug === t.slug) === i,
   )
@@ -96,38 +98,21 @@ export default function TrailsIndexPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Trails' }]} />
 
-        <V3Instrument
-          id="trails"
-          level={1}
-          eyebrow={v3Text('Central Oregon')}
-          headline={v3Text('Trailheads, and homes nearby')}
-          figures={[
-            {
-              value: v3Text(total.toLocaleString('en-US')),
-              label: v3Text('trails in the registry'),
-              href: '#trail-list',
-            },
-          ]}
-          source={v3Text(
-            'verified trails registry (data/co-trails.ts). Length prints only when the registry carries a number. Nothing here is a live MLS figure.',
-          )}
-          action={{
-            label: v3Text('Value my home'),
-            href: valuationHref('/central-oregon/trails'),
-          }}
-        />
-
         {firstRow ? (
           <V3Ledger
             id="trail-list"
-            eyebrow={v3Text('On foot and on two wheels')}
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Central Oregon trails')}
+            note={v3Text(caption)}
             rows={[firstRow, ...restRows]}
           />
         ) : (
           <V3Ledger
             id="trail-list"
+            headingLevel={1}
             heading={v3Text('Central Oregon trails')}
+            note={v3Text(caption)}
             rows={[]}
             emptyMessage={v3Text('The trail guide is being updated. See events in the meantime.')}
           />

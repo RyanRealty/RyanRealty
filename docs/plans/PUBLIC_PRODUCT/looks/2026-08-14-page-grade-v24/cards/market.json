@@ -1,0 +1,103 @@
+{
+  "route": "/housing-market",
+  "grain": "market",
+  "thing": "the number and the chart",
+  "verdict": "FAIL",
+  "auto_fails": [1, 14, 16, 18],
+  "axes": {
+    "job": 5,
+    "path": 3,
+    "opening": 8,
+    "distinct": 6,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 7,
+    "reach": 4,
+    "simple": 5,
+    "quiet": 2,
+    "beat": 3
+  },
+  "path": {
+    "start": "housing market",
+    "now": "$731k and chart",
+    "next": "",
+    "finish": "a balanced market",
+    "back": ""
+  },
+  "copy_words": 48,
+  "clutter": 7,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home on a market fold. Cookie Accept all is the other navy fill.",
+      "better": "Primary is the number, a year, or a place. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT and BACK cannot be said from the screen. Two navy fills compete.",
+      "better": "One next: pick a year or a place. Cookie off first paint."
+    },
+    {
+      "sev": "P0",
+      "defect": "7 foci and 48 copy words. Cookie sits on the chart.",
+      "better": "Instrument is the page: verdict captions the number. Chart fills the fold."
+    },
+    {
+      "sev": "P0",
+      "defect": "Known-path and Quiet TRAIL Cascade home. Cookie plus seller chrome versus their search hero.",
+      "better": "No seller chrome. Cookie off the fold. The chart is the screen."
+    },
+    {
+      "sev": "P1",
+      "defect": "History is a 2024–2026 legend, not a year the visitor can pick.",
+      "better": "Years are the control, not a caption under the line."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt: Bend houses and subscribe are not on the first path. Meaning is the H1 only.",
+      "better": "Labeled doors after the answer: this number → the place → the houses. Subscribe last."
+    },
+    {
+      "sev": "P2",
+      "defect": "Eyebrow reads CENTRAL OREGON, OREGON. Chart y-axis is one tick.",
+      "better": "One place name. The line is readable without a second sentence."
+    }
+  ],
+  "beat": {
+    "cascade": {
+      "thing_first": "WIN",
+      "known_path": "TRAIL",
+      "live_record": "WIN",
+      "quiet": "TRAIL",
+      "honesty": "WIN",
+      "must_win": "WIN"
+    },
+    "stellar": {
+      "thing_first": "WIN",
+      "known_path": "TRAIL",
+      "live_record": "WIN",
+      "quiet": "TIE",
+      "honesty": "WIN",
+      "must_win": "WIN"
+    }
+  },
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/cascade-home-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/stellar-home-390.png",
+    "390: breadcrumb Home / Housing market; eyebrow CENTRAL OREGON, OREGON; H1 Central Oregon housing market: a balanced market; 2x2 $731,000 / 1,844 / 5.8 / 23.5; chart MEDIAN SALE PRICE BY MONTH, RECENT YEARS 2024–2026, y $697K; Value my home filled; cookie on the chart.",
+    "1280: same Instrument in a row. Nav Homes Places Market Sell About. Market underlined. Still Value my home + cookie. No year pick, no Bend door, no subscribe.",
+    "Locked opening PUBLIC_UI §3: Instrument. Number and chart. Actual matches. Occupancy of the thing is under 50% once cookie covers the chart.",
+    "Honesty: MoS 5.8 is balanced (4–6). H1 says a balanced market. Units on every figure. No freshness stamp on the PNG.",
+    "Copy 48: H1 residual 5 + breadcrumb 3 + stat labels 13 + chart title 7 + cookie 11 + privacy 3 + DNS 6. Clutter 7: chrome, Value my home, cookie, eyebrow, H1, stats, chart.",
+    "Hunt: two-year chart = 0 taps (legend, not a pick) · Bend houses = not there · meaning = H1 only. Below-fold unknown (first-screen PNGs only).",
+    "Visitor objective: region-wide how's the market — live actives, median, MoS verdict, above the fold, zero interaction.",
+    "Beat seats scored: Cascade home + Stellar home (not market URLs; they ABSENT the market job). Beacon omitted — no PDF PNG. Duren / Zillow / Redfin / Compass omitted (no equivalent market 390). Zillow leftover is a captcha.",
+    "Cascade: SEARCH PROPERTIES, no pulse, no chart. Stellar: FIND YOUR NEXT HOME + six Search buttons, no pulse, no chart. Thing-first and must-win WIN because they ABSENT. Known-path TRAIL both (our NEXT is empty). Quiet TRAIL Cascade. Speed and continuity omitted.",
+    "perf not measured.",
+    "SEND: no. Cookie on the chart and a seller button is not a market URL to text."
+  ]
+}

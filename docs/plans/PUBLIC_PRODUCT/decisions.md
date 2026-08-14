@@ -697,3 +697,21 @@ Places are still legacy. Chrome unit = `app/layout.tsx` PublicNav → V3Chrome.
 `state.json` and `work-queue.json` in this folder are not authority.
 Do not start Public Product OS 2.
 
+## 2026-08-14 — Visual lock amendment: one shop, five place rhythms (Matt)
+
+Matt asked to move the lock, the rubric, and the page-grade skill in that order.
+The 2026-08-11 visual lock still binds: six closed patterns, no page exemption,
+no seventh pattern, chrome stays `V3Chrome`.
+
+What changed in `design_system/public/PUBLIC_UI.md` §3: the line
+"Places → Instrument then Field" is retired. City, neighborhood, master-plan,
+subdivision, and listing each have a named opening. Same shop (chrome, type,
+tokens, Field/Ledger language). Different first pattern. Master-plan is not a
+neighborhood. Tetherow is the master-plan exemplar, not a one-off product.
+Listing opens on Stage (this house's media). A listing that looks like another
+product is a lock break.
+
+Page Grade v2.4 scores this. The skill grades unique pages plus one exemplar
+per template, then a family strip at merge. Fix is a later wave in the same
+grind, not product code inside a grade.
+

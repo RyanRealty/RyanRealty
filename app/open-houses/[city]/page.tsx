@@ -2,12 +2,9 @@
  * /open-houses/[city] - city-scoped open houses, on the v3 barrel.
  *
  * Same contract as the region page. First screenful is the Field of
- * photographed open houses, then Instrument. generateMetadata title still
+ * photographed open houses. Count is a caption. generateMetadata title still
  * leads with "Open Houses in". dynamicParams stays true so a real city slug
  * that is not in SITE_CITY_SLUGS still resolves through getCityFromSlug.
- *
- * KB-era deletions: KbHero, KbOpenHouses, KbListingMap, KbCommunityAlerts markup,
- * KbSell, KbFooter, SmoothScrollProvider. Capture contract kept on the Sheet.
  */
 
 import { notFound } from 'next/navigation'
@@ -20,20 +17,14 @@ import {
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { homesForSalePath } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
-import { formatPrice } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   V3_ROOT_CLASS,
-  v3Text,
   V3Breadcrumb,
-  V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Quiet,
   V3SectionTracker,
-  type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -41,15 +32,15 @@ import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { OpenHouseAlertsSheet } from '../_v3/OpenHouseAlertsSheet.client'
 import {
   OH_CITY_SLUGS,
-  OH_FIELD_TRACE,
-  OH_TRACE,
   addIsoDays,
   cityLabel,
+  ohTrace,
   pacificTodayIso,
 } from '../_v3/oh-constants'
-import { assembleOpenHouses, medianPositive } from '../_v3/oh-listings'
+import { assembleOpenHouses } from '../_v3/oh-listings'
 import { openHouseFieldItems } from '../_v3/oh-field-items'
 import { openHouseEventSchemas } from '../_v3/oh-jsonld'
+import { OpenHousesField } from '../_v3/OpenHousesField'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -134,28 +125,10 @@ export default async function OpenHousesCityPage({
     baths: Number.isFinite(baths) ? baths : undefined,
   })
 
-  const count = openHouses.length
   const fieldItems = openHouseFieldItems(openHouses)
-  const medianList = medianPositive(openHouses.map((oh) => oh.listPrice))
+  const count = fieldItems.length
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
   const path = `/open-houses/${citySlug}`
-
-  const figures: V3InstrumentFigure[] = []
-  if (count > 0) {
-    figures.push({
-      value: v3Text(count.toLocaleString('en-US')),
-      label: v3Text(count === 1 ? `open house in ${cityName}` : `open houses in ${cityName}`),
-      href: '#calendar',
-    })
-  }
-  if (medianList != null) {
-    figures.push({
-      value: v3Text(formatPrice(medianList)),
-      label: v3Text('median list price on this calendar'),
-      href: '#calendar',
-    })
-  }
-  const [firstFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -197,44 +170,20 @@ export default async function OpenHousesCityPage({
           ]}
         />
 
-        <V3Field
-          id="calendar"
-          ariaLabel={`Open houses in ${cityName} this week`}
-          items={fieldItems}
-          count={
-            fieldItems.length > 0
-              ? {
-                  value: fieldItems.length.toLocaleString('en-US'),
-                  label: fieldItems.length === 1 ? `home in ${cityName}` : `homes in ${cityName}`,
-                  source: OH_FIELD_TRACE,
-                }
-              : undefined
-          }
-          footNote={
-            fieldItems.some((item) => item.photoSrc)
-              ? 'Each photograph opens the listing.'
-              : undefined
-          }
-          emptyMessage={`No open house in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
-        />
-
-        {firstFigure ? (
-          <V3Instrument
-            id="answer"
-            level={1}
-            eyebrow={v3Text(`${cityName} · this week`)}
-            headline={v3Text(`Open houses in ${cityName}`)}
-            figures={[firstFigure, ...restFigures]}
-            source={v3Text(OH_TRACE)}
-            action={{
-              label: v3Text('Value my home'),
-              href: valuationHref(path),
-              variant: 'primary',
-            }}
+        {count > 0 ? (
+          <OpenHousesField
+            heading={`Open houses in ${cityName}`}
+            headline={`Open houses in ${cityName}`}
+            captionValue={count.toLocaleString('en-US')}
+            captionLabel={count === 1 ? `open house in ${cityName}` : `open houses in ${cityName}`}
+            source={ohTrace(cityName)}
+            items={fieldItems}
+            ariaLabel={`Open houses in ${cityName} this week`}
+            emptyMessage={`No open house in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
           />
         ) : (
           <V3Quiet
-            id="answer"
+            id="calendar"
             heading={`Open houses in ${cityName}`}
             headingLevel={1}
             items={[

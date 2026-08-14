@@ -1,0 +1,94 @@
+{
+  "route": "/videos",
+  "grain": "homes",
+  "thing": "house videos",
+  "verdict": "FAIL",
+  "auto_fails": [1, 2, 3, 5, 6, 10, 14, 16],
+  "axes": {
+    "job": 2,
+    "path": 2,
+    "opening": 2,
+    "distinct": 2,
+    "craft": 3,
+    "motion": 2,
+    "perf": null,
+    "honesty": 3,
+    "reach": 2,
+    "simple": 3,
+    "quiet": 2,
+    "beat": null
+  },
+  "path": {
+    "start": "Video tours",
+    "now": "36",
+    "next": "?",
+    "finish": "?",
+    "back": "Home"
+  },
+  "copy_words": 37,
+  "clutter": 7,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Largest first-screen element is 36. Number-as-hero on a homes browse. Zero video pixels at 390 and 1280",
+      "better": "Field of homes with a video. 36 is a caption, never the opening."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Field. Actual is market Instrument: eyebrow, H1, giant 36, source, See homes for sale, city chips",
+      "better": "Houses fill the fold. Towns are filters. Video is a mode of this browse, not a number poster."
+    },
+    {
+      "sev": "P0",
+      "defect": "Sibling clone of /activity and /housing-market. Same CENTRAL OREGON eyebrow, serif H1, giant navy integer, source line. Stranger names a count, not videos",
+      "better": "This crop is house videos. Not a 36 hero. Not a market Instrument."
+    },
+    {
+      "sev": "P0",
+      "defect": "36 HOMES WITH A VIDEO TOUR. Source names active and pending listings that carry a video tour. has_virtual_tour Active+Pending = 1256; PropertyType A = 1049",
+      "better": "The count names the set on screen. One Field of that set. No unlabeled subset."
+    },
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home. Body primary is See homes for sale. Accept all is a third filled control. None plays a video",
+      "better": "Primary is a house video. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess: See homes for sale, a city chip, Value my home, or Accept all. FINISH is not on the screen. No video to tap",
+      "better": "One next tap: a house video. FINISH is I know it or I saved this."
+    },
+    {
+      "sev": "P0",
+      "defect": "Copy 37. Foci 7: chrome, cookie, eyebrow, H1, 36, See homes, chips",
+      "better": "Cut the poster. The Field is the page. Cookie after the thing."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: map missing, solds or price drops missing, this city's market has no door. The videos themselves have no door",
+      "better": "Modes are filters of this browse. Place market is a labeled exit. Play is the row."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. No video, no photo ≥160px. Cookie on the fold. City chips wrap; they are not the thing",
+      "better": "Video or photo fills the fold. Pin and row are the same set."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/videos-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/videos-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/activity-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-390.png",
+    "390: Home / Video tours. CENTRAL OREGON. H1 Video tours of homes for sale. 36 HOMES WITH A VIDEO TOUR. Source: live MLS through Oregon Data Share, active and pending listings that carry a video tour. See homes for sale. Chips All Central Oregon (on), Bend, Redmond, Sisters, La Pine, Prineville. Chrome Value my home. Cookie. No video. No house photo.",
+    "1280: same Instrument 36. Chip row adds Sunriver. Nav Homes Places Market Sell About. Saved + filled Value my home. Still no video tile on the fold.",
+    "Locked opening PUBLIC_UI §3 Homes: Field. Visitor objective: browse homes by watching their videos. Shelf: houses + map + filters + modes (video is a filter of browse, not a sibling site).",
+    "Honesty two shapes 2026-08-14: (1) has_virtual_tour IS TRUE AND StandardStatus IN Active,Pending → 1256. (2) plus PropertyType=A → 1049. Page 36 does not match the source sentence.",
+    "Sibling DNA: activity-390 is CENTRAL OREGON + H1 + giant 12 + source + See homes. market-390 is CENTRAL OREGON + H1 + figure grid + chart. This crop is the market Instrument without a chart.",
+    "Copy 37: H1 + HOMES WITH A VIDEO TOUR + source + cookie body. Clutter 7.",
+    "Hunt 390: map = not there · solds/price drops = not there · Bend market = not there · a video = not there",
+    "Not beat_on. Beat seats omitted, not guessed. perf not measured.",
+    "SEND: no. A 36 poster with no video is not a URL to text."
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "route": "/cities",
+  "grain": "city",
+  "thing": "the cities",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 4, 5, 10, 14, 16, 27],
+  "axes": {
+    "job": 2,
+    "path": 2,
+    "opening": 3,
+    "distinct": 3,
+    "craft": 3,
+    "motion": 2,
+    "perf": null,
+    "honesty": 6,
+    "reach": 2,
+    "simple": 2,
+    "quiet": 2,
+    "beat": 3
+  },
+  "path": {
+    "start": "Home Cities",
+    "now": "house stamps",
+    "next": "?",
+    "finish": "?",
+    "back": "Home Cities"
+  },
+  "copy_words": 19,
+  "clutter": 5,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home. Accept all is a second filled control. Neither is choose a city.",
+      "better": "Primary is a city or a house in a named city. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Field of this city's houses, verdict a caption. Fold is a stamp grid plus echo list. No map. No city name. No verdict.",
+      "better": "One Field: map and list are the same set. Cities are filters. Count is a caption."
+    },
+    {
+      "sev": "P0",
+      "defect": "Wrong grain. First crop is homes-browse clothes: 3×2 stamps then the same houses as a list. A stranger names house browse, not a city chooser.",
+      "better": "City Field. Towns are filters. Child grains stay below the fold."
+    },
+    {
+      "sev": "P0",
+      "defect": "Sibling clone of /homes-for-sale and /cities/bend minus the 494. Same stamp DNA as the master-plan crop.",
+      "better": "This crop is the cities. Not a second house index."
+    },
+    {
+      "sev": "P0",
+      "defect": "390 stamp photos ~111px (need ≥160). Addresses truncate (Breckenrid…, Desperado Tr…, Washington …, Mowich La…). 1280 grid is the same six twice.",
+      "better": "One large Field. Addresses wrap. No ellipsis."
+    },
+    {
+      "sev": "P0",
+      "defect": "Two lists of the same six houses. Cookie sits on the list.",
+      "better": "One Field. Map and list are the same set. Consent after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess (a stamp vs the card vs Value my home vs Accept all). FINISH is not on the screen. No city door is visible.",
+      "better": "One next tap: a named city. FINISH is I picked a city."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from the first screen: months of supply not there, a child neighborhood or master-plan not there, last-year median not there. The cities themselves are not there.",
+      "better": "Named city rows or Field filters. Pace and solds as captions, not a second house list."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. No city name on the fold. Cookie is a first-screen tax.",
+      "better": "Pin and row are one set. Consent after the thing."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cities-index-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cities-index-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/city-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/homes-browse-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/master-plan-390.png",
+    "390: chrome Value my home filled; breadcrumb Home / Cities; no H1; 3×2 stamps ~111px with truncated addresses ($699,000 60733 Breckenrid…, $750,000 52511 Antler Lane, $429,000 807 Desperado Tr…, $525,000 950 Washington …, $749,000 20780 Mira Circle, $250,000 51924 Mowich La…); echo list (Breckenridge 2 bd · 2 ba · 1,865 sqft, Antler Lane cut by cookie); Accept all. Copy 19 (cookie). Foci 5.",
+    "1280: same six in a 3-col grid plus the same six as a right list. Nav Homes Places Market Sell About. Places underlined. Filled Value my home. Cookie full width. No map. No city name. No verdict.",
+    "Locked opening PUBLIC_UI §3: City → Field of this city's houses. Verdict is a caption, never a number hero. Child neighborhoods and master-plans are doors below the fold. Index still uses the city opening.",
+    "Grain crop: home / homes-browse = house stamps; city Bend = 494 + stamps; this page = stamps + echo list, no city. City index wearing homes clothes. Auto-fail 27.",
+    "Hunt: MoS = not there · child grain = not there · last-year median = not there · a city = not there. Below-fold unknown (first-screen PNGs only).",
+    "Visitor objective: choose which Central Oregon city fits by comparing live inventory, prices, and pace on one chooser.",
+    "Beat not run (not in beat_on). Seats omitted. perf not measured.",
+    "SEND: no. A house stamp dump with no city names is not a city chooser to text."
+  ]
+}

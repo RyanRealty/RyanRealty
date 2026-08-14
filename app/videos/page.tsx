@@ -4,7 +4,7 @@
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata (city-aware
  * title/description/canonical/OG), ItemList + BreadcrumbList + CollectionPage
  * JSON-LD, one VideoObject per embeddable tour (raw <script>, VideoObject is
- * not in SchemaInput), city chips as real <Link>s with aria-current,
+ * not in SchemaInput), city chips as V3Button ghosts with aria-current,
  * revalidate 300, V3SectionTracker pageType="media".
  *
  * LEFTOVERS, not v3 atoms: HideAwareVideoGrid (inline play) and VideoFeedClient
@@ -21,27 +21,24 @@
  */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getListingTiles, getCityListings, type ListingTile } from '@/lib/data'
 import { tileToCardData } from '@/lib/site/listing-card'
 import { listingsBrowsePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
-import { cn } from '@/lib/utils'
 import HideAwareVideoGrid, { type HideAwareVideoItem } from '@/components/site/HideAwareVideoGrid'
 import { VideoFeedClient } from '@/components/site/VideoFeedClient'
 import type { ListingCardData } from '@/components/site/ListingCard'
 import {
   V3_ROOT_CLASS,
-  v3Text,
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Quiet,
   V3SectionTracker,
 } from '@/components/site/v3'
-import { CITY_CHIPS, resolveCity, resolveView, resolveStart } from './_v3/videos-constants'
+import { resolveCity, resolveView, resolveStart } from './_v3/videos-constants'
 import { tilesToFeedItems } from './_v3/feed-items'
+import { VideosOpening } from './_v3/VideosOpening'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
@@ -239,28 +236,10 @@ export default async function VideosPage({
           {jsonLd}
           {feedItems.length > 0 ? (
             <>
-              <V3Instrument
-                id="feed"
-                level={1}
-                eyebrow={v3Text('Central Oregon')}
-                headline={v3Text('Video tours of homes for sale')}
-                figures={[
-                  {
-                    value: v3Text(String(feedItems.length)),
-                    label: v3Text(
-                      feedItems.length === 1 ? 'home with a video tour' : 'homes with a video tour',
-                    ),
-                    href: listingsBrowsePath(),
-                  },
-                ]}
-                source={v3Text(
-                  'live MLS through Oregon Data Share, active and pending listings that carry a video tour',
-                )}
-                action={{
-                  label: v3Text('See homes for sale'),
-                  href: listingsBrowsePath(),
-                  variant: 'primary',
-                }}
+              <VideosOpening
+                heading="Video tours of homes for sale"
+                city={null}
+                count={feedItems.length}
               />
               <VideoFeedClient items={feedItems} startKey={startKey} />
               <V3Quiet
@@ -306,33 +285,14 @@ export default async function VideosPage({
         {jsonLd}
         <V3Breadcrumb trail={crumbTrail} />
 
-        {cards.length > 0 ? (
-          <V3Instrument
-            id="tours"
-            level={1}
-            eyebrow={v3Text(city ? `${city}, Oregon` : 'Central Oregon')}
-            headline={v3Text(heading)}
-            figures={[
-              {
-                value: v3Text(String(cards.length)),
-                label: v3Text(cards.length === 1 ? 'home with a video tour' : 'homes with a video tour'),
-                href: listingsBrowsePath(),
-              },
-            ]}
-            source={v3Text(
-              'live MLS through Oregon Data Share, active and pending listings that carry a video tour',
-            )}
-            action={{
-              label: v3Text('See homes for sale'),
-              href: listingsBrowsePath(),
-              variant: 'primary',
-            }}
-          />
+        <VideosOpening heading={heading} city={city} count={cards.length} />
+
+        {videoItems.length > 0 ? (
+          <HideAwareVideoGrid items={videoItems} />
         ) : (
           <V3Quiet
             id="tours"
-            heading={heading}
-            headingLevel={1}
+            heading="Tour the homes"
             items={[
               {
                 kind: 'prose',
@@ -344,41 +304,6 @@ export default async function VideosPage({
             ]}
           />
         )}
-
-        <nav aria-label="Filter video tours by city" className="flex flex-wrap items-center gap-2 px-4 py-4">
-          <Link
-            href="/videos"
-            aria-current={city ? undefined : 'page'}
-            className={cn(
-              'inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-              city
-                ? 'border border-border bg-background text-foreground hover:bg-secondary'
-                : 'bg-primary text-primary-foreground',
-            )}
-          >
-            All Central Oregon
-          </Link>
-          {CITY_CHIPS.map((c) => {
-            const active = c === city
-            return (
-              <Link
-                key={c}
-                href={`/videos?city=${encodeURIComponent(c)}`}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'inline-flex items-center rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-                  active
-                    ? 'bg-primary text-primary-foreground pointer-events-none'
-                    : 'border border-border bg-background text-foreground hover:bg-secondary',
-                )}
-              >
-                {c}
-              </Link>
-            )
-          })}
-        </nav>
-
-        {videoItems.length > 0 ? <HideAwareVideoGrid items={videoItems} /> : null}
 
         <V3Quiet
           id="explore"

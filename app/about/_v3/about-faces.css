@@ -1,28 +1,32 @@
 /* Route-local opening for /about. Owned broker cutouts on cream.
    Not a seventh pattern: Stage's job (owned media) without V3Stage's
    full-bleed frame, which would draw a rectangle behind the PNG.
-   Tokens come from components/site/v3/tokens.css via V3_ROOT_CLASS. */
+   Tokens come from components/site/v3/tokens.css via V3_ROOT_CLASS.
+   390: the first face fills the fold. Other names stay doors on the
+   same row as Call and Text. 48rem: three faces, same row language. */
 
 .v3.about-faces {
   max-width: var(--v3-measure);
   margin: 0 auto;
-  padding: var(--v3-space-md) var(--v3-gutter) var(--v3-space-sm);
+  padding: var(--v3-space-xs) var(--v3-gutter) var(--v3-space-lg);
 }
 
 .about-faces__head {
   display: flex;
   flex-direction: column;
   gap: var(--v3-space-3xs);
-  margin-bottom: var(--v3-space-sm);
+  margin-bottom: var(--v3-space-xs);
 }
 
-.about-faces__heading {
+.v3.about-faces .about-faces__heading {
   margin: 0;
+  font-size: var(--v3-size-display-2);
+  line-height: var(--v3-leading-heading);
 }
 
 .about-faces__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--v3-space-sm);
   align-items: end;
   margin: 0;
@@ -30,19 +34,22 @@
   list-style: none;
 }
 
-.about-faces__person {
+.about-faces__item {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--v3-space-xs);
+  align-items: stretch;
   min-width: 0;
-  min-height: var(--v3-tap);
-  color: var(--v3-ink);
-  text-align: center;
+}
+
+.about-faces__photo-link {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  color: inherit;
   text-decoration: none;
 }
 
-.about-faces__person:focus-visible {
+.about-faces__photo-link:focus-visible {
   outline: var(--v3-focus-ring);
   outline-offset: var(--v3-focus-offset);
 }
@@ -52,12 +59,29 @@
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 48vh;
+  max-height: 70vh;
   object-fit: contain;
 }
 
-.about-faces__name {
+.about-faces__grid > li:not(:first-child) .about-faces__photo-link {
+  display: none;
+}
+
+.about-faces__row {
+  display: flex;
+  align-items: center;
+  gap: var(--v3-space-xs);
   min-width: 0;
+  min-height: var(--v3-tap);
+}
+
+.about-faces__name {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--v3-tap);
+  color: var(--v3-ink);
   font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-medium);
   line-height: var(--v3-leading-heading);
@@ -68,14 +92,61 @@
   transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
 }
 
-.about-faces__person:hover .about-faces__name,
-.about-faces__person:focus-visible .about-faces__name {
+.about-faces__name:hover,
+.about-faces__name:focus-visible {
   text-decoration-color: currentColor;
 }
 
-.about-faces__title {
-  font-size: var(--v3-size-body-sm);
-  font-weight: var(--v3-weight-body);
-  line-height: var(--v3-leading-note);
+.about-faces__name:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+.about-faces__reach {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--v3-tap);
+  min-height: var(--v3-tap);
   color: var(--v3-ink-muted);
+  font-size: var(--v3-size-body);
+  line-height: var(--v3-leading-control);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: var(--v3-underline-offset);
+  transition: text-decoration-color var(--v3-dur-state) var(--v3-ease-out);
+}
+
+.about-faces__reach:hover,
+.about-faces__reach:focus-visible {
+  color: var(--v3-ink);
+  text-decoration-color: currentColor;
+}
+
+.about-faces__reach:focus-visible {
+  outline: var(--v3-focus-ring);
+  outline-offset: var(--v3-focus-offset);
+}
+
+@media (min-width: 48rem) {
+  .about-faces__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .about-faces__grid > li:not(:first-child) .about-faces__photo-link {
+    display: flex;
+  }
+
+  .about-faces__photo {
+    max-height: 64vh;
+  }
+
+  .about-faces__item {
+    align-items: center;
+  }
+
+  .about-faces__row {
+    width: 100%;
+    justify-content: center;
+  }
 }

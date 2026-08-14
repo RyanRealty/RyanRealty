@@ -43,6 +43,10 @@ const EXCLUDE = [
   // account/: KB has no form primitives. Excluded 2026-07-31 when the
   // ratchet flagged SubTypeControl.tsx, a new member of the same sheet.
   'components/search/',
+  // Sell capture Sheet — form primitives KB does not provide (same class as
+  // account/ and search/). Cookie banner tests assert import strings and
+  // are not a site surface.
+  'app/sell/_v3/',
 ]
 
 function walk(dir, out = []) {
@@ -54,7 +58,7 @@ function walk(dir, out = []) {
     if (statSync(full).isDirectory()) {
       if (EXCLUDE.some((e) => `${rel}/`.startsWith(e))) continue
       walk(full, out)
-    } else if (/\.(tsx|ts)$/.test(name)) {
+    } else if (/\.(tsx|ts)$/.test(name) && !/\.test\.(tsx|ts)$/.test(name)) {
       if (EXCLUDE.some((e) => rel.startsWith(e))) continue
       out.push(rel)
     }

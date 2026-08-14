@@ -2,8 +2,8 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED v6 Linear mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "competitiveTarget": "Beat Zillow / Redmond-area brokerage homepages. First viewport at 390 and 1280: search or inventory door, towns as tappable doors, at least three live MLS listing photographs that open the listing. Chart stays under those jobs.",
-  "note": "E-HOME-JOBS 2026-08-13. First viewport is homes and towns, not the market HUD. Order: Instrument level 1 (D11 H1 Homes for Sale in Central Oregon, six D11 towns as figure doors with live active counts, primary See homes for sale), Field (photographed homes, each a door, no relative plot), Ledger (six D11 towns with medians), Instrument level 2 (region pulse figures plus year overlay via buildRegionMedianChart), HomeAlertSheet, Quiet (D11 lead plus edges), Footer outside main. Chrome CTA stays Value my home. Chart is not deleted. Ticker, team dump, and horizontal review rails stay gone.",
+  "competitiveTarget": "Beat Zillow / Redmond-area brokerage homepages. First viewport at 390 and 1280: houses fill the fold, towns as filters, at least three live MLS listing photographs that open the listing. Chart stays under those jobs.",
+  "note": "Field-first 2026-08-14. First viewport is photographed homes. Order: HomeHomesField (compact D11 H1 Homes for Sale in Central Oregon, six D11 town name filters, V3Field with region count as caption), Ledger (six D11 towns with medians), Instrument level 2 (region pulse figures plus year overlay via buildRegionMedianChart), HomeAlertSheet, Quiet (D11 lead plus edges), Footer outside main. Chrome CTA stays Value my home. Chart is not deleted. No See homes for sale. Ticker, team dump, and horizontal review rails stay gone.",
   "requiredComponents": [
     {
       "name": "KbSectionTracker",
@@ -12,7 +12,7 @@
     },
     {
       "name": "V3Instrument",
-      "section": "Pattern 1, twice. Level 1 opens with D11 H1 and six town doors (live active counts). Ask is primary See homes for sale. Level 2 under the jobs holds region pulse figures and the year overlay via chart={homeChart}. Not a seventh pattern.",
+      "section": "Pattern 1, once under the Field. Level 2 holds region pulse figures and the year overlay via chart={homeChart}. Not a seventh pattern. Not the opening.",
       "blocking": true
     },
     {
@@ -26,8 +26,13 @@
       "blocking": true
     },
     {
+      "name": "HomeHomesField",
+      "section": "Page-local Field opening. Compact D11 H1, town name filters, first house fills the fold, V3Field with region count as caption.",
+      "blocking": true
+    },
+    {
       "name": "V3Field",
-      "section": "Pattern 2. Curated photographed homes (curateFeaturedTiles). Each photograph is a door into the listing. No relative plot on this route.",
+      "section": "Pattern 2, the opening. Composed in HomeHomesField. Curated photographed homes (curateFeaturedTiles). Each photograph is a door into the listing. Region count is a caption. Towns are filters, not a number poster.",
       "blocking": true
     },
     {
@@ -68,7 +73,7 @@
     "note": "This route never emitted page-level JSON-LD. Layout still emits Organization / WebSite. Meaning unchanged."
   },
   "dataLayer": {
-    "getRegionPulse": "lib/data/market/getRegionPulse.ts. market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A'. Feeds the level-1 Instrument figures and the Field count. Do not substitute getMarketPulse's 7d/closedLast30Days.",
+    "getRegionPulse": "lib/data/market/getRegionPulse.ts. market_pulse_live, geo_type='region', geo_slug='central-oregon', property_type='A'. Feeds the Field count caption and the level-2 Instrument figures. Do not substitute getMarketPulse's 7d/closedLast30Days.",
     "getMarketPulseCitySnapshots": "lib/data/market/getMarketPulseSnapshot.ts. geo_label IN D11_TOWNS. Feeds the town Ledger.",
     "getListingTiles": "lib/data/listings/getListingTiles.ts. status=active, propertyType=A, limit 200. Curated to 24 Field rows.",
     "getPriceHistory": "monthly region series for the Instrument chart. dropInProgressMonth(zonedDateKey Pacific YYYY-MM) then buildRegionMedianChart (year overlay). Not a flattened 13-month polyline.",
@@ -77,8 +82,7 @@
   },
   "sectionOrder": [
     "KbSectionTracker",
-    "V3Instrument (level 1, D11 H1, town doors, See homes for sale)",
-    "V3Field (photographed inventory, listing doors)",
+    "HomeHomesField (compact D11 H1, town filters, V3Field with count caption)",
     "V3Ledger (D11 towns)",
     "V3Instrument (level 2, region pulse, year overlay via buildRegionMedianChart)",
     "HomeAlertSheet (V3Sheet, listing alerts)",

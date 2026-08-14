@@ -1,0 +1,82 @@
+{
+  "route": "/our-homes",
+  "grain": "homes",
+  "thing": "our houses",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 6, 10, 14, 15, 16],
+  "axes": {
+    "job": 2,
+    "path": 2,
+    "opening": 2,
+    "distinct": 4,
+    "craft": 3,
+    "motion": 2,
+    "perf": null,
+    "honesty": 2,
+    "reach": 2,
+    "simple": 3,
+    "quiet": 2,
+    "beat": null
+  },
+  "path": {
+    "start": "Our homes",
+    "now": "No listings right now",
+    "next": "?",
+    "finish": "?",
+    "back": "Home"
+  },
+  "copy_words": 37,
+  "clutter": 6,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Screen says no listings. Listings has 2 Active + 1 Pending SFR under ListOfficeName Ryan Realty LLC: 220215931 Bend $1,095,000, 220221088 Redmond $599,999, 220225317 Pending Redmond $655,000",
+      "better": "Field of those houses. Empty Ledger only when the office set is empty."
+    },
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home. Body repeats Value my home. Accept all is a third filled control. None is our houses",
+      "better": "Buyer primary is one of our houses. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Field. Fold is H1, empty copy, three Quiet doors. No Field",
+      "better": "Houses fill the fold. Towns are filters. One Field of our listings."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess: See homes for sale, Value my home, Contact us, or Accept all. FINISH is not on the screen",
+      "better": "One next tap: a house. FINISH is I know it or I saved this."
+    },
+    {
+      "sev": "P0",
+      "defect": "Browse every Central Oregon home, or value your own explains the doors under it. Copy 37. Foci 6",
+      "better": "Delete the sentence. The house is the control. Cookie after the thing."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: map missing, solds or price drops missing, this city's market has no door. The three office houses have no door",
+      "better": "Field of our houses. Modes are filters of this browse. Place market is a labeled exit."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. No house photo. Cookie on the fold. ON THE MARKET peeks with no rows",
+      "better": "Photo ≥160px. Address wraps. Cookie off the first card."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/our-homes-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/our-homes-1280.png",
+    "390: Home / Our homes. H1 Homes listed by Ryan Realty. No listings right now. No Ryan Realty office listings are on the market in this refresh. Browse every Central Oregon home, or value your own. Doors: See homes for sale, Value my home, Contact us. ON THE MARKET peek. Chrome Value my home. Cookie.",
+    "1280: same empty Quiet. Nav Homes Places Market Sell About. Saved + filled Value my home. No house, no map, no Field.",
+    "Locked opening PUBLIC_UI §3 Homes: Field. Houses fill the fold. Towns are filters. Visitor objective: see the homes Ryan Realty itself represents.",
+    "Honesty two shapes 2026-08-14: (1) Active|Pending ListOfficeName ILIKE %Ryan% → Ryan Realty LLC n=3. (2) named rows PropertyType=A: 220215931 Active Bend $1095000; 220221088 Active Redmond $599999; 220225317 Pending Redmond $655000. Status mix for office: Active 2, Pending 1, Closed 16, Canceled 3.",
+    "Copy 37: Homes listed by + No listings right now + empty body minus brand/place + ON THE MARKET + cookie body. Clutter 6: chrome, cookie, H1, empty copy, door list, ON THE MARKET.",
+    "Filled: Value my home chrome, Accept all. Body Value my home is a Quiet row, not filled.",
+    "Hunt 390: map = not there · solds/price drops = not there · Bend market = not there · our 3 houses = not there",
+    "Not beat_on. Beat seats omitted, not guessed. perf not measured.",
+    "SEND: no. An empty page that hides three live office listings is not a URL to text."
+  ]
+}

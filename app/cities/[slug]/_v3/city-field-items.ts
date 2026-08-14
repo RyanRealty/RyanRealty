@@ -25,16 +25,18 @@ import { listingDetailPath } from '@/lib/slug'
  * the honest answer to both, and the Field's count above the frame still states
  * the real total from its own query.
  *
- * Photographs are required: V3Field's mosaic only opens when enough rows carry
- * `photoSrc`, and a house with no photo cannot be the first-screenful door.
+ * A photograph is optional. The city opening is one Field (map + list of the
+ * same set). A home with no photo is still listed and, when it has coordinates,
+ * plotted. Dropping it to force a mosaic would make the caption count a
+ * different population from the pins.
  */
-export function cityFieldItems(tiles: readonly ListingTile[], limit: number): V3FieldItem[] {
+export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V3FieldItem[] {
   const items: V3FieldItem[] = []
+  const cap = limit ?? Number.POSITIVE_INFINITY
 
   for (const tile of tiles) {
-    if (items.length >= limit) break
+    if (items.length >= cap) break
     if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) continue
-    if (!tile.photoUrl || tile.photoUrl.trim().length === 0) continue
 
     const street = [tile.streetNumber, tile.streetName, tile.streetSuffix]
       .filter((part) => typeof part === 'string' && part.trim().length > 0)
@@ -50,6 +52,8 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit: number): V3
       .filter((part): part is string => part !== null)
       .join(' · ')
 
+    const photo = tile.photoUrl?.trim()
+
     items.push({
       id: tile.listingKey,
       href: listingDetailPath(
@@ -60,7 +64,7 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit: number): V3
       ),
       priceLabel: formatPrice(tile.listPrice),
       title: street,
-      photoSrc: tile.photoUrl,
+      ...(photo ? { photoSrc: photo } : {}),
       ...(meta ? { meta } : {}),
       lat: tile.lat,
       lng: tile.lng,

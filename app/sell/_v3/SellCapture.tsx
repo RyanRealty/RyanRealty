@@ -2,7 +2,7 @@
  * Working surface around the locked capture forms.
  *
  * V3Sheet cannot take a ReactNode slot (its children are prose, its field is
- * one control). SellerLPForm and ValuationForm are the capture contracts, so
+ * one control). SellValueForm and ValuationForm are the capture contracts, so
  * they stay. This wrapper opens the Sheet token scope and layout so the form
  * sits in the locked Sell order as the first Sheet, without rewriting the
  * payload, field names, or Places autocomplete.
@@ -12,12 +12,12 @@ import { V3_ROOT_CLASS, V3Eyebrow, V3Heading } from '@/components/site/v3'
 import '@/components/site/v3/V3Sheet.css'
 
 type Props = {
-  /** Omit when the child form already owns the hash target (SellerLPForm id=get-value). */
+  /** Omit when the child form already owns the hash target (SellValueForm id=get-value). */
   id?: string
   headingId?: string
   eyebrow: string
   heading?: string
-  /** Used when the child form owns the visible heading (SellerLPForm card h2). */
+  /** Used when the child form owns the visible heading. /sell address step has none. */
   ariaLabel?: string
   children: ReactNode
 }

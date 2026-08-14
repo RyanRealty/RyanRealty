@@ -1,0 +1,100 @@
+{
+  "route": "/about",
+  "thing": "these people",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 7, 10, 11, 12, 14, 16, 17, 18],
+  "axes": {
+    "job": 4,
+    "path": 3,
+    "opening": 7,
+    "distinct": 6,
+    "craft": 6,
+    "motion": 2,
+    "perf": null,
+    "honesty": 3,
+    "reach": 4,
+    "simple": 4,
+    "quiet": 2,
+    "beat": 2
+  },
+  "path": {
+    "start": "About Ryan Realty",
+    "now": "three named faces",
+    "next": "Value my home",
+    "finish": "",
+    "back": ""
+  },
+  "copy_words": 55,
+  "clutter": 8,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome on About is Value my home. Cookie Accept all is the other filled control. NEXT is a seller form, not a person.",
+      "better": "The face is the primary. Phone sits on the face. Seller lives on Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "First screen ships the boutique mission sentence (authentic / exceptional). PAGE-GRADE v1 named this voice miss.",
+      "better": "Cut the sentence. Faces and names are the page."
+    },
+    {
+      "sev": "P0",
+      "defect": "Must-win fails: faces are present, names look like labels, reach is /contact or Value my home. No tel or sms on About. Stellar home prints three numbers.",
+      "better": "Name is the door at rest. Call and text on the face row. Form is not the reach."
+    },
+    {
+      "sev": "P0",
+      "defect": "Eight first-screen foci at 390: chrome, Value my home, breadcrumb, eyebrow, H1, faces, How it started, cookie.",
+      "better": "Chrome plus faces. No mission graf. No seller CTA. Cookie is not a first-screen block."
+    },
+    {
+      "sev": "P0",
+      "defect": "Beat theater: battery PNGs are Cascade and Stellar homes, not team pages. Must-win is not WIN.",
+      "better": "Tel on the face takes the reach row. Do not clone their chrome."
+    },
+    {
+      "sev": "P1",
+      "defect": "Verified sales exist on /team/[slug] and have no door on About. Reviews and phone are one labeled tap only after the mission block, and phone is still a form.",
+      "better": "Solds as named doors under the people. Reviews as one door. Call on the face."
+    },
+    {
+      "sev": "P1",
+      "defect": "FAQ Quiet dumps five questions, six mixed links, leftover city notes, and broker doors. Source stamp says market_pulse_live. Page comment rewrites PUBLIC_UI About → Quiet + Sheet.",
+      "better": "Eight named doors, not a question pile. Stamp is live MLS plus the date. Keep faces first. Do not mount a Sheet here."
+    },
+    {
+      "sev": "P2",
+      "defect": "Three-across cutouts at 390 are small under the H1 stack. Name underline is hover-only. Page is still.",
+      "better": "One large face, the other names as doors. Opening a name is the motion."
+    }
+  ],
+  "beat": {
+    "cascade": {
+      "thing_first": "ABSENT",
+      "known_path": "ABSENT",
+      "live_record": "TRAIL",
+      "quiet": "TRAIL",
+      "honesty": "TRAIL",
+      "speed": "ABSENT",
+      "continuity": "ABSENT",
+      "must_win": "TRAIL"
+    },
+    "stellar": {
+      "thing_first": "ABSENT",
+      "known_path": "TRAIL",
+      "live_record": "TRAIL",
+      "quiet": "TRAIL",
+      "honesty": "TRAIL",
+      "speed": "ABSENT",
+      "continuity": "ABSENT",
+      "must_win": "TRAIL"
+    }
+  },
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/about-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/about-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/cascade-home-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/stellar-home-390.png"
+  ]
+}

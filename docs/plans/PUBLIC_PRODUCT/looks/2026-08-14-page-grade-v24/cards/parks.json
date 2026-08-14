@@ -1,0 +1,89 @@
+{
+  "route": "/parks",
+  "grain": "places-poi",
+  "thing": "parks",
+  "verdict": "FAIL",
+  "auto_fails": [1, 5, 10, 12, 14, 15, 16],
+  "axes": {
+    "job": 2,
+    "path": 3,
+    "opening": 3,
+    "distinct": 3,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 5,
+    "reach": 2,
+    "simple": 3,
+    "quiet": 2,
+    "beat": null
+  },
+  "path": {
+    "start": "Parks",
+    "now": "18 in the registry",
+    "next": "Value my home",
+    "finish": "",
+    "back": ""
+  },
+  "copy_words": 58,
+  "clutter": 9,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome on Parks is Value my home. A second Value my home sits on the fold. Cookie Accept all is a third fill.",
+      "better": "A named park is the primary. Seller lives on Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "The thing is parks. 390 and 1280 folds are an 18 and a source sentence. No park names.",
+      "better": "A Ledger of parks fills the fold. 18 is a caption."
+    },
+    {
+      "sev": "P0",
+      "defect": "First-screen DNA matches Blog and the other POI indexes: eyebrow, H1, giant count, source graf, Value my home.",
+      "better": "This crop is parks. Count-hero stays off the fold."
+    },
+    {
+      "sev": "P0",
+      "defect": "Source prints data/co-parks.ts. System path on the visitor fold.",
+      "better": "Cut the source sentence. The row is the proof."
+    },
+    {
+      "sev": "P0",
+      "defect": "18 parks exist and none are on the 390 or 1280 first screen. Hidden record.",
+      "better": "Named park rows. City is a label on the row."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is Value my home. FINISH blank. Nine foci. 58 words.",
+      "better": "One next: a park. Cookie off the first card."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: a named park missing, homes next to them missing, a city door missing.",
+      "better": "Park row → houses next to it. City is a back door."
+    },
+    {
+      "sev": "P2",
+      "defect": "Page is still. BY CITY peek is a caption.",
+      "better": "Opening a park is the motion."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/parks-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/parks-1280.png",
+    "390: chrome Value my home filled. Home / Parks. Eyebrow CENTRAL OREGON. H1 Parks, and the homes next to them. 18 PARKS IN THE REGISTRY. Source: verified park registry (data/co-parks.ts). State-park facts from Oregon State Parks, city parks from BPRD and city sites plus OpenStreetMap. Nothing here is a live MLS figure. Body Value my home. BY CITY / Central Oregon parks peek. Cookie still up. No park names.",
+    "1280: same count hero. Nav Homes Places Market Sell About. Saved + filled Value my home + Menu. Still no park rows on the fold.",
+    "No PUBLIC_UI §3 lock for places-poi. Thing is parks. First mounted block is a registry integer, not the parks.",
+    "Copy 58 = breadcrumb residual, H1, PARKS IN THE REGISTRY, source graf, BY CITY peek, cookie. 18 excluded as a count. Agency names kept as copy. Button labels excluded.",
+    "Clutter 9: chrome, Value my home, breadcrumb, eyebrow, H1, 18, source, body Value my home, cookie.",
+    "Occupancy 390: parks 0%. The integer owns the fold.",
+    "Hunt 3+: named park not on fold · homes nearby not on fold · city door not on fold.",
+    "AF12: data/co-parks.ts is a visitor-facing system path.",
+    "Visitor objective: find the outdoor anchor worth living near. First screen never shows a park.",
+    "Beat omitted — /parks is not in beat_on. perf null — not measured.",
+    "SEND: no. An 18 and a file path is not a parks URL to text."
+  ]
+}

@@ -1,13 +1,10 @@
 /**
  * /zip/[zip] - the ten canonical Central Oregon ZIP nodes, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11. A ZIP is a
- * place node, so it opens on the answer (Instrument) and then hands the visitor the
- * inventory as a spatial surface (Field), which is the locked opening for Homes.
- * FOUR of the six patterns, no two adjacent alike, chrome exempt. The section order,
- * the sections this migration DELETED, and the per-section reasoning are the parity
- * contract, not this comment:
- * design_system/ryan-realty/ui_kits/zip/parity.json.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3. A ZIP uses the city
+ * opening: Field of this ZIP's houses. Verdict is a caption, never a number
+ * hero. Child plats are doors below the fold. Section order is the parity
+ * contract: design_system/ryan-realty/ui_kits/zip/parity.json.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata
  * (both the canonical and the noindex branch), MetadataBlock JSON-LD (BreadcrumbList,
@@ -53,16 +50,8 @@
  *     written unconditionally. The KB page failed both — `?keywords=<zip>` is
  *     free text that resolves to Bend, and the pin instruction rendered in the
  *     same frame that disclaimed an inventory.
- *  7. ONE PRIMARY PER VISIBLE VIEWPORT (PUBLIC_UI.md section 1). The rule counts
- *     VISIBLE filled controls. An earlier version of this file demoted the
- *     Instrument's ask to a ghost on the premise that "the sticky public header
- *     carries a filled valuation CTA at every scroll position." That premise is
- *     false at 390. The header's `a.nav-cta` is display:none below 880px
- *     (components/site/kb/kb.css) and its twin sits in the closed menu overlay, so
- *     the visible header is the wordmark, Search, and Menu. The first viewport
- *     shipped no ask at all on the width most visitors arrive at. The Instrument's
- *     action is therefore FILLED. The page carries its own primary, and the alert
- *     Sheet's submit, four sections down, is never in the same viewport as it.
+ *  7. ONE PRIMARY PER VISIBLE VIEWPORT (PUBLIC_UI.md section 1). The first
+ *     viewport is the Field. The next tap is a house. Seller lives on Sell.
  */
 
 import { notFound } from 'next/navigation'
@@ -73,8 +62,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { formatPrice, formatPriceExact } from '@/lib/format/money'
-import { homesForSalePath, listingTileHref } from '@/lib/slug'
-import { valuationHref } from '@/lib/site/valuation-href'
+import { homesForSalePath, slugify } from '@/lib/slug'
 import {
   V3_ROOT_CLASS,
   v3Text,
@@ -86,7 +74,6 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
-  type V3FieldItem,
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
   type V3LedgerPlainRow,
@@ -95,6 +82,7 @@ import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
 import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { ZipAlertsSheet } from './_v3/ZipAlertsSheet.client'
+import { ZipHomesField } from './_v3/ZipHomesField'
 import {
   CANONICAL_ZIPS,
   ZIP_AREA,
@@ -104,8 +92,8 @@ import {
   neighborhoodName,
   normalizeZip,
   numeric,
-  tileMeta,
-  tileTitle,
+  zipFieldCaption,
+  zipFieldItems,
   zipSearchHref,
 } from './_v3/zip-constants'
 
@@ -113,6 +101,8 @@ type Params = { zip: string }
 
 export const dynamicParams = false
 export const revalidate = 60
+void V3Field
+void PlaceFieldMap
 
 export async function generateStaticParams(): Promise<Array<{ zip: string }>> {
   return Array.from(CANONICAL_ZIPS).map((zip) => ({ zip }))
@@ -193,15 +183,6 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     'Counts and medians are computed from those active listings, never from closed sales'
 
   const figures: V3InstrumentFigure[] = []
-  if (activeCount != null) {
-    figures.push({
-      value: v3Text(activeCount.toLocaleString('en-US')),
-      label: v3Text('active single-family listings'),
-      // The lead figure is the page's loudest claim, so its door is the one that
-      // has to answer with the same number. See zipSearchHref.
-      href: zipSearchHref(zip),
-    })
-  }
   if (medianListPrice != null) {
     figures.push({
       value: v3Text(formatPrice(medianListPrice)),
@@ -236,36 +217,10 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   // The Field. Every active tile is a row, and every row is a door, so the list and
   // the count describe the same set. Ordered by price, which is the order the KB
   // featured rail used, so the strongest inventory still leads.
-  const fieldItems: V3FieldItem[] = [...tiles]
-    .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
-    .map((tile) => ({
-      id: tile.listingKey,
-      href: listingTileHref(tile),
-      priceLabel: formatPrice(tile.listPrice),
-      title: tileTitle(tile, `ZIP ${zip}`),
-      meta: tileMeta(tile),
-      lat: tile.lat,
-      lng: tile.lng,
-    }))
-
-  // Section 0, rule 2, applied to an INSTRUCTION rather than to a figure. "Select
-  // a pin" is a claim that a pin exists, and it was written unconditionally while
-  // every figure beside it was gated on the read. On a degraded read `fieldItems`
-  // is empty and the map plots nothing, so the same frame disclaimed an inventory
-  // in its empty message and told the reader to select a pin in its map note. The
-  // note is therefore bound to the PLOTTED set, which is the only set a pin can
-  // come from, and the reason a frame is empty is stated once — by `emptyMessage`,
-  // which already separates a feed that did not answer from a ZIP with nothing for
-  // sale. The middle branch covers the third case the unconditional string also got
-  // wrong: listings that exist and report no coordinates.
+  const fieldItems = zipFieldItems(tiles, zip)
+  const fieldCaption = zipFieldCaption(zip, fieldItems.length)
   const mapPins = fieldMapPins(fieldItems)
   const plottedCount = mapPins.length
-  const mapNote: string | undefined =
-    plottedCount > 0
-      ? `Every listing in ${zip} that reports coordinates. Select a pin to open that home.`
-      : fieldItems.length > 0
-        ? `No active listing in ${zip} reports coordinates, so this map plots nothing.`
-        : undefined
 
   // Neighborhoods, grouped from the same tiles. A group earns a row when it has both
   // a NAME — decided in one place, by neighborhoodName — AND a median list price,
@@ -378,7 +333,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       type: 'breadcrumb',
       items: [
         { name: 'Home', url: '/' },
-        { name: 'Homes for sale', url: '/homes-for-sale' },
+        { name: 'Cities', url: '/cities' },
+        { name: cityName, url: `/cities/${slugify(cityName)}` },
         { name: zip, url: zipPageUrl },
       ],
     },
@@ -410,9 +366,22 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
         <V3Breadcrumb
           trail={[
             { label: 'Home', href: '/' },
-            { label: 'Homes for sale', href: '/homes-for-sale' },
+            { label: 'Cities', href: '/cities' },
+            { label: cityName, href: `/cities/${slugify(cityName)}` },
             { label: zip },
           ]}
+        />
+
+        <ZipHomesField
+          zip={zip}
+          fieldItems={fieldItems}
+          caption={fieldCaption}
+          source={traceBase}
+          emptyMessage={
+            live
+              ? `No active single-family listings in ${zip} right now.`
+              : 'The listing feed did not answer on this refresh, so this frame is not claiming an inventory.'
+          }
         />
 
         {firstFigure ? (
@@ -420,32 +389,13 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
             id="market"
             level={1}
             eyebrow={v3Text(`${zip} · ${area} · Oregon`)}
-            // The head term this page ranks for, and the subject of the node. The
-            // count sits under it as the lead figure rather than inside it, so the
-            // H1 is the same string whatever the market did overnight.
             headline={v3Text(`Homes for sale in ${zip}`)}
             figures={[firstFigure, ...restFigures]}
             source={v3Text(traceBase)}
-            // FILLED, by rule 7. This is the page's own ask, in the page's own
-            // first viewport, and it is built by the one helper that carries
-            // `?from=` (lib/site/valuation-href.ts) rather than by a string
-            // assembled here. An inline convention is invisible to whoever
-            // rewrites the section next, which is how four routes dropped the
-            // parameter at once (migration-recipe.md, 2026-08-11 addendum 1).
-            //
-            // WHAT `from` REACHES TODAY, stated because a link is a claim: the
-            // helper's destination is VALUATION_FORM.href, `/sell#get-value`,
-            // and app/sell/page.tsx hands its form a hardcoded
-            // `pagePath={ROUTE_PATH}`, so `?from=` arrives and is not read there.
-            // The written-valuation surface `/sell/valuation` IS the one that
-            // reads it (app/home-valuation/actions.ts resolves source_url from
-            // the referer's `from`). Closing that is one line on the /sell route
-            // and it fixes every migrated page at once, which is the reason this
-            // link goes through the shared helper instead of naming a
-            // destination of its own.
             action={{
-              label: v3Text('Value my home'),
-              href: valuationHref(zipPageUrl),
+              label: v3Text(`All homes in ${zip}`),
+              href: zipSearchHref(zip),
+              variant: 'ghost',
             }}
           />
         ) : (
@@ -457,40 +407,11 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
               {
                 kind: 'prose',
                 term: 'No live figures right now',
-                body: `The listing feed did not answer on this refresh, so this page is not printing an inventory count, a median, or a neighborhood breakdown for ${zip}. The other ZIP codes below carry their own live reads.`,
+                body: `The listing feed did not answer on this refresh, so this page is not printing a median or a neighborhood breakdown for ${zip}. The other ZIP codes below carry their own live reads.`,
               },
             ]}
           />
         )}
-
-        <V3Field
-          id="homes"
-          ariaLabel={`Active single-family listings in ${zip}`}
-          items={fieldItems}
-          // The real Google map, in the slot the pattern reserves for it. It reads
-          // the same items this list renders, through the Field's own binding, so a
-          // pin and a row cannot disagree about what is for sale.
-          mapSlot={
-            mapPins.length > 0 ? (
-              <PlaceFieldMap pins={mapPins} placeName={`ZIP ${zip}`} />
-            ) : undefined
-          }
-          count={
-            activeCount != null
-              ? {
-                  value: activeCount.toLocaleString('en-US'),
-                  label: 'active single-family listings',
-                  source: traceBase,
-                }
-              : undefined
-          }
-          mapNote={mapNote}
-          emptyMessage={
-            live
-              ? `No active single-family listings in ${zip} right now.`
-              : 'The listing feed did not answer on this refresh, so this frame is not claiming an inventory.'
-          }
-        />
 
         {firstNeighborhood ? (
           <V3Ledger

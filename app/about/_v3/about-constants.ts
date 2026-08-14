@@ -4,7 +4,8 @@
  * Split out of page.tsx so the page stays under the file-size floor. Nothing
  * here fetches or formats. The mission sentence is the D11 exception: it is
  * the only public line that may name authentic / exceptional, and the words
- * are locked. Do not paraphrase it.
+ * are locked. Do not paraphrase it. It ships in the closing Quiet, never in
+ * How it started and never on the first screen.
  */
 
 /** D11 About mission. Exact words. Who is talking: We. Nowhere else on the site. */

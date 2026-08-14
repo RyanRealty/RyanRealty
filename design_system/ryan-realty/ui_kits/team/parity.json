@@ -3,7 +3,7 @@
   "mockup": "design_system/ryan-realty/ui_kits/team/index.html",
   "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
   "competitiveTarget": "Beat generic brokerage team pages: real broker names, Oregon licenses, transparent-PNG headshots, verbatim Google reviews, and a door to each /team/[slug] profile.",
-  "note": "Migrated off the KB register onto the v3 barrel 2026-08-13 (E-ABOUT). Rhythm: two of the six patterns (Quiet, Ledger), no two adjacent alike, chrome exempt. Order is Breadcrumb, Quiet (who you work with, headingLevel 1), Ledger (three brokers from getBrokers, Matt-Rebecca-Paul rank), Quiet (verbatim reviews + FAQ + edges), Footer. No Sheet on the index: the family's Sheets live on /contact and /team/[slug]. Primary ask is /contact. Reviews: getReviews(24) sorted so non-Matt-named reviews surface first (design-audit #156), TESTIMONIALS fallback when the live pool is empty. No invented quotes. KB-era deletions: KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
+  "note": "Look 2026-08-14: Team = faces. Order is Breadcrumb, AboutFaces (live broker cutouts reused from about/_v3, compact H1, name door, Call and Text on the face row from the live broker phone), Ledger (licenses, Matt-Rebecca-Paul rank), Quiet (verbatim reviews + FAQ + edges), Footer. PUBLIC_UI.md opens About-family on Quiet + Sheet. Faces first. The family's Sheet lives on /contact and /team/[slug]. Seller lives on Sell. The next tap is the name or the number. Reviews: getReviews(24) sorted so non-Matt-named reviews surface first (design-audit #156), TESTIMONIALS fallback when the live pool is empty. No invented quotes. KB-era deletions: KbHero, KbAbout, KbTeam, KbTestimonials, KbSell, FAQBlock, SmoothScrollProvider, KbFooter, kb-root, kb.css import.",
   "requiredComponents": [
     {
       "name": "MetadataBlock",
@@ -22,17 +22,22 @@
     },
     {
       "name": "V3Breadcrumb",
-      "section": "Chrome. Home > Team. Surface tone. Current page never a link.",
+      "section": "Chrome. Home > Team. Surface tone (this page opens on cream faces, not a dark Stage). Current page never a link.",
+      "blocking": true
+    },
+    {
+      "name": "AboutFaces",
+      "section": "First viewport. Same AboutFaces row as /about. Live brokers from getBrokers, canonical /images/brokers/*.png cutouts. The first face fills the 390 fold. Name is the door to /team/[slug]. Call and text sit on that row from the live broker phone. No card, no wash, no rectangular box. Compact H1 lives here. No eyebrow, no card graf, no seller ask.",
       "blocking": true
     },
     {
       "name": "V3Quiet",
-      "section": "Pattern 6, twice. Opening: one-broker-to-close fact and doors to /contact and /reviews. Closing: verbatim reviews (live pool or TESTIMONIALS), the same FAQ array the FAQPage JSON-LD uses, and outbound edges.",
+      "section": "Pattern 6, once, below the fold. Verbatim reviews (live pool or TESTIMONIALS), the same FAQ array the FAQPage JSON-LD uses, and outbound edges including Value my home. Seller does not open the page.",
       "blocking": true
     },
     {
       "name": "V3Ledger",
-      "section": "Pattern 3, once. One plain row per broker from getBrokers, ordered Matt, Rebecca, Paul. Headshot from headshotPng when present. Each row is a door to /team/[slug]. License in the detail line. Empty branch uses emptyMessage.",
+      "section": "Pattern 3, once, after the faces. One plain row per broker from getBrokers, ordered Matt, Rebecca, Paul. License in the detail line. Empty branch uses emptyMessage.",
       "blocking": true
     },
     {
@@ -51,11 +56,11 @@
   "deferredComponents": [
     {
       "name": "V3Sheet",
-      "reason": "Capture lives on /contact and on each /team/[slug] BrokerValuationSheet. The index does not add a form."
+      "reason": "About destinations open on Quiet + Sheet, but the capture forms already live on /contact and /team/[slug]. Adding a Sheet here would be a new capture contract."
     },
     {
       "name": "V3Stage",
-      "reason": "No owned team photo. Opening on Stage would require tone=on-media on the breadcrumb over a Quiet first viewport."
+      "reason": "Pattern 4 needs owned media and is never allowed over a number. V3Stage is one full-bleed frame with a navy scrim, which would put a rectangle behind the transparent broker PNGs. AboutFaces does that owned-media job on cream instead."
     },
     {
       "name": "V3Instrument",

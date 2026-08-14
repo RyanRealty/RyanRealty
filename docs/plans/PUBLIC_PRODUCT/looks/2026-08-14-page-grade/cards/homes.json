@@ -1,0 +1,118 @@
+{
+  "route": "/homes-for-sale",
+  "thing": "houses",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 4, 6, 10, 14, 15, 16, 18],
+  "axes": {
+    "job": 4,
+    "path": 3,
+    "opening": 3,
+    "distinct": 5,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 3,
+    "reach": 4,
+    "simple": 4,
+    "quiet": 2,
+    "beat": 2
+  },
+  "path": {
+    "start": "Homes for Sale",
+    "now": "822+ map view",
+    "next": "unknown",
+    "finish": "unknown",
+    "back": "same filters"
+  },
+  "copy_words": 27,
+  "clutter": 8,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Chrome Value my home is a visible filled control on this buyer page",
+      "better": "Buyer primary is the house or Save this search. Seller lives in Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "390 reads 822+ homes in this map view with no map on the PNG",
+      "better": "One Field: map and list are the same set. The count names the set on screen."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Field. 390 opens H1, search, chip row, then a house peek under the cookie",
+      "better": "Houses fill the fold. Filters are one control, not a rail. Cookie is not a first-screen tax."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess: Value my home, Save this search, Accept all, or the house",
+      "better": "One buyer primary: the house."
+    },
+    {
+      "sev": "P0",
+      "defect": "Must-win trails Zillow and Compass at 390: no one-set map, houses do not fill, chip rail",
+      "better": "Map and list are one set. Houses fill the fold. Filters do not need a horizontal rail."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: map missing, solds/price drops missing, this city's market has no door",
+      "better": "Modes are filters of this browse. Place market is a labeled exit."
+    },
+    {
+      "sev": "P1",
+      "defect": "in this map view explains a view that is not on the 390 screen",
+      "better": "Delete the sentence. The Field is the view."
+    },
+    {
+      "sev": "P2",
+      "defect": "1280 split map+list exists and makes the count true; Value my home and cookie still tax the job",
+      "better": "Score 390 first. Keep the 1280 one-set Field. Drop seller chrome from this buyer page."
+    }
+  ],
+  "beat": {
+    "zillow": {
+      "thing_first": "TRAIL",
+      "known_path": "TRAIL",
+      "live_record": "TIE",
+      "quiet": "TRAIL",
+      "honesty": "TRAIL",
+      "speed": "?",
+      "continuity": "?",
+      "must_win": "TRAIL"
+    },
+    "compass": {
+      "thing_first": "TRAIL",
+      "known_path": "TRAIL",
+      "live_record": "TIE",
+      "quiet": "TRAIL",
+      "honesty": "TRAIL",
+      "speed": "?",
+      "continuity": "?",
+      "must_win": "TRAIL"
+    },
+    "cascade": {
+      "thing_first": "WIN",
+      "known_path": "WIN",
+      "live_record": "WIN",
+      "quiet": "TRAIL",
+      "honesty": "TRAIL",
+      "speed": "?",
+      "continuity": "?",
+      "must_win": "TRAIL"
+    }
+  },
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/homes-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/homes-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/zillow-bend-390-live.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/compass-bend-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/cascade-home-390.png",
+    "390: Value my home filled; 822+ homes in this map view; no map; cookie on first card",
+    "1280: Split map+list on; count then honest; Value my home still filled",
+    "Zillow Bend 390: two house cards fill fold; For sale / Filters / Save search; Map|Sort pill; 1519 results; no map-view lie",
+    "Compass Bend 390: two house cards fill fold; Filters + Save Search; Map FAB; no chip rail",
+    "Cascade PNG is their home, not equivalent browse: search box + fireplace",
+    "Stellar / Duren / Redfin omitted — no equivalent PNG this firing",
+    "perf null — not measured"
+  ]
+}

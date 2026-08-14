@@ -434,12 +434,23 @@ describe('design directive contracts', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/UNRELIABLE_BOUNDARY_SLUGS/)
     expect(src).toMatch(/isBoundaryReliable\(slug\)/)
-    // Places Look 2026-08-13: the Field is photographed homes, not PlaceFieldMap.
-    // The plat-union draw expression left with the map. Boundary reliability still
-    // gates which tiles feed the count (in-polygon vs subdivision-name narrowing).
-    expect(src).toMatch(/hasMap: false/)
+    // Stage-then-Field (2026-08-14): the map draws again. An unreliable stored
+    // hull still must not draw; the county plat union always may.
+    expect(src).toMatch(/_resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\)/)
     expect(src).toMatch(/boundaryReliable && boundaryListingKeys\.length > 0/)
     expect(src).toMatch(/usedSubdivisionNarrowing/)
+  })
+
+  it('D103 — homepage opens Field-first: house on the fold, towns as filters, no See homes for sale', () => {
+    const page = readSrc('app/page.tsx')
+    expect(page).toMatch(/<HomeHomesField/)
+    expect(page).toMatch(/heading="Homes for Sale in Central Oregon"/)
+    expect(page).not.toMatch(/See homes for sale/)
+    const field = readSrc('app/_v3/HomeHomesField.tsx')
+    expect(field).toMatch(/aria-label="Towns"/)
+    expect(field).toMatch(/<V3Field/)
+    expect(field).toMatch(/HomeFieldPhoto/)
+    expect(field).not.toMatch(/See homes for sale/)
   })
 
   it('D99 — homepage Instrument keeps list figures off the sale-series caption (§0)', () => {

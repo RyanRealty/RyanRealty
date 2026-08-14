@@ -1,0 +1,79 @@
+{
+  "route": "/faq",
+  "grain": "market",
+  "thing": "the answers",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 10, 14, 16],
+  "axes": {
+    "job": 4,
+    "path": 3,
+    "opening": 3,
+    "distinct": 5,
+    "craft": 5,
+    "motion": 2,
+    "perf": null,
+    "honesty": 6,
+    "reach": 3,
+    "simple": 5,
+    "quiet": 2,
+    "beat": null
+  },
+  "path": {
+    "start": "real estate FAQ",
+    "now": "Neighborhoods questions",
+    "next": "Value my home",
+    "finish": "",
+    "back": ""
+  },
+  "copy_words": 85,
+  "clutter": 8,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome on FAQ is Value my home. Cookie Accept all is the other navy fill.",
+      "better": "The question is the primary. Seller lives on Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "Market lock is Instrument: the number and the chart. Fold is a title and two neighborhood answers. No number. No chart.",
+      "better": "This leaf is a Ledger of named questions. Market number lives on /housing-market."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is Value my home. FINISH blank. Eight foci. 85 words.",
+      "better": "One next: a named question. Cookie off the first card."
+    },
+    {
+      "sev": "P0",
+      "defect": "Cookie sits on the second answer.",
+      "better": "The first question is the fold. Cookie after the thing."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: two-year chart missing, Bend houses missing, meaning missing. Answers are neighborhood copy, not the market shelf.",
+      "better": "Named ledgers: nearby, solds, market. Eight doors, not a title stack."
+    },
+    {
+      "sev": "P2",
+      "defect": "Page is still. Neighborhoods 2 questions is a caption.",
+      "better": "Opening a question is the motion. One question visible at a time on 390."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/faq-index-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/faq-index-1280.png",
+    "390: chrome Value my home filled. Home / FAQ. Eyebrow BEND AND THE TOWNS AROUND IT. H1 Central Oregon real estate FAQ. Neighborhoods · 2 questions. Q: Do you specialize in any particular Bend neighborhoods? Long answer naming Old Mill, Northwest Crossing, Tetherow, Broken Top, Awbrey Butte, Tumalo, Vandevert Ranch, Sisters, Redmond, Sunriver, Crooked River Ranch. Cookie on the answer. No Instrument.",
+    "1280: same stack plus Q2 What areas outside of Bend do you cover? Answer peek Bend, Tumalo, Redmond, Sisters, Sunriver, Tetherow, La Pine, Prineville. About/Market nav. Still Value my home + cookie.",
+    "Locked opening PUBLIC_UI §3 Market leaves: Instrument, number and chart. Actual: Quiet of Q&A. Two questions on the 1280 fold, not a dump of 33.",
+    "Copy 85 = H1 residual, section label, first question, first answer minus place names, cookie. 2 excluded as a count. No boutique on this crop.",
+    "Clutter 8: chrome, Value my home, breadcrumb, eyebrow, H1, Neighborhoods block, Q1, cookie.",
+    "Occupancy 390: answers occupy the fold under a title stack. Market number is 0%.",
+    "Shelf: verdict hide. Past hide. Meaning hide. Reports hide. Geo drill hide. Subscribe hide. Answers have (layer 0).",
+    "Hunt 3+: chart not on fold · Bend houses not on fold · meaning not on fold.",
+    "Visitor objective: scan the short answers. First answers are on the fold. NEXT is still the seller chrome.",
+    "Beat omitted — /faq is not in beat_on. perf null — not measured.",
+    "SEND: no. A FAQ that opens on Value my home is not a URL to text."
+  ]
+}

@@ -1,8 +1,8 @@
 /**
  * /schools — Central Oregon schools index, on the v3 barrel.
  *
- * Places open on Instrument. Order: Breadcrumb, Instrument (registry count),
- * Ledger (every school), Sheet (SFR alerts), Quiet, Footer outside main.
+ * Named school rows fill the fold. District is a label on the row. Count is a
+ * caption. Seller lives on Sell.
  *
  * THE PAGE CONTRACT: pageMetadata, revalidate 3600, breadcrumb + webPage
  * JSON-LD via MetadataBlock, V3SectionTracker pageType="schools". Data through
@@ -11,7 +11,8 @@
  *
  * KB-era deletions: KbHero, KbBreadcrumb, KbFooter, SmoothScrollProvider,
  * kb.css, SchoolsIndexStyles card grid, RegionalSfrAlertsBand, per-district H2
- * sections (district grouping moved to the Ledger when column).
+ * sections (district grouping moved to the Ledger when column), the Instrument
+ * count hero.
  */
 
 import type { Metadata } from 'next'
@@ -26,11 +27,10 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
-  type V3LedgerFigureRow,
+  type V3LedgerPlainRow,
 } from '@/components/site/v3'
 import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.client'
 import type { SchoolLevel } from '@/data/co-schools'
@@ -55,8 +55,9 @@ export function generateMetadata(): Metadata {
 export default function SchoolsIndexPage() {
   const districts = getSchools()
   const total = getSchoolsCount()
+  const caption = `${total.toLocaleString('en-US')} ${total === 1 ? 'school' : 'schools'}`
 
-  const rows: V3LedgerFigureRow[] = []
+  const rows: V3LedgerPlainRow[] = []
   for (const district of districts) {
     const districtName = district.district.trim()
     if (!districtName) continue
@@ -66,17 +67,16 @@ export default function SchoolsIndexPage() {
         const slug = school.slug.trim()
         if (!name || !slug) continue
         const city = school.city.trim()
-        const detail = [LEVEL_LABEL[level], city, school.grades].filter(Boolean).join(' · ')
-        const rating =
-          typeof school.greatSchoolsRating === 'number'
-            ? `${school.greatSchoolsRating}/10`
-            : LEVEL_LABEL[level]
+        const parts = [LEVEL_LABEL[level], city, school.grades]
+        if (typeof school.greatSchoolsRating === 'number') {
+          parts.push(`${school.greatSchoolsRating}/10`)
+        }
+        const detail = parts.filter(Boolean).join(' · ')
         rows.push({
           href: `/schools/${slug}`,
           when: v3Text(districtName),
           what: v3Text(name),
           detail: detail ? v3Text(detail) : undefined,
-          value: v3Text(rating),
           id: slug,
         })
       }
@@ -109,53 +109,23 @@ export default function SchoolsIndexPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Schools' }]} />
 
-        <V3Instrument
-          id="schools"
-          level={1}
-          eyebrow={v3Text('Central Oregon')}
-          headline={v3Text('Schools by district, and the homes that feed them')}
-          figures={[
-            {
-              value: v3Text(total.toLocaleString('en-US')),
-              label: v3Text('schools in the registry'),
-              href: '#school-list',
-            },
-            {
-              value: v3Text(districts.length.toLocaleString('en-US')),
-              label: v3Text('districts'),
-              href: '#school-list',
-            },
-          ]}
-          source={v3Text(
-            'verified school registry (data/co-schools.ts). Academic stats print only when the registry carries a cited value. Nothing here is a live MLS figure.',
-          )}
-          action={{
-            label: v3Text('Value my home'),
-            href: valuationHref('/schools'),
-          }}
-        />
-
         {firstRow ? (
           <V3Ledger
             id="school-list"
-            eyebrow={v3Text('By district')}
+            headingLevel={1}
+            eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Central Oregon schools')}
+            note={v3Text(caption)}
             rows={[firstRow, ...restRows]}
-            source={v3Text(
-              'the same verified school registry as the count above. GreatSchools ratings print only when the registry carries a number.',
-            )}
-            action={{
-              label: v3Text('Search homes'),
-              href: listingsBrowsePath(),
-              variant: 'ghost',
-            }}
           />
         ) : (
           <V3Ledger
             id="school-list"
+            headingLevel={1}
             heading={v3Text('Central Oregon schools')}
+            note={v3Text(caption)}
             rows={[]}
-            emptyMessage={v3Text('The school registry is being updated. See cities or search homes in the meantime.')}
+            emptyMessage={v3Text('The school list is being updated. See cities or search homes in the meantime.')}
           />
         )}
 

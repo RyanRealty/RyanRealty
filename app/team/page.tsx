@@ -2,9 +2,12 @@
  * /team - broker roster, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * About-family destinations open on Quiet. This page is Quiet (who you work
- * with) then Ledger (the three brokers) then Quiet (reviews and FAQ). The
- * family's Sheet lives on /contact and /team/[slug]. Primary ask is /contact.
+ * Look (2026-08-14): Team = faces. The first viewport is the live brokers'
+ * canonical transparent PNGs (no card, no wash, no box). Name is the door.
+ * Call and text sit on the face row. Ledger (licenses) then Quiet (reviews
+ * and FAQ) sit below. PUBLIC_UI.md opens About-family on Quiet + Sheet.
+ * Faces first. The family's Sheet stays on /contact and /team/[slug]. Seller
+ * lives on Sell. The next tap is the name or the number.
  *
  * THE PAGE CONTRACT, carried across unchanged: export const metadata through
  * pageMetadata, MetadataBlock JSON-LD (CollectionPage + aboutOrganization +
@@ -36,6 +39,8 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
+import { AboutFaces } from '@/app/about/_v3/AboutFaces'
+import { aboutFaceFromBroker, type AboutFace } from '@/app/about/_v3/about-faces'
 import { brokerLedgerRow, TEAM_FAQ_ITEMS, TEAM_RANK } from './_v3/team-constants'
 
 export const metadata: Metadata = pageMetadata({
@@ -58,6 +63,10 @@ export default async function TeamPage() {
   const orderedBrokers = [...brokers].sort(
     (a, b) => (TEAM_RANK[a.slug.split('-')[0] ?? ''] ?? 9) - (TEAM_RANK[b.slug.split('-')[0] ?? ''] ?? 9),
   )
+
+  const faces = orderedBrokers
+    .map((b) => aboutFaceFromBroker(b))
+    .filter((face): face is AboutFace => face !== null)
 
   const brokerRows = orderedBrokers
     .map((b) => brokerLedgerRow(b))
@@ -127,21 +136,7 @@ export default async function TeamPage() {
         <MetadataBlock schemas={schemas} />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Team' }]} />
 
-        <V3Quiet
-          id="team"
-          eyebrow="Ryan Realty · Bend, Oregon"
-          heading="The brokers"
-          headingLevel={1}
-          items={[
-            {
-              kind: 'prose',
-              body: 'The broker you first speak to is the broker who works your purchase or sale through to close. Call the number on their card. That is who answers.',
-            },
-            { label: 'Call, text, or write', href: '/contact' },
-            { label: 'Client reviews', href: '/reviews' },
-            { label: 'Value my home', href: valuationHref('/team') },
-          ]}
-        />
+        <AboutFaces people={faces} heading="The brokers" />
 
         {firstBroker ? (
           <V3Ledger

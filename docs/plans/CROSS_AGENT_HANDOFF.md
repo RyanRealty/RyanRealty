@@ -2,6 +2,25 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
+# Current — 2026-08-14 (Grok, page-grade fix-all) — shipping
+
+**Track:** Find all, fix all, ship, regrade. Seven parallel fix agents plus leftover honesty/index folds.
+
+**Wired (this land):**
+- Chrome fills Value my home only on `/sell*` (`lib/site/chrome-seller-ask.ts`).
+- Cookie hidden until first scroll; 3s corner chip if no scroll.
+- About/team: faces first, boutique line cut, Call/Text on the face.
+- Sell: one address ask, Stage ghost gone.
+- Home + browse Field. 390 no longer says "in this map view" without a map.
+- City/zip Field (not 494-hero). Neighborhood pace then Field. Master-plan Stage then Field. Plat Ledger (not 0-hero).
+- Open houses / price drops / luxury / videos / activity: count is a caption. H1s keep Layer A literals.
+- Our-homes: exact `ListOfficeName` then prefix, not leading-wildcard ILIKE.
+- Blog + POI indexes open on Ledger of rows.
+
+**Next:** Push + deploy:verify, then recapture universe and regrade. Do not `git add -A`. Imagery / CMA stay out.
+
+**Skills read:** page-grade, dispatching-parallel-agents, frontend-design, public-product-os, PUBLIC_UI, PAGE-GRADE, git-commit.mdc.
+
 # Current — 2026-08-14 (Grok, imagery canon) — local, not pushed
 
 **Track:** Kill the prohibitive "AI never renders real life" lock. We are better at this now.
@@ -38,7 +57,7 @@
 
 **Do not `git add -A`.** Imagery Current / page-grade / chrome-seller-ask / admin inbox stay out.
 
-**Leftover:** existing stored CMAs keep old HTML until rebuilt. Do not rebuild the hand-crafted 3480 row. Sunstone draft built 2026-08-14: slug `cma-56628-sunstone`, status draft, not sent. Recommended $1,730,000. Audit fail (3 findings). Local HTML `out/cma-56628-sunstone/cma.html`. Looks `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-sunstone-cma/`.
+**Leftover:** existing stored CMAs keep old HTML until rebuilt. Do not rebuild the hand-crafted 3480 row. Sunstone draft built 2026-08-14: slug `cma-56628-sunstone`, status draft, not sent. Recommended $1,730,000. Audit fail (3 findings). Local HTML `out/cma-56628-sunstone/cma.html`. Looks `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-sunstone-cma/`. Production PDF was 500: Chromium rendered, then `assertPdfPageSafety` could not load `pdfjs-dist/legacy/build/pdf.worker.mjs` on Vercel. Fix is local (pdfjs-node + tracing include), not in this handoff commit.
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, TDD, VOICE.md, frontend-design, CMA producer SKILL.md, PAGE_CONTRACT, DATABASE_FOR_AI_AGENTS §3a, git-commit.mdc.
 

@@ -20,7 +20,7 @@
  * value sits one identifier away, so the honest call is the short one.
  *
  * NO PRIMARY ACTION HERE. The chrome carries exactly one primary CTA and it is
- * the valuation ask in V3Chrome (PUBLIC_UI.md section 1: one primary action per
+ * the valuation ask in V3Chrome on Sell (PUBLIC_UI.md section 1: one primary action per
  * viewport, earned by the content above it). Since the header is sticky, a
  * solid button in the footer would put two primaries in one viewport for the
  * whole length of the page. The same destination is a column link in Sell, so

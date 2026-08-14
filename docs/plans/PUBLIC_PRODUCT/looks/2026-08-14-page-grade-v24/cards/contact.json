@@ -1,0 +1,84 @@
+{
+  "route": "/contact",
+  "grain": "about",
+  "thing": "these people",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 10, 14, 15, 16],
+  "axes": {
+    "job": 4,
+    "path": 3,
+    "opening": 3,
+    "distinct": 5,
+    "craft": 5,
+    "motion": 2,
+    "perf": null,
+    "honesty": 6,
+    "reach": 4,
+    "simple": 4,
+    "quiet": 2,
+    "beat": null
+  },
+  "path": {
+    "start": "Call, text, or write",
+    "now": "three Quiet doors",
+    "next": "Value my home",
+    "finish": "",
+    "back": ""
+  },
+  "copy_words": 55,
+  "clutter": 9,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome on Contact is Value my home. Cookie Accept all is the other navy fill. NEXT is a seller form.",
+      "better": "Call or text is the primary. The number is on the fold. Seller lives on Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Quiet + Sheet, faces first. Fold is a title, a graf, three doors, then Send a message STEP 1 OF 5. No faces.",
+      "better": "Faces fill the fold. Name is the door. Sheet is one question after the number."
+    },
+    {
+      "sev": "P0",
+      "defect": "Calling or texting gets you an answer sooner explains the SLA line above it.",
+      "better": "Cut the second sentence. Call or text is the door."
+    },
+    {
+      "sev": "P0",
+      "defect": "FINISH is blank. Chrome, Accept all, and the form start compete with Call or text.",
+      "better": "One filled control: the number. Cookie off the first card."
+    },
+    {
+      "sev": "P0",
+      "defect": "Nine foci. 55 words. Cookie sits on the Sheet.",
+      "better": "Chrome plus the number plus one face. Form is the Sheet under that."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: Matt's phone is a label not a number, a review missing, a sold as a door missing.",
+      "better": "Tel prints. Reviews as one door. Solds as named doors under the people."
+    },
+    {
+      "sev": "P2",
+      "defect": "Page is still. STEP 1 OF 5 is a caption, not a motion on this crop.",
+      "better": "Typing the first field is the motion. Face stays put."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/contact-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/contact-1280.png",
+    "390: chrome Value my home filled. Home / Contact. Eyebrow RYAN REALTY · CENTRAL OREGON. H1 Call, text, or write. Graf: A broker replies within one business day. Calling or texting gets you an answer sooner. Quiet: Call or text · matt@ryan-realty.com · Broker profiles. TALK TO A BROKER / Send a message / STEP 1 OF 5. Cookie on the Sheet. No faces. No tel digits.",
+    "1280: same stack. About in nav. Saved + filled Value my home + Menu. Sheet still under the cookie. No faces.",
+    "Locked opening PUBLIC_UI §3 About: Quiet + Sheet, faces first. Actual: Quiet then a Sheet peek. Faces not in the 390 or 1280 first screen.",
+    "Copy 55 = Home, Contact, RYAN REALTY, H1, two SLA sentences, TALK TO A BROKER, Send a message, STEP 1 OF 5, cookie. Door labels and place names excluded.",
+    "Clutter 9: chrome, Value my home, breadcrumb, eyebrow, H1, graf, Quiet list, Send a message, cookie.",
+    "Occupancy 390: people as faces 0%. Reach doors are a Quiet list under type. Cookie covers the Sheet.",
+    "Shelf: people hide. Record hide. Reach them partial (email prints, tel is a label). Service area is the eyebrow.",
+    "Hunt: phone = 1 unlabeled tap · review not on fold · sold not on fold.",
+    "Visitor objective: reach a broker and know when they answer. Number is not on the fold. SLA is two sentences.",
+    "Beat omitted — /contact is not in beat_on. perf null — not measured.",
+    "SEND: no. A buyer cannot be sent a Contact URL that hides the faces and leads with Value my home."
+  ]
+}

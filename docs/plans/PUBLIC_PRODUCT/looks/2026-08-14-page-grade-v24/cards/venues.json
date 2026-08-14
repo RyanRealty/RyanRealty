@@ -1,0 +1,89 @@
+{
+  "route": "/central-oregon/venues",
+  "grain": "places-poi",
+  "thing": "venues",
+  "verdict": "FAIL",
+  "auto_fails": [1, 5, 10, 12, 14, 15, 16],
+  "axes": {
+    "job": 2,
+    "path": 3,
+    "opening": 3,
+    "distinct": 3,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 5,
+    "reach": 2,
+    "simple": 3,
+    "quiet": 2,
+    "beat": null
+  },
+  "path": {
+    "start": "Live music and shows",
+    "now": "20 in the registry",
+    "next": "Value my home",
+    "finish": "",
+    "back": ""
+  },
+  "copy_words": 55,
+  "clutter": 9,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome on Venues is Value my home. A second Value my home sits on the fold. Cookie Accept all is a third fill.",
+      "better": "A named venue is the primary. Seller lives on Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "The thing is venues. 390 and 1280 folds are a 20 and a source sentence. No venue names.",
+      "better": "A Ledger of venues fills the fold. 20 is a caption."
+    },
+    {
+      "sev": "P0",
+      "defect": "First-screen DNA matches Blog and the other POI indexes: eyebrow, H1, giant count, source graf, Value my home.",
+      "better": "This crop is venues. Count-hero stays off the fold."
+    },
+    {
+      "sev": "P0",
+      "defect": "Source prints data/co-venues.ts. System path on the visitor fold.",
+      "better": "Cut the source sentence. The row is the proof."
+    },
+    {
+      "sev": "P0",
+      "defect": "20 venues exist and none are on the 390 or 1280 first screen. Hidden record.",
+      "better": "Named venue rows. Calendar is a door on the row."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is Value my home. FINISH blank. Nine foci. 55 words.",
+      "better": "One next: a venue. Cookie off the first card."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: a named venue missing, homes nearby missing, a city door missing.",
+      "better": "Venue row → houses near it. City is a back door."
+    },
+    {
+      "sev": "P2",
+      "defect": "Page is still. ON STAGE peek is a caption.",
+      "better": "Opening a venue is the motion."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/venues-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/venues-1280.png",
+    "390: chrome Value my home filled. Home / Live music & shows. Eyebrow CENTRAL OREGON. H1 Where the shows are, and homes nearby. 20 VENUES IN THE REGISTRY. Source: verified venues registry (data/co-venues.ts). Each venue links to its own live calendar. Nothing here is a live MLS figure. Body Value my home. ON STAGE / Central Oregon venues peek. Cookie still up. No venue names.",
+    "1280: same count hero. Nav Homes Places Market Sell About. Saved + filled Value my home + Menu. Still no venue rows on the fold.",
+    "No PUBLIC_UI §3 lock for places-poi. Thing is venues. First mounted block is a registry integer, not the venues.",
+    "Copy 55 = breadcrumb residual, H1, VENUES IN THE REGISTRY, source graf, section peek, cookie. 20 excluded as a count. Button labels excluded.",
+    "Clutter 9: chrome, Value my home, breadcrumb, eyebrow, H1, 20, source, body Value my home, cookie.",
+    "Occupancy 390: venues 0%. The integer owns the fold.",
+    "Hunt 3+: named venue not on fold · homes nearby not on fold · city door not on fold.",
+    "AF12: data/co-venues.ts is a visitor-facing system path.",
+    "Visitor objective: find the cultural anchor worth living near. First screen never shows a venue.",
+    "Beat omitted — /central-oregon/venues is not in beat_on. perf null — not measured.",
+    "SEND: no. A 20 and a file path is not a venues URL to text."
+  ]
+}

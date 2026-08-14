@@ -1,0 +1,83 @@
+{
+  "route": "/cities/bend/awbrey-butte",
+  "grain": "neighborhood",
+  "thing": "Awbrey Butte houses + daily life",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 5, 14, 15, 16, 27],
+  "axes": {
+    "job": 2,
+    "path": 2,
+    "opening": 2,
+    "distinct": 3,
+    "craft": 3,
+    "motion": 2,
+    "perf": null,
+    "honesty": 6,
+    "reach": 3,
+    "simple": 3,
+    "quiet": 2,
+    "beat": 2
+  },
+  "path": {
+    "start": "Awbrey Butte homes",
+    "now": "62 and 28.6",
+    "next": "?",
+    "finish": "?",
+    "back": "Bend"
+  },
+  "copy_words": 55,
+  "clutter": 6,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home on /cities/bend/awbrey-butte. Only filled first-viewport control at 390. 1280 adds a second filled Value my home under the figures.",
+      "better": "Buyer primary is a house or Save Awbrey Butte. Seller lives on Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "First screen is a city/market number hero: 62, $1,385,000, 28.6. Zero house pixels. Zero schools or parks. Cookie covers the fold.",
+      "better": "Instrument is this neighborhood's pace. Field of its houses fills the fold. Daily life (schools, parks) on the first path."
+    },
+    {
+      "sev": "P0",
+      "defect": "Locked opening is Instrument (pace) then Field of houses. Actual is inventory-integer Instrument with no Field on the fold.",
+      "better": "PUBLIC_UI §3 neighborhood: pace Instrument, then Field of Awbrey Butte houses. 62 is a caption, not the hero."
+    },
+    {
+      "sev": "P0",
+      "defect": "Wrong grain. Crop matches market (eyebrow, H1, figure grid, source) and city number-hero (62 as spectacle). Not neighborhood.",
+      "better": "This crop is Awbrey Butte houses plus daily life. Not a 62 hero. Not amenities or membership."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess (Value my home vs cookie Accept all). FINISH is not on the screen. No house to tap.",
+      "better": "One next tap: a house. FINISH is I decided or alert on. BACK still Awbrey Butte."
+    },
+    {
+      "sev": "P0",
+      "defect": "Source paragraph explains months of supply and the 4 / 4-6 / 6 thresholds under the 28.6. Copy ~55. Foci 6 (chrome, cookie, eyebrow, H1, count grid, source).",
+      "better": "Pace figure carries the verdict. Cut the paragraph. Cookie after the thing."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from the first screen: months of supply = 0 taps. A school or park = not there. Last year's median sale = not there. Alert, solds, history, plats not on the fold.",
+      "better": "Named doors: a school, a park, last year's solds. First path, not a Quiet dump."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. No pin, no row, no filter the visitor caused.",
+      "better": "Field motion: pin and row are the same set."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/neighborhood-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/neighborhood-1280.png",
+    "390: Home / Bend / Awbrey Butte. Eyebrow AWBREY BUTTE · BEND, OREGON. H1 Awbrey Butte homes for sale. 62 single-family homes for sale. $1,385,000 median list. 28.6 months of supply. MLS source + MoS formula + threshold sentences. updated Aug 14, 2026. Value my home chrome. Cookie. No houses. No schools. No parks.",
+    "1280: same three figures in a row. Body Value my home under the source. Field 62 peek at the bottom edge. Cookie still on the fold. Still no house photo, school, or park.",
+    "Sibling DNA: market-390 and market-leaf-390 are eyebrow + H1 + figure grid + source. city-390 is 494 then stamps. This crop is the market Instrument without a chart, with a city inventory integer as lead.",
+    "Hunt: MoS = on screen · school or park = not there · last-year median = not there",
+    "Not beat_on. No equivalent-URL PNGs. Beat seats omitted, not guessed."
+  ]
+}

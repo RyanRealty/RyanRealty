@@ -30,7 +30,9 @@
  */
 
 import type { ListingTile } from '@/lib/data'
-import { displaySubdivision } from '@/lib/slug'
+import type { V3FieldItem } from '@/components/site/v3'
+import { formatPrice } from '@/lib/format/money'
+import { displaySubdivision, listingTileHref } from '@/lib/slug'
 
 /**
  * The canonical ZIP codes Ryan Realty serves. `dynamicParams = false` on the
@@ -223,4 +225,33 @@ export function tileMeta(tile: ListingTile): string | undefined {
     displaySubdivision(tile.subdivisionName) ?? '',
   ].filter(Boolean)
   return parts.length > 0 ? parts.join(' · ') : undefined
+}
+
+/** Caption beside the ZIP Field. The count is the listed set. No MoS at ZIP scope. */
+export function zipFieldCaption(zip: string, count: number): string | null {
+  if (count <= 0) return null
+  return `${count.toLocaleString('en-US')} ${count === 1 ? 'home' : 'homes'} in ${zip}`
+}
+
+/**
+ * Every tile is a row so the list, the map, and the caption count one set.
+ * Photographs pass through when the tile has one. A missing photo does not drop the home.
+ */
+export function zipFieldItems(tiles: readonly ListingTile[], zip: string): V3FieldItem[] {
+  return [...tiles]
+    .filter((tile) => isFigure(tile.listPrice, 1))
+    .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
+    .map((tile) => {
+      const photo = tile.photoUrl?.trim()
+      return {
+        id: tile.listingKey,
+        href: listingTileHref(tile),
+        priceLabel: formatPrice(tile.listPrice),
+        title: tileTitle(tile, `ZIP ${zip}`),
+        meta: tileMeta(tile),
+        lat: tile.lat,
+        lng: tile.lng,
+        ...(photo ? { photoSrc: photo } : {}),
+      }
+    })
 }

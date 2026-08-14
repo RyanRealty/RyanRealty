@@ -16,11 +16,9 @@ export const DROPS_CITY_LABEL: Record<string, string> = {
   'powell-butte': 'Powell Butte',
 }
 
-export const DROPS_TRACE =
-  'live MLS through Oregon Data Share. activity_events price_drop on active single-family listings in the Central Oregon service area. Window is the last 7 days. Drop is previous list price to current list price.'
-
-export const DROPS_FIELD_TRACE =
-  'the same 7-day price-drop pull as the count above. Rows with no street or no list price stay in the count and drop from this list, because a Field row has to name a price and an address. Sorted by drop percent, largest first.'
+export function dropsTrace(place: string): string {
+  return `live MLS through Oregon Data Share, asking-price cuts on active single-family homes in ${place} in the last 7 days`
+}
 
 export function cityLabel(slug: string): string {
   return (

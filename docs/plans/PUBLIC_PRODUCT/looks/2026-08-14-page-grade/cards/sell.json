@@ -1,0 +1,100 @@
+{
+  "route": "/sell",
+  "thing": "the address field",
+  "verdict": "FAIL",
+  "auto_fails": [14, 15, 16, 18],
+  "axes": {
+    "job": 4,
+    "path": 3,
+    "opening": 8,
+    "distinct": 7,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 7,
+    "reach": 5,
+    "simple": 4,
+    "quiet": 2,
+    "beat": 3
+  },
+  "path": {
+    "start": "sell your home",
+    "now": "address field",
+    "next": "which Value tap",
+    "finish": "unknown",
+    "back": "unknown"
+  },
+  "copy_words": 41,
+  "clutter": 7,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Header Value my home, Stage Value my home, and Get my home's value plus cookie Accept all compete for NEXT",
+      "better": "The address field is the only filled control. Chrome Value my home is that field, not a second tap."
+    },
+    {
+      "sev": "P0",
+      "defect": "Stage H1, ghost CTA, and FREE. NO LISTING AGREEMENT. sit above the field; cookie covers the card",
+      "better": "The field is the first screen. Label is the job. Stage is poster only."
+    },
+    {
+      "sev": "P0",
+      "defect": "Placeholder Enter your home address explains the field",
+      "better": "Empty field. Label is the job. No helper sentence."
+    },
+    {
+      "sev": "P0",
+      "defect": "7 foci and 41 first-screen words including cookie",
+      "better": "Chrome, Stage poster, one field. Cookie after dismiss."
+    },
+    {
+      "sev": "P0",
+      "defect": "Quiet and Known path TRAIL Cascade home: one search vs three Value asks plus cookie",
+      "better": "Field occupies the fold. One ask."
+    },
+    {
+      "sev": "P1",
+      "defect": "3% plan is an eyebrow; this-house comps and written CMA in 24 hours are Quiet or another route",
+      "better": "One labeled 3% Sheet. Proof is a named ledger, not a Quiet dump."
+    }
+  ],
+  "beat": {
+    "cascade": {
+      "thing_first": "WIN",
+      "known_path": "TRAIL",
+      "live_record": "ABSENT",
+      "quiet": "TRAIL",
+      "honesty": "TIE",
+      "speed": "?",
+      "continuity": "?",
+      "must_win": "WIN"
+    },
+    "stellar": {
+      "thing_first": "WIN",
+      "known_path": "WIN",
+      "live_record": "ABSENT",
+      "quiet": "TIE",
+      "honesty": "TIE",
+      "speed": "?",
+      "continuity": "?",
+      "must_win": "WIN"
+    }
+  },
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/sell-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/sell-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/cascade-home-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade/stellar-home-390.png",
+    "390: Stage then Sheet. Field on fold under H1. 3% LISTING PLAN once. FREE. NO LISTING AGREEMENT. once. Header Value my home filled; Stage Value my home ghost; card Get your home's value + Enter your home address + Get my home's value; cookie on the card",
+    "1280: same stack; Sell nav current; field below Stage; cookie on fold",
+    "AF1 does not fire: Value my home on Sell is the job",
+    "Copy 41 = 22 product (Ryan Realty, Home/Sell, LISTING PLAN, Sell your home in, FREE NO LISTING AGREEMENT, Get your home's value, Enter your home address) + 19 cookie",
+    "Clutter 7: chrome, Stage eyebrow, H1, Stage ghost CTA, no-agreement line, address card, cookie",
+    "Hunt: address field 0; 3% label 0 / plan body 1 scroll #listing-plan; proof = Bend Instrument 1, this-house comps after submit; 24h CMA on /sell/valuation not this first path",
+    "Cascade PNG is their home, not /sell: ENTER LOCATION OR MLS # + SEARCH PROPERTIES. Must-win WIN (their sell field ABSENT). Known path TRAIL. Quiet TRAIL",
+    "Stellar PNG is their home, not /sell: FIND YOUR NEXT HOME + six Search region buttons. No address field. Must-win WIN (ABSENT)",
+    "Zillow / Redfin / Compass / Duren / Beacon omitted — no equivalent /sell PNG this firing",
+    "perf null — not measured"
+  ]
+}

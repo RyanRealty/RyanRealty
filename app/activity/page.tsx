@@ -28,7 +28,6 @@ import {
   V3Breadcrumb,
   V3Footer,
   V3_FOOTER_COLUMNS,
-  V3Instrument,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
@@ -63,7 +62,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 const ACTIVITY_TRACE =
-  'live MLS activity events joined to Central Oregon listings, newest first, cap 24'
+  'live MLS activity joined to Central Oregon listings, newest first'
 
 export default async function ActivityPage() {
   const items = await getActivityFeed({ limit: 24 })
@@ -96,56 +95,24 @@ export default async function ActivityPage() {
         />
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Activity' }]} />
 
-        {items.length > 0 ? (
-          <V3Instrument
-            id="moved"
-            level={1}
-            eyebrow={v3Text('Central Oregon')}
-            headline={v3Text('What just moved on the list')}
-            figures={[
-              {
-                value: v3Text(String(items.length)),
-                label: v3Text(items.length === 1 ? 'recent MLS move' : 'recent MLS moves'),
-                href: listingsBrowsePath(),
-              },
-            ]}
-            source={v3Text(ACTIVITY_TRACE)}
-            action={{
-              label: v3Text('See homes for sale'),
-              href: listingsBrowsePath(),
-              variant: 'primary',
-            }}
-          />
-        ) : (
-          <V3Quiet
-            id="moved"
-            heading="What just moved on the list"
-            headingLevel={1}
-            items={[
-              {
-                kind: 'prose',
-                term: 'No recent activity',
-                body: 'The market is quiet right now. Browse active homes or check back for new listings, price changes, and sales.',
-              },
-              { label: 'See homes for sale', href: listingsBrowsePath() },
-            ]}
-          />
-        )}
-
         {firstRow ? (
           <V3Ledger
             id="feed"
-            eyebrow={v3Text('Live MLS')}
-            heading={v3Text('Latest moves on the list')}
+            headingLevel={1}
+            heading={v3Text('What just moved on the list')}
+            note={v3Text(
+              rows.length === 1
+                ? '1 recent move'
+                : `${rows.length.toLocaleString('en-US')} recent moves`,
+            )}
             rows={[firstRow, ...restRows]}
             source={v3Text(ACTIVITY_TRACE)}
-            action={{ label: v3Text('See homes for sale'), href: listingsBrowsePath() }}
           />
         ) : (
           <V3Ledger
             id="feed"
-            eyebrow={v3Text('Live MLS')}
-            heading={v3Text('Latest moves on the list')}
+            headingLevel={1}
+            heading={v3Text('What just moved on the list')}
             rows={[]}
             emptyMessage={v3Text(
               'The market is quiet right now. Browse active homes or check back for new listings, price changes, and sales.',

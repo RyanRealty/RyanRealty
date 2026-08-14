@@ -1,40 +1,48 @@
 /**
  * City inventory Field. Lives next to the page so the city route stays under
- * the 600-line floor. Photographs are the surface: no map slot, so V3Field
- * opens on live MLS photos that go to listings.
+ * the 600-line floor. PUBLIC_UI.md §3: Field of this city's houses. Verdict is
+ * a caption, never a number hero. Map and list are the same set.
  */
-import { V3Field, type V3FieldItem } from '@/components/site/v3'
+import { V3Field, V3SourceLine, type V3FieldItem } from '@/components/site/v3'
+import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
+import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
 import { cityFieldEmptyMessage } from './city-sections'
 
 export function CityHomesField({
   cityName,
   fieldItems,
-  inventory,
   tilesLength,
+  caption,
+  source,
 }: {
   cityName: string
   fieldItems: V3FieldItem[]
-  inventory: { count: number; source: string; updatedAt: string | null }
   tilesLength: number
+  caption: string | null
+  source: string
 }) {
-  const [firstFieldItem] = fieldItems
+  const pins = fieldMapPins(fieldItems)
+  const missing = fieldItems.length - pins.length
   return (
-    <V3Field
-      id="homes"
-      ariaLabel={`Homes for sale in ${cityName}`}
-      items={fieldItems}
-      count={{
-        value: inventory.count.toLocaleString('en-US'),
-        label: `homes for sale in ${cityName}`,
-        source: inventory.source,
-        updatedAt: inventory.updatedAt,
-      }}
-      footNote={
-        firstFieldItem
-          ? `The ${fieldItems.length} most recently listed active homes with a ${cityName} address. The count above them is a different measure with its own source line, not a total of these rows.`
-          : undefined
-      }
-      emptyMessage={cityFieldEmptyMessage(cityName, tilesLength)}
-    />
+    <>
+      <V3Field
+        id="homes"
+        ariaLabel={`Homes for sale in ${cityName}`}
+        items={fieldItems}
+        mapSlot={
+          fieldItems.length > 0 ? <PlaceFieldMap pins={pins} placeName={cityName} /> : undefined
+        }
+        mapNote={caption ?? undefined}
+        footNote={
+          missing > 0 && pins.length > 0
+            ? missing === 1
+              ? '1 of these carries no coordinates, so it is listed but not plotted.'
+              : `${missing.toLocaleString('en-US')} of these carry no coordinates, so they are listed but not plotted.`
+            : undefined
+        }
+        emptyMessage={cityFieldEmptyMessage(cityName, tilesLength)}
+      />
+      {fieldItems.length > 0 ? <V3SourceLine source={source} /> : null}
+    </>
   )
 }

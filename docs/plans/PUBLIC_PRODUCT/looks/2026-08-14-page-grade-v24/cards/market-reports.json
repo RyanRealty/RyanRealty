@@ -1,0 +1,89 @@
+{
+  "route": "/housing-market/reports",
+  "grain": "market",
+  "thing": "the number and the chart",
+  "verdict": "FAIL",
+  "auto_fails": [1, 6, 10, 12, 14, 15, 16],
+  "axes": {
+    "job": 3,
+    "path": 3,
+    "opening": 6,
+    "distinct": 4,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 4,
+    "reach": 3,
+    "simple": 3,
+    "quiet": 2,
+    "beat": 3
+  },
+  "path": {
+    "start": "Market reports",
+    "now": "$731k pulse",
+    "next": "?",
+    "finish": "a balanced market",
+    "back": "Market reports"
+  },
+  "copy_words": 70,
+  "clutter": 8,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home. 1280 adds a second filled Value my home under the source. Accept all is a third fill.",
+      "better": "Primary is a city card or a dated report. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "Job is per-city headline cards and the weekly report. Fold is the hub pulse: $731,000 / 1,844 / 5.8 / 24. No city card. No report. No chart.",
+      "better": "Instrument of this week's answer, then a Ledger of city cards. Each card is a door."
+    },
+    {
+      "sev": "P0",
+      "defect": "Source prints market_pulse_live, geo_type=region, geo_slug=central-oregon, property_type=A. Internal slugs on the fold.",
+      "better": "Cut the slugs. Stamp is MLS, Central Oregon, Aug 14."
+    },
+    {
+      "sev": "P0",
+      "defect": "The formula paragraph explains the 5.8. Copy 70. Eight foci.",
+      "better": "Delete the paragraph. 5.8 is the number. Threshold is a caption if needed."
+    },
+    {
+      "sev": "P0",
+      "defect": "Days to pending is 24 here. Hub and annual show 23.5 on the same look day. Door and figure disagree.",
+      "better": "One cache row, one figure, one rounding."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess (Value my home vs Accept all). FINISH is a balanced market, not a report opened.",
+      "better": "One next: a city card. FINISH is I opened this week's report."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt: two-year chart not there, Bend houses not there, meaning is the H1 plus a formula.",
+      "better": "Chart after the answer. City card is the place door. Subscribe last."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. Same Instrument DNA as /housing-market. Cookie on the fold.",
+      "better": "Consent after the thing. Reports are the Ledger."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-reports-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-reports-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-annual-390.png",
+    "390: breadcrumb Home / Market reports; eyebrow CENTRAL OREGON; H1 Central Oregon market reports: a balanced market; $731,000 MEDIAN LIST PRICE; 1,844 HOMES FOR SALE; 5.8 MONTHS OF SUPPLY, BALANCED MARKET; 24 MEDIAN DAYS TO PENDING; source market_pulse_live geo_type=region geo_slug=central-oregon property_type=A; MoS formula; this refresh 5.8; updated Aug 14, 2026; cookie.",
+    "1280: same four-stat row. Body Value my home. No city cards. No weekly report artifact. No chart. Nav Market underlined.",
+    "Locked opening PUBLIC_UI §3: Market → Instrument. Number and chart. Actual is Instrument of the hub pulse, no chart.",
+    "Honesty: 5.8 is balanced (4–6). Days to pending 24 vs 23.5 on /housing-market and /housing-market/annual-review in this same look set. System slugs on the fold.",
+    "Copy 70. Clutter 8: chrome, Value my home, eyebrow, H1, grid, source, body CTA (1280), cookie.",
+    "Hunt: two-year chart = not there · Bend houses = not there · a city report card = not there. Below-fold unknown (first-screen PNGs only).",
+    "Visitor objective: scan the current per-city headline cards and range table, and reach any weekly report artifact.",
+    "Beat not run (not in beat_on). Seats omitted. perf not measured.",
+    "SEND: no. A hub pulse with SQL slugs is not a reports URL to text."
+  ]
+}

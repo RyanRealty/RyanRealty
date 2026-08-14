@@ -20,11 +20,11 @@ spectacle.** Three commitments:
   motion does not encode a state change the visitor caused, it does not ship.
 - **The ask is the next step, never an interruption.** One primary action per viewport,
   earned by the content above it (founding directive 3). The count is of VISIBLE filled
-  controls, not of controls in the document, and it has a mobile corollary the first
-  migrations got wrong: at 390 the chrome's valuation CTA sits inside the collapsed menu,
-  so a page that demotes its own ask to ghost "because the header carries the primary"
-  ships a first viewport with no ask at all. A content page carries its own visible
-  primary; the chrome's CTA counts only where the chrome actually shows it.
+  controls, not of controls in the document. Chrome fills Value my home only on Sell
+  (Page Grade 2026-08-14 wrong-job-chrome). On buyer, place, market, about, and listing
+  pages the page body carries the primary; seller lives on Sell. A content page that
+  demotes its own ask to ghost "because the header carries the primary" still ships a
+  first viewport with no ask — do not do that.
 
 ## 2. Foundations (each cites an external standard, not our old site)
 
@@ -44,15 +44,18 @@ Every section on every public page is exactly one of these. A section that fits 
 not get an exception — the pattern set changes here, by editing this file.
 
 1. **Instrument** — the answer, big. One verdict/number/range in Amboqia with its
-   supporting figures and source line beneath. Used to open Market nodes, place market
-   bands, and the valuation result. *The pattern that makes data the spectacle.*
+   supporting figures and source line beneath. Opens Market. Opens Neighborhood. Fallback
+   open for Master-plan when no owned Stage asset exists. Never the city hero (the city's
+   houses are). *The pattern that makes data the spectacle.*
 2. **Field** — live inventory as a spatial surface: map + list in one frame, hover/tap
-   bound both ways, counts honest to the viewport. Opens Homes; embeds in Places.
+   bound both ways, counts honest to the viewport. Opens Homes and City. Embeds in
+   Neighborhood and Master-plan. A short plat is a Ledger, not a fake Field.
 3. **Ledger** — a scannable list of real rows (homes, places, sales, reports) with tabular
    numbers and one action per row. Every row is a door.
 4. **Stage** — full-bleed media (owned video/photo) carrying one line of type and one
    action; the only pattern allowed to be primarily emotional, and only where an owned
-   asset exists. Never over a number.
+   asset exists. Never over a number. Opens Listing. Opens Master-plan when an owned
+   place photo exists.
 5. **Sheet** — the working surface for a step: form, filter set, comparison, plan detail.
    Progressive: one question visible at a time on 390.
 6. **Quiet** — hairline-separated supporting content (FAQ, proof, definitions, legal,
@@ -61,9 +64,29 @@ not get an exception — the pattern set changes here, by editing this file.
 **Rhythm rule:** no two adjacent sections share a pattern, and no page uses more than four
 of the six. A page needing five patterns is doing two jobs — split it or cut one.
 
-**Per-destination openings** (from the locked §11 implications): Homes → Field · Places →
-Instrument (place verdict) then Field · Market → Instrument · Sell → Stage then Sheet ·
-Saved → Ledger · About → Quiet + Sheet.
+**One shop, five place rhythms** (Matt 2026-08-14). Chrome, type, tokens, Field/Ledger
+row language, and the motion ladder are the same site. The first pattern names the grain.
+A city, a neighborhood, a master-plan, a plat, and a listing that wear the same first
+screen are a lock break. A listing that looks like another product is a lock break.
+Master-plan is not a neighborhood with a nicer name. Tetherow is an exemplar of the
+master-plan template, not a one-off product.
+
+**Per-destination openings** (six patterns only — no seventh):
+
+| Grain | Route | Opening | Differentiator |
+|---|---|---|---|
+| Homes | `/`, `/homes-for-sale` | Field | Houses fill the fold. Towns are filters. |
+| City | `/cities/[slug]`, `/zip/[zip]` | Field of this city's houses. Verdict is a caption, never a number hero. | Child neighborhoods and master-plans are doors below the fold. |
+| Neighborhood | `/cities/[slug]/[neighborhoodSlug]` | Instrument (this neighborhood's pace) then Field of its houses. | Daily life (schools, parks) on the first path. Not amenities or membership. |
+| Master-plan | `/communities/[slug]` | Stage (owned place photo) then Field. No owned asset → Instrument of what belonging here is, then Field. | Amenities, membership, STR. Child plats are doors. Not a neighborhood. |
+| Subdivision | `/subdivisions/[slug]` | Ledger of this plat's homes. Field only when the plat has enough pins to be a map. | Parent community or city is the back door. Schools on the first path. A short plat is a list. |
+| Listing | the house URL | Stage (this house's media) with price and specs on the media, then one act (Sheet: tour or ask). | Same shop as the place pages. Payment, history, this place, who listed = layer 1. |
+| Market | `/housing-market` and leaves | Instrument | Number and chart. |
+| Sell | `/sell` | Stage then Sheet | Address field is the spine. |
+| Saved | `/account` saved surfaces | Ledger | What changed. |
+| About | `/about`, `/team` | Quiet + Sheet | Faces first. |
+
+The old line "Places → Instrument then Field" is retired. It made four grains one page.
 
 ## 4. Contrast table (computed, both surfaces)
 

@@ -9,6 +9,10 @@ description: Run ONE unit (or grind until blocked) of the Public Product OS — 
 > Plan of record: `docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md`.
 > This skill still loads the public quarry (recipe, locks, ratchet). It does
 > not own a second plan. `state.json` / `work-queue.json` are not the next unit.
+> UX grind after the v3 miss is `.claude/skills/page-grade/SKILL.md` —
+> unique pages plus one exemplar per template, family strip, then fix
+> every open class. Ledger `grade-ledger.json`. Not a 143-route dump.
+> Grade wave is not product code.
 
 The constitution is `docs/plans/PUBLIC_PRODUCT/PUBLIC-PRODUCT-OS.md` — schemas, amnesia
 lists, phase blocks, DoD, precedence ladder, seed catalog. **Read that file when you need

@@ -18,4 +18,13 @@
     top: 3.5rem;
     z-index: 20;
   }
+
+  /* 390: one Filters control, short dock, so the first house address
+     reaches the fold. Do not remount chrome. */
+  @media (max-width: 639px) {
+    .search-filter-dock h1 {
+      padding-top: 0.25rem;
+      padding-bottom: 0;
+    }
+  }
 }

@@ -30,3 +30,15 @@
 2026-08-13T23:50:00Z TRACK 1 MARKET LOOK GREEN. Already green. Production `c07f5638` READY. `/housing-market` first viewport is live figures and the chart atom (Instrument + V3Chart year overlay). CTA Value my home. v3 chrome kept. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-market/. Next: Track 1 §4 SEO / analytics / GSC / LLM. Track 2 not started.
 
 2026-08-13T24:10:00Z TRACK 1 §4 SEO/LLM DIALED. llms.txt golf hub off noindex LP. Sitemap no longer submits /lp/* or /feed. Three query URLs proven live. Evidence looks/2026-08-13-seo-llm/EVIDENCE.md. Track 1 §4 done. Track 2 not started.
+
+2026-08-14T15:35:00Z PAGE GRADE 1 (look only, dc7540e6). Sample 8/8 FAIL. Send 0. Top class: wrong-job-chrome (7 routes). Must-win TRAIL Zillow+Compass on homes/places. Cards in looks/2026-08-14-page-grade/cards/. No product code. Next: Matt says fix <class>.
+
+2026-08-14T15:45:00Z FIX wrong-job-chrome. Chrome fills Value my home only on /sell*. Local 390: home/homes/about CTA 0, sell CTA 1. PUBLIC_UI amended. Pending regrade.
+
+2026-08-14T20:25:00Z PAGE GRADE v2.4 locked. PUBLIC_UI §3: one shop, five place rhythms (city / neighborhood / master-plan / subdivision / listing). Rubric auto-fails 26/27. Universe + skill grind. No product code. Next: `page grade` runs the new universe.
+
+2026-08-14T20:55:00Z PAGE GRADE 2 (v2.4 universe, prod 33c3d556). 40/40 FAIL. Send 0. One-shop PASS. Wrong-grain FAIL (city, neighborhood, master-plan, plat, zip, indexes). Top class wrong-job-chrome 39/40. Local regrade: home 390 chrome CTA gone; sell keeps it. Prod still fills seller ask. Next class after ship: cookie-on-the-thing / number-as-hero / wrong-grain.
+
+2026-08-14T22:10:00Z FIX WAVE ALL OPEN CLASSES (local, not shipped). 7 parallel agents. Chrome seller-ask only on Sell. Cookie hidden until scroll (3s chip). About faces + boutique cut. Sell one Value ask. Home/browse Field. City/zip Field not 494-hero. Neighborhood pace then Field. Master-plan Stage then Field. Plat Ledger not 0-hero. Open houses / price drops / luxury / videos / activity Field. tsc clean. 306 wave tests pass. mockup-parity 28/28. Next: ship pathspec, then regrade universe.
+
+2026-08-14T22:30:00Z FIX WAVE SHIP PREP. seo-shell H1s restored (open houses / price drops Layer A). shadcn burndown excludes sell/_v3 + *.test.ts. Pathspec commit on top of 7541ff16. Next: push + deploy:verify + universe regrade.

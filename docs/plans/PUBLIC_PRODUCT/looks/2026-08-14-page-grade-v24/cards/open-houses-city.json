@@ -1,0 +1,98 @@
+{
+  "route": "/open-houses/bend",
+  "grain": "homes",
+  "thing": "Bend open houses",
+  "verdict": "FAIL",
+  "auto_fails": [1, 2, 3, 4, 5, 10, 14, 16],
+  "axes": {
+    "job": 3,
+    "path": 2,
+    "opening": 2,
+    "distinct": 3,
+    "craft": 3,
+    "motion": 2,
+    "perf": null,
+    "honesty": 5,
+    "reach": 3,
+    "simple": 3,
+    "quiet": 2,
+    "beat": 2
+  },
+  "path": {
+    "start": "Open houses",
+    "now": "119 HOMES IN BEND",
+    "next": "?",
+    "finish": "?",
+    "back": "Open houses"
+  },
+  "copy_words": 21,
+  "clutter": 7,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home. Accept all is a second filled control. Neither is Bend walk-this-week.",
+      "better": "Buyer primary is the house. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "119 is the hero. House photos are 22.8% of the area below chrome.",
+      "better": "Field of Bend open houses. 119 is a caption beside the Field, never the opening."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Field of photographed open houses. Actual is Instrument 119 then stamps plus a list card. No map. Caption says HOMES IN BEND, not open houses.",
+      "better": "One Field: map and list are the same Bend open-house set. When is on the photo. Caption names the mode."
+    },
+    {
+      "sev": "P0",
+      "defect": "Sibling clone of /cities/bend and /open-houses: same 3×2 stamp bands, number hero, list card, cookie. City inventory clothes on a Homes mode.",
+      "better": "This crop is Bend open houses with the when on the photo, not a 119 city poster."
+    },
+    {
+      "sev": "P0",
+      "defect": "390 stamp photos ~109px (need ≥160). Addresses truncate (61636 Hosmer La…). 1280 grid photos 188px (need ≥240).",
+      "better": "One large Field. Addresses wrap. No ellipsis."
+    },
+    {
+      "sev": "P0",
+      "defect": "Two lists of the same houses: 390 stamp grid plus the Hosmer card; 1280 left grid plus right list.",
+      "better": "One Field. Map and list are the same set."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT is a guess (Value my home vs a stamp vs the card vs Accept all). FINISH is not on the screen.",
+      "better": "One next tap: a house. FINISH is I know the time or I saved this. BACK still Bend."
+    },
+    {
+      "sev": "P1",
+      "defect": "119 HOMES IN BEND on /open-houses/bend. City fold is 494 homes for sale. Mode is only in the crumb.",
+      "better": "The Field is Bend open houses. The caption names that set. Do not reuse the city integer line."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from the first screen: map not there, solds / price drops not there, Bend's market not there. Filters and save not on either fold.",
+      "better": "Modes are filters of this browse. Map bound to the list. Bend market is a labeled exit."
+    },
+    {
+      "sev": "P2",
+      "defect": "Still. Cookie sits on the first list card. Crop is a serif inventory integer plus stamps.",
+      "better": "Pin and row are one set. Consent after the thing."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/open-houses-city-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/open-houses-city-1280.png",
+    "390: chrome Value my home filled y6–49; breadcrumb Home / Open houses / Bend; giant 119; HOMES IN BEND; 3×2 stamps y306–415 and y476–585 ~109px, tiles ~111px, truncated 61636 Hosmer La…; Hosmer list card $2,195,000 · Fri, Aug 14, 2026 · 9am-11am · 4 bd · 4 ba · 3,222 sqft; cookie y752–844 Accept all. Photo occupancy ~22.8% below chrome. Copy 21. Foci 7.",
+    "1280: same 119 hero. Left 3-col grid ~188px (Hosmer, Triple Knot, Bryanwood). Right list repeats those plus Hunters with when. Cookie y720–800. Nav Homes Places Market Sell About plus filled Value my home. No map.",
+    "Locked opening PUBLIC_UI §3: Homes → Field. Houses fill the fold. Towns are filters. This template is Homes grain (city-scoped open houses), not City grain. Opening stays Field of photographed open houses.",
+    "Sibling DNA: city-390 is 494 HOMES FOR SALE IN BEND then the same stamp bands. open-houses-390 is 195 HOMES ON THIS LIST then the same bands. This crop is that poster with Bend in the caption and crumb.",
+    "Set vs region: 119 vs 195; Bend tiles (Hosmer, Triple Knot, Bryanwood, Hunters, Capella, Saginaw) vs region (Hosmer, Pine, Roadway, Sage Country, Triple Knot, Bryanwood). Population looks scoped. Caption still says homes, not open houses.",
+    "Hunt: map = not there · solds / price drops = not there · Bend market = not there. Below-fold unknown (first-screen PNGs only).",
+    "Visitor objective: see the open houses in my city without re-scoping from the region view.",
+    "Not beat_on. No equivalent-URL PNGs. Beat seats omitted, not guessed. Must-win (map and list one set; houses fill the fold) is unmet on sight.",
+    "perf not measured.",
+    "SEND: no. A 119 HOMES IN BEND poster is a city count, not Bend open houses a buyer would open."
+  ]
+}

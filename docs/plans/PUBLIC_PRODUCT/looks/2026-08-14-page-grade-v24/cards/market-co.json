@@ -1,0 +1,73 @@
+{
+  "route": "/housing-market/central-oregon",
+  "grain": "market",
+  "thing": "the number and the chart",
+  "verdict": "FAIL",
+  "auto_fails": [1, 10, 14, 16],
+  "axes": {
+    "job": 5,
+    "path": 3,
+    "opening": 8,
+    "distinct": 5,
+    "craft": 4,
+    "motion": 2,
+    "perf": null,
+    "honesty": 7,
+    "reach": 4,
+    "simple": 5,
+    "quiet": 2,
+    "beat": 3
+  },
+  "path": {
+    "start": "Central Oregon market",
+    "now": "$731k and chart",
+    "next": "?",
+    "finish": "a balanced market",
+    "back": "Housing market"
+  },
+  "copy_words": 42,
+  "clutter": 7,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome is Value my home on a market fold. Cookie Accept all is the other navy fill.",
+      "better": "Primary is the number, a year, or a place. Seller lives on Sell. Cookie after the thing."
+    },
+    {
+      "sev": "P0",
+      "defect": "NEXT and BACK cannot be said as one tap. Two navy fills compete. Cookie sits on the chart.",
+      "better": "One next: pick a year or a city. Cookie off first paint."
+    },
+    {
+      "sev": "P0",
+      "defect": "7 foci and 42 copy words. Cookie covers the line.",
+      "better": "Instrument is the page: verdict captions the number. Chart fills the fold."
+    },
+    {
+      "sev": "P1",
+      "defect": "History is a 2024–2026 legend, not a year the visitor can pick. Bend houses and subscribe are not on the first path.",
+      "better": "Years are the control. Labeled doors after the answer: this number → the place → the houses. Subscribe last."
+    },
+    {
+      "sev": "P2",
+      "defect": "Eyebrow reads CENTRAL OREGON, OREGON. Chart y-axis is one tick. Same crop as /housing-market.",
+      "better": "One place name. The line is readable without a second sentence."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-co-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-co-1280.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/market-390.png",
+    "390: breadcrumb Home / Housing market / Central Oregon; eyebrow CENTRAL OREGON, OREGON; H1 Central Oregon market report: a balanced market; $731,000 MEDIAN LIST PRICE; 1,844 HOMES FOR SALE; 5.8 MONTHS OF SUPPLY; chart MEDIAN SALE PRICE BY MONTH, RECENT YEARS 2024–2026, y $697K; Value my home filled; cookie on the chart.",
+    "1280: same Instrument in a row. Nav Homes Places Market Sell About. Market underlined. Still Value my home + cookie. No year pick, no Bend door, no subscribe. No days-to-pending on this leaf (hub and annual show 23.5).",
+    "Locked opening PUBLIC_UI §3: Market → Instrument. Number and chart. Actual matches. Occupancy of the thing drops once cookie covers the chart.",
+    "Honesty: MoS 5.8 is balanced (4–6). H1 says a balanced market. Units on money. No freshness stamp on the PNG.",
+    "Copy 42. Clutter 7: chrome, Value my home, cookie, eyebrow, H1, stats, chart.",
+    "Hunt: two-year chart = 0 taps (legend, not a pick) · Bend houses = not there · meaning = H1 only. Below-fold unknown (first-screen PNGs only).",
+    "Visitor objective: regional roll-up — Central Oregon pulse, price history, and per-city snapshots — as one citable report.",
+    "Beat not run (not in beat_on). Seats omitted. perf not measured.",
+    "SEND: no. Cookie on the chart and a seller button is not a market URL to text."
+  ]
+}

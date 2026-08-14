@@ -685,13 +685,12 @@ export default function MapSearchView({
 
   const countLabel = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString()
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
-  // Calm map-view honesty: this number is viewport-scoped, not city inventory.
-  const countPhrase =
-    totalCount === 0
-      ? 'No homes in this map view'
-      : totalCount === 1
-        ? `${countLabel} home in this map view`
-        : `${countLabel} homes in this map view`
+  // Name the set on screen. 390 list has no map, so it cannot say "map view".
+  // Desktop split shows the map, so that phrase stays true there.
+  const homeWord = totalCount === 1 ? 'home' : 'homes'
+  const listCountPhrase = totalCount === 0 ? 'No homes' : `${countLabel} ${homeWord}`
+  const mapCountPhrase =
+    totalCount === 0 ? 'No homes in this map view' : `${countLabel} ${homeWord} in this map view`
 
   // listPanel is mounted once (desktop rail + mobile bottom sheet share the
   // node via CSS). Mobile List expands the sheet; Map hides it (count pill).
@@ -700,13 +699,14 @@ export default function MapSearchView({
   const listPanel = (
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
       {/* Mockup G2: "N homes · filters · Sort" sticky count/sort row. */}
-      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-3">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2 sm:py-3">
         <p className="min-w-0 flex-1 text-sm text-muted-foreground tabular-nums" aria-live="polite">
           {resultsDegraded ? (
             <span className="font-semibold text-foreground">Search delayed</span>
           ) : (
             <>
-              <span className="font-semibold text-foreground">{countPhrase}</span>
+              <span className="font-semibold text-foreground lg:hidden">{listCountPhrase}</span>
+              <span className="hidden font-semibold text-foreground lg:inline">{mapCountPhrase}</span>
               {filtersSummary ? (
                 <span className="hidden sm:inline"> · {filtersSummary}</span>
               ) : null}
@@ -947,7 +947,7 @@ export default function MapSearchView({
           'Search delayed'
         ) : (
           <>
-            <span className="font-semibold">{countPhrase}</span>
+            <span className="font-semibold">{mapCountPhrase}</span>
             {loading ? <span className="ml-1.5 text-xs text-muted-foreground">Updating…</span> : null}
           </>
         )}
@@ -971,10 +971,10 @@ export default function MapSearchView({
           variant="outline"
           size="sm"
         >
-          <ToggleGroupItem value="list" className="flex-1 py-3 rounded-none border-0 text-sm font-medium" aria-label="List view">
+          <ToggleGroupItem value="list" className="flex-1 rounded-none border-0 py-2 text-sm font-medium" aria-label="List view">
             List
           </ToggleGroupItem>
-          <ToggleGroupItem value="map" className="flex-1 py-3 rounded-none border-0 text-sm font-medium" aria-label="Map view">
+          <ToggleGroupItem value="map" className="flex-1 rounded-none border-0 py-2 text-sm font-medium" aria-label="Map view">
             Map
           </ToggleGroupItem>
         </ToggleGroup>

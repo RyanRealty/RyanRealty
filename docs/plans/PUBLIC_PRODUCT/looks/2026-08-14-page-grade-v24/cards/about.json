@@ -1,0 +1,88 @@
+{
+  "route": "/about",
+  "grain": "about",
+  "thing": "these people",
+  "verdict": "FAIL",
+  "auto_fails": [1, 3, 7, 10, 14, 16, 17, 18],
+  "axes": {
+    "job": 4,
+    "path": 3,
+    "opening": 5,
+    "distinct": 6,
+    "craft": 5,
+    "motion": 2,
+    "perf": null,
+    "honesty": 3,
+    "reach": 3,
+    "simple": 4,
+    "quiet": 2,
+    "beat": 2
+  },
+  "path": {
+    "start": "About Ryan Realty",
+    "now": "three named faces",
+    "next": "Value my home",
+    "finish": "",
+    "back": ""
+  },
+  "copy_words": 53,
+  "clutter": 8,
+  "send": false,
+  "punches": [
+    {
+      "sev": "P0",
+      "defect": "Filled chrome on About is Value my home. Cookie Accept all is the other filled control. NEXT is a seller form, not a person.",
+      "better": "The face is the primary. Phone sits on the face. Seller lives on Sell."
+    },
+    {
+      "sev": "P0",
+      "defect": "390 first screen ships boutique, authentic, and exceptional in How it started.",
+      "better": "Cut the sentence. Faces and names are the page."
+    },
+    {
+      "sev": "P0",
+      "defect": "Lock is Quiet + Sheet, faces first. Fold is eyebrow, H1, three faces, then How it started. No Sheet.",
+      "better": "Faces fill the fold. Name is the door. Call and text on the face row."
+    },
+    {
+      "sev": "P0",
+      "defect": "FINISH and BACK are blank. Two filled controls compete for NEXT.",
+      "better": "One filled control: the name or the number."
+    },
+    {
+      "sev": "P0",
+      "defect": "Eight first-screen foci and 53 words including cookie.",
+      "better": "Chrome plus faces. No mission graf. No seller CTA. Cookie off the first card."
+    },
+    {
+      "sev": "P0",
+      "defect": "Must-win fails on our crop: faces sit under a title stack, names are captions, no tel or sms. No equivalent team PNGs in this capture.",
+      "better": "Name is the door at rest. Tel on the face. Do not clone their chrome."
+    },
+    {
+      "sev": "P1",
+      "defect": "Hunt from first screen: Matt's phone missing, a review missing, a sold as a door missing.",
+      "better": "Solds as named doors under the people. Reviews as one door. Call on the face."
+    },
+    {
+      "sev": "P2",
+      "defect": "Three-across cutouts at 390 are small under the H1 stack. Page is still.",
+      "better": "One large face, the other names as doors. Opening a name is the motion."
+    }
+  ],
+  "beat": {},
+  "evidence": [
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/about-390.png",
+    "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/about-1280.png",
+    "390: chrome Value my home filled. Home / About. Eyebrow RYAN REALTY · BEND, OREGON. H1 About Ryan Realty. Three faces: Matt Ryan Owner & Principal Broker, Rebecca Ryser Peterson Broker, Paul Stevenson Broker. How it started + boutique sentence. Cookie still up with Accept all.",
+    "1280: same chrome, About current in nav, Saved + filled Value my home + Menu. Faces larger, names as captions, no underline or chevron. How it started below the fold. Cookie still up. No form wall.",
+    "Copy 53 = product words (Home, About, RYAN REALTY, About Ryan Realty, roles, How it started, boutique graf) + cookie. Place names and button labels excluded. Person names treated as the thing.",
+    "Clutter 8: chrome, Value my home, breadcrumb, eyebrow, H1, faces, How it started, cookie.",
+    "Occupancy 390: faces under title stack, cookie on the story. Thing well under 50% below chrome.",
+    "Shelf: people partial (faces yes, names not doors). Record hide. Reach them hide. Service area eyebrow only, not place doors.",
+    "Hunt 3+: phone, review, sold — none on this fold. Sibling captures show /reviews has 25 Google reviews and /contact has Call or text; those facts are off this page.",
+    "Beat seats omitted. v24 capture has no Cascade / Stellar / Duren / Zillow / Redfin / Compass team pages. Prior look folder has Cascade and Stellar homes, not About equivalents. Must-win TRAIL from our crop. AF17 and AF18.",
+    "perf null — not measured.",
+    "SEND: no. Boutique, seller chrome, and a cookie on the faces is not a URL to text a referring broker."
+  ]
+}

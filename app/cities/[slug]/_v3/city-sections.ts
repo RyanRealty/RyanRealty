@@ -382,24 +382,39 @@ export function marketAbsenceItems(
   pulseReturned: boolean,
   hasRows: boolean,
 ): V3QuietItem[] {
-  const tail = hasRows ? ' The homes below carry their own live list prices.' : ''
+  const tail = hasRows ? ' The homes above carry their own live list prices.' : ''
   const body = pulseReturned
-    ? `The ${cityName} market row returned on this refresh carrying no median list price, no months-of-supply figure, and no days-to-pending figure, so this page prints no verdict. The count below comes from that same row and carries its own source line.${tail}`
-    : `The ${cityName} market row did not return on this refresh, so this page is not printing a median, a supply figure, or a verdict. The count below comes from a different read and carries its own source line.${tail}`
+    ? `The ${cityName} market row returned on this refresh carrying no median list price, no months-of-supply figure, and no days-to-pending figure, so this page prints no verdict.${tail}`
+    : `The ${cityName} market row did not return on this refresh, so this page is not printing a median, a supply figure, or a verdict.${tail}`
   return [{ kind: 'prose', term: 'No live market figures right now', body }]
 }
 
 /**
- * THE FIELD'S EMPTY MESSAGE, saying what the read proves and nothing wider.
- *
- * The sentence it replaces ("No active single-family listing carried a {City} address
- * on this refresh") asserted two things this query cannot support. The pull is
- * propertyType 'A', which this route documents as the MLS residential BUCKET — single
- * family, townhome, and condominium — not the Single Family Residence sub-type. And an
- * empty row set proves only that no tile survived cityFieldItems' price-and-street
- * filter, which is a fact about the rows, not a claim about what is for sale in the
- * city. The two branches are different facts and read differently.
+ * Caption beside the Field. The count is the listed set, never a pulse figure
+ * from a different filter. Months of supply and the verdict use the same raw
+ * value the Instrument classifies. Absent MoS is omitted, never written as zero.
  */
+export function cityFieldCaption(input: {
+  cityName: string
+  count: number
+  mosLabel: string | null
+  verdictKind: 'sellers' | 'balanced' | 'buyers' | 'unknown'
+  verdictLabel: string
+}): string | null {
+  if (input.count <= 0) return null
+  const homes = `${input.count.toLocaleString('en-US')} ${input.count === 1 ? 'home' : 'homes'} in ${input.cityName}`
+  if (input.verdictKind === 'unknown' || input.mosLabel == null) return homes
+  return `${homes} · ${input.mosLabel} months of supply · a ${input.verdictLabel}`
+}
+
+/** Trace over the Field's listed set. No borrowed pulse stamp. */
+export function cityFieldTrace(cityName: string): string {
+  return (
+    `${FEED}, every active home in the residential bucket (single family, townhome, and condominium) ` +
+    `with a ${cityName} address, a list price, and a street on this page. The count is this set`
+  )
+}
+
 export function cityFieldEmptyMessage(cityName: string, tilesReturned: number): string {
   return tilesReturned === 0
     ? `The active listing feed returned no ${cityName} home in the residential bucket (single family, townhome, and condominium) on this refresh.`

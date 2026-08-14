@@ -37,6 +37,8 @@ Then merge new paths into this file under the right heading.
 
 ### A — RyanRealty project (`.cursor/skills`)
 
+- `/Users/matthewryan/RyanRealty/.claude/skills/page-grade/SKILL.md` *(UX grind: unique pages + one exemplar per template against PAGE-GRADE.md v2.4, family strip, fix top class, regrade — not a 143-route dump)*
+- `/Users/matthewryan/RyanRealty/.cursor/skills/page-grade/SKILL.md` *(same protocol as `.claude/skills/page-grade`)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/frontend-design/SKILL.md` *(building/reworking any web page, landing page, hero, or component — design taste + anti-AI-slop layer)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/hallmark/SKILL.md` *(anti-slop design audits/redesigns + study a reference design; run `hallmark audit <path>` on existing pages)*
 - `/Users/matthewryan/RyanRealty/.claude/skills/domain-context/SKILL.md` *(author/maintain repo-root CONTEXT.md ubiquitous-language doc — canonical terms + avoid-lists + flagged ambiguities; adapted from Matt Pocock's course-video-manager 2026-07-11)*

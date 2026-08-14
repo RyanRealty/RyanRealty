@@ -9,12 +9,13 @@
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata (title "Sell Your Home in Central Oregon"), MetadataBlock
  * JSON-LD (BreadcrumbList + FAQPage), V3SectionTracker pageType="sell",
- * revalidate 300, route /sell, and the capture contract. SellerLPForm still
+ * revalidate 300, route /sell, and the capture contract. SellValueForm
  * posts through submitSellerLPForm with pagePath="/sell" and formId get-value.
  * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
- * D11: visible CTA copy is "Value my home". The form's own heading is owned by
- * SellerLPForm (untouched this lease). Title/meta keep search-demand language.
+ * D11: visible CTA copy is "Value my home" once, on the address-field submit.
+ * Title/meta keep search-demand language. Stage is poster + H1 + quiet 3%
+ * eyebrow. The primitive still requires an action prop. The page hides it.
  *
  * One derivation for months of supply: marketVerdict reads the RAW value,
  * formatMonthsOfSupply prints it, and the Instrument source line carries
@@ -22,9 +23,9 @@
  * is what this ordering prevents.
  *
  * One filled primary in the first 390 viewport: the capture Sheet submit.
- * Stage action is ghost so chrome + Stage + form do not stack three filled
- * Value my home buttons. Stage is compact so the H1 clears chrome and the
- * address step shares the first viewport.
+ * Chrome Value my home stays (it is that field). Stage ghost is gone.
+ * Stage is compact so the H1 clears chrome and the address step shares
+ * the first viewport.
  */
 
 import type { Metadata } from 'next'
@@ -61,8 +62,9 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import SellerLPForm from '@/app/lp/seller-home-value/SellerLPForm'
 import { SellCapture } from './_v3/SellCapture'
+import { SellValueForm } from './_v3/SellValueForm'
+import './_v3/sell-stage.css'
 import {
   BEND_MARKET_TRACE_SCOPE,
   FAQ_ITEMS,
@@ -218,14 +220,15 @@ export default async function SellPage() {
         <V3Stage
           headingLevel={1}
           height="compact"
+          className="sell-stage-poster"
           eyebrow={SELL_STAGE_EYEBROW}
           headline="Sell your home in Central Oregon"
           posterSrc={posterSrc}
           action={{ label: 'Value my home', href: FORM_ANCHOR, variant: 'ghost' }}
         />
 
-        <SellCapture eyebrow="Free. No listing agreement." ariaLabel="Get your home's value">
-          <SellerLPForm knownVisitor={false} pagePath={ROUTE_PATH} />
+        <SellCapture eyebrow="Free. No listing agreement.">
+          <SellValueForm pagePath={ROUTE_PATH} />
         </SellCapture>
 
         {firstBendFigure ? (

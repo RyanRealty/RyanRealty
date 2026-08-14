@@ -1,10 +1,10 @@
 /**
  * /cities — Central Oregon cities index, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. First screenful opens the
- * Field of photographed homes, then Instrument (region pulse). Section order:
- * Breadcrumb, Field, Instrument, Ledger (cities), Sheet (SFR alerts), Quiet
- * (edges), Footer outside main.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3. Cities index is city
+ * grain: doors to cities, not a number hero and not a house-stamp dump.
+ * Section order: Breadcrumb, Ledger (cities), Instrument (region pulse below
+ * the fold), Sheet (SFR alerts), Quiet (edges), Footer outside main.
  *
  * THE PAGE CONTRACT, carried across unchanged: pageMetadata title/description/path,
  * revalidate 1800, CollectionPage + ItemList JSON-LD, Dataset from the same region
@@ -18,14 +18,13 @@
  * /cities/[slug]), em-dash empty placeholders (absent figures are omitted),
  * inline verdictFromMos (marketVerdict classifies the raw MoS).
  *
- * ONE PRIMARY PER VIEWPORT: at 390 the chrome CTA sits in the menu, so the
- * Instrument ask is primary. Value my home, via valuationHref('/cities').
+ * ONE PRIMARY PER VIEWPORT: the first tap is a named city. Seller lives on Sell.
  */
 
 import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
-import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots, getListingTiles } from '@/lib/data'
+import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
 import { getCityContent } from '@/lib/city-content'
 import { cityHero } from '@/lib/geo-images'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
@@ -49,7 +48,6 @@ import {
   V3Footer,
   V3_FOOTER_COLUMNS,
   V3Instrument,
-  V3Field,
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
@@ -63,7 +61,6 @@ import {
   CITY_SENTENCE_FALLBACK,
   firstSentence,
 } from './_v3/cities-index-constants'
-import { homeFieldItems } from '@/app/_v3/home-field-items'
 
 export const revalidate = 1800
 
@@ -77,14 +74,12 @@ export const metadata: Metadata = pageMetadata({
 })
 
 export default async function CitiesPage() {
-  const [allCities, allSnapshots, regionPulse, citySnapshots, tiles] = await Promise.all([
+  const [allCities, allSnapshots, regionPulse, citySnapshots] = await Promise.all([
     getCitiesForIndex(),
     getAllCitySnapshots(),
     getRegionPulse(),
     getMarketPulseCitySnapshots([...FEATURED_PULSE_LABELS]),
-    getListingTiles({ status: 'active', propertyType: 'A', limit: 80 }),
   ])
-  const fieldItems = homeFieldItems(tiles, 12)
 
   const sortedCities = sortCitiesWithPrimaryFirst(allCities)
   const visibleCities = sortedCities.slice(0, 60)
@@ -126,6 +121,10 @@ export default async function CitiesPage() {
       photoSrc: hero.verified ? hero.src : null,
       activeCount: pulse?.active_count ?? snap?.activeCount ?? null,
       medianListPrice: pulse?.median_list_price ?? snap?.medianPrice ?? null,
+      mosLabel:
+        pulse?.months_of_supply != null && pulse.months_of_supply > 0
+          ? formatMonthsOfSupply(pulse.months_of_supply)
+          : null,
     }
   })
 
@@ -146,6 +145,7 @@ export default async function CitiesPage() {
     const detailParts = [
       city.sentence,
       city.medianListPrice != null && active != null ? formatPrice(city.medianListPrice) : null,
+      city.mosLabel != null ? `${city.mosLabel} months of supply` : null,
     ].filter((part): part is string => Boolean(part))
     cityRows.push({
       href: `/cities/${city.slug}`,
@@ -298,52 +298,12 @@ export default async function CitiesPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Cities' }]} />
 
-        <V3Field
-          id="listed"
-          ariaLabel="Homes for sale in Central Oregon"
-          items={fieldItems}
-          footNote={
-            fieldItems.length > 0
-              ? `Listed here: photographed homes from the live list. Each photograph opens the listing.`
-              : undefined
-          }
-          emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
-        />
-
-        {firstRegionFigure ? (
-          <V3Instrument
-            id="region-pulse"
-            level={1}
-            eyebrow={v3Text('Central Oregon')}
-            headline={v3Text(headline)}
-            figures={[firstRegionFigure, ...restRegionFigures]}
-            source={v3Text(regionTrace)}
-            updated={regionPulse?.updatedAt ? v3Text(formatDate(regionPulse.updatedAt)) : undefined}
-            action={{
-              label: v3Text('Value my home'),
-              href: valuationHref('/cities'),
-            }}
-          />
-        ) : (
-          <V3Quiet
-            id="region-pulse"
-            heading="Central Oregon cities"
-            headingLevel={1}
-            items={[
-              {
-                kind: 'prose',
-                term: 'No live region figures right now',
-                body: 'The Central Oregon market row did not return on this refresh, so this page is not printing a region median, an inventory count, or a verdict. The city rows below carry their own figures.',
-              },
-            ]}
-          />
-        )}
-
         {firstCityRow ? (
           <V3Ledger
             id="cities"
             eyebrow={v3Text('Central Oregon')}
             heading={v3Text('Cities with homes for sale')}
+            headingLevel={1}
             rows={[firstCityRow, ...restCityRows]}
             source={v3Text(
               'live MLS through Oregon Data Share, active single-family listings, one row per city. Featured rows prefer the 15-minute market_pulse_live row, then geo_snapshot_mv.',
@@ -354,8 +314,39 @@ export default async function CitiesPage() {
           <V3Ledger
             id="cities"
             heading={v3Text('Cities with homes for sale')}
+            headingLevel={1}
             rows={[]}
             emptyMessage={v3Text('No city rows returned on this refresh.')}
+          />
+        )}
+
+        {firstRegionFigure ? (
+          <V3Instrument
+            id="region-pulse"
+            level={2}
+            eyebrow={v3Text('Central Oregon')}
+            headline={v3Text(headline)}
+            figures={[firstRegionFigure, ...restRegionFigures]}
+            source={v3Text(regionTrace)}
+            updated={regionPulse?.updatedAt ? v3Text(formatDate(regionPulse.updatedAt)) : undefined}
+            action={{
+              label: v3Text('Search all listings'),
+              href: listingsBrowsePath(),
+              variant: 'ghost',
+            }}
+          />
+        ) : (
+          <V3Quiet
+            id="region-pulse"
+            heading="Central Oregon pace"
+            headingLevel={2}
+            items={[
+              {
+                kind: 'prose',
+                term: 'No live region figures right now',
+                body: 'The Central Oregon market row did not return on this refresh, so this page is not printing a region median, an inventory count, or a verdict. The city rows above carry their own figures.',
+              },
+            ]}
           />
         )}
 
