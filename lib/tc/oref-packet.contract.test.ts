@@ -52,6 +52,7 @@ const ALLOW = {
 const NEW_PATH_FILES = [
   'lib/tc/oref-fill.ts',
   'lib/tc/oref-fill-pdf.ts',
+  'lib/tc/oref-001-field-map.ts',
   'lib/tc/oref-matt-email.ts',
   'app/actions/tc-oref-packet.ts',
   'app/admin/(protected)/deals/[key]/FillOrefPacket.tsx',

@@ -68,7 +68,7 @@ export async function getOrefDealForFill(dealId: string): Promise<{ data: DbRow 
 export async function getOrefFormVersionRow(id: string): Promise<DbRow | null> {
   const { data } = await client()
     .from('tc_form_versions')
-    .select('id, field_map, name, form_number')
+    .select('id, field_map, name, form_number, page_count')
     .eq('id', id)
     .maybeSingle()
   return (data as DbRow | null) ?? null
