@@ -3,30 +3,14 @@
 // 11D: migrated to the LOCKED admin v2 language (design_system/admin/ADMIN_UI.md),
 // worklist pattern (4). Presentation only.
 //
-// Carried over verbatim: requireAdminPage('transactions.edit'), `await
-// searchParams`, the `?q=` / `?lib=` params and buildLibHref, getTcFormLibraries(q),
-// PREVIEW_COUNT = 6 and the per-library expand/collapse, the populated /
-// total / sampleCount / productionCount arithmetic, the `(SAMPLE…)` name strip,
-// the field / signature counts, the signer-profile words, and every blank-PDF
-// href with its target/rel.
-//
-// Shape changed, data did not: the page's own <main> is gone (ConsoleShell owns
-// the landmark), the KpiStrip became the family's numbers strip, and each
-// library's shadcn table + phone card list became one ReportGrid that scrolls
-// inside its own box.
-//
-// ONE LABEL CORRECTED. The third figure read "OREF samples", but the count it
-// shows is `f.isSample` across EVERY library, not OREF's. The number is
-// unchanged; the word no longer claims a scope the code does not apply. The
-// verdict line names the libraries that are wholly samples, computed from the
-// rows on the page. Measured 2026-08-07: 111 live versions — OREF 110/110
-// sample, ODS 1/1 production, OR and RR empty. So "production: 1" is real, not
-// a broken read (ADMIN_UI §3 rule 6; a broad count plus a per-library group-by
-// agreed).
+// Catalog check (T2.1b, 2026-08-14): OREF / ODS / Oregon Realtors freshness
+// lives on this page. Apply a published-form catalog (metadata only) to see
+// updates, new forms, and forms the source retired.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import {
   Button,
+  HiddenField,
   ReportGrid,
   ReportNumbers,
   SectionHead,
@@ -36,13 +20,17 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
-import { getTcFormLibraries } from '@/app/actions/tc-forms'
+import { loadFormLibraryBoard } from '@/app/actions/tc-form-catalog'
+import type { FormFreshness } from '@/lib/data'
+import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
+import { CheckFormCatalog } from './CheckFormCatalog'
 
 export const dynamic = 'force-dynamic'
 
-type Props = { searchParams: Promise<{ q?: string; lib?: string }> }
+type FreshFilter = 'all' | FormFreshness
 
-// Default forms shown per library before "See all" — curate, never dump.
+type Props = { searchParams: Promise<{ q?: string; lib?: string; fresh?: string }> }
+
 const PREVIEW_COUNT = 6
 
 const FORM_COLUMNS: ReportColumn[] = [
@@ -51,29 +39,103 @@ const FORM_COLUMNS: ReportColumn[] = [
   { key: 'pages', label: 'Pages', numeric: true },
   { key: 'fields', label: 'Fields', numeric: true },
   { key: 'signers', label: 'Signers' },
-  { key: 'status', label: 'Status' },
-  { key: 'blank', label: 'Blank' },
+  { key: 'fresh', label: 'Library' },
+  { key: 'status', label: 'Blank' },
+  { key: 'open', label: 'Open' },
 ]
+
+function parseFresh(raw: string | undefined): FreshFilter {
+  if (
+    raw === 'updated' ||
+    raw === 'new' ||
+    raw === 'retired' ||
+    raw === 'current' ||
+    raw === 'unchecked'
+  ) {
+    return raw
+  }
+  return 'all'
+}
+
+function freshnessWord(fresh: FormFreshness, pendingLabel: string | null) {
+  if (fresh === 'updated') {
+    return (
+      <StateWord key="f" state="waiting">
+        {pendingLabel ? `Update ${pendingLabel}` : 'Update available'}
+      </StateWord>
+    )
+  }
+  if (fresh === 'new') {
+    return (
+      <StateWord key="f" state="accent">
+        New at source
+      </StateWord>
+    )
+  }
+  if (fresh === 'retired') {
+    return (
+      <StateWord key="f" state="slow">
+        Retired at source
+      </StateWord>
+    )
+  }
+  if (fresh === 'current') {
+    return (
+      <StateWord key="f" state="ok">
+        Current
+      </StateWord>
+    )
+  }
+  return (
+    <StateWord key="f" state="slow">
+      Not checked
+    </StateWord>
+  )
+}
+
+function formatCheckedAt(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(d)
+}
 
 export default async function TcFormsPage({ searchParams }: Props) {
   await requireAdminPage('transactions.edit')
-  const { q, lib: expanded } = await searchParams
-  const libraries = await getTcFormLibraries(q)
+  const { q, lib: expanded, fresh: freshRaw } = await searchParams
+  const fresh = parseFresh(freshRaw)
+  const libraries = await loadFormLibraryBoard(q)
 
   const populated = libraries.filter((l) => l.forms.length > 0)
   const total = libraries.reduce((s, l) => s + l.forms.length, 0)
   const sampleCount = libraries.reduce((s, l) => s + l.forms.filter((f) => f.isSample).length, 0)
-  const productionCount = total - sampleCount
+  const productionCount = libraries.reduce((s, l) => s + l.forms.filter((f) => f.held && !f.isSample).length, 0)
+  const updatedCount = libraries.reduce((s, l) => s + l.counts.updated, 0)
+  const newCount = libraries.reduce((s, l) => s + l.counts.new, 0)
+  const retiredCount = libraries.reduce((s, l) => s + l.counts.retired, 0)
+  const lastCheck = libraries
+    .map((l) => l.last_catalog_at)
+    .filter((v): v is string => Boolean(v))
+    .sort()
+    .at(-1)
+  const lastCheckLabel = formatCheckedAt(lastCheck)
 
-  // Which libraries are ENTIRELY samples — the honest reading of a status column
-  // where nearly every row says the same word. Derived from the rows rendered
-  // below, so the sentence and the table cannot disagree.
   const allSampleLibs = populated.filter((l) => l.forms.every((f) => f.isSample)).map((l) => l.code)
 
-  const buildLibHref = (code: string | null) => {
+  const buildHref = (next: { lib?: string | null; fresh?: FreshFilter | null }) => {
     const sp = new URLSearchParams()
     if (q) sp.set('q', q)
-    if (code) sp.set('lib', code)
+    const lib = next.lib === undefined ? expanded : next.lib
+    if (lib) sp.set('lib', lib)
+    const f = next.fresh === undefined ? fresh : next.fresh
+    if (f && f !== 'all') sp.set('fresh', f)
     const qs = sp.toString()
     return `/admin/forms${qs ? `?${qs}` : ''}`
   }
@@ -81,7 +143,7 @@ export default async function TcFormsPage({ searchParams }: Props) {
   return (
     <div className="av2-scope" style={{ maxWidth: 1024, margin: '0 auto', padding: 16 }}>
       <div style={{ margin: '0 0 14px' }}>
-        <VerdictLine tone={total === 0 ? 'attention' : 'ok'}>
+        <VerdictLine tone={total === 0 ? 'attention' : updatedCount + newCount > 0 ? 'attention' : 'ok'}>
           {total === 0 ? (
             <>
               <b>No form version came back{q ? ` for “${q}”` : ''}.</b> Envelopes are composed from
@@ -90,13 +152,14 @@ export default async function TcFormsPage({ searchParams }: Props) {
           ) : (
             <>
               <b>
-                {total.toLocaleString('en-US')} form version{total === 1 ? '' : 's'}
+                {total.toLocaleString('en-US')} form{total === 1 ? '' : 's'}
                 {q ? ` matching “${q}”` : ''} — {productionCount.toLocaleString('en-US')} production,{' '}
                 {sampleCount.toLocaleString('en-US')} sample.
               </b>{' '}
-              {allSampleLibs.length
-                ? `Every form in ${allSampleLibs.join(', ')} is a sample.`
-                : 'Envelopes are composed from these blanks only.'}
+              {lastCheckLabel
+                ? `Last catalog check ${lastCheckLabel}. ${updatedCount} updated, ${newCount} new, ${retiredCount} retired at source.`
+                : 'No catalog check yet. Run the check below to see updates and new forms from OREF, Oregon Data Share, and Oregon Realtors.'}{' '}
+              {allSampleLibs.length ? `Every held form in ${allSampleLibs.join(', ')} is a sample.` : ''}
             </>
           )}
         </VerdictLine>
@@ -104,11 +167,14 @@ export default async function TcFormsPage({ searchParams }: Props) {
 
       <ReportNumbers
         items={[
-          { key: 'total', label: 'form versions', value: total.toLocaleString('en-US') },
-          { key: 'prod', label: 'production', value: productionCount.toLocaleString('en-US') },
-          { key: 'sample', label: 'samples', value: sampleCount.toLocaleString('en-US') },
+          { key: 'total', label: 'forms shown', value: total.toLocaleString('en-US') },
+          { key: 'updated', label: 'updates', value: updatedCount.toLocaleString('en-US') },
+          { key: 'new', label: 'new at source', value: newCount.toLocaleString('en-US') },
+          { key: 'retired', label: 'retired at source', value: retiredCount.toLocaleString('en-US') },
         ]}
       />
+
+      <CheckFormCatalog script={buildFormCatalogCheckScript()} />
 
       <form method="GET" className="av2-rfilters">
         <TextField
@@ -117,10 +183,29 @@ export default async function TcFormsPage({ searchParams }: Props) {
           defaultValue={q ?? ''}
           placeholder="Search form number or name…"
         />
+        {fresh !== 'all' ? <HiddenField name="fresh" value={fresh} /> : null}
         <Button type="submit" touch style={{ alignSelf: 'flex-end' }}>
           Search
         </Button>
       </form>
+
+      <p style={{ fontSize: 'var(--a-text-sm)', margin: '0 0 14px' }}>
+        <Link href={buildHref({ fresh: 'all' })} style={{ color: 'var(--a-accent)' }}>
+          All
+        </Link>
+        {' · '}
+        <Link href={buildHref({ fresh: 'updated' })} style={{ color: 'var(--a-accent)' }}>
+          Updates ({updatedCount})
+        </Link>
+        {' · '}
+        <Link href={buildHref({ fresh: 'new' })} style={{ color: 'var(--a-accent)' }}>
+          New ({newCount})
+        </Link>
+        {' · '}
+        <Link href={buildHref({ fresh: 'retired' })} style={{ color: 'var(--a-accent)' }}>
+          Retired ({retiredCount})
+        </Link>
+      </p>
 
       {populated.length === 0 ? (
         <>
@@ -140,9 +225,13 @@ export default async function TcFormsPage({ searchParams }: Props) {
         </>
       ) : (
         populated.map((library) => {
+          const filtered =
+            fresh === 'all' ? library.forms : library.forms.filter((f) => f.freshness === fresh)
+          if (filtered.length === 0) return null
           const isExpanded = expanded === library.code
-          const visible = isExpanded ? library.forms : library.forms.slice(0, PREVIEW_COUNT)
-          const hiddenCount = library.forms.length - visible.length
+          const visible = isExpanded ? filtered : filtered.slice(0, PREVIEW_COUNT)
+          const hiddenCount = filtered.length - visible.length
+          const checked = formatCheckedAt(library.last_catalog_at)
 
           const rows: ReportGridRow[] = visible.map((f) => ({
             key: f.id,
@@ -150,15 +239,28 @@ export default async function TcFormsPage({ searchParams }: Props) {
               f.form_number ?? '—',
               f.name.replace(/\s*\(SAMPLE.*\)$/i, ''),
               f.page_count ?? '—',
-              f.fieldCount > 0 ? `${f.fieldCount} (${f.signatureFieldCount} sig)` : 'not mapped yet',
-              f.signer_profile ? (f.signer_profile === 'single_party' ? 'One side' : 'Both sides') : '—',
+              f.held
+                ? f.fieldCount > 0
+                  ? `${f.fieldCount} (${f.signatureFieldCount} sig)`
+                  : 'not mapped yet'
+                : 'not loaded',
+              f.signer_profile
+                ? f.signer_profile === 'single_party'
+                  ? 'One side'
+                  : 'Both sides'
+                : '—',
+              freshnessWord(f.freshness, f.pending_version_label),
               f.isSample ? (
                 <StateWord key="s" state="slow">
                   Sample
                 </StateWord>
-              ) : (
+              ) : f.held ? (
                 <StateWord key="s" state="ok">
                   Production
+                </StateWord>
+              ) : (
+                <StateWord key="s" state="waiting">
+                  Not ingested
                 </StateWord>
               ),
               f.blankUrl ? (
@@ -182,8 +284,9 @@ export default async function TcFormsPage({ searchParams }: Props) {
           return (
             <section key={library.id} aria-label={`${library.code} forms`}>
               <SectionHead>
-                {library.code} · {library.name} · {library.forms.length} form
-                {library.forms.length === 1 ? '' : 's'}
+                {library.code} · {library.name} · {filtered.length} form
+                {filtered.length === 1 ? '' : 's'}
+                {checked ? ` · checked ${checked}` : ''}
               </SectionHead>
               {library.license_note ? (
                 <p
@@ -200,21 +303,21 @@ export default async function TcFormsPage({ searchParams }: Props) {
               <ReportGrid
                 label={`${library.code} form versions`}
                 columns={FORM_COLUMNS}
-                template="minmax(72px, 0.6fr) minmax(200px, 2.4fr) minmax(56px, 0.4fr) minmax(96px, 0.8fr) minmax(84px, 0.7fr) minmax(88px, 0.7fr) minmax(72px, 0.5fr)"
-                minWidth={780}
+                template="minmax(72px, 0.5fr) minmax(180px, 2fr) minmax(56px, 0.35fr) minmax(88px, 0.7fr) minmax(76px, 0.55fr) minmax(120px, 0.9fr) minmax(88px, 0.6fr) minmax(72px, 0.45fr)"
+                minWidth={860}
                 rows={rows}
-                empty={<>This library holds no live form version.</>}
+                empty={<>This library holds no form in this filter.</>}
               />
 
               {hiddenCount > 0 ? (
                 <p style={{ margin: '8px 0 0', fontSize: 'var(--a-text-sm)' }}>
-                  <Link href={buildLibHref(library.code)} style={{ color: 'var(--a-accent)' }}>
-                    See all {library.forms.length} forms →
+                  <Link href={buildHref({ lib: library.code })} style={{ color: 'var(--a-accent)' }}>
+                    See all {filtered.length} forms →
                   </Link>
                 </p>
-              ) : isExpanded && library.forms.length > PREVIEW_COUNT ? (
+              ) : isExpanded && filtered.length > PREVIEW_COUNT ? (
                 <p style={{ margin: '8px 0 0', fontSize: 'var(--a-text-sm)' }}>
-                  <Link href={buildLibHref(null)} style={{ color: 'var(--a-accent)' }}>
+                  <Link href={buildHref({ lib: null })} style={{ color: 'var(--a-accent)' }}>
                     Show less
                   </Link>
                 </p>
@@ -225,9 +328,8 @@ export default async function TcFormsPage({ searchParams }: Props) {
       )}
 
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', marginTop: 20 }}>
-        Field maps (data bindings + signature spots with signer roles) get placed once per form
-        version and QA&apos;d — envelopes never invent field positions. Composer ships next; see
-        docs/TC_SYSTEM.md.
+        Field maps get placed once per form version. A newer published version is flagged here
+        before anyone sends it. Load the new blank through the ingest path before composing.
       </p>
     </div>
   )

@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-14T13:28:10.267Z
+**Generated:** 2026-08-14T13:32:01.864Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -4879,6 +4879,39 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 
+### `tc_form_catalog_checks`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `library_id` | uuid | no |  |
+| `source_library_id` | text | yes |  |
+| `checked_at` | timestamp with time zone | no | now() |
+| `published_count` | integer | no | 0 |
+| `held_count` | integer | no | 0 |
+| `new_count` | integer | no | 0 |
+| `updated_count` | integer | no | 0 |
+| `retired_count` | integer | no | 0 |
+| `current_count` | integer | no | 0 |
+| `created_by` | text | yes |  |
+
+### `tc_form_catalog_items`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `library_id` | uuid | no |  |
+| `source_form_id` | text | no |  |
+| `source_version_id` | text | no |  |
+| `name` | text | no |  |
+| `form_number` | text | yes |  |
+| `page_count` | integer | yes |  |
+| `version_label` | text | yes |  |
+| `disposition` | text | no |  |
+| `held_form_version_id` | uuid | yes |  |
+| `first_seen_at` | timestamp with time zone | no | now() |
+| `last_seen_at` | timestamp with time zone | no | now() |
+
 ### `tc_form_libraries`
 
 | Column | Type | Nullable | Default |
@@ -4889,6 +4922,9 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `region` | text | yes |  |
 | `license_note` | text | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
+| `source_library_id` | text | yes |  |
+| `last_catalog_at` | timestamp with time zone | yes |  |
+| `last_catalog_published_count` | integer | yes |  |
 
 ### `tc_form_versions`
 
@@ -4916,6 +4952,8 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `source_checked_at` | timestamp with time zone | yes |  |
 | `update_available` | boolean | no | false |
 | `superseded_by` | uuid | yes |  |
+| `pending_source_version_id` | text | yes |  |
+| `pending_version_label` | text | yes |  |
 
 ### `tc_principal_reviews`
 

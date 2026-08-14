@@ -62,6 +62,7 @@ export type PreferredOrefForm = {
   formNumber: string
   name: string
   fieldCount: number
+  updateAvailable: boolean
 }
 
 async function downloadBlank(sb: Sb, path: string): Promise<Uint8Array | null> {

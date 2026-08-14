@@ -30,6 +30,7 @@
 | **Methodology trace for any cache row** | `cache_methodology_definitions WHERE version=<version>` | `scope`, `definitions`, `notes` | every cache row carries `methodology_version` |
 | **Spark MLS API reference** | [docs/SPARK_API_REFERENCE.md](SPARK_API_REFERENCE.md) | n/a | n/a |
 | **CRM people on a TC deal** (who is on this file) | `tc_deal_people` by `deal_id` or `person_id` — DAL `getDealParties` / `getDealsForPerson` / `getPartyNamesByDealIds` | `deal_id`, `person_id`, `role` (`buyer` / `seller` / `other`). Unique `(deal_id, person_id)`. | live writes |
+| **Did OREF / ODS / Oregon Realtors revise a form?** | `tc_form_catalog_items` + `tc_form_versions.update_available` — apply a catalog on `/admin/forms` | `disposition` (`current` / `updated` / `new` / `retired`), `source_form_id`, `source_version_id` | last catalog paste |
 
 > **Don't aggregate raw `listings` for market reports.** The cache tables exist exactly so you don't have to. They're stamped with `methodology_version` and refreshed every 6 hours. Use them.
 
@@ -268,9 +269,15 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | `public.settings` | 0 | Generic key-value site config. |
 | `public.tc_sessions` | 0 | Transaction Coordinator Pipeline session log. `thread_id` enables follow-up email context. |
 | `public.tc_deal_people` | 0 | **Many CRM people on one Vault `tc_deals` row.** Unique `(deal_id, person_id)` — dual-intent is still one person on that file. Two houses = two deals. Roles: `buyer` / `seller` / `other`. RLS on, no policies: service-role only (same as other `tc_*`). Does not write SkySlope and does not revive `tc_deals.fub_person_ids`. Reads: `getDealParties`, `getDealsForPerson`, `getPartyNamesByDealIds` in `lib/data/tc/deal-people.ts`. Per §0. |
+| `public.tc_form_libraries` | 4 | OREF / ODS / Oregon Realtors / RR. `source_library_id` is the SkySlope Forms library id (1340 / 1528 / 1837). |
+| `public.tc_form_versions` | 111 | Licensed blanks + field maps. `source_form_id` is stable across revisions; `source_version_id` changes. `update_available` is set by the catalog check. |
+| `public.tc_form_catalog_items` | 0 | Last published catalog row per source form. Disposition `current` / `updated` / `new` / `retired`. |
+| `public.tc_form_catalog_checks` | 0 | One row per library per catalog check (counts only). |
 | `public.spatial_ref_sys` | 0 | PostGIS system table. RLS off (PostGIS-required; harmless). |
 
 **`tc_deal_people` note (Track 2 P2, 2026-08-14).** A transaction has more than one person. Dual-intent is still one `crm_people` row: the unique key is `(deal_id, person_id)`, so the same person cannot be buyer and seller on the same file. Two houses are two `tc_deals` rows. Roles are only `buyer`, `seller`, and `other`. Spouse / partner / co-buyer / sibling ride the primary's side; agents and everyone else are `other`. Vault is SoR. SkySlope is not written. Closings board names come from `getPartyNamesByDealIds`. Create from the person page (`StartDealForm` → `createDealWithPeople`); add/remove on the deal page (`DealParties`, above lender/title contacts).
+
+**Form libraries (T2.1b, 2026-08-14).** The in-house TC uses three SkySlope catalogs plus house forms: OREF (`1340`, paid subscription), Oregon Data Share (`1528`, free with membership), Oregon Realtors (`1837`, free with membership), RR. A catalog check is metadata-only (no PDF). Diff: `lib/tc/form-catalog-diff.ts`. Apply: `/admin/forms` paste or `POST /api/admin/forms/catalog-check`. Do not aggregate these tables for public market numbers. Never redistribute blanks.
 
 ---
 

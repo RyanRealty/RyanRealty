@@ -822,3 +822,14 @@ export type { SearchAreaRow, SearchAreaOwnerKind } from './areas/searchAreas'
 
 export { getPreferredOrefSaleAgreement } from './tc/getPreferredOrefSaleAgreement'
 export type { PreferredOrefForm } from './tc/getPreferredOrefSaleAgreement'
+
+export {
+  getTcFormLibraryBoard,
+  applyFormCatalogSnapshots,
+} from './tc/form-catalog'
+export type {
+  TcFormLibraryBoard,
+  TcFormBoardRow,
+  FormFreshness,
+  CatalogApplyResult,
+} from './tc/form-catalog'

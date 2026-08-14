@@ -64,11 +64,12 @@ SkySlope's model, extracted from their Partnership API spec (saved at `tmp/skysl
 Our equivalent (migration `20260610020000_tc_forms_signing_v1.sql`):
 
 ```
-tc_form_libraries      OREF | ODS | OR | RR (house forms), license notes
-tc_form_versions       versioned forms; blank PDF in Storage; field_map jsonb
-                       (fill bindings to deal data + signature fields with signer roles);
-                       signer_profile from the compliance form library;
-                       checklist_activity_hint for auto-assignment on execution
+tc_form_libraries      OREF | ODS | OR | RR (house forms), license notes,
+                       SkySlope source_library_id (1340 / 1528 / 1837), last catalog stamp
+tc_form_versions       versioned forms; blank PDF in Storage; field_map jsonb;
+                       source_form_id + source_version_id; update_available + pending_*
+tc_form_catalog_items  last published catalog per source form (current/updated/new/retired)
+tc_form_catalog_checks one row per library per check (counts only)
 tc_envelopes           draft → sent → partially_signed → completed | voided;
                        sealed_sha256 + certificate + executed_document_id on completion
 tc_envelope_documents  envelope ↔ filled-but-unsigned renders
@@ -88,7 +89,7 @@ documents are EMAILED to recipients and signing must be easy straight from the e
 4. On completion: sealed PDF + audit certificate auto-emailed to every party and the broker; executed doc auto-filed to the checklist.
 5. Pending-signer reminders (48h default) and per-recipient status (sent / viewed / signed) on the deal detail page.
 
-**Licensing boundary:** form templates are copyrighted (OREF especially). The engine is generic; blank PDFs load under Matt's OREF/ODS member access only and are never redistributed. Template onboarding: AcroForm field maps extracted programmatically where the blanks carry form fields; manual placement UI otherwise.
+**Licensing boundary:** form templates are copyrighted. Oregon Realtors and Oregon Data Share blanks are free with those memberships. OREF blanks load under Matt's paid OREF subscription. The engine is generic; blanks never redistribute. Template onboarding: AcroForm field maps extracted programmatically where the blanks carry form fields; manual placement UI otherwise.
 
 ## Roadmap
 

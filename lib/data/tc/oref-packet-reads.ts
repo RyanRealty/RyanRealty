@@ -19,7 +19,7 @@ export async function loadPreferredOrefForm(): Promise<OrefFormCandidate | null>
     sb.from('tc_form_libraries').select('id, code'),
     sb
       .from('tc_form_versions')
-      .select('id, library_id, form_number, name, field_map, blank_pdf_storage_path')
+      .select('id, library_id, form_number, name, field_map, blank_pdf_storage_path, update_available')
       .is('retired_at', null),
   ])
   const codeById = new Map(((libs ?? []) as DbRow[]).map((l) => [asString(l.id), asString(l.code)]))
@@ -32,6 +32,7 @@ export async function loadPreferredOrefForm(): Promise<OrefFormCandidate | null>
       name: asString(v.name),
       fieldCount: fields.length,
       blankPath: v.blank_pdf_storage_path ? asString(v.blank_pdf_storage_path) : null,
+      updateAvailable: v.update_available === true,
     }
   })
   return pickPreferredOrefForm(candidates)

@@ -87,6 +87,7 @@ export type OrefFormCandidate = {
   name: string
   fieldCount: number
   blankPath: string | null
+  updateAvailable?: boolean
 }
 
 /** SkySlope / AcroForm aliases → one deal fact. Normalized before match. */

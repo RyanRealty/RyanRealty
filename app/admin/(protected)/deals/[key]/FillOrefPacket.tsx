@@ -84,6 +84,12 @@ export function FillOrefPacket({
         {formLabel}. Fill from this cycle’s deal facts, email Matt, then seal. Brokers do not
         build forms. Not a client send.
       </p>
+      {form.updateAvailable ? (
+        <p style={{ ...tiny, margin: '0 0 10px' }}>
+          <StateWord state="waiting">Update available</StateWord> A newer published version is
+          at the source. Check /admin/forms before sending this packet to a client.
+        </p>
+      ) : null}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <Button onClick={fill} disabled={pending}>
           {pending && !documentId ? 'Filling…' : 'Fill from deal'}

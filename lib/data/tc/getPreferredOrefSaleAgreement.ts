@@ -7,6 +7,7 @@ export type PreferredOrefForm = {
   formNumber: string
   name: string
   fieldCount: number
+  updateAvailable: boolean
 }
 
 export async function getPreferredOrefSaleAgreement(): Promise<{
@@ -22,6 +23,7 @@ export async function getPreferredOrefSaleAgreement(): Promise<{
         formNumber: picked.formNumber ?? '',
         name: picked.name,
         fieldCount: picked.fieldCount,
+        updateAvailable: picked.updateAvailable === true,
       },
       error: null,
     }

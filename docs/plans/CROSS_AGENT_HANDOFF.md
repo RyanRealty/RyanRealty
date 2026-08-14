@@ -1,8 +1,31 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Incoming agent referrals LIVE at /refer-a-client. No live sends. No referral agreement sent.**
-> Prior: Track 2 P3 leftovers READY `7392b788`. Track 2 P2 READY `6f32f9b3`. Concurrent: pricing seller net landed on the same tip.
+> **NEWEST SUBJECT: Form-library catalog check (OREF / ODS / Oregon Realtors) on `/admin/forms`. Referral LIVE. Seller net READY. No live sends.**
+> Prior: Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`. Track 2 P3 leftovers READY `7392b788`.
 
-# Current — 2026-08-14 (Grok, inbound agent referral) — LIVE
+# Current — 2026-08-14 (Grok, form catalog T2.1b) — shipping
+
+**Track:** Transaction forms. Know when OREF, Oregon Data Share, or Oregon Realtors revise a form, and when a new published form exists, without downloading every blank.
+
+**SHA:** catalog commit about to push on top of `808f0295`. OR + ODS free with membership; OREF paid subscription.
+
+**Wired:**
+- Three SkySlope libraries: OREF `1340`, ODS `1528`, Oregon Realtors `1837`. Engine is generic; RR house forms stay local.
+- Metadata-only catalog check. Console script copies published JSON. Paste on `/admin/forms` or `POST /api/admin/forms/catalog-check`.
+- Diff matches `source_form_id`, then form number (samples still pair). Empty library lists are refused.
+- Persist `tc_form_catalog_items` + `tc_form_catalog_checks`. Held rows get `update_available` + `pending_source_version_id`.
+- `/admin/forms` filters: updates / new / retired. OREF packet warns when 001 is stale.
+- PDF ingest of a new version is still the existing loader. Do not send a stale layout to a client.
+
+**Next leftover:**
+- Apply hosted migration `20260814140000_tc_form_catalog.sql` if this session could not.
+- Run the check from the signed-in Mac Mini SkySlope Forms tab, then paste JSON.
+- `updateFormVersion` one-click PDF pull is not built. Re-run ingest for the new `sourceVersionId`.
+
+**Not this land:** SkySlope write, client send, Partnership API cron. Do not `git add -A`. Dirty CRM deals paths stay out.
+
+**Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, skyslope-form-compliance, oregon-real-estate-oref, oregon-orea-principal-broker, document-external-api, skyslope-file-organization, tc-builder, admin-product-os (orient), git-commit.mdc.
+
+# Prior — 2026-08-14 (Grok, inbound agent referral) — LIVE
 
 **Track:** New revenue desk. Out-of-area brokers send a Central Oregon buyer or seller to `/refer-a-client`. Destination-market GCI after a 25% referral. No outbound SMS/email. No drip. No ad spend.
 
@@ -21,15 +44,15 @@
 - After a real inbound lands, write the referral agreement by hand (Matt §1). Do not contact the client first
 - LIVE `/llms.txt` already lists the path
 
-**Not this land:** Pricing seller-net staged work is stash `wip-pricing-staged-during-referral-pick`. Older stashes still hold sell-film / SellerLPForm. Do not `git add -A`. Do not push `wt/*`. Did not send a referral or a message.
+**Not this land:** Seller-net is on this tip (`3f8ad2a2` + `104c01cc`), not in a stash. Older stashes still hold sell-film / SellerLPForm. Do not `git add -A`. Do not push `wt/*`. Did not send a referral or a message.
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, growth-loop (orient), admin-product-os (orient), public-product-os (orient), frontend-design, git-commit.mdc.
 
-# Concurrent — 2026-08-14 (other session, pricing seller net) — local dirt, not origin
+# Concurrent — 2026-08-14 (Grok, seller net) — READY `104c01cc`
 
-ClosePrice is the contract price. Seller concessions come off that number. Hosted schema applied. Selective commit of pricing files only.
+ClosePrice is the contract price. Seller concessions come off that number before commission. `lib/pricing/seller-net.ts` + view `sale_pricing_seller_net`. Production READY on `104c01cc`. Hosted YN column and view already applied.
 
-**Parked:** stash `wip-pricing-staged-during-referral-pick`. Pop that named stash after this referral commit is on `origin/main`.
+**Next:** 400-sale as-of backtest on ClosePrice and seller net. No accuracy claim without a printout. Pre-2024 YN drain is leftover.
 
 # Prior — 2026-08-14 (Grok, Track 2 P3 leftovers /endtoend) — READY `7392b788`
 

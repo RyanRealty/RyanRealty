@@ -1,7 +1,7 @@
 # Handoff — load the SkySlope form libraries into our TC system
 
 **For:** the session that will build the form loader + field mapping.
-**Status:** mechanism fully reverse-engineered and **proven live** against Matt's authenticated SkySlope Forms session (2026-06-13). Nothing built yet — this is the runbook. Companion: `docs/TC_BUILD_SPEC.md` T2.1 + T2.1b + T2.2 (this doc is the deeper, execution-ready version for the forms track specifically).
+**Status:** ingest endpoint + libraries live. **Catalog freshness (T2.1b) shipped 2026-08-14:** `/admin/forms` compares a published-form catalog (metadata only) to `tc_form_versions` and flags updates, new forms, and forms the source retired. Companion: `docs/TC_BUILD_SPEC.md` T2.1 + T2.1b + T2.2.
 
 **Goal:** get the real licensed blank forms (Oregon Realtors / OREF / Oregon Data Share) into `tc_form_versions` with a usable signature/data field map per form, so the envelope composer can instantiate a filled, sign-ready OREF form from deal data — not a blank upload.
 
@@ -99,7 +99,14 @@ Run it with **`run_in_background`-style chunking** (do one library, or 25 forms,
 
 **Step 5 — `createEnvelopeFromTemplate(cycleId, formVersionIds)`** (extend `app/actions/tc-envelopes.ts`): render blank → fill `text` fields from bound deal data (pdf-lib draw via `lib/tc/seal-pdf.ts`) → place `signature`/`initials`/`date` fields assigned to recipients by `signer_role` → hand to the existing send→sign→seal flow.
 
-**Step 6 — freshness (T2.1b):** with `source_version_id` stored, the "check for form updates" action compares the source's current `publishedVersionId` to ours → flags `update_available`; `updateFormVersion` pulls the new version, retires the old, carries the map only if the field layout is unchanged.
+**Step 6 — freshness (T2.1b) — catalog check SHIPPED 2026-08-14.** Do not download PDFs to learn what changed.
+
+1. On `/admin/forms`, copy the check script.
+2. Run it in the signed-in SkySlope Forms console (Mac Mini Chrome). It lists current published versions for OREF `1340`, ODS `1528`, Oregon Realtors `1837` and copies JSON. No token leaves that tab.
+3. Paste the JSON on `/admin/forms` → Apply catalog. Session-auth server action diffs against `tc_form_versions` (match `source_form_id`, then form number so samples still pair).
+4. Persist: `tc_form_catalog_items` + `tc_form_catalog_checks`; set `update_available` / `pending_source_version_id` on held rows. An empty library list is refused so we do not retire a library by accident.
+5. Optional automation: `POST /api/admin/forms/catalog-check` with `TC_FORMS_INGEST_SECRET` (same CORS as ingest).
+6. **Not yet:** `updateFormVersion` PDF pull (re-run the ingest loader for the new `sourceVersionId`). The composer / OREF packet warns when `update_available` is true. Do not send a stale layout to a client.
 
 ---
 
