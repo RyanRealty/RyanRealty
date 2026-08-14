@@ -38,7 +38,7 @@ export function CheckFormCatalog({ script }: { script: string }) {
         toast.error(error ?? 'Could not apply the catalog.')
         return
       }
-      const parts = data.libraries.map(
+      const parts = data.libraries.slice(0, 6).map(
         (l) =>
           `${l.libraryCode}: ${l.updated} updated, ${l.new} new, ${l.retired} retired, ${l.current} current`,
       )
