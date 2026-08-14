@@ -362,8 +362,7 @@ export default async function SubdivisionPage({ params }: Props) {
       : await fetchSubdivMarketExtras({ citySlug, resortSlug })
 
   const parentPulse = communityPulse ?? cityPulse
-  const parentLabel = communityPulse ? resortLabel ?? displayName : cityName
-  const parentHref =
+  const marketParentHref =
     communityPulse && resortSlug
       ? `/communities/${resortSlug}`
       : citySlug
@@ -373,7 +372,7 @@ export default async function SubdivisionPage({ params }: Props) {
   // sentence covers a number the page suppressed.
   const { figures: parentFigures, covers: parentCovers } = parentPulseFigures(
     parentPulse,
-    parentHref,
+    marketParentHref,
   )
   const statsPeriodLabel = subdivisionStats ? PERIOD_LABEL[subdivisionStats.periodType] : ''
   const [firstPlatFigure, ...restPlatFigures] = platFigures

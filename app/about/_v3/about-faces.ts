@@ -18,7 +18,7 @@ export type AboutFace = {
 
 const CANONICAL_HEADSHOT = /^\/images\/brokers\/[a-z0-9-]+\.png$/
 
-const BROKER_BY_SLUG = new Map(
+const BROKER_BY_SLUG = new Map<string, (typeof BROKERS)[BrokerKey]>(
   (Object.keys(BROKERS) as BrokerKey[]).map((key) => [BROKERS[key].slug, BROKERS[key]]),
 )
 
