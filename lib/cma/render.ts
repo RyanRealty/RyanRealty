@@ -54,6 +54,7 @@ import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { propertyUsePage } from '@/lib/cma/render-use-of-property'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
+import { marketPage as marketBoardPage } from '@/lib/cma/render-market-page'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -421,44 +422,7 @@ function compFlyerPage(a: RenderCmaArgs, comp: CmaAdjustedComp, index: number): 
 }
 
 function marketPage(a: RenderCmaArgs): PageDef | null {
-  const m = a.market
-  if (!m) return null
-  const verdictLabel =
-    m.marketVerdict === 'seller' ? "Seller's market" : m.marketVerdict === 'buyer' ? "Buyer's market" : m.marketVerdict === 'balanced' ? 'Balanced market' : 'Not enough data'
-  return {
-    meta: `${esc(a.subject.streetAddress)} · Market Context`,
-    toc: `${m.geoLabel} market conditions`,
-    body: `
-  <h2 class="section">Market Context · ${esc(m.geoLabel)}</h2>
-  <p>Verified conditions for the subject's market, from the Ryan Realty market data cache. Closed-sale figures cover ${dateLong(m.periodStart)} to ${dateLong(m.periodEnd)}. Inventory is live as of ${dateLong(m.pulseUpdatedAt ?? m.computedAt)}.</p>
-  <div class="stat-strip" style="grid-template-columns: repeat(4, 1fr);">
-    <div class="stat"><div class="lbl">Months of Supply</div><div class="val">${m.monthsOfSupply != null ? dec(m.monthsOfSupply, 1) : '—'}</div></div>
-    <div class="stat"><div class="lbl">Median Sale Price</div><div class="val">${usd(m.medianSalePrice)}</div></div>
-    <div class="stat"><div class="lbl">Median DOM</div><div class="val">${m.medianDom != null ? `${int(m.medianDom)} days` : '—'}</div></div>
-    <div class="stat"><div class="lbl">Sale-to-List</div><div class="val">${m.saleToListRatio != null ? `${dec(m.saleToListRatio * 100, 1)}%` : '—'}</div></div>
-  </div>
-  <div class="stat-strip" style="grid-template-columns: repeat(4, 1fr);">
-    <div class="stat"><div class="lbl">Closed Sales (12 mo)</div><div class="val">${int(m.soldCount365)}</div></div>
-    <div class="stat"><div class="lbl">Active Now</div><div class="val">${int(m.activeCount)}</div></div>
-    <div class="stat"><div class="lbl">Median $/sqft</div><div class="val">${m.medianPpsf != null ? usd(Math.round(m.medianPpsf)) : '—'}</div></div>
-    <div class="stat"><div class="lbl">YoY Median Price</div><div class="val">${m.yoyMedianPriceDeltaPct != null ? `${dec(m.yoyMedianPriceDeltaPct, 1)}%` : '—'}</div></div>
-  </div>
-  <h3 class="subhead">${esc(verdictLabel)}</h3>
-  <p>${
-    m.monthsOfSupply != null
-      ? `${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply, with ${int(m.activeCount)} active single-family listings on the market right now against the recent pace of closed sales. The standard thresholds read 4 months or less as a seller's market, 4 to 6 as balanced, and 6 or more as a buyer's market.`
-      : 'Live inventory was unavailable at build time, so no supply verdict is stated.'
-  }</p>
-  <p>${
-    m.yoyMedianPriceDeltaPct != null
-      ? `The median closed price is ${m.yoyMedianPriceDeltaPct >= 0 ? 'up' : 'down'} ${dec(Math.abs(m.yoyMedianPriceDeltaPct), 1)}% year over year. That trend rate is the market-conditions adjustment applied to every comp in the grid, so older sales are read at today's values rather than at their close-date values.`
-      : 'No verified year-over-year trend was available for this market, so no time adjustment was applied to the comps. Recent comps are weighted more heavily instead.'
-  }</p>
-  <div class="trace">
-    <div class="t-hd">Source</div>
-    <code>market_stats_cache</code> geo <code>${esc(m.geoSlug)}</code>, period rolling_365d ending ${dateLong(m.periodEnd)}, methodology ${esc(m.methodologyVersion ?? '—')}, computed ${dateLong(m.computedAt)} · <code>market_pulse_live</code> active count as of ${dateLong(m.pulseUpdatedAt)}.
-  </div>`,
-  }
+  return marketBoardPage({ subject: a.subject, comps: a.comps, market: a.market })
 }
 
 function pricedPage(a: RenderCmaArgs): PageDef {

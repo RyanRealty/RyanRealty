@@ -186,6 +186,8 @@ export function cmaSectionStyles(): string {
   table.kv td { padding: 4px 0; border-bottom: 1px solid var(--navy-line); vertical-align: top; }
   table.kv.is-wide th { width: 26%; }
   table.kv.is-wide td.v { width: 22%; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+  table.kv.compare-board th.v, table.kv.compare-board td.v { width: 18%; text-align: right; }
+  .trend-svg { width: 100%; height: auto; display: block; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
 

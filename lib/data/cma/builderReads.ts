@@ -302,6 +302,41 @@ export async function getCmaMarketPulseRow(
   return (data ?? null) as CmaMarketPulseRow | null
 }
 
+export type CmaMarketTrendRow = {
+  period_start: string
+  median_sale_price: number | null
+  sold_count: number | null
+  end_of_period_inventory: number | null
+}
+
+/** Completed monthly cache rows for the CMA market board. Drops the in-progress month. */
+export async function getCmaMarketTrendRows(
+  geoSlug: string,
+  geoType: 'city' | 'neighborhood',
+  months = 12,
+): Promise<CmaMarketTrendRow[]> {
+  const sb = client()
+  if (!sb || !geoSlug.trim()) return []
+  const { data, error } = await sb
+    .from('market_stats_cache')
+    .select('period_start, median_sale_price, sold_count, end_of_period_inventory')
+    .eq('geo_slug', geoSlug)
+    .eq('geo_type', geoType)
+    .eq('period_type', 'monthly')
+    .order('period_start', { ascending: false })
+    .limit(months + 1)
+  if (error) {
+    console.error('[getCmaMarketTrendRows]', error.message)
+    return []
+  }
+  const now = new Date()
+  return ((data ?? []) as CmaMarketTrendRow[]).filter((row) => {
+    const d = new Date(row.period_start)
+    if (Number.isNaN(d.getTime())) return false
+    return d.getUTCFullYear() !== now.getUTCFullYear() || d.getUTCMonth() !== now.getUTCMonth()
+  })
+}
+
 /** Active broker row for the CMA signature block. */
 export async function getCmaBrokerBySlugOrEmail(opts: {
   slug?: string | null

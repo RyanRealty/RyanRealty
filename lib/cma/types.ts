@@ -100,6 +100,13 @@ export interface CmaAdjustedComp extends CmaComp {
   weight: number
 }
 
+export interface CmaMarketTrendPoint {
+  periodStart: string
+  medianSalePrice: number | null
+  soldCount: number | null
+  endOfPeriodInventory: number | null
+}
+
 export interface CmaMarketContext {
   geoSlug: string
   geoLabel: string
@@ -113,6 +120,8 @@ export interface CmaMarketContext {
   yoyMedianPriceDeltaPct: number | null
   activeCount: number | null
   pendingCount: number | null
+  /** Live median ask from market_pulse_live. Null when the pulse row has none. */
+  medianListPrice?: number | null
   monthsOfSupply: number | null
   /** Which formula/source produced monthsOfSupply (canonical pulse vs 365d fallback). */
   mosFormula: string | null
@@ -120,6 +129,8 @@ export interface CmaMarketContext {
   methodologyVersion: string | null
   computedAt: string | null
   pulseUpdatedAt: string | null
+  /** Completed months only. A chart renders only when six priced months exist. */
+  trend?: CmaMarketTrendPoint[]
 }
 
 export interface CmaPricing {

@@ -17,7 +17,7 @@
  * Verdict thresholds (CLAUDE.md §0): <= 4 seller's, 4-6 balanced, >= 6 buyer's.
  */
 
-import { getCmaMarketStatsRow, getCmaMarketPulseRow } from '@/lib/data'
+import { getCmaMarketStatsRow, getCmaMarketPulseRow, getCmaMarketTrendRows } from '@/lib/data'
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import type { CmaMarketContext } from '@/lib/cma/types'
 
@@ -82,6 +82,9 @@ export async function getCmaMarketContext(
   }
   if (!stats) return null
 
+  const geoType = stats.geo_type === 'neighborhood' ? 'neighborhood' : 'city'
+  const trendRows = await getCmaMarketTrendRows(stats.geo_slug, geoType)
+
   const sold365 = num(stats.sold_count) ?? 0
   const active = num(pulse?.active_count)
   // Canonical MoS first (the published pulse figure), 365d-pace derivation only
@@ -114,11 +117,18 @@ export async function getCmaMarketContext(
     yoyMedianPriceDeltaPct: num(stats.yoy_median_price_delta_pct),
     activeCount: active,
     pendingCount: num(pulse?.pending_count),
+    medianListPrice: num(pulse?.median_list_price),
     monthsOfSupply,
     mosFormula,
     marketVerdict: verdict,
     methodologyVersion: stats.methodology_version,
     computedAt: stats.computed_at,
     pulseUpdatedAt: pulse?.updated_at ?? null,
+    trend: trendRows.map((row) => ({
+      periodStart: row.period_start,
+      medianSalePrice: num(row.median_sale_price),
+      soldCount: num(row.sold_count),
+      endOfPeriodInventory: num(row.end_of_period_inventory),
+    })),
   }
 }
