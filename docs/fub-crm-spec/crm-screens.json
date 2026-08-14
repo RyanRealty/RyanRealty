@@ -103,7 +103,7 @@
     "id": "deals-desktop",
     "specRef": "docs/fub-crm-spec/10-deals-pipelines.md",
     "route": "app/admin/(protected)/crm/deals/page.tsx",
-    "status": "done",
+    "status": "superseded",
     "requiredComponents": [
       "DealsSubBar",
       "DealsBoard",
@@ -115,7 +115,8 @@
       "dealInScope",
       "scopeBroker"
     ],
-    "verify": "docs/fub-crm-spec/_verify/screen-deals.png"
+    "verify": "docs/fub-crm-spec/_verify/screen-deals.png",
+    "supersededBy": "/admin/closings (one deal entity) — Track 2 P3, docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md; /admin/crm/deals* are redirect bridges"
   },
   {
     "id": "automations-desktop",
