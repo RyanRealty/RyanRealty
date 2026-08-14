@@ -4,11 +4,14 @@
  */
 
 import { resortCommunityCompatible } from '@/lib/cma/resort-guard'
-import { distanceMiles, proximityLabel } from '@/lib/cma/market-area'
+import { distanceMiles, proximityLabel, resolveMarketArea } from '@/lib/cma/market-area'
 import {
   classifyAgeBand,
   hoaCompatible,
+  isNewBuild,
   lotCompatible,
+  newConstructionCompatible,
+  plausibleListedClose,
   productCompatible,
   sewerCompatible,
   similarPerformingSubdivision,
@@ -52,6 +55,9 @@ export type PricingSubject = {
   hoaClass: HoaClass
   lotClass: LotClass
   ruralAcreage: boolean
+  /** City of Bend GIS mesh slug, or null outside every polygon. */
+  marketArea?: string | null
+  newConstruction?: boolean | null
 }
 
 export type PricingSale = {
@@ -87,6 +93,8 @@ export type PricingSale = {
   closePpsf: number
   photoUrl: string | null
   publicRemarks: string | null
+  marketArea?: string | null
+  newConstruction?: boolean | null
 }
 
 export type SubdivisionCell = {
@@ -168,6 +176,7 @@ function passesTier(
     return { ok: false, miles: null }
   }
   if (sale.closeDate >= asOf) return { ok: false, miles: null }
+  if (!plausibleListedClose(sale.closePrice, sale.lastAsk)) return { ok: false, miles: null }
   if (monthsBetween(asOf, sale.closeDate) > tier.monthsBack) return { ok: false, miles: null }
   if (!tier.ignoreCity && sale.citySlug !== subject.citySlug) return { ok: false, miles: null }
   if (tier.sameSubdivision) {
@@ -186,9 +195,23 @@ function passesTier(
   if (!slopOk(subject.beds, sale.beds, tier.bedSlop)) return { ok: false, miles: null }
   if (!slopOk(subject.baths, sale.baths, tier.bathSlop)) return { ok: false, miles: null }
 
-  // Price-tier cut on every rung that leaves the subject's own subdivision.
-  // Same-subdivision sales are the same tier by definition. Thin cells fail open.
+  if (
+    !newConstructionCompatible(
+      isNewBuild(subject.yearBuilt, asOfYear, subject.newConstruction),
+      isNewBuild(sale.yearBuilt, asOfYear, sale.newConstruction),
+    )
+  ) {
+    return { ok: false, miles: null }
+  }
+
+  // Price-tier + neighborhood cuts on every rung that leaves the subdivision.
+  // Same-subdivision sales are the same tier and the same polygon by definition.
   if (!tier.sameSubdivision) {
+    const subjectArea = subject.marketArea ?? resolveMarketArea(subject.latitude, subject.longitude)
+    const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude)
+    if (subjectArea && saleArea && subjectArea !== saleArea) {
+      return { ok: false, miles: null }
+    }
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
     const comp = cellFor(cells, sale.citySlug, sale.subdivisionNorm)
     if (
@@ -243,7 +266,7 @@ export function walkPricingLadder(
   const byKey = new Map<string, SelectedPricingComp>()
   const tiersUsed: string[] = []
   const trace: string[] = [
-    `As-of ${asOf}. Same subdivision first (3 then 6 then 9 months), then distance, then similar-performing subdivisions. Hard cuts: product, rural/urban, resort, water, sewer, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
+    `As-of ${asOf}. Same subdivision first (3 then 6 then 9 months, then a wider GLA band on the same street), then distance, then similar-performing subdivisions. Hard cuts: product, rural/urban, resort, water, sewer, new vs resale, neighborhood once the search leaves the subdivision, HOA on the tight rungs, and a 30% subdivision $/sqft tier gap.`,
   ]
 
   if (!subject.sqft || subject.sqft < 300) {
@@ -254,6 +277,7 @@ export function walkPricingLadder(
   for (const tier of tiers) {
     if (tier.sameSubdivision && !subject.subdivisionNorm) continue
     if (tier.ruralOnly && !subject.ruralAcreage) continue
+    if (tier.name.startsWith('city-') && subject.ruralAcreage) continue
     let added = 0
     for (const sale of pool) {
       if (byKey.has(sale.listingKey)) continue

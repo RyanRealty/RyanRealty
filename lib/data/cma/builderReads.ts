@@ -72,6 +72,7 @@ const LISTING_CMA_COLUMNS = [
   'sewer',
   'levels',
   'concessions_amount',
+  'new_construction_yn',
 ].join(', ')
 
 export type CmaListingRow = Record<string, unknown>

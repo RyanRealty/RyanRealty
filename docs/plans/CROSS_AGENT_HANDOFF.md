@@ -48,6 +48,14 @@
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, growth-loop (orient), admin-product-os (orient), public-product-os (orient), frontend-design, git-commit.mdc.
 
+# Concurrent — 2026-08-14 (Grok, pricing matcher cuts) — shipping
+
+Under-ask autopsy: the homes furthest below ask were mostly richer-product comps, not cheap lists. Matcher now refuses n&lt;3, drops close&lt;10% of last ask, reads subject water from PK-bounded WaterSource (Private alone = unknown), cuts neighborhood once the search leaves the subdivision, does not treat 1-acre-in-city as rural, keeps new construction off a resale, and widens same-sub GLA to ±30% before a mile ring.
+
+**Backtest** (200 listed detached, CloseDate 2024-01-01..2026-07-01, comps-path only): priced 176, refused 24, MAPE 10.5%, median abs 7.7%, 57.4% within 10%. Fresca / Longview / King Saul / Clairaway no longer look like fake bargains. Craftsman still −20% on a fair Awbrey Village set. Highway 20 and Debron still mix within a wide rural or same-polygon custom set.
+
+**Do not `git add -A`.** Forms Current owns `/admin/forms`. Pricing pathspecs only.
+
 # Concurrent — 2026-08-14 (Grok, seller net) — READY `104c01cc`
 
 ClosePrice is the contract price. Seller concessions come off that number before commission. `lib/pricing/seller-net.ts` + view `sale_pricing_seller_net`. Production READY on `104c01cc`. Hosted YN column and view already applied.

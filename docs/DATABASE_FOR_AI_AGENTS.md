@@ -138,6 +138,8 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | `public.pricing_subdivision_cells` | last 36 mo | Subdivision median $/sqft for the gated / different-tier cut. Window is `pricing_index_window.cells_since` (stamped by `refresh_pricing_indexes()`), not `CURRENT_DATE` in the MV body (F7). |
 | `public.pricing_index_window` | 1 | One-row stamp. `cells_since` is the inclusive close_date floor for `pricing_subdivision_cells`. Service-role only. |
 
+Pricing matcher (`lib/pricing/match.ts`) on top of facts, locked 2026-08-14 after the under-ask autopsy: refuse a comps-implied close when n&lt;3. Drop a fact whose close is under 10% of last ask (`56302 Sable Rock` closed $1,625 against last ask $1,680,000). Subject water is PK-bounded `details.WaterSource` via `getListingWaterSource` — typed `listings.water` is null on actives. `{Private:true}` alone is unknown (Caldera community water and a ranch well share that flag). Once the search leaves the subdivision, comps must sit in the same City of Bend GIS neighborhood. 1 acre inside a mapped neighborhood is not rural. New construction (0–2 years or MLS flag) does not pair with a resale. Same-subdivision GLA widens to ±30% before a mile ring opens.
+
 ### 2c. Market analytics (the cache — read these, don't compute) ⭐
 
 | Table | Rows | Purpose |

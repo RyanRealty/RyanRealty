@@ -14,6 +14,7 @@ import { computePricing } from '@/lib/cma/pricing'
 import { attachSellerNet, resolveConcessions, sellerNetFromPrice } from '@/lib/pricing/seller-net'
 import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import { storyAdjustment, type StoryClass } from '@/lib/pricing/classes'
+import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import {
   describePath,
@@ -57,7 +58,7 @@ export function predictedCloseFromAdjusted(
   subjectSqft: number,
   adjusted: Array<{ ppsfTimeAdjusted: number }>,
 ): number | null {
-  if (subjectSqft <= 0 || adjusted.length === 0) return null
+  if (subjectSqft <= 0 || adjusted.length < PRICING_MIN_COMPS) return null
   const trimmed = trimPpsfOutliers(adjusted)
   const ppsf = median(trimmed.map((r) => r.ppsfTimeAdjusted).filter((n) => n > 0))
   if (ppsf <= 0) return null

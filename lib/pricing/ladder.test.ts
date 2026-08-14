@@ -5,6 +5,8 @@ describe('pricingTierLadder — time before distance', () => {
   it('walks 3 then 6 then 9 months inside the subdivision before any mile ring', () => {
     const names = pricingTierLadder().map((t) => t.name)
     expect(names.slice(0, 3)).toEqual(['subdivision-3mo', 'subdivision-6mo', 'subdivision-9mo'])
+    expect(names.indexOf('subdivision-9mo')).toBeLessThan(names.indexOf('subdivision-3mo-wide'))
+    expect(names.indexOf('subdivision-9mo-wide')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
     expect(names.indexOf('subdivision-9mo')).toBeLessThan(names.indexOf('nearby-1mi-3mo'))
     expect(names.indexOf('nearby-1mi-9mo')).toBeLessThan(names.indexOf('nearby-2mi-3mo'))
     expect(names.indexOf('nearby-2mi-9mo')).toBeLessThan(names.indexOf('similar-sub-3mo'))

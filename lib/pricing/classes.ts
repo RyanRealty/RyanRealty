@@ -20,7 +20,8 @@
  *
  * `stories_total` is unused (0/8000 populated). Story comes from `levels`.
  * Typed `water` is unused on 2023+ closes (17,231/17,231 null). Water class
- * comes from PK-bounded `details.WaterSource` at facts-refresh time.
+ * comes from PK-bounded `details.WaterSource` at facts-refresh time. Private
+ * alone is unknown — Caldera community water and a ranch well share that flag.
  */
 
 export type WaterClass = 'well' | 'public' | 'unknown'
@@ -50,8 +51,9 @@ export function classifyWater(raw: unknown): WaterClass {
   if (!s.trim()) return 'unknown'
   if (/\bwell\b/.test(s)) return 'well'
   if (/\bpublic\b|\bcity\b|\bmunicipal\b|\bcommunity\b|\bwater meter\b/.test(s)) return 'public'
-  // Central Oregon "Private" water without Public is a well in every sampled row.
-  if (/\bprivate\b/.test(s)) return 'well'
+  // Private alone is not a class. Caldera community water and a ranch well
+  // both arrive as { Private: true }. Guessing either way invents a product.
+  if (/\bprivate\b/.test(s)) return 'unknown'
   return 'unknown'
 }
 
@@ -182,6 +184,23 @@ export function plausibleListedClose(closePrice: number, lastAsk: number | null 
   if (!(closePrice > 0)) return false
   if (lastAsk == null || !(lastAsk > 0)) return true
   return closePrice >= lastAsk * IMPLAUSIBLE_CLOSE_RATIO
+}
+
+/** 0–2 years from as-of. Null year and no MLS flag stay unknown. */
+export function isNewBuild(
+  yearBuilt: number | null | undefined,
+  asOfYear: number,
+  flag?: boolean | null,
+): boolean | null {
+  if (flag === true) return true
+  if (flag === false) return false
+  if (yearBuilt == null || yearBuilt < 1850) return null
+  return asOfYear - yearBuilt <= 2
+}
+
+export function newConstructionCompatible(a: boolean | null, b: boolean | null): boolean {
+  if (a == null || b == null) return true
+  return a === b
 }
 
 export function productCompatible(a: ProductKey, b: ProductKey): boolean {

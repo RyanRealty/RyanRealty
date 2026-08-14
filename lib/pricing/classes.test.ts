@@ -8,6 +8,9 @@ import {
   classifyStory,
   classifyWater,
   extractRemarkFlags,
+  isNewBuild,
+  newConstructionCompatible,
+  plausibleListedClose,
   hoaCompatible,
   lotCompatible,
   normSubdivision,
@@ -24,7 +27,8 @@ describe('classifyWater', () => {
     expect(classifyWater({ Public: true })).toBe('public')
     expect(classifyWater({ Private: true, 'Shared Well': true })).toBe('well')
     expect(classifyWater({ Public: true, 'Water Meter': true })).toBe('public')
-    expect(classifyWater({ Private: true })).toBe('well')
+    // Private alone is community water at Caldera and a well on a ranch. Do not guess.
+    expect(classifyWater({ Private: true })).toBe('unknown')
   })
   it('treats empty as unknown', () => {
     expect(classifyWater(null)).toBe('unknown')
@@ -133,6 +137,25 @@ describe('story dollar adjustment', () => {
     expect(storyAdjustment('two', 'one', 700_000)).toBe(-94_500)
     expect(storyAdjustment('one', 'one', 700_000)).toBe(0)
     expect(storyAdjustment('one', 'unknown', 700_000)).toBe(0)
+  })
+})
+
+describe('plausibleListedClose', () => {
+  it('drops a close that is under 10% of last ask', () => {
+    expect(plausibleListedClose(1_625, 1_680_000)).toBe(false)
+    expect(plausibleListedClose(168_000, 1_680_000)).toBe(true)
+    expect(plausibleListedClose(500_000, null)).toBe(true)
+  })
+})
+
+describe('new-construction match', () => {
+  it('treats a 0–2 year home as new and will not pair it with a resale', () => {
+    expect(isNewBuild(2025, 2026)).toBe(true)
+    expect(isNewBuild(2013, 2026)).toBe(false)
+    expect(isNewBuild(null, 2026)).toBeNull()
+    expect(newConstructionCompatible(true, false)).toBe(false)
+    expect(newConstructionCompatible(true, true)).toBe(true)
+    expect(newConstructionCompatible(true, null)).toBe(true)
   })
 })
 

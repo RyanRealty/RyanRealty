@@ -23,6 +23,7 @@ function subject(over: Partial<PricingSubject> = {}): PricingSubject {
     hoaClass: 'no_hoa',
     lotClass: 'in_town',
     ruralAcreage: false,
+    marketArea: null,
     ...over,
   }
 }
@@ -151,6 +152,122 @@ describe('walkPricingLadder', () => {
     ]
     const out = walkPricingLadder(subject(), pool, { asOf })
     expect(out.comps).toHaveLength(0)
+  })
+
+  it('drops a close that is a data bug against its own last ask', () => {
+    const pool = [
+      sale({
+        listingKey: 'BUG',
+        closePrice: 1_625,
+        lastAsk: 1_680_000,
+        closePpsf: 0.58,
+        address: '56302 Sable Rock',
+      }),
+      sale({ listingKey: 'REAL', closePrice: 1_795_000, lastAsk: 1_795_000, address: '56155 Sable Rock' }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['REAL'])
+  })
+
+  it('does not mix Boyd Acres with Awbrey Butte once the search leaves the subdivision', () => {
+    const pool = [
+      sale({
+        listingKey: 'AWBREY',
+        subdivision: 'Awbrey Village',
+        subdivisionNorm: 'awbrey village',
+        latitude: 44.081947,
+        longitude: -121.331962,
+        address: '1 Awbrey',
+        closeDate: '2026-07-01',
+      }),
+    ]
+    const out = walkPricingLadder(
+      subject({
+        subdivision: 'Ponderous Pines',
+        subdivisionNorm: 'ponderous pines',
+        latitude: 44.099742,
+        longitude: -121.291434,
+        marketArea: 'bend-boyd-acres',
+      }),
+      pool,
+      { asOf },
+    )
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('AWBREY')
+  })
+
+  it('does not price a 2005 resale off a 2026 new-construction sale', () => {
+    const pool = [
+      sale({ listingKey: 'NEW', yearBuilt: 2026, address: '1 New Kenwood', closeDate: '2026-07-01' }),
+      sale({ listingKey: 'RESALE', yearBuilt: 2005, address: '12 Kenwood', closeDate: '2026-06-01' }),
+    ]
+    const out = walkPricingLadder(subject({ yearBuilt: 2005 }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['RESALE'])
+  })
+
+  it('widens same-subdivision GLA before it opens a mile ring', () => {
+    const pool = [
+      sale({
+        listingKey: 'SAME_STREET',
+        sqft: 1927,
+        address: '21435 Hayloft',
+        closeDate: '2026-07-01',
+      }),
+      sale({
+        listingKey: 'NEXT_TRACT',
+        sqft: 2500,
+        subdivision: 'Petrosa',
+        subdivisionNorm: 'petrosa',
+        address: '3043 Brownstone',
+        latitude: 44.081947,
+        longitude: -121.331962,
+        closeDate: '2026-07-15',
+      }),
+    ]
+    const out = walkPricingLadder(subject({ sqft: 2500, streetAddress: '21451 Hayloft' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toEqual(['SAME_STREET'])
+    expect(out.tiersUsed[0]).toBe('subdivision-3mo-wide')
+  })
+
+  it('does not stop a rural subject on the city-5mi rung', () => {
+    const pool = [
+      sale({
+        listingKey: 'CITY',
+        subdivision: 'Other',
+        subdivisionNorm: 'other',
+        latitude: 44.06,
+        longitude: -121.32,
+        address: '1 City',
+        closeDate: '2026-07-01',
+        lotAcres: 5,
+      }),
+      sale({
+        listingKey: 'RURAL',
+        subdivision: 'Ranch',
+        subdivisionNorm: 'ranch',
+        city: 'Tumalo',
+        citySlug: 'tumalo',
+        latitude: 44.15,
+        longitude: -121.33,
+        address: '1 Ranch',
+        closeDate: '2026-06-01',
+        lotAcres: 8,
+      }),
+    ]
+    const out = walkPricingLadder(
+      subject({
+        lotAcres: 6.73,
+        lotClass: 'ranch',
+        ruralAcreage: true,
+        subdivision: null,
+        subdivisionNorm: null,
+        latitude: 44.12,
+        longitude: -121.34,
+      }),
+      pool,
+      { asOf },
+    )
+    expect(out.tiersUsed.some((t) => t.startsWith('rural-'))).toBe(true)
+    expect(out.comps.map((c) => c.listingKey)).toContain('RURAL')
   })
 
   it('stops at three same-subdivision apples and does not dilute with a 1-mile sale', () => {

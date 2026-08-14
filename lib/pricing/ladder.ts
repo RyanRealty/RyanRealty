@@ -35,14 +35,14 @@ export type PricingTier = {
 }
 
 export function pricingTierLadder(): PricingTier[] {
-  const sub = (months: number): PricingTier => ({
-    name: `subdivision-${months}mo`,
+  const sub = (months: number, sqftBand = 0.15, suffix = ''): PricingTier => ({
+    name: `subdivision-${months}mo${suffix}`,
     monthsBack: months,
     maxMiles: null,
     sameSubdivision: true,
     similarSubdivision: false,
     apples: 'strict',
-    sqftBand: 0.15,
+    sqftBand,
     ageYears: 15,
     sameStory: true,
     bedSlop: 1,
@@ -80,6 +80,11 @@ export function pricingTierLadder(): PricingTier[] {
     sub(3),
     sub(6),
     sub(9),
+    // Same street, different floorplan, before the next tract. Hayloft 2500 vs
+    // 1927 is 23% — inside 30%, outside the tight 15% band.
+    sub(3, 0.3, '-wide'),
+    sub(6, 0.3, '-wide'),
+    sub(9, 0.3, '-wide'),
     near(1, 3, 'strict'),
     near(1, 6, 'strict'),
     near(1, 9, 'strict'),

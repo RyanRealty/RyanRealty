@@ -137,6 +137,13 @@ describe('predictedCloseFromAdjusted', () => {
     expect(trimPpsfOutliers(rows).map((r) => r.id)).toEqual(['a', 'b', 'c'])
     expect(predictedCloseFromAdjusted(2000, rows)).toBe(710_000)
   })
+
+  it('refuses a sell price on one or two sales', () => {
+    expect(predictedCloseFromAdjusted(2000, [{ ppsfTimeAdjusted: 466 }])).toBeNull()
+    expect(
+      predictedCloseFromAdjusted(2000, [{ ppsfTimeAdjusted: 350 }, { ppsfTimeAdjusted: 360 }]),
+    ).toBeNull()
+  })
 })
 
 describe('reconcileAskAndComps', () => {

@@ -59,6 +59,8 @@ export function cmaSubjectToPricing(
     hoaClass: classifyHoa(subject.associationYn ?? null, subject.associationFee ?? subject.hoaMonthly ?? null),
     lotClass: classifyLot(subject.lotAcres),
     ruralAcreage: isRuralAcreage(subject, area),
+    marketArea: area,
+    newConstruction: subject.newConstructionYn ?? null,
   }
 }
 
@@ -140,8 +142,12 @@ export async function priceSubjectFromFacts(
 }> {
   const asOf = (opts.asOf ?? new Date().toISOString()).slice(0, 10)
   const match = await selectPricingComps(subject, opts)
+  let waterRaw = opts.waterRaw
+  if (waterRaw == null && subject.listingKey) {
+    waterRaw = await getListingWaterSource(subject.listingKey)
+  }
   const pricingSubject = cmaSubjectToPricing(subject, {
-    waterRaw: opts.waterRaw,
+    waterRaw,
     sewerRaw: opts.sewerRaw,
     levelsRaw: opts.levelsRaw,
   })

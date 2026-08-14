@@ -47,6 +47,8 @@ export interface CmaSubject {
   waterRaw?: unknown
   sewerRaw?: unknown
   levelsRaw?: unknown
+  /** MLS NewConstructionYN. Null means the feed did not say. */
+  newConstructionYn?: boolean | null
 }
 
 export interface CmaComp {
