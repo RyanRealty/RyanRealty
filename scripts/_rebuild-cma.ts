@@ -25,13 +25,19 @@ import Module from 'node:module'
 // stub is substituted at resolve time. Everything below is dynamically imported
 // AFTER the hook is installed, because a static import would hoist above it.
 const STUB = path.resolve(__dirname, '../test/server-only-stub.ts')
+const CACHE_STUB = path.resolve(__dirname, '../test/next-cache-cli-stub.ts')
 const resolveFilename = (Module as unknown as { _resolveFilename: (r: string, ...a: unknown[]) => string })._resolveFilename
 ;(Module as unknown as { _resolveFilename: unknown })._resolveFilename = function (
   this: unknown,
   request: string,
   ...args: unknown[]
 ) {
-  const req = request === 'server-only' || request === 'client-only' ? STUB : request
+  const req =
+    request === 'server-only' || request === 'client-only'
+      ? STUB
+      : request === 'next/cache'
+        ? CACHE_STUB
+        : request
   return resolveFilename.call(this, req, ...args)
 }
 

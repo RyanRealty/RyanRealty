@@ -38,7 +38,7 @@
 
 **Do not `git add -A`.** Imagery Current / page-grade / chrome-seller-ask / admin inbox stay out.
 
-**Leftover:** existing stored CMAs keep old HTML until rebuilt. Do not rebuild the hand-crafted 3480 row. Do not rebuild a live Sunstone CMA unless Matt asks.
+**Leftover:** existing stored CMAs keep old HTML until rebuilt. Do not rebuild the hand-crafted 3480 row. Sunstone draft built 2026-08-14: slug `cma-56628-sunstone`, status draft, not sent. Recommended $1,730,000. Audit fail (3 findings). Local HTML `out/cma-56628-sunstone/cma.html`. Looks `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-sunstone-cma/`.
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, TDD, VOICE.md, frontend-design, CMA producer SKILL.md, PAGE_CONTRACT, DATABASE_FOR_AI_AGENTS §3a, git-commit.mdc.
 
