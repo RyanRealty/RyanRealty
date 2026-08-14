@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { useOfPropertyPage } from '@/lib/cma/render-use-of-property'
+import { propertyUsePage } from '@/lib/cma/render-use-of-property'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 
@@ -88,13 +88,13 @@ const rental: RentalPotential = {
   disclaimer: 'Not legal or tax advice.',
 }
 
-describe('useOfPropertyPage', () => {
+describe('propertyUsePage', () => {
   it('returns null when there is nothing to say', () => {
-    expect(useOfPropertyPage({ streetAddress: '1 Main', development: null, rental: null })).toBeNull()
+    expect(propertyUsePage({ streetAddress: '1 Main', development: null, rental: null })).toBeNull()
   })
 
   it('prints the zone, both boards, and the detail under each headline', () => {
-    const page = useOfPropertyPage({ streetAddress: '3480 SW 45th', development, rental })
+    const page = propertyUsePage({ streetAddress: '3480 SW 45th', development, rental })
     expect(page).not.toBeNull()
     const html = page!.body
     expect(html).toContain('What this property can do')

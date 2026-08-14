@@ -52,7 +52,7 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { composeInboundCoverLine, resolveThisHomePlan } from '@/lib/cma/inbound-packet'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
-import { useOfPropertyPage } from '@/lib/cma/render-use-of-property'
+import { propertyUsePage } from '@/lib/cma/render-use-of-property'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -884,7 +884,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (story) rest.push(story)
   const whenToList = whenToListPage(a)
   if (whenToList) rest.push(whenToList)
-  const useOf = useOfPropertyPage({
+  const useOf = propertyUsePage({
     streetAddress: a.subject.streetAddress,
     development: a.development,
     rental: a.rental,

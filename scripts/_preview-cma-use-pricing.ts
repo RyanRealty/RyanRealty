@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { resolveRentalPotential } from '@/lib/cma/rental-potential'
-import { useOfPropertyPage } from '@/lib/cma/render-use-of-property'
+import { propertyUsePage } from '@/lib/cma/render-use-of-property'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
 import { cmaStylesheet } from '@/lib/cma/render-css'
 import type { CmaSiteData } from '@/lib/cma/county'
@@ -121,7 +121,7 @@ const market = {
 
 const development = resolveDevelopmentOpportunities(site, subject)
 const rental = resolveRentalPotential(subject, site)
-const useOf = useOfPropertyPage({ streetAddress: subject.streetAddress, development, rental })
+const useOf = propertyUsePage({ streetAddress: subject.streetAddress, development, rental })
 const priced = pricingPage({ subject, comps, market, pricing })
 
 function wrap(page: { meta: string; body: string }): string {

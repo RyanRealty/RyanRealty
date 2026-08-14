@@ -120,7 +120,7 @@ function rentCard(t: RentalTenure): string {
   </article>`
 }
 
-export function useOfPropertyPage(input: {
+export function propertyUsePage(input: {
   streetAddress: string
   development?: DevelopmentOpportunities | null
   rental?: RentalPotential | null
