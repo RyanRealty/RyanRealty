@@ -194,6 +194,26 @@ describe('the single-doc fold', () => {
     expect(html).not.toContain('NET_SHEET_SENTINEL')
   })
 
+  it('renders the this-home plan as the marketing hero when provided', () => {
+    const { html } = renderCmaHtml(
+      args(
+        {},
+        {
+          thisHomePlan: [
+            'For 123 Test Way we cut a listing video from this home\'s photos.',
+            'For 123 Test Way we build a Just Listed flyer, a feature sheet, and an Instagram carousel from this address.',
+            'For 123 Test Way we shoot a photo set made for this house.',
+            'A written report every week it is listed: showings, saves, views, and what we are doing next.',
+          ],
+        },
+      ),
+    )
+    expect(html).toContain('How we would market 123 Test Way')
+    expect(html).toContain('listing video')
+    expect(html).toContain('Also on this listing')
+    expect(html).not.toContain('What Every Listing Gets')
+  })
+
   it('the doc label and title never switch to audit', () => {
     const { html } = renderCmaHtml(withReview)
     expect(html).toContain('Comparative Market Analysis')

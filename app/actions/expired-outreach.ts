@@ -30,6 +30,11 @@ import { isSuppressed } from '@/lib/crm/suppressions'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
+import {
+  buildExpiredFirstTouchSms,
+  firstTouchFactsFromProspect,
+  isCanonicalFirstTouchBody,
+} from '@/lib/crm/first-touch-copy'
 import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
 import { revalidatePath } from 'next/cache'
 
@@ -131,7 +136,17 @@ export async function sendExpiredIntroAction(listingKey: string): Promise<Expire
       ...(personRow ?? {}),
       custom: { ...((personRow?.custom as Record<string, unknown> | null) ?? {}), cmaLink: docUrlForPerson },
     }
-    const merged = renderCrmMerge(String(tpl.body), personLike, ctx)
+    const merged = isCanonicalFirstTouchBody('expired', String(tpl.body))
+      ? buildExpiredFirstTouchSms(
+          firstTouchFactsFromProspect({
+            address: row.street_address,
+            listPrice: row.list_price,
+            expiredAt: row.expired_at,
+            senderFirstName: ctx.sender?.firstName ?? null,
+            cmaLink: docUrlForPerson,
+          }),
+        )
+      : renderCrmMerge(String(tpl.body), personLike, ctx)
     const unresolved = findUnresolvedMergeTokens(merged)
     if (unresolved.length > 0) {
       return { ok: false, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.` }
@@ -189,7 +204,18 @@ export async function previewExpiredIntroAction(listingKey: string): Promise<{ b
     if (!tpl?.body) return { body: null, error: 'Template missing' }
     const ctx = await buildMergeContext({ senderSlug: 'matt' })
     ctx.property = { ...(ctx.property ?? {}), address: row.street_address }
-    return { body: renderCrmMerge(String(tpl.body), { custom: { cmaLink: docUrl } }, ctx), error: null }
+    const body = isCanonicalFirstTouchBody('expired', String(tpl.body))
+      ? buildExpiredFirstTouchSms(
+          firstTouchFactsFromProspect({
+            address: row.street_address,
+            listPrice: row.list_price,
+            expiredAt: row.expired_at,
+            senderFirstName: ctx.sender?.firstName ?? null,
+            cmaLink: docUrl,
+          }),
+        )
+      : renderCrmMerge(String(tpl.body), { custom: { cmaLink: docUrl } }, ctx)
+    return { body, error: null }
   } catch {
     return { body: null, error: 'Preview failed' }
   }
