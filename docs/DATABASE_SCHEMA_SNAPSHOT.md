@@ -4485,6 +4485,16 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 
+### `tc_deal_people`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `deal_id` | uuid | no |  |
+| `person_id` | bigint | no |  |
+| `role` | text | no |  |
+| `created_at` | timestamp with time zone | no | now() |
+
 ### `tc_deals`
 
 | Column | Type | Nullable | Default |

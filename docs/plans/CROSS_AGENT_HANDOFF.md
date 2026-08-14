@@ -2,11 +2,11 @@
 > **NEWEST SUBJECT: Track 2 P2 person↔deal live. Many CRM people on one tc_deal. Matt gates remain: Yes on Today, C copy taste, Email to Matt. No live sends.**
 > Prior: Track 2 A+C+B. Track 1 §4 SEO/LLM done. Track 1 Looks GREEN.
 
-# Current — 2026-08-14 (Grok, Track 2 P2 person↔deal) — landing on origin/main
+# Current — 2026-08-14 (Grok, Track 2 P2 person↔deal) — on origin/main after push
 
 **Track:** 2 P2 person↔deal. A transaction has more than one person. Dual-intent is still one `crm_people` row (unique `deal_id+person_id`). Two houses = two deals. Roles: buyer | seller | other. Person↔deal is many-to-one (many people, one file). No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land.
 
-**SHA:** this land (filled after push).
+**SHA:** `16d69b29` feat(admin): link many crm people to one tc deal. Production verify after push.
 
 **Hosted migration** `20260814010000_tc_deal_people.sql` applied on `dwvlophlbvvygjfxcrhm` (docs/DATABASE_FOR_AI_AGENTS.md §0 lookup + §2k note). Table `tc_deal_people` live: unique `(deal_id, person_id)`, role check, RLS on, service-role only.
 
