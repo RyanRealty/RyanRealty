@@ -2,11 +2,11 @@
 > **NEWEST SUBJECT: Form-library catalog check (OREF / ODS / Oregon Realtors) on `/admin/forms`. Referral LIVE. Seller net READY. No live sends.**
 > Prior: Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`. Track 2 P3 leftovers READY `7392b788`.
 
-# Current — 2026-08-14 (Grok, form catalog T2.1b) — shipping
+# Current — 2026-08-14 (Grok, form catalog T2.1b) — LIVE `caa92e2a`
 
 **Track:** Transaction forms. Know when OREF, Oregon Data Share, or Oregon Realtors revise a form, and when a new published form exists, without downloading every blank.
 
-**SHA:** catalog commit about to push on top of `808f0295`. OR + ODS free with membership; OREF paid subscription.
+**SHA:** `caa92e2a` on `origin/main`. Production READY. Hosted `20260814140000` recorded on `dwvlophlbvvygjfxcrhm` (`tc_form_catalog_items` / `tc_form_catalog_checks` already present). OR + ODS free with membership; OREF paid subscription.
 
 **Wired:**
 - Three SkySlope libraries: OREF `1340`, ODS `1528`, Oregon Realtors `1837`. Engine is generic; RR house forms stay local.
@@ -17,7 +17,6 @@
 - PDF ingest of a new version is still the existing loader. Do not send a stale layout to a client.
 
 **Next leftover:**
-- Apply hosted migration `20260814140000_tc_form_catalog.sql` if this session could not.
 - Run the check from the signed-in Mac Mini SkySlope Forms tab, then paste JSON.
 - `updateFormVersion` one-click PDF pull is not built. Re-run ingest for the new `sourceVersionId`.
 
@@ -47,6 +46,14 @@
 **Not this land:** Seller-net is on this tip (`3f8ad2a2` + `104c01cc`), not in a stash. Older stashes still hold sell-film / SellerLPForm. Do not `git add -A`. Do not push `wt/*`. Did not send a referral or a message.
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, growth-loop (orient), admin-product-os (orient), public-product-os (orient), frontend-design, git-commit.mdc.
+
+# Concurrent — 2026-08-14 (Grok, leftover-todo pass) — READY `caa92e2a`
+
+Agent leftovers that do not need Matt. CRM Pipeline islands deleted (redirects stay). Seller-net cells page past the 1,000-row cap. `pricing_index_window` hosted. Form-catalog gates fixed so the stack could land. Production READY on `caa92e2a`.
+
+**Still Matt-gated:** Yes on Today, C taste, Email to Matt, publish, referral agreement after a real inbound.
+
+**Still open, not Matt-gated:** other OREF maps (need measured blanks), SkySlope live file, `crm-deals` mutations with no UI, pre-2024 YN drain (cron), one-click form PDF pull.
 
 # Concurrent — 2026-08-14 (Grok, pricing matcher cuts) — shipping
 

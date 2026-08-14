@@ -248,6 +248,7 @@ Work the leftover list an agent can finish. Matt-gated sends stay parked.
 - Pre-2024 concessions YN: 2024+ is 100%. 2023 is 73.7%. 2018–2022 is 21–34% and those stamped rows are Yes only (0 No). Drain stays the existing cron RPC. Do not TOAST-scan `listings.details`.
 - Seller-net gate debt: `pricing_subdivision_cells` no longer uses `CURRENT_DATE` in the MV body. Window is `pricing_index_window.cells_since`. Hosted applied `20260814132710`. Snapshot + DAL index refreshed so `ci:migration-drift` and `ci:mv-determinism` pass.
 - Unused CRM board readers deleted (`getCrmDeal`, `listDealsBoard`). `ci:reachable-exports` green. `crm-deals.ts` mutations remain on disk with no UI.
+- Landed on `caa92e2a` production READY. Hosted catalog + pricing-window migrations recorded.
 - Not this pass: Yes on Today, C taste, Email to Matt, publish, SkySlope cutover, referral agreement.
 
 ---

@@ -755,3 +755,5 @@ NOT IN SCOPE
 2026-08-14T13:33:00Z UNUSED CRM BOARD READERS deleted (getCrmDeal, listDealsBoard) so ci:reachable-exports passes after the kanban island removal. journey.ts marked entry-point (SQL contract). crm-deals mutations still on disk, no UI.
 
 2026-08-14T13:40:00Z FORM CATALOG T2.1b. Metadata-only check for OREF 1340 / ODS 1528 / Oregon Realtors 1837. /admin/forms paste or POST /api/admin/forms/catalog-check. Diff matches source_form_id then form number. Empty library lists refused. One-click PDF pull not built. Did not send a client message. Did not write SkySlope.
+
+2026-08-14T14:12:00Z LEFTOVER-TODO PASS LIVE. origin/main tip `caa92e2a` READY. Includes seller-net window + CRM board-reader delete + form catalog + row-cap page + catalog gate fixes + pricing matcher cuts (`caa92e2a`). Hosted `20260814132710` and `20260814140000` recorded. Did not tap Yes / Email to Matt / Start a deal. Did not pop stash. Did not `git add -A`.
