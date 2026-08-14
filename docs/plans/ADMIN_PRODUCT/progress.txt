@@ -731,3 +731,5 @@ NOT IN SCOPE
 2026-08-13T17:20:00Z TRACK 2 AUDIT COMPLETE. Ranked plan docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md. No A/B/C build. First slices when go: A draft path, C rewrite, B OREF fill. Send/taste/SkySlope remain Matt-gated.
 
 2026-08-14T02:40:00Z TRACK 2 SLICE A LANDED. /admin/today inbound row: who (closed set) + inbound quote + composePersonNextStep + recommended SMS. Yes → sendTodayInboundReply → sendCrmSmsAction → sendGovernedSms → sms_out → dismiss. SMS-only. No quiet-hours override. Email stays Open. Empty draft disables Yes. Did not start C or B. Did not touch stash@{0} or the public site. Next: slice C.
+
+2026-08-14T03:05:00Z TRACK 2 A+C+B LANDED on primary main. A 4bd86153 + e844ac4d READY. C merge e837b296 (1da1d4df) expired/FSBO this-home rewrite + hosted template UPDATE. B merge 7bc5262c (e8e68979) one OREF fill → Email to Matt → seal. No live send. No SkySlope write. Did not pop stash@{0}. Leftover: Matt taste on C, empty OREF field_map, person↔tc_deal.

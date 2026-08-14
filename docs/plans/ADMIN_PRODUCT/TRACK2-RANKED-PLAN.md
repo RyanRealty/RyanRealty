@@ -1,6 +1,6 @@
 # Track 2 ranked plan — 2026-08-13
 
-**Pass:** slice A landed (Today inbound Yes-path). C and B not started. No outbound from the agent. No SkySlope write.
+**Pass:** slices A, C, and B landed on `main`. No outbound from the agent. No SkySlope write. Matt still gates Yes on Today, C copy taste, and Email to Matt.
 **SoR:** this file. v0.14 in `BROKER-OPERATING-SYSTEM-PLAN.md` is quarry. Destinations stay locked.
 
 ---
@@ -76,7 +76,7 @@ North star: licensed library → fill from deal → send → file sealed PDF →
 
 **On disk now:** `tc_form_versions` live (forms page: 111 versions, OREF 110/110). Anticipate / envelope / seal / commissions / PB sign-off exist. D2: SkySlope is the live file. `/admin/deals` dashboard still reads `skyslope_transactions`. `tc_deals.fub_person_ids` is dead. No person ↔ deal FK.
 
-**Missing:** one OREF from `tc_form_versions` → fill → Matt-owned email → seal. No SkySlope write unless Matt names it. That is slice B.
+**Landed (slice B):** one OREF from `tc_form_versions` → fill from deal facts → Matt-owned email → seal. No SkySlope write. Empty `field_map` omits unknown/missing bindings. Person ↔ `tc_deal` still missing.
 
 **F1–F6:** Libraries 4 · Anticipate 3 · Fill 2 · Send 2 (SkySlope) · File 3 · Onboard 2.
 
@@ -101,13 +101,13 @@ FSBO (`fsbo-first-touch-v1`):
 | | Expired | FSBO | Inbound valuation |
 |---|---|---|---|
 | C1 KNOW | Packet failure analysis can name THIS listing’s ask, DOM, cuts. SMS does not. | SMS names the address only. | Address-only step 1. CMA engine knows the house if built. |
-| C2 MARKET | Fail. Services list is every listing. | Fail. “A little about us.” | Site 3% plan is the listing offer, not a first packet. |
-| C3 MESSAGE | Soft intro + link. | Soft intro + us. | CTA is Value my home (Track 1). |
+| C2 MARKET | Rewrite names listing video, flyers, photo set for this house. Taste open. | Same this-address plan. No “a little about us.” Taste open. | Site 3% plan is the listing offer, not a first packet. |
+| C3 MESSAGE | This-home analysis + this-address plan + link. Taste open. | Same. No brochure close. Taste open. | CTA is Value my home (Track 1). |
 | C4 VOICE | No prior-agent blame. | No blame. Brochure close. | Worth-question gone on the button. |
 | C5 TRUE | Engine traced. SMS invents nothing. | Same. | Same. |
-| C6 STREAM | Same generic template. | Same generic template. | Copy aligned. Packet not this pass. |
+| C6 STREAM | Rewritten template (seed-body UPDATE). | Rewritten template (seed-body UPDATE). | Copy aligned. Packet not this pass. |
 
-**Would this blow you away if it were your house?** No. A market-analysis link and a services brochure is what every shop sends. Slice C is the rewrite, still manual send.
+**Landed (slice C):** first-touch SMS + packet rewrite names THIS house and a this-address list-kit plan (video, flyers, photo set). Seed bodies UPDATE only when they still match the old seed. Still manual send. Matt taste on the copy is still open.
 
 ---
 
@@ -138,7 +138,7 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 | **Today** | Loop A home | Queue exists. Missing: what they wrote, one draft, yes → send. |
 | **Messages** | Loop A thread | History + composer. Not the ranked “everyone.” |
 | **People** | Who / next / now landed | Dual-intent must stay one person. |
-| **Prospecting** | Loop C worklist | Send path is right (manual, claimed, fail-closed). Copy is wrong. |
+| **Prospecting** | Loop C worklist | Send path is right (manual, claimed, fail-closed). C rewrite landed; Matt taste still open. |
 | **Valuations** | CMA / audit / BPO | Engine KEEP. Expired layer 2 REPLACE. |
 | **Closings** | Loop B | SkySlope live. In-house fill/send/file is the soon-use slice. |
 | Oversight | — | Alarms land here, not a text. |
@@ -165,8 +165,8 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 ### P1 — first complete loops (start using it)
 
 1. **A — Copilot yes-path.** **Landed.** Today inbound row: who, what they wrote, one next action, draft → yes → `sendGovernedSms` → timeline. Assigned-broker scoped.
-2. **C — Blow-away first touch.** Rewrite expired **and** FSBO first message + first packet: know this home + market this home (list-kit / this-address plan, not `buildServicesList`). Manual send. Matt taste on the packet.
-3. **B — One OREF.** One form from `tc_form_versions` → fill from deal data → Matt-owned email → seal. No SkySlope mutation.
+2. **C — Blow-away first touch.** **Landed (code).** Expired and FSBO first message + packet name this home + this-address plan. Manual send. Matt taste still open.
+3. **B — One OREF.** **Landed (code).** One form from `tc_form_versions` → fill from deal data → Matt-owned email → seal. No SkySlope mutation. Empty `field_map` leftover.
 
 ### P2 — context that changes the action
 
@@ -199,10 +199,10 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 | Slice | Done when | Unblocked vs Matt-gated |
 |---|---|---|
 | **A** Queue → one recommended SMS → yes → governed send → timeline | Matt can say “everyone I need to respond to,” tap yes, and the CRM shows `sms_out` | **Landed.** Send is still Matt-gated every time (Yes is the stamp). |
-| **B** One OREF from `tc_form_versions` → fill → Matt-owned email → seal | Matt has a sealed PDF in his inbox from deal data | **Unblocked to fill.** Email to Matt is a send (Matt-gated). No SkySlope write. |
-| **C** One expired (or FSBO) first-touch rewrite | Message + packet name THIS house and how we will market THIS house. Still manual. | **Unblocked to rewrite.** Send and “is it beautiful?” are Matt-gated. |
+| **B** One OREF from `tc_form_versions` → fill → Matt-owned email → seal | Matt has a sealed PDF in his inbox from deal data | **Landed (code).** Email to Matt is a send (Matt-gated). No SkySlope write. Empty `field_map` leftover. |
+| **C** One expired (or FSBO) first-touch rewrite | Message + packet name THIS house and how we will market THIS house. Still manual. | **Landed (code).** Send and “is it beautiful?” are Matt-gated. |
 
-Build order: **A landed. Next is C rewrite, then B fill.** Do not wait on Closings cutover. Do not mix with a public page grind.
+Build order: **A then C then B landed.** Leftover: person ↔ `tc_deal`, empty OREF `field_map`, Matt taste on C. Do not wait on Closings cutover. Do not mix with a public page grind.
 
 ---
 

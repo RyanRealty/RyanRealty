@@ -1,20 +1,27 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 2 slice A landed. Next is slice C (expired/FSBO rewrite). Do not start B.**
+> **NEWEST SUBJECT: Track 2 A+C+B landed on main. Matt gates remain: Yes on Today, C copy taste, Email to Matt. No live sends.**
 > Prior: Track 2 ranked plan. Track 1 §4 SEO/LLM done. Track 1 Looks GREEN.
 
-# Current — 2026-08-13 (Grok, Track 2 slice A) — inbound Yes-path
+# Current — 2026-08-13 (Grok, Track 2 A+C+B land) — serial merge on primary
 
-**Track:** 2 slice A landed. `/admin/today` inbound: who + quote + next + draft. Yes → `sendCrmSmsAction` → `sendGovernedSms` → `sms_out` → row leaves Today.
+**Track:** 2 slices A, C, and B are on `main`. No outbound SMS/email from this land. No SkySlope write. `stash@{0}` still not this land.
 
-**SHA:** `4bd86153` (local; confirm on origin/main after push).
+**SHAs (confirm on origin/main after this push):**
+- A feat `4bd86153` · yes-form fix `e844ac4d` (production READY) · park marker `774c4d37`
+- C merge `e837b296` (slice `1da1d4df`)
+- B merge `7bc5262c` (slice `e8e68979`)
 
 **Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`
 
-**Next:** slice C — expired/FSBO first-touch rewrite (message + packet for THIS house). Still manual send. Then B (one OREF fill).
+**Next leftover (not this land):**
+- Matt taste on C first-touch copy + packet
+- Empty OREF `field_map` (fill omits unknown/missing bindings)
+- Person ↔ `tc_deal` not done
+- Yes on Today and Email to Matt stay Matt-gated. Do not send.
 
-**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Do not `git add -A`. No public site. No slice C or B. No leftover admin OS grind.
+**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Do not `git add -A`. Do not pop stash. Do not push `wt/*`.
 
-**Skills read:** admin-product-os (orient, did not grind queue), crm-e2e (awareness, no battery), git-commit.mdc, TRACK2-RANKED-PLAN.md, VOICE.md.
+**Skills read:** git-commit.mdc, deploy-verify-before-done.mdc, supabase-migrations-auto.mdc, production-parity.mdc, deployments-cicd SKILL, supabase SKILL, database-canonical-reference SKILL, docs/DATABASE_FOR_AI_AGENTS.md, admin-product-os (handoff/board only).
 
 # Prior — 2026-08-13 (Grok, Track 1 Open houses) — Open houses Look GREEN on production
 
