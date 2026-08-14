@@ -239,6 +239,14 @@ A broker does not work a second send path or a second deal board.
 
 **Not this mission:** ads, SkySlope cutover, auto-send, public-site leftover, `stash@{0}`, a 12th destination.
 
+**Leftover-todo pass (2026-08-14)**
+Work the leftover list an agent can finish. Matt-gated sends stay parked.
+- CRM Pipeline islands deleted. `/admin/crm/deals*` stay redirect bridges. Gated absent in `check-dead-ui`.
+- OREF maps: live `tc_form_versions` is 111/111 `field_map=[]`. Overlay remains 001 / 15-page / 01/2026 only. No other sample blanks on disk. Do not invent geometry.
+- Seller-net 400-sale print: `docs/research/pricing-backtest-2026-08-14.json`. Close MAPE 2.76% (97.3% within 10%). Seller net MAPE 2.54% on 384 priced rows (97.9% within 10%). 36 starved (<3 comps). Filter and cite in that file.
+- Pre-2024 concessions YN: 2024+ is 100%. 2023 is 73.7%. 2018–2022 is 21–34% and those stamped rows are Yes only (0 No). Drain stays the existing cron RPC. Do not TOAST-scan `listings.details`.
+- Not this pass: Yes on Today, C taste, Email to Matt, publish, SkySlope cutover, referral agreement.
+
 ---
 
 ## Skills read this pass

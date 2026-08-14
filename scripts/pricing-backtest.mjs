@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url'
 import { classifyStory, citySlug } from '../lib/pricing/classes.ts'
 import { walkPricingLadder } from '../lib/pricing/match.ts'
 import { estimateClosePrice } from '../lib/pricing/estimate.ts'
+import { resolveConcessions, sellerNetFromPrice } from '../lib/pricing/seller-net.ts'
 
 config({ path: join(dirname(fileURLToPath(import.meta.url)), '../.env.local') })
 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
@@ -28,7 +29,7 @@ if (!factsN || factsN < 500) {
 const { data: subjects, error } = await sb
   .from('sale_pricing_facts')
   .select(
-    'listing_key, list_number, street_number, street_name, city, city_slug, subdivision, subdivision_norm, latitude, longitude, product_class, beds, baths, sqft, year_built, lot_acres, lot_class, story_class, water_class, sewer_class, hoa_class, close_price, close_date, original_ask, last_ask, days_to_offer, cdom, drop_count, close_ppsf, photo_url, public_remarks',
+    'listing_key, list_number, street_number, street_name, city, city_slug, subdivision, subdivision_norm, latitude, longitude, product_class, beds, baths, sqft, year_built, lot_acres, lot_class, story_class, water_class, sewer_class, hoa_class, close_price, close_date, concessions_amount, concessions_yn, original_ask, last_ask, days_to_offer, cdom, drop_count, close_ppsf, photo_url, public_remarks',
   )
   .eq('product_class', 'detached')
   .gte('close_date', '2024-01-01')
@@ -60,7 +61,7 @@ for (const row of picked) {
     sb
       .from('sale_pricing_facts')
       .select(
-        'listing_key, list_number, street_number, street_name, city, city_slug, subdivision, subdivision_norm, latitude, longitude, product_class, beds, baths, sqft, year_built, lot_acres, lot_class, story_class, water_class, sewer_class, hoa_class, close_price, close_date, original_ask, last_ask, days_to_offer, cdom, drop_count, close_ppsf, photo_url, public_remarks',
+        'listing_key, list_number, street_number, street_name, city, city_slug, subdivision, subdivision_norm, latitude, longitude, product_class, beds, baths, sqft, year_built, lot_acres, lot_class, story_class, water_class, sewer_class, hoa_class, close_price, close_date, concessions_amount, concessions_yn, original_ask, last_ask, days_to_offer, cdom, drop_count, close_ppsf, photo_url, public_remarks',
       )
       .eq('city_slug', row.city_slug)
       .eq('product_class', 'detached')
@@ -104,6 +105,8 @@ for (const row of picked) {
     lotClass: r.lot_class,
     closePrice: Number(r.close_price),
     closeDate: String(r.close_date).slice(0, 10),
+    concessionsAmount: r.concessions_amount != null ? Number(r.concessions_amount) : null,
+    concessionsYn: r.concessions_yn ?? null,
     originalAsk: r.original_ask != null ? Number(r.original_ask) : null,
     lastAsk: r.last_ask != null ? Number(r.last_ask) : null,
     daysToOffer: r.days_to_offer != null ? Number(r.days_to_offer) : null,
@@ -185,6 +188,15 @@ for (const row of picked) {
   const predicted = est.predictedClose ?? est.pricing?.method3 ?? est.pricing?.method1Mid ?? null
   const actual = Number(row.close_price)
   const err = predicted != null && actual > 0 ? (predicted - actual) / actual : null
+  const actualConc = resolveConcessions({
+    amount: row.concessions_amount != null ? Number(row.concessions_amount) : null,
+    yn: row.concessions_yn,
+    closeDate: asOf,
+  })
+  const actualNet = sellerNetFromPrice(actual, actualConc)
+  const predictedNet = est.pricing?.sellerNet?.predictedSellerNet ?? null
+  const netErr =
+    predictedNet != null && actualNet != null && actualNet > 0 ? (predictedNet - actualNet) / actualNet : null
   errors.push({
     key: row.listing_key,
     city: row.city,
@@ -193,34 +205,44 @@ for (const row of picked) {
     actual,
     predicted,
     err,
+    actualNet,
+    predictedNet,
+    netErr,
     comps: match.comps.length,
     tiers: match.tiersUsed,
     regime: est.regime,
   })
 }
 
-const usable = errors.filter((e) => e.err != null)
-const abs = usable.map((e) => Math.abs(e.err))
-const mape = abs.length ? abs.reduce((a, b) => a + b, 0) / abs.length : null
-const within2 = abs.filter((n) => n <= 0.02).length
-const within5 = abs.filter((n) => n <= 0.05).length
-const within8 = abs.filter((n) => n <= 0.08).length
-const within10 = abs.filter((n) => n <= 0.1).length
+function score(rows, key) {
+  const usable = rows.filter((e) => e[key] != null)
+  const abs = usable.map((e) => Math.abs(e[key]))
+  const mape = abs.length ? abs.reduce((a, b) => a + b, 0) / abs.length : null
+  return {
+    priced: usable.length,
+    mape: mape != null ? +mape.toFixed(4) : null,
+    within_2pct: usable.length ? +(abs.filter((n) => n <= 0.02).length / usable.length).toFixed(3) : null,
+    within_5pct: usable.length ? +(abs.filter((n) => n <= 0.05).length / usable.length).toFixed(3) : null,
+    within_8pct: usable.length ? +(abs.filter((n) => n <= 0.08).length / usable.length).toFixed(3) : null,
+    within_10pct: usable.length ? +(abs.filter((n) => n <= 0.1).length / usable.length).toFixed(3) : null,
+    median_abs_err: abs.length ? +[...abs].sort((a, b) => a - b)[Math.floor(abs.length / 2)].toFixed(4) : null,
+  }
+}
+
+const close = score(errors, 'err')
+const net = score(errors, 'netErr')
 const starved = errors.filter((e) => e.comps < 3).length
 
 console.log(
   JSON.stringify(
     {
+      cite: 'docs/DATABASE_FOR_AI_AGENTS.md §0 sale_pricing_facts; ClosePrice is contract price; seller net = close minus resolved concessions',
+      fetched_at: new Date().toISOString(),
       facts: factsN,
       sample: errors.length,
-      priced: usable.length,
       starved,
-      mape: mape != null ? +mape.toFixed(4) : null,
-      within_2pct: usable.length ? +(within2 / usable.length).toFixed(3) : null,
-      within_5pct: usable.length ? +(within5 / usable.length).toFixed(3) : null,
-      within_8pct: usable.length ? +(within8 / usable.length).toFixed(3) : null,
-      within_10pct: usable.length ? +(within10 / usable.length).toFixed(3) : null,
-      median_abs_err: abs.length ? +[...abs].sort((a, b) => a - b)[Math.floor(abs.length / 2)].toFixed(4) : null,
+      close,
+      seller_net: net,
       rows: errors.slice(0, 15),
     },
     null,

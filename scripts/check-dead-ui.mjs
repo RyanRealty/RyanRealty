@@ -173,6 +173,59 @@ const DEAD_FILES = [
     reason:
       'Retired expired/FSBO compose dialog. Only the two deleted islands imported it.',
   },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/DealsBoard.tsx',
+    reason:
+      'CRM Pipeline kanban is retired. /admin/crm/deals* redirect to Closings. One deal entity.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/DealsSubBar.tsx',
+    reason: 'Retired with DealsBoard. Closings is the deal board.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/DealDetailModal.tsx',
+    reason: 'Retired with DealsBoard. Open the file from Closings or the person.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/DealsDialogs.tsx',
+    reason: 'Retired with DealsBoard.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/ManagePipelines.tsx',
+    reason: 'Pipeline config died with the standalone CRM deals board.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/PipelineFormDialog.tsx',
+    reason: 'Retired with ManagePipelines.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/AddStageDialog.tsx',
+    reason: 'Retired with ManagePipelines.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/StageEditDialog.tsx',
+    reason: 'Retired with ManagePipelines.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/_components/deal-detail-bits.tsx',
+    reason: 'Retired with DealDetailModal.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/[id]/DealHeader.tsx',
+    reason: 'crm_deals detail islands retired. Bookmarks land on Closings.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/[id]/DealFiles.tsx',
+    reason: 'Retired with the CRM deal detail page.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/[id]/DealCommission.tsx',
+    reason: 'Retired with the CRM deal detail page.',
+  },
+  {
+    path: 'app/admin/(protected)/crm/deals/[id]/DealMilestones.tsx',
+    reason: 'Retired with the CRM deal detail page.',
+  },
 ]
 
 // ---------------------------------------------------------------------------

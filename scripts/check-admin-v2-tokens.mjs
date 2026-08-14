@@ -166,25 +166,9 @@ const SCAN_DIRS = [
   //
   // THE SCOPING LESSON: a relocation-driven unit only sees files under
   // components/admin/<family>. Files ALREADY sitting in the route were invisible
-  // to it. Check the route directory itself, not just what moves into it. crm/deals/page.tsx itself is NOT listed: it still mounts
-  // MobileCrmHeader from components/admin/shared/mobile, the phone header the
-  // work queue already proves carries no root-tab nav (ConsoleShell's
-  // CrmMobileTabBar owns the five tabs, and its scope control and search are
-  // duplicated by TopBarScope and the command palette). Deleting that header —
-  // 12-admin-chrome-debt — gates this page and helps crm/activity and the crm
-  // root at the same time. The deals ISLANDS below are clean and gated now.
-  // Both are fully self-contained after crmAvatarColor/crmInitials
-  // moved to lib/admin/crm-avatar (32 lines of pure logic that lib already
-  // imported), so nothing here reaches back into components/admin/crm.
-  'app/admin/(protected)/crm/deals/_components/AddStageDialog.tsx',
-  'app/admin/(protected)/crm/deals/_components/DealDetailModal.tsx',
-  'app/admin/(protected)/crm/deals/_components/DealsBoard.tsx',
-  'app/admin/(protected)/crm/deals/_components/DealsDialogs.tsx',
-  'app/admin/(protected)/crm/deals/_components/DealsSubBar.tsx',
-  'app/admin/(protected)/crm/deals/_components/ManagePipelines.tsx',
-  'app/admin/(protected)/crm/deals/_components/PipelineFormDialog.tsx',
-  'app/admin/(protected)/crm/deals/_components/StageEditDialog.tsx',
-  'app/admin/(protected)/crm/deals/_components/deal-detail-bits.tsx',
+  // to it. Check the route directory itself, not just what moves into it.
+  // crm/deals* are redirect bridges to Closings (Track 2 P3). The kanban
+  // islands were deleted 2026-08-14 and are gated absent in check-dead-ui.
   'app/admin/(protected)/newsletters/_components/NewsletterPreviewPanel.tsx',
   'app/admin/(protected)/newsletters/_components/NewsletterScheduleControls.tsx',
   'app/admin/(protected)/newsletters/_components/SubscriberFilters.tsx',
@@ -614,10 +598,6 @@ const SCAN_DIRS = [
   'app/admin/(protected)/approval-queue/_components/FilterSidebar.tsx',
   'app/admin/(protected)/bpo/_components/worklist/BpoSendDialog.client.tsx',
   'app/admin/(protected)/cmas/_components/worklist/CmaSendDialog.client.tsx',
-  'app/admin/(protected)/crm/deals/[id]/DealCommission.tsx',
-  'app/admin/(protected)/crm/deals/[id]/DealFiles.tsx',
-  'app/admin/(protected)/crm/deals/[id]/DealHeader.tsx',
-  'app/admin/(protected)/crm/deals/[id]/DealMilestones.tsx',
   'app/admin/(protected)/crm/settings/_components/templates/EmailTemplateModal.tsx',
   'app/admin/(protected)/crm/settings/_components/templates/TextTemplateModal.tsx',
   'app/admin/(protected)/crm/settings/appointments/AppointmentSettingsClient.tsx',

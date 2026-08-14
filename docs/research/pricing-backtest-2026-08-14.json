@@ -1,0 +1,54 @@
+{
+  "cite": "docs/DATABASE_FOR_AI_AGENTS.md §0 sale_pricing_facts (hosted dwvlophlbvvygjfxcrhm). ClosePrice is the contract price. Seller net = close minus resolveConcessions(amount, yn, close_date). Predicted net is attachSellerNet on the as-of comparable set.",
+  "script": "scripts/pricing-backtest.mjs",
+  "fetched_at": "2026-08-14T13:21:01.656Z",
+  "filter": {
+    "table": "sale_pricing_facts",
+    "product_class": "detached",
+    "close_date": "2024-01-01 .. 2026-07-01",
+    "sqft": "800..4000",
+    "close_price_gt": 150000,
+    "as_of": "comps close before subject; 18-month lookback; no look-ahead",
+    "sample": "stride 400 from first 800 matching keys"
+  },
+  "facts": 149402,
+  "sample": 400,
+  "starved_under_3_comps": 36,
+  "close": {
+    "priced": 400,
+    "mape": 0.0276,
+    "within_2pct": 0.51,
+    "within_5pct": 0.887,
+    "within_8pct": 0.953,
+    "within_10pct": 0.973,
+    "median_abs_err": 0.02
+  },
+  "seller_net": {
+    "priced": 384,
+    "mape": 0.0254,
+    "within_2pct": 0.484,
+    "within_5pct": 0.891,
+    "within_8pct": 0.961,
+    "within_10pct": 0.979,
+    "median_abs_err": 0.0201
+  },
+  "concessions_yn_coverage_fetched_at": "2026-08-14T13:19:07.388Z",
+  "concessions_yn_by_year": [
+    { "year": 2018, "n": 6509, "yn": 1392, "yn_pct": 0.214, "yn_no": 0 },
+    { "year": 2019, "n": 6397, "yn": 1755, "yn_pct": 0.274, "yn_no": 0 },
+    { "year": 2020, "n": 7462, "yn": 2546, "yn_pct": 0.341, "yn_no": 0 },
+    { "year": 2021, "n": 7542, "yn": 1639, "yn_pct": 0.217, "yn_no": 0 },
+    { "year": 2022, "n": 5905, "yn": 1645, "yn_pct": 0.279, "yn_no": 0 },
+    { "year": 2023, "n": 4509, "yn": 3322, "yn_pct": 0.737, "yn_no": 1599 },
+    { "year": 2024, "n": 4830, "yn": 4830, "yn_pct": 1, "yn_no": 2870 },
+    { "year": 2025, "n": 5004, "yn": 5004, "yn_pct": 1, "yn_no": 2832 },
+    { "year": 2026, "n": 2777, "yn": 2777, "yn_pct": 1, "yn_no": 1490 }
+  ],
+  "yn_drain_this_session": {
+    "rpc": "backfill_sale_pricing_concessions_yn",
+    "scanned": 3200,
+    "updated": 3200,
+    "done": false,
+    "pre_2024_yn_null_after": 121593
+  }
+}

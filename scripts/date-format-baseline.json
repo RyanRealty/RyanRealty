@@ -7,7 +7,6 @@
     "app/actions/reports.ts",
     "app/admin/(protected)/audit-log/page.tsx",
     "app/admin/(protected)/blog/page.tsx",
-    "app/admin/(protected)/crm/deals/[id]/DealFiles.tsx",
     "app/admin/(protected)/crm/deals/[id]/page.tsx",
     "app/admin/(protected)/crm/sequences/page.tsx",
     "app/admin/(protected)/listings/page.tsx",
