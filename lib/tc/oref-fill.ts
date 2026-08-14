@@ -7,7 +7,12 @@
  * Live library (2026-08-13): OREF 001 is the Residential Real Estate Sale
  * Agreement. OREF 110 is "Notice From Seller To Buyer", not a sale agreement.
  * Prefer 001. Fall back to the best-supported sale-agreement-named version.
+ *
+ * When `tc_form_versions.field_map` is empty for 001, use the checked-in
+ * overlay in oref-001-field-map.ts (measured on the 01/2026 15-page sample).
  */
+
+import { isOref001OverlayApplicable, oref001OverlayFieldMap } from './oref-001-field-map'
 
 export const PREFERRED_OREF_LIBRARY = 'OREF'
 export const PREFERRED_OREF_FORM_NUMBER = '001'
@@ -157,9 +162,20 @@ export function parseEarnestMoneyAmount(raw: unknown): number | null {
   return null
 }
 
+function nameFromUnknown(n: unknown): string | null {
+  if (typeof n === 'string') return nonEmpty(n)
+  if (!n || typeof n !== 'object') return null
+  const o = n as Record<string, unknown>
+  const direct = nonEmpty(typeof o.name === 'string' ? o.name : typeof o.full_name === 'string' ? o.full_name : null)
+  if (direct) return direct
+  const first = nonEmpty(typeof o.first === 'string' ? o.first : typeof o.first_name === 'string' ? o.first_name : null)
+  const last = nonEmpty(typeof o.last === 'string' ? o.last : typeof o.last_name === 'string' ? o.last_name : null)
+  return nonEmpty([first, last].filter(Boolean).join(' '))
+}
+
 function namesList(names: unknown): string[] {
   if (!Array.isArray(names)) return []
-  return names.map((n) => String(n ?? '').trim()).filter(Boolean)
+  return names.map(nameFromUnknown).filter((n): n is string => Boolean(n))
 }
 
 export function dealFactsFromRows(
@@ -244,6 +260,25 @@ export function resolveFactKey(binding: string): DealFactKey | null {
 
 function fieldBinding(field: FillableField): string {
   return field.dataRef || field.binding || field.key || field.label || ''
+}
+
+export type OrefFieldMapSource = 'db' | 'oref-001-overlay' | 'empty'
+
+/**
+ * Prefer a non-empty DB field_map. If live 001 rows have `[]` (flat sample
+ * PDF, no AcroForm), use the checked-in overlay so fill writes onto the blank.
+ */
+export function resolveOrefFieldMap(opts: {
+  formNumber?: string | null
+  pageCount?: number | null
+  fieldMap?: FillableField[] | null
+}): { fields: FillableField[]; source: OrefFieldMapSource } {
+  const db = Array.isArray(opts.fieldMap) ? opts.fieldMap : []
+  if (db.length > 0) return { fields: db, source: 'db' }
+  if (isOref001OverlayApplicable(opts.formNumber, opts.pageCount)) {
+    return { fields: oref001OverlayFieldMap(), source: 'oref-001-overlay' }
+  }
+  return { fields: [], source: 'empty' }
 }
 
 /**

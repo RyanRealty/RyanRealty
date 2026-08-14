@@ -26,7 +26,7 @@ import {
   coverRowsFromFacts,
   dealFactsFromRows,
   mapDealFactsToFillValues,
-  type FillableField,
+  resolveOrefFieldMap,
 } from '@/lib/tc/oref-fill'
 import { buildFilledOrefPdf } from '@/lib/tc/oref-fill-pdf'
 import { MATT_OWNED_MAILBOX, planOrefMattEmail } from '@/lib/tc/oref-matt-email'
@@ -105,9 +105,14 @@ export async function fillOrefSaleAgreementFromDeal(
     const versionRow = await getOrefFormVersionRow(form.id)
 
     const facts = dealFactsFromRows(deal as never, cycle as never)
-    const fieldMap = (versionRow?.field_map ?? []) as FillableField[]
-    const mapped = mapDealFactsToFillValues(facts, fieldMap)
+    const resolved = resolveOrefFieldMap({
+      formNumber: asString(versionRow?.form_number) || form.formNumber,
+      pageCount: typeof versionRow?.page_count === 'number' ? versionRow.page_count : null,
+      fieldMap: Array.isArray(versionRow?.field_map) ? versionRow.field_map : [],
+    })
+    const mapped = mapDealFactsToFillValues(facts, resolved.fields)
     const coverRows = coverRowsFromFacts(facts)
+    const overlayKeys = [...new Set(mapped.filled.map((f) => f.factKey))]
 
     const blank = await downloadBlank(sb, form.blankPath)
     if (!blank) return { data: null, error: 'The OREF blank PDF could not be loaded.' }
@@ -145,6 +150,7 @@ export async function fillOrefSaleAgreementFromDeal(
         source: 'oref_fill',
         form_version_id: form.id,
         form_number: formNumber,
+        field_map_source: resolved.source,
       },
     })
     if (docErr) {
@@ -182,7 +188,9 @@ export async function fillOrefSaleAgreementFromDeal(
       action: 'oref_filled',
       detail: {
         form_number: formNumber,
-        filled_keys: coverRows.map((r) => r.factKey),
+        field_map_source: resolved.source,
+        filled_keys: overlayKeys,
+        cover_keys: coverRows.map((r) => r.factKey),
         omitted_fact_keys: mapped.omittedFactKeys,
       },
     })
@@ -194,7 +202,7 @@ export async function fillOrefSaleAgreementFromDeal(
         documentId: docId,
         formNumber,
         formName: form.name,
-        filledKeys: coverRows.map((r) => r.factKey),
+        filledKeys: overlayKeys,
         omittedFactKeys: mapped.omittedFactKeys,
       },
       error: null,

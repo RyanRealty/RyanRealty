@@ -6,6 +6,7 @@ import {
   parseEarnestMoneyAmount,
   pickPreferredOrefForm,
   presentFactValues,
+  resolveOrefFieldMap,
   type DealFacts,
   type OrefFormCandidate,
 } from './oref-fill'
@@ -61,6 +62,18 @@ describe('dealFactsFromRows', () => {
     expect(facts.salePrice).toBeNull()
     expect(facts.listingPrice).toBeNull()
   })
+
+  it('reads buyer/seller names from cycle jsonb objects without inventing', () => {
+    const facts = dealFactsFromRows(
+      { address: '218 SW 4th St' },
+      {
+        buyers: [{ name: 'Todd Chester' }, { first: 'Ada', last: 'Lovelace' }, { name: '' }],
+        sellers: [{ full_name: 'PMA Investments LLC' }],
+      },
+    )
+    expect(facts.buyers).toEqual(['Todd Chester', 'Ada Lovelace'])
+    expect(facts.sellers).toEqual(['PMA Investments LLC'])
+  })
 })
 
 describe('parseEarnestMoneyAmount', () => {
@@ -112,6 +125,44 @@ describe('mapDealFactsToFillValues', () => {
     const { filled } = mapDealFactsToFillValues(facts, [{ dataRef: 'SalePrice' }, { dataRef: 'ListPrice' }])
     expect(filled.find((f) => f.factKey === 'salePrice')).toBeUndefined()
     expect(filled.find((f) => f.factKey === 'listingPrice')?.value).toBe('$449,000')
+  })
+})
+
+describe('resolveOrefFieldMap', () => {
+  it('uses the checked-in 001 overlay when the live field_map is empty', () => {
+    const resolved = resolveOrefFieldMap({ formNumber: '001', pageCount: 15, fieldMap: [] })
+    expect(resolved.source).toBe('oref-001-overlay')
+    const { filled } = mapDealFactsToFillValues(FULL, resolved.fields)
+    const keys = filled.map((f) => f.factKey)
+    expect(keys).toEqual(
+      expect.arrayContaining(['address', 'city', 'salePrice', 'buyers', 'sellers']),
+    )
+    expect(filled.find((f) => f.factKey === 'salePrice')?.value).toBe('$435,000')
+    expect(filled.find((f) => f.factKey === 'listingPrice')).toBeUndefined()
+    expect(filled.every((f) => f.page != null && f.x != null && f.y != null)).toBe(true)
+  })
+
+  it('omits overlay blanks when the matching fact is missing', () => {
+    const resolved = resolveOrefFieldMap({ formNumber: '001', pageCount: 15, fieldMap: [] })
+    const { filled } = mapDealFactsToFillValues(
+      { ...FULL, salePrice: null, earnestMoneyAmount: null, buyers: [] },
+      resolved.fields,
+    )
+    const keys = filled.map((f) => f.factKey)
+    expect(keys).not.toContain('salePrice')
+    expect(keys).not.toContain('buyers')
+    expect(keys).toContain('address')
+    expect(filled.every((f) => f.value !== '$0' && f.value !== 'TBD')).toBe(true)
+  })
+
+  it('prefers a non-empty database field_map over the overlay', () => {
+    const resolved = resolveOrefFieldMap({
+      formNumber: '001',
+      pageCount: 15,
+      fieldMap: [{ dataRef: 'PropertyAddress', page: 1, x: 0.1, y: 0.1, w: 0.4, h: 0.03 }],
+    })
+    expect(resolved.source).toBe('db')
+    expect(resolved.fields).toHaveLength(1)
   })
 })
 
