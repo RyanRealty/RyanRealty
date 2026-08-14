@@ -175,6 +175,15 @@ export function lotCompatible(subjectAcres: number | null, compAcres: number | n
   return compAcres >= subjectAcres * 0.4 && compAcres <= subjectAcres * 2.5
 }
 
+/** Close under 10% of last ask is a facts bug, not a distressed sale. */
+export const IMPLAUSIBLE_CLOSE_RATIO = 0.1
+
+export function plausibleListedClose(closePrice: number, lastAsk: number | null | undefined): boolean {
+  if (!(closePrice > 0)) return false
+  if (lastAsk == null || !(lastAsk > 0)) return true
+  return closePrice >= lastAsk * IMPLAUSIBLE_CLOSE_RATIO
+}
+
 export function productCompatible(a: ProductKey, b: ProductKey): boolean {
   if (a === 'unknown' || b === 'unknown') return true
   return a === b

@@ -87,14 +87,10 @@ describe('concessionNote', () => {
 
 describe('attachSellerNet', () => {
   it('writes seller net onto the pricing object from the comparable set', () => {
-    const pricing: {
-      recommended: number
-      notes: string[]
-      sellerNet?: {
-        expectedConcessions: number | null
-        predictedSellerNet: number | null
-      }
-    } = { recommended: 700_000, notes: [] }
+    const pricing: NonNullable<Parameters<typeof attachSellerNet>[0]> = {
+      recommended: 700_000,
+      notes: [],
+    }
     attachSellerNet(
       pricing,
       [
