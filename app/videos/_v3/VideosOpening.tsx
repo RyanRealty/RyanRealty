@@ -3,11 +3,8 @@
  * The Field is HideAwareVideoGrid, mounted by the page.
  */
 import { cn } from '@/lib/utils'
-import { V3Button, V3Heading, V3SourceLine, V3_ROOT_CLASS } from '@/components/site/v3'
+import { V3Button, V3Heading, V3_ROOT_CLASS } from '@/components/site/v3'
 import { CITY_CHIPS } from './videos-constants'
-
-const VIDEOS_TRACE =
-  'live MLS through Oregon Data Share, homes on this page that carry a video tour'
 
 export function VideosOpening({
   heading,
@@ -29,7 +26,6 @@ export function VideosOpening({
           </p>
         ) : null}
       </div>
-      {count > 0 ? <V3SourceLine source={VIDEOS_TRACE} className="mb-4" /> : null}
       <nav aria-label="Filter video tours by city" className="flex flex-wrap items-center gap-2 pb-4">
         <V3Button href="/videos" variant="ghost" ariaCurrent={city ? undefined : 'page'}>
           All Central Oregon

@@ -88,7 +88,6 @@ export function OurHomesField({
           ))}
         </nav>
       ) : null}
-      {first ? <V3SourceLine source={source} className="mb-6" /> : null}
       <V3Field
         id="listed"
         className="our-homes-field"
@@ -97,6 +96,7 @@ export function OurHomesField({
         mapSlot={first ? <OurHomePhotos items={items} /> : undefined}
         emptyMessage={emptyMessage}
       />
+      {first ? <V3SourceLine source={source} className="mt-6" /> : null}
     </div>
   )
 }

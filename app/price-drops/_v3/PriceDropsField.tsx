@@ -5,7 +5,7 @@
  */
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { V3Heading, V3SourceLine, V3_ROOT_CLASS } from '@/components/site/v3'
+import { V3Heading, V3_ROOT_CLASS } from '@/components/site/v3'
 import type { PriceDropFieldItem } from './drops-field-items'
 import './price-drops-field.css'
 
@@ -56,13 +56,11 @@ export function PriceDropsOpening({
   headline,
   captionValue,
   captionLabel,
-  source,
 }: {
   heading: string
   headline?: string
   captionValue: string
   captionLabel: string
-  source: string
 }) {
   const title = headline ?? heading
   return (
@@ -74,7 +72,6 @@ export function PriceDropsOpening({
           {` ${captionLabel}`}
         </p>
       </div>
-      <V3SourceLine source={source} />
     </div>
   )
 }

@@ -87,7 +87,6 @@ export function OpenHousesField({
           </p>
         ) : null}
       </div>
-      {first ? <V3SourceLine source={source} className="mb-6" /> : null}
       <V3Field
         id="calendar"
         className="oh-homes-field"
@@ -96,6 +95,7 @@ export function OpenHousesField({
         mapSlot={first ? <OpenHousePhotos items={items} /> : undefined}
         emptyMessage={emptyMessage}
       />
+      {first ? <V3SourceLine source={source} className="mt-6" /> : null}
     </div>
   )
 }

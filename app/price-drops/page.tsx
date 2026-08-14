@@ -32,6 +32,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Quiet,
   V3SectionTracker,
+  V3SourceLine,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -138,7 +139,6 @@ export default async function PriceDropsRegionPage() {
               heading="Price drops in Central Oregon"
               captionValue={captionCount.toLocaleString('en-US')}
               captionLabel={captionCount === 1 ? 'price cut this week' : 'price cuts this week'}
-              source={dropsTrace('Central Oregon')}
             />
             <V3Field
               id="cuts"
@@ -148,6 +148,7 @@ export default async function PriceDropsRegionPage() {
               mapSlot={<PriceDropPhotos items={fieldItems} />}
               emptyMessage="No price cut on this pull has both a street and a list price, so this list has nothing to name."
             />
+            <V3SourceLine source={dropsTrace('Central Oregon')} />
           </>
         ) : (
           <V3Quiet

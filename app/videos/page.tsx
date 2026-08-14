@@ -35,6 +35,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Quiet,
   V3SectionTracker,
+  V3SourceLine,
 } from '@/components/site/v3'
 import { resolveCity, resolveView, resolveStart } from './_v3/videos-constants'
 import { tilesToFeedItems } from './_v3/feed-items'
@@ -288,7 +289,10 @@ export default async function VideosPage({
         <VideosOpening heading={heading} city={city} count={cards.length} />
 
         {videoItems.length > 0 ? (
-          <HideAwareVideoGrid items={videoItems} />
+          <>
+            <HideAwareVideoGrid items={videoItems} />
+            <V3SourceLine source="live MLS through Oregon Data Share, homes on this page that carry a video tour" />
+          </>
         ) : (
           <V3Quiet
             id="tours"

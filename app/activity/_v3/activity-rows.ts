@@ -33,7 +33,11 @@ export function activityRows(items: readonly ActivityFeedItem[]): V3LedgerFigure
     const when = liveStamp(a.event_at)
     if (!when) continue
     const kind = ACTIVITY_LABEL[a.event_type] ?? a.event_type
-    const cityLine = [a.City, a.SubdivisionName].filter(Boolean).join(' · ')
+    const placeName = [a.City, a.SubdivisionName]
+      .map((part) => (typeof part === 'string' ? part.trim() : ''))
+      .filter((part) => part.length > 0 && part.toUpperCase() !== 'N/A')
+      .join(' · ')
+    const cityLine = placeName
     const detail = [kind, cityLine].filter((part) => part && part.trim().length > 0).join(' · ')
     rows.push({
       href: listingTileHref({

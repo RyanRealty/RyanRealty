@@ -122,10 +122,6 @@ export default async function ContactPage({ searchParams }: PageProps) {
 
   const listingHref = listingTile ? listingTileHref(listingTile) : null
   const introItems: V3QuietItem[] = [
-    {
-      kind: 'prose',
-      body: 'A broker replies within one business day. Calling or texting gets you an answer sooner.',
-    },
     ...(listingHref
       ? [{ label: listingSummary || 'The listing you asked about', href: listingHref }]
       : []),

@@ -23,6 +23,7 @@ import {
   V3_FOOTER_COLUMNS,
   V3Quiet,
   V3SectionTracker,
+  V3SourceLine,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -161,7 +162,6 @@ export default async function PriceDropsCityPage({ params }: Props) {
               headline={`Price drops in ${cityName}`}
               captionValue={captionCount.toLocaleString('en-US')}
               captionLabel={captionCount === 1 ? `price cut in ${cityName}` : `price cuts in ${cityName}`}
-              source={dropsTrace(cityName)}
             />
             <V3Field
               id="cuts"
@@ -171,6 +171,7 @@ export default async function PriceDropsCityPage({ params }: Props) {
               mapSlot={<PriceDropPhotos items={fieldItems} />}
               emptyMessage={`No price cut in ${cityName} on this pull has both a street and a list price, so this list has nothing to name.`}
             />
+            <V3SourceLine source={dropsTrace(cityName)} />
           </>
         ) : (
           <V3Quiet

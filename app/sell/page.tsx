@@ -23,7 +23,8 @@
  * is what this ordering prevents.
  *
  * One filled primary in the first 390 viewport: the capture Sheet submit.
- * Chrome Value my home stays (it is that field). Stage ghost is gone.
+ * Chrome Value my home is off /sell (the field is the ask) and on /sell/* leaves.
+ * Stage ghost is gone.
  * Stage is compact so the H1 clears chrome and the address step shares
  * the first viewport.
  */

@@ -449,7 +449,8 @@ describe('design directive contracts', () => {
     const field = readSrc('app/_v3/HomeHomesField.tsx')
     expect(field).toMatch(/aria-label="Towns"/)
     expect(field).toMatch(/<V3Field/)
-    expect(field).toMatch(/HomeFieldPhoto/)
+    expect(field).toMatch(/tabular-nums text-foreground/)
+    expect(field).not.toMatch(/count=\{count\}/)
     expect(field).not.toMatch(/See homes for sale/)
   })
 

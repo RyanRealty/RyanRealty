@@ -25,7 +25,6 @@ import type { Metadata } from 'next'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
 import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
-import { getCityContent } from '@/lib/city-content'
 import { cityHero } from '@/lib/geo-images'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPrice } from '@/lib/format/money'
@@ -58,8 +57,6 @@ import { RegionalAlertSheet } from '@/app/central-oregon/_v3/RegionalAlertSheet.
 import {
   FEATURED_CITY_SLUGS,
   FEATURED_PULSE_LABELS,
-  CITY_SENTENCE_FALLBACK,
-  firstSentence,
 } from './_v3/cities-index-constants'
 
 export const revalidate = 1800
@@ -109,15 +106,10 @@ export default async function CitiesPage() {
       slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
     const pulse = pulseBySlug.get(slug) ?? rawPulseBySlug.get(slug) ?? null
     const snap = snapshotBySlug.get(slug) ?? null
-    const content = getCityContent(name)
-    const sentence = content?.description
-      ? firstSentence(content.description)
-      : CITY_SENTENCE_FALLBACK[slug] ?? null
     const hero = cityHero(slug)
     return {
       slug,
       name,
-      sentence,
       photoSrc: hero.verified ? hero.src : null,
       activeCount: pulse?.active_count ?? snap?.activeCount ?? null,
       medianListPrice: pulse?.median_list_price ?? snap?.medianPrice ?? null,
@@ -143,8 +135,7 @@ export default async function CitiesPage() {
           ? formatPrice(city.medianListPrice)
           : 'See the city'
     const detailParts = [
-      city.sentence,
-      city.medianListPrice != null && active != null ? formatPrice(city.medianListPrice) : null,
+      city.medianListPrice != null ? formatPrice(city.medianListPrice) : null,
       city.mosLabel != null ? `${city.mosLabel} months of supply` : null,
     ].filter((part): part is string => Boolean(part))
     cityRows.push({

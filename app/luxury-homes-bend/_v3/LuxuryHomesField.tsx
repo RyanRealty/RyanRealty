@@ -75,7 +75,6 @@ export function LuxuryHomesField({
           </p>
         ) : null}
       </div>
-      {first ? <V3SourceLine source={source} className="mb-6" /> : null}
       <V3Field
         id="homes"
         className="lux-homes-field"
@@ -84,6 +83,7 @@ export function LuxuryHomesField({
         mapSlot={first ? <LuxuryPhotos items={items} /> : undefined}
         emptyMessage={emptyMessage}
       />
+      {first ? <V3SourceLine source={source} className="mt-6" /> : null}
     </div>
   )
 }

@@ -1,11 +1,9 @@
 /**
  * Homepage inventory Field. Houses open the page. The D11 H1 is compact so
  * photographs fill the fold. Towns are filters into the browse Field, not a
- * number poster. The region count is a caption on the Field, same shape as
- * CityHomesField.
+ * number poster. The region count is a caption, never a V3Figure hero.
  */
-import Link from 'next/link'
-import { V3Button, V3Field, type V3FieldItem } from '@/components/site/v3'
+import { V3Button, V3Field, V3SourceLine, type V3FieldItem } from '@/components/site/v3'
 
 export function HomeHomesField({
   heading,
@@ -23,7 +21,6 @@ export function HomeHomesField({
     updatedAt: string | null
   }
 }) {
-  const [firstFieldItem, ...restFieldItems] = fieldItems
   const [firstTown, ...restTowns] = towns
 
   return (
@@ -32,6 +29,12 @@ export function HomeHomesField({
         <h1 className="font-display text-sm font-medium leading-5 text-foreground">
           {heading}
         </h1>
+        {count ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            <span className="tabular-nums text-foreground">{count.value}</span>
+            {` ${count.label}`}
+          </p>
+        ) : null}
         {firstTown ? (
           <nav aria-label="Towns" className="mt-3 flex flex-wrap gap-2">
             <V3Button href={firstTown.href} variant="ghost">
@@ -46,50 +49,13 @@ export function HomeHomesField({
         ) : null}
       </header>
 
-      {firstFieldItem ? <HomeFieldPhoto item={firstFieldItem} priority /> : null}
-
       <V3Field
         id="listed"
         ariaLabel="Homes for sale in Central Oregon"
-        items={restFieldItems.length > 0 ? restFieldItems : fieldItems}
-        count={count}
-        footNote={
-          firstFieldItem
-            ? `Listed here: ${fieldItems.length} photographed homes from the live list. Each photograph opens the listing.`
-            : undefined
-        }
+        items={fieldItems}
         emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
       />
+      {count ? <V3SourceLine source={count.source} updatedAt={count.updatedAt} /> : null}
     </>
-  )
-}
-
-function HomeFieldPhoto({
-  item,
-  priority = false,
-}: {
-  item: V3FieldItem
-  priority?: boolean
-}) {
-  if (!item.photoSrc) return null
-
-  return (
-    <Link
-      href={item.href}
-      className="mx-auto block min-w-0 max-w-5xl px-4 text-foreground no-underline sm:px-6"
-    >
-      <img
-        src={item.photoSrc}
-        alt=""
-        width={800}
-        height={600}
-        className="mt-4 h-64 w-full object-cover"
-        loading={priority ? 'eager' : 'lazy'}
-        fetchPriority={priority ? 'high' : 'auto'}
-      />
-      <p className="mt-2 text-sm font-medium tabular-nums">{item.priceLabel}</p>
-      <p className="text-sm text-muted-foreground">{item.title}</p>
-      {item.meta ? <p className="text-sm text-muted-foreground">{item.meta}</p> : null}
-    </Link>
   )
 }

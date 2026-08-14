@@ -44,7 +44,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { V3_ROOT_CLASS, V3Figure, V3SourceLine } from './atoms'
+import { V3_ROOT_CLASS, V3SourceLine } from './atoms'
 import './tokens.css'
 import './V3Field.css'
 
@@ -112,9 +112,10 @@ export type V3FieldProps = {
   /** Same slot, in children position. Ignored when `mapSlot` is passed. */
   children?: V3FieldMapSlot
   /**
-   * The honest count of what is in view, with the trace that backs it. The
-   * figure and its source arrive together, so a count cannot render without the
-   * line that says where it came from.
+   * The honest count of what is in view, with the trace that backs it. Renders
+   * as a caption, never a number hero (Page Grade auto-fail 2). Source arrives
+   * with the figure so a count cannot render without the line that says where
+   * it came from.
    */
   count?: {
     /** Preformatted, e.g. "128". */
@@ -333,9 +334,10 @@ export function V3Field({
         className={cn(V3_ROOT_CLASS, 'v3-field', className)}
       >
         {count ? (
-          <div className="v3-field__count">
-            <V3Figure value={count.value} label={count.label} />
-          </div>
+          <p className="v3-field__count">
+            <span className="v3-field__count-value">{count.value}</span>
+            {` ${count.label}`}
+          </p>
         ) : null}
 
         <div className="v3-field__frame" onMouseLeave={() => setActive(null)}>
@@ -413,47 +415,51 @@ export function V3Field({
             ) : null}
           </div>
 
-          <div className="v3-field__col">
-            <ul className="v3-field__list" role="list">
-              {items.map((item) => (
-                <li key={item.id} className="v3-field__item">
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      'v3-field__row',
-                      hasListingPhoto(item) && 'v3-field__row--has-photo',
-                      active === item.id && 'is-active',
-                    )}
-                    onMouseEnter={() => setActive(item.id)}
-                    onFocus={() => setActive(item.id)}
-                    onBlur={() => setActive(null)}
-                  >
-                    {hasListingPhoto(item) ? (
-                      <img
-                        className="v3-field__thumb"
-                        src={item.photoSrc}
-                        alt=""
-                        width={88}
-                        height={88}
-                        loading="lazy"
-                      />
-                    ) : null}
-                    <span className="v3-field__copy">
-                      <span className="v3-field__price">{item.priceLabel}</span>
-                      <span className="v3-field__title">{item.title}</span>
-                      {item.meta ? (
-                        <span className="v3-field__meta">{item.meta}</span>
+          {usePhotoSurface ? (
+            footNote ? <p className="v3-field__note">{footNote}</p> : null
+          ) : (
+            <div className="v3-field__col">
+              <ul className="v3-field__list" role="list">
+                {items.map((item) => (
+                  <li key={item.id} className="v3-field__item">
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'v3-field__row',
+                        hasListingPhoto(item) && 'v3-field__row--has-photo',
+                        active === item.id && 'is-active',
+                      )}
+                      onMouseEnter={() => setActive(item.id)}
+                      onFocus={() => setActive(item.id)}
+                      onBlur={() => setActive(null)}
+                    >
+                      {hasListingPhoto(item) ? (
+                        <img
+                          className="v3-field__thumb"
+                          src={item.photoSrc}
+                          alt=""
+                          width={88}
+                          height={88}
+                          loading="lazy"
+                        />
                       ) : null}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-              {items.length === 0 ? (
-                <li className="v3-field__empty">{emptyMessage}</li>
-              ) : null}
-            </ul>
-            {footNote ? <p className="v3-field__note">{footNote}</p> : null}
-          </div>
+                      <span className="v3-field__copy">
+                        <span className="v3-field__price">{item.priceLabel}</span>
+                        <span className="v3-field__title">{item.title}</span>
+                        {item.meta ? (
+                          <span className="v3-field__meta">{item.meta}</span>
+                        ) : null}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+                {items.length === 0 ? (
+                  <li className="v3-field__empty">{emptyMessage}</li>
+                ) : null}
+              </ul>
+              {footNote ? <p className="v3-field__note">{footNote}</p> : null}
+            </div>
+          )}
         </div>
 
         {count ? (
