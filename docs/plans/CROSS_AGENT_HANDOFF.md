@@ -1,12 +1,12 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Incoming agent referrals at /refer-a-client. Push + deploy:verify next. No live sends. No referral agreement sent.**
-> Prior: Track 2 P3 leftovers READY `7392b788`. Track 2 P2 READY `6f32f9b3`. Concurrent: pricing seller net (stashed).
+> **NEWEST SUBJECT: Incoming agent referrals LIVE at /refer-a-client. No live sends. No referral agreement sent.**
+> Prior: Track 2 P3 leftovers READY `7392b788`. Track 2 P2 READY `6f32f9b3`. Concurrent: pricing seller net landed on the same tip.
 
-# Current — 2026-08-14 (Grok, inbound agent referral) — pushing now
+# Current — 2026-08-14 (Grok, inbound agent referral) — LIVE
 
 **Track:** New revenue desk. Out-of-area brokers send a Central Oregon buyer or seller to `/refer-a-client`. Destination-market GCI after a 25% referral. No outbound SMS/email. No drip. No ad spend.
 
-**SHA:** inbound referral commit on `587dbe97` (message corrected from a seller-net title collision). No new migration.
+**SHA:** referral `b4bf6b8d` on `origin/main`. Tip `104c01cc` (seller-net stacked after). Production READY `dpl_6v6xZDp114abhCEYmroiY98r5zbq`. No new referral migration. Hosted `sale_pricing_facts` already present (149,402 rows).
 
 **Wired:**
 - Public `/refer-a-client` — v3 Stage → Ledger → Sheet (9 steps, choice intent) → Quiet
@@ -15,11 +15,11 @@
 - Admin `/admin/crm/referrals` — Incoming from other agents above the outgoing handoff queue
 - Nav / sitemap / llms map / page-inventory. Sign-in modal excluded on `/refer-a-client` and `/join`
 
-**Looks:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-refer-a-client/` 390+1280 hero, ledger, form. No OAuth modal.
+**Looks:** `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-refer-a-client/` local 390+1280 hero/ledger/form plus prod-390 and prod-1280. No OAuth modal.
 
 **Next leftover:**
 - After a real inbound lands, write the referral agreement by hand (Matt §1). Do not contact the client first
-- LIVE `/llms.txt` will list the path after deploy
+- LIVE `/llms.txt` already lists the path
 
 **Not this land:** Pricing seller-net staged work is stash `wip-pricing-staged-during-referral-pick`. Older stashes still hold sell-film / SellerLPForm. Do not `git add -A`. Do not push `wt/*`. Did not send a referral or a message.
 
