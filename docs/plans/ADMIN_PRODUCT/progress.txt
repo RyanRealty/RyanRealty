@@ -725,3 +725,5 @@ NOT IN SCOPE
 
 
 
+
+2026-08-13T24:10:00Z TRACK 1 §4 SEO/LLM DIALED. llms.txt golf hub off noindex /lp/central-oregon-golf. Sitemap no longer submits /lp/* or /feed. NWX 3/2 map lists indexable browse path. Gates forbid /lp/ on AI map and sitemap. Evidence docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-seo-llm/EVIDENCE.md. Track 1 §4 done. Track 2 not started.

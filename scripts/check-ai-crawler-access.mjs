@@ -97,6 +97,9 @@ if (!existsSync(LLMS)) {
   if (stripped.includes('${SITE_URL}/reports')) {
     errors.push('llms.txt cites ${SITE_URL}/reports (308 hop to /housing-market/reports). Cite the survivor.')
   }
+  if (/\$\{SITE_URL\}\/lp\//.test(readFileSync(LLMS, 'utf8'))) {
+    errors.push('llms.txt cites ${SITE_URL}/lp/ (noindex paid-arrival). Cite organic survivors such as /central-oregon/golf/{slug}.')
+  }
 }
 
 if (errors.length === 0) {

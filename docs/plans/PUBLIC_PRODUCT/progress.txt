@@ -28,3 +28,5 @@
 2026-08-13T23:40:00Z TRACK 1 REVIEWS LOOK GREEN. feat c07f5638 READY. /reviews first viewport is live Google quotes as written (MJB, E Oster; Audra on 1280). Attribution stays. No star HUD, no paraphrase, no ticker. CTA Value my home. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-reviews/. Next: Market (figures + chart allowed). Track 2 not started.
 
 2026-08-13T23:50:00Z TRACK 1 MARKET LOOK GREEN. Already green. Production `c07f5638` READY. `/housing-market` first viewport is live figures and the chart atom (Instrument + V3Chart year overlay). CTA Value my home. v3 chrome kept. Looks in docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-market/. Next: Track 1 §4 SEO / analytics / GSC / LLM. Track 2 not started.
+
+2026-08-13T24:10:00Z TRACK 1 §4 SEO/LLM DIALED. llms.txt golf hub off noindex LP. Sitemap no longer submits /lp/* or /feed. Three query URLs proven live. Evidence looks/2026-08-13-seo-llm/EVIDENCE.md. Track 1 §4 done. Track 2 not started.

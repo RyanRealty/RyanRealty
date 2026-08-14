@@ -4,8 +4,7 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Track 1 Market GREEN). HEAD `c07f5638` READY.
-Ratchet **56 / 0 / 51**, kb 0. Chrome CTA is Value my home. Next public Look: Track 1 §4 SEO / analytics / GSC / LLM (surfaces we already ship). Do not start Track 2. G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
+**Updated:** 2026-08-13 (Grok, Track 1 §4 SEO/LLM). Dialed llms.txt + sitemap off noindex `/lp/*` and `/feed`. Evidence `docs/plans/PUBLIC_PRODUCT/looks/2026-08-13-seo-llm/`. Track 1 §4 done. Do not start Track 2. G3 week-grant and G4 OAuth are not in Go. Live yes→post is a hard stop.
 
 ---
 
@@ -240,7 +239,7 @@ from the baseline if it drifts.
 | **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | **landed** `317d88de` | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
 | **G2** | Imagine draft on Today | **landed** `def67a92` READY | Produce a draft. Does not stamp yes. Does not post. Admin signed-in 390+1280 look still needs a session. |
 | **G1 / G3 / G4** | live post / week-grant / Paul+Rebecca OAuth | **not in Go** | Hard stops. Tokens already live. Produce is Imagine. Week-grant and OAuth click wait on Matt. |
-| **F1** | `/llms.txt` + JSON-LD + G34/G39/G67 | **landed** `9e11ce83` READY | Named queries cite survivor URLs. Map: `lib/seo/ai-query-map.json`. Live `/llms.txt` lists About, Reviews, Value my home, NWX 3/2. Google still has to recrawl. |
+| **F1** | `/llms.txt` + JSON-LD + G34/G39/G67 | **landed** `9e11ce83` READY; **§4 dial** this session | Named queries cite survivor URLs. Golf hub no longer cites the noindex LP. Sitemap no longer submits `/lp/*` or `/feed`. NWX 3/2 lists the indexable browse path plus the facet URL (AI fetch, noindex). |
 | **P10** | public wrap closing gates | **landed** `d5ebc4db` READY | B=0. Call: invert reports slug + v3 hub wrap + named frozen-LP B-exclusion. Mixed leftover after E-TRACKER: ReportsByCityView, ReportsIndexContent, MetadataBlock. Did not restyle heath. |
 | **D4** | newsletter identity stitch | **landed** `168bfec1` READY | One person record. No fake lead. V3Footer has no newsletter ask. |
 | **Search-stitch** | listing-alert identity stitch | **landed** `fd34a499` READY | Same wrapper as D4. Did not submit. |

@@ -9,6 +9,11 @@
   "pillars": [
     {
       "section": "listings",
+      "label": "Northwest Crossing homes for sale, Bend",
+      "path": "/homes-for-sale/bend/northwest-crossing"
+    },
+    {
+      "section": "listings",
       "label": "3-bedroom, 2-bath homes in Northwest Crossing, Bend",
       "path": "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2"
     },
@@ -79,10 +84,11 @@
       "query": "I need a 3-bedroom, 2-bath in Northwest Crossing",
       "intent": "filtered-inventory-plus-place",
       "citablePaths": [
-        "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2",
-        "/communities/northwest-crossing"
+        "/communities/northwest-crossing",
+        "/homes-for-sale/bend/northwest-crossing",
+        "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2"
       ],
-      "why": "The listings URL applies beds=3 and baths=2 on the Northwest Crossing browse path. The community page answers what Northwest Crossing is.",
+      "why": "Google should cite the community page (indexable Place JSON-LD) and the unfiltered browse path. The beds=3&baths=2 URL stays on the AI map so assistants can fetch filtered inventory. Faceted search is noindex by design (shouldNoIndexSearchVariant).",
       "jsonLd": [
         {
           "file": "app/communities/[slug]/page.tsx",
@@ -95,6 +101,7 @@
       ],
       "llmsSubstrings": [
         "/homes-for-sale/bend/northwest-crossing?beds=3&baths=2",
+        "/homes-for-sale/bend/northwest-crossing",
         "northwest-crossing"
       ]
     },

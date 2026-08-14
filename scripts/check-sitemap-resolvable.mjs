@@ -80,10 +80,10 @@ const FAMILIES = [
   // (slugChecks), else the route resolves but the PAGE 404s.
   { id: 'sell', roots: ['sell'], resolvers: ['app/sell/page.tsx', 'app/sell/valuation/page.tsx', 'app/sell/[intent]/page.tsx'], slugSource: 'lib/lead-landing-content.ts', slugs: ['for-sale-by-owner', 'expired-listings', 'inherited-home'] },
   { id: 'buy', roots: ['buy'], resolvers: ['app/buy/page.tsx', 'app/buy/[intent]/page.tsx'], slugSource: 'lib/lead-landing-content.ts', slugs: ['first-time-home-buyer', 'relocation', 'investment'] },
-  { id: 'lp', roots: ['lp'], resolvers: ['app/lp/tetherow/page.tsx', 'app/lp/bend/page.tsx', 'app/lp/tetherow/heath/page.tsx', 'app/lp/central-oregon-golf/page.tsx'] },
   { id: 'tools', roots: ['tools'], resolvers: ['app/tools/mortgage-calculator/page.tsx', 'app/tools/rental-property-calculator/page.tsx', 'app/tools/appreciation/page.tsx'] },
   // Static single-page families (each is a bare /segment -> app/segment/page.tsx).
-  { id: 'static-singles', roots: ['about', 'contact', 'our-homes', 'videos', 'faq', 'feed', 'reviews', 'join', 'privacy', 'terms', 'accessibility', 'fair-housing', 'dmca', 'activity'], resolvers: ['app/about/page.tsx', 'app/contact/page.tsx', 'app/our-homes/page.tsx', 'app/videos/page.tsx', 'app/faq/page.tsx', 'app/feed/page.tsx', 'app/reviews/page.tsx', 'app/join/page.tsx', 'app/privacy/page.tsx', 'app/terms/page.tsx', 'app/accessibility/page.tsx', 'app/fair-housing/page.tsx', 'app/dmca/page.tsx', 'app/activity/page.tsx'] },
+  // /feed 301s to /videos?view=feed and is noindex — do not emit it.
+  { id: 'static-singles', roots: ['about', 'contact', 'our-homes', 'videos', 'faq', 'reviews', 'join', 'privacy', 'terms', 'accessibility', 'fair-housing', 'dmca', 'activity'], resolvers: ['app/about/page.tsx', 'app/contact/page.tsx', 'app/our-homes/page.tsx', 'app/videos/page.tsx', 'app/faq/page.tsx', 'app/reviews/page.tsx', 'app/join/page.tsx', 'app/privacy/page.tsx', 'app/terms/page.tsx', 'app/accessibility/page.tsx', 'app/fair-housing/page.tsx', 'app/dmca/page.tsx', 'app/activity/page.tsx'] },
 ]
 
 const problems = []
@@ -167,6 +167,15 @@ if (!/allowedNeighborhoodPaths\.add\(/.test(src)) {
 }
 if (!existsSync('lib/sitemap-guard.ts')) problems.push('drift-guard: lib/sitemap-guard.ts (filterRogueCityUrls) is missing')
 if (!existsSync('lib/sitemap-guard.test.ts')) problems.push('drift-guard: lib/sitemap-guard.test.ts (proves the guard catches concat/join/aliased constructions) is missing')
+
+// IA lock 2026-08-11: /lp/* are noindex paid-arrival. Submitting them is the
+// GSC "submitted but noindex" class. /feed is a 301 stub.
+if (/\$\{baseUrl\}\/lp\//.test(src)) {
+  problems.push('IA lock: sitemap must not emit ${baseUrl}/lp/ URLs. /lp/* are noindex paid-arrival (off the organic graph).')
+}
+if (/\$\{baseUrl\}\/feed[`'"\s,}]/.test(src)) {
+  problems.push('/feed 301s to /videos?view=feed and is noindex. Submit /videos, not /feed.')
+}
 
 // --- Check 4: INDEX CONTRACT — /sitemap.xml is a sitemap index, not a urlset.
 //

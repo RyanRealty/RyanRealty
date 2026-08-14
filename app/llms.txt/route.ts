@@ -143,8 +143,7 @@ ${pillarLines('listings')}
 ## Live Music & Shows (venues)
 - Central Oregon live music & show venues: ${SITE_URL}/central-oregon/venues${venueLines}
 
-## Golf
-- Central Oregon golf guide (every course by architect): ${SITE_URL}/lp/central-oregon-golf${golfLines}
+## Golf${golfLines}
 
 ## Trails
 - Central Oregon hiking & mountain-bike trails: ${SITE_URL}/central-oregon/trails${trailLines}

@@ -61,6 +61,9 @@ const strippedLlms = llmsSrc.replaceAll('${SITE_URL}/housing-market/reports', ''
 if (strippedLlms.includes('${SITE_URL}/reports')) {
   errors.push('llms.txt still cites ${SITE_URL}/reports (308 hop). Citation target is /housing-market/reports.')
 }
+if (/\$\{SITE_URL\}\/lp\//.test(llmsSrc)) {
+  errors.push('llms.txt cites ${SITE_URL}/lp/ (noindex paid-arrival). Cite an organic survivor.')
+}
 
 const f1 = (map.queries ?? []).filter((q) => q.source === 'f1')
 if (f1.length < 3) {
@@ -94,6 +97,9 @@ for (const q of map.queries ?? []) {
     const pn = pathnameOf(p)
     if (isPermanentHop(pn, configSrc)) {
       errors.push(`${q.id}: citable path ${p} matches a permanent redirect source in next.config.ts. Cite the survivor.`)
+    }
+    if (pn === '/lp' || pn.startsWith('/lp/')) {
+      errors.push(`${q.id}: citable path ${p} is a noindex LP. Cite an organic survivor.`)
     }
     if (!llmsCovers(p)) {
       errors.push(`${q.id}: llms.txt does not cover citable path ${p}.`)
