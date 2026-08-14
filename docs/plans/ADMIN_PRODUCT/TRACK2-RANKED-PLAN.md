@@ -230,7 +230,7 @@ A broker can walk in and run the daily loops on one person and one file.
 **Bar**
 Production READY on the same SHA as `origin/main`. Hosted `tc_deal_people` applied. A broker can click the surfaces without a second store or a second send path. Matt still gates every outbound message, every publish, Email to Matt, and packet taste.
 
-**P3 leftover (2026-08-14 /endtoend)**
+**P3 leftover (2026-08-14 /endtoend) — READY `7392b788`**
 A broker does not work a second send path or a second deal board.
 - Prospecting is the only expired/FSBO send. Dead dashboard actions refuse.
 - Identified hot visitors become a Today/task (broker-alert). No extra Matt email.

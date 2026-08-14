@@ -1,12 +1,76 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 2 P3 leftovers landing (dead send paths, visitor email off, Pipeline→Closings). Push + deploy:verify next. Matt gates remain: Yes on Today, C copy taste, Email to Matt, publish. No live sends.**
-> Prior: Track 2 P2 READY `6f32f9b3`. Track 2 A+C+B. Track 1 Looks GREEN.
+> **NEWEST SUBJECT: Track 2 P3 leftovers READY `7392b788` (dead send paths, visitor email off, Pipeline→Closings). Matt gates remain: Yes on Today, C copy taste, Email to Matt, publish. No live sends.**
+> Prior: Track 2 P2 READY `6f32f9b3`. Track 2 A+C+B. Track 1 Looks GREEN. Concurrent local dirt: pricing seller net + parked `wt/refer-a-client-20260814`.
 
-# Current — 2026-08-14 (Grok, Track 2 P3 leftovers /endtoend) — landing, push next
+# Current — 2026-08-14 (Grok, Track 2 P3 leftovers /endtoend) — READY
 
-**Track:** 2 P3 leftovers that do not need Matt. A broker does not work a second send path or a second deal board. No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land. Pricing / referral / sitemap dirt in this tree is **not this land**.
+**Track:** 2 P3 leftovers that do not need Matt. A broker does not work a second send path or a second deal board. No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land. Pricing / referral dirt in this tree is **not this land**.
 
-**SHA:** P3 `15c03889` on local main (push next). P2 tip `6f32f9b3` already READY.
+**SHA:** P3 tip `7392b788` on `origin/main`. Production READY (`dpl_3fJ7uEWJfrcLTW4UpGuubtcL6yWY`). Feat `15c03889` + stamp `f9ea186e` + screen-parity fix `7392b788`. P2 tip `6f32f9b3` already READY.
+
+**Hosted migration** `20260814010000_tc_deal_people.sql` already applied on `dwvlophlbvvygjfxcrhm`. 0 rows. P3 has no new migration.
+
+**Wired:**
+- Dead `sendExpiredIntroAction` / FSBO send / `send-doc` refuse with “Send from /admin/prospecting.”
+- Visitor hot-lead cron: 5-minute call task for identified sessions. `visitorEscalateEmailEnabled()` is false. No Resend.
+- `/admin/crm/deals`, `/pipelines`, `[id]`, reporting/deals → `/admin/closings`. Pipeline child gone from People nav. Closings footer no longer links the old board.
+- Packet hero stays `buildThisHomeMarketingPlan`.
+
+**Looks:** `docs/plans/ADMIN_PRODUCT/looks/2026-08-14-track2-p2/` signed-in local 390+1280. Today, person 61670 Start a deal (not submitted), deal 1234-test OREF packet, Closings, Pipeline redirect same bytes as Closings, Prospecting. Did not tap Yes / Email to Matt / Start a deal.
+
+**Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md` (P3 leftover block)
+
+**Next leftover:**
+- Matt taste on C first-touch copy + packet
+- Empty OREF maps on other form versions (overlay locked to 15-page 01/2026 sample)
+- SkySlope remains the live file until cutover
+- Unused CRM kanban islands still on disk under `app/admin/(protected)/crm/deals/`
+- Yes on Today, Email to Matt, and publish stay Matt-gated. Do not send.
+
+**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Uncommitted pricing (`lib/pricing/`, `sale_pricing_facts`) and parked `wt/refer-a-client-20260814` @ `03ac7943`. Do not `git add -A`. Do not pop stash. Do not push `wt/*`.
+
+**Skills read:** endtoend, admin-product-os (orient only), database-canonical-reference SKILL, git-commit.mdc, deploy-verify-before-done.mdc.
+
+# Concurrent — 2026-08-14 (other session, pricing seller net) — local dirt, not origin
+
+ClosePrice is the contract price. Seller concessions come off that number. Hosted schema applied. Selective commit of pricing files only. Do not mix into this P3 docs stamp.
+
+**Track:** CMA / BPO / expired pricing. Contract close and seller net are different numbers.
+
+**SHA:** local main, this land (selective add of pricing files, not `git add -A`). Track 2 P3 and referral stay other lands.
+
+**Measured (docs/DATABASE_FOR_AI_AGENTS.md §0 / §2b, hosted `dwvlophlbvvygjfxcrhm`):**
+- `sale_pricing_facts` 149,402 closed Central Oregon residential sales, 1996-08-20 through 2026-08-13
+- ClosePrice is the contract price. Spark `ConcessionsAmount` + `Concessions` YN change seller net, not ClosePrice
+- 2024+ detached: about 41 to 45 percent report a positive concession, median $9k to $10k when given (1.4 to 1.6 percent of close). Null amount on 2024 and 2025 is YN No (300/300 PK-bounded samples), not missing
+- 2022 to 2023 null amount mixes No, Yes-without-dollars, and blank YN. Do not infer those years
+
+**Hosted schema (applied):**
+- `sale_pricing_facts.concessions_yn`
+- view `sale_pricing_seller_net` (`seller_net` = close minus resolved concessions)
+- RPCs `stamp_sale_pricing_concessions` / `backfill_sale_pricing_concessions_yn`
+- 2024+ YN coverage: 12,611 / 12,611. Older years still draining via cron
+
+**Wired:**
+- `lib/pricing/seller-net.ts` resolve concessions, seller net from price, set median including zeros
+- Estimate + CMA notes + comp table (Close / Conc / Net) + flyer + expired net sheet concession line
+- Facts DAL selects `concessions_amount` + `concessions_yn`
+- Cron `/api/cron/refresh-sale-pricing-facts` stamps YN after each facts drain
+
+**Do not:** treat last ask as net. Time-adjust ClosePrice for comps. Subtract concessions only after the close is picked.
+
+**Next:**
+- Selective commit of pricing files only. Push `main`. `npm run deploy:verify`
+- Re-run the 400-sale backtest after ask-first + seller-net (print MAPE / within 10% on close, and on net where known)
+- Keep draining pre-2024 YN via the cron. Do not TOAST-scan `listings.details` over the full table
+
+**Skills read:** database-canonical-reference, DATABASE_FOR_AI_AGENTS §0/§2/§4, TOAST_READ_DISCIPLINE, cma-data-model, tdd, CROSS_AGENT_HANDOFF.
+
+# Prior — 2026-08-14 (Grok, Track 2 P3 leftovers /endtoend) — READY `7392b788`
+
+**Track:** 2 P3 leftovers that do not need Matt. A broker does not work a second send path or a second deal board. No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land. Pricing / referral dirt in this tree is **not this land**.
+
+**SHA:** P3 tip `7392b788` on `origin/main`. Production READY. P2 tip `6f32f9b3` already READY.
 
 **Hosted migration** `20260814010000_tc_deal_people.sql` already applied on `dwvlophlbvvygjfxcrhm`. 0 rows. P3 has no new migration.
 
