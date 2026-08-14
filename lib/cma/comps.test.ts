@@ -111,6 +111,13 @@ describe('isRuralAcreage — who may reach the rural rungs', () => {
     expect(isRuralAcreage(subject({ lotAcres: 0.18 }), null)).toBe(false)
     expect(isRuralAcreage(subject({ lotAcres: 0.99 }), null)).toBe(false)
   })
+  it('is false for a 1-acre lot in a town that has no Bend GIS mesh', () => {
+    expect(isRuralAcreage(subject({ city: 'Redmond', lotAcres: 1 }), null)).toBe(false)
+    expect(isRuralAcreage(subject({ city: 'Sisters', lotAcres: 1.2 }), null)).toBe(false)
+  })
+  it('is true for a ranch mailing-city lot in those same towns', () => {
+    expect(isRuralAcreage(subject({ city: 'Redmond', lotAcres: 5 }), null)).toBe(true)
+  })
   it('is false inside a mapped Bend neighborhood however large the lot', () => {
     expect(isRuralAcreage(subject({ lotAcres: 40 }), 'river-west')).toBe(false)
   })

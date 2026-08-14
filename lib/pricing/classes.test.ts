@@ -118,6 +118,11 @@ describe('similar-performing subdivision (the gated / different-tier cut)', () =
     expect(similarPerformingSubdivision(749, 48, 200, 3)).toBe(true)
     expect(similarPerformingSubdivision(null, 0, 301, 48)).toBe(true)
   })
+
+  it('drops Awbrey Woods tract against Awbrey Butte custom inside the same neighborhood', () => {
+    expect(similarPerformingSubdivision(457.29, 86, 381.85, 7, 1.15)).toBe(false)
+    expect(similarPerformingSubdivision(457.29, 86, 381.85, 7)).toBe(true)
+  })
 })
 
 describe('remark flags keep the matched phrase', () => {
@@ -145,6 +150,11 @@ describe('plausibleListedClose', () => {
     expect(plausibleListedClose(1_625, 1_680_000)).toBe(false)
     expect(plausibleListedClose(168_000, 1_680_000)).toBe(true)
     expect(plausibleListedClose(500_000, null)).toBe(true)
+  })
+
+  it('drops a close that is over 10× last ask', () => {
+    expect(plausibleListedClose(20_000_000, 1_680_000)).toBe(false)
+    expect(plausibleListedClose(1_800_000, 1_680_000)).toBe(true)
   })
 })
 

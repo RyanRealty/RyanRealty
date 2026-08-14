@@ -289,4 +289,101 @@ describe('walkPricingLadder', () => {
     expect(out.comps.map((c) => c.listingKey).sort()).toEqual(['A', 'B', 'C'])
     expect(out.tiersUsed).toEqual(['subdivision-3mo'])
   })
+
+  it('does not treat three wide-GLA same-subdivision sales as a quality stop', () => {
+    const pool = [
+      sale({ listingKey: 'W1', sqft: 1927, address: '10 Kenwood', closeDate: '2026-07-01' }),
+      sale({ listingKey: 'W2', sqft: 1910, address: '11 Kenwood', closeDate: '2026-06-20' }),
+      sale({ listingKey: 'W3', sqft: 1940, address: '12 Kenwood', closeDate: '2026-06-10' }),
+      sale({
+        listingKey: 'NEAR',
+        sqft: 2480,
+        subdivision: 'Aubrey',
+        subdivisionNorm: 'aubrey',
+        address: '2 Aubrey',
+        latitude: 44.0604,
+        longitude: -121.3204,
+        marketArea: 'bend-old-bend',
+        closeDate: '2026-07-15',
+      }),
+    ]
+    const out = walkPricingLadder(subject({ sqft: 2500, marketArea: 'bend-old-bend' }), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).toContain('NEAR')
+    expect(out.tiersUsed.some((t) => t.endsWith('-wide'))).toBe(true)
+    expect(out.tiersUsed.some((t) => t.startsWith('nearby-'))).toBe(true)
+  })
+
+  it('does not let a sale with no coordinates pass a mile ring', () => {
+    const pool = [
+      sale({
+        listingKey: 'NO_GEO',
+        subdivision: 'Aubrey',
+        subdivisionNorm: 'aubrey',
+        address: '2 Aubrey',
+        latitude: null,
+        longitude: null,
+        closeDate: '2026-07-01',
+      }),
+    ]
+    const out = walkPricingLadder(subject(), pool, { asOf })
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('NO_GEO')
+  })
+
+  it('does not price Awbrey Butte custom off Awbrey Woods tract in the same polygon', () => {
+    const cells = new Map([
+      ['bend:awbrey butte', { medianPpsf: 457.29, n: 86 }],
+      ['bend:awbrey woods', { medianPpsf: 381.85, n: 7 }],
+    ])
+    const pool = [
+      sale({
+        listingKey: 'DEBRON',
+        subdivision: 'Awbrey Woods',
+        subdivisionNorm: 'awbrey woods',
+        address: '20366 Debron',
+        latitude: 44.081947,
+        longitude: -121.331962,
+        marketArea: 'bend-awbrey-butte',
+        closeDate: '2026-07-01',
+        closePpsf: 382,
+      }),
+    ]
+    const out = walkPricingLadder(
+      subject({
+        subdivision: 'Awbrey Butte',
+        subdivisionNorm: 'awbrey butte',
+        latitude: 44.081947,
+        longitude: -121.331962,
+        marketArea: 'bend-awbrey-butte',
+      }),
+      pool,
+      { asOf, cells },
+    )
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('DEBRON')
+  })
+
+  it('does not mix a mapped Bend neighborhood with an unmapped Highway 20 sale', () => {
+    const pool = [
+      sale({
+        listingKey: 'HWY20',
+        subdivision: 'Deschutes River Woods',
+        subdivisionNorm: 'deschutes river woods',
+        address: '1 Highway 20',
+        latitude: 44.12,
+        longitude: -121.26,
+        closeDate: '2026-07-01',
+      }),
+    ]
+    const out = walkPricingLadder(
+      subject({
+        subdivision: 'Ponderous Pines',
+        subdivisionNorm: 'ponderous pines',
+        latitude: 44.099742,
+        longitude: -121.291434,
+        marketArea: 'bend-boyd-acres',
+      }),
+      pool,
+      { asOf },
+    )
+    expect(out.comps.map((c) => c.listingKey)).not.toContain('HWY20')
+  })
 })

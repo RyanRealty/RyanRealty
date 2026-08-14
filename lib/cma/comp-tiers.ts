@@ -128,11 +128,21 @@ export function compTierLadder(subdivisionIlike: string | null): CompTier[] {
 }
 
 /**
- * Rural acreage: outside every mapped polygon AND on an acre or more. Both
- * halves matter. An in-town Redmond or Sisters lot also resolves to no polygon
- * (the GIS mesh covers Bend only), and for THAT subject the city bound is
- * right — dropping it would price an in-town lot off Bend sales.
+ * Rural acreage: outside every mapped polygon AND on an acre or more.
+ *
+ * The GIS mesh is Bend only. A 1-acre lot in Redmond or Sisters also resolves
+ * to no polygon — that is a town lot, not Highway 20. Those towns keep the
+ * city bound until the lot is ranch-sized (5 acres). Unmapped Bend (Highway
+ * 20, Tumalo mailing) on an acre or more is still rural.
  */
+const TOWN_WITHOUT_MESH = new Set(['redmond', 'sisters', 'prineville', 'madras', 'la pine', 'culver'])
+const RANCH_ACRES = 5
+
 export function isRuralAcreage(subject: CmaSubject, marketArea: string | null): boolean {
-  return marketArea == null && (subject.lotAcres ?? 0) >= 1
+  if (marketArea != null) return false
+  const acres = subject.lotAcres ?? 0
+  if (acres < 1) return false
+  const city = (subject.city ?? '').trim().toLowerCase()
+  if (TOWN_WITHOUT_MESH.has(city) && acres < RANCH_ACRES) return false
+  return true
 }

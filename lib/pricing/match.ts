@@ -14,6 +14,7 @@ import {
   plausibleListedClose,
   productCompatible,
   sewerCompatible,
+  SAME_NEIGHBORHOOD_TIER_RATIO,
   similarPerformingSubdivision,
   waterCompatible,
   type AgeBand,
@@ -29,6 +30,7 @@ import {
   PRICING_MIN_COMPS,
   PRICING_QUALITY_STOP,
   PRICING_TARGET_COMPS,
+  isPricingQualityRung,
   pricingTierLadder,
   type AppleStrictness,
   type PricingTier,
@@ -207,9 +209,11 @@ function passesTier(
   // Price-tier + neighborhood cuts on every rung that leaves the subdivision.
   // Same-subdivision sales are the same tier and the same polygon by definition.
   if (!tier.sameSubdivision) {
-    const subjectArea = subject.marketArea ?? resolveMarketArea(subject.latitude, subject.longitude)
-    const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude)
-    if (subjectArea && saleArea && subjectArea !== saleArea) {
+    const subjectArea = subject.marketArea ?? resolveMarketArea(subject.latitude, subject.longitude) ?? null
+    const saleArea = sale.marketArea ?? resolveMarketArea(sale.latitude, sale.longitude) ?? null
+    // Mapped vs unmapped is a different market. Fail-open here let Highway 20
+    // sales into Boyd Acres because Bend GIS is the only mesh.
+    if (subjectArea !== saleArea) {
       return { ok: false, miles: null }
     }
     const subj = cellFor(cells, subject.citySlug, subject.subdivisionNorm)
@@ -220,6 +224,7 @@ function passesTier(
         subj?.n ?? 0,
         comp?.medianPpsf ?? null,
         comp?.n ?? 0,
+        subjectArea != null ? SAME_NEIGHBORHOOD_TIER_RATIO : undefined,
       )
     ) {
       return { ok: false, miles: null }
@@ -230,7 +235,9 @@ function passesTier(
     { lat: subject.latitude, lng: subject.longitude },
     { lat: sale.latitude, lng: sale.longitude },
   )
-  if (tier.maxMiles != null && miles != null && miles > tier.maxMiles) return { ok: false, miles }
+  if (tier.maxMiles != null) {
+    if (miles == null || miles > tier.maxMiles) return { ok: false, miles }
+  }
   return { ok: true, miles }
 }
 
@@ -303,9 +310,7 @@ export function walkPricingLadder(
       )
       if (tier.disclosure) trace.push(tier.disclosure)
     }
-    const qualityRung =
-      tier.sameSubdivision || (tier.maxMiles != null && tier.maxMiles <= 1 && tier.apples === 'strict')
-    if (qualityRung && byKey.size >= PRICING_QUALITY_STOP) {
+    if (isPricingQualityRung(tier) && byKey.size >= PRICING_QUALITY_STOP) {
       trace.push(
         `Stopped at ${byKey.size} apples on ${tier.name}. Three tight sales beat a wider mix.`,
       )

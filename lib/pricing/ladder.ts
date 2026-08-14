@@ -152,3 +152,11 @@ export const PRICING_MIN_COMPS = 3
 export const PRICING_MAX_COMPS = 5
 /** Three same-subdivision (or 1-mile strict) sales are enough. Do not open distance. */
 export const PRICING_QUALITY_STOP = 3
+/** Tight GLA only. ±30% same-street rungs are a size concession, not a quality stop. */
+export const PRICING_TIGHT_SQFT_BAND = 0.15
+
+export function isPricingQualityRung(tier: PricingTier): boolean {
+  const tightSameSub = tier.sameSubdivision && tier.sqftBand <= PRICING_TIGHT_SQFT_BAND
+  const tightMile = tier.maxMiles != null && tier.maxMiles <= 1 && tier.apples === 'strict'
+  return tightSameSub || tightMile
+}

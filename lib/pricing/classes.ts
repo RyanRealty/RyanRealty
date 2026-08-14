@@ -177,13 +177,17 @@ export function lotCompatible(subjectAcres: number | null, compAcres: number | n
   return compAcres >= subjectAcres * 0.4 && compAcres <= subjectAcres * 2.5
 }
 
-/** Close under 10% of last ask is a facts bug, not a distressed sale. */
+/** Close under 10% of last ask, or over 10× last ask, is a facts bug. */
 export const IMPLAUSIBLE_CLOSE_RATIO = 0.1
+export const IMPLAUSIBLE_CLOSE_RATIO_HIGH = 10
 
 export function plausibleListedClose(closePrice: number, lastAsk: number | null | undefined): boolean {
   if (!(closePrice > 0)) return false
   if (lastAsk == null || !(lastAsk > 0)) return true
-  return closePrice >= lastAsk * IMPLAUSIBLE_CLOSE_RATIO
+  return (
+    closePrice >= lastAsk * IMPLAUSIBLE_CLOSE_RATIO &&
+    closePrice <= lastAsk * IMPLAUSIBLE_CLOSE_RATIO_HIGH
+  )
 }
 
 /** 0–2 years from as-of wins over NewConstructionYN=false. Null year and no flag stay unknown. */
@@ -216,6 +220,8 @@ export function productCompatible(a: ProductKey, b: ProductKey): boolean {
  * fail open — excluding on a four-sale sample invents a market.
  */
 export const SUBDIVISION_TIER_RATIO = 1.3
+/** Same GIS neighborhood: tract vs custom (Awbrey Woods $382 vs Awbrey Butte $457). */
+export const SAME_NEIGHBORHOOD_TIER_RATIO = 1.15
 export const SUBDIVISION_TIER_MIN_N = 5
 
 export function similarPerformingSubdivision(
@@ -223,6 +229,7 @@ export function similarPerformingSubdivision(
   subjectN: number,
   compMedianPpsf: number | null,
   compN: number,
+  ratio: number = SUBDIVISION_TIER_RATIO,
 ): boolean {
   if (
     subjectMedianPpsf == null ||
@@ -234,8 +241,8 @@ export function similarPerformingSubdivision(
   ) {
     return true
   }
-  const ratio = compMedianPpsf / subjectMedianPpsf
-  return ratio >= 1 / SUBDIVISION_TIER_RATIO && ratio <= SUBDIVISION_TIER_RATIO
+  const gap = compMedianPpsf / subjectMedianPpsf
+  return gap >= 1 / ratio && gap <= ratio
 }
 
 export type RemarkFlags = {

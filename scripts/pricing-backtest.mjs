@@ -148,7 +148,7 @@ for (const row of picked) {
     sewerClass: row.sewer_class,
     hoaClass: row.hoa_class,
     lotClass: row.lot_class,
-    ruralAcreage: isRuralAcreage({ lotAcres }, marketArea),
+    ruralAcreage: isRuralAcreage({ lotAcres, city: row.city }, marketArea),
     marketArea,
     newConstruction: newConstructionFlag(row),
   }

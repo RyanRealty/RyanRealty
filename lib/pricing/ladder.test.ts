@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pricingTierLadder } from '@/lib/pricing/ladder'
+import { isPricingQualityRung, pricingTierLadder } from '@/lib/pricing/ladder'
 
 describe('pricingTierLadder — time before distance', () => {
   it('walks 3 then 6 then 9 months inside the subdivision before any mile ring', () => {
@@ -22,5 +22,13 @@ describe('pricingTierLadder — time before distance', () => {
       expect(!!t.ruralOnly).toBe(t.name.startsWith('rural-'))
       expect(!!t.ignoreCity).toBe(t.name.startsWith('rural-'))
     }
+  })
+
+  it('does not treat a wide-GLA subdivision rung as a quality stop', () => {
+    const byName = Object.fromEntries(pricingTierLadder().map((t) => [t.name, t]))
+    expect(isPricingQualityRung(byName['subdivision-3mo']!)).toBe(true)
+    expect(isPricingQualityRung(byName['subdivision-3mo-wide']!)).toBe(false)
+    expect(isPricingQualityRung(byName['nearby-1mi-3mo']!)).toBe(true)
+    expect(isPricingQualityRung(byName['nearby-2mi-3mo']!)).toBe(false)
   })
 })

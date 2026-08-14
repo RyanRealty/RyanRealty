@@ -4,7 +4,7 @@
  */
 
 import { isRuralAcreage } from '@/lib/cma/comp-tiers'
-import { resolveMarketArea } from '@/lib/cma/market-area'
+import { marketAreaName, resolveMarketArea } from '@/lib/cma/market-area'
 import type { CmaSubject } from '@/lib/cma/types'
 import {
   classifyHoa,
@@ -168,6 +168,7 @@ export function matchToCompSelection(
   subject: CmaSubject,
   match: PricingMatchResult,
 ): CompSelection & { pricingSales: SelectedPricingComp[] } {
+  const area = resolveMarketArea(subject.latitude, subject.longitude)
   return {
     comps: match.comps.map(pricingSaleToCmaComp),
     excludedOutliers: [],
@@ -176,9 +177,9 @@ export function matchToCompSelection(
     pricingSource: 'facts',
     pricingSales: match.comps,
     diagnostics: {
-      market_area: null,
-      market_area_resolved: false,
-      rural_acreage: false,
+      market_area: marketAreaName(area),
+      market_area_resolved: area != null,
+      rural_acreage: isRuralAcreage(subject, area),
       subject: {
         sqft: subject.sqft ?? null,
         lot_acres: subject.lotAcres ?? null,

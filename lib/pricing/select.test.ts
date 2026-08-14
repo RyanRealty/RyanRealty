@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CmaSubject } from '@/lib/cma/types'
-import { cmaSubjectToPricing, pickCompSource } from '@/lib/pricing/select'
+import { cmaSubjectToPricing, matchToCompSelection, pickCompSource } from '@/lib/pricing/select'
 
 function subject(over: Partial<CmaSubject> = {}): CmaSubject {
   return {
@@ -51,6 +51,46 @@ describe('cmaSubjectToPricing', () => {
     const out = cmaSubjectToPricing(subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73 }))
     expect(out.ruralAcreage).toBe(true)
     expect(out.marketArea).toBeNull()
+  })
+
+  it('does not treat a 1-acre Redmond lot as rural just because Bend GIS has no mesh there', () => {
+    const out = cmaSubjectToPricing(
+      subject({
+        city: 'Redmond',
+        latitude: 44.272,
+        longitude: -121.174,
+        lotAcres: 1.05,
+        subdivision: 'Dry Canyon',
+      }),
+    )
+    expect(out.marketArea).toBeNull()
+    expect(out.ruralAcreage).toBe(false)
+  })
+})
+
+describe('matchToCompSelection', () => {
+  it('records the resolved market area and rural flag', () => {
+    const awbrey = matchToCompSelection(subject(), {
+      comps: [],
+      tiersUsed: [],
+      trace: [],
+      reachedTarget: false,
+      starved: true,
+    })
+    expect(awbrey.diagnostics.market_area).toBe('Awbrey Butte')
+    expect(awbrey.diagnostics.market_area_resolved).toBe(true)
+    expect(awbrey.diagnostics.rural_acreage).toBe(false)
+
+    const rural = matchToCompSelection(subject({ latitude: 44.2, longitude: -121.4, lotAcres: 6.73 }), {
+      comps: [],
+      tiersUsed: [],
+      trace: [],
+      reachedTarget: false,
+      starved: true,
+    })
+    expect(rural.diagnostics.market_area).toBeNull()
+    expect(rural.diagnostics.market_area_resolved).toBe(false)
+    expect(rural.diagnostics.rural_acreage).toBe(true)
   })
 })
 
