@@ -733,3 +733,5 @@ NOT IN SCOPE
 2026-08-14T02:40:00Z TRACK 2 SLICE A LANDED. /admin/today inbound row: who (closed set) + inbound quote + composePersonNextStep + recommended SMS. Yes → sendTodayInboundReply → sendCrmSmsAction → sendGovernedSms → sms_out → dismiss. SMS-only. No quiet-hours override. Email stays Open. Empty draft disables Yes. Did not start C or B. Did not touch stash@{0} or the public site. Next: slice C.
 
 2026-08-14T03:05:00Z TRACK 2 A+C+B LANDED on primary main. A 4bd86153 + e844ac4d READY. C merge e837b296 (1da1d4df) expired/FSBO this-home rewrite + hosted template UPDATE. B merge 7bc5262c (e8e68979) one OREF fill → Email to Matt → seal. No live send. No SkySlope write. Did not pop stash@{0}. Leftover: Matt taste on C, empty OREF field_map, person↔tc_deal.
+
+2026-08-14T03:20:00Z TRACK 2 A+C+B LIVE. origin/main tip 43ea950a READY. Hosted migration applied on dwvlophlbvvygjfxcrhm: FSBO first-touch seed updated; expired live body already diverged so left alone. C/B worktrees removed. No live send.

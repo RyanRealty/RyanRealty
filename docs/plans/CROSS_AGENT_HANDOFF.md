@@ -1,20 +1,23 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 2 A+C+B landed on main. Matt gates remain: Yes on Today, C copy taste, Email to Matt. No live sends.**
+> **NEWEST SUBJECT: Track 2 A+C+B live on origin/main. Matt gates remain: Yes on Today, C copy taste, Email to Matt. No live sends.**
 > Prior: Track 2 ranked plan. Track 1 §4 SEO/LLM done. Track 1 Looks GREEN.
 
-# Current — 2026-08-13 (Grok, Track 2 A+C+B land) — serial merge on primary
+# Current — 2026-08-13 (Grok, Track 2 A+C+B land) — live on origin/main
 
-**Track:** 2 slices A, C, and B are on `main`. No outbound SMS/email from this land. No SkySlope write. `stash@{0}` still not this land.
+**Track:** 2 slices A, C, and B are on `origin/main`. Tip `43ea950a` production READY. No outbound SMS/email from this land. No SkySlope write. `stash@{0}` still not this land. C and B worktrees removed.
 
-**SHAs (confirm on origin/main after this push):**
-- A feat `4bd86153` · yes-form fix `e844ac4d` (production READY) · park marker `774c4d37`
+**SHAs on origin/main:**
+- A feat `4bd86153` · yes-form fix `e844ac4d` (READY) · park marker `774c4d37`
 - C merge `e837b296` (slice `1da1d4df`)
 - B merge `7bc5262c` (slice `e8e68979`)
+- Land class-fixes through tip `43ea950a` (DAL reads, service client, admin-v2 scan)
+
+**Hosted migration** `20260813200000_rewrite_expired_fsbo_first_touch.sql` applied on `dwvlophlbvvygjfxcrhm` (docs/DATABASE_FOR_AI_AGENTS.md §0, CRM copy). FSBO seed matched and updated. Expired seed did not match the live body, so that row was left alone.
 
 **Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`
 
 **Next leftover (not this land):**
-- Matt taste on C first-touch copy + packet
+- Matt taste on C first-touch copy + packet (expired live body was already not the old seed)
 - Empty OREF `field_map` (fill omits unknown/missing bindings)
 - Person ↔ `tc_deal` not done
 - Yes on Today and Email to Matt stay Matt-gated. Do not send.
