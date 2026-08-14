@@ -97,6 +97,9 @@ next-env.d.ts
 # reasoning as admin-product-os: memory lives in docs/plans/PUBLIC_PRODUCT/ (tracked); an
 # untracked runner strands the OS on one machine.
 !.claude/skills/public-product-os/
+# ...and page-grade — the public UX grind (2026-08-14). CLAUDE.md cites it; an
+# untracked skill fails ci:claude-canon in the isolated verify tree.
+!.claude/skills/page-grade/
 .claude/worktrees
 .claude/cache
 .claude/projects
