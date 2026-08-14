@@ -56,8 +56,10 @@ import { CommissionEdit } from './CommissionControls'
 import { ChecklistStatusControl } from './ChecklistControls'
 import { DealContacts } from './DealContacts'
 import { DealEnvelopes, type DealEnvelopesCycle } from './DealEnvelopes'
+import { FillOrefPacket } from './FillOrefPacket'
 import { DocumentName } from './DocumentName'
 import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
+import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/app/actions/tc-oref-packet'
 import {
   COMMISSION_STATUS,
   DOC_COLUMNS,
@@ -203,11 +205,13 @@ function CycleSection({
   showArchived,
   anticipated,
   commissions,
+  orefForm,
 }: {
   cycle: TcCycle
   showArchived: boolean
   anticipated: AnticipatedDocsResult | null
   commissions: TcCommission[]
+  orefForm: PreferredOrefForm | null
 }) {
   const docs = cycle.documents.filter((doc) => (showArchived ? true : !doc.archived))
   const archivedCount = cycle.documents.filter((doc) => doc.archived).length
@@ -274,6 +278,7 @@ function CycleSection({
       ) : null}
 
       <AnticipatedDocs data={anticipated} />
+      <FillOrefPacket cycleId={cycle.id} form={orefForm} />
       <CommissionSection rows={commissions} />
 
       <section aria-label="Documents">
@@ -373,6 +378,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
 
   const contacts = await getDealContacts(deal.id)
   const commissions = await getCommissionsForCycles(deal.cycles.map((c) => c.id))
+  const orefForm = (await getPreferredOrefSaleAgreement()).data
 
   const anticipatedByCycle = new Map<string, AnticipatedDocsResult | null>(
     await Promise.all(
@@ -440,6 +446,7 @@ export default async function TcDealPage({ params, searchParams }: Props) {
               showArchived={showArchived}
               anticipated={anticipatedByCycle.get(cycle.id) ?? null}
               commissions={commissions.filter((r) => r.cycle_id === cycle.id)}
+              orefForm={orefForm}
             />
           </div>
         </details>
