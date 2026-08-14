@@ -6,6 +6,7 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import type { PublicListingRead, PublicRefuseReason } from '@/lib/pricing/public-contract'
 
 export const LISTING_PRICING_CONTRACT_VERSION = 'public-v1-2026-08-14'
@@ -125,12 +126,13 @@ export async function upsertListingPricingRead(row: ListingPricingReadRow): Prom
 async function fetchListingPricingRead(listingKey: string): Promise<ListingPricingReadRow | null> {
   const sb = client()
   if (!sb || !listingKey.trim()) return null
+  const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const { data, error } = await sb
     .from('listing_pricing_reads')
     .select(
       'listing_key, kind, refuse_reason, list_price, comps_close, delta_pct, range_low, range_high, n, facts_ready, new_construction, subdivision, same_subdivision_tight, computed_at, contract_version',
     )
-    .eq('listing_key', listingKey)
+    .eq('listing_key', canonicalKey)
     .maybeSingle()
   if (error) throw new Error(error.message)
   if (!data) return null
