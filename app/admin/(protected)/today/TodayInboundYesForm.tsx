@@ -18,7 +18,9 @@ export function TodayInboundYesForm({ personId, body }: { personId: number; body
     e.preventDefault()
     if (pending || !body.trim()) return
     if (!idempotencyKeyRef.current) idempotencyKeyRef.current = newIdempotencyKey()
-    const fd = new FormData(e.currentTarget)
+    const fd = new FormData()
+    fd.set('personId', String(personId))
+    fd.set('body', body)
     fd.set('idempotencyKey', idempotencyKeyRef.current)
     startTransition(async () => {
       const { error } = await sendTodayInboundReply(fd)
@@ -32,8 +34,6 @@ export function TodayInboundYesForm({ personId, body }: { personId: number; body
 
   return (
     <form onSubmit={onSubmit}>
-      <input type="hidden" name="personId" value={personId} />
-      <input type="hidden" name="body" value={body} />
       <Button type="submit" disabled={pending || !body.trim()} aria-label="Send the recommended text">
         {pending ? 'Sending' : 'Yes'}
       </Button>
