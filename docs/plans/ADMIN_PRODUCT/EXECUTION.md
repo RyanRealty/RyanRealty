@@ -4,7 +4,7 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-14 (Grok, Track 2 P2 person↔deal). Ranked plan: `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`. A Yes-path, C first-touch rewrite, B one OREF fill, and many CRM people on one `tc_deal` are on `main`. Live send is still Matt tapping Yes / Email to Matt. C copy taste is Matt-gated. G3 week-grant and G4 OAuth are not in Go.
+**Updated:** 2026-08-13 (Grok, /endtoend P2 remainder). Ranked plan + goal: `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md` (End-to-end goal section). Person↔deal is on local `main` (many people, one file). This session lands Today approval Yes, inbound valuation C-bar packet, and OREF 001 field overlay, then production-verifies. Live send is still Matt tapping Yes / Email to Matt. C copy taste is Matt-gated. G3 week-grant and G4 OAuth are not in Go.
 
 ---
 

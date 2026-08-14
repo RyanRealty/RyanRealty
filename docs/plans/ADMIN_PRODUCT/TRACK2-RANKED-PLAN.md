@@ -172,12 +172,13 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 
 ### P2 — context that changes the action
 
-- Person ↔ `tc_deal`; create-deal from the person — **landed**
-- `/admin/deals` reads `tc_*` (SkySlope remains the live file until cutover)
-- Inbound valuation first packet aligned to the C bar
+- Person ↔ `tc_deal`; create-deal from the person — **landed** (many people, one file)
+- `/admin/deals` list redirects to Closings (`tc_*`). SkySlope remains the live file until cutover
+- Inbound valuation first packet aligned to the C bar — landing this session
 - Reply-on-thread is the Today row (already locked)
-- One approval yes on Today
-- Dual-intent stays one person
+- One approval yes on Today — landing this session
+- Dual-intent stays one person (unique `deal_id+person_id`)
+- OREF 001 field overlay — landing this session
 
 ### P3 — strip bloat
 
@@ -204,7 +205,30 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 | **B** One OREF from `tc_form_versions` → fill → Matt-owned email → seal | Matt has a sealed PDF in his inbox from deal data | **Landed (code).** Email to Matt is a send (Matt-gated). No SkySlope write. Empty `field_map` leftover. |
 | **C** One expired (or FSBO) first-touch rewrite | Message + packet name THIS house and how we will market THIS house. Still manual. | **Landed (code).** Send and “is it beautiful?” are Matt-gated. |
 
-Build order: **A then C then B then P2 person↔deal landed.** Leftover: empty OREF `field_map`, Matt taste on C. Do not wait on Closings cutover. Do not mix with a public page grind. Do not start other P2 slices in this land.
+Build order: **A then C then B then P2 person↔deal landed.** This session finishes the rest of P2 end to end.
+
+---
+
+## End-to-end goal (2026-08-13 /endtoend)
+
+A broker can walk in and run the daily loops on one person and one file.
+
+**What exists when finished**
+- Today: inbound who / quote / draft / Yes (governed SMS). Ready drafts: Yes stamps the same approval as the queue. Nothing auto-sends or auto-publishes.
+- People: Start a deal from the person. A deal holds many CRM people (buyer, seller, other). Dual-intent stays one person. Spouse/co-buyer can ride the same file.
+- Closings: list is `tc_*`. Deal page shows CRM parties above lender/title contacts. One OREF 001 fills from deal facts onto the blank, emails Matt only, then seals. No SkySlope write.
+- First packets (expired, FSBO, inbound valuation) name THIS home and how we would market THIS home. Manual send.
+
+**What a real user does**
+1. Open Today. Reply or stamp a draft. Yes is the stamp.
+2. Open a person. Start a deal. Add the other parties.
+3. Open the file. Fill OREF 001. Email to Matt when Matt says so. Seal.
+4. Expired / FSBO / Value-my-home packet is a plan for that address, not a brochure.
+
+**Bar**
+Production READY on the same SHA as `origin/main`. Hosted `tc_deal_people` applied. A broker can click the surfaces without a second store or a second send path. Matt still gates every outbound message, every publish, Email to Matt, and packet taste.
+
+**Not this mission:** ads, SkySlope cutover, auto-send, public-site leftover, `stash@{0}`.
 
 ---
 
