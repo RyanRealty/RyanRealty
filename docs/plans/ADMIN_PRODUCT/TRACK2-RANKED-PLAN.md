@@ -1,6 +1,6 @@
 # Track 2 ranked plan — 2026-08-13
 
-**Pass:** slices A, C, B, and P2 (person↔deal, Today approval Yes, inbound valuation C-bar, OREF 001 overlay) landed on `main`. No outbound from the agent. No SkySlope write. Matt still gates Yes on Today, C copy taste, Email to Matt, and publish.
+**Pass:** slices A, C, B, P2, and P3 leftovers that do not need Matt (dead send paths, visitor email rail, Pipeline→Closings) land on `main`. No outbound from the agent. No SkySlope write. Matt still gates Yes on Today, C copy taste, Email to Matt, and publish.
 **SoR:** this file. v0.14 in `BROKER-OPERATING-SYSTEM-PLAN.md` is quarry. Destinations stay locked.
 
 ---
@@ -11,7 +11,7 @@
 - Loop A is **queue + draft**, not “tell me everyone → yes → you send → CRM records it.”
 - `lib/agent` is broker→agent SMS. Reuse the runtime. Do not confuse it with Loop A.
 - Loop B: SkySlope is the live file (D2). In-house has libraries + anticipate + seal. `/admin/deals` still reads the SkySlope mirror. CRM people link to `tc_deal` via `tc_deal_people` (many people, one file).
-- Loop C first SMS is a market-analysis offer. The expired packet’s hero layer is still “what every listing gets.”
+- Loop C first SMS is a market-analysis offer. The expired packet hero is the this-home plan (video, flyers, photo set for THIS address). Generic brochure copy is not the lead.
 - First touch stays manual. Suppression fail-closed. No invented numbers. No prior-agent blame.
 - 11 destinations stay. Extra weight: Today, Messages, People, Prospecting, Valuations, Closings.
 - Ads parked. No second CRM, chatbot, or signing stack.
@@ -34,11 +34,11 @@ Q1 Best · Q2 Simple · Q3 Clear · Q4 E2E. S1 Improve (next copilot / first-tou
 | bpo-deliver | 3 | 3 | 3 | 3 | Stay lender/offer | — | MERGE→cma-deliver surface. Never a buyer packet. |
 | prospecting | 5 | 3 | 3 | 3 | Rewrite message + packet | THIS home’s DOM, ask, photos, list-kit plan | Detect / skip-trace / manual send work. Copy fails the bar. |
 | listing-alert-care | 4 | 3 | 4 | 4 | Keep | — | Buyer alerts. Not Loop C. |
-| visitor-escalate | 2 | 2 | 2 | 2 | Kill the extra email rail | Identified looking-at already wakes | MERGE leftover. Still a cron. |
+| visitor-escalate | 4 | 4 | 4 | 4 | Kill the extra email rail | Identified looking-at already wakes | Landed. Cron creates a 5-min call task. No Resend email. |
 | content-approve | 4 | 3 | 3 | 4 | One yes on Today | — | Today Yes stamps via approveNowAction. Does not publish. |
 | sync-ops | 4 | 3 | 3 | 4 | Keep | — | Not A/B/C. |
 | data-curate | 3 | 3 | 3 | 3 | MERGE→sync-ops | — | Oversight, not a loop. |
-| deal-track | 3 | 2 | 2 | 2 | One deal entity | Person ↔ `tc_deal` | CRM kanban is a leftover store. |
+| deal-track | 3 | 3 | 3 | 3 | One deal entity | Person ↔ `tc_deal` | CRM board redirects to Closings. SkySlope still live. |
 | tc-close | 5 | 3 | 3 | 3 | One OREF fill → Matt email → seal | Deal facts + CRM parties | SkySlope is live. 001 overlay fills when field_map is empty. |
 | weekly-sla-review | 3 | 3 | 3 | 3 | Oversight, not a wake | — | Human ritual. |
 | reporting-truth | 3 | 2 | 3 | 3 | Do not rebuild | — | Sprawl. P4. |
@@ -52,7 +52,7 @@ Q1 Best · Q2 Simple · Q3 Clear · Q4 E2E. S1 Improve (next copilot / first-tou
 |---|---|---|---|
 | CRM deals vs `tc_deals` vs SkySlope | 1 | 2 | P2/P3. SkySlope live until cutover. One in-house deal. |
 | Today vs `/admin/approval-queue` vs `/admin/crm/approvals` | 2 | 3 | P2. One yes. |
-| `expired-outreach.ts` / `fsbo-dashboard.ts` vs `/admin/prospecting` | 2 | 3 | P3. One send path. |
+| `expired-outreach.ts` / `fsbo-dashboard.ts` vs `/admin/prospecting` | 4 | 5 | Landed. Dead send actions refuse. Prospecting is the only cold send. |
 | `lib/agent` vs Loop A | 3 | 3 | Reuse runtime. Different job (broker→agent). |
 | Chrome Golf → `/lp/central-oregon-golf` | 3 | 4 | Not this pass. Paid arrival. Organic is `/central-oregon/golf/{slug}`. |
 
@@ -98,7 +98,7 @@ FSBO (`fsbo-first-touch-v1`):
 
 > Hi, %sender_first_name% with Ryan Realty. I saw you are selling %address% yourself. No pitch, and good luck with the sale. I put together a market analysis for %address% that may help you price and negotiate. Want me to send it over? A little about us: ryan-realty.com/sell
 
-**Live packet layer 2** (`lib/cma/expired-audit.ts` `buildServicesList`): “What every Ryan Realty listing gets” — MLS feeds, photography, 3D tour, weekly report, data-driven pricing, transaction management. That is the `/sell` brochure, not a plan for this house.
+**Live packet layer 2** (`lib/cma/expired-audit.ts` `buildThisHomeMarketingPlan`): hero names THIS address (listing video, flyer set, photo set). Secondary is walkthrough / weekly report / MLS. Render title is “How we would market {address}.” Not the old brochure heading.
 
 **C bar (message + packet, not architecture)**
 
@@ -184,12 +184,12 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 
 ### P3 — strip bloat
 
-- Generic “every listing gets” as the hero of an expired audit
-- Two (three) deal stores as the broker’s job
-- Dead `expired-outreach` / `fsbo-dashboard` send actions
-- Visitor-escalate as a second email rail
-- SkySlope rituals we do not need after one clean in-house packet
-- A 12th destination
+- Generic “every listing gets” as the hero of an expired audit — **landed** (this-home plan is the hero; tests pin the old heading out)
+- Two (three) deal stores as the broker’s job — **landed** (`/admin/crm/deals` + pipelines + `[id]` redirect to Closings; Pipeline dropped from People nav). SkySlope remains the live file until cutover. `crm_deals` rows stay in the DB.
+- Dead `expired-outreach` / `fsbo-dashboard` / `send-doc` send actions — **landed** (refuse; one send path is Prospecting)
+- Visitor-escalate as a second email rail — **landed** (cron still creates a 5-minute call task for identified sessions; no Resend email)
+- SkySlope rituals we do not need after one clean in-house packet — **not this land** (Matt must name a live action)
+- A 12th destination — **not added**. Pipeline child removed.
 
 ### P4 — later
 
@@ -207,7 +207,7 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 | **B** One OREF from `tc_form_versions` → fill → Matt-owned email → seal | Matt has a sealed PDF in his inbox from deal data | **Landed (code).** Email to Matt is a send (Matt-gated). Overlay covers empty 001 map. Other form versions still omit. |
 | **C** One expired (or FSBO) first-touch rewrite | Message + packet name THIS house and how we will market THIS house. Still manual. | **Landed (code).** Send and “is it beautiful?” are Matt-gated. |
 
-Build order: **A then C then B then P2 remainder landed on local main.** Push + production verify next.
+Build order: **A then C then B then P2 remainder then P3 leftovers that do not need Matt.**
 
 ---
 
@@ -230,7 +230,14 @@ A broker can walk in and run the daily loops on one person and one file.
 **Bar**
 Production READY on the same SHA as `origin/main`. Hosted `tc_deal_people` applied. A broker can click the surfaces without a second store or a second send path. Matt still gates every outbound message, every publish, Email to Matt, and packet taste.
 
-**Not this mission:** ads, SkySlope cutover, auto-send, public-site leftover, `stash@{0}`.
+**P3 leftover (2026-08-14 /endtoend)**
+A broker does not work a second send path or a second deal board.
+- Prospecting is the only expired/FSBO send. Dead dashboard actions refuse.
+- Identified hot visitors become a Today/task (broker-alert). No extra Matt email.
+- People nav has no Pipeline. Bookmarks to `/admin/crm/deals` land on Closings.
+- Packet hero stays the this-home plan.
+
+**Not this mission:** ads, SkySlope cutover, auto-send, public-site leftover, `stash@{0}`, a 12th destination.
 
 ---
 

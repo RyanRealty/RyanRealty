@@ -1,33 +1,39 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 2 P2 remainder on local main (`7de19cfb`). Push + deploy:verify next. Matt gates remain: Yes on Today, C copy taste, Email to Matt, publish. No live sends.**
-> Prior: Track 2 A+C+B. Track 1 §4 SEO/LLM done. Track 1 Looks GREEN.
+> **NEWEST SUBJECT: Track 2 P3 leftovers landing (dead send paths, visitor email off, Pipeline→Closings). Push + deploy:verify next. Matt gates remain: Yes on Today, C copy taste, Email to Matt, publish. No live sends.**
+> Prior: Track 2 P2 READY `6f32f9b3`. Track 2 A+C+B. Track 1 Looks GREEN.
 
-# Current — 2026-08-14 (Grok, Track 2 P2 /endtoend) — local main, push next
+# Current — 2026-08-14 (Grok, Track 2 P3 leftovers /endtoend) — landing, push next
 
-**Track:** 2 P2 remainder. A broker can run the daily loops on one person and one file. Dual-intent is still one `crm_people` row (unique `deal_id+person_id`). Two houses = two deals. Roles: buyer | seller | other. No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land.
+**Track:** 2 P3 leftovers that do not need Matt. A broker does not work a second send path or a second deal board. No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land. Pricing / referral / sitemap dirt in this tree is **not this land**.
 
-**SHA:** `7de19cfb` fix(admin): fill OREF names from CRM parties. Includes person↔deal (`16d69b29`), Today approval Yes, inbound valuation C-bar, OREF 001 overlay. Production verify after push.
+**SHA:** P3 `40a5df8c` on local main (push next). P2 tip `6f32f9b3` already READY.
 
-**Hosted migration** `20260814010000_tc_deal_people.sql` applied on `dwvlophlbvvygjfxcrhm` (docs/DATABASE_FOR_AI_AGENTS.md §0 lookup + §2k note). Table `tc_deal_people` live: unique `(deal_id, person_id)`, role check, RLS on, service-role only. Confirmed 0 rows.
+**Hosted migration** `20260814010000_tc_deal_people.sql` already applied on `dwvlophlbvvygjfxcrhm`. 0 rows. P3 has no new migration.
 
 **Wired:**
-- `/admin/today` — inbound Yes (governed SMS). Ready draft Yes stamps via `approveNowAction` (no publish)
-- `/admin/people/[id]` — deals + `StartDealForm` (HiddenField person id)
-- `/admin/deals/[key]` — `DealParties` above `DealContacts`. OREF fill prefers CRM party names, then cycle jsonb. Empty 001 15-page map uses checked-in overlay
-- Closings — `getPartyNamesByDealIds` on `rowContext`
-- Inbound CMA send/report copy names THIS home + this-address plan
+- Dead `sendExpiredIntroAction` / FSBO send / `send-doc` refuse with “Send from /admin/prospecting.”
+- Visitor hot-lead cron: 5-minute call task for identified sessions. `visitorEscalateEmailEnabled()` is false. No Resend.
+- `/admin/crm/deals`, `/pipelines`, `[id]`, reporting/deals → `/admin/closings`. Pipeline child gone from People nav. Closings footer no longer links the old board.
+- Packet hero stays `buildThisHomeMarketingPlan`.
 
-**Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md` (End-to-end goal section)
+**Looks:** `docs/plans/ADMIN_PRODUCT/looks/2026-08-14-track2-p2/` signed-in local 390+1280. Today, person 61670 Start a deal (not submitted), deal 1234-test OREF packet, Closings, Pipeline redirect same bytes as Closings, Prospecting. Did not tap Yes / Email to Matt / Start a deal.
+
+**Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md` (P3 leftover block)
 
 **Next leftover:**
 - Matt taste on C first-touch copy + packet
 - Empty OREF maps on other form versions (overlay locked to 15-page 01/2026 sample)
 - SkySlope remains the live file until cutover
+- Unused CRM kanban islands still on disk under `app/admin/(protected)/crm/deals/`
 - Yes on Today, Email to Matt, and publish stay Matt-gated. Do not send.
 
-**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Do not `git add -A`. Do not pop stash. Do not push `wt/*`. Did not start P3.
+**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Uncommitted pricing (`lib/pricing/`, `sale_pricing_facts`) and referral (`app/refer-a-client/`, inbound-referral). Do not `git add -A`. Do not pop stash. Do not push `wt/*`.
 
-**Skills read:** endtoend, admin-product-os (orient only), database-canonical-reference SKILL, docs/DATABASE_FOR_AI_AGENTS.md §0, git-commit.mdc, supabase-migrations-auto.mdc, deploy-verify-before-done.mdc.
+**Skills read:** endtoend, admin-product-os (orient only), database-canonical-reference SKILL, git-commit.mdc, deploy-verify-before-done.mdc.
+
+# Prior — 2026-08-14 (Grok, Track 2 P2 /endtoend) — P2 READY on origin
+
+**SHA:** `6f32f9b3` READY. Person↔deal (`tc_deal_people`), Today approval Yes, inbound valuation C-bar, OREF 001 overlay. Hosted migration applied (0 rows). No live send.
 
 # Prior — 2026-08-13 (Grok, Track 1 Open houses) — Open houses Look GREEN on production
 

@@ -1,9 +1,9 @@
 'use server'
 
 /**
- * FSBO Dashboard actions — build the CMA, approve+send it by email, and send
- * the initial-contact SMS, each an explicit admin click with fail-closed
- * guards (mirrors the expireds dashboard + intro-SMS posture).
+ * FSBO dashboard leftovers. /admin/fsbos redirects to Prospecting.
+ * Build stays for any stale caller. Send actions refuse — Prospecting
+ * is the only cold-outreach send.
  */
 
 import { revalidatePath } from 'next/cache'
@@ -11,27 +11,12 @@ import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
 import { buildCma } from '@/lib/cma/build'
-import { sendCmaToLead } from '@/lib/cma/send'
-import { updateCmaRowFieldsBySlug } from '@/lib/data'
 import { slugifyAddress } from '@/lib/cma/address-slug'
+import { resolveWritableCmaSlot } from '@/lib/cma/versions'
 import {
-  getLatestBuiltCmaRowForBaseSlug,
-  getLatestClientReadyCmaRowForBaseSlug,
-  resolveWritableCmaSlot,
-} from '@/lib/cma/versions'
-import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
-import { isSuppressed } from '@/lib/crm/suppressions'
-import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
-import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
-import { buildMergeContext } from '@/lib/crm/merge-context'
-import {
-  buildFsboFirstTouchSms,
-  firstTouchFactsFromProspect,
-  isCanonicalFirstTouchBody,
-} from '@/lib/crm/first-touch-copy'
-import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
-
-const SMS_TEMPLATE_KEY = 'fsbo-first-touch-v1'
+  retiredProspectingSendDataError,
+  retiredProspectingSendError,
+} from '@/lib/prospecting/retired-send'
 
 async function requireAdmin(): Promise<boolean> {
   const session = await getSession()
@@ -44,36 +29,29 @@ type FsboRow = {
   street_address: string | null
   city: string | null
   postal_code: string | null
-  list_price: number | null
   owner_name: string | null
   contact_phone: string | null
   contact_email: string | null
-  enrichment_notes: string | null
-  status: string | null
-  fub_person_id: number | null
-  outreach_crm_person_id: number | null
-  outreach_sms_sent_at: string | null
 }
 
 async function getFsboRow(fsboUrl: string): Promise<FsboRow | null> {
   const sb = createServiceClient()
   const { data } = await sb
     .from('fsbo_listings')
-    .select('fsbo_url, street_address, city, postal_code, list_price, owner_name, contact_phone, contact_email, enrichment_notes, status, fub_person_id, outreach_crm_person_id, outreach_sms_sent_at')
+    .select('fsbo_url, street_address, city, postal_code, owner_name, contact_phone, contact_email')
     .eq('fsbo_url', fsboUrl)
     .maybeSingle()
   return (data as FsboRow | null) ?? null
 }
 
-export async function buildFsboCmaAction(fsboUrl: string): Promise<{ data: { slug: string } | null; error: string | null }> {
+export async function buildFsboCmaAction(
+  fsboUrl: string,
+): Promise<{ data: { slug: string } | null; error: string | null }> {
   try {
     if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
     const f = await getFsboRow(fsboUrl)
     if (!f) return { data: null, error: 'FSBO listing not found' }
     if (!f.street_address) return { data: null, error: 'No street address on the FSBO record' }
-    // Land the build on a writable slot: rebuild the open draft in place, or
-    // open a new --vN document after a finalized/delivered CMA — never clobber
-    // a protected document back to draft (lib/cma/versions.ts).
     const slot = await resolveWritableCmaSlot(slugifyAddress(f.street_address))
     if (!slot.ok) return { data: null, error: slot.error }
     const slug = slot.slug
@@ -82,7 +60,12 @@ export async function buildFsboCmaAction(fsboUrl: string): Promise<{ data: { slu
       rawAddress: f.street_address,
       city: f.city,
       postalCode: f.postal_code,
-      client: { name: f.owner_name, email: f.contact_email, phone: f.contact_phone, notes: 'FSBO CMA (dashboard build)' },
+      client: {
+        name: f.owner_name,
+        email: f.contact_email,
+        phone: f.contact_phone,
+        notes: 'FSBO CMA (dashboard build)',
+      },
       requestSource: 'fsbo-dashboard',
     })
     if (!res.ok) return { data: null, error: res.error ?? 'CMA build failed' }
@@ -95,141 +78,14 @@ export async function buildFsboCmaAction(fsboUrl: string): Promise<{ data: { slu
 }
 
 export async function sendFsboCmaEmailAction(
-  fsboUrl: string,
-  opts: { acknowledgeReview?: boolean } = {},
+  _fsboUrl: string,
+  _opts: { acknowledgeReview?: boolean } = {},
 ): Promise<{ data: { transport: string } | null; error: string | null }> {
-  try {
-    if (!(await requireAdmin())) return { data: null, error: 'Unauthorized' }
-    const f = await getFsboRow(fsboUrl)
-    if (!f) return { data: null, error: 'FSBO listing not found' }
-    if (/HARD STOP|LITIGATOR/i.test(String(f.enrichment_notes ?? ''))) {
-      return { data: null, error: 'Hard-stop contact. Do not contact.' }
-    }
-    if (f.status === 'gone') return { data: null, error: 'This FSBO has come off the market.' }
-    if (!f.contact_email) return { data: null, error: 'No owner email on file.' }
-    if (!f.street_address) return { data: null, error: 'No street address on the FSBO record' }
-
-    // Resolve the NEWEST BUILT document for the address (base slug or --vN):
-    // never an older delivered document when a fresh one exists, and never an
-    // unbuilt intake placeholder (finalizing one would strand an empty
-    // protected row and the send would fail rendering).
-    const latest = await getLatestBuiltCmaRowForBaseSlug(slugifyAddress(f.street_address))
-    if (!latest) return { data: null, error: 'No CMA built yet. Build it first.' }
-    const { slug, row } = latest
-    const bs = (row.build_summary ?? {}) as Record<string, unknown>
-    const needsReview = String(bs.needs_review ?? '') === 'true' || bs.needs_review === true
-    if (needsReview && !opts.acknowledgeReview) {
-      return { data: null, error: 'This CMA is flagged for review. Open it, review the flags, then confirm the acknowledgment to send.' }
-    }
-    if (!(row.client_email as string | null)?.trim()) {
-      await updateCmaRowFieldsBySlug(slug, { client_email: f.contact_email.toLowerCase() })
-    }
-    if (String(row.status ?? '') === 'draft') {
-      const fin = await updateCmaRowFieldsBySlug(slug, { status: 'finalized', finalized_at: new Date().toISOString() })
-      if (!fin.ok) return { data: null, error: fin.error ?? 'Approve failed' }
-    }
-    const sent = await sendCmaToLead(slug)
-    if (!sent.ok) return { data: null, error: sent.error ?? 'Send failed' }
-    revalidatePath('/admin/fsbos')
-    return { data: { transport: sent.transport ?? 'gmail' }, error: null }
-  } catch (err) {
-    console.error('[sendFsboCmaEmailAction]', err)
-    return { data: null, error: 'Send failed unexpectedly' }
-  }
+  return retiredProspectingSendDataError()
 }
 
 export type FsboSmsResult = { ok: true; sid: string } | { ok: false; error: string }
 
-/** Initial-contact SMS — every guard re-runs at send, fail-closed. */
-export async function sendFsboIntroSmsAction(fsboUrl: string): Promise<FsboSmsResult> {
-  try {
-    if (!(await requireAdmin())) return { ok: false, error: 'Unauthorized' }
-    const sb = createServiceClient()
-    const f = await getFsboRow(fsboUrl)
-    if (!f) return { ok: false, error: 'FSBO listing not found.' }
-    if (/HARD STOP|LITIGATOR/i.test(String(f.enrichment_notes ?? ''))) {
-      return { ok: false, error: 'Hard-stop contact (litigator / TCPA / deceased flag). Do not text.' }
-    }
-    if (f.status === 'gone') return { ok: false, error: 'This FSBO has come off the market.' }
-    if (f.outreach_sms_sent_at) return { ok: false, error: 'Intro text already sent to this owner.' }
-    if (!f.contact_phone) return { ok: false, error: 'No owner phone on file.' }
-    if (inSmsQuietHours()) return { ok: false, error: 'TCPA quiet hours (before 8am or after 9pm Pacific). Try later.' }
-    const to = toE164(f.contact_phone)
-    if (!to) return { ok: false, error: 'Owner phone did not normalize to E.164.' }
-
-    // Native lead (created on first send if the cron skipped it).
-    const lead = await ensureNativeLead({
-      name: f.owner_name ?? `Owner of ${f.street_address}`,
-      email: f.contact_email,
-      phone: f.contact_phone,
-      source: 'fsbo-outreach',
-      assignedBroker: 'matt',
-    })
-    if (!(lead.personId > 0)) return { ok: false, error: 'Could not create the CRM contact.' }
-    const sup = await isSuppressed(lead.personId, 'sms')
-    if (sup.suppressed) return { ok: false, error: `This contact has opted out of texting (${sup.reasons.join(', ')}).` }
-
-    const { data: tpl } = await sb
-      .from('crm_templates')
-      .select('body')
-      .eq('key', SMS_TEMPLATE_KEY)
-      .eq('channel', 'sms')
-      .eq('is_active', true)
-      .maybeSingle()
-    if (!tpl?.body) {
-      return { ok: false, error: `SMS template ${SMS_TEMPLATE_KEY} is not active yet. Approve the template wording first.` }
-    }
-    const { data: personRow } = await sb
-      .from('crm_people')
-      .select('name, first_name, last_name, stage, source, emails, phones, addresses, custom')
-      .eq('id', lead.personId)
-      .maybeSingle()
-    const ctx = await buildMergeContext({ person: undefined, senderSlug: 'matt' })
-    ctx.property = { ...(ctx.property ?? {}), address: f.street_address ?? '' }
-    const clientReady = f.street_address
-      ? await getLatestClientReadyCmaRowForBaseSlug(slugifyAddress(f.street_address)).catch(() => null)
-      : null
-    const cmaLink = clientReady?.slug ? `https://ryan-realty.com/cma/${clientReady.slug}` : null
-    const personLike = {
-      ...(personRow ?? {}),
-      custom: { ...((personRow?.custom as Record<string, unknown> | null) ?? {}), ...(cmaLink ? { cmaLink } : {}) },
-    } as MergePersonLike
-    const merged = isCanonicalFirstTouchBody('fsbo', String(tpl.body))
-      ? buildFsboFirstTouchSms(
-          firstTouchFactsFromProspect({
-            address: f.street_address,
-            listPrice: f.list_price != null ? Number(f.list_price) : null,
-            senderFirstName: ctx.sender?.firstName ?? null,
-            cmaLink,
-          }),
-        )
-      : renderCrmMerge(String(tpl.body), personLike, ctx)
-    const unresolved = findUnresolvedMergeTokens(merged)
-    if (unresolved.length > 0) {
-      return { ok: false, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.` }
-    }
-    const { instrumentSmsLinks } = await import('@/lib/data/crm/shortLinks')
-    const body = await instrumentSmsLinks(merged, { personId: lead.personId, broker: 'matt' }).catch(() => merged)
-
-    const sent = await sendSmsViaMessagingService({ to, body })
-    if (!sent.ok) return { ok: false, error: sent.error }
-    await sb.from('crm_timeline').insert({
-      person_id: lead.personId,
-      kind: 'sms_out',
-      title: 'FSBO outreach intro SMS',
-      body,
-      payload: { fsbo_url: f.fsbo_url, template_key: SMS_TEMPLATE_KEY, sid: sent.sid, queue: 'fsbo-outreach' },
-      broker: 'matt',
-      source: 'app',
-    })
-    await sb
-      .from('fsbo_listings')
-      .update({ outreach_sms_sent_at: new Date().toISOString(), outreach_sms_sid: sent.sid, outreach_crm_person_id: lead.personId })
-      .eq('fsbo_url', f.fsbo_url)
-    revalidatePath('/admin/fsbos')
-    return { ok: true, sid: sent.sid }
-  } catch (err) {
-    console.error('[sendFsboIntroSmsAction]', err)
-    return { ok: false, error: 'Send failed unexpectedly.' }
-  }
+export async function sendFsboIntroSmsAction(_fsboUrl: string): Promise<FsboSmsResult> {
+  return retiredProspectingSendError()
 }

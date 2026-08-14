@@ -110,11 +110,11 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the nav budget: 36 superuser items, 25 broker items (P9 end-state: Oversight −4+1, Valuations +3 / Prospecting leaf −2, Reports 0, Audiences +1 su, Content −5 su, Settings hub +1 both)', () => {
+  it('renders the nav budget: 35 superuser items, 24 broker items (P3: Pipeline child folded into Closings)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
-    expect(count('superuser')).toBe(36)
-    expect(count('broker')).toBe(25)
+    expect(count('superuser')).toBe(35)
+    expect(count('broker')).toBe(24)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {
@@ -122,7 +122,7 @@ describe('shell projection (one nav source for every surface)', () => {
     const home = sections.find((s) => s.label === 'Today')!
     expect(home.items).toEqual([{ label: 'Today', href: '/admin/today', icon: 'dashboard' as const }])
     const people = sections.find((s) => s.label === 'People')!
-    expect(people.items.map((i) => i.label)).toContain('Pipeline')
+    expect(people.items.map((i) => i.label)).not.toContain('Pipeline')
     expect(people.items.map((i) => i.label)).not.toContain('People')
   })
 
@@ -162,7 +162,7 @@ describe('shell projection (one nav source for every surface)', () => {
     expect(activeSections('/admin/crm/sequences')).toEqual(['Settings'])
     expect(activeSections('/admin/crm/57297')).toEqual(['People']) // lead detail → People (bridge-era redirect route)
     expect(activeSections('/admin/people/57297')).toEqual(['People']) // v2 person page (Phase 11B/B3 repoint target)
-    expect(activeSections('/admin/crm/deals')).toEqual(['People']) // pipeline, NOT Transactions
+    expect(activeSections('/admin/closings')).toEqual(['Closings'])
     expect(activeSections('/admin/today')).toEqual(['Today'])
     expect(activeSections('/admin/help')).toEqual([]) // non-nav route lights nothing
   })

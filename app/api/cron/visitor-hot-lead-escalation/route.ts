@@ -8,17 +8,13 @@
  *   - IDENTIFIED session (resolves to a crm_people row via crm_person_id,
  *     or fub_person_id → crm_people.fub_legacy_id for legacy sessions):
  *       1. Create a 5-minute native call task on the person (crm_tasks via
- *          createNativeTask — the in-house replacement for the dead FUB
- *          createRealtimeTask, FUB decommissioned 2026-06-24).
- *       2. Send an alert email to MATT_ALERT_EMAIL with the journey
- *          summary (top pages, listings viewed, score, source) linking to
- *          the native CRM person page (/admin/people/<personId>).
+ *          createNativeTask). That is the broker-alert merge — Today, not
+ *          a second email rail.
+ *       2. Do not email Matt. Looking-at already wakes identified visitors.
  *       3. Set hot_lead_fired_at so we never fire twice for the same session.
  *
  *   - ANONYMOUS session (no CRM person):
- *       1. Send an alert email to MATT_ALERT_EMAIL labeled "anonymous hot
- *          visitor" with the journey summary + a remarketing audience hint.
- *       2. Set hot_lead_fired_at.
+ *       1. No email. No task. Mark fired so the cron does not retry.
  *
  * The threshold is environment-configurable so we can tune it without a
  * deploy (set VISITOR_HOT_LEAD_THRESHOLD in Vercel env).
@@ -34,6 +30,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { visitorEscalateEmailEnabled } from '@/lib/crm/visitor-escalate'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -281,8 +278,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, threshold, escalated: 0, message: 'no hot sessions' })
   }
 
+  const emailOn = visitorEscalateEmailEnabled()
   const [eventsBySession, personBySession] = await Promise.all([
-    fetchTopEventsForSessions(sessions.map((s) => s.session_id)),
+    emailOn ? fetchTopEventsForSessions(sessions.map((s) => s.session_id)) : Promise.resolve(new Map<string, TopEvent[]>()),
     resolveNativePersons(sessions),
   ])
   const firedSessionIds: string[] = []
@@ -291,8 +289,6 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
 
   for (const session of sessions) {
-    const events = eventsBySession.get(session.session_id) ?? []
-    const summary = summarizeJourney(events)
     const person = personBySession.get(session.session_id) ?? null
     const isIdentified = !!person
 
@@ -315,12 +311,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 2. Alert email to Matt for every hot session (identified or not)
-    const subjectPrefix = isIdentified ? 'Hot lead' : 'Hot anonymous visitor'
-    const subject = `${subjectPrefix} (score ${session.engagement_score}) — ${formatSource(session)} from ${formatGeo(session)}`
-    const html = buildAlertEmailHtml(session, events, summary, person)
-    const sent = await sendAlertEmail(html, subject)
-    if (sent) emailsSent += 1
+    // 2. Extra email rail is off (visitor-escalate MERGE→broker-alert).
+    if (emailOn) {
+      const events = eventsBySession.get(session.session_id) ?? []
+      const summary = summarizeJourney(events)
+      const subjectPrefix = isIdentified ? 'Hot lead' : 'Hot anonymous visitor'
+      const subject = `${subjectPrefix} (score ${session.engagement_score}) — ${formatSource(session)} from ${formatGeo(session)}`
+      const html = buildAlertEmailHtml(session, events, summary, person)
+      const sent = await sendAlertEmail(html, subject)
+      if (sent) emailsSent += 1
+    }
 
     firedSessionIds.push(session.session_id)
   }

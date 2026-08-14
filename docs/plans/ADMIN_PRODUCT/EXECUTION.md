@@ -4,7 +4,7 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-14 (Grok, /endtoend P2 remainder merged). Ranked plan + goal: `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`. On local `main`: person↔deal, Today approval Yes, inbound valuation C-bar, OREF 001 overlay + CRM party names. Production verify after push. Live send is still Matt tapping Yes / Email to Matt. C copy taste is Matt-gated. G3 week-grant and G4 OAuth are not in Go.
+**Updated:** 2026-08-14 (Grok, /endtoend P3 leftovers). Ranked plan + goal: `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`. P2 is on `origin/main` `6f32f9b3` READY. P3 leftovers that do not need Matt: dead send paths refuse, visitor email rail off, Pipeline→Closings. Live send is still Matt tapping Yes / Email to Matt. C copy taste is Matt-gated. SkySlope rituals and a 12th destination are not this land. G3 week-grant and G4 OAuth are not in Go.
 
 ---
 
@@ -127,7 +127,8 @@ file is required, the first agent to need it takes the lease and the other waits
 | Track 2 A | **landed** `4bd86153` / fix `e844ac4d` READY | `/admin/today` inbound: who + quote + next + draft. Yes → `sendCrmSmsAction` → `sendGovernedSms`. SMS-only. No quiet-hours override. Email stays Open. |
 | Track 2 C | **landed** merge `e837b296` (`1da1d4df`) | Expired + FSBO first-touch rewrite (this-home copy + packet plan). Hosted migration `20260813200000_rewrite_expired_fsbo_first_touch.sql` (UPDATE seed bodies only). Manual send. Matt taste still open. |
 | Track 2 B | **landed** merge `7bc5262c` (`e8e68979`) | One OREF from `tc_form_versions` → fill from deal → Email to Matt → seal. No SkySlope write. Empty `field_map` omits bindings. |
-| Track 2 P2 | **landed** `16d69b29` | Many CRM people on one `tc_deal` via `tc_deal_people`. Start from the person. Parties on the deal above lender/title. Closings show names. No SkySlope write. |
+| Track 2 P2 | **landed** `16d69b29` / tip `6f32f9b3` READY | Many CRM people on one `tc_deal` via `tc_deal_people`. Start from the person. Parties on the deal above lender/title. Closings show names. OREF overlay + Today approval Yes + inbound C-bar. No SkySlope write. |
+| Track 2 P3 leftovers | **landed** `40a5df8c` | Dead expired/FSBO/send-doc actions refuse. Visitor cron creates a call task, no Resend email. `/admin/crm/deals*` → Closings. Pipeline dropped from People nav. Closings footer no longer advertises the old board. Packet hero is the this-home plan. |
 
 Chrome is live. Mixed routes sit under v3 chrome; they are quarry, not done. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 

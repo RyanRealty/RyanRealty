@@ -122,7 +122,7 @@ export const DESTINATIONS: NavDestination[] = [
       // People · Oversight. Deals + Activity lost their tabs to Prospecting and
       // Oversight (menu children remain until their families roll).
       { label: 'Search', href: '/admin/people', icon: 'users', capability: 'people.view', tab: { order: 4, label: 'People' } },
-      { label: 'Pipeline', href: '/admin/crm/deals', icon: 'layers', capability: 'people.view' },
+      // Pipeline (/admin/crm/deals) folded into Closings — one deal entity.
       // Activity moved to Oversight (P9 roll:oversight — it is a supervision
       // feed, not a people job; reachable under Oversight's All tools).
       { label: 'Tasks', href: '/admin/crm/tasks', icon: 'list-todo', capability: 'tasks.use' },

@@ -152,6 +152,27 @@ const DEAD_FILES = [
       'index. Zero importers confirmed after the index became a redirect to ' +
       '/admin/expireds.',
   },
+  {
+    path: 'components/admin/expired/ExpiredOutreachRow.client.tsx',
+    reason:
+      'Retired expired-outreach send button. Zero page importers. Send is ' +
+      'sendProspectingIntro at /admin/prospecting.',
+  },
+  {
+    path: 'components/admin/expired/ExpiredAuditActions.client.tsx',
+    reason:
+      'Retired expired-dashboard send island. Zero page importers. Send is Prospecting.',
+  },
+  {
+    path: 'components/admin/fsbo/FsboActions.client.tsx',
+    reason:
+      'Retired FSBO-dashboard send island. Zero page importers. Send is Prospecting.',
+  },
+  {
+    path: 'components/admin/SendDocDialog.client.tsx',
+    reason:
+      'Retired expired/FSBO compose dialog. Only the two deleted islands imported it.',
+  },
 ]
 
 // ---------------------------------------------------------------------------

@@ -5,9 +5,9 @@
 // Named for the outcome, not "deals" — a word two dead systems fought over.
 // Lenses by stage; each row opens the full TC deal page (docs, signing,
 // commissions, checklist) which stays at /admin/deals/[key]. The legacy
-// skyslope-mirror LIST at /admin/deals is absorbed (redirect bridge, same
-// commit); the pre-contract CRM pipeline board stays one tap away until the
-// person-stage migration (P3 lock: pre-close interest = person stage + tasks).
+// skyslope-mirror LIST at /admin/deals and the CRM kanban at /admin/crm/deals*
+// are redirect bridges here (P3: one deal entity). SkySlope stays the live
+// file until cutover.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getClosingsBoard, type ClosingDealRow } from '@/lib/data/tc/closings'
@@ -181,10 +181,6 @@ export default async function ClosingsPage() {
         {' · '}
         <Link href="/admin/forms" style={{ color: 'var(--a-accent)' }}>
           Forms
-        </Link>
-        {' · '}
-        <Link href="/admin/crm/deals" style={{ color: 'var(--a-accent)' }}>
-          Pre-contract pipeline
         </Link>
       </p>
     </div>

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-13T08:02:05.778Z",
+  "generatedAt": "2026-08-14T05:19:39.871Z",
   "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 193,
+  "count": 189,
   "names": [
     "components/ActivityFeedCard.tsx",
     "components/ActivityFeedSlider.tsx",
@@ -28,9 +28,6 @@
     "components/admin/crm/MembershipToggles.tsx",
     "components/admin/crm/NextStepCard.tsx",
     "components/admin/crm/source-labels.ts",
-    "components/admin/expired/ExpiredAuditActions.client.tsx",
-    "components/admin/expired/ExpiredOutreachRow.client.tsx",
-    "components/admin/fsbo/FsboActions.client.tsx",
     "components/admin/hooks/useIdempotentAction.ts",
     "components/broker/BrokerBio.tsx",
     "components/broker/BrokerCard.tsx",
@@ -187,7 +184,6 @@
     "lib/data/expired/dashboard.ts",
     "lib/data/fsbo/dashboard.ts",
     "lib/email-templates/layout.tsx",
-    "lib/grok-image.ts",
     "lib/lead-scoring.ts",
     "lib/listing-highlights.ts",
     "lib/market-condition.ts",

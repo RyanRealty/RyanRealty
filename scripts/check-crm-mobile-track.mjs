@@ -119,7 +119,7 @@ const PENDING = [
   'M7 remaining pickers — Source, Time frame, relationships, §25.10 tags full-screen, §25.11 address map, header Edit mode, per-tab FAB sheets [lead detail]',
   'M8 mobile Home Dashboard parity (mob-44): /admin/broker-dashboard',
   'M9 mobile Settings (mob-06): /admin/crm/settings + all 16 sub-pages (appointments · areas · assignment · brokers · company · custom-fields · groups · lead-flows · market-reports · ponds · segments · stages · suppression · tags · team · templates)',
-  'M10 mobile deals (§10/FUB §12i): /admin/crm/deals · /admin/crm/deals/[id]',
+  // M10 removed 2026-08-14: /admin/crm/deals* redirect to Closings (one deal entity).
   'M11 mobile workflows/automations: /admin/crm/sequences · /admin/crm/sequences/[id]/edit · /admin/crm/workflows · /admin/crm/automations',
   'M12 mobile reporting suite (12 reports usable at 390px): /admin/crm/reporting + agent-activity · agent-goals · appointments · batch-emails · call-logs · calls · contact-attempts · lead-sources · overview · properties · speed-to-lead · texts',
   'M13 mobile import: /admin/crm/import + [id] · new · new/map · new/preview',
