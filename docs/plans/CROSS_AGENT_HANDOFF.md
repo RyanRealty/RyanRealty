@@ -72,9 +72,9 @@ Agent leftovers that do not need Matt. CRM Pipeline islands deleted (redirects s
 
 **Still open, not Matt-gated:** other OREF maps (need measured blanks), SkySlope live file, `crm-deals` mutations with no UI, pre-2024 YN drain (cron), one-click form PDF pull.
 
-# Concurrent — 2026-08-14 (Grok, pricing audit leftovers) — local, pushing
+# Concurrent — 2026-08-14 (Grok, pricing audit leftovers) — READY `67207069`
 
-1–5 LIVE `4701a30e` (production READY). Hosted `20260814152953` applied. This land is the leftover matcher holes:
+1–5 LIVE `4701a30e`. Leftovers LIVE `67207069` (production READY). Hosted `20260814152953` already applied. Matcher holes closed:
 
 1. Quality stop is tight GLA only. `subdivision-*-wide` (±30%) does not stop the ladder.
 2. `plausibleListedClose` drops a close over 10× last ask, not only under 10%.
