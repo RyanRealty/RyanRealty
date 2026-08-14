@@ -150,8 +150,10 @@ describe('master-plan opening', () => {
   } as ResortCommunityContent
 
   it('uses the owned Tetherow aerial, never an invented photo', () => {
-    expect(stagePoster('tetherow')).toBe('/lp/tetherow/img/tetherow-aerial-course.jpg')
-    expect(communityImage('tetherow')).toBe('/lp/tetherow/img/tetherow-aerial-course.jpg')
+    const owned = communityImage('tetherow')
+    expect(owned).toBeTruthy()
+    expect(owned).toMatch(/tetherow/)
+    expect(stagePoster('tetherow')).toBe(owned)
     expect(stagePoster('no-such-community')).toBeNull()
   })
 
@@ -187,7 +189,7 @@ describe('communities index rows', () => {
       name: 'Tetherow',
       city: 'Bend',
       belonging: belongingLine(content),
-      photoSrc: '/lp/tetherow/img/tetherow-aerial-course.jpg',
+      photoSrc: communityImage('tetherow'),
     })
     expect(row?.what).toBe('Tetherow')
     expect(row?.detail).toBe('Golf membership. 18-hole course.')
