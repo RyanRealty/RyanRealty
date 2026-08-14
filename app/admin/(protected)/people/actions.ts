@@ -10,6 +10,7 @@
  */
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { createDealFromPersonAction } from '@/app/actions/tc-deal-people'
 import { kickoffCmaForContactAction } from '@/app/actions/crm-cma-kickoff'
 import {
   addCrmNoteAction,
@@ -137,6 +138,15 @@ export async function completeTaskFromPerson(
 }
 
 // ── Send center (BPO build affordance) ──────────────────────────────────────
+
+export async function startDealFromPerson(formData: FormData): Promise<void> {
+  const personId = Number(formData.get('personId'))
+  const res = await createDealFromPersonAction(formData)
+  if (res.error || !res.propertyKey) {
+    redirect(errorUrl(personId, res.error ?? 'Deal not created'))
+  }
+  redirect(`/admin/deals/${encodeURIComponent(res.propertyKey)}`)
+}
 
 export async function startBpoFromPerson(personId: number): Promise<void> {
   const r = await startBpoForContactAction(personId)

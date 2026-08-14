@@ -11,6 +11,7 @@ import 'server-only'
  */
 
 import { createServiceClient } from '@/lib/supabase/service'
+import { getPartyNamesByDealIds } from './deal-people'
 
 export interface ClosingDealRow {
   id: string
@@ -28,6 +29,7 @@ export interface ClosingDealRow {
   listingPrice: number | null
   itemsTotal: number
   itemsInReview: number
+  partyNames: string[]
 }
 
 export interface ClosingsBoard {
@@ -49,6 +51,7 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
   if (!deals?.length) return { deals: [], unreadable: false }
 
   const dealIds = deals.map((d) => d.id as string)
+  const namesByDeal = await getPartyNamesByDealIds(dealIds)
   const cyclesRes = await sb
     .from('tc_cycles')
     .select(
@@ -109,6 +112,7 @@ export async function getClosingsBoard(): Promise<ClosingsBoard> {
       listingPrice: (cy?.listing_price as number | null) ?? null,
       itemsTotal: ct.total,
       itemsInReview: ct.inReview,
+      partyNames: namesByDeal.get(id) ?? [],
     }
   })
 

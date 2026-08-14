@@ -32,6 +32,7 @@ import { getGroupReplyParticipants } from '@/lib/data/crm/getGroupReplyParticipa
 import { getAppointmentsForPerson } from '@/lib/data/crm/getAppointments'
 import { getContactBehaviorSummary } from '@/lib/data/crm/getContactBehaviorSummary'
 import { getPersonAwaitingBrokerStep } from '@/lib/data/crm/getBrokerActionQueue'
+import { getDealsForPerson } from '@/lib/data'
 import { isTriageTaskCandidate } from '@/lib/data/crm/getInboundTriage'
 import { extractAddressCandidate } from '@/lib/crm/seller-intent'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
@@ -57,7 +58,9 @@ import {
   requirePersonInScope,
 } from '@/app/actions/crm'
 import { Button, SectionHead, StateWord, TextField, ThreadBubble } from '@/components/admin/v2'
+import { PersonDeals } from './PersonDeals'
 import { PersonIdentityHeader } from './PersonIdentityHeader'
+import { stripHtml, tsLabel } from './person-format'
 import {
   addNoteFromPerson,
   addTagFromPerson,
@@ -79,23 +82,6 @@ import { SendSection } from './SendSection'
 import { TasksSection } from './TasksSection'
 
 export const dynamic = 'force-dynamic'
-
-function tsLabel(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })
-}
-
-/** Plain-text an email body for the thread pane (full HTML stays in tools). */
-function stripHtml(s: string): string {
-  return s
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 export default async function PersonPage({
   params,
@@ -165,6 +151,7 @@ export default async function PersonPage({
     fieldDefs,
     behaviorSummary,
     awaitingStep,
+    personDeals,
   ] = await Promise.all([
     getContactActivityFeed(idNum, 30),
     getContactCmas({ crmPersonId: idNum, emails: card.email ? [card.email] : [] }),
@@ -183,6 +170,7 @@ export default async function PersonPage({
     getCrmFieldDefinitions(),
     getContactBehaviorSummary(idNum),
     getPersonAwaitingBrokerStep(idNum),
+    getDealsForPerson(idNum),
   ])
   const showKickoff = sp.intent === 'cma' || sp.kicked === '1'
   const kicked = sp.kicked === '1'
@@ -526,6 +514,15 @@ export default async function PersonPage({
           )}
         </section>
       ) : null}
+
+      <PersonDeals
+        personId={idNum}
+        deals={personDeals}
+        prospectStory={prospectStory}
+        inboundAddress={suggestedAddress}
+        whoLabels={whoLabels}
+        relationships={relationships}
+      />
 
       {fold}
 

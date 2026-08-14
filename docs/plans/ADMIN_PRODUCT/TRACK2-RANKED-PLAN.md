@@ -1,6 +1,6 @@
 # Track 2 ranked plan — 2026-08-13
 
-**Pass:** slices A, C, and B landed on `main`. No outbound from the agent. No SkySlope write. Matt still gates Yes on Today, C copy taste, and Email to Matt.
+**Pass:** slices A, C, B, and P2 person↔deal landed on `main`. No outbound from the agent. No SkySlope write. Matt still gates Yes on Today, C copy taste, and Email to Matt.
 **SoR:** this file. v0.14 in `BROKER-OPERATING-SYSTEM-PLAN.md` is quarry. Destinations stay locked.
 
 ---
@@ -10,7 +10,7 @@
 - Track 1 public Looks are green. Conversion surface is not this pass.
 - Loop A is **queue + draft**, not “tell me everyone → yes → you send → CRM records it.”
 - `lib/agent` is broker→agent SMS. Reuse the runtime. Do not confuse it with Loop A.
-- Loop B: SkySlope is the live file (D2). In-house has libraries + anticipate + seal. `/admin/deals` still reads the SkySlope mirror. No CRM person ↔ `tc_deal` link.
+- Loop B: SkySlope is the live file (D2). In-house has libraries + anticipate + seal. `/admin/deals` still reads the SkySlope mirror. CRM people link to `tc_deal` via `tc_deal_people` (many people, one file).
 - Loop C first SMS is a market-analysis offer. The expired packet’s hero layer is still “what every listing gets.”
 - First touch stays manual. Suppression fail-closed. No invented numbers. No prior-agent blame.
 - 11 destinations stay. Extra weight: Today, Messages, People, Prospecting, Valuations, Closings.
@@ -74,9 +74,11 @@ North star: “Tell me everyone I need to respond to” → who they are, what t
 
 North star: licensed library → fill from deal → send → file sealed PDF → PB review in 7 banking days. Brokers never build forms. SkySlope is the comparison, not the destination.
 
-**On disk now:** `tc_form_versions` live (forms page: 111 versions, OREF 110/110). Anticipate / envelope / seal / commissions / PB sign-off exist. D2: SkySlope is the live file. `/admin/deals` dashboard still reads `skyslope_transactions`. `tc_deals.fub_person_ids` is dead. No person ↔ deal FK.
+**On disk now:** `tc_form_versions` live (forms page: 111 versions, OREF 110/110). Anticipate / envelope / seal / commissions / PB sign-off exist. D2: SkySlope is the live file. `/admin/deals` dashboard still reads `skyslope_transactions`. `tc_deals.fub_person_ids` is dead. Person ↔ deal is `tc_deal_people` (many people, one file).
 
-**Landed (slice B):** one OREF from `tc_form_versions` → fill from deal facts → Matt-owned email → seal. No SkySlope write. Empty `field_map` omits unknown/missing bindings. Person ↔ `tc_deal` still missing.
+**Landed (slice B):** one OREF from `tc_form_versions` → fill from deal facts → Matt-owned email → seal. No SkySlope write. Empty `field_map` omits unknown/missing bindings.
+
+**Landed (P2 person↔deal):** `tc_deal_people` (unique `deal_id+person_id`, roles buyer|seller|other). Start a deal from the person. Parties on the deal page above lender/title contacts. Closings rows show party names. Dual-intent stays one person. Two houses = two deals.
 
 **F1–F6:** Libraries 4 · Anticipate 3 · Fill 2 · Send 2 (SkySlope) · File 3 · Onboard 2.
 
@@ -170,7 +172,7 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 
 ### P2 — context that changes the action
 
-- Person ↔ `tc_deal`; create-deal from the person
+- Person ↔ `tc_deal`; create-deal from the person — **landed**
 - `/admin/deals` reads `tc_*` (SkySlope remains the live file until cutover)
 - Inbound valuation first packet aligned to the C bar
 - Reply-on-thread is the Today row (already locked)
@@ -202,7 +204,7 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 | **B** One OREF from `tc_form_versions` → fill → Matt-owned email → seal | Matt has a sealed PDF in his inbox from deal data | **Landed (code).** Email to Matt is a send (Matt-gated). No SkySlope write. Empty `field_map` leftover. |
 | **C** One expired (or FSBO) first-touch rewrite | Message + packet name THIS house and how we will market THIS house. Still manual. | **Landed (code).** Send and “is it beautiful?” are Matt-gated. |
 
-Build order: **A then C then B landed.** Leftover: person ↔ `tc_deal`, empty OREF `field_map`, Matt taste on C. Do not wait on Closings cutover. Do not mix with a public page grind.
+Build order: **A then C then B then P2 person↔deal landed.** Leftover: empty OREF `field_map`, Matt taste on C. Do not wait on Closings cutover. Do not mix with a public page grind. Do not start other P2 slices in this land.
 
 ---
 

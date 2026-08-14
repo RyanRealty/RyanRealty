@@ -27,6 +27,7 @@
 | **Is this a resort community?** | `subdivision_flags WHERE entity_key='<city>:<slug>'` | `is_resort` | manual |
 | **Methodology trace for any cache row** | `cache_methodology_definitions WHERE version=<version>` | `scope`, `definitions`, `notes` | every cache row carries `methodology_version` |
 | **Spark MLS API reference** | [docs/SPARK_API_REFERENCE.md](SPARK_API_REFERENCE.md) | n/a | n/a |
+| **CRM people on a TC deal** (who is on this file) | `tc_deal_people` by `deal_id` or `person_id` — DAL `getDealParties` / `getDealsForPerson` / `getPartyNamesByDealIds` | `deal_id`, `person_id`, `role` (`buyer` / `seller` / `other`). Unique `(deal_id, person_id)`. | live writes |
 
 > **Don't aggregate raw `listings` for market reports.** The cache tables exist exactly so you don't have to. They're stamped with `methodology_version` and refreshed every 6 hours. Use them.
 
@@ -258,7 +259,10 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | `public.app_config` | 0 | Runtime-configurable parameters (mortgage_rate, insurance_rate, default_tax_rate, etc.). Read by RPCs that compute affordability. |
 | `public.settings` | 0 | Generic key-value site config. |
 | `public.tc_sessions` | 0 | Transaction Coordinator Pipeline session log. `thread_id` enables follow-up email context. |
+| `public.tc_deal_people` | 0 | **Many CRM people on one Vault `tc_deals` row.** Unique `(deal_id, person_id)` — dual-intent is still one person on that file. Two houses = two deals. Roles: `buyer` / `seller` / `other`. RLS on, no policies: service-role only (same as other `tc_*`). Does not write SkySlope and does not revive `tc_deals.fub_person_ids`. Reads: `getDealParties`, `getDealsForPerson`, `getPartyNamesByDealIds` in `lib/data/tc/deal-people.ts`. Per §0. |
 | `public.spatial_ref_sys` | 0 | PostGIS system table. RLS off (PostGIS-required; harmless). |
+
+**`tc_deal_people` note (Track 2 P2, 2026-08-14).** A transaction has more than one person. Dual-intent is still one `crm_people` row: the unique key is `(deal_id, person_id)`, so the same person cannot be buyer and seller on the same file. Two houses are two `tc_deals` rows. Roles are only `buyer`, `seller`, and `other`. Spouse / partner / co-buyer / sibling ride the primary's side; agents and everyone else are `other`. Vault is SoR. SkySlope is not written. Closings board names come from `getPartyNamesByDealIds`. Create from the person page (`StartDealForm` → `createDealWithPeople`); add/remove on the deal page (`DealParties`, above lender/title contacts).
 
 ---
 

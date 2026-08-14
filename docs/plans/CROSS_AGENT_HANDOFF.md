@@ -1,30 +1,31 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 2 A+C+B live on origin/main. Matt gates remain: Yes on Today, C copy taste, Email to Matt. No live sends.**
-> Prior: Track 2 ranked plan. Track 1 §4 SEO/LLM done. Track 1 Looks GREEN.
+> **NEWEST SUBJECT: Track 2 P2 person↔deal live. Many CRM people on one tc_deal. Matt gates remain: Yes on Today, C copy taste, Email to Matt. No live sends.**
+> Prior: Track 2 A+C+B. Track 1 §4 SEO/LLM done. Track 1 Looks GREEN.
 
-# Current — 2026-08-13 (Grok, Track 2 A+C+B land) — live on origin/main
+# Current — 2026-08-14 (Grok, Track 2 P2 person↔deal) — landing on origin/main
 
-**Track:** 2 slices A, C, and B are on `origin/main`. Tip `43ea950a` production READY. No outbound SMS/email from this land. No SkySlope write. `stash@{0}` still not this land. C and B worktrees removed.
+**Track:** 2 P2 person↔deal. A transaction has more than one person. Dual-intent is still one `crm_people` row (unique `deal_id+person_id`). Two houses = two deals. Roles: buyer | seller | other. Person↔deal is many-to-one (many people, one file). No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land.
 
-**SHAs on origin/main:**
-- A feat `4bd86153` · yes-form fix `e844ac4d` (READY) · park marker `774c4d37`
-- C merge `e837b296` (slice `1da1d4df`)
-- B merge `7bc5262c` (slice `e8e68979`)
-- Land class-fixes through tip `43ea950a` (DAL reads, service client, admin-v2 scan)
+**SHA:** this land (filled after push).
 
-**Hosted migration** `20260813200000_rewrite_expired_fsbo_first_touch.sql` applied on `dwvlophlbvvygjfxcrhm` (docs/DATABASE_FOR_AI_AGENTS.md §0, CRM copy). FSBO seed matched and updated. Expired seed did not match the live body, so that row was left alone.
+**Hosted migration** `20260814010000_tc_deal_people.sql` applied on `dwvlophlbvvygjfxcrhm` (docs/DATABASE_FOR_AI_AGENTS.md §0 lookup + §2k note). Table `tc_deal_people` live: unique `(deal_id, person_id)`, role check, RLS on, service-role only.
+
+**Wired:**
+- `/admin/people/[id]` — existing deals link to `/admin/deals/{propertyKey}`; `StartDealForm` (prospect street+city else inbound parse; `defaultDealRoleFromWho`; related via `roleForRelated`)
+- `/admin/deals/[key]` — `DealParties` above `DealContacts`
+- Closings — `getPartyNamesByDealIds` on `rowContext`
 
 **Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`
 
 **Next leftover (not this land):**
-- Matt taste on C first-touch copy + packet (expired live body was already not the old seed)
+- Matt taste on C first-touch copy + packet
 - Empty OREF `field_map` (fill omits unknown/missing bindings)
-- Person ↔ `tc_deal` not done
+- Other P2 slices (`/admin/deals` still reads SkySlope mirror; inbound valuation packet; one approval yes)
 - Yes on Today and Email to Matt stay Matt-gated. Do not send.
 
-**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Do not `git add -A`. Do not pop stash. Do not push `wt/*`.
+**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Do not `git add -A`. Do not pop stash. Do not push `wt/*`. Did not start other P2 slices. Did not edit today/*, lib/cma/*, oref-fill*, prospecting first-touch, or the public site.
 
-**Skills read:** git-commit.mdc, deploy-verify-before-done.mdc, supabase-migrations-auto.mdc, production-parity.mdc, deployments-cicd SKILL, supabase SKILL, database-canonical-reference SKILL, docs/DATABASE_FOR_AI_AGENTS.md, admin-product-os (handoff/board only).
+**Skills read:** admin-product-os (orient only), tc-builder (awareness), database-canonical-reference SKILL, docs/DATABASE_FOR_AI_AGENTS.md §0, git-commit.mdc, supabase-migrations-auto.mdc, deploy-verify-before-done.mdc, supabase SKILL.
 
 # Prior — 2026-08-13 (Grok, Track 1 Open houses) — Open houses Look GREEN on production
 

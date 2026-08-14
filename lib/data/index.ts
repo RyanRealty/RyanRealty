@@ -815,3 +815,14 @@ export type { SearchAreaRow, SearchAreaOwnerKind } from './areas/searchAreas'
 
 export { getPreferredOrefSaleAgreement } from './tc/getPreferredOrefSaleAgreement'
 export type { PreferredOrefForm } from './tc/getPreferredOrefSaleAgreement'
+export {
+  getDealParties,
+  getDealsForPerson,
+  getPartyNamesByDealIds,
+  addPersonToDeal,
+  removePersonFromDeal,
+  createDealWithPeople,
+} from './tc/deal-people'
+export type { DealParty, PersonDealLink, CreateDealWithPeopleInput } from './tc/deal-people'
+export { searchPeopleByName } from './crm/searchPeople'
+export type { PeopleSearchHit } from './crm/searchPeople'

@@ -59,7 +59,8 @@ import { DealEnvelopes, type DealEnvelopesCycle } from './DealEnvelopes'
 import { FillOrefPacket } from './FillOrefPacket'
 import { DocumentName } from './DocumentName'
 import { getEnvelopesForCycle } from '@/app/actions/tc-envelopes'
-import { getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
+import { getDealParties, getPreferredOrefSaleAgreement, type PreferredOrefForm } from '@/lib/data'
+import { DealParties } from './DealParties'
 import {
   COMMISSION_STATUS,
   DOC_COLUMNS,
@@ -376,9 +377,13 @@ export default async function TcDealPage({ params, searchParams }: Props) {
   const deal = await getTcDeal(decodeURIComponent(key))
   if (!deal) notFound()
 
-  const contacts = await getDealContacts(deal.id)
-  const commissions = await getCommissionsForCycles(deal.cycles.map((c) => c.id))
-  const orefForm = (await getPreferredOrefSaleAgreement()).data
+  const [contacts, commissions, orefFormResult, parties] = await Promise.all([
+    getDealContacts(deal.id),
+    getCommissionsForCycles(deal.cycles.map((c) => c.id)),
+    getPreferredOrefSaleAgreement(),
+    getDealParties(deal.id),
+  ])
+  const orefForm = orefFormResult.data
 
   const anticipatedByCycle = new Map<string, AnticipatedDocsResult | null>(
     await Promise.all(
@@ -451,6 +456,8 @@ export default async function TcDealPage({ params, searchParams }: Props) {
           </div>
         </details>
       ))}
+
+      <DealParties dealId={deal.id} propertyKey={deal.property_key} parties={parties} />
 
       {/* Deal team & contacts (co-agents + lender/title/escrow/appraiser/TC) */}
       <DealContacts dealId={deal.id} contacts={contacts} />

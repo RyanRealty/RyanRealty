@@ -735,3 +735,5 @@ NOT IN SCOPE
 2026-08-14T03:05:00Z TRACK 2 A+C+B LANDED on primary main. A 4bd86153 + e844ac4d READY. C merge e837b296 (1da1d4df) expired/FSBO this-home rewrite + hosted template UPDATE. B merge 7bc5262c (e8e68979) one OREF fill → Email to Matt → seal. No live send. No SkySlope write. Did not pop stash@{0}. Leftover: Matt taste on C, empty OREF field_map, person↔tc_deal.
 
 2026-08-14T03:20:00Z TRACK 2 A+C+B LIVE. origin/main tip 43ea950a READY. Hosted migration applied on dwvlophlbvvygjfxcrhm: FSBO first-touch seed updated; expired live body already diverged so left alone. C/B worktrees removed. No live send.
+
+2026-08-14T04:20:00Z TRACK 2 P2 PERSON↔DEAL wiring. Many CRM people on one tc_deal via tc_deal_people (unique deal_id+person_id; roles buyer|seller|other). Person page lists deals + StartDealForm. Deal page DealParties above DealContacts. Closings rowContext shows party names. Hosted migration applied on dwvlophlbvvygjfxcrhm. No live send. No SkySlope write. Did not pop stash@{0}. Leftover: Matt taste on C, empty OREF field_map. Did not start other P2 slices.

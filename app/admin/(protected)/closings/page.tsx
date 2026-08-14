@@ -32,6 +32,7 @@ function dealHref(d: ClosingDealRow): string {
 
 function rowContext(d: ClosingDealRow, nowMs: number): string {
   const bits: string[] = []
+  if (d.partyNames.length) bits.push(d.partyNames.join(', '))
   if (d.brokerName) bits.push(d.brokerName)
   const p = price(d.salePrice ?? d.listingPrice)
   if (p) bits.push(p)
@@ -147,7 +148,9 @@ export default async function ClosingsPage() {
                 </Link>
                 <span className="av2-quiet__ok">closed</span>
                 <span className="av2-quiet__fig">
-                  {[price(d.salePrice), formatDate(d.actualClosingDate)].filter(Boolean).join(' · ')}
+                  {[d.partyNames.join(', ') || null, price(d.salePrice), formatDate(d.actualClosingDate)]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </span>
               </li>
             ))}
