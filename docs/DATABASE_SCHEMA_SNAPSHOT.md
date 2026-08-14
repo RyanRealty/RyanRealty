@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-14T15:47:13.578Z
+**Generated:** 2026-08-14T17:27:48.912Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -594,7 +594,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 284**
+### `cmas` · **rows ≈ 288**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -683,7 +683,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 265**
+### `expired_listings` · **rows ≈ 269**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -742,7 +742,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 684**
+### `marketing_brain_actions` · **rows ≈ 688**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -3002,6 +3002,26 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `tags` | ARRAY | no | '{}'::text[] |
 | `quality_score` | numeric | no | 0 |
 | `created_at` | timestamp with time zone | no | now() |
+
+### `listing_pricing_reads`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `kind` | text | no |  |
+| `refuse_reason` | text | yes |  |
+| `list_price` | numeric | yes |  |
+| `comps_close` | numeric | yes |  |
+| `delta_pct` | numeric | yes |  |
+| `range_low` | numeric | yes |  |
+| `range_high` | numeric | yes |  |
+| `n` | integer | no | 0 |
+| `facts_ready` | boolean | no | false |
+| `new_construction` | boolean | no | false |
+| `subdivision` | text | yes |  |
+| `same_subdivision_tight` | boolean | no | false |
+| `computed_at` | timestamp with time zone | no | now() |
+| `contract_version` | text | no | 'public-v1-2026-08-14'::text |
 
 ### `listing_private`
 
