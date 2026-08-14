@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CMA preview · 3480 SW 45th · use + pricing</title>
+<style>
+  
+  @page {
+    size: Letter;
+    margin: 0.4in 0.6in 0.7in 0.6in;
+  }
+
+  /* The reserved bands belong to @page. A document that also pads its own
+     wrapper double-counts them and loses a band on interior sheets. */
+  html, body { margin: 0; padding: 0; }
+
+  /* Deliberate sheet break. Replaces fixed-height sheets: a section starts on
+     fresh paper, then flows for as many sheets as its content needs. */
+  .sheet-break { break-before: page; page-break-before: always; }
+  .sheet-break:first-child { break-before: auto; page-break-before: auto; }
+
+  /* Keep-together rules. A block that cannot be split never straddles a sheet
+     boundary, which is what produces a half-row orphaned under a header. */
+  h1, h2, h3, h4 { break-after: avoid; page-break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  table, figure, img { break-inside: avoid; page-break-inside: avoid; }
+  tr { break-inside: avoid; page-break-inside: avoid; }
+  thead { display: table-header-group; }
+
+  /* An element taller than the content box cannot be paginated and WILL clip.
+     Capping it at the content height turns a silent truncation into a visible
+     scale-down. */
+  img, svg, canvas { max-width: 100%; max-height: 9.9in; }
+
+  /* overflow:hidden on a paged container destroys content instead of moving it
+     to the next sheet. It is banned by ci:pdf-page-safety; this is the backstop
+     for any stylesheet that slips one through. */
+  @media print {
+    .page, .sheet, .doc { overflow: visible !important; height: auto !important; }
+  }
+
+
+  @font-face {
+    font-family: 'Amboqia Boriango';
+    src: url('https://ryan-realty.com/fonts/Amboqia_Boriango.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --navy: #102742;
+    --cream: #faf8f4;
+    --navy-line: rgba(16, 39, 66, 0.18);
+    --navy-fill: rgba(16, 39, 66, 0.06);
+    --muted: rgba(16, 39, 66, 0.62);
+  }
+
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #e8e3d8;
+    font-family: 'Geist', system-ui, -apple-system, sans-serif;
+    color: var(--navy);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* A .page is a logical SECTION, not a physical sheet.
+
+     It used to be a fixed 11in box with overflow:hidden, which deleted whatever
+     did not fit — silently, because a clipped row is never drawn and leaves no
+     trace in the PDF. 77 delivered-library CMAs were losing up to 2.6in of the
+     description block that way.
+
+     Now each section starts on fresh paper and flows for as many sheets as its
+     content needs. The reserved bands come from @page (see the contract above),
+     so a section that spills gets a properly margined continuation sheet
+     instead of running off the edge. No height, no padding, no overflow rule —
+     all three belong to @page now. */
+  .page {
+    background: var(--cream);
+    position: relative;
+    break-before: page;
+    page-break-before: always;
+  }
+  .page:first-child { break-before: auto; page-break-before: auto; }
+
+  @media screen {
+    /* Screen only: show sheets on a desk. Print takes its box from @page. */
+    .page {
+      width: 8.5in;
+      min-height: 11in;
+      margin: 0.4in auto;
+      padding: 0.4in 0.6in 0.7in 0.6in;
+      box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
+    }
+  }
+
+  .pg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--navy-line);
+    padding-bottom: 9px;
+    margin-bottom: 16px;
+  }
+  .pg-header img.logo { height: 34px; }
+  .pg-header .pg-meta {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pg-footer {
+    position: absolute;
+    bottom: 0.32in;
+    left: 0.6in;
+    right: 0.6in;
+    border-top: 1px solid var(--navy-line);
+    padding-top: 7px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    background: var(--cream);
+  }
+
+  h2.section {
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--navy);
+    margin: 0 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--navy);
+    display: inline-block;
+  }
+  h3.subhead {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--navy);
+    margin: 12px 0 5px 0;
+  }
+  p { font-size: 11px; line-height: 1.45; margin: 0 0 6px 0; }
+  .small { font-size: 10px; color: var(--muted); line-height: 1.45; }
+
+  .cover-label {
+    font-size: 10px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .cover-title {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 52px;
+    line-height: 0.95;
+    color: var(--navy);
+    margin: 0 0 6px 0;
+  }
+  .cover-sub {
+    font-size: 16px;
+    color: var(--navy);
+    font-weight: 400;
+    margin-bottom: 18px;
+  }
+
+  .hero-photo {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    background: var(--navy-fill);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .hero-caption {
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 16px;
+  }
+
+  .value-block {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 24px 28px;
+    margin: 0 0 18px 0;
+    border-radius: 10px;
+  }
+  .value-block .vb-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .value-block .vb-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(250, 248, 244, 0.72);
+    margin-bottom: 6px;
+  }
+  /* The answer. A seller opens this document for one number, so it is the
+     largest element on the page. */
+  .value-block .vb-price {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 58px;
+    line-height: 0.92;
+    color: var(--cream);
+    margin: 0;
+  }
+  .value-block .vb-pill {
+    flex-shrink: 0;
+    border: 1px solid rgba(250, 248, 244, 0.45);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cream);
+    white-space: nowrap;
+  }
+  .value-block .vb-range {
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid rgba(250, 248, 244, 0.20);
+    font-size: 13px;
+    color: var(--cream);
+  }
+  .value-block .vb-detail {
+    font-size: 10.5px;
+    color: rgba(250, 248, 244, 0.80);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    margin: 14px 0 18px 0;
+    border-top: 1px solid var(--navy-line);
+    border-bottom: 1px solid var(--navy-line);
+  }
+  .stat-strip.is-3 { grid-template-columns: repeat(3, 1fr); }
+  .stat-strip .stat {
+    padding: 12px 8px;
+    text-align: center;
+    border-right: 1px solid var(--navy-line);
+  }
+  .stat-strip .stat:last-child { border-right: 0; }
+  .stat-strip .stat .lbl {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .stat-strip .stat .val {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--navy);
+  }
+
+  .presented-by {
+    position: absolute;
+    left: 0.6in;
+    right: 0.6in;
+    bottom: 0.72in;
+    padding-top: 14px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+  .presented-by strong { color: var(--navy); font-weight: 500; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  table.comps {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+    margin-top: 4px;
+  }
+  table.comps thead th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 8.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--navy);
+    padding: 5px 5px;
+    border-bottom: 2px solid var(--navy);
+  }
+  table.comps tbody td {
+    padding: 4px 5px;
+    border-bottom: 1px solid var(--navy-line);
+    vertical-align: middle;
+  }
+  table.comps tbody tr.subject td {
+    background: var(--navy);
+    color: var(--cream);
+    font-weight: 500;
+  }
+  table.comps .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .comp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin: 4px 0 10px 0;
+  }
+  .comp-card {
+    border: 1px solid var(--navy-line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+  }
+  .comp-card .ph-wrap { position: relative; }
+  .comp-card .ph {
+    width: 100%;
+    height: 92px;
+    object-fit: cover;
+    display: block;
+    background: var(--navy-fill);
+  }
+  /* Proximity is the answer to "why these comps" — it reads on the card, not
+     buried in a run-on stats line (comp rework 2026-07-30). */
+  .comp-card .num-chip {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 9px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .comp-card .prox-chip {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 7.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 999px;
+  }
+  .comp-card .area-tag {
+    margin-top: 3px;
+    font-size: 7.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--navy);
+    background: var(--navy-fill);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: inline-block;
+  }
+  .comp-card .ph-missing {
+    width: 100%;
+    height: 92px;
+    background: var(--navy-fill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 10px;
+  }
+  .comp-card .body { padding: 5px 7px 6px; }
+  .comp-card .addr {
+    font-size: 9.5px;
+    font-weight: 500;
+    color: var(--navy);
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .comp-card .stats { font-size: 8.5px; color: var(--muted); line-height: 1.3; }
+  .comp-card .price {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .comp-card .when {
+    font-size: 8px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.3;
+  }
+
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .tier {
+    border: 1px solid var(--navy-line);
+    border-radius: 10px;
+    padding: 16px 14px;
+    background: white;
+  }
+  .tier.featured { background: var(--navy); color: var(--cream); border-color: var(--navy); }
+  .tier .t-lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .tier.featured .t-lbl { color: rgba(250, 248, 244, 0.72); }
+  .tier .t-val {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 24px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 7px 0;
+  }
+  .tier.featured .t-val { color: var(--cream); }
+  .tier .t-note { font-size: 10px; color: var(--muted); line-height: 1.4; }
+  .tier.featured .t-note { color: rgba(250, 248, 244, 0.80); }
+
+  .signature-page {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 36px;
+    align-items: end;
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--navy-line);
+  }
+  .signature-page .portrait { width: 100%; height: auto; display: block; }
+  .signature-page .sig-content { padding-bottom: 6px; }
+  .signature-page .sig-name {
+    font-family: 'Caveat', cursive;
+    font-size: 44px;
+    color: var(--navy);
+    line-height: 1;
+    border-bottom: 1px solid var(--navy);
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    width: 260px;
+  }
+  .signature-page .sig-printed {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 4px 0;
+  }
+  .signature-page .sig-title { font-size: 11px; color: var(--navy); margin-bottom: 14px; line-height: 1.45; }
+  .signature-page .sig-contact { font-size: 11px; line-height: 1.7; color: var(--navy); }
+  .signature-page .sig-contact strong { font-weight: 500; }
+  .signature-page .sig-contact a { color: inherit; text-decoration: none; }
+
+  /* Closing next-step page (conversion-audit 2026-07-15 #5): the document
+     used to end on disclaimers with zero tappable contact. */
+  .cta-lead { font-size: 14px; line-height: 1.75; color: var(--navy); max-width: 62ch; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+  .cta-actions a {
+    display: inline-block;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 13px 22px;
+    border: 1px solid var(--navy);
+    border-radius: 10px;
+  }
+  .cta-actions a.ghost { background: transparent; color: var(--navy); }
+  .cta-reply-note { margin-top: 16px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .signature-page .sig-license {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--navy-line);
+    font-size: 9.5px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .trace {
+    background: var(--navy-fill);
+    border-left: 3px solid var(--navy);
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: 9.5px;
+    line-height: 1.55;
+    color: var(--navy);
+  }
+  .trace .t-hd {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .trace code {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 9px;
+    background: rgba(16,39,66,0.10);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .note-list { margin: 5px 0 8px 16px; padding: 0; }
+  .note-list li { font-size: 10.5px; line-height: 1.4; margin-bottom: 3px; }
+
+  /* The page box now comes from @page in the contract at the top of this
+     stylesheet (CMA_MARGIN_IN: 0.4in top for the in-body section header, 0.7in
+     bottom for the running footer Chrome draws into the margin strip).
+
+     There is deliberately NO @page rule here. An 0-margin @page plus .page
+     padding was the old model, and it could not give a spilled section a
+     margin — the padding lands once at the top of the box and once at the
+     bottom, never at an interior sheet boundary. */
+  /* ONE artifact, two media (Matt 2026-08-05): the per-page header (and the
+     running footer Chrome draws in the print margin) are PRINT chrome. The
+     web view is the same document without them. */
+  @media screen { .pg-header { display: none; } }
+
+  @media print {
+    body { background: white; margin: 0; padding: 0; }
+    .page {
+      box-shadow: none;
+      margin: 0;
+      width: auto;
+      /* Fill the sheet so the cover's absolutely-positioned "presented by"
+         block still anchors to the bottom of the paper, while still being free
+         to grow past it when a section runs long. Content-box height =
+         11in - 0.4in top - 0.7in bottom. */
+      min-height: 9.9in;
+      padding: 0;
+    }
+    /* NO height, NO max-height, NO overflow:hidden — all three delete content.
+       A clipped row is never drawn, so it leaves no trace in the PDF for any
+       downstream check to find. That is how 77 CMAs in the library were losing
+       up to 2.6in of the description block with no error. Overflow stays
+       visible; @page gives the spill a properly margined sheet. §0. */
+    a { text-decoration: none; color: inherit; }
+  }
+
+  .flyer-badge {
+    display: inline-block;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 8.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 3px 11px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .flyer-title {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 3px 0;
+  }
+  .flyer-sub { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 9px; }
+  .flyer-hero {
+    width: 100%;
+    height: 3.4in;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 8px;
+    background: var(--navy-fill);
+    display: block;
+    margin-bottom: 9px;
+  }
+  .flyer-hero.is-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 24px;
+  }
+  .flyer-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border-top: 1px solid var(--navy-line);
+    border-bottom: 1px solid var(--navy-line);
+    margin-bottom: 9px;
+  }
+  .flyer-stats .s { padding: 7px 6px; text-align: center; border-right: 1px solid var(--navy-line); }
+  .flyer-stats .s:last-child { border-right: 0; }
+  .flyer-stats .s .l {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1px;
+  }
+  .flyer-stats .s .v { font-size: 13px; font-weight: 500; color: var(--navy); }
+  .flyer-stats .s.featured .v { font-weight: 600; }
+  .flyer-desc { font-size: 9.5px; line-height: 1.45; color: var(--navy); margin: 0 0 9px 0; }
+  .flyer-features {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    margin-bottom: 9px;
+    font-size: 9px;
+  }
+  .flyer-features .f { background: var(--navy-fill); padding: 4px 8px; border-radius: 5px; color: var(--navy); }
+  .flyer-features .f .fl {
+    font-size: 7.5px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .flyer-features .f .fv { font-size: 9px; line-height: 1.2; }
+
+  .map-img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    background: var(--navy-fill);
+    display: block;
+    margin-bottom: 14px;
+  }
+  .map-key { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .map-key .k {
+    background: var(--navy-fill);
+    padding: 8px 10px;
+    border-radius: 6px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .map-key .k .pin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .map-key .k .pin.subject { background: #b3261e; }
+  .map-key .k .txt { font-size: 10px; line-height: 1.3; }
+
+  /* ── Contents ─────────────────────────────────────────────────────────── */
+  ol.toc { list-style: none; margin: 10px 0 0 0; padding: 0; }
+  ol.toc li {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 11.5px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--navy-line);
+  }
+  ol.toc li .t { color: var(--navy); }
+  ol.toc li .d { flex: 1; border-bottom: 1px dotted var(--navy-line); }
+  ol.toc li .p { color: var(--muted); font-size: 10px; letter-spacing: 0.08em; }
+
+  /* ── Marketing highlights ─────────────────────────────────────────────── */
+  .hl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 12px; }
+  .hl {
+    border: 1px solid var(--navy-line);
+    border-left: 3px solid var(--navy);
+    border-radius: 8px;
+    padding: 11px 13px;
+    background: white;
+  }
+  .hl .hl-head { font-size: 12px; font-weight: 600; line-height: 1.3; color: var(--navy); }
+  .hl .hl-basis { margin-top: 5px; font-size: 9.5px; line-height: 1.45; color: var(--muted); }
+
+  /* ── Verdict pills + capability chips ─────────────────────────────────── */
+  .verdict {
+    display: inline-block;
+    margin-left: 6px;
+    vertical-align: 1px;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 7.5px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .verdict.is-yes { background: var(--navy); }
+  .verdict.is-no { background: transparent; color: var(--muted); border: 1px solid var(--navy-line); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px 0; }
+  .chips span {
+    font-size: 9px;
+    line-height: 1.2;
+    color: var(--navy);
+    background: var(--navy-fill);
+    border-radius: 4px;
+    padding: 3px 7px;
+  }
+  .zone-line { font-size: 14px; margin-bottom: 6px; }
+  .src { font-size: 9px; color: var(--muted); margin: 3px 0 10px 0; line-height: 1.4; }
+  .src a { color: inherit; }
+
+  /* ── Key/value fact tables ────────────────────────────────────────────── */
+  table.kv { width: 100%; border-collapse: collapse; font-size: 10px; margin: 4px 0 8px 0; }
+  table.kv th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 4px 8px 4px 0;
+    border-bottom: 1px solid var(--navy-line);
+    width: 40%;
+    vertical-align: top;
+  }
+  table.kv td { padding: 4px 0; border-bottom: 1px solid var(--navy-line); vertical-align: top; }
+  table.kv.is-wide th { width: 26%; }
+  table.kv.is-wide td.v { width: 22%; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+  table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
+  table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
+
+  table.comps .sub-cell { font-size: 8px; color: var(--muted); margin-top: 1px; }
+  table.comps-adjust td.num, table.comps-adjust th.v {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ── Use-of-property boards (build / rent) ─────────────────────────────── */
+  .zone-mast {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 16px 18px 14px;
+    border-radius: 10px;
+    margin: 8px 0 14px 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .zone-mast .zm-kicker {
+    font-size: 8.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(250, 248, 244, 0.70);
+    margin-bottom: 4px;
+  }
+  .zone-mast .zm-code {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 40px;
+    line-height: 0.95;
+    margin: 0 0 4px 0;
+  }
+  .zone-mast .zm-name { font-size: 14px; font-weight: 500; margin: 0 0 6px 0; }
+  .zone-mast .zm-meta {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: rgba(250, 248, 244, 0.72);
+  }
+  .glance-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    gap: 0;
+    margin: 0 0 16px 0;
+    border: 1px solid var(--navy-line);
+    border-radius: 8px;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .glance {
+    padding: 10px 8px;
+    text-align: center;
+    border-right: 1px solid var(--navy-line);
+  }
+  .glance:last-child { border-right: 0; }
+  .glance .g-q {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .glance .g-a .verdict { margin-left: 0; }
+  .use-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 14px 0 12px 0;
+  }
+  .use-col-title {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 10px 0;
+  }
+  .use-card {
+    border: 1px solid var(--navy-line);
+    border-left: 3px solid var(--navy);
+    border-radius: 8px;
+    padding: 11px 13px;
+    background: #fff;
+    margin-bottom: 9px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .use-card[data-verdict="no"],
+  .use-card[data-verdict="unlikely"] { border-left-color: var(--navy-line); }
+  .use-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .use-topic {
+    font-size: 8.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .use-head {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--navy);
+    margin: 0 0 6px 0;
+  }
+  .use-detail {
+    font-size: 10.5px;
+    line-height: 1.45;
+    color: var(--navy);
+    margin: 0 0 6px 0;
+  }
+
+  /* ── Print + PDF fidelity ─────────────────────────────────────────────── */
+  p, li { orphans: 3; widows: 3; }
+  .comp-card, .tier, .hl, .map-key .k, .trace, .flyer-features .f, .use-card, .zone-mast { break-inside: avoid; page-break-inside: avoid; }
+  @media (max-width: 700px) {
+    .use-board { grid-template-columns: 1fr; }
+  }
+  h2.section, h3.subhead { break-after: avoid; page-break-after: avoid; }
+  table.comps tr, table.kv tr { break-inside: avoid; page-break-inside: avoid; }
+
+</style>
+</head>
+<body>
+<section class="page">
+  <header class="pg-header">
+    <img src="https://ryan-realty.com/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3480 SW 45th St · What this property can do</div>
+  </header>
+  
+  <h2 class="section">What this property can do</h2>
+  
+  <div class="zone-mast">
+    <div class="zm-kicker">Zone</div>
+    <div class="zm-code">R-2</div>
+    <div class="zm-name">Limited Residential R-2</div>
+    <div class="zm-meta">City of Redmond · verified 2026-07-30</div>
+  </div>
+  <p>The zone decides whether you can add a unit, split the lot, or rent the house. The answers below are a first read of published code, not a permit.</p>
+  <div class="glance-row">
+    <div class="glance">
+      <div class="g-q">Add a unit</div>
+      <div class="g-a"><span class="verdict is-yes">Allowed</span></div>
+    </div><div class="glance">
+      <div class="g-q">Split the lot</div>
+      <div class="g-a"><span class="verdict is-no">Not available</span></div>
+    </div><div class="glance">
+      <div class="g-q">Long-term rent</div>
+      <div class="g-a"><span class="verdict is-yes">Allowed</span></div>
+    </div><div class="glance">
+      <div class="g-q">Mid-term rent</div>
+      <div class="g-a"><span class="verdict is-yes">Allowed</span></div>
+    </div><div class="glance">
+      <div class="g-q">Short-term rent</div>
+      <div class="g-a"><span class="verdict">Conditional</span></div>
+    </div>
+  </div>
+  
+  <p class="zone-line"><strong>R-2</strong> · Limited Residential R-2</p>
+  <p>Redmond&#39;s zoning standards are adopted to protect the character and values of land and buildings and the economic stability of sound residential districts, and to assure that future development occurs in an orderly and relatively compact manner. R-2 carries the same standards as R-1: 9,000 sq ft minimum for a single-family home, a minimum of 4 units per net acre, and a maximum of 5 units per net acre.</p>
+  <div class="two-col">
+    <div>
+      <h3 class="subhead">Allowed outright</h3><div class="chips"><span>Single-family detached dwelling</span><span>Duplex, triplex, quadplex, townhouse, and cottage cluster</span><span>Accessory dwelling unit or accessory suite</span><span>Guest house, without a kitchen</span><span>Manufactured home</span><span>Single-room occupancy development</span><span>Residential care home</span><span>Child care home</span><span>Home occupation, as an accessory use</span><span>Farm use and farming</span><span>Livestock, subject to Sec. 8.365</span><span>Park and multi-use trail</span></div>
+    </div>
+    <div>
+      <h3 class="subhead">Allowed with a conditional use permit</h3><div class="chips"><span>Bed and breakfast</span><span>Church or religious institution</span><span>Private community center or community pool</span><span>Child care center</span><span>Planned unit development</span><span>Private school</span><span>Public facility or emergency management services</span><span>Private utility facilities</span></div>
+    </div>
+  </div>
+  <h3 class="subhead">The numbers the code sets</h3>
+  <table class="kv"><tr><th>Minimum lot area, single family / duplex / triplex</th><td>9,000 sq ft</td></tr><tr><th>Minimum lot area, quadplex and cottage cluster</th><td>9,000 sq ft</td></tr><tr><th>Minimum lot area, townhouse</th><td>1,500 sq ft</td></tr><tr><th>Minimum density</th><td>4 units per net acre</td></tr><tr><th>Maximum density, single family</th><td>5 units per net acre</td></tr><tr><th>Maximum density, townhouse</th><td>20 units per net acre</td></tr><tr><th>Front setback</th><td>10 ft, and 20 ft for an attached garage</td></tr><tr><th>Interior side setback</th><td>5 ft on one side and 10 ft on the other. Both sides drop to 5 ft where alley access is provided</td></tr><tr><th>Rear setback</th><td>20 ft</td></tr><tr><th>Maximum building height, house / plex / ADU</th><td>32 ft</td></tr><tr><th>Minimum street frontage</th><td>50 ft on a standard street, 30 ft on a cul-de-sac, 20 ft on a flag lot</td></tr></table>
+  <p class="src">Source: Redmond Development Code Ch. 8, Sec. 8.010 (purpose), Secs. 8.100 to 8.120 (zone names), Sec. 8.135 Table A (uses), Sec. 8.140 Table B (minimum standards) · <a href="https://library.municode.com/or/redmond/codes/code_of_ordinances?nodeId=CH8DERE_ARTIZOST_REUSZO_S8.140TABMIST">library.municode.com</a></p>
+  <div class="use-board">
+    <div class="use-col">
+    <h3 class="use-col-title">Build</h3>
+    
+  <article class="use-card" data-verdict="yes">
+    <div class="use-card-top">
+      <span class="use-topic">ADU</span>
+      <span class="verdict is-yes">Allowed</span>
+    </div>
+    <p class="use-head">Allowed outright in every Redmond residential zone.</p>
+    <p class="use-detail">Redmond lists an accessory dwelling unit as permitted outright in R-1 through R-5 and in R-3A. A stand-alone ADU runs between 300 and 900 sqft of gross floor area and must work as a genuine separate dwelling: its own exterior entrance, its own kitchen, and its own bathroom. It cannot sit forward of the primary home&#39;s forward-most façade, and an ADU above a garage cannot exceed the garage footprint. Maximum height matches the zone, 32 ft in R-1 through R-3A and 45 ft in R-4 and R-5. The primary home keeps its own minimum parking after the ADU is added. A guest house is the separate, related option: 300 to 1,200 sqft, and no kitchen.</p>
+    <p class="src">Source: Redmond Development Code Ch. 8, Sec. 8.135 Table A, Sec. 8.137, and Sec. 8.325 · <a href="https://library.municode.com/or/redmond/codes/code_of_ordinances?nodeId=CH8DERE_ARTIZOST_SUPR_S8.325ACDWUNGUHO">library.municode.com</a></p>
+  </article>
+  <article class="use-card" data-verdict="yes">
+    <div class="use-card-top">
+      <span class="use-topic">Middle housing</span>
+      <span class="verdict is-yes">Allowed</span>
+    </div>
+    <p class="use-head">Duplex, triplex, quadplex, townhouse, and cottage cluster are all permitted outright here.</p>
+    <p class="use-detail">Redmond lists duplexes, triplexes, quadplexes, townhouses, and cottage clusters as outright uses in every residential zone, with middle-housing land divisions available to put each unit on its own lot. There is no maximum density for a duplex, triplex, quadplex, or cottage cluster: the binding standard is minimum lot size. A quadplex or cottage cluster needs 9,000 sqft in R-1 and R-2, 7,500 sqft in R-3 and R-3A, and 7,000 sqft in R-4 and R-5. A townhouse lot needs 1,500 sqft. Cottage clusters run at four or more units per cluster, a 900 sqft maximum footprint each, and a shared common courtyard.</p>
+    <p class="src">Source: Redmond Development Code Ch. 8, Sec. 8.135 Table A, Sec. 8.140 Table B, Sec. 8.143; ORS 197A.420 · <a href="https://library.municode.com/or/redmond/codes/code_of_ordinances?nodeId=CH8DERE_ARTIZOST_REUSZO_S8.140TABMIST">library.municode.com</a></p>
+  </article>
+  <article class="use-card" data-verdict="yes">
+    <div class="use-card-top">
+      <span class="use-topic">Second dwelling</span>
+      <span class="verdict is-yes">Allowed</span>
+    </div>
+    <p class="use-head">A second unit is achievable here, either as an ADU or by converting to a duplex.</p>
+    <p class="use-detail">Redmond gives this lot two routes to a second unit. The first is an ADU under Sec. 8.325, covered above. The second is a conversion: the code expressly allows converting an existing single-family detached dwelling to a duplex, triplex, or quadplex, provided the conversion does not increase nonconformance with the underlying zone. Both are outright uses subject to the development standards.</p>
+    <p class="src">Source: Redmond Development Code Ch. 8, Sec. 8.325, Sec. 8.135 Table A, and Sec. 8.141(5)(10) · <a href="https://library.municode.com/or/redmond/codes/code_of_ordinances?nodeId=CH8DERE_ARTIZOST_SUPR_S8.325ACDWUNGUHO">library.municode.com</a></p>
+  </article>
+  <article class="use-card" data-verdict="no">
+    <div class="use-card-top">
+      <span class="use-topic">Subdivide or partition</span>
+      <span class="verdict is-no">Not available</span>
+    </div>
+    <p class="use-head">This is a single conforming lot in R-2, held to the same 9,000 sqft minimum as every lot around it.</p>
+    <p class="use-detail">R-2 requires a 9,000 sqft minimum lot for a single-family home, duplex, or triplex, and caps single-family density at 5 units per net acre. This parcel is 10,019 sqft. Two conforming lots do not fit at the code minimum, so the value here is the house and the lot as they stand. A second unit is still available through an ADU or a middle-housing configuration, both covered below.</p>
+    <p class="src">Source: Redmond Development Code Ch. 8, Sec. 8.140 Table B · <a href="https://library.municode.com/or/redmond/codes/code_of_ordinances?nodeId=CH8DERE_ARTIZOST_REUSZO_S8.140TABMIST">library.municode.com</a></p>
+  </article>
+  </div>
+    <div class="use-col">
+    <h3 class="use-col-title">Rent</h3>
+    
+  <article class="use-card" data-verdict="yes">
+    <div class="use-card-top">
+      <span class="use-topic">Long-term rental</span>
+      <span class="verdict is-yes">Allowed</span>
+    </div>
+    <p class="use-head">Yes. A 12-month lease is available here, and one statewide rulebook governs it.</p>
+    <p class="use-detail">Oregon runs every residential tenancy of a dwelling unit through one statute, the Residential Landlord and Tenant Act at ORS chapter 90, and it applies the same way in every city and county. You set the starting rent freely. The increase rules take over once the tenancy begins: nothing during the first year, then one increase per 12-month period on 90 days written notice, capped at the percentage the state publishes for that calendar year. The 2026 figure is 9.5% for an ordinary residential tenancy, which is the lesser of 10 percent or 7 percent plus the September 12-month average change in the West Region consumer price index. A different ceiling of 6% governs space rent in a manufactured-home facility or marina with more than 30 spaces, which runs under ORS 90.600 instead. A unit whose first certificate of occupancy issued less than 15 years before the notice is exempt from the cap entirely, as is a unit regulated or certified as affordable housing. Terminations follow the same first-year line: 30 days written notice with no reason given during the first year of occupancy, and after that only for a tenant cause or a qualifying landlord reason such as moving in, selling to a buyer who will occupy, demolition, conversion, or repairs that require the unit to be vacant. Oregon also bars cities and counties from adopting their own rent control, so the state ceiling is the ceiling at this address.</p>
+    <ul class="note-list"><li>Keep the rent-increase clock. No increase during the first year of the tenancy. After that, one increase per 12-month period, 90 days written notice, and no more than the maximum the state publishes for that calendar year. The 2026 maximum is 9.5% for an ordinary residential tenancy, and 6% for space rent in a manufactured-home facility or marina with more than 30 spaces. ORS 90.323(2), ORS 90.324(1), ORS 90.600.</li><li>Maintain the unit in habitable condition for the whole tenancy: weatherproofing, working plumbing, hot and cold running water, heat, safe wiring, working smoke and carbon monoxide alarms, and working locks on entry doors and windows. ORS 90.320(1).</li><li>Return the security deposit with a written accounting within 31 days after the tenancy ends and the tenant delivers possession. ORS 90.300(12) and (13).</li></ul>
+    <p class="src">Source: ORS 90.323 and 90.324 (rent increases), ORS 90.427 (terminations), ORS 90.320 (habitability), ORS 90.300 (deposits), ORS 659A.421 (source of income), ORS 91.225 (no local rent control). 2026 maximum 9.5% for a residential tenancy and 6% for facility space rent (ORS 90.600), per Oregon Department of Administrative Services, 2026 rent stabilization percentages (correction published 2025-10-01), calculated under ORS 90.324(1). · <a href="https://www.oregonlegislature.gov/bills_laws/ors/ors090.html">oregonlegislature.gov</a></p>
+  </article>
+  <article class="use-card" data-verdict="yes">
+    <div class="use-card-top">
+      <span class="use-topic">Mid-term rental</span>
+      <span class="verdict is-yes">Allowed</span>
+    </div>
+    <p class="use-head">Open, and it is the widest path here. A stay of 30 days or longer is not a short-term rental.</p>
+    <p class="use-detail">Oregon has no separate mid-term category, so two independent lines decide what a stay is, and both point the same way for a 30-day-plus program. Redmond defines a short-term rental as a dwelling unit made available for use, rent, or occupancy for a period of less than 30 consecutive days. A stay of 30 days or longer is therefore not a short-term rental in Redmond, so it sits outside the city permit and its parking, occupancy, signage, and local-contact standards. Oregon draws the same line for lodging tax: a guest who stays 30 or more consecutive days at the same facility is exempt, and the exemption covers the entire stay. The second line is the tenancy line, and it is the one that catches people. A stay escapes ORS chapter 90 only as a vacation occupancy, and that takes all three of these at once: the occupant rents for vacation purposes only and not as a principal residence, the occupant has a principal residence somewhere other than this unit, and the authorized period of occupancy does not exceed 45 days. Miss any one of the three and the occupant is a tenant with habitability, deposit accounting, and written termination notice attached from the first day. A 13-week travel contract that makes this address the occupant&#39;s residence creates a tenancy. It is not a vacation stay. The other exclusion, transient occupancy, does not reach a house: it requires daily charging, daily or every-other-day maid and linen service, and it is excluded only in a hotel or motel. The practical read for this property: a furnished 30-day-plus rental avoids the short-term rental permit and the room tax, and in exchange it is a tenancy, so write it as a fixed term and run it under ORS chapter 90 from day one.</p>
+    <ul class="note-list"><li>Decide which of the two the stay is before anyone signs. Vacation occupancy takes all three tests in ORS 90.100. Anything else is a tenancy under ORS chapter 90 no matter how short it is.</li><li>Write a fixed term. A fixed term whose ending date falls inside the first year of occupancy ends without cause on 30 days written notice given before that date. Skip the notice and the tenancy carries on. ORS 90.427(4)(b).</li><li>Charge by the month rather than by the day. Daily charging plus daily or every-other-day maid and linen service is the transient-occupancy pattern in ORS 90.100, and that exclusion only applies in a hotel or motel.</li></ul>
+    <p class="src">Source: ORS 90.100 (definitions of vacation occupancy and transient occupancy), ORS 90.110(4) and (6) (exclusions), ORS 90.427(4)(b) (fixed term ending in the first year), ORS 320.300(11) and ORS 320.308(6) (state lodging tax definition and the 30-consecutive-day exemption). Local: Redmond City Code 7.134 (definition of short-term rental, Ord. No. 2020-04 and Ord. No. 2022-04). · <a href="https://www.oregonlegislature.gov/bills_laws/ors/ors090.html">oregonlegislature.gov</a></p>
+  </article>
+  <article class="use-card" data-verdict="conditional">
+    <div class="use-card-top">
+      <span class="use-topic">Short-term rental</span>
+      <span class="verdict">Conditional</span>
+    </div>
+    <p class="use-head">Allowed in the residential zones with a city permit, and Redmond sets no separation rule or cap.</p>
+    <p class="use-detail">Redmond permits short-term rentals in residential zones, and in the Mixed Use Neighborhood and C2 zones, with a city STR permit, a business license, and the 9% lodging tax. The standards are straightforward: one extra off-street parking space, occupancy caps, no signage. Housing type is the real gate. No short-term rental is allowed in a triplex, quadplex, cottage development, or multi-family complex. A duplex qualifies only when the other unit is owner-occupied or a long-term rental, and where a home and an ADU share a lot only one of the two may rent short-term. Unlike Bend there is no separation rule, cap, or waitlist, so a conforming property that meets the standards qualifies.</p>
+    <ul class="note-list"><li>Obtain the city business license before any rental, then apply for the short-term rental permit. Renew the business license every January. Redmond City Code 7.138(1).</li><li>Register with the tax administrator within 15 calendar days of commencing business, display the certificate of authority, and remit the 9% Redmond lodging tax monthly by the 15th for the preceding month. Redmond City Code 7.110(1) and 7.112(1). A business license or lodging tax payment 30 days past due can cost you the permit. Redmond City Code 7.138(1).</li><li>Provide one off-street parking space beyond the onsite requirement, cap occupancy at three persons over age 3 per bedroom, post the occupancy limit and the Good Neighbor Guidelines inside, keep weekly solid-waste pickup year round, and put up no signage. Redmond City Code 7.138(2) through (5).</li></ul>
+    <p class="src">Source: Redmond City Code Secs. 7.132 to 7.140 (STR permit, zones, standards); Secs. 7.100 to 7.130 (lodging tax) · <a href="https://library.municode.com/or/redmond/codes/code_of_ordinances">library.municode.com</a></p>
+  </article>
+  </div>
+  </div>
+  <p>The MLS did not report whether this property carries a homeowners association, so we are not going to state one way or the other. The recorded covenants, conditions and restrictions, the plat, and any road-maintenance agreement for this property are on file with the Deschutes County Clerk and are indexed through Deschutes County DIAL. Ask for the current CC&amp;Rs and bylaws, the operating budget, the reserve study, recent meeting minutes, and any resale disclosure, and read them before your contingency dates run. Those documents, not the zoning code, set the rules on rentals, RV and boat parking, outbuildings, accessory dwellings, fencing, exterior finishes, and landscaping, and they can be stricter than the code allows.</p>
+  <h3 class="subhead">Cited income figures</h3>
+  <p class="small">Only figures we can name a source for. There is no nightly rate or occupancy model in this report.</p>
+  <table class="kv is-wide"><thead><tr><th>Figure</th><th class="v">Value</th><th class="b">Basis</th></tr></thead><tbody><tr><th>Room tax on nightly revenue</th><td class="v">9% city plus 1.5% state</td><td class="b">Redmond City Code 7.102(1) sets the rate by Council resolution, and the City publishes 9 percent on its Finance transient-lodging-tax page. State rate per ORS 320.305(1)(a). Both read 2026-07-30. Collectors retain 5 percent under Redmond City Code 7.112(5).</td></tr><tr><th>Maximum rent increase on a tenancy, calendar year 2026</th><td class="v">9.5% residential, 6% facility space rent</td><td class="b">Oregon Department of Administrative Services, 2026 rent stabilization percentages (correction published 2025-10-01), calculated under ORS 90.324(1), published at https://apps.oregon.gov/oregon-newsroom/OR/DAS/Posts/Post/Correction-2026-Rent-Stabilization-Percentages. Applies after the first year of a tenancy under ORS 90.323. The state republishes this figure by September 30 each year, so the ceiling for a later year is not this number.</td></tr><tr><th>Property tax of record, annual</th><td class="v">$4,200</td><td class="b">Annual tax carried on the MLS record for this property (MLS 220214000).</td></tr></tbody></table>
+  <p class="small">Three tenures, three different engines, and they do not price the same way. A long-term lease trades the top of the market for occupancy: one rent, twelve months or more, one turnover, and an increase ceiling set by the state each year. A mid-term stay of 30 days or longer carries no room tax and no short-term rental permit, and pays for that in furnishings, more frequent turnover, and vacancy between stays. A nightly rental prices by the night and pays for it in room tax, cleaning, linens, management, platform fees, licensing, and a season that is not flat across the year. What decides the number in every case is the same short list: the rate the unit actually achieves, how many nights or months it is occupied, and the operating cost stack underneath. We do not publish a nightly rate, an occupancy percentage, a cap rate, or a yield for this address, because no source we can cite carries those figures for this property, and a number we cannot trace is worse than no number. To model it with real inputs, get four things: a written rent opinion from a Central Oregon property manager for the long-term figure, a revenue history from a short-term rental manager for permitted comparable properties near this one, the association rules and dues if the property is in one, and an insurance quote for the use you intend.</p>
+  <p class="small">Sources: City of Redmond code, verified 2026-07-30 · rental rules for City of Redmond, verified 2026-07-30.</p>
+  <p class="small">We research each of these questions against the county and city code, and every rule cites the code section we relied on. The registry was verified against its primary sources on 2026-07-14 and re-verified in part on 2026-07-30. Where a use list appears below it covers the principal residential uses, and the cited table is the governing list. Codes change, parcels have particulars a code table cannot see, and none of this is a land-use decision or an entitlement. Verify anything you plan to rely on with the offices below before you act on it.</p>
+</section>
+<section class="page">
+  <header class="pg-header">
+    <img src="https://ryan-realty.com/images/brand/logo-blue.png" alt="Ryan Realty" class="logo" />
+    <div class="pg-meta">3480 SW 45th St · How this home is priced</div>
+  </header>
+  
+  <h2 class="section">How this home is priced</h2>
+  <p>Supported range $639,000 to $669,000. Recommended list $655,000 ($402 per square foot).</p>
+  <div class="stat-strip is-3">
+    <div class="stat"><div class="lbl">Conservative</div><div class="val">$639,000</div></div>
+    <div class="stat"><div class="lbl">Recommended list</div><div class="val">$655,000</div></div>
+    <div class="stat"><div class="lbl">High end</div><div class="val">$669,000</div></div>
+  </div>
+  <h3 class="subhead">How we priced this</h3>
+  <ul class="note-list"><li>2 closed sales, each brought to today and to your living area.</li><li>The close is the contract price. Concessions come off after that.</li><li>A wide size match on the same street does not stop the search. A tight size match or a sale inside one mile does.</li><li>In the same neighborhood we drop a subdivision whose typical dollar per foot is more than 15 percent off yours. Across the city that cut is 30 percent.</li><li>Recent Redmond sales have been closing at 98.9 percent of list.</li></ul>
+  
+  <h3 class="subhead">What each sale becomes on your house</h3>
+  <p>Close $ is the contract price. Time brings the sale to today. Size brings it to your living area. Adjusted $ is that sale as if it were your house.</p>
+  <table class="kv is-wide comps-adjust">
+    <thead><tr><th>Sale</th><th class="v">Close $</th><th class="v">Time</th><th class="v">Size</th><th class="v">Adjusted $</th></tr></thead>
+    <tbody><tr>
+      <td>3344 SW Cascade Vista</td>
+      <td class="num">$655,000</td>
+      <td class="num">$0</td>
+      <td class="num">−$23,200</td>
+      <td class="num">$636,000</td>
+    </tr><tr>
+      <td>3638 SW 45th St</td>
+      <td class="num">$770,000</td>
+      <td class="num">$0</td>
+      <td class="num">−$80,000</td>
+      <td class="num">$670,000</td>
+    </tr></tbody>
+  </table>
+  <div class="tier-grid">
+    <div class="tier">
+      <div class="t-lbl">Conservative</div>
+      <div class="t-val">$639,000</div>
+      <div class="t-note">Quick-sale entry. Use when a fast, certain close is the priority.</div>
+    </div>
+    <div class="tier featured">
+      <div class="t-lbl">Recommended list</div>
+      <div class="t-val">$655,000</div>
+      <div class="t-note">The reconciled value of the adjusted sales. Leaves room to negotiate inside the supported range.</div>
+    </div>
+    <div class="tier">
+      <div class="t-lbl">High end</div>
+      <div class="t-val">$669,000</div>
+      <div class="t-note">Ceiling of the supportable range with presentation and condition fully resolved.</div>
+    </div>
+  </div>
+  
+  <h3 class="subhead">The three checks</h3>
+  <p>Dollar per square foot on the time-adjusted sales brackets $620,000 to $644,000, median $640,000 on 1,631 square feet.</p>
+  <p>The three closest homes in living area, land at $630,000.</p>
+  <p>The similarity-weighted average of every fully adjusted sale lands at $650,000. That check carries the market-conditions correction, so it anchors the recommendation.</p>
+  
+  <p class="small">Confidence: <strong>High</strong>. Seven closed sales in a tight size band.</p>
+</section>
+</body>
+</html>

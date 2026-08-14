@@ -147,7 +147,7 @@ describe('print CMA cover — confidence never contradicts needsReview', () => {
     expect(html).toContain('High confidence')
   })
 
-  it('the Pricing Strategy page confidence line also never shows High under needsReview', () => {
+  it('the pricing page confidence line also never shows High under needsReview', () => {
     const { html } = renderCmaHtml(byronArgs())
     expect(html).not.toMatch(/Confidence: <strong>High<\/strong>/)
   })

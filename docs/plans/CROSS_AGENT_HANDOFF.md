@@ -19,6 +19,22 @@
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, creative-brain, public-product-os (orient), git-commit.mdc.
 
+# Concurrent — 2026-08-14 (Grok, CMA use + pricing pages) — shipping
+
+**Track:** Make the CMA document match the 3480 Downloads baseline, then beat it. Owners ask two questions: can I rent this, and can I develop it. Answer those through zoning. Explain how we priced.
+
+**Wired (local, not pushed yet):**
+- `lib/cma/render-use-of-property.ts` — zone masthead, glance row, Build / Rent boards with full cited detail. STR stays under Rent.
+- `lib/cma/render-pricing-page.ts` — How this home is priced. Close = contract. Quality stop. 15% / 30% neighborhood cut. Three tiers. Three checks. No Method 1 jargon.
+- Collapsed one-liner `whatYouCanDoPage` removed from `lib/cma/render.ts`.
+- Looks: `docs/plans/CMA/looks/2026-08-14-use-and-pricing/`
+
+**Do not `git add -A`.** Imagery Current / page-grade / chrome-seller-ask / admin inbox stay out.
+
+**Leftover:** existing stored CMAs keep their old HTML until rebuilt. Do not rebuild the hand-crafted 3480 row.
+
+**Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, TDD, VOICE.md, frontend-design, CMA producer SKILL.md, PAGE_CONTRACT, git-commit.mdc.
+
 # Concurrent — 2026-08-14 (Grok, public pricing product) — READY `68a1123d`
 
 **Track:** Roll the matcher into one public product. Not another matcher-geography pass.

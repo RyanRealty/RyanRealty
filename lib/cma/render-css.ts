@@ -226,6 +226,7 @@ export function cmaStylesheet(siteUrl: string): string {
     border-top: 1px solid var(--navy-line);
     border-bottom: 1px solid var(--navy-line);
   }
+  .stat-strip.is-3 { grid-template-columns: repeat(3, 1fr); }
   .stat-strip .stat {
     padding: 12px 8px;
     text-align: center;

@@ -351,6 +351,6 @@ export function pricingRangeDisplay(
   return {
     label: 'Comp-supported range',
     outOfRange: true,
-    note: `The recommended list price is capped ${direction} this range. See Pricing Strategy for why.`,
+    note: `The recommended list price is capped ${direction} this range. See How this home is priced for why.`,
   }
 }

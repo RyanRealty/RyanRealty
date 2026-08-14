@@ -190,10 +190,124 @@ export function cmaSectionStyles(): string {
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
 
   table.comps .sub-cell { font-size: 8px; color: var(--muted); margin-top: 1px; }
+  table.comps-adjust td.num, table.comps-adjust th.v {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ── Use-of-property boards (build / rent) ─────────────────────────────── */
+  .zone-mast {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 16px 18px 14px;
+    border-radius: 10px;
+    margin: 8px 0 14px 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .zone-mast .zm-kicker {
+    font-size: 8.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(250, 248, 244, 0.70);
+    margin-bottom: 4px;
+  }
+  .zone-mast .zm-code {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 40px;
+    line-height: 0.95;
+    margin: 0 0 4px 0;
+  }
+  .zone-mast .zm-name { font-size: 14px; font-weight: 500; margin: 0 0 6px 0; }
+  .zone-mast .zm-meta {
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: rgba(250, 248, 244, 0.72);
+  }
+  .glance-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    gap: 0;
+    margin: 0 0 16px 0;
+    border: 1px solid var(--navy-line);
+    border-radius: 8px;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .glance {
+    padding: 10px 8px;
+    text-align: center;
+    border-right: 1px solid var(--navy-line);
+  }
+  .glance:last-child { border-right: 0; }
+  .glance .g-q {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .glance .g-a .verdict { margin-left: 0; }
+  .use-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 14px 0 12px 0;
+  }
+  .use-col-title {
+    font-family: 'Amboqia Boriango', Georgia, serif;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--navy);
+    margin: 0 0 10px 0;
+  }
+  .use-card {
+    border: 1px solid var(--navy-line);
+    border-left: 3px solid var(--navy);
+    border-radius: 8px;
+    padding: 11px 13px;
+    background: #fff;
+    margin-bottom: 9px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .use-card[data-verdict="no"],
+  .use-card[data-verdict="unlikely"] { border-left-color: var(--navy-line); }
+  .use-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .use-topic {
+    font-size: 8.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .use-head {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--navy);
+    margin: 0 0 6px 0;
+  }
+  .use-detail {
+    font-size: 10.5px;
+    line-height: 1.45;
+    color: var(--navy);
+    margin: 0 0 6px 0;
+  }
 
   /* ── Print + PDF fidelity ─────────────────────────────────────────────── */
   p, li { orphans: 3; widows: 3; }
-  .comp-card, .tier, .hl, .map-key .k, .trace, .flyer-features .f { break-inside: avoid; page-break-inside: avoid; }
+  .comp-card, .tier, .hl, .map-key .k, .trace, .flyer-features .f, .use-card, .zone-mast { break-inside: avoid; page-break-inside: avoid; }
+  @media (max-width: 700px) {
+    .use-board { grid-template-columns: 1fr; }
+  }
   h2.section, h3.subhead { break-after: avoid; page-break-after: avoid; }
   table.comps tr, table.kv tr { break-inside: avoid; page-break-inside: avoid; }
 

@@ -52,6 +52,8 @@ import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 import { composeInboundCoverLine, resolveThisHomePlan } from '@/lib/cma/inbound-packet'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
+import { useOfPropertyPage } from '@/lib/cma/render-use-of-property'
+import { pricingPage } from '@/lib/cma/render-pricing-page'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -459,81 +461,13 @@ function marketPage(a: RenderCmaArgs): PageDef | null {
   }
 }
 
-function pricingPage(a: RenderCmaArgs): PageDef {
-  const p = a.pricing
-  const s = a.subject
-  return {
-    meta: `${esc(s.streetAddress)} · Pricing Strategy`,
-    toc: 'Pricing strategy and the three tiers',
-    body: `
-  <h2 class="section">Pricing Strategy</h2>
-  <p>${p.method2 != null ? 'Three' : 'Two'} independent methods, one answer. ${p.converged ? 'The methods land within the 5% convergence tolerance, which is the math check.' : 'The methods land wider than the 5% tolerance, so the reconciliation method governs and the stated confidence is reduced.'}</p>
-  <div class="tier-grid">
-    <div class="tier">
-      <div class="t-lbl">Conservative</div>
-      <div class="t-val">${usd(p.conservative)}</div>
-      <div class="t-note">Quick-sale entry. Use when a fast, certain close is the priority.</div>
-    </div>
-    <div class="tier featured">
-      <div class="t-lbl">Recommended List</div>
-      <div class="t-val">${usd(p.recommended)}</div>
-      <div class="t-note">${p.priceOverride != null ? 'Broker-adjusted on review, anchored to the data-supported reconciliation.' : 'The reconciled value of the adjusted comp set. Leaves room to negotiate inside the supported range.'}</div>
-    </div>
-    <div class="tier">
-      <div class="t-lbl">High End</div>
-      <div class="t-val">${usd(p.highEnd)}</div>
-      <div class="t-note">Ceiling of the supportable range with presentation and condition fully resolved.</div>
-    </div>
-  </div>
-  ${sellerNetBlock(p)}
-  <h3 class="subhead" style="margin-top:14px;">Method 1 · Tiered price per square foot</h3>
-  <p>The comps' time-adjusted $/sqft rates span ${usd(Math.round(p.method1Low / (s.sqft || 1)))} to ${usd(Math.round(p.method1High / (s.sqft || 1)))} at the 25th to 75th percentile. Applied to the subject's ${int(s.sqft)} sqft that brackets ${usd(p.method1Low)} to ${usd(p.method1High)}, with the median rate landing at ${usd(p.method1Mid)}.</p>
-  ${
-    p.method2 != null
-      ? `<h3 class="subhead">Method 2 · Size-matched baseline${p.improvementsValueAdd ? ' plus documented improvements' : ''}</h3>
-  <p>The median adjusted price of the three comps closest to the subject in living area${p.improvementsValueAdd ? `, plus ${usd(p.improvementsValueAdd)} of credited improvement value from the seller's reported spend at a 65% recovery rate,` : ''} lands at ${usd(p.method2)}.</p>`
-      : ''
-  }
-  <h3 class="subhead">Method ${p.method2 != null ? '3' : '2'} · Adjusted-comp reconciliation</h3>
-  <p>The similarity-weighted average of every comp's fully adjusted price (time plus size, weights favoring the closest and most recent sales) lands at ${usd(p.method3)}. This method carries the market-conditions correction, so it anchors the recommendation.</p>
-  ${p.notes.length > 0 ? `<h3 class="subhead">Method notes</h3><ul class="note-list">${p.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
-  <p class="small" style="margin-top:8px;">Confidence: <strong>${esc(displayConfidence(p))}</strong>. ${esc(p.confidenceReason)}</p>
-  <h3 class="subhead">Why this number holds up</h3>
-  <ul class="note-list">${whyBullets(a).map((b) => `<li>${b}</li>`).join('')}</ul>`,
-  }
-}
-
-function sellerNetBlock(p: CmaPricing): string {
-  const n = p.sellerNet
-  if (!n || n.knownCount === 0) return ''
-  return `
-  <h3 class="subhead">Close price and seller net</h3>
-  <p>The list tiers above are contract prices. Seller concessions come off the close before commission and closing costs.</p>
-  <div class="stat-strip" style="grid-template-columns: repeat(3, 1fr);">
-    <div class="stat"><div class="lbl">Close / list estimate</div><div class="val">${usd(p.recommended)}</div></div>
-    <div class="stat"><div class="lbl">Expected concessions</div><div class="val">${n.expectedConcessions != null ? usd(n.expectedConcessions) : '—'}</div></div>
-    <div class="stat"><div class="lbl">Seller net from price</div><div class="val">${n.predictedSellerNet != null ? usd(n.predictedSellerNet) : '—'}</div></div>
-  </div>
-  <p class="small">${n.givenCount} of ${n.knownCount} comparable sales reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
-}
-
-/** The pricing argument, in the seller's terms. Each line is a printed figure. */
-function whyBullets(a: RenderCmaArgs): string[] {
-  const m = a.market
-  const out = [
-    `The recommendation sits on ${a.comps.length} verified closed sales, not on an automated estimate or a single anchor comp.`,
-    `Every comp was normalized to today's market before comparison${m?.yoyMedianPriceDeltaPct != null ? `, using the verified ${dec(m.yoyMedianPriceDeltaPct, 1)}% year-over-year trend for ${esc(m.geoLabel)}` : ''}.`,
-  ]
-  if (m?.monthsOfSupply != null) out.push(`${esc(m.geoLabel)} is carrying ${dec(m.monthsOfSupply, 1)} months of supply. The tier grid reflects that reality rather than working against it.`)
-  if (m?.medianDom != null) out.push(`The median ${esc(m.geoLabel)} sale is taking ${int(m.medianDom)} days. Pricing inside the supported range is what keeps a listing on the fast side of that number.`)
-  out.push('Where a defensible dollar adjustment was not possible, the difference is disclosed and down-weighted instead of guessed.')
-  const net = a.pricing.sellerNet
-  if (net && net.givenCount > 0 && net.medianWhenGiven != null) {
-    out.push(
-      `${net.givenCount} of ${net.knownCount} comparable sales reported a seller concession, median ${usd(net.medianWhenGiven)} when given. That credit comes off the close before commission.`,
-    )
-  }
-  return out
+function pricedPage(a: RenderCmaArgs): PageDef {
+  return pricingPage({
+    subject: a.subject,
+    comps: a.comps,
+    market: a.market,
+    pricing: a.pricing,
+  })
 }
 
 function rationalePage(a: RenderCmaArgs): PageDef {
@@ -618,48 +552,6 @@ function highlightsPage(a: RenderCmaArgs): PageDef | null {
   ${block}`,
   }
 }
-
-/**
- * "What you can do with this property" (Matt 2026-08-05: summarize zoning +
- * rental to the basics). ONE page: the zone, each buildability answer as its
- * verdict-first one-liner, and each rental tenure the same way. The detail
- * paragraphs, requirement lists, income tables, and buyer-option spreads are
- * retired from the doc — the one-line headlines were already written to lead
- * with the capability, so this page IS the summary. The disclaimer + a single
- * verified-against line keep the §0 sourcing honest.
- */
-function whatYouCanDoPage(a: RenderCmaArgs): PageDef | null {
-  const dev = a.development
-  const rental = a.rental
-  const buildRows = (dev?.items ?? []).map(
-    (i) => `<li><strong>${esc(i.topic)}:</strong> ${esc(i.headline)}</li>`,
-  )
-  const rentRows = (rental?.tenures ?? []).map(
-    (t) => `<li><strong>${esc(t.tenure)} rental:</strong> ${esc(t.headline)}</li>`,
-  )
-  if (buildRows.length === 0 && rentRows.length === 0) return null
-  const hoa = dev?.hoa
-  const hoaLine =
-    hoa?.hasAssociation === true
-      ? `<p class="small">There is a homeowners association on record. Recorded covenants can be stricter than zoning, so the CC&amp;Rs get confirmed before any of the above is acted on.</p>`
-      : ''
-  const verified = [dev ? `${dev.jurisdiction} code, verified ${dev.verifiedAsOf}` : null, rental ? `rental rules for ${rental.jurisdiction}, verified ${rental.verifiedAsOf}` : null]
-    .filter(Boolean)
-    .join(' · ')
-  return {
-    meta: `${esc(a.subject.streetAddress)} · What You Can Do With It`,
-    toc: 'What you can do with this property',
-    body: `
-  <h2 class="section">What You Can Do With This Property</h2>
-  ${dev ? `<p>The parcel is zoned <strong>${esc(dev.zone)}</strong> in ${esc(dev.jurisdiction)}. In plain terms, here is what that allows.</p>` : ''}
-  ${buildRows.length > 0 ? `<h3 class="subhead">Building and use</h3><ul class="note-list">${buildRows.join('')}</ul>` : ''}
-  ${rentRows.length > 0 ? `<h3 class="subhead">Renting it out</h3><ul class="note-list">${rentRows.join('')}</ul>` : ''}
-  ${hoaLine}
-  ${verified ? `<p class="small">Sources: ${esc(verified)}.</p>` : ''}
-  ${dev?.disclaimer ? `<p class="small">${esc(dev.disclaimer)}</p>` : rental?.disclaimer ? `<p class="small">${esc(rental.disclaimer)}</p>` : ''}`,
-  }
-}
-
 
 // ── Report extras (Matt 2026-08-05): when-to-list + competition ────────────
 
@@ -992,16 +884,18 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (story) rest.push(story)
   const whenToList = whenToListPage(a)
   if (whenToList) rest.push(whenToList)
-  rest.push(pricingPage(a))
+  const useOf = useOfPropertyPage({
+    streetAddress: a.subject.streetAddress,
+    development: a.development,
+    rental: a.rental,
+  })
+  if (useOf) rest.push(useOf)
+  rest.push(pricedPage(a))
   const competition = competitionPage(a)
   if (competition) rest.push(competition)
   rest.push(rationalePage(a))
-  // What the comp grid does not price: the sellable facts first, then the code
-  // that backs them, then the ways a buyer can use the parcel.
   const highlights = highlightsPage(a)
   if (highlights) rest.push(highlights)
-  const canDo = whatYouCanDoPage(a)
-  if (canDo) rest.push(canDo)
   const plan = listingPlanPage(a)
   if (plan) rest.push(plan)
   const verify = verifyPage(a)

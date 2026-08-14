@@ -167,6 +167,8 @@ describe('capability blocks return nothing when their data is absent', () => {
       'What It Could Bring In',
       'HOA and CC&amp;Rs',
       'What We Lead With',
+      'What this property can do',
+      'What You Can Do With This Property',
       'Verify It Yourself',
     ]) {
       expect(html).not.toContain(heading)
@@ -204,5 +206,48 @@ describe('render helpers', () => {
   it('prints the comp proximity, which is the answer to "why these comps"', () => {
     const { html } = renderCmaHtml(bareArgs)
     expect(html).toContain('1.75 miles NW')
+  })
+})
+
+describe('use-of-property and pricing pages in the assembled document', () => {
+  it('prints the zone board and the pricing explanation when development data is present', () => {
+    const { html } = renderCmaHtml({
+      ...bareArgs,
+      development: {
+        jurisdiction: 'City of Redmond',
+        zone: 'R-2',
+        verifiedAsOf: '2026-07-30',
+        zoningExplainer: {
+          zone: 'R-2',
+          zoneName: 'Limited Residential',
+          purpose: 'Redmond R-2 holds single-unit homes at a limited density.',
+          permittedOutright: ['Single-unit dwelling'],
+          conditional: [],
+          dimensional: [],
+          citation: 'RDC 8.135',
+          url: 'https://www.codepublishing.com/OR/Redmond/',
+        },
+        items: [
+          {
+            topic: 'ADU',
+            verdict: 'yes',
+            headline: 'An accessory dwelling is allowed on this lot.',
+            detail: 'The lot meets the size test.',
+            citation: 'RDC 8.141',
+            url: 'https://www.codepublishing.com/OR/Redmond/',
+          },
+        ],
+        buyerOptions: [],
+        hoa: null,
+        marketingHighlights: [],
+        disclaimer: 'This is a preliminary read of published code, not a land-use decision.',
+        resources: [],
+      },
+    })
+    expect(html).toContain('What this property can do')
+    expect(html).toContain('class="zm-code">R-2')
+    expect(html).toContain('How this home is priced')
+    expect(html).toContain('How we priced this')
+    expect(html).not.toContain('What You Can Do With This Property')
   })
 })
