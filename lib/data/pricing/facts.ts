@@ -7,6 +7,7 @@
 
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
+import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 import type { PricingSale, SubdivisionCell } from '@/lib/pricing/match'
@@ -167,16 +168,24 @@ export async function getPricingSubdivisionCells(citySlug: string): Promise<Map<
   const sb = client()
   const out = new Map<string, SubdivisionCell>()
   if (!sb) return out
-  const { data, error } = await sb
-    .from('pricing_subdivision_cells')
-    .select('city_slug, subdivision_norm, n, median_ppsf')
-    .eq('city_slug', citySlug)
-    .limit(2000)
+  const { rows, error } = await fetchPagedRows<{
+    city_slug: string
+    subdivision_norm: string | null
+    n: number
+    median_ppsf: number
+  }>((from, to) =>
+    sb
+      .from('pricing_subdivision_cells')
+      .select('city_slug, subdivision_norm, n, median_ppsf')
+      .eq('city_slug', citySlug)
+      .order('subdivision_norm', { ascending: true })
+      .range(from, to),
+  )
   if (error) {
     console.error('[getPricingSubdivisionCells]', error.message)
     return out
   }
-  for (const r of data ?? []) {
+  for (const r of rows) {
     const sub = typeof r.subdivision_norm === 'string' ? r.subdivision_norm : null
     if (!sub) continue
     out.set(`${r.city_slug}:${sub}`, { medianPpsf: Number(r.median_ppsf), n: Number(r.n) })
