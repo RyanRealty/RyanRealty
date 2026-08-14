@@ -6,7 +6,7 @@
 
 **Track:** 2 slice A landed. `/admin/today` inbound: who + quote + next + draft. Yes → `sendCrmSmsAction` → `sendGovernedSms` → `sms_out` → row leaves Today.
 
-**SHA:** pending this land (fill after commit + push).
+**SHA:** `4bd86153` (local; confirm on origin/main after push).
 
 **Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`
 

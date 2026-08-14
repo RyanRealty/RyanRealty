@@ -124,7 +124,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-404 | **landed** `fc0abd96` | Global 404 on V3Footer. HideChrome still gates LP/admin paths. Leftover NotFoundClient island stays. Ratchet held 59/0/52 (not a page.tsx). Look 390+1280 junk URL: HTTP 404, H1 Page not found, chrome=1, `.v3-footer`=1, no `#newsletter-email`, none covering. |
 | E-SEARCH-CHIP | **landed** `af26df03` | Dropped the navy Get alerts chip in SearchFilters. Collapsed Get listing alerts stays. Save this search stays the navy mid-browse control. Ratchet held 59/0/52. Look 390+1280 `/homes-for-sale`: H1 Homes for Sale, chrome=1, Get listing alerts, no Get alerts chip, Save this search, no covering. Did not submit. |
 | E-HOME-HUD | **landed** `47ec374c` | Homepage year overlay on the existing level-1 Instrument (`buildRegionMedianChart`). Deleted leftover `KbMarketHud`. Ratchet **59/0/52 → 56/0/51**, kb 3→0. Look 390+1280 `/`: H1 Homes for Sale in Central Oregon, chrome=1, footer=1, chart SVG, no HUD, Value my home, none covering. |
-| Track 2 A | **landed** (this commit) | `/admin/today` inbound: who + quote + next + draft. Yes → `sendCrmSmsAction` → `sendGovernedSms`. SMS-only. No quiet-hours override. Email stays Open. C and B not started. |
+| Track 2 A | **landed** `4bd86153` | `/admin/today` inbound: who + quote + next + draft. Yes → `sendCrmSmsAction` → `sendGovernedSms`. SMS-only. No quiet-hours override. Email stays Open. C and B not started. |
 
 Chrome is live. Mixed routes sit under v3 chrome; they are quarry, not done. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
