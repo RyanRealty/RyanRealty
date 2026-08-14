@@ -55,13 +55,17 @@ Agent leftovers that do not need Matt. CRM Pipeline islands deleted (redirects s
 
 **Still open, not Matt-gated:** other OREF maps (need measured blanks), SkySlope live file, `crm-deals` mutations with no UI, pre-2024 YN drain (cron), one-click form PDF pull.
 
-# Concurrent — 2026-08-14 (Grok, pricing matcher cuts) — shipping
+# Concurrent — 2026-08-14 (Grok, pricing matcher cuts) — READY `caa92e2a`
 
 Under-ask autopsy: the homes furthest below ask were mostly richer-product comps, not cheap lists. Matcher now refuses n&lt;3, drops close&lt;10% of last ask, reads subject water from PK-bounded WaterSource (Private alone = unknown), cuts neighborhood once the search leaves the subdivision, does not treat 1-acre-in-city as rural, keeps new construction off a resale, and widens same-sub GLA to ±30% before a mile ring.
 
 **Backtest** (200 listed detached, CloseDate 2024-01-01..2026-07-01, comps-path only): priced 176, refused 24, MAPE 10.5%, median abs 7.7%, 57.4% within 10%. Fresca / Longview / King Saul / Clairaway no longer look like fake bargains. Craftsman still −20% on a fair Awbrey Village set. Highway 20 and Debron still mix within a wide rural or same-polygon custom set.
 
-**Do not `git add -A`.** Forms Current owns `/admin/forms`. Pricing pathspecs only.
+**SHA:** `caa92e2a` on `origin/main`. Production READY `dpl_DJye9CfMg4N5inp8wTCvfuShXSbc` (aliases include ryan-realty.com). No new pricing migration. Docs tip `dd4a747a` was CANCELED (ignore / superseded).
+
+**Leftover:** Highway 20 / no-mesh rural still picks 2021 Tumalo custom. Debron mixes tract vs custom inside the Awbrey Butte polygon. Pre-2024 concessions YN drain. 400-sale ClosePrice + seller-net backtest reprint.
+
+**Do not `git add -A`.** Page-grade / public-product-os dirty files stay out.
 
 # Concurrent — 2026-08-14 (Grok, seller net) — READY `104c01cc`
 

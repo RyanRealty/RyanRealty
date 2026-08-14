@@ -67,14 +67,22 @@ function loadEnvLocal() {
 
 function loadVercelCliToken() {
   const explicitPath = process.env.VERCEL_AUTH_CONFIG?.trim()
-  const authPath = explicitPath || resolve(homedir(), '.vercel/auth.json')
-  if (!existsSync(authPath)) return ''
-  try {
-    const raw = JSON.parse(readFileSync(authPath, 'utf8'))
-    return String(raw?.token ?? '').trim()
-  } catch {
-    return ''
+  const candidates = [
+    explicitPath,
+    resolve(homedir(), '.vercel/auth.json'),
+    resolve(homedir(), 'Library/Application Support/com.vercel.cli/auth.json'),
+  ].filter(Boolean)
+  for (const authPath of candidates) {
+    if (!existsSync(authPath)) continue
+    try {
+      const raw = JSON.parse(readFileSync(authPath, 'utf8'))
+      const token = String(raw?.token ?? '').trim()
+      if (token) return token
+    } catch {
+      // try the next known CLI auth path
+    }
   }
+  return ''
 }
 
 function parseJsonFromOutput(raw) {
@@ -150,7 +158,13 @@ async function findDeploymentForSha(token, projectId, teamId, sha) {
     `/v6/deployments?projectId=${projectId}&teamId=${teamId}&limit=20&target=production`,
   )
   const list = data?.deployments ?? []
-  return list.find((d) => d?.meta?.githubCommitSha === sha) ?? null
+  const want = String(sha || '').toLowerCase()
+  return (
+    list.find((d) => {
+      const got = String(d?.meta?.githubCommitSha || '').toLowerCase()
+      return got && want && (got === want || got.startsWith(want) || want.startsWith(got))
+    }) ?? null
+  )
 }
 
 async function getBuildLogs(token, deploymentId, teamId, limit = 60) {
