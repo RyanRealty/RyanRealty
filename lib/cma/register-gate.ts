@@ -99,17 +99,17 @@ function shell(title: string, body: string): string {
 
 /** Pre-auth: benefits + Continue with Google. */
 export function renderRegisterShell(params: { slug: string; address: string | null; clientName: string | null }): string {
-  const addr = params.address ? escapeHtml(params.address) : 'your home'
+  const addr = params.address ? escapeHtml(params.address) : 'this home'
   const startHref = `/api/cma/register?slug=${encodeURIComponent(params.slug)}&start=1`
   return shell(
-    'Your home value report · Ryan Realty',
+    `Your report on ${addr} · Ryan Realty`,
     `
     <h1>Your report on ${addr} is ready</h1>
-    <p>One quick sign-in confirms it reaches the right person. Here is what you get:</p>
+    <p>One quick sign-in confirms it reaches the right person.</p>
     <ul class="benefits">
-      <li>What your home is worth right now, with the closed sales that prove it</li>
-      <li>Every comparable mapped, photographed, and priced per square foot</li>
-      <li>A licensed Oregon broker one text away for questions, no pressure</li>
+      <li>How we would market ${addr}: listing video, flyers, and a photo set made for this house</li>
+      <li>Closed sales near ${addr}, each adjusted for when it sold and how its size compares</li>
+      <li>A licensed Oregon broker one text away</li>
     </ul>
     <a class="cta" href="${startHref}"><span class="g">G</span> Continue with Google</a>
     ${params.clientName ? `<p class="who">Prepared for ${escapeHtml(params.clientName)}. Sign in to confirm it is you.</p>` : ''}

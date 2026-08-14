@@ -33,13 +33,11 @@ import { isSuppressed, isSuppressedByEmail } from '@/lib/crm/suppressions'
 import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { sendEmail } from '@/lib/resend'
 import { sendGmailMessage } from '@/lib/gmail-draft'
-import { formatPriceExact } from '@/lib/format/money'
+import { composeInboundValuationCopy } from '@/lib/cma/inbound-packet'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const FUB_BCC = process.env.FUB_BCC_ADDRESS?.trim() || 'ryan.realty@followupboss.me'
 const MAX_PDF_BYTES = 25 * 1024 * 1024
-
-const usd = formatPriceExact
 
 interface CmaSendContext {
   slug: string
@@ -105,12 +103,30 @@ export interface CmaSendOverride {
   bodyText?: string | null
 }
 
+function inboundFacts(ctx: CmaSendContext) {
+  const firstName = (ctx.clientName ?? '').trim().split(/\s+/)[0] || null
+  return {
+    address: ctx.subjectAddress?.trim() || null,
+    firstName,
+    valueLow: ctx.valueLow,
+    valueHigh: ctx.valueHigh,
+    recommendedList: ctx.recommendedList,
+  }
+}
+
+function emphasizeAddress(text: string, address: string | null): string {
+  const named = address?.trim() || ''
+  const escaped = escapeHtml(text)
+  if (!named) return escaped
+  const needle = escapeHtml(named)
+  return escaped.split(needle).join(`<strong>${needle}</strong>`)
+}
+
 function buildLeadBody(ctx: CmaSendContext, override?: CmaSendOverride): { html: string; text: string; subject: string } {
-  const firstName = (ctx.clientName ?? '').trim().split(/\s+/)[0] || 'there'
+  const copy = composeInboundValuationCopy(inboundFacts(ctx))
   const brokerFirst = ctx.brokerRow.displayName.split(/\s+/)[0]
   const viewUrl = `${SITE_URL}/cma/${ctx.slug}`
-  const hasNumbers = ctx.recommendedList != null && ctx.valueLow != null && ctx.valueHigh != null
-  const subject = override?.subject?.trim() || `Your home value analysis for ${ctx.subjectAddress}`
+  const subject = override?.subject?.trim() || copy.subject
 
   if (override?.bodyText?.trim()) {
     const raw = override.bodyText.trim()
@@ -145,39 +161,30 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
     }
     const html = wrapBrandedEmail({
       bodyHtml,
-      previewText: `Your market analysis for ${ctx.subjectAddress} is ready.`,
-      mastheadLine: 'HOME VALUE ANALYSIS',
+      previewText: copy.previewText,
+      mastheadLine: copy.mastheadLine,
       heroUrl: null,
       senderBroker: shellBroker,
       unsubscribeUrl: null,
-      // No audience line: someone who asked for a market analysis knows why they
-      // got one. Explaining it is the filler §2 bans (Matt 2026-08-03).
       audienceLine: null,
     })
     return { html, text, subject }
   }
 
-  const numbersHtml = hasNumbers
-    ? `<p style="margin:0 0 16px 0;">The short version. Based on what has actually sold near you, your home lands in a range of <strong>${usd(ctx.valueLow)} to ${usd(ctx.valueHigh)}</strong>, and I would price it around <strong>${usd(ctx.recommendedList)}</strong>.</p>`
+  const numbersHtml = copy.numbers
+    ? `<p style="margin:0 0 16px 0;">${emphasizeAddress(copy.numbers, ctx.subjectAddress)}</p>`
     : ''
   const bodyHtml = `
 <div style="padding:32px 34px 8px;">
-  <p style="margin:0 0 16px 0;">Hi ${escapeHtml(firstName)},</p>
-  <p style="margin:0 0 16px 0;">I put together a full market analysis for <strong>${escapeHtml(ctx.subjectAddress)}</strong>. The complete report is attached as a PDF, and you can also read it online.</p>
+  <p style="margin:0 0 16px 0;">${escapeHtml(copy.greeting)}</p>
+  <p style="margin:0 0 16px 0;">${emphasizeAddress(copy.plan, ctx.subjectAddress)}</p>
   ${numbersHtml}
-  <p style="margin:0 0 16px 0;">The report walks through the comparable sales, the adjustments behind the number, and where the market sits right now. Happy to talk any of it through, no pressure.</p>
+  <p style="margin:0 0 16px 0;">${escapeHtml(copy.close)}</p>
   <p style="margin:0 0 24px 0;"><a href="${viewUrl}" style="display:inline-block;background:#102742;color:#faf8f4;font-size:13px;font-weight:700;letter-spacing:.08em;text-decoration:none;padding:14px 32px;">READ THE FULL REPORT &rarr;</a></p>
   <p style="margin:0 0 8px 0;">${escapeHtml(brokerFirst)}<br/>Ryan Realty${ctx.brokerRow.phone ? `<br/>${escapeHtml(ctx.brokerRow.phone)}` : ''}</p>
 </div>`
 
-  const numbersText = hasNumbers
-    ? `The short version. Based on what has actually sold near you, your home lands in a range of ${usd(ctx.valueLow)} to ${usd(ctx.valueHigh)}, and I would price it around ${usd(ctx.recommendedList)}.\n\n`
-    : ''
-  const text = `Hi ${firstName},
-
-I put together a full market analysis for ${ctx.subjectAddress}. The complete report is attached as a PDF, and you can also read it online: ${viewUrl}
-
-${numbersText}The report walks through the comparable sales, the adjustments behind the number, and where the market sits right now. Happy to talk any of it through, no pressure.
+  const text = `${copy.bodyText.replace(copy.close, `${copy.close} ${viewUrl}`)}
 
 ${brokerFirst}
 Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedTextFooter()}`
@@ -197,14 +204,12 @@ Ryan Realty${ctx.brokerRow.phone ? `\n${ctx.brokerRow.phone}` : ''}${brandedText
   }
   const html = wrapBrandedEmail({
     bodyHtml,
-    previewText: `Your market analysis for ${ctx.subjectAddress} is ready.`,
-    mastheadLine: 'HOME VALUE ANALYSIS',
+    previewText: copy.previewText,
+    mastheadLine: copy.mastheadLine,
     heroUrl: null,
     senderBroker: shellBroker,
     unsubscribeUrl: null,
-    // No audience line: someone who asked for a market analysis knows why they
-      // got one. Explaining it is the filler §2 bans (Matt 2026-08-03).
-      audienceLine: null,
+    audienceLine: null,
   })
   return { html, text, subject }
 }
@@ -227,16 +232,7 @@ export interface SendCmaToLeadResult {
  */
 /** The default compose message (the link, signature, and footer append at send). */
 function defaultComposeText(ctx: CmaSendContext): string {
-  const firstName = (ctx.clientName ?? '').trim().split(/\s+/)[0] || 'there'
-  const hasNumbers = ctx.recommendedList != null && ctx.valueLow != null && ctx.valueHigh != null
-  const numbers = hasNumbers
-    ? `\n\nThe short version. Based on what has actually sold near you, your home lands in a range of ${usd(ctx.valueLow)} to ${usd(ctx.valueHigh)}, and I would price it around ${usd(ctx.recommendedList)}.`
-    : ''
-  return `Hi ${firstName},
-
-I put together a full market analysis for ${ctx.subjectAddress}. The complete report is attached as a PDF, and you can also read it online.${numbers}
-
-The report walks through the comparable sales, the adjustments behind the number, and where the market sits right now. Happy to talk any of it through, no pressure.`
+  return composeInboundValuationCopy(inboundFacts(ctx)).bodyText
 }
 
 /**

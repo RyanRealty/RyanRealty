@@ -49,6 +49,7 @@ import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ListingPlan } from '@/lib/cma/listing-plan'
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
+import { composeInboundCoverLine, resolveThisHomePlan } from '@/lib/cma/inbound-packet'
 import type { DevelopmentOpportunities } from '@/lib/cma/development'
 import type { RentalPotential } from '@/lib/cma/rental-potential'
 
@@ -160,7 +161,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
     body: `
   <div class="cover-label">${clientLine}</div>
   <h1 class="cover-title">${esc(a.subject.streetAddress)}</h1>
-  <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}${cleanText(a.subject.subdivision) ? ` · ${esc(cleanText(a.subject.subdivision)!)}` : ''}</div>
+  <div class="cover-sub">${esc(a.subject.city)}, Oregon ${esc(a.subject.postalCode ?? '')}${cleanText(a.subject.subdivision) ? ` · ${esc(cleanText(a.subject.subdivision)!)}` : ''}<br/>${esc(composeInboundCoverLine(a.subject.streetAddress))}</div>
   ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
   <div class="hero-caption">${esc(hero.caption)}</div>
   <div class="value-block">
@@ -665,11 +666,8 @@ function seasonalityChartSvg(x: NonNullable<CmaExtras['seasonality']>): string {
 
 // ── The subdivision story (Matt 2026-08-05: the homeowner's deep read) ─────
 
-// ── What you own (the prior purchase and what it has done) ────────────────
-
-// ── What we would do about it (the plan, from this home's own numbers) ────
 function thisHomePlanPage(a: RenderCmaArgs): PageDef | null {
-  const lines = (a.thisHomePlan ?? []).map((s) => s.trim()).filter(Boolean)
+  const lines = resolveThisHomePlan({ thisHomePlan: a.thisHomePlan, streetAddress: a.subject.streetAddress })
   if (lines.length === 0) return null
   const address = a.subject.streetAddress.trim()
   const title = address ? `How we would market ${address}` : 'How we would market this home'
@@ -950,6 +948,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   rest.push(subjectPage(a))
   const likes = whatWeLikePage(a)
   if (likes) rest.push(likes)
+  const thisHome = thisHomePlanPage(a)
+  if (thisHome) rest.push(thisHome)
   const map = mapPage(a)
   if (map) rest.push(map)
   rest.push(compCardsAndTablePage(a))
@@ -971,8 +971,6 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (highlights) rest.push(highlights)
   const canDo = whatYouCanDoPage(a)
   if (canDo) rest.push(canDo)
-  const thisHome = thisHomePlanPage(a)
-  if (thisHome) rest.push(thisHome)
   const plan = listingPlanPage(a)
   if (plan) rest.push(plan)
   const verify = verifyPage(a)
