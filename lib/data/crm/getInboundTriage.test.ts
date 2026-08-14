@@ -17,6 +17,7 @@ import {
   type TriageItem,
   type TriageKind,
 } from './getInboundTriage'
+import { enrichReplyTriage } from './enrichInboundTriage'
 
 const NOW = Date.parse('2026-07-21T18:00:00.000Z')
 const iso = (hoursAgo: number) => new Date(NOW - hoursAgo * 3_600_000).toISOString()
@@ -31,6 +32,11 @@ function fixture(kind: TriageKind, hoursAgo: number, personId = 1): Omit<TriageI
     occurredAt: iso(hoursAgo),
     deepLink: `/admin/people/${personId}`,
     taskId: null,
+    inboundBody: '',
+    inboundChannel: null,
+    whoLabels: [],
+    nextStep: '',
+    draftSms: '',
   }
 }
 
@@ -218,5 +224,53 @@ describe('watermark + unread helpers', () => {
     expect(isUnreadStatus('open')).toBe(false)
     expect(isUnreadStatus('handled')).toBe(false)
     expect(isUnreadStatus('closed')).toBe(false)
+  })
+})
+
+describe('enrichReplyTriage', () => {
+  it('adds who labels, next step, quote, and a draft for an interested SMS', () => {
+    const extra = enrichReplyTriage({
+      inboundKind: 'sms_in',
+      inboundBody: 'Yes, tell me more',
+      inboundPayload: { intent: 'interested' },
+      personName: 'Dana',
+      tags: ['audience:seller'],
+      stage: 'Lead',
+    })
+    expect(extra.inboundChannel).toBe('sms')
+    expect(extra.inboundBody).toBe('Yes, tell me more')
+    expect(extra.whoLabels).toEqual(['Seller'])
+    expect(extra.nextStep).toBe('Reply. They are interested.')
+    expect(extra.draftSms).toBe('Thanks for writing back. Happy to talk about the house.')
+  })
+
+  it('prefers a classified recommendedReply on the inbound payload', () => {
+    const extra = enrichReplyTriage({
+      inboundKind: 'sms_in',
+      inboundBody: 'Sure',
+      inboundPayload: {
+        intent: 'interested',
+        recommendedReply: 'Happy to walk you through it. When is a good time for a quick call?',
+      },
+      personName: 'Dana',
+      tags: [],
+      stage: null,
+    })
+    expect(extra.draftSms).toBe('Happy to walk you through it. When is a good time for a quick call?')
+  })
+
+  it('marks email replies as email and still drafts, without changing the channel', () => {
+    const extra = enrichReplyTriage({
+      inboundKind: 'email_in',
+      inboundBody: 'Can we talk Thursday?',
+      inboundPayload: { intent: 'question' },
+      personName: 'Dana',
+      tags: ['audience:buyer'],
+      stage: null,
+    })
+    expect(extra.inboundChannel).toBe('email')
+    expect(extra.nextStep).toBe('Reply. They asked a question.')
+    expect(extra.whoLabels).toEqual(['Buyer'])
+    expect(extra.draftSms).toBe('Happy to answer that. When works for a quick call?')
   })
 })

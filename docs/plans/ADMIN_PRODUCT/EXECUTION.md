@@ -4,7 +4,7 @@
 **This file:** live board. If it disagrees with git or the ratchet, this file is wrong.
 Fix it in the same session. Do not invent a second board.
 
-**Updated:** 2026-08-13 (Grok, Track 2 audit). Track 1 closed. Ranked plan: `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`. No A/B/C build this pass. G3 week-grant and G4 OAuth are not in Go. Live yes→send is a hard stop.
+**Updated:** 2026-08-13 (Grok, Track 2 slice A). Ranked plan: `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`. Slice A landed on `/admin/today` (Yes → governed SMS). C (expired/FSBO rewrite) and B (OREF fill) are next. G3 week-grant and G4 OAuth are not in Go. Live send is still Matt tapping Yes.
 
 ---
 
@@ -124,6 +124,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | E-404 | **landed** `fc0abd96` | Global 404 on V3Footer. HideChrome still gates LP/admin paths. Leftover NotFoundClient island stays. Ratchet held 59/0/52 (not a page.tsx). Look 390+1280 junk URL: HTTP 404, H1 Page not found, chrome=1, `.v3-footer`=1, no `#newsletter-email`, none covering. |
 | E-SEARCH-CHIP | **landed** `af26df03` | Dropped the navy Get alerts chip in SearchFilters. Collapsed Get listing alerts stays. Save this search stays the navy mid-browse control. Ratchet held 59/0/52. Look 390+1280 `/homes-for-sale`: H1 Homes for Sale, chrome=1, Get listing alerts, no Get alerts chip, Save this search, no covering. Did not submit. |
 | E-HOME-HUD | **landed** `47ec374c` | Homepage year overlay on the existing level-1 Instrument (`buildRegionMedianChart`). Deleted leftover `KbMarketHud`. Ratchet **59/0/52 → 56/0/51**, kb 3→0. Look 390+1280 `/`: H1 Homes for Sale in Central Oregon, chrome=1, footer=1, chart SVG, no HUD, Value my home, none covering. |
+| Track 2 A | **landed** (this commit) | `/admin/today` inbound: who + quote + next + draft. Yes → `sendCrmSmsAction` → `sendGovernedSms`. SMS-only. No quiet-hours override. Email stays Open. C and B not started. |
 
 Chrome is live. Mixed routes sit under v3 chrome; they are quarry, not done. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 
@@ -235,6 +236,7 @@ from the baseline if it drifts.
 | **A3** | admin person header | **landed** `56a1ccc0` | Who (closed labels), next step, now. `PersonIdentityHeader`. Admin look still needs a signed-in 390+1280 pass. |
 | **A4+A1** | `queueReturnVisitAlert` rewrite + Today looking-at | **landed** `86695f6e` READY | `{name} is looking at {address}.` Key `crm_people.id`. Today first lane. Queue only. No live SMS. Admin look still needs a signed-in pass. |
 | **A5** | lead ask text | **landed** `a237a340` READY | Names the home. Does not say we watched them. Draft in composer. Packet is taste. |
+| **Track 2 A** | Today inbound Yes-path | **landed** | Who / quote / next / draft on the inbound row. Yes sends one governed SMS. Email Open only. Next: slice C. |
 | **C1** | expired packet | taste | Matt stops the PDF. |
 | **G5 wrappers** | `lib/grok-image.ts`, `lib/grok-video.ts` only | **landed** `317d88de` | Models `grok-imagine-image-quality` + `grok-imagine-video-1.5`. No live post. Listing-tour Replicate is a later touch. |
 | **G2** | Imagine draft on Today | **landed** `def67a92` READY | Produce a draft. Does not stamp yes. Does not post. Admin signed-in 390+1280 look still needs a session. |

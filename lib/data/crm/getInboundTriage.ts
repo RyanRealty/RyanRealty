@@ -42,6 +42,15 @@
  * Fails SOFT per source — a broken table never blanks the dashboard.
  */
 import 'server-only'
+import type { PersonWhoLabel } from '@/lib/crm/person-who-labels'
+import {
+  asStringList,
+  EMPTY_REPLY_FIELDS,
+  enrichReplyTriage,
+  fetchReplyIntel,
+  type PersonRow,
+  type ReplyIntel,
+} from '@/lib/data/crm/enrichInboundTriage'
 import { createServiceClient } from '@/lib/supabase/service'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -66,6 +75,12 @@ export type TriageItem = {
   rank: number
   /** The crm_tasks id when kind === 'task' (drives the snooze dismiss). */
   taskId: number | null
+  /** Inbound body for reply rows. Empty on other kinds. */
+  inboundBody: string
+  inboundChannel: 'sms' | 'email' | null
+  whoLabels: PersonWhoLabel[]
+  nextStep: string
+  draftSms: string
 }
 
 /** One entry in the merged "Needs your action" list. Generic over the sequence
@@ -256,17 +271,23 @@ async function fetchPeople(
   sb: Sb,
   ids: number[],
   brokerScope: string | null,
-): Promise<Map<number, { name: string | null }>> {
-  const out = new Map<number, { name: string | null }>()
+): Promise<Map<number, PersonRow>> {
+  const out = new Map<number, PersonRow>()
   for (let i = 0; i < ids.length; i += IN_CHUNK) {
     let q = sb
       .from('crm_people')
-      .select('id,name,assigned_broker')
+      .select('id,name,assigned_broker,tags,stage')
       .eq('deleted', false)
       .in('id', ids.slice(i, i + IN_CHUNK))
     if (brokerScope) q = q.eq('assigned_broker', brokerScope)
     const { data } = await q
-    for (const p of data ?? []) out.set(p.id as number, { name: (p.name as string | null) ?? null })
+    for (const p of data ?? []) {
+      out.set(p.id as number, {
+        name: (p.name as string | null) ?? null,
+        tags: asStringList(p.tags),
+        stage: (p.stage as string | null) ?? null,
+      })
+    }
   }
   return out
 }
@@ -302,7 +323,14 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
   const cutoffIso = new Date(nowMs - TRIAGE_WINDOW_HOURS * 3_600_000).toISOString()
   const nowIso = new Date(nowMs).toISOString()
 
-  type InboundRow = { person_id: number; ts: string; kind: string; title: string | null }
+  type InboundRow = {
+    person_id: number
+    ts: string
+    kind: string
+    title: string | null
+    body: string | null
+    payload: unknown
+  }
   type DocRow = {
     person_id: number
     event: string
@@ -336,7 +364,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
     safeRows<InboundRow>(
       sb
         .from('crm_timeline')
-        .select('person_id,ts,kind,title')
+        .select('person_id,ts,kind,title,body,payload')
         .in('kind', ['sms_in', 'email_in'])
         .gte('ts', cutoffIso)
         .order('ts', { ascending: false })
@@ -392,13 +420,21 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
 
   // ONE person fetch scopes all four sources identically (deleted + broker).
   const people = await fetchPeople(sb, candidateIds, brokerScope).catch(
-    () => new Map<number, { name: string | null }>(),
+    () => new Map<number, PersonRow>(),
   )
   if (people.size === 0) return []
   const scopedIds = [...people.keys()]
-  const states = await fetchStates(sb, scopedIds).catch(
-    () => new Map<number, { status: string | null; updatedAt: string | null }>(),
+  const inboundScopedIds = [...new Set(inboundRows.map((r) => r.person_id))].filter((id) =>
+    people.has(id),
   )
+  const [states, intelByPerson] = await Promise.all([
+    fetchStates(sb, scopedIds).catch(
+      () => new Map<number, { status: string | null; updatedAt: string | null }>(),
+    ),
+    fetchReplyIntel(sb, inboundScopedIds, cutoffIso, safeRows).catch(
+      () => new Map<number, ReplyIntel>(),
+    ),
+  ])
 
   const items: Array<Omit<TriageItem, 'rank'>> = []
 
@@ -409,6 +445,17 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
     if (!person || seenReply.has(r.person_id)) continue
     seenReply.add(r.person_id)
     if (!isUnreadStatus(states.get(r.person_id)?.status)) continue
+    const intel = intelByPerson.get(r.person_id)
+    const extra = enrichReplyTriage({
+      inboundKind: r.kind,
+      inboundBody: r.body,
+      inboundPayload: r.payload,
+      personName: person.name,
+      tags: person.tags,
+      stage: person.stage,
+      classifiedIntent: intel?.intent ?? null,
+      classifiedReply: intel?.recommendedReply ?? '',
+    })
     items.push({
       id: `reply:${r.person_id}`,
       kind: 'reply',
@@ -418,6 +465,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
       occurredAt: r.ts,
       deepLink: `/admin/people/${r.person_id}#comms`,
       taskId: null,
+      ...extra,
     })
   }
 
@@ -445,6 +493,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
       occurredAt: g.newest,
       deepLink: `/admin/people/${g.personId}`,
       taskId: null,
+      ...EMPTY_REPLY_FIELDS,
     })
   }
 
@@ -464,6 +513,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
       occurredAt: r.last_seen_at,
       deepLink: `/admin/people/${pid}`,
       taskId: null,
+      ...EMPTY_REPLY_FIELDS,
     })
   }
 
@@ -479,6 +529,7 @@ export async function getInboundTriage(brokerScope: string | null): Promise<Tria
       occurredAt: t.due_at,
       deepLink: `/admin/people/${t.person_id}`,
       taskId: t.id,
+      ...EMPTY_REPLY_FIELDS,
     })
   }
 

@@ -1,8 +1,7 @@
 # Track 2 ranked plan — 2026-08-13
 
-**Pass:** planning audit only. No A/B/C build. No outbound. No SkySlope write.
+**Pass:** slice A landed (Today inbound Yes-path). C and B not started. No outbound from the agent. No SkySlope write.
 **SoR:** this file. v0.14 in `BROKER-OPERATING-SYSTEM-PLAN.md` is quarry. Destinations stay locked.
-**Scored against disk this session,** not the August 12 scorecard.
 
 ---
 
@@ -67,7 +66,7 @@ North star: “Tell me everyone I need to respond to” → who they are, what t
 
 **On disk now:** `/admin/today` ranks looking-at + inbound + parked + CMA drafts + ready approvals + due tasks. Inbound row is name + signal + Open/Dismiss. Ask preloads a buyer text. A3 header has who / next / now. A4 wake SMS is queued, not auto-sent.
 
-**Missing:** one recommended SMS on the inbound row; the body they wrote; yes on that draft; `sendGovernedSms`; timeline `sms_out`; sequence pause. That is slice A.
+**Landed (slice A):** inbound row shows who (closed set), what they wrote, `composePersonNextStep`, and a recommended SMS. Yes → `sendTodayInboundReply` → `sendCrmSmsAction` → `sendGovernedSms` → `crm_timeline` `sms_out` → dismiss so the row leaves Today. Email rows stay Open (no Yes-send-SMS). Empty draft disables Yes. Never auto-send. Sequence stays paused.
 
 **Do not confuse with `lib/agent`.** That is the broker texting the marketing line. Loop A is agent→broker over **client** work.
 
@@ -165,7 +164,7 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 
 ### P1 — first complete loops (start using it)
 
-1. **A — Copilot yes-path.** Today inbound row: who, what they wrote, one next action, draft → yes → `sendGovernedSms` → timeline. Assigned-broker scoped.
+1. **A — Copilot yes-path.** **Landed.** Today inbound row: who, what they wrote, one next action, draft → yes → `sendGovernedSms` → timeline. Assigned-broker scoped.
 2. **C — Blow-away first touch.** Rewrite expired **and** FSBO first message + first packet: know this home + market this home (list-kit / this-address plan, not `buildServicesList`). Manual send. Matt taste on the packet.
 3. **B — One OREF.** One form from `tc_form_versions` → fill from deal data → Matt-owned email → seal. No SkySlope mutation.
 
@@ -195,15 +194,15 @@ Seller path: value my home / expired / FSBO → CMA or audit → list → under 
 
 ---
 
-## First build slices (plan only — do not build in this pass)
+## First build slices
 
 | Slice | Done when | Unblocked vs Matt-gated |
 |---|---|---|
-| **A** Queue → one recommended SMS → yes → governed send → timeline | Matt can say “everyone I need to respond to,” tap yes, and the CRM shows `sms_out` | **Unblocked to draft.** Send is Matt-gated every time. |
+| **A** Queue → one recommended SMS → yes → governed send → timeline | Matt can say “everyone I need to respond to,” tap yes, and the CRM shows `sms_out` | **Landed.** Send is still Matt-gated every time (Yes is the stamp). |
 | **B** One OREF from `tc_form_versions` → fill → Matt-owned email → seal | Matt has a sealed PDF in his inbox from deal data | **Unblocked to fill.** Email to Matt is a send (Matt-gated). No SkySlope write. |
 | **C** One expired (or FSBO) first-touch rewrite | Message + packet name THIS house and how we will market THIS house. Still manual. | **Unblocked to rewrite.** Send and “is it beautiful?” are Matt-gated. |
 
-Build order when a later session says go: **A draft path, then C rewrite, then B fill.** Do not wait on Closings cutover. Do not mix with a public page grind.
+Build order: **A landed. Next is C rewrite, then B fill.** Do not wait on Closings cutover. Do not mix with a public page grind.
 
 ---
 

@@ -2,15 +2,17 @@
 // Today: inbound, looking-at (A1), parked sequence steps, ready approvals,
 // CMA drafts to review, due tasks. Looking-at is the same sentence as the
 // D3 wake SMS so a missed text is not a missed person. Ask (A5) opens the
-// person composer with the D1 lead ask prefilled. Draft only. Never a send.
+// person composer with the D1 lead ask prefilled. Inbound Yes sends one
+// governed SMS. Never auto-send.
 import Link from 'next/link'
-import { formatTriageAge, getInboundTriage } from '@/lib/data/crm/getInboundTriage'
+import { formatTriageAge, getInboundTriage, type TriageItem } from '@/lib/data/crm/getInboundTriage'
 import { getLookingAtNow } from '@/lib/data/crm/getLookingAtNow'
 import { getTaskQueue } from '@/lib/data/crm/getTaskQueue'
 import { getBrokerActionQueue } from '@/lib/data/crm/getBrokerActionQueue'
 import { listCmasForAdmin } from '@/lib/data'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { createServiceClient } from '@/lib/supabase/service'
+import { todayInboundYesEnabled } from '@/lib/crm/today-inbound-draft'
 import { Button, QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
 import {
   confirmParkedStepToday,
@@ -19,6 +21,7 @@ import {
   completeTaskToday,
 } from './actions'
 import { ProduceDraftForm } from './ProduceDraftForm'
+import { TodayInboundYesForm } from './TodayInboundYesForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +37,37 @@ async function readyApprovals() {
     .order('created_at', { ascending: true })
     .limit(8)
   return data ?? []
+}
+
+function inboundQuote(body: string): string {
+  const trimmed = body.trim()
+  if (!trimmed) return ''
+  const max = 180
+  const clipped = trimmed.length > max ? `${trimmed.slice(0, max).trim()}...` : trimmed
+  return `"${clipped}"`
+}
+
+function inboundReplyContext(t: TriageItem) {
+  const quote = inboundQuote(t.inboundBody)
+  return (
+    <>
+      {quote ? <div>{quote}</div> : <div>{t.signal}</div>}
+      {t.nextStep ? <div>{t.nextStep}</div> : null}
+      {t.draftSms ? <div>Draft: {t.draftSms}</div> : null}
+    </>
+  )
+}
+
+function inboundReplyTitle(t: TriageItem) {
+  const who = t.whoLabels.length > 0 ? ` · ${t.whoLabels.join(' · ')}` : ''
+  return (
+    <>
+      <Link href={t.deepLink} style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
+        {t.personName ?? 'Unknown contact'}
+      </Link>
+      {who}
+    </>
+  )
 }
 
 function draftHeadline(row: {
@@ -134,31 +168,40 @@ export default async function TodayPage() {
         <section aria-label="Inbound">
           <SectionHead>Inbound</SectionHead>
           <ul className="av2-queue">
-            {triage.map((t) => (
-              <QueueRow
-                key={t.id}
-                kind="Reply"
-                kindTone="accent"
-                title={t.personName ?? 'Unknown contact'}
-                context={t.signal}
-                age={formatTriageAge(t.occurredAt, nowMs)}
-                action={
-                  <span style={{ display: 'inline-flex', gap: 8 }}>
-                    <form action={dismissTriageToday}>
-                      <input type="hidden" name="personId" value={t.personId} />
-                      <input type="hidden" name="kind" value={t.kind} />
-                      {t.taskId ? <input type="hidden" name="taskId" value={t.taskId} /> : null}
-                      <Button variant="quiet" type="submit">
-                        Dismiss
-                      </Button>
-                    </form>
-                    <Link href={t.deepLink}>
-                      <Button>Open</Button>
-                    </Link>
-                  </span>
-                }
-              />
-            ))}
+            {triage.map((t) => {
+              const isReply = t.kind === 'reply'
+              const yesEnabled = todayInboundYesEnabled({
+                kind: t.kind,
+                inboundChannel: t.inboundChannel,
+                draftSms: t.draftSms,
+              })
+              return (
+                <QueueRow
+                  key={t.id}
+                  kind="Reply"
+                  kindTone="accent"
+                  title={isReply ? inboundReplyTitle(t) : (t.personName ?? 'Unknown contact')}
+                  context={isReply ? inboundReplyContext(t) : t.signal}
+                  age={formatTriageAge(t.occurredAt, nowMs)}
+                  action={
+                    <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                      <form action={dismissTriageToday}>
+                        <input type="hidden" name="personId" value={t.personId} />
+                        <input type="hidden" name="kind" value={t.kind} />
+                        {t.taskId ? <input type="hidden" name="taskId" value={t.taskId} /> : null}
+                        <Button variant="quiet" type="submit">
+                          Dismiss
+                        </Button>
+                      </form>
+                      {yesEnabled ? <TodayInboundYesForm personId={t.personId} body={t.draftSms} /> : null}
+                      <Link href={t.deepLink}>
+                        <Button variant={yesEnabled ? 'quiet' : undefined}>Open</Button>
+                      </Link>
+                    </span>
+                  }
+                />
+              )
+            })}
           </ul>
         </section>
       )}

@@ -11,6 +11,7 @@ import {
   skipNextStepAction,
   dismissTriageItemAction,
   completeCrmTaskAction,
+  sendCrmSmsAction,
 } from '@/app/actions/crm'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 import { generateBannerImage } from '@/lib/grok-image'
@@ -49,6 +50,38 @@ export async function dismissTriageToday(formData: FormData): Promise<void> {
 export async function completeTaskToday(formData: FormData): Promise<void> {
   await completeCrmTaskAction(formData)
   revalidatePath('/admin/today')
+}
+
+/**
+ * Today inbound Yes-path. Matt's tap is the stamp. Routes through the existing
+ * composer action → sendGovernedSms. Never Twilio-direct. Never quiet-hours override.
+ */
+export async function sendTodayInboundReply(formData: FormData): Promise<{ error: string | null }> {
+  const auth = await checkAdminAction('today.view')
+  if (!auth.ok) return { error: auth.error }
+  const personId = Number(formData.get('personId'))
+  const body = String(formData.get('body') ?? '').trim()
+  if (!Number.isFinite(personId) || personId <= 0 || !body) {
+    return { error: 'A contact and message are required.' }
+  }
+  try {
+    const sendData = new FormData()
+    sendData.set('personId', String(personId))
+    sendData.set('body', body)
+    const idempotencyKey = String(formData.get('idempotencyKey') ?? '').trim()
+    if (idempotencyKey) sendData.set('idempotencyKey', idempotencyKey)
+    const sent = await sendCrmSmsAction(sendData)
+    if (!sent.ok) return { error: sent.error }
+    const dismissed = await dismissTriageItemAction({ personId, kind: 'reply' })
+    if (!dismissed.ok) {
+      console.error('[sendTodayInboundReply]', dismissed.error)
+    }
+    revalidatePath('/admin/today')
+    return { error: null }
+  } catch (err) {
+    console.error('[sendTodayInboundReply]', err)
+    return { error: 'Could not send the text.' }
+  }
 }
 
 async function downloadImagineUrl(url: string): Promise<Buffer> {

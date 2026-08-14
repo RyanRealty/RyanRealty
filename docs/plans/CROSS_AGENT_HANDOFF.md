@@ -1,18 +1,20 @@
 > **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
-> **NEWEST SUBJECT: Track 2 ranked plan complete. No A/B/C build until a later session says go.**
-> Prior: Track 1 §4 SEO/LLM done. Track 1 Market GREEN. Reviews GREEN. About GREEN. Open houses GREEN. Places GREEN. Listing GREEN. Search GREEN. `/sell` GREEN. `/` GREEN.
+> **NEWEST SUBJECT: Track 2 slice A landed. Next is slice C (expired/FSBO rewrite). Do not start B.**
+> Prior: Track 2 ranked plan. Track 1 §4 SEO/LLM done. Track 1 Looks GREEN.
 
-# Current — 2026-08-13 (Grok, Track 2 audit) — ranked plan P0–P4
+# Current — 2026-08-13 (Grok, Track 2 slice A) — inbound Yes-path
 
-**Track:** 2 planning audit only. No code, migrations, deploys, SkySlope writes, or outbound.
+**Track:** 2 slice A landed. `/admin/today` inbound: who + quote + next + draft. Yes → `sendCrmSmsAction` → `sendGovernedSms` → `sms_out` → row leaves Today.
+
+**SHA:** pending this land (fill after commit + push).
 
 **Plan:** `docs/plans/ADMIN_PRODUCT/TRACK2-RANKED-PLAN.md`
 
-**First slices (plan only):** A copilot yes-path (draft unblocked, send Matt-gated) · C expired/FSBO blow-away rewrite (rewrite unblocked, send + taste Matt-gated) · B one OREF fill → Matt email → seal (fill unblocked, send Matt-gated). Build order when go: A draft, then C rewrite, then B fill.
+**Next:** slice C — expired/FSBO first-touch rewrite (message + packet for THIS house). Still manual send. Then B (one OREF fill).
 
-**Not this land:** `stash@{0}`. Do not `git add -A`. Do not start leftover ratchet or sell-film.
+**Not this land:** `stash@{0}` (sell-film / SellerLPForm / SignInPrompt). Do not `git add -A`. No public site. No slice C or B. No leftover admin OS grind.
 
-**Skills read:** admin-product-os (orient, did not grind queue), crm-e2e, ia-lock, process-registry, prospecting + tc-close PDS.
+**Skills read:** admin-product-os (orient, did not grind queue), crm-e2e (awareness, no battery), git-commit.mdc, TRACK2-RANKED-PLAN.md, VOICE.md.
 
 # Prior — 2026-08-13 (Grok, Track 1 Open houses) — Open houses Look GREEN on production
 
