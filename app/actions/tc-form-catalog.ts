@@ -5,8 +5,6 @@ import { checkAdminAction } from '@/lib/admin/require-admin'
 import { applyFormCatalogSnapshots } from '@/lib/data/tc/form-catalog'
 import type { CatalogApplyResult } from '@/lib/data/tc/form-catalog'
 
-export type { CatalogApplyResult }
-
 export async function applyFormCatalogJson(
   jsonText: string,
 ): Promise<{ data: CatalogApplyResult | null; error: string | null }> {
