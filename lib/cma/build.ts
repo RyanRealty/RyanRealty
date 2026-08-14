@@ -898,7 +898,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       repairedKeys,
       contract,
       pricing,
-      market,
+      market, subject, factsReady: selection.pricingSource === 'facts',
     })
 
     // 8. Persist. Upsert keyed on slug — a rebuild updates in place (G47:

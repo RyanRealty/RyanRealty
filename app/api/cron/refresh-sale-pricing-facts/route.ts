@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { stampListingPricingReadsBatch } from '@/lib/pricing/stamp-listing-read'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -91,6 +92,12 @@ export async function GET(request: Request) {
     console.error('[refresh-sale-pricing-facts] index', idxErr.message)
     return NextResponse.json({ ok: false, error: idxErr.message, upserted }, { status: 500 })
   }
+  let listingReads = { stamped: 0, skipped: 0, due: 0 }
+  try {
+    listingReads = await stampListingPricingReadsBatch(done ? 24 : 6)
+  } catch (err) {
+    console.error('[refresh-sale-pricing-facts] listing_reads', err)
+  }
   return NextResponse.json({
     ok: true,
     upserted,
@@ -98,6 +105,7 @@ export async function GET(request: Request) {
     newConstructionStamped,
     waterReclassUpdated,
     newConstructionBackfilled,
+    listingReads,
     done,
     indexes: idx,
     duration_ms: Date.now() - started,

@@ -19,6 +19,23 @@
 
 **Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, creative-brain, public-product-os (orient), git-commit.mdc.
 
+# Concurrent — 2026-08-14 (Grok, public pricing product) — landing
+
+**Track:** Roll the matcher into one public product. Not another matcher-geography pass.
+
+**Wired in this session (not live until push + hosted migration + READY):**
+- `lib/pricing/public-contract.ts` — listed over/under, unlisted range, refuse (thin-set / new-construction / builder-phase / facts-not-ready / no-gla). Range band 0.09.
+- CMA `build_summary.public_listing_read` from the same contract. Document can still price new construction. Page must not.
+- `listing_pricing_reads` stamp + `listing_pricing_reads_due`. Cron append on refresh-sale-pricing-facts. Page reads the stamp only.
+- Listing page: published CMA wins. Else `LivePricingRead`. CTA is `PublishedCmaDownload` mode=request → same `crm_people` path. No second form.
+- Terms mention the listing-page market read.
+
+**Do not `git add -A`.** Imagery Current / page-grade / chrome-seller-ask stay out.
+
+**Leftover after this lands:** builder-phase $/sqft (Walnut / Kiesow class) only. Public page refuses those addresses.
+
+**Skills read:** SESSION_HANDOFF, CROSS_AGENT_HANDOFF, TDD, VOICE.md, DATABASE_FOR_AI_AGENTS §2b, git-commit.mdc.
+
 # Prior — 2026-08-14 (Grok, form catalog T2.1b) — LIVE `caa92e2a`
 
 **Track:** Transaction forms. Know when OREF, Oregon Data Share, or Oregon Realtors revise a form, and when a new published form exists, without downloading every blank.

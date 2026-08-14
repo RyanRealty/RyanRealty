@@ -205,3 +205,129 @@ export async function registerForCmaDocumentAction(input: CmaDownloadInput): Pro
 
   return { ok: true, url: `/api/cma-document/${registration.token}` }
 }
+
+export type CmaRequestResult = { ok: true } | { ok: false; error: string }
+
+/** Live listing-page read. Same lead path. No document token. */
+export async function requestListingCmaAction(input: CmaDownloadInput): Promise<CmaRequestResult> {
+  if (typeof input.company === 'string' && input.company.trim() !== '') {
+    return { ok: false, error: 'We could not process that request.' }
+  }
+
+  const isProd = process.env.NODE_ENV === 'production'
+  const h = await headers()
+  const ip =
+    h.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    h.get('x-real-ip') ||
+    h.get('cf-connecting-ip') ||
+    '127.0.0.1'
+
+  try {
+    const limiter = getAuthLimiter()
+    if (!limiter) {
+      if (isProd) return { ok: false, error: 'Too many requests. Please try again later.' }
+    } else {
+      const { success } = await limiter.limit(`cma-request:${ip}`)
+      if (!success) return { ok: false, error: 'Too many requests. Please try again in a minute.' }
+    }
+  } catch {
+    if (isProd) return { ok: false, error: 'Too many requests. Please try again later.' }
+  }
+
+  const listingKey = String(input.listingKey ?? '').trim()
+  const fullName = String(input.fullName ?? '').trim().slice(0, 120)
+  const email = String(input.email ?? '').trim().toLowerCase()
+  const phone = String(input.phone ?? '').trim().slice(0, 40) || null
+
+  if (!listingKey) return { ok: false, error: 'We could not tell which property that was.' }
+  if (fullName.length < 2) return { ok: false, error: 'Please enter your name.' }
+  if (email.length > 254 || !EMAIL_RE.test(email)) {
+    return { ok: false, error: 'Please enter an email address we can reach you at.' }
+  }
+  if (input.agreed !== true) {
+    return { ok: false, error: 'Please agree to the terms so we can send the analysis.' }
+  }
+  if (input.termsVersion !== CMA_DOCUMENT_TERMS_VERSION) {
+    return { ok: false, error: 'Those terms are out of date. Reload the page and try again.' }
+  }
+
+  const smsTag = input.smsConsent === true ? 'sms-consent:yes' : 'sms-consent:no'
+  const attributed = await readAttributedAgentServer()
+  const assignedBroker = attributed?.broker ?? 'matt'
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+  const sourceUrl = `${base}/listing/${encodeURIComponent(listingKey)}`
+
+  let personId: number | null = null
+  try {
+    const [firstName, ...rest] = fullName.split(/\s+/)
+    const result = await sendEvent({
+      type: 'Property Inquiry',
+      person: {
+        firstName,
+        lastName: rest.join(' ') || undefined,
+        emails: [{ value: email }],
+        phones: phone ? [{ value: phone }] : undefined,
+      },
+      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      system: 'Ryan Realty Website',
+      sourceUrl,
+      message: `Requested a market analysis from the listing-page read for listing ${listingKey}`,
+      brokerAttribution: { brokerSlug: assignedBroker },
+    })
+    personId = result.ok ? result.personId : null
+  } catch {
+    // fall through
+  }
+
+  if (!personId) {
+    try {
+      const native = await ensureNativeLead({
+        name: fullName,
+        email,
+        phone,
+        source: 'listing-pricing-read',
+        tags: ['audience:buyer', 'source:listing-pricing-read', smsTag],
+        assignedBroker: assignedBroker as never,
+      })
+      personId = native.personId > 0 ? native.personId : null
+    } catch {
+      // best-effort
+    }
+  }
+
+  if (personId) {
+    try {
+      await enrichNativeLead({
+        personId,
+        tags: ['source:listing-pricing-read', smsTag],
+        assignedBroker: assignedBroker as never,
+        originNote: {
+          title: 'Requested a market analysis',
+          body: `Listing ${listingKey}. Live listing-page read. Agreed to terms version ${input.termsVersion}. SMS consent: ${input.smsConsent === true ? 'yes' : 'no'}.`,
+        },
+      })
+      await createNativeTask({
+        personId,
+        name: `Prepare a CMA for listing ${listingKey}`,
+        type: 'Follow Up',
+        dueInMinutes: 15,
+        assignedBroker: assignedBroker as never,
+      })
+    } catch {
+      // best-effort
+    }
+  }
+
+  try {
+    await fireLeadGenerated({
+      lp_variant: 'listing-pricing-read',
+      lead_type: 'buyer',
+      value: 0,
+      fub_person_id: personId ?? undefined,
+    })
+  } catch {
+    // best-effort
+  }
+
+  return { ok: true }
+}

@@ -17,14 +17,15 @@ import { countByTier } from '@/lib/cma/comp-trace'
 import type { AccuracyContract } from '@/lib/cma/contract'
 import type { CmaAudit } from '@/lib/cma/audit'
 import type { CompJudgment } from '@/lib/cma/judge'
-import type { CmaComp, CmaMarketContext, CmaPricing } from '@/lib/cma/types'
+import type { CmaAdjustedComp, CmaComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaSiteData } from '@/lib/cma/county'
+import { publicReadFromBuild } from '@/lib/cma/public-read-from-build'
 
 export interface BuildSummaryInput {
   builder: string
   docType: 'cma' | 'expired-audit'
   pageCount: number
-  comps: CmaComp[]
+  comps: CmaAdjustedComp[]
   compSelection: CompSelectionDiagnostics
   site: CmaSiteData
   judgment: CompJudgment | null
@@ -34,6 +35,8 @@ export interface BuildSummaryInput {
   contract: AccuracyContract
   pricing: CmaPricing
   market: CmaMarketContext | null
+  subject: CmaSubject
+  factsReady: boolean
 }
 
 /**
@@ -150,6 +153,14 @@ export function composeBuildSummary(i: BuildSummaryInput): Record<string, unknow
           yoy_pct: i.market.yoyMedianPriceDeltaPct,
         }
       : null,
+    // What the public listing page would show. The CMA document can still
+    // price new construction. The page must not.
+    public_listing_read: publicReadFromBuild({
+      factsReady: i.factsReady,
+      comps: i.comps,
+      subject: i.subject,
+      tiersUsed: i.compSelection.tiers_used,
+    }),
   }
 }
 

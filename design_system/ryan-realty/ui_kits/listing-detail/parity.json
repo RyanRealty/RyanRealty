@@ -5,7 +5,7 @@
   "competitiveTarget": "Zillow Showcase + Hilton & Hyland editorial register (per docs/research/top-brokerage-listing-content-audit.md)",
   "note": "Migrated off the KB chrome onto the v3 barrel 2026-08-13 (E-HOMES-DETAIL). Rhythm: three of the six patterns (Sheet inside the listing stack, Ledger, Quiet), no two adjacent alike, chrome exempt. Order is Breadcrumb, listing-detail stack (hero, price, facts, remarks, Sheet alerts, restyle, map, market, schools, parks, history, money, attribution), Ledger (similar homes), Quiet (edges), Footer. PUBLIC_UI.md section 1: the page primary at 390 is PriceCtaStrip filled Schedule a tour. Valuation is a Quiet link labeled Value my home. V3Footer carries no button. Layout owns V3Chrome. One V3Footer outside main. No kb-root.",
   "dataChanges": {
-    "unchanged": "Every listing figure, filter, window, and unit. getListingDetail, photos, videos, history, open houses, pulse, brokers, reviews, published CMA, related homes. JSON-LD RealEstateListing + BreadcrumbList still emit from the page MetadataBlock with listingDetailPath, listingShareSummary, gated photos slice 0-5, and ctaBroker as listingAgent. MLS publicRemarks are displayed, never rewritten. Capture still calls submitSearchAlertSignup with city, propertyType A, price band, beds when present, field email, trap company.",
+    "unchanged": "Every listing figure, filter, window, and unit. getListingDetail, photos, videos, history, open houses, pulse, brokers, reviews, published CMA, related homes. Live pricing read is stamp-only (getListingPricingRead). JSON-LD RealEstateListing + BreadcrumbList still emit from the page MetadataBlock with listingDetailPath, listingShareSummary, gated photos slice 0-5, and ctaBroker as listingAgent. MLS publicRemarks are displayed, never rewritten. Capture still calls submitSearchAlertSignup with city, propertyType A, price band, beds when present, field email, trap company.",
     "similarHomes": "KbFeatured video tiles are deleted. Similar homes render as V3Ledger figure rows from relatedHomes.primary. Rows without a street or a list price are dropped (v3Text throws on blank; formatPrice of null is not a price). formatPrice rounding to $1,000 is display-only on the Ledger. JSON-LD still uses the raw listPrice.",
     "builderTiles": "getListingsByBuilder is deleted from this page. The builder door in Quiet opens /builders/<slug>. That route still owns the builder inventory rail."
   },
@@ -126,6 +126,12 @@
       "path": "components/site/listing-detail/PublishedCmaSection.tsx",
       "blocking": true,
       "why": "Our published opinion of value. Renders only for a document with published_to_listing true that also passed its audit."
+    },
+    {
+      "name": "LivePricingRead",
+      "path": "components/site/listing-detail/LivePricingRead.tsx",
+      "blocking": true,
+      "why": "Stamp-backed market read when no published CMA. Range or over/under or refuse. Never walks the matcher on the request."
     },
     {
       "name": "V3Footer",

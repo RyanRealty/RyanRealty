@@ -134,6 +134,8 @@ export async function priceSubjectFromFacts(
 ): Promise<{
   match: PricingMatchResult & { factsReady: boolean }
   pricing: CmaPricing | null
+  predictedClose: number | null
+  compsImpliedClose: number | null
   recommendedList: number | null
   medianDaysToOffer: number | null
   pathNotes: string[]

@@ -75,7 +75,7 @@ const ITEMS: V3QuietItem[] = [
   {
     kind: 'prose',
     term: 'Automated valuations (CMA)',
-    body: 'Any automated valuation or comparative market analysis (CMA) provided on this site is an estimate only and is not an appraisal. Do not use it as the sole basis for pricing or purchase decisions.',
+    body: 'Any automated valuation, listing-page market read, or comparative market analysis (CMA) provided on this site is an estimate only and is not an appraisal. Do not use it as the sole basis for pricing or purchase decisions.',
   },
   {
     kind: 'prose',

@@ -182,6 +182,8 @@ export function estimateClosePrice(opts: {
 }): {
   pricing: CmaPricing | null
   predictedClose: number | null
+  /** Comps-implied close. Listed public over/under uses this, never the ask haircut. */
+  compsImpliedClose: number | null
   recommendedList: number | null
   medianDaysToOffer: number | null
   pathNotes: string[]
@@ -247,5 +249,5 @@ export function estimateClosePrice(opts: {
         : null
   const regime =
     regimes.size === 0 ? 'flat' : regimes.size === 1 ? ( [...regimes][0] as 'rising' | 'flat' | 'falling') : 'mixed'
-  return { pricing, predictedClose, recommendedList, medianDaysToOffer, pathNotes, regime }
+  return { pricing, predictedClose, compsImpliedClose: compClose, recommendedList, medianDaysToOffer, pathNotes, regime }
 }

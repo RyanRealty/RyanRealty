@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { Body } from '@/components/site/primitives'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
-import { registerForCmaDocumentAction } from '@/app/actions/cma-download'
+import { registerForCmaDocumentAction, requestListingCmaAction } from '@/app/actions/cma-download'
 import { CONTACT } from '@/lib/brand/contact'
 
 /**
@@ -35,6 +35,8 @@ type Props = {
   subjectAddress: string
   terms: readonly string[]
   termsVersion: string
+  /** download = published CMA. request = live read, same lead path, no document yet. */
+  mode?: 'download' | 'request'
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -103,8 +105,10 @@ function Field({ label, id, children }: { label: string; id: string; children: R
   )
 }
 
-export function PublishedCmaDownload({ listingKey, subjectAddress, terms, termsVersion }: Props) {
+export function PublishedCmaDownload({ listingKey, subjectAddress, terms, termsVersion, mode = 'download' }: Props) {
+  const isRequest = mode === 'request'
   const [open, setOpen] = useState(false)
+  const [requested, setRequested] = useState(false)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -134,7 +138,7 @@ export function PublishedCmaDownload({ listingKey, subjectAddress, terms, termsV
       return
     }
     startTransition(async () => {
-      const result = await registerForCmaDocumentAction({
+      const payload = {
         listingKey,
         fullName: fullName.trim(),
         email: email.trim(),
@@ -143,13 +147,34 @@ export function PublishedCmaDownload({ listingKey, subjectAddress, terms, termsV
         agreed,
         smsConsent,
         company,
-      })
+      }
+      const result = isRequest
+        ? await requestListingCmaAction(payload)
+        : await registerForCmaDocumentAction(payload)
       if (!result.ok) {
         setError(result.error)
         return
       }
-      setDownloadUrl(result.url)
+      if (isRequest) {
+        setRequested(true)
+        return
+      }
+      if ('url' in result && typeof result.url === 'string') setDownloadUrl(result.url)
     })
+  }
+
+  if (requested) {
+    return (
+      <div style={KB_PANEL_STYLE} data-testid="published-cma-request-ready">
+        <div className="display" style={{ fontSize: 'clamp(17px,1.7vw,20px)' }}>
+          We have the request
+        </div>
+        <Body size="small">
+          We will prepare the analysis for {subjectAddress} and be in touch. The full write-up names every comparable
+          sale and the adjustment behind each one.
+        </Body>
+      </div>
+    )
   }
 
   if (downloadUrl) {
@@ -187,12 +212,13 @@ export function PublishedCmaDownload({ listingKey, subjectAddress, terms, termsV
             style={KB_BUTTON_STYLE}
             data-testid="published-cma-download-cta"
           >
-            Download the full market analysis
+            {isRequest ? 'Get the full analysis' : 'Download the full market analysis'}
           </button>
         </div>
         <Body size="small" tone="muted">
-          The full analysis names every comparable sale behind this range and shows the adjustment we made for each
-          one.
+          {isRequest
+            ? 'The full analysis names every comparable sale and shows the adjustment we made for each one.'
+            : 'The full analysis names every comparable sale behind this range and shows the adjustment we made for each one.'}
         </Body>
       </div>
     )
@@ -299,7 +325,7 @@ export function PublishedCmaDownload({ listingKey, subjectAddress, terms, termsV
           style={{ ...KB_BUTTON_STYLE, opacity: pending ? 0.55 : 1, cursor: pending ? 'not-allowed' : 'pointer' }}
           data-testid="published-cma-submit"
         >
-          {pending ? 'Working' : 'Send me the full analysis'}
+          {pending ? 'Working' : isRequest ? 'Ask us for the analysis' : 'Send me the full analysis'}
         </button>
       </div>
 

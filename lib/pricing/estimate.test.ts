@@ -179,7 +179,32 @@ describe('estimateClosePrice n<3', () => {
       market: null,
     })
     expect(out.predictedClose).toBe(686_000)
+    expect(out.compsImpliedClose).toBeNull()
     expect(out.pricing).toBeNull()
+  })
+})
+
+describe('estimateClosePrice compsImpliedClose', () => {
+  it('keeps the comps-implied close separate from the ask haircut', () => {
+    const out = estimateClosePrice({
+      subject,
+      subjectStory: 'one',
+      comps: [
+        sale({ sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+        sale({ listingKey: 'C2', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+        sale({ listingKey: 'C3', sqft: 2000, closePrice: 700_000, closeDate: '2025-12-01' }),
+      ],
+      compStories: ['one', 'one', 'one'],
+      points: [
+        { month: '2025-12-01', ppsf: 350, n: 40 },
+        { month: '2026-01-01', ppsf: 350, n: 40 },
+      ],
+      asOf: '2026-01-15',
+      market: null,
+    })
+    expect(out.predictedClose).toBe(686_000)
+    expect(out.compsImpliedClose).toBeGreaterThan(0)
+    expect(out.compsImpliedClose).not.toBe(out.predictedClose)
   })
 })
 

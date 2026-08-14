@@ -18,6 +18,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
 import { getPublishedCmaForListing } from '@/lib/data/cma/getPublishedCma'
+import { getListingPricingRead } from '@/lib/data/pricing/reads'
 import { cn } from '@/lib/utils'
 import {
   V3_ROOT_CLASS,
@@ -50,6 +51,7 @@ import { ListingLikeThisSheet as _ListingLikeThisSheetImport } from '@/component
 import { resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
+import { LivePricingRead } from '@/components/site/listing-detail/LivePricingRead'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
 import { PhotoGalleryLightbox as _PhotoGalleryLightboxImport } from '@/components/site/PhotoGalleryLightbox'
 import { TextMattCTA as _TextMattCTAImport } from '@/components/site/listing-detail/TextMattCTA'
@@ -162,7 +164,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         ? { neighborhood: marketGeo.name, city: listing.city ?? undefined }
         : { city: listing.city ?? undefined }
 
-  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma] =
+  const [relatedHomes, history, photos, videos, brokers, listingAgent, marketPulse, marketStats, openHouses, reviews, publishedCma, pricingRead] =
     await Promise.all([
       withTimeoutFallback(
         getRelatedListings({
@@ -201,6 +203,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       withTimeoutFallback(getListingDetailOpenHouses(listingKey), [], 3000, 'listing:open-houses'),
       withTimeoutFallback(getReviews(50), null, 3000, 'listing:reviews'),
       withTimeoutFallback(getPublishedCmaForListing(listing.listingKey), null, 3000, 'listing:publishedCma'),
+      withTimeoutFallback(getListingPricingRead(listing.listingKey), null, 3000, 'listing:pricingRead'),
     ])
 
   const listingWithPhotos = { ...listing, photos }
@@ -314,7 +317,16 @@ export default async function ListingDetailPage({ params }: PageProps) {
         taxAnnualAmount={listing.taxAnnualAmount}
       />
       <RentalAnalysis listing={listing} />
-      <PublishedCmaSection cma={publishedCma} />
+      {publishedCma ? (
+        <PublishedCmaSection cma={publishedCma} />
+      ) : (
+        <LivePricingRead
+          read={pricingRead}
+          listPrice={listing.listPrice}
+          listingKey={listing.listingKey}
+          subjectAddress={street}
+        />
+      )}
       <ListingAttribution
         listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}
