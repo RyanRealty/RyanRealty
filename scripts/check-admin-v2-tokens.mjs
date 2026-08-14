@@ -628,6 +628,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/deals/[key]/DocumentName.tsx',
   'app/admin/(protected)/deals/[key]/DocumentRowActions.tsx',
   'app/admin/(protected)/deals/[key]/DocumentUpload.tsx',
+  'app/admin/(protected)/deals/[key]/FillOrefPacket.tsx',
   'app/admin/(protected)/dscr/_components/DscrEmailDialog.client.tsx',
   'app/admin/(protected)/email/compose/_components/AdminEmailCompose.tsx',
   'app/admin/(protected)/email/compose/_components/ComposeToCohort.tsx',
