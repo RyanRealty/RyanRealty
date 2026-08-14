@@ -21,7 +21,7 @@ import { revalidatePath, revalidateTag } from 'next/cache'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getProspect, updateCmaRowFieldsBySlug } from '@/lib/data'
+import { getProspect, getProspectDetail, updateCmaRowFieldsBySlug } from '@/lib/data'
 import { verifyNotRelisted } from '@/lib/data/prospecting/batch'
 import { resolveDripSequenceForKind } from '@/lib/data/prospecting/drip'
 import {
@@ -55,6 +55,12 @@ import { isSuppressed, isSuppressedByPhone, isSuppressedByEmail } from '@/lib/cr
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
+import {
+  buildFirstTouchSms,
+  firstTouchFactsFromProspect,
+  formatFirstTouchUsd,
+  isCanonicalFirstTouchBody,
+} from '@/lib/crm/first-touch-copy'
 import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
 import { sendTemplateSelfTestAction } from '@/app/actions/crm-template-test'
 
@@ -64,6 +70,43 @@ async function requireAdmin(): Promise<boolean> {
   const session = await getSession()
   const role = await getAdminRoleForEmail(session?.user?.email ?? null)
   return Boolean(role && role.role !== 'report_viewer')
+}
+
+async function composeProspectFirstTouch(args: {
+  kind: ProspectKind
+  prospect: { id: string; streetAddress: string | null; listPrice: number | null; listedAt: string | null; expiredAt: string | null }
+  senderFirstName: string | null
+  cmaLink: string | null
+  templateBody: string | null
+  personLike: MergePersonLike
+  ctx: Parameters<typeof renderCrmMerge>[2]
+}): Promise<string> {
+  const detail = await getProspectDetail(args.kind, args.prospect.id).catch(() => null)
+  const price = detail?.listPrice ?? args.prospect.listPrice
+  if (args.ctx) {
+    args.ctx.property = {
+      ...(args.ctx.property ?? {}),
+      address: detail?.streetAddress ?? args.prospect.streetAddress,
+      price: price != null && Number.isFinite(price) && price > 0 ? formatFirstTouchUsd(price) : args.ctx.property?.price,
+    }
+  }
+  if (args.templateBody && !isCanonicalFirstTouchBody(args.kind, args.templateBody)) {
+    return renderCrmMerge(args.templateBody, args.personLike, args.ctx)
+  }
+  return buildFirstTouchSms(
+    args.kind,
+    firstTouchFactsFromProspect({
+      address: detail?.streetAddress ?? args.prospect.streetAddress,
+      listPrice: price,
+      daysOnMarket: detail?.daysOnMarket ?? null,
+      listedAt: args.prospect.listedAt,
+      expiredAt: args.prospect.expiredAt,
+      originalListPrice: detail?.originalListPrice ?? null,
+      priceHistory: detail?.priceHistory,
+      senderFirstName: args.senderFirstName,
+      cmaLink: args.cmaLink,
+    }),
+  )
 }
 
 /**
@@ -220,12 +263,19 @@ export async function sendProspectingIntro(
         .eq('id', lead.personId)
         .maybeSingle()
       const ctx = await buildMergeContext({ person: undefined, senderSlug: 'matt' })
-      ctx.property = { ...(ctx.property ?? {}), address: prospect.streetAddress }
       const personLike: MergePersonLike = {
         ...(personRow ?? {}),
         custom: { ...((personRow?.custom as Record<string, unknown> | null) ?? {}), cmaLink: docUrlForPerson },
       }
-      merged = renderCrmMerge(String(tpl.body), personLike, ctx)
+      merged = await composeProspectFirstTouch({
+        kind,
+        prospect,
+        senderFirstName: ctx.sender?.firstName ?? null,
+        cmaLink: docUrlForPerson,
+        templateBody: String(tpl.body),
+        personLike,
+        ctx,
+      })
     }
     const unresolved = findUnresolvedMergeTokens(merged)
     if (unresolved.length > 0) {
@@ -711,9 +761,16 @@ export async function prepareProspectSend(
       .eq('is_active', true)
       .maybeSingle()
     const ctx = await buildMergeContext({ senderSlug: 'matt' })
-    ctx.property = { ...(ctx.property ?? {}), address: prospect.streetAddress }
     const defaultSmsBody = tpl?.body
-      ? renderCrmMerge(String(tpl.body), { custom: { cmaLink: docUrl ?? '' } }, ctx)
+      ? await composeProspectFirstTouch({
+          kind,
+          prospect,
+          senderFirstName: ctx.sender?.firstName ?? null,
+          cmaLink: docUrl,
+          templateBody: String(tpl.body),
+          personLike: { custom: { cmaLink: docUrl ?? '' } },
+          ctx,
+        })
       : ''
 
     // Email defaults come from the SAME rail the send uses (prepareCmaSendPreview
@@ -724,9 +781,7 @@ export async function prepareProspectSend(
     let defaultEmailSubject = prospect.streetAddress
       ? `Your market analysis for ${prospect.streetAddress}`
       : 'Your market analysis'
-    let defaultEmailBody = docUrl
-      ? `Hi, Matt with Ryan Realty. I put together a market analysis for ${prospect.streetAddress ?? 'your property'}. Take a look here: ${docUrl} No pressure either way.`
-      : ''
+    let defaultEmailBody = defaultSmsBody
     if (docSlug) {
       const preview = await prepareCmaSendPreview(docSlug).catch(() => null)
       if (preview?.ok) {

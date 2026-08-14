@@ -152,6 +152,31 @@ function storyScene(a: ImmersiveArgs): string {
 
 
 
+function thisHomeScene(a: ImmersiveArgs): string {
+  const lines = (a.thisHomePlan ?? []).map((s) => s.trim()).filter(Boolean)
+  if (lines.length === 0) return ''
+  const address = a.subject.streetAddress.trim()
+  const title = address ? `How we would market ${address}` : 'How we would market this home'
+  const hero = lines.slice(0, 3)
+  const secondary = lines.slice(3)
+  const cards = hero
+    .map((s) => `<div class="plan r"><div class="plan-a">${esc(s)}</div></div>`)
+    .join('')
+  const rest = secondary.length
+    ? `<p class="body r">${secondary.map((s) => esc(s)).join(' ')}</p>`
+    : ''
+  return `
+  <section class="sc sc-cream" id="how-we-would-market">
+    <div class="in wide">
+      <div class="kick r">This home</div>
+      <h2 class="h r">${esc(title)}</h2>
+      <p class="lede r">The plan below is for ${esc(address || 'this home')}, not a generic listing package.</p>
+      <div class="plan-grid">${cards}</div>
+      ${rest}
+    </div>
+  </section>`
+}
+
 function planScene(a: ImmersiveArgs): string {
   const p = a.listingPlan
   if (!p) return ''
@@ -668,6 +693,7 @@ ${seasonalityScene(a)}
 ${marketScene(a)}
 ${likesScene(a)}
 ${canDoScene(a)}
+${thisHomeScene(a)}
 ${planScene(a)}
 ${nextScene(a)}
 ${sourcesScene(a)}

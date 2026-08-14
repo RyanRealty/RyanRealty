@@ -93,6 +93,8 @@ export interface RenderCmaArgs {
   equity?: CmaEquityPosition | null
   /** What we would do about this home, derived from its own measured gaps. */
   listingPlan?: ListingPlan | null
+  /** How we would market THIS address (list-kit hero). Not the /sell brochure. */
+  thisHomePlan?: string[] | null
 }
 
 interface PageDef {
@@ -666,6 +668,30 @@ function seasonalityChartSvg(x: NonNullable<CmaExtras['seasonality']>): string {
 // ── What you own (the prior purchase and what it has done) ────────────────
 
 // ── What we would do about it (the plan, from this home's own numbers) ────
+function thisHomePlanPage(a: RenderCmaArgs): PageDef | null {
+  const lines = (a.thisHomePlan ?? []).map((s) => s.trim()).filter(Boolean)
+  if (lines.length === 0) return null
+  const address = a.subject.streetAddress.trim()
+  const title = address ? `How we would market ${address}` : 'How we would market this home'
+  const hero = lines.slice(0, 3)
+  const secondary = lines.slice(3)
+  const heroLis = hero.map((s) => `<li><strong>${esc(s)}</strong></li>`).join('')
+  const rest = secondary.length
+    ? `<h3 class="subhead">Also on this listing</h3><ul class="note-list">${secondary
+        .map((s) => `<li>${esc(s)}</li>`)
+        .join('')}</ul>`
+    : ''
+  return {
+    meta: `${esc(address || 'This home')} · How we would market it`,
+    toc: title,
+    body: `
+  <h2 class="section">${esc(title)}</h2>
+  <p>The plan below is for ${esc(address || 'this home')}, not a generic listing package.</p>
+  <ul class="note-list">${heroLis}</ul>
+  ${rest}`,
+  }
+}
+
 function listingPlanPage(a: RenderCmaArgs): PageDef | null {
   const p = a.listingPlan
   if (!p) return null
@@ -675,11 +701,13 @@ function listingPlanPage(a: RenderCmaArgs): PageDef | null {
         `<li><strong>${esc(i.trigger)}</strong><div>${esc(i.action)}</div><div class="small">${esc(i.basis)}</div></li>`,
     )
     .join('')
+  const address = a.subject.streetAddress.trim()
+  const heading = address ? `What we would do at ${address}` : 'What We Would Do'
   return {
-    meta: `${esc(a.subject.streetAddress)} · What We Would Do`,
-    toc: 'What we would do',
+    meta: `${esc(address || 'This home')} · What We Would Do`,
+    toc: heading,
     body: `
-  <h2 class="section">What We Would Do</h2>
+  <h2 class="section">${esc(heading)}</h2>
   <p>Every line below comes from a number in this report, measured on your home.</p>
   <ul class="note-list">${rows}</ul>
   <div class="trace"><div class="t-hd">Source</div>${esc(p.source)}</div>`,
@@ -943,6 +971,8 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (highlights) rest.push(highlights)
   const canDo = whatYouCanDoPage(a)
   if (canDo) rest.push(canDo)
+  const thisHome = thisHomePlanPage(a)
+  if (thisHome) rest.push(thisHome)
   const plan = listingPlanPage(a)
   if (plan) rest.push(plan)
   const verify = verifyPage(a)

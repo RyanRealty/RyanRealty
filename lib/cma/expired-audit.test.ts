@@ -7,7 +7,15 @@
  * listing period.
  */
 import { describe, expect, it } from 'vitest'
-import { buildFailureFindings, buildOwnershipFinding } from './expired-audit'
+import {
+  buildFailureFindings,
+  buildOwnershipFinding,
+  buildServicesList,
+  buildThisHomeMarketingPlan,
+  feeLine,
+} from './expired-audit'
+import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-copy'
+import { checkBrandVoice } from '@/lib/voice/check'
 import type { BpoListingHistory } from '@/lib/bpo/types'
 import type { CmaPricing, CmaSubject } from '@/lib/cma/types'
 
@@ -203,5 +211,36 @@ describe('buildFailureFindings — ownership integration', () => {
     expect(ownership!.fact).toContain('county deed record')
     expect(ownership!.fact).toContain('2004')
     expect(ownership!.fact).not.toContain('MLS record')
+  })
+})
+
+describe('buildServicesList — this-home plan, not a brochure', () => {
+  it('names THIS address on the hero lines and keeps generic services secondary', () => {
+    const plan = buildThisHomeMarketingPlan({ streetAddress: '1842 NW Foo St' })
+    expect(plan.hero[0]).toContain('1842 NW Foo St')
+    expect(plan.hero.join(' ')).toMatch(/listing video/i)
+    expect(plan.hero.join(' ')).not.toMatch(/every Ryan Realty listing/i)
+    expect(plan.secondary.join(' ')).toMatch(/3D walkthrough|weekly report|MLS/i)
+    const list = buildServicesList({ streetAddress: '1842 NW Foo St' })
+    expect(list[0]).toContain('1842 NW Foo St')
+    expect(list[0]).toContain('listing video')
+    expect(list.join(' ')).not.toMatch(/What every Ryan Realty listing gets/i)
+    for (const line of list) {
+      expect(isWorthQuestionCopy(line)).toBe(false)
+      expect(blamesPriorAgent(line)).toBe(false)
+      const voice = checkBrandVoice(line)
+      expect(voice.ok, `${line} -> ${JSON.stringify(voice.violations)}`).toBe(true)
+    }
+  })
+
+  it('does not invent an address when none is provided', () => {
+    const list = buildServicesList(null)
+    expect(list[0]).toContain('this home')
+    expect(list.join(' ')).not.toMatch(/1842|Main St|\$\d/)
+  })
+
+  it('fee line does not lead with the old brochure sentence', () => {
+    expect(feeLine()).not.toMatch(/Every service above/i)
+    expect(isWorthQuestionCopy(feeLine())).toBe(false)
   })
 })

@@ -14,12 +14,21 @@ import { buildCma } from '@/lib/cma/build'
 import { sendCmaToLead } from '@/lib/cma/send'
 import { updateCmaRowFieldsBySlug } from '@/lib/data'
 import { slugifyAddress } from '@/lib/cma/address-slug'
-import { getLatestBuiltCmaRowForBaseSlug, resolveWritableCmaSlot } from '@/lib/cma/versions'
+import {
+  getLatestBuiltCmaRowForBaseSlug,
+  getLatestClientReadyCmaRowForBaseSlug,
+  resolveWritableCmaSlot,
+} from '@/lib/cma/versions'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isSuppressed } from '@/lib/crm/suppressions'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
 import { renderCrmMerge, findUnresolvedMergeTokens, type MergePersonLike } from '@/lib/crm/merge'
 import { buildMergeContext } from '@/lib/crm/merge-context'
+import {
+  buildFsboFirstTouchSms,
+  firstTouchFactsFromProspect,
+  isCanonicalFirstTouchBody,
+} from '@/lib/crm/first-touch-copy'
 import { sendSmsViaMessagingService, toE164 } from '@/lib/crm/twilio'
 
 const SMS_TEMPLATE_KEY = 'fsbo-first-touch-v1'
@@ -35,6 +44,7 @@ type FsboRow = {
   street_address: string | null
   city: string | null
   postal_code: string | null
+  list_price: number | null
   owner_name: string | null
   contact_phone: string | null
   contact_email: string | null
@@ -49,7 +59,7 @@ async function getFsboRow(fsboUrl: string): Promise<FsboRow | null> {
   const sb = createServiceClient()
   const { data } = await sb
     .from('fsbo_listings')
-    .select('fsbo_url, street_address, city, postal_code, owner_name, contact_phone, contact_email, enrichment_notes, status, fub_person_id, outreach_crm_person_id, outreach_sms_sent_at')
+    .select('fsbo_url, street_address, city, postal_code, list_price, owner_name, contact_phone, contact_email, enrichment_notes, status, fub_person_id, outreach_crm_person_id, outreach_sms_sent_at')
     .eq('fsbo_url', fsboUrl)
     .maybeSingle()
   return (data as FsboRow | null) ?? null
@@ -176,7 +186,24 @@ export async function sendFsboIntroSmsAction(fsboUrl: string): Promise<FsboSmsRe
       .maybeSingle()
     const ctx = await buildMergeContext({ person: undefined, senderSlug: 'matt' })
     ctx.property = { ...(ctx.property ?? {}), address: f.street_address ?? '' }
-    const merged = renderCrmMerge(String(tpl.body), (personRow ?? {}) as MergePersonLike, ctx)
+    const clientReady = f.street_address
+      ? await getLatestClientReadyCmaRowForBaseSlug(slugifyAddress(f.street_address)).catch(() => null)
+      : null
+    const cmaLink = clientReady?.slug ? `https://ryan-realty.com/cma/${clientReady.slug}` : null
+    const personLike = {
+      ...(personRow ?? {}),
+      custom: { ...((personRow?.custom as Record<string, unknown> | null) ?? {}), ...(cmaLink ? { cmaLink } : {}) },
+    } as MergePersonLike
+    const merged = isCanonicalFirstTouchBody('fsbo', String(tpl.body))
+      ? buildFsboFirstTouchSms(
+          firstTouchFactsFromProspect({
+            address: f.street_address,
+            listPrice: f.list_price != null ? Number(f.list_price) : null,
+            senderFirstName: ctx.sender?.firstName ?? null,
+            cmaLink,
+          }),
+        )
+      : renderCrmMerge(String(tpl.body), personLike, ctx)
     const unresolved = findUnresolvedMergeTokens(merged)
     if (unresolved.length > 0) {
       return { ok: false, error: `Send refused. Unresolved merge tokens: ${unresolved.join(', ')}.` }

@@ -510,7 +510,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         const photosCount = subject.listingKey ? await getListingPhotosCount(subject.listingKey) : null
         expiredAudit = {
           findings: buildFailureFindings({ subject, pricing, market, history, photosCount, ownershipSince: await getExpiredOwnershipSince(subject.mlsNumber) }),
-          services: buildServicesList(),
+          services: buildServicesList(subject),
           netSheet: buildNetSheet(pricing),
           feeLine: feeLine(),
         }
@@ -555,6 +555,8 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
 
     // 4.9. What we would do about it, derived only from this home's own
     // measured gaps. Every line cites a figure computed above.
+    const thisHomePlan = buildServicesList(subject)
+
     const rawPlan = buildListingPlan({ subject, pricing, extras, expiredAudit, market })
     // Plan lines cite source strings computed elsewhere, so they inherit that
     // punctuation. Sanitize at the boundary rather than trusting every source.
@@ -598,6 +600,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       pricing.confidenceReason,
       ...(development ? [development.disclaimer, ...development.items.flatMap((i) => [i.headline, i.detail]), ...development.buyerOptions.flatMap((o) => [o.headline, o.detail]), ...development.marketingHighlights.map((h) => h.headline)] : []),
       ...(rental ? [rental.disclaimer, rental.economicsNote, ...rental.tenures.flatMap((t) => [t.headline, t.detail]), ...rental.marketingHighlights.map((h) => h.headline)] : []),
+      ...thisHomePlan,
       ...(listingPlan ? listingPlan.items.flatMap((i) => [i.trigger, i.action, i.basis]) : []),
       ...(subdivisionStory
         ? [
@@ -673,6 +676,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       subdivisionStory,
       equity,
       listingPlan,
+      thisHomePlan,
     }
 
     // Spread, never a second hand-written list: a field added to one list and
@@ -840,7 +844,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
               },
               failure_findings: expiredAudit.findings,
               net_sheet: expiredAudit.netSheet,
-              services_source: 'Mirrors the published Essential-plan claims on ryan-realty.com/sell',
+              services_source: `This-home list-kit plan for ${subject.streetAddress}. Photos, 3D, and weekly report stay secondary.`,
             },
           }
         : {}),

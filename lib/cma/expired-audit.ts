@@ -13,9 +13,9 @@
  *     VOICE.md + the expired-listing-lp SKILL: the data tells the
  *     story, never editorialize, NEVER blame the prior agent, no "most agents
  *     do X" framing.
- *  2. SERVICES — what every Ryan Realty listing gets. Mirrors the site's own
- *     published claims (app/sell/page.tsx) verbatim-adjacent so the document
- *     never promises anything the site doesn't.
+ *  2. THIS-HOME PLAN — how we would market THIS address (list-kit first:
+ *     listing video, flyers, photo set). Generic services (3D, weekly report,
+ *     MLS) stay secondary. Never a "/sell brochure" hero.
  *  3. NET SHEET — estimated seller proceeds at the recommended price, at the
  *     2.5% expired-listing rate (our normal rate is 3% — stated explicitly).
  *     Our fee facts come from Matt (the principal broker). Third-party costs
@@ -269,21 +269,39 @@ export function buildFailureFindings(args: {
   return findings
 }
 
+export type ThisHomePlanSubject = {
+  streetAddress?: string | null
+}
+
 /**
- * What every Ryan Realty listing gets. Mirrors the site's published Essential-
- * plan claims (app/sell/page.tsx) — the document never promises anything the
- * site doesn't already state publicly.
+ * How we would market THIS house. Hero lines name the address when we have
+ * it (list-kit: video, flyers, photo set). 3D, weekly report, and MLS feeds
+ * stay secondary. Omit the address rather than invent one.
  */
-export function buildServicesList(): string[] {
-  return [
-    'Listed on the MLS and every national feed it syndicates to (Zillow, Redfin, Realtor.com, and the rest).',
-    'Professional photography, paid for by us.',
-    'A 3D tour, so out-of-area buyers walk the home before they fly in.',
-    'Every showing coordinated and every inquiry answered by the broker on your listing agreement, not a team assistant.',
-    'A written report every week it is listed: showings, saves, views, and what we are doing next.',
-    'Data-driven pricing built the way this audit was built, from verified closed sales and county records.',
-    'Transaction management through close, including inspection negotiation and title coordination.',
-  ]
+export function buildThisHomeMarketingPlan(subject?: ThisHomePlanSubject | null): {
+  hero: string[]
+  secondary: string[]
+} {
+  const address = subject?.streetAddress?.trim() || null
+  const forHome = address ? `For ${address}` : 'For this home'
+  return {
+    hero: [
+      `${forHome} we cut a listing video from this home's photos.`,
+      `${forHome} we build a Just Listed flyer, a feature sheet, and an Instagram carousel from this address.`,
+      `${forHome} we shoot a photo set made for this house.`,
+    ],
+    secondary: [
+      'A 3D walkthrough of this home so out-of-area buyers can walk it before they fly in.',
+      'A written report every week it is listed: showings, saves, views, and what we are doing next.',
+      'Listed on the MLS and the national feeds it syndicates to.',
+    ],
+  }
+}
+
+/** Packet layer 2. Hero is the this-home plan. Secondary is not the lead. */
+export function buildServicesList(subject?: ThisHomePlanSubject | null): string[] {
+  const plan = buildThisHomeMarketingPlan(subject)
+  return [...plan.hero, ...plan.secondary]
 }
 
 /**
@@ -361,7 +379,7 @@ export function buildNetSheet(pricing: CmaPricing): ExpiredNetSheet {
  *  Enhanced plan — so the honest comparison names the plans rather than
  *  presenting 2.5% as an expired-only concession (audit finding 2026-07-14). */
 export function feeLine(): string {
-  return `For an expired listing we list at ${EXPIRED_LISTING_FEE_PCT}% of the sale price, where our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%. Every service above is included at that rate. Commission is negotiable and every listing agreement is its own conversation.`
+  return `For an expired listing we list at ${EXPIRED_LISTING_FEE_PCT}% of the sale price, where our standard Enhanced plan runs ${STANDARD_LISTING_FEE_PCT}%. Commission is negotiable and every listing agreement is its own conversation.`
 }
 
 // ── The failed-ask ceiling (Matt 2026-08-05) ────────────────────────────────
