@@ -51,6 +51,9 @@ const BASELINE = new Set([
   // deliberately: 76K rows, 2 btree indexes, one daily refresh — the full
   // rewrite costs ~nothing. Documented in the migration body.
   '20260729193000_listing_tile_mv_drop_now_refreshed_at.sql:similar_listings_mv_src',
+  // Already applied. Live MV rebuilt without CURRENT_DATE in
+  // 20260814132710_pricing_subdivision_cells_window.sql.
+  '20260814020000_sale_pricing_facts.sql:pricing_subdivision_cells',
 ])
 
 // NB: no trailing \b after the paren alternatives — ")" is a non-word char, so

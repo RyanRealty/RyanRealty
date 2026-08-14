@@ -22,6 +22,7 @@
 | **Active listings in a community** | `listings WHERE "SubdivisionName" = ANY(<aliases from neighborhood_subdivisions>) AND "StandardStatus" IN ('Active','Coming Soon','Active Under Contract')` | see §3a for the aliases | ≤ 10 min |
 | **Comparable sales (CMA)** | **`sale_pricing_facts`** (all years, Central Oregon closed A) via `selectPricingFactsPool` / `selectPricingComps`. Fallback: `listings WHERE "StandardStatus"='Closed'` | close_price, concessions_amount, concessions_yn, seller_net (view `sale_pricing_seller_net`), close_ppsf, water/sewer/hoa/lot/story classes, original_ask, drop_count | facts refresh 6h; listings ≤ 10 min |
 | **Market-path time adjustment** | **`pricing_market_index`** (monthly median $/sqft per city, 1996+) | `month`, `n`, `median_ppsf`, `median_sale_to_original` | rebuilt after facts refresh |
+| **Subdivision gated $/sqft cut** | **`pricing_subdivision_cells`** via `getPricingSubdivisionCells`. Window from `pricing_index_window.cells_since` | `median_ppsf`, `n` | rebuilt after facts refresh |
 | **Polygon for a community** | `boundaries WHERE geo_type=<type> AND geo_slug=<slug>` | `polygon` (PostGIS geometry) | manual |
 | **Homes inside a boundary** (map pins + "homes for sale" cards on city/neighborhood/community pages) | `listing_boundary_xref_mv WHERE geo_type=<type> AND geo_slug=<slug> AND standard_status='Active'` — via the `listings_in_boundary` RPC, wrapped by the `getGeoBoundaryMapData` DAL. **NEVER `ST_Within` against `listings` at request time** (it blows the anon 3s timeout — see §4d). | `listing_key`, `lat`, `lng`, `list_price` | ≤ 15 min (refreshed by `/api/cron/refresh-mvs`) |
 | **Which subdivisions roll up into a community** | `neighborhood_subdivisions WHERE neighborhood_slug=<slug>` | `subdivision_label` (the MLS SubdivisionName values) | manual |
@@ -133,7 +134,8 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | **`public.sale_pricing_seller_net`** | view | Same rows plus `seller_net` = close_price minus resolved seller concessions. ClosePrice is the contract price. Concessions do not change it. |
 | `public.sale_pricing_price_steps` | growing | Deduped ListPrice path per sale, from `listing_history.raw`. |
 | **`public.pricing_market_index`** | monthly | City × month median $/sqft / sale-to-original / days-to-offer from facts. The long series for path time-adjustment. `market_stats_cache` monthly is only ~14 months — do not use it as the long index. |
-| `public.pricing_subdivision_cells` | last 36 mo | Subdivision median $/sqft for the gated / different-tier cut. |
+| `public.pricing_subdivision_cells` | last 36 mo | Subdivision median $/sqft for the gated / different-tier cut. Window is `pricing_index_window.cells_since` (stamped by `refresh_pricing_indexes()`), not `CURRENT_DATE` in the MV body (F7). |
+| `public.pricing_index_window` | 1 | One-row stamp. `cells_since` is the inclusive close_date floor for `pricing_subdivision_cells`. Service-role only. |
 
 ### 2c. Market analytics (the cache — read these, don't compute) ⭐
 

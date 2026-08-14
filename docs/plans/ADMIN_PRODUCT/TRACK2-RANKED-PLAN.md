@@ -245,6 +245,7 @@ Work the leftover list an agent can finish. Matt-gated sends stay parked.
 - OREF maps: live `tc_form_versions` is 111/111 `field_map=[]`. Overlay remains 001 / 15-page / 01/2026 only. No other sample blanks on disk. Do not invent geometry.
 - Seller-net 400-sale print: `docs/research/pricing-backtest-2026-08-14.json`. Close MAPE 2.76% (97.3% within 10%). Seller net MAPE 2.54% on 384 priced rows (97.9% within 10%). 36 starved (<3 comps). Filter and cite in that file.
 - Pre-2024 concessions YN: 2024+ is 100%. 2023 is 73.7%. 2018–2022 is 21–34% and those stamped rows are Yes only (0 No). Drain stays the existing cron RPC. Do not TOAST-scan `listings.details`.
+- Seller-net gate debt: `pricing_subdivision_cells` no longer uses `CURRENT_DATE` in the MV body. Window is `pricing_index_window.cells_since`. Hosted applied `20260814132710`. Snapshot + DAL index refreshed so `ci:migration-drift` and `ci:mv-determinism` pass.
 - Not this pass: Yes on Today, C taste, Email to Matt, publish, SkySlope cutover, referral agreement.
 
 ---

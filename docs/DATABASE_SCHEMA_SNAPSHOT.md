@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-10T20:28:08.732Z
+**Generated:** 2026-08-14T13:28:10.267Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -348,7 +348,7 @@ Pre-projected single-row-per-listing view for tile + map rendering. snake_case c
 | `search_vector` | tsvector | yes |  |
 | `refreshed_at` | timestamp with time zone | yes |  |
 
-### `similar_listings_mv` · **rows ≈ 75,941**
+### `similar_listings_mv` · **rows ≈ 76,410**
 
 (anchor_key, similar_key, rank, similarity_score) — precomputed nearest 12 active comparables per anchor. Refreshed nightly via `/api/cron/refresh-similar-listings`. Active-set only (closed anchors return empty).
 
@@ -417,7 +417,7 @@ Row per methodology version describing the formula behind each market stat. Meth
 | `methodology_version` | text | yes |  |
 | `methodology` | jsonb | yes |  |
 
-### `market_stats_cache` · **rows ≈ 14,470**
+### `market_stats_cache` · **rows ≈ 13,751**
 
 6-hour freshness. Per-geo + per-window aggregated stats. **DAL:** `getMarketStats(...)`. **Known issue 2026-05-28:** column list in the current DAL does not match the cache schema — fix deferred.
 
@@ -594,7 +594,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `dom_total` | smallint | yes |  |
 | `price_per_sqft` | numeric | yes |  |
 
-### `cmas` · **rows ≈ 273**
+### `cmas` · **rows ≈ 284**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -683,7 +683,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `pulled_at` | timestamp with time zone | yes |  |
 | `north_star_attributed_buyer_leads` | integer | no | 0 |
 
-### `expired_listings` · **rows ≈ 252**
+### `expired_listings` · **rows ≈ 265**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -742,7 +742,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `outreach_email_claim_at` | timestamp with time zone | yes |  |
 | `outreach_email_idempotency_key` | text | yes |  |
 
-### `marketing_brain_actions` · **rows ≈ 670**
+### `marketing_brain_actions` · **rows ≈ 683**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -812,7 +812,7 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `related_campaign` | text | yes |  |
 | `related_post_id` | text | yes |  |
 
-### `saved_listings` · **rows ≈ 4**
+### `saved_listings` · **rows ≈ 5**
 
 | Column | Type | Nullable | Default |
 |---|---|---|---|
@@ -3865,6 +3865,35 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `created_at` | timestamp with time zone | no | now() |
 | `change_amount` | numeric | yes |  |
 
+### `pricing_index_window`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | smallint | no | 1 |
+| `cells_since` | date | no |  |
+
+### `pricing_market_index`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `city_slug` | text | yes |  |
+| `month` | date | yes |  |
+| `n` | integer | yes |  |
+| `median_ppsf` | double precision | yes |  |
+| `median_close` | double precision | yes |  |
+| `median_sale_to_original` | double precision | yes |  |
+| `median_days_to_offer` | double precision | yes |  |
+
+### `pricing_subdivision_cells`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `city_slug` | text | yes |  |
+| `subdivision_norm` | text | yes |  |
+| `n` | integer | yes |  |
+| `median_ppsf` | double precision | yes |  |
+| `median_close` | double precision | yes |  |
+
 ### `process_escape_ledger`
 
 | Column | Type | Nullable | Default |
@@ -4040,6 +4069,219 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `done` | boolean | no | false |
 | `rows_cleaned` | bigint | no | 0 |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `sale_pricing_facts`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `list_number` | text | yes |  |
+| `street_number` | text | yes |  |
+| `street_name` | text | yes |  |
+| `city` | text | no |  |
+| `city_slug` | text | no |  |
+| `postal_code` | text | yes |  |
+| `county` | text | yes |  |
+| `subdivision` | text | yes |  |
+| `subdivision_norm` | text | yes |  |
+| `latitude` | numeric | yes |  |
+| `longitude` | numeric | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `product_class` | text | no |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `sqft` | numeric | no |  |
+| `year_built` | smallint | yes |  |
+| `lot_acres` | numeric | yes |  |
+| `lot_class` | text | no |  |
+| `story_class` | text | no |  |
+| `levels_raw` | text | yes |  |
+| `water_class` | text | no |  |
+| `sewer_class` | text | no |  |
+| `hoa_class` | text | no |  |
+| `association_yn` | boolean | yes |  |
+| `association_fee` | numeric | yes |  |
+| `water_raw` | text | yes |  |
+| `sewer_raw` | text | yes |  |
+| `utilities_source` | text | yes |  |
+| `on_market_date` | date | yes |  |
+| `original_ask` | numeric | yes |  |
+| `last_ask` | numeric | yes |  |
+| `close_date` | date | no |  |
+| `close_price` | numeric | no |  |
+| `close_ppsf` | numeric | yes |  |
+| `sale_to_original` | numeric | yes |  |
+| `sale_to_final` | numeric | yes |  |
+| `first_drop_day` | smallint | yes |  |
+| `drop_count` | smallint | no | 0 |
+| `pending_date` | date | yes |  |
+| `days_to_offer` | smallint | yes |  |
+| `cdom` | integer | yes |  |
+| `history_event_count` | integer | no | 0 |
+| `flag_new_roof` | boolean | no | false |
+| `phrase_new_roof` | text | yes |  |
+| `flag_remodeled` | boolean | no | false |
+| `phrase_remodeled` | text | yes |  |
+| `flag_updated_kitchen` | boolean | no | false |
+| `phrase_updated_kitchen` | text | yes |  |
+| `flag_new_construction` | boolean | no | false |
+| `phrase_new_construction` | text | yes |  |
+| `flag_distressed` | boolean | no | false |
+| `phrase_distressed` | text | yes |  |
+| `remarks_source` | text | yes |  |
+| `buyer_financing` | text | yes |  |
+| `concessions_amount` | numeric | yes |  |
+| `photo_url` | text | yes |  |
+| `public_remarks` | text | yes |  |
+| `refreshed_at` | timestamp with time zone | no | now() |
+| `concessions_yn` | text | yes |  |
+
+### `sale_pricing_facts_sfr`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `list_number` | text | yes |  |
+| `street_number` | text | yes |  |
+| `street_name` | text | yes |  |
+| `city` | text | yes |  |
+| `city_slug` | text | yes |  |
+| `postal_code` | text | yes |  |
+| `county` | text | yes |  |
+| `subdivision` | text | yes |  |
+| `subdivision_norm` | text | yes |  |
+| `latitude` | numeric | yes |  |
+| `longitude` | numeric | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `product_class` | text | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `sqft` | numeric | yes |  |
+| `year_built` | smallint | yes |  |
+| `lot_acres` | numeric | yes |  |
+| `lot_class` | text | yes |  |
+| `story_class` | text | yes |  |
+| `levels_raw` | text | yes |  |
+| `water_class` | text | yes |  |
+| `sewer_class` | text | yes |  |
+| `hoa_class` | text | yes |  |
+| `association_yn` | boolean | yes |  |
+| `association_fee` | numeric | yes |  |
+| `water_raw` | text | yes |  |
+| `sewer_raw` | text | yes |  |
+| `utilities_source` | text | yes |  |
+| `on_market_date` | date | yes |  |
+| `original_ask` | numeric | yes |  |
+| `last_ask` | numeric | yes |  |
+| `close_date` | date | yes |  |
+| `close_price` | numeric | yes |  |
+| `close_ppsf` | numeric | yes |  |
+| `sale_to_original` | numeric | yes |  |
+| `sale_to_final` | numeric | yes |  |
+| `first_drop_day` | smallint | yes |  |
+| `drop_count` | smallint | yes |  |
+| `pending_date` | date | yes |  |
+| `days_to_offer` | smallint | yes |  |
+| `cdom` | integer | yes |  |
+| `history_event_count` | integer | yes |  |
+| `flag_new_roof` | boolean | yes |  |
+| `phrase_new_roof` | text | yes |  |
+| `flag_remodeled` | boolean | yes |  |
+| `phrase_remodeled` | text | yes |  |
+| `flag_updated_kitchen` | boolean | yes |  |
+| `phrase_updated_kitchen` | text | yes |  |
+| `flag_new_construction` | boolean | yes |  |
+| `phrase_new_construction` | text | yes |  |
+| `flag_distressed` | boolean | yes |  |
+| `phrase_distressed` | text | yes |  |
+| `remarks_source` | text | yes |  |
+| `buyer_financing` | text | yes |  |
+| `concessions_amount` | numeric | yes |  |
+| `photo_url` | text | yes |  |
+| `public_remarks` | text | yes |  |
+| `refreshed_at` | timestamp with time zone | yes |  |
+
+### `sale_pricing_price_steps`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | no |  |
+| `step_index` | smallint | no |  |
+| `event_date` | date | no |  |
+| `day_from_list` | smallint | yes |  |
+| `old_price` | numeric | no |  |
+| `new_price` | numeric | no |  |
+| `change_pct` | numeric | yes |  |
+
+### `sale_pricing_seller_net`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `listing_key` | text | yes |  |
+| `list_number` | text | yes |  |
+| `street_number` | text | yes |  |
+| `street_name` | text | yes |  |
+| `city` | text | yes |  |
+| `city_slug` | text | yes |  |
+| `postal_code` | text | yes |  |
+| `county` | text | yes |  |
+| `subdivision` | text | yes |  |
+| `subdivision_norm` | text | yes |  |
+| `latitude` | numeric | yes |  |
+| `longitude` | numeric | yes |  |
+| `property_type` | text | yes |  |
+| `property_sub_type` | text | yes |  |
+| `product_class` | text | yes |  |
+| `beds` | integer | yes |  |
+| `baths` | numeric | yes |  |
+| `sqft` | numeric | yes |  |
+| `year_built` | smallint | yes |  |
+| `lot_acres` | numeric | yes |  |
+| `lot_class` | text | yes |  |
+| `story_class` | text | yes |  |
+| `levels_raw` | text | yes |  |
+| `water_class` | text | yes |  |
+| `sewer_class` | text | yes |  |
+| `hoa_class` | text | yes |  |
+| `association_yn` | boolean | yes |  |
+| `association_fee` | numeric | yes |  |
+| `water_raw` | text | yes |  |
+| `sewer_raw` | text | yes |  |
+| `utilities_source` | text | yes |  |
+| `on_market_date` | date | yes |  |
+| `original_ask` | numeric | yes |  |
+| `last_ask` | numeric | yes |  |
+| `close_date` | date | yes |  |
+| `close_price` | numeric | yes |  |
+| `close_ppsf` | numeric | yes |  |
+| `sale_to_original` | numeric | yes |  |
+| `sale_to_final` | numeric | yes |  |
+| `first_drop_day` | smallint | yes |  |
+| `drop_count` | smallint | yes |  |
+| `pending_date` | date | yes |  |
+| `days_to_offer` | smallint | yes |  |
+| `cdom` | integer | yes |  |
+| `history_event_count` | integer | yes |  |
+| `flag_new_roof` | boolean | yes |  |
+| `phrase_new_roof` | text | yes |  |
+| `flag_remodeled` | boolean | yes |  |
+| `phrase_remodeled` | text | yes |  |
+| `flag_updated_kitchen` | boolean | yes |  |
+| `phrase_updated_kitchen` | text | yes |  |
+| `flag_new_construction` | boolean | yes |  |
+| `phrase_new_construction` | text | yes |  |
+| `flag_distressed` | boolean | yes |  |
+| `phrase_distressed` | text | yes |  |
+| `remarks_source` | text | yes |  |
+| `buyer_financing` | text | yes |  |
+| `concessions_amount` | numeric | yes |  |
+| `photo_url` | text | yes |  |
+| `public_remarks` | text | yes |  |
+| `refreshed_at` | timestamp with time zone | yes |  |
+| `concessions_yn` | text | yes |  |
+| `seller_net` | numeric | yes |  |
 
 ### `saved_cities`
 
