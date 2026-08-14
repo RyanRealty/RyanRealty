@@ -128,7 +128,7 @@ file is required, the first agent to need it takes the lease and the other waits
 | Track 2 C | **landed** merge `e837b296` (`1da1d4df`) | Expired + FSBO first-touch rewrite (this-home copy + packet plan). Hosted migration `20260813200000_rewrite_expired_fsbo_first_touch.sql` (UPDATE seed bodies only). Manual send. Matt taste still open. |
 | Track 2 B | **landed** merge `7bc5262c` (`e8e68979`) | One OREF from `tc_form_versions` → fill from deal → Email to Matt → seal. No SkySlope write. Empty `field_map` omits bindings. |
 | Track 2 P2 | **landed** `16d69b29` / tip `6f32f9b3` READY | Many CRM people on one `tc_deal` via `tc_deal_people`. Start from the person. Parties on the deal above lender/title. Closings show names. OREF overlay + Today approval Yes + inbound C-bar. No SkySlope write. |
-| Track 2 P3 leftovers | **landed** `40a5df8c` | Dead expired/FSBO/send-doc actions refuse. Visitor cron creates a call task, no Resend email. `/admin/crm/deals*` → Closings. Pipeline dropped from People nav. Closings footer no longer advertises the old board. Packet hero is the this-home plan. |
+| Track 2 P3 leftovers | **landed** `15c03889` | Dead expired/FSBO/send-doc actions refuse. Visitor cron creates a call task, no Resend email. `/admin/crm/deals*` → Closings. Pipeline dropped from People nav. Closings footer no longer advertises the old board. Packet hero is the this-home plan. |
 
 Chrome is live. Mixed routes sit under v3 chrome; they are quarry, not done. Treat every shipped v3 page as quarry: keep what holds, rework what is clunky, never call it final because a wave claimed it.
 

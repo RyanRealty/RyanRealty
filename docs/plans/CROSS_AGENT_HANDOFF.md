@@ -6,7 +6,7 @@
 
 **Track:** 2 P3 leftovers that do not need Matt. A broker does not work a second send path or a second deal board. No outbound SMS/email. No SkySlope write. `stash@{0}` still not this land. Pricing / referral / sitemap dirt in this tree is **not this land**.
 
-**SHA:** P3 `40a5df8c` on local main (push next). P2 tip `6f32f9b3` already READY.
+**SHA:** P3 `15c03889` on local main (push next). P2 tip `6f32f9b3` already READY.
 
 **Hosted migration** `20260814010000_tc_deal_people.sql` already applied on `dwvlophlbvvygjfxcrhm`. 0 rows. P3 has no new migration.
 
