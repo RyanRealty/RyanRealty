@@ -21,6 +21,7 @@ import {
   type ReportGridRow,
 } from '@/components/admin/v2'
 import { getTcFormLibraryBoard, type FormFreshness } from '@/lib/data'
+import { formatDateTime } from '@/lib/format/date'
 import { buildFormCatalogCheckScript } from '@/lib/tc/form-catalog-script'
 import { CheckFormCatalog } from './CheckFormCatalog'
 
@@ -94,16 +95,8 @@ function freshnessWord(fresh: FormFreshness, pendingLabel: string | null) {
 
 function formatCheckedAt(iso: string | null): string | null {
   if (!iso) return null
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Los_Angeles',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(d)
+  const label = formatDateTime(iso)
+  return label === '—' ? null : label
 }
 
 export default async function TcFormsPage({ searchParams }: Props) {
