@@ -56,6 +56,18 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toContain('?print=1')
   })
 
+  it('opens on THIS home and the list-kit plan, not a worth-question', () => {
+    const html = renderImmersiveCmaHtml(args(), 'https://ryan-realty.com')
+    expect(html).toContain('How we would market 20513 Byron')
+    expect(html).toContain('listing video')
+    expect(html).not.toMatch(/what your home is worth/i)
+    expect(html).not.toMatch(/What every listing gets/i)
+    const planAt = html.indexOf('id="how-we-would-market"')
+    const evidenceAt = html.indexOf('id="evidence"')
+    expect(planAt).toBeGreaterThan(0)
+    expect(evidenceAt).toBeGreaterThan(planAt)
+  })
+
   it('the failed-listing scene renders with the backtest constants', () => {
     const html = renderImmersiveCmaHtml(
       args({ expiredAudit: { findings: [{ lens: 'pricing', fact: 'Asked above every sale.', meaning: 'The ask was the ceiling.' }], services: [], netSheet: { lines: [], netLow: 0, netHigh: 0 }, feeLine: '' } as never }),

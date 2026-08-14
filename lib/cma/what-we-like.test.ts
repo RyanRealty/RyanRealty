@@ -194,6 +194,21 @@ describe('the single-doc fold', () => {
     expect(html).not.toContain('NET_SHEET_SENTINEL')
   })
 
+  it('names THIS home on the cover and falls back to the this-home plan', () => {
+    const { html } = renderCmaHtml(args({}))
+    expect(html).toContain('We built a market analysis for 123 Test Way')
+    expect(html).toContain('listing video')
+    expect(html).toContain('How we would market 123 Test Way')
+    expect(html).not.toContain('What Every Listing Gets')
+    expect(html).not.toMatch(/what your home is worth/i)
+    const coverAt = html.indexOf('cover-title')
+    const planAt = html.indexOf('How we would market 123 Test Way')
+    const compsAt = html.indexOf('Where the comps sit')
+    expect(coverAt).toBeGreaterThan(0)
+    expect(planAt).toBeGreaterThan(coverAt)
+    expect(compsAt === -1 || planAt < compsAt).toBe(true)
+  })
+
   it('renders the this-home plan as the marketing hero when provided', () => {
     const { html } = renderCmaHtml(
       args(

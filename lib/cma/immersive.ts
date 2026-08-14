@@ -19,6 +19,7 @@ import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
+import { inboundImmersiveHeroKick, inboundImmersiveTitle, resolveThisHomePlan } from '@/lib/cma/inbound-packet'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ListingPlan } from '@/lib/cma/listing-plan'
 import { formatDate } from '@/lib/format/date'
@@ -149,11 +150,8 @@ function storyScene(a: ImmersiveArgs): string {
   </section>`
 }
 
-
-
-
 function thisHomeScene(a: ImmersiveArgs): string {
-  const lines = (a.thisHomePlan ?? []).map((s) => s.trim()).filter(Boolean)
+  const lines = resolveThisHomePlan({ thisHomePlan: a.thisHomePlan, streetAddress: a.subject.streetAddress })
   if (lines.length === 0) return ''
   const address = a.subject.streetAddress.trim()
   const title = address ? `How we would market ${address}` : 'How we would market this home'
@@ -477,7 +475,7 @@ export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): strin
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <meta name="robots" content="noindex,nofollow"/>
-<title>${esc(s.streetAddress)} · What your home is worth · Ryan Realty</title>
+<title>${esc(inboundImmersiveTitle(s.streetAddress))}</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
 @font-face{font-family:'Amboqia Boriango';src:url('${siteUrl}/fonts/Amboqia_Boriango.otf') format('opentype');font-display:swap}
@@ -660,7 +658,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   ${heroImg}
   <div class="hero-scrim" aria-hidden="true"></div>
   <div class="in">
-    <div class="hero-kick">What your home is worth · ${esc(a.generatedAtIso.slice(0, 10))}</div>
+    <div class="hero-kick">${esc(inboundImmersiveHeroKick(s.streetAddress, a.generatedAtIso))}</div>
     <h1 class="hero-h">${esc(s.streetAddress)}</h1>
     <div class="hero-sub">${esc(s.city)}, ${esc(s.state)} ${esc(s.postalCode ?? '')}${s.subdivision ? ` · ${esc(s.subdivision)}` : ''}${specs ? ` · ${esc(specs)}` : ''}</div>
     <div class="hero-for">Prepared for ${esc(a.client.name ?? 'the owner')} by ${esc(a.broker.displayName)}, Ryan Realty</div>
@@ -685,6 +683,7 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   </div>
 </section>
 
+${thisHomeScene(a)}
 ${subdivisionStoryScene(a)}
 ${compsScene(a)}
 ${storyScene(a)}
@@ -693,7 +692,6 @@ ${seasonalityScene(a)}
 ${marketScene(a)}
 ${likesScene(a)}
 ${canDoScene(a)}
-${thisHomeScene(a)}
 ${planScene(a)}
 ${nextScene(a)}
 ${sourcesScene(a)}
