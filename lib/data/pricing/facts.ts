@@ -11,7 +11,7 @@ import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
 import type { MarketIndexPoint } from '@/lib/pricing/market-path'
 import type { PricingSale, SubdivisionCell } from '@/lib/pricing/match'
-import type { HoaClass, LotClass, ProductKey, SewerClass, StoryClass, WaterClass } from '@/lib/pricing/classes'
+import { plausibleListedClose, type HoaClass, type LotClass, type ProductKey, type SewerClass, type StoryClass, type WaterClass } from '@/lib/pricing/classes'
 
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -62,6 +62,8 @@ function rowToSale(r: Record<string, unknown>): PricingSale | null {
   const closeDate = typeof r.close_date === 'string' ? r.close_date.slice(0, 10) : null
   const listingKey = typeof r.listing_key === 'string' ? r.listing_key : null
   if (!listingKey || !closeDate || !closePrice || closePrice <= 0 || !sqft || sqft < 300) return null
+  const lastAsk = r.last_ask != null ? Number(r.last_ask) : null
+  if (!plausibleListedClose(closePrice, lastAsk)) return null
   const street = `${r.street_number ?? ''} ${r.street_name ?? ''}`.trim()
   return {
     listingKey,
@@ -89,7 +91,7 @@ function rowToSale(r: Record<string, unknown>): PricingSale | null {
     concessionsAmount: r.concessions_amount != null ? Number(r.concessions_amount) : null,
     concessionsYn: typeof r.concessions_yn === 'string' ? r.concessions_yn : null,
     originalAsk: r.original_ask != null ? Number(r.original_ask) : null,
-    lastAsk: r.last_ask != null ? Number(r.last_ask) : null,
+    lastAsk,
     daysToOffer: r.days_to_offer != null ? Number(r.days_to_offer) : null,
     cdom: r.cdom != null ? Number(r.cdom) : null,
     dropCount: Number(r.drop_count ?? 0),
@@ -137,7 +139,9 @@ export async function selectPricingFactsPool(opts: {
     console.error('[selectPricingFactsPool]', error.message)
     return []
   }
-  return (data ?? []).map((r) => rowToSale(r as Record<string, unknown>)).filter((r): r is PricingSale => r != null)
+  return ((data ?? []) as unknown as Record<string, unknown>[])
+    .map((r) => rowToSale(r))
+    .filter((r): r is PricingSale => r != null)
 }
 
 export async function getPricingMarketIndex(citySlug: string): Promise<MarketIndexPoint[]> {

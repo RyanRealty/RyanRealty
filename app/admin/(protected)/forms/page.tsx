@@ -93,7 +93,7 @@ function freshnessWord(fresh: FormFreshness, pendingLabel: string | null) {
   )
 }
 
-function formatCheckedAt(iso: string | null): string | null {
+function formatCheckedAt(iso: string | null | undefined): string | null {
   if (!iso) return null
   const label = formatDateTime(iso)
   return label === '—' ? null : label
