@@ -1,14 +1,14 @@
 /**
- * load-fonts — wires the canonical Amboqia Boriango loader for this project.
+ * load-fonts — legacy shim.
  *
- * Imported once at the top of src/index.ts (Remotion entry file).
- * The project's own fonts.ts handles AzoSans + the existing `loadFonts()`
- * call chain; this module ensures the canonical `loadAmboqia()` from
- * video_production_skills/captions/canonical is also registered so
- * SingleWordCaption components render with the correct brand display font.
- *
- * Font file: video/evergreen-education/public/Amboqia_Boriango.otf
+ * Previous version imported the canonical loadAmboqia() from
+ * video_production_skills/captions/canonical/load-amboqia. That loader
+ * hung inside Chromium during render (fetch never resolved, delayRender
+ * timed out at 118s). Reverted to a no-op — the project's own
+ * src/fonts.ts::loadFonts() (invoked from EvergreenExplainer +
+ * EvergreenMasterclass) already loads Amboqia + AzoSans from
+ * public/ root using the same FontFace pattern with proper error handling.
  */
-import { loadAmboqia } from '../../../video_production_skills/captions/canonical/load-amboqia'
-
-loadAmboqia()
+export function noop(): void {
+  // intentionally empty
+}

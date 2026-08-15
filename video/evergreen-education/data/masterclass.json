@@ -14,11 +14,11 @@
     "loanAmount": 375000,
     "interestRate": 0.07,
     "termYears": 30,
-    "monthlyRent": 3000,
-    "monthlyPI": 2495,
-    "monthlyTaxes": 625,
-    "monthlyInsurance": 80,
-    "monthlyOpexReserves": 200,
+    "monthlyRent": 3400,
+    "monthlyPI": 2500,
+    "monthlyTaxes": 500,
+    "monthlyInsurance": 100,
+    "monthlyOpexReserves": 100,
     "monthlyCashFlow": 200,
     "appreciationRate": 0.03,
     "buildingBasis": 400000,
@@ -28,6 +28,7 @@
     "taxSavingsYearly": 3491,
     "year1LoanPaydown": 4091
   },
+  "inputsArithmeticCheck": "$3,400 rent - $2,500 P&I - $500 taxes - $100 insurance - $100 reserves = $200/mo net cash flow. Verified 2026-08-15 after v3 chart audit revealed prior numbers didn't sum. Property tax normalized to $500/mo (1.2%/yr of $500K, mid-market realistic); rent raised to $3,400 (0.68% rent-to-price ratio, common for $500K SFR in appreciating markets).",
   "chapterDurations": [18, 14, 22, 18, 16, 18, 16, 13],
   "script": {
     "segments": [
@@ -41,13 +42,13 @@
         "id": "the-hypothetical",
         "chapter": 2,
         "headline": "Picture a rental property",
-        "text": "Picture a typical rental. A five hundred thousand dollar single-family home. You put twenty-five percent down. That's a hundred and twenty-five thousand. The bank lends you the rest. You rent it for three thousand a month. We're going to follow this property for the next twenty years."
+        "text": "Picture a typical rental. A five hundred thousand dollar single-family home. You put twenty-five percent down. That's a hundred and twenty-five thousand. The bank lends you the rest. You rent it for thirty-four hundred a month. We're going to follow this property for the next twenty years."
       },
       {
         "id": "cash-flow-breakdown",
         "chapter": 3,
         "headline": "Pillar 1: Cash flow",
-        "text": "Each month, three thousand dollars in rent comes in. Out goes the mortgage payment, about twenty-five hundred. Property tax, six hundred and twenty-five. Insurance, eighty dollars. And reserves for repairs and vacancies, around two hundred. What's left? About two hundred dollars a month. Not life-changing. But it's income you didn't trade your hours for."
+        "text": "Each month, thirty-four hundred dollars in rent comes in. Out goes the mortgage payment, about twenty-five hundred. Property tax, five hundred. Insurance, one hundred. And reserves for repairs and vacancies, another hundred. What's left? Two hundred dollars a month. Not life-changing. But it's income you didn't trade your hours for."
       },
       {
         "id": "appreciation",

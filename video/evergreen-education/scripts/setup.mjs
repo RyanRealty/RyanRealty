@@ -17,9 +17,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
 const REPO = resolve(ROOT, '..', '..')
 
+// Fonts are placed in TWO locations so both the legacy loader (public/ root)
+// and the canonical loader (public/fonts/ subdir per
+// video_production_skills/captions/canonical/load-amboqia) work.
 const FONTS = [
   ['public/fonts/Amboqia_Boriango.otf', 'public/Amboqia_Boriango.otf'],
   ['public/fonts/AzoSans-Medium.ttf', 'public/AzoSans-Medium.ttf'],
+  ['public/fonts/Amboqia_Boriango.otf', 'public/fonts/Amboqia_Boriango.otf'],
+  ['public/fonts/AzoSans-Medium.ttf', 'public/fonts/AzoSans-Medium.ttf'],
 ]
 
 async function exists(p) {
