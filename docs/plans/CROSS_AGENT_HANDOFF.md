@@ -2,29 +2,30 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — one chart grammar, local then ship
+# Current — 2026-08-15 (Grok) — one chart grammar LIVE
 
 **Matt:** Standardize UIs from admin to public. One charting system. Documents use the same geometry.
 
-**SHA:** chart unit about to land on `main`. Origin product still `0a888011` until this push.
+**SHA:** `a93cf35a` on `origin/main`. Vercel production READY. Custom domain https://ryan-realty.com.
 
 **Done this unit:**
 - One geometry: `lib/charts/plot.ts`. Public skin `V3Chart`. Admin skin `AChart`. Print `lib/charts/print-svg.ts` + `lib/cma/seasonality-chart.ts`.
-- Live recharts removed from MarketCoreCharts, SalesReportCharts, EquityProjection, AgentActivityChart. Analytics wrappers already on AChart.
+- Live recharts removed from MarketCoreCharts, SalesReportCharts, EquityProjection, AgentActivityChart.
 - Custom report sold-count line + financials net-by-year on AChart. Immersive CMA seasonality uses the same SVG as print.
-- Neighborhood sold Instrument: `placeMartCompositionChart(regionMart)` labeled as Central Oregon, not the neighborhood.
+- Neighborhood sold Instrument: region mart composition, labeled Central Oregon, not the neighborhood.
 - D109 fails if those mounts import recharts.
+- Ten-page strip recaptured at 390 and 1280 (all 200). Chart frames found on market, history, city, Awbrey Butte. Local PNGs: `docs/plans/PUBLIC_PRODUCT/looks/2026-08-15-chart-grammar/` (not committed).
 
-**Printed cube (unchanged, do not republish 1990):**
+**Printed cube (live on /housing-market, do not republish 1990):**
 - 1998 region all: **5,179** / **$654,573,406** / median **$104,900**
 - 1998 fireplace: **1,568** / 5,179 (30.3%)
 - 2024: **5,707** / **$3.931B** / median **$570,000**
 
 **Do not:** page-grade, new OS, `git add -A`, leftover page-grade-v24-regrade folder or `_sunstone-cma-summary.ts`.
 
-**Left on disk, not this commit:** Arrival Buy/Sell/Look, sentence search, HouseMe, Google comms, sell leftovers, unmounted recharts (`GeoMarketOverview`, `MarketSnapshotChart`, `MarketVisuals`).
+**Left on disk, not shipped:** Arrival Buy/Sell/Look, sentence search, HouseMe, Google comms, sell leftovers, unmounted recharts (`GeoMarketOverview`, `MarketSnapshotChart`, `MarketVisuals`).
 
-**Next:** pathspec push this chart unit, `deploy:verify`, then recapture the ten-page strip at 390 and 1280.
+**Next:** leftover product units after Matt stamps PRODUCT.md. Optional later: AChart on prospect price history only if ≥2 priced cycles.
 
 **Skills read:** public-product-os (orient), frontend-design, git-commit.mdc, CROSS_AGENT_HANDOFF.
 
