@@ -697,6 +697,18 @@ Places are still legacy. Chrome unit = `app/layout.tsx` PublicNav → V3Chrome.
 `state.json` and `work-queue.json` in this folder are not authority.
 Do not start Public Product OS 2.
 
+## 2026-08-15 — Ban new UI components (Matt)
+
+The public shop does not grow a new component for a new job. Six patterns.
+No seventh. No arrival island, no sentence widget, no comms card as a new
+surface. Wire the job into Field / Instrument / Ledger / Stage / Sheet /
+Quiet, or into the search and auth that already exist. A new
+`components/**/*.tsx` that draws its own chrome is a lock break.
+
+Leftover files that already shipped against this (`ArrivalIntent.client.tsx`,
+`SentenceSearch.tsx`, `GoogleCommsCard.tsx`) do not license a next one.
+Do not migrate orphan charts onto V3Chart just to keep a component alive.
+
 ## 2026-08-14 — Visual lock amendment: one shop, five place rhythms (Matt)
 
 Matt asked to move the lock, the rubric, and the page-grade skill in that order.

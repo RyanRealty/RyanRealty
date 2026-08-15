@@ -50,3 +50,5 @@
 2026-08-15T06:10:00Z PRODUCT.md END-TO-END LIVE. Prod 4cfc1a9e READY. Order 1–9 walked on ryan-realty.com (arrival, sentence, place, HouseMe, sell, Google comms, About, both boards). Cube 1998 + chart grammar already live. Named stops: looking-at send, ads, I6, page-grade. Do not start a new OS.
 
 2026-08-15T06:20:00Z LEFTOVER MISSION. Welcome-back walked on ryan-realty.com (welcome=1, buy=0). Deleted unmounted recharts (GeoMarketOverview, MarketSnapshotChart, MarketVisuals). recharts dep gone. D109 walks app/ + components/. PRODUCT.md cube table rewritten (1998 live, no sales_cube_* redo). Named stops still hold.
+
+2026-08-15T13:25:00Z LOCK: ban new UI components. Six v3 patterns. No seventh. No new island. ArrivalIntent / SentenceSearch / GoogleCommsCard already shipped and do not license a next one.

@@ -10,6 +10,8 @@ The look (PropXYZ cards, Tremor instruments, HouseMe report) is how the data is 
 
 Do not run page-grade. Do not start Public Product OS 2. Do not ask Matt to restate this.
 
+**Ban new UI components (Matt, 2026-08-15).** The shop is the six v3 patterns plus chrome. Jobs wire into Field, Instrument, Ledger, Stage, Sheet, Quiet, and the search that already exists. Do not add an island, a card system, a quiz surface, or a seventh pattern. A new file under `components/` that draws its own chrome is a lock break. Fold a job into a primitive or a page. Do not invent a component so the job has a home.
+
 ---
 
 ## What we broke

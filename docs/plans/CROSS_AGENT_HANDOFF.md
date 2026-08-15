@@ -22,7 +22,9 @@
 
 **Left on disk, not shipped:** recapture PNGs. Page-grade leftover folder. `LOOK-PLAN.md` / `RESTORE.md`.
 
-**Next:** nothing on this product plan except Matt stamps for looking-at send. Optional later: `office_id` on rebuild when touching that script; AChart on prospect price history only if ≥2 priced cycles.
+**Locked 2026-08-15 (Matt):** ban new UI components. Six v3 patterns. No seventh. No new island, card system, or quiz surface. Fold a job into a primitive or a page. `ArrivalIntent` / `SentenceSearch` / `GoogleCommsCard` already shipped and do not license a next one.
+
+**Next:** nothing on this product plan except Matt stamps for looking-at send. Optional later: `office_id` on rebuild when touching that script; AChart on prospect price history only if ≥2 priced cycles. Do not add a component.
 
 **Skills read:** endtoend, git-commit.mdc, PRODUCT.md, CROSS_AGENT_HANDOFF.
 
