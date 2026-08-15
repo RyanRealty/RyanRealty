@@ -143,7 +143,7 @@
   /* Photographed Field. Thumbs in a map+list row, and the fold-filling lead. */
   --v3-photo-thumb: 7.5rem;
   --v3-photo-tile-min: 12rem;
-  --v3-photo-lead-min: 18rem;
+  --v3-photo-lead-min: 24rem;
 
   /* -- Radii. 10px control, 14px card, pill for chips. -- */
   --v3-radius-sm: 6px;

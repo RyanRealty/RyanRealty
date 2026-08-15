@@ -22,10 +22,26 @@ const Impl = dynamic(
   () => import('./PlaceFieldMapImpl').then((m) => m.PlaceFieldMapImpl),
   {
     ssr: false,
-    loading: () => <div className="v3-field__map-pending" aria-hidden="true" />,
+    loading: () => <div className="v3-field__map-loading" aria-hidden="true" />,
   },
 )
 
 export function PlaceFieldMap(props: ComponentProps<typeof PlaceFieldMapImpl>) {
-  return <Impl {...props} />
+  return (
+    <div className="v3-field__map-frame">
+      {props.posterSrc ? (
+        <img
+          className="v3-field__map-poster"
+          src={props.posterSrc}
+          alt=""
+          width={800}
+          height={600}
+          aria-hidden="true"
+        />
+      ) : (
+        <div className="v3-field__map-pending" aria-hidden="true" />
+      )}
+      <Impl {...props} />
+    </div>
+  )
 }

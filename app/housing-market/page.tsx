@@ -491,9 +491,8 @@ export default async function HousingMarketHubPage() {
             source={v3Text(
               `closed MLS sales through Oregon Data Share, Central Oregon service-area cities, all property types, calendar year ${closed.year}. Not active inventory. ${ANALYTICS_METHODOLOGY_V1}`,
             )}
-            // Only a mart row carries a real computed_at. getCoMarketAnnual falls back
-            // to a live aggregate that stamps now(), which would print "updated today"
-            // over a closed calendar year, so that stamp is dropped instead.
+            // Only a mart row carries a real computed_at. A missing year is missing;
+            // this page does not invent a stamp from the request clock.
             updated={
               closed.source === 'mart' && closed.computedAt
                 ? v3Text(formatDate(closed.computedAt))

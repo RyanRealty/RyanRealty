@@ -441,6 +441,35 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/usedSubdivisionNarrowing/)
   })
 
+  it('D104 — Field photo caps print price, beds/baths/sqft, and street', () => {
+    const src = readSrc('components/site/v3/V3Field.tsx')
+    expect(src).toMatch(/v3-field__photo-meta/)
+    expect(src).toMatch(/item\.meta/)
+    expect(src).not.toMatch(/from\('listings'\)/)
+  })
+
+  it('D105 — city/ZIP map first paint is a listing photograph, not cream', () => {
+    const src = readSrc('app/central-oregon/_v3/PlaceFieldMap.client.tsx')
+    expect(src).toMatch(/v3-field__map-frame/)
+    expect(src).toMatch(/v3-field__map-poster/)
+    expect(src).toMatch(/props\.posterSrc/)
+  })
+
+  it('D107 — closed-sales explorer year picker starts at 1998', () => {
+    const src = readSrc('app/housing-market/history/_v3/HistoryFilterSheet.client.tsx')
+    expect(src).toMatch(/HISTORY_FROM_YEAR = 1998/)
+    expect(src).not.toMatch(/YEAR_OPTIONS = \[2016/)
+  })
+
+  it('D106 — public market annual and feature cubes never scan listings', () => {
+    const market = readSrc('lib/data/analytics/getCoMarketAnnual.ts')
+    const feature = readSrc('lib/data/analytics/getCoFeatureAnnual.ts')
+    expect(market).not.toMatch(/from\('listings'\)/)
+    expect(market).not.toMatch(/live_aggregate/)
+    expect(feature).not.toMatch(/from\('listings'\)/)
+    expect(feature).not.toMatch(/live_aggregate/)
+  })
+
   it('D103 — homepage opens Field-first: house on the fold, towns as filters, no See homes for sale', () => {
     const page = readSrc('app/page.tsx')
     expect(page).toMatch(/<HomeHomesField/)

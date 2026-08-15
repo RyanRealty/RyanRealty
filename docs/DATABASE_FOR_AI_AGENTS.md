@@ -14,6 +14,10 @@
 
 | What you need | Where to query | Key columns | Freshness |
 |---|---|---|---|
+| **Size of the CO market ($ volume, composition, year)** | **`analytics_mart_market_annual`** via `getCoMarketAnnual` / `getCoMarketAnnualSeries`. This is the shipped sales cube (plans still say `sales_cube_*` — those tables were never created). Public reads are mart-only: no `listings` scan. Rows exist **1998–present**. | `year`, `type_scope` (`all`/`sfr`/`multi`/`land`/`other`), `sold_count`, `total_volume`, `median_close`, `property_type_breakdown` | Nightly last 2 years; `scripts/analytics/rebuild-analytics-marts.mjs --from Y --to Y` for history |
+| **Fireplace / garage / HOA-class history** | **`analytics_mart_feature_annual`** via `getCoFeatureAnnual`. Mart-only on the request path. Rows exist **1998–present**. | `year`, `type_scope`, `feature_key`, `sold_count`, `total_volume` | Same rebuild |
+| **Unique closed-sales search** (year × city × type × amenity) | **`analyzeClosedSales`** → `analytics_result_cache` then mart then `analyze_closed_sales_co` RPC. Never page `listings`. | aggregates only | Cache + RPC |
+| **Brokerage / broker market share** | **`analytics_mart_office_share_annual`** + dims. Admin only (`/admin/analytics/competition`). **No public competitor names** (Matt I6). | office/agent share | Same rebuild |
 | **Market report for a city** (Bend, Redmond, Sisters…) | `market_stats_cache WHERE geo_type='city' AND geo_slug=<slugified-city>` | `period_type`, `sold_count`, `median_sale_price`, `median_dom` | ≤ 6h |
 | **Market report for a resort community** (Tetherow, Sunriver, Eagle Crest, Pronghorn, …) | `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug=<bare-slug>` — see §3a for the 14 valid slugs | same | ≤ 6h |
 | **Market report for a Bend neighborhood** (Awbrey Butte, Larkspur, …) | `market_stats_cache WHERE geo_type='neighborhood' AND geo_slug='bend-<slug>'` | same | ≤ 6h |

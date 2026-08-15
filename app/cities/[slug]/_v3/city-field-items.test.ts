@@ -40,6 +40,7 @@ describe('cityFieldItems', () => {
   it('passes a photograph through when the tile has one', () => {
     const items = cityFieldItems([tile({ listingKey: 'a', photoUrl: 'https://img.example/house.jpg' })])
     expect(items[0]?.photoSrc).toBe('https://img.example/house.jpg')
+    expect(items[0]?.meta).toBe('3 bd · 2 ba · 1,800 sqft')
   })
 })
 

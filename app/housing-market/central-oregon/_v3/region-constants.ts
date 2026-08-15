@@ -51,8 +51,8 @@ export const CITY_SLUG: Record<string, string> = {
  */
 export const PAGE_PATH = '/housing-market/central-oregon'
 
-/** The closed-sales window this page publishes, unchanged from the KB page. */
-export const CLOSED_SALES_FROM_YEAR = 2016
+/** The closed-sales window this page publishes. Floor is the first year the mart holds. */
+export const CLOSED_SALES_FROM_YEAR = 1998
 export const CLOSED_SALES_TO_YEAR = 2024
 
 /**

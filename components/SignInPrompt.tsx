@@ -19,13 +19,21 @@ const PV_KEY = 'rr_session_pageviews'
  * home. Now: first pageview of the session is never interrupted; the prompt
  * waits for the second pageview (the engaged visitor, who actually converts).
  */
-function countPageview(): number {
+function countPageview(pathname: string): number {
   try {
-    const n = Number(sessionStorage.getItem(PV_KEY) || '0') + 1
-    sessionStorage.setItem(PV_KEY, String(n))
-    return n
+    const seenKey = `${PV_KEY}:seen`
+    const seen = new Set(
+      (sessionStorage.getItem(seenKey) || '').split('|').filter(Boolean),
+    )
+    if (!seen.has(pathname)) {
+      seen.add(pathname)
+      sessionStorage.setItem(seenKey, [...seen].join('|'))
+      sessionStorage.setItem(PV_KEY, String(seen.size))
+      return seen.size
+    }
+    return Number(sessionStorage.getItem(PV_KEY) || '0')
   } catch {
-    return 2 // storage unavailable: keep legacy behavior
+    return 2
   }
 }
 
@@ -117,13 +125,13 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
     }
     if (wasDismissed()) return
     // Engagement gate: never interrupt the first pageview of a session.
-    if (countPageview() < 2) return
+    if (countPageview(pathname || '/') < 2) return
     // Re-check the 404 flag at fire time — by 1s the not-found page's effect has set it.
     const t = setTimeout(() => {
       if (!isNotFoundPage()) setShow(true)
     }, 1000)
     return () => clearTimeout(t)
-  }, [user, hasNextParam, isHome, isLandingPage, fromAdClick, fromOutreachClick, isAuthPage, isLeadFormPage])
+  }, [user, hasNextParam, pathname, isHome, isLandingPage, fromAdClick, fromOutreachClick, isAuthPage, isLeadFormPage])
 
   async function handleSignIn(provider: 'google' | 'facebook') {
     setLoading(provider)

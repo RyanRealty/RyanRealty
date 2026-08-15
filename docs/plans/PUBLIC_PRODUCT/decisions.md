@@ -715,3 +715,52 @@ Page Grade v2.4 scores this. The skill grades unique pages plus one exemplar
 per template, then a family strip at merge. Fix is a later wave in the same
 grind, not product code inside a grade.
 
+## 2026-08-14 — Arrival, intent, Google comms (Matt, chat)
+
+Plan of record for the public product is `PRODUCT.md`. LOOK-PLAN is the display
+chapter only.
+
+**Let them go** when they came from Google search, an ad, an email, a text, or a
+shared listing. Do not ask what they are trying to do. The click is the job.
+
+**Always map them first.** Google account email → `crm_people`, then person ids,
+then `rr_vid`. Continue with Google is identity, not an intent quiz.
+
+**Ask Buy · Sell · Look** only on a direct / blank arrival with no visitor and
+no person we can attach. Look is the site. Welcome back names the thing they
+left. No modal on land.
+
+**Continue with Google is the comms door.** Phone + unchecked email + unchecked
+carrier SMS sentence on the same card, before the redirect. Consent is not the
+price of the account or the report. Kill the CMA Almost there page once checks
+persist across `/auth/callback`.
+
+**Both boards.** Classic search and AI citation. Same URL per job. Track
+intent + welcome-back + stitch + opt-in first-party and in GA4. Do not stamp
+CRM buyer from a cookie alone.
+
+**Look (stamped same evening):** PropXYZ cards/map, Tremor instruments, HouseMe
+report shape on our stamps. Stripe/Linear density revoked for Field and
+Instrument. Do not run page-grade as the ship gate.
+
+## 2026-08-10 — Sales cube / reporting (Matt)
+
+Matt: deep CO closed-sales reporting; then vs now from first thick year; composition;
+unique cuts (fireplaces in 1998); expose on the site; competitor share; no bottlenecks.
+
+Shipped under `analytics_mart_*`, not the planned `sales_cube_*` names.
+Public competitor names locked off forever (I6).
+
+**Locked 2026-08-15:** public `getCoMarketAnnual` and `getCoFeatureAnnual` are
+mart-only. A missing year is missing. Do not scan `listings` on those request
+paths. Mart rows exist 1998–present. `CLOSED_SALES_FROM_YEAR` is 1998.
+2024 region `all` stays 5,707 / $3.931B. 1990 is zero rows and does not publish.
+
+Remaining: weekly full rebuild (cron is last 2 years), place/listing/CMA read
+the mart, Tremor on the market family.
+
+## 2026-08-14 — Search is both (Matt, chat)
+
+Classic search is not a sunset. AI answers are not a side bet. Lead both.
+Sentence search writes the same filter params. No chat widget.
+

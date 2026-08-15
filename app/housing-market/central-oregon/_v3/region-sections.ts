@@ -126,9 +126,8 @@ export type ClosedLedger = {
  * exists when a later lease splits the rhythm. Do not flatten the years
  * to a figure.
  *
- * Only a mart row carries a real computed_at. getCoMarketAnnual falls back to a live
- * aggregate that stamps now(), which would print "updated today" over a set of closed
- * calendar years, so that stamp is dropped instead. The KB strip printed it either way.
+ * Only a mart row carries a real computed_at. A missing year is missing; this
+ * Ledger does not invent a stamp from the request clock.
  */
 export function buildClosedLedger(series: CoMarketAnnualRow[]): ClosedLedger {
   const years = series

@@ -2,22 +2,56 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-14 (Grok) — PUBLIC UI FROZEN after richness restore shipped
+# Current — 2026-08-15 (Grok) — Field facts + cube 1998, executing not planning
 
-**Matt:** Audits and instruction piles made the public site go backwards. Stop further public UI unless he names the page and the change.
+**Matt:** Lost trust. No more plans. Thorough, fast. Top of the Central Oregon market. Do not flatten.
 
-**Already on `origin/main` (this session, before the freeze landed):** product `04e760d9`, tip `bc964248`. Production READY (`npm run deploy:verify` exit 0). The older note that these were local-only was wrong.
+**Shipped this session (push next):**
+- Field photos print price + beds/baths/sqft + street on the photograph. Lead min 24rem.
+- City/ZIP map first paint is the listing photograph (`PlaceFieldMap` poster under dynamic load).
+- `getCoMarketAnnual` + `getCoFeatureAnnual` are mart-only. No `listings` scan.
+- Marts backfilled 1998–2015. Coverage **1998–2025**. `CLOSED_SALES_FROM_YEAR` = 1998.
+- History year picker is every year from 1998.
 
-**What that ship did:**
-- Home: Amboqia field-size H1, fold-filling house with price on the photo, 2-col mosaic. Count stays a caption.
-- City/ZIP: Amboqia place stamp, larger list photos, map poster while Maps loads. Playwright still captures a gray map box (Maps script).
-- P0s left closed: count-as-caption, one sell ask, no city essays, source off browse, broker face.
+**Printed cube (service role, 2026-08-15):**
+- 1998 region all: **5,179** closes, **$654,573,406** volume, median **$104,900** — `analytics_mart_market_annual` geo_type=region geo_slug=central-oregon type_scope=all
+- 1998 fireplace: **1,568** / 5,179 (30.3%), median close $160,000 — `analytics_mart_feature_annual` feature_key=fireplace
+- 2024 unchanged: **5,707** / **$3.931B** / median $570,000 (EDA match). 1990 = 0 rows, not published.
 
-**Still thin:** About cutouts on cream, neighborhood Instrument cream slab, subdivision empty plat, homes-browse search chrome, city map without a live basemap in capture.
+**Do not:** page-grade, new OS, `git add -A`, leftover page-grade-v24-regrade folder or `_sunstone-cma-summary.ts`.
 
-**Do not:** page-grade, fix-wave, recapture, write a new rubric/OS, or push more public UI unless Matt names the page.
+**Next:** recapture home / city / history?year=1998 / region at 390 and 1280. Then sentence search, Tremor on market, HouseMe report compose on listing, Google comms card, arrival Buy/Sell/Look, CMA reads mart.
 
-**Skills read:** page-grade, public-product-os, frontend-design, design_system/ryan-realty, CROSS_AGENT_HANDOFF, SESSION_HANDOFF.
+**Skills read:** frontend-design, git-commit.mdc, CROSS_AGENT_HANDOFF.
+
+# Prior — 2026-08-14 (Grok) — public look: stop inventing, use an existing system
+
+**Matt:** Page-grade flattened the live site. "Restore" is the wrong word. Do not write product UI until he stamps a look. Then: find a system that already exists (GitHub + reviews + trending), incorporate something beautiful. Do not spin another rubric/OS.
+
+**GitHub hunt (done this session). There is no beautiful open-source brokerage frontend.** Highest RE stars:
+- `microrealestate/microrealestate` 1,166 — landlord/PM ops, not a public MLS site
+- `AleksNeStu/ai-real-estate-assistant` 293 — live demo is a cold Render splash, not a look
+- Niche Next/shadcn RE templates: 0–6 stars, student clones
+
+**What is actually trending and looks good (2026 reviews):**
+1. **Tremor Blocks** — 16k stars on tremor-npm, Vercel acquired, 300+ blocks now free MIT. Philosophy: show the data, hide the chrome. Demo: https://blocks.tremor.so and https://tremor.so/blocks
+2. **Origin UI → COSS** — 10.4k stars, now Cal.com's system at https://coss.com/ui. Primitives, not a brokerage look.
+3. **Magic UI** — 20.8k. Landing-page motion. Wrong job.
+4. **PropXYZ** (Shadcn Studio, Jun 2026, $79) — only RE-shaped Next 16 + shadcn + TW v4 template. Cards already draw photo + beds/baths/sqft + price + map split. Demo: https://shadcn-nextjs-propxyz-admin-template.vercel.app/ — rental/PM, not MLS, but the card/map language is the one that looks finished.
+5. **HouseMe.ai** — best live AI-RE *product* (Intelligence Report). Not OSS. Copy the report structure, not their code.
+
+**THE PICK (Matt stamped the 3 UIs 2026-08-14 evening):**
+- Browse/map/cards: PropXYZ card + map-split language.
+- Market / analysis: Tremor Blocks (free MIT). Skin navy/cream.
+- Listing intelligence: HouseMe report shape on *our* stamps. No invented 5-year %.
+
+**Plan of record:** `docs/plans/PUBLIC_PRODUCT/PRODUCT.md`. Includes the Aug 10 sales cube (shipped as `analytics_mart_*`, 2016–2025; remaining: 1998 backfill, kill live_aggregate, weekly full rebuild, place/listing/CMA reads). `LOOK-PLAN.md` is display only. `DATABASE_FOR_AI_AGENTS.md` lookup now routes size/composition/feature/share to the marts.
+
+**Do not:** page-grade, new Public Product OS, Magic UI, treat look as the whole job.
+
+**Next:** Matt stamps PRODUCT.md, then execute PRODUCT §1 (arrival and memory), then §2 (Field cards). Recapture the ten-page strip after any `V3Field` change.
+
+**Skills read:** frontend-design, design_system/ryan-realty, CROSS_AGENT_HANDOFF.
 
 # Current — 2026-08-14 (Grok, imagery canon) — local, not pushed
 

@@ -148,6 +148,7 @@
   display: grid;
   gap: var(--v3-space-2xs);
   min-width: 0;
+  overflow: hidden;
   color: var(--v3-ink);
   text-decoration: none;
   border-radius: var(--v3-radius-sm);
@@ -164,24 +165,51 @@
   border: 1px solid var(--v3-edge);
 }
 
-.v3-field__photo--lead {
-  overflow: hidden;
-}
-
 .v3-field__photo--lead img {
   min-height: var(--v3-photo-lead-min);
   aspect-ratio: 16 / 9;
 }
 
+.v3-field__photo-cap,
 .v3-field__lead-cap {
   position: absolute;
   inset-inline: 0;
   bottom: 0;
   display: grid;
   gap: var(--v3-space-3xs);
-  padding: var(--v3-space-md);
+  min-width: 0;
+  padding: var(--v3-space-sm);
   background: var(--v3-scrim-mid);
   color: var(--v3-ink-on-media);
+}
+
+.v3-field__lead-cap {
+  padding: var(--v3-space-md);
+}
+
+.v3-field__photo-price {
+  font-size: var(--v3-size-body);
+  font-weight: var(--v3-weight-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink-on-media);
+  text-shadow: var(--v3-media-shadow);
+}
+
+.v3-field__photo-meta {
+  font-size: var(--v3-size-source);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink-on-media);
+}
+
+.v3-field__photo-title {
+  font-size: var(--v3-size-source);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-on-navy-muted);
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .v3-field__photo--lead .v3-field__photo-price {
@@ -190,13 +218,33 @@
   font-weight: var(--v3-weight-body);
   letter-spacing: var(--v3-track-display);
   line-height: var(--v3-leading-heading);
-  color: var(--v3-ink-on-media);
-  text-shadow: var(--v3-media-shadow);
+}
+
+.v3-field__photo--lead .v3-field__photo-meta {
+  font-size: var(--v3-size-body-sm);
 }
 
 .v3-field__photo--lead .v3-field__photo-title {
   font-size: var(--v3-size-body);
-  color: var(--v3-ink-on-navy-muted);
+}
+
+.v3-field__map-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.v3-field__map-frame > .v3-field__map-poster {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.v3-field__map-frame > :last-child {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
 }
 
 .v3-field__map-pending,
@@ -207,6 +255,12 @@
   background: var(--v3-wash);
 }
 
+.v3-field__map-loading {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
 .v3-field__map-poster {
   object-fit: cover;
 }
@@ -214,28 +268,6 @@
 .v3-field__photo.is-active img,
 .v3-field__photo:focus-visible img {
   box-shadow: inset 0 0 0 2px var(--v3-ink);
-}
-
-.v3-field__photo-cap {
-  display: grid;
-  gap: var(--v3-space-3xs);
-  min-width: 0;
-}
-
-.v3-field__photo-price {
-  font-size: var(--v3-size-body);
-  font-weight: var(--v3-weight-num);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1;
-}
-
-.v3-field__photo-title {
-  font-size: var(--v3-size-source);
-  line-height: var(--v3-leading-note);
-  color: var(--v3-ink-muted);
-  overflow: visible;
-  white-space: normal;
-  overflow-wrap: anywhere;
 }
 
 @media (min-width: 56.25rem) {

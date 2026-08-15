@@ -372,7 +372,11 @@ export function V3Field({
                         index === 0 && 'v3-field__photo--lead',
                         active === item.id && 'is-active',
                       )}
-                      aria-label={`${item.priceLabel}, ${item.title}`}
+                      aria-label={
+                        item.meta
+                          ? `${item.priceLabel}, ${item.meta}, ${item.title}`
+                          : `${item.priceLabel}, ${item.title}`
+                      }
                       onMouseEnter={() => setActive(item.id)}
                       onFocus={() => setActive(item.id)}
                       onBlur={() => setActive(null)}
@@ -391,6 +395,9 @@ export function V3Field({
                         )}
                       >
                         <span className="v3-field__photo-price">{item.priceLabel}</span>
+                        {item.meta ? (
+                          <span className="v3-field__photo-meta">{item.meta}</span>
+                        ) : null}
                         <span className="v3-field__photo-title">{item.title}</span>
                       </span>
                     </Link>

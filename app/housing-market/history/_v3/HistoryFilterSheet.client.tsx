@@ -15,10 +15,15 @@ import { V3Sheet, type V3SheetAdvance, type V3SheetStep } from '@/components/sit
 import { ANALYTICS_CO_CITIES_PROPER } from '@/lib/data/analytics/co-cities'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 
-const YEAR_OPTIONS = [2016, 2018, 2020, 2022, 2023, 2024, 2025, 2026].map((year) => ({
-  value: String(year),
-  label: String(year),
-}))
+const HISTORY_FROM_YEAR = 1998
+const HISTORY_TO_YEAR = 2030
+const YEAR_OPTIONS = Array.from(
+  { length: HISTORY_TO_YEAR - HISTORY_FROM_YEAR + 1 },
+  (_, index) => {
+    const year = HISTORY_FROM_YEAR + index
+    return { value: String(year), label: String(year) }
+  },
+)
 
 const TYPE_OPTIONS = [
   { value: 'all', label: 'All types' },
