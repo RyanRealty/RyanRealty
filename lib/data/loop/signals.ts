@@ -1,6 +1,7 @@
 /**
  * Company scoreboard ingest. One live pull, named sources, UNKNOWN when unread.
  * Docs: docs/plans/COMPANY_SCOREBOARD.md
+ * reachability: entry-point scripts/company-scoreboard-probe.ts
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'

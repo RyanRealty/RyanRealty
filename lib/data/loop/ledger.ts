@@ -1,3 +1,7 @@
+/**
+ * THE LOOP ledger writes. Not on the public barrel (file-size budget).
+ * reachability: entry-point company scoreboard / growth-loop Learn step
+ */
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
