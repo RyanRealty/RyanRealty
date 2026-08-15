@@ -1,8 +1,9 @@
 // @no-parity — place-family index, reuses the /communities KB index language
 /**
  * Subdivisions index — same KB index language as /communities.
- * Featured rows are recorded child plats (not marketing community slugs).
- * The A-to-Z list is the indexable plat set that already feeds the sitemap.
+ * Featured rows and the A-to-Z list are recorded child plats from the
+ * community registry (not marketing community slugs). The county-wide
+ * indexable set still feeds the sitemap. It is too heavy to render here.
  */
 
 import type { Metadata } from 'next'
@@ -13,11 +14,9 @@ import {
   getSurfaceImages,
   pickSurfaceImage,
 } from '@/lib/data'
-import { getIndexableSubdivisions } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { slugify } from '@/lib/slug'
 import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
 import { communityImage, cityHero } from '@/lib/geo-images'
-import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -66,13 +65,6 @@ function isDisplayablePlatName(alias: string): boolean {
   return true
 }
 
-function cityLabel(slug: string): string {
-  return slug
-    .split('-')
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ')
-}
-
 function fmtPrice(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
   return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
@@ -119,13 +111,10 @@ export default async function SubdivisionsPage() {
   const childPlats = registryChildPlats(registry)
   const featuredSeeds = pickFeaturedPlats(childPlats)
 
-  const [indexableResult, snapshots, heroPhotoPool] = await Promise.all([
-    withTimeoutFallbackResult(getIndexableSubdivisions(), [], 25000, 'subdivisions:indexable'),
+  const [snapshots, heroPhotoPool] = await Promise.all([
     getAllCommunitySnapshots(),
     getSurfaceImages('hero'),
   ])
-  const indexableOk = indexableResult.ok
-  const indexable = indexableResult.value
 
   const snapBySlug = new Map<string, (typeof snapshots)[number]>()
   for (const s of snapshots) {
@@ -156,26 +145,23 @@ export default async function SubdivisionsPage() {
     }
   })
 
-  const azSource = indexableOk
-    ? indexable.map((s) => ({
-        slug: s.slug,
-        name: s.name,
-        city: cityLabel(s.citySlug),
-        activeCount: snapBySlug.get(s.slug)?.activeSfrCount ?? 0,
-        href: `/subdivisions/${s.slug}`,
-      }))
-    : childPlats.map((p) => ({
+  const azSeen = new Set<string>()
+  const azSource = childPlats.flatMap((p) => {
+    if (azSeen.has(p.slug)) return []
+    azSeen.add(p.slug)
+    return [
+      {
         slug: p.slug,
         name: p.name,
         city: p.city,
         activeCount: snapBySlug.get(p.slug)?.activeSfrCount ?? 0,
         href: `/subdivisions/${p.slug}`,
-      }))
+      },
+    ]
+  })
 
-  const totalActive: number | null = indexableOk
-    ? azSource.reduce((sum, p) => sum + p.activeCount, 0)
-    : null
-  const platCount: number | null = indexableOk ? azSource.length : null
+  const totalActive = azSource.reduce((sum, p) => sum + p.activeCount, 0)
+  const platCount = azSource.length
 
   const schemas: SchemaInput[] = [
     {
@@ -244,21 +230,19 @@ export default async function SubdivisionsPage() {
             <div className="region-grid" style={{ marginTop: '26px' }}>
               <div className="stat-cell">
                 <span className="stat-num mono-num">
-                  {totalActive != null && totalActive > 0 ? totalActive.toLocaleString() : '-'}
+                  {totalActive > 0 ? totalActive.toLocaleString() : '-'}
                 </span>
                 <span className="stat-label">Homes for sale across these plats</span>
               </div>
               <div className="stat-cell">
-                <span className="stat-num mono-num">
-                  {platCount != null ? platCount.toLocaleString() : '-'}
-                </span>
-                <span className="stat-label">Plats with a public page</span>
+                <span className="stat-num mono-num">{platCount.toLocaleString()}</span>
+                <span className="stat-label">Community plats in this index</span>
               </div>
             </div>
             <div className="region-foot">
               <p className="note">
-                Single-family active inventory on plats with a county polygon and
-                enough closed sales to keep a public page. Figures from the MLS.
+                Single-family active inventory on recorded plats inside the
+                known communities. Figures from the regional MLS.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                 <Link href="/communities" className="btn ghost">
@@ -387,7 +371,7 @@ export default async function SubdivisionsPage() {
             <div className="sec-head">
               <span className="sec-index">The full index</span>
               <h2 className="sec-title display">
-                Every public plat,<br />A to Z
+                Community plats,<br />A to Z
               </h2>
             </div>
             <p
@@ -398,9 +382,7 @@ export default async function SubdivisionsPage() {
                 lineHeight: 1.5,
               }}
             >
-              {platCount != null
-                ? `${platCount.toLocaleString()} recorded plats with a county polygon and enough closed sales to keep a public page. Search by name or city.`
-                : 'Recorded plats with a county polygon. Search by name or city.'}
+              {`${platCount.toLocaleString()} recorded plats inside the known communities. Search by name or city.`}
             </p>
             <div className="pt-2">
               <CommunityIndexBrowser

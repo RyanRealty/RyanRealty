@@ -2,7 +2,26 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — company loop v1.2.1 blast-radius
+# Current — 2026-08-15 (Grok) — finish the place-family indexes
+
+**Matt:** The restore stopped at an invented cutoff. Neighborhood and subdivision indexes were still 404. Finish the place doors. No seventh pattern.
+
+**SHA:** `ccc0f62b` on `origin/main` (indexes). Follow-up in this commit: subdivision hero counts from the community plat set (the county-wide indexable scan timed out on Vercel and baked two dashes). Parent restore `d2208216`.
+
+**Done this land:**
+- `/neighborhoods` LIVE: 13 Bend districts, 355 active SFR, doors to `/cities/bend/{slug}`. Production walk 200, kb-root, Awbrey Butte $1,385,000.
+- `/subdivisions` LIVE: featured community plats + A-to-Z of those plats, doors to `/subdivisions/{slug}`. Areas nav / Menu+ / both footers / sitemap / site-index all open both indexes.
+- Neighborhood and plat `generateStaticParams` are no longer empty stubs.
+- Hero on `/subdivisions` now publishes snapshot counts for the community plat set it actually lists. County-wide `getIndexableSubdivisions` stays on the sitemap, not this page.
+- Production READY for `ccc0f62b`. Screenshots in `out/looks/2026-08-15-place-indexes/` (gitignored).
+
+**Do not:** `git add -A`. Do not commit LOOK-PLAN / RESTORE / page-grade leftovers / recapture PNGs / `_sunstone-cma-summary.ts`. Do not stamp Public Product OS grains LIVE. Do not page-grade.
+
+**Named stops (still hold):** looking-at SMS / buyer-packet send. Ad spend. I6. Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase. Do not publish 1990. Ban new UI components.
+
+**Skills read:** endtoend, git-commit.mdc, CROSS_AGENT_HANDOFF, deployments-cicd, verification.
+
+# Prior — 2026-08-15 (Grok) — company loop v1.2.1 blast-radius
 
 **Matt:** Search, saved searches, granular filters, listing alerts, CMA look, stat accuracy + one verification process, all polygons, Vercel/Supabase, analytics/GBP/social/reporting, CRM ease. Holistic: a change in analytics must land on the site, reporting, newsletters, and ads. Spark is ingest-only. Do not lose identity stitch (opens, clicks, Google, ads).
 
@@ -16,25 +35,6 @@
 **Do not:** `git add -A`. Do not mix place-index or LOOK leftovers. Do not send, post, spend, or OAuth. Do not invent a 13th domain or a second stats engine.
 
 **Skills read:** growth-loop, crm-e2e, database-canonical-reference, SESSION_HANDOFF, CROSS_AGENT_HANDOFF.
-
-# Prior — 2026-08-15 (Grok) — finish the place-family indexes
-
-**Matt:** The restore stopped at an invented cutoff. Neighborhood and subdivision indexes were still 404. Finish the place doors. No seventh pattern.
-
-**SHA:** pending push on `main` (this commit). Parent restore `d2208216`. Company-improvement `7c2bca5c`..`b163a2f6` already on `origin/main`.
-
-**Done this land:**
-- `/neighborhoods` KB index: 13 Bend districts, live counts from `getBendNeighborhoodLedger`, photos via `pickSurfaceImage`, doors to `/cities/bend/{slug}`.
-- `/subdivisions` KB index: featured child plats + A-to-Z from `getIndexableSubdivisions`, doors to `/subdivisions/{slug}`.
-- Areas nav, Menu+, both footers, sitemap, site-index, and reachability gate now open both indexes.
-- Neighborhood and plat `generateStaticParams` are no longer empty stubs.
-- Local walk: both indexes 200 with live figures (356 homes / 13 districts; plats + inventory). Awbrey Butte and Sunrise Village details 200. Screenshots in `out/looks/2026-08-15-place-indexes/` (gitignored).
-
-**Do not:** `git add -A`. Do not commit LOOK-PLAN / RESTORE / page-grade leftovers / recapture PNGs / `_sunstone-cma-summary.ts`. Do not stamp Public Product OS grains LIVE. Do not page-grade.
-
-**Named stops (still hold):** looking-at SMS / buyer-packet send. Ad spend. I6. Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase. Do not publish 1990. Ban new UI components.
-
-**Skills read:** endtoend, git-commit.mdc, CROSS_AGENT_HANDOFF.
 
 # Prior — 2026-08-15 (Grok) — company improvement process (THE LOOP v1.2.0)
 
