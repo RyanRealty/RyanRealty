@@ -307,4 +307,4 @@ The product walk is live. Three leftovers were still on disk and would make the 
 
 **Will not do:** looking-at send, ad spend, I6, page-grade, new OS, migrate the orphan charts onto V3Chart, publish 1990.
 
-**Progress:** leftover 1 walked on https://ryan-realty.com 2026-08-15 (`welcome=1`, `buy=0`). Leftover 2–3 in this commit: five unmounted recharts modules deleted, `recharts` removed from `package.json`, D109 walks `app/` + `components/`, cube table rewritten so the next agent does not redo 1998. Dead `lib/report-year-compare.ts` deleted (explore tool retired; only its test imported it).
+**Progress:** leftover 1 walked on https://ryan-realty.com 2026-08-15 (`welcome=1`, `buy=0`). Leftover 2–3 live on `d4cece6d` (Vercel READY): five unmounted recharts modules deleted, `recharts` removed from `package.json`, D109 walks `app/` + `components/`, cube table rewritten so the next agent does not redo 1998. Dead `lib/report-year-compare.ts` deleted (explore tool retired; only its test imported it).

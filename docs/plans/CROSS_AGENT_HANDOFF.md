@@ -6,7 +6,7 @@
 
 **Matt:** Do not stop. Complete outstanding tasks /endtoend.
 
-**SHA:** pending this push on `main`. Product code already live on `4cfc1a9e`. This commit deletes leftover recharts and stamps the cube table.
+**SHA:** `d4cece6d` on `origin/main`. Vercel production READY. Custom domain https://ryan-realty.com. Product Order 1–9 still live on `4cfc1a9e`; this commit is the leftover lock.
 
 **Done this leftover:**
 - Welcome-back walked on https://ryan-realty.com: `welcome=1`, `buy=0` for `rr_last_thing` = 61281 McRoberts.
