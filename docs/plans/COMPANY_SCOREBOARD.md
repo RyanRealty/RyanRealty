@@ -18,7 +18,7 @@
 | Figure | Value | Source |
 |---|---|---|
 | Version | **v1 OPEN** — 2 of 25 agent gaps closed (G1, G14; G15–G25 added from the requirements harvest), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list |
-| Requirements coverage | **203 directives dispositioned** (2026-08-15 harvest): 91 LOCKED rules · 41 VERIFIED · 39 PARTIAL · 25 MISSING (all gap-covered) · 6 GATED on Matt · 1 PARKED | `ENTERPRISE_MAP/REQUIREMENTS.md` + G57 |
+| Requirements coverage | **206 directives dispositioned** (2026-08-15 harvest + additions): 92 LOCKED rules · 42 VERIFIED · 39 PARTIAL · 25 MISSING (all gap-covered) · 7 GATED on Matt · 1 PARKED | `ENTERPRISE_MAP/REQUIREMENTS.md` + G57 |
 | Stranded ledger windows | **0** (was 11 — all closed 2026-08-15 with §0 traces; `seo-aeo` unfrozen). Work graph: 13 nodes, 1 done, next node G2 identity stitch | probe `ledger.expiredUnlearned` + `loop_work_nodes` |
 | Capabilities below Working floor | **7** (TC, video, social OAuth, broker platform, westside, Grok memory, SMS agent) | `ENTERPRISE_MAP/matrix/CAPABILITIES.md` 2026-08-08 close |
 | Needs-reauth integrations | **0 active** — GBP/YouTube/X/TikTok auto-refresh from stored refresh tokens via the daily 12:00Z heartbeat (verified live 2026-08-15, scheduled run all OK + on-demand trigger rolled expiries). LinkedIn is `needs-reauth` and **PARKED** (provider issued no refresh token). No Matt reconnect task exists. | heartbeat `sync_logs` 2026-08-15T12:00:03Z + probe `social.tokens` (`auto-refresh` vs `needs-reauth`) |

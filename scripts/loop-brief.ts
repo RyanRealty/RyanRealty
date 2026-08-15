@@ -14,6 +14,7 @@
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
+import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/data/loop/domains'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
 import { isStaleInProgress, type WorkNodeState } from '../lib/data/loop/work-node'
 
@@ -161,6 +162,10 @@ async function main() {
     push(`output:    ${next.output}`)
     push(`accept:    ${next.accept}`)
     push(`claim it:  state open -> in_progress (lib/data/loop/work-graph.ts claimWorkNode)`)
+    const reads = DOMAIN_REQUIRED_READS[next.domain as CompanyImprovementDomain] ?? []
+    push(`load first (this animal's discipline — read before working):`)
+    for (const r of reads) push(`  - ${r}`)
+    push(`  - REQUIREMENTS.md rows covering this node (grep the gap ref) + the canon preflight for whatever the change touches`)
   }
   push('')
   push('--- RULES (v1.5.0) ---')

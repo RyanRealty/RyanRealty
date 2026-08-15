@@ -12,6 +12,7 @@
 - **G57 `ci:requirements-register`** (in ci:gates + MECHANICAL_GATES): R-IDs contiguous (rows leave only as SUPERSEDED in place), closed disposition set, MISSING must cite an existing manifest gap. Namespace note: only MISSING rows' G-refs validate against the manifest (G44/G56 in evidence cells are mechanical gates).
 - Loop-brief now prints the demand line (register counts). Canon v1.5.0; pointers bumped; G44 green (263 docs).
 - **New-directive rule (canon):** a new Matt directive lands as a register row in the same delivery that acts on it.
+- **Same-day follow-up (versioning Q&A):** expertise routing shipped — `DOMAIN_REQUIRED_READS` in domains.ts (existence-tested) printed by the brief under the next node; §How Matt steers (ADD/CHANGE/STOP; blocked ≠ stopped) in COMPANY_IMPROVEMENT; R-204 (expertise, VERIFIED) R-205 (steering, LOCKED) R-206 (scheduled unattended iterations — GATED, Matt undecided). Register 206 rows. Second-brain research done: we independently match Karpathy's LLM-Wiki pattern (raw→wiki→schema, ingest/query/lint); lint = our gates + weekly packet + certification.
 
 **Next:** "Run the loop" → brief serves G2 identity stitch. New gaps are scored alongside old ones; Learn stays first where windows expire.
 

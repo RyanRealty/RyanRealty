@@ -70,6 +70,28 @@ Do not add a thirteenth domain. These are the surfaces Matt named, mapped onto t
 | **license-voice** | §0 traces, brand-voice, PAGE_CONTRACT, one-stat process | Untraced number does not ship. |
 
 Closed domain set in code: `COMPANY_IMPROVEMENT_DOMAINS`. An unknown domain fails the insert.
+**Expertise routing:** every domain carries required reads in `DOMAIN_REQUIRED_READS`
+(`lib/data/loop/domains.ts`, tested for existence) — the loop-brief prints them under the
+next node, so no session works an animal cold. The canon preflight contract stacks on top
+per change type.
+
+## How Matt steers (three verbs, mid-flight welcome)
+
+The loop is autonomous; Matt is never required mid-cycle — but any word from him lands as
+durable state in the same delivery that acts on it, per the canon's new-directive rule:
+
+- **ADD** ("I also want…"): a new register row (R-next). If nothing covers it, a new
+  manifest gap (G-next) + a seeded work node. It enters the scored queue like everything
+  else — no ad-hoc side channel, no forgetting.
+- **CHANGE** ("that's not what I meant / do it this way"): the node's contract is amended
+  (objective/accept updated, evidence trail kept), or the register row is amended; a
+  superseded requirement flips to SUPERSEDED in place with a pointer — never deleted (G57).
+- **STOP** ("kill it / off the rails"): `killWorkNode(id, reason)` — terminal, reason
+  recorded; the register row flips to PARKED or SUPERSEDED. A stop is a fact the graph
+  remembers, so the idea cannot re-enter unnoticed.
+
+Blocked ≠ stopped: a node waiting on a Matt move goes `blocked` with the reason, and the
+brief serves the next eligible node. The loop routes around humans; it never idles on one.
 
 ## Accept against the goal (this is the test)
 

@@ -286,6 +286,14 @@
 | R-202 | Recruiting toolkit deferred behind West Side proof | 03-DECISIONS A1 | PARKED | — |
 | R-203 | Inbound agent referrals: destination GCI after 25% referral fee recorded | 2026-08-14 | VERIFIED | — |
 
+## Additions (post-harvest — new directives land here in ID order)
+
+| ID | Requirement | Source | Disposition | Covers |
+|---|---|---|---|---|
+| R-204 | Per-node expertise: every domain names required reads; the brief prints them under the next node; no animal is worked cold | Matt 2026-08-15 (versioning Q&A) | VERIFIED | `DOMAIN_REQUIRED_READS` + existence tests |
+| R-205 | Steering verbs ADD/CHANGE/STOP: any Matt word lands as durable state in the same delivery; stops are terminal and remembered; blocked ≠ stopped — the loop routes around humans | Matt 2026-08-15 (versioning Q&A) | LOCKED | COMPANY_IMPROVEMENT §How Matt steers |
+| R-206 | Calendar-scheduled unattended loop iterations (no human "Run the loop" trigger) | Matt 2026-08-15 (raised, undecided) | GATED | Matt yes/no; until then a session grinds until blocked |
+
 ## Standing Matt gates (never agent-closed)
 
 Outbound to real people · public posts · ad spend · OAuth grants/new-platform connects · newsletter first cohort (M1) · TC resume/SkySlope cutover (M2) · video park-or-rebuild (M3) · ads fund-or-park (M4) · DNS timing (M5) · park sign-offs (M6) · press pitches · GBP/Zillow/Yelp profile corrections · severity-gate loosening · referral agreements.

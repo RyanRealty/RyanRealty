@@ -1,7 +1,9 @@
+import { existsSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import {
   COMPANY_BLAST_RADIUS,
   COMPANY_IMPROVEMENT_DOMAINS,
+  DOMAIN_REQUIRED_READS,
   assertCompanyDomain,
   confidenceFromVerdicts,
   isCompanyImprovementDomain,
@@ -42,6 +44,21 @@ describe('company improvement domains', () => {
     expect(isCompanyImprovementDomain('seo-aeo')).toBe(true)
     expect(isCompanyImprovementDomain('growth')).toBe(false)
     expect(() => assertCompanyDomain('growth')).toThrow(/unknown company domain/i)
+  })
+
+  it('every domain routes to at least one expertise read — no animal is worked cold', () => {
+    for (const domain of COMPANY_IMPROVEMENT_DOMAINS) {
+      expect(DOMAIN_REQUIRED_READS[domain]?.length, `${domain} has no required reads`).toBeGreaterThan(0)
+    }
+  })
+
+  it('expertise reads point at real files (section hints in parens allowed)', () => {
+    for (const [domain, reads] of Object.entries(DOMAIN_REQUIRED_READS)) {
+      for (const read of reads) {
+        const path = read.replace(/\s*\(.*\)$/, '')
+        expect(existsSync(path), `${domain}: ${path} does not exist`).toBe(true)
+      }
+    }
   })
 })
 
