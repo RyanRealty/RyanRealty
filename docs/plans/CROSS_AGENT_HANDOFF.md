@@ -6,7 +6,7 @@
 
 **Matt:** Search, saved searches, granular filters, listing alerts, CMA look, stat accuracy + one verification process, all polygons, Vercel/Supabase, analytics/GBP/social/reporting, CRM ease. Holistic: a change in analytics must land on the site, reporting, newsletters, and ads. Spark is ingest-only. Do not lose identity stitch (opens, clicks, Google, ads).
 
-**SHA:** `d35f85cf` on `main`. Parent company ingest `7c2bca5c`..`b163a2f6` on `origin/main`.
+**SHA:** `2ac16199` on `main`. Parent company ingest `7c2bca5c`..`b163a2f6` on `origin/main`.
 
 **Done this land:**
 - THE LOOP **v1.2.1**. Same 12 domains. Named surfaces + `COMPANY_BLAST_RADIUS` (7 planes).

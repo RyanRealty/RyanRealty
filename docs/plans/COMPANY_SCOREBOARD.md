@@ -48,7 +48,7 @@
 | Class | Domain | Predicted delta | Commit |
 |---|---|---|---|
 | Company ingest + `site_improvement_ledger.domain` | factory | Non-SEO classes can take a ledger row | `7c2bca5c` |
-| Holistic blast-radius + named surfaces | factory | Search, alerts, polygons, identity, CMA, Spark, ads keys are scored on the same packet | `d35f85cf` |
+| Holistic blast-radius + named surfaces | factory | Search, alerts, polygons, identity, CMA, Spark, ads keys are scored on the same packet | `2ac16199` |
 
 ## 3. What is measuring
 
