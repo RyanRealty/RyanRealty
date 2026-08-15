@@ -10,9 +10,9 @@
  *
  * THE SOURCE SET IS CLOSED, and it is the same set the KB overview read: the
  * config's prose, at-a-glance facts, drive times, amenities, course, membership
- * and builders; the registry's subdivision aliases and HOA estimate; the verified
+ * and builders, the registry's subdivision aliases and HOA estimate, the verified
  * city-to-district registry in data/co-schools.ts. No fact is composed from two
- * sources and none is invented — a community with no config yields fewer rows,
+ * sources and none is invented. A community with no config yields fewer rows,
  * which is what the page then shows.
  *
  * MARKET FIGURES DO NOT BELONG HERE. Prices, medians, inventory counts, days on
@@ -31,7 +31,7 @@ import { slugify } from '@/lib/slug'
  * from the RAW alias because /subdivisions/[slug] filters listings by that exact
  * string, so only the visible text is corrected. It is duplicated rather than
  * imported because the only copy lives inside components/site/kb, which this
- * register may not import; the correction belongs in lib/ and that gap is
+ * register may not import. The correction belongs in lib/ and that gap is
  * reported. "Lodges at Bachelor V" stays unmapped rather than guessed (§0).
  */
 const ALIAS_DISPLAY: Record<string, string> = {
@@ -49,10 +49,31 @@ function prose(term: string, body: string): V3QuietItem[] {
   return body.trim().length > 0 ? [{ kind: 'prose', term, body }] : []
 }
 
+function childPlatItems(input: {
+  name: string
+  aliases: readonly string[]
+  countIsAliasAware: boolean
+}): V3QuietItem[] {
+  if (input.aliases.length === 0) return []
+  const items: V3QuietItem[] = [
+    {
+      kind: 'prose',
+      term: `Subdivisions in ${input.name}`,
+      body: input.countIsAliasAware
+        ? `The MLS files these homes under more than one subdivision name, and every one of them counts toward the figures above.`
+        : `The MLS files these homes under more than one subdivision name.`,
+    },
+  ]
+  for (const alias of input.aliases) {
+    items.push({ label: ALIAS_DISPLAY[alias] ?? alias, href: `/subdivisions/${slugify(alias)}` })
+  }
+  return items
+}
+
 /**
- * The authored knowledge rows, in reading order: what the place is, what it
- * costs to belong to it, how long it takes to get anywhere, what is there, who
- * built it, and where its children go to school.
+ * The authored knowledge rows, in reading order: what belonging costs, what the
+ * place is, the child plats, how long it takes to get anywhere, what is there,
+ * who built it, and where its children go to school.
  */
 export function buildPlaceKnowledge(input: {
   name: string
@@ -64,16 +85,16 @@ export function buildPlaceKnowledge(input: {
   schoolDistrictSlug: string | null
   isResort: boolean
   /**
-   * True only when the published count WAS built from the alias set — the page's
+   * True only when the published count WAS built from the alias set, the page's
    * alias-aware branch. False on every other branch, including the market-pulse
    * and snapshot rows, which count by the literal subdivision name.
    *
    * The subdivisions row used to say the aliases "all count toward the figures
    * above" unconditionally, and on 2026-08-12 /communities/three-rivers published
-   * that sentence under a count that came from its market pulse row — the same
+   * that sentence under a count that came from its market pulse row, the same
    * page whose Field states, three sections up, that the count "carries the number
    * without the listings behind it". Two claims about one read, contradicting each
-   * other. The row still carries every alias as a door; only the sentence that
+   * other. The row still carries every alias as a door. Only the sentence that
    * describes the count is conditional on the count.
    */
   countIsAliasAware: boolean
@@ -84,37 +105,47 @@ export function buildPlaceKnowledge(input: {
    * the whole reason the lookup happens: a link to an unpublished post is a dead
    * door, and the config cannot know a post's status.
    */
-  amenityPosts: Readonly<Record<string, { slug: string; title: string }>>
+  amenityPosts: Readonly<Record<string, { slug: string, title: string }>>
 }): V3QuietItem[] {
   const { name, content, registry } = input
   const items: V3QuietItem[] = []
+
+  if (content?.hoaMasterAnnual) {
+    items.push({
+      kind: 'prose',
+      term: 'Master HOA',
+      body: `$${content.hoaMasterAnnual.toLocaleString('en-US')} a year. Membership is separate from the home.`,
+    })
+  } else if (registry?.hoa_annual_estimate) {
+    items.push({
+      kind: 'prose',
+      term: 'HOA estimate',
+      body: `$${registry.hoa_annual_estimate.toLocaleString('en-US')} a year.`,
+    })
+  }
 
   for (const paragraph of input.aboutParagraphs) {
     if (paragraph.trim().length > 0) items.push({ kind: 'prose', body: paragraph })
   }
 
-  // At a glance. Every value is a config or registry field, printed as stored.
   const glance: string[] = []
   if (content?.founded) glance.push(`Founded ${String(content.founded)}`)
   if (content?.acres) glance.push(`${content.acres.toLocaleString('en-US')} acres`)
   if (content?.architect) glance.push(`Course architect ${content.architect}`)
-  if (content?.hoaMasterAnnual) {
-    glance.push(`Master HOA $${content.hoaMasterAnnual.toLocaleString('en-US')} a year`)
-  } else if (registry?.hoa_annual_estimate) {
-    glance.push(`HOA estimate $${registry.hoa_annual_estimate.toLocaleString('en-US')} a year`)
-  }
   const topRanking = content?.courseRankings?.[0]
   if (topRanking) glance.push(`${topRanking.rank} ${topRanking.publication}`)
   items.push(...prose('At a glance', glance.join(' · ')))
 
-  // Drive times, minutes first, exactly as the config states them.
+  const aliases = (registry?.subdivision_aliases ?? []).filter(
+    (a) => a.toLowerCase().trim() !== name.toLowerCase().trim(),
+  )
+  items.push(...childPlatItems({ name, aliases, countIsAliasAware: input.countIsAliasAware }))
+
   const drives = (content?.driveTimes ?? [])
     .filter((d) => Number.isFinite(d.minutes) && d.destination)
     .map((d) => `${d.minutes} minutes to ${d.destination}${d.note ? ` (${d.note})` : ''}`)
   items.push(...prose('Drive times', drives.join(' · ')))
 
-  // Amenities, grouped by the config's own category so the row count stays
-  // scannable on 390. A category with no named amenity produces no row.
   const byCategory = new Map<string, string[]>()
   for (const amenity of content?.amenities ?? []) {
     const category = amenity.category?.trim() || 'On site'
@@ -128,9 +159,6 @@ export function buildPlaceKnowledge(input: {
     items.push(...prose(category, names.join(' · ')))
   }
 
-  // The amenity edges. One row per amenity the config points at a post that is
-  // actually published, so the block that describes the lifestyle also carries
-  // the way to read more about it.
   const seenPost = new Set<string>()
   for (const amenity of content?.amenities ?? []) {
     const post = amenity.blog_slug ? input.amenityPosts[amenity.blog_slug] : undefined
@@ -139,7 +167,6 @@ export function buildPlaceKnowledge(input: {
     items.push({ label: post.title, href: `/blog/${post.slug}` })
   }
 
-  // The course. Specs are printed only when the config carries them.
   const specs = content?.courseSpecs
   if (specs) {
     const line: string[] = []
@@ -151,13 +178,12 @@ export function buildPlaceKnowledge(input: {
     items.push(...prose('The course', [specs.summary ?? '', line.join(' · ')].filter(Boolean).join(' ')))
   }
 
-  // Membership. Tier names and their stated price or waitlist status, no more:
-  // a dues figure the config does not carry is not one this page can supply.
   const tiers = (content?.membershipTiers ?? [])
     .map((tier) => {
       const label = String(tier.name ?? tier.tier ?? tier.label ?? '').trim()
       if (!label) return ''
-      const price = tier.price == null || tier.price === '' ? '' : ` ${String(tier.price)}`
+      const rawPrice = tier.price == null || tier.price === '' ? '' : String(tier.price).trim()
+      const price = rawPrice && !/[\u2014\u2013]/.test(rawPrice) ? ` ${rawPrice}` : ''
       const wait = tier.waitlist_status ? ` (${tier.waitlist_status})` : ''
       return `${label}${price}${wait}`
     })
@@ -167,15 +193,11 @@ export function buildPlaceKnowledge(input: {
     items.push(...prose('Membership office', content.membershipOfficePhone))
   }
 
-  // Builders.
   const builders = (content?.builders ?? [])
     .map((b) => String(b.name ?? '').trim())
     .filter(Boolean)
   items.push(...prose('Builders', builders.join(' · ')))
 
-  // Schools. The district registry is the only permitted source, and it answers
-  // at city scope, so the row says city scope. Individual school assignment is
-  // per address and this system does not hold it, so it is not claimed.
   if (input.schoolDistrictName) {
     items.push({
       kind: 'prose',
@@ -190,8 +212,6 @@ export function buildPlaceKnowledge(input: {
     }
   }
 
-  // Second homes. Generic framing only: no permit caps, occupancy limits, or
-  // income figures, which are the §0 hard rule on this subject.
   if (input.isResort) {
     items.push({
       kind: 'prose',
@@ -199,25 +219,6 @@ export function buildPlaceKnowledge(input: {
       body: `Short-term rental potential in ${name} varies by HOA rules, community covenants, and Oregon regulations. Ask for the current rental guidelines before you assume what is permitted or what it could earn.`,
     })
     items.push({ label: `Ask about renting in ${name}`, href: input.contactHref })
-  }
-
-  // The subdivisions the MLS files this community under. The row carries the edge
-  // into each subdivision node, and it explains the count ONLY on the branch where
-  // the count is actually built from these names (see countIsAliasAware).
-  const aliases = (registry?.subdivision_aliases ?? []).filter(
-    (a) => a.toLowerCase().trim() !== name.toLowerCase().trim(),
-  )
-  if (aliases.length > 0) {
-    items.push({
-      kind: 'prose',
-      term: `Subdivisions in ${name}`,
-      body: input.countIsAliasAware
-        ? `The MLS files these homes under more than one subdivision name, and every one of them counts toward the figures above.`
-        : `The MLS files these homes under more than one subdivision name.`,
-    })
-    for (const alias of aliases) {
-      items.push({ label: ALIAS_DISPLAY[alias] ?? alias, href: `/subdivisions/${slugify(alias)}` })
-    }
   }
 
   return items

@@ -6,7 +6,7 @@
  * it is to split, not to re-baseline.
  *
  * NOTHING HERE FETCHES. Every input is already loaded and already guarded by the
- * page; this module only decides which figures are honest to print, what sentence
+ * page. This module only decides which figures are honest to print, what sentence
  * says where they came from, and which doors the closing block carries.
  *
  * ONE PAIR, ONE TRACE, ONE STAMP. `resolveLivePair` is the single place the
@@ -37,7 +37,7 @@ export type LivePair = {
   /** The clock belonging to that source, or null when the source carries none. */
   stamp: string | null
   /**
-   * True when the count IS a tile set this page holds — the homes the Field
+   * True when the count IS a tile set this page holds, the homes the Field
    * plots and lists. False when it came from a mart row that carries no tiles.
    *
    * The page reads it to decide where the count's DOOR goes. A figure reading
@@ -75,8 +75,8 @@ export function resolveLivePair(input: {
   communityTiles: readonly Tile[]
   boundaryReliable: boolean
   usedSubdivisionNarrowing: boolean
-  pulse: { activeCount: number | null; medianListPrice: number | null; refreshedAt: string | null } | null
-  snapshot: { activeSfrCount: number | null; medianListPrice: number | null; refreshedAt: string | null } | null
+  pulse: { activeCount: number | null, medianListPrice: number | null, refreshedAt: string | null } | null
+  snapshot: { activeSfrCount: number | null, medianListPrice: number | null, refreshedAt: string | null } | null
 }): LivePair {
   const { communityName, communityTiles } = input
 
@@ -128,7 +128,7 @@ export function resolveLivePair(input: {
 /**
  * The opening Instrument's figures. Every one is a door: PUBLIC-PRODUCT-OS calls
  * dead text naming a linkable thing a defect. The count and the median describe
- * the live pair; months of supply and days to pending come from the market pulse
+ * the live pair. Months of supply and days to pending come from the market pulse
  * row, and the trace below names both sources rather than letting one borrow the
  * other's provenance.
  *
@@ -136,7 +136,7 @@ export function resolveLivePair(input: {
  * builder does not round, because the rounding is the defect: `toFixed(1)` on a
  * raw 4.02 prints "4.0" under a headline reading "a balanced market" and above a
  * threshold clause saying 4 or less is a seller's market, while the same page's
- * FAQ — which goes through the canonical formatter — prints 4.1 and the Dataset
+ * FAQ, which goes through the canonical formatter, prints 4.1 and the Dataset
  * publishes 4.1. Three values for one statistic on one page. lib/format/months-
  * of-supply.ts is the single boundary-safe rule and the page calls it.
  */
@@ -215,35 +215,36 @@ export function buildLiveTrace(input: {
 
 /**
  * The closed-sale Instrument's figures. A different population from the live
- * pair — homes that sold, not homes for sale — so they sit in their own section
+ * pair: homes that sold, not homes for sale, so they sit in their own section
  * under their own trace and never join the set above.
  */
 export function buildClosedFigures(input: {
   medianSalePrice: number | null
   soldCount: number | null
   medianDaysOnMarket: number | null
-  cityReportHref: string
+  /** This place's market page, already place-filtered. */
+  marketHref: string
 }): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
   if (input.medianSalePrice != null && input.medianSalePrice > 0) {
     figures.push({
       value: v3Text(formatPrice(input.medianSalePrice)),
       label: v3Text('median sale price'),
-      href: input.cityReportHref,
+      href: input.marketHref,
     })
   }
   if (input.soldCount != null && input.soldCount > 0) {
     figures.push({
       value: v3Text(input.soldCount.toLocaleString('en-US')),
       label: v3Text('homes sold'),
-      href: input.cityReportHref,
+      href: input.marketHref,
     })
   }
   if (input.medianDaysOnMarket != null) {
     figures.push({
       value: v3Text(String(Math.round(input.medianDaysOnMarket))),
       label: v3Text('median days on market'),
-      href: input.cityReportHref,
+      href: input.marketHref,
     })
   }
   return figures
@@ -259,10 +260,10 @@ export function buildClosedFigures(input: {
  * The browse door said "Every <community> home for sale". It is not: that route
  * filters on the literal MLS SubdivisionName and this page counts alias-aware, so
  * on 2026-08-12 /communities/tetherow published 36 while /homes-for-sale/bend/
- * tetherow published 30 — a gap this page's own markup proves, since it links
+ * tetherow published 30, a gap this page's own markup proves, since it links
  * 19504 Century Drive under the subdivision "Roald West", counted in the 36 and
  * absent from the 30. The door stays, because a Tetherow-filtered search is a
- * real and useful node; the word "every" goes, because only the alias-aware set
+ * real and useful node. The word "every" goes, because only the alias-aware set
  * on this page is every one. Alias-awareness on the browse route is the real fix
  * and is reported to the orchestrator, since that route is not this unit's.
  *
@@ -274,7 +275,7 @@ export function buildClosedFigures(input: {
  * THE SELL DOOR CARRIES ITS ORIGIN. `/sell#get-value` written bare drops
  * `?from=<path>`, which app/lp/seller-home-value/actions.ts turns into the CRM
  * source attribution, so the lead still arrives and just stops saying which
- * community page produced it — invisible in QA, and completed valuations per page
+ * community page produced it, invisible in QA, and completed valuations per page
  * is this program's KPI. lib/site/valuation-href.ts is the one way to build it
  * (migration-recipe.md addendum 2026-08-11), and `pagePath` is what it carries.
  */
@@ -282,17 +283,23 @@ export function buildExploreEdges(input: {
   communityName: string
   cityName: string
   citySlug: string | null
+  /** Place-filtered Homes URL (city + community slug). */
   browseHref: string
+  /** Place-filtered Market URL for this community. */
+  communityMarketHref: string
   cityReportHref: string
   /** This page's own path, e.g. '/communities/tetherow'. The valuation origin. */
   pagePath: string
-  faqs: readonly { question: string; answer: string }[]
-  golfCourses: readonly { slug: string; name: string }[]
+  faqs: readonly { question: string, answer: string }[]
+  golfCourses: readonly { slug: string, name: string }[]
+  /** Registry resort list. Quiet doors, not a second hardcoded set. */
+  resortItems: readonly V3QuietItem[]
 }): V3QuietItem[] {
   const { citySlug, cityName } = input
   return [
     ...input.faqs.map((item) => ({ kind: 'prose' as const, term: item.question, body: item.answer })),
     { label: `Search ${input.communityName} homes`, href: input.browseHref },
+    { label: `${input.communityName} market report`, href: input.communityMarketHref },
     { label: 'Manage your listing alerts', href: '/login?returnUrl=%2Faccount%2Fsaved-searches' },
     ...(citySlug ? [{ label: `${cityName} homes for sale`, href: homesForSalePath(cityName) }] : []),
     { label: `${cityName} market report`, href: input.cityReportHref },
@@ -302,6 +309,7 @@ export function buildExploreEdges(input: {
       label: `${c.name} golf course`,
       href: `/central-oregon/golf/${c.slug}`,
     })),
+    ...input.resortItems,
     { label: 'Every Central Oregon community', href: '/communities' },
     { label: 'Central Oregon housing market', href: '/housing-market' },
     { label: 'Value my home', href: valuationHref(input.pagePath) },

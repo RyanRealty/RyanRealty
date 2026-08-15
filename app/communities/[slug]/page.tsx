@@ -1,5 +1,5 @@
 /**
- * /communities/<slug> — master-plan grain. Tetherow is the exemplar, not a
+ * /communities/<slug> master-plan grain. Tetherow is the exemplar, not a
  * one-off. Opens Stage (owned place photo) then one Field. No owned asset →
  * Instrument of belonging, then Field. Amenities, membership, STR, and child
  * plats are doors. Not a neighborhood. Not a city stamp twin.
@@ -25,7 +25,7 @@
  *     11,496 acres against ~450 real). An unreliable hull may not draw and may
  *     not drive the count; the MLS subdivision-name listings do both instead.
  *     The county plat union, when one exists, always draws.
- *  3. ONE PAIR, ONE TRACE, ONE STAMP — resolveLivePair in _v3/community-figures.
+ *  3. ONE PAIR, ONE TRACE, ONE STAMP. resolveLivePair in _v3/community-figures.
  *  4. ABSENT IS NOT ZERO. Every source is guarded, and when all are silent the
  *     page says it has no live figures rather than publishing 0.
  *  5. ONE PRIMARY PER VIEWPORT. The opening is Stage (owned photo) or a
@@ -39,7 +39,7 @@
  * branch published `listings_in_boundary`'s pin count under the label "Active
  * single-family", and that RPC filters on status only, so the number counted
  * condos, land, and townhomes. It is now the single-family actives inside the
- * same boundary — the set the label claimed and the set its median comes from.
+ * same boundary. the set the label claimed and the set its median comes from.
  *
  * WHAT THE 2026-08-12 REPAIR PASS CHANGED, all of it published copy this page was
  * getting wrong, none of it a gate that moved:
@@ -91,7 +91,8 @@ import { GOLF_COURSES } from '@/data/golf/courses'
 import { cityResorts, resortActiveSfrCounts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { getDistrictForCity } from '@/data/co-schools'
-import { homesForSalePath, slugify } from '@/lib/slug'
+import { slugify } from '@/lib/slug'
+import { getPlaceLinks } from '@/lib/place-links'
 import { communityImage } from '@/lib/geo-images'
 import { getCanonicalCityForSubdivision, getAllResortCommunities } from '@/lib/data/communities/registry'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -124,6 +125,7 @@ import {
   communityFieldItems,
 } from './_v3/community-opening'
 import { CommunityStage } from './_v3/CommunityStage'
+import { resortQuietItems } from '../_v3/resort-doors'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   // Seed the curated resort-community set (finite, in-repo registry) so the
@@ -139,12 +141,9 @@ type Props = { params: Promise<{ slug: string }> }
 /** The most rows the in-boundary queries return. Named so the trace can say it. */
 const BOUNDARY_ROW_CAP = 200
 
-/** How many homes the Field lists. Every one with coordinates still pins. */
-const FIELD_LIST_CAP = 24
-
 // Boundaries listed in the sanity baseline are oversized or un-corrected
 // (broken-top is 11,496 acres against ~450 real), so anything keyed off the
-// polygon — the in-boundary listings, the count, the drawn shape — is wrong: it
+// polygon. the in-boundary listings, the count, the drawn shape. is wrong: it
 // swallows Tetherow and west Bend.
 const UNRELIABLE_BOUNDARY_SLUGS = new Set(boundarySanityBaseline.allowed as string[])
 function isBoundaryReliable(slug: string): boolean {
@@ -198,7 +197,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const isResort = registryEntry?.is_resort === true || community.isResort
   const isResortInCity = Boolean(resortMatch)
 
-  // Community geo snapshot keys are stored as "city:subdivision" lowercase;
+  // Community geo snapshot keys are stored as "city:subdivision" lowercase.
   // market_stats_cache and market_pulse_live neighborhood rows are keyed by the
   // bare community slug.
   const communityGeoKey = `${cityName.toLowerCase().trim()}:${community.subdivision.toLowerCase().trim()}`
@@ -206,7 +205,7 @@ export default async function CommunityDetailPage({ params }: Props) {
 
   const [snapshot, pulse, stats, boundaryMapData, _resortBoundary, citySfrTiles, richContent] =
     await Promise.all([
-      // Always-present community snapshot — the JSON-LD and Place fallback source. (§0)
+      // Always-present community snapshot. the JSON-LD and Place fallback source. (§0)
       withTimeoutFallback(getGeoSnapshot({ geoType: 'community', geoKey: communityGeoKey }), null, 3000, 'comm:snapshot'),
       withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: neighborhoodSlug }), null, 3500, 'comm:pulse'),
       // Closed-sale stats from market_stats_cache: market_pulse_live carries no
@@ -315,7 +314,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   // A RATIO IS ONLY ABOUT THE INVENTORY IT WAS COMPUTED FROM, AND THIS PAGE PRINTS
   // THE FORMULA, SO THE READER CAN CHECK IT. Months of supply is active listings
   // over average monthly closings, and the pulse row computed it from ITS OWN
-  // active count — the literal-subdivision-name count for this slug. That is a
+  // active count. the literal-subdivision-name count for this slug. That is a
   // different number from the alias-aware count this page publishes, and on
   // 2026-08-12 it was different on every community carrying a pulse row:
   // tetherow 20 against the 36 here, vandevert-ranch 12 against 0. Publishing the
@@ -329,25 +328,25 @@ export default async function CommunityDetailPage({ params }: Props) {
   //     market, printed under an H1 reading "a balanced market".
   //
   // So the figure and the verdict it drives publish only when the pulse row's own
-  // numerator IS the count on this page — which is exactly the case where the
+  // numerator IS the count on this page. which is exactly the case where the
   // pair itself came from that row. Otherwise the statistic cannot be verified
   // against what this page publishes and it does not ship (§0: cut it, never
   // approximate it). Days to pending survives the same disagreement because it is
   // a timing median over homes that went pending, carries no printed formula, and
-  // drives no verdict; its trace names the pulse row as its source.
+  // drives no verdict. Its trace names the pulse row as its source.
   const mosPublishable =
     mosRaw != null && activeCount != null && pulse?.activeCount === activeCount ? mosRaw : null
   // ── THE FIELD: the homes, as a spatial surface ────────────────────────────
   // ONE SET, COUNTED AND SHOWN. The Field plots and lists the SAME homes the
   // Instrument counts, so the two can never publish two inventories: when the
   // alias-aware branch produced the count, the alias tiles are the set, even when
-  // that set is empty — listing subdivision-name tiles under a published 0 would
+  // that set is empty. listing subdivision-name tiles under a published 0 would
   // be the same merge defect one section lower. Every other branch that produces a
   // count from tiles produces it from communityTiles, and the two mart branches
   // produce a count with no tiles at all, so `rows.length === activeCount`
   // whenever live.fromTiles and `rows` is empty whenever it is not.
   const fieldTiles = aliasAwareCount != null ? resortTiles : communityTiles
-  const fieldItems = communityFieldItems(fieldTiles, FIELD_LIST_CAP)
+  const fieldItems = communityFieldItems(fieldTiles)
   const mapPins = fieldMapPins(fieldItems)
   const mapPolygon = _resortBoundary ?? (boundaryReliable ? boundaryMapData.polygon : null)
   const hasMap = mapPins.length > 0 || Boolean(mapPolygon)
@@ -355,13 +354,19 @@ export default async function CommunityDetailPage({ params }: Props) {
   const belongFigures = belongingFigures(richContent)
   const [firstBelong, ...restBelong] = belongFigures
 
-  const browseHref = homesForSalePath(cityName, community.subdivision)
+  const placeLinks = getPlaceLinks({
+    type: 'community',
+    slug: resortSlug,
+    citySlug: citySlug || undefined,
+  })
+  const browseHref = placeLinks.browseUrl
+  const communityMarketHref = placeLinks.marketUrl
   const cityReportHref = citySlug ? `/housing-market/${citySlug}` : '/housing-market'
 
   // WHERE THE COUNT'S DOOR GOES. A figure reading "36 homes for sale" may only
   // link somewhere that publishes those 36. The subdivision browse page filters on
   // the literal MLS SubdivisionName, which is the undercount the alias-aware set
-  // exists to correct — 36 here against 30 there on 2026-08-12 — so it is not that
+  // exists to correct. 36 here against 30 there on 2026-08-12. so it is not that
   // door. When the count is a tile set, the set is on THIS page, in the Field, and
   // the Field is the door. When it came from a mart row instead, this page holds
   // no such list and the subdivision browse is the closest node that does.
@@ -369,7 +374,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     medianSalePrice: stats?.medianSalePrice ?? null,
     soldCount: stats?.soldCount ?? null,
     medianDaysOnMarket: stats?.medianDaysOnMarket ?? null,
-    cityReportHref,
+    marketHref: communityMarketHref,
   })
   const [firstClosedFigure, ...restClosedFigures] = closedFigures
 
@@ -389,7 +394,7 @@ export default async function CommunityDetailPage({ params }: Props) {
   const faqHoaEstimate =
     registryHoa ?? (subNeighborhoodMinHoa !== null && isFinite(subNeighborhoodMinHoa) ? subNeighborhoodMinHoa : null)
 
-  // School district — from the verified city-to-district registry in
+  // School district. from the verified city-to-district registry in
   // data/co-schools.ts, the ONLY source allowed (§0). It answers undefined for a
   // city outside the service area, and the schools row and FAQ are then omitted
   // rather than fabricated.
@@ -414,7 +419,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     // The PUBLISHABLE months of supply, not the raw pulse value: the visible FAQ
     // answer, the FAQPage JSON-LD, and the Dataset's variableMeasured are the same
     // claim the Instrument makes. Feeding the raw value here republished the
-    // contradiction the figure above no longer prints — vandevert-ranch answered
+    // contradiction the figure above no longer prints. vandevert-ranch answered
     // "72.0 months of supply, which is a buyer's market" on a page publishing 0
     // homes for sale, and shipped 72 as a machine-readable variable.
     monthsOfSupply: mosPublishable,
@@ -475,10 +480,12 @@ export default async function CommunityDetailPage({ params }: Props) {
     cityName,
     citySlug,
     browseHref,
+    communityMarketHref,
     cityReportHref,
     pagePath: `/communities/${slug}`,
     faqs,
     golfCourses: GOLF_COURSES.filter((c) => c.communitySlug === slug),
+    resortItems: resortQuietItems(),
   })
 
   const trail = [
@@ -600,7 +607,7 @@ export default async function CommunityDetailPage({ params }: Props) {
             source={v3Text(
               `closed MLS sales through Oregon Data Share, ${community.name} single-family homes, rolling 365 days. Closed sales, not active inventory`,
             )}
-            action={{ label: v3Text(`${cityName} market report`), href: cityReportHref, variant: 'ghost' }}
+            action={{ label: v3Text(`${community.name} market report`), href: communityMarketHref, variant: 'ghost' }}
           />
         ) : null}
 
@@ -617,8 +624,8 @@ export default async function CommunityDetailPage({ params }: Props) {
           items={exploreItems}
           // THE VISIBLE FRESHNESS SIGNAL, AND IT IS THE SAME CLOCK THE MARKUP
           // PUBLISHES. The KB page rendered "Market data updated <label>" as its
-          // own element; the migration replaced it with the Instrument's `updated`
-          // prop, which reads live.stamp — and the pair carries no stamp on the
+          // own element. The migration replaced it with the Instrument's `updated`
+          // prop, which reads live.stamp. and the pair carries no stamp on the
           // alias, boundary, and subdivision-name branches, so it never rendered on
           // a resort or a plain subdivision while the Dataset went on publishing
           // dateModified. asOfLabel and asOfIso come from one buildMarketFaq call,

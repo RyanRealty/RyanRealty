@@ -66,8 +66,8 @@ export function belongingTrace(name: string): string {
 }
 
 /** The counted set as Field rows. Photo is optional. Map and list are this set. */
-export function communityFieldItems(tiles: readonly ListingTile[], cap: number): V3FieldItem[] {
-  return [...tiles]
+export function communityFieldItems(tiles: readonly ListingTile[], cap?: number): V3FieldItem[] {
+  const items = [...tiles]
     .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .flatMap((tile) => {
       if (!tile.listingKey) return []
@@ -92,5 +92,5 @@ export function communityFieldItems(tiles: readonly ListingTile[], cap: number):
         } satisfies V3FieldItem,
       ]
     })
-    .slice(0, cap)
+  return cap == null ? items : items.slice(0, cap)
 }
