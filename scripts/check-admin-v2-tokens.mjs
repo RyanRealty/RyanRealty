@@ -635,6 +635,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/people/[id]/CommsSection.tsx',
   'app/admin/(protected)/people/[id]/SendSection.tsx',
   'app/admin/(protected)/reports/custom/CustomReportBuilder.tsx',
+  'app/admin/(protected)/reports/custom/ReportTimeSeriesChart.tsx',
   'app/admin/(protected)/reports/emails/EmailLogCsvButton.tsx',
   'app/admin/(protected)/sign-off/SignOffControls.tsx',
   'app/admin/(protected)/site-pages/HeroMediaForm.tsx',
