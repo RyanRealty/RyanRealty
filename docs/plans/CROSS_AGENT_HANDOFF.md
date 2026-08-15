@@ -12,7 +12,9 @@
 - **5 paste-ready bot briefs** in `ENTERPRISE_MAP/VERIFICATION-FLEET.md`: Walker Mobile/Desktop (daily), Money Path (2×daily, p0 on funnel breaks), Stats Truth (page-internal §0 contradictions), Regression Certifier (on-demand; **clean pass now required for version certification** per canon). Phase-2 Matt-gated: Analytics Reader (OAuth), Form E2E (test-identity lane), R-206 scheduling.
 - R-207 (PARTIAL→G29), G29 seeded (graph 29 nodes), Max pins G29/R-207, scoreboard fleet row, canon v1.6.0 + pointers, G44/G56/G57 green, 56 tests.
 
-**Matt's one setup step:** open Grok Bot app → create 5 bots → paste each brief → replace `<FLEET-SECRET>` (a session prints it on request) → set routines.
+**Matt's one setup step:** open Grok Bot app → create 5 bots → paste each brief → replace `<FLEET-SECRET>` (a session prints it on request) → run once supervised → save as skill → schedule per the six-point routine checklist.
+
+**X-research mesh (same day):** harvested xAI's canonical operating model + field practice into the spec — skill-before-routine (never automate unproven), six-point routine checklist (owner/schedule+TZ/input/result/approval-boundary-as-sentence/no-data policy), re-paste packs after significant ships (regenerator is the re-sync), memory-is-not-a-source (in Stats Truth brief), do-not-rely-on-Auto-Review (rails are the fence), staggered schedules for usage limits (7a/9a/11a+5p/2p PT), Teach-a-Task = optional draft. Practitioner signal: "test apps" is a top validated Grok Bot use case.
 
 **Do not:** put the fleet secret in any committed file; let bots touch forms/admin; treat a bot finding as verdict (reproduce-or-reject); certify a version without the fleet pass.
 
