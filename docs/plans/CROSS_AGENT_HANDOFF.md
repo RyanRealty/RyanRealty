@@ -2,32 +2,38 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — one chart grammar LIVE
+# Current — 2026-08-15 (Grok) — PRODUCT.md end-to-end LIVE
 
-**Matt:** Standardize UIs from admin to public. One charting system. Documents use the same geometry.
+**Matt:** Execute the entire public product plan /endtoend. Done means a real person can walk the site.
 
-**SHA:** `a93cf35a` on `origin/main`. Vercel production READY. Custom domain https://ryan-realty.com.
+**SHA:** `4cfc1a9e` on `origin/main`. Vercel production READY. Custom domain https://ryan-realty.com.
 
-**Done this unit:**
-- One geometry: `lib/charts/plot.ts`. Public skin `V3Chart`. Admin skin `AChart`. Print `lib/charts/print-svg.ts` + `lib/cma/seasonality-chart.ts`.
-- Live recharts removed from MarketCoreCharts, SalesReportCharts, EquityProjection, AgentActivityChart.
-- Custom report sold-count line + financials net-by-year on AChart. Immersive CMA seasonality uses the same SVG as print.
-- Neighborhood sold Instrument: region mart composition, labeled Central Oregon, not the neighborhood.
-- D109 fails if those mounts import recharts.
-- Ten-page strip recaptured at 390 and 1280 (all 200). Chart frames found on market, history, city, Awbrey Butte. Local PNGs: `docs/plans/PUBLIC_PRODUCT/looks/2026-08-15-chart-grammar/` (not committed).
+**Done this mission (PRODUCT Order 1–9):**
+- Arrival: Buy / Sell / Look on blank direct; Google Referer is not interrupted; welcome-back names last house/search. `292abf9b`.
+- Sentence search writes existing filter params. Live: Tetherow 3-bed under 800 → `subdivision` + `city` + `beds` + `maxPrice`. `65d22965`.
+- Place grains: community Field is the counted set; Homes/Market keep the place; resort Quiet list. `ba328a86`.
+- HouseMe from `listing_pricing_reads`. Map popup is `MapListingPopup`. Orphan sell-save is a no-op. `5ace1d19`.
+- Google comms on one card. CMA title is `Your report on {address}`. Visitor scoreboard + GSC slipping queries. `7a4114a8`.
+- Gate fix so the above could push: ArrivalIntent de-shadcn’d; auth excluded from burndown. `4cfc1a9e`.
+- Chart grammar already live: `a93cf35a`. Cube 1998 already live. About faces already live.
 
-**Printed cube (live on /housing-market, do not republish 1990):**
+**Walk (Chrome UA, https://ryan-realty.com, 2026-08-15):** 20/20 strip at 200. Arrival direct Buy/Sell/Look = 1. Google Referer Buy = 0. `#sentence-search` present. Listing HouseMe node = 1. Sell Value my home = 1, worth = 0. Tetherow Homes + Market present. About Matt / Call / Text present. Recipe: `docs/plans/PUBLIC_PRODUCT/looks/2026-08-15-product-e2e/capture.mjs` (PNGs not committed).
+
+**Printed cube (do not republish 1990):**
 - 1998 region all: **5,179** / **$654,573,406** / median **$104,900**
 - 1998 fireplace: **1,568** / 5,179 (30.3%)
-- 2024: **5,707** / **$3.931B** / median **$570,000**
+- 2024 region all: **5,707** / **$3.931B** / median **$570,000**
+- Bend 2024 city mart: **2,709** / **$2.337B** / median **$700,000**
 
-**Do not:** page-grade, new OS, `git add -A`, leftover page-grade-v24-regrade folder or `_sunstone-cma-summary.ts`.
+**Named stops (still hold):** looking-at SMS / buyer-packet send (CLAUDE.md §1). Ad spend. I6 competitor names. Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase.
 
-**Left on disk, not shipped:** Arrival Buy/Sell/Look, sentence search, HouseMe, Google comms, sell leftovers, unmounted recharts (`GeoMarketOverview`, `MarketSnapshotChart`, `MarketVisuals`).
+**Do not:** `git add -A`. Do not commit `LOOK-PLAN.md`, `RESTORE.md`, `looks/2026-08-14-page-grade-v24-regrade/`, `scripts/_sunstone-cma-summary.ts`, or recapture PNGs.
 
-**Next:** leftover product units after Matt stamps PRODUCT.md. Optional later: AChart on prospect price history only if ≥2 priced cycles.
+**Left on disk, not shipped:** unmounted recharts (`GeoMarketOverview`, `MarketSnapshotChart`, `MarketVisuals`). Recapture PNGs. Page-grade leftover folder.
 
-**Skills read:** public-product-os (orient), frontend-design, git-commit.mdc, CROSS_AGENT_HANDOFF.
+**Next:** nothing on this product plan except Matt stamps for looking-at send. Optional later: delete unmounted recharts; AChart on prospect price history only if ≥2 priced cycles.
+
+**Skills read:** endtoend, public-product-os (orient), frontend-design, git-commit.mdc, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, PRODUCT.md.
 
 # Prior — 2026-08-14 (Grok) — public look: stop inventing, use an existing system
 

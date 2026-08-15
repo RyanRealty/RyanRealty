@@ -227,13 +227,15 @@ Scoreboard we actually watch: resume rate (returner opened last house), stitch r
 ## Already built. Do not rebuild.
 
 - `rr_vid`, `intent_tags`, VisitTracker, UTM / gclid, agent attribution, person identity bridges.
-- Browse split map + list. FlexMLS-grain `SEARCH_FIELDS`.
-- Home tiles already compute `meta`. V3Field draws it on rows, not on the photograph.
-- Listing already loads `getListingPricingRead`. It is a range + a sentence, not a report.
-- Market already has Instrument + Recharts + cache.
-- City map impl exists. First paint is an empty cream box.
-- `/llms.txt`, sitemaps, GSC ingest, dual-objective inventory.
-- Valuation spine, 3% plan, written-CMA process. `skipPartialLead` exists and is not wired on `/sell`.
+- Browse split map + list. FlexMLS-grain `SEARCH_FIELDS`. Sentence box on `/homes-for-sale` writes those params.
+- Home tiles compute `meta`. V3Field draws it on rows, not on the photograph.
+- Listing HouseMe report from `listing_pricing_reads`. Map popup is `MapListingPopup`.
+- Market Instrument + `V3Chart` + mart. Public cube reads are mart-only. Floor year 1998.
+- City map impl exists. First paint is an empty cream box until Google paints.
+- `/llms.txt`, sitemaps, GSC ingest, dual-objective inventory. Three citation queries mapped.
+- Valuation spine, 3% plan, written-CMA process. Address-only save on `/sell` is a no-op.
+- Arrival island on `/`. Google comms on the same card as Continue with Google.
+- Looking-at ask helpers in `lib/crm/looking-at.ts`. Composer preload only. Never a send.
 
 ---
 
@@ -241,41 +243,41 @@ Scoreboard we actually watch: resume rate (returner opened last house), stitch r
 
 After every public-UI step: recapture home, browse, city, neighborhood, Tetherow, a plat, a listing, sell, market, about at 390 and 1280. Shared `V3Field` is how the last flatten spread. Worse on any of those → revert that step.
 
-### 1. Arrival and memory — shipping
+### 1. Arrival and memory — LIVE `292abf9b` / production READY on `4cfc1a9e`
 
-Buy · Sell · Look only on blank unknown direct. Welcome back names the last thing. Stitch Google email / `rr_vid` / person before any ask. Fire `intent_declared` and `welcome_back` to first-party + GA4. No modal.
+Buy · Sell · Look only on blank unknown direct. Welcome back names the last thing. Stitch Google email / `rr_vid` / person before any ask. Fire `intent_declared` and `welcome_back` to first-party + GA4. No modal. Walk 2026-08-15: direct Buy/Sell/Look = 1; Google Referer Buy = 0.
 
-### 2. Field cards and maps (Buy)
+### 2. Field cards and maps (Buy) — LIVE (Field earlier; sentence `65d22965`)
 
-Draw `meta` on the photo. Lead house fills the fold. City/ZIP poster until Google paints. Browse looks like PropXYZ. Sentence search writes existing params.
+Draw `meta` on the photo. Lead house fills the fold. City/ZIP poster until Google paints. Browse looks like PropXYZ. Sentence search writes existing params. Live proof: `3 bed under 800 in Tetherow` → `?subdivision=Tetherow&city=Bend&beds=3&maxPrice=800000`.
 
-### 3. Place grains
+### 3. Place grains — LIVE `ba328a86`
 
-Neighborhood: Tremor pace, then houses, daily life on the first path. Master-plan (Tetherow first, then the other resorts): owned photo, child polygons, pins, membership number, see-all on the page. Plat: list of homes. Resort list on every grain. Place context follows into Homes and Market.
+Neighborhood: Tremor pace, then houses, daily life on the first path. Master-plan (Tetherow first, then the other resorts): owned photo, child polygons, pins, membership number, see-all on the page. Plat: list of homes. Resort list on every grain. Place context follows into Homes and Market. Walk: Tetherow Homes + Market doors present.
 
-### 4. This house
+### 4. This house — LIVE `5ace1d19` (looking-at send is a named stop)
 
-HouseMe report from the stamp. Sticky this-listing broker. Map popup = photo + facts. Looking-at wakes the phone. Buyer packet, not seller CMA.
+HouseMe report from the stamp. Sticky this-listing broker. Map popup = photo + facts. Looking-at ask exists in CRM (`lookingAtAskHref`). Send stays off until Matt stamps the specific message. Buyer packet, not seller CMA.
 
-### 5. Market
+### 5. Market — LIVE (cube + V3Chart earlier; `a93cf35a`)
 
-Tremor density. One block. MoS verdict matches the number. Chart under the job.
+Tremor density. One block. MoS verdict matches the number. Chart under the job. One geometry: `lib/charts/plot.ts`. Public `V3Chart`. Admin `AChart`. Print SVG.
 
-### 6. Sell
+### 6. Sell — LIVE `5ace1d19`
 
-Address first. Wire `skipPartialLead`. Kill leftover worth-question copy. One spine. Low-contrast tabs fixed.
+Address first. `saveSellerPartialLead` is a no-op. Kill leftover worth-question copy. One spine. Walk: Value my home = 1; worth button = 0.
 
-### 7. Continue with Google is the comms door
+### 7. Continue with Google is the comms door — LIVE `7a4114a8`
 
 One card. Persist consent across redirect. Kill CMA Almost there. Intent chooses the sequence.
 
-### 8. About + leftover
+### 8. About + leftover — LIVE (faces earlier; recapture 2026-08-15)
 
-Three faces, Call and Text. Reviews as written. Scoped open houses. No mystery search square. No `?`.
+Three faces, Call and Text. Reviews as written. Scoped open houses. “Search homes across Central Oregon” is a named door to browse, not a mystery square.
 
-### 9. Both boards, used
+### 9. Both boards, used — LIVE `7a4114a8`
 
-Prove the three citation queries. GSC slipping class. Dual-source intent audiences. Resume / stitch / opt-in on a real scoreboard, not a claim in a plan.
+Three citation queries mapped in `lib/seo/ai-query-map.json`; `ci:ai-query-battery` green. GSC slipping class on `/admin/analytics/google-search`. Resume / stitch / opt-in on `/admin/visitors/live`.
 
 ---
 
@@ -313,4 +315,4 @@ The argument is PRODUCT.md. Done means a real person can walk the site and do th
 - Competitor names on the public site (I6).
 - Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase.
 
-**Progress** is the table under Order. Update it when a step is live on production, not when a file exists.
+**Progress** is the Order list above. Steps 1–9 are live on `origin/main` `4cfc1a9e`, Vercel production READY, walked 2026-08-15 on https://ryan-realty.com. Named stops still hold: looking-at send, ad spend, I6, page-grade, new OS.

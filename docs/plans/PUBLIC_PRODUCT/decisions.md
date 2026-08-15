@@ -756,8 +756,9 @@ mart-only. A missing year is missing. Do not scan `listings` on those request
 paths. Mart rows exist 1998–present. `CLOSED_SALES_FROM_YEAR` is 1998.
 2024 region `all` stays 5,707 / $3.931B. 1990 is zero rows and does not publish.
 
-Remaining: weekly full rebuild (cron is last 2 years), place/listing/CMA read
-the mart, Tremor on the market family.
+Weekly full rebuild is registered (`/api/cron/rebuild-analytics-marts-full`,
+Sunday 09:15 UTC) and heartbeats `assertMartFloorYear`. Nightly last-2-years
+stays. City / CMA market board read the mart. Market family uses V3Chart.
 
 ## 2026-08-14 — One chart grammar (Matt, chat)
 
