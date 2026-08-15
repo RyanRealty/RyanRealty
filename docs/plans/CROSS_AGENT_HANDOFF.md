@@ -1,12 +1,29 @@
-> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.4.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next node contract), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
+> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.5.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next node contract), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — Durable Company Loop: work graph, loop-brief, G56, first MEA iteration
+# Current — 2026-08-15 (Grok) — Requirements register: all of Matt's asks, dispositioned and unshrinkable
+
+**Matt:** Bring every requirement from every session together; the system fills gaps automatically; never "five things so forget the 120 others"; he is done being the memory.
+
+**Done (THE LOOP v1.5.0):**
+- **`docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md`** — five parallel readers harvested the FULL corpus (handoff history, master goals, brain dumps, Broker OS plan, public locks, PROGRAM decisions, canon, rules, memory): 572 raw directives → **203 dispositioned rows** (91 LOCKED · 41 VERIFIED · 39 PARTIAL · 25 MISSING · 6 GATED · 1 PARKED) grouped by the 12 animals, each with source + coverage. Dispositions inherit source claims; certification re-verifies.
+- **Gaps filled automatically:** the 25 MISSING rows drove **G15–G25** onto VERSION-1 (search completeness, CMA/pricing residual, prospecting product, reporting collapse, one person surface + SendPanel, buyer packet build, public IA/mobile residual, SEO/AEO residual, email residue kill, admin dark mode, social fan-out calendar) + 11 seeded work nodes (graph now 24 nodes, G1 done).
+- **G57 `ci:requirements-register`** (in ci:gates + MECHANICAL_GATES): R-IDs contiguous (rows leave only as SUPERSEDED in place), closed disposition set, MISSING must cite an existing manifest gap. Namespace note: only MISSING rows' G-refs validate against the manifest (G44/G56 in evidence cells are mechanical gates).
+- Loop-brief now prints the demand line (register counts). Canon v1.5.0; pointers bumped; G44 green (263 docs).
+- **New-directive rule (canon):** a new Matt directive lands as a register row in the same delivery that acts on it.
+
+**Next:** "Run the loop" → brief serves G2 identity stitch. New gaps are scored alongside old ones; Learn stays first where windows expire.
+
+**Do not:** delete or renumber R-rows (SUPERSEDE in place). Do not treat VERIFIED-per-source as re-verified — certification does that. Sends/posts/spend/OAuth stay Matt-gated.
+
+**Skills read:** growth-loop, COMPANY_IMPROVEMENT, DEVELOPMENT_PROCESS, ENTERPRISE_MAP handoff + matrices.
+
+# Prior — 2026-08-15 (Grok) — Durable Company Loop: work graph, loop-brief, G56, first MEA iteration
 
 **Matt:** Long sessions lose context; objectives fall off the plate; wants the recursive plan runnable with graph engineering, everything remembered, no shortcut assumptions.
 
-**Done (THE LOOP v1.4.0, plan `durable_company_loop`):**
+**Done (THE LOOP v1.5.0, plan `durable_company_loop`):**
 - **Durable work graph:** `public.loop_work_nodes` (migration `20260815190000`, applied hosted via `scripts/analytics/apply-analytics-migration.mjs` — psql absent, pg driver used). Contract per node (objective/output/accept), audited transitions (done/killed terminal, evidence required), DAL `lib/data/loop/work-graph.ts`, pure rules + tests `work-node.ts`. Seeded G1–G13 from VERSION-1 (`scripts/seed-work-graph.ts`, idempotent upsert on version_gap).
 - **Session boot is a command:** `npx tsx scripts/loop-brief.ts` — handoff Current + scoreboard headline + stranded windows + work graph + next node contract. Matt's prompt is now "Run the loop."
 - **G56 anti-shortcut gate:** `scripts/check-version-manifest.mjs` (`ci:version-manifest`, in ci:gates + MECHANICAL_GATES). Below-floor CAPs / red INTs must be accounted in VERSION-1; G/M numbering contiguous; DONE needs a date; CERTIFIED needs a SHA. First run caught CAP-033 dropped — fixed into M6.

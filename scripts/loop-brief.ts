@@ -60,6 +60,23 @@ function manifestStatus(): string {
   }
 }
 
+function requirementsSummary(): string {
+  try {
+    const src = readFileSync('docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md', 'utf8')
+    const counts: Record<string, number> = {}
+    for (const m of src.matchAll(/^\|\s*R-\d{3}\s*\|[^|]*\|[^|]*\|([^|]*)\|/gm)) {
+      const d = m[1].trim().replace(/\*/g, '')
+      counts[d] = (counts[d] ?? 0) + 1
+    }
+    const total = Object.values(counts).reduce((a, b) => a + b, 0)
+    if (total === 0) return 'UNREADABLE: no R-rows'
+    const order = ['VERIFIED', 'LOCKED', 'PARTIAL', 'MISSING', 'GATED', 'PARKED', 'SUPERSEDED']
+    return `${total} requirements: ${order.filter((k) => counts[k]).map((k) => `${counts[k]} ${k}`).join(' · ')} (register: ENTERPRISE_MAP/REQUIREMENTS.md)`
+  } catch {
+    return 'UNREADABLE: docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md'
+  }
+}
+
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -106,6 +123,7 @@ async function main() {
   push('================ LOOP BRIEF ================')
   push(`fetched: ${signals.fetchedAt}`)
   push(`version: ${manifestStatus()}`)
+  push(`demand:  ${requirementsSummary()}`)
   push('')
   push('--- HANDOFF (Current) ---')
   push(handoffCurrent())
@@ -145,7 +163,7 @@ async function main() {
     push(`claim it:  state open -> in_progress (lib/data/loop/work-graph.ts claimWorkNode)`)
   }
   push('')
-  push('--- RULES (v1.4.0) ---')
+  push('--- RULES (v1.5.0) ---')
   push('1. One node per cycle. Claim before working; evidence before done.')
   push('2. Only environment-verified facts enter durable state (probe rows, screenshots, deploy READY).')
   push('3. Update CROSS_AGENT_HANDOFF Current before stopping. The chat is disposable; the graph is not.')

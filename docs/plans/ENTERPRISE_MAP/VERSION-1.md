@@ -3,6 +3,7 @@
 **Status: OPEN** (flips to CERTIFIED by the certification pass below, in one commit)
 **Process:** THE LOOP v1.3.0 §Company versions (`docs/DEVELOPMENT_PROCESS.md`)
 **Substrate:** the Enterprise Map matrices (`matrix/CAPABILITIES.md` CAP-001…035, `matrix/INTEGRATIONS.md` INT-001…037, `matrix/FACTORY.md`), inventories regenerated 2026-08-08T21:00Z, live probe 2026-08-15T15:3xZ (`npx tsx scripts/company-scoreboard-probe.ts`).
+**Demand side:** [REQUIREMENTS.md](REQUIREMENTS.md) — 203 harvested Matt directives, each dispositioned; MISSING/PARTIAL rows cite the gap below that carries them (G57 forbids shrinkage on both files).
 
 ## Why versions exist
 
@@ -66,6 +67,17 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | G12 | Video decision docket for Matt: park or rebuild, with costs and the brain-path option | CAP-017 | factory |
 | G13 | Probe each unknown-health integration once (Sentry ingest, OpenAI/xAI call path, stock/gen media, VAPID, AdSense); flip to green or park | INT-021…036 | factory |
 | G14 | **DONE 2026-08-15** — token auto-refresh verified live: scheduled heartbeat 12:00:03Z refreshed TikTok (rolls daily) and renewed YouTube/X/GBP; on-demand trigger moved expiries forward again at 19:09Z. Refresh tokens on file for all four. | INT-009, INT-011, INT-012, INT-013, heartbeat `sync_logs` | social-presence |
+| G15 | Search completeness to plan acceptance: zoning intents with definitions, long-tail disposition ledger, sold depth behind VOW gate, user saved areas, perf p75 targets | REQUIREMENTS R-097…R-106 | public-ux |
+| G16 | CMA/pricing production residual: corpus rebuild under live judge, resolver flags, one engine across CMA/BPO/expired-audit, comp geography contract, send-to-reply funnel, listing Transparent-CMA | REQUIREMENTS R-069, R-070, R-073, R-074, R-083, R-112 | sales-insights |
+| G17 | Prospecting product: one dense sortable list, real detail page with send-audit, person-page rollup, per-channel compliance stops | REQUIREMENTS R-171, R-172, R-145 | broker-tools |
+| G18 | Reporting collapse: one definition registry, each metric computed once behind the DAL and rendered once, measurement stamps (first-action, reply latency, CMA SLA) on admin | REQUIREMENTS R-026, R-077, R-078, R-080 | sales-insights |
+| G19 | One responsive person surface + unified SendPanel; delete desktop/mobile forks; one send path per concept | REQUIREMENTS R-170 | broker-tools |
+| G20 | Buyer packet product (build side): how-this-home-compares + what-to-think-about-offering; ask-first flow; sends stay Matt-gated | REQUIREMENTS R-142 | nurture |
+| G21 | Public IA/mobile residual: nav coverage, city section-order fan-out to neighborhood/community, KB density, duplicate DOM streaming waste, dead-end map cards, sub-city scoping, interstitial stacking, sticky broker bar | REQUIREMENTS R-107, R-108, R-109 | public-ux |
+| G22 | SEO/AEO residual: money-path JSON-LD parity contracts, crawl-budget pruning, GBP review-ask drafts, /luxury internal links, Lighthouse perf promote, contestable-SERP depth, out-of-area referral tier | REQUIREMENTS R-119, R-120, R-124, R-125, R-126, R-129, R-130, R-151 | seo-aeo |
+| G23 | Email residue kill: stop FUB/Beacon archived nurture sends via connected Gmail; purge FUB vocabulary and dead keys | REQUIREMENTS R-147 | nurture |
+| G24 | Admin dark mode: both themes ship and are reachable | REQUIREMENTS R-116 | broker-tools |
+| G25 | Social fan-out calendar (build side): one idea becomes per-channel variants, Loop G draft-first calendar on Today; publishes stay approval-gated | REQUIREMENTS R-186 | social-presence |
 
 Matt-only (the complete list of human dependencies for v1 — nothing else waits on you):
 

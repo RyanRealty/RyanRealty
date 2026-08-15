@@ -1,6 +1,6 @@
 # THE LOOP — the canonical development process
 
-**Version: 1.4.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Company versions 2026-08-15 · Durable work graph 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
+**Version: 1.5.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Company versions 2026-08-15 · Durable work graph 2026-08-15 · Requirements register 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
 
 All development in this repo — site code, the marketing brain, cron agents, producers, every Claude Code session — routes through this one self-improving cycle. This document is the single source of truth for HOW work happens. The sync gate (`scripts/check-process-canon.mjs`, G44) fails the build if the entry points stop pointing here, if a pointer's version drifts from this header, or if a new plan doc lands unregistered.
 
@@ -39,6 +39,11 @@ function that finds stranded seams.
 - **Manifest:** `docs/plans/ENTERPRISE_MAP/VERSION-1.md` — the current version's floor,
   gap list (agent-executable vs Matt-only), and certification checklist. One manifest at
   a time; a version plan anywhere else is a rogue plan.
+- **Demand side:** `docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md` — every directive Matt has
+  issued, harvested from the full on-disk corpus and dispositioned (LOCKED / VERIFIED /
+  PARTIAL / MISSING / PARKED / GATED / SUPERSEDED). MISSING rows must cite a covering
+  manifest gap; the register may never shrink (G57). New Matt directives land here in the
+  same delivery that acts on them.
 - **Floor shape:** no capability below Working (3) without Matt's PARK sign-off; zero red
   integrations; zero expired unlearned ledger windows; zero UNKNOWN on claimed-fixed
   packet signals; production parity. Exact conditions live in the manifest, not here.
@@ -203,6 +208,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.5.0 (2026-08-15)** — Requirements register: 572 raw Matt directives harvested from the full corpus (five parallel readers), deduped to 203 dispositioned rows in `ENTERPRISE_MAP/REQUIREMENTS.md`; 25 MISSING rows drove new manifest gaps G15–G25 + seeded work nodes. G57 `ci:requirements-register` makes the register unshrinkable. Loop-brief prints the demand line.
 - **1.4.0 (2026-08-15)** — Durable work graph + memory hierarchy: in-flight work lives in `loop_work_nodes` (contracts, dependencies, audited transitions, evidence-required done), never in chat. Boot ritual is a command (`scripts/loop-brief.ts`); MEA mapping (Manager = brief + scores, Executor = disposable session, Auditor = accept + gates); additive-update rule; G56 `ci:version-manifest` kills silent plan shrinkage. Graph-engineering infra waves GO recorded (Matt 2026-08-15) — workflows in `.claude/workflows/`, ADR discipline via codebase-memory.
 - **1.3.0 (2026-08-15)** — Company versions: release-baseline discipline over the Enterprise Map. Manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md` (floor, gap list, certification). Learn made mechanical: `closeImprovementLedgerRow` + a guard that refuses a new class in a domain with expired unlearned windows; packet probe counts stranded windows per domain.
 - **1.2.1 (2026-08-15)** — Holistic blast-radius: a change names DAL, public site, admin/CRM, reporting, alerts/newsletters, ads audiences, and identity before it starts. Named surfaces (search, alerts, polygons, CMA look, Spark efficiency, identity stitch) score on the existing 12 domains. No new OS.

@@ -120,6 +120,101 @@ const SEEDS = [
     output: 'INTEGRATIONS matrix has zero unknown health cells; evidence per row.',
     accept: 'Health counts table shows unknown = 0 with per-row evidence in the log.',
   },
+  {
+    versionGap: 'G15',
+    domain: 'public-ux',
+    title: 'Search completeness to plan acceptance',
+    objective:
+      'REQUIREMENTS R-097…R-106: zoning as jurisdiction:code with definitions, long-tail disposition ledger, sold depth behind the VOW gate, user saved areas, filter/pan perf p75 targets.',
+    output: 'Filter plan acceptance rows flip; disposition ledger exists; perf numbers recorded.',
+    accept: 'Every FILTER_COMPLETENESS acceptance item is done or dispositioned with reason; p75 numbers measured on prod.',
+  },
+  {
+    versionGap: 'G16',
+    domain: 'sales-insights',
+    title: 'CMA/pricing production residual',
+    objective:
+      'REQUIREMENTS R-069/070/073/074/083/112: rebuild corpus under the live judge and measure flag rate, fix county/site resolver flags, one pricing engine across CMA/BPO/expired-audit, comp geography contract, send-to-reply funnel, listing Transparent-CMA after comp rework.',
+    output: 'Corpus rebuilt with flag-rate report; one engine; funnel report live.',
+    accept: 'Flag rate measured and reported; engines unified with tests; funnel renders from real engagement events.',
+  },
+  {
+    versionGap: 'G17',
+    domain: 'broker-tools',
+    title: 'Prospecting product to spec',
+    objective:
+      'REQUIREMENTS R-171/172/145: one dense sortable prospecting list, real detail page with send-audit, CRM person rollup of expired/FSBO/CMA engagement, per-channel compliance stops with open-channel CTAs.',
+    output: 'Prospecting list + detail + rollup shipped; per-channel stops enforced at send.',
+    accept: 'Broker works a weekly expired/FSBO pass phone-first on the new surfaces; sends respect per-channel stops (verified signed-in).',
+  },
+  {
+    versionGap: 'G18',
+    domain: 'sales-insights',
+    title: 'Reporting collapse: one definition per metric',
+    objective:
+      'REQUIREMENTS R-026/077/078/080: one metric-definition registry, each metric computed once behind the DAL and rendered once, measurement stamps (first-broker-action, reply latency, CMA SLA) visible on admin.',
+    output: 'Definition registry + single render path per metric + stamps on admin surfaces.',
+    accept: 'No duplicate metric definitions remain (gate or census proves it); stamps render with real data.',
+  },
+  {
+    versionGap: 'G19',
+    domain: 'broker-tools',
+    title: 'One person surface + unified SendPanel',
+    objective: 'REQUIREMENTS R-170: one responsive person workspace; delete desktop/mobile forks; unified SendPanel so each concept has exactly one send path.',
+    output: 'Forked person surfaces deleted; SendPanel unified over the governed-send chokepoint.',
+    accept: 'Person workspace works at 390 and 1280 with one code path; every send flows the chokepoint (gate-verified).',
+  },
+  {
+    versionGap: 'G20',
+    domain: 'nurture',
+    title: 'Buyer packet product (build side)',
+    objective: 'REQUIREMENTS R-142: buyer packet with how-this-home-compares and what-to-think-about-offering; ask-first flow after broker yes. Sends remain Matt-gated per §1.',
+    output: 'Packet builder + rendered preview on Today; ask-first draft flow.',
+    accept: 'A real listing produces a rendered packet draft a broker can approve; zero sends without the per-action gate.',
+  },
+  {
+    versionGap: 'G21',
+    domain: 'public-ux',
+    title: 'Public IA/mobile residual classes',
+    objective:
+      'REQUIREMENTS R-107/108/109: nav coverage, city section-order fan-out to neighborhood/community, KB desktop density, duplicate DOM streaming waste, dead-end map cards, sub-city data scoping, interstitial stacking, sticky broker bar.',
+    output: 'Each class fixed everywhere it occurs (census-first per MOBILE_GRIND).',
+    accept: 'Per-class census shows zero remaining instances; 390+1280 walks recorded.',
+  },
+  {
+    versionGap: 'G22',
+    domain: 'seo-aeo',
+    title: 'SEO/AEO residual to money-path contracts',
+    objective:
+      'REQUIREMENTS R-119/120/124/125/126/129/130/151: money-path JSON-LD parity contracts, crawl-budget pruning on GSC evidence, GBP review-ask drafts on close, /luxury internal links, Lighthouse perf promote to error, contestable-SERP depth, out-of-area referral tier.',
+    output: 'Contracts + JSON-LD shipped; pruning/link classes done; review-ask drafts staged.',
+    accept: 'parity.json green on money paths; GSC shows the pruned classes; drafts appear on deal close (no sends).',
+  },
+  {
+    versionGap: 'G23',
+    domain: 'nurture',
+    title: 'Email residue kill (FUB/Beacon)',
+    objective: 'REQUIREMENTS R-147: stop FUB/Beacon archived nurture emails still sending via connected Gmail; purge FUB vocabulary and dead keys where safe.',
+    output: 'Residue sends stopped at the source; purge list executed with evidence.',
+    accept: 'Zero FUB/Beacon-originated sends observed over a full week of email_events; keys/vocab census clean.',
+  },
+  {
+    versionGap: 'G24',
+    domain: 'broker-tools',
+    title: 'Admin dark mode reachable',
+    objective: 'REQUIREMENTS R-116: both admin themes ship and are reachable (11F decision: ship both from day one).',
+    output: 'Theme toggle reachable; dark tokens complete.',
+    accept: 'Admin renders correctly in both themes at 390+1280 (screenshots).',
+  },
+  {
+    versionGap: 'G25',
+    domain: 'social-presence',
+    title: 'Social fan-out calendar (build side)',
+    objective:
+      'REQUIREMENTS R-186: one idea fans out as per-channel variants (never identical cross-post); Loop G self-running draft-first calendar surfaces on Today. Publishes stay approval-gated per §1.',
+    output: 'Fan-out builder + calendar drafts on Today.',
+    accept: 'One idea produces distinct per-channel drafts on Today with humanApprovedAt gating; zero autonomous publishes.',
+  },
 ] as const
 
 async function main() {
