@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import {
@@ -107,9 +106,9 @@ export function ArrivalIntent() {
     return (
       <p className={cn('px-4 py-3 text-sm text-muted-foreground')}>
         {welcome.line}{' '}
-        <Button variant="link" className="h-11" asChild>
-          <Link href={welcome.href}>{welcome.label}</Link>
-        </Button>
+        <Link href={welcome.href} className="inline-flex h-11 items-center font-medium text-foreground underline underline-offset-4">
+          {welcome.label}
+        </Link>
       </p>
     )
   }
@@ -117,19 +116,27 @@ export function ArrivalIntent() {
   if (view === 'quiz') {
     return (
       <nav aria-label="What are you trying to do" className={cn('flex flex-wrap items-center gap-2 px-4 py-3')}>
-        <Button variant="ghost" className="h-11" asChild>
-          <Link href="/homes-for-sale" onClick={() => onTap('buyer')}>
-            Buy
-          </Link>
-        </Button>
-        <Button variant="ghost" className="h-11" asChild>
-          <Link href="/sell#get-value" onClick={() => onTap('seller')}>
-            Sell
-          </Link>
-        </Button>
-        <Button type="button" variant="ghost" className="h-11" onClick={() => onTap('look')}>
+        <Link
+          href="/homes-for-sale"
+          onClick={() => onTap('buyer')}
+          className="inline-flex h-11 items-center px-3 text-sm font-medium text-foreground"
+        >
+          Buy
+        </Link>
+        <Link
+          href="/sell#get-value"
+          onClick={() => onTap('seller')}
+          className="inline-flex h-11 items-center px-3 text-sm font-medium text-foreground"
+        >
+          Sell
+        </Link>
+        <Link
+          href="/"
+          onClick={() => onTap('look')}
+          className="inline-flex h-11 items-center px-3 text-sm font-medium text-foreground"
+        >
           Look
-        </Button>
+        </Link>
       </nav>
     )
   }

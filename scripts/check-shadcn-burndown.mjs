@@ -47,6 +47,9 @@ const EXCLUDE = [
   // account/ and search/). Cookie banner tests assert import strings and
   // are not a site surface.
   'app/sell/_v3/',
+  // Auth + Google comms door — form primitives (checkbox, input, button)
+  // KB does not provide. Same class as account/ and search/.
+  'components/auth/',
 ]
 
 function walk(dir, out = []) {

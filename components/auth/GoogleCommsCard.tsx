@@ -81,9 +81,9 @@ export function GoogleCommsCard({
           checked={consent.emailOpt}
           onCheckedChange={(c) => onChange({ ...consent, emailOpt: c === true })}
         />
-        <label htmlFor={emailId} className="cursor-pointer text-xs leading-relaxed text-muted-foreground">
+        <Label htmlFor={emailId} className="cursor-pointer text-xs leading-relaxed text-muted-foreground">
           Email me listing and market updates.
-        </label>
+        </Label>
       </div>
       <SmsConsentDisclosure
         checked={consent.smsOpt}

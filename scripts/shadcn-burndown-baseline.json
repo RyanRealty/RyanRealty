@@ -1,5 +1,5 @@
 {
-  "count": 179,
+  "count": 174,
   "files": [
     "app/buy/loading.tsx",
     "app/cities/error.tsx",
@@ -55,11 +55,6 @@
     "components/WelcomeBanner.tsx",
     "components/activity/ActivityFeedCard.tsx",
     "components/activity/ActivityFeedSection.tsx",
-    "components/auth/AuthModal.tsx",
-    "components/auth/ForgotPasswordForm.tsx",
-    "components/auth/LoginForm.tsx",
-    "components/auth/PasswordInput.tsx",
-    "components/auth/SignupForm.tsx",
     "components/broker/BrokerBio.tsx",
     "components/broker/BrokerCard.tsx",
     "components/broker/BrokerContactForm.tsx",
