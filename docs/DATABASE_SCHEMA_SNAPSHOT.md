@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-15T14:14:46.607Z
+**Generated:** 2026-08-15T18:55:01.434Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -3464,6 +3464,27 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `"ListAgentName"` | text | yes |  |
 | `details` | jsonb | yes |  |
 | `spark_raw` | jsonb | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `updated_at` | timestamp with time zone | no | now() |
+
+### `loop_work_nodes`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `parent_id` | uuid | yes |  |
+| `depends_on` | ARRAY | no | '{}'::uuid[] |
+| `domain` | text | no |  |
+| `version_gap` | text | yes |  |
+| `title` | text | no |  |
+| `objective` | text | no |  |
+| `output` | text | no |  |
+| `accept` | text | no |  |
+| `state` | text | no | 'open'::text |
+| `evidence` | text | yes |  |
+| `blocked_reason` | text | yes |  |
+| `owner_session` | text | yes |  |
+| `ledger_row_id` | uuid | yes |  |
 | `created_at` | timestamp with time zone | no | now() |
 | `updated_at` | timestamp with time zone | no | now() |
 
