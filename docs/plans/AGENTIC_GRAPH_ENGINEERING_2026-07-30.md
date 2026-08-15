@@ -1,8 +1,15 @@
 # Agentic Graph Engineering — comprehensive plan (v2, 2026-07-30)
 
-**Status: live — plan only, no execution until Matt's go.** v1 (research + seed backlog)
-produced earlier today; v2 incorporates Matt's scope questions, the deeper research pass,
-and the two X sources Matt supplied, reviewed against this codebase and the database.
+**Status: GO recorded 2026-08-15 (Matt: "apply graph engineering to what we're trying to
+do here") for the infrastructure waves — Wave 0 registration, Wave 1 (W1.1, W1.2) and
+W2.1 saved to `.claude/workflows/`, W5.2 codebase-KG freshness + ADR discipline. The
+send/publish/spend/OAuth edges stay per-action Matt-gated exactly as §3 rule 9 says.
+The durable-state substance of this doc (state, handoffs, verification, budgets, stop
+conditions) shipped as THE LOOP v1.4.0: `loop_work_nodes` work graph + `loop-brief`
+boot + G56 manifest gate.** v1 (research + seed backlog)
+produced earlier 2026-07-30; v2 incorporates Matt's scope questions, the deeper research
+pass, and the two X sources Matt supplied, reviewed against this codebase and the
+database.
 
 Sources reviewed at Matt's request:
 - [@0xCodez — "Graph Engineering with Claude: 14-step roadmap"](https://x.com/0xCodez/status/2079165300625330317) (4.5M views)

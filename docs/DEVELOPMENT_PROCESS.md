@@ -1,6 +1,6 @@
 # THE LOOP — the canonical development process
 
-**Version: 1.3.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Company versions 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
+**Version: 1.4.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Company versions 2026-08-15 · Durable work graph 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
 
 All development in this repo — site code, the marketing brain, cron agents, producers, every Claude Code session — routes through this one self-improving cycle. This document is the single source of truth for HOW work happens. The sync gate (`scripts/check-process-canon.mjs`, G44) fails the build if the entry points stop pointing here, if a pointer's version drifts from this header, or if a new plan doc lands unregistered.
 
@@ -47,6 +47,47 @@ function that finds stranded seams.
   (`lib/data/loop/ledger.ts`); the packet probe counts `expiredUnlearned` per domain.
 - **The weekly packet leads with version progress.** Versions close on **conditions,
   never dates** (§0: an invented timeline is a fabricated number).
+
+## Memory hierarchy + the work graph (v1.4.0 — sessions are disposable)
+
+Research basis (2026-08-15 pass): Anthropic context engineering + multi-agent research
+system, the LongHorizon-Harness MEA loop (arXiv 2608.01964), ACE context-collapse
+findings, and `docs/plans/AGENTIC_GRAPH_ENGINEERING_2026-07-30.md`. The one-line law:
+**the chat session is working memory; durable state lives outside it, and only
+environment-verified facts enter durable state.** Losing a session costs re-read time,
+never objectives.
+
+| Store | What lives there | Dies when |
+|---|---|---|
+| Chat context / in-chat todos | Nothing load-bearing. Mirrors only. | Every summarization, mode switch, session end |
+| `loop_work_nodes` (Supabase) | In-flight work: nodes with contracts (objective · output · accept), dependencies, state (`open → in_progress → blocked/done/killed`), evidence. DAL `lib/data/loop/work-graph.ts` | Never |
+| `site_improvement_ledger` | Hypotheses + measured verdicts (the Learn edge) | Never |
+| `VERSION-1.md` + Enterprise Map | The floor, the gap list, the closed universe | Never |
+| `CROSS_AGENT_HANDOFF.md` | Narrative continuity between tools/sessions | Never (Current block replaced, history kept) |
+| codebase-memory graph + ADRs | Code structure + standing decisions, queryable | Refreshed via `detect_changes` |
+
+**The boot ritual is a command, not a convention:** `npx tsx scripts/loop-brief.ts`
+assembles the smallest high-signal context (handoff Current, scoreboard headline,
+stranded windows, work graph, the next node's full contract). Matt's prompt is one
+line — "Run the loop" — and a session that died mid-node is continued by the next
+session from the same node.
+
+**MEA mapping (Manage–Execute–Audit):** the Manager is `loop-brief` + the scored gap
+list (derives ONE bounded node from durable state + the version goal). The Executor is
+any session, fresh context, exactly one node per cycle, claimed before worked. The
+Auditor is accept-against-goal + the gates: `completeWorkNode` refuses `done` without
+evidence, and evidence means the environment said so (probe rows, screenshots at
+390+1280, deploy READY, ledger verdicts) — never the session's self-report.
+
+**Node contract:** every node carries objective, output artifact, and accept test
+(`assertWorkNodeDraft` refuses anything less — a node without an accept test cannot be
+audited). Deterministic plumbing is code, never an agent. `done` and `killed` are
+terminal.
+
+**Additive updates (anti context-collapse):** ledgers, evidence logs, and the handoff
+grow by itemized increments. Never rewrite a durable store wholesale; EVIDENCE-LOG is
+append-only, ledger rows close but never vanish, manifest gap rows close with evidence
+or park — deletion fails G56.
 
 ## Loop topology (locked 2026-06-10)
 
@@ -162,6 +203,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.4.0 (2026-08-15)** — Durable work graph + memory hierarchy: in-flight work lives in `loop_work_nodes` (contracts, dependencies, audited transitions, evidence-required done), never in chat. Boot ritual is a command (`scripts/loop-brief.ts`); MEA mapping (Manager = brief + scores, Executor = disposable session, Auditor = accept + gates); additive-update rule; G56 `ci:version-manifest` kills silent plan shrinkage. Graph-engineering infra waves GO recorded (Matt 2026-08-15) — workflows in `.claude/workflows/`, ADR discipline via codebase-memory.
 - **1.3.0 (2026-08-15)** — Company versions: release-baseline discipline over the Enterprise Map. Manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md` (floor, gap list, certification). Learn made mechanical: `closeImprovementLedgerRow` + a guard that refuses a new class in a domain with expired unlearned windows; packet probe counts stranded windows per domain.
 - **1.2.1 (2026-08-15)** — Holistic blast-radius: a change names DAL, public site, admin/CRM, reporting, alerts/newsletters, ads audiences, and identity before it starts. Named surfaces (search, alerts, polygons, CMA look, Spark efficiency, identity stitch) score on the existing 12 domains. No new OS.
 - **1.2.0 (2026-08-15)** — Company ingest: THE LOOP scores every domain (not only Growth/SEO). Weekly packet `COMPANY_SCOREBOARD.md`, addendum `COMPANY_IMPROVEMENT.md`, `site_improvement_ledger.domain`. Five standing loops unchanged. No sixth session. No new OS.

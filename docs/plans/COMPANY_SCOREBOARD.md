@@ -1,7 +1,8 @@
 # Company scoreboard — weekly packet
 
-**Process:** [COMPANY_IMPROVEMENT.md](COMPANY_IMPROVEMENT.md) (THE LOOP v1.3.0)  
+**Process:** [COMPANY_IMPROVEMENT.md](COMPANY_IMPROVEMENT.md) (THE LOOP v1.4.0)  
 **Version target:** [ENTERPRISE_MAP/VERSION-1.md](ENTERPRISE_MAP/VERSION-1.md) — lead with version progress.  
+**Session boot:** `npx tsx scripts/loop-brief.ts` — the work graph (`loop_work_nodes`) is the source of record for in-flight work.  
 **Overwrite this file each week.** Do not start a dated novel.  
 **Rule:** if a domain has no number, write **UNKNOWN** and the query that failed. Unreadable ≠ 0.
 
@@ -16,8 +17,8 @@
 
 | Figure | Value | Source |
 |---|---|---|
-| Version | **v1 OPEN** — 1 of 14 agent gaps closed (G14), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list |
-| Stranded ledger windows | **11** expired unlearned, all `seo-aeo` (domain frozen by the insert guard until Learn closes them) | probe `ledger.expiredUnlearned` / `expiredByDomain` |
+| Version | **v1 OPEN** — 2 of 14 agent gaps closed (G1, G14), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list |
+| Stranded ledger windows | **0** (was 11 — all closed 2026-08-15 with §0 traces; `seo-aeo` unfrozen). Work graph: 13 nodes, 1 done, next node G2 identity stitch | probe `ledger.expiredUnlearned` + `loop_work_nodes` |
 | Capabilities below Working floor | **7** (TC, video, social OAuth, broker platform, westside, Grok memory, SMS agent) | `ENTERPRISE_MAP/matrix/CAPABILITIES.md` 2026-08-08 close |
 | Needs-reauth integrations | **0 active** — GBP/YouTube/X/TikTok auto-refresh from stored refresh tokens via the daily 12:00Z heartbeat (verified live 2026-08-15, scheduled run all OK + on-demand trigger rolled expiries). LinkedIn is `needs-reauth` and **PARKED** (provider issued no refresh token). No Matt reconnect task exists. | heartbeat `sync_logs` 2026-08-15T12:00:03Z + probe `social.tokens` (`auto-refresh` vs `needs-reauth`) |
 | Meta audience heartbeat | first green run **2026-08-15T14:03Z** — hold 7 days then flip FIX→KEEP (gap G11) | `meta_audience_log.ran_at` |
@@ -65,8 +66,8 @@
 
 | Ledger row | Domain | Window state | Metric |
 |---|---|---|---|
-| 11 open `seo-aeo` | seo-aeo | **EXPIRED unlearned** (probe 2026-08-15T15:3xZ) — Learn is the only legal next `seo-aeo` work; the insert guard refuses new classes | `actual_delta` is null |
-| `ba3435dd` factory | factory | open, inside window (14d from `7c2bca5c`) | `non_seo_domains_in_ledger` |
+| 11 `seo-aeo` rows | seo-aeo | **CLOSED 2026-08-15** (Learn): 1 win — Tetherow LCP p75 60,768→4,156ms (38 samples) · 1 loss — overlay discipline engagement 0.144→0.119 · 1 flat — llms.txt +3 AI sessions vs +10 · 8 inconclusive — GSC page series not live in the June window (per-row gap named). Confidence now learned per class. | `actual_delta` + verdict written |
+| `ba3435dd` factory | factory | open, inside window (14d from `7c2bca5c`) — this v1.2→1.4 machinery wave rides it; Learn due 2026-08-29 | `non_seo_domains_in_ledger` |
 
 ## 4. What is rotting (top residuals)
 

@@ -1,8 +1,27 @@
-> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.3.0):** `docs/plans/COMPANY_SCOREBOARD.md` + `docs/plans/COMPANY_IMPROVEMENT.md` + version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical). Full open list: `ALL-OPEN-ITEMS.md`.
+> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.4.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next node contract), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — Company v1: versions over the map, Learn made mechanical
+# Current — 2026-08-15 (Grok) — Durable Company Loop: work graph, loop-brief, G56, first MEA iteration
+
+**Matt:** Long sessions lose context; objectives fall off the plate; wants the recursive plan runnable with graph engineering, everything remembered, no shortcut assumptions.
+
+**Done (THE LOOP v1.4.0, plan `durable_company_loop`):**
+- **Durable work graph:** `public.loop_work_nodes` (migration `20260815190000`, applied hosted via `scripts/analytics/apply-analytics-migration.mjs` — psql absent, pg driver used). Contract per node (objective/output/accept), audited transitions (done/killed terminal, evidence required), DAL `lib/data/loop/work-graph.ts`, pure rules + tests `work-node.ts`. Seeded G1–G13 from VERSION-1 (`scripts/seed-work-graph.ts`, idempotent upsert on version_gap).
+- **Session boot is a command:** `npx tsx scripts/loop-brief.ts` — handoff Current + scoreboard headline + stranded windows + work graph + next node contract. Matt's prompt is now "Run the loop."
+- **G56 anti-shortcut gate:** `scripts/check-version-manifest.mjs` (`ci:version-manifest`, in ci:gates + MECHANICAL_GATES). Below-floor CAPs / red INTs must be accounted in VERSION-1; G/M numbering contiguous; DONE needs a date; CERTIFIED needs a SHA. First run caught CAP-033 dropped — fixed into M6.
+- **Canon v1.4.0:** memory hierarchy (chat = disposable; graph/ledger/manifest/handoff/ADR = durable), MEA mapping (Manager = brief+scores · Executor = session · Auditor = accept+gates), additive-updates rule. All pointers bumped; G44 green (262 plan docs).
+- **Graph waves GO recorded** in AGENTIC_GRAPH_ENGINEERING (infra only): `.claude/workflows/{verify-figures,adversarial-audit,scoreboard-sweep}.md`; codebase-memory ADR written (PURPOSE/STACK/…/TRADEOFFS incl. token self-renew + FUB dead + one identity spine); `detect_changes` verified (91 files vs index at `85d13209`).
+- **First MEA iteration (G1) COMPLETE:** claimed → `scripts/loop-learn-close-windows.ts --domain seo-aeo` closed all 11 expired windows with §0 traces (1 win: Tetherow LCP p75 60,768→4,156ms · 1 loss: overlay engagement 0.144→0.119 · 1 flat: llms.txt +3 vs +10 · 8 inconclusive: GSC page series not live in June — G.2 lesson) → probe `expiredUnlearned=0`, seo-aeo unfrozen → node done with evidence (`bcde58b9`). Brief now auto-serves **G2 identity stitch** as next.
+- Prior deliveries confirmed: `1641a156` + `85d13209` both READY on production.
+
+**Next:** "Run the loop" → brief serves G2 (identity stitch, 1/164). ba3435dd factory window Learns 2026-08-29. Matt moves M1–M6 in VERSION-1.
+
+**Do not:** re-add reconnect asks (tokens self-renew; LinkedIn parked). Do not treat chat todos as the source of record — the graph is. Do not open a class in a domain with expired unlearned windows (guard refuses anyway).
+
+**Skills read:** growth-loop, COMPANY_IMPROVEMENT, DEVELOPMENT_PROCESS, AGENTIC_GRAPH_ENGINEERING, ENTERPRISE_MAP SESSION_HANDOFF, TDD.
+
+# Prior — 2026-08-15 (Grok) — Company v1: versions over the map, Learn made mechanical
 
 **Matt:** Fast answers keep leaving ad-hoc drift; the whole product never reaches "a new version" together. Wants the comprehensive, granular, holistic process.
 

@@ -52,7 +52,7 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 
 | # | Work | Ref | Domain |
 |---|---|---|---|
-| G1 | Close the 11 stranded `seo-aeo` windows: write `actual_delta` + verdict from GSC 28d actuals | ledger probe 2026-08-15 | seo-aeo |
+| G1 | **DONE 2026-08-15** — all 11 windows closed via `scripts/loop-learn-close-windows.ts` with §0 traces: 1 win (Tetherow LCP p75 60,768ms → 4,156ms), 1 loss (overlay discipline, engagement 0.144 → 0.119), 1 flat (llms.txt +3 AI sessions vs +10), 8 inconclusive (GSC page series not live in the June window — telemetry gap named per row). Probe `expiredUnlearned` = 0; domain unfrozen. Work-graph node `bcde58b9` carries the evidence. | ledger probe 2026-08-15 | seo-aeo |
 | G2 | Identity stitch class: lead-capture + sign-in writes `crm_person_id` to `visitor_identity_map` (1/164 today). Planes: identity, ads-audiences, alerts | packet §1b | leads |
 | G3 | Stage truth: Lead stage is 0 of 22,672 people — stage writers + journey advance so the funnel is real | CAP-009 | nurture |
 | G4 | Alerts coverage: enroll path from account/LP into `listing_alerts` (6 active today); sends never from legacy `saved_searches` | CAP-010, packet §1b | nurture |
@@ -65,7 +65,7 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | G11 | Meta audience heartbeat: hold green 7 days from 2026-08-15, then flip INT-007 FIX→KEEP | INT-007 | factory |
 | G12 | Video decision docket for Matt: park or rebuild, with costs and the brain-path option | CAP-017 | factory |
 | G13 | Probe each unknown-health integration once (Sentry ingest, OpenAI/xAI call path, stock/gen media, VAPID, AdSense); flip to green or park | INT-021…036 | factory |
-| G14 | **DONE 2026-08-15** — token auto-refresh verified live: scheduled heartbeat 12:00:03Z refreshed TikTok (rolls daily) and renewed YouTube/X/GBP; on-demand trigger moved expiries forward again at 19:09Z. Refresh tokens on file for all four. | INT-009/011/012/013, heartbeat `sync_logs` | social-presence |
+| G14 | **DONE 2026-08-15** — token auto-refresh verified live: scheduled heartbeat 12:00:03Z refreshed TikTok (rolls daily) and renewed YouTube/X/GBP; on-demand trigger moved expiries forward again at 19:09Z. Refresh tokens on file for all four. | INT-009, INT-011, INT-012, INT-013, heartbeat `sync_logs` | social-presence |
 
 Matt-only (the complete list of human dependencies for v1 — nothing else waits on you):
 
@@ -76,7 +76,7 @@ Matt-only (the complete list of human dependencies for v1 — nothing else waits
 | M3 | Video: park or rebuild (after G12 docket) | CAP-017 |
 | M4 | Ads spend: fund or explicitly park for v1 (audience wiring is agent work either way) | CAP-018 |
 | M5 | DNS cutover timing (ryan-realty.com) | CAP-001 |
-| M6 | One-line PARK sign-off: LinkedIn (no provider refresh token — a new grant only if you ever want LinkedIn distribution), Threads, Nextdoor, Pinterest, RentCast, SchoolDigger, Inngest stay parked for v1 | INT PARK list |
+| M6 | One-line PARK sign-off: LinkedIn / INT-010 (no provider refresh token — a new grant only if you ever want LinkedIn distribution), Threads, Nextdoor, Pinterest, RentCast, SchoolDigger, Inngest, and Grok memory as SoR (CAP-033 — stays assist-only) stay parked for v1 | INT PARK list + CAP-033 |
 
 There is no OAuth reconnect task. Tokens self-renew by design (Matt 2026-08-15: the credentials are env-side; stop asking). The prior M1 was an escape — see `process_escape_ledger`.
 
