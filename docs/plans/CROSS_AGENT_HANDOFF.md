@@ -2,18 +2,20 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-14 (Grok, restore Field richness) — shipping
+# Current — 2026-08-14 (Grok, restore Field richness) — local `ebb1416e`
 
 **Track:** Matt called the post-page-grade site an ultra-basic template. Own the flatten. Restore photography, Amboqia, density. Do not reopen the P0s.
 
 **Cause:** `119f12ae` (on top of `78522abf`) shrunk the home H1 to `text-sm`, deleted the fold-filling house, and collapsed `V3Field` photos from a 3-col mosaic to a 1-col stack inside a leftover 2-col frame (empty cream on the right). City first screen is breadcrumb + cream map box + 44px thumbs. Listing/Tetherow/Sell still have Stage photography.
 
-**Wired this pass (not pushed yet):**
+**SHA:** `ebb1416e` local, not pushed yet.
+
+**Wired:**
 - Home: Amboqia field-size H1, first house fills the fold, 2-col mosaic on desktop, count stays a caption.
 - City/ZIP: Amboqia place stamp (not a second H1), larger list photos, listing poster while the map loads.
 - P0s left closed: count-as-caption, one sell ask, no city essays, source off browse, broker face.
 
-**Next:** Pathspec commit + `npm run push` + `deploy:verify`. Then recapture home/city. About, neighborhood Instrument cream slab, and subdivision empty plat are still thin. Do not `git add -A`.
+**Next:** `npm run push` + `deploy:verify`. Then recapture home/city. About, neighborhood Instrument cream slab, and subdivision empty plat are still thin. Do not `git add -A`.
 
 **Skills read:** page-grade, public-product-os, frontend-design, design_system/ryan-realty, CROSS_AGENT_HANDOFF, SESSION_HANDOFF.
 
