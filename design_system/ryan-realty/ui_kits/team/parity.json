@@ -84,13 +84,14 @@
   ],
   "perBrokerPage": {
     "route": "app/team/[slug]/page.tsx",
-    "note": "Per-broker profile on the v3 barrel. Invariants: (1) reviewBelongsOnPage filters every review. (2) getBrokerSales provides per-broker closings (both sides); fallback is getBrokerageListingTiles. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) 977 zip filter on closings. (5) photo-only ledger tiles. (6) BrokerValuationSheet posts the same submitBrokerSellerLead object (variant seller, fields address / name / email / phone / timeline / notes). (7) SmsConsentDisclosure renders because the sheet collects a phone; the action does not read smsConsent. (8) Direct call/text/email from live phone/email only.",
+    "note": "Per-broker profile on the v3 barrel. Invariants: (1) reviewBelongsOnPage filters every review. (2) getBrokerSales provides per-broker closings (both sides); fallback is getBrokerageListingTiles. (3) JSON-LD RealEstateAgent + BreadcrumbList preserved. (4) 977 zip filter on closings. (5) photo-only ledger tiles. (6) BrokerValuationSheet posts the same submitBrokerSellerLead object (variant seller, fields address / name / email / phone / timeline / notes). (7) SmsConsentDisclosure renders because the sheet collects a phone; the action does not read smsConsent. (8) Direct call/text/email from live phone/email only. (9) First viewport is AboutFaces, same cutout as /about and /team.",
     "requiredComponents": [
       { "name": "KbNav", "section": "layout-owned public header", "blocking": true },
       { "name": "KbSectionTracker", "section": "tracking, pageType=broker", "blocking": true },
       { "name": "MetadataBlock", "section": "BreadcrumbList JSON-LD", "blocking": true },
       { "name": "V3Breadcrumb", "section": "Home / Team / Name", "blocking": true },
-      { "name": "V3Quiet", "section": "bio + facts, then filtered reviews, then call/text/email", "blocking": true },
+      { "name": "AboutFaces", "section": "First viewport. Canonical PNG cutout, Call and Text on the face row. Bio Quiet sits below.", "blocking": true },
+      { "name": "V3Quiet", "section": "bio + facts below the face, then filtered reviews, then call/text/email", "blocking": true },
       { "name": "V3Ledger", "section": "closings with recorded ClosePrice via formatPriceExact", "blocking": true },
       { "name": "BrokerValuationSheet", "section": "Pattern 5, same capture contract as LeadCaptureBlock seller", "blocking": true },
       { "name": "V3Footer", "section": "outside main", "blocking": true }

@@ -12,8 +12,8 @@
  * (ReportsByCityView, ReportsIndexContent) stay leftover mixed.
  *
  * DROPPED: KbHero, KbBreadcrumb, KbFooter, KbSell, SmoothScrollProvider, kb.css.
- * Capture: submitMarketPageInquiry via ReportsInquirySheet. Visible CTA: Value
- * my home. D9: city Ledger stays type; the range table is an island, not a
+ * Capture: submitMarketPageInquiry via ReportsInquirySheet. First-screen ask
+ * is the city figures. Value my home lives in Quiet. D9: city Ledger stays type; the range table is an island, not a
  * flattened series. D11: copy states the fact.
  *
  * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a
@@ -125,8 +125,8 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
             )}
             updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             action={{
-              label: v3Text('Value my home'),
-              href: SELL_HREF,
+              label: v3Text('Live figures by city'),
+              href: '#cities',
             }}
           />
         ) : (

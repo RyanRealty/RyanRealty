@@ -2,9 +2,9 @@
  * /team/[slug] - one broker's page, on the components/site/v3 barrel.
  *
  * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md, locked 2026-08-11.
- * Quiet (identity) then Ledger (closings) then Quiet (filtered reviews) then
- * Sheet (valuation, same submitBrokerSellerLead payload) then Quiet (call,
- * text, email). Four patterns, no two adjacent alike.
+ * Faces first (same AboutFaces cutout as /about and /team). Quiet (identity)
+ * then Ledger (closings) then Quiet (filtered reviews) then Sheet (valuation,
+ * same submitBrokerSellerLead payload) then Quiet (call, text, email).
  *
  * THE PAGE CONTRACT, carried across: generateMetadata with the canonical-slug
  * fix, BrokerAttributionSetter, RealEstateAgent JSON-LD on worksFor (brokerage
@@ -37,6 +37,8 @@ import {
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
+import { AboutFaces } from '@/app/about/_v3/AboutFaces'
+import { aboutFaceFromBroker } from '@/app/about/_v3/about-faces'
 import { BrokerValuationSheet } from './_v3/BrokerValuationSheet.client'
 import { namesBroker, reviewBelongsOnPage } from './_v3/review-filter'
 import { brokerageTileToRow, brokerSaleToRow, factualFallbackBio, HEADSHOT } from './_v3/sale-rows'
@@ -133,6 +135,14 @@ export default async function TeamMemberPage({ params }: Props) {
     ((Object.entries(BROKER_EMAIL_BY_SLUG).find(
       ([, email]) => email.toLowerCase() === (broker.email ?? '').toLowerCase(),
     )?.[0] as BrokerSlug | undefined) ?? null)
+
+  const face = aboutFaceFromBroker({
+    slug: broker.slug || canonicalPathSlug,
+    fullName: broker.display_name,
+    title: broker.title,
+    headshotPng: HEADSHOT[broker.slug] ?? HEADSHOT[canonicalPathSlug] ?? null,
+    phoneDirect: broker.phone,
+  })
 
   const identityItems: V3QuietItem[] = [
     { kind: 'prose', body: bioText },
@@ -238,11 +248,13 @@ export default async function TeamMemberPage({ params }: Props) {
           ]}
         />
 
+        {face ? <AboutFaces people={[face]} heading={broker.display_name} /> : null}
+
         <V3Quiet
           id="profile"
           eyebrow={`${firstName} · ${broker.title ?? 'Real Estate Broker'}`}
-          heading={broker.display_name}
-          headingLevel={1}
+          heading={face ? `${firstName}'s license` : broker.display_name}
+          headingLevel={face ? 2 : 1}
           items={identityItems}
         />
 

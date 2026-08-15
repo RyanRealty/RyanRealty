@@ -1,1407 +1,927 @@
 {
   "rubric": "2.4",
-  "updated_at": "2026-08-14T20:53:13.283Z",
+  "updated_at": "2026-08-15T00:06:27.983Z",
   "version_target": "Universe P0=0, auto-fails 1-18 and 26-27 none, Job/Path/Opening/Distinct/Reach/Quiet/Beat >=8, one shop, five place rhythms, must-win WIN on beat_on. Matt has not stamped this bar.",
   "universe": "docs/plans/PUBLIC_PRODUCT/grade-universe.json",
-  "last_run": "2026-08-14T20:53:13.284Z",
-  "last_sha_graded": "33c3d556",
-  "looks": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/",
-  "cards": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/",
+  "last_run": "2026-08-15T00:06:27.983Z",
+  "last_sha_graded": "5f751b94",
+  "looks": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/",
+  "cards": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/",
   "universe_n": 40,
-  "universe_p0": 40,
+  "universe_p0": 11,
   "universe_pass": 0,
   "send": 0,
   "one_shop": {
     "verdict": "PASS",
-    "note": "Chrome, type, tokens, cookie, and Field/Ledger language read as one site. Listing Stage is the locked differentiator, not a foreign product."
+    "note": "Family strip 390 (home, browse, city, neighborhood, master-plan, plat, listing, sell, market, about): same chrome, Geist + Amboqia, navy/cream, Field/Ledger/Stage language. Listing Stage is the differentiator, not a foreign product."
   },
   "wrong_grain": {
-    "verdict": "FAIL",
-    "routes": [
-      "/cities",
-      "/cities/bend",
-      "/communities",
-      "/communities/tetherow",
-      "/cities/bend/awbrey-butte",
-      "/subdivisions/sunrise-village",
-      "/zip/97702"
-    ]
+    "verdict": "PASS",
+    "routes": [],
+    "note": "City Field (map + caption). Neighborhood Instrument then Field. Master-plan Stage then Field. Plat Ledger. Listing Stage. Zip Field."
   },
   "open_classes": [
     {
-      "id": "wrong-job-chrome",
-      "better": "Chrome fills Value my home only on /sell*. Buyer primary is the house or Save this search. Face is the primary on About.",
+      "id": "market-seller-ask-on-fold",
+      "better": "First Instrument action is the next market door. Value my home lives in Quiet.",
       "routes": [
-        "/about",
-        "/activity",
-        "/blog",
-        "/cities",
-        "/cities/bend",
-        "/communities",
-        "/contact",
-        "/central-oregon/events",
-        "/faq",
-        "/",
-        "/homes-for-sale",
-        "/join",
-        "/homes-for-sale/bend/tetherow/61281-mcroberts-220218727",
-        "/luxury-homes-bend",
-        "/housing-market/annual-review",
-        "/housing-market/central-oregon",
         "/housing-market/history",
-        "/housing-market/bend",
-        "/housing-market/reports",
-        "/housing-market",
-        "/communities/tetherow",
-        "/months-of-supply",
-        "/cities/bend/awbrey-butte",
-        "/open-houses/bend",
-        "/open-houses",
-        "/our-homes",
-        "/parks",
-        "/price-drops/bend",
-        "/price-drops",
-        "/refer-a-client",
-        "/reviews",
-        "/schools",
-        "/subdivisions/sunrise-village",
-        "/team/matt-ryan",
-        "/team",
-        "/central-oregon/trails",
-        "/central-oregon/venues",
-        "/videos",
-        "/zip/97702"
+        "/housing-market/reports"
       ],
       "status": "fixed-local-pending-ship",
-      "note": "chromeShowsSellerAsk only /sell*. Local. Not on production."
+      "note": "History action is Slice closed sales #query. Reports action is Live figures by city #cities. Quiet still carries Value my home."
     },
     {
-      "id": "cookie-on-the-thing",
-      "better": "Consent after the thing. Cookie is not a first-screen block.",
+      "id": "broker-leaf-faces-first",
+      "better": "Same AboutFaces cutout as /about and /team. Bio Quiet below.",
       "routes": [
-        "/about",
-        "/activity",
-        "/blog",
-        "/cities",
-        "/cities/bend",
-        "/communities",
-        "/contact",
-        "/central-oregon/events",
-        "/faq",
+        "/team/matt-ryan"
+      ],
+      "status": "fixed-local-pending-ship",
+      "note": "AboutFaces mounted on /team/[slug]. Not on production until this SHA ships."
+    },
+    {
+      "id": "beat-theater",
+      "better": "Equivalent-URL PNGs for the frozen battery, then fill the matrix. Do not claim Beat from memory.",
+      "routes": [
         "/",
         "/homes-for-sale",
-        "/join",
-        "/homes-for-sale/bend/tetherow/61281-mcroberts-220218727",
-        "/luxury-homes-bend",
-        "/housing-market/annual-review",
-        "/housing-market/central-oregon",
-        "/housing-market/history",
-        "/housing-market/bend",
-        "/housing-market/reports",
-        "/housing-market",
+        "/cities/bend",
         "/communities/tetherow",
-        "/months-of-supply",
-        "/cities/bend/awbrey-butte",
-        "/open-houses/bend",
-        "/open-houses",
-        "/our-homes",
-        "/parks",
-        "/price-drops/bend",
-        "/price-drops",
-        "/refer-a-client",
-        "/reviews",
-        "/schools",
+        "/homes-for-sale/bend/tetherow/61281-mcroberts-220218727",
         "/sell",
-        "/subdivisions/sunrise-village",
-        "/team/matt-ryan",
-        "/team",
-        "/central-oregon/trails",
-        "/central-oregon/venues",
-        "/videos",
-        "/zip/97702"
-      ],
-      "status": "fixed-local-pending-ship",
-      "note": "Banner hidden until first scroll; 3s corner Cookies chip if no scroll. Accept all not a first-viewport primary."
-    },
-    {
-      "id": "wrong-grain",
-      "better": "First pattern matches PUBLIC_UI §3 for this grain. City Field. Neighborhood Instrument then Field. Master-plan Stage then Field. Subdivision Ledger. Listing Stage (holds).",
-      "routes": [
-        "/cities",
-        "/cities/bend",
-        "/communities",
-        "/communities/tetherow",
-        "/cities/bend/awbrey-butte",
-        "/subdivisions/sunrise-village",
-        "/zip/97702"
-      ],
-      "status": "fixed-local-pending-ship",
-      "note": "City Field. Neighborhood pace then Field. Master-plan Stage then Field. Plat Ledger. Tetherow is the exemplar."
-    },
-    {
-      "id": "number-as-hero-on-browse",
-      "better": "Houses fill the fold. Count is a caption.",
-      "routes": [
-        "/activity",
-        "/cities/bend",
-        "/",
-        "/luxury-homes-bend",
-        "/open-houses/bend",
-        "/open-houses",
-        "/price-drops/bend",
-        "/price-drops",
-        "/subdivisions/sunrise-village",
-        "/videos",
-        "/zip/97702"
-      ],
-      "status": "fixed-local-pending-ship",
-      "note": "Home/city/zip/open-houses/price-drops/luxury/videos/activity: count is a caption. Houses fill the fold."
-    },
-    {
-      "id": "unknown-path-two-primaries",
-      "better": "One next tap readable from the screen. FINISH and BACK on the fold.",
-      "routes": [
-        "/about",
-        "/activity",
-        "/blog",
-        "/cities",
-        "/cities/bend",
-        "/communities",
-        "/contact",
-        "/central-oregon/events",
-        "/faq",
-        "/",
-        "/homes-for-sale",
-        "/join",
-        "/homes-for-sale/bend/tetherow/61281-mcroberts-220218727",
-        "/luxury-homes-bend",
-        "/housing-market/annual-review",
-        "/housing-market/central-oregon",
-        "/housing-market/history",
-        "/housing-market/bend",
-        "/housing-market/reports",
         "/housing-market",
-        "/communities/tetherow",
-        "/months-of-supply",
-        "/cities/bend/awbrey-butte",
-        "/open-houses/bend",
-        "/open-houses",
-        "/our-homes",
-        "/parks",
-        "/price-drops/bend",
-        "/price-drops",
-        "/refer-a-client",
-        "/reviews",
-        "/schools",
-        "/sell",
-        "/subdivisions/sunrise-village",
-        "/team/matt-ryan",
-        "/team",
-        "/central-oregon/trails",
-        "/central-oregon/venues",
-        "/videos",
-        "/zip/97702"
-      ],
-      "status": "partial-local",
-      "note": "Chrome + cookie + money-path pages now have one next tap. Market/blog/POI/team leaves not rewritten this wave."
-    },
-    {
-      "id": "stamp-houses-two-lists",
-      "better": "One LARGE Field. Addresses wrap. Map and list are the same set.",
-      "routes": [
-        "/cities/bend",
-        "/communities/tetherow",
-        "/cities",
-        "/open-houses",
-        "/open-houses/bend"
-      ],
-      "status": "fixed-local-pending-ship",
-      "note": "City/Tetherow/open-houses: one Field. Cities index is city doors, not a stamp dump."
-    },
-    {
-      "id": "map-view-no-map",
-      "better": "One Field: map and list are the same set.",
-      "routes": [
-        "/homes-for-sale"
-      ],
-      "status": "fixed-local-pending-ship",
-      "note": "390 count is homes, not in this map view. Phrase only when a map is on screen."
-    },
-    {
-      "id": "sell-three-asks",
-      "better": "The address field is the only filled control. Label is the job.",
-      "routes": [
-        "/sell"
-      ],
-      "status": "fixed-local-pending-ship",
-      "note": "Stage ghost hidden. Empty field. One submit Value my home."
-    },
-    {
-      "id": "about-boutique-and-form-wall",
-      "better": "Cut the boutique sentence. Name is the door. Call and text on the face.",
-      "routes": [
         "/about"
       ],
-      "status": "fixed-local-pending-ship",
-      "note": "Boutique line cut. Faces fill the fold. Call/Text on the face. D11 mission only in below-fold FAQ."
+      "status": "open",
+      "note": "Zillow Bend 390 exists. Compass/Cascade/Redfin/Stellar/Duren/Beacon crops are missing from disk this firing. Auto-fail 17 on beat_on."
     }
   ],
   "scores": {
-    "/about": {
-      "grain": "about",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        7,
-        10,
-        14,
-        16,
-        17,
-        18
-      ],
-      "axes": {
-        "job": 4,
-        "path": 3,
-        "opening": 5,
-        "distinct": 6,
-        "craft": 5,
-        "motion": 2,
-        "perf": null,
-        "honesty": 3,
-        "reach": 3,
-        "simple": 4,
-        "quiet": 2,
-        "beat": 2
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/about.json"
-    },
-    "/activity": {
-      "grain": "homes",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        5,
-        6,
-        10,
-        14,
-        16
-      ],
-      "axes": {
-        "job": 2,
-        "path": 2,
-        "opening": 2,
-        "distinct": 2,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 4,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/activity.json"
-    },
-    "/blog": {
-      "grain": "market",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        5,
-        10,
-        12,
-        14,
-        15,
-        16
-      ],
-      "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
-        "perf": null,
-        "honesty": 4,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/blog-index.json"
-    },
-    "/cities": {
-      "grain": "city",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        4,
-        5,
-        10,
-        14,
-        16,
-        27
-      ],
-      "axes": {
-        "job": 2,
-        "path": 2,
-        "opening": 3,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 6,
-        "reach": 2,
-        "simple": 2,
-        "quiet": 2,
-        "beat": 3
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/cities-index.json"
-    },
-    "/cities/bend": {
-      "grain": "city",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        4,
-        14,
-        16,
-        18,
-        27
-      ],
-      "axes": {
-        "job": 3,
-        "path": 2,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 6,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 2
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/city.json"
-    },
-    "/communities": {
-      "grain": "master-plan",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        5,
-        10,
-        12,
-        14,
-        15,
-        16,
-        27
-      ],
-      "axes": {
-        "job": 2,
-        "path": 2,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
-        "perf": null,
-        "honesty": 5,
-        "reach": 2,
-        "simple": 2,
-        "quiet": 2,
-        "beat": 3
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/communities-index.json"
-    },
-    "/contact": {
-      "grain": "about",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        10,
-        14,
-        15,
-        16
-      ],
-      "axes": {
-        "job": 4,
-        "path": 3,
-        "opening": 3,
-        "distinct": 5,
-        "craft": 5,
-        "motion": 2,
-        "perf": null,
-        "honesty": 6,
-        "reach": 4,
-        "simple": 4,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/contact.json"
-    },
-    "/central-oregon/events": {
-      "grain": "places-poi",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        5,
-        10,
-        12,
-        14,
-        15,
-        16
-      ],
-      "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 3,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
-        "perf": null,
-        "honesty": 5,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/events.json"
-    },
-    "/faq": {
-      "grain": "market",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        10,
-        14,
-        16
-      ],
-      "axes": {
-        "job": 4,
-        "path": 3,
-        "opening": 3,
-        "distinct": 5,
-        "craft": 5,
-        "motion": 2,
-        "perf": null,
-        "honesty": 6,
-        "reach": 3,
-        "simple": 5,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/faq-index.json"
-    },
     "/": {
       "grain": "homes",
       "verdict": "FAIL",
       "auto_fails": [
-        1,
-        2,
-        3,
-        4,
-        10,
-        14,
-        15,
-        16,
-        18
+        17
       ],
       "axes": {
-        "job": 3,
-        "path": 3,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 6,
-        "reach": 4,
-        "simple": 4,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 7,
+        "simple": 8,
+        "quiet": 8,
+        "beat": 4
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/home.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/home.json"
     },
     "/homes-for-sale": {
       "grain": "homes",
       "verdict": "FAIL",
       "auto_fails": [
-        1,
-        3,
-        4,
-        6,
-        8,
-        10,
-        14,
-        15,
-        16,
-        18
+        17
       ],
       "axes": {
-        "job": 4,
-        "path": 3,
-        "opening": 2,
-        "distinct": 6,
-        "craft": 4,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 3,
-        "reach": 4,
-        "simple": 4,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": 4
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/homes-browse.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/homes-browse.json"
     },
-    "/join": {
-      "grain": "about",
+    "/open-houses": {
+      "grain": "homes",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        5,
-        10,
-        14,
-        16
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 6,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 5,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
         "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/join.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/open-houses.json"
+    },
+    "/price-drops": {
+      "grain": "homes",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/price-drops.json"
+    },
+    "/luxury-homes-bend": {
+      "grain": "homes",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/luxury.json"
+    },
+    "/our-homes": {
+      "grain": "homes",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/our-homes.json"
+    },
+    "/videos": {
+      "grain": "homes",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 7,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/videos.json"
+    },
+    "/activity": {
+      "grain": "homes",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/activity.json"
+    },
+    "/cities": {
+      "grain": "city",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/cities-index.json"
+    },
+    "/communities": {
+      "grain": "master-plan",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/communities-index.json"
+    },
+    "/cities/bend": {
+      "grain": "city",
+      "verdict": "FAIL",
+      "auto_fails": [
+        17
+      ],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": 4
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/city.json"
+    },
+    "/cities/bend/awbrey-butte": {
+      "grain": "neighborhood",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/neighborhood.json"
+    },
+    "/communities/tetherow": {
+      "grain": "master-plan",
+      "verdict": "FAIL",
+      "auto_fails": [
+        17
+      ],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": 4
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/master-plan.json"
+    },
+    "/subdivisions/sunrise-village": {
+      "grain": "subdivision",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/subdivision.json"
     },
     "/homes-for-sale/bend/tetherow/61281-mcroberts-220218727": {
       "grain": "listing",
       "verdict": "FAIL",
       "auto_fails": [
-        1,
-        4,
-        14,
-        16,
-        18
+        17
       ],
       "axes": {
-        "job": 6,
-        "path": 3,
+        "job": 8,
+        "path": 8,
         "opening": 8,
-        "distinct": 7,
-        "craft": 5,
-        "motion": 3,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 6,
-        "reach": 4,
-        "simple": 4,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": 4
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/listing.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/listing.json"
     },
-    "/luxury-homes-bend": {
-      "grain": "homes",
+    "/zip/97702": {
+      "grain": "city",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/zip.json"
+    },
+    "/sell": {
+      "grain": "sell",
       "verdict": "FAIL",
       "auto_fails": [
-        1,
-        2,
-        3,
-        5,
-        6,
-        10,
-        14,
-        16
+        17
       ],
       "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 3,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": 4
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/luxury.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/sell.json"
     },
-    "/housing-market/annual-review": {
+    "/housing-market": {
       "grain": "market",
       "verdict": "FAIL",
       "auto_fails": [
-        1,
-        10,
-        14,
-        16
+        17
       ],
       "axes": {
-        "job": 4,
-        "path": 3,
+        "job": 8,
+        "path": 8,
         "opening": 8,
-        "distinct": 4,
-        "craft": 4,
-        "motion": 2,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 6,
-        "reach": 3,
-        "simple": 4,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": 4
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/market-annual.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/market.json"
     },
     "/housing-market/central-oregon": {
       "grain": "market",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        10,
-        14,
-        16
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 5,
-        "path": 3,
+        "job": 8,
+        "path": 8,
         "opening": 8,
-        "distinct": 5,
-        "craft": 4,
-        "motion": 2,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 7,
-        "reach": 4,
-        "simple": 5,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/market-co.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/market-co.json"
     },
     "/housing-market/history": {
       "grain": "market",
       "verdict": "FAIL",
       "auto_fails": [
         1,
-        10,
-        12,
-        14,
-        15,
-        16
+        14
       ],
       "axes": {
         "job": 4,
         "path": 3,
-        "opening": 6,
-        "distinct": 5,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 4,
-        "reach": 3,
-        "simple": 2,
-        "quiet": 2,
-        "beat": 3
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/market-history.json"
-    },
-    "/housing-market/bend": {
-      "grain": "market",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        10,
-        11,
-        14,
-        16
-      ],
-      "axes": {
-        "job": 5,
-        "path": 3,
         "opening": 8,
-        "distinct": 6,
-        "craft": 4,
-        "motion": 2,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 7,
-        "reach": 4,
-        "simple": 4,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 4,
+        "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/market-leaf.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/market-history.json"
     },
     "/housing-market/reports": {
       "grain": "market",
       "verdict": "FAIL",
       "auto_fails": [
         1,
-        6,
-        10,
-        12,
-        14,
-        15,
-        16
+        14
       ],
       "axes": {
-        "job": 3,
-        "path": 3,
-        "opening": 6,
-        "distinct": 4,
-        "craft": 4,
-        "motion": 2,
-        "perf": null,
-        "honesty": 4,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 3
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/market-reports.json"
-    },
-    "/housing-market": {
-      "grain": "market",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        14,
-        16,
-        18
-      ],
-      "axes": {
-        "job": 5,
+        "job": 4,
         "path": 3,
         "opening": 8,
-        "distinct": 6,
-        "craft": 4,
-        "motion": 2,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 7,
-        "reach": 4,
-        "simple": 5,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 4,
+        "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/market.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/market-reports.json"
     },
-    "/communities/tetherow": {
-      "grain": "master-plan",
+    "/housing-market/annual-review": {
+      "grain": "market",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        4,
-        14,
-        16,
-        17,
-        18,
-        27
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 3,
-        "path": 3,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 5,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 2
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/master-plan.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/market-annual.json"
     },
     "/months-of-supply": {
       "grain": "market",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        10,
-        12,
-        14,
-        16
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 6,
-        "path": 4,
+        "job": 8,
+        "path": 8,
         "opening": 8,
-        "distinct": 6,
-        "craft": 5,
-        "motion": 2,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 6,
-        "reach": 5,
-        "simple": 4,
-        "quiet": 2,
-        "beat": 3
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/months-of-supply.json"
-    },
-    "/cities/bend/awbrey-butte": {
-      "grain": "neighborhood",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        5,
-        14,
-        15,
-        16,
-        27
-      ],
-      "axes": {
-        "job": 2,
-        "path": 2,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 6,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 2
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/neighborhood.json"
-    },
-    "/open-houses/bend": {
-      "grain": "homes",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        4,
-        5,
-        10,
-        14,
-        16
-      ],
-      "axes": {
-        "job": 3,
-        "path": 2,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 5,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 2
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/open-houses-city.json"
-    },
-    "/open-houses": {
-      "grain": "homes",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        4,
-        5,
-        10,
-        14,
-        15,
-        16
-      ],
-      "axes": {
-        "job": 3,
-        "path": 2,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 6,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 2
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/open-houses.json"
-    },
-    "/our-homes": {
-      "grain": "homes",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        6,
-        10,
-        14,
-        15,
-        16
-      ],
-      "axes": {
-        "job": 2,
-        "path": 2,
-        "opening": 2,
-        "distinct": 4,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 2,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 7,
         "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/our-homes.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/months-of-supply.json"
     },
-    "/parks": {
-      "grain": "places-poi",
+    "/blog": {
+      "grain": "market",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        5,
-        10,
-        12,
-        14,
-        15,
-        16
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 3,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 5,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
         "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/parks.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/blog-index.json"
     },
-    "/price-drops/bend": {
-      "grain": "homes",
+    "/faq": {
+      "grain": "market",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        5,
-        6,
-        10,
-        12,
-        14,
-        15,
-        16
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 3,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 3
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 7,
+        "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/price-drops-city.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/faq-index.json"
     },
-    "/price-drops": {
-      "grain": "homes",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        5,
-        10,
-        12,
-        14,
-        15,
-        16
-      ],
-      "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 4,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 3
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/price-drops.json"
-    },
-    "/refer-a-client": {
+    "/about": {
       "grain": "about",
       "verdict": "FAIL",
       "auto_fails": [
-        1,
-        3,
-        5,
-        10,
-        14,
-        16
+        17
       ],
       "axes": {
-        "job": 3,
-        "path": 3,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 6,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 6,
-        "reach": 3,
-        "simple": 4,
-        "quiet": 2,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": 4
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/about.json"
+    },
+    "/team": {
+      "grain": "about",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
         "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/refer.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/team.json"
+    },
+    "/contact": {
+      "grain": "about",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/contact.json"
     },
     "/reviews": {
       "grain": "about",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        10,
-        14,
-        16
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 4,
-        "path": 3,
-        "opening": 4,
-        "distinct": 5,
-        "craft": 6,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 7,
-        "reach": 4,
-        "simple": 5,
-        "quiet": 2,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
         "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/reviews.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/reviews.json"
+    },
+    "/join": {
+      "grain": "about",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/join.json"
+    },
+    "/refer-a-client": {
+      "grain": "about",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/refer.json"
+    },
+    "/central-oregon/events": {
+      "grain": "places-poi",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/events.json"
+    },
+    "/central-oregon/trails": {
+      "grain": "places-poi",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/trails.json"
+    },
+    "/central-oregon/venues": {
+      "grain": "places-poi",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/venues.json"
+    },
+    "/parks": {
+      "grain": "places-poi",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/parks.json"
     },
     "/schools": {
       "grain": "places-poi",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        5,
-        10,
-        12,
-        14,
-        15,
-        16
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 3,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
-        "perf": null,
-        "honesty": 5,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/schools.json"
-    },
-    "/sell": {
-      "grain": "sell",
-      "verdict": "FAIL",
-      "auto_fails": [
-        14,
-        15,
-        16,
-        18
-      ],
-      "axes": {
-        "job": 4,
-        "path": 3,
+        "job": 8,
+        "path": 8,
         "opening": 8,
-        "distinct": 7,
-        "craft": 4,
-        "motion": 2,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 7,
-        "reach": 5,
-        "simple": 4,
-        "quiet": 2,
-        "beat": 3
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/sell.json"
-    },
-    "/subdivisions/sunrise-village": {
-      "grain": "subdivision",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        14,
-        15,
-        16,
-        27
-      ],
-      "axes": {
-        "job": 2,
-        "path": 2,
-        "opening": 2,
-        "distinct": 2,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 6,
-        "reach": 3,
-        "simple": 3,
-        "quiet": 2,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
         "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/subdivision.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/schools.json"
+    },
+    "/open-houses/bend": {
+      "grain": "homes",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/open-houses-city.json"
+    },
+    "/price-drops/bend": {
+      "grain": "homes",
+      "verdict": "FAIL",
+      "auto_fails": [],
+      "axes": {
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
+        "perf": null,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
+        "beat": null
+      },
+      "send": false,
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/price-drops-city.json"
     },
     "/team/matt-ryan": {
       "grain": "about",
       "verdict": "FAIL",
       "auto_fails": [
-        1,
         3,
-        10,
-        14,
-        16
+        15
       ],
       "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 2,
-        "distinct": 5,
-        "craft": 4,
-        "motion": 2,
-        "perf": null,
-        "honesty": 7,
-        "reach": 3,
-        "simple": 4,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/team-broker.json"
-    },
-    "/team": {
-      "grain": "about",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        3,
-        6,
-        10,
-        14,
-        15,
-        16
-      ],
-      "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 2,
-        "distinct": 5,
-        "craft": 4,
-        "motion": 2,
-        "perf": null,
-        "honesty": 3,
-        "reach": 3,
-        "simple": 4,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/team.json"
-    },
-    "/central-oregon/trails": {
-      "grain": "places-poi",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        5,
-        10,
-        12,
-        14,
-        15,
-        16
-      ],
-      "axes": {
-        "job": 2,
-        "path": 3,
+        "job": 4,
+        "path": 8,
         "opening": 3,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 5,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 3,
         "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/trails.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/team-broker.json"
     },
-    "/central-oregon/venues": {
-      "grain": "places-poi",
+    "/housing-market/bend": {
+      "grain": "market",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        5,
-        10,
-        12,
-        14,
-        15,
-        16
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 2,
-        "path": 3,
-        "opening": 3,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
+        "job": 8,
+        "path": 8,
+        "opening": 8,
+        "distinct": 8,
+        "craft": 8,
+        "motion": 6,
         "perf": null,
-        "honesty": 5,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
+        "honesty": 8,
+        "reach": 8,
+        "simple": 8,
+        "quiet": 8,
         "beat": null
       },
       "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/venues.json"
-    },
-    "/videos": {
-      "grain": "homes",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        5,
-        6,
-        10,
-        14,
-        16
-      ],
-      "axes": {
-        "job": 2,
-        "path": 2,
-        "opening": 2,
-        "distinct": 2,
-        "craft": 3,
-        "motion": 2,
-        "perf": null,
-        "honesty": 3,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
-        "beat": null
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/videos.json"
-    },
-    "/zip/97702": {
-      "grain": "city",
-      "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        2,
-        3,
-        10,
-        14,
-        15,
-        16,
-        27
-      ],
-      "axes": {
-        "job": 2,
-        "path": 2,
-        "opening": 2,
-        "distinct": 3,
-        "craft": 4,
-        "motion": 2,
-        "perf": null,
-        "honesty": 6,
-        "reach": 2,
-        "simple": 3,
-        "quiet": 2,
-        "beat": 3
-      },
-      "send": false,
-      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24/cards/zip.json"
+      "card": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/market-leaf.json"
     }
   }
 }

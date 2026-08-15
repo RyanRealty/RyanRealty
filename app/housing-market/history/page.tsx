@@ -175,8 +175,8 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
             )}
             updated={computedLabel ? v3Text(computedLabel) : undefined}
             action={{
-              label: v3Text('Value my home'),
-              href: valuationHref('/housing-market/history'),
+              label: v3Text('Slice closed sales'),
+              href: '#query',
               variant: 'primary',
             }}
           />
