@@ -13,7 +13,7 @@ The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for wh
 what is verified, and what is open — not a side doc. Subject work (admin, CRM, growth)
 still runs; it does not erase other planes from Sense.
 
-**Every development cycle routes through THE LOOP v1.5.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work).
+**Every development cycle routes through THE LOOP v1.5.1 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work).
 One self-improving cycle: ingest telemetry → diagnose → prioritize → fix the class → verify
 exhaustively → ship → measure → learn → lock behind a gate → compete. It carries the preflight
 contract, the live-environment rules, the escape-ledger protocol, and the approval model.

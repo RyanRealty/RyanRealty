@@ -215,6 +215,33 @@ const SEEDS = [
     output: 'Fan-out builder + calendar drafts on Today.',
     accept: 'One idea produces distinct per-channel drafts on Today with humanApprovedAt gating; zero autonomous publishes.',
   },
+  {
+    versionGap: 'G26',
+    domain: 'nurture',
+    title: 'Email tracking completeness (four untracked paths)',
+    objective:
+      'REQUIREMENTS R-137 / audit 2026-08-15: route the sequence SMS-to-email fallback (crm-sequence-engine ~line 443), home-valuation CMA delivery + acknowledgment (app/home-valuation/actions.ts), the admin one-off composer (app/actions/admin-email.ts), and the CMA request confirmation (lib/cma/request-emails.ts) through attributeOutbound/track.',
+    output: 'All four paths tracked; a grep census shows zero consumer-facing sendEmail calls without tracking.',
+    accept: 'A real send on each path lands open/click events in email_events tied to the person; census gate or test proves no bypass remains.',
+  },
+  {
+    versionGap: 'G27',
+    domain: 'sales-insights',
+    title: 'Coming Soon count truth on served for-sale counts',
+    objective:
+      'REQUIREMENTS R-025 / audit 2026-08-15: pulse active_count includes Coming Soon by design while the directive says exclude. Either exclude CS from served for-sale counts or label the definition on every surface that shows it. Matt may pick the definition; blast-radius dal-stat + public-site + reporting; §0 applies.',
+    output: 'One definition, applied and labeled everywhere the count renders.',
+    accept: 'Bend spot-check: served count matches its stated definition exactly (verified against boundary SFR query both ways).',
+  },
+  {
+    versionGap: 'G28',
+    domain: 'transactions',
+    title: 'Referral fee reaches the money math',
+    objective:
+      'REQUIREMENTS R-203 / audit 2026-08-15: inboundFeePct (25% recorded at intake) is write-only. Wire it so a referred person\u2019s closing pre-fills tc_commissions.referral_fee and destination GCI is computed after the fee.',
+    output: 'Referral-linked closing shows referral_fee auto-populated from the recorded pct; admin referral desk shows GCI-after-fee.',
+    accept: 'A test deal for a referred person computes net = gci - (pct \u00d7 side) without hand-typing; desk renders the figure with a \u00a70 trace.',
+  },
 ] as const
 
 async function main() {

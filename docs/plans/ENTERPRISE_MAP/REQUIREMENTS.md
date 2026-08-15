@@ -5,6 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
+**Max:** R-206 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -51,7 +52,7 @@
 | R-022 | No invented five-year percentages or 0–10 scores on listing intelligence; over/under or refuse | public look 2026-08-14 | LOCKED | — |
 | R-023 | Imagery: reference-conditioned place work allowed; never invent a listing room/view; no people-as-residents | imagery canon 2026-08-14 | LOCKED | — |
 | R-024 | Same-labeled figures on one page share one SFR source; label type_scope SFR vs all | DESIGN_DIRECTIVES; SALES_INTELLIGENCE | LOCKED | — |
-| R-025 | Exclude Coming Soon from for-sale counts and anon access everywhere | handoff 2026-08-02; COMING_SOON_SQL | VERIFIED | — |
+| R-025 | Exclude Coming Soon from for-sale counts and anon access everywhere | handoff 2026-08-02; COMING_SOON_SQL | PARTIAL | G27 — anon access verified sealed (RLS + trigger + gate); pulse `active_count` still includes Coming Soon by design (audit 2026-08-15: Bend 487 contained 4 CS) |
 | R-026 | Every number in packets/newsletters is a compliance artifact; one definition per metric | ADMIN 00-REASONING | PARTIAL | G18 |
 | R-027 | Oregon TC disclosures derive from role×property with primary-source citations | RECONCILED-RULES §1.15 | GATED | M2 (TC resume) |
 | R-028 | Public competitor brokerage names locked off forever (I6); admin desk may keep names | PRODUCT.md | LOCKED | — |
@@ -141,7 +142,7 @@
 | R-092 | Mobile-first: 390 is truth, 1280 second; visual inspection on live numbers is law — code review is not the look | BROKER-OS v0.6 | LOCKED | G9 baselines |
 | R-093 | Stamped look: PropXYZ cards/map + Tremor-style market blocks + HouseMe listing intelligence; no Magic UI; no Tremor npm | Matt stamp 2026-08-14 | PARTIAL | sibling owns rollout |
 | R-094 | Listing opens on Stage: real MLS photo/video hero, UNMUTE top-right, poster until video ready; beats Zillow Showcase | Track 1; DESIGN_DIRECTIVES | VERIFIED | — |
-| R-095 | Home page: search door + six town doors with live MLS photography; Places/Opens first screenful photographed and door-through | Track 1 2026-08-13 | VERIFIED | — |
+| R-095 | Home page: search door + six town doors with live MLS photography; Places/Opens first screenful photographed and door-through | Track 1 2026-08-13 | PARTIAL | G21 — doors + search verified live; town photos are curated static scenics (`TOWN_IMG` in app/page.tsx), not live MLS (audit 2026-08-15) |
 | R-096 | /sell: worth-question gone; address-only step 1; CTA language "Value my home"; worth-language only in title/meta | Track 1; D5 | VERIFIED | — |
 | R-097 | One registry-driven filter surface + URL contract; buyer can express any shoppable MLS need; registry generated from Spark metadata, gated | SEARCH plans | PARTIAL | G15 |
 | R-098 | Facet counts live per value, class-aware, zero-match disabled; find-a-filter matches values; no dead filters | FILTER_COMPLETENESS | PARTIAL | G15 |
@@ -193,7 +194,7 @@
 | R-134 | Identity stitch everywhere: map Google email → crm_people → person ids → rr_vid before any ask; no fake CRM lead from cookies | PUBLIC decisions; EXECUTION | PARTIAL | G2 |
 | R-135 | Welcome-back names last house/search; no modal on land; consent is not the price of an account | PUBLIC decisions | VERIFIED | — |
 | R-136 | Conversion events E1–E6 instrumented; alert/save capture uses current search context, never a blank form | CONVERSION_MAP; PRODUCT | LOCKED | — |
-| R-137 | Every outbound email/SMS carries open/click tracking tied to crm_people via attributeOutbound | SAVED_SEARCH goal; attribution plan | VERIFIED | — |
+| R-137 | Every outbound email/SMS carries open/click tracking tied to crm_people via attributeOutbound | SAVED_SEARCH goal; attribution plan | PARTIAL | G26 — spine tracked; audit 2026-08-15 found four untracked paths (sequence email fallback, home-valuation delivery + ack, admin one-off, CMA request confirmation) |
 | R-138 | Suppression + stop-list + quiet hours checked on every send path, fail-closed | CRM_BUILD_MISSION; RECONCILED | LOCKED | — |
 | R-139 | Lead routing: source→broker strategies + round-robin; no ponds; all-to-Matt dormant default | 01-DECISIONS; crm-completion | LOCKED | — |
 | R-140 | Person labels closed set (Expired, FSBO, Buyer, Seller, Client); dual-intent = two labels one person | BROKER-OS | LOCKED | — |
@@ -284,7 +285,7 @@
 | R-200 | /join stays off the exploration graph in the About cluster; chrome never sells recruiting | ia-lock | LOCKED | — |
 | R-201 | /join conversion instrumented so recruiting has a number | packet | MISSING | G10 |
 | R-202 | Recruiting toolkit deferred behind West Side proof | 03-DECISIONS A1 | PARKED | — |
-| R-203 | Inbound agent referrals: destination GCI after 25% referral fee recorded | 2026-08-14 | VERIFIED | — |
+| R-203 | Inbound agent referrals: destination GCI after 25% referral fee recorded | 2026-08-14 | PARTIAL | G28 — desk live, 25% fee basis recorded at intake; `inboundFeePct` is write-only and never reaches `tc_commissions.referral_fee` (audit 2026-08-15) |
 
 ## Additions (post-harvest — new directives land here in ID order)
 

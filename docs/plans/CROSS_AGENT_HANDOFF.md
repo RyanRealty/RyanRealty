@@ -1,12 +1,27 @@
-> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.5.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next node contract), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
+> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.5.1): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next node contract), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — Requirements register: all of Matt's asks, dispositioned and unshrinkable
+# Current — 2026-08-15 (Grok) — First adversarial pass: the machine found 17 defects, teeth hardened
+
+**Matt:** "When I catch things you haven't, I worry this is all prose." Correct instinct — R-040 (adversarial verify, LOCKED since July) was being violated by self-graded verification. ESCAPE `6c980ad6`.
+
+**Audit (3 fresh-context breakers, claims only):** 17 defects, zero found by Matt.
+- Gates: G56/G57 blind to TAIL-row deletion (proven: delete G25/R-206 → green). FIXED: `**Max:** G28 · M6` / `**Max:** R-206` pins, cross-checked both directions; M-rows now need DONE dates too. Re-proven: tail delete now FAILS.
+- Enforcement: work-graph state machine was DAL-only (raw update flipped killed→done) + TOCTOU race; ledger freeze had zero executable callers and failed OPEN on read error; one-open-per-domain unenforced. FIXED: DB triggers `loop_work_nodes_guard` + `site_improvement_ledger_guard` (migration `20260815210000`, applied hosted), optimistic `.eq('state', from)` in transition(), DAL guard fail-closed + full one-open rule.
+- Register truth (12 rows attacked): 8 survived. R-025 (pulse counts INCLUDE Coming Soon — Bend 487 had 4), R-095 (town doors are static scenics not live MLS), R-137 (four untracked email paths: sequence fallback, home-valuation delivery+ack, admin one-off, CMA request confirm), R-203 (inboundFeePct write-only, never reaches tc_commissions). All demoted VERIFIED→PARTIAL; product gaps **G26/G27/G28** opened + seeded (graph 28 nodes).
+- Stale claims: 8 in packet/manifest — including a REVIVED OAuth reconnect ask in §5 (the cb7699f1 class) and "13 nodes" vs live 24. All corrected; counts now live in ONE place each.
+- Canon v1.5.1: step 5 mandates the adversarial pass for high-stakes classes (fresh subagent, claims only, never self-graded). All pointers bumped; G44 green.
+
+**Verified survivors worth knowing:** R-057 private-key diversion (anon probes clean), R-179 delivery observability (real events), R-121 sitemaps (7,668 listing URLs live), R-066 concessions math, transitions refuse illegally at DB level now.
+
+**Next:** G2 identity stitch via "Run the loop" (brief serves it with leads-domain reads). G26 (email tracking) and G27 (Coming Soon count truth — may need Matt's definition pick) are strong next candidates; G27 is §0-adjacent.
+
+# Prior — 2026-08-15 (Grok) — Requirements register: all of Matt's asks, dispositioned and unshrinkable
 
 **Matt:** Bring every requirement from every session together; the system fills gaps automatically; never "five things so forget the 120 others"; he is done being the memory.
 
-**Done (THE LOOP v1.5.0):**
+**Done (THE LOOP v1.5.1):**
 - **`docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md`** — five parallel readers harvested the FULL corpus (handoff history, master goals, brain dumps, Broker OS plan, public locks, PROGRAM decisions, canon, rules, memory): 572 raw directives → **203 dispositioned rows** (91 LOCKED · 41 VERIFIED · 39 PARTIAL · 25 MISSING · 6 GATED · 1 PARKED) grouped by the 12 animals, each with source + coverage. Dispositions inherit source claims; certification re-verifies.
 - **Gaps filled automatically:** the 25 MISSING rows drove **G15–G25** onto VERSION-1 (search completeness, CMA/pricing residual, prospecting product, reporting collapse, one person surface + SendPanel, buyer packet build, public IA/mobile residual, SEO/AEO residual, email residue kill, admin dark mode, social fan-out calendar) + 11 seeded work nodes (graph now 24 nodes, G1 done).
 - **G57 `ci:requirements-register`** (in ci:gates + MECHANICAL_GATES): R-IDs contiguous (rows leave only as SUPERSEDED in place), closed disposition set, MISSING must cite an existing manifest gap. Namespace note: only MISSING rows' G-refs validate against the manifest (G44/G56 in evidence cells are mechanical gates).
@@ -24,7 +39,7 @@
 
 **Matt:** Long sessions lose context; objectives fall off the plate; wants the recursive plan runnable with graph engineering, everything remembered, no shortcut assumptions.
 
-**Done (THE LOOP v1.5.0, plan `durable_company_loop`):**
+**Done (THE LOOP v1.5.1, plan `durable_company_loop`):**
 - **Durable work graph:** `public.loop_work_nodes` (migration `20260815190000`, applied hosted via `scripts/analytics/apply-analytics-migration.mjs` — psql absent, pg driver used). Contract per node (objective/output/accept), audited transitions (done/killed terminal, evidence required), DAL `lib/data/loop/work-graph.ts`, pure rules + tests `work-node.ts`. Seeded G1–G13 from VERSION-1 (`scripts/seed-work-graph.ts`, idempotent upsert on version_gap).
 - **Session boot is a command:** `npx tsx scripts/loop-brief.ts` — handoff Current + scoreboard headline + stranded windows + work graph + next node contract. Matt's prompt is now "Run the loop."
 - **G56 anti-shortcut gate:** `scripts/check-version-manifest.mjs` (`ci:version-manifest`, in ci:gates + MECHANICAL_GATES). Below-floor CAPs / red INTs must be accounted in VERSION-1; G/M numbering contiguous; DONE needs a date; CERTIFIED needs a SHA. First run caught CAP-033 dropped — fixed into M6.

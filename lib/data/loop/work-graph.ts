@@ -109,13 +109,19 @@ async function transition(
       .single()
     if (readErr || !row) return { data: null, error: readErr?.message ?? 'node not found' }
     assertTransition(row.state as WorkNodeState, to)
+    // Optimistic concurrency: the update only lands if the state is still the
+    // one we asserted from (audit 2026-08-15 found the read-then-write race).
+    // The DB trigger loop_work_nodes_guard enforces legality below us too.
     const { data, error } = await sb
       .from('loop_work_nodes')
       .update({ ...patch, state: to, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('state', row.state)
       .select('id')
       .single()
-    if (error || !data?.id) return { data: null, error: error?.message ?? 'update matched no row' }
+    if (error || !data?.id) {
+      return { data: null, error: error?.message ?? 'update matched no row (state changed concurrently — re-read and retry)' }
+    }
     return { data: { id: data.id as string }, error: null }
   } catch (err) {
     console.error('[workNodeTransition]', err)

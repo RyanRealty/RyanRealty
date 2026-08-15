@@ -1,6 +1,6 @@
 # Company scoreboard — weekly packet
 
-**Process:** [COMPANY_IMPROVEMENT.md](COMPANY_IMPROVEMENT.md) (THE LOOP v1.5.0)  
+**Process:** [COMPANY_IMPROVEMENT.md](COMPANY_IMPROVEMENT.md) (THE LOOP v1.5.1)  
 **Version target:** [ENTERPRISE_MAP/VERSION-1.md](ENTERPRISE_MAP/VERSION-1.md) — lead with version progress.  
 **Session boot:** `npx tsx scripts/loop-brief.ts` — the work graph (`loop_work_nodes`) is the source of record for in-flight work.  
 **Overwrite this file each week.** Do not start a dated novel.  
@@ -17,9 +17,10 @@
 
 | Figure | Value | Source |
 |---|---|---|
-| Version | **v1 OPEN** — 2 of 25 agent gaps closed (G1, G14; G15–G25 added from the requirements harvest), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list |
-| Requirements coverage | **206 directives dispositioned** (2026-08-15 harvest + additions): 92 LOCKED rules · 42 VERIFIED · 39 PARTIAL · 25 MISSING (all gap-covered) · 7 GATED on Matt · 1 PARKED | `ENTERPRISE_MAP/REQUIREMENTS.md` + G57 |
-| Stranded ledger windows | **0** (was 11 — all closed 2026-08-15 with §0 traces; `seo-aeo` unfrozen). Work graph: 13 nodes, 1 done, next node G2 identity stitch | probe `ledger.expiredUnlearned` + `loop_work_nodes` |
+| Version | **v1 OPEN** — 2 of 28 agent gaps closed (G1, G14; G15–G25 from the requirements harvest, G26–G28 from the 2026-08-15 adversarial audit), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list (Max-pinned) |
+| Requirements coverage | **206 directives dispositioned**: 92 LOCKED · 38 VERIFIED · 43 PARTIAL · 25 MISSING (all gap-covered) · 7 GATED · 1 PARKED. Four rows demoted VERIFIED→PARTIAL by adversarial audit (R-025, R-095, R-137, R-203) | `ENTERPRISE_MAP/REQUIREMENTS.md` + G57 (Max-pinned) |
+| Stranded ledger windows | **0** (was 11 — all closed 2026-08-15 with §0 traces; `seo-aeo` unfrozen). Work graph: **28 nodes** · 1 done (G1) · 1 killed (audit probe) · next node G2 identity stitch | probe `ledger.expiredUnlearned` + loop-brief 2026-08-15T20:1xZ |
+| Adversarial audit (first R-040 pass) | **17 defects found by the machine, 0 by Matt**: 2 gate blind spots (fixed: Max pins), 3 enforcement bypasses (fixed: DB triggers + fail-closed DAL), 4 overstated register rows (corrected, product gaps G26–G28 opened), 8 stale packet/manifest claims (corrected). Escape recorded. | audit agents 2026-08-15 + `process_escape_ledger` |
 | Capabilities below Working floor | **7** (TC, video, social OAuth, broker platform, westside, Grok memory, SMS agent) | `ENTERPRISE_MAP/matrix/CAPABILITIES.md` 2026-08-08 close |
 | Needs-reauth integrations | **0 active** — GBP/YouTube/X/TikTok auto-refresh from stored refresh tokens via the daily 12:00Z heartbeat (verified live 2026-08-15, scheduled run all OK + on-demand trigger rolled expiries). LinkedIn is `needs-reauth` and **PARKED** (provider issued no refresh token). No Matt reconnect task exists. | heartbeat `sync_logs` 2026-08-15T12:00:03Z + probe `social.tokens` (`auto-refresh` vs `needs-reauth`) |
 | Meta audience heartbeat | first green run **2026-08-15T14:03Z** — hold 7 days then flip FIX→KEEP (gap G11) | `meta_audience_log.ran_at` |
@@ -77,7 +78,7 @@ Scored from this fetch + COMPANY_IMPROVEMENT.md. Not vibes.
 1. **nurture** — 20,287 Nurture / **0 Lead** / 12 Active Client. **6** active listing alerts against 22,672 people. The journey and the alert engine are unused at company scale.
 2. **leads / identity** — 11,233 visitor events in 7d and **164** identity-map rows, but only **1** row has `crm_person_id`. Tracking is alive. The stitch to `crm_people` (and therefore ads audiences) is not. This is the “do not lose the Google / match / ads path” class.
 3. **recruit-retain** — **3** brokers. `/join` convert UNKNOWN.
-4. **social-presence** — TikTok valid through 2026-08-16T12:00Z. YouTube, LinkedIn, X, GBP **expired**. Brain `measured=2`, `ready` 420.
+4. **social-presence** — tokens are NOT the rot (corrected 2026-08-15: TikTok/YouTube/X/GBP auto-refresh via the daily heartbeat; LinkedIn parked, no provider refresh token). The rot is the pipeline: brain `measured=2`, `ready` 420, no fan-out calendar (G25).
 5. **public-ux / polygons** — **3,312** boundaries live. **0** `search_areas`. Filter facets are fresh. Whether every `geo_type` is on the map is UNKNOWN (probe does not walk pages). Do not `ST_Within` at request time.
 
 Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pulse all v3). **sales-insights** (GCI live; audience cron ran this morning). **transactions** (SkySlope still 2026-06-10). **broker-tools** (294 CMAs; look UNKNOWN).
@@ -85,7 +86,6 @@ Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pu
 ## 5. Matt-only
 
 - Newsletter first cohort send (5,346 subscribers)
-- Social OAuth reconnect: YouTube, LinkedIn, X, GBP
 - Ad spend (Demand parked). Audience *wiring* may be fixed without spend.
 - Taste stops (packets, posts, CMA look)
 - SkySlope mutation / Closings cutover
@@ -98,16 +98,16 @@ Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pu
 | Domain | Status | Notes |
 |---|---|---|
 | public-ux | watch | 131 registry fields. 3,312 polygons. 0 drawn search areas. Look still a grind. |
-| seo-aeo | ok ingest / UNKNOWN gap | 180 GSC benchmark rows in 28d. 11 open windows. |
+| seo-aeo | unfrozen | 180 GSC benchmark rows in 28d. All 11 windows CLOSED 2026-08-15 with verdicts (1 win, 1 loss, 1 flat, 8 telemetry-gap). |
 | leads | rotting | Identity stitch 1/164. Visitor events are not becoming people. |
 | nurture | rotting | Lead = 0. 6 active alerts. |
-| social-presence | rotting | 4 expired tokens. |
+| social-presence | rotting (pipeline, not tokens) | Tokens self-renew (LinkedIn parked). Rot = measured 2 / ready 420, no calendar (G25). |
 | sales-insights | watch | GCI live. Audience log ran today. |
 | transactions | rotting | SkySlope 66+ days stale. |
 | broker-tools | UNKNOWN look | 294 CMA rows. Ease / Today queue not in this probe. |
 | recruit-retain | rotting | 3 brokers. `/join` UNKNOWN. |
 | data-sync | ok | Delta ~11 min. Spark remains ingest-only. |
-| factory | shipped | v1.2.1 blast-radius. |
+| factory | shipped | THE LOOP v1.5.x: work graph, loop-brief, G56/G57, DB triggers, adversarial verification standing. |
 | license-voice | ok this fill | Pulse v3 on 45/45. One-stat process still CAP-006 / marts / §0. |
 
 ---

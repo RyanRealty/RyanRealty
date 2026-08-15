@@ -55,9 +55,24 @@ if (rows.length === 0) {
   process.exit(1)
 }
 
-// 1. Contiguity
+// 1. Contiguity + tail pin. The adversarial audit (2026-08-15) proved deleting
+// the highest-numbered row was invisible; the register must declare its max in
+// a "**Max:** R-nnn" line, cross-checked both directions.
+const maxHeader = register.match(/^\*\*Max:\*\*\s*R-(\d{3})/m)
+if (!maxHeader) {
+  fails.push(`${REGISTER}: missing the "**Max:** R-nnn" pin line — without it, tail-row deletion is invisible`)
+}
+const declaredMax = maxHeader ? Number(maxHeader[1]) : null
 const nums = new Set(rows.map((r) => r.num))
-const max = Math.max(...nums)
+const actualMax = Math.max(...nums)
+if (declaredMax != null) {
+  if (actualMax < declaredMax) {
+    fails.push(`Max pin declares R-${String(declaredMax).padStart(3, '0')} but the highest row present is R-${String(actualMax).padStart(3, '0')} — tail row(s) were deleted instead of SUPERSEDED in place`)
+  } else if (actualMax > declaredMax) {
+    fails.push(`rows reach R-${String(actualMax).padStart(3, '0')} but the Max pin says R-${String(declaredMax).padStart(3, '0')} — update the pin in the same change`)
+  }
+}
+const max = Math.max(actualMax, declaredMax ?? 0)
 for (let i = 1; i <= max; i++) {
   if (!nums.has(i)) {
     fails.push(`R-${String(i).padStart(3, '0')} is missing while R-${String(max).padStart(3, '0')} exists — requirements leave only by becoming SUPERSEDED in place, never by deletion`)

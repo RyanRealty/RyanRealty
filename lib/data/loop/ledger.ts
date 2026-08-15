@@ -37,15 +37,38 @@ export async function insertImprovementLedgerRow(
   try {
     assertLedgerDraft(draft)
     const sb = createServiceClient()
-    // WIP guard (THE LOOP v1.3.0): a domain with stranded windows may not open
-    // a new class. Close the old hypothesis (closeImprovementLedgerRow) first —
-    // 'inconclusive' is a legal verdict when the metric became unmeasurable.
-    const stranded = await listExpiredUnlearnedWindows({ domain: draft.domain })
+    // WIP guard (THE LOOP canon): ONE open class per domain, and a domain with
+    // stranded windows must Learn first. Fail CLOSED: an unreadable ledger
+    // refuses the insert (audit 2026-08-15 — the old path failed open on read
+    // error). The DB trigger site_improvement_ledger_guard enforces the same
+    // rules below us for any writer that bypasses this DAL.
+    const { data: openRows, error: readErr } = await sb
+      .from('site_improvement_ledger')
+      .select('id,shipped_at,window_days,actual_delta')
+      .eq('domain', draft.domain)
+      .is('actual_delta', null)
+    if (readErr) {
+      return { data: null, error: `ledger unreadable (${readErr.message}) — refusing to open a class blind` }
+    }
+    const now = new Date()
+    const stranded = (openRows ?? []).filter((r) =>
+      isExpiredUnlearned(
+        { shippedAt: String(r.shipped_at), windowDays: Number(r.window_days ?? 14), actualDelta: null },
+        now,
+      ),
+    )
     if (stranded.length > 0) {
       const ids = stranded.map((r) => r.id).join(', ')
       return {
         data: null,
         error: `domain "${draft.domain}" has ${stranded.length} expired unlearned window(s) — write actual_delta + verdict via closeImprovementLedgerRow before opening a new class. Stranded ids: ${ids}`,
+      }
+    }
+    if ((openRows ?? []).length > 0) {
+      const ids = (openRows ?? []).map((r) => r.id).join(', ')
+      return {
+        data: null,
+        error: `domain "${draft.domain}" already has ${openRows!.length} open class(es) — one open class per domain; close or supersede first. Open ids: ${ids}`,
       }
     }
     const { data, error } = await sb

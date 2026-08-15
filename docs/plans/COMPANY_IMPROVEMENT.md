@@ -1,6 +1,6 @@
 # Company improvement — THE LOOP addendum
 
-**Version:** THE LOOP v1.5.0  
+**Version:** THE LOOP v1.5.1  
 **Canon:** [docs/DEVELOPMENT_PROCESS.md](../DEVELOPMENT_PROCESS.md)  
 **Weekly packet:** [COMPANY_SCOREBOARD.md](COMPANY_SCOREBOARD.md)  
 **Universe:** [ENTERPRISE_MAP](ENTERPRISE_MAP/SESSION_HANDOFF.md) CAP / INT / FAC  

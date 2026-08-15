@@ -1,9 +1,10 @@
 # Company v1 — the first certified whole-company version
 
 **Status: OPEN** (flips to CERTIFIED by the certification pass below, in one commit)
-**Process:** THE LOOP v1.3.0 §Company versions (`docs/DEVELOPMENT_PROCESS.md`)
-**Substrate:** the Enterprise Map matrices (`matrix/CAPABILITIES.md` CAP-001…035, `matrix/INTEGRATIONS.md` INT-001…037, `matrix/FACTORY.md`), inventories regenerated 2026-08-08T21:00Z, live probe 2026-08-15T15:3xZ (`npx tsx scripts/company-scoreboard-probe.ts`).
-**Demand side:** [REQUIREMENTS.md](REQUIREMENTS.md) — 203 harvested Matt directives, each dispositioned; MISSING/PARTIAL rows cite the gap below that carries them (G57 forbids shrinkage on both files).
+**Max:** G28 · M6 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
+**Process:** THE LOOP v1.5.1 §Company versions (`docs/DEVELOPMENT_PROCESS.md`)
+**Substrate:** the Enterprise Map matrices (`matrix/CAPABILITIES.md` CAP-001…035, `matrix/INTEGRATIONS.md` INT-001…037, `matrix/FACTORY.md`), inventories regenerated 2026-08-08T21:00Z; live figures carry their own stamps in `COMPANY_SCOREBOARD.md` (single source — counts are not restated here).
+**Demand side:** [REQUIREMENTS.md](REQUIREMENTS.md) — every harvested Matt directive, dispositioned; the current count and split live in that file's G57 gate output, not here. MISSING/PARTIAL rows cite the gap below that carries them.
 
 ## Why versions exist
 
@@ -78,6 +79,9 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | G23 | Email residue kill: stop FUB/Beacon archived nurture sends via connected Gmail; purge FUB vocabulary and dead keys | REQUIREMENTS R-147 | nurture |
 | G24 | Admin dark mode: both themes ship and are reachable | REQUIREMENTS R-116 | broker-tools |
 | G25 | Social fan-out calendar (build side): one idea becomes per-channel variants, Loop G draft-first calendar on Today; publishes stay approval-gated | REQUIREMENTS R-186 | social-presence |
+| G26 | Email tracking completeness: route the four untracked send paths (sequence SMS-to-email fallback, home-valuation CMA delivery + acknowledgment, admin one-off composer, CMA request confirmation) through `attributeOutbound`/track | REQUIREMENTS R-137; adversarial audit 2026-08-15 | nurture |
+| G27 | Coming Soon count truth: pulse `active_count` includes Coming Soon by design while R-025 says exclude — either exclude from the served for-sale counts or label the definition explicitly on every surface (Matt may pick); §0 blast-radius: dal-stat, public-site, reporting | REQUIREMENTS R-025; audit 2026-08-15 | sales-insights |
+| G28 | Referral fee reaches the money math: `inboundFeePct` (recorded 25%) currently write-only — wire it into `tc_commissions.referral_fee` when a referred person's deal closes | REQUIREMENTS R-203; audit 2026-08-15 | transactions |
 
 Matt-only (the complete list of human dependencies for v1 — nothing else waits on you):
 
@@ -104,7 +108,7 @@ There is no OAuth reconnect task. Tokens self-renew by design (Matt 2026-08-15: 
 
 ## Rules
 
-- **One open class per domain; stranded domains are frozen** — enforced in code, not prose (`lib/data/loop/ledger.ts`).
+- **One open class per domain; stranded domains are frozen** — enforced twice: in the DAL (`lib/data/loop/ledger.ts`, fail-closed on unreadable ledger) and at the database (`site_improvement_ledger_guard` trigger, migration 20260815210000), so no writer bypasses it. Work-node transitions are likewise trigger-enforced (`loop_work_nodes_guard`).
 - **The weekly packet leads with version progress**: gaps closed / remaining, floor violations, stranded windows.
 - **No side manifests.** This file is the version; v2 supersedes it inside this package. A "version plan" anywhere else is a rogue plan (G44).
 - **Blast-radius still applies per class** (`docs/plans/COMPANY_IMPROVEMENT.md`): the version is the macro accept; each class still names its planes and accepts against its goal type.

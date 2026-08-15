@@ -77,8 +77,17 @@ for (const int of redInts) {
   }
 }
 
-// 4. Numbering continuity — deletion protection.
-function continuity(prefix) {
+// 4. Numbering continuity + tail pin — deletion protection. The adversarial
+// audit (2026-08-15) proved deleting the HIGHEST-numbered row was invisible
+// when max derived from surviving rows. The manifest must declare its own
+// maxima in a "**Max:** Gnn · Mnn" header line; the gate cross-checks both
+// directions (declared < actual = stale header; actual < declared = deleted
+// tail). The declared max may only grow.
+const maxHeader = manifest.match(/^\*\*Max:\*\*\s*G(\d+)\s*·\s*M(\d+)/m)
+if (!maxHeader) {
+  fails.push(`${MANIFEST}: missing the "**Max:** Gnn · Mnn" pin line — without it, tail-row deletion is invisible`)
+}
+function continuity(prefix, declaredMax) {
   const ids = [...manifest.matchAll(new RegExp(`^\\|\\s*${prefix}(\\d+)\\s*\\|`, 'gm'))].map((m) =>
     Number(m[1]),
   )
@@ -86,20 +95,30 @@ function continuity(prefix) {
     fails.push(`${MANIFEST}: no ${prefix}-rows found — the gap table is the plan; it cannot be empty`)
     return
   }
-  const max = Math.max(...ids)
-  for (let i = 1; i <= max; i++) {
+  const actualMax = Math.max(...ids)
+  if (declaredMax != null) {
+    if (actualMax < declaredMax) {
+      fails.push(
+        `${MANIFEST}: Max pin declares ${prefix}${declaredMax} but the highest row present is ${prefix}${actualMax} — tail row(s) were deleted instead of closed or parked`,
+      )
+    } else if (actualMax > declaredMax) {
+      fails.push(`${MANIFEST}: rows reach ${prefix}${actualMax} but the Max pin says ${prefix}${declaredMax} — update the pin in the same change`)
+    }
+  }
+  const limit = Math.max(actualMax, declaredMax ?? 0)
+  for (let i = 1; i <= limit; i++) {
     if (!ids.includes(i)) {
       fails.push(
-        `${MANIFEST}: ${prefix}${i} is missing while ${prefix}${max} exists — a row was deleted instead of being closed with evidence (DONE + date) or PARKED`,
+        `${MANIFEST}: ${prefix}${i} is missing while ${prefix}${limit} exists — a row was deleted instead of being closed with evidence (DONE + date) or PARKED`,
       )
     }
   }
 }
-continuity('G')
-continuity('M')
+continuity('G', maxHeader ? Number(maxHeader[1]) : null)
+continuity('M', maxHeader ? Number(maxHeader[2]) : null)
 
-// 5. DONE rows carry date evidence.
-for (const m of manifest.matchAll(/^\|\s*(G\d+)\s*\|([^\n]*)$/gm)) {
+// 5. DONE rows carry date evidence — G AND M rows (audit: M rows escaped this).
+for (const m of manifest.matchAll(/^\|\s*([GM]\d+)\s*\|([^\n]*)$/gm)) {
   const [, id, rest] = m
   if (/\bDONE\b/.test(rest) && !/\b\d{4}-\d{2}-\d{2}\b/.test(rest)) {
     fails.push(`${MANIFEST}: ${id} claims DONE without a date — evidence or it did not happen`)

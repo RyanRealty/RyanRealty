@@ -1,6 +1,6 @@
 # DAL function index
 
-**Generated:** 2026-08-15T18:55:01.497Z
+**Generated:** 2026-08-15T21:01:08.541Z
 
 **Source of truth:** auto-generated from `lib/data/**/*.ts`. Do NOT hand-edit. Re-run `npm run ci:data-access -- --refresh` to regenerate.
 
@@ -2556,7 +2556,7 @@ Companion files:
 
 ### `lib/data/loop/domains.ts`
 
-**Exports:** `COMPANY_BLAST_RADIUS`, `COMPANY_IMPROVEMENT_DOMAINS`, `isCompanyImprovementDomain`, `assertCompanyDomain`, `confidenceFromVerdicts`, `scoreCandidate`
+**Exports:** `COMPANY_BLAST_RADIUS`, `COMPANY_IMPROVEMENT_DOMAINS`, `isCompanyImprovementDomain`, `assertCompanyDomain`, `DOMAIN_REQUIRED_READS`, `confidenceFromVerdicts`, `scoreCandidate`
 
 ---
 
@@ -2572,7 +2572,7 @@ Companion files:
 
 **Tables:** `site_improvement_ledger`
 
-**Selected columns:** `id`, `domain`, `change_class`, `surface`, `description`, `metric`, `baseline_value`, `predicted_delta`, `actual_delta`, `window_days`, `shipped_at`, `measured_at`, `verdict`, `commit_sha`
+**Selected columns:** `id`, `shipped_at`, `window_days`, `actual_delta`, `domain`, `change_class`, `surface`, `description`, `metric`, `baseline_value`, `predicted_delta`, `measured_at`, `verdict`, `commit_sha`
 
 ---
 
