@@ -71,11 +71,47 @@ Do not add a thirteenth domain. These are the surfaces Matt named, mapped onto t
 
 Closed domain set in code: `COMPANY_IMPROVEMENT_DOMAINS`. An unknown domain fails the insert.
 
+## Accept against the goal (this is the test)
+
+A class is a software change with a hypothesis, not a vibe. Before work starts, the ledger row must name:
+
+1. **Domain** and **change_class**
+2. **Goal type** (one primary): visual · performance · behavior · data · ops
+3. **Metric** + **baseline** + **predicted_delta** + **window**
+4. **Blast-radius planes** that must be caught up when this ships
+
+Then we do the class. Then we **accept or it is not done**. Gates and `npm test` are the floor. They are not the accept.
+
+| Goal type | Accept (must show) | Not accept |
+|---|---|---|
+| **visual** | 390 + 1280 screenshots of every named surface, after the change, against the stated look. Mobile and desktop. | “It builds.” A desktop-only crop. |
+| **performance** | The named CWV / LCP / TTFB number on the named route, after deploy, vs the baseline on the ledger row. | Lighthouse on localhost only. |
+| **behavior** | The user path works signed-out and signed-in, empty and full, on the real data. CRM / search / alerts / identity as named. | A unit test that never opened the page. |
+| **data** | §0 trace per figure. Same DAL on every plane that shows the number. Methodology stamp on the served row. | A second query that “looks right.” |
+| **ops** | Delta / deploy / token / cron in the state the diagnose rule required (READY, healthy, not expired). | Push succeeded, production not checked. |
+
+A true software organization does the same thing: ticket states the accept test, CI is the ratchet, the review is “did we hit the goal,” and nothing is Done while sibling surfaces are still on the old contract.
+
+### Holistic catch-up (the stranded-work rule)
+
+The failure mode this section exists to kill: we go deep on one change, the rest of the product does not know, and something stays broken or half-wired.
+
+A class is **not done** while any of these is true:
+
+- A named blast-radius plane still reads the old definition (site has the new stat, reporting does not; filter is in the sheet, `listing_alerts` cannot use it; visitor is tracked, `crm_people` is not).
+- The ledger row has no `actual_delta` after the window ended.
+- The weekly packet still says UNKNOWN for a signal this class claimed to fix.
+- Production is not READY for the SHA, or hosted schema lags the code.
+
+WIP limit: **one open class per domain.** Close it (accept + Learn) or kill it (ledger verdict + reason). Do not start a second class in a domain that still has expired, unlearned windows. That is how ad-hoc piles up.
+
+Weekly packet job 1 is not “what is new.” It is **close expired windows, list stranded classes, then pick the next score.**
+
 ## Cadence
 
 | When | Who | What |
 |---|---|---|
-| Continuous | Agent on the winning domain | One class per cycle, on every named blast-radius plane. Grind until blocked on Matt, a measurement window, or an empty score. |
+| Continuous | Agent on the winning domain | One class per cycle, on every named blast-radius plane. Accept against the goal before calling it done. Grind until blocked on Matt, a measurement window, or an empty score. |
 | Daily | Substrate + Sense | Sync, pulse, tokens, deploy, money-path smoke, identity stitch health. |
 | Weekly | Orchestrator | Overwrite [COMPANY_SCOREBOARD.md](COMPANY_SCOREBOARD.md). Close learn rows whose windows ended. Re-score. |
 | Monthly | `/deep-audit` | Stuck rows, dark crons, expired tokens, drifted skills, unused polygons, alert send gaps. |
@@ -103,6 +139,9 @@ Matt reads the weekly packet. He says yes only to outbound to real people, publi
 - Silent social posting or SkySlope cutover
 - Invent a second identity table or a second stats engine
 - Send listing alerts from `saved_searches`
+- Call a class done because CI passed
+- Start a new class in a domain that has expired, unlearned ledger windows
+- Leave a blast-radius plane on the old contract
 
 ## First code
 
