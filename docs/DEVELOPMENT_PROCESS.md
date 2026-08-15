@@ -1,6 +1,6 @@
 # THE LOOP — the canonical development process
 
-**Version: 1.2.1** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
+**Version: 1.3.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Company versions 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
 
 All development in this repo — site code, the marketing brain, cron agents, producers, every Claude Code session — routes through this one self-improving cycle. This document is the single source of truth for HOW work happens. The sync gate (`scripts/check-process-canon.mjs`, G44) fails the build if the entry points stop pointing here, if a pointer's version drifts from this header, or if a new plan doc lands unregistered.
 
@@ -26,6 +26,27 @@ ingest -> diagnose -> prioritize -> fix-the-class -> verify -> ship -> measure -
 8. **Learn.** After the window closes, write `actual_delta` and a verdict. A domain with open windows whose dates have passed is not allowed to start a new class until those rows are closed. That is how ad-hoc work stops sitting half-done. Mispredictions sharpen confidence.
 9. **Lock.** Every fix that killed a class adds or tightens a mechanical gate so it cannot recur. A win that can silently regress is incomplete work. Catalog: `docs/MECHANICAL_GATES.md`.
 10. **Compete.** A standing benchmark of rankings / CTR / conversion vs named competitors on target queries. The gap to the leader feeds the value function, so the loop preferentially attacks where we are losing.
+
+## Company versions (the release baseline)
+
+The cycle ships continuously; **versions certify the whole company together.** A company
+version is a floor across every capability and integration in the Enterprise Map
+(`docs/plans/ENTERPRISE_MAP/matrix/`), verified in one certification pass. This is what
+stops forward-regress: between certifications the loop grinds classes as usual, but the
+version defines what "everything caught up" means, and certification is the forcing
+function that finds stranded seams.
+
+- **Manifest:** `docs/plans/ENTERPRISE_MAP/VERSION-1.md` — the current version's floor,
+  gap list (agent-executable vs Matt-only), and certification checklist. One manifest at
+  a time; a version plan anywhere else is a rogue plan.
+- **Floor shape:** no capability below Working (3) without Matt's PARK sign-off; zero red
+  integrations; zero expired unlearned ledger windows; zero UNKNOWN on claimed-fixed
+  packet signals; production parity. Exact conditions live in the manifest, not here.
+- **Mechanical teeth:** `insertImprovementLedgerRow` refuses a new class in a domain with
+  expired unlearned windows; `closeImprovementLedgerRow` is the Learn step
+  (`lib/data/loop/ledger.ts`); the packet probe counts `expiredUnlearned` per domain.
+- **The weekly packet leads with version progress.** Versions close on **conditions,
+  never dates** (§0: an invented timeline is a fabricated number).
 
 ## Loop topology (locked 2026-06-10)
 
@@ -122,7 +143,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `CMA_PIPELINE_TO_PRODUCTION_2026-07-30.md` | **live** — end-to-end goal for taking the CMA/BPO pipeline to production grade (registered here by a sibling session's request; owner is that session) |
 | `WESTSIDE_BACKLOG.md` | **live** — west-side dominance ranked backlog, generated 2026-07-28 from live competitor/market data |
 | `MOBILE_GRIND/` | **live** — mobile-audit defect-CLASS remediation package (state machine, per-class census tables, ledger). Matt's 2026-08-06 iPhone pass produced ~19 reported defects; each is treated as a sample of a class, so every step is census-first (enumerate every instance repo-wide) → fix all → gate the class. Every file within is covered by this row. |
-| `COMPANY_IMPROVEMENT.md` | **live** — THE LOOP v1.2.1 addendum: company domains, named surfaces, blast-radius, diagnose rules, cadence. Not a new OS. |
+| `COMPANY_IMPROVEMENT.md` | **live** — THE LOOP company addendum: company domains, named surfaces, blast-radius, diagnose rules, accept-against-goal, cadence. Not a new OS. |
 | `COMPANY_SCOREBOARD.md` | **live** — weekly company packet (overwrite, do not date-stamp a novel). Start ritual with SESSION_HANDOFF. |
 | `CROSS_AGENT_HANDOFF.md` | session-continuity (required agent handoff protocol) |
 | `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission |
@@ -141,6 +162,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.3.0 (2026-08-15)** — Company versions: release-baseline discipline over the Enterprise Map. Manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md` (floor, gap list, certification). Learn made mechanical: `closeImprovementLedgerRow` + a guard that refuses a new class in a domain with expired unlearned windows; packet probe counts stranded windows per domain.
 - **1.2.1 (2026-08-15)** — Holistic blast-radius: a change names DAL, public site, admin/CRM, reporting, alerts/newsletters, ads audiences, and identity before it starts. Named surfaces (search, alerts, polygons, CMA look, Spark efficiency, identity stitch) score on the existing 12 domains. No new OS.
 - **1.2.0 (2026-08-15)** — Company ingest: THE LOOP scores every domain (not only Growth/SEO). Weekly packet `COMPANY_SCOREBOARD.md`, addendum `COMPANY_IMPROVEMENT.md`, `site_improvement_ledger.domain`. Five standing loops unchanged. No sixth session. No new OS.
 - **1.1.0 (2026-06-10)** — Loop topology locked: five domain loops (Growth, Demand, Nurture, Transaction, Experience) over one shared spine + cron substrate; one session per loop; contact-journey stage as the cross-loop funnel object; collision and session-discipline rules.

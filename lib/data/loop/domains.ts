@@ -1,5 +1,5 @@
 /**
- * Company-wide THE LOOP domains (v1.2.1).
+ * Company-wide THE LOOP domains (v1.3.0).
  *
  * Growth/SEO is one row. A class that cannot name a domain here is not
  * company work — it is an ad-hoc task. Canon: docs/plans/COMPANY_IMPROVEMENT.md

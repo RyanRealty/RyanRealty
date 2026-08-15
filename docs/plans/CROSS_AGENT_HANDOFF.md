@@ -1,16 +1,22 @@
-> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.2.1):** `docs/plans/COMPANY_SCOREBOARD.md` + `docs/plans/COMPANY_IMPROVEMENT.md`. Blast-radius required. Full open list: `ALL-OPEN-ITEMS.md`.
+> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.3.0):** `docs/plans/COMPANY_SCOREBOARD.md` + `docs/plans/COMPANY_IMPROVEMENT.md` + version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical). Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — accept against the goal
+# Current — 2026-08-15 (Grok) — Company v1: versions over the map, Learn made mechanical
 
-**Matt:** Does the process test? Goal, then check. Visual vs perf vs behavior. Holistic catch-up so ad-hoc work does not strand.
+**Matt:** Fast answers keep leaving ad-hoc drift; the whole product never reaches "a new version" together. Wants the comprehensive, granular, holistic process.
 
-**Done:** COMPANY_IMPROVEMENT §Accept. Ledger row is the hypothesis. Accept by goal type. One open class per domain. Expired unlearned windows block a new class in that domain. No product code.
+**Done (THE LOOP v1.3.0):**
+- **`docs/plans/ENTERPRISE_MAP/VERSION-1.md`** — Company v1 manifest: six-layer plain-language census over CAP/INT matrices, the 7-condition floor, 14 agent gaps (G1–G14) + 7 Matt moves (M1–M7), certification pass. Versions close on conditions, never dates.
+- **Learn mechanical** in `lib/data/loop/`: `closeImprovementLedgerRow` (writes actual_delta+verdict+measured_at); `insertImprovementLedgerRow` refuses a domain with expired unlearned windows; `listExpiredUnlearnedWindows`; pure `windowEndsAt`/`isExpiredUnlearned` + tests (30 pass). Probe/packet now counts `expiredUnlearned` per domain.
+- Canon v1.3.0 §Company versions + changelog; pointers bumped (CLAUDE, TEMPLATE, producer-output-class, addendum, scoreboard, SESSION_HANDOFF, growth-loop SKILL, domains.ts). G44 green, 262 plan docs registered.
+- Live probe 2026-08-15T15:3xZ: **11 of 12 open windows expired-unlearned, all `seo-aeo` → domain frozen until Learn closes them.** TikTok token expires 2026-08-16T12:00Z (G14). Meta audience heartbeat first green 14:03Z (G11).
 
-**SHA:** `649c0a79` (docs). Feature `2ac16199` already on `origin/main`.
+**Next:** G1 (close the 11 seo-aeo windows from GSC actuals) unfreezes SEO. Then the scored queue: G2 identity stitch (1/164), G3 Lead stage 0, G4 alerts coverage. Matt moves listed in VERSION-1 §M.
 
-**Skills read:** COMPANY_IMPROVEMENT, DEVELOPMENT_PROCESS.
+**SHA:** see this commit. Prior `649c0a79`, `7d4a7256` on origin.
+
+**Skills read:** growth-loop, COMPANY_IMPROVEMENT, DEVELOPMENT_PROCESS, ENTERPRISE_MAP SESSION_HANDOFF + matrices, TDD.
 
 # Prior — 2026-08-15 (Grok) — finish the place-family indexes
 

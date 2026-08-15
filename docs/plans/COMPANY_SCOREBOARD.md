@@ -1,6 +1,7 @@
 # Company scoreboard — weekly packet
 
-**Process:** [COMPANY_IMPROVEMENT.md](COMPANY_IMPROVEMENT.md) (THE LOOP v1.2.1)  
+**Process:** [COMPANY_IMPROVEMENT.md](COMPANY_IMPROVEMENT.md) (THE LOOP v1.3.0)  
+**Version target:** [ENTERPRISE_MAP/VERSION-1.md](ENTERPRISE_MAP/VERSION-1.md) — lead with version progress.  
 **Overwrite this file each week.** Do not start a dated novel.  
 **Rule:** if a domain has no number, write **UNKNOWN** and the query that failed. Unreadable ≠ 0.
 
@@ -10,6 +11,17 @@
 **DAL:** `collectCompanyScoreboardSignals` in `lib/data/loop/signals.ts`
 
 ---
+
+## 0. Company version progress (probe 2026-08-15T15:3xZ)
+
+| Figure | Value | Source |
+|---|---|---|
+| Version | **v1 OPEN** — 0 of 14 agent gaps closed, 0 of 7 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list |
+| Stranded ledger windows | **11** expired unlearned, all `seo-aeo` (domain frozen by the insert guard until Learn closes them) | probe `ledger.expiredUnlearned` / `expiredByDomain` |
+| Capabilities below Working floor | **7** (TC, video, social OAuth, broker platform, westside, Grok memory, SMS agent) | `ENTERPRISE_MAP/matrix/CAPABILITIES.md` 2026-08-08 close |
+| Red integrations | **4** — GBP, LinkedIn, YouTube, X (all Matt OAuth) | `ENTERPRISE_MAP/matrix/INTEGRATIONS.md` + probe tokens |
+| TikTok token | valid, **expires 2026-08-16T12:00Z** — verify auto-refresh (gap G14) | probe `social.tokens` |
+| Meta audience heartbeat | first green run **2026-08-15T14:03Z** — hold 7 days then flip FIX→KEEP (gap G11) | `meta_audience_log.ran_at` |
 
 ## 1. Money and license
 
@@ -52,10 +64,10 @@
 
 ## 3. What is measuring
 
-| Ledger row | Domain | Window closes | Metric |
+| Ledger row | Domain | Window state | Metric |
 |---|---|---|---|
-| 11 open `seo-aeo` | seo-aeo | UNKNOWN per-row until Learn writes `actual_delta` | `actual_delta` is null |
-| `ba3435dd` factory | factory | 14d from `7c2bca5c` | `non_seo_domains_in_ledger` |
+| 11 open `seo-aeo` | seo-aeo | **EXPIRED unlearned** (probe 2026-08-15T15:3xZ) — Learn is the only legal next `seo-aeo` work; the insert guard refuses new classes | `actual_delta` is null |
+| `ba3435dd` factory | factory | open, inside window (14d from `7c2bca5c`) | `non_seo_domains_in_ledger` |
 
 ## 4. What is rotting (top residuals)
 

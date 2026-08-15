@@ -6,7 +6,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { confidenceFromVerdicts, type CompanyImprovementDomain, type LedgerVerdict } from './domains'
-import { assertLedgerDraft, type ImprovementLedgerDraft } from './ledger-draft'
+import { assertLedgerDraft, isExpiredUnlearned, type ImprovementLedgerDraft } from './ledger-draft'
 
 export type { ImprovementLedgerDraft }
 
@@ -37,6 +37,17 @@ export async function insertImprovementLedgerRow(
   try {
     assertLedgerDraft(draft)
     const sb = createServiceClient()
+    // WIP guard (THE LOOP v1.3.0): a domain with stranded windows may not open
+    // a new class. Close the old hypothesis (closeImprovementLedgerRow) first —
+    // 'inconclusive' is a legal verdict when the metric became unmeasurable.
+    const stranded = await listExpiredUnlearnedWindows({ domain: draft.domain })
+    if (stranded.length > 0) {
+      const ids = stranded.map((r) => r.id).join(', ')
+      return {
+        data: null,
+        error: `domain "${draft.domain}" has ${stranded.length} expired unlearned window(s) — write actual_delta + verdict via closeImprovementLedgerRow before opening a new class. Stranded ids: ${ids}`,
+      }
+    }
     const { data, error } = await sb
       .from('site_improvement_ledger')
       .insert({
@@ -78,6 +89,61 @@ export async function listOpenImprovementWindows(): Promise<ImprovementLedgerRow
     return []
   }
   return (data ?? []).map(mapRow)
+}
+
+/** Open rows whose measurement window has lapsed — the stranded work the weekly packet closes first. */
+export async function listExpiredUnlearnedWindows(input?: {
+  domain?: CompanyImprovementDomain
+  now?: Date
+}): Promise<ImprovementLedgerRow[]> {
+  const now = input?.now ?? new Date()
+  const open = await listOpenImprovementWindows()
+  return open.filter(
+    (r) =>
+      (!input?.domain || r.domain === input.domain) &&
+      isExpiredUnlearned(
+        { shippedAt: r.shippedAt, windowDays: r.windowDays, actualDelta: r.actualDelta },
+        now,
+      ),
+  )
+}
+
+/**
+ * The Learn step, mechanical. Writes the measured outcome and verdict so the
+ * class is closed and the domain may open its next class.
+ */
+export async function closeImprovementLedgerRow(input: {
+  id: string
+  actualDelta: number
+  verdict: LedgerVerdict
+  notes?: string | null
+}): Promise<{ data: { id: string } | null; error: string | null }> {
+  try {
+    if (!input.id.trim()) return { data: null, error: 'id is required' }
+    if (!Number.isFinite(input.actualDelta)) return { data: null, error: 'actualDelta must be a finite number' }
+    if (!isVerdict(input.verdict)) return { data: null, error: `unknown verdict "${input.verdict}"` }
+    const sb = createServiceClient()
+    const patch: Record<string, unknown> = {
+      actual_delta: input.actualDelta,
+      verdict: input.verdict,
+      measured_at: new Date().toISOString(),
+    }
+    if (input.notes != null) patch.notes = input.notes
+    const { data, error } = await sb
+      .from('site_improvement_ledger')
+      .update(patch)
+      .eq('id', input.id)
+      .select('id')
+      .single()
+    if (error || !data?.id) {
+      console.error('[closeImprovementLedgerRow]', error?.message)
+      return { data: null, error: error?.message ?? 'update matched no row' }
+    }
+    return { data: { id: data.id as string }, error: null }
+  } catch (err) {
+    console.error('[closeImprovementLedgerRow]', err)
+    return { data: null, error: err instanceof Error ? err.message : 'close failed' }
+  }
 }
 
 export async function getChangeClassConfidence(input: {

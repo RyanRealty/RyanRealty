@@ -6,6 +6,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { isExpiredUnlearned } from './ledger-draft'
+
 export type SignalStatus = 'ok' | 'unreadable'
 
 export type CountByKey = Record<string, number>
@@ -54,6 +56,8 @@ export type CompanyScoreboardSignals = {
     status: SignalStatus
     rows: number
     openWindows: number
+    expiredUnlearned: number
+    expiredByDomain: CountByKey
     byDomain: CountByKey
     source: string
   }
@@ -210,7 +214,7 @@ export async function collectCompanyScoreboardSignals(
     sb.from('marketing_brain_actions').select('status'),
     sb.from('sync_state').select('last_delta_sync_at,last_full_sync_at').eq('id', 'default').maybeSingle(),
     sb.from('tc_commissions').select('status,gci'),
-    sb.from('site_improvement_ledger').select('domain,actual_delta'),
+    sb.from('site_improvement_ledger').select('domain,actual_delta,shipped_at,window_days'),
     sb.from('newsletter_subscribers').select('id', { count: 'exact', head: true }),
     sb.from('brokers').select('id', { count: 'exact', head: true }),
     sb.from('market_pulse_live').select('methodology_version'),
@@ -302,14 +306,29 @@ export async function collectCompanyScoreboardSignals(
     status: ledgerRes.error ? 'unreadable' : 'ok',
     rows: 0,
     openWindows: 0,
+    expiredUnlearned: 0,
+    expiredByDomain: {},
     byDomain: {},
-    source: 'site_improvement_ledger.domain + actual_delta',
+    source: 'site_improvement_ledger.domain + actual_delta + shipped_at + window_days',
   }
   if (!ledgerRes.error && ledgerRes.data) {
     ledger.rows = ledgerRes.data.length
     for (const row of ledgerRes.data) {
-      bump(ledger.byDomain, (row.domain as string | null) || '(null)')
+      const domain = (row.domain as string | null) || '(null)'
+      bump(ledger.byDomain, domain)
       if (row.actual_delta == null) ledger.openWindows += 1
+      const stranded = isExpiredUnlearned(
+        {
+          shippedAt: String(row.shipped_at ?? fetchedAt),
+          windowDays: Number(row.window_days ?? 14),
+          actualDelta: row.actual_delta == null ? null : Number(row.actual_delta),
+        },
+        now,
+      )
+      if (stranded) {
+        ledger.expiredUnlearned += 1
+        bump(ledger.expiredByDomain, domain)
+      }
     }
   }
 

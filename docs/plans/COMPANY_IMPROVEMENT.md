@@ -1,6 +1,6 @@
 # Company improvement — THE LOOP addendum
 
-**Version:** THE LOOP v1.2.1  
+**Version:** THE LOOP v1.3.0  
 **Canon:** [docs/DEVELOPMENT_PROCESS.md](../DEVELOPMENT_PROCESS.md)  
 **Weekly packet:** [COMPANY_SCOREBOARD.md](COMPANY_SCOREBOARD.md)  
 **Universe:** [ENTERPRISE_MAP](ENTERPRISE_MAP/SESSION_HANDOFF.md) CAP / INT / FAC  
@@ -106,6 +106,16 @@ A class is **not done** while any of these is true:
 WIP limit: **one open class per domain.** Close it (accept + Learn) or kill it (ledger verdict + reason). Do not start a second class in a domain that still has expired, unlearned windows. That is how ad-hoc piles up.
 
 Weekly packet job 1 is not “what is new.” It is **close expired windows, list stranded classes, then pick the next score.**
+
+### Company versions (the macro accept)
+
+Per-class accept keeps one change honest; the **company version** keeps the whole system
+honest. Manifest: [ENTERPRISE_MAP/VERSION-1.md](ENTERPRISE_MAP/VERSION-1.md) — the floor
+every capability and integration must meet, the granular gap list, and the certification
+pass that flips it to CERTIFIED in one commit. The stranded-domain rule above is enforced
+in code: `insertImprovementLedgerRow` refuses a domain with expired unlearned windows,
+and `closeImprovementLedgerRow` writes the Learn (`lib/data/loop/ledger.ts`). The packet
+probe reports `expiredUnlearned` per domain so job 1 has a number, not a vibe.
 
 ## Cadence
 
