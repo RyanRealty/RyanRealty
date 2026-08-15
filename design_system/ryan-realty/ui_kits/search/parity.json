@@ -11,6 +11,11 @@
       "blocking": true
     },
     {
+      "name": "SentenceSearch",
+      "section": "Typed sentence writes the same URL params the chips already understand. No chat bubble.",
+      "blocking": true
+    },
+    {
       "name": "MapSearchView",
       "section": "split map + results with search-as-you-move (mockup: map-split). This is the Homes Field.",
       "blocking": true

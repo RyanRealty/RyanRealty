@@ -52,6 +52,7 @@ function bboxFromGeometry(
   return { west, south, east, north }
 }
 import SearchFilters from '@/components/search/SearchFilters'
+import SentenceSearch from '@/components/search/SentenceSearch'
 import SearchResults from '@/components/search/SearchResults'
 import MapSearchView from '@/components/search/MapSearchView'
 import HideAwareSearchMap from '@/components/search/HideAwareSearchMap'
@@ -388,6 +389,7 @@ export default async function SearchPage({
         <h1 className="truncate px-4 pt-2 font-display text-sm font-medium leading-5 text-foreground sm:px-6">
           {h1Text}
         </h1>
+        <SentenceSearch />
         <SearchFilters initialFilters={initialFiltersFromUrl} signedIn={!!session?.user} />
       </div>
       {/* Guest listing-alert capture for all views.
