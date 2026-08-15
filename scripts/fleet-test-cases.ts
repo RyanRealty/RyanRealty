@@ -127,10 +127,36 @@ async function main() {
       expected: `Record CURRENT state for upcoming work "${n.title}" [${n.domain}]. The accept it will eventually meet: ${n.accept}. Do not report the gap itself as a defect — report only NEW breakage you find while walking it, and note observed baseline facts as severity info.`,
     }))
 
+  const FLOW_IDENTITY =
+    'Identity for ALL submits in this pack (the ONLY identity you may ever submit with): name "Fleet Test", email fleet-test+flow@ryan-realty.com, phone 500-555-0106. The system recognizes it and suppresses every side effect.'
+  const flows = [
+    {
+      id: 'flow-newsletter',
+      url: `${PROD}/`,
+      expected: `Find the newsletter signup (footer or /newsletter). Submit it with the fleet identity. Expected: a clear confirmation state (subscribed / check-your-email style), no error, no crash. ${FLOW_IDENTITY}`,
+    },
+    {
+      id: 'flow-valuation',
+      url: `${PROD}/sell`,
+      expected: `Complete the valuation: step 1 a real Bend address (e.g. 61855 SE Sweet Pea Pl style — any address visible on the site's own listings), step 2 the fleet identity email + phone. SUBMIT it. Expected: a confirmation telling you what happens next (written valuation within 24 hours language), no error page. ${FLOW_IDENTITY}`,
+    },
+    {
+      id: 'flow-listing-contact',
+      url: `${PROD}/homes-for-sale`,
+      expected: `Open any listing, use the contact/tour CTA, fill with the fleet identity, SUBMIT. Expected: a human-readable confirmation, no raw error, the page stays usable after. ${FLOW_IDENTITY}`,
+    },
+    {
+      id: 'flow-alert-save',
+      url: `${PROD}/homes-for-sale`,
+      expected: `Apply one filter, then use Save search / Alerts. Follow whatever the UI asks (email capture or sign-in prompt) using the fleet identity email. Expected: the flow completes to an explicit confirmation OR clearly explains its requirement (a sign-in prompt is a valid state — report the path you saw as severity info). ${FLOW_IDENTITY}`,
+    },
+  ]
+
   const packs: Array<{ name: string; cases: Array<{ id: string; url: string; expected: string; note?: string }> }> = [
     { name: 'core', cases: [...CORE_CASES] },
     { name: 'regression', cases: regression },
     { name: 'preflight', cases: preflight },
+    { name: 'flows', cases: flows },
   ]
 
   for (const pack of packs) {

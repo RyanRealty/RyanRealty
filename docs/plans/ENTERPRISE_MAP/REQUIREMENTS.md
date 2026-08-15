@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-207 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-208 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -294,7 +294,8 @@
 | R-204 | Per-node expertise: every domain names required reads; the brief prints them under the next node; no animal is worked cold | Matt 2026-08-15 (versioning Q&A) | VERIFIED | `DOMAIN_REQUIRED_READS` + existence tests |
 | R-205 | Steering verbs ADD/CHANGE/STOP: any Matt word lands as durable state in the same delivery; stops are terminal and remembered; blocked ≠ stopped — the loop routes around humans | Matt 2026-08-15 (versioning Q&A) | LOCKED | COMPANY_IMPROVEMENT §How Matt steers |
 | R-206 | Calendar-scheduled unattended loop iterations (no human "Run the loop" trigger) | Matt 2026-08-15 (raised, undecided) | GATED | Matt yes/no; until then a session grinds until blocked |
-| R-207 | External verification fleet: grok bots browse production like users on routines; findings feed the work graph mechanically (reproduce-or-reject); a version certifies only on a clean fleet pass; analytics sign-in and form-E2E lanes stay Matt-gated | Matt 2026-08-15 (self-feeding loop) | PARTIAL | G29 — machinery live (endpoint, packs, intake, briefs); bots not yet created in the app |
+| R-207 | External verification fleet: grok bots browse production like users on routines; findings feed the work graph mechanically (reproduce-or-reject); a version certifies only on a clean fleet pass; analytics sign-in stays Matt-gated | Matt 2026-08-15 (self-feeding loop) | PARTIAL | G29 — machinery live (endpoint, packs, intake, briefs); bots not yet created in the app |
+| R-208 | Bots test the system like humans end-to-end including real submits (newsletter, valuation, listing contact, alert save) and the workflows behind them — via the designated fleet test identity with all side effects neutralized; admin-side effects verified by the loop | Matt 2026-08-15 ("use the system like a human, catch all use cases") | VERIFIED | G30 done — four chokepoint guards proven live (fixture 61855); Flow Prover brief + flows pack + fleet-flow-verify shipped |
 
 ## Standing Matt gates (never agent-closed)
 

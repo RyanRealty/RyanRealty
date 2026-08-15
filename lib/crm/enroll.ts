@@ -62,6 +62,14 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
 
   const tags = (person.tags as string[]) ?? []
 
+  // Verification-fleet test identity never enrolls in anything.
+  {
+    const { hasFleetTestTag } = await import('@/lib/crm/fleet-test-identity')
+    if (hasFleetTestTag(tags)) {
+      return { enrolled: false, reason: 'fleet:test identity (verification fleet — never enroll)' }
+    }
+  }
+
   // Referral tier (W12): out-of-area referral candidates and fail-closed
   // unclassified property inquiries never enter the standard drip sequences.
   // This single gate covers BOTH the intake fire-and-forget path

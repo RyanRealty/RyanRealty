@@ -1,7 +1,7 @@
 # Company v1 — the first certified whole-company version
 
 **Status: OPEN** (flips to CERTIFIED by the certification pass below, in one commit)
-**Max:** G29 · M6 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
+**Max:** G30 · M6 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
 **Process:** THE LOOP v1.6.0 §Company versions (`docs/DEVELOPMENT_PROCESS.md`)
 **Substrate:** the Enterprise Map matrices (`matrix/CAPABILITIES.md` CAP-001…035, `matrix/INTEGRATIONS.md` INT-001…037, `matrix/FACTORY.md`), inventories regenerated 2026-08-08T21:00Z; live figures carry their own stamps in `COMPANY_SCOREBOARD.md` (single source — counts are not restated here).
 **Demand side:** [REQUIREMENTS.md](REQUIREMENTS.md) — every harvested Matt directive, dispositioned; the current count and split live in that file's G57 gate output, not here. MISSING/PARTIAL rows cite the gap below that carries them.
@@ -82,7 +82,8 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | G26 | Email tracking completeness: route the four untracked send paths (sequence SMS-to-email fallback, home-valuation CMA delivery + acknowledgment, admin one-off composer, CMA request confirmation) through `attributeOutbound`/track | REQUIREMENTS R-137; adversarial audit 2026-08-15 | nurture |
 | G27 | Coming Soon count truth: pulse `active_count` includes Coming Soon by design while R-025 says exclude — either exclude from the served for-sale counts or label the definition explicitly on every surface (Matt may pick); §0 blast-radius: dal-stat, public-site, reporting | REQUIREMENTS R-025; audit 2026-08-15 | sales-insights |
 | G28 | Referral fee reaches the money math: `inboundFeePct` (recorded 25%) currently write-only — wire it into `tc_commissions.referral_fee` when a referred person's deal closes | REQUIREMENTS R-203; audit 2026-08-15 | transactions |
-| G29 | Stand the verification fleet up: Matt creates the 5 starter bots from VERIFICATION-FLEET.md briefs; endpoint proven with a synthetic finding end-to-end (POST → table → intake → node → rejected-as-test); first core+regression pass runs | REQUIREMENTS R-207; VERIFICATION-FLEET.md | factory |
+| G29 | Stand the verification fleet up: Matt creates the 6 starter bots from VERIFICATION-FLEET.md briefs; endpoint proven with a synthetic finding end-to-end (POST → table → intake → node → rejected-as-test); first core+regression pass runs | REQUIREMENTS R-207; VERIFICATION-FLEET.md | factory |
+| G30 | **DONE 2026-08-15** — Flow Prover lane: designated fleet test identity recognized at the intake chokepoint (tag + all-channel suppression), wake-task skip, auto-enroll refusal, packet-count exclusion — all four guards proven live (fixture person 61855: tagged, suppressed, 0 tasks, enroll refused, excluded). Flows case pack + Bot 6 brief + `fleet-flow-verify` backend check shipped. | REQUIREMENTS R-208; chokepoint proof 2026-08-15 | factory |
 
 Matt-only (the complete list of human dependencies for v1 — nothing else waits on you):
 

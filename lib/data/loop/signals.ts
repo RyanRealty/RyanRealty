@@ -167,10 +167,12 @@ async function countCrmStages(
   let people = 0
   const page = 1000
   for (let from = 0; ; from += page) {
+    // fleet:test rows are verification-fleet fixtures, never business reality.
     const { data, error } = await sb
       .from('crm_people')
       .select('stage')
       .eq('deleted', false)
+      .not('tags', 'cs', '{"fleet:test"}')
       .range(from, from + page - 1)
     if (error) return { error: error.message, people: 0, byStage: {} }
     const rows = data ?? []
@@ -221,12 +223,12 @@ export async function collectCompanyScoreboardSignals(
     ...tokenResults
   ] = await Promise.all([
     countCrmStages(sb),
-    sb.from('crm_people').select('id', { count: 'exact', head: true }).eq('deleted', false).gte('created_at', since7d),
+    sb.from('crm_people').select('id', { count: 'exact', head: true }).eq('deleted', false).not('tags', 'cs', '{"fleet:test"}').gte('created_at', since7d),
     sb.from('marketing_brain_actions').select('status'),
     sb.from('sync_state').select('last_delta_sync_at,last_full_sync_at').eq('id', 'default').maybeSingle(),
     sb.from('tc_commissions').select('status,gci'),
     sb.from('site_improvement_ledger').select('domain,actual_delta,shipped_at,window_days'),
-    sb.from('newsletter_subscribers').select('id', { count: 'exact', head: true }),
+    sb.from('newsletter_subscribers').select('id', { count: 'exact', head: true }).not('email', 'ilike', '%fleet-test%'),
     sb.from('brokers').select('id', { count: 'exact', head: true }),
     sb.from('market_pulse_live').select('methodology_version'),
     sb.from('target_query_benchmark').select('query', { count: 'exact', head: true }).gte('date', since28d),
@@ -234,9 +236,9 @@ export async function collectCompanyScoreboardSignals(
     sb.from('tc_deals').select('id', { count: 'exact', head: true }),
     sb.from('skyslope_transactions').select('synced_at').order('synced_at', { ascending: false }).limit(1),
     sb.from('tc_form_catalog_items').select('id', { count: 'exact', head: true }).eq('disposition', 'updated'),
-    sb.from('listing_alerts').select('id', { count: 'exact', head: true }),
-    sb.from('listing_alerts').select('id', { count: 'exact', head: true }).eq('is_active', true),
-    sb.from('listing_alerts').select('id', { count: 'exact', head: true }).not('crm_person_id', 'is', null),
+    sb.from('listing_alerts').select('id', { count: 'exact', head: true }).not('email', 'ilike', '%fleet-test%'),
+    sb.from('listing_alerts').select('id', { count: 'exact', head: true }).eq('is_active', true).not('email', 'ilike', '%fleet-test%'),
+    sb.from('listing_alerts').select('id', { count: 'exact', head: true }).not('crm_person_id', 'is', null).not('email', 'ilike', '%fleet-test%'),
     sb.from('saved_searches').select('id', { count: 'exact', head: true }),
     sb.from('search_areas').select('id', { count: 'exact', head: true }),
     sb.from('boundaries').select('id', { count: 'exact', head: true }),

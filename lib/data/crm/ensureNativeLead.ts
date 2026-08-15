@@ -159,6 +159,15 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   const normalizedEmail = normalizeEmail(input.email)
   const normalizedPhone = normalizePhone(input.phone)
 
+  // Verification-fleet lane: the designated test identity gets tagged at THIS
+  // chokepoint (every lead path flows through here), so downstream guards
+  // (wake-task skip, auto-enroll skip, packet-count exclusion) key off one tag.
+  const { isFleetTestIdentity, FLEET_TEST_TAG } = await import('@/lib/crm/fleet-test-identity')
+  const isFleetTest = isFleetTestIdentity({ email: normalizedEmail, phone: normalizedPhone })
+  if (isFleetTest) {
+    input = { ...input, tags: [...(input.tags ?? []), FLEET_TEST_TAG] }
+  }
+
   const sb = createServiceClient()
 
   // Email-first lookup, then phone — the FUB-independent join keys.
@@ -272,6 +281,22 @@ export async function ensureNativeLead(input: EnsureNativeLeadInput): Promise<En
   )
   if (pointsError) {
     console.warn('[ensureNativeLead] crm_contact_points insert failed:', pointsError.message)
+  }
+
+  // Fleet test identity: suppress ALL channels at create so every send path
+  // (including any not yet routed through tracking) fails closed for this row.
+  if (isFleetTest) {
+    try {
+      const { addSuppression } = await import('@/lib/crm/suppressions')
+      await addSuppression({
+        personId,
+        channel: 'all',
+        reason: 'fleet:test — verification-fleet designated identity; never contact',
+        source: 'fleet-test-identity',
+      })
+    } catch (e) {
+      console.warn('[ensureNativeLead] fleet-test suppression failed:', e instanceof Error ? e.message : e)
+    }
   }
 
   return { personId, created: true }
@@ -455,6 +480,19 @@ export async function createNativeTask(input: CreateNativeTaskInput): Promise<vo
   const dueAt = new Date(Date.now() + dueInMinutes * 60 * 1000).toISOString()
   try {
     const sb = createServiceClient()
+    // Fleet test identity never wakes a broker — no call task, no phone buzz.
+    {
+      const { hasFleetTestTag } = await import('@/lib/crm/fleet-test-identity')
+      const { data: person } = await sb
+        .from('crm_people')
+        .select('tags')
+        .eq('id', input.personId)
+        .maybeSingle()
+      if (hasFleetTestTag(person?.tags)) {
+        console.log('[createNativeTask] fleet:test person — wake task skipped by design')
+        return
+      }
+    }
     // P12: person is SoT — task broker defaults from person, not the caller's guess.
     const { resolveBrokerFromPerson } = await import('@/lib/crm/assigned-broker')
     const broker =

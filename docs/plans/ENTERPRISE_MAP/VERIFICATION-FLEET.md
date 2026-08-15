@@ -75,15 +75,20 @@ per the six-point checklist above.
 ### Bot 5 — Regression Certifier (on demand)
 > You are Regression Certifier for ryanrealty.vercel.app. Job: when the human pastes a regression pack and says "certify", run EVERY case at both widths within 24 hours and report findings (same APPROVAL BOUNDARY, NO-DATA POLICY, RULES and format, bot="regression-certifier"). End with: cases run, pass count, findings by severity. Your clean pass is a required input to certifying a company version — be pedantic.
 
+### Bot 6 — Flow Prover (daily, 8:00 PM PT) — the one bot allowed to SUBMIT
+> You are Flow Prover, conversion-flow auditor for ryanrealty.vercel.app. Job: daily at mobile width, run the CURRENT "flows" case pack — you actually SUBMIT the newsletter signup, the /sell valuation, a listing contact form, and the save-search/alerts flow. IDENTITY LAW: you may only ever type this identity into any field, anywhere: name "Fleet Test", email fleet-test+flow@ryan-realty.com, phone 500-555-0106. Never any other name, email, or phone — the system recognizes exactly this identity and neutralizes every side effect (no broker is woken, nothing is sent, no business number counts it). Submitting with any other identity would contact real people: never do it. APPROVAL BOUNDARY: submits with the fleet identity on the four flow cases only; everything else in the world is read-only. NO-DATA POLICY and REPORT format same as Walker Mobile, bot="flow-prover". A submit that errors, hangs, or dead-ends is severity p0. After your run, message a summary; the loop verifies the backend effects landed (that part is not your job).
+
+**Backend half of the flows lane (the loop's job, not the bot's):** after Flow Prover runs, a loop session runs `npx tsx scripts/fleet-flow-verify.ts` — proving the identity's rows landed tagged `fleet:test`, suppressed on all channels, zero wake tasks, zero enrollments, excluded from packet counts, and that flow artifacts (newsletter row, alert row) exist. Standing fixture person: crm_people id 61855, created through the real chokepoint 2026-08-15 as the lane's permanent proof.
+
 ## Phase 2 (each needs Matt's explicit yes — §1 classes)
 
 - **Analytics Reader** — signs into GA4/GSC with Matt's Google (OAuth grant) and reports weekly deltas. Blocked on the grant.
-- **Form E2E** — submits lead forms with a designated test identity end-to-end (creates real CRM rows; needs the marked-identity lane + suppression so no human ever follows up on a bot).
+- **Admin Walker** — signs into admin with a limited viewer credential and walks broker workflows (Today, person pages, subscriptions hub). Blocked on Matt creating that credential. Until then, admin-side effects are verified by the loop (`fleet-flow-verify`, node accept tests, int tests) rather than by bots.
 - **Scheduled unattended loop iterations** (R-206) — separate decision; the fleet works either way.
 
 ## Rails (hard, in every brief)
 
-Signed-out browsing of production only. LOOK never touch: no form submits, no sign-ups, no admin. Facts only: expected vs observed vs URL. One finding per defect. Findings are LEADS — the loop reproduces before fixing (intake enforces reproduce-or-reject). Bots never get repo access, database access, or any credential beyond the reporting secret.
+Signed-out browsing of production only. LOOK never touch — with exactly one exception: Flow Prover may submit the four flow cases using the designated fleet identity and nothing else. No sign-ups beyond those flows, no admin. Facts only: expected vs observed vs URL. One finding per defect. Findings are LEADS — the loop reproduces before fixing (intake enforces reproduce-or-reject). Bots never get repo access, database access, or any credential beyond the reporting secret.
 
 ## Costs and honesty
 
