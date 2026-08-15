@@ -48,6 +48,8 @@ const HUBS = [
   { href: '/homes-for-sale', label: 'Homes for sale' },
   { href: '/cities', label: 'Cities' },
   { href: '/communities', label: 'Communities' },
+  { href: '/neighborhoods', label: 'Neighborhoods' },
+  { href: '/subdivisions', label: 'Subdivisions' },
   { href: '/housing-market', label: 'Housing market' },
   { href: '/open-houses', label: 'Open houses' },
   { href: '/price-drops', label: 'Price drops' },

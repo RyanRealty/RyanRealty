@@ -40,6 +40,8 @@ const REQUIRED_HREFS = [
   '/homes-for-sale?view=map',
   '/open-houses',
   '/communities',
+  '/neighborhoods',
+  '/subdivisions',
   '/cities',
   '/housing-market',
   '/housing-market/reports',

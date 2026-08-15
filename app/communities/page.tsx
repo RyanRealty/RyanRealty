@@ -304,6 +304,9 @@ export default async function CommunitiesPage() {
               <Link href="/search" className="btn">
                 Search all listings <span className="arr">→</span>
               </Link>
+              <Link href="/subdivisions" className="btn ghost">
+                Recorded plats
+              </Link>
             </div>
           </div>
         </section>

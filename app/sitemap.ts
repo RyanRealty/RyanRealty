@@ -93,6 +93,8 @@ export async function buildAllUrls(baseUrl: string, now: Date): Promise<Metadata
     { url: `${baseUrl}/luxury-homes-bend`, lastModified: now, changeFrequency: 'daily', priority: 0.8 },
     { url: `${baseUrl}/communities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/cities`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/neighborhoods`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${baseUrl}/subdivisions`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     // Crawlable directory of every browse-URL family (W3.4 internal-link layer).
     { url: `${baseUrl}/site-index`, lastModified: now, changeFrequency: 'daily', priority: 0.5 },
     { url: `${baseUrl}${teamPath()}`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },

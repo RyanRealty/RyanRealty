@@ -97,7 +97,8 @@ import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
 import '@/components/site/kb/kb.css'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string; neighborhoodSlug: string }>> {
-  return []
+  const { BEND_NEIGHBORHOOD_DISTRICTS } = await import('@/lib/data/geo/getBendNeighborhoodLedger')
+  return BEND_NEIGHBORHOOD_DISTRICTS.map((n) => ({ slug: 'bend', neighborhoodSlug: n.slug }))
 }
 export const dynamicParams = true
 export const revalidate = 60

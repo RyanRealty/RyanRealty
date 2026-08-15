@@ -28,6 +28,8 @@ export type CommunityIndexItem = {
   name: string
   city: string
   activeCount: number
+  /** Defaults to `/communities/${slug}` so the communities index stays unchanged. */
+  href?: string
 }
 
 const MATCH_CAP = 100
@@ -37,11 +39,15 @@ function letterOf(name: string): string {
   return c >= 'A' && c <= 'Z' ? c : '#'
 }
 
+function itemHref(item: CommunityIndexItem): string {
+  return item.href ?? `/communities/${item.slug}`
+}
+
 function IndexLink({ item }: { item: CommunityIndexItem }) {
   return (
     <li className="break-inside-avoid py-1">
       <a
-        href={`/communities/${item.slug}`}
+        href={itemHref(item)}
         className="text-sm font-medium text-primary underline-offset-2 hover:underline"
       >
         {item.name}
@@ -56,7 +62,21 @@ function IndexLink({ item }: { item: CommunityIndexItem }) {
   )
 }
 
-export default function CommunityIndexBrowser({ items }: { items: CommunityIndexItem[] }) {
+type CommunityIndexBrowserProps = {
+  items: CommunityIndexItem[]
+  searchLabel?: string
+  searchPlaceholder?: string
+  emptyLabel?: string
+  countNoun?: { singular: string; plural: string }
+}
+
+export default function CommunityIndexBrowser({
+  items,
+  searchLabel = 'Search communities by name or city',
+  searchPlaceholder = 'Search by community or city name',
+  emptyLabel = 'No communities match your search.',
+  countNoun = { singular: 'community', plural: 'communities' },
+}: CommunityIndexBrowserProps) {
   const [query, setQuery] = useState('')
   // "A to Z" only helps someone who already knows a community's name — a
   // relocating buyer building a mental model of the area had no way in
@@ -108,12 +128,12 @@ export default function CommunityIndexBrowser({ items }: { items: CommunityIndex
   return (
     <div>
       <Label htmlFor="community-search" className="sr-only">
-        Search communities by name or city
+        {searchLabel}
       </Label>
       <Input
         id="community-search"
         type="search"
-        placeholder="Search by community or city name"
+        placeholder={searchPlaceholder}
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         className="mt-2 w-full max-w-md"
@@ -145,7 +165,7 @@ export default function CommunityIndexBrowser({ items }: { items: CommunityIndex
         <div className="mt-6">
           <p className="text-xs text-muted-foreground tabular-nums">
             {matches.length === 0
-              ? 'No communities match your search.'
+              ? emptyLabel
               : matches.length > MATCH_CAP
                 ? `Showing ${MATCH_CAP} of ${matches.length} matches. Keep typing to narrow.`
                 : `${matches.length} ${matches.length === 1 ? 'match' : 'matches'}`}
@@ -153,7 +173,7 @@ export default function CommunityIndexBrowser({ items }: { items: CommunityIndex
           {matches.length > 0 ? (
             <ul className="mt-3 sm:columns-2 lg:columns-3 gap-x-8">
               {matches.slice(0, MATCH_CAP).map((item) => (
-                <IndexLink key={item.slug} item={item} />
+                <IndexLink key={itemHref(item)} item={item} />
               ))}
             </ul>
           ) : null}
@@ -169,7 +189,7 @@ export default function CommunityIndexBrowser({ items }: { items: CommunityIndex
                 <span className="font-display text-lg text-foreground">{label}</span>
                 <span className="flex items-center gap-3">
                   <span className="text-xs tabular-nums text-muted-foreground">
-                    {rows.length} {rows.length === 1 ? 'community' : 'communities'}
+                    {rows.length} {rows.length === 1 ? countNoun.singular : countNoun.plural}
                   </span>
                   <span
                     aria-hidden
@@ -181,7 +201,7 @@ export default function CommunityIndexBrowser({ items }: { items: CommunityIndex
               </summary>
               <ul className="pb-4 sm:columns-2 lg:columns-3 gap-x-8">
                 {rows.map((item) => (
-                  <IndexLink key={item.slug} item={item} />
+                  <IndexLink key={itemHref(item)} item={item} />
                 ))}
               </ul>
             </details>

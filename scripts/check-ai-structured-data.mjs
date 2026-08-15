@@ -102,6 +102,18 @@ const CHECKS = [
       '  preference; without it every edited evergreen post loses its freshness signal.',
   },
   {
+    file: 'app/neighborhoods/page.tsx',
+    label: 'neighborhoods index: breadcrumb + CollectionPage',
+    all: ['MetadataBlock'],
+    why: 'The neighborhoods index MUST emit breadcrumb JSON-LD via MetadataBlock.',
+  },
+  {
+    file: 'app/subdivisions/page.tsx',
+    label: 'subdivisions index: breadcrumb + CollectionPage',
+    all: ['MetadataBlock'],
+    why: 'The subdivisions index MUST emit breadcrumb JSON-LD via MetadataBlock.',
+  },
+  {
     file: 'app/schools/page.tsx',
     label: 'schools index: breadcrumb + WebPage',
     all: ['MetadataBlock'],

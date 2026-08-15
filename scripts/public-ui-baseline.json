@@ -9,8 +9,8 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 205,
-    "legacyPages": 8,
+    "nonV3ImportSites": 219,
+    "legacyPages": 10,
     "mixedPages": 44
   },
   "frozenNoindexLps": [
@@ -102,6 +102,7 @@
     "app/months-of-supply/page.tsx",
     "app/motivated-sellers/[city]/page.tsx",
     "app/motivated-sellers/page.tsx",
+    "app/neighborhoods/page.tsx",
     "app/newsletter/unsubscribe/page.tsx",
     "app/offline/page.tsx",
     "app/open-houses/[city]/page.tsx",
@@ -132,6 +133,7 @@
     "app/sign/[token]/page.tsx",
     "app/site-index/page.tsx",
     "app/subdivisions/[slug]/page.tsx",
+    "app/subdivisions/page.tsx",
     "app/team/[slug]/edit/page.tsx",
     "app/team/[slug]/page.tsx",
     "app/team/page.tsx",
@@ -293,8 +295,8 @@
     },
     "app/listing/[listingKey]/page.tsx": {
       "explore": 3,
-      "legacy": 3,
-      "kb": 5
+      "kb": 6,
+      "legacy": 2
     },
     "app/lp/tetherow/heath/page.tsx": {
       "legacy": 1,
@@ -309,6 +311,10 @@
     "app/months-of-supply/page.tsx": {
       "v3": 1,
       "legacy": 1
+    },
+    "app/neighborhoods/page.tsx": {
+      "legacy": 2,
+      "kb": 5
     },
     "app/newsletter/unsubscribe/page.tsx": {
       "v3": 1
@@ -394,6 +400,10 @@
       "explore": 2,
       "kb": 9,
       "legacy": 2
+    },
+    "app/subdivisions/page.tsx": {
+      "legacy": 2,
+      "kb": 5
     },
     "app/team/[slug]/edit/page.tsx": {
       "v3": 1

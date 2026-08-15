@@ -2,11 +2,30 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — company improvement process (THE LOOP v1.2.0)
+# Current — 2026-08-15 (Grok) — finish the place-family indexes
+
+**Matt:** The restore stopped at an invented cutoff. Neighborhood and subdivision indexes were still 404. Finish the place doors. No seventh pattern.
+
+**SHA:** pending push on `main` (this commit). Parent restore `d2208216`. Company-improvement `7c2bca5c`..`b163a2f6` already on `origin/main`.
+
+**Done this land:**
+- `/neighborhoods` KB index: 13 Bend districts, live counts from `getBendNeighborhoodLedger`, photos via `pickSurfaceImage`, doors to `/cities/bend/{slug}`.
+- `/subdivisions` KB index: featured child plats + A-to-Z from `getIndexableSubdivisions`, doors to `/subdivisions/{slug}`.
+- Areas nav, Menu+, both footers, sitemap, site-index, and reachability gate now open both indexes.
+- Neighborhood and plat `generateStaticParams` are no longer empty stubs.
+- Local walk: both indexes 200 with live figures (356 homes / 13 districts; plats + inventory). Awbrey Butte and Sunrise Village details 200. Screenshots in `out/looks/2026-08-15-place-indexes/` (gitignored).
+
+**Do not:** `git add -A`. Do not commit LOOK-PLAN / RESTORE / page-grade leftovers / recapture PNGs / `_sunstone-cma-summary.ts`. Do not stamp Public Product OS grains LIVE. Do not page-grade.
+
+**Named stops (still hold):** looking-at SMS / buyer-packet send. Ad spend. I6. Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase. Do not publish 1990. Ban new UI components.
+
+**Skills read:** endtoend, git-commit.mdc, CROSS_AGENT_HANDOFF.
+
+# Prior — 2026-08-15 (Grok) — company improvement process (THE LOOP v1.2.0)
 
 **Matt:** Develop a process that continually improves the whole company. No new OS. No product UI.
 
-**SHA:** `7c2bca5c` on `main`. Hosted `site_improvement_ledger.domain` applied 2026-08-15. Ledger row `ba3435dd`.
+**SHA:** `7c2bca5c` on `main` (local through `b163a2f6`). Hosted `site_improvement_ledger.domain` applied 2026-08-15. Ledger row `ba3435dd`.
 
 **Done this land:**
 - THE LOOP bumped to v1.2.0. Ingest is company-wide. Five standing loops unchanged.

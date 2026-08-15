@@ -589,3 +589,36 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/pageType/)
   })
 })
+
+describe('place-family indexes', () => {
+  it('neighborhoods and subdivisions indexes exist and use the KB index language', () => {
+    const neighborhoods = readSrc('app/neighborhoods/page.tsx')
+    const subdivisions = readSrc('app/subdivisions/page.tsx')
+    expect(neighborhoods).toMatch(/from '@\/lib\/data'/)
+    expect(neighborhoods).toMatch(/getBendNeighborhoodLedger/)
+    expect(neighborhoods).toMatch(/KbBreadcrumb/)
+    expect(neighborhoods).toMatch(/\/cities\/\$\{n\.citySlug\}\/\$\{n\.slug\}/)
+    expect(subdivisions).toMatch(/from '@\/lib\/data'/)
+    expect(subdivisions).toMatch(/getIndexableSubdivisions/)
+    expect(subdivisions).toMatch(/CommunityIndexBrowser/)
+    expect(subdivisions).toMatch(/href: `\/subdivisions\/\$\{/)
+  })
+
+  it('Areas nav and footer open both indexes', () => {
+    const nav = readSrc('lib/site-nav.ts')
+    expect(nav).toMatch(/href: '\/neighborhoods'/)
+    expect(nav).toMatch(/href: '\/subdivisions'/)
+    expect(nav).toMatch(/label: 'All neighborhoods'/)
+    expect(nav).toMatch(/label: 'All subdivisions'/)
+  })
+
+  it('neighborhood and plat detail generateStaticParams are not empty stubs', () => {
+    const neighborhood = readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
+    const plat = readSrc('app/subdivisions/[slug]/page.tsx')
+    expect(neighborhood).toMatch(/BEND_NEIGHBORHOOD_DISTRICTS/)
+    expect(neighborhood).not.toMatch(/generateStaticParams[\s\S]{0,200}return\s*\[\s*\]/)
+    expect(plat).toMatch(/resolveSubdivisionAreaRedirect/)
+    expect(plat).not.toMatch(/generateStaticParams[\s\S]{0,80}return\s*\[\s*\]/)
+  })
+})
+

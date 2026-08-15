@@ -32,8 +32,11 @@ import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
  *  data/bend/bend-neighborhood-polygons.json (design-audit §0: the page was
  *  reading getBendNeighborhoodStats, which sources a market_pulse_live
  *  neighborhood row that has never existed, rendering "0 Active" for all 13
- *  districts on the live page). */
-const LEDGER_NEIGHBORHOODS: ReadonlyArray<{ label: string; slug: string }> = [
+ *  districts on the live page).
+ *
+ * Shared by the ledger, /neighborhoods index, and neighborhood
+ * generateStaticParams so the three cannot drift. */
+export const BEND_NEIGHBORHOOD_DISTRICTS: ReadonlyArray<{ label: string; slug: string }> = [
   { label: 'Awbrey Butte', slug: 'awbrey-butte' },
   { label: 'Boyd Acres', slug: 'boyd-acres' },
   { label: 'Century West', slug: 'century-west' },
@@ -86,7 +89,7 @@ async function _fetchBendNeighborhoodLedger(): Promise<NeighborhoodLedgerRow[]> 
         .eq('property_sub_type', 'Single Family Residence')
         .in(
           'boundary_neighborhood',
-          LEDGER_NEIGHBORHOODS.map((n) => n.label),
+          BEND_NEIGHBORHOOD_DISTRICTS.map((n) => n.label),
         )
         .order('listing_key', { ascending: true })
         .range(from, to),
@@ -112,7 +115,7 @@ async function _fetchBendNeighborhoodLedger(): Promise<NeighborhoodLedgerRow[]> 
     byLabel.set(row.boundary_neighborhood, prices)
   }
 
-  return LEDGER_NEIGHBORHOODS.flatMap((n) => {
+  return BEND_NEIGHBORHOOD_DISTRICTS.flatMap((n) => {
     const all = byLabel.get(n.label) ?? []
     if (all.length === 0) return []
     const priced = all.filter((p) => Number.isFinite(p)).sort((a, b) => a - b)

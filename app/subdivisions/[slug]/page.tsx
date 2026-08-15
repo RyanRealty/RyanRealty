@@ -74,7 +74,15 @@ export const dynamicParams = true
 export const revalidate = 60
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  return []
+  const communities = (resortCommunitiesData as { communities: ResortEntry[] }).communities
+  const slugs = new Set<string>()
+  for (const entry of communities) {
+    for (const alias of entry.subdivision_aliases) {
+      const slug = slugify(alias)
+      if (!resolveSubdivisionAreaRedirect(slug)) slugs.add(slug)
+    }
+  }
+  return [...slugs].map((slug) => ({ slug }))
 }
 
 type Props = { params: Promise<{ slug: string }> }

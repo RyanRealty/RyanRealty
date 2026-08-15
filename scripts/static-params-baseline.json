@@ -1,11 +1,10 @@
 {
-  "generatedAt": "2026-08-13T10:27:33.402Z",
+  "generatedAt": "2026-08-15T14:31:19.748Z",
   "reason": "Pre-Wave-3 snapshot of dynamic routes without generateStaticParams. New violations fail CI; existing ones are tracked until Wave 3 migration.",
-  "total": 14,
+  "total": 12,
   "violators": [
     "app/blog/[slug]/page.tsx",
     "app/buy/[intent]/page.tsx",
-    "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
     "app/cma-drafts/[id]/page.tsx",
     "app/housing-market/reports/[slug]/[geoName]/page.tsx",
     "app/listing/[listingKey]/page.tsx",
@@ -14,7 +13,6 @@
     "app/reports/[slug]/[geoName]/page.tsx",
     "app/reports/sales/[city]/[period]/page.tsx",
     "app/sell/[intent]/page.tsx",
-    "app/subdivisions/[slug]/page.tsx",
     "app/team/[slug]/edit/page.tsx",
     "app/team/[slug]/page.tsx"
   ]
