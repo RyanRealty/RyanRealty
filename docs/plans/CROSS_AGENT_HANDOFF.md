@@ -2,38 +2,29 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — PRODUCT.md end-to-end LIVE
+# Current — 2026-08-15 (Grok) — leftover mission (recharts gone, welcome-back walked)
 
-**Matt:** Execute the entire public product plan /endtoend. Done means a real person can walk the site.
+**Matt:** Do not stop. Complete outstanding tasks /endtoend.
 
-**SHA:** `4cfc1a9e` on `origin/main`. Vercel production READY. Custom domain https://ryan-realty.com.
+**SHA:** pending this push on `main`. Product code already live on `4cfc1a9e`. This commit deletes leftover recharts and stamps the cube table.
 
-**Done this mission (PRODUCT Order 1–9):**
-- Arrival: Buy / Sell / Look on blank direct; Google Referer is not interrupted; welcome-back names last house/search. `292abf9b`.
-- Sentence search writes existing filter params. Live: Tetherow 3-bed under 800 → `subdivision` + `city` + `beds` + `maxPrice`. `65d22965`.
-- Place grains: community Field is the counted set; Homes/Market keep the place; resort Quiet list. `ba328a86`.
-- HouseMe from `listing_pricing_reads`. Map popup is `MapListingPopup`. Orphan sell-save is a no-op. `5ace1d19`.
-- Google comms on one card. CMA title is `Your report on {address}`. Visitor scoreboard + GSC slipping queries. `7a4114a8`.
-- Gate fix so the above could push: ArrivalIntent de-shadcn’d; auth excluded from burndown. `4cfc1a9e`.
-- Chart grammar already live: `a93cf35a`. Cube 1998 already live. About faces already live.
+**Done this leftover:**
+- Welcome-back walked on https://ryan-realty.com: `welcome=1`, `buy=0` for `rr_last_thing` = 61281 McRoberts.
+- Deleted unmounted recharts: `GeoMarketOverview`, `LazyGeoMarketOverview`, `MarketSnapshotChart`, `MarketVisuals` + `.client`.
+- Removed `recharts` from `package.json`. D109 now walks `app/` + `components/` and fails if any file imports it.
+- PRODUCT.md cube gap table rewritten. 1998 is live. Do not re-plan `sales_cube_*` or a live `listings` fallback.
+- Baselines shrunk: shadcn 174→173, reachable-exports 189→186, design-tokens 202→201, hydration 74→65.
+- Deleted dead `lib/report-year-compare.ts` (only its test imported it after the explore tool retired). Do not hide it as a new orphan.
 
-**Walk (Chrome UA, https://ryan-realty.com, 2026-08-15):** 20/20 strip at 200. Arrival direct Buy/Sell/Look = 1. Google Referer Buy = 0. `#sentence-search` present. Listing HouseMe node = 1. Sell Value my home = 1, worth = 0. Tetherow Homes + Market present. About Matt / Call / Text present. Recipe: `docs/plans/PUBLIC_PRODUCT/looks/2026-08-15-product-e2e/capture.mjs` (PNGs not committed).
-
-**Printed cube (do not republish 1990):**
-- 1998 region all: **5,179** / **$654,573,406** / median **$104,900**
-- 1998 fireplace: **1,568** / 5,179 (30.3%)
-- 2024 region all: **5,707** / **$3.931B** / median **$570,000**
-- Bend 2024 city mart: **2,709** / **$2.337B** / median **$700,000**
-
-**Named stops (still hold):** looking-at SMS / buyer-packet send (CLAUDE.md §1). Ad spend. I6 competitor names. Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase.
+**Named stops (still hold):** looking-at SMS / buyer-packet send (CLAUDE.md §1). Ad spend. I6. Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase. Do not publish 1990.
 
 **Do not:** `git add -A`. Do not commit `LOOK-PLAN.md`, `RESTORE.md`, `looks/2026-08-14-page-grade-v24-regrade/`, `scripts/_sunstone-cma-summary.ts`, or recapture PNGs.
 
-**Left on disk, not shipped:** unmounted recharts (`GeoMarketOverview`, `MarketSnapshotChart`, `MarketVisuals`). Recapture PNGs. Page-grade leftover folder.
+**Left on disk, not shipped:** recapture PNGs. Page-grade leftover folder. `LOOK-PLAN.md` / `RESTORE.md`.
 
-**Next:** nothing on this product plan except Matt stamps for looking-at send. Optional later: delete unmounted recharts; AChart on prospect price history only if ≥2 priced cycles.
+**Next:** nothing on this product plan except Matt stamps for looking-at send. Optional later: `office_id` on rebuild when touching that script; AChart on prospect price history only if ≥2 priced cycles.
 
-**Skills read:** endtoend, public-product-os (orient), frontend-design, git-commit.mdc, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, PRODUCT.md.
+**Skills read:** endtoend, git-commit.mdc, PRODUCT.md, CROSS_AGENT_HANDOFF.
 
 # Prior — 2026-08-14 (Grok) — public look: stop inventing, use an existing system
 

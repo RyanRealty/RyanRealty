@@ -18,8 +18,7 @@ const EXCLUDED_PATHS = [
   "components/site/listing-detail/ListingLocationMap.client.tsx",
   "components/site/listing-detail/ListingHeroMap.client.tsx",
   // Non-site map .client files with the same Google Maps isolation constraint:
-  "components/seller-lp/MarketVisuals.client.tsx",
-  "components/tools/EquityProjectionChart.client.tsx", // recharts — hex literals required in chart config
+  "components/tools/EquityProjectionChart.client.tsx", // chart config still carries hex literals
   "components/tools/RentalCalculator.tsx",             // recharts chart axes (same class as above)
   // Email templates — email clients don't support CSS variables:
   "lib/email-templates/",

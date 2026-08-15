@@ -103,60 +103,34 @@ Plans still say `sales_cube_annual`. Those tables were never created. The shippe
 | `analyze_closed_sales_co` + `analytics_result_cache` | constrained unique search | `analyzeClosedSales` |
 | `analytics_v_closed_sale_co` | closed fact **view** (no `details`) | rebuild script only |
 
-Rebuild: `scripts/analytics/rebuild-analytics-marts.mjs`. Cron `/api/cron/rebuild-analytics-marts` — **last 2 calendar years only**.
+Rebuild: `scripts/analytics/rebuild-analytics-marts.mjs`. Nightly `/api/cron/rebuild-analytics-marts` (last 2 calendar years). Weekly full `/api/cron/rebuild-analytics-marts-full` from 1998 (Sunday 09:15 UTC). Heartbeat `assertMartFloorYear`.
 
-Live on site today: `/housing-market` size strip (2024: **5,707 closes / $3.931B**, 0% vs EDA), `/housing-market/central-oregon` series **1998–2024**, `/housing-market/history` explorer, `/admin/analytics/competition`. Matt lock I6: no competitor names on the public site.
+Live on site today: `/housing-market` size strip (2024: **5,707 closes / $3.931B**, 0% vs EDA), `/housing-market/central-oregon` series **1998–2024**, `/housing-market/history` explorer, city / CMA market board from the mart, `/admin/analytics/competition`. Matt lock I6: no competitor names on the public site.
 
-### What does not work yet (vs the ask)
+### What is already the cube (do not redo)
 
-| Ask | Today | Gap |
-|---|---|---|
-| Then vs now from first thick year | Public series starts **2016**. EDA floor is **1998** (1990 = 0 rows). | Marts not backfilled 1998–2015 |
-| Fireplaces sold in 1998 | Feature mart is **2016–2025**. Explorer can RPC a 1998 filter. | 1998 is not a cube cell. A request can still hit the RPC. |
-| Unique search + reports off the model | History explorer exists. Report factory and CMA do **not** read the marts. | SI-6 embeds missing on city / sell / listing. CMA still on `sale_pricing_facts` only. |
-| Competitor share | Admin desk live. | Public stays locked. Entity `office_id` still residual at rebuild. |
-| No request-path aggregation | `getCoMarketAnnual` still has a **24h live `listings` fallback**. | Violates the cube lock. Kill it. |
-| Fast, no bottlenecks | Nightly last-2-years only. | Need one-shot 1998→now rebuild, then weekly full from floor. |
-| Docs agents actually read | `DATABASE_FOR_AI_AGENTS.md` omitted the marts until this session. | Next agent will re-plan `sales_cube_*` unless they read the lookup table. |
+Printed this session. Do not republish 1990 (zero rows). Do not invent `sales_cube_*`.
 
-### Remaining units (this is the work)
+| Ask | Live |
+|---|---|
+| Then vs now from first thick year | Public series starts **1998**. 1998 region all: **5,179** / **$654,573,406** / median **$104,900**. 2024: **5,707** / **$3.931B** / median **$570,000**. |
+| Fireplaces sold in 1998 | Feature mart cell: **1,568** / 5,179 (30.3%). |
+| Place and listing read the cube | City Instrument and CMA market board call `getCoMarketAnnual`. Pulse stays the live HUD. SFR vs all-type stays labeled. |
+| No request-path aggregation | Public `getCoMarketAnnual` / `getCoFeatureAnnual` are mart-only. Missing year renders empty. No `source: 'live_aggregate'` on those paths. |
+| Fast, no bottlenecks | Nightly last 2 years + weekly full from 1998. Heartbeat fails if 1998 region `all` is missing. |
+| Show it like Tremor | Market family uses `V3Chart` on the mart rows. One geometry: `lib/charts/plot.ts`. |
 
-A unit is done when the command has been run in this session, the printed number matches the page, and there is no `source: 'live_aggregate'` on that path.
+### Honest leftovers (not a second cube plan)
 
-1. **Backfill the mart 1998–2015.**  
-   `node scripts/analytics/rebuild-analytics-marts.mjs --from 1998 --to 2015`  
-   Region + REPORT_CITIES, every `type_scope`, feature keys fireplace/garage/association.  
-   Accept: `SELECT year, sold_count, total_volume FROM analytics_mart_market_annual WHERE geo_slug='central-oregon' AND type_scope='all' AND year=1998` returns a row. Fireplace 1998 is a row in `analytics_mart_feature_annual`. Print both. Same numbers on `/housing-market/history?year=1998`.
+| Leftover | Status |
+|---|---|
+| Competitor names on the public site | Locked off (I6). Admin desk keeps names. |
+| Entity `office_id` on rebuild | Residual. Finish only when touching the rebuild script. |
+| Looking-at SMS / buyer-packet send | Ask exists. Send is CLAUDE.md §1. Do not send. |
+| Unmounted recharts modules | Deleted. D109 fails if `app/` or `components/` imports recharts again. |
+| 1990 | Zero rows. Does not publish. |
 
-2. **Public then-vs-now uses the floor.**  
-   Change `CLOSED_SALES_FROM_YEAR` from 2016 to **1998** in `app/housing-market/central-oregon/_v3/region-constants.ts` (and any hub copy that says 2016). Series reads the mart only.  
-   Accept: `/housing-market/central-oregon` chart starts 1998. 2024 still 5,707 / $3.931B.
-
-3. **Kill the live listings fallback** on public cube reads.  
-   `getCoMarketAnnual` / series: if the mart row is missing, render empty + source line, do not scan `listings`.  
-   Accept: grep `live_aggregate` unused on those public callers.
-
-4. **Rebuild schedule matches the warehouse.**  
-   Nightly last 2 years stays. Add weekly full from 1998 (same script, advisory lock). Heartbeat fails if 1998 region `all` is missing.  
-   Accept: cron registered in `vercel.json`; one successful weekly job log.
-
-5. **Place and listing read the cube.**  
-   City / neighborhood Instrument and the listing report pull `getCoMarketAnnual` / `getCoFeatureAnnual` for that geo when a mart row exists. Pulse stays the live HUD. Do not mix SFR pulse with all-type volume without a label.  
-   Accept: Bend city page shows 2024 all-type volume from the mart, labeled. Listing HouseMe block can show this place’s median from pulse **or** this year’s mart — each labeled.
-
-6. **Reports and CMA read the same model.**  
-   Market-report blog and CMA market board call the mart DAL, not ad-hoc `listings` sums. `content-market-claims.mjs` already gates blogs — keep it.  
-   Accept: one CMA rebuild printout cites `analytics_mart_market_annual` for the community/city year figure.
-
-7. **Show it like Tremor.**  
-   `/housing-market`, `/housing-market/history`, `/housing-market/central-oregon` use Tremor KPI + chart blocks on the mart rows. Same shop as the rest of the site.  
-   Accept: 390 screenshot. The $ volume and the composition are the first screen, not a caption under cream.
-
-8. **Admin share stays admin.**  
-   Competition desk keeps names. Public never lists competitor brokerages. Finish `office_id` on rebuild when touching the script.  
-   Accept: I6 still holds on a public grep.
-
-Do not create `sales_cube_*` tables. Do not aggregate raw `listings` on a public request. Do not publish 1990 (zero rows). Do not call this 10× — alerts were still 6 when the marts shipped.
+Do not create `sales_cube_*` tables. Do not aggregate raw `listings` on a public request. Do not publish 1990. Do not call this 10× — alerts were still 6 when the marts shipped.
 
 ---
 
@@ -316,3 +290,21 @@ The argument is PRODUCT.md. Done means a real person can walk the site and do th
 - Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase.
 
 **Progress** is the Order list above. Steps 1–9 are live on `origin/main` `4cfc1a9e`, Vercel production READY, walked 2026-08-15 on https://ryan-realty.com. Named stops still hold: looking-at send, ad spend, I6, page-grade, new OS.
+
+---
+
+## Leftover mission (2026-08-15, do not stop)
+
+The product walk is live. Three leftovers were still on disk and would make the next agent redo shipped work.
+
+**When finished:**
+
+1. A stranger who left a house and comes back to `/` sees **Welcome back.** plus that house. Walked on production, not only unit-tested.
+2. Zero `from 'recharts'` under `app/` or `components/`. `recharts` is not a dependency. D109 fails the commit if either returns.
+3. PRODUCT.md cube table matches the mart. The next agent does not re-plan `sales_cube_*`, a 1998 backfill, or a live `listings` fallback.
+
+**Bar:** production READY on `origin/main`. Welcome-back walk prints `welcome >= 1` and `buy === 0`. Grep for `from 'recharts'` in `app/` + `components/` is empty.
+
+**Will not do:** looking-at send, ad spend, I6, page-grade, new OS, migrate the orphan charts onto V3Chart, publish 1990.
+
+**Progress:** leftover 1 walked on https://ryan-realty.com 2026-08-15 (`welcome=1`, `buy=0`). Leftover 2–3 in this commit: five unmounted recharts modules deleted, `recharts` removed from `package.json`, D109 walks `app/` + `components/`, cube table rewritten so the next agent does not redo 1998. Dead `lib/report-year-compare.ts` deleted (explore tool retired; only its test imported it).

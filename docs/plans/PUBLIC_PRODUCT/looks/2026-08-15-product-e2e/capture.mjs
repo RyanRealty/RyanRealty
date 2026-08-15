@@ -85,6 +85,31 @@ for (const family of pages) {
 }
 
 {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    userAgent: UA,
+  })
+  await context.addInitScript(() => {
+    sessionStorage.setItem(
+      'rr_last_thing',
+      JSON.stringify({
+        kind: 'house',
+        label: '61281 McRoberts',
+        href: '/homes-for-sale/bend/tetherow/61281-mcroberts-220218727',
+      }),
+    )
+  })
+  const page = await context.newPage()
+  const res = await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 45000 })
+  await page.waitForTimeout(2800)
+  const welcome = await page.getByText('Welcome back. 61281 McRoberts.').count()
+  const buy = await page.getByRole('link', { name: 'Buy', exact: true }).count()
+  walk.welcomeBack = { status: res?.status() ?? null, welcome, buy }
+  console.log('walk welcome-back', walk.welcomeBack)
+  await context.close()
+}
+
+{
   const { context, page, status } = await open('/homes-for-sale', { width: 390, height: 844 })
   const sentence = await page.locator('#sentence-search').count()
   const placeholder = await page.locator('input[placeholder="3 bed under 800 in Tetherow"]').count()

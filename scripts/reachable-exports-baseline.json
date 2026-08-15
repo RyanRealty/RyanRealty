@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-08-14T05:19:39.871Z",
+  "generatedAt": "2026-08-15T06:15:22.643Z",
   "reason": "Pre-gate backlog of components/** and lib/** modules that no file imports. This list may only shrink: wire the module into a surface, mark it \"reachability: entry-point <reason>\" in its first 10 lines, or delete it. New orphans fail the build.",
-  "count": 189,
+  "count": 186,
   "names": [
     "components/ActivityFeedCard.tsx",
     "components/ActivityFeedSlider.tsx",
@@ -66,7 +66,6 @@
     "components/geo-page/GeoSectionNewestListings.tsx",
     "components/geo-page/GeoSectionPopularCommunities.tsx",
     "components/geo-page/InventoryTypeSlider.tsx",
-    "components/geo-page/LazyGeoMarketOverview.tsx",
     "components/geo-page/ListingsSlider.tsx",
     "components/geo-page/PageActionBar.tsx",
     "components/layout/ContentPageHero.tsx",
@@ -132,8 +131,6 @@
     "components/reports/StatCard.tsx",
     "components/search/HotCommunitiesSection.tsx",
     "components/search/InFeedAdCard.tsx",
-    "components/search/MarketSnapshotChart.tsx",
-    "components/seller-lp/MarketVisuals.tsx",
     "components/seller-lp/SellerSocialProof.tsx",
     "components/seller-lp/SoldStoryCard.tsx",
     "components/site/ActivityFeed.tsx",

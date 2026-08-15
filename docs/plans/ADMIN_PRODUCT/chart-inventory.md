@@ -12,13 +12,12 @@ Quarry grepped on disk: `KbMarketChart`, `MarketCoreCharts`, `PriceChart`, `Sale
 
 **Not findings (on disk, no mounted public/admin/packet surface):**
 
+Deleted 2026-08-15 (zero page imports, leftover recharts): `MarketSnapshotChart`, `GeoMarketOverview` / `LazyGeoMarketOverview`, `MarketVisuals` + `.client`. D109 fails if `app/` or `components/` imports recharts again.
+
 | Path | Why excluded |
 |---|---|
-| `components/search/MarketSnapshotChart.tsx` | recharts `LineChart`. Zero page imports. |
-| `components/geo-page/GeoMarketOverview.tsx` / `LazyGeoMarketOverview.tsx` | recharts `LineChart`. Zero page imports. |
 | `components/listing/PriceHistoryChart.tsx` | `MiniSparkline` polyline. Zero page imports. |
 | `components/reports/MiniSparkline.tsx:25` | polyline. Only imported by the unmounted `PriceHistoryChart`. |
-| `components/seller-lp/MarketVisuals.tsx` + `.client.tsx` | recharts `AreaChart`. Zero `app/` imports. |
 | `components/listing/PriceHistory.tsx` / `showcase/ShowcasePriceHistory.tsx` | type/table of listing price events. `ShowcasePriceHistory` is only in reachable-export baselines, not a page. |
 | `lib/data/nav/getMegaMenuData.ts:350` | 12-point sparkline **fetched**. `lib/site-menu.ts:19` says sparklines are not rendered in the menu. |
 | `video/**` line charts | Remotion, not a public/admin/packet web surface. |

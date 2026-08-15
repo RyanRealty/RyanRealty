@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-13T16:04:27.564Z",
-  "total": 202,
+  "generatedAt": "2026-08-15T06:13:14.915Z",
+  "total": 201,
   "byFile": {
     "app/actions/auto-response.ts": 3,
     "app/api/cma/[slug]/gmail-draft/route.ts": 1,
@@ -89,7 +89,6 @@
     "components/reports/PredictiveInsights.tsx": 1,
     "components/reports/ReportsByCityView.tsx": 2,
     "components/reports/SalesReportCard.tsx": 1,
-    "components/search/MarketSnapshotChart.tsx": 1,
     "components/search/SearchResults.tsx": 1,
     "components/seller-lp/SoldStoryCard.tsx": 5,
     "components/site/ActivityFeed.tsx": 1,

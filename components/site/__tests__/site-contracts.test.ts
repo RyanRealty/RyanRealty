@@ -1,5 +1,5 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -15,6 +15,17 @@ import { describe, expect, it } from 'vitest'
 
 function readSrc(rel: string): string {
   return readFileSync(resolve(rel), 'utf8')
+}
+
+function walkTs(dir: string, out: string[] = []): string[] {
+  if (!existsSync(dir)) return out
+  for (const name of readdirSync(dir)) {
+    if (name === 'node_modules' || name === '.next') continue
+    const full = join(dir, name)
+    if (statSync(full).isDirectory()) walkTs(full, out)
+    else if (/\.(ts|tsx)$/.test(name) && !/\.test\.(ts|tsx)$/.test(name)) out.push(full)
+  }
+  return out
 }
 
 /**
@@ -506,6 +517,11 @@ describe('design directive contracts', () => {
     expect(readSrc('lib/cma/immersive.ts')).toMatch(/from '@\/lib\/cma\/seasonality-chart'/)
     expect(readSrc('lib/cma/seasonality-chart.ts')).toMatch(/from '@\/lib\/charts\/plot'/)
     expect(readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')).toMatch(/placeMartCompositionChart\(regionMart\)/)
+    const rechartsHits = [...walkTs('app'), ...walkTs('components')].filter((file) =>
+      /from ['"]recharts['"]/.test(readFileSync(file, 'utf8')),
+    )
+    expect(rechartsHits).toEqual([])
+    expect(readSrc('package.json')).not.toMatch(/"recharts"/)
   })
 
   it('D108 — weekly full mart rebuild from 1998 and heartbeat on the floor year', () => {

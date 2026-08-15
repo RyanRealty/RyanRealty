@@ -1,5 +1,5 @@
 {
-  "count": 174,
+  "count": 173,
   "files": [
     "app/buy/loading.tsx",
     "app/cities/error.tsx",
@@ -94,7 +94,6 @@
     "components/geo-page/CommunityBarCard.tsx",
     "components/geo-page/GeoAboutSection.tsx",
     "components/geo-page/GeoCTAWithBroker.tsx",
-    "components/geo-page/GeoMarketOverview.tsx",
     "components/geo-page/GeoSlider.tsx",
     "components/geo-page/InventoryTypeSlider.tsx",
     "components/geo-page/ListingBarCard.tsx",
