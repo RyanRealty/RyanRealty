@@ -27,7 +27,7 @@
 ## Matt / env blockers (cannot agent-force)
 
 - Hosted Supabase migration apply (no CLI link/token here)  
-- OAuth reconnects  
+- ~~OAuth reconnects~~ **SCRUBBED 2026-08-15** — tokens auto-refresh via the daily heartbeat (verified live); LinkedIn parked (no provider refresh token)  
 - Newsletter first send, ad spend, DNS, TC unpause (F7 **DONE** prod 2026-07-29 — not a Matt window residual)  
 
 ## Bottom line

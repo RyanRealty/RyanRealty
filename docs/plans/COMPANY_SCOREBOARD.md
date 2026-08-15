@@ -16,11 +16,10 @@
 
 | Figure | Value | Source |
 |---|---|---|
-| Version | **v1 OPEN** — 0 of 14 agent gaps closed, 0 of 7 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list |
+| Version | **v1 OPEN** — 1 of 14 agent gaps closed (G14), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list |
 | Stranded ledger windows | **11** expired unlearned, all `seo-aeo` (domain frozen by the insert guard until Learn closes them) | probe `ledger.expiredUnlearned` / `expiredByDomain` |
 | Capabilities below Working floor | **7** (TC, video, social OAuth, broker platform, westside, Grok memory, SMS agent) | `ENTERPRISE_MAP/matrix/CAPABILITIES.md` 2026-08-08 close |
-| Red integrations | **4** — GBP, LinkedIn, YouTube, X (all Matt OAuth) | `ENTERPRISE_MAP/matrix/INTEGRATIONS.md` + probe tokens |
-| TikTok token | valid, **expires 2026-08-16T12:00Z** — verify auto-refresh (gap G14) | probe `social.tokens` |
+| Needs-reauth integrations | **0 active** — GBP/YouTube/X/TikTok auto-refresh from stored refresh tokens via the daily 12:00Z heartbeat (verified live 2026-08-15, scheduled run all OK + on-demand trigger rolled expiries). LinkedIn is `needs-reauth` and **PARKED** (provider issued no refresh token). No Matt reconnect task exists. | heartbeat `sync_logs` 2026-08-15T12:00:03Z + probe `social.tokens` (`auto-refresh` vs `needs-reauth`) |
 | Meta audience heartbeat | first green run **2026-08-15T14:03Z** — hold 7 days then flip FIX→KEEP (gap G11) | `meta_audience_log.ran_at` |
 
 ## 1. Money and license

@@ -69,7 +69,7 @@ If `git status` shows dirty inbox files → **only** write under `docs/plans/ENT
 - Expired: via **sync-delta**, not scheduled detect-expired cron  
 - google-ads snapshot: **wired** into snapshot-channels PLATFORMS  
 - tc_deals / skyslope_transactions: **33** (mirror sample stale 2026-06-10)  
-- Social auth: TikTok valid; LI/X/YT/GBP **EXPIRED**; Threads/Pin/ND empty  
+- Social auth (corrected 2026-08-15): TikTok/YT/X/GBP **auto-refresh** via daily token-heartbeat (refresh tokens on file, verified live — short `expires_at` is provider TTL design, not a dead connection); LinkedIn **needs-reauth, PARKED** (no provider refresh token); Threads/Pin/ND empty  
 - Newsletter subs **5346**; sequences 7 (4 active); email_events live  
 
 ---
@@ -81,7 +81,7 @@ Full residual list: **`ALL-OPEN-ITEMS.md`**. Plan: **`synthesis/ADVANCEMENT_PLAN
 1. ~~Inventories / matrices / dispositions / parks / fleet ritual / plan v1~~  
 2. Confirm dual-adversary DUAL-PASS.md; close any HIGH residual it finds  
 3. CAP-015: run measurement-loop / publisher published_to completeness  
-4. Reconnect runbook for expired socials (Matt OAuth)  
+4. ~~Reconnect runbook for expired socials~~ **SCRUBBED 2026-08-15** — tokens auto-refresh via daily heartbeat (verified live); LinkedIn parked. There is no Matt OAuth task.  
 5. SkySlope mirror re-sync ops  
 6. Hosted ClosePrice apply when supabase link available  
 7. Re-census admin after 11F lands  

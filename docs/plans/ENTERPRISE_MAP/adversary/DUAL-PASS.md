@@ -35,7 +35,7 @@ Map v1 is **not** “every PARTIAL promoted to maturity 5.”
 |------------------------------------------------|--------|
 | CAP-015 publish_to / ready drain | ACTIVE ship class |
 | Hosted ClosePrice apply | BLOCKED_ENV |
-| OAuth reconnect LI/X/YT/GBP | BLOCKED_MATT OAuth |
+| ~~OAuth reconnect LI/X/YT/GBP~~ (2026-08-15 correction: X/YT/GBP auto-refresh via heartbeat, refresh tokens on file; LinkedIn PARKED — see EVIDENCE-LOG) | SCRUBBED |
 | Newsletter first send / ad spend / DNS / TC unpause | BLOCKED_MATT |
 
 **PASS conditions met for control-system v1.** Continuous maturity Sense continues under streams S0–S6.

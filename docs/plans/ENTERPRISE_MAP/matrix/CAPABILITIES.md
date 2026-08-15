@@ -278,12 +278,12 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **2** — OAuth tables + publish paths exist; **ops health red**: only TikTok valid short-window; LI/X/YT/GBP expired; Threads/Pin/Nextdoor not connected. Not a green “multi-social product.” |
-| **Evidence status** | **VERIFIED** (auth table health 2026-08-08) |
-| **Evidence pointers** | M-live `social` block; EVIDENCE-LOG INT social token health; INTEGRATIONS INT-009…016; cron `token-heartbeat`; publisher-sweep depends on tokens |
+| **Maturity** | **2** — OAuth tables + publish paths exist. **Token health corrected 2026-08-15:** TikTok/YT/X/GBP auto-refresh via the daily heartbeat (refresh tokens on file, verified live); LinkedIn parked (no provider refresh token); Threads/Pin/Nextdoor not connected. Still not a productized “multi-social product” — the gap is publish cadence, not tokens. |
+| **Evidence status** | **VERIFIED** (heartbeat `sync_logs` 2026-08-15T12:00:03Z + live renew trigger; supersedes the 2026-08-08 `expires_at`-only read) |
+| **Evidence pointers** | EVIDENCE-LOG 2026-08-15 token correction; INTEGRATIONS INT-009…016 (corrected); cron `token-heartbeat`; publisher-sweep depends on tokens |
 | **Public risk** | Med |
 | **Broker product?** | Premium thesis |
-| **Residual disposition** | **ACTIVE** (ops) reconnect LI/X/YT/GBP; **PARK** or connect Threads/Pinterest/Nextdoor explicitly |
+| **Residual disposition** | **ACTIVE** (product) publish cadence; LinkedIn **PARKED** per Matt 2026-08-15; **PARK** stands for Threads/Pinterest/Nextdoor |
 
 ---
 

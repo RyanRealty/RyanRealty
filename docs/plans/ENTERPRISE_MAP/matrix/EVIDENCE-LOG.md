@@ -378,3 +378,15 @@ Notes:
 - **S-017 CLOSED:** F7 is DONE in production (T-017 / migrations listing_search_mv_* 2026-07-30+). Scrubbed false BLOCKED_MATT F7 window from open lists.
 - **Z-inventory-meta** N_prod/N_reg corrected.
 - Map v1 redefined as control-system close (not all CAP maturity 5). Dual-pass **PASS (control system)** with product HIGH residuals listed.
+
+### Token liveness correction 2026-08-15 (Matt directive: no reconnect asks)
+
+**Claim corrected:** the 2026-08-08 close read `expires_at` alone and called INT-009/010/012/013 red "RECONNECT (Matt OAuth)". Wrong for three of four. Verified 2026-08-15:
+
+- Scheduled `token-heartbeat` (12:00 UTC daily) ran 2026-08-15T12:00:03Z — `sync_logs` cycle: meta 200, youtube 200, x 200, google_business_profile 200, tiktok 200; linkedin 500; threads/pinterest/nextdoor 204 (not connected, parked).
+- Refresh tokens on file (presence check, no values): tiktok_auth len 72 · youtube_auth len 103 · x_auth len 91 · google_business_profile_auth len 103 · **linkedin_auth NULL**.
+- Live on-demand trigger (prod endpoint, CRON_SECRET) at ~18:09Z: HTTP 207 ok=5/skipped=3/failed=1(linkedin). `expires_at` moved: youtube 13:00Z → 19:09:09Z, gbp 13:00Z → 19:09:09Z, x 14:00Z → 20:09:10Z. TikTok already fresh to 2026-08-16T12:00:02Z (refreshed by the noon run). Meta page token verified: Page "Ryan Realty Bend" (138563319329985).
+- Short `expires_at` = provider TTL design (Google 1h, X 2h, TikTok 24h). Liveness authority is the heartbeat sync_logs, never expires_at alone.
+- LinkedIn: lib has full refresh logic (`lib/linkedin.ts` refreshLinkedInToken) but the provider issued no refresh token at grant time → cannot self-renew → **PARKED per Matt 2026-08-15**. Heartbeat will log linkedin 500 daily while parked; expected, not a defect.
+- Check added: `lib/data/loop/signals.ts` TokenHealth now carries `refreshTokenPresent` and statuses `auto-refresh` / `needs-reauth` (replaces the misleading `expired`). Escape recorded in `process_escape_ledger`.
+- Cells corrected: INTEGRATIONS INT-009/010/011/012/013/035 + health counts (red 4 → 0, green 9 → 13, dark 6 → 7) + dispositions (RECONNECT 5 → 0, PARK 6 → 7, KEEP 22 → 26); SOCIAL-PARKS; CAP-019; ALL-OPEN §1/§2/§8; ADVANCEMENT_PLAN S5/§4/§6; SESSION_HANDOFF highlights + step 4; REMAINING; DUAL-PASS residual row; VERSION-1 (M-list has no OAuth move); COMPANY_SCOREBOARD §0.

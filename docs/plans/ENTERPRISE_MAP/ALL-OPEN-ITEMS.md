@@ -64,7 +64,7 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 | CAP-016 | NO_SCRIPT residual | ACTIVE |
 | CAP-017 | Video park or rebuild | ACTIVE decision |
 | CAP-018 | Ads spend | BLOCKED_MATT |
-| CAP-019 | Reconnect expired OAuth | BLOCKED_MATT OAuth |
+| CAP-019 | ~~Reconnect expired OAuth~~ **SCRUBBED 2026-08-15** — tokens auto-refresh via daily heartbeat (verified live); LinkedIn PARKED (no provider refresh token). Residual: publish cadence productization | ACTIVE |
 | CAP-020 | First cohort send | BLOCKED_MATT |
 | CAP-021–023 | Broker/portal productization | ACTIVE |
 | CAP-024 | Shell maintain | KEEP |
@@ -87,7 +87,7 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 | INT-001 | CLI link for migrations | BLOCKED_ENV |
 | INT-002 | Spark freshness Sense | ACTIVE |
 | INT-004–008 | Deeper health probes | ACTIVE |
-| INT-009–013 | Token reconnect | BLOCKED_MATT OAuth |
+| INT-009–013 | ~~Token reconnect~~ **DONE 2026-08-15** — GBP/TikTok/YouTube/X auto-refresh verified live (heartbeat + on-demand); INT-010 LinkedIn **PARKED** (refresh_token NULL from provider) | DONE / PARKED |
 | INT-014–016 | Threads/Nextdoor/Pinterest | **PARKED** |
 | INT-017 | SkySlope mirror re-sync | ACTIVE FIX |
 | INT-018 | FUB residue cleanup optional | LEGACY |
@@ -151,7 +151,7 @@ Tracked in ADVANCEMENT_PLAN.md §2. All streams remain visible.
 | ~~F7 MV window~~ **SCRUBBED** — applied prod 2026-07-29 (T-017 / F7-sync-contention.md); residual latency ≠ unapplied F7 |
 | Newsletter first cohort |
 | Ad spend / outbound / public publish approvals |
-| OAuth reconnect logins |
+| ~~OAuth reconnect logins~~ **SCRUBBED 2026-08-15** — auto-refresh verified; LinkedIn parked. Only a future "connect LinkedIn/Threads/Pinterest/Nextdoor" decision would be Matt's |
 | DNS cutover |
 | TC_BUILDOUT unpause |
 | Agentic graph Wave GO |

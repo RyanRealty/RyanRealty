@@ -86,7 +86,7 @@ See `inventories/M-live-db-counts.json` / EVIDENCE-LOG. Snapshot includes listin
 ### S5 Distribution
 | Cite | Work | Status |
 |------|------|--------|
-| INT-009–013 | OAuth reconnect | RECONNECT Matt |
+| INT-009–013 | ~~OAuth reconnect~~ **SCRUBBED 2026-08-15** — auto-refresh verified live (heartbeat); LinkedIn PARKED (refresh_token NULL) | DONE / PARKED |
 | INT-014–016 | Threads/Nextdoor/Pinterest | **PARKED** |
 | CAP-016/017 | Producers + video park/rebuild | ACTIVE / PARK decision residual |
 | CAP-018 | Ads ops | BLOCKED_MATT spend |
@@ -117,7 +117,7 @@ See `inventories/M-live-db-counts.json` / EVIDENCE-LOG. Snapshot includes listin
 - ~~F7 MV maintenance window~~ **SCRUBBED** (prod 2026-07-29)  
 - Newsletter first cohort send  
 - Ad spend / outbound to real people / public social publish approvals  
-- OAuth reconnect logins  
+- ~~OAuth reconnect logins~~ **SCRUBBED 2026-08-15** (auto-refresh verified; LinkedIn parked)  
 - DNS cutover timing  
 - TC_BUILDOUT unpause  
 - GO on agentic graph waves  
@@ -145,7 +145,7 @@ See `inventories/M-live-db-counts.json` / EVIDENCE-LOG. Snapshot includes listin
 ## 6. Immediate next ship classes (agent-executable)
 
 1. CAP-015: ensure publisher-sweep writes `published_to` for content executes; run measurement-loop to flip measured via reconcile.  
-2. Social: produce reconnect runbook (no secret login by agent).  
+2. ~~Social reconnect runbook~~ **SCRUBBED 2026-08-15** — tokens self-renew via heartbeat; LinkedIn parked.  
 3. SkySlope: re-sync ops path / document stale mirror.  
 4. Meta audience: re-run heartbeat cron when credentials allow.  
 5. Continue CAP maturity PARTIAL → VERIFIED with path+live probes.  

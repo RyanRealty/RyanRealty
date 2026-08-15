@@ -16,7 +16,15 @@ export type TokenHealth = {
   table: string
   rows: number
   expiresAt: string | null
-  status: 'valid' | 'expired' | 'empty' | 'unreadable'
+  refreshTokenPresent: boolean
+  /**
+   * 'auto-refresh' = access token past expires_at but a refresh token is stored:
+   * the daily token-heartbeat renews it on demand. NOT a dead connection — the
+   * 2026-08-15 escape was calling these "expired, Matt must reconnect."
+   * 'needs-reauth' = past expiry with no refresh token: only a new OAuth grant
+   * can revive it (park it unless the platform matters).
+   */
+  status: 'valid' | 'auto-refresh' | 'needs-reauth' | 'empty' | 'unreadable'
 }
 
 export type CompanyScoreboardSignals = {
@@ -135,6 +143,9 @@ const SOCIAL_TABLES = [
   'nextdoor_auth',
 ] as const
 
+// threads_auth carries a long-lived token with no refresh_token column.
+const NO_REFRESH_COLUMN = new Set<string>(['threads_auth'])
+
 function bump(map: CountByKey, key: string, amount = 1) {
   map[key] = (map[key] ?? 0) + amount
 }
@@ -238,7 +249,9 @@ export async function collectCompanyScoreboardSignals(
     sb.from('visitor_events').select('id', { count: 'exact', head: true }).gte('event_at', since7d),
     sb.from('meta_audience_log').select('ran_at').order('ran_at', { ascending: false }).limit(1),
     sb.from('cmas').select('id', { count: 'exact', head: true }),
-    ...SOCIAL_TABLES.map((table) => sb.from(table).select('expires_at,updated_at')),
+    ...SOCIAL_TABLES.map((table) =>
+      sb.from(table).select(NO_REFRESH_COLUMN.has(table) ? 'expires_at' : 'expires_at,refresh_token'),
+    ),
   ])
 
   const crm = emptyCrm()
@@ -265,15 +278,22 @@ export async function collectCompanyScoreboardSignals(
   }
 
   const tokens: TokenHealth[] = SOCIAL_TABLES.map((table, i) => {
-    const res = tokenResults[i] as { data: Array<{ expires_at?: string; updated_at?: string }> | null; error: { message: string } | null }
+    const res = tokenResults[i] as {
+      data: Array<{ expires_at?: string; refresh_token?: string | null }> | null
+      error: { message: string } | null
+    }
     if (res.error) {
-      return { table, rows: 0, expiresAt: null, status: 'unreadable' }
+      return { table, rows: 0, expiresAt: null, refreshTokenPresent: false, status: 'unreadable' }
     }
     const rows = res.data ?? []
-    if (rows.length === 0) return { table, rows: 0, expiresAt: null, status: 'empty' }
+    if (rows.length === 0) {
+      return { table, rows: 0, expiresAt: null, refreshTokenPresent: false, status: 'empty' }
+    }
     const expiresAt = rows[0]?.expires_at ?? null
-    const expired = expiresAt ? Date.parse(expiresAt) < now.getTime() : false
-    return { table, rows: rows.length, expiresAt, status: expired ? 'expired' : 'valid' }
+    const refreshTokenPresent = Boolean(rows[0]?.refresh_token?.trim())
+    const pastExpiry = expiresAt ? Date.parse(expiresAt) < now.getTime() : false
+    const status = !pastExpiry ? 'valid' : refreshTokenPresent ? 'auto-refresh' : 'needs-reauth'
+    return { table, rows: rows.length, expiresAt, refreshTokenPresent, status }
   })
 
   const sync: CompanyScoreboardSignals['sync'] = {

@@ -12,6 +12,8 @@
 - Canon v1.3.0 §Company versions + changelog; pointers bumped (CLAUDE, TEMPLATE, producer-output-class, addendum, scoreboard, SESSION_HANDOFF, growth-loop SKILL, domains.ts). G44 green, 262 plan docs registered.
 - Live probe 2026-08-15T15:3xZ: **11 of 12 open windows expired-unlearned, all `seo-aeo` → domain frozen until Learn closes them.** TikTok token expires 2026-08-16T12:00Z (G14). Meta audience heartbeat first green 14:03Z (G11).
 
+**Correction same day (Matt: "knock it off" on reconnect asks) — ESCAPE `cb7699f1`:** the "4 red integrations, Matt must reconnect" claim was FALSE for 3 of 4. Verified live: GBP/YouTube/X/TikTok auto-refresh via the daily 12:00Z token-heartbeat (refresh tokens on file; scheduled run 2026-08-15T12:00:03Z all ok; on-demand trigger rolled expiries to 19:09/20:09Z). Only LinkedIn lacks a provider refresh token → **PARKED, never a reconnect ask**. Fixed everywhere: signals.ts TokenHealth (`refreshTokenPresent`, `auto-refresh`/`needs-reauth` statuses), VERSION-1 (no OAuth Matt move; 6 Matt moves; G14 DONE), INTEGRATIONS (red 4→0, RECONNECT 5→0), SOCIAL-PARKS, CAP-019, ALL-OPEN, ADVANCEMENT_PLAN, REMAINING, DUAL-PASS, SESSION_HANDOFF, scoreboard §0, EVIDENCE-LOG 2026-08-15 entry. **Rule: liveness authority is heartbeat `sync_logs`, never `expires_at` alone. Do not re-add reconnect asks.**
+
 **Next:** G1 (close the 11 seo-aeo windows from GSC actuals) unfreezes SEO. Then the scored queue: G2 identity stitch (1/164), G3 Lead stage 0, G4 alerts coverage. Matt moves listed in VERSION-1 §M.
 
 **SHA:** see this commit. Prior `649c0a79`, `7d4a7256` on origin.

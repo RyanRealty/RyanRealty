@@ -26,20 +26,20 @@ number).
 | **2. Data in** | Feeds that fill layer 1 | Spark MLS sync 3 lanes (CAP-007) · analytics snapshots GA4/GSC/socials (CAP-031) · email + SMS events (INT-004/005) · visitor tracking + identity map (164 visitors, 1 stitched to a person) · SkySlope mirror (INT-017, stale 2026-06-10) | Working. Identity stitch and SkySlope mirror are the weak seams. |
 | **3. Public product** | The 296-page site a consumer sees | Search/map (CAP-002) · listing detail (CAP-003) · geo/neighborhood pages (CAP-004) · market hub (CAP-005) · landing pages (CAP-008) · team (CAP-021) · account (CAP-023) · SEO/AEO (CAP-029) · design system (CAP-026) · voice (CAP-028) | Working-to-reliable. No route below Working. |
 | **4. Broker product** | The 170-page admin the brokers run the business on | CRM people/inbox/sequences (CAP-009/010/011) · CMA/BPO (CAP-013) · TC (CAP-012) · prospecting (CAP-014) · newsletter (CAP-020) · DSCR (CAP-034) · SMS agent (CAP-035) · broker platform/onboarding (CAP-022) · admin shell + design (CAP-024/025/027) | Uneven. Shell VERIFIED at Reliable; TC, SMS agent, and onboarding are Skeleton. |
-| **5. Outbound + distribution** | How work leaves the building | Marketing brain pipeline (CAP-015) · producers (CAP-016) · video (CAP-017) · Meta ads/audiences (CAP-018) · social publishing OAuth (CAP-019) · westside program (CAP-030) | Weakest layer. 4 of 5 social tokens expired; brain measured=2 of 420 ready; sends Matt-gated by design. |
+| **5. Outbound + distribution** | How work leaves the building | Marketing brain pipeline (CAP-015) · producers (CAP-016) · video (CAP-017) · Meta ads/audiences (CAP-018) · social publishing OAuth (CAP-019) · westside program (CAP-030) | Weakest layer, but not for tokens: TikTok, YouTube, X, GBP, and the Meta page token all self-renew via the daily heartbeat (verified live 2026-08-15). LinkedIn is parked (provider issued no refresh token). The real gaps: brain measured=2 of 420 ready; sends Matt-gated by design. |
 | **6. The factory** | How the company changes itself | THE LOOP + gates (271 `ci:*`) · 61 registered crons · deploy discipline · the Enterprise Map · this manifest (CAP-032, FAC-*) | Working. The Learn step became mechanical with v1.3.0 (this delivery). |
 
 ## Where v0 stands (map close 2026-08-08 + probe 2026-08-15)
 
 - **Capabilities:** 6 Reliable · 22 Working · 7 Skeleton · 0 below Skeleton. Evidence: 6 VERIFIED · 27 PARTIAL · 1 UNKNOWN · 1 BLOCKED_MATT.
-- **Integrations:** 9 green · 10 amber · 4 red (GBP, LinkedIn, YouTube, X — all OAuth expiry) · 6 dark (parked) · 8 unknown.
+- **Integrations:** the 2026-08-08 map close called GBP, LinkedIn, YouTube, and X red "reconnect" items. **Corrected 2026-08-15 with live evidence:** GBP, YouTube, and X carry 1–2 hour access tokens by provider design and auto-refresh from stored refresh tokens via the daily 12:00Z token-heartbeat (scheduled run 2026-08-15T12:00:03Z all OK; live trigger rolled expiries forward on demand). TikTok same, verified. Only LinkedIn is dead — its provider issued no refresh token — and it is **PARKED**, not a reconnect ask. Red count after correction: **0**.
 - **Ledger:** 12 rows · 12 open windows · **11 expired-unlearned, all `seo-aeo`** — the measured proof of the ad-hoc habit. The WIP guard now refuses new classes in that domain until they close.
-- **Live seams:** identity 1/164 stitched · Lead stage = 0 of 22,672 people · 6 active listing alerts · email clicks 7d = 0 · TikTok token expires 2026-08-16T12:00Z.
+- **Live seams:** identity 1/164 stitched · Lead stage = 0 of 22,672 people · 6 active listing alerts · email clicks 7d = 0.
 
 ## The v1 floor (all seven, together)
 
 1. **No capability below Working (3)** — or it carries Matt's explicit PARK / BLOCKED sign-off recorded on this manifest.
-2. **Zero red integrations** — each reconnected (Matt OAuth) or explicitly parked.
+2. **Zero needs-reauth integrations** — tokens with refresh tokens on file self-renew via the heartbeat (that is the system working, not a defect); anything the provider will not refresh is explicitly parked. Met 2026-08-15: LinkedIn parked, everything else auto-refreshes.
 3. **Zero FIX integrations** — Meta audience heartbeat green for a full week (first green run 2026-08-15T14:03Z); SkySlope mirror re-synced or the cutover decided.
 4. **Zero expired unlearned ledger windows** — now mechanical: `insertImprovementLedgerRow` refuses a stranded domain; `closeImprovementLedgerRow` is the Learn step.
 5. **Zero UNKNOWN in the weekly packet on claimed-fixed signals** — plus first rendered look-walk baselines (public site 390+1280, CMA output) and `/join` conversion instrumented.
@@ -65,19 +65,20 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | G11 | Meta audience heartbeat: hold green 7 days from 2026-08-15, then flip INT-007 FIX→KEEP | INT-007 | factory |
 | G12 | Video decision docket for Matt: park or rebuild, with costs and the brain-path option | CAP-017 | factory |
 | G13 | Probe each unknown-health integration once (Sentry ingest, OpenAI/xAI call path, stock/gen media, VAPID, AdSense); flip to green or park | INT-021…036 | factory |
-| G14 | TikTok auto-refresh verified actually renewing (token expires 2026-08-16T12:00Z); else it joins M1 | INT-011 | social-presence |
+| G14 | **DONE 2026-08-15** — token auto-refresh verified live: scheduled heartbeat 12:00:03Z refreshed TikTok (rolls daily) and renewed YouTube/X/GBP; on-demand trigger moved expiries forward again at 19:09Z. Refresh tokens on file for all four. | INT-009/011/012/013, heartbeat `sync_logs` | social-presence |
 
 Matt-only (the complete list of human dependencies for v1 — nothing else waits on you):
 
 | # | Move | Ref |
 |---|---|---|
-| M1 | OAuth reconnect: GBP, LinkedIn, YouTube, X (sign-in only; runbook exists) | INT-009/010/012/013 |
-| M2 | Newsletter first cohort send (5,346 subscribers waiting) | CAP-020 |
-| M3 | TC: unpause TC_BUILDOUT or hold, and the SkySlope cutover decision | CAP-012 |
-| M4 | Video: park or rebuild (after G12 docket) | CAP-017 |
-| M5 | Ads spend: fund or explicitly park for v1 (audience wiring is agent work either way) | CAP-018 |
-| M6 | DNS cutover timing (ryan-realty.com) | CAP-001 |
-| M7 | One-line PARK sign-off: Threads, Nextdoor, Pinterest, RentCast, SchoolDigger, Inngest stay parked for v1 | INT PARK list |
+| M1 | Newsletter first cohort send (5,346 subscribers waiting) | CAP-020 |
+| M2 | TC: unpause TC_BUILDOUT or hold, and the SkySlope cutover decision | CAP-012 |
+| M3 | Video: park or rebuild (after G12 docket) | CAP-017 |
+| M4 | Ads spend: fund or explicitly park for v1 (audience wiring is agent work either way) | CAP-018 |
+| M5 | DNS cutover timing (ryan-realty.com) | CAP-001 |
+| M6 | One-line PARK sign-off: LinkedIn (no provider refresh token — a new grant only if you ever want LinkedIn distribution), Threads, Nextdoor, Pinterest, RentCast, SchoolDigger, Inngest stay parked for v1 | INT PARK list |
+
+There is no OAuth reconnect task. Tokens self-renew by design (Matt 2026-08-15: the credentials are env-side; stop asking). The prior M1 was an escape — see `process_escape_ledger`.
 
 ## Certification pass (run when the gap list is empty)
 
