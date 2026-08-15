@@ -27,7 +27,7 @@ import { attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
 import { composeBuildSummary, composeFailureSummary } from '@/lib/cma/build-summary'
-import { getCmaMarketContext } from '@/lib/cma/market'
+import { getCmaMarketContext, yearMartCite } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
 import { judgeComps, repairNarrativeAgainstAudit } from '@/lib/cma/judge'
 import { checkNarrativeIntegrity } from '@/lib/cma/audit-narrative-integrity'
@@ -799,7 +799,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
             methodology_version: market.methodologyVersion,
             computed_at: market.computedAt,
             pulse_updated_at: market.pulseUpdatedAt,
-            sold_count_365: market.soldCount365,
+            sold_count_365: market.soldCount365, year_volume: yearMartCite(market.yearMart),
             active_count: market.activeCount,
             months_of_supply: market.monthsOfSupply,
             months_of_supply_formula: market.mosFormula,

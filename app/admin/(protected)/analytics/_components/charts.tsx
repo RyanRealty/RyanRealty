@@ -1,41 +1,14 @@
-'use client'
-
 /**
- * Recharts client wrappers. Kept thin so the server pages can pass
- * already-shaped data without importing the recharts SDK on the server.
+ * Admin analytics charts. Same plot geometry as the public V3Chart.
+ * Skin is AChart (--a-* classes). Recharts is gone. CSS variables resolve
+ * because stroke and fill are classes, not SVG presentation attributes.
  */
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  LineChart,
-  Line,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts'
-
-// 11C: the admin owns its own palette (design_system/admin/ADMIN_UI.md — the
-// public brand is blacklisted as design input here). Series colours step down
-// the accent + neutral tokens; no status colour is spent on decoration.
-const SERIES_COLORS = [
-  'var(--a-accent)',
-  'var(--a-accent-strong)',
-  'var(--a-text-2)',
-  'var(--a-border-strong)',
-  'var(--a-border)',
-] as const
+import { AChart } from '@/components/admin/v2'
 
 export function HorizontalBarChart({
   data,
   xKey,
   yKey,
-  height = 320,
   formatter,
 }: {
   data: Record<string, string | number>[]
@@ -44,118 +17,106 @@ export function HorizontalBarChart({
   height?: number
   formatter?: (v: number) => string
 }) {
+  const points = data
+    .map((row) => {
+      const value = Number(row[yKey])
+      const tick = String(row[xKey] ?? '')
+      if (!Number.isFinite(value) || value <= 0 || !tick) return null
+      const label = formatter ? formatter(value) : value.toLocaleString('en-US')
+      return { value, tick, label }
+    })
+    .filter((p): p is { value: number; tick: string; label: string } => p != null)
+
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 16 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--a-border)" horizontal={false} />
-        <XAxis type="number" stroke="var(--a-text-2)" tickFormatter={(v) => (formatter ? formatter(Number(v)) : String(v))} />
-        <YAxis type="category" dataKey={xKey} stroke="var(--a-text-2)" width={180} interval={0} />
-        <Tooltip
-          formatter={(v: number) => (formatter ? formatter(v) : v.toLocaleString())}
-          contentStyle={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 8, color: 'var(--a-text)' }}
-        />
-        <Bar dataKey={yKey} fill="var(--a-accent)" radius={[0, 4, 4, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <AChart
+      caption="Top sources by lead volume"
+      kind="bars"
+      layout="horizontal"
+      baselineLabel="0"
+      series={[{ name: 'Leads', points }]}
+      emptyReason="No source attribution in this range."
+    />
   )
 }
 
 export function TimeSeriesChart({
   data,
   series,
-  height = 280,
 }: {
   data: { date: string; [k: string]: number | string }[]
   series: { key: string; label: string; color?: string }[]
   height?: number
 }) {
+  const plotted = series.map((s) => ({
+    name: s.label,
+    points: data.map((row, i) => {
+      const value = Number(row[s.key])
+      const tick = String(row.date)
+      return {
+        value: Number.isFinite(value) ? value : Number.NaN,
+        tick,
+        label: Number.isFinite(value) ? value.toLocaleString('en-US') : 'n/a',
+        at: i,
+      }
+    }),
+  }))
+
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--a-border)" />
-        <XAxis dataKey="date" stroke="var(--a-text-2)" tickFormatter={(d) => String(d).slice(5)} />
-        <YAxis stroke="var(--a-text-2)" />
-        <Tooltip
-          contentStyle={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 8, color: 'var(--a-text)' }}
-          formatter={(v: number) => v.toLocaleString()}
-        />
-        <Legend />
-        {series.map((s, i) => (
-          <Line
-            key={s.key}
-            type="monotone"
-            dataKey={s.key}
-            name={s.label}
-            stroke={s.color ?? SERIES_COLORS[i % SERIES_COLORS.length]}
-            strokeWidth={2}
-            dot={false}
-          />
-        ))}
-      </LineChart>
-    </ResponsiveContainer>
+    <AChart
+      caption="Sessions and leads by day"
+      kind="line"
+      series={plotted}
+      emptyReason="No daily snapshots in this range."
+    />
   )
 }
 
 export function BrokerPieChart({
   data,
-  height = 280,
 }: {
   data: { broker: string; count: number }[]
   height?: number
 }) {
+  const points = data
+    .filter((r) => r.count > 0 && r.broker)
+    .map((r) => ({
+      value: r.count,
+      tick: r.broker,
+      label: r.count.toLocaleString('en-US'),
+    }))
+
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <PieChart>
-        <Pie
-          data={data}
-          dataKey="count"
-          nameKey="broker"
-          innerRadius={60}
-          outerRadius={100}
-          paddingAngle={2}
-          isAnimationActive={false}
-        >
-          {data.map((_, i) => (
-            <Cell key={i} fill={SERIES_COLORS[i % SERIES_COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip
-          contentStyle={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 8, color: 'var(--a-text)' }}
-        />
-        <Legend />
-      </PieChart>
-    </ResponsiveContainer>
+    <AChart
+      caption="Broker attribution"
+      kind="bars"
+      layout="horizontal"
+      baselineLabel="0"
+      series={[{ name: 'Leads', points }]}
+      emptyReason="No broker assignments in this range."
+    />
   )
 }
 
 export function StackedBarMix({
   data,
-  height = 280,
 }: {
   data: { classification: string; count: number }[]
   height?: number
 }) {
-  // Render as a single stacked row so it reads as a mix bar.
-  // Recharts stacked-bar needs a fake date axis.
-  const flattened: Record<string, number | string> = { name: 'Mix' }
-  for (const r of data) flattened[r.classification] = r.count
-
-  const keys = data.map((r) => r.classification)
+  const points = data
+    .filter((r) => r.count > 0 && r.classification)
+    .map((r) => ({
+      value: r.count,
+      tick: r.classification,
+      label: r.count.toLocaleString('en-US'),
+    }))
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={[flattened]} layout="vertical" margin={{ top: 16, right: 16, bottom: 16, left: 16 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--a-border)" />
-        <XAxis type="number" stroke="var(--a-text-2)" />
-        <YAxis type="category" dataKey="name" stroke="var(--a-text-2)" />
-        <Tooltip
-          contentStyle={{ background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 8, color: 'var(--a-text)' }}
-        />
-        <Legend />
-        {keys.map((k, i) => (
-          <Bar key={k} dataKey={k} stackId="mix" fill={SERIES_COLORS[i % SERIES_COLORS.length]} />
-        ))}
-      </BarChart>
-    </ResponsiveContainer>
+    <AChart
+      caption="Lead channel mix"
+      kind="mix"
+      series={[{ name: 'Leads', points }]}
+      emptyReason="No leads captured in this range."
+    />
   )
 }

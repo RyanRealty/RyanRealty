@@ -18,6 +18,7 @@ import type { V3QuietItem } from '@/components/site/v3'
 import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
 import type { LifestyleNearItem } from '@/lib/explore/lifestyle-near'
 import { valuationHref } from '@/lib/site/valuation-href'
+import { resortQuietItems } from '@/app/communities/_v3/resort-doors'
 
 export type EdgeInput = {
   displayName: string
@@ -27,9 +28,11 @@ export type EdgeInput = {
   resortSlug: string | null
   placeContext: PlaceContext
   lifestyleItems: readonly LifestyleNearItem[]
-  peerPlats: ReadonlyArray<{ name: string; href: string }>
-  /** Where "every home for sale here" goes, built by the page from lib/slug. */
+  peerPlats: ReadonlyArray<{ name: string, href: string }>
+  /** Place-filtered Homes URL for this plat (city + subdivision slug). */
   browseHref: string
+  /** Place-filtered Market URL for this plat. */
+  marketHref: string
   /** This plat's own path. The valuation origin. */
   pagePath: string
 }
@@ -51,6 +54,7 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
     lifestyleItems,
     peerPlats,
     browseHref,
+    marketHref,
     pagePath,
   } = input
 
@@ -88,7 +92,9 @@ export function buildSubdivisionEdges(input: EdgeInput): V3QuietItem[] {
     for (const peer of peerPlats) push(peer.name, peer.href)
   }
 
-  push(`Every ${displayName} home for sale`, browseHref)
+  push(`${displayName} homes for sale`, browseHref)
+  push(`${displayName} market report`, marketHref)
+  edges.push(...resortQuietItems())
   push('All Central Oregon communities', '/communities')
   push('All Central Oregon cities', '/cities')
   push('Value my home', valuationHref(pagePath))

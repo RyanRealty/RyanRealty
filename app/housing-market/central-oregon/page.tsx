@@ -135,7 +135,7 @@ import {
   MARKET_CONSEQUENCE,
   PAGE_PATH,
 } from './_v3/region-constants'
-import { buildRegionInstruments } from './_v3/region-figures'
+import { buildRegionInstruments, buildRegionLead, withoutMosFigures } from './_v3/region-figures'
 import {
   buildCityLedger,
   buildClosedLedger,
@@ -143,6 +143,7 @@ import {
   buildGuideRows,
 } from './_v3/region-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from '../_v3/market-charts'
+import '../_v3/tremor-density.css'
 
 export const revalidate = 300
 
@@ -243,13 +244,10 @@ export default async function CentralOregonRegionPage() {
   // assembled from the figures that section actually rendered (invariant 3). Split out
   // under ci:file-size-budget's own instruction, alongside the Ledger builders.
   const region = buildRegionInstruments(regionPulse, mosText)
-  const [firstLiveFigure, ...restLiveFigures] = region.live.figures
+  const lead = buildRegionLead(closedSeries, mosText)
+  const [firstLeadFigure, ...restLeadFigures] = lead.figures
+  const [firstLiveFigure, ...restLiveFigures] = withoutMosFigures(region.live.figures)
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
-
-  // The three Ledgers, built in ./_v3/region-sections.ts. Pure turns from a DAL row
-  // into barrel-ready props, split out under ci:file-size-budget's own instruction,
-  // and each returns its rows WITH the stamp computed from those same rows (invariant
-  // 3) and, for the cities, the covered places it could not source (invariant 4).
   const cityLedger = buildCityLedger(citySnapshots)
   const [firstCityRow, ...restCityRows] = cityLedger.rows
   const closedLedger = buildClosedLedger(closedSeries)
@@ -377,28 +375,31 @@ export default async function CentralOregonRegionPage() {
           ]}
         />
 
-        {firstLiveFigure ? (
+        {firstLeadFigure ? (
           <V3Instrument
             id="market"
             level={1}
+            className="hm-tremor"
             eyebrow={v3Text('Central Oregon, Oregon')}
             headline={v3Text(
               `Central Oregon market report${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
-            figures={[firstLiveFigure, ...restLiveFigures]}
-            source={v3Text(region.live.trace)}
-            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
-            // PRIMARY, and it is the page's only filled control above the Sheet
-            // (invariant 5). It was a ghost until 2026-08-12 on the premise that the
-            // sticky header carries a filled valuation CTA; measured at 390 that CTA
-            // is display:none and its twin sits in the closed Menu+ overlay, so the
-            // ghost left the first viewport with no ask at all. `from` is invariant 6.
+            figures={[firstLeadFigure, ...restLeadFigures]}
+            source={v3Text(lead.source)}
+            updated={
+              lead.latest?.computedAt
+                ? v3Text(formatDate(lead.latest.computedAt))
+                : refreshedAt
+                  ? v3Text(formatDate(refreshedAt))
+                  : undefined
+            }
             action={{
               label: v3Text('Value my home'),
               href: VALUATION_HREF,
               variant: 'primary',
             }}
-            chart={regionChart}
+            chart={lead.chart}
+            chartSecondary={lead.chartSecondary}
           />
         ) : (
           <V3Quiet
@@ -408,8 +409,8 @@ export default async function CentralOregonRegionPage() {
             items={[
               {
                 kind: 'prose',
-                term: 'No live figures right now',
-                body: 'The Central Oregon market row did not return on this refresh, so this page is not printing a median, an inventory count, or a verdict. The city reports below carry their own live rows.',
+                term: 'No ALL-TYPE volume on this refresh',
+                body: lead.source,
               },
             ]}
           />
@@ -445,6 +446,20 @@ export default async function CentralOregonRegionPage() {
             )}
           />
         )}
+
+        {firstLiveFigure ? (
+          <V3Instrument
+            id="sfr-pulse"
+            level={2}
+            className="hm-tremor"
+            eyebrow={v3Text('SFR pulse')}
+            headline={v3Text('Single-family list inventory')}
+            figures={[firstLiveFigure, ...restLiveFigures]}
+            source={v3Text(region.live.trace)}
+            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
+            chart={regionChart}
+          />
+        ) : null}
 
         <V3Quiet
           id="summary"

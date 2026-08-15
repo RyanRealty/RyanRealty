@@ -1,152 +1,56 @@
 'use client'
 
 /**
- * MarketCoreCharts — THE tabbed core-chart module. Market data embeds are one
- * chart or zero charts: a handful of fast, cache-fed series (median price,
- * inventory, days on market, months of supply, price cuts, closed sales), one
- * per tab, one component used everywhere (city page, community page, listing
- * detail market context).
- *
- * Contract:
- *   - Server-data-in / client-render: the page fetches getCoreChartSeries and
- *     passes the payload; this component never fetches.
- *   - A tab with no chartable series is OMITTED (never an empty chart); with
- *     zero chartable tabs the module renders nothing.
- *   - Design tokens only (navy primary strokes, muted grid, card surface) so
- *     it reads correctly on cream pages and inside navy KB sections alike.
- *   - Tabular numerals on every numeric surface; respects
- *     prefers-reduced-motion (chart draw animation off).
- *   - Every tab carries its §0 trace (source + period) in the fine print.
+ * MarketCoreCharts — tabbed city-scope series on the listing market block.
+ * Geometry is V3Chart (lib/charts/plot). Tabs stay client. A tab with fewer
+ * than two points is omitted. Zero chartable tabs render nothing.
  */
 
 import { useMemo, useRef, useState } from 'react'
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
 import { cn } from '@/lib/utils'
+import { V3Chart, v3Text } from '@/components/site/v3'
 import type { CoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
-import { buildCoreChartTabs, formatCoreChartAxis, formatCoreChartValue, type CoreChartTab } from './core-charts'
+import { buildCoreChartTabs, type CoreChartTab } from './core-charts'
 
 export type MarketCoreChartsProps = {
   data: CoreChartSeries | null
-  /** Optional heading above the tabs. Sentence case. */
   heading?: string
   /**
-   * Names the geography charted when it differs from the page subject (e.g. a
-   * sparse community falling back to its parent city). Rendered next to the
-   * heading so a city series is never read as the community's. (§0)
+   * Names the geography charted when it differs from the page subject.
+   * A city series is never read as the community's. (§0)
    */
   scopeLabel?: string
   className?: string
 }
 
-const CHART_HEIGHT = 232
-const STROKE = 'var(--primary)'
-const GRID = 'var(--border)'
-const TICK = { fontSize: 11, fill: 'var(--muted-foreground)' } as const
-
-function usePrefersReducedMotion(): boolean {
-  // Lazy init on the client; SSR markup carries no animation state.
-  const [reduced] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  )
-  return reduced
+function chartForTab(tab: CoreChartTab) {
+  return {
+    caption: v3Text(`${tab.tabLabel}, ${tab.period}`),
+    kind: tab.kind === 'bar' ? ('bars' as const) : ('line' as const),
+    series: [
+      {
+        name: v3Text(tab.tabLabel),
+        points: tab.rows.map((row) => ({
+          value: row.value,
+          tick: v3Text(row.label),
+          label: v3Text(formatReading(tab, row.value)),
+        })),
+      },
+    ],
+  }
 }
 
-function ChartForTab({
-  tab,
-  animate,
-  ...sized
-}: {
-  tab: CoreChartTab
-  animate: boolean
-  /** Injected by ResponsiveContainer via cloneElement. */
-  width?: number
-  height?: number
-}) {
-  const common = {
-    ...sized,
-    data: tab.rows,
-    margin: { top: 8, right: 8, bottom: 0, left: 0 },
+function formatReading(tab: CoreChartTab, value: number): string {
+  if (tab.metric === 'medianClosePrice') {
+    return `$${(Math.round(value / 1000) * 1000).toLocaleString('en-US')}`
   }
-  const tooltipProps = {
-    formatter: (v: number | string) =>
-      [formatCoreChartValue(tab.metric, typeof v === 'number' ? v : Number(v)), tab.tabLabel] as [string, string],
-    labelFormatter: (_label: unknown, payload: ReadonlyArray<{ payload?: { fullLabel?: string } }>) =>
-      payload?.[0]?.payload?.fullLabel ?? '',
-    contentStyle: {
-      background: 'var(--card)',
-      border: '1px solid var(--border)',
-      borderRadius: 10,
-      color: 'var(--foreground)',
-      fontSize: 12,
-      fontVariantNumeric: 'tabular-nums',
-    },
-    cursor: { stroke: GRID },
-  }
-  // A keyed ARRAY, not a fragment: recharts 2.x resolves XAxis/YAxis/Grid by
-  // walking React.Children, which flattens arrays but NOT fragments — inside a
-  // fragment all three silently vanish (no grid, no axis labels).
-  const axes = [
-    <CartesianGrid key="grid" stroke={GRID} strokeDasharray="3 3" vertical={false} />,
-    <XAxis
-      key="x"
-      dataKey="label"
-      tick={TICK}
-      tickLine={false}
-      axisLine={{ stroke: GRID }}
-      minTickGap={32}
-      interval="preserveStartEnd"
-    />,
-    <YAxis
-      key="y"
-      tick={TICK}
-      tickLine={false}
-      axisLine={false}
-      width={46}
-      domain={['auto', 'auto']}
-      tickFormatter={(v: number) => formatCoreChartAxis(tab.metric, v)}
-    />,
-  ]
-  if (tab.kind === 'bar') {
-    return (
-      <BarChart {...common}>
-        {axes}
-        <Tooltip {...tooltipProps} />
-        <Bar dataKey="value" fill={STROKE} fillOpacity={0.85} radius={[3, 3, 0, 0]} isAnimationActive={animate} />
-      </BarChart>
-    )
-  }
-  return (
-    <LineChart {...common}>
-      {axes}
-      <Tooltip {...tooltipProps} />
-      <Line
-        type="linear"
-        dataKey="value"
-        stroke={STROKE}
-        strokeWidth={2.25}
-        dot={false}
-        activeDot={{ r: 3.5, fill: STROKE }}
-        isAnimationActive={animate}
-      />
-    </LineChart>
-  )
+  if (tab.metric === 'priceCutShare') return `${value.toFixed(1)}%`
+  if (tab.metric === 'monthsOfSupply') return tab.latestValue
+  if (tab.metric === 'medianDom') return `${Math.round(value)} days`
+  if (tab.metric === 'closedVolume') return `${Math.round(value).toLocaleString('en-US')} sold`
+  return `${Math.round(value).toLocaleString('en-US')} active`
 }
 
-/**
- * Hand-rolled tab strip in the KB idiom (real buttons, WAI-ARIA tabs pattern,
- * design tokens) — site surfaces are shadcn-free per the G47 burn-down gate.
- * Roving tabindex; arrow keys, Home and End move selection.
- */
 function CoreChartTabStrip({
   tabs,
   active,
@@ -208,21 +112,15 @@ function CoreChartTabStrip({
 
 export function MarketCoreCharts({ data, heading, scopeLabel, className }: MarketCoreChartsProps) {
   const tabs = useMemo(() => buildCoreChartTabs(data), [data])
-  const reducedMotion = usePrefersReducedMotion()
   const [activeMetric, setActiveMetric] = useState<string | null>(null)
   if (tabs.length === 0) return null
   const active = tabs.find((t) => t.metric === activeMetric)?.metric ?? tabs[0]!.metric
   const tab = tabs.find((t) => t.metric === active)!
   const idBase = 'core-charts'
+  const chart = chartForTab(tab)
 
   return (
-    <div
-      className={cn(
-        'rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-6',
-        'tabular-nums',
-        className,
-      )}
-    >
+    <div className={cn('rounded-2xl border border-border bg-card p-4 text-card-foreground sm:p-6', className)}>
       {heading ? (
         <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <h3 className="text-base font-semibold text-primary">{heading}</h3>
@@ -245,14 +143,15 @@ export function MarketCoreCharts({ data, heading, scopeLabel, className }: Marke
             <span className="text-xs font-medium text-foreground">{tab.verdictLabel}</span>
           ) : null}
         </div>
-        <div className="w-full" style={{ height: CHART_HEIGHT }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ChartForTab tab={tab} animate={!reducedMotion} />
-          </ResponsiveContainer>
-        </div>
+        <V3Chart
+          id={`${idBase}-${tab.metric}`}
+          caption={chart.caption}
+          kind={chart.kind}
+          series={chart.series}
+        />
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
           {tab.period} · regional MLS via {tab.metric === 'monthsOfSupply'
-            ? 'the market stats cache. Months of supply is active inventory divided by average monthly closed sales over the trailing 6 months. Four or less is a seller’s market, four to six is balanced, six or more is a buyer’s market.'
+            ? 'the market stats cache. Months of supply is active inventory divided by average monthly closed sales over the trailing 6 months. Four or less is a seller\'s market, four to six is balanced, six or more is a buyer\'s market.'
             : tab.metric === 'priceCutShare'
               ? 'the weekly market history snapshot. Share of active listings with at least one price cut.'
               : 'the market stats cache. Completed months only.'}

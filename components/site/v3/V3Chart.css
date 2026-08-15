@@ -131,6 +131,27 @@
   stroke-dasharray: 1.5 3;
 }
 
+.v3 .v3-chart__bar {
+  fill: var(--v3-ink);
+}
+
+.v3 .v3-chart__bar--1 {
+  fill: var(--v3-ink-muted);
+}
+
+.v3 .v3-chart__bar--2 {
+  fill: var(--v3-edge);
+}
+
+.v3 .v3-chart__plot--mix {
+  height: 2.25rem;
+}
+
+.v3 .v3-chart__key--0 .v3-chart__swatch {
+  border-top-style: solid;
+  border-top-color: var(--v3-ink);
+}
+
 .v3 .v3-chart__x {
   display: flex;
   justify-content: space-between;

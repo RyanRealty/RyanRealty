@@ -38,10 +38,21 @@
  */
 
 import type { MarketPulse } from '@/lib/data'
+import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice } from '@/lib/format/money'
 import { listingsBrowsePath } from '@/lib/slug'
-import { v3Text, type V3InstrumentFigure } from '@/components/site/v3'
+import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components/site/v3'
+import { buildClosedVolumeChart, buildCompositionChart } from '../../_v3/market-charts'
+import {
+  buildAllTypeFigures,
+  buildCompositionFigures,
+  closedMartMissingBody,
+  closedMartSource,
+  compositionParts,
+  pickLatestMartYear,
+} from '../../_v3/closed-kpis'
+import { CLOSED_SALES_TO_YEAR, HISTORY_PATH } from './region-constants'
 
 /** One Instrument's worth of props: its figures and the trace that covers them. */
 export type RegionSection = {
@@ -91,21 +102,21 @@ export function buildRegionInstruments(
   if (medianListPrice != null) {
     liveFigures.push({
       value: v3Text(formatPrice(medianListPrice)),
-      label: v3Text('median list price'),
+      label: v3Text('median list price, SFR pulse'),
       href: listingsBrowsePath(),
     })
   }
   if (activeCount != null) {
     liveFigures.push({
       value: v3Text(activeCount.toLocaleString('en-US')),
-      label: v3Text('homes for sale'),
+      label: v3Text('homes for sale, SFR pulse'),
       href: listingsBrowsePath(),
     })
   }
   if (mosText != null) {
     liveFigures.push({
       value: v3Text(mosText),
-      label: v3Text('months of supply'),
+      label: v3Text('months of supply, SFR pulse'),
       href: '/months-of-supply',
     })
   }
@@ -158,4 +169,76 @@ export function buildRegionInstruments(
     pace: { figures: paceFigures, trace: paceTrace },
     activeCount,
   }
+}
+
+export type RegionLead = {
+  latest: CoMarketAnnualRow | null
+  figures: V3InstrumentFigure[]
+  source: string
+  historyPath: string
+  chart: V3ChartProps | undefined
+  chartSecondary: V3ChartProps | undefined
+}
+
+/**
+ * First-screen ALL-TYPE volume + composition, with SFR months of supply so
+ * the verdict stays next to its number. Chart is attached by the page.
+ */
+export function buildRegionLead(
+  series: readonly CoMarketAnnualRow[],
+  mosText: string | null,
+): RegionLead {
+  const latest = pickLatestMartYear(series)
+  const historyPath = latest ? `${HISTORY_PATH}?year=${latest.year}` : HISTORY_PATH
+  const figures: V3InstrumentFigure[] = []
+  if (latest) {
+    figures.push(
+      ...buildAllTypeFigures({
+        soldCount: latest.soldCount,
+        totalVolume: latest.totalVolume,
+        historyHref: historyPath,
+      }),
+    )
+    figures.push(
+      ...buildCompositionFigures({
+        parts: compositionParts(latest.propertyTypeBreakdown),
+        historyHref: historyPath,
+      }),
+    )
+  }
+  if (mosText) {
+    figures.push({
+      value: v3Text(mosText),
+      label: v3Text('months of supply, SFR pulse'),
+      href: '/months-of-supply',
+    })
+  }
+  const sourceBits: string[] = []
+  if (latest) sourceBits.push(closedMartSource(latest.year))
+  else sourceBits.push(closedMartMissingBody(CLOSED_SALES_TO_YEAR))
+  if (mosText) {
+    sourceBits.push(
+      `Months of supply is live MLS, single-family (SFR pulse), Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
+    )
+  }
+  return {
+    latest,
+    figures,
+    source: sourceBits.join(' '),
+    historyPath,
+    chart: buildClosedVolumeChart(
+      series.filter((row) => row.source === 'mart'),
+      'ALL-TYPE closed volume by year, Central Oregon',
+    ),
+    chartSecondary: latest
+      ? buildCompositionChart(
+          compositionParts(latest.propertyTypeBreakdown),
+          `ALL-TYPE composition, ${latest.year}`,
+        )
+      : undefined,
+  }
+}
+
+export function withoutMosFigures(figures: readonly V3InstrumentFigure[]): V3InstrumentFigure[] {
+  return figures.filter((figure) => figure.href !== '/months-of-supply')
 }

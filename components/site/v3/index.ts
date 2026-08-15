@@ -70,7 +70,7 @@ export type {
  */
 export { V3Chart } from './V3Chart'
 
-export type { V3ChartProps, V3ChartSeries, V3ChartPoint } from './V3Chart'
+export type { V3ChartProps, V3ChartSeries, V3ChartPoint, V3ChartKind } from './V3Chart'
 
 /* -------------------------------------------------------------------------- */
 /* Pattern 1 — INSTRUMENT: the answer, big                                     */

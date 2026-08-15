@@ -74,15 +74,12 @@ export function homesLedgerTrace(scope: PlatScope): string {
 }
 
 /** Trace for the Field's rows and pins (population 2). */
-export function fieldTrace(scope: PlatScope, listedCap: number): string {
+export function fieldTrace(scope: PlatScope): string {
   const where =
     scope.kind === 'registry'
       ? `recorded under the ${scope.subdivisionName} subdivision name in ${scope.city}`
       : `inside the recorded ${scope.displayName} plat boundary`
-  return (
-    `${FEED}, active single-family listings ${where}. The list shows at most ${listedCap} of them, ` +
-    `and the map plots every one that carries coordinates.`
-  )
+  return `${FEED}, active single-family listings ${where}. Map and list are the same set.`
 }
 
 /**
@@ -111,8 +108,8 @@ export function platStatsTrace(displayName: string, cityName: string, periodLabe
  *
  * The sentence is composed from the figures that actually rendered, not from the
  * three the pulse row can carry. A guard in _v3/subdivision-figures.ts drops any
- * figure the row did not answer — including a closings count of 0, which the DAL
- * cannot distinguish from a NULL column — and a trace that named a figure the
+ * figure the row did not answer ,  including a closings count of 0, which the DAL
+ * cannot distinguish from a NULL column ,  and a trace that named a figure the
  * page then suppressed would be a source line describing a number nobody can see.
  */
 export function parentMarketTrace(scopeLabel: string, covers: ParentMarketCoverage): string {
@@ -154,6 +151,3 @@ export const PERIOD_LABEL: Record<
 
 /** How many closed years the Ledger prints. The KB table used the same ceiling. */
 export const MAX_YEAR_ROWS = 40
-
-/** How many listings the Field lists. The KB dual-pane used the same ceiling. */
-export const MAX_LISTED = 24

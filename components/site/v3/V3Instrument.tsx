@@ -175,6 +175,11 @@ export type V3InstrumentProps = {
    */
   chart?: V3ChartProps
   /**
+   * A second series under the first. Still one Instrument, not a seventh pattern.
+   * Use when the page has two honest series (composition and a monthly median).
+   */
+  chartSecondary?: V3ChartProps
+  /**
    * 1 when the Instrument opens the page and carries its answer. 2 for a market band
    * inside a page another pattern opened. Required, because a page can carry two
    * Instruments and only one of them is the page's answer.
@@ -209,6 +214,7 @@ export function V3Instrument({
   eyebrow,
   action,
   chart,
+  chartSecondary,
   level,
   id,
   className,
@@ -221,7 +227,7 @@ export function V3Instrument({
   if (headline.trim().length === 0) {
     throw new Error(
       'V3Instrument: headline is empty. The verdict is the accessible name of the ' +
-        'section; an empty one leaves the region unnamed.',
+        'section. An empty one leaves the region unnamed.',
     )
   }
   if (source.trim().length === 0) {
@@ -288,6 +294,15 @@ export function V3Instrument({
       {chart ? (
         <div className="v3-instrument__chart">
           <V3Chart {...chart} id={chart.id ?? (id ? `${id}-chart` : undefined)} />
+        </div>
+      ) : null}
+
+      {chartSecondary ? (
+        <div className="v3-instrument__chart">
+          <V3Chart
+            {...chartSecondary}
+            id={chartSecondary.id ?? (id ? `${id}-chart-2` : undefined)}
+          />
         </div>
       ) : null}
 

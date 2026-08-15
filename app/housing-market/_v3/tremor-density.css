@@ -1,0 +1,34 @@
+/* Tremor density on market Instruments: show the data, hide the chrome.
+   Navy on cream through v3 tokens only. Scoped so other patterns stay put. */
+
+.v3.v3-instrument.hm-tremor {
+  padding: var(--v3-space-xl) var(--v3-gutter) var(--v3-space-lg);
+}
+
+.v3.v3-instrument.hm-tremor .v3-instrument__headline {
+  margin-bottom: var(--v3-space-md);
+}
+
+.v3.v3-instrument.hm-tremor .v3-instrument__figures {
+  gap: var(--v3-space-sm);
+  padding-top: var(--v3-space-md);
+}
+
+.v3.v3-instrument.hm-tremor .v3-figure {
+  background: var(--v3-wash);
+  padding: var(--v3-space-sm) var(--v3-space-md);
+  border-radius: var(--v3-radius-card);
+}
+
+.v3.v3-instrument.hm-tremor .v3-instrument__chart {
+  margin-top: var(--v3-space-md);
+  padding-top: var(--v3-space-md);
+}
+
+.v3.v3-instrument.hm-tremor .v3-instrument__source {
+  margin-top: var(--v3-space-md);
+}
+
+.v3.v3-instrument.hm-tremor .v3-instrument__action {
+  margin-top: var(--v3-space-lg);
+}

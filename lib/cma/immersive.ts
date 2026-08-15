@@ -22,6 +22,7 @@ import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle, resolveThisHomePlan } from '@/lib/cma/inbound-packet'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ListingPlan } from '@/lib/cma/listing-plan'
+import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { formatDate } from '@/lib/format/date'
 
 type ImmersiveArgs = RenderCmaArgs & { broker: CmaBroker }
@@ -70,22 +71,8 @@ const LENS_LABELS: Record<string, string> = {
 function seasonalityScene(a: ImmersiveArgs): string {
   const x = a.extras?.seasonality
   if (!x) return ''
-  const vals = x.byMonth.map((m) => m.medianDaysToPending).filter((v): v is number => v != null)
-  if (vals.length === 0) return ''
-  const max = Math.max(...vals)
-  const fastest = new Set(x.fastestMonths)
-  const bars = x.byMonth
-    .map((m) => {
-      const has = m.medianDaysToPending != null
-      const pct = has ? Math.max(6, (m.medianDaysToPending! / max) * 100) : 0
-      const hot = fastest.has(m.monthName)
-      return `<div class="szn-col">
-        <div class="szn-v">${has ? Math.round(m.medianDaysToPending!) : ''}</div>
-        <div class="szn-bar-wrap">${has ? `<div class="szn-bar${hot ? ' hot' : ''}" style="--h:${pct.toFixed(1)}%"></div>` : '<div class="szn-na">n/a</div>'}</div>
-        <div class="szn-m">${m.monthName.slice(0, 3)}</div>
-      </div>`
-    })
-    .join('')
+  const svg = seasonalityChartSvg(x)
+  if (!svg) return ''
   const byName = new Map(x.byMonth.map((m) => [m.monthName, m]))
   const line = (names: string[]) =>
     names
@@ -101,7 +88,7 @@ function seasonalityScene(a: ImmersiveArgs): string {
       <div class="kick r">Timing</div>
       <h2 class="h r">When ${esc(a.subject.city)} homes go pending</h2>
       <p class="lede r">Each bar is the median days to pending for the ${int(x.totalClosed)} single-family sales that closed in ${esc(a.subject.city)} over the last ${dec(x.yearsCovered, 1)} years, grouped by the month they closed.</p>
-      <div class="szn r" role="img" aria-label="Median days to pending by close month">${bars}</div>
+      <div class="szn r">${svg}</div>
       <p class="body r">Fastest: ${esc(fastLine)}. Slowest: ${esc(slowLine)}. A month with fewer than 12 measured sales shows no bar.</p>
       
     </div>
@@ -548,16 +535,9 @@ img{max-width:100%}
 .cmp-p{font-family:'Amboqia Boriango',Georgia,serif;font-size:30px;margin:6px 0 8px;font-variant-numeric:tabular-nums}
 .cmp-m{font-size:13px;opacity:.65;font-variant-numeric:tabular-nums}
 .cmp-adj{font-size:13.5px;margin-top:10px;padding-top:10px;border-top:1px solid var(--ink12)}
-/* seasonality */
-.szn{display:flex;gap:8px;align-items:flex-end;height:280px;margin:16px 0 8px}
-.szn-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%}
-.szn-v{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:6px}
-.szn-bar-wrap{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center}
-.szn-bar{width:70%;max-width:44px;height:var(--h);background:var(--navy);opacity:.32;border-radius:8px 8px 3px 3px;transform:scaleY(0);transform-origin:bottom;transition:transform .9s cubic-bezier(.2,.7,.2,1)}
-.szn-bar.hot{opacity:1}
-.szn-na{font-size:11px;opacity:.4}
-.szn-m{font-size:12px;opacity:.65;margin-top:8px}
-.on .szn-bar{transform:scaleY(1)}
+/* seasonality — shared print SVG from lib/cma/seasonality-chart.ts */
+.szn{margin:16px 0 8px}
+.szn svg{width:100%;height:auto;display:block}
 /* sources appendix */
 .srcgrid{display:grid;gap:10px;margin-top:8px}
 .srcrow{display:grid;grid-template-columns:220px 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--ink12);font-size:13px}
@@ -640,7 +620,6 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   .yr{height:220px}
   .next-in{flex-direction:column;align-items:flex-start}
   .fin-l,.bench-l{width:120px}
-  .szn{height:200px;gap:4px}
   .sc{padding:72px 18px}
 }
 @media (max-width:560px){.stat3,.stat4{grid-template-columns:1fr}}

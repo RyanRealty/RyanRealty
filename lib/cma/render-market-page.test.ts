@@ -63,6 +63,40 @@ describe('marketPage', () => {
     expect(page!.body).not.toContain('trend-chart')
   })
 
+  it('cites analytics_mart_market_annual for the city year figure when present', () => {
+    const page = marketPage({
+      subject,
+      comps,
+      market: {
+        ...market,
+        yearMart: {
+          year: 2024,
+          geoType: 'city',
+          geoSlug: 'bend',
+          geoLabel: 'Bend',
+          typeScope: 'all',
+          soldCount: 2100,
+          totalVolume: 1_800_000_000,
+          medianClose: 625000,
+          source: 'mart',
+          table: 'analytics_mart_market_annual',
+          computedAt: '2026-08-14T20:00:00.000Z',
+          methodology: 'closed_cte+service_area_v1',
+          typeLabel: 'all property types, 2024',
+        },
+      },
+    })
+    expect(page!.body).toContain('analytics_mart_market_annual')
+    expect(page!.body).toContain('all property types, 2024')
+    expect(page!.body).toContain('geo_type')
+    expect(page!.body).toContain('bend')
+  })
+
+  it('omits the year cube when the mart row is missing', () => {
+    const page = marketPage({ subject, comps, market })
+    expect(page!.body).not.toContain('analytics_mart_market_annual')
+  })
+
   it('draws a trend when six priced months are present', () => {
     const trend = [
       '2026-01-01',

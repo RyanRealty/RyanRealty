@@ -34,6 +34,7 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
+import { ReportTimeSeriesChart } from './ReportTimeSeriesChart'
 
 type Props = { cities: string[] }
 
@@ -480,6 +481,7 @@ export default function CustomReportBuilder({ cities }: Props) {
                   )}
                   {includeTimeSeries && seg.timeSeries != null && seg.timeSeries.length > 0 && (
                     <div className="mt-4">
+                      <ReportTimeSeriesChart points={seg.timeSeries} caption={`${seg.label} sold count`} id={`ts-${seg.key}`} />
                       <ReportGrid
                         label={`${seg.label} monthly time series`}
                         columns={SERIES_COLUMNS}
@@ -540,6 +542,7 @@ export default function CustomReportBuilder({ cities }: Props) {
             <div className="mt-8">
               <h3 style={SUBHEAD_STYLE}>Time series (monthly)</h3>
               <div className="mt-2">
+                <ReportTimeSeriesChart points={result.timeSeries} caption="Sold count by month" id="ts-main" />
                 <ReportGrid
                   label="Time series (monthly)"
                   columns={SERIES_COLUMNS}

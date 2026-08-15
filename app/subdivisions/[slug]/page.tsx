@@ -1,5 +1,5 @@
 /**
- * /subdivisions/<slug> — plat grain. Opens a Ledger of this plat's homes.
+ * /subdivisions/<slug> plat grain. Opens a Ledger of this plat's homes.
  * Field only when pins are a real map. Giant 0 is forbidden. Empty Ledger if
  * none. Parent community or city is the back door. Schools on the first path.
  * The old line "Places open on Instrument then Field" is retired.
@@ -101,7 +101,6 @@ import {
   fieldFallbackTrace,
   fieldTrace,
   homesLedgerTrace,
-  MAX_LISTED,
   parentMarketTrace,
   PERIOD_LABEL,
   platStatsTrace,
@@ -300,10 +299,7 @@ export default async function SubdivisionPage({ params }: Props) {
       .map((r) => r.listing_key),
   )
 
-  // Field rows and map pins. Pins are every active single-family listing that
-  // carries coordinates. The list is the first MAX_LISTED of them, the ceiling
-  // the KB dual-pane used. The footnote states the difference rather than
-  // letting a reader assume the list is the whole set.
+  // Field rows and map pins. Pins and list are the same counted set.
   const plotted: FieldEntry[] = []
   for (const tile of mapTiles) {
     const entry = toFieldEntry(tile, videoKeys.has(tile.listingKey))
@@ -316,7 +312,7 @@ export default async function SubdivisionPage({ params }: Props) {
   const usingFallbackRows = plotted.length === 0 && featuredTiles.length > 0
   const fieldItems: V3FieldItem[] = usingFallbackRows
     ? fallbackFieldRows(featuredTiles, videoKeys)
-    : plotted.slice(0, MAX_LISTED)
+    : plotted
 
   const mapPolygon = hasBoundary && boundary.polygon ? boundary.polygon : undefined
   const hasMap = plotted.length > 0 || Boolean(mapPolygon)
@@ -324,7 +320,7 @@ export default async function SubdivisionPage({ params }: Props) {
   const fieldSource =
     usingFallbackRows && registryMatch
       ? fieldFallbackTrace(registryMatch.canonicalName, registryMatch.city)
-      : fieldTrace(platScope, MAX_LISTED)
+      : fieldTrace(platScope)
 
   // Sales history, the plat cached statistics, and the schools. Every result
   // below reaches the screen.
@@ -390,6 +386,7 @@ export default async function SubdivisionPage({ params }: Props) {
     lifestyleItems: lifestyleForCentroid(mapCentroid(mapTiles)),
     peerPlats: peerPlatsForResort(resortSlug, slug),
     browseHref: subdivisionListingsPath(cityName, displayName),
+    marketHref: citySlug ? `/housing-market/${citySlug}/${slug}` : '/housing-market',
     pagePath: `/subdivisions/${slug}`,
   })
 
@@ -479,11 +476,6 @@ export default async function SubdivisionPage({ params }: Props) {
               source: fieldSource,
             }}
             mapNote={mapPolygon ? `The outline is the recorded ${displayName} plat boundary.` : undefined}
-            footNote={
-              usingFallbackRows === false && plotted.length > fieldItems.length
-                ? `The map plots all ${plotted.length} active single-family listings that carry coordinates.`
-                : undefined
-            }
           />
           </>
         ) : firstHome ? (

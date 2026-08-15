@@ -10,7 +10,7 @@
  * region report's Ledger row order, which is a presentation decision about one page.
  */
 
-import { formatPriceExact } from '@/lib/format/money'
+export { volumeCompact as volumeLabel } from '../../_v3/closed-kpis'
 
 /** The cities that earn a row in the region report's market-by-city Ledger. */
 export const CITY_LABELS = [
@@ -78,16 +78,3 @@ export const MARKET_CONSEQUENCE: Record<string, string | undefined> = {
   balanced: 'Neither side has a structural edge, so pricing and presentation decide the outcome.',
 }
 
-/**
- * Closed-sales dollar volume, in the exact rounding the KB size strip published:
- * billions to two decimals, millions to one, anything smaller in whole dollars.
- * lib/format/money has no billions-scale compact form, and formatPrice rounds to the
- * nearest $1,000, which is wrong for an aggregate this size. Not a primitive, so the
- * barrel's format-free rule does not reach it; the page still hands the barrel a
- * finished string.
- */
-export function volumeLabel(n: number): string {
-  if (n >= 1e9) return `$${(n / 1e9).toFixed(2)}B`
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`
-  return formatPriceExact(n)
-}

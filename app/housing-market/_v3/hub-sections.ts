@@ -12,10 +12,29 @@
  * this Ledger stays type.
  */
 
-import type { MarketPulseSnapshot } from '@/lib/data'
+import type { MarketPulse, MarketPulseSnapshot } from '@/lib/data'
+import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { formatPrice } from '@/lib/format/money'
-import { v3Text, type V3LedgerFigureRow } from '@/components/site/v3'
-import { CITY_LABELS, CITY_SLUG } from './hub-constants'
+import { listingsBrowsePath } from '@/lib/slug'
+import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
+import {
+  v3Text,
+  type V3ChartProps,
+  type V3InstrumentFigure,
+  type V3LedgerFigureRow,
+} from '@/components/site/v3'
+import { CITY_LABELS, CITY_SLUG, HISTORY_PATH } from './hub-constants'
+import {
+  buildAllTypeFigures,
+  buildCompositionFigures,
+  closedMartMissingBody,
+  closedMartRow,
+  closedMartSource,
+  compositionParts,
+  medianCloseLabel,
+  volumeSentence,
+} from './closed-kpis'
+import { buildCompositionChart } from './market-charts'
 
 export type CityFootnote = { label: string; fact: string }
 
@@ -78,4 +97,111 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[]): CityLedger {
     .at(-1)
 
   return { rows, stamp, footnotes }
+}
+
+export type HubLead = {
+  closed: CoMarketAnnualRow | null
+  figures: V3InstrumentFigure[]
+  source: string
+  historyPath: string
+  volumeSentence: string | null
+  medianLabel: string | null
+  leadType: { code: string; n: number } | null
+  leadTypePct: string | null
+  chart: V3ChartProps | undefined
+}
+
+/**
+ * First-screen KPIs: ALL-TYPE volume, ALL-TYPE closes, composition, and the
+ * SFR pulse months-of-supply figure so the verdict stays next to its number.
+ */
+export function buildHubLead(
+  closedYear: CoMarketAnnualRow | null | undefined,
+  mosText: string | null,
+): HubLead {
+  const closed = closedMartRow(closedYear)
+  const historyPath = closed ? `${HISTORY_PATH}?year=${closed.year}` : HISTORY_PATH
+  const figures: V3InstrumentFigure[] = []
+  if (closed) {
+    figures.push(
+      ...buildAllTypeFigures({
+        soldCount: closed.soldCount,
+        totalVolume: closed.totalVolume,
+        historyHref: historyPath,
+      }),
+    )
+    figures.push(
+      ...buildCompositionFigures({
+        parts: compositionParts(closed.propertyTypeBreakdown),
+        historyHref: historyPath,
+      }),
+    )
+  }
+  if (mosText) {
+    figures.push({
+      value: v3Text(mosText),
+      label: v3Text('months of supply, SFR pulse'),
+      href: '/months-of-supply',
+    })
+  }
+
+  const parts = closed ? compositionParts(closed.propertyTypeBreakdown) : []
+  const leadType = parts[0] ?? null
+  const leadTypePct =
+    closed && leadType ? ((100 * leadType.n) / closed.soldCount).toFixed(1) : null
+
+  const sourceBits: string[] = []
+  if (closed) sourceBits.push(closedMartSource(closed.year))
+  else if (closedYear) sourceBits.push(closedMartMissingBody(closedYear.year))
+  if (mosText) {
+    sourceBits.push(
+      `Months of supply is live MLS, single-family (SFR pulse), Central Oregon region. ${MOS_METHODOLOGY_CLAUSE} ${MOS_THRESHOLD_CLAUSE}`,
+    )
+  }
+
+  return {
+    closed,
+    figures,
+    source:
+      sourceBits.join(' ') ||
+      'Central Oregon market figures did not return on this refresh.',
+    historyPath,
+    volumeSentence: closed ? volumeSentence(closed.totalVolume) : null,
+    medianLabel: closed ? medianCloseLabel(closed.medianClose) : null,
+    leadType,
+    leadTypePct,
+    chart: closed
+      ? buildCompositionChart(
+          compositionParts(closed.propertyTypeBreakdown),
+          `ALL-TYPE composition, ${closed.year}`,
+        )
+      : undefined,
+  }
+}
+
+/** SFR pulse leftovers after the first screen already printed months of supply. */
+export function buildSfrFollowFigures(pulse: MarketPulse | null): V3InstrumentFigure[] {
+  const figures: V3InstrumentFigure[] = []
+  if (pulse?.medianListPrice != null && pulse.medianListPrice > 0) {
+    figures.push({
+      value: v3Text(formatPrice(pulse.medianListPrice)),
+      label: v3Text('median list price, SFR pulse'),
+      href: '/housing-market/central-oregon',
+    })
+  }
+  if (pulse != null && pulse.activeCount > 0) {
+    figures.push({
+      value: v3Text(pulse.activeCount.toLocaleString('en-US')),
+      label: v3Text('homes for sale, SFR pulse'),
+      href: listingsBrowsePath(),
+    })
+  }
+  if (pulse?.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
+    figures.push({
+      value: v3Text(String(pulse.medianDaysToPending)),
+      label: v3Text('median days to pending, SFR pulse'),
+      href: '/housing-market/central-oregon',
+    })
+  }
+  return figures
 }

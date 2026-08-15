@@ -130,6 +130,25 @@ describe('V3Chart atom', () => {
     expect(d).not.toMatch(/L/)
   })
 
+  it('draws a mix as rects, not a line through categories', () => {
+    const html = renderToStaticMarkup(
+      createElement(V3Chart, {
+        caption: v3Text('Closed sales by type, 2024'),
+        kind: 'mix',
+        series: [
+          series('Closed units', [
+            point(4850, 'Single-family', '4,850'),
+            point(600, 'Land', '600'),
+          ]),
+        ],
+      }),
+    )
+    expect(html).toContain('v3-chart--mix')
+    expect(html).toContain('<rect')
+    expect(html).not.toMatch(/<path[^>]*d=/)
+    expect(html).toContain('4,850')
+  })
+
   it('distinguishes a second series without a second hue', () => {
     const html = renderToStaticMarkup(
       createElement(V3Chart, {

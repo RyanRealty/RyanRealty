@@ -1,16 +1,17 @@
 /**
- * GET /api/cron/rebuild-analytics-marts
- * Rebuilds CO closed-sales annual marts for current + prior calendar year.
+ * GET /api/cron/rebuild-analytics-marts-full
+ * Weekly full rebuild of CO closed-sales annual marts from 1998.
+ * Nightly last-2-years stays on /api/cron/rebuild-analytics-marts.
  */
 import { NextResponse } from 'next/server'
 import { spawn } from 'node:child_process'
 import { join } from 'node:path'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
-import { assertMartFloorYear } from '@/lib/data/analytics/getCoMarketAnnual'
+import { assertMartFloorYear, MART_FLOOR_YEAR } from '@/lib/data/analytics/getCoMarketAnnual'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+export const maxDuration = 800
 
 function runRebuild(from: number, to: number): Promise<{ code: number; out: string }> {
   return new Promise((resolve) => {
@@ -37,13 +38,13 @@ export async function GET(request: Request) {
   const y = new Date().getUTCFullYear()
   const start = Date.now()
   try {
-    const result = await runRebuild(y - 1, y)
+    const result = await runRebuild(MART_FLOOR_YEAR, y)
     const floor = await assertMartFloorYear()
     const ok = result.code === 0 && floor.ok
     return NextResponse.json(
       {
         ok,
-        years: [y - 1, y],
+        years: [MART_FLOOR_YEAR, y],
         duration_ms: Date.now() - start,
         floor,
         log_tail: result.out,

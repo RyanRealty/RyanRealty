@@ -103,6 +103,8 @@ import {
   getRecentBlogPosts,
   getCommunitiesInNeighborhoodLite,
 } from '@/lib/data'
+import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
+import { PLACE_MART_YEAR, placeMartCompositionChart, placeMartFigures, presentPlaceMart, regionMartContextTrace } from '@/app/cities/[slug]/_v3/city-mart'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { peerNeighborhoodTowns } from '@/lib/explore/neighborhood-peers'
 // Row shaping shared with the city + community place pages — one copy, so a fix
@@ -234,7 +236,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   // (invariant 1: its own section, its own source line, its own timestamp).
   const readAt = new Date().toISOString()
 
-  const [pulseRead, stats, boundaryRead, blogPosts, communities, richContent, peers, activity] =
+  const [pulseRead, stats, boundaryRead, blogPosts, communities, richContent, peers, activity, regionMartRow] =
     await Promise.all([
       // Result variant, because the branch this read selects also selects the
       // SENTENCE printed under the figures. "No market-pulse row is published for
@@ -274,6 +276,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         3500,
         'nbh:activity',
       ),
+      getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
     ])
 
   const pulse = pulseRead.value
@@ -312,7 +315,6 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const liveSet = pulse
     ? liveFigures(pulse, { browse: browsePath, cityReport: cityReportPath, monthsOfSupply: '/months-of-supply' })
     : liveFallbackFigures(neighborhood, browsePath)
-  const [firstLive, ...restLive] = liveSet
 
   // Trace and stamp follow the same branch as the figures. The pulse line is
   // short: the pace figure carries the verdict, and the MoS threshold essay
@@ -343,7 +345,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   })
 
   /* ── SECTION 3 · closed sales, rolling 12 months ────────────────────────── */
-  const soldSet = stats ? soldFigures(stats) : []
+  const regionMart = presentPlaceMart(regionMartRow, 'region')
+  const martSet = placeMartFigures(regionMart, `/housing-market/history?year=${PLACE_MART_YEAR}`)
+  const soldSet = stats ? [...soldFigures(stats), ...martSet] : []
+  const paceSet = soldSet.length > 0 ? liveSet : [...liveSet, ...martSet]
+  const [firstLive, ...restLive] = paceSet
   const [firstSold, ...restSold] = soldSet
 
   /* ── SECTION 3b · the live feed ─────────────────────────────────────────── */
@@ -457,7 +463,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             eyebrow={v3Text(`${placeName} · ${cityName}, Oregon`)}
             headline={v3Text(`${placeName} homes for sale`)}
             figures={[firstLive, ...restLive]}
-            source={v3Text(liveTrace)}
+            source={v3Text(soldSet.length > 0 || regionMart == null ? liveTrace : `${liveTrace} ${regionMartContextTrace(regionMart)}`)}
             updated={liveStamp ? v3Text(formatDate(liveStamp)) : undefined}
             action={
               rows[0]
@@ -514,9 +520,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             eyebrow={v3Text('Closed sales')}
             headline={v3Text(`What sold in ${placeName} over the last 12 months`)}
             figures={[firstSold, ...restSold]}
-            source={v3Text(
-              `closed MLS sales through Oregon Data Share, single-family, ${placeName}, rolling 12 months ending ${formatDate(stats.periodEnd)}. Methodology ${stats.methodologyVersion}. Not active inventory.`,
-            )}
+            source={v3Text(`closed MLS sales through Oregon Data Share, single-family, ${placeName}, rolling 12 months ending ${formatDate(stats.periodEnd)}. Methodology ${stats.methodologyVersion}. Not active inventory.` + (regionMart ? ` ${regionMartContextTrace(regionMart)}` : ''))}
+            chart={placeMartCompositionChart(regionMart)}
             updated={stats.refreshedAt ? v3Text(formatDate(stats.refreshedAt)) : undefined}
           />
         ) : null}

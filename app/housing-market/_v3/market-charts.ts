@@ -12,12 +12,14 @@
 
 import { buildYearSeries, type KbYearSeries } from '@/lib/kb/year-series'
 import { formatPriceCompact } from '@/lib/format/money'
+import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import {
   v3Text,
   type V3ChartPoint,
   type V3ChartProps,
   type V3ChartSeries,
 } from '@/components/site/v3'
+import { volumeCompact, type CompositionPart } from './closed-kpis'
 
 const MONTH_TICK = [
   'Jan',
@@ -167,5 +169,80 @@ export function buildClosedCountChart(
   return {
     caption: v3Text(caption),
     series: [{ name: v3Text('Homes sold'), points }],
+  }
+}
+
+/**
+ * One year's type mix. A mix bar, not a line through types (that invents order).
+ */
+export function buildCompositionChart(
+  parts: readonly CompositionPart[],
+  caption: string,
+): V3ChartProps | undefined {
+  const points: V3ChartPoint[] = parts
+    .filter((part) => part.n > 0)
+    .map((part) => ({
+      value: part.n,
+      tick: v3Text(part.label || labelPropertyType(part.code)),
+      label: v3Text(part.n.toLocaleString('en-US')),
+    }))
+  if (points.length < 1) return undefined
+  return {
+    caption: v3Text(caption),
+    kind: 'mix',
+    series: [{ name: v3Text('Closed units'), points }],
+  }
+}
+
+/** Amenity unit share for one year. Bars from a 0% baseline. */
+export function buildAmenityShareChart(
+  rows: readonly { name: string; sharePct: number }[],
+  caption: string,
+): V3ChartProps | undefined {
+  const points: V3ChartPoint[] = rows
+    .filter((row) => Number.isFinite(row.sharePct) && row.sharePct > 0 && row.name)
+    .map((row) => ({
+      value: row.sharePct,
+      tick: v3Text(row.name),
+      label: v3Text(`${row.sharePct.toFixed(1)}%`),
+    }))
+  if (points.length < 1) return undefined
+  return {
+    caption: v3Text(caption),
+    kind: 'bars',
+    baselineLabel: v3Text('0%'),
+    series: [{ name: v3Text('Share of closes'), points }],
+  }
+}
+
+export type ClosedYearVolumePoint = {
+  year: number
+  totalVolume: number
+}
+
+/**
+ * ALL-TYPE dollar volume by calendar year. Count is a different unit and
+ * does not share this Y axis.
+ */
+export function buildClosedVolumeChart(
+  rows: readonly ClosedYearVolumePoint[],
+  caption: string,
+): V3ChartProps | undefined {
+  const points: V3ChartPoint[] = []
+  for (const row of [...rows].sort((a, b) => a.year - b.year)) {
+    if (!(row.year > 0 && row.totalVolume > 0)) continue
+    const label = volumeCompact(row.totalVolume)
+    if (!label) continue
+    points.push({
+      value: row.totalVolume,
+      tick: v3Text(String(row.year)),
+      label: v3Text(label),
+      at: row.year,
+    })
+  }
+  if (points.length < 2) return undefined
+  return {
+    caption: v3Text(caption),
+    series: [{ name: v3Text('ALL-TYPE volume'), points }],
   }
 }

@@ -1,0 +1,85 @@
+.a-chart {
+  position: relative;
+  margin: 0;
+  min-width: 0;
+}
+
+.a-chart__caption {
+  margin: 0 0 var(--a-s2);
+  font-size: var(--a-text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--a-text-2);
+}
+
+.a-chart__empty {
+  margin: 0;
+  font-size: var(--a-text-sm);
+  color: var(--a-text-2);
+}
+
+.a-chart__plot {
+  height: 11rem;
+  min-width: 0;
+}
+
+.a-chart__plot--mix {
+  height: 2.25rem;
+}
+
+.a-chart__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.a-chart__line {
+  fill: none;
+  stroke: var(--a-accent);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.a-chart__line--1 {
+  stroke: var(--a-text-2);
+  stroke-dasharray: 5 4;
+}
+
+.a-chart__line--2 {
+  stroke: var(--a-border-strong);
+  stroke-dasharray: 1.5 3;
+}
+
+.a-chart__bar {
+  fill: var(--a-accent);
+}
+
+.a-chart__bar--1 {
+  fill: var(--a-accent-strong);
+}
+
+.a-chart__bar--2 {
+  fill: var(--a-text-2);
+}
+
+.a-chart__x {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--a-text-xs);
+  color: var(--a-text-2);
+}
+
+.a-chart__data {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -122,6 +122,15 @@ import {
   type CityCommunityItem,
   type CityPlaceItem,
 } from './_v3/city-sections'
+import {
+  PLACE_MART_YEAR,
+  cityInstrumentSource,
+  pickPlaceMart,
+  placeMartCompositionChart,
+  placeMartFigures,
+} from './_v3/city-mart'
+import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
+import { getCoMarketAnnualCity } from '@/lib/data/analytics/getCoMarketAnnualCity'
 import { buildCitySchemas } from './_v3/city-metadata'
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
@@ -205,6 +214,8 @@ export default async function CityDetailPage({ params }: Props) {
     blogPosts,
     activity,
     resortRead,
+    cityMartRow,
+    regionMartRow,
   ] = await Promise.all([
     getMarketPulse({ geoType: 'city', geoSlug }),
     getCityListings(cityName, {
@@ -238,6 +249,8 @@ export default async function CityDetailPage({ params }: Props) {
     hasResorts
       ? withTimeoutFallbackResult(fetchAllCityActiveSfr(cityName), [], 6000, 'city:resortTiles')
       : Promise.resolve({ value: [] as Awaited<ReturnType<typeof fetchAllCityActiveSfr>>, ok: true }),
+    getCoMarketAnnualCity({ year: PLACE_MART_YEAR, citySlug: slug, typeScope: 'all' }),
+    getCoMarketAnnual({ year: PLACE_MART_YEAR, typeScope: 'all' }),
   ])
 
   const resortTiles = resortRead.value
@@ -265,10 +278,14 @@ export default async function CityDetailPage({ params }: Props) {
   const marketFaq = buildMarketFaq(cityName, marketFaqInput)
   const { faqs } = marketFaq
 
-  const figures = marketFigures(pulse, mosLabel, {
-    marketReport: `/housing-market/${slug}`,
-    monthsOfSupply: '/months-of-supply',
-  })
+  const mart = pickPlaceMart(cityMartRow, regionMartRow)
+  const figures = [
+    ...marketFigures(pulse, mosLabel, {
+      marketReport: `/housing-market/${slug}`,
+      monthsOfSupply: '/months-of-supply',
+    }),
+    ...placeMartFigures(mart, `/housing-market/history?year=${PLACE_MART_YEAR}`),
+  ]
   const [firstMarketFigure, ...restMarketFigures] = figures
 
   const fieldItems = cityFieldItems(tiles)
@@ -455,7 +472,8 @@ export default async function CityDetailPage({ params }: Props) {
               `${cityName} homes for sale${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
             figures={[firstMarketFigure, ...restMarketFigures]}
-            source={v3Text(cityMarketTrace(cityName))}
+            source={v3Text(cityInstrumentSource(cityMarketTrace(cityName), mart, cityName))}
+            chart={placeMartCompositionChart(mart)}
             updated={pulse?.refreshedAt ? v3Text(formatDate(pulse.refreshedAt)) : undefined}
             action={{
               label: v3Text(`See every ${cityName} home for sale`),

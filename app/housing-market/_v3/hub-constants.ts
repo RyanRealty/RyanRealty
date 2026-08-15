@@ -48,4 +48,4 @@ export const HISTORY_PATH = '/housing-market/history'
  * one of these four, so a figure door carrying any other code would silently drop
  * its filter and land on an unfiltered page.
  */
-export const HISTORY_TYPE_CODES = new Set(['A', 'B', 'C', 'D'])
+export { CLOSED_TYPE_CODES as HISTORY_TYPE_CODES } from './closed-kpis'

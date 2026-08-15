@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -39,11 +38,7 @@ import {
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import { analyzeRental, formatUSD, formatPct, type RentalAnalysisInputs } from '@/lib/rental-analysis'
-
-const EquityProjectionChart = dynamic(() => import('./EquityProjectionChart.client'), {
-  ssr: false,
-  loading: () => <div aria-hidden className="h-[260px] rounded-[14px] border border-border bg-card animate-pulse" />,
-})
+import EquityProjectionChart from './EquityProjectionChart.client'
 
 /** Optional rent estimate (e.g. from RentCast on a listing page). */
 export type RentEstimate = {

@@ -56,17 +56,11 @@ import {
   getPriceHistory,
 } from '@/lib/data'
 import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
-import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import {
-  marketVerdict,
-  MOS_METHODOLOGY_CLAUSE,
-  MOS_THRESHOLD_CLAUSE,
-} from '@/lib/market/classify'
-import { formatPrice } from '@/lib/format/money'
+import { marketVerdict } from '@/lib/market/classify'
 import { formatDate, zonedDateKey } from '@/lib/format/date'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { listingsBrowsePath } from '@/lib/slug'
@@ -81,21 +75,15 @@ import {
   V3Ledger,
   V3Quiet,
   V3SectionTracker,
-  type V3InstrumentFigure,
   type V3LedgerPlainRow,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
-import {
-  CITY_LABELS,
-  CITY_SLUG,
-  CLOSED_SALES_YEAR,
-  HISTORY_PATH,
-  HISTORY_TYPE_CODES,
-} from './_v3/hub-constants'
-import { buildCityLedger } from './_v3/hub-sections'
+import { CITY_LABELS, CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
+import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
+import './_v3/tremor-density.css'
 
 export const revalidate = 300
 
@@ -167,105 +155,32 @@ export default async function HousingMarketHubPage() {
   const { datasetVariables, asOfIso, asOfLabel } = marketFaq
   const refreshedAt = regionPulse?.refreshedAt ?? null
 
-  // Closed sales for the last full year: closed MLS sales, all property types,
-  // service-area cities. A different population from the pulse above, so its
-  // figures, its trace, and its stamp stay together and never borrow the pulse's.
-  const closed =
-    closedYear && closedYear.soldCount > 0 && closedYear.totalVolume > 0 ? closedYear : null
-
-  // Written once, printed twice: the Instrument prints these strings and the FAQ
-  // answer below prints the identical ones, so the page and its JSON-LD cannot
-  // drift. Whole dollars rather than formatPrice, because formatPrice rounds to the
-  // nearest $1,000 (lib/format/money.ts) - correct for a list-price display, wrong
-  // for a published payload, where a $627,450 median would go out of the FAQPage
-  // JSON-LD as $627,000. One number per fact, on the page and in the markup.
-  const closedVolumeLabel = closed
-    ? closed.totalVolume >= 1e9
-      ? `$${(closed.totalVolume / 1e9).toFixed(2)} billion`
-      : closed.totalVolume >= 1e6
-        ? `$${Math.round(closed.totalVolume / 1e6)} million`
-        : `$${Math.round(closed.totalVolume).toLocaleString('en-US')}`
-    : null
-  const closedMedianLabel =
-    closed && closed.medianClose != null && closed.medianClose > 0
-      ? `$${Math.round(closed.medianClose).toLocaleString('en-US')}`
-      : null
-
-  const closedTypes = closed
-    ? Object.entries(closed.propertyTypeBreakdown || {})
-        .map(([code, n]) => ({ code, n: Number(n) || 0 }))
-        .filter((e) => e.n > 0)
-        .sort((a, b) => b.n - a.n)
-    : []
-  const leadType = closedTypes[0] ?? null
-  const leadTypePct =
-    closed && leadType ? ((100 * leadType.n) / closed.soldCount).toFixed(1) : null
-
-  // Every closed-sales figure names a live filter on the explorer, so every one is a
-  // door. app/housing-market/history/page.tsx reads `year` and `type`.
-  const historyPath = closed ? `${HISTORY_PATH}?year=${closed.year}` : HISTORY_PATH
-  const leadTypePath =
-    closed && leadType && HISTORY_TYPE_CODES.has(leadType.code)
-      ? `${historyPath}&type=${leadType.code}`
-      : historyPath
+  // ALL-TYPE closed year from the mart, plus the SFR pulse MoS figure so the
+  // verdict and the number stay on the same first screen. source === 'missing'
+  // is empty, not a printed zero.
+  const lead = buildHubLead(closedYear, mosText)
+  const closed = lead.closed
+  const historyPath = lead.historyPath
+  const [firstLeadFigure, ...restLeadFigures] = lead.figures
+  const sfrFollow = buildSfrFollowFigures(regionPulse)
+  const [firstSfrFigure, ...restSfrFigures] = sfrFollow
 
   // M1 AEO: the mart-backed size and composition questions, appended to the same FAQ
-  // array that feeds the FAQPage JSON-LD. Wording and numbers unchanged from the KB
-  // page, and both read the strings computed above.
+  // array that feeds the FAQPage JSON-LD. Both read the strings computed above.
   const faqs = [...marketFaq.faqs]
-  if (closed && closedVolumeLabel) {
-    const medianBit = closedMedianLabel ? ` Median close price was ${closedMedianLabel}.` : ''
+  if (closed && lead.volumeSentence) {
+    const medianBit = lead.medianLabel ? ` Median close price was ${lead.medianLabel}.` : ''
     faqs.push({
       question: `How large was the Central Oregon housing market in ${closed.year}?`,
-      answer: `In ${closed.year}, closed sales across Central Oregon service-area cities totaled ${closedVolumeLabel} across ${closed.soldCount.toLocaleString('en-US')} transactions (all property types).${medianBit} Figures come from closed MLS sales, not active list inventory.`,
+      answer: `In ${closed.year}, closed sales across Central Oregon service-area cities totaled ${lead.volumeSentence} across ${closed.soldCount.toLocaleString('en-US')} transactions (all property types).${medianBit} Figures come from closed MLS sales, not active list inventory.`,
     })
-    if (leadType && leadTypePct) {
+    if (lead.leadType && lead.leadTypePct) {
       faqs.push({
         question: `What property types made up Central Oregon sales in ${closed.year}?`,
-        answer: `Of ${closed.soldCount.toLocaleString('en-US')} closed sales in ${closed.year}, ${labelPropertyType(leadType.code)} led at ${leadType.n.toLocaleString('en-US')} closes (${leadTypePct}% of units). Composition is by closed units, not active inventory.`,
+        answer: `Of ${closed.soldCount.toLocaleString('en-US')} closed sales in ${closed.year}, ${labelPropertyType(lead.leadType.code)} led at ${lead.leadType.n.toLocaleString('en-US')} closes (${lead.leadTypePct}% of units). Composition is by closed units, not active inventory.`,
       })
     }
   }
-
-  // Region figures. Every one is a door: PUBLIC-PRODUCT-OS calls dead text naming a
-  // linkable thing a defect. All four come from the one region pulse row, which is
-  // exactly what the trace under them describes.
-  const regionFigures: V3InstrumentFigure[] = []
-  if (regionPulse?.medianListPrice != null) {
-    regionFigures.push({
-      value: v3Text(formatPrice(regionPulse.medianListPrice)),
-      label: v3Text('median list price'),
-      href: '/housing-market/central-oregon',
-    })
-  }
-  if (regionPulse != null) {
-    regionFigures.push({
-      value: v3Text(regionPulse.activeCount.toLocaleString('en-US')),
-      label: v3Text('homes for sale'),
-      href: listingsBrowsePath(),
-    })
-  }
-  if (mosText != null) {
-    regionFigures.push({
-      value: v3Text(mosText),
-      label: v3Text('months of supply'),
-      href: '/months-of-supply',
-    })
-  }
-  if (regionPulse?.medianDaysToPending != null) {
-    regionFigures.push({
-      value: v3Text(String(regionPulse.medianDaysToPending)),
-      label: v3Text('median days to pending'),
-      href: '/housing-market/central-oregon',
-    })
-  }
-  const [firstRegionFigure, ...restRegionFigures] = regionFigures
-
-  const regionTrace =
-    'live MLS through Oregon Data Share, single-family homes across the Central Oregon region. ' +
-    MOS_METHODOLOGY_CLAUSE +
-    ' ' +
-    MOS_THRESHOLD_CLAUSE
 
   // City rows. D9 leftover lives on the builder: each city is a door, and a
   // line through cities invents a sequence V3Chart is not for.
@@ -393,25 +308,30 @@ export default async function HousingMarketHubPage() {
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Housing market' }]} />
 
-        {firstRegionFigure ? (
+        {firstLeadFigure ? (
           <V3Instrument
             id="market"
             level={1}
+            className="hm-tremor"
             eyebrow={v3Text('Central Oregon, Oregon')}
             headline={v3Text(
               `Central Oregon housing market${verdict.kind === 'unknown' ? '' : `: a ${verdict.label}`}`,
             )}
-            figures={[firstRegionFigure, ...restRegionFigures]}
-            source={v3Text(regionTrace)}
-            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
-            // Secondary by invariant 5. The sticky header already carries a filled
-            // valuation CTA at every scroll position of this page.
+            figures={[firstLeadFigure, ...restLeadFigures]}
+            source={v3Text(lead.source)}
+            updated={
+              closed?.source === 'mart' && closed.computedAt
+                ? v3Text(formatDate(closed.computedAt))
+                : refreshedAt
+                  ? v3Text(formatDate(refreshedAt))
+                  : undefined
+            }
             action={{
               label: v3Text('Value my home'),
               href: valuationHref('/housing-market'),
               variant: 'ghost',
             }}
-            chart={regionChart}
+            chart={lead.chart}
           />
         ) : (
           <V3Quiet
@@ -422,7 +342,10 @@ export default async function HousingMarketHubPage() {
               {
                 kind: 'prose',
                 term: 'No live figures right now',
-                body: 'The Central Oregon market row did not return on this refresh, so this page is not printing a median, an inventory count, or a verdict. The city reports below carry their own live rows.',
+                body:
+                  closedYear && closedYear.source === 'missing'
+                    ? `The ALL-TYPE closed-sales mart row for calendar year ${CLOSED_SALES_YEAR} did not return on this refresh. This page is not printing a close count or a dollar volume. The city reports below carry their own live rows.`
+                    : 'The Central Oregon market row did not return on this refresh, so this page is not printing a median, an inventory count, or a verdict. The city reports below carry their own live rows.',
               },
             ]}
           />
@@ -452,57 +375,24 @@ export default async function HousingMarketHubPage() {
           />
         )}
 
-        {closed && closedVolumeLabel ? (
-          // D9 leftover on purpose (A27): one closed calendar year is a
-          // singleton status, not a series. The explorer behind the figures
-          // is the door.
+        {firstSfrFigure ? (
           <V3Instrument
-            id="closed-sales"
+            id="sfr-pulse"
             level={2}
-            eyebrow={v3Text('Closed sales')}
-            headline={v3Text(`Central Oregon closed ${closedVolumeLabel} in ${closed.year}`)}
-            figures={[
-              {
-                value: v3Text(closed.soldCount.toLocaleString('en-US')),
-                label: v3Text('closed sales'),
-                href: historyPath,
-              },
-              ...(closedMedianLabel
-                ? [
-                    {
-                      value: v3Text(closedMedianLabel),
-                      label: v3Text('median close price'),
-                      href: historyPath,
-                    },
-                  ]
-                : []),
-              ...(leadType && leadTypePct
-                ? [
-                    {
-                      value: v3Text(`${leadTypePct}%`),
-                      label: v3Text(
-                        `${labelPropertyType(leadType.code)} share of closed units`,
-                      ),
-                      href: leadTypePath,
-                    },
-                  ]
-                : []),
-            ]}
+            className="hm-tremor"
+            eyebrow={v3Text('SFR pulse')}
+            headline={v3Text('Single-family list inventory')}
+            figures={[firstSfrFigure, ...restSfrFigures]}
             source={v3Text(
-              `closed MLS sales through Oregon Data Share, Central Oregon service-area cities, all property types, calendar year ${closed.year}. Not active inventory. ${ANALYTICS_METHODOLOGY_V1}`,
+              'live MLS through Oregon Data Share, single-family homes across the Central Oregon region. Not ALL-TYPE closed sales',
             )}
-            // Only a mart row carries a real computed_at. A missing year is missing;
-            // this page does not invent a stamp from the request clock.
-            updated={
-              closed.source === 'mart' && closed.computedAt
-                ? v3Text(formatDate(closed.computedAt))
-                : undefined
-            }
+            updated={refreshedAt ? v3Text(formatDate(refreshedAt)) : undefined}
             action={{
               label: v3Text('Closed sales explorer'),
               href: HISTORY_PATH,
               variant: 'ghost',
             }}
+            chart={regionChart}
           />
         ) : null}
 

@@ -37,6 +37,7 @@
 // reconcile to the figure beside it.
 import Link from 'next/link'
 import {
+  AChart,
   ReportGrid,
   ReportNumbers,
   SectionHead,
@@ -153,6 +154,23 @@ export default async function FinancialsPage() {
         Verified and paid commissions, plus the brokerage expense ledger. Ad spend pulls live from
         the ads ledger. Net = brokerage retained minus expenses.
       </p>
+      {years.length >= 2 ? (
+        <AChart
+          id="financials-net"
+          caption="Net by year"
+          kind="line"
+          series={[
+            {
+              name: 'Net',
+              points: [...years].reverse().map((y) => ({
+                value: y.net,
+                tick: y.year,
+                label: money(y.net),
+              })),
+            },
+          ]}
+        />
+      ) : null}
       <ReportGrid
         label="Profit and loss by year"
         columns={PL_COLUMNS}

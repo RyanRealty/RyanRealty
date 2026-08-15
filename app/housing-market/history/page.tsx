@@ -6,8 +6,7 @@
  * Data: analyzeClosedSales (result_cache -> mart -> SQL aggregate RPC). No
  * listings paging. Amenity share for the selected year comes from
  * getCoFeatureAnnual (region, all types). That cube is a comparison
- * (chart inventory A20) and stays figures, not one flattened number.
- * Amenity share is one year, not a time series, so it does not take chart.
+ * (chart inventory A20). Share bars use the shared plot (kind=bars).
  *
  * DROPPED: KbBreadcrumb, KbFooter, SmoothScrollProvider, the raw query
  * <form> / <input> / <button> plate (design-token lint in a new file),
@@ -27,8 +26,11 @@ import {
 import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { formatDate } from '@/lib/format/date'
-import { formatPrice, formatPriceCompact } from '@/lib/format/money'
+import { formatPrice } from '@/lib/format/money'
 import { valuationHref } from '@/lib/site/valuation-href'
+import { medianCloseLabel, volumeCompact } from '../_v3/closed-kpis'
+import { buildAmenityShareChart } from '../_v3/market-charts'
+import '../_v3/tremor-density.css'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
   V3_ROOT_CLASS,
@@ -88,29 +90,35 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
     maxPrice != null && Number.isFinite(maxPrice) ? `max ${formatPrice(maxPrice)}` : null,
   ].filter((bit): bit is string => Boolean(bit))
 
-  const kpiFigures: V3InstrumentFigure[] = [
-    {
-      value: v3Text(result.soldCount.toLocaleString('en-US')),
-      label: v3Text('closes'),
-      href: `/housing-market/history?year=${year}`,
-    },
-    {
-      value: v3Text(formatPriceCompact(result.totalVolume)),
-      label: v3Text('volume'),
-      href: `/housing-market/history?year=${year}`,
-    },
-  ]
-  if (result.medianClose != null && Number.isFinite(result.medianClose) && result.medianClose > 0) {
+  const unfiltered = !city && !propertyType && !fireplace && minPrice == null && maxPrice == null
+  const hasKpis =
+    result.source !== 'empty' && result.soldCount > 0 && result.totalVolume > 0
+  const volume = hasKpis ? volumeCompact(result.totalVolume) : ''
+  const kpiFigures: V3InstrumentFigure[] = []
+  if (hasKpis && volume) {
     kpiFigures.push({
-      value: v3Text(`$${Math.round(result.medianClose).toLocaleString('en-US')}`),
-      label: v3Text('median close'),
+      value: v3Text(result.soldCount.toLocaleString('en-US')),
+      label: v3Text(unfiltered ? 'ALL-TYPE closes' : 'closes'),
       href: `/housing-market/history?year=${year}`,
     })
+    kpiFigures.push({
+      value: v3Text(volume),
+      label: v3Text(unfiltered ? 'ALL-TYPE volume' : 'volume'),
+      href: `/housing-market/history?year=${year}`,
+    })
+    const median = medianCloseLabel(result.medianClose)
+    if (median) {
+      kpiFigures.push({
+        value: v3Text(median),
+        label: v3Text(unfiltered ? 'ALL-TYPE median close' : 'median close'),
+        href: `/housing-market/history?year=${year}`,
+      })
+    }
   }
   const [firstKpi, ...restKpi] = kpiFigures
 
   const amenityFigures: V3InstrumentFigure[] = []
-  if (featureCube && featureCube.rows.length > 0) {
+  if (featureCube && featureCube.source === 'mart' && featureCube.rows.length > 0) {
     for (const row of featureCube.rows) {
       const label = CO_FEATURE_LABELS[row.featureKey as CoFeatureKey] ?? row.featureKey
       const share =
@@ -136,6 +144,21 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
     }
   }
   const [firstAmenity, ...restAmenity] = amenityFigures
+  const amenityChart =
+    featureCube && featureCube.source === 'mart'
+      ? buildAmenityShareChart(
+          featureCube.rows
+            .filter(
+              (row) =>
+                row.unitSharePct != null && Number.isFinite(row.unitSharePct) && row.unitSharePct > 0,
+            )
+            .map((row) => ({
+              name: CO_FEATURE_LABELS[row.featureKey as CoFeatureKey] ?? row.featureKey,
+              sharePct: row.unitSharePct as number,
+            })),
+          `Amenity share of CO closes, ${year}`,
+        )
+      : undefined
 
   const computedLabel = result.computedAt ? formatDate(result.computedAt) : null
 
@@ -167,11 +190,12 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
           <V3Instrument
             id="results"
             level={1}
+            className="hm-tremor"
             eyebrow={v3Text('Unique search · aggregates only')}
             headline={v3Text(`Closed sales explorer, ${year}`)}
             figures={[firstKpi, ...restKpi]}
             source={v3Text(
-              `${ANALYTICS_METHODOLOGY_V1}. Active query: ${filterBits.join(' · ')}. Aggregates only. No sold addresses on this page`,
+              `${ANALYTICS_METHODOLOGY_V1}. Active query: ${filterBits.join(' · ')}. Aggregates only. No sold addresses on this page. Source ${result.source}`,
             )}
             updated={computedLabel ? v3Text(computedLabel) : undefined}
             action={{
@@ -180,7 +204,23 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
               variant: 'primary',
             }}
           />
-        ) : null}
+        ) : (
+          <V3Quiet
+            id="results"
+            heading={`Closed sales explorer, ${year}`}
+            headingLevel={1}
+            items={[
+              {
+                kind: 'prose',
+                term: 'No matching closes',
+                body:
+                  result.source === 'empty'
+                    ? `No closed-sales row returned for this query. This page is not printing a close count or a dollar volume. Active query: ${filterBits.join(' · ')}.`
+                    : `No closed sales matched this query. This page is not printing zeros as facts. Active query: ${filterBits.join(' · ')}.`,
+              },
+            ]}
+          />
+        )}
 
         <HistoryFilterSheet
           year={year}
@@ -195,12 +235,26 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
           <V3Instrument
             id="amenities"
             level={2}
+            className="hm-tremor"
             eyebrow={v3Text(`Amenity share for CO ${year}`)}
             headline={v3Text(`Fireplace, garage, and HOA share, ${year}`)}
             figures={[firstAmenity, ...restAmenity]}
             source={v3Text(
               `Precomputed feature cubes (typed columns only). Region, all property types. Not filtered by the query above. Source ${featureCube?.source ?? 'mart'}. Fireplace uses fireplace_yn or fireplaces_total greater than zero. Garage uses garage_yn. Association uses association_yn (HOA)`,
             )}
+            chart={amenityChart}
+          />
+        ) : featureCube?.source === 'missing' ? (
+          <V3Quiet
+            id="amenities"
+            heading={`Fireplace, garage, and HOA share, ${year}`}
+            items={[
+              {
+                kind: 'prose',
+                term: 'Fireplace share did not return',
+                body: `The feature mart row for calendar year ${year} did not return on this refresh. This page is not printing a fireplace share.`,
+              },
+            ]}
           />
         ) : null}
 

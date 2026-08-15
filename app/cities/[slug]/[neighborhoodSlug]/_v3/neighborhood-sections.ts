@@ -267,14 +267,14 @@ export function liveFigures(
   if (shipsFigure(pulse.monthsOfSupply) && pulse.monthsOfSupply != null) {
     figures.push({
       value: v3Text(formatMonthsOfSupply(pulse.monthsOfSupply)),
-      label: v3Text('months of supply'),
+      label: v3Text('months of supply, single-family'),
       href: links.monthsOfSupply,
     })
   }
   if (shipsFigure(pulse.medianDaysToPending) && pulse.medianDaysToPending != null) {
     figures.push({
       value: v3Text(String(Math.round(pulse.medianDaysToPending))),
-      label: v3Text('median days to pending'),
+      label: v3Text('median days to pending, single-family'),
       href: links.cityReport,
     })
   }
@@ -332,26 +332,26 @@ export function soldFigures(stats: SoldStats): V3InstrumentFigure[] {
   if (stats.medianSalePrice != null && stats.medianSalePrice > 0) {
     figures.push({
       value: v3Text(formatPrice(stats.medianSalePrice)),
-      label: v3Text('median sale price'),
+      label: v3Text('median sale price, single-family'),
     })
   }
   if (stats.soldCount != null && stats.soldCount > 0) {
     figures.push({
       value: v3Text(stats.soldCount.toLocaleString('en-US')),
-      label: v3Text('homes sold'),
+      label: v3Text('homes sold, single-family'),
     })
   }
   if (stats.saleToListRatio != null && stats.saleToListRatio > 0) {
     const pct = stats.saleToListRatio < 2 ? stats.saleToListRatio * 100 : stats.saleToListRatio
     figures.push({
       value: v3Text(`${pct.toFixed(1)}%`),
-      label: v3Text('average sale to list'),
+      label: v3Text('average sale to list, single-family'),
     })
   }
   if (stats.medianDaysOnMarket != null && stats.medianDaysOnMarket > 0) {
     figures.push({
       value: v3Text(`${Math.round(stats.medianDaysOnMarket)} days`),
-      label: v3Text('median days on market'),
+      label: v3Text('median days on market, single-family'),
     })
   }
   return figures

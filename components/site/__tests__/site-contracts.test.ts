@@ -470,6 +470,57 @@ describe('design directive contracts', () => {
     expect(feature).not.toMatch(/live_aggregate/)
   })
 
+  it('D109 — one chart grammar for public, admin, and documents', () => {
+    const plot = readSrc('lib/charts/plot.ts')
+    const v3 = readSrc('components/site/v3/V3Chart.tsx')
+    const admin = readSrc('components/admin/v2/AChart.tsx')
+    const adminWrap = readSrc('app/admin/(protected)/analytics/_components/charts.tsx')
+    const cma = readSrc('lib/cma/render.ts')
+    expect(plot).toMatch(/export function buildLinePlot/)
+    expect(plot).toMatch(/export function buildBarPlot/)
+    expect(plot).toMatch(/export function buildMixPlot/)
+    expect(plot).toMatch(/A cubic would invent/)
+    expect(v3).toMatch(/from '@\/lib\/charts\/plot'/)
+    expect(v3).not.toMatch(/from ['"]recharts['"]/)
+    expect(admin).toMatch(/from '@\/lib\/charts\/plot'/)
+    expect(admin).not.toMatch(/from ['"]recharts['"]/)
+    expect(adminWrap).not.toMatch(/from ['"]recharts['"]/)
+    expect(cma).toMatch(/from '@\/lib\/charts\/plot'/)
+    expect(cma).toMatch(/from '@\/lib\/charts\/print-svg'/)
+    expect(cma).toMatch(/from '@\/lib\/cma\/seasonality-chart'/)
+    const live = [
+      'components/market/MarketCoreCharts.tsx',
+      'components/reports/SalesReportCharts.tsx',
+      'components/tools/EquityProjectionChart.client.tsx',
+      'app/admin/(protected)/crm/reporting/agent-activity/AgentActivityChart.tsx',
+    ]
+    for (const file of live) {
+      expect(readSrc(file)).not.toMatch(/from ['"]recharts['"]/)
+    }
+    expect(readSrc('components/market/MarketCoreCharts.tsx')).toMatch(/from '@\/components\/site\/v3'/)
+    expect(readSrc('components/reports/SalesReportCharts.tsx')).toMatch(/<V3Chart/)
+    expect(readSrc('components/tools/EquityProjectionChart.client.tsx')).toMatch(/<V3Chart/)
+    expect(readSrc('app/admin/(protected)/crm/reporting/agent-activity/AgentActivityChart.tsx')).toMatch(/<AChart/)
+    expect(readSrc('app/admin/(protected)/reports/custom/CustomReportBuilder.tsx')).toMatch(/ReportTimeSeriesChart/)
+    expect(readSrc('app/admin/(protected)/financials/page.tsx')).toMatch(/<AChart/)
+    expect(readSrc('lib/cma/immersive.ts')).toMatch(/from '@\/lib\/cma\/seasonality-chart'/)
+    expect(readSrc('lib/cma/seasonality-chart.ts')).toMatch(/from '@\/lib\/charts\/plot'/)
+    expect(readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')).toMatch(/placeMartCompositionChart\(regionMart\)/)
+  })
+
+  it('D108 — weekly full mart rebuild from 1998 and heartbeat on the floor year', () => {
+    const weekly = readSrc('app/api/cron/rebuild-analytics-marts-full/route.ts')
+    const nightly = readSrc('app/api/cron/rebuild-analytics-marts/route.ts')
+    const dal = readSrc('lib/data/analytics/getCoMarketAnnual.ts')
+    const vercel = readSrc('vercel.json')
+    expect(dal).toMatch(/MART_FLOOR_YEAR = 1998/)
+    expect(dal).toMatch(/assertMartFloorYear/)
+    expect(weekly).toMatch(/MART_FLOOR_YEAR/)
+    expect(weekly).toMatch(/assertMartFloorYear/)
+    expect(nightly).toMatch(/assertMartFloorYear/)
+    expect(vercel).toMatch(/\/api\/cron\/rebuild-analytics-marts-full/)
+  })
+
   it('D103 — homepage opens Field-first: house on the fold, towns as filters, no See homes for sale', () => {
     const page = readSrc('app/page.tsx')
     expect(page).toMatch(/<HomeHomesField/)

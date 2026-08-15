@@ -5,7 +5,9 @@
  * (Caldera Springs, Tetherow, …). City is the fallback. market_stats_cache
  * rolling_365d supplies the closed-sale trend and the YoY rate that drives
  * the per-comp time adjustment; market_pulse_live supplies live inventory
- * AND the canonical months of supply.
+ * AND the canonical months of supply. Calendar-year volume comes from
+ * analytics_mart_market_annual via getCmaMarketBoardYear (city grain, else
+ * the region row labeled as region). A missing mart row is omitted.
  *
  * Months of supply comes FROM market_pulse_live.months_of_supply — the §0
  * canonical figure (active / (closed_last_6_months / 6)) that every other
@@ -19,7 +21,10 @@
 
 import { getCmaMarketPulseRow, getCmaMarketStatsRow, getCmaMarketTrendRows } from '@/lib/data/cma/builderReads'
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
+import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
 import type { CmaMarketContext } from '@/lib/cma/types'
+
+export { yearMartCite } from '@/lib/cma/market-board-mart'
 
 function slugCandidates(city: string): string[] {
   const lower = city.trim().toLowerCase()
@@ -83,7 +88,10 @@ export async function getCmaMarketContext(
   if (!stats) return null
 
   const geoType = stats.geo_type === 'neighborhood' ? 'neighborhood' : 'city'
-  const trendRows = await getCmaMarketTrendRows(stats.geo_slug, geoType)
+  const [trendRows, yearMart] = await Promise.all([
+    getCmaMarketTrendRows(stats.geo_slug, geoType),
+    getCmaMarketBoardYear({ city }),
+  ])
 
   const sold365 = num(stats.sold_count) ?? 0
   const active = num(pulse?.active_count)
@@ -124,6 +132,7 @@ export async function getCmaMarketContext(
     methodologyVersion: stats.methodology_version,
     computedAt: stats.computed_at,
     pulseUpdatedAt: pulse?.updated_at ?? null,
+    yearMart,
     trend: trendRows.map((row) => ({
       periodStart: row.period_start,
       medianSalePrice: num(row.median_sale_price),

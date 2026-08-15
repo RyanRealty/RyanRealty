@@ -2,29 +2,31 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — Field facts + cube 1998, executing not planning
+# Current — 2026-08-15 (Grok) — one chart grammar, local then ship
 
-**Matt:** Lost trust. No more plans. Thorough, fast. Top of the Central Oregon market. Do not flatten.
+**Matt:** Standardize UIs from admin to public. One charting system. Documents use the same geometry.
 
-**SHA:** `0a888011` on `origin/main`. Production READY.
+**SHA:** chart unit about to land on `main`. Origin product still `0a888011` until this push.
 
-**Shipped this session:**
-- Field photos print price + beds/baths/sqft + street on the photograph. Lead min 24rem.
-- City/ZIP map first paint is the listing photograph (`PlaceFieldMap` poster under dynamic load).
-- `getCoMarketAnnual` + `getCoFeatureAnnual` are mart-only. No `listings` scan.
-- Marts backfilled 1998–2015. Coverage **1998–2025**. `CLOSED_SALES_FROM_YEAR` = 1998.
-- History year picker is every year from 1998.
+**Done this unit:**
+- One geometry: `lib/charts/plot.ts`. Public skin `V3Chart`. Admin skin `AChart`. Print `lib/charts/print-svg.ts` + `lib/cma/seasonality-chart.ts`.
+- Live recharts removed from MarketCoreCharts, SalesReportCharts, EquityProjection, AgentActivityChart. Analytics wrappers already on AChart.
+- Custom report sold-count line + financials net-by-year on AChart. Immersive CMA seasonality uses the same SVG as print.
+- Neighborhood sold Instrument: `placeMartCompositionChart(regionMart)` labeled as Central Oregon, not the neighborhood.
+- D109 fails if those mounts import recharts.
 
-**Printed cube (service role, 2026-08-15):**
-- 1998 region all: **5,179** closes, **$654,573,406** volume, median **$104,900** — `analytics_mart_market_annual` geo_type=region geo_slug=central-oregon type_scope=all
-- 1998 fireplace: **1,568** / 5,179 (30.3%), median close $160,000 — `analytics_mart_feature_annual` feature_key=fireplace
-- 2024 unchanged: **5,707** / **$3.931B** / median $570,000 (EDA match). 1990 = 0 rows, not published.
+**Printed cube (unchanged, do not republish 1990):**
+- 1998 region all: **5,179** / **$654,573,406** / median **$104,900**
+- 1998 fireplace: **1,568** / 5,179 (30.3%)
+- 2024: **5,707** / **$3.931B** / median **$570,000**
 
 **Do not:** page-grade, new OS, `git add -A`, leftover page-grade-v24-regrade folder or `_sunstone-cma-summary.ts`.
 
-**Next:** recapture home / city / history?year=1998 / region at 390 and 1280. Then sentence search, Tremor on market, HouseMe report compose on listing, Google comms card, arrival Buy/Sell/Look, CMA reads mart.
+**Left on disk, not this commit:** Arrival Buy/Sell/Look, sentence search, HouseMe, Google comms, sell leftovers, unmounted recharts (`GeoMarketOverview`, `MarketSnapshotChart`, `MarketVisuals`).
 
-**Skills read:** frontend-design, git-commit.mdc, CROSS_AGENT_HANDOFF.
+**Next:** pathspec push this chart unit, `deploy:verify`, then recapture the ten-page strip at 390 and 1280.
+
+**Skills read:** public-product-os (orient), frontend-design, git-commit.mdc, CROSS_AGENT_HANDOFF.
 
 # Prior — 2026-08-14 (Grok) — public look: stop inventing, use an existing system
 

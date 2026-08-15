@@ -7,6 +7,8 @@
  * marketing_brain_skills/producers/cma/SKILL.md steps 3, 4, 4.5, and 9.
  */
 
+import type { CmaMartYearFigure } from '@/lib/cma/market-board-mart'
+
 export interface CmaSubject {
   listingKey: string | null
   mlsNumber: string | null
@@ -131,6 +133,12 @@ export interface CmaMarketContext {
   pulseUpdatedAt: string | null
   /** Completed months only. A chart renders only when six priced months exist. */
   trend?: CmaMarketTrendPoint[]
+  /**
+   * Calendar-year volume from analytics_mart_market_annual.
+   * City grain when the city cell exists, else the region row labeled as region.
+   * Absent when the mart row is missing. Never a zero fill.
+   */
+  yearMart?: CmaMartYearFigure | null
 }
 
 export interface CmaPricing {

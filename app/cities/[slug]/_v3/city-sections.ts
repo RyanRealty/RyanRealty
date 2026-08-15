@@ -242,14 +242,14 @@ export function marketFigures(
   if (pulse?.medianListPrice != null && pulse.medianListPrice > 0) {
     figures.push({
       value: v3Text(formatPrice(pulse.medianListPrice)),
-      label: v3Text('median list price'),
+      label: v3Text('median list price, single-family'),
       href: links.marketReport,
     })
   }
   if (monthsOfSupplyLabel != null) {
     figures.push({
       value: v3Text(monthsOfSupplyLabel),
-      label: v3Text('months of supply'),
+      label: v3Text('months of supply, single-family'),
       href: links.monthsOfSupply,
     })
   }
@@ -264,7 +264,7 @@ export function marketFigures(
   if (pulse?.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
     figures.push({
       value: v3Text(String(pulse.medianDaysToPending)),
-      label: v3Text('median days to pending'),
+      label: v3Text('median days to pending, single-family'),
       href: links.marketReport,
     })
   }

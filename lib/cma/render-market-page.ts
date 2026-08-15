@@ -151,9 +151,23 @@ export function marketPage(input: {
       : 'No verified year-over-year trend was available for this market, so no time adjustment was applied.'
   }</p>
   ${trendChart(m.trend ?? [])}
+  ${yearMartBlock(m)}
   <div class="trace">
     <div class="t-hd">Source</div>
     <code>market_stats_cache</code> geo <code>${esc(m.geoSlug)}</code>, period rolling_365d ending ${dateLong(m.periodEnd)}, methodology ${esc(m.methodologyVersion ?? 'n/a')}, computed ${dateLong(m.computedAt)} · <code>market_pulse_live</code> as of ${dateLong(m.pulseUpdatedAt)}.
   </div>`,
   }
+}
+
+function yearMartBlock(m: CmaMarketContext): string {
+  const y = m.yearMart
+  if (!y || y.source !== 'mart' || y.soldCount <= 0 || y.totalVolume <= 0) return ''
+  const geo = y.geoType === 'city' ? y.geoLabel : 'Central Oregon'
+  return `
+  <h3 class="subhead">${esc(geo)} closed sales, ${esc(String(y.year))}</h3>
+  <p>${esc(geo)} closed ${usd(Math.round(y.totalVolume))} across ${int(y.soldCount)} sales (${esc(y.typeLabel)}). The table above is the last 12 months of single-family sales.</p>
+  <div class="trace">
+    <div class="t-hd">Source</div>
+    <code>analytics_mart_market_annual</code> geo_type <code>${esc(y.geoType)}</code>, geo_slug <code>${esc(y.geoSlug)}</code>, year ${int(y.year)}, type_scope all, methodology ${esc(y.methodology)}, computed ${dateLong(y.computedAt)}.
+  </div>`
 }

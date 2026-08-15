@@ -15,6 +15,9 @@
  * expired audit, and the BPO all print the same property the same way.
  */
 
+import { buildLinePlot } from '@/lib/charts/plot'
+import { PRINT_NAVY_CREAM, renderPrintChartSvg } from '@/lib/charts/print-svg'
+import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { cmaStylesheet } from '@/lib/cma/render-css'
 import {
   cleanText,
@@ -519,35 +522,27 @@ function highlightsPage(a: RenderCmaArgs): PageDef | null {
 
 // ── Report extras (Matt 2026-08-05): when-to-list + competition ────────────
 
-function seasonalityChartSvg(x: NonNullable<CmaExtras['seasonality']>): string {
-  const W = 720
-  const H = 210
-  const plotTop = 18
-  const plotBottom = 168
-  const barW = 40
-  const gap = (W - 12 * barW) / 13
-  const vals = x.byMonth.map((m) => m.medianDaysToPending).filter((v): v is number => v != null)
-  const max = Math.max(...vals, 1)
-  const fastest = new Set(x.fastestMonths)
-  const bars = x.byMonth
-    .map((m, i) => {
-      const cx = gap + i * (barW + gap)
-      const label = `<text x="${cx + barW / 2}" y="${plotBottom + 16}" text-anchor="middle" font-size="11" fill="#102742" opacity="0.75">${m.monthName.slice(0, 3)}</text>`
-      if (m.medianDaysToPending == null) {
-        return `${label}<text x="${cx + barW / 2}" y="${plotBottom - 6}" text-anchor="middle" font-size="10" fill="#102742" opacity="0.4">n/a</text>`
-      }
-      const h = Math.max(6, ((plotBottom - plotTop) * m.medianDaysToPending) / max)
-      const y = plotBottom - h
-      const hot = fastest.has(m.monthName)
-      return `${label}
-      <rect x="${cx}" y="${y}" width="${barW}" height="${h}" rx="4" fill="#102742" opacity="${hot ? '1' : '0.35'}"/>
-      <text x="${cx + barW / 2}" y="${y - 6}" text-anchor="middle" font-size="12" font-weight="600" fill="#102742">${Math.round(m.medianDaysToPending)}</text>`
-    })
-    .join('\n')
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median days to pending by close month" style="width:100%;height:auto;display:block;">
-    <line x1="0" y1="${plotBottom}" x2="${W}" y2="${plotBottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
-    ${bars}
-  </svg>`
+function subdivisionYearChartSvg(
+  years: readonly { year: number; count: number }[],
+): string {
+  const plot = buildLinePlot([
+    {
+      name: 'Closed sales',
+      points: years
+        .filter((y) => y.year > 0 && y.count > 0)
+        .map((y) => ({
+          value: y.count,
+          tick: String(y.year),
+          label: String(y.count),
+          at: y.year,
+        })),
+    },
+  ])
+  if (!plot) return ''
+  return renderPrintChartSvg(plot, {
+    caption: 'Closed sales by year',
+    colors: PRINT_NAVY_CREAM,
+  })
 }
 
 
@@ -609,6 +604,7 @@ function subdivisionStoryPage(a: RenderCmaArgs): PageDef | null {
         `<tr><td>${y.year}</td><td>${int(y.count)}</td><td>${usd(y.medianClose)}</td><td>${y.medianPpsf != null ? usd(Math.round(y.medianPpsf)) : '—'}</td></tr>`,
     )
     .join('')
+  const yearChart = subdivisionYearChartSvg(f.years)
   const sections = st.sections
     .map((sec) => `<h3 class="subhead">${esc(sec.heading)}</h3><p>${esc(sec.body)}</p>`)
     .join('')
@@ -630,6 +626,7 @@ function subdivisionStoryPage(a: RenderCmaArgs): PageDef | null {
     body: `
   <h2 class="section">The Story of ${esc(f.name)}</h2>
   <p>${int(f.totalSales)} closed single-family sales in ${esc(f.name)}, by year.</p>
+  ${yearChart ? `<div class="chart-block" data-anim="chart">${yearChart}</div>` : ''}
   <table class="comp-table">
     <thead><tr><th>Year</th><th>Sales</th><th>Median close</th><th>Median $/sqft</th></tr></thead>
     <tbody>${yearRows}</tbody>

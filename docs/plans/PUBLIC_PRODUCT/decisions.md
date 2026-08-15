@@ -759,6 +759,19 @@ paths. Mart rows exist 1998–present. `CLOSED_SALES_FROM_YEAR` is 1998.
 Remaining: weekly full rebuild (cron is last 2 years), place/listing/CMA read
 the mart, Tremor on the market family.
 
+## 2026-08-14 — One chart grammar (Matt, chat)
+
+Standardize UIs from admin to public so we are not using two charting
+systems. The new cube (analytics_mart_*) and every document we create
+(CMA, packets, market pages, admin analytics) draw the same series.
+
+**Locked:** one geometry module (`lib/charts/plot.ts`). Public skin is
+V3Chart (navy/cream, Amboqia/Geist). Admin skin is AChart (`--a-*`,
+Inter). Print documents use `lib/charts/print-svg.ts` with navy/cream.
+No `@tremor/react`. No recharts on a live series. Field stays
+photography. Do not paint the public site Inter/slate. Do not paint
+admin Amboqia/navy.
+
 ## 2026-08-14 — Search is both (Matt, chat)
 
 Classic search is not a sunset. AI answers are not a side bet. Lead both.
