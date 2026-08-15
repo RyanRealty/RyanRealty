@@ -6,6 +6,8 @@
 
 **Matt:** Develop a process that continually improves the whole company. No new OS. No product UI.
 
+**SHA:** `7c2bca5c` on `main`. Hosted `site_improvement_ledger.domain` applied 2026-08-15. Ledger row `ba3435dd`.
+
 **Done this land:**
 - THE LOOP bumped to v1.2.0. Ingest is company-wide. Five standing loops unchanged.
 - Addendum `docs/plans/COMPANY_IMPROVEMENT.md` (domain → signal → diagnose).
@@ -15,7 +17,7 @@
 
 **Do not:** `git add -A`. Do not mix LOOK-PLAN / RESTORE / page-grade leftovers. Do not send, post, spend, or OAuth.
 
-**First packet filled** 2026-08-15T14:14:00Z. Hosted `domain` column applied. 11 open ledger windows (all seo-aeo). Next cycle can score a non-SEO class.
+**First packet filled** 2026-08-15T14:14:00Z. 11 open seo-aeo windows plus this factory row. Next cycle can score a non-SEO class (nurture Lead=0 is the highest-reach rotting row).
 
 **Skills read:** TDD, database-canonical-reference, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, growth-loop, git-commit.mdc.
 

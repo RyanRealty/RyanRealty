@@ -31,7 +31,7 @@
 
 | Class | Domain | Predicted delta | Commit |
 |---|---|---|---|
-| Company ingest + `site_improvement_ledger.domain` | factory | Non-SEO classes can take a ledger row and a score | this land |
+| Company ingest + `site_improvement_ledger.domain` | factory | Non-SEO classes can take a ledger row and a score | `7c2bca5c` |
 
 ## 3. What is measuring
 
@@ -39,7 +39,7 @@
 |---|---|---|---|
 | **11 open windows, all `seo-aeo`** | seo-aeo | UNKNOWN per-row until a Learn pass writes `actual_delta` | `site_improvement_ledger` where `actual_delta` is null. 11/11 rows. Hosted `domain` defaulted existing rows to `seo-aeo` on 2026-08-15 apply. |
 
-No new measurement window was opened for this factory class in the same probe. Open the row when this commit lands.
+Factory window opened on `7c2bca5c`: ledger id `ba3435dd-b585-47b0-874a-a9910bc3c945`, `change_class=company-ingest`, `metric=non_seo_domains_in_ledger`, baseline 0, predicted +1, window 14d.
 
 ## 4. What is rotting (top residuals)
 
