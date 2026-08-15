@@ -1,14 +1,14 @@
 {
   "rubric": "2.4",
-  "updated_at": "2026-08-15T00:06:27.983Z",
+  "updated_at": "2026-08-15T00:19:05.975Z",
   "version_target": "Universe P0=0, auto-fails 1-18 and 26-27 none, Job/Path/Opening/Distinct/Reach/Quiet/Beat >=8, one shop, five place rhythms, must-win WIN on beat_on. Matt has not stamped this bar.",
   "universe": "docs/plans/PUBLIC_PRODUCT/grade-universe.json",
-  "last_run": "2026-08-15T00:06:27.983Z",
-  "last_sha_graded": "5f751b94",
+  "last_run": "2026-08-15T00:19:05.975Z",
+  "last_sha_graded": "f76ecf4d",
   "looks": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/",
   "cards": "docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/",
   "universe_n": 40,
-  "universe_p0": 11,
+  "universe_p0": 8,
   "universe_pass": 0,
   "send": 0,
   "one_shop": {
@@ -28,8 +28,8 @@
         "/housing-market/history",
         "/housing-market/reports"
       ],
-      "status": "fixed-local-pending-ship",
-      "note": "History action is Slice closed sales #query. Reports action is Live figures by city #cities. Quiet still carries Value my home."
+      "status": "shipped",
+      "note": "Prod f76ecf4d READY. History action is Slice closed sales. Reports action is Live figures by city. Recaptured."
     },
     {
       "id": "broker-leaf-faces-first",
@@ -37,8 +37,8 @@
       "routes": [
         "/team/matt-ryan"
       ],
-      "status": "fixed-local-pending-ship",
-      "note": "AboutFaces mounted on /team/[slug]. Not on production until this SHA ships."
+      "status": "shipped",
+      "note": "Prod f76ecf4d READY. Face + Call/Text on the 390 fold. Recaptured."
     },
     {
       "id": "beat-theater",
@@ -474,13 +474,10 @@
     "/housing-market/history": {
       "grain": "market",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        14
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 4,
-        "path": 3,
+        "job": 8,
+        "path": 8,
         "opening": 8,
         "distinct": 8,
         "craft": 8,
@@ -489,7 +486,7 @@
         "honesty": 8,
         "reach": 8,
         "simple": 8,
-        "quiet": 4,
+        "quiet": 7,
         "beat": null
       },
       "send": false,
@@ -498,13 +495,10 @@
     "/housing-market/reports": {
       "grain": "market",
       "verdict": "FAIL",
-      "auto_fails": [
-        1,
-        14
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 4,
-        "path": 3,
+        "job": 8,
+        "path": 8,
         "opening": 8,
         "distinct": 8,
         "craft": 8,
@@ -513,7 +507,7 @@
         "honesty": 8,
         "reach": 8,
         "simple": 8,
-        "quiet": 4,
+        "quiet": 7,
         "beat": null
       },
       "send": false,
@@ -881,14 +875,11 @@
     "/team/matt-ryan": {
       "grain": "about",
       "verdict": "FAIL",
-      "auto_fails": [
-        3,
-        15
-      ],
+      "auto_fails": [],
       "axes": {
-        "job": 4,
+        "job": 8,
         "path": 8,
-        "opening": 3,
+        "opening": 8,
         "distinct": 8,
         "craft": 8,
         "motion": 6,
@@ -896,7 +887,7 @@
         "honesty": 8,
         "reach": 8,
         "simple": 8,
-        "quiet": 3,
+        "quiet": 8,
         "beat": null
       },
       "send": false,

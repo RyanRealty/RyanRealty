@@ -2,24 +2,28 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-14 (Grok, page-grade fix-all) — shipping
+# Current — 2026-08-14 (Grok, page-grade loop) — READY `f76ecf4d`
 
-**Track:** Find all, fix all, ship, regrade. Seven parallel fix agents plus leftover honesty/index folds.
+**Track:** Finish leftover page-grade P0s, ship, recapture, regrade. Do not restart the audit.
 
-**Wired (this land):**
-- Chrome fills Value my home only on `/sell*` (`lib/site/chrome-seller-ask.ts`).
-- Cookie hidden until first scroll; 3s corner chip if no scroll.
-- About/team: faces first, boutique line cut, Call/Text on the face.
-- Sell: one address ask, Stage ghost gone.
-- Home + browse Field. 390 no longer says "in this map view" without a map.
-- City/zip Field (not 494-hero). Neighborhood pace then Field. Master-plan Stage then Field. Plat Ledger (not 0-hero).
-- Open houses / price drops / luxury / videos / activity: count is a caption. H1s keep Layer A literals.
-- Our-homes: exact `ListOfficeName` then prefix, not leading-wildcard ILIKE.
-- Blog + POI indexes open on Ledger of rows.
+**SHA:** `f76ecf4d` on `origin/main` (also `119f12ae`, `5f751b94`). Production READY (`npm run deploy:verify` exit 0). No schema.
 
-**Next:** Push + deploy:verify, then recapture universe and regrade. Do not `git add -A`. Imagery / CMA stay out.
+**Wired this loop:**
+- Home/browse/luxury/OH/our-homes/videos/price-drops: count is a caption; source after the Field; houses fill the fold.
+- Sell: one Value my home (form). Chrome seller-ask off exact `/sell`.
+- Cities index: name / median / MoS / count. Contact: no first-screen explain.
+- History first ask is Slice closed sales. Reports first ask is Live figures by city.
+- Broker leaf: AboutFaces + Call/Text. Bio below.
 
-**Skills read:** page-grade, dispatching-parallel-agents, frontend-design, public-product-os, PUBLIC_UI, PAGE-GRADE, git-commit.mdc.
+**Regrade (prod `f76ecf4d`, 40 families, 80 PNGs):**
+- One-shop PASS. Wrong-grain PASS.
+- Product P0s left: **0**.
+- Universe P0 = **8**, all auto-fail 17 Beat theater on `beat_on` (Compass/Cascade/Redfin/Stellar/Duren/Beacon crops missing this firing).
+- Cards untracked under `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/`. PNGs stay untracked. CMA scratch stays out.
+
+**Next:** Recapture the frozen Beat battery, fill matrices, then the 8 AF17s can close. Do not `git add -A`.
+
+**Skills read:** page-grade, public-product-os, git-commit.mdc, CROSS_AGENT_HANDOFF, SESSION_HANDOFF.
 
 # Current — 2026-08-14 (Grok, imagery canon) — local, not pushed
 
