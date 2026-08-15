@@ -49,6 +49,13 @@ type Props = {
   lifestyleLine?: string | null
   zoom?: number
   className?: string
+  photoUrl?: string | null
+  price?: number | null
+  beds?: number | null
+  baths?: number | null
+  sqft?: number | null
+  cityLine?: string | null
+  href?: string | null
 }
 
 export function ListingLocationMap({
@@ -59,6 +66,13 @@ export function ListingLocationMap({
   zoom,
   className,
   addressLine,
+  photoUrl,
+  price,
+  beds,
+  baths,
+  sqft,
+  cityLine,
+  href,
 }: Props & { addressLine?: string | null }) {
   if (lat == null || lng == null) return null
 
@@ -86,6 +100,20 @@ export function ListingLocationMap({
             lng={lng}
             boundary={boundary ?? null}
             zoom={zoom}
+            popup={
+              addressLine
+                ? {
+                    price: price ?? null,
+                    photoURL: photoUrl ?? null,
+                    streetLine: addressLine,
+                    cityLine: cityLine?.trim() || '',
+                    beds: beds ?? null,
+                    baths: baths ?? null,
+                    sqft: sqft ?? null,
+                    href: href?.trim() || '#location',
+                  }
+                : null
+            }
           />
         </div>
       </div>

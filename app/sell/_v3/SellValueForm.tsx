@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
 import {
   submitSellerLPForm,
-  saveSellerPartialLead,
   type SellerLPTimeline,
 } from '@/app/lp/seller-home-value/actions'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
@@ -61,12 +60,6 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
       setError('Please enter a complete property address.')
       return
     }
-    void saveSellerPartialLead({
-      address: v,
-      sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
-      source: 'seller-lp',
-      pagePath,
-    })
     setStep('qualify')
   }
 

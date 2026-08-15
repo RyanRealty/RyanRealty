@@ -7,7 +7,6 @@ import {
   type FubEventPerson,
 } from '@/lib/followupboss'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
-import { saveAnonymousPartialAddress } from '@/lib/data'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
@@ -93,64 +92,16 @@ export type SellerLPResult =
   | { success: false; error: string }
 
 /**
- * Lightweight partial-lead capture. Fires when the seller enters their
- * address and advances to step 2 (before they fill out contact info).
- *
- * Non-blocking fire-and-forget: sends a FUB Seller Inquiry event with
- * just the address and tags source:seller-lp-partial so we can see
- * partial-completion in FUB without triggering the full workflow
- * enrollment. Never throws. The UI step change must never wait on this.
+ * Locked off 2026-08-14: no save until contact exists. Address-only
+ * advances the form. Contact submit is the first write.
  */
-export async function saveSellerPartialLead(params: {
+export async function saveSellerPartialLead(_params: {
   address: string
   sessionId: string | undefined
   source: 'seller-lp' | 'list-now-lp'
-  /** See SellerLPSubmission.pagePath. */
   pagePath?: string
 }): Promise<void> {
-  try {
-    const rawAddress = params.address?.trim() ?? ''
-    if (!rawAddress) return
-
-    // Always try to capture the address anonymously via the visitor_events DAL
-    // so a sessionId-keyed row lands even when there is no cookie identity.
-    // Fire-and-forget — must never delay the step change.
-    void saveAnonymousPartialAddress({
-      sessionId: params.sessionId,
-      address: rawAddress,
-      lpSurface: 'seller-lp',
-    }).catch(() => {/* swallowed */})
-
-    // Cookie-identified visitor only for the partial native capture below.
-    // Anonymous visitors already captured via the visitor_events row above.
-    const cookiePersonId = await getPersonIdFromCookie()
-    if (!cookiePersonId) return
-
-    // Partial capture goes native (post-FUB cutover). sendEvent records the
-    // crm_people lead and returns its id. When it resolves a native person,
-    // stamp the partial-source tag natively. A cookie-only event with no email
-    // or phone resolves to no id — the anonymous row above is the record then.
-    const eventResult = await sendEvent({
-      type: 'Seller Inquiry',
-      person: { id: cookiePersonId },
-      source,
-      sourceUrl: `${siteUrl}${sanitizePagePath(params.pagePath)}`,
-      pageTitle: 'Seller LP. Address step (partial)',
-      message: `Partial lead: address entered, step 2 not yet completed. Address: ${rawAddress}. Source: ${params.source}.`,
-    })
-
-    if (!eventResult.ok) {
-      console.warn('[seller-lp] partial lead capture failed (non-blocking):', eventResult.error)
-      return
-    }
-
-    if (eventResult.personId) {
-      await enrichNativeLead({ personId: eventResult.personId, tags: ['source:seller-lp-partial'] })
-    }
-  } catch (e) {
-    // Intentionally silent. Partial-lead capture must never affect the UI.
-    console.warn('[seller-lp] saveSellerPartialLead swallowed error:', e)
-  }
+  return
 }
 
 function getServiceSupabase() {

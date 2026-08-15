@@ -236,6 +236,23 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
   const cityHref = listing.citySlug ? `/cities/${listing.citySlug}` : null
+  const listingHref = listingDetailPath(
+    listing.listingKey,
+    {
+      streetNumber: listing.streetNumber,
+      streetName: listing.streetName,
+      city: listing.city,
+      state: null,
+      postalCode: listing.postalCode,
+    },
+    {
+      city: listing.boundaryCity ?? listing.city,
+      neighborhood: listing.boundaryNeighborhood,
+      subdivision:
+        listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null,
+    },
+    { mlsNumber: listing.listNumber },
+  )
 
   const marketHubHref = marketGeo
     ? marketGeo.geoType === 'community'
@@ -265,6 +282,21 @@ export default async function ListingDetailPage({ params }: PageProps) {
     <>
       <PriceCtaStrip listing={listingWithPhotos} onSave={saveListingFromStrip} initialSaved={initialSaved} />
       <PlaceIdentityLine place={placeContext} />
+      <LivePricingRead
+        read={pricingRead}
+        listPrice={listing.listPrice}
+        listingKey={listing.listingKey}
+        subjectAddress={street}
+        sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+        dom={listing.dom}
+        placeMedianDays={marketPulse?.medianDaysToPending ?? null}
+        placeName={marketGeo?.name ?? listing.city ?? listing.subdivisionName ?? null}
+        hoaMonthly={listing.hoaMonthly}
+        associationFee={listing.associationFee}
+        associationFeeFrequency={listing.associationFeeFrequency}
+        taxAnnualAmount={listing.taxAnnualAmount}
+        hideCmaRequest={Boolean(publishedCma)}
+      />
       {openHouses.length > 0 ? (
         <OpenHouses
           events={openHouses.map((oh) => ({
@@ -298,6 +330,13 @@ export default async function ListingDetailPage({ params }: PageProps) {
         lng={listing.lng}
         lifestyleLine={buildLifestyleLine({ city: listing.city })}
         addressLine={street}
+        photoUrl={photos[0]?.url ?? null}
+        price={listing.listPrice}
+        beds={listing.beds}
+        baths={listing.baths}
+        sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+        cityLine={[listing.city, listing.postalCode].filter(Boolean).join(', ') || null}
+        href={listingHref}
       />
       {marketGeo ? (
         <NeighborhoodMarketContext
@@ -317,16 +356,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         taxAnnualAmount={listing.taxAnnualAmount}
       />
       <RentalAnalysis listing={listing} />
-      {publishedCma ? (
-        <PublishedCmaSection cma={publishedCma} />
-      ) : (
-        <LivePricingRead
-          read={pricingRead}
-          listPrice={listing.listPrice}
-          listingKey={listing.listingKey}
-          subjectAddress={street}
-        />
-      )}
+      {publishedCma ? <PublishedCmaSection cma={publishedCma} /> : null}
       <ListingAttribution
         listAgentName={listing.listAgentName}
         listOfficeName={listing.listOfficeName}
@@ -346,24 +376,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     />
   ) : null
 
-  const canonicalSubdivisionForLd =
-    listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
-  const canonicalPath = listingDetailPath(
-    listing.listingKey,
-    {
-      streetNumber: listing.streetNumber,
-      streetName: listing.streetName,
-      city: listing.city,
-      state: null,
-      postalCode: listing.postalCode,
-    },
-    {
-      city: listing.boundaryCity ?? listing.city,
-      neighborhood: listing.boundaryNeighborhood,
-      subdivision: canonicalSubdivisionForLd,
-    },
-    { mlsNumber: listing.listNumber },
-  )
+  const canonicalPath = listingHref
 
   const listingJsonLdSchemas: SchemaInput[] = [
     {

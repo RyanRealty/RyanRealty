@@ -17,7 +17,7 @@ describe('/sell three asks became one', () => {
     expect(page).not.toMatch(/import SellerLPForm/)
     expect(page).toContain('pagePath={ROUTE_PATH}')
     expect(form).toContain('submitSellerLPForm')
-    expect(form).toContain('saveSellerPartialLead')
+    expect(form).not.toContain('saveSellerPartialLead')
     expect(form).toContain("formId = 'get-value'")
     expect(form).toContain("pagePath = '/sell'")
     expect(form).toContain("source: 'seller-lp'")

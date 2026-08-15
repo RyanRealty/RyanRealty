@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { trackEvent, readRrSessionId } from '@/lib/tracking'
-import { submitSellerLPForm, saveSellerPartialLead, type SellerLPTimeline } from './actions'
+import { submitSellerLPForm, type SellerLPTimeline } from './actions'
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 
@@ -132,13 +132,6 @@ export default function SellerLPForm({
       setError('Please enter a complete property address.')
       return
     }
-    // Fire partial-lead capture non-blocking before advancing the step.
-    void saveSellerPartialLead({
-      address: v,
-      sessionId: readRrSessionId(), // hydration-safe (event-handler body, not render)
-      source: isListNow ? 'list-now-lp' : 'seller-lp',
-      pagePath,
-    })
     // Known visitor with email already known: skip step 2 entirely.
     if (knownVisitor && (prefillEmail || email)) {
       submit({ skipQualify: true })

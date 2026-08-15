@@ -131,7 +131,7 @@
       "name": "LivePricingRead",
       "path": "components/site/listing-detail/LivePricingRead.tsx",
       "blocking": true,
-      "why": "Stamp-backed market read when no published CMA. Range or over/under or refuse. Never walks the matcher on the request."
+      "why": "HouseMe-shaped report from listing_pricing_reads. Over/under or refuse, comps n, $/sqft, DOM vs place, True Cost from real fields. Never walks the matcher on the request. No invented 0-10 or 5-year %."
     },
     {
       "name": "V3Footer",

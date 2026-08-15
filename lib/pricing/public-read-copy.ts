@@ -40,6 +40,15 @@ export function refuseCopy(reason: PublicRefuseReason): string | null {
   return null
 }
 
+/** Refuse copy for the HouseMe block, including stamp reasons the old range card hid. */
+export function housemeRefuseCopy(reason: PublicRefuseReason): string | null {
+  const shown = refuseCopy(reason)
+  if (shown) return shown
+  if (reason === 'facts-not-ready') return 'The facts for this read are not ready.'
+  if (reason === 'no-gla') return 'No living area on file. This page will not guess a number.'
+  return null
+}
+
 export const PUBLIC_READ_DISCLAIMER =
   'This is an estimate, not an appraisal. It is not a guarantee of price.'
 
@@ -47,3 +56,14 @@ export const PUBLIC_READ_EYEBROW = 'Our read'
 export const PUBLIC_READ_TITLE = 'How the ask sits against nearby sales'
 export const PUBLIC_READ_TITLE_UNLISTED = 'What nearby sales imply'
 export const PUBLIC_READ_TITLE_REFUSE = 'Why this page has no number'
+
+export const HOUSEME_EYEBROW = 'This house'
+export const HOUSEME_TITLE_FACTS = 'What this listing shows'
+export const HOUSEME_LABEL_READ = 'Versus the ask'
+export const HOUSEME_LABEL_READ_UNLISTED = 'Nearby sales'
+export const HOUSEME_LABEL_READ_REFUSE = 'Why no number'
+export const HOUSEME_LABEL_COMPS = 'Comps'
+export const HOUSEME_LABEL_PPSF = 'Price per sq ft'
+export const HOUSEME_LABEL_DOM = 'Days on market'
+export const HOUSEME_LABEL_TRUE_COST = 'True cost'
+export const HOUSEME_LABEL_INVESTMENT = 'Rent'

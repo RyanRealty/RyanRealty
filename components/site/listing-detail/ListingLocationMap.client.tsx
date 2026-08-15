@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { GoogleMap, Marker, Polygon } from '@react-google-maps/api'
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions } from '@/lib/maps/markers'
+import MapListingPopup, { type MapListingPopupData } from '@/components/search/MapListingPopup'
 
 /**
  * ListingLocationMap.client — Google Maps for listing detail location block.
@@ -19,6 +20,7 @@ type Props = {
   lng: number
   boundary?: GeoJSON.Geometry | null
   zoom?: number
+  popup?: MapListingPopupData | null
 }
 
 function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
@@ -35,8 +37,10 @@ function geojsonToPaths(geo: GeoJSON.Geometry): google.maps.LatLngLiteral[][] {
   return []
 }
 
-export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 15 }: Props) {
+export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 15, popup }: Props) {
   const { ready, error } = useGoogleMapsReady()
+  const [map, setMap] = useState<google.maps.Map | null>(null)
+  const [popupOpen, setPopupOpen] = useState(true)
 
   // Intrinsic height: clamp from viewport so GoogleMaps never inits at 0px.
   const containerStyle = useMemo(
@@ -115,6 +119,7 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 15
         center={center}
         zoom={zoom}
         options={mapOptions}
+        onLoad={setMap}
       >
         {paths.length > 0 ? (
           <Polygon
@@ -131,6 +136,7 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 15
         ) : null}
         <Marker
           position={center}
+          onClick={() => setPopupOpen(true)}
           icon={{
             path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
             fillColor: NAVY,
@@ -141,6 +147,14 @@ export default function ListingLocationMapClient({ lat, lng, boundary, zoom = 15
             anchor: new google.maps.Point(12, 22),
           }}
         />
+        {map && popup && popupOpen ? (
+          <MapListingPopup
+            map={map}
+            position={center}
+            listing={popup}
+            onClose={() => setPopupOpen(false)}
+          />
+        ) : null}
       </GoogleMap>
     </div>
   )
