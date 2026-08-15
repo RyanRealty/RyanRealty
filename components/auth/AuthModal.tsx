@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signInWithEmailPassword, signUpWithEmailPassword } from '@/app/actions/auth'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
-import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { GoogleCommsCard, GoogleContinueButton, useGoogleCommsConsent } from '@/components/auth/GoogleCommsCard'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,10 +31,12 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/account' 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
+  const comms = useGoogleCommsConsent()
 
   async function handleOAuth(provider: 'google' | 'facebook') {
     setLoading(provider)
     setError(null)
+    await comms.persist()
     const result = await signInWithOAuthBrowser(provider, next)
     if (result.error) {
       setLoading(null)
@@ -121,15 +124,12 @@ export default function AuthModal({ open, onClose, onSuccess, next = '/account' 
           </Button>
         </div>
         <div className="space-y-3">
-          <Button
-            type="button"
-            onClick={() => handleOAuth('google')}
+          <GoogleCommsCard consent={comms.consent} onChange={comms.setConsent} />
+          <GoogleContinueButton
+            loading={loading === 'google'}
             disabled={!!loading}
-            className="flex w-full items-center justify-center gap-3"
-          >
-            <GoogleIcon className="size-5" />
-            {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
-          </Button>
+            onClick={() => handleOAuth('google')}
+          />
           <Button
             type="button"
             variant="outline"

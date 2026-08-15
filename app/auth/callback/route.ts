@@ -9,6 +9,13 @@ import * as Sentry from '@sentry/nextjs'
 import { NextResponse } from 'next/server'
 import { cookies, headers } from 'next/headers'
 import { safeRedirectPath } from '@/lib/auth/safeRedirect'
+import {
+  GOOGLE_COMMS_COOKIE,
+  googleCommsEnrichmentCustom,
+  parseGoogleCommsConsent,
+  usableGoogleCommsPhone,
+  type GoogleCommsConsent,
+} from '@/lib/auth/google-comms-consent'
 
 const AUTH_NEXT_COOKIE = 'auth_next'
 const PERSON_ID_COOKIE = 'rr_pid'
@@ -85,6 +92,80 @@ async function claimGuestSearchesForUser(user: User): Promise<void> {
   }
 }
 
+/**
+ * Apply the Google comms-door cookie to the signed-in person via existing
+ * CRM helpers (ensureNativeLead, suppressions, newsletter, enrichNativeLead).
+ * Does not stamp buyer/seller intent. Never throws into the sign-in path.
+ */
+async function applyGoogleCommsConsent(opts: {
+  email: string
+  name?: string
+  consent: GoogleCommsConsent
+  nextPath: string
+}): Promise<void> {
+  const email = opts.email.trim().toLowerCase()
+  if (!email) return
+  try {
+    const { ensureNativeLead, enrichNativeLead } = await import('@/lib/data/crm/ensureNativeLead')
+    const phone = usableGoogleCommsPhone(opts.consent.phone)
+    const { personId } = await ensureNativeLead({
+      name: opts.name ?? null,
+      email,
+      phone,
+      source: 'website-signup',
+      tags: ['source:website-signup'],
+    })
+    if (personId > 0) {
+      const { addSuppression, removeSuppression } = await import('@/lib/crm/suppressions')
+      const smsOk = opts.consent.smsOpt === true && Boolean(phone)
+      await removeSuppression({ personId, channel: 'sms', reason: 'no-sms-consent' })
+      if (!smsOk) {
+        await addSuppression({
+          personId,
+          channel: 'sms',
+          reason: 'no-sms-consent',
+          source: 'google-comms',
+        })
+      }
+      if (opts.consent.emailOpt) {
+        const { subscribeToNewsletter } = await import('@/lib/data/newsletter')
+        await subscribeToNewsletter({
+          email,
+          name: opts.name ?? null,
+          source: 'google-comms',
+          crmPersonId: personId,
+        })
+      }
+      await enrichNativeLead({
+        personId,
+        custom: googleCommsEnrichmentCustom(opts.consent),
+        originNote: {
+          title: 'Google comms door',
+          body: `Email updates: ${opts.consent.emailOpt ? 'yes' : 'no'}. SMS: ${smsOk ? 'yes' : 'no'}.`,
+        },
+      })
+    }
+
+    const cmaSlug = opts.nextPath.match(/^\/cma\/([a-z0-9-]{3,80})$/)?.[1]
+    if (cmaSlug) {
+      const { getCmaAccessIdentity } = await import('@/lib/data')
+      const identity = await getCmaAccessIdentity(cmaSlug)
+      if (identity?.personId && identity.personId !== personId) {
+        const claiming = !identity.clientEmail && identity.personEmails.length === 0 && !identity.claimedBy
+        await enrichNativeLead({
+          personId: identity.personId,
+          custom: {
+            cmaConsent: true,
+            ...(claiming ? { cmaClaimedBy: email } : {}),
+          },
+        })
+      }
+    }
+  } catch (err) {
+    Sentry.captureException(err)
+  }
+}
+
 async function getBaseUrl(request: Request): Promise<string> {
   const h = await headers()
   const host = h.get('x-forwarded-host') || h.get('host')
@@ -106,6 +187,7 @@ export async function GET(request: Request) {
   // Durable first-party visitor id (Phase 5) — present server-side so the login
   // can stitch this browser's anonymous history to the now-known person.
   const rrVid = cookieStore.get('rr_vid')?.value
+  const googleComms = parseGoogleCommsConsent(cookieStore.get(GOOGLE_COMMS_COOKIE)?.value)
 
   const errorParam = searchParams.get('error')
   const errorDesc = searchParams.get('error_description')
@@ -148,6 +230,14 @@ export async function GET(request: Request) {
           .then(({ saveOauthAvatarByEmail }) => saveOauthAvatarByEmail(data.user.email, avatar))
           .catch(() => {})
       }
+      if (googleComms && data.user.email) {
+        await applyGoogleCommsConsent({
+          email: data.user.email,
+          name: typeof name === 'string' ? name : undefined,
+          consent: googleComms,
+          nextPath: safeNext,
+        })
+      }
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)
@@ -174,6 +264,14 @@ export async function GET(request: Request) {
       }).catch((err) => {
         Sentry.captureException(err)
       })
+      if (googleComms && data.user.email) {
+        await applyGoogleCommsConsent({
+          email: data.user.email,
+          name: data.user.user_metadata?.full_name ?? data.user.user_metadata?.name,
+          consent: googleComms,
+          nextPath: safeNext,
+        })
+      }
       const redirectUrl = safeNext.includes('?') ? `${base}${safeNext}&signed_up=1` : `${base}${safeNext}?signed_up=1`
       const res = NextResponse.redirect(redirectUrl)
       res.cookies.delete(AUTH_NEXT_COOKIE)

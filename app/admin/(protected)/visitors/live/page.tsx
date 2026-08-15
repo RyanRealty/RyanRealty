@@ -58,7 +58,7 @@ import {
   type ReportColumn,
   type ReportGridRow,
 } from '@/components/admin/v2'
-import { fetchLiveVisitors, fetchLiveSummary, type LiveSessionRow } from '../_lib/queries'
+import { fetchLiveVisitors, fetchLiveSummary, fetchProductScoreboard, type LiveSessionRow } from '../_lib/queries'
 import VisitorFilterSelect from '../VisitorFilterSelect'
 
 export const dynamic = 'force-dynamic'
@@ -130,7 +130,13 @@ const COLUMNS: ReportColumn[] = [
 ]
 
 async function SummaryStrip() {
-  const summary = await fetchLiveSummary()
+  const [summary, product] = await Promise.all([fetchLiveSummary(), fetchProductScoreboard(7)])
+  const stitchPct =
+    product.sessions > 0 ? Math.round((product.identified / product.sessions) * 100) : null
+  const resumePct =
+    product.returning > 0 ? Math.round((product.welcomeBack / product.returning) * 100) : null
+  const optInPct =
+    product.signin > 0 ? Math.round((product.emailOpt / product.signin) * 100) : null
   return (
     <>
       <div style={{ margin: '0 0 14px' }}>
@@ -149,6 +155,26 @@ async function SummaryStrip() {
           { key: 'today', label: 'Sessions today', value: String(summary.totalToday) },
           { key: 'identified', label: 'Identified today', value: String(summary.identifiedToday) },
           { key: 'hot', label: 'Hot leads today', value: String(summary.hotLeadsToday) },
+        ]}
+      />
+      <ReportNumbers
+        items={[
+          { key: 'intent', label: 'Intent declared (7d)', value: String(product.intentDeclared) },
+          {
+            key: 'resume',
+            label: 'Resume rate (7d)',
+            value: resumePct == null ? '—' : `${resumePct}%`,
+          },
+          {
+            key: 'stitch-rate',
+            label: 'Stitch rate (7d)',
+            value: stitchPct == null ? '—' : `${stitchPct}%`,
+          },
+          {
+            key: 'opt-in',
+            label: 'Email opt-in vs sign-in (7d)',
+            value: optInPct == null ? '—' : `${optInPct}%`,
+          },
         ]}
       />
       <p style={{ fontSize: 'var(--a-text-xs)', color: 'var(--a-text-2)', margin: '0 0 20px' }}>

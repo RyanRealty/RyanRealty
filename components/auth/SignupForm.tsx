@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signUpWithEmailPassword } from '@/app/actions/auth'
 import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
-import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { GoogleCommsCard, GoogleContinueButton, useGoogleCommsConsent } from '@/components/auth/GoogleCommsCard'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,7 @@ export default function SignupForm({ next }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [needsConfirmation, setNeedsConfirmation] = useState(false)
+  const comms = useGoogleCommsConsent()
 
   if (needsConfirmation) {
     return (
@@ -36,6 +38,7 @@ export default function SignupForm({ next }: Props) {
   async function handleOAuth(provider: 'google' | 'facebook') {
     setLoading(provider)
     setError(null)
+    await comms.persist()
     const result = await signInWithOAuthBrowser(provider, next)
     if (result.error) {
       setLoading(null)
@@ -78,15 +81,14 @@ export default function SignupForm({ next }: Props) {
 
   return (
     <div className="mt-6 space-y-4">
-      <Button
-        type="button"
-        onClick={() => handleOAuth('google')}
+      <GoogleCommsCard consent={comms.consent} onChange={comms.setConsent} />
+      <GoogleContinueButton
+        loading={loading === 'google'}
         disabled={!!loading}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
-      >
-        <GoogleIcon className="size-5" />
-        {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
-      </Button>
+        onClick={() => handleOAuth('google')}
+        variant="outline"
+        className="w-full"
+      />
       <Button
         type="button"
         onClick={() => handleOAuth('facebook')}

@@ -147,6 +147,58 @@ async function TopQueries({ sinceDate, endDate }: { sinceDate: string; endDate: 
   )
 }
 
+async function SlippingQueries({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
+  const start = new Date(`${sinceDate}T00:00:00Z`).getTime()
+  const end = new Date(`${endDate}T00:00:00Z`).getTime()
+  const mid = new Date((start + end) / 2).toISOString().slice(0, 10)
+  const [earlier, later] = await Promise.all([
+    aggBy('campaign', sinceDate, mid),
+    aggBy('campaign', mid, endDate),
+  ])
+  const laterByKey = new Map(later.map((r) => [r.key, r]))
+  const slipping = earlier
+    .filter((a) => a.clicks >= 3)
+    .map((a) => {
+      const b = laterByKey.get(a.key)
+      const laterClicks = b?.clicks ?? 0
+      return {
+        key: a.key,
+        earlier: a.clicks,
+        later: laterClicks,
+        delta: laterClicks - a.clicks,
+      }
+    })
+    .filter((r) => r.later < r.earlier)
+    .sort((a, b) => a.delta - b.delta)
+  return (
+    <section aria-label="Slipping queries">
+      <SectionHead>Slipping queries</SectionHead>
+      <p className="av2-note">
+        Queries that lost clicks from the first half of this range ({sinceDate} to {mid}) to the
+        second half ({mid} to {endDate}). Same GSC snapshot. A class fix, not a new page.
+      </p>
+      <DataList
+        label="Slipping queries"
+        rows={slipping}
+        cap={10}
+        rowKey={(r) => r.key}
+        columns={[
+          { key: 'query', header: 'Query', lead: true, cell: (r) => stripQ(r.key) },
+          { key: 'earlier', header: 'Clicks first half', num: true, cell: (r) => fmt(r.earlier) },
+          { key: 'later', header: 'Clicks second half', num: true, cell: (r) => fmt(r.later) },
+          {
+            key: 'delta',
+            header: 'Change',
+            num: true,
+            cell: (r) => <span style={{ color: 'var(--a-warn)' }}>{fmt(r.delta)}</span>,
+          },
+        ]}
+        empty={<>No query lost clicks across the two halves of this range, or GSC has not synced yet.</>}
+      />
+    </section>
+  )
+}
+
 async function OpportunityQueries({ sinceDate, endDate }: { sinceDate: string; endDate: string }) {
   const rows = await aggBy('campaign', sinceDate, endDate)
   // High impressions, low CTR, decent rank (page 1 or 2). Easy SEO wins.
@@ -227,6 +279,7 @@ export default async function GscPage({ searchParams }: { searchParams: Promise<
       </p>
       <RangeControl current={sp.range ?? '30d'} currentStart={sp.startDate} currentEnd={sp.endDate} />
       <Suspense fallback={<Loading what="Search Console totals" />}><HeadlineKpis sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
+      <Suspense fallback={<Loading what="slipping queries" />}><SlippingQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
       <Suspense fallback={<Loading what="opportunity queries" />}><OpportunityQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
       <Suspense fallback={<Loading what="top queries" />}><TopQueries sinceDate={range.startDate} endDate={range.endDate} /></Suspense>
       <Suspense fallback={<Loading what="top pages" />}><TopPages sinceDate={range.startDate} endDate={range.endDate} /></Suspense>

@@ -194,3 +194,74 @@ export async function fetchLiveSummary(): Promise<LiveSummary> {
     topSourceCount,
   }
 }
+
+export type ProductScoreboard = {
+  windowDays: number
+  intentDeclared: number
+  welcomeBack: number
+  identified: number
+  sessions: number
+  returning: number
+  emailOpt: number
+  smsOpt: number
+  signin: number
+}
+
+/** Last-7-day first-party counts for arrival, resume, stitch, and Google-card opt-in. */
+export async function fetchProductScoreboard(windowDays = 7): Promise<ProductScoreboard> {
+  const supabase = getServiceSupabase()
+  const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString()
+  const [intentRes, welcomeRes, identifiedRes, sessionsRes, returningRes, emailOptRes, smsOptRes, signinRes] =
+    await Promise.all([
+      supabase
+        .from('visitor_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_type', 'intent_declared')
+        .gte('event_at', since),
+      supabase
+        .from('visitor_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_type', 'welcome_back')
+        .gte('event_at', since),
+      supabase
+        .from('visitor_sessions')
+        .select('session_id', { count: 'exact', head: true })
+        .gte('last_seen_at', since)
+        .not('identified_at', 'is', null),
+      supabase
+        .from('visitor_sessions')
+        .select('session_id', { count: 'exact', head: true })
+        .gte('last_seen_at', since),
+      supabase
+        .from('visitor_sessions')
+        .select('session_id', { count: 'exact', head: true })
+        .gte('last_seen_at', since)
+        .lt('first_seen_at', since),
+      supabase
+        .from('visitor_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_type', 'email_opt')
+        .gte('event_at', since),
+      supabase
+        .from('visitor_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_type', 'sms_opt')
+        .gte('event_at', since),
+      supabase
+        .from('visitor_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_type', 'signin')
+        .gte('event_at', since),
+    ])
+  return {
+    windowDays,
+    intentDeclared: intentRes.count ?? 0,
+    welcomeBack: welcomeRes.count ?? 0,
+    identified: identifiedRes.count ?? 0,
+    sessions: sessionsRes.count ?? 0,
+    returning: returningRes.count ?? 0,
+    emailOpt: emailOptRes.count ?? 0,
+    smsOpt: smsOptRes.count ?? 0,
+    signin: signinRes.count ?? 0,
+  }
+}

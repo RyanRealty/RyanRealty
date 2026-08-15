@@ -14,7 +14,8 @@
  *    (bind-on-first-register, audited); later different emails are refused.
  *  - Admins always pass (the review iframe and broker preview).
  *
- * Consent: capture is ASKED at registration, never required — TCPA express
+ * Consent: capture is ASKED on the Google comms card (and once at CMA
+ * registration if that cookie is missing), never required — TCPA express
  * consent cannot be a condition of service, and the carrier-verified sentence
  * (components/site/SmsConsentDisclosure.tsx SMS_CONSENT_TEXT) is reused
  * verbatim (ci:sms-consent locks its wording).
@@ -34,6 +35,8 @@ export function decideCmaAccess(params: {
   personEmails: string[]
   claimedBy: string | null
   consentRecorded: boolean
+  /** rr_google_comms cookie already recorded the comms ask (boxes may be unchecked). */
+  commsConsentRecorded?: boolean
 }): CmaGateDecision {
   if (params.isAdmin) return { kind: 'serve' }
   const viewer = (params.viewerEmail ?? '').trim().toLowerCase()
@@ -45,11 +48,14 @@ export function decideCmaAccess(params: {
       .filter(Boolean),
   )
   if (known.size === 0) {
-    // Phone-only lead: first registrant claims the doc.
-    return { kind: 'claim-and-consent' }
+    // Phone-only lead: first registrant claims the doc. CRM consent on THIS
+    // person means the claim already landed (callback wrote cmaClaimedBy).
+    // A site-wide comms cookie alone is not a claim.
+    return params.consentRecorded ? { kind: 'serve' } : { kind: 'claim-and-consent' }
   }
   if (!known.has(viewer)) return { kind: 'wrong-person' }
-  return params.consentRecorded ? { kind: 'serve' } : { kind: 'consent' }
+  const asked = params.consentRecorded || params.commsConsentRecorded === true
+  return asked ? { kind: 'serve' } : { kind: 'consent' }
 }
 
 // ── Shells ──────────────────────────────────────────────────────────────────
@@ -128,10 +134,10 @@ export function renderConsentShell(params: {
 }): string {
   const addr = params.address ? escapeHtml(params.address) : 'your home'
   return shell(
-    'Almost there · Ryan Realty',
+    `Your report on ${addr} · Ryan Realty`,
     `
     <h1>You're in, ${escapeHtml(params.viewerEmail)}</h1>
-    <p>Before your report on ${addr} opens, two optional choices. Your report opens either way.</p>
+    <p>Two optional choices before your report on ${addr} opens. Your report opens either way.</p>
     <form method="POST" action="/api/cma/register" style="margin-top:18px">
       <input type="hidden" name="slug" value="${escapeHtml(params.slug)}">
       <label class="consent">

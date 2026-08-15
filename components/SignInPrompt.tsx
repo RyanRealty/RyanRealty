@@ -6,7 +6,8 @@ import { signInWithOAuthBrowser } from '@/lib/supabase/oauth'
 import type { AuthUser } from '@/app/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { GoogleIcon, FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { FacebookIcon } from '@/components/icons/AuthProviderIcons'
+import { GoogleCommsCard, GoogleContinueButton, useGoogleCommsConsent } from '@/components/auth/GoogleCommsCard'
 
 const DISMISS_KEY = 'ryan_realty_signin_prompt_dismissed'
 const DISMISS_HOURS = 24
@@ -71,6 +72,7 @@ type InnerProps = { user: AuthUser | null; searchParams: ReturnType<typeof useSe
 function SignInPromptInner({ user, searchParams }: InnerProps) {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
+  const comms = useGoogleCommsConsent()
   const hasNextParam = typeof window !== 'undefined' ? !!searchParams?.get('next') : false
   const pathname = usePathname()
   const isHome = pathname === '/'
@@ -135,6 +137,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
 
   async function handleSignIn(provider: 'google' | 'facebook') {
     setLoading(provider)
+    await comms.persist()
     const nextFromUrl = searchParams?.get('next')
     const next = nextFromUrl && nextFromUrl.startsWith('/') ? nextFromUrl : '/'
     const result = await signInWithOAuthBrowser(provider, next)
@@ -162,7 +165,7 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
             Get alerts when homes match or change
           </DialogTitle>
           <DialogDescription className="mt-1.5 text-sm text-primary-foreground/80">
-            One tap with Google or Facebook. No new password.
+            Continue with Google or Facebook. Phone and updates are optional.
           </DialogDescription>
         </div>
         <div className="px-6 pt-5 sm:px-8">
@@ -196,15 +199,13 @@ function SignInPromptInner({ user, searchParams }: InnerProps) {
           </ul>
         </div>
         <div className="space-y-3 px-6 pb-6 pt-6 sm:px-8">
-          <Button
-            type="button"
+          <GoogleCommsCard consent={comms.consent} onChange={comms.setConsent} />
+          <GoogleContinueButton
+            loading={loading === 'google'}
             disabled={!!loading}
             onClick={() => handleSignIn('google')}
-            className="flex w-full items-center justify-center gap-3 rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
-          >
-            <GoogleIcon className="size-5" />
-            {loading === 'google' ? 'Redirecting…' : 'Continue with Google'}
-          </Button>
+            className="w-full"
+          />
           <Button
             type="button"
             disabled={!!loading}

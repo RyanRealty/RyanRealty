@@ -183,6 +183,8 @@ export type FirstPartyEventType =
   | 'save_listing'
   | 'intent_declared'
   | 'welcome_back'
+  | 'email_opt'
+  | 'sms_opt'
 
 export type FirstPartyEventOptions = {
   /** MLS number when the event concerns one listing. */

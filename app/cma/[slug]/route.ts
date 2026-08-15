@@ -24,6 +24,8 @@ import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { getSession } from '@/app/actions/auth'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { cookies } from 'next/headers'
+import { GOOGLE_COMMS_COOKIE, hasGoogleCommsConsentRecorded } from '@/lib/auth/google-comms-consent'
 import {
   decideCmaAccess,
   renderRegisterShell,
@@ -78,6 +80,7 @@ export async function GET(
     // Admins pass (review iframe, broker preview).
     if (isPublicStatus && !isAdmin) {
       const identity = await getCmaAccessIdentity(safeSlug)
+      const commsCookie = (await cookies()).get(GOOGLE_COMMS_COOKIE)?.value
       const decision = decideCmaAccess({
         isAdmin: false,
         viewerEmail,
@@ -85,6 +88,7 @@ export async function GET(
         personEmails: identity?.personEmails ?? [],
         claimedBy: identity?.claimedBy ?? null,
         consentRecorded: identity?.consentRecorded ?? false,
+        commsConsentRecorded: hasGoogleCommsConsentRecorded(commsCookie),
       })
       if (decision.kind === 'register') {
         return new NextResponse(

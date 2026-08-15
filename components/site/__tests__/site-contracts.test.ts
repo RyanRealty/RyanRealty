@@ -521,6 +521,63 @@ describe('design directive contracts', () => {
     expect(vercel).toMatch(/\/api\/cron\/rebuild-analytics-marts-full/)
   })
 
+  it('D110 — listing map popup is the brand card, not a Google InfoWindow', () => {
+    const wrap = readSrc('components/site/listing-detail/ListingLocationMap.tsx')
+    const client = readSrc('components/site/listing-detail/ListingLocationMap.client.tsx')
+    const page = readSrc('app/listing/[listingKey]/page.tsx')
+    expect(wrap).toMatch(/photoUrl/)
+    expect(wrap).toMatch(/MapListingPopup|popup=/)
+    expect(client).toMatch(/from '@\/components\/search\/MapListingPopup'/)
+    expect(client).toMatch(/<MapListingPopup/)
+    expect(client).not.toMatch(/<InfoWindow[\s>]/)
+    expect(page).toMatch(/photoUrl=\{photos\[0\]/)
+    expect(page).toMatch(/href=\{listingHref\}/)
+    expect(page).not.toMatch(/from ['"]twilio['"]/)
+    expect(page).not.toMatch(/lookingAtWake|sendLookingAt/)
+  })
+
+  it('D111 — sentence search writes existing filter params', () => {
+    const page = readSrc('app/search/page.tsx')
+    const box = readSrc('components/search/SentenceSearch.tsx')
+    const parse = readSrc('lib/search/sentence-to-params.ts')
+    expect(page).toMatch(/<SentenceSearch/)
+    expect(box).toMatch(/sentenceToParams/)
+    expect(box).toMatch(/Search listings/)
+    expect(parse).toMatch(/parseSearchQuery/)
+    expect(parse).toMatch(/ALL_SEARCH_URL_PARAMS/)
+  })
+
+  it('D112 — listing HouseMe report is stamp-backed and refuses invention', () => {
+    const page = readSrc('app/listing/[listingKey]/page.tsx')
+    const live = readSrc('components/site/listing-detail/LivePricingRead.tsx')
+    const report = readSrc('components/site/listing-detail/HouseMeReport.tsx')
+    expect(page).toMatch(/<LivePricingRead/)
+    expect(live).toMatch(/<HouseMeReport/)
+    expect(report).toMatch(/listing_pricing_reads/)
+    expect(report).not.toMatch(/0-10|0–10|5-year|5 year/)
+    expect(report).not.toMatch(/\bAI\b/)
+  })
+
+  it('D113 — Continue with Google is the comms door on one card', () => {
+    const modal = readSrc('components/auth/AuthModal.tsx')
+    const card = readSrc('components/auth/GoogleCommsCard.tsx')
+    const gate = readSrc('lib/cma/register-gate.ts')
+    expect(modal).toMatch(/<GoogleCommsCard/)
+    expect(card).toMatch(/Continue with Google/)
+    expect(card).toMatch(/SMS_CONSENT_TEXT|SmsConsentDisclosure/)
+    expect(gate).toMatch(/Your report on/)
+    expect(gate).not.toMatch(/Almost there/)
+  })
+
+  it('D114 — community Homes and Market doors keep the place filter', () => {
+    const page = readSrc('app/communities/[slug]/page.tsx')
+    const figures = readSrc('app/communities/[slug]/_v3/community-figures.ts')
+    expect(page).toMatch(/getPlaceLinks/)
+    expect(page).toMatch(/communityFieldItems\(fieldTiles\)/)
+    expect(figures).toMatch(/communityMarketHref/)
+    expect(figures).toMatch(/resortItems/)
+  })
+
   it('D103 — homepage opens Field-first: house on the fold, towns as filters, no See homes for sale', () => {
     const page = readSrc('app/page.tsx')
     expect(page).toMatch(/<ArrivalIntent/)

@@ -178,7 +178,7 @@ const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 // rejected above, 'essential' strips listing meta + metadata below.
 const ALLOWED_EVENT_TYPES = new Set<string>([
   'page_view', 'listing_view', 'search', 'scroll_depth', 'section_view', 'cta_click', 'identify', 'signin', 'save_listing',
-  'intent_declared', 'welcome_back',
+  'intent_declared', 'welcome_back', 'email_opt', 'sms_opt',
 ])
 
 // Map the host of the page being tracked to a canonical source_domain bucket.
@@ -425,7 +425,9 @@ export async function POST(request: NextRequest) {
     eventType === 'page_view' ||
     eventType === 'listing_view' ||
     eventType === 'intent_declared' ||
-    eventType === 'welcome_back'
+    eventType === 'welcome_back' ||
+    eventType === 'email_opt' ||
+    eventType === 'sms_opt'
   if (mirrorGa4) {
     try {
       const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
