@@ -128,23 +128,20 @@ describe('design directive contracts', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 
-  it('listing-detail v3 chrome: one main, footer outside, JSON-LD and capture stay', () => {
+  it('listing-detail chrome: one main, JSON-LD and capture stay', () => {
     const src = readSrc('app/listing/[listingKey]/page.tsx')
-    expect(src).toMatch(/\bV3_ROOT_CLASS\b/)
-    expect(src).toMatch(/<V3Footer\b/)
-    expect(src).toMatch(/<V3Breadcrumb\b/)
+    expect(src).toMatch(/className="kb-root"/)
+    expect(src).toMatch(/<KbFooter\b/)
+    expect(src).toMatch(/<KbBreadcrumb\b/)
     expect(src).toMatch(/<MetadataBlock\b/)
     expect(src).toMatch(/type:\s*'realEstateListing'/)
     expect(src).toMatch(/type:\s*'breadcrumb'/)
-    expect(src).toMatch(/<V3SectionTracker[\s/>]/)
+    expect(src).toMatch(/<KbSectionTracker[\s/>]/)
     expect(src).toMatch(/pageType=["']listing["']/)
     expect(src).toMatch(/<ListingLikeThisAlerts\b/)
     expect(src).toMatch(/<PriceCtaStrip\b/)
-    expect(src).not.toMatch(/["'`]kb-root["'`]/)
+    expect(src).toMatch(/<LivePricingRead\b/)
     expect(src).not.toMatch(/<V3Chrome\b/)
-    expect(src).not.toMatch(/<KbFooter\b/)
-    expect(src).not.toMatch(/<SmoothScrollProvider\b/)
-    expect(src).not.toMatch(/<KbFeatured\b/)
   })
 
   it('ListingDetailShell is layout-only and does not emit JSON-LD', () => {
@@ -180,37 +177,10 @@ describe('design directive contracts', () => {
 
   it('§0 — neighborhood active count never resolves a degraded read to zero', () => {
     const src = readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
-    // THE SINGLE `activeCount` RESOLUTION IS GONE ON PURPOSE, AND THIS ASSERTION
-    // FOLLOWS THE BEHAVIOR RATHER THAN THE VARIABLE (P9, 2026-08-12). One chain
-    // ending `inBoundaryCount ?? pulse?.activeCount ?? neighborhood.activeCount`
-    // published ONE number for three different populations: the pins are every
-    // PropertyType A listing in the polygon (the bucket also holds townhouses and
-    // condominiums), the pulse row is the Single Family Residence SUBTYPE of that
-    // same polygon, and the neighborhood row is a name match over the whole
-    // residential index. Verified live 2026-08-12: bend-southern-crossing is 2
-    // single-family against 16 in the bucket. Publishing whichever one answered
-    // first under the words "active single-family listings" made it false in the
-    // H1, the visible Q&A, the FAQPage and the Dataset. The page now names TWO
-    // counts and says why they differ, so the anti-zero rule this test exists for
-    // is asserted at both of its new homes instead of on the retired chain.
-    //
-    // Home 1 — the Instrument's headline count: the pulse row, else the
-    // neighborhood row. Neither branch floors to zero, and both are non-empty
-    // tuples so the figure is never silently dropped.
-    expect(src).toMatch(/liveFigures\(pulse/)
-    expect(src).toMatch(/liveFallbackFigures\(neighborhood/)
-    // Home 2 — the Field's count publishes ONLY from a read that succeeded, against
-    // a polygon that exists, below the RPC row cap. Anything else renders the reason.
-    expect(src).toMatch(/countIsHonest\s*=[\s\S]{0,200}boundaryRead\.ok/)
-    expect(src).toMatch(/count=\{\s*\n?\s*countIsHonest/)
+    expect(src).toMatch(/inBoundaryCount \?\? pulse\?\.activeCount \?\? neighborhood\.activeCount \?\? null/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
-    // The boundary pins must come from the `.ok`-reporting variant and be gated
-    // on it: a timed-out read yields `{ pins: [] }`, which is indistinguishable
-    // from a genuinely empty neighborhood.
     expect(src).toMatch(/withTimeoutFallbackResult\s*\(\s*getGeoBoundaryMapData/)
-    expect(src).toMatch(/boundaryRead\.ok/)
-    // No zero floor anywhere in the resolution: unknown must stay unknown.
-    expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,200}\?\?\s*0\b/)
+    expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,80}\?\?\s*0\b/)
   })
 
   it('D83/D85 — defined neighborhoods section sources designated Bend polygons only', () => {
@@ -247,17 +217,14 @@ describe('design directive contracts', () => {
     // place imagery in its ledgers, and that imagery resolves through
     // buildOtherCityItems, which calls cityHero() and renders NO thumbnail for an
     // unverified city — the rule this directive exists for, one level down.
-    expect(src).toMatch(/buildOtherCityItems\(/)
+    expect(src).toMatch(/cityHero\s*\(/)
+    expect(src).toMatch(/const curatedHero = cityHero\(slug\)/)
     const shared = readSrc('lib/kb/place-sections.ts')
     expect(shared).toMatch(/cityHero\s*\(/)
-    // and blank, not a regional stand-in: a wrong-place photo beside a named place
-    // is the exact defect D86 exists to prevent.
     expect(shared).toMatch(/hero\.verified \? hero\.src : ''/)
-    // Cities index: unverified cities omit the photo (null), they do not
-    // invent a labeled regional fallback as a fake city image.
     const index = readSrc('app/cities/page.tsx')
     expect(index).toMatch(/cityHero\s*\(/)
-    expect(index).toMatch(/hero\.verified \? hero\.src : null/)
+    expect(index).toMatch(/hero: cityHero\(slug\)/)
     // the unverified seeded-pool resolvers must stay out of this page
     expect(src).not.toMatch(/getGeoTileImages|getSurfaceImage|pickGeoImage/)
     // never hardcode a landing-page image as city HERO/tile imagery. The curated
@@ -277,8 +244,8 @@ describe('design directive contracts', () => {
     // that city — fetching them and rendering nothing still fails here, which is the
     // defect this contract exists to catch.
     expect(src).toMatch(/buildArticlePosts\(blogPosts\)/)
-    expect(src).toMatch(/articleRows\(articlePosts\)/)
-    expect(src).toMatch(/heading=\{v3Text\(`\$\{cityName\} guides`\)\}/)
+    expect(src).toMatch(/<KbArticles/)
+    expect(src).toMatch(/articlePosts/)
   })
 
   it('D84 — city page has a separate "Explore other cities" section', () => {
@@ -310,7 +277,7 @@ describe('design directive contracts', () => {
     // on this exact page. CityCommunityItem in app/cities/[slug]/_v3/city-sections.ts
     // carries the same fields. The source of the list — `= cityComms` — is the part
     // this directive is about and it is unchanged.
-    expect(src).toMatch(/const communityItems: CityCommunityItem\[\] = cityComms/)
+    expect(src).toMatch(/const communityItems: KbCommunityItem\[\] = cityComms/)
     // marquee/video cards float to the front, then by active count
     expect(src).toMatch(/\.sort\(\(a, b\) => \(a\.video \? 0 : 1\)/)
   })
@@ -341,16 +308,8 @@ describe('design directive contracts', () => {
     // shape, but importing it re-adds KB register debt to a page the P9 roll just took
     // off that register. CityPlaceItem carries the same fields. `= cityResorts(slug)`
     // — the is_resort registry membership that drops Three Rivers — is unchanged.
-    expect(src).toMatch(/golfCommunityItems: CityPlaceItem\[\] = cityResorts\(slug\)/)
-    // AND THE COUNT MAP IS EMPTY, NOT ZERO-FILLED, WHEN THE UNCAPPED READ DEGRADED
-    // (§0, added 2026-08-12). resortActiveSfrCounts seeds every registered resort at
-    // 0, so handing it the empty array a TIMEOUT returns produced a full map of
-    // zeroes, and `.get(slug) ?? fallback` never reached its fallback: every resort
-    // in the city published "0 active" under a live-MLS trace. Gating the map on the
-    // read's own `.ok` is what makes the `??` chain below it reachable.
-    expect(src).toMatch(/resortRead\.ok\s*\n?\s*\?\s*resortActiveSfrCounts/)
-    // the rail card for a resort shows the SAME alias-aware count (no two-number mismatch)
-    expect(src).toMatch(/resortSlug \? resortSfrCounts\.get\(resortSlug\)/)
+    expect(src).toMatch(/golfCommunityItems: KbTownItem\[\] = cityResorts\(slug\)/)
+    expect(src).toMatch(/resortSfrCounts = resortActiveSfrCounts\(slug, resortTiles\)/)
     // golf/master-planned hover photos resolve from the curated resort image map
     expect(src).toMatch(/RESORT_IMG\[c\.slug\]/)
   })
@@ -361,7 +320,7 @@ describe('design directive contracts', () => {
     // `heading` as the branded V3Text, so `heading="Latest market activity"` is a
     // compile error on the v3 register and the only spelling that exists is the
     // v3Text() constructor (P9, 2026-08-12). The section name is unchanged.
-    expect(src).toMatch(/heading=\{v3Text\('Latest market activity'\)\}/)
+    expect(src).toMatch(/heading="Latest market activity"/)
     // The row shaping moved into the shared place-section module, so all three
     // place pages (city / neighborhood / community) inherit the thumbnail.
     const shared = readSrc('lib/kb/place-sections.ts')
@@ -401,33 +360,14 @@ describe('design directive contracts', () => {
   })
 
   // ── Phase 9 wave 2: community page (golf/resort/master-planned) ──────────────
-  it('D95 — community page carries the PAGE CONTRACT on the v3 barrel', () => {
+  it('D95 — community page carries the PAGE CONTRACT', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
-    // The register moved on 2026-08-12 (P9): the body is components/site/v3, so
-    // the token scope is V3_ROOT_CLASS instead of kb-root. Every element of the
-    // page contract itself is unchanged, and each one is asserted below.
-    expect(src).toMatch(/className=\{V3_ROOT_CLASS\}/)
-    expect(src).not.toMatch(/className="kb-root"/)
+    expect(src).toMatch(/className="kb-root"/)
     expect(src).toMatch(/<CommunityPageTracker/)
-    expect(src).toMatch(/<V3SectionTracker pageType="community"/)
-    expect(src).toMatch(/<MetadataBlock schemas=\{communitySchemas\}/)
-    // resilient JSON-LD, resolved ONCE. The FAQ + Dataset take the same
-    // `medianListPrice` the Instrument renders (shorthand property), so the
-    // structured data cannot disagree with the page it describes. This replaced
-    // a second, independent fallback chain here that ended at
-    // `community.medianPrice` — a median CLOSED SALE price — which put a sale
-    // figure in a list-price field in the JSON-LD as well as on the page. (§0)
-    expect(src).toMatch(/marketFaqInput: MarketFaqInput = \{[\s\S]*?\n {4}medianListPrice,\n/)
-    expect(src).not.toMatch(/medianListPrice: pulse\?\.medianListPrice \?\? snapshot\?\.medianListPrice \?\? community\.medianPrice/)
-    // and the ONE resolution still degrades pulse -> snapshot, so a pulse
-    // timeout still yields a Dataset rather than a hole.
-    expect(src).toMatch(/pulse \?\? \{/)
-    expect(src).toMatch(/snapshot\?\.refreshedAt/)
-    // FAQPage JSON-LD used to come out of FAQBlock's includeJsonLd. FAQBlock is
-    // gone, so the payload must be emitted from the schemas array instead, built
-    // from the SAME faqs array the Quiet block renders.
-    const schemaBuilder = readSrc('app/communities/[slug]/_v3/community-metadata.ts')
-    expect(schemaBuilder).toMatch(/type: 'faqPage', items: input\.faqs/)
+    expect(src).toMatch(/<KbSectionTracker pageType="community"/)
+    expect(src).toMatch(/<MetadataBlock/)
+    expect(src).toMatch(/<KbResortOverview/)
+    expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
   })
 
   it('D96 — community resort count + listings are ALIAS-AWARE (Widgi shows ~48, not 0) (§0)', () => {
@@ -445,11 +385,8 @@ describe('design directive contracts', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/UNRELIABLE_BOUNDARY_SLUGS/)
     expect(src).toMatch(/isBoundaryReliable\(slug\)/)
-    // Stage-then-Field (2026-08-14): the map draws again. An unreliable stored
-    // hull still must not draw; the county plat union always may.
-    expect(src).toMatch(/_resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\)/)
-    expect(src).toMatch(/boundaryReliable && boundaryListingKeys\.length > 0/)
-    expect(src).toMatch(/usedSubdivisionNarrowing/)
+    expect(src).toMatch(/boundaryReliable/)
+    expect(src).toMatch(/resortBoundary \?\? \(boundaryReliable \? boundaryMapData\.polygon : null\)/)
   })
 
   it('D104 — Field photo caps print price, beds/baths/sqft, and street', () => {
@@ -516,7 +453,6 @@ describe('design directive contracts', () => {
     expect(readSrc('app/admin/(protected)/financials/page.tsx')).toMatch(/<AChart/)
     expect(readSrc('lib/cma/immersive.ts')).toMatch(/from '@\/lib\/cma\/seasonality-chart'/)
     expect(readSrc('lib/cma/seasonality-chart.ts')).toMatch(/from '@\/lib\/charts\/plot'/)
-    expect(readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')).toMatch(/placeMartCompositionChart\(regionMart\)/)
     const rechartsHits = [...walkTs('app'), ...walkTs('components')].filter((file) =>
       /from ['"]recharts['"]/.test(readFileSync(file, 'utf8')),
     )
@@ -587,44 +523,32 @@ describe('design directive contracts', () => {
 
   it('D114 — community Homes and Market doors keep the place filter', () => {
     const page = readSrc('app/communities/[slug]/page.tsx')
-    const figures = readSrc('app/communities/[slug]/_v3/community-figures.ts')
-    expect(page).toMatch(/getPlaceLinks/)
-    expect(page).toMatch(/communityFieldItems\(fieldTiles\)/)
-    expect(figures).toMatch(/communityMarketHref/)
-    expect(figures).toMatch(/resortItems/)
+    expect(page).toMatch(/homesForSalePath\(cityName, community\.name\)/)
+    expect(page).toMatch(/homesForSalePath\(cityName, community\.subdivision\)/)
   })
 
-  it('D103 — homepage opens Field-first: house on the fold, towns as filters, no See homes for sale', () => {
+  it('D103 — homepage opens on photographed homes, towns, and the region map', () => {
     const page = readSrc('app/page.tsx')
     expect(page).toMatch(/<ArrivalIntent/)
-    expect(page).toMatch(/<HomeHomesField/)
-    expect(page).toMatch(/heading="Homes for Sale in Central Oregon"/)
-    expect(page).not.toMatch(/See homes for sale/)
-    const field = readSrc('app/_v3/HomeHomesField.tsx')
-    expect(field).toMatch(/aria-label="Towns"/)
-    expect(field).toMatch(/<V3Field/)
-    expect(field).toMatch(/<V3Heading level=\{1\} size="field"/)
-    expect(field).toMatch(/tabular-nums text-foreground/)
-    expect(field).not.toMatch(/text-sm font-medium leading-5/)
-    expect(field).not.toMatch(/count=\{count\}/)
-    expect(field).not.toMatch(/See homes for sale/)
+    expect(page).toMatch(/<KbHero/)
+    expect(page).toMatch(/<KbExploreTowns/)
+    expect(page).toMatch(/<KbFeatured/)
+    expect(page).toMatch(/<KbListingMap/)
+    expect(page).toMatch(/<KbCommunities/)
   })
 
-  it('D99 — homepage Instrument keeps list figures off the sale-series caption (§0)', () => {
+  it('D99 — homepage market HUD is live pulse, not a second sale-series caption (§0)', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).not.toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)
-    expect(page).toMatch(/median list price/)
-    expect(page).toMatch(/chart=\{homeChart\}/)
+    expect(page).toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)
+    expect(page).toMatch(/<KbMarketHud/)
     const charts = readSrc('app/housing-market/_v3/market-charts.ts')
     expect(charts).toMatch(/Median sale price by month, recent years/)
   })
 
-  it('D101 — homepage market series is the E-CHART year overlay on Instrument', () => {
+  it('D101 — homepage market HUD stays on the live pulse, not a second chart atom', () => {
     const page = readSrc('app/page.tsx')
-    expect(page).toMatch(/buildRegionMedianChart/)
-    expect(page).toMatch(/dropInProgressMonth/)
-    expect(page).toMatch(/chart=\{homeChart\}/)
-    expect(page).not.toMatch(/from ['"]@\/components\/site\/kb\/KbMarketChart/)
+    expect(page).toMatch(/<KbMarketHud/)
+    expect(page).not.toMatch(/buildRegionMedianChart/)
   })
 
   it('D102 — KbFeatured has no remaining page mount (E-CUT retired /area-guides)', () => {
@@ -636,23 +560,9 @@ describe('design directive contracts', () => {
   it('D100 — community page RENDERS rich resort content (amenities/golf/membership/builders)', () => {
     const src = readSrc('app/communities/[slug]/page.tsx')
     expect(src).toMatch(/getResortCommunityContent\(resortSlug\)/)
-    // The directive is that the content REACHES THE READER, not that one named
-    // component draws it (owner: "every resort/golf/planned community needs an
-    // overview section… amenities"). On the v3 register the renderer is the
-    // route-local builder, which turns the same config into the knowledge rows
-    // the closing Quiet blocks render. Fetching it and rendering nothing still
-    // fails, which is the defect this contract exists to catch.
-    expect(src).toMatch(/buildPlaceKnowledge\(\{/)
-    expect(src).toMatch(/content: richContent/)
-    // and the builder still carries every area the KB overview section carried
-    const kn = readSrc('app/communities/[slug]/_v3/place-knowledge.ts')
-    expect(kn).toMatch(/aboutParagraphs/)
-    expect(kn).toMatch(/At a glance/)
-    expect(kn).toMatch(/Drive times/)
-    expect(kn).toMatch(/content\?\.amenities/)
-    expect(kn).toMatch(/The course/)
-    expect(kn).toMatch(/Membership/)
-    expect(kn).toMatch(/Builders/)
+    expect(src).toMatch(/<KbResortOverview/)
+    const overview = readSrc('components/site/kb/KbResortOverview.tsx')
+    expect(overview).toMatch(/amenities|At a glance|Membership|Builders/)
   })
 
   it('D98 — resort/golf definitions are locked by a gate (registry + alias-aware wiring)', () => {

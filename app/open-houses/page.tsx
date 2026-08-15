@@ -1,17 +1,30 @@
 /**
  * /open-houses - this week's open houses, on the components/site/v3 barrel.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes grain.
- * Opening is Field of photographed open houses. Count is a caption.
- * Rhythm: Field, Sheet, Quiet. Chrome exempt.
+ * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md. Homes curated mode.
+ * Rhythm: four of six, no two adjacent alike. Order is Breadcrumb, Field
+ * (photographed open houses that open the listing), Instrument level 1
+ * (count + median under the jobs), Sheet, Quiet, Footer.
  *
  * THE PAGE CONTRACT, carried across unchanged: generateMetadata through
  * pageMetadata, MetadataBlock JSON-LD (BreadcrumbList + Event nodes), a rendered
  * V3SectionTracker with pageType="open-houses", TrackSearchView, revalidate 60,
- * the route, and searchParam filters.
+ * the route, and searchParam filters. MetadataBlock stays on the legacy
+ * register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
  *
  * WINDOW: today through six days out, Pacific, unless the visitor passes
- * dateFrom/dateTo. DATES RENDER IN PACIFIC.
+ * dateFrom/dateTo. The KB page said "this week" while getOpenHousesWithListings
+ * defaulted to Sat-Sun. The copy and the query now name the same window.
+ *
+ * DATES RENDER IN PACIFIC. The KB when-label used timeZone UTC.
+ *
+ * ONE PRIMARY PER VIEWPORT, counting visible filled controls. At 390 the
+ * chrome CTA sits in the collapsed menu, so the Instrument ask is primary.
+ * Label is Value my home (D11). valuationHref carries ?from=.
+ *
+ * KB-era deletions: KbHero (search + voice), KbOpenHouses 12-tile cap, KbListingMap,
+ * KbCommunityAlerts markup (capture contract kept on the Sheet), KbSell, KbFooter,
+ * SmoothScrollProvider, region pulse read that rendered only on KbSell.
  */
 
 import type { Metadata } from 'next'
@@ -22,14 +35,20 @@ import {
 } from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingsBrowsePath } from '@/lib/slug'
+import { valuationHref } from '@/lib/site/valuation-href'
+import { formatPrice } from '@/lib/format/money'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import {
   V3_ROOT_CLASS,
+  v3Text,
   V3Breadcrumb,
+  V3Field,
   V3Footer,
   V3_FOOTER_COLUMNS,
+  V3Instrument,
   V3Quiet,
   V3SectionTracker,
+  type V3InstrumentFigure,
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -37,15 +56,15 @@ import TrackSearchView from '@/components/tracking/TrackSearchView'
 import { OpenHouseAlertsSheet } from './_v3/OpenHouseAlertsSheet.client'
 import {
   OH_CITY_SLUGS,
+  OH_FIELD_TRACE,
+  OH_TRACE,
   addIsoDays,
   cityLabel,
-  ohTrace,
   pacificTodayIso,
 } from './_v3/oh-constants'
-import { assembleOpenHouses } from './_v3/oh-listings'
+import { assembleOpenHouses, medianPositive } from './_v3/oh-listings'
 import { openHouseFieldItems } from './_v3/oh-field-items'
 import { openHouseEventSchemas } from './_v3/oh-jsonld'
-import { OpenHousesField } from './_v3/OpenHousesField'
 
 export const revalidate = 60
 
@@ -111,9 +130,27 @@ export default async function OpenHousesPage({
     baths: Number.isFinite(baths) ? baths : undefined,
   })
 
+  const count = openHouses.length
   const fieldItems = openHouseFieldItems(openHouses)
-  const count = fieldItems.length
+  const medianList = medianPositive(openHouses.map((oh) => oh.listPrice))
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+
+  const figures: V3InstrumentFigure[] = []
+  if (count > 0) {
+    figures.push({
+      value: v3Text(count.toLocaleString('en-US')),
+      label: v3Text(count === 1 ? 'open house this week' : 'open houses this week'),
+      href: '#calendar',
+    })
+  }
+  if (medianList != null) {
+    figures.push({
+      value: v3Text(formatPrice(medianList)),
+      label: v3Text('median list price on this calendar'),
+      href: '#calendar',
+    })
+  }
+  const [firstFigure, ...restFigures] = figures
 
   const schemas: SchemaInput[] = [
     {
@@ -147,19 +184,44 @@ export default async function OpenHousesPage({
 
         <V3Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Open houses' }]} />
 
-        {count > 0 ? (
-          <OpenHousesField
-            heading="Open houses in Central Oregon"
-            captionValue={count.toLocaleString('en-US')}
-            captionLabel={count === 1 ? 'open house this week' : 'open houses this week'}
-            source={ohTrace('Central Oregon')}
-            items={fieldItems}
-            ariaLabel="Open houses on the calendar this week"
-            emptyMessage="No open house on this pull has both a street and a list price, so this list has nothing to name."
+        <V3Field
+          id="calendar"
+          ariaLabel="Open houses on the calendar this week"
+          items={fieldItems}
+          count={
+            fieldItems.length > 0
+              ? {
+                  value: fieldItems.length.toLocaleString('en-US'),
+                  label: fieldItems.length === 1 ? 'home on this list' : 'homes on this list',
+                  source: OH_FIELD_TRACE,
+                }
+              : undefined
+          }
+          footNote={
+            fieldItems.some((item) => item.photoSrc)
+              ? 'Each photograph opens the listing.'
+              : undefined
+          }
+          emptyMessage="No open house on this pull has both a street and a list price, so this list has nothing to name."
+        />
+
+        {firstFigure ? (
+          <V3Instrument
+            id="answer"
+            level={1}
+            eyebrow={v3Text('Central Oregon · this week')}
+            headline={v3Text('Open houses in Central Oregon')}
+            figures={[firstFigure, ...restFigures]}
+            source={v3Text(OH_TRACE)}
+            action={{
+              label: v3Text('Value my home'),
+              href: valuationHref('/open-houses'),
+              variant: 'primary',
+            }}
           />
         ) : (
           <V3Quiet
-            id="calendar"
+            id="answer"
             heading="Open houses in Central Oregon"
             headingLevel={1}
             items={[

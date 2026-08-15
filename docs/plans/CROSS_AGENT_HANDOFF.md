@@ -2,31 +2,31 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — leftover mission (recharts gone, welcome-back walked)
+# Current — 2026-08-15 (Grok) — restore the photographed public site
 
-**Matt:** Do not stop. Complete outstanding tasks /endtoend.
+**Matt:** Revert the public site the page-grade pass flattened. Keep going /endtoend. Not another OS. Not a new UI component.
 
-**SHA:** `d4cece6d` on `origin/main`. Vercel production READY. Custom domain https://ryan-realty.com. Product Order 1–9 still live on `4cfc1a9e`; this commit is the leftover lock.
+**SHA:** `e093275f` on `main`, pushing now. Parent: `0ccad3b0`.
 
-**Done this leftover:**
-- Welcome-back walked on https://ryan-realty.com: `welcome=1`, `buy=0` for `rr_last_thing` = 61281 McRoberts.
-- Deleted unmounted recharts: `GeoMarketOverview`, `LazyGeoMarketOverview`, `MarketSnapshotChart`, `MarketVisuals` + `.client`.
-- Removed `recharts` from `package.json`. D109 now walks `app/` + `components/` and fails if any file imports it.
-- PRODUCT.md cube gap table rewritten. 1998 is live. Do not re-plan `sales_cube_*` or a live `listings` fallback.
-- Baselines shrunk: shadcn 174→173, reachable-exports 189→186, design-tokens 202→201, hydration 74→65.
-- Deleted dead `lib/report-year-compare.ts` (only its test imported it after the explore tool retired). Do not hide it as a new orphan.
+**Done this restore:**
+- Homepage is KB again: KbHero, towns, communities, featured, region map, ticker, sell, reviews, team, market HUD, plus ArrivalIntent. D11 lead locked.
+- City / neighborhood / community / zip / cities+communities indexes: photographed KB + PlaceMapListSplit dual-pane, not cream ledger.
+- Listing: full KB stack (hero, gallery, facts, map popup with photo/href) plus HouseMe LivePricingRead.
+- About stayed HEAD (faces + Call/Text). Mission sentence stays out of How it started.
+- Plat sales-history / schools kept the photographed table and re-wired year doors + DAL school constants so `ci:subdivision-stats-integrity` holds.
+- Gates: mockup-parity 28/28, public-ui re-seeded to the restore (205/8/44), tests 11356 pass. Screenshots in `out/looks/2026-08-15-restore/` (gitignored).
 
-**Named stops (still hold):** looking-at SMS / buyer-packet send (CLAUDE.md §1). Ad spend. I6. Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase. Do not publish 1990.
+**Kept (not flattened):** ArrivalIntent, sentence search, HouseMe/pricing read, map popup facts, about phones, cube, CMA, admin, chart grammar, D109 no-recharts.
 
-**Do not:** `git add -A`. Do not commit `LOOK-PLAN.md`, `RESTORE.md`, `looks/2026-08-14-page-grade-v24-regrade/`, `scripts/_sunstone-cma-summary.ts`, or recapture PNGs.
+**Named stops (still hold):** looking-at SMS / buyer-packet send (CLAUDE.md §1). Ad spend. I6. Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase. Do not publish 1990. Ban new UI components.
+
+**Do not:** `git add -A`. Do not commit `LOOK-PLAN.md`, `RESTORE.md`, `looks/2026-08-14-page-grade-v24-regrade/`, recapture PNGs, or `scripts/_sunstone-cma-summary.ts`. Do not stamp neighborhood/subdivision grains LIVE.
 
 **Left on disk, not shipped:** recapture PNGs. Page-grade leftover folder. `LOOK-PLAN.md` / `RESTORE.md`.
 
-**Locked 2026-08-15 (Matt):** ban new UI components. Six v3 patterns. No seventh. No new island, card system, or quiz surface. Fold a job into a primitive or a page. `ArrivalIntent` / `SentenceSearch` / `GoogleCommsCard` already shipped and do not license a next one.
+**Next after push:** `npm run deploy:verify`, then walk production home/Bend/listing. Neighborhood and subdivision *indexes* still 404. That is a later product job, not this revert.
 
-**Next:** nothing on this product plan except Matt stamps for looking-at send. Optional later: `office_id` on rebuild when touching that script; AChart on prospect price history only if ≥2 priced cycles. Do not add a component.
-
-**Skills read:** endtoend, git-commit.mdc, PRODUCT.md, CROSS_AGENT_HANDOFF.
+**Skills read:** endtoend, git-commit.mdc, CROSS_AGENT_HANDOFF, SESSION_HANDOFF.
 
 # Prior — 2026-08-14 (Grok) — public look: stop inventing, use an existing system
 

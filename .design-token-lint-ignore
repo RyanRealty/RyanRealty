@@ -506,6 +506,9 @@ components/site/SiteHeaderSearch.client.tsx
 # design system, not shadcn (ci:shadcn-burndown), so the only design-system-
 # compliant table here is a raw one. ODS §5-4 aggregate-only; no shadcn import.
 components/reports/CityArchiveSection.tsx
+# Restored working plat sales ledger (2026-08-15). Same KB aggregate table
+# idiom as CityArchiveSection. ODS §5-4 aggregate-only.
+app/subdivisions/[slug]/SubdivisionSalesHistory.tsx
 
 # Long-form editorial reading measure (2026-08-03): the months-of-supply glossary
 # page, the annual-review market reference, and the shared MarketSources citation

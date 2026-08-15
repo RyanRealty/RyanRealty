@@ -9,9 +9,9 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 56,
-    "legacyPages": 0,
-    "mixedPages": 51
+    "nonV3ImportSites": 205,
+    "legacyPages": 8,
+    "mixedPages": 44
   },
   "frozenNoindexLps": [
     "app/lp/tetherow/heath/page.tsx"
@@ -115,6 +115,7 @@
     "app/price-drops/page.tsx",
     "app/privacy/page.tsx",
     "app/pulse/page.tsx",
+    "app/refer-a-client/page.tsx",
     "app/reports/[slug]/[geoName]/page.tsx",
     "app/reports/[slug]/page.tsx",
     "app/reports/page.tsx",
@@ -202,27 +203,30 @@
       "v3": 1
     },
     "app/cities/[slug]/[neighborhoodSlug]/page.tsx": {
-      "v3": 1,
-      "legacy": 1
+      "kb": 23,
+      "legacy": 3,
+      "explore": 2
     },
     "app/cities/[slug]/page.tsx": {
-      "v3": 1,
-      "legacy": 1
+      "kb": 24,
+      "explore": 1,
+      "legacy": 3
     },
     "app/cities/page.tsx": {
-      "legacy": 1,
-      "v3": 1
+      "legacy": 2,
+      "kb": 6
     },
     "app/cma-drafts/[id]/page.tsx": {
       "v3": 1
     },
     "app/communities/[slug]/page.tsx": {
-      "v3": 1,
-      "legacy": 1
+      "kb": 26,
+      "explore": 2,
+      "legacy": 3
     },
     "app/communities/page.tsx": {
-      "legacy": 1,
-      "v3": 1
+      "legacy": 2,
+      "kb": 6
     },
     "app/compare/page.tsx": {
       "legacy": 1,
@@ -288,8 +292,9 @@
       "v3": 1
     },
     "app/listing/[listingKey]/page.tsx": {
-      "v3": 1,
-      "legacy": 2
+      "explore": 3,
+      "legacy": 3,
+      "kb": 5
     },
     "app/lp/tetherow/heath/page.tsx": {
       "legacy": 1,
@@ -327,6 +332,7 @@
       "v3": 1
     },
     "app/page.tsx": {
+      "kb": 16,
       "v3": 1
     },
     "app/parks/[slug]/page.tsx": {
@@ -346,6 +352,9 @@
       "legacy": 1
     },
     "app/privacy/page.tsx": {
+      "v3": 1
+    },
+    "app/refer-a-client/page.tsx": {
       "v3": 1
     },
     "app/reports/sales/[city]/[period]/page.tsx": {
@@ -382,8 +391,9 @@
       "v3": 1
     },
     "app/subdivisions/[slug]/page.tsx": {
-      "v3": 1,
-      "legacy": 1
+      "explore": 2,
+      "kb": 9,
+      "legacy": 2
     },
     "app/team/[slug]/edit/page.tsx": {
       "v3": 1
@@ -416,8 +426,8 @@
       "v3": 1
     },
     "app/zip/[zip]/page.tsx": {
-      "v3": 1,
-      "legacy": 1
+      "kb": 13,
+      "legacy": 2
     }
   }
 }

@@ -46,12 +46,8 @@ const JSON_OUT = process.argv.includes('--json')
 // ---------------------------------------------------------------------------
 
 const DEAD_FILES = [
-  {
-    path: 'components/site/kb/KbSell.client.tsx',
-    reason:
-      'P10 wrap: last importer was the reports hub. Valuation door is V3Quiet Value my home. ' +
-      'Zero importers confirmed. Do not resurrect.',
-  },
+  // KbSell.client.tsx is live again on the restored KB public site (home, city,
+  // community, zip, neighborhood, subdivision tail). Do not re-add it here.
   // ----- Deprecated breadcrumb impls -----
   // The sole breadcrumb is components/site/BreadcrumbNav.tsx. The following
   // are old implementations that have been superseded. They have zero import

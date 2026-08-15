@@ -1,156 +1,127 @@
 {
   "route": "app/cities/[slug]/[neighborhoodSlug]/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/neighborhood/index.html",
-  "visualLanguage": "design_system/public/PUBLIC_UI.md (locked 2026-08-11). The index.html in this directory is the RETIRED KB-era mockup and is kept only because ci:mockup-coverage requires a parity.json beside any index.html. It is not the visual target for this route any more. The target is the six closed patterns in PUBLIC_UI.md, built from components/site/v3.",
-  "competitiveTarget": "Beat Zillow, Redfin, and every Bend brokerage at the neighborhood grain. First screen is this neighborhood's pace (months of supply, then days to pending), then a Field of its houses on the fold, then daily life (schools, parks). Inventory is a Field caption, never the hero. The 62 / $1,385,000 / 28.6 stamp opening is retired.",
-  "note": "REPAIRED 2026-08-14 page-grade v2.4 wrong-grain. PUBLIC_UI.md §3 neighborhood opening is Instrument (this neighborhood's pace) then Field of its houses. Daily life (schools, parks) on the first path. Inventory is a Field caption, never the hero. The old line Places open Instrument then Field is retired. Rhythm: Instrument, Field, Ledger (daily life), Instrument (sold), Ledger (activity), Quiet, Sheet, Quiet. Chrome exempt. A fifth pattern (Ledger) is declared, same as the D93 activity exception. THREE POPULATIONS ANSWER FOR THIS PLACE AND THEY DISAGREE BY CONSTRUCTION: market_pulse_live (live inventory, keyed {citySlug}-{neighborhoodSlug}), market_stats_cache rolling_365d (closed sales, same key), and the recorded boundary polygon joined to the live listing index (what is plotted). Each gets its own section, its own source line, and its own stamp, none borrows another's, and every one of the three names Oregon Data Share. THE FIRST AND THIRD READ THE SAME POLYGON AND DIFFER ONLY BY PROPERTY POPULATION, which is where this route shipped its worst defect: refresh_community_market_pulse() narrows to PropertyType A AND property_sub_type 'Single Family Residence', while listings_in_boundary joined to getListingTiles narrows to PropertyType A, a bucket that also holds townhouses and condominiums. Verified live 2026-08-12: bend-southern-crossing is 2 single-family against 16 in the bucket (10 townhouses, 4 condominiums), bend-old-bend 7 against 8, and the family splits the same way at river-west, century-west, southwest-bend and summit-west. Both figures are true. Publishing both under the words 'active single-family listings' made one of them false in the H1, in the visible Q&A, and in the FAQPage and Dataset markup on a licensed broker's surface. The fix is naming, not suppression: the headline figure reads 'single-family homes for sale', the Field's reads 'active homes inside the boundary', each source line states its own filter, the Field's line reconciles itself to the figure above it, and every Field row carries its home type. The page states NO verdict of its own: buildMarketFaq is the single derivation of the buyer's/seller's classification for this geography, and the page prints only the months-of-supply figure plus the canonical clauses from lib/market/classify.ts. THE FIGURE GOES THROUGH formatMonthsOfSupply, the one display rule, which is boundary-safe by construction (4.02 prints 4.1, 5.97 prints 5.9), so the printed digits cannot classify differently from the raw value the shared builder classifies and there is nothing to withhold. An earlier revision rounded the figure at the call site and suppressed it whenever that rounding disagreed, justified in writing by 'there is no third number to print' — a false premise, since formatMonthsOfSupply is that number and the closing Q&A on the same page was already printing it off the same row. Both call-site roundings are gone and both of this route's rows in check-market-formula.mjs's frozen MoS ledger were deleted in the same change. A THIRD POPULATION USED TO SHIP AS SINGLE-FAMILY TOO: on the branch with no pulse row, getNeighborhoodBySlug's name-matched, every-residential-type count was published under that word by the meta description, the visible Q&A, the FAQPage markup and the Dataset variables, because it was handed to buildMarketFaq, whose prose is written for the single-family population. That branch now builds its own Q&A pair in its own words (fallbackFaqSet), naming what it counted and stating no verdict, and the Field's empty message no longer calls the PropertyType A bucket single-family either. Every sentence this route publishes ABOUT a figure now lives in _v3/neighborhood-claims.ts under one rule: no claim may outrun its payload.",
+  "competitiveTarget": "Neighborhood pages must surface the actual in-boundary homes for sale plus a full KB (kinetic-brutalist) design treatment matching the city and community pages — live single-family market data, boundary map + pins, subdivisions ledger, and live activity no competitor surfaces at neighborhood granularity.",
+  "note": "KB (kinetic-brutalist) design language — Phase 9 wave 3 (docs/KB_CONVERGENCE_ROADMAP.md). Mirrors the community page section order and reuses the SAME section library (components/site/kb/*), fed neighborhood-scoped DAL data, never forked (ci:kb-single-source G50). KbNav + KbFooter carry chrome. Body lives in main.kb-root. City-fallback: when the neighborhood's own monthly price series is too sparse (<8 non-null monthly points OR <2 calendar years), the market chart falls back to the parent city's series with chartScopeLabel set to '{City} (city)' (§0 honesty).",
   "requiredComponents": [
     {
-      "name": "MetadataBlock",
-      "section": "BreadcrumbList + Neighborhood Place + Dataset + FAQPage JSON-LD. All four are emitted here: V3Breadcrumb and V3Quiet carry no structured data of their own, on purpose, so one derivation feeds the visible copy and the markup. FAQPage moved here from FAQBlock's includeJsonLd; the payload's meaning is unchanged. Place.hasMap ships when PlaceFieldMap is in the Field slot (pins or a recorded polygon).",
-      "blocking": true
-    },
-    {
       "name": "KbNav",
-      "section": "The public header, mounted by app/layout.tsx through PublicNav. Not a page-level import; ci:mockup-parity auto-satisfies this entry while the layout owns the header. The chrome has not migrated yet, so this route is a mixed page in the ci:public-ui ledger by design.",
+      "section": "chrome — transparent-over-hero top bar + full-screen menu. Inside .kb-root.",
       "blocking": true
     },
     {
       "name": "KbSectionTracker",
-      "section": "Page-level analytics, pageType='neighborhood', unchanged. Kept on the KB register deliberately: section tracking is analytics wiring, not visual language, and the barrel ships no equivalent. ci:kb-page-contract accepts either register's tracker.",
+      "section": "tracking — fires the neighborhood page-view + powers section/interaction analytics (page contract).",
       "blocking": true
     },
     {
-      "name": "V3Breadcrumb",
-      "section": "Chrome, and the up-rung of the place ladder: Home > {City} > {Neighborhood}, current page never a link. Surface tone, because this page opens on a pace Instrument and not on a dark Stage.",
+      "name": "MetadataBlock",
+      "section": "AI-citability — Breadcrumb + Neighborhood Place + market Dataset JSON-LD.",
       "blocking": true
     },
     {
-      "name": "V3Instrument",
-      "section": "Pattern 1, twice. LEVEL 1 is this neighborhood's PACE: months of supply is the head when it ships, then days to pending. Inventory and median list price are not heroes. The MoS threshold paragraph is cut; the pace figure carries the verdict. The ask is a house or Save, never Value my home. When no pace figure ships, a Quiet says so. LEVEL 2 is the last rolling 12 months of closed sales off the market_stats_cache row.",
+      "name": "KbBreadcrumb",
+      "section": "breadcrumb — KB-styled Home > {City} > {Neighborhood} hierarchy (visual; JSON-LD is in MetadataBlock).",
       "blocking": true
     },
     {
-      "name": "V3Field",
-      "section": "Pattern 2, once. Photographed homes inside the recorded boundary, PropertyType A, highest price first, capped at 24. photoSrc is required so the fold shows house pixels. No PlaceFieldMap: the Field is the mosaic of houses, not a stamp map twin. The count caption is the honest in-boundary inventory when the read succeeded. Empty names which of four facts is true instead of rendering zero under a live-MLS trace.",
+      "name": "KbHero",
+      "section": "hero — full-bleed VERIFIED neighborhood or city hero photo with labeled regional fallback, neighborhood name in Amboqia, plain-language search, live stat row.",
       "blocking": true
     },
     {
-      "name": "V3Quiet",
-      "section": "Pattern 6, twice, never adjacent. ABOUT carries the verified depth from data/resort-community-{citySlug}-{neighborhoodSlug}.json: the curated prose, the drive times, and up to eight amenities with their descriptions and access notes, falling back to the neighborhoods-table description when no config exists, which is the same either/or the KB pair KbResortOverview + KbAbout ran. CLOSING carries the market Q&A as question-and-answer prose from the same buildMarketFaq array the FAQPage JSON-LD uses, then every outbound edge: the full-inventory door, the parent city both as an overview and as a market report, months of supply when that figure shipped, each subdivision inside this neighborhood, each peer neighborhood, the city index, open houses, price drops, the recent guides, the sell path, the saved-searches sign-in the KB alert block carried, and the Oregon Data Share citation MarketSources used to render. ITS NAME COVERS BOTH HALVES: eyebrow 'Questions and next steps', heading 'Questions about {Neighborhood}, and where to go next'. It was named 'Common questions', which described the first four rows and misdescribed the roughly thirty link rows after them, including the accessible name announced for the landmark. It stays ONE section because the four-pattern cap and the no-two-adjacent rule leave exactly two Quiet slots on this node, one either side of the Sheet, and ABOUT holds the other. See barrelGaps.",
+      "name": "KbAbout",
+      "section": "about — editorial intro (data-driven prose from neighborhood.description) + quick-facts ledger. Suppressed when KbResortOverview has verified rich content (avoids duplicate overview prose).",
       "blocking": true
     },
     {
-      "name": "NeighborhoodAlertsSheet",
-      "section": "Pattern 5, once, in app/cities/[slug]/[neighborhoodSlug]/_v3/NeighborhoodAlertsSheet.client.tsx. The page's second ask, and the one the inventory above it earned. Wraps V3Sheet and calls the same server action the KB block called, submitSearchAlertSignup, with the same field name (email) and the same filters (city plus propertyType 'A', no subdivision key). The city scope is deliberate and carried across: neighborhood names are not 1:1 with MLS subdivision tags, so a neighborhood filter would be an invented narrowing. The three success side effects run in the same order: the guest-watch residual, the confirmation, and the alert_create measurement event. THE HONEYPOT IS INTACT: V3Sheet's trap prop renders the hidden `company` input on every step, aria-hidden and out of the tab order, off-screen by CSS rather than display:none, and its typed value is what the action receives. An earlier revision sent the empty-string literal instead, which kept the payload shape and made the action's first defence unable to fire from this surface. THE STANDING DISCLOSURE IS INTACT TOO: 'One email per new listing. Unsubscribe any time.' sits beside the field, the two sentences the KB block always rendered and the first version of this sheet dropped, leaving a licensed broker's public capture form collecting an address with no stated frequency and no stated way out. This surface's row in check-alert-capture-disclosure.mjs's frozen ledger was deleted in the same change. The copy also no longer promises 'a single-family home': the filter it sends is propertyType 'A', the bucket that carries townhouses and condominiums, so the promise says home.",
+      "name": "KbResortOverview",
+      "section": "rich overview — KB rebuild of the pre-KB CommunityRichContent. Verified overview prose + at-a-glance facts + drive times + amenities from getResortCommunityContent (data/resort-community-{citySlug}-{neighborhoodSlug}.json). Renders nothing when no config.",
       "blocking": true
     },
     {
-      "name": "V3Footer",
-      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row. Carries no button, and NOT because the header covers the ask: it does not below 880px, which is why the opening Instrument's action is the page's primary. The footer stays button-free because a second filled control in the closing viewport would put two primaries in one viewport, and the ask the reader arrived for is thirty rows above it. Rendered OUTSIDE main, because HTML-AAM maps footer to role=contentinfo only when it is not nested in sectioning content.",
+      "name": "KbMarketHud",
+      "section": "market — verdict stamp, KPI grid, median-close chart with city-level fallback when neighborhood series is sparse.",
       "blocking": true
     },
     {
-      "name": "V3Ledger",
-      "section": "Pattern 3, twice when both exist, never adjacent. Daily life (schools and parks) sits on the first path after the Field. Latest market activity (D93) keeps its scoped feed. A third Ledger for subdivision and peer counts stays deferred.",
+      "name": "KbFeatured",
+      "section": "featured homes — poster grid of top-priced in-boundary active listings.",
+      "blocking": true
+    },
+    {
+      "name": "KbTicker",
+      "section": "ticker — scrolling price/address strip.",
+      "blocking": true
+    },
+    {
+      "name": "KbListingMap",
+      "section": "map — MapLibre point map with boundary polygon and in-boundary listing pins.",
+      "blocking": true
+    },
+    {
+      "name": "KbExploreTowns",
+      "section": "ledgers — reused twice: once for the subdivisions-within-neighborhood ledger (each linking to /subdivisions/{slug}), once for the Explore-other-cities list.",
+      "blocking": true
+    },
+    {
+      "name": "KbActivity",
+      "section": "activity — live new / price-cut / pending / sold rows for the parent city.",
+      "blocking": true
+    },
+    {
+      "name": "KbArticles",
+      "section": "guides — recent blog posts scoped to the parent city (getRecentBlogPosts).",
+      "blocking": true
+    },
+    {
+      "name": "KbTestimonials",
+      "section": "testimonials — verified Google reviews.",
+      "blocking": true
+    },
+    {
+      "name": "KbTeam",
+      "section": "team — the brokers.",
+      "blocking": true
+    },
+    {
+      "name": "KbSell",
+      "section": "sell CTA — What is your {Neighborhood} home worth?",
+      "blocking": true
+    },
+    {
+      "name": "FAQBlock",
+      "section": "faq — verified market Q&A + FAQPage JSON-LD.",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "footer — dual-audience close + sitemap (towns=[]).",
       "blocking": true
     }
   ],
   "layoutComponents": [
     {
-      "name": "PublicNav",
-      "section": "renders from app/layout.tsx",
-      "note": "Resolves to KbNav today. Not in requiredComponents as itself because the gate checks the route file; the KbNav entry above is the one the gate auto-satisfies."
-    }
-  ],
-  "deferredComponents": [
-    {
-      "name": "PlaceFieldMap",
-      "reason": "REPAIRED 2026-08-14. Neighborhood fold is a Field of house photographs, not a map. Place.hasMap stays off until a later pass puts the map below the fold without eating the houses."
+      "name": "SiteHeader",
+      "section": "hidden on ^/cities/[slug]/[neighborhoodSlug] via HideChrome — KbNav renders instead.",
+      "note": "Gate checks the route file."
     },
     {
-      "name": "V3Ledger, for the subdivision set and the peer-neighborhood set",
-      "reason": "V3Ledger itself is NOT deferred — daily life and Latest market activity both render. What is deferred is a THIRD Ledger for subdivision and peer-neighborhood counts."
-    },
-    {
-      "name": "V3Stage",
-      "reason": "Pattern 4 needs an owned video or photo and is never allowed over a number. This node opens on pace, then houses."
+      "name": "SiteFooter",
+      "section": "hidden on ^/cities/[slug]/[neighborhoodSlug] via HideChrome — KbFooter renders instead.",
+      "note": "Gate checks the route file."
     }
   ],
   "removedComponents": [
-    "KbHero (hero photo, neighborhood search field, and stat row) — replaced by V3Instrument level 1. The hero photo and its curated/regional-fallback resolution (communityImage, cityHero, mediaCaption) go with it: a photo is a Stage, and Stage is the pattern this page does not have. The H1 head term is preserved exactly: 'Homes for Sale' becomes the sentence-case 'homes for sale' the v3 register spells, and ci:seo-shell's contract for this route was moved in the same change to accept either register's spelling.",
-    "KbBreadcrumb overlay — replaced by V3Breadcrumb, surface tone, since there is no dark hero to sit on.",
-    "KbListingMap with its boundary polygon overlay, and PlaceMapListSplit — replaced by V3Field with PlaceFieldMap in the map slot. The polygon is still read (getGeoBoundaryMapData) because it is what makes the in-boundary count and the Place geo centroid honest, and it is drawn when the Field mounts the map. Place.hasMap returns with that map.",
-    "KbFeatured (poster grid of top-priced in-boundary listings) and resolveFeaturedItems — the same listings are the V3Field rows, price-descending, so the grid was a second rendering of one set.",
-    "KbTicker (scrolling price and address strip) — decoration, not a pattern.",
-    "KbMarketHud and KbMarketChart, and with them getPriceHistory for both the neighborhood and the parent-city fallback series, getRegionPulse (county median), and the chartScopeLabel machinery. The HUD's figures survive, split across the two Instruments by population. The 60-month median-close CHART does not: the barrel ships no chart primitive. The city-fallback rule it existed to make honest (a neighborhood series under 8 points or under 2 calendar years relabeled as the city's) is therefore moot on this route.",
-    "KbExploreTowns, twice (the subdivisions-in-this-neighborhood ledger and the other-cities ledger) — the subdivision and peer-neighborhood doors survive as links in the closing Quiet block; their per-row activeCount and medianPrice do not. getAllCitySnapshots goes with the other-cities ledger, replaced by one 'Every Central Oregon city' edge to /cities.",
-    "LifestyleNearSection with its lifestyleNearLatLng and mapCentroid reads — a lat-lng proximity rail with no pattern in the closed set.",
-    "KbAreaGuideVideo and getAreaGuideVideo — owned video is a Stage, and this page has no Stage.",
-    "KbOpenHouses and getOpenHousesWithListings — the read was CITY-scoped with an honest city eyebrow, so it was never neighborhood data. The open-houses door for the parent city survives in the closing Quiet block.",
-    "KbSell — a CTA block whose figures duplicated the Instrument's. The valuation ask survives as the Instrument's PRIMARY action. It was written down as surviving 'as the Instrument's ghost action and as the sticky header's filled primary', and the second half of that was false below 880px, where the header CTA computes display:none: between the deleted KbHero primary, the deleted KbHero ctaSecondary to /sell/valuation, and the deleted KbSell block, mobile was left with no filled seller CTA anywhere on the page.",
-    "KbArticles — the same three posts survive as links in the closing Quiet block; the thumbnails and excerpts do not.",
-    "KbTestimonials and KbTeam — brokerage trust blocks with no pattern in the closed set on a place node.",
-    "FAQBlock — the same buildMarketFaq array renders as V3Quiet prose and the FAQPage JSON-LD moved to MetadataBlock.",
-    "MarketSources — replaced by the Oregon Data Share edge in the closing Quiet block (same anchor text, same href) plus the per-section source lines, which name Oregon Data Share on every figure block INCLUDING the Field. That last clause was written before it was true: the Field's source line said only 'the recorded boundary polygon joined to the live listing index', naming no MLS, over the one block that renders individual listing records with street address, price, beds, baths and size. It now opens with the feed and with MarketSources' own explanatory clause ('the regional MLS cooperative behind every listing and market figure on this page'), so the attribution sits over the listing data rather than only thirty rows below it.",
-    "SmoothScrollProvider (Lenis smooth scroll) — PUBLIC_UI.md section 5 allows a scroll-bound sequence on exactly two moments and neither is here.",
-    "getMarketStatsCacheRowForGeo — a SECOND read of the same market_stats_cache row getMarketStats already returns, kept only for avg_sale_to_list_ratio, which getMarketStats projects as saleToListRatio. One row, one read.",
-    "getBlogPostsBySlugs for amenity topic-cluster links — verified 2026-08-12 that zero of the thirteen data/resort-community-bend-*.json configs carries a blog_slug, so the branch never fired on this route.",
-    "getCommunitiesInNeighborhood replaced by getCommunitiesInNeighborhoodLite — the heavy variant pulls up to 5,000 city tiles to compute a per-subdivision count and median, and this page no longer renders either figure. Reading them and dropping them is the discarded-read defect.",
-    "The post-submit 'Sign in to manage alerts' ANCHOR, from inside the Sheet — a terminal V3Sheet step carries prose, not links. The sentence naming the unsubscribe path survives in the terminal step, and the anchor itself survives on the page: same label, same href (/login?returnUrl=%2Faccount%2Fsaved-searches), in the closing Quiet block that carries this node's outbound edges. Nothing about this destination left the page.",
-    "The hero's in-boundary count as the page's headline inventory figure — the KB page published the raw listings_in_boundary pin count, which the RPC returns for EVERY active property type, under a hero that said single-family, so land, duplexes and condos were inside that number. The headline count now comes from the market_pulse_live row, which is the polygon narrowed to PropertyType A AND the Single Family Residence subtype, under the pulse's own trace and stamp, labelled 'single-family homes for sale'. The Field keeps the wider PropertyType A set, because hiding ten townhouses and four condominiums that are genuinely for sale inside the boundary would be a worse page than showing them, and it labels that set as what it is.",
-    "KbActivity - RESTORED 2026-08-12 as a V3Ledger, not deleted. The KB component stays off this route (the barrel law and the register ratchet both forbid re-importing it); getActivityFeedWithFallbackMulti, buildActivityItems and the in-boundary scoping are back in full."
-  ],
-  "barrelGaps": [
-    "V3Map as a barrel primitive is still open. This route's Field slot is filled by PlaceFieldMap (app/central-oregon/_v3/), shared with the other place-detail nodes. That closes the visitor-facing gap without putting a vendor map in the barrel.",
-    "A V3Quiet that can carry NAMED GROUPS of rows, or a rhythm-rule allowance for a second Quiet in one slot. The KB page filed this node's outbound graph under four distinctly-named blocks (KbExploreTowns twice, plus KbArticles). PUBLIC_UI.md section 3 caps a page at four of the six patterns and forbids two adjacent sections sharing one, and this node spends its four on Instrument, Field, Sheet and Quiet, which leaves exactly two Quiet slots: one either side of the Sheet. ABOUT holds the first, so the FAQ and roughly thirty links share the second. The name now covers both halves, which is the honest fix available inside the locked language, but four ledgers collapsed to one section is a real loss of structure and it is this gap, not a preference, that caused it.",
-    "A hidden-field kind on V3Sheet was reported here as a gap and is now CLOSED: V3Sheet.trap renders the honeypot as a property of the surface rather than as one of its steps' questions, which is why the alert form's `company` defence works again."
-  ],
-  "jsonLd": {
-    "required": [
-      {
-        "type": "BreadcrumbList",
-        "emittedBy": "MetadataBlock schemas array (breadcrumb entry). Items unchanged: Home, Cities, the city, the neighborhood."
-      },
-      {
-        "type": "Place",
-        "emittedBy": "MetadataBlock schemas array (place entry), placeType Neighborhood. hasMap is off while PlaceFieldMap is deferred. The DESCRIPTION is chosen by the branch that produced the figures (placeDescription)."
-      },
-      {
-        "type": "Dataset",
-        "emittedBy": "MetadataBlock schemas array (dataset entry), variableMeasured and dateModified from the branch's own builder. Emitted only when there is at least one variable. Name, url, and spatialCoverage strings unchanged. THE DESCRIPTION IS NOW DERIVED FROM variableMeasured (datasetDescription) and names exactly the variables in the payload. It was a fixed sentence promising 'Live single-family home market data ... median list price, active inventory, and market statistics' beside whatever survived the per-figure guards — a machine-readable claim that could outrun its own payload, and that called the no-pulse branch's every-residential-type figures single-family. It now names no single population either, because the payload has none: months of supply divides an active count by a closed series and days-to-pending is measured on closed sales, so the sentence points the reader at the per-figure source lines on the page instead of picking one."
-      },
-      {
-        "type": "FAQPage",
-        "emittedBy": "MetadataBlock schemas array (faqPage entry), items = the same faqs array V3Quiet renders. On the KB page this came out of FAQBlock's includeJsonLd; the payload's meaning is unchanged."
-      }
-    ],
-    "note": "ONE DERIVATION PER BRANCH, AND EACH ONE NAMES THE POPULATION IT READ. The visible Q&A, the FAQPage items and the Dataset variables always come from one call, so the copy and the markup cannot diverge. On the pulse branch that call is buildMarketFaq, the shared builder that also owns the buyer's/seller's verdict. On the no-pulse branch it is fallbackFaqSet (_v3/neighborhood-claims.ts), because buildMarketFaq's prose is written for the single-family population and the KB page's habit of handing it getNeighborhoodBySlug's every-residential-type numbers published them as 'active single-family listings' in the visible rows, the FAQPage markup and the Dataset variables at once — on the one branch whose own on-page source line says that count is not the single-family subtype. The fallback pair names what it counted, publishes its count as 'Active Residential Listings' rather than 'Active Listings' so a machine is not told two different measures are the same one, carries no asOf stamp because that read carries none, and states no verdict because months of supply exists only on the pulse row."
-  },
-  "dataLayer": {
-    "getNeighborhoodBySlug": "app/actions/cities.ts. Resolves the neighborhoods row and computes activeCount and medianPrice off listing_tile_mv for the neighborhood NAME, residential inventory types only. Feeds the metadata, the identity, the About fallback prose, and the level-1 Instrument's no-pulse branch.",
-    "getMarketPulse": "lib/data/market/getMarketPulse.ts. market_pulse_live, geo_type neighborhood, geo_slug {citySlug}-{neighborhoodSlug}, property_type A. Verified live 2026-08-12: 28 neighborhood rows exist on that key. Written by refresh_community_market_pulse() (migration 20260727180000_bl016_community_pulse_and_yearly.sql), whose active_count reads listing_boundary_xref_mv filtered property_type='A' AND (property_sub_type IS NULL OR property_sub_type='Single Family Residence') over the SAME boundary the Field uses, whose median_days_to_pending reads closed sales from the last 90 days through the neighborhood_subdivisions alias join and is null below five, and whose months_of_supply divides the active count by that closed series over 180 days. Every one of those facts is stated in the level-1 source line, because a single sentence naming the active set could not cover all four. Feeds the level-1 Instrument, buildMarketFaq, AND generateMetadata: the meta description publishes a count, a SERP snippet carries no source line to reconcile one, and describing getNeighborhoodBySlug's every-residential-type number under the words 'single-family homes for sale' was false on every neighborhood and disagreed with the page's own H1 figure on the 28 that carry a pulse row. Same cache key and same window as the page's read, so it is one cached row rather than a second query per render.",
-    "getMarketStats": "lib/data/market/getMarketStats.ts. market_stats_cache, geo_type neighborhood, the same city-qualified key, period_type rolling_365d. Verified live 2026-08-12: 74 rolling-365d rows per neighborhood on that key and none on the bare slug. Feeds the level-2 Instrument only.",
-    "getGeoBoundaryMapData": "lib/data/geo/getGeoBoundaryMapData.ts. The recorded polygon plus in-polygon active pins via listings_in_boundary. Feeds the Field's listing-key set, its honest-count guard, and the Place geo centroid.",
-    "getListingTiles": "lib/data/listings/getListingTiles.ts, by listingKeys from the boundary read, status active, propertyType A, limit 250. The RPC filters only StandardStatus, so this is where the PropertyType narrowing happens, and therefore where the count the Field publishes comes from. It is NOT a single-family narrowing: PropertyType A is a bucket holding single-family homes, townhouses and condominiums, which is why the Field's count and label say 'homes' and the level-1 count says 'single-family'. The tile's property_sub_type is projected onto every Field row for the same reason.",
-    "getCommunitiesInNeighborhoodLite": "lib/data/communities/subdivisionFlags.ts. communities rows for this neighborhood_id, name and slug only. Feeds the subdivision doors.",
-    "peerNeighborhoodTowns": "lib/explore/neighborhood-peers.ts over getBendNeighborhoodLedger. Feeds the sideways rung of the place ladder.",
-    "getResortCommunityContent": "lib/resort-community-content.ts, keyed by the same city-qualified slug. Feeds the About block.",
-    "getRecentBlogPosts": "lib/data/blog/getRecentBlogPosts.ts, cityName-weighted, limit 3. Feeds the guide doors.",
-    "note": "ROUTE-LOCAL SHAPING IS TWO FILES. _v3/neighborhood-sections.ts turns rows into barrel props; _v3/neighborhood-claims.ts holds every SENTENCE the route publishes about a figure — the meta description, the Field's empty message and footnote, the no-pulse branch's Q&A, the Dataset and Place descriptions, and the four structured-data payloads themselves — under one rule: no claim may outrun its payload, so each function takes the payload it describes as its argument. Every read is a DAL function from @/lib/data or a route action (G8), and every one is still wrapped in withTimeoutFallback, which is a deadline and not a swallowed error: the underlying functions are resilient-cached and throw on a transient failure rather than caching a confident empty. NOTHING IS FETCHED THAT THIS PAGE DOES NOT RENDER; the seven reads the KB page made whose results are no longer displayed are listed in removedComponents. Route-local shaping lives in app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts so the route file stays under the ci:file-size-budget 600-line floor."
-  },
-  "sectionOrder": [
-    "MetadataBlock",
-    "KbSectionTracker",
-    "V3Breadcrumb",
-    "V3Instrument (level 1, pace) or V3Quiet when no pace figure",
-    "V3Field (photographed houses, no map)",
-    "V3Ledger (daily life: schools and parks)",
-    "V3Instrument (level 2, closed sales, rolling 12 months)",
-    "V3Ledger (Latest market activity, boundary-scoped when possible, D93)",
-    "V3Quiet (verified depth)",
-    "NeighborhoodAlertsSheet (V3Sheet, listing alerts)",
-    "V3Quiet (FAQ plus outbound edges)",
-    "V3Footer"
+    "PageBreadcrumb (replaced by KbBreadcrumb)",
+    "HeroBlock (replaced by KbHero)",
+    "CTABar (replaced by KbSell + KbFooter)",
+    "NeighborhoodMap / SiteNeighborhoodMap (replaced by KbListingMap)",
+    "ListingCard grid (replaced by KbFeatured)",
+    "VideoTourRail (not present — video tours surface through KbFeatured .video)",
+    "MotivatedListings (replaced by KbActivity)",
+    "CommunityRichContent (rebuilt as KbResortOverview, fed by getResortCommunityContent)",
+    "Stat band (replaced by KbMarketHud)",
+    "BreadcrumbNav (replaced by KbBreadcrumb)"
   ]
 }

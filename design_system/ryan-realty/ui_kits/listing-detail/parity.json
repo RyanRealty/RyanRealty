@@ -31,8 +31,8 @@
       "blocking": true
     },
     {
-      "name": "V3Breadcrumb",
-      "section": "Chrome. Home > Homes for sale > city > street. Current page never a link. Surface tone, belowNav default ON so the trail clears the fixed header. Sentence case Homes for sale.",
+      "name": "KbBreadcrumb",
+      "section": "Home / Homes for sale / city / street.",
       "blocking": true
     },
     {
@@ -62,8 +62,8 @@
       "blocking": true
     },
     {
-      "name": "ListingLikeThisSheet",
-      "section": "Pattern 5. V3Sheet wrapping submitSearchAlertSignup. Same payload as KbCommunityAlerts: email, filters (city, propertyType A, price band, beds), company trap forwarded from answers.company. Disclosure: One email per new listing. Unsubscribe any time.",
+      "name": "KbFeatured",
+      "section": "Similar homes in this place.",
       "blocking": true
     },
     {
@@ -92,13 +92,8 @@
       "blocking": true
     },
     {
-      "name": "V3Ledger",
-      "section": "Pattern 3. Similar homes from relatedHomes.primary. Every row a door. Ghost action to the place browse path. Does not say every.",
-      "blocking": true
-    },
-    {
-      "name": "V3Quiet",
-      "section": "Pattern 6. Outbound edges: Value my home via valuationHref(canonicalPath), Ask about this home, Manage saved alerts, city, market hub, parents, trails, golf, builder.",
+      "name": "PlaceParentsSection",
+      "section": "This home sits inside these places.",
       "blocking": true
     },
     {
@@ -134,8 +129,8 @@
       "why": "HouseMe-shaped report from listing_pricing_reads. Over/under or refuse, comps n, $/sqft, DOM vs place, True Cost from real fields. Never walks the matcher on the request. No invented 0-10 or 5-year %."
     },
     {
-      "name": "V3Footer",
-      "section": "Chrome. Canonical sitemap projection. Carries no button. Rendered OUTSIDE main so the footer maps to contentinfo.",
+      "name": "KbFooter",
+      "section": "Footer.",
       "blocking": true
     }
   ],

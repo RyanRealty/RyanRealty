@@ -1,36 +1,16 @@
 /**
- * SubdivisionSchools — the plat node's CLOSING SECTION, PATTERN 6, QUIET
- * (design_system/public/PUBLIC_UI.md section 3): hairline supporting content
- * carrying the graph's outbound edges. The assigned schools come first, then
- * every other edge out of this plat.
+ * SubdivisionSchools — the assigned-schools section on /subdivisions/[slug]
+ * (W2.4 MPC parity). Renders the §0-thresholded school claims from
+ * getSubdivisionSchools: each level shows only when >=70% of >=10 of the
+ * subdivision's own listings agree on the school (the counts render as the
+ * §0 trace). Cross-links to /schools/[slug] when the curated co-schools
+ * registry resolves the MLS name; otherwise plain text.
  *
- * WHY ONE SECTION AND NOT TWO. Two rules meet here and only this shape satisfies
- * both. `ci:subdivision-stats-integrity` requires that this page CALL
- * getSubdivisionSchools and RENDER `<SubdivisionSchools>`, so the schools cannot
- * be folded into a page-level block under another name. PUBLIC_UI.md's rhythm
- * rule forbids two adjacent sections sharing a pattern, and the schools block and
- * the closing edge block are both Quiet, so as separate sections they would sit
- * adjacent whenever the conditional sections between them did not render. One
- * Quiet, owned here, is what holds both rules at once for every combination of
- * present and absent data. Nothing else on the page is conditional in a way that
- * can break the rhythm.
- *
- * THE SECTION 0 THRESHOLD IS RENDERED, NOT ASSUMED, AND NOT RESTATED. The claim
- * rule lives in getSubdivisionSchools as two exported constants, and the sentence
- * this section prints is BUILT FROM THOSE CONSTANTS rather than spelling their
- * values in prose. Restating them is a live drift surface: change either constant
- * and the public page asserts a threshold the DAL no longer applies, on a licensed
- * broker's surface, with nothing to catch it. Importing them makes the sentence
- * follow the rule by construction, which is stronger than a gate. Each entry also
- * prints the modal count over the total, so a reader sees the evidence behind the
- * claim. A level that does not clear the threshold is omitted, never guessed.
- *
- * The schools cross-link to /schools/<slug> only when the curated Central Oregon
- * schools registry resolves the MLS name. An unresolved name stays plain text
- * rather than becoming a link to a page that does not exist.
+ * Renders null when no level clears the threshold (fails soft, mirrors
+ * SubdivisionSalesHistory).
  */
 
-import { V3Quiet, type V3QuietItem } from '@/components/site/v3'
+import Link from 'next/link'
 import { findSchoolByName } from '@/data/co-schools'
 import {
   SCHOOL_MIN_AGREEMENT,
@@ -48,54 +28,58 @@ const LEVEL_LABEL: Record<SubdivisionSchool['level'], string> = {
 interface Props {
   displayName: string
   schools: SubdivisionSchool[]
-  /**
-   * Every other outbound edge this page carries, built at the page where the
-   * data that justifies each one was read. Rendered after the schools.
-   */
-  edges: readonly V3QuietItem[]
 }
 
-export function SubdivisionSchools({ displayName, schools, edges }: Props) {
-  const items: V3QuietItem[] = []
-
-  for (const school of schools) {
-    const name = school.name.trim()
-    if (!name) continue
-    items.push({
-      kind: 'prose',
-      term: LEVEL_LABEL[school.level],
-      body: `${name}, the assignment on ${school.modalCount} of the ${school.totalCount} listings here that carry one.`,
-    })
-    const registered = findSchoolByName(name)
-    if (registered) {
-      items.push({ label: `${registered.name} school page`, href: `/schools/${registered.slug}` })
-    }
-  }
-
-  if (items.length > 0) {
-    // Both numbers come from the DAL's own constants. Neither is typed here.
-    const agreementBit = `${Math.round(SCHOOL_MIN_AGREEMENT * 100)} percent`
-    items.push({
-      kind: 'prose',
-      term: 'How these assignments were read',
-      body:
-        `School assignments reflect the listings recorded in ${displayName}. A school appears only ` +
-        `when at least ${agreementBit} of at least ${SCHOOL_MIN_SAMPLES} of those listings name it. ` +
-        `Confirm enrollment and boundaries with the district. The listing data comes from Oregon ` +
-        `Data Share through Ryan Realty.`,
-    })
-  }
-
-  items.push(...edges)
-
-  if (items.length === 0) return null
+export function SubdivisionSchools({ displayName, schools }: Props) {
+  if (schools.length === 0) return null
 
   return (
-    <V3Quiet
-      id="around"
-      eyebrow={schools.length > 0 ? `${displayName} · Schools and nearby` : `${displayName} · Nearby`}
-      heading={`Around ${displayName}`}
-      items={items}
-    />
+    <section className="section" id="schools" aria-label="Schools">
+      <div className="wrap">
+        <div className="sec-head" style={{ borderColor: 'var(--navy)' }}>
+          <span className="sec-index">{displayName} {'·'} Schools</span>
+          <h2 className="sec-title display">Assigned schools</h2>
+        </div>
+
+        <dl style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', margin: '0 0 1.25rem' }}>
+          {schools.map((s) => {
+            const registered = findSchoolByName(s.name)
+            return (
+              <div key={s.level}>
+                <dt
+                  style={{
+                    fontSize: '.72rem',
+                    letterSpacing: '.08em',
+                    textTransform: 'uppercase',
+                    color: 'var(--navy-70)',
+                  }}
+                >
+                  {LEVEL_LABEL[s.level]}
+                </dt>
+                <dd style={{ margin: '.25rem 0 0', fontSize: '1.15rem' }}>
+                  {registered ? (
+                    <Link
+                      href={`/schools/${registered.slug}`}
+                      style={{ color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px' }}
+                    >
+                      {registered.name}
+                    </Link>
+                  ) : (
+                    s.name
+                  )}
+                </dd>
+              </div>
+            )
+          })}
+        </dl>
+
+        <p style={{ fontSize: '.8rem', color: 'var(--navy-70)', margin: 0, maxWidth: '44rem' }}>
+          School assignments reflect the listings recorded in {displayName}. A school appears only
+          when at least {Math.round(SCHOOL_MIN_AGREEMENT * 100)} percent of at least {SCHOOL_MIN_SAMPLES}{' '}
+          of those listings name it. Confirm enrollment and boundaries with the district. Source:
+          Oregon Data Share via Ryan Realty.
+        </p>
+      </div>
+    </section>
   )
 }

@@ -1,8 +1,11 @@
 {
-  "count": 173,
+  "count": 178,
   "files": [
     "app/buy/loading.tsx",
+    "app/cities/[slug]/[neighborhoodSlug]/error.tsx",
+    "app/cities/[slug]/error.tsx",
     "app/cities/error.tsx",
+    "app/communities/[slug]/error.tsx",
     "app/compare/error.tsx",
     "app/dashboard/error.tsx",
     "app/dashboard/marketing/_components/EmptyState.tsx",
@@ -67,6 +70,7 @@
     "components/city/CityNeighborhoods.tsx",
     "components/community/CommunityCTA.tsx",
     "components/community/CommunityCard.tsx",
+    "components/community/CommunityIndexBrowser.tsx",
     "components/community/CommunityListings.tsx",
     "components/community/CommunityMap.tsx",
     "components/community/CommunityVacationRentalBlock.tsx",
@@ -164,6 +168,7 @@
     "components/site/VideoFeedClient.tsx",
     "components/site/golf/GolfCommunityCards.tsx",
     "components/site/golf/GolfHomesGrid.tsx",
+    "components/site/kb/KbCommunityAlerts.client.tsx",
     "components/site/listing-detail/ListingHero.tsx",
     "components/site/listing-detail/ListingVideoEmbed.tsx",
     "components/site/nav/MegaMenu.tsx",

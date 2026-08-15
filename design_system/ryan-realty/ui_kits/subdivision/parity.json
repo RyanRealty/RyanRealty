@@ -21,28 +21,33 @@
       "blocking": true
     },
     {
-      "name": "V3Breadcrumb",
-      "section": "Chrome. Home > Communities > (parent resort or parent city) > this plat, the same trail and the same parent rule as the KB page. Surface tone, which also clears the fixed public header by default.",
+      "name": "KbBreadcrumb",
+      "section": "Home > Communities > this plat.",
       "blocking": true
     },
     {
-      "name": "V3Instrument",
-      "section": "Pattern 1, up to twice, NEVER the opening. Level 2 is the plat market_stats_cache ytd row when it carries a median or sold count, otherwise the parent pulse below sales history. No giant 0. No Value my home on this band.",
+      "name": "KbHero",
+      "section": "Plat name and live count.",
       "blocking": true
     },
     {
-      "name": "V3Field",
-      "section": "Pattern 2, only when the plat has enough pins to be a map (FIELD_MAP_MIN = 4). A short plat is a Ledger. The empty state is an empty Ledger, not a Field of ghost tiles.",
+      "name": "KbFeatured",
+      "section": "Homes in this plat.",
       "blocking": true
     },
     {
-      "name": "V3Ledger",
-      "section": "Pattern 3. The opening for a short plat or an empty plat: homes as rows, or an honest emptyMessage when the query timed out or the plat has none. Parent community or city is the ghost action.",
+      "name": "KbListingMap",
+      "section": "Plat map when pins exist.",
       "blocking": true
     },
     {
-      "name": "PlaceFieldMap",
-      "section": "The real Google map filling V3Field's mapSlot, shared at app/central-oregon/_v3/PlaceFieldMap.client.tsx. Draws the recorded plat polygon and one pin per plotted listing, reads and writes the same highlight as the list through useV3FieldBinding. The route-local SubdivisionFieldMap pair is gone.",
+      "name": "PlaceMapListSplit",
+      "section": "Dual-pane list and map.",
+      "blocking": true
+    },
+    {
+      "name": "KbFooter",
+      "section": "Footer.",
       "blocking": true
     },
     {
@@ -53,16 +58,6 @@
     {
       "name": "SubdivisionSchools",
       "section": "Pattern 6, Quiet, route-local, and the page's closing section. The assigned schools first, each printing the modal count over the total that carried the field so the section 0 threshold is visible evidence rather than an assertion, then every outbound edge the page carries (parks, trails and golf with their distance and the sentence that says what it measures, the parent places, the peer plats, the browse path, the indexes, and the Oregon Data Share citation). ci:subdivision-stats-integrity requires this component be rendered by name.",
-      "blocking": true
-    },
-    {
-      "name": "V3Quiet",
-      "section": "Pattern 6. Field-mode H1 when the plat is map-worthy. SubdivisionSchools is the page's school Quiet and must render by name (ci:subdivision-stats-integrity).",
-      "blocking": true
-    },
-    {
-      "name": "V3Footer",
-      "section": "Chrome. The canonical sitemap projection (V3_FOOTER_COLUMNS off lib/site-nav) plus the legal row, carrying no button because the one valuation primary belongs to the sticky header. Rendered OUTSIDE <main>, because HTML-AAM maps <footer> to role=contentinfo only when it is not nested in sectioning content.",
       "blocking": true
     }
   ],
@@ -78,15 +73,15 @@
     "Place, with address and containedInPlace only when the page resolved a city, and hasMap only when a polygon or at least one plotted listing exists."
   ],
   "dataLayer": [
-    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) — the plat polygon and its active pins.",
-    "getCommunityListings(city, alias, 14) — the registry-name active set. Also the registry-path active count, which is why that path's trace names the fourteen-row ceiling.",
-    "getListingTiles({ ..., status: 'active', propertyType: 'A', limit: 200 }) — the Field rows and pins.",
-    "getListingsWithVideos({ community, city, status: 'active', limit: 12 }) — marks the Field rows that have a video tour.",
-    "getSubdivisionSalesHistory(slug) — the Ledger.",
-    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) — the market Instrument's first choice. ci:subdivision-stats-integrity pins the period.",
-    "getSubdivisionSchools(city, alias) — the closing Quiet's school entries. ci:subdivision-stats-integrity pins the call.",
-    "fetchSubdivMarketExtras({ citySlug, resortSlug }) — the community and city pulse rows, of which the market Instrument uses exactly one. READ CONDITIONALLY: it runs only when the plat has no market_stats_cache row of its own, because the band renders the plat row when there is one and both pulse queries would then be discarded. It used to run on every request.",
-    "isSubdivisionIndexable(slug) — the robots policy in generateMetadata."
+    "getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }) \u2014 the plat polygon and its active pins.",
+    "getCommunityListings(city, alias, 14) \u2014 the registry-name active set. Also the registry-path active count, which is why that path's trace names the fourteen-row ceiling.",
+    "getListingTiles({ ..., status: 'active', propertyType: 'A', limit: 200 }) \u2014 the Field rows and pins.",
+    "getListingsWithVideos({ community, city, status: 'active', limit: 12 }) \u2014 marks the Field rows that have a video tour.",
+    "getSubdivisionSalesHistory(slug) \u2014 the Ledger.",
+    "getMarketStats({ geoType: 'subdivision', geoSlug: slug, periodType: 'ytd' }) \u2014 the market Instrument's first choice. ci:subdivision-stats-integrity pins the period.",
+    "getSubdivisionSchools(city, alias) \u2014 the closing Quiet's school entries. ci:subdivision-stats-integrity pins the call.",
+    "fetchSubdivMarketExtras({ citySlug, resortSlug }) \u2014 the community and city pulse rows, of which the market Instrument uses exactly one. READ CONDITIONALLY: it runs only when the plat has no market_stats_cache row of its own, because the band renders the plat row when there is one and both pulse queries would then be discarded. It used to run on every request.",
+    "isSubdivisionIndexable(slug) \u2014 the robots policy in generateMetadata."
   ],
   "sectionOrder": [
     "MetadataBlock",

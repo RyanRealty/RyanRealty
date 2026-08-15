@@ -15,33 +15,18 @@
       "blocking": true
     },
     {
-      "name": "V3Breadcrumb",
-      "section": "breadcrumb \u2014 Home / Cities. JSON-LD is in MetadataBlock.",
+      "name": "KbBreadcrumb",
+      "section": "breadcrumb — Home / Cities. JSON-LD is in MetadataBlock.",
       "blocking": true
     },
     {
-      "name": "V3Ledger",
-      "section": "city doors \u2014 the opening. Featured plus the rest of the index. Ledger media only when cityHero() is verified. Next tap is a named city.",
+      "name": "RegionalSfrAlertsBand",
+      "section": "SFR listing-alert capture.",
       "blocking": true
     },
     {
-      "name": "V3Instrument",
-      "section": "region pulse below the fold \u2014 live active count, median list, months of supply. marketVerdict classifies the raw MoS. Not the first screen.",
-      "blocking": true
-    },
-    {
-      "name": "RegionalAlertSheet",
-      "section": "SFR listing-alert capture. Same action and filters as the retired RegionalSfrAlertsBand.",
-      "blocking": true
-    },
-    {
-      "name": "V3Quiet",
-      "section": "edges \u2014 communities, housing market, search, valuation, Oregon Data Share.",
-      "blocking": true
-    },
-    {
-      "name": "V3Footer",
-      "section": "footer outside main so the element is a contentinfo landmark.",
+      "name": "KbFooter",
+      "section": "footer.",
       "blocking": true
     },
     {
@@ -60,8 +45,8 @@
       "blocking": true
     },
     {
-      "name": "listingsBrowsePath",
-      "section": "Ledger and Instrument ghost door into the live list.",
+      "name": "MarketSources",
+      "section": "Oregon Data Share citation.",
       "blocking": true
     }
   ],

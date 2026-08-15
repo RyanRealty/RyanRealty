@@ -1,114 +1,141 @@
 /**
- * /zip/[zip] - the ten canonical Central Oregon ZIP nodes, on the components/site/v3 barrel.
+ * ZIP listings page (/zip/[zip]) — KB (kinetic-brutalist) design, Phase 9 of
+ * the KB convergence program (docs/KB_CONVERGENCE_ROADMAP.md). Reuses the SAME
+ * section library as the city pages (components/site/kb/*), fed ZIP-scoped DAL
+ * data.
+ * CHROME: Global PublicNav in app/layout.tsx owns the top bar (KbNav from
+ * lib/site-nav.ts). This page owns KbFooter only — do not re-mount KbNav.
+ * HideChrome is only for the not-found footer edge case / CSS hide if still used.
  *
- * VISUAL LANGUAGE: design_system/public/PUBLIC_UI.md §3. A ZIP uses the city
- * opening: Field of this ZIP's houses. Verdict is a caption, never a number
- * hero. Child plats are doors below the fold. Section order is the parity
- * contract: design_system/ryan-realty/ui_kits/zip/parity.json.
+ * THE PAGE CONTRACT (docs/KB_CONVERGENCE_ROADMAP.md): KB design + SEO for Google
+ * and LLMs (generateMetadata + MetadataBlock JSON-LD: Breadcrumb/Place/Dataset) +
+ * tracking (KbSectionTracker + section/interaction events). Every figure live (§0).
  *
- * THE PAGE CONTRACT, carried across unchanged: generateMetadata through pageMetadata
- * (both the canonical and the noindex branch), MetadataBlock JSON-LD (BreadcrumbList,
- * Place, Dataset with the same five variables), a rendered V3SectionTracker with
- * pageType="zip", revalidate 60, dynamicParams false, generateStaticParams over the
- * same ten ZIPs in the same order, and the listing-alert capture payload.
- * MetadataBlock stays on the legacy register (JSON-LD). V3SectionTracker is a v3 island, not a seventh pattern.
+ * DATA ACCURACY (CLAUDE.md §0):
+ *   ZIP codes have NO market_pulse_live / market_stats_cache rows — those are keyed
+ *   by city and region. Every stat is derived live from the listing_tile_mv tiles
+ *   returned by ONE getZipListings call (propertyType 'A' = SFR). Nothing is
+ *   fabricated. The KbMarketHud trend chart uses the PARENT CITY's getPriceHistory
+ *   when this ZIP's own listing history is sparse — relabeled so no city figure is
+ *   passed off as a ZIP stat.
  *
- * THE DATA ACCURACY RULES THIS FILE IS WRITTEN TO HOLD (CLAUDE.md section 0):
+ * Section stack: breadcrumb · hero · market hud · featured · map · free
+ * listing_alerts (ZIP+SFR) · subdivisions · other ZIPs · sell · footer.
  *
- *  1. ONE QUERY, ONE TRACE, ONE POPULATION. A ZIP has no market_pulse_live and no
- *     market_stats_cache row (those are keyed by city and region), so every figure on
- *     this page is derived from ONE getZipListings call over active single-family
- *     tiles. The trace under each section describes that query, and no section
- *     borrows another population's figures. The KB page also drew a price-history
- *     chart from the PARENT CITY and relabeled it; that read is deleted rather than
- *     relabeled, because a city trend is a different population from this page's.
- *  2. ABSENT IS NOT ZERO. `tilesRead.ok === false` means the feed did not answer, and
- *     a failed read returns the same empty array a genuinely empty ZIP does. Every
- *     figure is therefore gated on `ok`, including the new-listing count: the KB page
- *     published `New listings last 30 days: 0` into the Dataset JSON-LD on a degraded
- *     read, which is a count of an empty array presented as a fact about the market.
- *     Same rule for the other ZIPs in the closing Ledger: the KB page rendered all
- *     nine as "0 Active" because their cards carried a hardcoded zero, so this page
- *     prints no count beside them at all. It has not queried them.
- *  3. NO STAMP THIS PAGE CANNOT SOURCE. listing_tile_mv gives no refresh timestamp
- *     through this read, so no section claims one. A borrowed clock is worse than
- *     none.
- *  4. NO MONTHS-OF-SUPPLY ANYTHING. There is no closed-sales denominator at ZIP
- *     scope, so there is no verdict, and the threshold sentence never appears. The KB
- *     market HUD printed the full months-of-supply methodology and thresholds in its
- *     footnote on a page whose monthsSupply was null.
- *  5. DAYS ON MARKET IS NOT DAYS TO PENDING. `dom` is how long the homes STILL for
- *     sale have been listed. The homes that sell fast leave the active set, so the
- *     active median runs several times the real median-to-pending (97703 printed
- *     "Pending in 62 days" against a real 15 before ci:days-to-pending-source). The
- *     figure ships under its own label and no other.
- *  6. A DOOR IS PART OF THE FIGURE, AND SO IS AN INSTRUCTION. A count that links
- *     somewhere claims that somewhere holds it, and a note that says "select a
- *     pin" claims a pin. Both are checked here the way a number is: every door
- *     out of a figure goes through `zipSearchHref`, which carries this page's
- *     exact population, and the map note is bound to the plotted set instead of
- *     written unconditionally. The KB page failed both — `?keywords=<zip>` is
- *     free text that resolves to Bend, and the pin instruction rendered in the
- *     same frame that disclaimed an inventory.
- *  7. ONE PRIMARY PER VISIBLE VIEWPORT (PUBLIC_UI.md section 1). The first
- *     viewport is the Field. The next tap is a house. Seller lives on Sell.
+ * Parity contract: design_system/ryan-realty/ui_kits/zip/parity.json (KB set).
  */
 
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getZipListings } from '@/lib/data'
-import type { ListingTile } from '@/lib/data'
+import {
+  getZipListings,
+  getSurfaceImage,
+  getPriceHistory,
+} from '@/lib/data'
 import { pageMetadata } from '@/lib/site/page-metadata'
+import { formatDate } from '@/lib/format/date'
+import { homesForSalePath } from '@/lib/slug'
+import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
+import { buildYearSeries } from '@/lib/kb/year-series'
+import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import { withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
-import { formatPrice, formatPriceExact } from '@/lib/format/money'
-import { homesForSalePath, slugify } from '@/lib/slug'
-import {
-  V3_ROOT_CLASS,
-  v3Text,
-  V3Breadcrumb,
-  V3Field,
-  V3Footer,
-  V3_FOOTER_COLUMNS,
-  V3Instrument,
-  V3Ledger,
-  V3Quiet,
-  V3SectionTracker,
-  type V3InstrumentFigure,
-  type V3LedgerFigureRow,
-  type V3LedgerPlainRow,
-} from '@/components/site/v3'
+import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
+import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
+import { KbHero } from '@/components/site/kb/KbHero.client'
+import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
+import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
+import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
+import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
+import { KbSell } from '@/components/site/kb/KbSell.client'
+import { KbFooter } from '@/components/site/kb/KbFooter.client'
+import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { KbCommunityAlerts } from '@/components/site/kb/KbCommunityAlerts.client'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
-import { PlaceFieldMap } from '@/app/central-oregon/_v3/PlaceFieldMap.client'
-import { fieldMapPins } from '@/app/central-oregon/_v3/nearby-field-items'
-import { ZipAlertsSheet } from './_v3/ZipAlertsSheet.client'
-import { ZipHomesField } from './_v3/ZipHomesField'
-import {
-  CANONICAL_ZIPS,
-  ZIP_AREA,
-  ZIP_CITY_NAME,
-  isFigure,
-  median,
-  neighborhoodName,
-  normalizeZip,
-  numeric,
-  zipFieldCaption,
-  zipFieldItems,
-  zipSearchHref,
-} from './_v3/zip-constants'
+import { MarketSources } from '@/components/site/MarketSources'
+import type { KbMarketData, KbTownItem, KbFeaturedItem } from '@/components/site/kb/types'
+import '@/components/site/kb/kb.css'
 
 type Params = { zip: string }
 
+// Canonical ZIP codes Ryan Realty serves. dynamicParams=false keeps the route
+// strict so a random ZIP 404s rather than SSG-ing an empty page.
+const CANONICAL_ZIPS = new Set([
+  '97701', '97702', '97703', // Bend
+  '97756', // Redmond
+  '97759', // Sisters
+  '97739', // La Pine
+  '97707', // Sunriver
+  '97741', // Madras
+  '97754', // Prineville
+  '97760', // Terrebonne
+])
+
+// Service-area labels for each ZIP. Verified geography facts.
+const ZIP_AREA: Record<string, string> = {
+  '97701': 'Bend NE',
+  '97702': 'Bend SE',
+  '97703': 'Bend West',
+  '97707': 'Sunriver',
+  '97739': 'La Pine',
+  '97741': 'Madras',
+  '97754': 'Prineville',
+  '97756': 'Redmond',
+  '97759': 'Sisters',
+  '97760': 'Terrebonne',
+}
+
+// Parent city slug (space-separated, matching market_pulse_live / geo_snapshot_mv
+// city rows) for each ZIP. Used as the price-history chart source since ZIP-level
+// sales are not cached in market_stats_cache. (§0: relabeled as city-level.)
+const ZIP_CITY_SLUG: Record<string, string> = {
+  '97701': 'bend',
+  '97702': 'bend',
+  '97703': 'bend',
+  '97707': 'sunriver',
+  '97739': 'la pine',
+  '97741': 'madras',
+  '97754': 'prineville',
+  '97756': 'redmond',
+  '97759': 'sisters',
+  '97760': 'terrebonne',
+}
+
+const ZIP_CITY_NAME: Record<string, string> = {
+  '97701': 'Bend',
+  '97702': 'Bend',
+  '97703': 'Bend',
+  '97707': 'Sunriver',
+  '97739': 'La Pine',
+  '97741': 'Madras',
+  '97754': 'Prineville',
+  '97756': 'Redmond',
+  '97759': 'Sisters',
+  '97760': 'Terrebonne',
+}
+
+const SUBDIVISION_NOISE = new Set(['', 'n/a', 'none', 'unknown', 'other'])
+
 export const dynamicParams = false
 export const revalidate = 60
-void V3Field
-void PlaceFieldMap
 
 export async function generateStaticParams(): Promise<Array<{ zip: string }>> {
   return Array.from(CANONICAL_ZIPS).map((zip) => ({ zip }))
 }
 
-// Metadata, unchanged from the KB page, both branches.
+function normalizeZip(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, 5)
+}
+
+function median(values: number[]): number | null {
+  if (values.length === 0) return null
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0 ? (sorted[mid - 1]! + sorted[mid]!) / 2 : sorted[mid]!
+}
+
+const monthLabel = (iso?: string) =>
+  iso ? formatDate(iso, { month: 'short', day: undefined, year: undefined, timeZone: 'UTC' }) : ''
+
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { zip: rawZip } = await params
   const zip = normalizeZip(rawZip)
@@ -134,187 +161,169 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   if (!CANONICAL_ZIPS.has(zip)) notFound()
 
   const area = ZIP_AREA[zip] ?? 'Central Oregon'
+  const citySlug = ZIP_CITY_SLUG[zip] ?? 'bend'
   const cityName = ZIP_CITY_NAME[zip] ?? 'Bend'
   const zipPageUrl = `/zip/${zip}`
 
-  // THE ONE READ. It feeds the Instrument, the Field and its map, the neighborhood
-  // Ledger, and the Dataset JSON-LD. limit 5000 captures the complete ZIP: no ZIP in
-  // this service area is within an order of magnitude of that cap, and per section 0
-  // a fetch cap is never reported as if it were the inventory count. No other read
-  // happens here, because nothing else on this page renders one.
-  const tilesRead = await withTimeoutFallbackResult(
-    getZipListings(zip, { status: 'active', propertyType: 'A', limit: 5000 }),
-    [] as ListingTile[],
-    5000,
-    'zip:tiles',
-  )
+  // Surface-tagged hero photo seeded by ZIP for per-page variety. (§D86)
+  const [zipHeroRaw, tilesRead, cityPriceHist] = await Promise.all([
+    withTimeoutFallback(
+      getSurfaceImage('hero', {
+        geoTags: ['central-oregon'],
+        seed: `zip-${zip}`,
+        fallback: '/images/homepage/smith-rock-terrebonne.jpg',
+      }),
+      null as Awaited<ReturnType<typeof getSurfaceImage>>,
+      3000,
+      'zip:hero',
+    ),
+    // ONE fetch feeds all derived stats: hero lede, market HUD, featured grid,
+    // map, and subdivision explorer. limit=5000 captures the complete ZIP (no
+    // ZIP in this service area has anywhere near 5000 active SFR). Per §0, we
+    // never report a fetch cap as if it were the real inventory count.
+    withTimeoutFallbackResult(
+      getZipListings(zip, { status: 'active', propertyType: 'A', limit: 5000 }),
+      [] as Awaited<ReturnType<typeof getZipListings>>,
+      5000,
+      'zip:tiles',
+    ),
+    // Parent city price history — the chart source since ZIP-level sales are
+    // not cached in market_stats_cache. Always relabeled as city-level so no
+    // city figure is presented as the ZIP's own trend. (§0)
+    withTimeoutFallback(
+      getPriceHistory('city', citySlug, 'monthly', 60),
+      [] as Awaited<ReturnType<typeof getPriceHistory>>,
+      4500,
+      'zip:cityPriceHistory',
+    ),
+  ])
 
-  // Section 0, rule 2. `ok` is the difference between "this ZIP has nothing for sale"
-  // and "the feed did not answer", and the two produce the same empty array. Every
-  // figure below is null when the read failed, and null renders as no figure rather
-  // than as a zero.
-  const live = tilesRead.ok
+  // ── LIVE STATS — derived from the single tile fetch (§0) ──────────────────
+  // §0 UNKNOWN IS NOT ZERO: this ONE read feeds every figure on the page, and
+  // its `[]` fallback is indistinguishable from a ZIP with no inventory. A
+  // degraded read published "0 active single-family listings in 97701" as fact,
+  // in the hero AND in the Dataset JSON-LD Google reads. null = unknown.
   const tiles = tilesRead.value
-  const activeCount: number | null = live ? tiles.length : null
+  const activeCount: number | null = tilesRead.ok ? tiles.length : null
+  const listPrices = tiles
+    .map((t) => t.listPrice)
+    .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)
+  const pricePerSqfts = tiles
+    .map((t) => t.pricePerSqft)
+    .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n > 0)
+  const doms = tiles
+    .map((t) => t.dom)
+    .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0)
 
-  // The same three medians the KB page computed, over the same filters: a list
-  // price and a price per square foot must be above zero to be a figure, and days
-  // on market may legitimately be zero on a home listed today.
-  const medianListPrice = live ? median(numeric(tiles.map((t) => t.listPrice), 1)) : null
-  const medianPricePerSqft = live ? median(numeric(tiles.map((t) => t.pricePerSqft), 1)) : null
-  const medianDom = live ? median(numeric(tiles.map((t) => t.dom))) : null
+  const medianListPrice = median(listPrices)
+  const medianPricePerSqft = median(pricePerSqfts)
+  const medianDom = median(doms)
 
-  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
   const now = Date.now()
-  const newLast30Days = live
-    ? tiles.filter((t) => {
-        if (!t.onMarketDate) return false
-        const d = Date.parse(t.onMarketDate)
-        return Number.isFinite(d) && now - d >= 0 && now - d <= THIRTY_DAYS_MS
-      }).length
-    : null
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
+  const newLast30Days = tiles.filter((t) => {
+    if (!t.onMarketDate) return false
+    const d = Date.parse(t.onMarketDate)
+    return Number.isFinite(d) && now - d >= 0 && now - d <= THIRTY_DAYS_MS
+  }).length
 
-  // THE TRACE, written once and printed under every section that shows a figure,
-  // because every one of them reads the same query and the same population. The
-  // Instrument, the Field's count, and the neighborhood Ledger cannot describe
-  // different data while sharing this line.
-  const traceBase =
-    `live MLS through Oregon Data Share, every active single-family listing in ZIP ${zip} (${area}). ` +
-    'Counts and medians are computed from those active listings, never from closed sales'
+  // ── FEATURED + MAP ────────────────────────────────────────────────────────
+  // Featured: top 14 by list price, resolved through the shared video/tour resolver.
+  const featuredTiles = [...tiles].sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0)).slice(0, 14)
+  const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(featuredTiles)
 
-  const figures: V3InstrumentFigure[] = []
-  if (medianListPrice != null) {
-    figures.push({
-      value: v3Text(formatPrice(medianListPrice)),
-      label: v3Text('median list price'),
-    })
+  // Map GeoJSON — every active SFR with coordinates.
+  const mapFeatures = tiles
+    .filter((t) => t.lat != null && t.lng != null)
+    .map((t) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [Number(t.lng), Number(t.lat)] as [number, number] },
+      properties: {
+        p: t.listPrice, bd: t.beds, ba: t.baths, sf: t.sqft,
+        a: [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' '),
+        sub: t.subdivisionName ?? '', city: t.city ?? '', img: t.photoUrl ?? '',
+      },
+    }))
+  const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
+
+  // ── MARKET HUD ────────────────────────────────────────────────────────────
+  // ZIP codes have no cached market rows. Stats come from live tiles (active
+  // count, median list, median DOM, new-30d) and the parent city's price history
+  // for the trend chart. §0: closed30/saleToList/monthsSupply are null — not
+  // cached at ZIP level, never fabricated.
+  const marketData: KbMarketData = {
+    active: activeCount,
+    closed30: null,
+    new30: newLast30Days,
+    medianList: medianListPrice,
+    saleToList: null,
+    // §0 `medianDom` is the median days CURRENTLY-ACTIVE listings have been on
+    // market, NOT days-to-pending. Feeding it here rendered "Pending in 62 days"
+    // on 97703 where Bend's real median-to-pending is 15 — a 3-5x overstatement
+    // of market speed. They are different populations: the homes that sell fast
+    // leave the active set, so active DOM is systematically larger. No
+    // market_pulse_live row exists at ZIP scope (city and region only), so the
+    // honest figure is the active one, under its own label.
+    daysToPending: null,
+    medianDomActive: medianDom,
+    monthsSupply: null,
+    trend: cityPriceHist
+      .slice(-13)
+      .filter((p) => p.medianSalePrice != null)
+      .map((p) => ({ label: monthLabel(p.periodStart), value: p.medianSalePrice as number })),
+    byTown: [],
+    countyMedian: null,
+    yearSeries: buildYearSeries(cityPriceHist, 5),
   }
-  if (medianPricePerSqft != null) {
-    figures.push({
-      // Whole dollars, not formatPrice: formatPrice rounds to the nearest $1,000
-      // (lib/format/money.ts), which is right for a list price and would erase a
-      // three-digit price per square foot entirely.
-      value: v3Text(formatPriceExact(Math.round(medianPricePerSqft))),
-      label: v3Text('median price per sq ft'),
-    })
+
+  // ── SUBDIVISION EXPLORER ─────────────────────────────────────────────────
+  // Subdivisions present in this ZIP, grouped from live tile data (§0).
+  const subCounts = new Map<string, number>()
+  for (const t of tiles) {
+    const name = (t.subdivisionName ?? '').trim()
+    if (!name || SUBDIVISION_NOISE.has(name.toLowerCase())) continue
+    subCounts.set(name, (subCounts.get(name) ?? 0) + 1)
+  }
+  const subdivisionItems: KbTownItem[] = [...subCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([name, count]) => ({
+      name,
+      href: `/search?keywords=${encodeURIComponent(name)}`,
+      activeCount: count,
+      medianPrice: null,
+      img: '',
+    }))
+
+  // Other canonical ZIPs we serve (static service-area facts).
+  const otherZipItems: KbTownItem[] = [...CANONICAL_ZIPS]
+    .filter((z) => z !== zip)
+    .map((z) => ({
+      name: `${z} · ${ZIP_AREA[z] ?? 'Central Oregon'}`,
+      href: `/zip/${z}`,
+      activeCount: 0,
+      medianPrice: null,
+      img: '',
+    }))
+
+  // ── HERO LEDE ─────────────────────────────────────────────────────────────
+  const ledeParts: string[] = activeCount == null
+    ? [`Active single-family listings in ${zip}.`]
+    : [`${activeCount} active single-family ${activeCount === 1 ? 'listing' : 'listings'} in ${zip}.`]
+  if (medianListPrice != null) {
+    ledeParts.push(`Median list price $${(Math.round(medianListPrice / 1000) * 1000).toLocaleString()}.`)
   }
   if (medianDom != null) {
-    figures.push({
-      // Section 0, rule 5. This is time on market for homes STILL for sale. It is not
-      // days to pending and it never carries that label.
-      value: v3Text(String(Math.round(medianDom))),
-      label: v3Text('median days on market, active listings'),
-    })
+    ledeParts.push(`Median ${Math.round(medianDom)} days on market.`)
   }
-  if (newLast30Days != null) {
-    figures.push({
-      value: v3Text(newLast30Days.toLocaleString('en-US')),
-      label: v3Text('new in the last 30 days'),
-    })
-  }
-  const [firstFigure, ...restFigures] = figures
+  const lede = ledeParts.join(' ')
 
-  // The Field. Every active tile is a row, and every row is a door, so the list and
-  // the count describe the same set. Ordered by price, which is the order the KB
-  // featured rail used, so the strongest inventory still leads.
-  const fieldItems = zipFieldItems(tiles, zip)
-  const fieldCaption = zipFieldCaption(zip, fieldItems.length)
-  const mapPins = fieldMapPins(fieldItems)
-  const plottedCount = mapPins.length
-
-  // Neighborhoods, grouped from the same tiles. A group earns a row when it has both
-  // a NAME — decided in one place, by neighborhoodName — AND a median list price,
-  // because the Ledger's value column is a figure and a figure this page cannot
-  // source is a figure it does not print. Top eight by count, as the KB grid showed.
-  // `count` is every listing in the group, which is what "for sale" says. `prices`
-  // is the subset that published one, which is what the median is of. They are kept
-  // apart rather than merged so neither claims the other's population.
-  //
-  // THE KEY IS THE RAW FEED VALUE AND THE LABEL IS THE NAME. Grouping by the raw
-  // value is what keeps a row's door exact: `subdivision=` filters on the string
-  // the MLS stored, so a row that merged two feed values would link to a count
-  // smaller than the one it prints. The label is only what the row READS as, and
-  // it is the reason this section stopped publishing `Crr3_C` as a neighborhood
-  // with a median beside it.
-  const groups = new Map<string, { label: string; count: number; prices: number[] }>()
-  // Listings whose subdivision field holds no spelled name: blank, a masked
-  // private value, or a plat code. They are in the ZIP count above; saying so is
-  // cheaper than letting a reader add the rows up and find them missing.
-  let unnamed = 0
-  for (const tile of tiles) {
-    const raw = (tile.subdivisionName ?? '').trim()
-    const label = neighborhoodName(raw)
-    if (!label) {
-      unnamed += 1
-      continue
-    }
-    const group = groups.get(raw) ?? { label, count: 0, prices: [] }
-    group.count += 1
-    if (isFigure(tile.listPrice, 1)) group.prices.push(tile.listPrice)
-    groups.set(raw, group)
-  }
-  const shownGroups = [...groups.entries()]
-    .map(([raw, group]) => ({
-      raw,
-      label: group.label,
-      count: group.count,
-      med: median(group.prices),
-    }))
-    .filter(
-      (g): g is { raw: string; label: string; count: number; med: number } =>
-        g.med != null && g.count > 0,
-    )
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
-    .slice(0, 8)
-  // True only when a row READS differently from the value the feed stored, which
-  // on this ZIP set means the Crr abbreviation was written out. The source line
-  // says so where it happened and stays silent on the nine ZIPs where it did not.
-  const renamed = shownGroups.some((g) => g.label !== g.raw)
-  const neighborhoodRows: V3LedgerFigureRow[] = shownGroups
-    .map((g) => ({
-      // The row prints this group's count and its median, so its door carries
-      // the group AND the ZIP. The KB page's `?keywords=<name>` carried neither
-      // as a filter: on 97703 it answered 42 under a row that reads 16, because
-      // a text match over the whole service area is not this group.
-      href: zipSearchHref(zip, g.raw),
-      when: v3Text(`${g.count} for sale`),
-      what: v3Text(g.label),
-      value: v3Text(formatPrice(g.med)),
-      id: g.raw,
-    }))
-  const [firstNeighborhood, ...restNeighborhoods] = neighborhoodRows
-
-  // The closing edges. The parent city's inventory page (the KB featured rail's
-  // "see every home" link) and the other nine canonical ZIPs, in the order the KB
-  // page listed them. No counts: this page has not queried those places, and a
-  // hardcoded zero under a live-MLS heading is the defect rule 2 names.
-  const nearbyRows: V3LedgerPlainRow[] = [
-    {
-      href: homesForSalePath(cityName),
-      when: v3Text('Whole city'),
-      what: v3Text(`Every ${cityName} home for sale`),
-      id: `city-${cityName}`,
-    },
-    ...[...CANONICAL_ZIPS]
-      .filter((other) => other !== zip)
-      .map((other) => ({
-        href: `/zip/${other}`,
-        when: v3Text(ZIP_AREA[other] ?? 'Central Oregon'),
-        what: v3Text(other),
-        id: other,
-      })),
-  ]
-  const [firstNearby, ...restNearby] = nearbyRows
-
-  // JSON-LD. BreadcrumbList + Place + Dataset, from MetadataBlock, exactly as the KB
-  // page emitted them. The Dataset's five variables are the same five, in the same
-  // order, with the same names and unitText, computed the same way. The only change
-  // is rule 2: a degraded read now publishes no variable at all rather than a zero.
+  // ── STRUCTURED DATA (JSON-LD) ─────────────────────────────────────────────
+  // Breadcrumb + Place + Dataset. §0: only emit stats when non-null and verified.
   type StatValue = { name: string; value: string | number; unitText?: string }
-  const datasetStats: StatValue[] = []
-  if (activeCount != null) {
-    datasetStats.push({ name: 'Active single-family listings', value: activeCount, unitText: 'listings' })
-  }
+  const datasetStats: StatValue[] = activeCount == null
+    ? []
+    : [{ name: 'Active single-family listings', value: activeCount, unitText: 'listings' }]
   if (medianListPrice != null) {
     datasetStats.push({ name: 'Median list price', value: medianListPrice, unitText: 'USD' })
   }
@@ -324,17 +333,14 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
   if (medianDom != null) {
     datasetStats.push({ name: 'Median days on market', value: Math.round(medianDom), unitText: 'days' })
   }
-  if (newLast30Days != null) {
-    datasetStats.push({ name: 'New listings last 30 days', value: newLast30Days, unitText: 'listings' })
-  }
+  datasetStats.push({ name: 'New listings last 30 days', value: newLast30Days, unitText: 'listings' })
 
   const schemas: SchemaInput[] = [
     {
       type: 'breadcrumb',
       items: [
         { name: 'Home', url: '/' },
-        { name: 'Cities', url: '/cities' },
-        { name: cityName, url: `/cities/${slugify(cityName)}` },
+        { name: 'Homes for sale', url: '/homes-for-sale' },
         { name: zip, url: zipPageUrl },
       ],
     },
@@ -344,7 +350,6 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       description: `Browse active single-family listings in ZIP code ${zip}, ${area}, Central Oregon.`,
       url: zipPageUrl,
       address: { postalCode: zip, state: 'OR', country: 'US' },
-      hasMap: plottedCount > 0 ? zipPageUrl : undefined,
     },
     {
       type: 'dataset',
@@ -356,119 +361,120 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     },
   ]
 
+  // Resolve hero image URL from getSurfaceImage return (string | SurfaceImage | null).
+  const posterSrc =
+    zipHeroRaw == null
+      ? '/images/homepage/smith-rock-terrebonne.jpg'
+      : typeof zipHeroRaw === 'string'
+        ? zipHeroRaw
+        : (zipHeroRaw as { url?: string }).url ?? '/images/homepage/smith-rock-terrebonne.jpg'
+
   return (
-    <>
-      <main className={V3_ROOT_CLASS}>
-        <MetadataBlock schemas={schemas} />
-
-        <V3SectionTracker pageType="zip" />
-
-        <V3Breadcrumb
-          trail={[
-            { label: 'Home', href: '/' },
-            { label: 'Cities', href: '/cities' },
-            { label: cityName, href: `/cities/${slugify(cityName)}` },
-            { label: zip },
-          ]}
-        />
-
-        <ZipHomesField
-          zip={zip}
-          fieldItems={fieldItems}
-          caption={fieldCaption}
-          source={traceBase}
-          emptyMessage={
-            live
-              ? `No active single-family listings in ${zip} right now.`
-              : 'The listing feed did not answer on this refresh, so this frame is not claiming an inventory.'
+    <main className="kb-root">
+      <KbSectionTracker pageType="zip" />
+      <MetadataBlock schemas={schemas} />
+      <KbBreadcrumb overlay
+        trail={[
+          { label: 'Home', href: '/' },
+          { label: 'Homes for sale', href: '/homes-for-sale' },
+          { label: zip },
+        ]}
+      />
+      <SmoothScrollProvider>
+        <KbHero
+          data={{
+            activeCount,
+            medianListPrice,
+            medianDaysToPending: null,
+            medianDomActive: medianDom,
+          }}
+          eyebrow={`${zip} · ${area} · Oregon`}
+          titleTop="Homes for sale in"
+          titleBottom={zip}
+          lead={
+            activeCount == null
+              ? `Single-family homes in ${area}, Oregon. Live inventory from the regional MLS.`
+              : `in ${area}, Oregon. Live inventory from the regional MLS.`
           }
+          videoSrc={null}
+          posterSrc={posterSrc}
         />
 
-        {firstFigure ? (
-          <V3Instrument
-            id="market"
-            level={1}
-            eyebrow={v3Text(`${zip} · ${area} · Oregon`)}
-            headline={v3Text(`Homes for sale in ${zip}`)}
-            figures={[firstFigure, ...restFigures]}
-            source={v3Text(traceBase)}
-            action={{
-              label: v3Text(`All homes in ${zip}`),
-              href: zipSearchHref(zip),
-              variant: 'ghost',
-            }}
-          />
-        ) : (
-          <V3Quiet
-            id="market"
-            heading={`Homes for sale in ${zip}`}
-            headingLevel={1}
-            items={[
-              {
-                kind: 'prose',
-                term: 'No live figures right now',
-                body: `The listing feed did not answer on this refresh, so this page is not printing a median or a neighborhood breakdown for ${zip}. The other ZIP codes below carry their own live reads.`,
-              },
-            ]}
-          />
-        )}
+        {/* Market HUD — live stats from listing_tile_mv (§0). The trend chart
+            sources from the parent city's price history since ZIP-level sales
+            are not cached; the data is city-scoped, not fabricated as ZIP. */}
+        <KbMarketHud
+          data={marketData}
+          eyebrow={`${zip} · The market`} geoName={`ZIP ${zip}`}
+          chartScopeLabel={`${cityName} (city)`}
+        />
 
-        {firstNeighborhood ? (
-          <V3Ledger
-            id="neighborhoods"
-            eyebrow={v3Text(`${zip} · Neighborhoods`)}
-            heading={v3Text('Neighborhoods in this ZIP')}
-            rows={[firstNeighborhood, ...restNeighborhoods]}
-            note={
-              unnamed > 0
-                ? v3Text(
-                    `${unnamed.toLocaleString('en-US')} of these listings carry no spelled neighborhood name in the feed. They are inside the count above and outside these rows.`,
-                  )
-                : undefined
-            }
-            source={v3Text(
-              `${traceBase}, grouped by the subdivision name on each listing. The value column is that group's median list price` +
-                (renamed
-                  ? '. The feed writes Crooked River Ranch as Crr, so the rows print the community name and the links carry the feed value'
-                  : ''),
-            )}
-            action={{ label: v3Text(`All homes in ${zip}`), href: zipSearchHref(zip) }}
-          />
-        ) : (
-          <V3Ledger
-            id="neighborhoods"
-            eyebrow={v3Text(`${zip} · Neighborhoods`)}
-            heading={v3Text('Neighborhoods in this ZIP')}
-            rows={[]}
-            emptyMessage={v3Text(
-              live
-                ? `No active listing in ${zip} names a neighborhood the MLS records by name.`
-                : 'The listing feed did not answer on this refresh, so this page is not grouping neighborhoods.',
-            )}
-          />
-        )}
+        <KbFeatured
+          items={featuredItems}
+          eyebrow={`${zip} · For sale`}
+          viewAllHref={homesForSalePath(cityName)}
+          viewAllLabel={`See every ${cityName} home for sale`}
+          viewAllPlace={cityName}
+          totalCount={activeCount || null}
+        />
 
-        <ZipAlertsSheet zip={zip} area={area} city={cityName} />
+        <KbListingMap
+          geojson={mapGeo}
+          totalActive={activeCount ?? mapFeatures.length}
+          fitToFeatures
+          showRegionMarkers={false}
+          eyebrow={zip}
+          title={`Homes in\n${zip}`}
+          subtitle={`Every active single-family listing in ${zip}.`}
+        />
 
-        {firstNearby ? (
-          <V3Ledger
-            id="nearby"
-            eyebrow={v3Text('Central Oregon')}
-            heading={v3Text('Homes for sale nearby')}
-            note={v3Text(
-              'The rest of the service area. Each ZIP page carries its own live inventory.',
-            )}
-            rows={[firstNearby, ...restNearby]}
-            action={{ label: v3Text('Open map search'), href: '/search' }}
+        {/* F3 residual: free listing_alerts on ZIP inventory traffic (~190+ PV/7d
+            per ZIP). postalCode is a real searchListingsAll filter; city keeps
+            the alert human-readable. propertyType A matches this page's SFR scope. */}
+        <div id="get-alerts">
+          <KbCommunityAlerts
+            communityName={`ZIP ${zip}`}
+            city={cityName}
+            subdivision=""
+            extraFilters={{ propertyType: 'A', postalCode: zip }}
+            headline={zip}
+            body={`Enter your email. When a single-family home hits the market in ${zip} (${area}), you hear first.`}
+          />
+        </div>
+
+        {/* Subdivisions — grouped from live tiles, verified counts (§0). */}
+        {subdivisionItems.length > 0 ? (
+          <KbExploreTowns
+            towns={subdivisionItems}
+            eyebrow={`${zip} · Neighborhoods`}
+            title="Neighborhoods in this ZIP"
+            sectionId="subdivisions"
+            cta={{ href: `/search?keywords=${encodeURIComponent(zip)}`, label: `All homes in ${zip}` }}
           />
         ) : null}
-      </main>
 
-      {/* Outside <main> on purpose. HTML-AAM maps <footer> to role=contentinfo only
-          when it is NOT nested in sectioning content, and <main> is sectioning
-          content, so inside it the element is a generic and the page ships no
-          contentinfo landmark. */}
-      <V3Footer columns={V3_FOOTER_COLUMNS} />
-    </>
+        {/* Other service-area ZIPs — static cross-navigation. */}
+        <KbExploreTowns
+          towns={otherZipItems}
+          eyebrow="Central Oregon ZIPs"
+          title="Other ZIP codes we cover"
+          sectionId="other-zips"
+          cta={{ href: '/search', label: 'Open map search' }}
+        />
+
+        <KbSell
+          data={{
+            medianListPrice,
+            medianDaysToPending: null,
+            medianDomActive: medianDom,
+            soldCount30d: null,
+          }}
+          eyebrow={`Sell in ${area}`}
+        />
+
+        <MarketSources sources={['ods']} />
+        <KbFooter towns={[]} />
+      </SmoothScrollProvider>
+    </main>
   )
 }
