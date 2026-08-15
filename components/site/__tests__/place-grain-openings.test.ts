@@ -56,7 +56,10 @@ describe('neighborhood pace', () => {
       },
       links,
     )
-    expect(figures.map((figure) => figure.label)).toEqual(['months of supply', 'median days to pending'])
+    expect(figures.map((figure) => figure.label)).toEqual([
+      'months of supply, single-family',
+      'median days to pending, single-family',
+    ])
     expect(figures[0]?.value).toBe('4.2')
     expect(figures.some((figure) => /home|inventory|list price/i.test(String(figure.label)))).toBe(false)
   })
