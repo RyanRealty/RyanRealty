@@ -66,4 +66,4 @@ Matt reads the weekly packet. He says yes only to outbound to real people, publi
 
 ## First code
 
-`site_improvement_ledger.domain` + DAL in `lib/data/loop/`. Ingest: `collectCompanyScoreboardSignals`. Probe: `npx tsx scripts/company-scoreboard-probe.ts`.
+`site_improvement_ledger.domain` + DAL in `lib/data/loop/` (import the subpath, not the `@/lib/data` barrel). Ingest: `collectCompanyScoreboardSignals`. Probe: `npx tsx scripts/company-scoreboard-probe.ts`.
