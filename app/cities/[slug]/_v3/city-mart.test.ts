@@ -11,6 +11,8 @@ import {
 
 function row(overrides: Partial<CoMarketAnnualRow> = {}): CoMarketAnnualRow {
   return {
+    geoType: 'region',
+    geoSlug: 'central-oregon',
     year: 2024,
     typeScope: 'all',
     soldCount: 2000,
