@@ -1,6 +1,6 @@
 # THE LOOP — the canonical development process
 
-**Version: 1.1.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Supersedes every plan in `docs/plans/` (they are history, not process)
+**Version: 1.2.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
 
 All development in this repo — site code, the marketing brain, cron agents, producers, every Claude Code session — routes through this one self-improving cycle. This document is the single source of truth for HOW work happens. The sync gate (`scripts/check-process-canon.mjs`, G44) fails the build if the entry points stop pointing here, if a pointer's version drifts from this header, or if a new plan doc lands unregistered.
 
@@ -16,14 +16,14 @@ ingest -> diagnose -> prioritize -> fix-the-class -> verify -> ship -> measure -
    +----------------------------------------------------------------------------------------------+
 ```
 
-1. **Ingest.** Pull the scoreboard: GA4 (sessions, conversion, bounce by surface), Search Console (impressions, clicks, CTR, position by query and page), Meta/ads (spend, CPL by campaign and LP), FUB (leads created, source, outcome), Core Web Vitals (`web_vitals` by route), competitor signals. Normalized into `site_signal` (view) keyed by route + date.
-2. **Diagnose** with rules, not vibes: impressions high + CTR < 2% → rewrite title/meta. Position 5–15 on real volume → on-page depth. Traffic high + conversion low → UX/CTA fix. Spend high + LP conversion low → funnel fix. LCP > 2.5s on a hot route → performance fix. Competitor outranks us on a target query → targeted content.
-3. **Prioritize.** `score = reach x gap-to-benchmark x confidence / effort`, where confidence is the learned win-rate for that change-class from `site_improvement_ledger`. Top candidate wins the cycle.
+1. **Ingest.** Pull the **company** scoreboard, not only Growth: GA4, Search Console, web vitals, ads CPL, plus CRM stages, speed-to-lead, brain ready/executed/measured, social token health, sync freshness, GCI / commissions, TC / SkySlope freshness, form-catalog updates, broker count, `/join` convert, factory escapes. Weekly packet: `docs/plans/COMPANY_SCOREBOARD.md`. Domain table: `docs/plans/COMPANY_IMPROVEMENT.md`. Route-level series still land in `site_signal` (view).
+2. **Diagnose** with rules, not vibes. Growth rules still hold (impressions high + CTR < 2% → title/meta; position 5–15 + volume → depth; traffic high + conversion low → UX/CTA; LCP > 2.5s → perf). Company rules: `measured=0` → fix the learn path before new producers; Nurture-heavy + Lead near zero → CRM class; expired OAuth → Matt reconnect; delta unhealthy → P0; untraced public number → stop. Full table in `docs/plans/COMPANY_IMPROVEMENT.md`.
+3. **Prioritize.** `score = reach x gap-to-benchmark x confidence / effort`, where confidence is the learned win-rate for that change-class from `site_improvement_ledger` **by `domain`**. A class that cannot name a `COMPANY_IMPROVEMENT_DOMAINS` value is not company work. Top candidate wins the cycle.
 4. **Fix the class, never the instance.** The unit of work is the root-cause cluster resolved everywhere it occurs, in one coordinated change. Honor the preflight contract (below).
 5. **Verify exhaustively before Matt sees it.** Every affected instance, mobile and desktop, every number traced to source (§0). tsc, tests, `npm run ci:gates`, build, and a rendered-browser pass on the affected surfaces. Matt confirms a class is resolved; he does not find the bugs.
 6. **Ship** per the live-environment rules (below). Draft-first for content and consumer-visible changes; explicit approval, then commit + push to `main` and watch the deploy go READY.
 7. **Measure.** Stamp the baseline metric + window before shipping. A/B where the surface supports it, else before/after.
-8. **Learn.** After the window closes, write `(change_class, surface, predicted_delta, actual_delta)` to `site_improvement_ledger`. The per-class win-rate it accumulates is the `confidence` input for the next cycle's prioritization. Mispredictions sharpen the value function.
+8. **Learn.** After the window closes, write `(domain, change_class, surface, predicted_delta, actual_delta)` to `site_improvement_ledger`. The per-class win-rate it accumulates is the `confidence` input for the next cycle's prioritization. Mispredictions sharpen the value function.
 9. **Lock.** Every fix that killed a class adds or tightens a mechanical gate so it cannot recur. A win that can silently regress is incomplete work. Catalog: `docs/MECHANICAL_GATES.md`.
 10. **Compete.** A standing benchmark of rankings / CTR / conversion vs named competitors on target queries. The gap to the leader feeds the value function, so the loop preferentially attacks where we are losing.
 
@@ -33,7 +33,7 @@ THE LOOP is the meta-process. It runs as **five domain loops over one shared spi
 
 | # | Loop | Session / trigger | Cadence | Owns | State ledger |
 |---|---|---|---|---|---|
-| 1 | **Growth** (SEO, AI visibility, content depth, conversion) | Orchestrator session — runs THE LOOP cycle directly | Continuous | Page content/meta/JSON-LD/llms.txt, thin-vs-thick fixes, CWV, competitor benchmark | `site_improvement_ledger`, `site_signal` |
+| 1 | **Growth** (SEO, AI visibility, content depth, conversion) | Orchestrator session — runs THE LOOP cycle directly; weekly overwrites `COMPANY_SCOREBOARD.md` | Continuous | Page content/meta/JSON-LD/llms.txt, thin-vs-thick fixes, CWV, competitor benchmark; **arbitrates company-wide score** | `site_improvement_ledger` (now domain-scoped), `site_signal`, `docs/plans/COMPANY_SCOREBOARD.md` |
 | 2 | **Demand** (paid + organic acquisition) | `/facebook-seller-growth` | Weekly + producer crons | Meta ads, audiences, LP conversion, organic social, experiments | `LEARNINGS.md`, `.auto-memory/fb-ads-loop-state.json` |
 | 3 | **Nurture** (CRM, comms, follow-up intelligence) | `/loop /crm-e2e` | Self-paced guardian | FUB mirror, Gmail/Twilio ingest, sequences, auto-enroll, suppressions, smart follow-ups | `tmp/crm-e2e-latest.json`, `docs/CRM_REPLACEMENT_BLUEPRINT.md` |
 | 4 | **Transaction** (TC + Oregon law) | `/loop /tc-builder` | Self-paced ladder | Deals, documents, signing, compliance engine, the Oregon law/forms knowledge base | `docs/TC_SYSTEM.md`, `docs/TC_OREGON_COMPLIANCE.md` |
@@ -45,7 +45,7 @@ THE LOOP is the meta-process. It runs as **five domain loops over one shared spi
 
 **Collision rules.** Experience owns page *structure*; Growth owns page *content and meta* — a file family under active Experience migration is frozen to Growth until the family ships. Nurture owns outbound comms; Demand never sends directly. Transaction owns anything legally binding. The orchestrator session arbitrates conflicts and owns prioritization across loops (step 3 of the cycle, applied fleet-wide).
 
-**Session discipline.** Ad-hoc sessions are for one-off tasks only and close when done. Anything recurring belongs to one of the five loops or becomes a cron. A sixth standing session is a smell — fold it in or gate it.
+**Session discipline.** Ad-hoc sessions are for one-off tasks only and close when done. Anything recurring belongs to one of the five loops or becomes a cron. A sixth standing session is a smell — fold it in or gate it. Broker OS loops A–G are job names for how a broker’s week feels, not a second process. Company domains (public-ux, seo-aeo, leads, nurture, social-presence, sales-insights, transactions, broker-tools, recruit-retain, data-sync, factory, license-voice) are scored on the weekly packet; they do not each get a standing session.
 
 ## The preflight contract (no change starts blind)
 
@@ -76,9 +76,10 @@ A defect that reached Matt or production gets three things, always: (1) the whol
 
 ## The ledgers (live in Supabase)
 
-- `site_improvement_ledger` — one row per shipped experiment: change_class, surface, metric, predicted_delta, actual_delta, window. Feeds prioritization confidence.
+- `site_improvement_ledger` — one row per shipped experiment: **domain**, change_class, surface, metric, predicted_delta, actual_delta, window. Feeds prioritization confidence across every company domain, not only SEO. DAL: `lib/data/loop/`.
 - `process_escape_ledger` — one row per escape: what slipped, why, the check added.
-- `site_signal` (view) — the normalized scoreboard the diagnose step reads.
+- `site_signal` (view) — the normalized route × date × metric series.
+- `docs/plans/COMPANY_SCOREBOARD.md` — the weekly packet the orchestrator overwrites. Template and diagnose rules: `docs/plans/COMPANY_IMPROVEMENT.md`.
 
 ## Registered plan documents
 
@@ -121,6 +122,8 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `CMA_PIPELINE_TO_PRODUCTION_2026-07-30.md` | **live** — end-to-end goal for taking the CMA/BPO pipeline to production grade (registered here by a sibling session's request; owner is that session) |
 | `WESTSIDE_BACKLOG.md` | **live** — west-side dominance ranked backlog, generated 2026-07-28 from live competitor/market data |
 | `MOBILE_GRIND/` | **live** — mobile-audit defect-CLASS remediation package (state machine, per-class census tables, ledger). Matt's 2026-08-06 iPhone pass produced ~19 reported defects; each is treated as a sample of a class, so every step is census-first (enumerate every instance repo-wide) → fix all → gate the class. Every file within is covered by this row. |
+| `COMPANY_IMPROVEMENT.md` | **live** — THE LOOP v1.2.0 addendum: company domains, diagnose rules, cadence. Not a new OS. |
+| `COMPANY_SCOREBOARD.md` | **live** — weekly company packet (overwrite, do not date-stamp a novel). Start ritual with SESSION_HANDOFF. |
 | `CROSS_AGENT_HANDOFF.md` | session-continuity (required agent handoff protocol) |
 | `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission |
 | `DELTA_SYNC_UNIFICATION_HANDOFF.md` | **open input** — delta-sync unification cutover handoff |
@@ -138,5 +141,6 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.2.0 (2026-08-15)** — Company ingest: THE LOOP scores every domain (not only Growth/SEO). Weekly packet `COMPANY_SCOREBOARD.md`, addendum `COMPANY_IMPROVEMENT.md`, `site_improvement_ledger.domain`. Five standing loops unchanged. No sixth session. No new OS.
 - **1.1.0 (2026-06-10)** — Loop topology locked: five domain loops (Growth, Demand, Nurture, Transaction, Experience) over one shared spine + cron substrate; one session per loop; contact-journey stage as the cross-loop funnel object; collision and session-discipline rules.
 - **1.0.0 (2026-06-09)** — Initial canon, distilled from `ultracode-site-consistency-kickoff.md` after the 06-09 audit was executed end to end. Ledgers + sync gate land in the same delivery.

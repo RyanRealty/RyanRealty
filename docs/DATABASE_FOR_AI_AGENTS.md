@@ -36,6 +36,7 @@
 | **Spark MLS API reference** | [docs/SPARK_API_REFERENCE.md](SPARK_API_REFERENCE.md) | n/a | n/a |
 | **CRM people on a TC deal** (who is on this file) | `tc_deal_people` by `deal_id` or `person_id` — DAL `getDealParties` / `getDealsForPerson` / `getPartyNamesByDealIds` | `deal_id`, `person_id`, `role` (`buyer` / `seller` / `other`). Unique `(deal_id, person_id)`. | live writes |
 | **Did OREF / ODS / Oregon Realtors revise a form?** | `tc_form_catalog_items` + `tc_form_versions.update_available` — apply a catalog on `/admin/forms` | `disposition` (`current` / `updated` / `new` / `retired`), `source_form_id`, `source_version_id` | last catalog paste |
+| **Company improvement experiment / class confidence** | `site_improvement_ledger` via `insertImprovementLedgerRow` / `getChangeClassConfidence` / `collectCompanyScoreboardSignals` (`lib/data/loop/`). Weekly packet: `docs/plans/COMPANY_SCOREBOARD.md`. | `domain` (closed set of 12), `change_class`, `predicted_delta`, `actual_delta` | per ship; window then learn |
 
 > **Don't aggregate raw `listings` for market reports.** The cache tables exist exactly so you don't have to. They're stamped with `methodology_version` and refreshed every 6 hours. Use them.
 

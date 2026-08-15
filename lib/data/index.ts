@@ -824,6 +824,25 @@ export { getPreferredOrefSaleAgreement } from './tc/getPreferredOrefSaleAgreemen
 export type { PreferredOrefForm } from './tc/getPreferredOrefSaleAgreement'
 
 export {
+  COMPANY_IMPROVEMENT_DOMAINS,
+  assertCompanyDomain,
+  confidenceFromVerdicts,
+  isCompanyImprovementDomain,
+  scoreCandidate,
+  type CompanyImprovementDomain,
+  type LedgerVerdict,
+} from './loop/domains'
+export { assertLedgerDraft, type ImprovementLedgerDraft } from './loop/ledger-draft'
+export {
+  getChangeClassConfidence,
+  insertImprovementLedgerRow,
+  listOpenImprovementWindows,
+} from './loop/ledger'
+export {
+  collectCompanyScoreboardSignals,
+  type CompanyScoreboardSignals,
+} from './loop/signals'
+export {
   getTcFormLibraryBoard,
   applyFormCatalogSnapshots,
 } from './tc/form-catalog'

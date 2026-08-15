@@ -1,12 +1,29 @@
-> **FLEET + MAP (Grok 2026-08-08 close pass): Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — always start `SESSION_HANDOFF.md`. Full open list: `ALL-OPEN-ITEMS.md`. Inventories regenerated; CAP/INT close in progress; social parks + token reconnect residual; CAP-015 measured=0 class open; ClosePrice migration file on main (hosted apply BLOCKED_ENV). Does not replace admin Current below.**
+> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.2.0):** `docs/plans/COMPANY_SCOREBOARD.md` + `docs/plans/COMPANY_IMPROVEMENT.md`. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — restore the photographed public site
+# Current — 2026-08-15 (Grok) — company improvement process (THE LOOP v1.2.0)
+
+**Matt:** Develop a process that continually improves the whole company. No new OS. No product UI.
+
+**Done this land:**
+- THE LOOP bumped to v1.2.0. Ingest is company-wide. Five standing loops unchanged.
+- Addendum `docs/plans/COMPANY_IMPROVEMENT.md` (domain → signal → diagnose).
+- Weekly packet `docs/plans/COMPANY_SCOREBOARD.md` (overwrite, not a dated novel).
+- `site_improvement_ledger.domain` (12 closed domains). DAL `lib/data/loop/`. Probe `npx tsx scripts/company-scoreboard-probe.ts`.
+- Start ritual: SESSION_HANDOFF + COMPANY_SCOREBOARD.
+
+**Do not:** `git add -A`. Do not mix LOOK-PLAN / RESTORE / page-grade leftovers. Do not send, post, spend, or OAuth.
+
+**First packet filled** 2026-08-15T14:14:00Z. Hosted `domain` column applied. 11 open ledger windows (all seo-aeo). Next cycle can score a non-SEO class.
+
+**Skills read:** TDD, database-canonical-reference, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, growth-loop, git-commit.mdc.
+
+# Prior — 2026-08-15 (Grok) — restore the photographed public site
 
 **Matt:** Revert the public site the page-grade pass flattened. Keep going /endtoend. Not another OS. Not a new UI component.
 
-**SHA:** `e093275f` on `main`, pushing now. Parent: `0ccad3b0`.
+**SHA:** `d2208216` on `origin/main`. Vercel production READY. Custom domain https://ryan-realty.com serves kb-root + photographed home/Bend. Parent: `0ccad3b0`.
 
 **Done this restore:**
 - Homepage is KB again: KbHero, towns, communities, featured, region map, ticker, sell, reviews, team, market HUD, plus ArrivalIntent. D11 lead locked.

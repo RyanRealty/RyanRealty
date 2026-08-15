@@ -24,7 +24,10 @@ import { execFileSync } from 'node:child_process'
  */
 
 const REPO = resolve(new URL('.', import.meta.url).pathname, '../..')
-const SANDBOX = join(tmpdir(), 'rr-toast-gate-sandbox')
+// Per-process path. A fixed name races when two vitest workers (or a leftover
+// hook run) reset the same /tmp dir — the next run() then sees a missing
+// baseline or a deleted gate script (2026-08-15 pre-commit: 8 false fails).
+const SANDBOX = join(tmpdir(), `rr-toast-gate-sandbox-${process.pid}`)
 const GATE = join(SANDBOX, 'scripts/check-toast-read-discipline.mjs')
 
 /**

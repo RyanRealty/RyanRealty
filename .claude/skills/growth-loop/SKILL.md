@@ -24,8 +24,9 @@ NOT owned: page *structure* under active Experience migration (frozen — check 
 
 ### 0. Orient (always, cheap)
 1. Read `docs/DEVELOPMENT_PROCESS.md` — the cycle, the topology, the preflight contract, the approval model. The canon outranks this skill; if they disagree, fix this skill.
-2. Read `docs/EXPERIENCE_SYSTEM.md` §Rollout status — every page family currently mid-migration is **frozen to Growth** this iteration.
-3. Query `site_improvement_ledger` (DAL-first; read-only) — open experiments, their windows, anything whose window closed and needs its `actual_delta` written (that is a Learn step and takes priority over starting new work).
+2. Read `docs/plans/COMPANY_SCOREBOARD.md` and `docs/plans/COMPANY_IMPROVEMENT.md` — company ingest, not Growth-only. A higher-scored non-SEO domain wins the cycle.
+3. Read `docs/EXPERIENCE_SYSTEM.md` §Rollout status — every page family currently mid-migration is **frozen to Growth** this iteration.
+4. Query `site_improvement_ledger` via `listOpenImprovementWindows` / `getChangeClassConfidence` (DAL-first; read-only) — open experiments, their windows, anything whose window closed and needs its `actual_delta` written (that is a Learn step and takes priority over starting new work). Every new row must set `domain` from `COMPANY_IMPROVEMENT_DOMAINS`.
 
 ### 1. Ingest the scoreboard
 Pull fresh — never from memory: GA4 (sessions, conversions, bounce by surface), Search Console (impressions, clicks, CTR, position by query and page), `web_vitals` by route, Meta/ads CPL by LP (read-only — actions on spend belong to Demand), FUB leads by source, competitor positions on target queries. Sources: the `site_signal` view and the `agent_insights` / marketing snapshot tables populated by the substrate crons (`marketing-snapshot-ga4`, `marketing-snapshot-gsc`, etc.). Respect data-access discipline: schema snapshot + DAL index first, no ad-hoc fishing.
@@ -42,7 +43,7 @@ Pull fresh — never from memory: GA4 (sessions, conversions, bounce by surface)
 - Page missing JSON-LD fields / not in llms.txt / thin (< the archetype's content floor) → AI-visibility fix
 
 ### 3. Prioritize
-`score = reach × gap-to-benchmark × confidence ÷ effort`, confidence = the learned win-rate for that change-class from `site_improvement_ledger`. Skip candidates in frozen families. ONE class wins the iteration.
+`score = reach × gap-to-benchmark × confidence ÷ effort`, confidence = the learned win-rate for that change-class from `site_improvement_ledger` by `domain`. Skip candidates in frozen families. ONE class wins the iteration. Company domains compete with Growth candidates on the same score.
 
 Content-moat candidates from `data/growth/content-moat-backlog.md` enter this same scoring alongside scoreboard-derived candidates (evidence stamps in that file expire after 30 days — re-verify before scoring on them). New content pieces are drafts → `marketing_brain_skills/produce/` action row → Matt approval, per the backlog's standing constraints.
 

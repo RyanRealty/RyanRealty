@@ -242,6 +242,8 @@ The listing detail page embeds whatever `getListingVideos()` returns. We do not 
 | getRecentActivity | unstable_cache | 60s | activity |
 | getBrokers | unstable_cache | 86400s (1d) | brokers |
 | getMarketReport | unstable_cache | 3600s | market |
+| collectCompanyScoreboardSignals | none (weekly ops ingest) | — | — |
+| insertImprovementLedgerRow / listOpenImprovementWindows / getChangeClassConfidence | none (loop ledger) | — | — |
 
 ### Redis (Upstash — already wired in middleware for rate limiting)
 
