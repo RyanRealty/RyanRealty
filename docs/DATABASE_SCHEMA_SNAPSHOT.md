@@ -1,6 +1,6 @@
 # Database schema snapshot
 
-**Generated:** 2026-08-15T21:01:08.478Z
+**Generated:** 2026-08-15T21:29:05.891Z
 
 **Source of truth:** auto-generated from `information_schema.columns` against the production Supabase project `dwvlophlbvvygjfxcrhm` (`ryan-realty-platform`).
 
@@ -2540,6 +2540,26 @@ Authoritative polygon geometries from City of Bend GIS, Deschutes County DIAL, O
 | `save_count` | integer | no | 0 |
 | `share_count` | integer | no | 0 |
 | `updated_at` | timestamp with time zone | no | now() |
+
+### `fleet_findings`
+
+| Column | Type | Nullable | Default |
+|---|---|---|---|
+| `id` | uuid | no | gen_random_uuid() |
+| `bot` | text | no |  |
+| `case_id` | text | yes |  |
+| `url` | text | no |  |
+| `viewport` | text | yes |  |
+| `expected` | text | no |  |
+| `observed` | text | no |  |
+| `severity` | text | no | 'minor'::text |
+| `evidence` | text | yes |  |
+| `domain` | text | yes |  |
+| `status` | text | no | 'new'::text |
+| `fingerprint` | text | no |  |
+| `node_id` | uuid | yes |  |
+| `created_at` | timestamp with time zone | no | now() |
+| `triaged_at` | timestamp with time zone | yes |  |
 
 ### `fsbo_listings`
 
