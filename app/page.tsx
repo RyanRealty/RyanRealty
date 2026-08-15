@@ -77,6 +77,7 @@ import {
 } from '@/components/site/v3'
 import { HomeAlertSheet } from './_v3/HomeAlertSheet.client'
 import { HomeHomesField } from './_v3/HomeHomesField'
+import { ArrivalIntent } from '@/components/site/v3/ArrivalIntent.client'
 import {
   D11_TOWNS,
   D11_TOWN_SLUG,
@@ -213,6 +214,7 @@ export default async function Home() {
     <>
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker pageType="homepage" />
+        <ArrivalIntent />
 
         {fieldItems.length > 0 || pulse ? (
           <HomeHomesField

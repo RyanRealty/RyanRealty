@@ -523,6 +523,7 @@ describe('design directive contracts', () => {
 
   it('D103 — homepage opens Field-first: house on the fold, towns as filters, no See homes for sale', () => {
     const page = readSrc('app/page.tsx')
+    expect(page).toMatch(/<ArrivalIntent/)
     expect(page).toMatch(/<HomeHomesField/)
     expect(page).toMatch(/heading="Homes for Sale in Central Oregon"/)
     expect(page).not.toMatch(/See homes for sale/)

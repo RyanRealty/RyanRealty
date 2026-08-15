@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { trackUserEvent } from '@/app/actions/track-user-event'
 import { hasAnalyticsConsent, getStoredConsent, autoGrantConsentForAdTraffic } from './CookieConsentBanner'
+import { lastThingFromHouse, lastThingFromSearch, writeLastThing } from '@/lib/site/arrival-intent'
 
 
 // localStorage key for the source-agnostic uuid that lets us stitch a visitor
@@ -33,10 +34,17 @@ export function getOrCreateSessionId(): string | null {
   if (typeof window === 'undefined') return null
   try {
     const existing = localStorage.getItem(RR_SESSION_ID_KEY)
-    if (existing && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(existing)) return existing
-    const fresh = uuidv4()
-    localStorage.setItem(RR_SESSION_ID_KEY, fresh)
-    return fresh
+    const id =
+      existing && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(existing)
+        ? existing
+        : uuidv4()
+    if (id !== existing) localStorage.setItem(RR_SESSION_ID_KEY, id)
+    try {
+      sessionStorage.setItem(RR_SESSION_ID_KEY, id)
+    } catch {
+      /* sessionStorage may be blocked; localStorage still stitches */
+    }
+    return id
   } catch {
     return uuidv4()
   }
@@ -173,10 +181,14 @@ export type FirstPartyEventType =
   | 'section_view'
   | 'cta_click'
   | 'save_listing'
+  | 'intent_declared'
+  | 'welcome_back'
 
 export type FirstPartyEventOptions = {
   /** MLS number when the event concerns one listing. */
   listingMls?: string | null
+  /** Street when known. Used to remember the last house for welcome-back. */
+  listingStreet?: string | null
   /** Scroll depth percent (scroll_depth events). */
   scrollDepthPct?: number
   /** Free-form event payload (e.g. { query, city } for search events). */
@@ -203,6 +215,22 @@ export function fireFirstPartyEvent(eventType: FirstPartyEventType, opts: FirstP
   if (consent === 'declined') return
   const { campaign, referrer, landingPage, fbclid } = captureSource()
   const pathname = window.location.pathname
+  try {
+    if (eventType === 'listing_view') {
+      writeLastThing(lastThingFromHouse({ path: pathname, street: opts.listingStreet }))
+    }
+    if (eventType === 'search') {
+      const query = typeof opts.metadata?.query === 'string' ? opts.metadata.query : null
+      writeLastThing(
+        lastThingFromSearch({
+          href: `${pathname}${window.location.search || ''}`,
+          query,
+        }),
+      )
+    }
+  } catch {
+    /* memory must never break tracking */
+  }
   const payload = {
     sessionId,
     sourceDomain: window.location.hostname.toLowerCase().replace(/^www\./, ''),
@@ -260,6 +288,12 @@ export default function VisitTracker({ userId }: Props) {
     // auto-granted so THIS first page view + all on-site intent scoring fires.
     // Respects an explicit prior decision (essential/declined not overridden).
     autoGrantConsentForAdTraffic()
+    try {
+      const vid = document.cookie.match(/(?:^|; )rr_vid=([^;]+)/)?.[1]
+      if (vid) sessionStorage.setItem('rr_vid', vid)
+    } catch {
+      /* first-party memory is best-effort */
+    }
     // The public visitor pipeline never tracks internal admin pages.
     if (pathname?.startsWith('/admin') || !pathname) return
     // Unified visitor_sessions / visitor_events pipeline — feeds the

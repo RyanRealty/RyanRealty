@@ -178,6 +178,7 @@ const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 // rejected above, 'essential' strips listing meta + metadata below.
 const ALLOWED_EVENT_TYPES = new Set<string>([
   'page_view', 'listing_view', 'search', 'scroll_depth', 'section_view', 'cta_click', 'identify', 'signin', 'save_listing',
+  'intent_declared', 'welcome_back',
 ])
 
 // Map the host of the page being tracked to a canonical source_domain bucket.
@@ -420,14 +421,20 @@ export async function POST(request: NextRequest) {
   // has a `_ga` cookie, client gtag is live — skip MP. If essential-only or
   // no `_ga` (denied / blocked / never loaded), server-fill the gap.
   // Never blocks the visitor response. No-op without GA4_API_SECRET.
-  if (eventType === 'page_view' || eventType === 'listing_view') {
+  const mirrorGa4 =
+    eventType === 'page_view' ||
+    eventType === 'listing_view' ||
+    eventType === 'intent_declared' ||
+    eventType === 'welcome_back'
+  if (mirrorGa4) {
     try {
       const { fireGa4Event, clientIdFromGaCookie, clientIdFromSessionId } = await import(
         '@/lib/ga4-measurement-protocol'
       )
       const gaCookie = request.cookies.get('_ga')?.value
       const fromCookie = clientIdFromGaCookie(gaCookie)
-      const clientHasGtag = !minimalOnly && !!fromCookie
+      const isView = eventType === 'page_view' || eventType === 'listing_view'
+      const clientHasGtag = isView && !minimalOnly && !!fromCookie
       if (!clientHasGtag) {
         const pagePath = (() => {
           try {
@@ -436,9 +443,14 @@ export async function POST(request: NextRequest) {
             return undefined
           }
         })()
+        const meta = body.metadata && typeof body.metadata === 'object' ? body.metadata : {}
+        const intent = typeof meta.intent === 'string' ? meta.intent : undefined
+        const source = typeof meta.source === 'string' ? meta.source : undefined
+        const thing = typeof meta.thing === 'string' ? meta.thing : undefined
         void fireGa4Event({
-          eventName: 'page_view',
+          eventName: isView ? 'page_view' : eventType,
           clientId: fromCookie || clientIdFromSessionId(sessionId),
+          userProperties: intent ? { intent } : undefined,
           eventParams: {
             page_location: pageUrl,
             page_title: body.pageTitle ?? undefined,
@@ -446,6 +458,9 @@ export async function POST(request: NextRequest) {
             page_path: pagePath,
             // First-party session stitch (optional custom dim later)
             session_id: sessionId.slice(0, 36),
+            intent,
+            source,
+            thing,
           },
         })
       }

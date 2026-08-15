@@ -26,6 +26,11 @@
       "blocking": true
     },
     {
+      "name": "ArrivalIntent",
+      "section": "In-page Buy / Sell / Look and welcome-back. Not a seventh pattern. Not a modal. Renders null on inbound Google/ad/email.",
+      "blocking": true
+    },
+    {
       "name": "HomeHomesField",
       "section": "Page-local Field opening. Amboqia field-size D11 H1, town name filters, first house fills the fold as the mosaic lead, V3Field with region count as caption.",
       "blocking": true
@@ -82,6 +87,7 @@
   },
   "sectionOrder": [
     "KbSectionTracker",
+    "ArrivalIntent (in-page Buy / Sell / Look, welcome-back)",
     "HomeHomesField (compact D11 H1, town filters, V3Field with count caption)",
     "V3Ledger (D11 towns)",
     "V3Instrument (level 2, region pulse, year overlay via buildRegionMedianChart)",
