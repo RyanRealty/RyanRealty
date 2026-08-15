@@ -2,11 +2,21 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — finish the place-family indexes
+# Current — 2026-08-15 (Grok) — accept against the goal
+
+**Matt:** Does the process test? Goal, then check. Visual vs perf vs behavior. Holistic catch-up so ad-hoc work does not strand.
+
+**Done:** COMPANY_IMPROVEMENT §Accept. Ledger row is the hypothesis. Accept by goal type. One open class per domain. Expired unlearned windows block a new class in that domain. No product code.
+
+**SHA:** `649c0a79` (docs). Feature `2ac16199` already on `origin/main`.
+
+**Skills read:** COMPANY_IMPROVEMENT, DEVELOPMENT_PROCESS.
+
+# Prior — 2026-08-15 (Grok) — finish the place-family indexes
 
 **Matt:** The restore stopped at an invented cutoff. Neighborhood and subdivision indexes were still 404. Finish the place doors. No seventh pattern.
 
-**SHA:** `ccc0f62b` on `origin/main` (indexes). Follow-up in this commit: subdivision hero counts from the community plat set (the county-wide indexable scan timed out on Vercel and baked two dashes). Parent restore `d2208216`.
+**SHA:** `68988f0b` on `origin/main`. Indexes landed in `ccc0f62b`. This SHA publishes subdivision hero counts from the community plat set. Parent restore `d2208216`. Production READY.
 
 **Done this land:**
 - `/neighborhoods` LIVE: 13 Bend districts, 355 active SFR, doors to `/cities/bend/{slug}`. Production walk 200, kb-root, Awbrey Butte $1,385,000.
