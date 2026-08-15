@@ -168,7 +168,7 @@ async function main() {
     push(`  - REQUIREMENTS.md rows covering this node (grep the gap ref) + the canon preflight for whatever the change touches`)
   }
   push('')
-  push('--- RULES (v1.5.1) ---')
+  push('--- RULES (v1.6.0) ---')
   push('1. One node per cycle. Claim before working; evidence before done.')
   push('2. Only environment-verified facts enter durable state (probe rows, screenshots, deploy READY).')
   push('3. Update CROSS_AGENT_HANDOFF Current before stopping. The chat is disposable; the graph is not.')

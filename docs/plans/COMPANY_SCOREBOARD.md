@@ -17,7 +17,8 @@
 
 | Figure | Value | Source |
 |---|---|---|
-| Version | **v1 OPEN** — 2 of 28 agent gaps closed (G1, G14; G15–G25 from the requirements harvest, G26–G28 from the 2026-08-15 adversarial audit), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list (Max-pinned) |
+| Version | **v1 OPEN** — 2 of 29 agent gaps closed (G1, G14; G15–G25 from the requirements harvest, G26–G28 from the adversarial audit, G29 fleet stand-up), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list (Max-pinned) |
+| Verification fleet | **Machinery live, bots pending Matt setup**: `/api/fleet/findings` + `fleet_findings` (hosted) + case-pack generator + intake (reproduce-or-reject). 5 paste-ready bot briefs in `ENTERPRISE_MAP/VERIFICATION-FLEET.md`. Certification now requires a clean fleet pass. | THE LOOP v1.6.0 |
 | Requirements coverage | **206 directives dispositioned**: 92 LOCKED · 38 VERIFIED · 43 PARTIAL · 25 MISSING (all gap-covered) · 7 GATED · 1 PARKED. Four rows demoted VERIFIED→PARTIAL by adversarial audit (R-025, R-095, R-137, R-203) | `ENTERPRISE_MAP/REQUIREMENTS.md` + G57 (Max-pinned) |
 | Stranded ledger windows | **0** (was 11 — all closed 2026-08-15 with §0 traces; `seo-aeo` unfrozen). Work graph: **28 nodes** · 1 done (G1) · 1 killed (audit probe) · next node G2 identity stitch | probe `ledger.expiredUnlearned` + loop-brief 2026-08-15T20:1xZ |
 | Adversarial audit (first R-040 pass) | **17 defects found by the machine, 0 by Matt**: 2 gate blind spots (fixed: Max pins), 3 enforcement bypasses (fixed: DB triggers + fail-closed DAL), 4 overstated register rows (corrected, product gaps G26–G28 opened), 8 stale packet/manifest claims (corrected). Escape recorded. | audit agents 2026-08-15 + `process_escape_ledger` |

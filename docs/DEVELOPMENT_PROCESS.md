@@ -1,6 +1,6 @@
 # THE LOOP — the canonical development process
 
-**Version: 1.5.1** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Company versions 2026-08-15 · Durable work graph 2026-08-15 · Requirements register 2026-08-15 · Adversarial verification standing 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
+**Version: 1.6.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Company versions 2026-08-15 · Durable work graph 2026-08-15 · Requirements register 2026-08-15 · Adversarial verification standing 2026-08-15 · External verification fleet 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
 
 All development in this repo — site code, the marketing brain, cron agents, producers, every Claude Code session — routes through this one self-improving cycle. This document is the single source of truth for HOW work happens. The sync gate (`scripts/check-process-canon.mjs`, G44) fails the build if the entry points stop pointing here, if a pointer's version drifts from this header, or if a new plan doc lands unregistered.
 
@@ -50,6 +50,13 @@ function that finds stranded seams.
 - **Mechanical teeth:** `insertImprovementLedgerRow` refuses a new class in a domain with
   expired unlearned windows; `closeImprovementLedgerRow` is the Learn step
   (`lib/data/loop/ledger.ts`); the packet probe counts `expiredUnlearned` per domain.
+  DB triggers (`loop_work_nodes_guard`, `site_improvement_ledger_guard`) enforce the same
+  rules below the DAL for any writer.
+- **External verification fleet:** Grok Bots walk production like users on routines
+  (`docs/plans/ENTERPRISE_MAP/VERIFICATION-FLEET.md`). Case packs generate from durable
+  state (`scripts/fleet-test-cases.ts`); findings POST to `/api/fleet/findings`; intake
+  (`scripts/fleet-intake.ts`) converts them to work nodes under reproduce-or-reject.
+  **A version certifies only with a clean fleet regression pass.**
 - **The weekly packet leads with version progress.** Versions close on **conditions,
   never dates** (§0: an invented timeline is a fabricated number).
 
@@ -208,6 +215,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.6.0 (2026-08-15)** — External verification fleet: Grok Bots (each on its own cloud computer/browser) walk production as users on routines. Machinery: `fleet_findings` table + `/api/fleet/findings` endpoint (fleet secret), `scripts/fleet-test-cases.ts` (regression pack from DONE nodes' accepts + core money paths + preflight walks), `scripts/fleet-intake.ts` (findings → work nodes, reproduce-or-reject). Bot briefs + rails in `ENTERPRISE_MAP/VERIFICATION-FLEET.md`. Certification now requires a clean fleet pass. Phase-2 (analytics sign-in, form E2E) stays Matt-gated.
 - **1.5.1 (2026-08-15)** — Adversarial verification standing (R-040 enforced): high-stakes classes get a fresh-context breaker pass before ship. Driven by the first such audit finding 17 defects in self-graded work: tail-row deletion blind spot in G56/G57 (fixed with Max pins), DAL-only state machine (fixed with DB triggers `loop_work_nodes_guard` + `site_improvement_ledger_guard`, migration 20260815210000), fail-open ledger guard (now fail-closed + one-open-per-domain), four overstated register rows (corrected; product gaps G26–G28 opened), stale packet sections including a revived reconnect ask (purged).
 - **1.5.0 (2026-08-15)** — Requirements register: 572 raw Matt directives harvested from the full corpus (five parallel readers), deduped to 203 dispositioned rows in `ENTERPRISE_MAP/REQUIREMENTS.md`; 25 MISSING rows drove new manifest gaps G15–G25 + seeded work nodes. G57 `ci:requirements-register` makes the register unshrinkable. Loop-brief prints the demand line.
 - **1.4.0 (2026-08-15)** — Durable work graph + memory hierarchy: in-flight work lives in `loop_work_nodes` (contracts, dependencies, audited transitions, evidence-required done), never in chat. Boot ritual is a command (`scripts/loop-brief.ts`); MEA mapping (Manager = brief + scores, Executor = disposable session, Auditor = accept + gates); additive-update rule; G56 `ci:version-manifest` kills silent plan shrinkage. Graph-engineering infra waves GO recorded (Matt 2026-08-15) — workflows in `.claude/workflows/`, ADR discipline via codebase-memory.

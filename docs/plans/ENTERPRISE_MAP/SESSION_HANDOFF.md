@@ -1,7 +1,7 @@
 # SESSION HANDOFF — Enterprise Map (automatic bootstrap)
 
 **Read this first** in any new Claude Code or Grok session continuing the enterprise map.  
-**Company start ritual (THE LOOP v1.5.1):** run `npx tsx scripts/loop-brief.ts` — it assembles handoff Current, the scoreboard headline, stranded windows, the durable work graph (`loop_work_nodes`), and the next node's contract. Deep context: [`docs/plans/COMPANY_SCOREBOARD.md`](../COMPANY_SCOREBOARD.md) + [`docs/plans/COMPANY_IMPROVEMENT.md`](../COMPANY_IMPROVEMENT.md). The map is still the universe. **The version target is [`VERSION-1.md`](VERSION-1.md)**; a domain with expired unlearned ledger windows is frozen until Learn closes them; G56 forbids silent manifest shrinkage.  
+**Company start ritual (THE LOOP v1.6.0):** run `npx tsx scripts/loop-brief.ts` — it assembles handoff Current, the scoreboard headline, stranded windows, the durable work graph (`loop_work_nodes`), and the next node's contract. Deep context: [`docs/plans/COMPANY_SCOREBOARD.md`](../COMPANY_SCOREBOARD.md) + [`docs/plans/COMPANY_IMPROVEMENT.md`](../COMPANY_IMPROVEMENT.md). The map is still the universe. **The version target is [`VERSION-1.md`](VERSION-1.md)**; a domain with expired unlearned ledger windows is frozen until Learn closes them; G56 forbids silent manifest shrinkage.  
 **Do not ask Matt whether to continue.** Execute until closed or blocked on Matt-only gates.  
 **Parallel admin work is IN SCOPE of the map — always.**  
 Claude (or anyone) may *edit* admin files in another session. That does **not** leave admin out of comprehensive coverage. CAP-011/024/025, ADMIN_PRODUCT, and all admin routes stay on the universe and advancement plan.

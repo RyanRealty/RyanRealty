@@ -1,8 +1,22 @@
-> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.5.1): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next node contract), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
+> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next node contract), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — First adversarial pass: the machine found 17 defects, teeth hardened
+# Current — 2026-08-15 (Grok) — Verification fleet: Grok Bots wired as the external Auditor (v1.6.0)
+
+**Matt:** Wants self-feeding external verification — grok bots browse like users after each iteration, output returns to the loop. Product confirmed installed (`/Applications/Grok Bot.app`, beta 2026-08-11; own cloud computer + browser per bot, routines, parallel threads; conversational setup, no public API).
+
+**Done (THE LOOP v1.6.0):**
+- **Pipeline live end-to-end (bots pending Matt's paste):** `fleet_findings` table (migration `20260815220000`, applied hosted) → POST `/api/fleet/findings` (`x-fleet-secret` = CRON_SECRET interim; validates expected/observed/url, fingerprint-deduped) → `scripts/fleet-intake.ts` (info→baseline; minor/major/p0→OPEN work node tagged `fleet:<fp>`, FIRST step reproduce-or-reject) → normal loop brief serves it.
+- **Case packs generate from durable state:** `scripts/fleet-test-cases.ts` → out/fleet/cases: core 7 (money paths incl. MoS verdict-match, LOOK-never-touch rails), regression 1 (from DONE nodes' accepts — grows automatically), preflight 9 (open browsable gaps).
+- **5 paste-ready bot briefs** in `ENTERPRISE_MAP/VERIFICATION-FLEET.md`: Walker Mobile/Desktop (daily), Money Path (2×daily, p0 on funnel breaks), Stats Truth (page-internal §0 contradictions), Regression Certifier (on-demand; **clean pass now required for version certification** per canon). Phase-2 Matt-gated: Analytics Reader (OAuth), Form E2E (test-identity lane), R-206 scheduling.
+- R-207 (PARTIAL→G29), G29 seeded (graph 29 nodes), Max pins G29/R-207, scoreboard fleet row, canon v1.6.0 + pointers, G44/G56/G57 green, 56 tests.
+
+**Matt's one setup step:** open Grok Bot app → create 5 bots → paste each brief → replace `<FLEET-SECRET>` (a session prints it on request) → set routines.
+
+**Do not:** put the fleet secret in any committed file; let bots touch forms/admin; treat a bot finding as verdict (reproduce-or-reject); certify a version without the fleet pass.
+
+# Prior — 2026-08-15 (Grok) — First adversarial pass: the machine found 17 defects, teeth hardened
 
 **Matt:** "When I catch things you haven't, I worry this is all prose." Correct instinct — R-040 (adversarial verify, LOCKED since July) was being violated by self-graded verification. ESCAPE `6c980ad6`.
 
@@ -21,7 +35,7 @@
 
 **Matt:** Bring every requirement from every session together; the system fills gaps automatically; never "five things so forget the 120 others"; he is done being the memory.
 
-**Done (THE LOOP v1.5.1):**
+**Done (THE LOOP v1.6.0):**
 - **`docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md`** — five parallel readers harvested the FULL corpus (handoff history, master goals, brain dumps, Broker OS plan, public locks, PROGRAM decisions, canon, rules, memory): 572 raw directives → **203 dispositioned rows** (91 LOCKED · 41 VERIFIED · 39 PARTIAL · 25 MISSING · 6 GATED · 1 PARKED) grouped by the 12 animals, each with source + coverage. Dispositions inherit source claims; certification re-verifies.
 - **Gaps filled automatically:** the 25 MISSING rows drove **G15–G25** onto VERSION-1 (search completeness, CMA/pricing residual, prospecting product, reporting collapse, one person surface + SendPanel, buyer packet build, public IA/mobile residual, SEO/AEO residual, email residue kill, admin dark mode, social fan-out calendar) + 11 seeded work nodes (graph now 24 nodes, G1 done).
 - **G57 `ci:requirements-register`** (in ci:gates + MECHANICAL_GATES): R-IDs contiguous (rows leave only as SUPERSEDED in place), closed disposition set, MISSING must cite an existing manifest gap. Namespace note: only MISSING rows' G-refs validate against the manifest (G44/G56 in evidence cells are mechanical gates).
@@ -39,7 +53,7 @@
 
 **Matt:** Long sessions lose context; objectives fall off the plate; wants the recursive plan runnable with graph engineering, everything remembered, no shortcut assumptions.
 
-**Done (THE LOOP v1.5.1, plan `durable_company_loop`):**
+**Done (THE LOOP v1.6.0, plan `durable_company_loop`):**
 - **Durable work graph:** `public.loop_work_nodes` (migration `20260815190000`, applied hosted via `scripts/analytics/apply-analytics-migration.mjs` — psql absent, pg driver used). Contract per node (objective/output/accept), audited transitions (done/killed terminal, evidence required), DAL `lib/data/loop/work-graph.ts`, pure rules + tests `work-node.ts`. Seeded G1–G13 from VERSION-1 (`scripts/seed-work-graph.ts`, idempotent upsert on version_gap).
 - **Session boot is a command:** `npx tsx scripts/loop-brief.ts` — handoff Current + scoreboard headline + stranded windows + work graph + next node contract. Matt's prompt is now "Run the loop."
 - **G56 anti-shortcut gate:** `scripts/check-version-manifest.mjs` (`ci:version-manifest`, in ci:gates + MECHANICAL_GATES). Below-floor CAPs / red INTs must be accounted in VERSION-1; G/M numbering contiguous; DONE needs a date; CERTIFIED needs a SHA. First run caught CAP-033 dropped — fixed into M6.

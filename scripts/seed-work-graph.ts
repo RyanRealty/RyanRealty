@@ -234,6 +234,15 @@ const SEEDS = [
     accept: 'Bend spot-check: served count matches its stated definition exactly (verified against boundary SFR query both ways).',
   },
   {
+    versionGap: 'G29',
+    domain: 'factory',
+    title: 'Stand the verification fleet up',
+    objective:
+      'REQUIREMENTS R-207 / VERIFICATION-FLEET.md: Matt creates the 5 starter bots from the briefs; prove the pipeline end-to-end with a synthetic finding (POST -> fleet_findings -> intake -> node -> rejected-as-test); first core+regression pass runs on routines.',
+    output: 'Five bots live on routines; first real findings triaged through intake.',
+    accept: 'A finding a bot POSTed appears as a work node via fleet-intake with reproduce-or-reject honored; regression pack ran clean or its findings are noded.',
+  },
+  {
     versionGap: 'G28',
     domain: 'transactions',
     title: 'Referral fee reaches the money math',
