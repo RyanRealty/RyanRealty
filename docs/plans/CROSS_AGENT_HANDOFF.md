@@ -6,7 +6,9 @@
 
 **Matt:** Lost trust. No more plans. Thorough, fast. Top of the Central Oregon market. Do not flatten.
 
-**Shipped this session (push next):**
+**SHA:** `0a888011` on `origin/main`. Production READY.
+
+**Shipped this session:**
 - Field photos print price + beds/baths/sqft + street on the photograph. Lead min 24rem.
 - City/ZIP map first paint is the listing photograph (`PlaceFieldMap` poster under dynamic load).
 - `getCoMarketAnnual` + `getCoFeatureAnnual` are mart-only. No `listings` scan.
