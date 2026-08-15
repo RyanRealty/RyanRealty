@@ -140,6 +140,11 @@
   /* Minimum touch target, thumb reachable at 390 (Apple HIG / Material). */
   --v3-tap: 44px;
 
+  /* Photographed Field. Thumbs in a map+list row, and the fold-filling lead. */
+  --v3-photo-thumb: 7.5rem;
+  --v3-photo-tile-min: 12rem;
+  --v3-photo-lead-min: 18rem;
+
   /* -- Radii. 10px control, 14px card, pill for chips. -- */
   --v3-radius-sm: 6px;
   --v3-radius-control: 10px;
@@ -411,6 +416,12 @@
 }
 
 .v3 .v3-heading--2 {
+  font-size: var(--v3-size-display-2);
+  line-height: var(--v3-leading-heading);
+}
+
+/* Field-opening H1: Amboqia, compact enough that photographs still fill the fold. */
+.v3 .v3-heading--field {
   font-size: var(--v3-size-display-2);
   line-height: var(--v3-leading-heading);
 }

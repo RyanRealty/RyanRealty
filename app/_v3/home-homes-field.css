@@ -1,0 +1,30 @@
+/* Homepage Field opening. Tokens inherit from the page's .v3 root. */
+.home-homes-field__head {
+  max-width: var(--v3-measure);
+  margin-inline: auto;
+  padding: var(--v3-space-lg) var(--v3-gutter) 0;
+}
+
+.home-homes-field__count {
+  margin: var(--v3-space-xs) 0 0;
+  font-size: var(--v3-size-body-sm);
+  line-height: var(--v3-leading-note);
+  color: var(--v3-ink-muted);
+}
+
+.home-homes-field__count-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  color: var(--v3-ink);
+}
+
+.home-homes-field__towns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v3-space-xs);
+  margin-top: var(--v3-space-sm);
+}
+
+.home-homes-field .v3-field {
+  padding-top: var(--v3-space-sm);
+}

@@ -22,14 +22,18 @@ export function ZipHomesField({
 }) {
   const pins = fieldMapPins(fieldItems)
   const missing = fieldItems.length - pins.length
+  const posterSrc = fieldItems.find((item) => item.photoSrc)?.photoSrc
   return (
     <>
+      <p className="v3-heading v3-heading--field v3-field-place-name">{zip}</p>
       <V3Field
         id="homes"
         ariaLabel={`Active single-family listings in ${zip}`}
         items={fieldItems}
         mapSlot={
-          fieldItems.length > 0 ? <PlaceFieldMap pins={pins} placeName={`ZIP ${zip}`} /> : undefined
+          fieldItems.length > 0 ? (
+            <PlaceFieldMap pins={pins} placeName={`ZIP ${zip}`} posterSrc={posterSrc} />
+          ) : undefined
         }
         mapNote={caption ?? undefined}
         footNote={

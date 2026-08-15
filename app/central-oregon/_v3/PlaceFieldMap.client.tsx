@@ -22,7 +22,7 @@ const Impl = dynamic(
   () => import('./PlaceFieldMapImpl').then((m) => m.PlaceFieldMapImpl),
   {
     ssr: false,
-    loading: () => <div style={{ width: '100%', height: '100%' }} aria-hidden="true" />,
+    loading: () => <div className="v3-field__map-pending" aria-hidden="true" />,
   },
 )
 

@@ -1,9 +1,11 @@
 /**
- * Homepage inventory Field. Houses open the page. The D11 H1 is compact so
- * photographs fill the fold. Towns are filters into the browse Field, not a
- * number poster. The region count is a caption, never a V3Figure hero.
+ * Homepage inventory Field. Houses open the page. The D11 H1 is Amboqia at
+ * field size so photographs fill the fold. Towns are filters into the browse
+ * Field, not a number poster. The region count is a caption, never a V3Figure
+ * hero. The first photographed house is the fold.
  */
-import { V3Button, V3Field, V3SourceLine, type V3FieldItem } from '@/components/site/v3'
+import { V3Button, V3Field, V3Heading, V3SourceLine, type V3FieldItem } from '@/components/site/v3'
+import './home-homes-field.css'
 
 export function HomeHomesField({
   heading,
@@ -24,19 +26,21 @@ export function HomeHomesField({
   const [firstTown, ...restTowns] = towns
 
   return (
-    <>
-      <header className="px-4 pt-4 sm:px-6">
-        <h1 className="font-display text-sm font-medium leading-5 text-foreground">
+    <div className="home-homes-field">
+      <header className="home-homes-field__head">
+        <V3Heading level={1} size="field">
           {heading}
-        </h1>
+        </V3Heading>
         {count ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            <span className="tabular-nums text-foreground">{count.value}</span>
+          <p className="home-homes-field__count">
+            <span className="home-homes-field__count-value tabular-nums text-foreground">
+              {count.value}
+            </span>
             {` ${count.label}`}
           </p>
         ) : null}
         {firstTown ? (
-          <nav aria-label="Towns" className="mt-3 flex flex-wrap gap-2">
+          <nav aria-label="Towns" className="home-homes-field__towns">
             <V3Button href={firstTown.href} variant="ghost">
               {firstTown.label}
             </V3Button>
@@ -56,6 +60,6 @@ export function HomeHomesField({
         emptyMessage="No photographed active single-family home with a list price and a street address returned on this refresh."
       />
       {count ? <V3SourceLine source={count.source} updatedAt={count.updatedAt} /> : null}
-    </>
+    </div>
   )
 }

@@ -61,6 +61,7 @@ export type {
   V3SourceLineProps,
   V3EyebrowProps,
   V3HeadingProps,
+  V3HeadingSize,
 } from './atoms'
 
 /**

@@ -322,12 +322,20 @@ export function V3Eyebrow({ children, onMedia, id, className }: V3EyebrowProps) 
 /* V3Heading                                                                   */
 /* -------------------------------------------------------------------------- */
 
+export type V3HeadingSize = 'display' | 'field'
+
 export type V3HeadingProps = {
   /**
    * 1 for the page answer, exactly once per page. 2 for a section title.
    * Deeper levels are a sign the page is doing two jobs.
    */
   level: 1 | 2
+  /**
+   * `display` is the locked Instrument/Stage scale. `field` is Amboqia at
+   * display-2 so a Homes or City Field can name the page without eating the
+   * photographs that are supposed to fill the fold.
+   */
+  size?: V3HeadingSize
   /** The heading text. Non-nullable: a heading is a name, so it cannot be empty. */
   children: NonNullable<ReactNode>
   /** Inverts for use over Stage media. */
@@ -335,6 +343,19 @@ export type V3HeadingProps = {
   /** Pair with aria-labelledby on the section that this heading names. */
   id?: string
   className?: string
+}
+
+function headingSizeClass(level: 1 | 2, size: V3HeadingSize): string {
+  switch (size) {
+    case 'field':
+      return 'v3-heading--field'
+    case 'display':
+      return level === 1 ? 'v3-heading--1' : 'v3-heading--2'
+    default: {
+      const _never: never = size
+      return _never
+    }
+  }
 }
 
 /**
@@ -345,6 +366,7 @@ export type V3HeadingProps = {
  */
 export function V3Heading({
   level,
+  size = 'display',
   children,
   onMedia,
   id,
@@ -352,7 +374,7 @@ export function V3Heading({
 }: V3HeadingProps) {
   const classes = cn(
     'v3-heading',
-    level === 1 ? 'v3-heading--1' : 'v3-heading--2',
+    headingSizeClass(level, size),
     onMedia && 'v3-heading--on-media',
     className,
   )

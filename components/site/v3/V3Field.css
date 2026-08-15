@@ -34,6 +34,18 @@
   padding: var(--v3-space-2xl) var(--v3-gutter) var(--v3-space-2xl);
 }
 
+/* Photographs are the fold. Do not open with a cream slab above them. */
+.v3.v3-field.v3-field--photos {
+  padding-top: var(--v3-space-md);
+}
+
+/* Place stamp above a map+list Field. Not the page H1. */
+.v3-field-place-name {
+  max-width: var(--v3-measure);
+  margin: var(--v3-space-lg) auto 0;
+  padding: 0 var(--v3-gutter);
+}
+
 /* Caption, not a number hero. The houses are the fold. */
 .v3-field__count {
   margin: 0 0 var(--v3-space-sm);
@@ -66,6 +78,12 @@
   .v3-field__frame {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
     align-items: start;
+  }
+
+  /* Photo-only Fields used to keep the two-column track and leave the second
+     column empty cream. One track, full measure. */
+  .v3-field__frame--photos {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -115,7 +133,18 @@
   gap: var(--v3-space-md);
 }
 
+@media (min-width: 56.25rem) {
+  .v3-field__photos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .v3-field__photo--lead {
+    grid-column: 1 / -1;
+  }
+}
+
 .v3-field__photo {
+  position: relative;
   display: grid;
   gap: var(--v3-space-2xs);
   min-width: 0;
@@ -127,12 +156,59 @@
 .v3-field__photo img {
   display: block;
   width: 100%;
-  min-height: 10rem;
+  min-height: var(--v3-photo-tile-min);
   aspect-ratio: 16 / 10;
   object-fit: cover;
   border-radius: var(--v3-radius-sm);
   background: var(--v3-wash);
   border: 1px solid var(--v3-edge);
+}
+
+.v3-field__photo--lead {
+  overflow: hidden;
+}
+
+.v3-field__photo--lead img {
+  min-height: var(--v3-photo-lead-min);
+  aspect-ratio: 16 / 9;
+}
+
+.v3-field__lead-cap {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: grid;
+  gap: var(--v3-space-3xs);
+  padding: var(--v3-space-md);
+  background: var(--v3-scrim-mid);
+  color: var(--v3-ink-on-media);
+}
+
+.v3-field__photo--lead .v3-field__photo-price {
+  font-family: var(--v3-font-display);
+  font-size: var(--v3-size-display-2);
+  font-weight: var(--v3-weight-body);
+  letter-spacing: var(--v3-track-display);
+  line-height: var(--v3-leading-heading);
+  color: var(--v3-ink-on-media);
+  text-shadow: var(--v3-media-shadow);
+}
+
+.v3-field__photo--lead .v3-field__photo-title {
+  font-size: var(--v3-size-body);
+  color: var(--v3-ink-on-navy-muted);
+}
+
+.v3-field__map-pending,
+.v3-field__map-poster {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--v3-wash);
+}
+
+.v3-field__map-poster {
+  object-fit: cover;
 }
 
 .v3-field__photo.is-active img,
@@ -147,7 +223,7 @@
 }
 
 .v3-field__photo-price {
-  font-size: var(--v3-size-body-sm);
+  font-size: var(--v3-size-body);
   font-weight: var(--v3-weight-num);
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
@@ -279,14 +355,14 @@
 }
 
 .v3-field__row--has-photo {
-  grid-template-columns: var(--v3-tap) minmax(0, 1fr);
+  grid-template-columns: var(--v3-photo-thumb) minmax(0, 1fr);
   column-gap: var(--v3-space-sm);
   align-items: center;
 }
 
 .v3-field__thumb {
-  width: var(--v3-tap);
-  height: var(--v3-tap);
+  width: var(--v3-photo-thumb);
+  height: var(--v3-photo-thumb);
   object-fit: cover;
   border-radius: var(--v3-radius-sm);
   background: var(--v3-wash);

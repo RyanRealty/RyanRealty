@@ -81,6 +81,7 @@ export function PlaceFieldMapImpl({
   placeName,
   centerLonLat,
   placePin,
+  posterSrc,
 }: {
   pins: readonly PlaceFieldMapPin[]
   boundary?: unknown
@@ -88,6 +89,8 @@ export function PlaceFieldMapImpl({
   centerLonLat?: readonly [number, number]
   /** Venue, trailhead, or clubhouse. Not a listing. */
   placePin?: { lat: number; lng: number; title: string }
+  /** Live listing photograph shown while the map script loads. */
+  posterSrc?: string
 }) {
   const router = useRouter()
   const { ready, error } = useGoogleMapsReady()
@@ -167,7 +170,20 @@ export function PlaceFieldMapImpl({
       </div>
     )
   }
-  if (!ready) return <div style={FILL} aria-hidden="true" />
+  if (!ready) {
+    if (posterSrc) {
+      return (
+        <img
+          className="v3-field__map-poster"
+          src={posterSrc}
+          alt=""
+          width={800}
+          height={600}
+        />
+      )
+    }
+    return <div className="v3-field__map-pending" aria-hidden="true" />
+  }
 
   return (
     <div style={FILL} role="group" aria-label={`Map of homes for sale near ${placeName}`}>

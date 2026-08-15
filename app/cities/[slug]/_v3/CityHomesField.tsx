@@ -23,14 +23,18 @@ export function CityHomesField({
 }) {
   const pins = fieldMapPins(fieldItems)
   const missing = fieldItems.length - pins.length
+  const posterSrc = fieldItems.find((item) => item.photoSrc)?.photoSrc
   return (
     <>
+      <p className="v3-heading v3-heading--field v3-field-place-name">{cityName}</p>
       <V3Field
         id="homes"
         ariaLabel={`Homes for sale in ${cityName}`}
         items={fieldItems}
         mapSlot={
-          fieldItems.length > 0 ? <PlaceFieldMap pins={pins} placeName={cityName} /> : undefined
+          fieldItems.length > 0 ? (
+            <PlaceFieldMap pins={pins} placeName={cityName} posterSrc={posterSrc} />
+          ) : undefined
         }
         mapNote={caption ?? undefined}
         footNote={

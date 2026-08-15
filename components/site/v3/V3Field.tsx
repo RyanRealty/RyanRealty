@@ -186,8 +186,8 @@ const PLOT_DISCLOSURE =
 
 /** Enough live photographs to be an inventory surface, not a lonely thumbnail. */
 const PHOTO_SURFACE_MIN = 3
-/** First-viewport mosaic. The list still holds the rest of the set. */
-const PHOTO_SURFACE_MAX = 6
+/** First-viewport mosaic: one lead plus a two-column set. The list still holds the rest. */
+const PHOTO_SURFACE_MAX = 7
 
 function hasListingPhoto(
   item: V3FieldItem,
@@ -331,7 +331,12 @@ export function V3Field({
       <section
         id={id}
         aria-label={ariaLabel}
-        className={cn(V3_ROOT_CLASS, 'v3-field', className)}
+        className={cn(
+          V3_ROOT_CLASS,
+          'v3-field',
+          usePhotoSurface && 'v3-field--photos',
+          className,
+        )}
       >
         {count ? (
           <p className="v3-field__count">
@@ -340,7 +345,13 @@ export function V3Field({
           </p>
         ) : null}
 
-        <div className="v3-field__frame" onMouseLeave={() => setActive(null)}>
+        <div
+          className={cn(
+            'v3-field__frame',
+            usePhotoSurface && 'v3-field__frame--photos',
+          )}
+          onMouseLeave={() => setActive(null)}
+        >
           <div className="v3-field__col">
             <div
               className={cn(
@@ -358,6 +369,7 @@ export function V3Field({
                       href={item.href}
                       className={cn(
                         'v3-field__photo',
+                        index === 0 && 'v3-field__photo--lead',
                         active === item.id && 'is-active',
                       )}
                       aria-label={`${item.priceLabel}, ${item.title}`}
@@ -368,12 +380,16 @@ export function V3Field({
                       <img
                         src={item.photoSrc}
                         alt=""
-                        width={480}
-                        height={360}
+                        width={index === 0 ? 1280 : 640}
+                        height={index === 0 ? 720 : 400}
                         loading={index < 3 ? 'eager' : 'lazy'}
                         fetchPriority={index < 3 ? 'high' : 'auto'}
                       />
-                      <span className="v3-field__photo-cap">
+                      <span
+                        className={cn(
+                          index === 0 ? 'v3-field__lead-cap' : 'v3-field__photo-cap',
+                        )}
+                      >
                         <span className="v3-field__photo-price">{item.priceLabel}</span>
                         <span className="v3-field__photo-title">{item.title}</span>
                       </span>
@@ -438,8 +454,8 @@ export function V3Field({
                           className="v3-field__thumb"
                           src={item.photoSrc}
                           alt=""
-                          width={88}
-                          height={88}
+                          width={120}
+                          height={120}
                           loading="lazy"
                         />
                       ) : null}

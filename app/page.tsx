@@ -14,8 +14,9 @@
  * / WebSite). MetadataBlock is not added because this route never computed
  * a market FAQ set. V3SectionTracker is a v3 island, not a seventh pattern.
  *
- * Field first (2026-08-14): compact D11 H1, town name filters, then photographed
- * homes. The region count is a Field caption, not a number hero. Chart atom
+ * Field first (2026-08-14): Amboqia field-size D11 H1, town name filters, then
+ * photographed homes. The first house fills the fold. The region count is a
+ * Field caption, not a number hero. Chart atom
  * stays on a level-2 Instrument UNDER those jobs. Chrome fills Value my home
  * only on Sell.
  *

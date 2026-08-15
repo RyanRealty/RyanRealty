@@ -2,28 +2,20 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-14 (Grok, page-grade loop) — READY `f76ecf4d`
+# Current — 2026-08-14 (Grok, restore Field richness) — shipping
 
-**Track:** Finish leftover page-grade P0s, ship, recapture, regrade. Do not restart the audit.
+**Track:** Matt called the post-page-grade site an ultra-basic template. Own the flatten. Restore photography, Amboqia, density. Do not reopen the P0s.
 
-**SHA:** `f76ecf4d` on `origin/main` (also `119f12ae`, `5f751b94`). Production READY (`npm run deploy:verify` exit 0). No schema.
+**Cause:** `119f12ae` (on top of `78522abf`) shrunk the home H1 to `text-sm`, deleted the fold-filling house, and collapsed `V3Field` photos from a 3-col mosaic to a 1-col stack inside a leftover 2-col frame (empty cream on the right). City first screen is breadcrumb + cream map box + 44px thumbs. Listing/Tetherow/Sell still have Stage photography.
 
-**Wired this loop:**
-- Home/browse/luxury/OH/our-homes/videos/price-drops: count is a caption; source after the Field; houses fill the fold.
-- Sell: one Value my home (form). Chrome seller-ask off exact `/sell`.
-- Cities index: name / median / MoS / count. Contact: no first-screen explain.
-- History first ask is Slice closed sales. Reports first ask is Live figures by city.
-- Broker leaf: AboutFaces + Call/Text. Bio below.
+**Wired this pass (not pushed yet):**
+- Home: Amboqia field-size H1, first house fills the fold, 2-col mosaic on desktop, count stays a caption.
+- City/ZIP: Amboqia place stamp (not a second H1), larger list photos, listing poster while the map loads.
+- P0s left closed: count-as-caption, one sell ask, no city essays, source off browse, broker face.
 
-**Regrade (prod `f76ecf4d`, 40 families, 80 PNGs):**
-- One-shop PASS. Wrong-grain PASS.
-- Product P0s left: **0**.
-- Universe P0 = **8**, all auto-fail 17 Beat theater on `beat_on` (Compass/Cascade/Redfin/Stellar/Duren/Beacon crops missing this firing).
-- Cards untracked under `docs/plans/PUBLIC_PRODUCT/looks/2026-08-14-page-grade-v24-regrade/cards/`. PNGs stay untracked. CMA scratch stays out.
+**Next:** Pathspec commit + `npm run push` + `deploy:verify`. Then recapture home/city. About, neighborhood Instrument cream slab, and subdivision empty plat are still thin. Do not `git add -A`.
 
-**Next:** Recapture the frozen Beat battery, fill matrices, then the 8 AF17s can close. Do not `git add -A`.
-
-**Skills read:** page-grade, public-product-os, git-commit.mdc, CROSS_AGENT_HANDOFF, SESSION_HANDOFF.
+**Skills read:** page-grade, public-product-os, frontend-design, design_system/ryan-realty, CROSS_AGENT_HANDOFF, SESSION_HANDOFF.
 
 # Current — 2026-08-14 (Grok, imagery canon) — local, not pushed
 
