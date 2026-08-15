@@ -2,20 +2,20 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-14 (Grok, restore Field richness) — local `ebb1416e`
+# Current — 2026-08-14 (Grok) — PUBLIC UI FROZEN after richness restore shipped
 
-**Track:** Matt called the post-page-grade site an ultra-basic template. Own the flatten. Restore photography, Amboqia, density. Do not reopen the P0s.
+**Matt:** Audits and instruction piles made the public site go backwards. Stop further public UI unless he names the page and the change.
 
-**Cause:** `119f12ae` (on top of `78522abf`) shrunk the home H1 to `text-sm`, deleted the fold-filling house, and collapsed `V3Field` photos from a 3-col mosaic to a 1-col stack inside a leftover 2-col frame (empty cream on the right). City first screen is breadcrumb + cream map box + 44px thumbs. Listing/Tetherow/Sell still have Stage photography.
+**Already on `origin/main` (this session, before the freeze landed):** product `04e760d9`, tip `bc964248`. Production READY (`npm run deploy:verify` exit 0). The older note that these were local-only was wrong.
 
-**SHA:** `ebb1416e` local, not pushed yet.
-
-**Wired:**
-- Home: Amboqia field-size H1, first house fills the fold, 2-col mosaic on desktop, count stays a caption.
-- City/ZIP: Amboqia place stamp (not a second H1), larger list photos, listing poster while the map loads.
+**What that ship did:**
+- Home: Amboqia field-size H1, fold-filling house with price on the photo, 2-col mosaic. Count stays a caption.
+- City/ZIP: Amboqia place stamp, larger list photos, map poster while Maps loads. Playwright still captures a gray map box (Maps script).
 - P0s left closed: count-as-caption, one sell ask, no city essays, source off browse, broker face.
 
-**Next:** `npm run push` + `deploy:verify`. Then recapture home/city. About, neighborhood Instrument cream slab, and subdivision empty plat are still thin. Do not `git add -A`.
+**Still thin:** About cutouts on cream, neighborhood Instrument cream slab, subdivision empty plat, homes-browse search chrome, city map without a live basemap in capture.
+
+**Do not:** page-grade, fix-wave, recapture, write a new rubric/OS, or push more public UI unless Matt names the page.
 
 **Skills read:** page-grade, public-product-os, frontend-design, design_system/ryan-realty, CROSS_AGENT_HANDOFF, SESSION_HANDOFF.
 
