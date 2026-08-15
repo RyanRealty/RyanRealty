@@ -1,9 +1,22 @@
 /**
- * Company-wide THE LOOP domains (v1.2.0).
+ * Company-wide THE LOOP domains (v1.2.1).
  *
  * Growth/SEO is one row. A class that cannot name a domain here is not
  * company work — it is an ad-hoc task. Canon: docs/plans/COMPANY_IMPROVEMENT.md
+ * A change that cannot name its blast-radius planes is not ready to start.
  */
+
+export const COMPANY_BLAST_RADIUS = [
+  'dal-stat',
+  'public-site',
+  'admin-crm',
+  'reporting',
+  'alerts-newsletters',
+  'ads-audiences',
+  'identity',
+] as const
+
+export type CompanyBlastRadiusPlane = (typeof COMPANY_BLAST_RADIUS)[number]
 
 export const COMPANY_IMPROVEMENT_DOMAINS = [
   'public-ux',

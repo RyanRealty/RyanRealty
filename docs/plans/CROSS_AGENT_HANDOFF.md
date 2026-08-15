@@ -1,8 +1,23 @@
-> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.2.0):** `docs/plans/COMPANY_SCOREBOARD.md` + `docs/plans/COMPANY_IMPROVEMENT.md`. Full open list: `ALL-OPEN-ITEMS.md`.
+> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.2.1):** `docs/plans/COMPANY_SCOREBOARD.md` + `docs/plans/COMPANY_IMPROVEMENT.md`. Blast-radius required. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — finish the place-family indexes
+# Current — 2026-08-15 (Grok) — company loop v1.2.1 blast-radius
+
+**Matt:** Search, saved searches, granular filters, listing alerts, CMA look, stat accuracy + one verification process, all polygons, Vercel/Supabase, analytics/GBP/social/reporting, CRM ease. Holistic: a change in analytics must land on the site, reporting, newsletters, and ads. Spark is ingest-only. Do not lose identity stitch (opens, clicks, Google, ads).
+
+**SHA:** `d35f85cf` on `main`. Parent company ingest `7c2bca5c`..`b163a2f6` on `origin/main`.
+
+**Done this land:**
+- THE LOOP **v1.2.1**. Same 12 domains. Named surfaces + `COMPANY_BLAST_RADIUS` (7 planes).
+- Probe now reads `listing_alerts`, `boundaries`, `search_areas`, `visitor_identity_map`, `email_events`, `visitor_events`, `cmas`, `meta_audience_log`.
+- Packet refresh 2026-08-15T14:45:03Z. Identity stitch **1/164**. Alerts **6** active. Boundaries **3,312**. `search_areas` **0**.
+
+**Do not:** `git add -A`. Do not mix place-index or LOOK leftovers. Do not send, post, spend, or OAuth. Do not invent a 13th domain or a second stats engine.
+
+**Skills read:** growth-loop, crm-e2e, database-canonical-reference, SESSION_HANDOFF, CROSS_AGENT_HANDOFF.
+
+# Prior — 2026-08-15 (Grok) — finish the place-family indexes
 
 **Matt:** The restore stopped at an invented cutoff. Neighborhood and subdivision indexes were still 404. Finish the place doors. No seventh pattern.
 

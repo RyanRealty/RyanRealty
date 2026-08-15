@@ -1,7 +1,7 @@
 # SESSION HANDOFF — Enterprise Map (automatic bootstrap)
 
 **Read this first** in any new Claude Code or Grok session continuing the enterprise map.  
-**Company start ritual (THE LOOP v1.2.0):** also read [`docs/plans/COMPANY_SCOREBOARD.md`](../COMPANY_SCOREBOARD.md) and [`docs/plans/COMPANY_IMPROVEMENT.md`](../COMPANY_IMPROVEMENT.md). The weekly packet is how the whole company is scored. The map is still the universe.  
+**Company start ritual (THE LOOP v1.2.1):** also read [`docs/plans/COMPANY_SCOREBOARD.md`](../COMPANY_SCOREBOARD.md) and [`docs/plans/COMPANY_IMPROVEMENT.md`](../COMPANY_IMPROVEMENT.md). The weekly packet is how the whole company is scored. A change names its blast-radius planes. The map is still the universe.  
 **Do not ask Matt whether to continue.** Execute until closed or blocked on Matt-only gates.  
 **Parallel admin work is IN SCOPE of the map — always.**  
 Claude (or anyone) may *edit* admin files in another session. That does **not** leave admin out of comprehensive coverage. CAP-011/024/025, ADMIN_PRODUCT, and all admin routes stay on the universe and advancement plan.
@@ -87,7 +87,7 @@ Full residual list: **`ALL-OPEN-ITEMS.md`**. Plan: **`synthesis/ADVANCEMENT_PLAN
 7. Re-census admin after 11F lands  
 8. Ship ACTIVE residuals one class at a time — never drop from ALL-OPEN  
 
-**Updated:** 2026-08-15 — company start ritual points at `docs/plans/COMPANY_SCOREBOARD.md` (THE LOOP v1.2.0). Map residuals unchanged.
+**Updated:** 2026-08-15 — company start ritual points at `docs/plans/COMPANY_SCOREBOARD.md` (THE LOOP v1.2.1, blast-radius). Map residuals unchanged.
 
 ## Matt-only blockers (stop and surface — do not invent approval)
 

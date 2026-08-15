@@ -1,6 +1,6 @@
 # THE LOOP — the canonical development process
 
-**Version: 1.2.0** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
+**Version: 1.2.1** · Locked 2026-06-09 · Topology locked 2026-06-10 · Company ingest 2026-08-15 · Holistic blast-radius 2026-08-15 · Supersedes every plan in `docs/plans/` (they are history, not process)
 
 All development in this repo — site code, the marketing brain, cron agents, producers, every Claude Code session — routes through this one self-improving cycle. This document is the single source of truth for HOW work happens. The sync gate (`scripts/check-process-canon.mjs`, G44) fails the build if the entry points stop pointing here, if a pointer's version drifts from this header, or if a new plan doc lands unregistered.
 
@@ -16,10 +16,10 @@ ingest -> diagnose -> prioritize -> fix-the-class -> verify -> ship -> measure -
    +----------------------------------------------------------------------------------------------+
 ```
 
-1. **Ingest.** Pull the **company** scoreboard, not only Growth: GA4, Search Console, web vitals, ads CPL, plus CRM stages, speed-to-lead, brain ready/executed/measured, social token health, sync freshness, GCI / commissions, TC / SkySlope freshness, form-catalog updates, broker count, `/join` convert, factory escapes. Weekly packet: `docs/plans/COMPANY_SCOREBOARD.md`. Domain table: `docs/plans/COMPANY_IMPROVEMENT.md`. Route-level series still land in `site_signal` (view).
-2. **Diagnose** with rules, not vibes. Growth rules still hold (impressions high + CTR < 2% → title/meta; position 5–15 + volume → depth; traffic high + conversion low → UX/CTA; LCP > 2.5s → perf). Company rules: `measured=0` → fix the learn path before new producers; Nurture-heavy + Lead near zero → CRM class; expired OAuth → Matt reconnect; delta unhealthy → P0; untraced public number → stop. Full table in `docs/plans/COMPANY_IMPROVEMENT.md`.
+1. **Ingest.** Pull the **company** scoreboard, not only Growth: GA4, Search Console, web vitals, ads CPL, plus CRM stages, speed-to-lead, brain ready/executed/measured, social token health, sync freshness, GCI / commissions, TC / SkySlope freshness, form-catalog updates, broker count, `/join` convert, factory escapes, **listing alerts, polygons, identity stitch, email open/click, CMA count**. Weekly packet: `docs/plans/COMPANY_SCOREBOARD.md`. Domain table + blast-radius: `docs/plans/COMPANY_IMPROVEMENT.md`. Route-level series still land in `site_signal` (view).
+2. **Diagnose** with rules, not vibes. Growth rules still hold (impressions high + CTR < 2% → title/meta; position 5–15 + volume → depth; traffic high + conversion low → UX/CTA; LCP > 2.5s → perf). Company rules: `measured=0` → fix the learn path before new producers; Nurture-heavy + Lead near zero → CRM class; expired OAuth → Matt reconnect; delta unhealthy → P0; untraced public number → stop; **alert with no `crm_person_id` → identity class; new stat not on the DAL → incomplete**. Full table in `docs/plans/COMPANY_IMPROVEMENT.md`.
 3. **Prioritize.** `score = reach x gap-to-benchmark x confidence / effort`, where confidence is the learned win-rate for that change-class from `site_improvement_ledger` **by `domain`**. A class that cannot name a `COMPANY_IMPROVEMENT_DOMAINS` value is not company work. Top candidate wins the cycle.
-4. **Fix the class, never the instance.** The unit of work is the root-cause cluster resolved everywhere it occurs, in one coordinated change. Honor the preflight contract (below).
+4. **Fix the class, never the instance.** The unit of work is the root-cause cluster resolved everywhere it occurs, **on every blast-radius plane it touches** (DAL, public site, admin/CRM, reporting, alerts/newsletters, ads audiences, identity). Honor the preflight contract (below).
 5. **Verify exhaustively before Matt sees it.** Every affected instance, mobile and desktop, every number traced to source (§0). tsc, tests, `npm run ci:gates`, build, and a rendered-browser pass on the affected surfaces. Matt confirms a class is resolved; he does not find the bugs.
 6. **Ship** per the live-environment rules (below). Draft-first for content and consumer-visible changes; explicit approval, then commit + push to `main` and watch the deploy go READY.
 7. **Measure.** Stamp the baseline metric + window before shipping. A/B where the surface supports it, else before/after.
@@ -51,7 +51,7 @@ THE LOOP is the meta-process. It runs as **five domain loops over one shared spi
 
 | The change touches | Load first (mandatory) |
 |---|---|
-| Database / data / a stat | `docs/DATABASE_SCHEMA_SNAPSHOT.md` + `docs/DAL_INDEX.md` + the relevant DAL function. Deliverable carries a §0 verification trace per figure. |
+| Database / data / a stat | `docs/DATABASE_SCHEMA_SNAPSHOT.md` + `docs/DAL_INDEX.md` + the relevant DAL function. Deliverable carries a §0 verification trace per figure. Name the blast-radius planes in `COMPANY_IMPROVEMENT.md`. A new public number that is not reachable from one DAL function on every plane that will show it is incomplete. |
 | A page or surface | The surface's mockup (`design_system/ryan-realty/ui_kits/<surface>/`) + its `parity.json` + the canonical data source + the existing component. |
 | Design / UI / layout | `design_system/ryan-realty/` specs + tokens. Headings via the display primitives. Components from `@/components/ui`. |
 | An audit finding | The actual file at the cited line, read directly — never acted on from a subagent's recall. |
@@ -122,7 +122,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 | `CMA_PIPELINE_TO_PRODUCTION_2026-07-30.md` | **live** — end-to-end goal for taking the CMA/BPO pipeline to production grade (registered here by a sibling session's request; owner is that session) |
 | `WESTSIDE_BACKLOG.md` | **live** — west-side dominance ranked backlog, generated 2026-07-28 from live competitor/market data |
 | `MOBILE_GRIND/` | **live** — mobile-audit defect-CLASS remediation package (state machine, per-class census tables, ledger). Matt's 2026-08-06 iPhone pass produced ~19 reported defects; each is treated as a sample of a class, so every step is census-first (enumerate every instance repo-wide) → fix all → gate the class. Every file within is covered by this row. |
-| `COMPANY_IMPROVEMENT.md` | **live** — THE LOOP v1.2.0 addendum: company domains, diagnose rules, cadence. Not a new OS. |
+| `COMPANY_IMPROVEMENT.md` | **live** — THE LOOP v1.2.1 addendum: company domains, named surfaces, blast-radius, diagnose rules, cadence. Not a new OS. |
 | `COMPANY_SCOREBOARD.md` | **live** — weekly company packet (overwrite, do not date-stamp a novel). Start ritual with SESSION_HANDOFF. |
 | `CROSS_AGENT_HANDOFF.md` | session-continuity (required agent handoff protocol) |
 | `CRM_BUILD_MISSION.md` | **live** — CRM delivery mission |
@@ -141,6 +141,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.2.1 (2026-08-15)** — Holistic blast-radius: a change names DAL, public site, admin/CRM, reporting, alerts/newsletters, ads audiences, and identity before it starts. Named surfaces (search, alerts, polygons, CMA look, Spark efficiency, identity stitch) score on the existing 12 domains. No new OS.
 - **1.2.0 (2026-08-15)** — Company ingest: THE LOOP scores every domain (not only Growth/SEO). Weekly packet `COMPANY_SCOREBOARD.md`, addendum `COMPANY_IMPROVEMENT.md`, `site_improvement_ledger.domain`. Five standing loops unchanged. No sixth session. No new OS.
 - **1.1.0 (2026-06-10)** — Loop topology locked: five domain loops (Growth, Demand, Nurture, Transaction, Experience) over one shared spine + cron substrate; one session per loop; contact-journey stage as the cross-loop funnel object; collision and session-discipline rules.
 - **1.0.0 (2026-06-09)** — Initial canon, distilled from `ultracode-site-consistency-kickoff.md` after the 06-09 audit was executed end to end. Ledgers + sync gate land in the same delivery.

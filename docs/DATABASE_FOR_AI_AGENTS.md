@@ -36,7 +36,10 @@
 | **Spark MLS API reference** | [docs/SPARK_API_REFERENCE.md](SPARK_API_REFERENCE.md) | n/a | n/a |
 | **CRM people on a TC deal** (who is on this file) | `tc_deal_people` by `deal_id` or `person_id` — DAL `getDealParties` / `getDealsForPerson` / `getPartyNamesByDealIds` | `deal_id`, `person_id`, `role` (`buyer` / `seller` / `other`). Unique `(deal_id, person_id)`. | live writes |
 | **Did OREF / ODS / Oregon Realtors revise a form?** | `tc_form_catalog_items` + `tc_form_versions.update_available` — apply a catalog on `/admin/forms` | `disposition` (`current` / `updated` / `new` / `retired`), `source_form_id`, `source_version_id` | last catalog paste |
-| **Company improvement experiment / class confidence** | `site_improvement_ledger` via `insertImprovementLedgerRow` / `getChangeClassConfidence` / `collectCompanyScoreboardSignals` (`lib/data/loop/`). Weekly packet: `docs/plans/COMPANY_SCOREBOARD.md`. | `domain` (closed set of 12), `change_class`, `predicted_delta`, `actual_delta` | per ship; window then learn |
+| **Company improvement experiment / class confidence** | `site_improvement_ledger` via `insertImprovementLedgerRow` / `getChangeClassConfidence` / `collectCompanyScoreboardSignals` (`lib/data/loop/`). Weekly packet: `docs/plans/COMPANY_SCOREBOARD.md`. A new public stat must land on one DAL and every blast-radius plane that will show it. | `domain` (closed set of 12), `change_class`, `predicted_delta`, `actual_delta` | per ship; window then learn |
+| **Listing alerts / saved-search sends** | `listing_alerts` via `lib/data/leads/listingAlerts.ts`. Do not send from legacy `saved_searches`. | `filters`, `filters_hash`, `crm_person_id`, `notification_frequency`, `is_active` | live |
+| **Did this visitor become a known person?** | `visitor_identity_map` + `crm_people` (Google / email-click / form). Same row feeds CAPI and Meta audiences. Path: `docs/MARKETING_LEAD_FLOW.md` §9. | `rr_vid`, `crm_person_id`, `user_id`, `identify_source` | live |
+| **Did they open or click what we sent?** | `email_events` (`event` = `open` / `click`) | `recipient_email`, `person_id`, `occurred_at` | live webhook |
 
 > **Don't aggregate raw `listings` for market reports.** The cache tables exist exactly so you don't have to. They're stamped with `methodology_version` and refreshed every 6 hours. Use them.
 

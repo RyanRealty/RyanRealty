@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  COMPANY_BLAST_RADIUS,
   COMPANY_IMPROVEMENT_DOMAINS,
   assertCompanyDomain,
   confidenceFromVerdicts,
@@ -22,6 +23,18 @@ describe('company improvement domains', () => {
       'data-sync',
       'factory',
       'license-voice',
+    ])
+  })
+
+  it('names the seven blast-radius planes so a stat change cannot land on one surface only', () => {
+    expect(COMPANY_BLAST_RADIUS).toEqual([
+      'dal-stat',
+      'public-site',
+      'admin-crm',
+      'reporting',
+      'alerts-newsletters',
+      'ads-audiences',
+      'identity',
     ])
   })
 

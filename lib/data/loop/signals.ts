@@ -91,6 +91,33 @@ export type CompanyScoreboardSignals = {
     formUpdates: number
     source: string
   }
+  search: {
+    status: SignalStatus
+    listingAlerts: number
+    listingAlertsActive: number
+    listingAlertsWithPerson: number
+    savedSearchesLegacy: number
+    searchAreas: number
+    boundaries: number
+    facetRefreshedAt: string | null
+    source: string
+  }
+  identity: {
+    status: SignalStatus
+    identityMap: number
+    identityMappedToCrm: number
+    emailEvents7d: number
+    emailOpens7d: number
+    emailClicks7d: number
+    visitorEvents7d: number
+    audienceLastRanAt: string | null
+    source: string
+  }
+  cma: {
+    status: SignalStatus
+    rows: number
+    source: string
+  }
 }
 
 const SOCIAL_TABLES = [
@@ -161,6 +188,21 @@ export async function collectCompanyScoreboardSignals(
     dealsRes,
     skyRes,
     formRes,
+    alertsRes,
+    alertsActiveRes,
+    alertsPersonRes,
+    savedSearchRes,
+    searchAreasRes,
+    boundariesRes,
+    facetRes,
+    identityRes,
+    identityCrmRes,
+    email7dRes,
+    emailOpenRes,
+    emailClickRes,
+    visitor7dRes,
+    audienceRes,
+    cmaRes,
     ...tokenResults
   ] = await Promise.all([
     countCrmStages(sb),
@@ -177,6 +219,21 @@ export async function collectCompanyScoreboardSignals(
     sb.from('tc_deals').select('id', { count: 'exact', head: true }),
     sb.from('skyslope_transactions').select('synced_at').order('synced_at', { ascending: false }).limit(1),
     sb.from('tc_form_catalog_items').select('id', { count: 'exact', head: true }).eq('disposition', 'updated'),
+    sb.from('listing_alerts').select('id', { count: 'exact', head: true }),
+    sb.from('listing_alerts').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    sb.from('listing_alerts').select('id', { count: 'exact', head: true }).not('crm_person_id', 'is', null),
+    sb.from('saved_searches').select('id', { count: 'exact', head: true }),
+    sb.from('search_areas').select('id', { count: 'exact', head: true }),
+    sb.from('boundaries').select('id', { count: 'exact', head: true }),
+    sb.from('search_facet_counts').select('refreshed_at').order('refreshed_at', { ascending: false }).limit(1),
+    sb.from('visitor_identity_map').select('rr_vid', { count: 'exact', head: true }),
+    sb.from('visitor_identity_map').select('rr_vid', { count: 'exact', head: true }).not('crm_person_id', 'is', null),
+    sb.from('email_events').select('id', { count: 'exact', head: true }).gte('occurred_at', since7d),
+    sb.from('email_events').select('id', { count: 'exact', head: true }).gte('occurred_at', since7d).eq('event', 'open'),
+    sb.from('email_events').select('id', { count: 'exact', head: true }).gte('occurred_at', since7d).eq('event', 'click'),
+    sb.from('visitor_events').select('id', { count: 'exact', head: true }).gte('event_at', since7d),
+    sb.from('meta_audience_log').select('ran_at').order('ran_at', { ascending: false }).limit(1),
+    sb.from('cmas').select('id', { count: 'exact', head: true }),
     ...SOCIAL_TABLES.map((table) => sb.from(table).select('expires_at,updated_at')),
   ])
 
@@ -303,6 +360,54 @@ export async function collectCompanyScoreboardSignals(
     source: 'tc_deals + skyslope_transactions.synced_at + tc_form_catalog_items disposition=updated',
   }
 
+  const searchError =
+    alertsRes.error ||
+    alertsActiveRes.error ||
+    alertsPersonRes.error ||
+    savedSearchRes.error ||
+    searchAreasRes.error ||
+    boundariesRes.error ||
+    facetRes.error
+  const search: CompanyScoreboardSignals['search'] = {
+    status: searchError ? 'unreadable' : 'ok',
+    listingAlerts: alertsRes.count ?? 0,
+    listingAlertsActive: alertsActiveRes.count ?? 0,
+    listingAlertsWithPerson: alertsPersonRes.count ?? 0,
+    savedSearchesLegacy: savedSearchRes.count ?? 0,
+    searchAreas: searchAreasRes.count ?? 0,
+    boundaries: boundariesRes.count ?? 0,
+    facetRefreshedAt: (facetRes.data?.[0]?.refreshed_at as string | null) ?? null,
+    source:
+      'listing_alerts + saved_searches (legacy) + search_areas + boundaries + search_facet_counts.refreshed_at',
+  }
+
+  const identityError =
+    identityRes.error ||
+    identityCrmRes.error ||
+    email7dRes.error ||
+    emailOpenRes.error ||
+    emailClickRes.error ||
+    visitor7dRes.error ||
+    audienceRes.error
+  const identity: CompanyScoreboardSignals['identity'] = {
+    status: identityError ? 'unreadable' : 'ok',
+    identityMap: identityRes.count ?? 0,
+    identityMappedToCrm: identityCrmRes.count ?? 0,
+    emailEvents7d: email7dRes.count ?? 0,
+    emailOpens7d: emailOpenRes.count ?? 0,
+    emailClicks7d: emailClickRes.count ?? 0,
+    visitorEvents7d: visitor7dRes.count ?? 0,
+    audienceLastRanAt: (audienceRes.data?.[0]?.ran_at as string | null) ?? null,
+    source:
+      'visitor_identity_map + email_events (event=open|click, 7d) + visitor_events 7d + meta_audience_log.ran_at',
+  }
+
+  const cma: CompanyScoreboardSignals['cma'] = {
+    status: cmaRes.error ? 'unreadable' : 'ok',
+    rows: cmaRes.count ?? 0,
+    source: 'cmas count',
+  }
+
   return {
     fetchedAt,
     crm,
@@ -321,5 +426,8 @@ export async function collectCompanyScoreboardSignals(
     gsc,
     sequences,
     tc,
+    search,
+    identity,
+    cma,
   }
 }

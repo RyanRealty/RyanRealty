@@ -5,7 +5,7 @@ description: Run ONE iteration of the Growth loop (Loop 1, the orchestrator) —
 
 # Growth loop — one iteration of THE LOOP, run by the orchestrator
 
-This is Loop 1 of the five-loop topology in `docs/DEVELOPMENT_PROCESS.md` §Loop topology (canon, v1.1.0+). Each cycle = ingest → diagnose → prioritize → fix-the-class → verify → ship → measure → learn → lock.
+This is Loop 1 of the five-loop topology in `docs/DEVELOPMENT_PROCESS.md` §Loop topology (canon, v1.2.1). Each cycle = ingest → diagnose → prioritize → fix-the-class → verify → ship → measure → learn → lock. A change names its `COMPANY_BLAST_RADIUS` planes (DAL, public site, admin/CRM, reporting, alerts/newsletters, ads audiences, identity) before it starts.
 
 **GRIND SEMANTICS (Matt directive 2026-06-10): a firing does not stop after one cycle.** Chain cycles back-to-back — ship, re-prioritize, take the next candidate — until one of these is true: (a) every remaining candidate is blocked on a Matt review or an open measurement window, (b) no candidate clears the score threshold (don't manufacture work), or (c) the session's context is nearly spent — in which case finish the in-flight commit, write the handoff, and spawn a fresh session to keep grinding (per `feedback_continuous_work_and_handoff`). Sleeping between wake-ups is for the BLOCKED state, not the default. "Did something then stopped" is the failure mode this paragraph exists to prevent.
 
@@ -26,7 +26,7 @@ NOT owned: page *structure* under active Experience migration (frozen — check 
 1. Read `docs/DEVELOPMENT_PROCESS.md` — the cycle, the topology, the preflight contract, the approval model. The canon outranks this skill; if they disagree, fix this skill.
 2. Read `docs/plans/COMPANY_SCOREBOARD.md` and `docs/plans/COMPANY_IMPROVEMENT.md` — company ingest, not Growth-only. A higher-scored non-SEO domain wins the cycle.
 3. Read `docs/EXPERIENCE_SYSTEM.md` §Rollout status — every page family currently mid-migration is **frozen to Growth** this iteration.
-4. Query `site_improvement_ledger` via `listOpenImprovementWindows` / `getChangeClassConfidence` from `lib/data/loop/` (not the `@/lib/data` barrel — file-size budget). Open experiments, their windows, anything whose window closed and needs its `actual_delta` written (that is a Learn step and takes priority over starting new work). Every new row must set `domain` from `COMPANY_IMPROVEMENT_DOMAINS`.
+4. Query `site_improvement_ledger` via `listOpenImprovementWindows` / `getChangeClassConfidence` from `lib/data/loop/` (not the `@/lib/data` barrel — file-size budget). Open experiments, their windows, anything whose window closed and needs its `actual_delta` written (that is a Learn step and takes priority over starting new work). Every new row must set `domain` from `COMPANY_IMPROVEMENT_DOMAINS`. A new statistic that reporting, newsletters, CMA, or ads will show must be one DAL function, not a second query.
 
 ### 1. Ingest the scoreboard
 Pull fresh — never from memory: GA4 (sessions, conversions, bounce by surface), Search Console (impressions, clicks, CTR, position by query and page), `web_vitals` by route, Meta/ads CPL by LP (read-only — actions on spend belong to Demand), FUB leads by source, competitor positions on target queries. Sources: the `site_signal` view and the `agent_insights` / marketing snapshot tables populated by the substrate crons (`marketing-snapshot-ga4`, `marketing-snapshot-gsc`, etc.). Respect data-access discipline: schema snapshot + DAL index first, no ad-hoc fishing.
@@ -48,7 +48,7 @@ Pull fresh — never from memory: GA4 (sessions, conversions, bounce by surface)
 Content-moat candidates from `data/growth/content-moat-backlog.md` enter this same scoring alongside scoreboard-derived candidates (evidence stamps in that file expire after 30 days — re-verify before scoring on them). New content pieces are drafts → `marketing_brain_skills/produce/` action row → Matt approval, per the backlog's standing constraints.
 
 ### 4. Fix the class, never the instance
-Preflight contract applies (mockup + parity.json for surfaces, DAL for data, §0 trace for every stat). Resolve the root-cause cluster everywhere it occurs in one coordinated change.
+Preflight contract applies (mockup + parity.json for surfaces, DAL for data, §0 trace for every stat). Resolve the root-cause cluster everywhere it occurs in one coordinated change, on every named blast-radius plane. Search filters stay on `lib/search/field-registry.ts`. Alert sends stay on `listing_alerts`. Identity stays on `visitor_identity_map` → `crm_people` → CAPI/audiences.
 
 ### 5. Verify exhaustively
 tsc, tests, `npm run ci:gates`, real `next build`, rendered-browser pass on every affected surface, mobile and desktop. Matt confirms classes are resolved; he does not find bugs.
