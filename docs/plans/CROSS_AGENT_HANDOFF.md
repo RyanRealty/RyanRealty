@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — ship class: one rebuild per category
+# Current — 2026-08-16 (cursor-loop-chain) — Awbrey 52/63/62/23 four-count finding rejected
+
+**Surface:** Cursor cloud `bc-fae5218e` (`cursor/loop-chain-2026-08-16t23-43-4fc7`). **Time:** 2026-08-16 ~23:55 UTC. Brief served ship class `fleet:public-ux:place-pages` (8 nodes). This session still had the old one-node prompt, so it claimed **only** node `42d2e8d5` (public-ux / fleet `ddee011ef2a4013fb6aaa12585ff1b3f`). The other 7 siblings stay open for the next ship-class cycle. No product change. Production already **READY** on the shipped neighborhood inventory class (`9cac09b1`). `npm run ci:gates` 224/224. No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). Finding `ddee011e` status rejected. No public-ux ledger insert (open window `2a5054ac`).
+
+**Done**
+- Fleet finding [p0]: Awbrey Butte hero/map 63, FAQ 62, visible cards 23, index 52, hero "homes for sale in Bend". FIRST STEP reproduce: it does not. Class already shipped (`getNeighborhoodPublicInventory`).
+- Production 2026-08-16T23:45Z (STALE): `/neighborhoods` tile **64 Active $1,363,000**, `/cities/bend` row **64 Active $1,363,000**, place hero **64 homes for sale in Awbrey Butte** + **Median list $1,363,000**, FAQ / Dataset Active Listings **64**, `#homes` list **64** unique inventory hrefs, hydrated map badge **64 ACTIVE LISTINGS**. 0 of 52 / 63 / 62 / 23 / "homes for sale in Bend". Probe `scripts/probe-awbrey-four-counts-prod.mjs` exit 0.
+- Screenshots `/opt/cursor/artifacts/awbrey_four_{place,index_tile,city_nbh,place_map}_{1280,390}.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** ship-class R-216 `63422a307`. Southern Crossing reject `391d941ad` (node `08704f1f` **done**). Awbrey 52/63/62 reject `1faedbd9b` (node `5688e089` **done**). Ridge plat parent-pulse `3f34bf653` (node `a8726dc3` **done**). Ridge plat SFR count `846193510` (node `390ea7a4` **done**). Awbrey index-vs-place reject `6f334748e` (node `2d90a914` **done**). listing down-payment `aba8c2222`. place list medians `eff056fb2`. page-grade process KILLED `9afe74a6a` (do not run `/page-grade`). NWX v8e logo-in-frame killed. Tetherow one-annual HOA. MOS withhold. Counted-set list. G33 `/admin/loop`. G32 seeded. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor) — ship class: one rebuild per category
 
 **Surface:** Cursor Grok. **Time:** 2026-08-16 ~16:30 PT. Matt ADD (R-216). Not a fleet node. No public-ux or factory ledger insert (open windows `2a5054ac` / `ba3435dd`). Loop stays **ARMED**. **`main` @** `63422a307` + Southern Crossing reject stamp from `bc-b448549b`.
 
