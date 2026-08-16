@@ -1,0 +1,127 @@
+{
+  "versionGap": "G32",
+  "requirement": "R-213",
+  "recordedAt": "2026-08-16T16:10:00.000Z",
+  "docs": "https://docs.x.ai/overview",
+  "brief": "docs/plans/ENTERPRISE_MAP/xai-stack.md",
+  "auth": "XAI_API_KEY → https://api.x.ai/v1",
+  "chokepoint": {
+    "image": "lib/grok-image.ts",
+    "video": "lib/grok-video.ts",
+    "text": "lib/grok-text.ts",
+    "voice": "lib/grok-voice.ts (add in this node)",
+    "produce": "lib/social/imagine-produce.ts"
+  },
+  "complete": false,
+  "note": "cancel-now rows are safe to cancel today. cancel-after-cutover rows still have a live code path — cancel only after G32 flips that path to xAI.",
+  "cancelNow": [
+    {
+      "vendor": "fal.ai",
+      "product": "Video/image model aggregator (Kling/Veo/etc host)",
+      "env": ["FAL_KEY"],
+      "int": "INT-032",
+      "paths": ["social_media_skills/content/automated-content-pipeline.md (docs only)"],
+      "why": "D10 already parked the zoo. No required live generate path. G13 probe treated FAL as optional.",
+      "xaiReplacement": "Imagine Video 1.5 + Imagine Images",
+      "cancelWhere": "https://fal.ai/dashboard/billing — cancel plan / revoke key"
+    },
+    {
+      "vendor": "Synthesia",
+      "product": "Stock-avatar talking-head video",
+      "env": ["SYNTHESIA_API_KEY", "SYNTHESIA_AVATAR_ID"],
+      "int": "INT-032",
+      "paths": ["app/actions/synthesia.ts", "app/components/admin/broker/BrokerVideoStudio.tsx"],
+      "why": "D10: Imagine is the camera. Avatar studio is residue. One historical video on the account (G13). No cron depends on it.",
+      "xaiReplacement": "Imagine Video 1.5 (native audio) or TTS + Remotion",
+      "cancelWhere": "https://www.synthesia.io — account / billing / cancel subscription"
+    }
+  ],
+  "cancelAfterCutover": [
+    {
+      "vendor": "ElevenLabs",
+      "product": "Victoria TTS + forced-alignment + call STT (scribe)",
+      "env": ["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID", "ELEVENLABS_VOICE_ID_VICTORIA", "ELEVENLABS_VOICE_ID_ELLEN"],
+      "int": "INT-019",
+      "paths": [
+        "lib/voice/alignment.ts",
+        "scripts/_voice_lib.py",
+        "app/api/twilio/recording/route.ts"
+      ],
+      "why": "Still the live VO + caption-align + recording-transcript path. CLAUDE.md §4 names Victoria. Do not cancel until grok-voice.ts is the only caller.",
+      "xaiReplacement": "POST /v1/tts (custom-clone Victoria or lock eve/ara) + with_timestamps; STT for Twilio recordings",
+      "cancelWhere": "https://elevenlabs.io/app/subscription"
+    },
+    {
+      "vendor": "Replicate",
+      "product": "Broker headshot stylizer, photo enhance, leftover listing-tour i2v",
+      "env": ["REPLICATE_API_TOKEN"],
+      "int": "INT-032",
+      "paths": [
+        "app/actions/broker-headshot.ts",
+        "scripts/_enhance-photo.mjs",
+        "video/listing-tour/scripts/prepare-tour.ts (if still imported)"
+      ],
+      "why": "Today banner/social already uses Imagine. Headshot + enhance still call Replicate. Cancel after those two move to Imagine edits / i2v.",
+      "xaiReplacement": "Imagine image edits + Imagine Video 1.5 i2v",
+      "cancelWhere": "https://replicate.com/account/billing"
+    },
+    {
+      "vendor": "OpenAI",
+      "product": "Vision photo tagging + leftover image/text calls",
+      "env": ["OPENAI_API_KEY"],
+      "int": "INT-021",
+      "paths": ["lib/photo-classification.ts"],
+      "why": "Not the social camera. Still a billed gen/vision vendor. Move classification to Grok vision, then cancel.",
+      "xaiReplacement": "Grok 4.6 image-input / Responses API",
+      "cancelWhere": "https://platform.openai.com/settings/organization/billing"
+    },
+    {
+      "vendor": "Anthropic",
+      "product": "Producer runtime, CMA judge/audit, inbox drafts",
+      "env": ["ANTHROPIC_API_KEY"],
+      "int": "INT-022",
+      "paths": [
+        "lib/marketing-brain/run-producer-core.ts",
+        "lib/cma/judge.ts",
+        "app/actions/crm-inbox.ts"
+      ],
+      "why": "One-product rule includes content text. Live money paths (CMA judge, producers). Cancel only after those call grok-text / Responses.",
+      "xaiReplacement": "grok-4.6 Responses API via lib/grok-text.ts",
+      "cancelWhere": "https://console.anthropic.com/settings/billing"
+    }
+  ],
+  "keepNotGen": [
+    {
+      "vendor": "xAI",
+      "why": "The one product. KEEP. INT-023.",
+      "env": ["XAI_API_KEY"]
+    },
+    {
+      "vendor": "Remotion",
+      "why": "Local compositor. Not a billed gen API."
+    },
+    {
+      "vendor": "Unsplash / Pexels / Shutterstock",
+      "why": "Licensed stock, not generative. INT-031. Unsplash is the live stock path. Do not cancel unless Matt wants Imagine for every still.",
+      "env": ["UNSPLASH_ACCESS_KEY", "PEXELS_API_KEY", "SHUTTERSTOCK_API_KEY"]
+    },
+    {
+      "vendor": "Twilio / Spark / Meta / Google Maps / Supabase / Vercel",
+      "why": "Product rails. Out of G32 scope."
+    },
+    {
+      "vendor": "Apify / BatchData",
+      "why": "Scrape + skip-trace. Not image/video/voice gen."
+    }
+  ],
+  "alreadyParkedNoBillAction": [
+    {
+      "vendor": "HeyGen",
+      "why": "Cursor plugin skills exist. No HEYGEN_* key in .env.example / INT map. Nothing to cancel unless Matt has a HeyGen login outside this repo."
+    },
+    {
+      "vendor": "Vertex Imagen / Veo",
+      "why": "INT-037 TOOLING. VERTEX_PROJECT_ID in example. No heavy runtime path. Leave parked; no separate subscription if nothing is billed."
+    }
+  ]
+}

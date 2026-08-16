@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-grok-town-doors) — town doors at rest + daily launch cap removed
+# Current — 2026-08-16 (cursor) — G32 seeded: xAI-only gen stack + cancel list
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~09:15 PT. Matt ADD (R-205): one generative product — xAI. Loop stays **ARMED**. This session seeded G32; it did not claim G16 and did not fire a second sentinel (bc-406a42b5 already launched).
+
+**Done**
+- R-213 + G32 + M7 on the version/register. Max pins **G32 · M7** and **R-213**.
+- M3 CHANGE: park-in-practice lifted for xAI only. Rebuild is Imagine + Voice, not ElevenLabs Turbo. R-045 stays LOCKED.
+- Expert brief `docs/plans/ENTERPRISE_MAP/xai-stack.md` (required read for social-presence). Official docs https://docs.x.ai/overview.
+- Cancel list SoR `docs/plans/ENTERPRISE_MAP/xai-stack-accept.json`. **Cancel now:** fal.ai, Synthesia. **Cancel after cutover:** ElevenLabs, Replicate, OpenAI, Anthropic. **Keep:** xAI, Remotion, licensed stock, product rails.
+- Queue: `Matt ADD` titles priority 1 (with fleet majors), so G32 outranks planned G16 when the next brief runs.
+- Node title: `Matt ADD [major]: xAI-only image, video, voice, and content gen`. Domain social-presence. Accept is the cancel list + chokepoint.
+
+**Do not:** cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, COMPANY_IMPROVEMENT ADD verb, xAI overview/models/Imagine/TTS.
+
+# Prior — 2026-08-16 (cursor-grok-town-doors) — town doors at rest + daily launch cap removed
 
 **Surface:** Cursor Grok (`cursor-grok-town-doors-20260816`). **Time:** 2026-08-16 ~08:57 PT. Brief served fleet finding `071bd6f0` (public-ux), not G16. One node only. Product **`b33fe504`**. Baseline **`eddccdbd`**. **`main` @** `9ac608ab`. Vercel Production **READY** (`dpl_49opLtX7FCPXPmAMaB5hQVaL1zGq`, aliases `ryan-realty.com` + `ryanrealty.vercel.app`). Product already live; this commit is the handoff. No hosted migration. Loop stays **ARMED**. Daily launch cap **removed** (Matt 2026-08-16). Node **done**.
 

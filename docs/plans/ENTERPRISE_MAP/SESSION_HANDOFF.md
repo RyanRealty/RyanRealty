@@ -96,7 +96,7 @@ Full residual list: **`ALL-OPEN-ITEMS.md`**. Plan: **`synthesis/ADVANCEMENT_PLAN
 - Newsletter look-approve after G31 (enroll/send stay Matt-manual)  
 - Ad spend PARKED for v1 · public publish · outbound to real people  
 - TC cutover HOLD until TMS thoroughly tested (do not unpause TC_BUILDOUT)  
-- Video silence = park-in-practice (no rebuild unless Matt says rebuild)  
+- Video rebuild is xAI-only (M3 CHANGE 2026-08-16; G32). Public posts still approval-gated  
 - GO on agentic graph workflows if executing P-005 waves  
 
 Everything else: execute.

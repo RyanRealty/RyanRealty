@@ -1,7 +1,7 @@
 # Company v1 — the first certified whole-company version
 
 **Status: OPEN** (flips to CERTIFIED by the certification pass below, in one commit)
-**Max:** G31 · M6 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
+**Max:** G32 · M7 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
 **Process:** THE LOOP v1.6.0 §Company versions (`docs/DEVELOPMENT_PROCESS.md`)
 **Substrate:** the Enterprise Map matrices (`matrix/CAPABILITIES.md` CAP-001…035, `matrix/INTEGRATIONS.md` INT-001…037, `matrix/FACTORY.md`), inventories regenerated 2026-08-08T21:00Z; live figures carry their own stamps in `COMPANY_SCOREBOARD.md` (single source — counts are not restated here).
 **Demand side:** [REQUIREMENTS.md](REQUIREMENTS.md) — every harvested Matt directive, dispositioned; the current count and split live in that file's G57 gate output, not here. MISSING/PARTIAL rows cite the gap below that carries them.
@@ -85,6 +85,7 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | G29 | Stand the verification fleet up: Matt creates the 6 starter bots from VERIFICATION-FLEET.md briefs; endpoint proven with a synthetic finding end-to-end (POST → table → intake → node → rejected-as-test); first core+regression pass runs | REQUIREMENTS R-207; VERIFICATION-FLEET.md | factory |
 | G30 | **DONE 2026-08-15** — Flow Prover lane: designated fleet test identity recognized at the intake chokepoint (tag + all-channel suppression), wake-task skip, auto-enroll refusal, packet-count exclusion — all four guards proven live (fixture person 61855: tagged, suppressed, 0 tasks, enroll refused, excluded). Flows case pack + Bot 6 brief + `fleet-flow-verify` backend check shipped. | REQUIREMENTS R-208; chokepoint proof 2026-08-15 | factory |
 | G31 | Newsletter redesign (look only): restyle the branded email shell + admin rendered preview so Matt can approve the look. Enroll and send stay Matt-manual after that approve. Zero sends in this node. | REQUIREMENTS R-212; R-159 | nurture |
+| G32 | xAI-only generative stack: image, video, voice, and content text run through one product (`XAI_API_KEY`). Inventory every third-party gen vendor, produce the cancel list, put all new generate calls through `lib/grok-*.ts`. Executor must be expert in https://docs.x.ai/overview. | REQUIREMENTS R-213; D10 | social-presence |
 
 Matt-only (steered 2026-08-16 — CHANGE/HOLD/PARK/DONE recorded below; nothing else waits):
 
@@ -92,10 +93,11 @@ Matt-only (steered 2026-08-16 — CHANGE/HOLD/PARK/DONE recorded below; nothing 
 |---|---|---|
 | M1 | **CHANGE 2026-08-16** — first-cohort blast is no longer the v1 gate. Loop work is G31 redesign. After Matt approves the look, he enrolls and sends manually. | CAP-020 |
 | M2 | **HOLD 2026-08-16** — TC cutover held until the TMS has been thoroughly tested. Do not unpause TC_BUILDOUT. Vault stays SoR; SkySlope stays live TMS. | CAP-012 |
-| M3 | **SILENCE 2026-08-16** — park-in-practice. R-045 stays LOCKED. Docket remains (park $0 / rebuild $0.05/1k Turbo + $5/row). No rebuild until Matt says rebuild. | CAP-017 |
+| M3 | **CHANGE 2026-08-16** — park-in-practice lifted for xAI only. Rebuild path is Grok Imagine + Voice (`XAI_API_KEY`), not ElevenLabs Turbo. R-045 stays LOCKED (producers stay off the brain REGISTRY). Public posts still approval-gated. | CAP-017; G32 |
 | M4 | **PARKED 2026-08-16** — no ad spend for v1. Audience wiring and the Meta heartbeat continue. | CAP-018 |
 | M5 | **DONE 2026-08-16** — ryan-realty.com has been the live host for a long time (A 76.76.21.21, `server: Vercel`). DNS cutover is not an open gate. | CAP-001 |
 | M6 | **REVIEWED 2026-08-16** — Matt said the OAuth/env set is connected. Live probe: TikTok / YouTube / X / GBP have rows + refresh tokens (KEEP, heartbeat). LinkedIn has a row but expired 2026-07-09 with **no refresh token** (PARK). Threads / Pinterest / Nextdoor auth **empty** (PARK). RentCast / SchoolDigger / Inngest are env keys, not OAuth — still PARK as product paths. No reconnect ask. | INT PARK list + CAP-033 |
+| M7 | **ADD 2026-08-16** — one generative product: xAI (text, voice, Imagine image, Imagine video). Cancel the zoo. Cancel list is G32 accept. | R-213; D10 |
 
 There is no OAuth reconnect task. Tokens that can refresh self-renew (Matt 2026-08-15). The prior M1-as-reconnect was an escape — see `process_escape_ledger`.
 

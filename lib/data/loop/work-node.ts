@@ -61,8 +61,16 @@ export function assertTransition(from: WorkNodeState, to: WorkNodeState): void {
  * beats everything, a major beats gap order. Lower = served first.
  */
 export function fleetNodePriority(title: string): number {
-  if (title.startsWith('Fleet finding [p0]')) return 0
-  if (title.startsWith('Fleet finding [major]')) return 1
+  if (title.startsWith('Fleet finding [p0]') || title.startsWith('Matt ADD [p0]') || title.startsWith('Matt CHANGE [p0]')) {
+    return 0
+  }
+  if (
+    title.startsWith('Fleet finding [major]') ||
+    title.startsWith('Matt ADD') ||
+    title.startsWith('Matt CHANGE')
+  ) {
+    return 1
+  }
   return 2
 }
 

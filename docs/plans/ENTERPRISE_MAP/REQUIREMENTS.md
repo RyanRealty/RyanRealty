@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-212 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-213 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -300,7 +300,8 @@
 | R-210 | Full co-evolution: bot findings enter through the steering verbs (intake at every loop boot; p0/major findings outrank planned work; regressions carry the CHANGE duty into their node); the loop rewrites full bot briefs in code, served live — bots follow next heartbeat, nothing re-pasted | Matt 2026-08-15 ("everything grows together") | VERIFIED | `/api/fleet/briefs/[bot]` + `fleet-intake-core` in loop-brief boot + `fleetNodePriority` queue ordering |
 | R-211 | THE LOOP stays DISARMED until Matt explicitly arms it ("arm the loop"). After that word, it stays armed until he says "disarm the loop". Planning-mode hold: infrastructure may be built and pushed, but no unattended iteration launches while `LOOP_SENTINEL=off`. One iteration ran before the hold landed (bc-13c50db8 completed G2 cleanly, 2026-08-16 02:20–02:45 UTC); the system was disarmed the same hour, then armed on Matt's word | Matt 2026-08-15 ("we are still in planning mode … we don't want to be executing a loop yet"); Matt 2026-08-16 21:52 PT ("Arm the loop") | LOCKED | Armed 2026-08-16 21:52 PT: `LOOP_SENTINEL=on` written to Vercel production; bake deploy follows this row. Disarm requires the same explicit word. Silence never arms or disarms |
 | R-212 | Newsletter redesign is loop work: restyle the branded email shell + admin rendered preview; Matt approves the look; enroll and send stay Matt-manual. Zero agent sends | Matt 2026-08-16 (M1 CHANGE) | MISSING | G31 |
+| R-213 | One generative product: xAI only (image, video, voice, content text) via `XAI_API_KEY`. Social/video/VO/stills go through `lib/grok-*.ts`. Third-party gen vendors are inventoried and canceled. Executor reads https://docs.x.ai/overview before any generate call | Matt 2026-08-16 ADD; D10 | MISSING | G32 |
 
 ## Standing Matt gates (never agent-closed)
 
-Outbound to real people · public posts · ad spend · OAuth grants/new-platform connects · newsletter look-approve after G31 (M1) · TC cutover HOLD until TMS tested (M2) · video silence = park-in-practice (M3; rebuild only if Matt says rebuild) · ads spend PARKED for v1 (M4) · ~~DNS timing (M5)~~ DONE 2026-08-16 · OAuth/env review recorded (M6; no reconnect ask) · press pitches · GBP/Zillow/Yelp profile corrections · severity-gate loosening · referral agreements.
+Outbound to real people · public posts · ad spend · OAuth grants/new-platform connects · newsletter look-approve after G31 (M1) · TC cutover HOLD until TMS tested (M2) · video rebuild is xAI-only (M3 CHANGE 2026-08-16; G32) · ads spend PARKED for v1 (M4) · ~~DNS timing (M5)~~ DONE 2026-08-16 · OAuth/env review recorded (M6; no reconnect ask) · xAI-only gen stack (M7 / R-213) · press pitches · GBP/Zillow/Yelp profile corrections · severity-gate loosening · referral agreements.

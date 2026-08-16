@@ -243,6 +243,17 @@ const SEEDS = [
     accept: 'Rendered preview at 375 and 640 is the look Matt can approve from /admin/newsletters/[id]. Brand-voice clean. Zero newsletter sends in the node evidence.',
   },
   {
+    versionGap: 'G32',
+    domain: 'social-presence',
+    title: 'Matt ADD [major]: xAI-only image, video, voice, and content gen',
+    objective:
+      'REQUIREMENTS R-213 / Matt 2026-08-16 ADD: one generative product — xAI (https://docs.x.ai/overview). Image, video, voice, and content text go through lib/grok-*.ts. Inventory every third-party gen vendor. Produce the cancel list in xai-stack-accept.json. Executor must read the xAI docs (overview, models, Imagine, TTS, STT, custom voices) before writing a generate call. Do not invent a listing. Publishes stay approval-gated.',
+    output:
+      'Cancel list Matt can act on (cancel-now vs cancel-after-cutover). Chokepoint for image + video + voice + text. New generate paths refuse ElevenLabs / Replicate / fal / Synthesia / OpenAI images.',
+    accept:
+      'xai-stack-accept.json lists every billed gen vendor with cancel-now | cancel-after-cutover | keep-not-gen. cancel-now rows have no required live path. lib/grok-voice.ts exists. Required reads in xai-stack.md were loaded. No public post and no outbound in the evidence.',
+  },
+  {
     versionGap: 'G29',
     domain: 'factory',
     title: 'Stand the verification fleet up',

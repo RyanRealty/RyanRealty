@@ -62,7 +62,7 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 | CAP-014 | FSBO hygiene continuous | ACTIVE |
 | CAP-015 | Publish identity + ready drain; measured status class | PARTIAL — status flip **shipped** |
 | CAP-016 | NO_SCRIPT residual | ACTIVE |
-| CAP-017 | Video silence = park-in-practice | PARK-IN-PRACTICE (Matt silence 2026-08-16) |
+| CAP-017 | Video rebuild is xAI-only (G32). R-045 stays LOCKED | ACTIVE (G32) |
 | CAP-018 | Ads spend PARKED for v1; audience wiring continues | PARKED (Matt 2026-08-16) |
 | CAP-019 | ~~Reconnect expired OAuth~~ **SCRUBBED 2026-08-15** — tokens auto-refresh via daily heartbeat (verified live); LinkedIn PARKED (no provider refresh token). Residual: publish cadence productization | ACTIVE |
 | CAP-020 | Newsletter redesign G31; look-approve then Matt-manual send | ACTIVE (G31) + M1 look-approve |

@@ -66,6 +66,7 @@ export const DOMAIN_REQUIRED_READS: Record<CompanyImprovementDomain, readonly st
   'social-presence': [
     'social_media_skills/platform-best-practices/SKILL.md',
     'CLAUDE.md (§4 video rules, §5 brain pipeline)',
+    'docs/plans/ENTERPRISE_MAP/xai-stack.md',
   ],
   'sales-insights': [
     'docs/DATABASE_FOR_AI_AGENTS.md',

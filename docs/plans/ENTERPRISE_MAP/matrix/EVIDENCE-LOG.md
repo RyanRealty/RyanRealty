@@ -427,3 +427,14 @@ Source: Matt 2026-08-16 session. Recorded in VERSION-1 + REQUIREMENTS R-212. No 
 | M5 DONE | ryan-realty.com live: A `76.76.21.21`, `server: Vercel` (curl 2026-08-16; 403 is bot-UA screen) | CAP-001 residual closed |
 | M6 REVIEWED | TikTok/YT/X/GBP rows + refresh. LinkedIn expired 2026-07-09 no refresh. Threads/Pin/Nextdoor empty. | live auth tables 2026-08-16 |
 | G27 | **Not done.** Public CS lockdown 2026-08-02. Pulse `active_count` still includes CS. Bend pulse 486; City=Bend SFR CS = 5. Node `2891d28e` stays open. | `refresh_market_pulse` FILTER Active+CS; probe this session |
+
+## 2026-08-16 — Matt ADD: xAI-only gen stack (G32 / R-213 / M7)
+
+Source: Matt 2026-08-16. One product: xAI (https://docs.x.ai/overview). Cancel list SoR `xai-stack-accept.json`. Expert brief `xai-stack.md`.
+
+| Move | Recorded | Evidence |
+|---|---|---|
+| M7 ADD | Image, video, voice, content text through `XAI_API_KEY` only | R-213 MISSING→G32 |
+| M3 CHANGE | Park-in-practice lifted for xAI; rebuild is Imagine + Voice, not ElevenLabs Turbo | VERSION-1 M3; CAP-017 |
+| Cancel-now | fal.ai + Synthesia — no required live generate path | xai-stack-accept.json |
+| Cancel-after-cutover | ElevenLabs, Replicate, OpenAI, Anthropic | same SoR |

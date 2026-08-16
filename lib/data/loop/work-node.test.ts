@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   assertTransition,
   assertWorkNodeDraft,
+  fleetNodePriority,
   isCloudAgentSession,
   isLegalTransition,
   isStaleInProgress,
@@ -53,6 +54,15 @@ describe('work-node state machine (audited transitions)', () => {
 
   it('open cannot jump straight to done — work is claimed before it is finished', () => {
     expect(isLegalTransition('open', 'done')).toBe(false)
+  })
+})
+
+describe('queue priority (fleet + Matt steering outrank planned gaps)', () => {
+  it('serves Matt ADD/CHANGE with fleet majors, ahead of planned G-rows', () => {
+    expect(fleetNodePriority('Fleet finding [p0]: money path')).toBe(0)
+    expect(fleetNodePriority('Matt ADD [major]: xAI-only image, video, voice, and content gen')).toBe(1)
+    expect(fleetNodePriority('Matt CHANGE [major]: rebuild on xAI')).toBe(1)
+    expect(fleetNodePriority('CMA/pricing production residual')).toBe(2)
   })
 })
 
