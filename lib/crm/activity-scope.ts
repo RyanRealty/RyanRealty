@@ -1,4 +1,4 @@
-import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_BROKERS } from '@/lib/crm/constants'
 
 /**
  * Resolve the broker scope for the Activity feed.
@@ -10,7 +10,7 @@ import { CRM_BROKERS, type CrmBrokerSlug } from '@/lib/crm/constants'
  * authorization rule isn't prose.
  */
 export function resolveActivityScope(
-  callerScope: CrmBrokerSlug | null,
+  callerScope: string | null,
   requested: string | null | undefined,
 ): string | null {
   if (callerScope !== null) return callerScope

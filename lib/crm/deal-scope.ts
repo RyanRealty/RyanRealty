@@ -1,5 +1,3 @@
-import type { CrmBrokerSlug } from '@/lib/crm/constants'
-
 /**
  * Pure broker-scope decision for a deal mutation.
  *
@@ -12,7 +10,7 @@ import type { CrmBrokerSlug } from '@/lib/crm/constants'
  * Kept pure (no DB, no async) so the authorization rule is unit-tested, not prose.
  */
 export function dealInScope(
-  scoped: CrmBrokerSlug | null,
+  scoped: string | null,
   dealBroker: string | null,
   personBroker: string | null,
 ): boolean {

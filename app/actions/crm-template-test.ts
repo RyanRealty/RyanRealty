@@ -106,7 +106,7 @@ export async function sendTemplateSelfTestAction(
   const { getBrokerTelephony } = await import('@/lib/data/crm/getBrokerTelephony')
   const telephony = await getBrokerTelephony()
   const slug = access.brokerSlug ?? 'matt'
-  const entry = telephony.bySlug[slug] ?? null
+  const entry = telephony.bySlug[slug as 'matt' | 'paul' | 'rebecca'] ?? null
   const toPhone = entry?.forwardToCell ?? null
   const fromNumber = entry?.twilioNumber ?? null
   if (!toPhone) {

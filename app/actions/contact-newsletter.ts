@@ -126,7 +126,7 @@ export async function sendNewsletterToContactAction(personId: number, idempotenc
 
 async function sendNewsletterToContactCore(
   personId: number,
-  access: { brokerSlug: CrmBrokerSlug | null },
+  access: { brokerSlug: string | null },
 ): Promise<CrmActionResult> {
   try {
     const sb = createServiceClient()

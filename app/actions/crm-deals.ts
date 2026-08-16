@@ -13,7 +13,6 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { dealInScope } from '@/lib/crm/deal-scope'
 import { getDealScopeRow } from '@/lib/data/crm/getDealScopeRow'
 import { getDealPipelines, pipelineHasStage } from '@/lib/data/crm/getDealPipelines'
-import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 export type DealActionResult = { ok: true } | { ok: false; error: string }
 
@@ -35,7 +34,7 @@ async function requireAccess() {
  * person-scope). Deals matching neither are refused, so no broker can edit
  * another broker's financials. Returns ok:false with no DB write on failure.
  */
-async function requireDealInScope(dealId: number, scoped: CrmBrokerSlug | null): Promise<DealActionResult> {
+async function requireDealInScope(dealId: number, scoped: string | null): Promise<DealActionResult> {
   if (scoped === null) return { ok: true }
   const row = await getDealScopeRow(dealId)
   if (!row) return { ok: false, error: 'Deal not found' }
