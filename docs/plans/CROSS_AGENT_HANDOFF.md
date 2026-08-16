@@ -14,9 +14,25 @@
 - Planes: dal-stat (hold DAL + signals), admin-crm (`/admin/audiences`, `/admin/analytics/meta-health`), reporting (packet + INTEGRATIONS + scoreboard), ads (36h heartbeat, no spend). Public-site / alerts / identity stitch unchanged.
 - Ship: `ci:gates` green via `npm run push`; `origin/main` includes `8247ee9b2` (`c0465bc5a` + email-send-gated re-key `8247ee9b2`); production deploy success. PR #38 merged.
 
-**Do not:** flip INT-007 to KEEP before 2026-08-22. Do not insert another factory ledger row. G10 is **DONE** on main (`0b1ba14c9`) — do not redo `/join`. G6 stays blocked (live SMS). Do not SMS, publish, spend, or OAuth. Disarm = Matt says "disarm the loop". Bots still Phase 3.
+**Do not:** flip INT-007 to KEEP before 2026-08-22. Do not insert another factory ledger row. G10 is **DONE** on main (`ecb22e78f`, production READY GitHub `5930254210` / inspector `8koYeDcaTiGfCwhMrNLjMgKxJXF5`) — do not redo `/join`. G6 stays blocked (live SMS). Do not SMS, publish, spend, or OAuth. Disarm = Matt says "disarm the loop". Bots still Phase 3.
 
 **Skills read:** growth-loop, DEVELOPMENT_PROCESS, DATABASE_FOR_AI_AGENTS (lookup + cache model), INTEGRATIONS INT-007, VERSION-1 G11, COMPANY_SCOREBOARD ads row, COMPANY_IMPROVEMENT blast-radius, git-commit, facebook-seller-growth (read-only; no spend).
+
+# Prior — 2026-08-16 (loop-sentinel bc-120b6b86) — G10 /join conversion shipped
+
+**Surface:** Cursor cloud agent `bc-120b6b86-e7c3-4235-8ec9-72f20954bf55`. **Time:** 2026-08-16 ~11:01 UTC. Brief served **G10** (recruit-retain). One node only. **`main` @** `ecb22e78f`. Vercel Production **READY** (GitHub deployment `5930254210`, inspector `8koYeDcaTiGfCwhMrNLjMgKxJXF5`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
+
+**Done**
+- G10 Instrument `/join` conversion (`086bdf15-0172-4f9f-8704-70ba9094ef0f`) **done**. Accept: packet shows a `/join` conversion figure with a named source.
+- Class: visits already lived in `visitor_events` (`page_url` path `/join`); no convert writer and the probe did not read them. DAL `getJoinConversionStats` / `readJoinConversionStats` / `recordJoinConversion` / `tagRecruitJoin`. Contact form `Join the team` writes `join_convert` and tags `recruit:join` (no buyer enroll, no CAPI Lead). `/join` phone + contact CTAs via `JoinCtaTracker`. Today + packet read the same DAL. Gate `ci:join-conversion`.
+- Accept proof: `visits7d=13` / `visitsAll=67` / `conversions7d=0` / `conversionsAll=0` / `status=ok`. Source: `visitor_events via getJoinConversionStats (page_url path /join + event_type=join_convert)`. Fleet-test convert insert succeeded (`convertRowsIncludingFleet=2`) and did **not** change packet counts. Series days present (2026-08-03 had 38 visit events). Production `/join` HTTP 200 (browser UA).
+- Ledger `5683a341-68d4-4b5f-aed0-6a5f4922ed0b` (recruit-retain, class `join-conversion`). VERSION-1 G10 **DONE 2026-08-16**. R-201 VERIFIED. CAP-022 residual (OAuth) unchanged. No schema migration (series table is existing `visitor_events`).
+- Planes: dal-stat (`lib/data/loop/join-conversion.ts` + signals), public-site (contact + `/join` tracker), identity (`recruit:join`), ads (skip CAPI Lead for recruit), admin-crm (`/admin/today` VerdictLine), reporting (packet §1b + recruit-retain). Alerts unchanged.
+- Ship: `ci:gates` 212/212; `origin/main` includes `ecb22e78f`; production deploy success. Rebased over G11 machinery (`readMetaAudienceHold`) so both gates stay in `ci:gates:chain`.
+
+**Do not:** SMS, publish, spend, or OAuth. Do not treat a recruit contact as a buyer Lead. Do not redo `/join`. G6 stays blocked (live SMS). G11 accept still open (KEEP waits for a day ≥ 2026-08-22). Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, BROKER-OPERATING-SYSTEM-PLAN, MASTER_SPEC, REQUIREMENTS R-201, COMPANY_IMPROVEMENT blast-radius, VERSION-1 G10, git-commit.
 
 # Prior — 2026-08-16 (loop-sentinel bc-66d23ef1) — G9 look-walk baselines shipped
 
