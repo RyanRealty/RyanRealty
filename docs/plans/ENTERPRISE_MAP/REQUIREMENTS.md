@@ -144,16 +144,16 @@
 | R-094 | Listing opens on Stage: real MLS photo/video hero, UNMUTE top-right, poster until video ready; beats Zillow Showcase | Track 1; DESIGN_DIRECTIVES | VERIFIED | — |
 | R-095 | Home page: search door + six town doors with live MLS photography; Places/Opens first screenful photographed and door-through | Track 1 2026-08-13 | PARTIAL | G21 — doors + search verified live; town photos are curated static scenics (`TOWN_IMG` in app/page.tsx), not live MLS (audit 2026-08-15) |
 | R-096 | /sell: worth-question gone; address-only step 1; CTA language "Value my home"; worth-language only in title/meta | Track 1; D5 | VERIFIED | — |
-| R-097 | One registry-driven filter surface + URL contract; buyer can express any shoppable MLS need; registry generated from Spark metadata, gated | SEARCH plans | PARTIAL | G15 |
-| R-098 | Facet counts live per value, class-aware, zero-match disabled; find-a-filter matches values; no dead filters | FILTER_COMPLETENESS | PARTIAL | G15 |
-| R-099 | Zoning as jurisdiction:code with definitions + verification dates; permits-intents only | FILTER_COMPLETENESS | MISSING | G15 |
-| R-100 | Every long-tail searchable concept dispositioned exposed-or-excluded with reason in a gate ledger | FILTER_COMPLETENESS | MISSING | G15 |
-| R-101 | Sold search depth behind registered VOW gate | SEARCH_OPT | MISSING | G15 |
-| R-102 | Drawn shapes: multi-shape include/exclude, URL-persisted, server-evaluated, radius live-readout; drawn geography reaches saved alerts | SEARCH_OPT; FILTER plan | PARTIAL | G15 (alerts leg G4) |
-| R-103 | Named saved areas reusable in searches and alerts; broker-authored then user | SEARCH_OPT | PARTIAL | G15 |
-| R-104 | Search performance: filter paint <800ms p75; pan pins <500–800ms; cold TTFB <600ms; timeout honesty | SEARCH plans | PARTIAL | G15 |
+| R-097 | One registry-driven filter surface + URL contract; buyer can express any shoppable MLS need; registry generated from Spark metadata, gated | SEARCH plans | VERIFIED | G15 accept 2026-08-16 (`search-completeness-accept.json` A1; 131 fields; `ci:search-registry-generated`) |
+| R-098 | Facet counts live per value, class-aware, zero-match disabled; find-a-filter matches values; no dead filters | FILTER_COMPLETENESS | VERIFIED | G15 accept 2026-08-16 (A2; `ci:search-field-completeness`) |
+| R-099 | Zoning as jurisdiction:code with definitions + verification dates; permits-intents only | FILTER_COMPLETENESS | VERIFIED | G15 accept 2026-08-16 (A3; `lib/zoning/resolve.ts` keys `jurisdiction:code`) |
+| R-100 | Every long-tail searchable concept dispositioned exposed-or-excluded with reason in a gate ledger | FILTER_COMPLETENESS | VERIFIED | G15 accept 2026-08-16 (A4; 268 concepts, unexplained = 0) |
+| R-101 | Sold search depth behind registered VOW gate | SEARCH_OPT | PARTIAL | G15 residual — VOW chokepoint live; sold browse still on the legacy RPC, not `searchListingsAll` |
+| R-102 | Drawn shapes: multi-shape include/exclude, URL-persisted, server-evaluated, radius live-readout; drawn geography reaches saved alerts | SEARCH_OPT; FILTER plan | VERIFIED | G15 accept 2026-08-16 (A6; `?shapes=` + `search_listing_keys_in_shapes`; alerts leg G4) |
+| R-103 | Named saved areas reusable in searches and alerts; broker-authored then user | SEARCH_OPT | VERIFIED | G15 accept 2026-08-16 (A7; `search_areas` + AreaPicker + `/account/areas`) |
+| R-104 | Search performance: filter paint <800ms p75; pan pins <500–800ms; cold TTFB <600ms; timeout honesty | SEARCH plans | PARTIAL | G15 residual — TTFB p75 measured 275/254ms; client filter-paint / pan-pin RUM not recorded |
 | R-105 | Search chrome: omnibox, chips, Save/Alerts, count/sort, map+list lockstep; mobile bottom-sheet; sentence search writes same filter params | WAVE3; decisions | VERIFIED | — |
-| R-106 | Account portal unifies alerts, saved searches, saved homes, named areas, activity | SEARCH_OPT | PARTIAL | G15 |
+| R-106 | Account portal unifies alerts, saved searches, saved homes, named areas, activity | SEARCH_OPT | VERIFIED | G15 accept 2026-08-16 (A10; `/account` rails live) |
 | R-107 | Nav/IA residual: site nav covers brokerage/buy/sell/market/tools/communities; city section order fans out to neighborhood/community | PROSPECT_TO_CMA IA | PARTIAL | G21 |
 | R-108 | KB desktop density pass; fix duplicate DOM streaming containers (~40% waste) | PROSPECT_TO_CMA | MISSING | G21 |
 | R-109 | Mobile classes: map cards never dead-end; sub-city surfaces scoped data; interstitials never stack over hero; sticky broker bar site-wide | MOBILE_GRIND | PARTIAL | G21 |

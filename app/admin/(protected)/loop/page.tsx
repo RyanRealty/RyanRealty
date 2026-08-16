@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getLoopStatus, type LoopNodeSummary } from '@/lib/data/loop/status'
 import { readIntegrationHealth } from '@/lib/data/loop/integration-health'
+import { readSearchCompletenessAccept } from '@/lib/data/loop/search-completeness'
 import { readVideoDecisionDocket } from '@/lib/data/loop/video-docket'
 import { QueueRow, QuietRow, VerdictLine, SectionHead } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
@@ -38,6 +39,7 @@ export default async function LoopStatusPage() {
   const status = await getLoopStatus()
   const video = readVideoDecisionDocket()
   const integrations = readIntegrationHealth()
+  const searchCompleteness = readSearchCompletenessAccept()
   const nowMs = Date.now()
 
   const running = status.nodes.runningNow
@@ -104,6 +106,15 @@ export default async function LoopStatusPage() {
               integrations.status === 'ok'
                 ? `unknown ${integrations.unknownCount} · green ${integrations.greenCount} · park ${integrations.parkCount} · ${integrations.probedCount} probed`
                 : 'probes unreadable'
+            }
+          />
+          <QuietRow
+            name="Search completeness"
+            state={searchCompleteness.status === 'ok' ? 'ACCEPT' : 'UNREAD'}
+            figure={
+              searchCompleteness.status === 'ok'
+                ? `${searchCompleteness.longTail.disposedCount} long-tail · TTFB p75 ${searchCompleteness.perf.p75.ttfbHomesForSaleMs}/${searchCompleteness.perf.p75.ttfbBendMs}ms · ${formatDate(searchCompleteness.recordedAt)}`
+                : 'accept ledger unreadable'
             }
           />
         </ul>

@@ -20,7 +20,7 @@
 | Version | **v1 OPEN** — 2 of 29 agent gaps closed (G1, G14; G15–G25 from the requirements harvest, G26–G28 from the adversarial audit, G29 fleet stand-up), 0 of 6 Matt moves done | `ENTERPRISE_MAP/VERSION-1.md` gap list (Max-pinned) |
 | Loop sentinel | **ARMED** 2026-08-16 after Matt said "arm the loop". Watch `/admin/loop`. Machinery: one-node-per-session + zero-gap handoff + orphan auto-release. Heartbeat every 10 min; kill switch / standdown / 12-per-day cap always on. Disarm = "disarm the loop". | R-206 VERIFIED · R-211 LOCKED |
 | Verification fleet | **Machinery live incl. the flows lane, bots pending Matt setup**: endpoint + intake (reproduce-or-reject) + 4 case packs (core/regression/preflight/flows) + **6** paste-ready bot briefs. Flow Prover may SUBMIT real forms using the designated fleet identity — all four side-effect guards proven live 2026-08-15 (fixture person 61855: tagged, suppressed, no wake, no enroll, excluded from counts). Certification requires a clean fleet pass. | THE LOOP v1.6.0 + G30 |
-| Requirements coverage | **207 directives dispositioned**: 92 LOCKED · 38 VERIFIED · 44 PARTIAL · 25 MISSING (all gap-covered) · 7 GATED · 1 PARKED. Four rows demoted VERIFIED→PARTIAL by adversarial audit (R-025, R-095, R-137, R-203); R-207 fleet added | `ENTERPRISE_MAP/REQUIREMENTS.md` + G57 (Max-pinned; that gate's output is the count SoR) |
+| Requirements coverage | **212 directives dispositioned**: 93 LOCKED · 53 VERIFIED · 41 PARTIAL · 19 MISSING (all gap-covered) · 5 GATED · 1 PARKED. G15 flipped R-097…R-100 / R-102 / R-103 / R-106 to VERIFIED; R-101 and R-104 stay PARTIAL with named residuals. R-212 added (G31). Count SoR is G57. | `ENTERPRISE_MAP/REQUIREMENTS.md` + G57 (Max-pinned) |
 | Stranded ledger windows | **0** (was 11 — all closed 2026-08-15 with §0 traces; `seo-aeo` unfrozen). Work graph: G2 identity stitch **DONE 2026-08-16** (32/166 mapped). Next served node is whatever `loop-brief` prints. | probe `ledger.expiredUnlearned` + G2 accept 2026-08-16 |
 | Adversarial audit (first R-040 pass) | **17 defects found by the machine, 0 by Matt**: 2 gate blind spots (fixed: Max pins), 3 enforcement bypasses (fixed: DB triggers + fail-closed DAL), 4 overstated register rows (corrected, product gaps G26–G28 opened), 8 stale packet/manifest claims (corrected). Escape recorded. | audit agents 2026-08-15 + `process_escape_ledger` |
 | Capabilities below Working floor | **7** (TC, video, social OAuth, broker platform, westside, Grok memory, SMS agent) | `ENTERPRISE_MAP/matrix/CAPABILITIES.md` 2026-08-08 close |
@@ -28,6 +28,7 @@
 | Meta audience heartbeat | last LIVE **2026-08-16T09:01:26Z** CRM received 13980. consecutive UTC days already ≥7 (`readMetaAudienceHold`). KEEP waits for a day **≥ 2026-08-22** (G11 accept). Daily freshness 36h. | `lib/data/loop/meta-audience-hold.ts` |
 | Video park-or-rebuild docket | **Delivered.** Park = incremental vendor $0 (keep R-045, inbox stays matt_alert). Rebuild = ElevenLabs Turbo $0.05/1k + producer cap $5/row $15/run; 24 REGISTRY rows + 11 dead safe-zone imports; requires changing R-045. Decision **pending** (M3). | `docs/plans/ENTERPRISE_MAP/video-decision-docket.json` via `readVideoDecisionDocket` |
 | Integration health (INT-021…036) | **unknown = 0.** Green 5 (OpenAI, xAI, Unsplash, Replicate+Synthesia, AdSense). Park 3 (Sentry stub, NeverBounce, VAPID). | `docs/plans/ENTERPRISE_MAP/integration-health-probes.json` via `readIntegrationHealth` |
+| Search completeness (R-097…R-106) | **268** long-tail concepts dispositioned, unexplained = 0. TTFB p75 `/homes-for-sale` **275ms** / `/homes-for-sale/bend` **254ms** (target 600ms, n=8). A5 gated (VOW). A8 measured (paint/pan RUM residual). | `docs/plans/ENTERPRISE_MAP/search-completeness-accept.json` via `readSearchCompletenessAccept` |
 
 ## 1. Money and license
 
@@ -53,7 +54,8 @@
 | Search areas (drawn) | **0** | `search_areas` |
 | Boundaries (polygons) | **3,312** | `boundaries` |
 | Facet counts refreshed | **2026-08-15T14:42:00Z** (~3 min before fetch) | `search_facet_counts.refreshed_at` |
-| Filter registry | **131** fields | `lib/search/field-registry.ts` `SEARCH_FIELDS` (`key:` count). Honest Spark-visible target is still the completeness plan, not this count alone. |
+| Filter registry | **131** fields | `lib/search/field-registry.ts` `SEARCH_FIELDS` (`key:` count). Completeness accept is the 268-concept ledger, not this count alone. |
+| Search completeness | **268** long-tail dispositioned · TTFB p75 **275 / 254ms** | `docs/plans/ENTERPRISE_MAP/search-completeness-accept.json` via `readSearchCompletenessAccept` |
 | Identity map | **166** | `visitor_identity_map` |
 | Identity mapped to CRM | **32** | `visitor_identity_map.crm_person_id` is not null. G2 class: stitch now writes `crm_person_id` in lockstep (was 1 because only `fub_person_id` was set). Hosted backfill + fleet-test form-submit accept 2026-08-16 (`rr_vid=g2-accept-ea08a60f-3cbc-4769-9353-c56e686588fc`, person 61855). |
 | Visitor events 7d | **11,233** | `visitor_events.event_at >= now-7d` |
@@ -72,6 +74,7 @@
 | `/join` conversion instrumented | recruit-retain | Packet recruit-retain has a named visit/convert figure | G10 `join-conversion` |
 | Video park-or-rebuild docket | factory | Packet + `/admin/loop` carry both options costed; M3 still pending | G12 `video-docket` |
 | Unknown-health integrations probed | factory | INTEGRATIONS health counts unknown = 0 with per-row evidence | G13 `integration-health` |
+| Search completeness to plan acceptance | public-ux | FILTER_COMPLETENESS ledger complete; 268 long-tail; TTFB p75 under 600ms | G15 `search-completeness-accept` |
 
 ## 3. What is measuring
 

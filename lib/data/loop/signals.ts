@@ -11,6 +11,7 @@ import { readJoinConversionStats } from './join-conversion'
 import { readLookWalkBaseline } from './look-walk'
 import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hold'
 import { readIntegrationHealth } from './integration-health'
+import { readSearchCompletenessAccept } from './search-completeness'
 import { readVideoDecisionDocket } from './video-docket'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
 
@@ -170,6 +171,14 @@ export type CompanyScoreboardSignals = {
     probedCount: number
     greenCount: number
     parkCount: number
+    source: string
+  }
+  searchCompleteness: {
+    status: SignalStatus
+    longTailDisposed: number
+    unexplained: number
+    ttfbHomesForSaleMs: number | null
+    ttfbBendMs: number | null
     source: string
   }
 }
@@ -538,6 +547,16 @@ export async function collectCompanyScoreboardSignals(
     source: intHealth.source,
   }
 
+  const searchAccept = readSearchCompletenessAccept()
+  const searchCompleteness: CompanyScoreboardSignals['searchCompleteness'] = {
+    status: searchAccept.status,
+    longTailDisposed: searchAccept.longTail.disposedCount,
+    unexplained: searchAccept.longTail.unexplainedCount,
+    ttfbHomesForSaleMs: searchAccept.perf.p75.ttfbHomesForSaleMs,
+    ttfbBendMs: searchAccept.perf.p75.ttfbBendMs,
+    source: searchAccept.source,
+  }
+
   return {
     fetchedAt,
     crm,
@@ -563,5 +582,6 @@ export async function collectCompanyScoreboardSignals(
     join,
     video,
     integrations,
+    searchCompleteness,
   }
 }

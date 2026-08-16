@@ -2,9 +2,26 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (Cursor) — Matt steered M1–M6; G31 seeded; G27 residual confirmed
+# Current — 2026-08-16 (cursor-grok-g15) — G15 search completeness shipped
 
-**Surface:** Cursor local. **Time:** 2026-08-16 ~07:50 PT. Steering delivery (R-205). No product class this session. G15 is **in_progress** under `cursor-grok-g15-20260816` (claimed 14:35Z) — do not steal it.
+**Surface:** Cursor Grok (`cursor-grok-g15-20260816`). **Time:** 2026-08-16 ~07:55 PT. Brief served **G15** (public-ux). One node only. Loop stays **ARMED**.
+
+**Done**
+- G15 Search completeness to plan acceptance (`c2c9adde-22f0-4359-971e-409d04a2ec32`) **done**. Accept: every FILTER_COMPLETENESS item dispositioned; prod TTFB p75 recorded.
+- Class: SoR `docs/plans/ENTERPRISE_MAP/search-completeness-accept.json`. DAL `readSearchCompletenessAccept` / `searchCompletenessComplete`. Packet §0 + §1b + §2 + scoreboard `searchCompleteness`. `/admin/loop` QuietRow. Gate `ci:search-completeness-accept`. No public-ux ledger insert (open window `2a5054ac`). No schema migration.
+- 268 long-tail concepts (222 custom + 46 standard) dispositioned, unexplained = 0. Every `registry-report.json` long-tail concept is in the ledger.
+- Prod TTFB p75 (8 curl samples, 2026-08-16): `/homes-for-sale` **275ms**, `/homes-for-sale/bend` **254ms** (target 600ms).
+- Register: R-097, R-098, R-099, R-100, R-102, R-103, R-106 **VERIFIED**. R-101 **PARTIAL** (VOW live; sold browse still legacy RPC). R-104 **PARTIAL** (TTFB measured; client filter-paint / pan-pin RUM residual). R-105 already VERIFIED. Max pin **R-212** unchanged.
+- Accept proof: `npx tsx scripts/loop-probe-g15.ts` — `complete=true` longTailDisposed=268 unexplained=0 ttfb 275/254 samples=8. Gate 10/10. Tests 11564. `npm run build` exit 0.
+- VERSION-1 G15 **DONE 2026-08-16**.
+
+**Do not:** insert another public-ux ledger row. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G27 done. Do not unpause TC. G6 stays blocked (live SMS). G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints (likely G16).
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, MECHANICAL_GATES, FILTER_COMPLETENESS plan §3/§4.8/§15, REQUIREMENTS R-097…R-106, VERSION-1 G15, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, git-commit.
+
+# Prior — 2026-08-16 (Cursor) — Matt steered M1–M6; G31 seeded; G27 residual confirmed
+
+**Surface:** Cursor local. **Time:** 2026-08-16 ~07:50 PT. Steering delivery (R-205). No product class that session. G15 was in_progress then; it is now **done**.
 
 **Done (durable state only)**
 - M1 CHANGE: newsletter first-cohort blast is not the v1 gate. Loop work is **G31** redesign (look only). After Matt approves the look, he enrolls and sends manually. R-212 MISSING→G31. R-159 PARTIAL.
@@ -16,7 +33,7 @@
 - G27 **not done**. 2026-08-02 session sealed public CS access. Pulse `active_count` still includes CS. Bend pulse 486; City=Bend SFR CS = 5. Node `2891d28e` stays open.
 - Manifest Max pin **G31 · M6**. Register Max **R-212**.
 
-**Do not:** flip R-045. Do not SMS, publish, spend, or OAuth. Do not steal G15. Do not mark G27 done. Do not unpause TC. Disarm = Matt says "disarm the loop". Bots still need Matt to create them (G29).
+**Do not:** flip R-045. Do not SMS, publish, spend, or OAuth. Do not mark G27 done. Do not unpause TC. Disarm = Matt says "disarm the loop". Bots still need Matt to create them (G29).
 
 **Skills read:** growth-loop, DEVELOPMENT_PROCESS, COMPANY_IMPROVEMENT §How Matt steers, VERSION-1, REQUIREMENTS, VERIFICATION-FLEET, BROKER_SMS_AGENT DoD, git-commit.
 

@@ -1,0 +1,1982 @@
+{
+  "status": "ok",
+  "recordedAt": "2026-08-16T14:36:20.144Z",
+  "source": "docs/plans/ENTERPRISE_MAP/search-completeness-accept.json",
+  "versionGap": "G15",
+  "plan": "docs/plans/SEARCH_FILTER_COMPLETENESS_PLAN_2026-07-30.md",
+  "acceptItems": [
+    {
+      "id": "A1",
+      "requirement": "R-097",
+      "text": "Every shipped filter traces to Spark metadata; registry/metadata disagreement fails the build.",
+      "disposition": "live",
+      "reason": "ci:search-registry-generated + field-registry. 131 exposed fields. URL contract is FilterSchema."
+    },
+    {
+      "id": "A2",
+      "requirement": "R-098",
+      "text": "No zero-match filter; no confidential field; find-a-filter matches values; class-aware facets.",
+      "disposition": "live",
+      "reason": "ci:search-field-completeness + find-a-filter value match + class-prevalence. Confidential keys stay off the public surface."
+    },
+    {
+      "id": "A3",
+      "requirement": "R-099",
+      "text": "Zoning as jurisdiction:code with definitions and verification dates; permits-intents only.",
+      "disposition": "live",
+      "reason": "lib/zoning/resolve.ts keys jurisdiction:code. Find-a-filter renders plain English when unambiguous. STR is never inferred from zoning (R-019)."
+    },
+    {
+      "id": "A4",
+      "requirement": "R-100",
+      "text": "Every long-tail searchable concept is exposed or excluded with a §10 reason.",
+      "disposition": "live",
+      "reason": "This ledger: 268 concepts (222 custom + 46 standard), zero unexplained."
+    },
+    {
+      "id": "A5",
+      "requirement": "R-101",
+      "text": "Sold search carries the same filter depth as active, behind a registered VOW gate.",
+      "disposition": "gated",
+      "reason": "VOW chokepoint is live (ODS §5-4: audience must be vow). Sold browse stays on the legacy RPC, not searchListingsAll. Same-depth sold search is the residual — do not lift VOW data onto a public index."
+    },
+    {
+      "id": "A6",
+      "requirement": "R-102",
+      "text": "Drawn shapes: multi-shape include/exclude, URL-persisted, server-evaluated; drawn geography reaches alerts.",
+      "disposition": "live",
+      "reason": "MapSearchView + ?shapes= + search_listing_keys_in_shapes. G4 enrolls the same filters into listing_alerts."
+    },
+    {
+      "id": "A7",
+      "requirement": "R-103",
+      "text": "Named saved areas reusable in searches and alerts.",
+      "disposition": "live",
+      "reason": "search_areas + AreaPicker + /account/areas. Public broker-authored areas at /areas/[slug]."
+    },
+    {
+      "id": "A8",
+      "requirement": "R-104",
+      "text": "Filter paint <800ms p75; pan pins <500–800ms; cold TTFB <600ms; timeout honesty.",
+      "disposition": "measured",
+      "reason": "p75 recorded on this file under perf. Structural timeouts stay locked by ci:search-perf-budget."
+    },
+    {
+      "id": "A9",
+      "requirement": "R-105",
+      "text": "Search chrome: omnibox, chips, Save/Alerts, count/sort, map+list lockstep; sentence search writes the same params.",
+      "disposition": "live",
+      "reason": "WAVE3 shipped. R-105 already VERIFIED. Sentence search writes FilterSchema params."
+    },
+    {
+      "id": "A10",
+      "requirement": "R-106",
+      "text": "Account portal unifies alerts, saved searches, saved homes, named areas, activity.",
+      "disposition": "live",
+      "reason": "/account renders those rails from live queries. /dashboard redirects to /account."
+    },
+    {
+      "id": "A11",
+      "requirement": "§4.8",
+      "text": "All 22 sub types selectable with live counts; no substring match on property_sub_type.",
+      "disposition": "live",
+      "reason": "propertySubTypes is an enumerated multi over the 22 feed values. DAL is IN, not ILIKE."
+    }
+  ],
+  "longTail": {
+    "customCount": 222,
+    "standardCount": 46,
+    "disposedCount": 268,
+    "unexplainedCount": 0,
+    "rows": [
+      {
+        "concept": "cf:# Full Baths",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# Full Baths2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# Full Baths3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# Full Baths4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# Half Baths",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# Half Baths2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# Half Baths3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# Half Baths4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# OverheadDock Doors",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:# of Bedrooms",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# of Bedrooms2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# of Bedrooms3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# of Bedrooms4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# of Carports",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# of Garages",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# of Grade Level Doors",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:# of Living Units",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# of Other Parking",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:# of Parking Spaces",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Acreage CropsUsage 1",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Acreage CropsUsage 2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Acreage CropsUsage 3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Acreage CropsUsage 4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Agency Represent YN",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Annual Average Daily Traffic",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Assessment Comments",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Audio Surveillance on Premises YN",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:BLM",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:BLM#",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Back on Market Date",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Backup Package Available",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Building Permit #",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Business Included",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Business Name",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Business is a Franchise2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:CAM Cost",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:CAM Frequency",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:CAM SqFt",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Cap Rate Basis",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Ceiling Clear Height",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Commonly Known Address",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Comp Sale YN2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Comprehensive Unit List Attached",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:ConfidentialityNon-Disclosure Agreement",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:CropsUsage 1",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:CropsUsage 2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:CropsUsage 3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:CropsUsage 4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Currently Not Used/Listing Service",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Dealer License Number",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Deeded Acres",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Dock Type",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Dual Listing YN",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:FIRPTA YN",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Fallthrough Date2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Green Verification Metric",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:Hours of Operation Description",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Hours of Operation Description2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Inventory List Attached",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Inventory List Attached2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Inventory Value",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Inventory Value2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Irrigation Comments",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:Irrigation Comments2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:Irrigation Water Rights Acres3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:Irrigation Well GPM",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:Labor Information",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Labor Information2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Lease End Date",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Lease Rate Options",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Leased Acres",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Leased Components",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Legacy Pcl #",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:List Price per SqFt",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:List Price per SqFt2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Listing Service",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Load Factor",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Lot Size Square Feet",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Manufacturer",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:May Remain In Park",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Monthly Rent",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent10",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent5",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent6",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent7",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent8",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Monthly Rent9",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Number of Units Leased",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:On Leased Land YN",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Option to Extend",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend10",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend5",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend6",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend7",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend8",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Option to Extend9",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Other Restrictions",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Other Restrictions2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Other27",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Owner Phone2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Ownership Interest Type",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Park Parcel Number",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Parking",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Personal Property Taxes",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Personal PropertyFixturesEquipment",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Personal PropertyFixturesEquipment Value",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Phone to Show",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Potential Tax Liability YN2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Preferred Escrow Company Officer",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Price Per SqFt10",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt11",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt5",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt6",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt7",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt8",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Price Per SqFt9",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Private#",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Private3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Production Comments",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:Projected Active Date",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Public Survey Subsection",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Pumping Costs",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators10",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators5",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators6",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators7",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators8",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Rent Escalators9",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:SeasonYear Round Crop 1",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:SeasonYear Round Crop 2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:SeasonYear Round Crop 3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:SeasonYear Round Crop 4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "suffix",
+        "reason": "Suffixed MLS room/unit repeat of a parent concept already dispositioned."
+      },
+      {
+        "concept": "cf:Section",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Seller Directs No Photos with Listing",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Seller to Provide Training",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Seller to Provide Training2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:SewerSeptic Comments",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:Sold Price per Acre",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "sold",
+        "reason": "Sold-scope column. On-market MV is null; sold depth stays behind the VOW chokepoint on the legacy RPC."
+      },
+      {
+        "concept": "cf:Sold Price per SqFt",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "sold",
+        "reason": "Sold-scope column. On-market MV is null; sold depth stays behind the VOW chokepoint on the legacy RPC."
+      },
+      {
+        "concept": "cf:Square Footage",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage10",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage5",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage6",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage7",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage8",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:Square Footage9",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "cf:State#",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:State2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Status10",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status11",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status12",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status5",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status6",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status7",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status8",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Status9",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Tenant Name",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name10",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name5",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name6",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name7",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name8",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Tenant Name9",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Total Building NRA",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:UGB",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:USFS",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:USFS#",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Unit #",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #10",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #3",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #4",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #5",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #6",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #7",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #8",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit #9",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "cf:Unit List Attached",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "cf:Utilities Comments",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:VehiclesAverage Daily Traffic",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Video Surveillance on Premises YN",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "cf:Water Comments",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:Water Costs",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "cf:Zoning Comments",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "comments",
+        "reason": "Free-text comments. Keywords/search_vector already search remarks; a dedicated filter would be a dead type-in."
+      },
+      {
+        "concept": "cf:owner2",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "group:Agricultural Class",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Documents",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "group:Documents on File",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "group:Exclusion of Rights",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Existing Lease Type",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Grazing Permits",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Income and Expenses (Annual Amounts)",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Mineral Information",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Miscellaneous Information",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "group:Showing Requirements",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "confidential",
+        "reason": "Confidential or showing/tenant/surveillance field. Plan §8 / §10 — never a public filter."
+      },
+      {
+        "concept": "group:Special Assessments",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Unit 1 Rent Includes",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Unit 2 Rent Includes",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Unit 3 Rent Includes",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Unit 4 Rent Includes",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "commercial",
+        "reason": "Commercial, farm, or agency-economics concept. Not a residential buyer shop on this surface."
+      },
+      {
+        "concept": "group:Window Features",
+        "kind": "custom",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Window treatments/features overlap existing interior feature filters. A second group control would split one buyer question."
+      },
+      {
+        "concept": "AssociationFeeFrequency",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "City",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "CloseDate",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "sold",
+        "reason": "Sold-scope column. On-market MV is null; sold depth stays behind the VOW chokepoint on the legacy RPC."
+      },
+      {
+        "concept": "ClosePrice",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "sold",
+        "reason": "Sold-scope column. On-market MV is null; sold depth stays behind the VOW chokepoint on the legacy RPC."
+      },
+      {
+        "concept": "CoolingYN",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "Directions",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "HeatingYN",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "ListingContractDate",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "timestamp",
+        "reason": "Ingest/sort timestamp. Buyer recency is the DOM / on-market range, not this MLS stamp."
+      },
+      {
+        "concept": "ListingId",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "identity",
+        "reason": "Row identity / MLS join key. Lookup is resolveCanonicalListingKey, not a shoppable filter."
+      },
+      {
+        "concept": "ListingKey",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "identity",
+        "reason": "Row identity / MLS join key. Lookup is resolveCanonicalListingKey, not a shoppable filter."
+      },
+      {
+        "concept": "ListingUpdateTimestamp",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "timestamp",
+        "reason": "Ingest/sort timestamp. Buyer recency is the DOM / on-market range, not this MLS stamp."
+      },
+      {
+        "concept": "LotSizeArea",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "LotSizeSquareFeet",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "LotSizeUnits",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Covered by an existing registry filter or geography/scope layer — a second control would split one buyer question."
+      },
+      {
+        "concept": "MlsStatus",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "scope",
+        "reason": "Status or property-class scope selector, not a registry field."
+      },
+      {
+        "concept": "ModificationTimestamp",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "timestamp",
+        "reason": "Ingest/sort timestamp. Buyer recency is the DOM / on-market range, not this MLS stamp."
+      },
+      {
+        "concept": "OnMarketContractDate",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "timestamp",
+        "reason": "Ingest/sort timestamp. Buyer recency is the DOM / on-market range, not this MLS stamp."
+      },
+      {
+        "concept": "OnMarketDate",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "timestamp",
+        "reason": "Ingest/sort timestamp. Buyer recency is the DOM / on-market range, not this MLS stamp."
+      },
+      {
+        "concept": "OriginatingSystemKey",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "identity",
+        "reason": "Row identity / MLS join key. Lookup is resolveCanonicalListingKey, not a shoppable filter."
+      },
+      {
+        "concept": "OriginatingSystemName",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "identity",
+        "reason": "Row identity / MLS join key. Lookup is resolveCanonicalListingKey, not a shoppable filter."
+      },
+      {
+        "concept": "ParcelNumber",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "identity",
+        "reason": "Row identity / MLS join key. Lookup is resolveCanonicalListingKey, not a shoppable filter."
+      },
+      {
+        "concept": "PermitInternetYN",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "PhotosChangeTimestamp",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "timestamp",
+        "reason": "Ingest/sort timestamp. Buyer recency is the DOM / on-market range, not this MLS stamp."
+      },
+      {
+        "concept": "PostalCode",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "PostalCodePlus4",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "PriceChangeTimestamp",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "timestamp",
+        "reason": "Ingest/sort timestamp. Buyer recency is the DOM / on-market range, not this MLS stamp."
+      },
+      {
+        "concept": "PropertyType",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "scope",
+        "reason": "Status or property-class scope selector, not a registry field."
+      },
+      {
+        "concept": "PropertyTypeLabel",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "scope",
+        "reason": "Status or property-class scope selector, not a registry field."
+      },
+      {
+        "concept": "Skirt",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "covered",
+        "reason": "Manufactured skirt is not an independent shop. Home type (In Park / Manufactured On Land) is the buyer control."
+      },
+      {
+        "concept": "SourceSystemKey",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "identity",
+        "reason": "Row identity / MLS join key. Lookup is resolveCanonicalListingKey, not a shoppable filter."
+      },
+      {
+        "concept": "SourceSystemName",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "identity",
+        "reason": "Row identity / MLS join key. Lookup is resolveCanonicalListingKey, not a shoppable filter."
+      },
+      {
+        "concept": "StandardStatus",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "scope",
+        "reason": "Status or property-class scope selector, not a registry field."
+      },
+      {
+        "concept": "StateOrProvince",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "StatusChangeTimestamp",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "timestamp",
+        "reason": "Ingest/sort timestamp. Buyer recency is the DOM / on-market range, not this MLS stamp."
+      },
+      {
+        "concept": "StreetDirPrefix",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "StreetDirSuffix",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "StreetName",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "StreetNumber",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "StreetNumberInteger",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "StreetSuffix",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "SubdivisionName",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "UnitNumber",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "UnparsedAddress",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "geography",
+        "reason": "Geography layer (city, ZIP, street, subdivision, state). FilterSchema + keywords already express it."
+      },
+      {
+        "concept": "VOWAddressDisplayYN",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "VOWAutomatedValuationDisplayYN",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      },
+      {
+        "concept": "VOWConsumerCommentYN",
+        "kind": "standard",
+        "disposition": "excluded",
+        "reasonClass": "plumbing",
+        "reason": "Broker or syndication plumbing (agency, dual, FIRPTA, VOW flags, listing-service flags). Not a buyer shop."
+      }
+    ]
+  },
+  "perf": {
+    "measuredAt": "2026-08-16T14:36:41.984Z",
+    "environment": "curl TTFB from this workstation to https://ryan-realty.com (production), 8 samples each, p75 = index floor(0.75*(n-1))",
+    "samples": 8,
+    "p75": {
+      "ttfbHomesForSaleMs": 275,
+      "ttfbBendMs": 254
+    },
+    "targetTtfbMs": 600,
+    "dalBaseline": "scripts/search-perf-baseline.json (2026-08-01 laptop-to-Supabase; production is faster)",
+    "note": "Client filter-paint and pan-pin RUM is not in this file. Query-side budgets stay on ci:search-perf-budget. Cold HTML TTFB is the prod number the accept test asked for."
+  }
+}
