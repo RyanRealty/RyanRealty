@@ -21,7 +21,10 @@
  *
  * Setup (one-time):
  *   - VERCEL_TOKEN in .env.local or shell env (https://vercel.com/account/tokens).
- *   - .vercel/project.json present (`npx vercel link` once).
+ *   - .vercel/project.json present (`npx vercel link` once), or
+ *     VERCEL_PROJECT_ID + VERCEL_ORG_ID, or the documented Ryan Realty ids.
+ *   - Cloud agents without a Vercel token fall back to `gh` commit status
+ *     (context "Vercel") so READY/ERROR is still environment-verified.
  */
 
 import { readFileSync, existsSync } from 'fs'
@@ -117,18 +120,55 @@ function findDeploymentForShaViaCli(sha) {
   }
 }
 
+function findDeploymentForShaViaGithub(sha) {
+  try {
+    const output = execSync(
+      `gh api repos/RyanRealty/RyanRealty/commits/${sha}/status`,
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    )
+    const parsed = JSON.parse(output)
+    const vercel = (parsed.statuses ?? []).find((s) => s.context === 'Vercel')
+    if (!vercel) return null
+    const stateMap = {
+      success: 'READY',
+      pending: 'BUILDING',
+      failure: 'ERROR',
+      error: 'ERROR',
+    }
+    const inspectorUrl = vercel.target_url || null
+    const idMatch = inspectorUrl ? inspectorUrl.match(/\/([^/?#]+)$/) : null
+    return {
+      id: idMatch?.[1] ?? `gh-${sha.slice(0, 7)}`,
+      uid: idMatch?.[1] ?? null,
+      state: stateMap[vercel.state] || 'UNKNOWN',
+      url: null,
+      inspectorUrl,
+      meta: { githubCommitSha: sha },
+    }
+  } catch {
+    return null
+  }
+}
+
 function loadProjectMeta() {
+  const fileEnv = loadEnvLocal()
+  const envProject = (process.env.VERCEL_PROJECT_ID || fileEnv.VERCEL_PROJECT_ID || '').trim()
+  const envTeam = (process.env.VERCEL_ORG_ID || fileEnv.VERCEL_ORG_ID || '').trim()
+  if (envProject && envTeam) {
+    return { projectId: envProject, teamId: envTeam }
+  }
   const path = resolve(process.cwd(), '.vercel/project.json')
-  if (!existsSync(path)) {
-    err('Missing .vercel/project.json. Run `npx vercel link` once to create it.')
-    process.exit(2)
+  if (existsSync(path)) {
+    const raw = JSON.parse(readFileSync(path, 'utf8'))
+    if (raw.projectId && raw.orgId) {
+      return { projectId: raw.projectId, teamId: raw.orgId }
+    }
   }
-  const raw = JSON.parse(readFileSync(path, 'utf8'))
-  if (!raw.projectId || !raw.orgId) {
-    err('.vercel/project.json missing projectId or orgId.')
-    process.exit(2)
+  // Documented in docs/TC_BUILD_SPEC.md. Cloud agents often lack `vercel link`.
+  return {
+    projectId: 'prj_7ApmWUMyZQR3IIQbSiqHyzSWZoaA',
+    teamId: 'team_zwYQPapH0CpleD7RzJ7WctGO',
   }
-  return { projectId: raw.projectId, teamId: raw.orgId }
 }
 
 function getHeadSha() {
@@ -209,7 +249,7 @@ async function main() {
   const sha = (targetSha || getHeadSha()).toLowerCase()
 
   if (usingCliFallback) {
-    out('no API token found; using Vercel CLI auth fallback for deploy checks')
+    out('no API token found; using Vercel CLI, then GitHub Vercel status, for deploy checks')
   }
 
   out(`waiting for production deploy of ${sha.slice(0, 7)} (project ${projectId})`)
@@ -217,10 +257,18 @@ async function main() {
   const startedAt = Date.now()
   let deployment = null
   let lastState = null
+  let usingGithubFallback = false
 
   while (Date.now() - startedAt < TIMEOUT_MS) {
     if (usingCliFallback) {
-      deployment = findDeploymentForShaViaCli(sha)
+      deployment = findDeploymentForShaViaGithub(sha)
+      if (deployment && !usingGithubFallback) {
+        out('no Vercel API token; using GitHub Vercel commit status')
+        usingGithubFallback = true
+      }
+      if (!deployment) {
+        deployment = findDeploymentForShaViaCli(sha)
+      }
     } else {
       try {
         deployment = await findDeploymentForSha(apiToken, projectId, teamId, sha)

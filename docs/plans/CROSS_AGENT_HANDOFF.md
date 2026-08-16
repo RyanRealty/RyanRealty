@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-0369d0e1) — G8 SkySlope mirror ops shipped
+# Current — 2026-08-16 (loop-sentinel bc-66d23ef1) — G9 look-walk baselines shipped
+
+**Surface:** Cursor cloud agent `bc-66d23ef1-fc40-4fe7-87ec-b7dc59ce4f39`. **Time:** 2026-08-16 ~10:12 UTC. Brief served **G9** (public-ux). One node only. **`main` @** `8a847a8e7`. Vercel Production **READY** (GitHub deployment `5929885543`, inspector `46WCQ6dmZSQvuBbfdkfeDNwNmyQS`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
+
+**Done**
+- G9 Look-walk baselines (`4aa54907-47ce-4b96-9eaa-d370a6e56df5`) **done**. Accept: Packet §1b CMA look and public-ux walk are no longer UNKNOWN.
+- Class: production walk at 390+1280 for the 8 `beat_on` routes + graded CMA HTML. SoR `docs/plans/ENTERPRISE_MAP/look-walk-baseline.json`. DAL `readLookWalkBaseline` / `lookWalkBaselineComplete`. Scoreboard probe `cma.look` + `lookWalk`. Packet §1b cites the baseline. Gate `ci:look-walk`. Boot fix: `readSkySlopeMirrorFreshness` extracted so `loop-brief` can import signals without `server-only`.
+- Accept proof: probe `cma.look=ok` verdict WORKING slug `cma-19496-tumalo-reservoir` (17 pages, cover is the house, range $955,000–$1,060,000); `lookWalk.status=ok` publicRoutes 8 / publicOk 8. Production HTTP 200 both viewports. Verdicts: listing + about WORKING; homes-browse + sell PARTIAL; home / Bend / Tetherow / market TRAIL. Residual punches stay on the baseline (grade wave only — no page redesign).
+- Ledger `2a5054ac-1608-4343-872a-322e705973c6` (public-ux, class `look-walk-baselines`). VERSION-1 G9 **DONE 2026-08-16**. R-092 coverage note updated. No schema migration.
+- Planes: dal-stat (`lib/data/loop/look-walk.ts` + signals), public-site (walked, not redesigned), reporting (packet §1b + probe). Admin-crm / ads / alerts / identity unchanged.
+- Ship: `ci:gates` 210/210; `origin/main` includes `8a847a8e7`; production deploy success. Same-session factory hygiene: `check-vercel-deploy.mjs` falls back to documented project ids + GitHub Vercel commit status when `.vercel/project.json` / `VERCEL_TOKEN` are missing (cloud-agent ship path).
+
+**Do not:** redesign public pages in this residual (TRAIL punches are named, not this node's class). Do not SMS, publish, spend, or OAuth. Do not claim G10 (`/join` conversion). G6 stays blocked (live SMS). Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, COMPANY_SCOREBOARD §1b, VERSION-1 G9, PAGE-GRADE v2.4 (first-screen rubric), look-walk baseline, git-commit, COMPANY_IMPROVEMENT blast-radius.
+
+# Prior — 2026-08-16 (loop-sentinel bc-0369d0e1) — G8 SkySlope mirror ops shipped
 
 **Surface:** Cursor cloud agent `bc-0369d0e1-5c3f-43e2-9a78-9cddc20f2c4c`. **Time:** 2026-08-16 ~09:45 UTC. Brief served **G8** (transactions). One node only. **`main` @** `8bb2c6327`. Vercel Production **READY** (GitHub deployment `5929663437`, inspector `3LKLi3cQjgcKFvhLEXyU7N4AGPx8`).
 
