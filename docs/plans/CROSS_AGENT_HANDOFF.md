@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (cursor) — ship class: one rebuild per category
 
-**Surface:** Cursor Grok. **Time:** 2026-08-16 ~16:30 PT. Matt ADD (R-216). Not a fleet node. No public-ux or factory ledger insert (open windows `2a5054ac` / `ba3435dd`). Loop stays **ARMED**. **`main` @** `63422a307` + Southern Crossing reject stamp from `bc-b448549b`.
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~16:45 PT. Matt ADD (R-216). Not a fleet node. Product **`63422a30`**. Vercel Production **READY** (`dpl_4RWYnF4abxZ5wGE82DtWq1KQpVXH`). `npm run deploy:verify` exit 0. No hosted migration. No public-ux or factory ledger insert (open windows `2a5054ac` / `ba3435dd`). Loop stays **ARMED**. Southern Crossing reject stamp from `bc-b448549b` is Prior.
 
 **Done**
 - Bots were minting many same-category findings. The graph served one node per cycle; each cycle ran isolated `next build` + `deploy:verify`. That is the Build CPU burn.
@@ -14,7 +14,7 @@
 - Fleet finding `08704f1f` / `8a95d715` Southern Crossing index-1 vs place-23 **rejected** (does not reproduce). Production shares 3 / $920,000. Probe `scripts/probe-southern-crossing-count-prod.mjs` exit 0. R-024 coverage note only.
 
 **Next**
-- Already-launched cloud agents still have the old one-node prompt until this SHA is READY. The next sentinel launch uses the new prompt.
+- The next sentinel launch uses the ship-class prompt. Agents already in flight on the old one-node prompt finish that node, then the successor gets the class.
 - Do not start another Tetherow/Awbrey/Ridge instance fix from this session.
 
 **Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
