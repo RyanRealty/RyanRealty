@@ -17,7 +17,8 @@ export interface KbHeroData {
 
 export interface KbTownItem {
   name: string
-  activeCount: number
+  /** Null when the ledger read did not answer. 0 is a measured empty. */
+  activeCount: number | null
   medianPrice: number | null
   href: string
   img: string

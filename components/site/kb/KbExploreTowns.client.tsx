@@ -69,7 +69,7 @@ export function KbExploreTowns({
               <span className="town-stats">
                 {/* 0 renders as "0 Active" — hiding the ledger left a bare town
                     name beside fully-populated rows (looked broken; design-audit). */}
-                {t.activeCount >= 0 ? (
+                {t.activeCount != null && t.activeCount >= 0 ? (
                   <span className="town-count mono-num">
                     {t.activeCount.toLocaleString('en-US')}
                     <span className="lbl">Active</span>

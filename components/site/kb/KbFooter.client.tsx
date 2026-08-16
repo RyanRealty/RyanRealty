@@ -45,7 +45,7 @@ export function KbFooter({
   }, [])
 
   const fine = towns
-    .map((t) => `${t.name} ${t.activeCount.toLocaleString('en-US')} / ${kbMoneyFull(t.medianPrice) ?? '—'}`)
+    .map((t) => `${t.name} ${t.activeCount != null ? t.activeCount.toLocaleString('en-US') : '—'} / ${kbMoneyFull(t.medianPrice) ?? '—'}`)
     .join(' · ')
 
   return (

@@ -102,12 +102,12 @@ export default async function NeighborhoodsPage() {
       photoSrc,
       photoAlt: `${n.name}, ${n.cityName} Oregon`,
       photoIsPlace: photoSrc !== hero.src,
-      activeCount: stats?.activeCount ?? 0,
+      activeCount: stats?.activeCount ?? (ledger.length > 0 && n.citySlug === 'bend' ? 0 : null),
       medianListPrice: stats?.medianListPrice ?? null,
     }
   })
 
-  const totalActive = featured.reduce((sum, n) => sum + n.activeCount, 0)
+  const totalActive = featured.reduce((sum, n) => sum + (n.activeCount ?? 0), 0)
 
   const schemas: SchemaInput[] = [
     {
@@ -261,14 +261,14 @@ export default async function NeighborhoodsPage() {
                           {n.sentence}
                         </p>
                       ) : null}
-                      {n.activeCount > 0 || n.medianListPrice != null ? (
+                      {n.activeCount != null && n.activeCount > 0 || n.medianListPrice != null ? (
                         <div className="mt-6 flex flex-wrap items-baseline gap-x-9 gap-y-4">
                           <div>
                             <p
                               className="display mono-num"
                               style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}
                             >
-                              {n.activeCount > 0 ? n.activeCount.toLocaleString() : '-'}
+                              {n.activeCount != null && n.activeCount > 0 ? n.activeCount.toLocaleString() : '-'}
                             </p>
                             <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
                               Active
@@ -288,7 +288,9 @@ export default async function NeighborhoodsPage() {
                         </div>
                       ) : (
                         <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '24px' }}>
-                          No active listings right now.{' '}
+                          {n.activeCount === 0
+                            ? 'No active listings right now. '
+                            : ''}
                           <a href={n.href} style={{ color: 'var(--navy)', textDecoration: 'underline' }}>
                             See the district
                           </a>

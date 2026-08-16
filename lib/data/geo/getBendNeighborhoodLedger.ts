@@ -1,147 +1,46 @@
 /**
  * getBendNeighborhoodLedger — live per-neighborhood active count + median
- * list price for the v6 homepage ledger.
+ * list price for `/neighborhoods`, `/cities/bend` district tiles, and peers.
  *
- * Data source: `listing_tile_mv` (hourly MV refresh) filtered to the
- * SFR convention (property_type='A', Single Family Residence) and
- * Active/Coming Soon inventory, grouped by `boundary_neighborhood` — the
- * polygon-assigned Bend neighborhood-association district on every tile.
- *
- * Why not market_pulse_live: as of 2026-06-12 the live pulse table carries
- * ONLY city + region rows (refresh_market_pulse iterates 16 cities + the
- * region — verified against the live function definition). The neighborhood
- * rows the older homepage map expected no longer exist, so this function
- * computes the same two figures directly from the tile MV instead. ~160
- * rows fetched, aggregated in Node, cached 15 min.
- *
- * Per CLAUDE.md §0: every figure traces to listing_tile_mv rows; medians
- * are computed here (lower-median over sorted prices, matching the
- * percentile_cont(0.5) discrete neighbor for small n). Neighborhoods with
- * zero active SFR inventory are omitted (honest empty, no dash-fill).
+ * SoR is `getBendNeighborhoodPublicInventory` (listing_boundary_xref_mv,
+ * SFR + PUBLIC_ACTIVE, `public.boundaries` polygon). That is the same
+ * population the place-page hero, FAQ, and Field list. Do not reintroduce
+ * `listing_tile_mv.boundary_neighborhood` or `market_pulse_live.active_count`
+ * as a second public "Active" figure — those were the 52 / 62 / 63 split
+ * on Awbrey Butte (2026-08-16 fleet finding).
  */
 
-import { makeResilientCached } from '@/lib/data/cache/resilient'
-import { supabaseAnon } from '@/lib/data/client'
-import { fetchPagedRows } from '@/lib/supabase/paginate'
-import { cacheTag } from '@/lib/data/cache/unstable-cache'
-import { PUBLIC_ACTIVE_STATUSES } from '@/lib/listing-status-public'
+import {
+  BEND_NEIGHBORHOOD_DISTRICTS,
+  getBendNeighborhoodPublicInventory,
+  type NeighborhoodPublicInventory,
+} from '@/lib/data/geo/neighborhood-public-inventory'
 
-/** Bend NA districts shown on the /cities/bend neighborhoods ledger (label =
- *  boundary_neighborhood value, verified against live listing_tile_mv rows).
- *  Expanded from the original 5-district homepage set to all 13 polygons in
- *  data/bend/bend-neighborhood-polygons.json (design-audit §0: the page was
- *  reading getBendNeighborhoodStats, which sources a market_pulse_live
- *  neighborhood row that has never existed, rendering "0 Active" for all 13
- *  districts on the live page).
- *
- * Shared by the ledger, /neighborhoods index, and neighborhood
- * generateStaticParams so the three cannot drift. */
-export const BEND_NEIGHBORHOOD_DISTRICTS: ReadonlyArray<{ label: string; slug: string }> = [
-  { label: 'Awbrey Butte', slug: 'awbrey-butte' },
-  { label: 'Boyd Acres', slug: 'boyd-acres' },
-  { label: 'Century West', slug: 'century-west' },
-  { label: 'Larkspur', slug: 'larkspur' },
-  { label: 'Mountain View', slug: 'mountain-view' },
-  { label: 'Old Bend', slug: 'old-bend' },
-  { label: 'Old Farm District', slug: 'old-farm-district' },
-  { label: 'Orchard District', slug: 'orchard-district' },
-  { label: 'River West', slug: 'river-west' },
-  { label: 'Southeast Bend', slug: 'southeast-bend' },
-  { label: 'Southern Crossing', slug: 'southern-crossing' },
-  { label: 'Southwest Bend', slug: 'southwest-bend' },
-  { label: 'Summit West', slug: 'summit-west' },
-]
+export { BEND_NEIGHBORHOOD_DISTRICTS }
 
 export type NeighborhoodLedgerRow = {
-  /** Display label, e.g. 'Awbrey Butte'. */
   label: string
-  /** Active + Coming Soon SFR listing count. */
   activeCount: number
-  /** Median list price in dollars (null when no priced rows). */
   medianListPrice: number | null
-  /** Href for the neighborhood page. */
   href: string
 }
 
-function median(sorted: number[]): number | null {
-  if (sorted.length === 0) return null
-  const mid = Math.floor((sorted.length - 1) / 2)
-  return sorted.length % 2 === 1 ? sorted[mid]! : (sorted[mid]! + sorted[mid + 1]!) / 2
-}
-
-async function _fetchBendNeighborhoodLedger(): Promise<NeighborhoodLedgerRow[]> {
-  const sb = supabaseAnon()
-  if (!sb) return []
-
-  // Paged read (PostgREST caps single responses at 1,000 rows — a bare
-  // .limit(2000) silently truncated there once active inventory grew,
-  // undercounting neighborhoods and skewing medians).
-  const { rows: data, error } = await fetchPagedRows<{
-    boundary_neighborhood: string | null
-    list_price: number | null
-  }>(
-    (from, to) =>
-      sb
-        .from('listing_tile_mv')
-        .select('boundary_neighborhood, list_price')
-        .in('standard_status', PUBLIC_ACTIVE_STATUSES)
-        .eq('property_type', 'A')
-        .eq('property_sub_type', 'Single Family Residence')
-        .in(
-          'boundary_neighborhood',
-          BEND_NEIGHBORHOOD_DISTRICTS.map((n) => n.label),
-        )
-        .order('listing_key', { ascending: true })
-        .range(from, to),
-    2000,
-  )
-
-  if (error) {
-    throw new Error(
-      `[getBendNeighborhoodLedger] listing_tile_mv query failed: ${error.message ?? JSON.stringify(error)}`,
-    )
+function toLedgerRow(row: NeighborhoodPublicInventory): NeighborhoodLedgerRow {
+  return {
+    label: row.label,
+    activeCount: row.activeCount,
+    medianListPrice: row.medianListPrice,
+    href: row.href,
   }
-
-  const byLabel = new Map<string, number[]>()
-  for (const row of data) {
-    if (!row.boundary_neighborhood) continue
-    const prices = byLabel.get(row.boundary_neighborhood) ?? []
-    if (row.list_price != null && Number.isFinite(Number(row.list_price)) && Number(row.list_price) > 0) {
-      prices.push(Number(row.list_price))
-    } else {
-      // unpriced rows still count toward inventory; track via sentinel-free length below
-      prices.push(NaN)
-    }
-    byLabel.set(row.boundary_neighborhood, prices)
-  }
-
-  return BEND_NEIGHBORHOOD_DISTRICTS.flatMap((n) => {
-    const all = byLabel.get(n.label) ?? []
-    if (all.length === 0) return []
-    const priced = all.filter((p) => Number.isFinite(p)).sort((a, b) => a - b)
-    return [
-      {
-        label: n.label,
-        activeCount: all.length,
-        medianListPrice: median(priced),
-        href: `/cities/bend/${n.slug}`,
-      },
-    ]
-  })
 }
 
 /**
- * Cached ledger rows (15 min — the MV refreshes hourly, the shorter TTL just
- * bounds staleness after an MV refresh lands). Falls back to [] on transient
- * errors — the homepage hides the ledger rather than rendering dashes.
+ * Districts with measured inventory only. A degraded batch (`[]`) stays empty
+ * so callers cannot `?? 0` a timeout into thirteen fake zeros (city-places
+ * invariant 4). A district that rolled up to 0 is a measured empty and is
+ * omitted from the index the same way.
  */
-export const getBendNeighborhoodLedger = makeResilientCached(
-  _fetchBendNeighborhoodLedger,
-  // v2 (2026-07-08, design-audit §0): scope expanded 5 -> 13 districts.
-  ['bend-neighborhood-ledger-v2'],
-  {
-    revalidate: 900,
-    tags: [cacheTag.city('bend'), cacheTag.market],
-  },
-  [],
-)
+export async function getBendNeighborhoodLedger(): Promise<NeighborhoodLedgerRow[]> {
+  const rows = await getBendNeighborhoodPublicInventory()
+  return rows.filter((r) => r.activeCount > 0).map(toLedgerRow)
+}

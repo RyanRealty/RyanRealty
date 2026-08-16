@@ -39,6 +39,7 @@ import {
   getAreaGuideVideo,
 } from '@/lib/data'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
+import { getNeighborhoodPublicInventory } from '@/lib/data/geo/neighborhood-public-inventory'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -118,9 +119,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     neighborhood.seoTitle?.trim() ||
     `${neighborhood.name} homes for sale | ${neighborhood.cityName}, Oregon`
 
+  const inventory =
+    citySlug === 'bend'
+      ? await getNeighborhoodPublicInventory(`${citySlug}-${neighborhoodSlug}`)
+      : null
   const generatedDescription =
-    neighborhood.activeCount > 0
-      ? `${neighborhood.activeCount} single-family homes for sale in ${neighborhood.name}, ${neighborhood.cityName}. Median list price ${neighborhood.medianPrice != null ? fmtK(neighborhood.medianPrice) ?? '' : 'available on request'}. Live market data from the regional MLS.`
+    inventory != null && inventory.activeCount > 0
+      ? `${inventory.activeCount} single-family homes for sale in ${neighborhood.name}, ${neighborhood.cityName}. Median list price ${inventory.medianListPrice != null ? fmtK(inventory.medianListPrice) ?? '' : 'available on request'}. Live market data from the regional MLS.`
       : `Active single-family homes in ${neighborhood.name}, ${neighborhood.cityName}, Oregon. List prices and days on market, pulled live.`
   // Brand voice (CLAUDE.md): a curated DB seo_description carrying a banned
   // cliche (the live "charming" on /cities/bend/old-bend) must never reach the
@@ -158,6 +163,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     boundaryRead, allCitySnapshots, blogPosts, openHouses, activity,
     cityPriceHist, neighborhoodCommunities, richContent, areaGuideVideo,
     peerNeighborhoods,
+    inventoryRead,
   ] = await Promise.all([
     withTimeoutFallback(getMarketPulse({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug }), null, 3500, 'nbh:pulse'),
     withTimeoutFallback(getMarketStats({ geoType: 'neighborhood', geoSlug: boundaryNeighborhoodSlug, periodType: 'rolling_365d' }), null, 3500, 'nbh:stats'),
@@ -187,17 +193,24 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     // slug (EXACT geo match). Null → KbAreaGuideVideo renders nothing.
     withTimeoutFallback(getAreaGuideVideo(neighborhoodSlug), null, 3000, 'area-guide-video'),
     withTimeoutFallback(peerNeighborhoodTowns(citySlug, neighborhoodSlug), [], 3500, 'nbh:peers'),
+    getNeighborhoodPublicInventory(boundaryNeighborhoodSlug),
   ])
 
   const boundaryMapData = boundaryRead.value
-  // In-boundary listing tiles (lat/lng/photo for map + featured + ticker).
-  const boundaryListingKeys = boundaryMapData.pins.map((p) => p.listingKey)
+  const inventory = inventoryRead
+  // Counted set = SFR + PUBLIC_ACTIVE inside the recorded boundary. Same payload
+  // as /neighborhoods and /cities/bend tiles (getBendNeighborhoodPublicInventory).
+  // Do not fall back to pin length, pulse.active_count, or listing_tile_mv tags —
+  // those are different populations (Awbrey Butte 52 / 62 / 63, 2026-08-16).
+  // A measured empty (inventory present, 0 keys) must not revive pin-only homes.
+  const inventoryOk = inventory != null
+  const countedKeys = inventoryOk ? inventory.listingKeys : []
+  const boundaryListingKeys = inventoryOk
+    ? countedKeys
+    : boundaryMapData.pins.map((p) => p.listingKey)
   const listingTiles =
     boundaryListingKeys.length > 0
       ? await withTimeoutFallback(
-          // §0: the map subtitle claims "every active SINGLE-FAMILY listing". The
-          // listings_in_boundary RPC filters only StandardStatus='Active', so the
-          // property-type narrowing has to happen here or the claim is false.
           getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 250 }),
           [],
           4500,
@@ -206,26 +219,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
       : []
 
   // ── COUNTS + PRICES ────────────────────────────────────────────────────────
-  // §0 UNKNOWN IS NOT ZERO. This used to read `pulse?.activeCount ?? pins.length
-  // > 0 ? pins.length : neighborhood.activeCount`, which binds as `(pulse?.
-  // activeCount ?? (pins.length > 0)) ? pins.length : …` because `??` is
-  // lower-precedence than `>`. The pulse count never guarded anything and the
-  // answer was ALWAYS `pins.length`, so a boundary read that timed out returned
-  // the `{ pins: [] }` fallback and the hero published "0 homes for sale" beside
-  // a real median list price. Pins are the in-polygon truth, but only when the
-  // read SUCCEEDED, a polygon exists, and the count is under the RPC row cap (at
-  // the cap the true total is higher). Otherwise pulse, then the listing_tile_mv
-  // row, then null — consumers suppress the figure rather than print a zero.
-  const BOUNDARY_PIN_CAP = 200 // p_limit in getGeoBoundaryMapData's fetchPins
-  const inBoundaryCount =
-    boundaryRead.ok && boundaryMapData.polygon != null && boundaryMapData.pins.length < BOUNDARY_PIN_CAP
-      ? boundaryMapData.pins.length
-      : null
-  const activeCount: number | null =
-    inBoundaryCount ?? pulse?.activeCount ?? neighborhood.activeCount ?? null
-  // A count we could not measure has no asking price to pair with it.
+  // §0 UNKNOWN IS NOT ZERO. A timed-out inventory read is null, never 0, and
+  // never a different query's number.
+  const activeCount: number | null = inventory?.activeCount ?? null
   const medianListPrice =
-    activeCount == null ? null : pulse?.medianListPrice ?? neighborhood.medianPrice ?? null
+    activeCount == null ? null : inventory?.medianListPrice ?? pulse?.medianListPrice ?? null
   const medianDays = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
   const nbhCentroid = mapCentroid(listingTiles)
   const nbhLifestyle = lifestyleNearLatLng(nbhCentroid?.lat, nbhCentroid?.lng)
@@ -357,9 +355,10 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   }
 
   // ── PAGE CONTRACT: AI-citable verified Q&A + structured data ───────────────
-  const marketFaqInput: MarketFaqInput = pulse ?? {
-    activeCount: neighborhood.activeCount ?? null,
-    medianListPrice: neighborhood.medianPrice ?? null,
+  const marketFaqInput: MarketFaqInput = {
+    ...(pulse ?? {}),
+    activeCount,
+    medianListPrice: medianListPrice ?? pulse?.medianListPrice ?? null,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
 
@@ -454,7 +453,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
             eyebrow={`${neighborhood.name} · For sale`}
             title={`Homes in ${neighborhood.name}`}
             subtitle={`Every active single-family listing in ${neighborhood.name}. Zoom the map for photo stamps.`}
-            totalActive={activeCount ?? mapFeatures.length}
+            totalActive={inventoryOk ? (activeCount ?? 0) : listingTiles.length}
             viewAllHref={subdivisionListingsPath(cityName, neighborhood.name)}
             viewAllLabel={`See every ${neighborhood.name} home for sale`}
           />

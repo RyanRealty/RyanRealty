@@ -173,9 +173,9 @@ export default async function CityDetailPage({ params }: Props) {
     withTimeoutFallback(getMarketStatsCacheRowForGeo({ geoType: 'city', geoSlug }), null, 3000, 'city:mktStats'),
     withTimeoutFallback(getPriceHistory('city', geoSlug, 'monthly', 60), [], 4500, 'city:priceHistory'),
     withTimeoutFallback(getCommunitiesForIndex(), [], 3500, 'city:communities'),
-    // getBendNeighborhoodLedger (listing_tile_mv), not getBendNeighborhoodStats
-    // (market_pulse_live has never carried neighborhood rows — every district
-    // rendered a false "0 Active" on the live page; design-audit §0).
+    // getBendNeighborhoodLedger → getBendNeighborhoodPublicInventory
+    // (listing_boundary_xref_mv SFR + PUBLIC_ACTIVE). Same population as the
+    // place-page hero/FAQ. Not pulse.active_count (includes Coming Soon).
     slug === 'bend'
       ? withTimeoutFallback(getBendNeighborhoodLedger(), [], 5000, 'city:nbhStats')
       : Promise.resolve([] as Awaited<ReturnType<typeof getBendNeighborhoodLedger>>),
@@ -312,7 +312,7 @@ export default async function CityDetailPage({ params }: Props) {
             return {
               name,
               href,
-              activeCount: live?.activeCount ?? 0,
+              activeCount: live?.activeCount ?? (neighborhoodStats.length > 0 ? 0 : null),
               medianPrice: live?.medianListPrice ?? null,
               img: commImgByName.get(name.toLowerCase()) ?? neighborhoodPhotos.get(c.slug) ?? '',
             }

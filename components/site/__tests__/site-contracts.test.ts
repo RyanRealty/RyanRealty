@@ -175,12 +175,26 @@ describe('design directive contracts', () => {
     expect(src).not.toMatch(/activeCount(?::[^=]*)?=\s*pulse\?\.activeCount\s*\?\?\s*0/)
   })
 
-  it('§0 — neighborhood active count never resolves a degraded read to zero', () => {
+  it('§0 — neighborhood active count is the public inventory DAL, never a second population', () => {
     const src = readSrc('app/cities/[slug]/[neighborhoodSlug]/page.tsx')
-    expect(src).toMatch(/inBoundaryCount \?\? pulse\?\.activeCount \?\? neighborhood\.activeCount \?\? null/)
+    expect(src).toMatch(/getNeighborhoodPublicInventory/)
+    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*inventory\?\.activeCount\s*\?\?\s*null/)
+    expect(src).not.toMatch(/inBoundaryCount \?\? pulse\?\.activeCount \?\? neighborhood\.activeCount/)
+    expect(src).not.toMatch(/activeCount \?\? mapFeatures\.length/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
     expect(src).toMatch(/withTimeoutFallbackResult\s*\(\s*getGeoBoundaryMapData/)
     expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,80}\?\?\s*0\b/)
+  })
+
+  it('§0 — Bend neighborhood index tiles read the same public inventory SoR', () => {
+    const ledger = readSrc('lib/data/geo/getBendNeighborhoodLedger.ts')
+    expect(ledger).toMatch(/getBendNeighborhoodPublicInventory/)
+    expect(ledger).not.toMatch(/\.from\(\s*['"]listing_tile_mv['"]/)
+    expect(ledger).not.toMatch(/\.eq\(\s*['"]boundary_neighborhood['"]/)
+    const city = readSrc('app/cities/[slug]/page.tsx')
+    expect(city).not.toMatch(/live\?\.activeCount \?\? 0/)
+    const neighborhoods = readSrc('app/neighborhoods/page.tsx')
+    expect(neighborhoods).not.toMatch(/stats\?\.activeCount \?\? 0/)
   })
 
   it('D83/D85 — defined neighborhoods section sources designated Bend polygons only', () => {
