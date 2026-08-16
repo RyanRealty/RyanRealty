@@ -1,11 +1,10 @@
 /**
  * Listing-alert enrollment identity — PURE.
  *
- * sendEvent / ensureNativeLead return crm_people.id as personId. Enrollment
- * writers used to pass that value as fubPersonId, and resolveCrmPersonId
- * looked up fub_legacy_id first. Post-cutover that miss left crm_person_id
- * null unless the email JSONB fallback happened to hit. This helper is the
- * contract: a capture personId is a native CRM id.
+ * sendEvent / ensureNativeLead return crm_people.id as personId. Stamp that
+ * native id on listing_alerts.crm_person_id. Do not look it up through a
+ * retired CRM identifier column first — post-cutover that miss left the
+ * stitch null unless the email fallback happened to hit.
  */
 
 export function nativeCrmPersonId(personId: number | null | undefined): number | null {

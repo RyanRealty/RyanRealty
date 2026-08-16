@@ -23,8 +23,8 @@ checks.push({
   ok: /const crmPersonId = input\.crmPersonId/.test(dal),
 })
 checks.push({
-  label: 'resolveCrmPersonId falls back to crm_people.id when fub_legacy_id misses',
-  ok: /\.eq\('id', args\.fubPersonId\)/.test(dal),
+  label: 'resolveCrmPersonId prefers a native crmPersonId when the writer stamped one',
+  ok: /if \(args\.crmPersonId/.test(dal) && /return args\.crmPersonId/.test(dal),
 })
 checks.push({
   label: 'stampListingAlertsCrmPerson exists',
@@ -59,7 +59,7 @@ checks.push({
 const lp = src('app/lp/buyer-listing-alerts/actions.ts')
 checks.push({
   label: 'buyer LP passes crmPersonId (native id) into upsertListingAlert',
-  ok: /crmPersonId: nativeCrmPersonId\(fubPersonId\)/.test(lp),
+  ok: /crmPersonId: nativeCrmPersonId\(eventResult\.personId\)/.test(lp),
 })
 
 const bulk = src('app/actions/newsletter.ts')

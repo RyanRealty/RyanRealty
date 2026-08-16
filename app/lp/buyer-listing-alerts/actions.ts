@@ -359,7 +359,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
             filters: set.filters,
             filtersHash: set.filtersHash,
             name: set.name,
-            crmPersonId: nativeCrmPersonId(fubPersonId),
+            crmPersonId: nativeCrmPersonId(eventResult.personId),
             fubPersonId,
           })
           if (!persisted.ok) {

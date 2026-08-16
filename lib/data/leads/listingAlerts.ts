@@ -96,16 +96,6 @@ export async function resolveCrmPersonId(
       .limit(1)
       .maybeSingle()
     if (data?.id) return data.id as number
-    // Post-cutover callers still pass sendEvent.personId as fubPersonId —
-    // that value IS crm_people.id. Accept it when the legacy column misses.
-    const { data: byId } = await supabase
-      .from('crm_people')
-      .select('id')
-      .eq('id', args.fubPersonId)
-      .eq('deleted', false)
-      .limit(1)
-      .maybeSingle()
-    if (byId?.id) return byId.id as number
   }
   const email = (args.email ?? '').trim().toLowerCase()
   if (email) {
@@ -159,7 +149,7 @@ export type ListingAlertInput = {
   filtersHash: string
   name: string
   fubPersonId?: number | null
-  /** Native crm_people.id from sendEvent / ensureNativeLead. Prefer this over fubPersonId. */
+  /** Native crm_people.id from sendEvent / ensureNativeLead. Prefer this. */
   crmPersonId?: number | null
   /** Auth user id when the subscriber is signed in (the /account create path). */
   userId?: string | null
