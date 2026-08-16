@@ -28,10 +28,8 @@
 // One qualifier was CUT, not carried: the empty state said settings are "only
 // available for active brokers". The read is `brokers` filtered by email with no
 // active/status predicate, so "active" was not something this page checks.
-import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
-import { getCrmAccess } from '@/app/actions/crm'
-import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
+import { requireAdminPage } from '@/lib/admin/require-admin'
 import { createServiceClient } from '@/lib/supabase/service'
 import { BROKER_HEADSHOTS } from '@/app/admin/(protected)/crm/inbox/_components/mobile/mobile-data'
 import { VerdictLine } from '@/components/admin/v2'
@@ -44,12 +42,9 @@ export const metadata = { title: 'My settings | Admin' }
 export const dynamic = 'force-dynamic'
 
 export default async function MySettingsPage() {
+  const ctx = await requireAdminPage('settings.account')
+  const email = ctx.email
   const session = await getSession()
-  const email = session?.user?.email?.trim().toLowerCase()
-  if (!email) redirect('/admin/access-denied')
-
-  const roleRow = await getAdminRoleForEmail(email)
-  if (!roleRow) redirect('/admin/access-denied')
 
   // Find the matching broker row by email
   const sb = createServiceClient()
@@ -62,8 +57,7 @@ export default async function MySettingsPage() {
   // Mobile audit P2-8 (2026-07-02): the profile card wears the same broker
   // headshot the CRM headers use — the real headshot for the three brokers,
   // falling back to the OAuth avatar (then initials) for others.
-  const access = await getCrmAccess()
-  const crmSlug = access?.brokerSlug ?? null
+  const crmSlug = ctx.brokerSlug
   const avatarUrl: string | null =
     (crmSlug ? BROKER_HEADSHOTS[crmSlug] : null) ??
     session?.user?.user_metadata?.avatar_url ??
@@ -87,7 +81,7 @@ export default async function MySettingsPage() {
       {/* < md — mob-06 Settings modal structure */}
       <MobileSettingsScreen
         broker={mobileBroker}
-        role={roleRow.role}
+        role={ctx.role}
         email={email}
         avatarUrl={avatarUrl}
         appVersion={pkg.version}

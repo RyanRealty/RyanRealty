@@ -13,7 +13,6 @@
 // became SectionHeads, and the lead sentence became a verdict that counts the
 // links actually rendered.
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { ReportGrid, SectionHead, VerdictLine, type ReportColumn } from '@/components/admin/v2'
@@ -50,9 +49,8 @@ function siteUrl(): string {
 }
 
 export default async function BrokerLinksPage() {
-  await requireAdminPage('content.marketing')
-  const access = await getCrmAccess()
-  const scope = access ? scopeBroker(access) : '__unmapped__'
+  const ctx = await requireAdminPage('content.marketing')
+  const scope = scopeBroker(ctx)
   const roster = (await getCrmBrokers()).filter((b) => b.crmActive)
   const brokers = scope ? roster.filter((b) => b.slug === scope) : roster
   const base = siteUrl()
