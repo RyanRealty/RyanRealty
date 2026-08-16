@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — Awbrey index-vs-place count finding rejected
+# Current — 2026-08-16 (cursor-loop-chain) — one SFR count on registry plat pages
+
+**Surface:** Cursor cloud `bc-31d1fea8` (`cursor/loop-chain-2026-08-16t22-06-cbc5`). **Time:** 2026-08-16 ~22:45 UTC. Brief served fleet finding `390ea7a4` (public-ux / fleet `37d5349b2d2e55aa62df73389d8bad85`), not G16/G32. One node only. Product **`846193510`**. **`main` @** `846193510` + this stamp. Vercel Production **READY** (inspector `HgAYesBm6C5a5D8YAHyqbaEGcWs7`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). `npm run ci:gates` 223/223. No hosted migration. Loop stays **ARMED**. Node **done**. Same SHA already on `main` (no PR diff). No public-ux ledger insert (open window `2a5054ac`).
+
+**Done**
+- Fleet finding [p0]: Ridge At Eagle Crest index tile 12 vs place hero 14 vs `#homes` 26. Reproduced on production before the class: three queries (geo_snapshot SFR Active / featured-fetch cap / PropertyType A including townhouses).
+- Class: SoR `getPlatPublicInventory` is MLS SubdivisionName in the parent city, SFR (`property_type='A'` AND `property_sub_type='Single Family Residence'`) + `PUBLIC_ACTIVE_STATUSES`. Same payload on `/subdivisions` tiles and `/subdivisions/{slug}` hero + list keys. Gate `ci:publish-plat-inventory`. No public-ux ledger insert (open window `2a5054ac`).
+- After READY: production 1280 + 390 — index tile **12 Active**, place hero **12 homes for sale in Ridge At Eagle Crest**, `#homes` **12** unique inventory hrefs. 0 of 14 / 26. Probe `scripts/probe-ridge-plat-count-prod.mjs` exit 0. Screenshots `/opt/cursor/artifacts/ridge_count_{place,index_tile}_{1280,390}.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** Awbrey index-vs-place reject `6f334748e` / stamp `09de2a587` (node `2d90a914` **done**, does not reproduce). listing down-payment `aba8c2222` / handoff `31e81df7b` (node `ee37b3a4` **done**). place list medians `eff056fb2`. page-grade process KILLED `9afe74a6a` (do not run `/page-grade`). NWX v8e logo-in-frame killed. Tetherow one-annual HOA. MOS withhold. Counted-set list. G33 `/admin/loop`. G32 seeded. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — Awbrey index-vs-place count finding rejected
 
 **Surface:** Cursor cloud `bc-cfc9ebee` (`cursor/loop-chain-2026-08-16t21-49-e840`). **Time:** 2026-08-16 ~22:10 UTC. Brief served fleet finding `2d90a914` (public-ux / fleet `9f0392434899acb5c7543925a52e542b`), not G16/G32. One node only. No product change. **`main` @** `6f334748e` + this stamp. Production already **READY** on the shipped inventory class (`9cac09b1` / grain `c6c5ad1fd`). `npm run ci:gates` 222/222. No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). PR **#50**. No public-ux ledger insert (open window `2a5054ac`).
 
