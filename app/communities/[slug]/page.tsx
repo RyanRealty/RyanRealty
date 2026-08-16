@@ -753,15 +753,9 @@ export default async function CommunityDetailPage({ params }: Props) {
           eyebrow={communityLabel}
           titleTop={`${community.name},`}
           titleBottom="Homes for Sale"
-          // KbHero prefixes "<N> homes for sale" when activeCount is known.
-          // The continuation names THIS community, never the parent city
-          // (fleet 97c68da5 — "N homes for sale in Bend" on a finer-grain page).
           lead={placeHeroLead({
-            placeName: community.name,
-            parentName: cityName,
-            activeCount,
+            placeName: community.name, parentName: cityName, activeCount,
             knownSuffix: 'Live inventory from the regional MLS.',
-            unknownSuffix: 'Live inventory from the regional MLS.',
           })}
           videoSrc={null}
           posterSrc={heroPhoto}
