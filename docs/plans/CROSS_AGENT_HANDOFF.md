@@ -2,22 +2,21 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — NWX brand on the balloon (studio)
+# Current — 2026-08-16 (cursor) — NWX v8e logo-in-frame killed
 
-**Surface:** Cursor Grok. **Time:** 2026-08-16 ~13:20 PT. Studio only. Not a fleet node. Did not claim G32/G16.
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~13:26 PT. Studio only. Not a fleet node.
 
 **Done**
-- Matt locked stand life: people on the far corner, cyclist on the walk, car in the ring, navy and cream.
-- Brand home is the balloon. Real `logo-blue.png` painted into the cream cloth of `v8e-hold-mark-big.jpg`. Imagine-typeset mark-a/mark-b killed.
-- Hung motion: `out/xai-ryanrealty-studio/show/northwest-crossing-v8/nwx-v8e-stand.mp4`. Drift useful. Ring kill (brick + second car + mark in the sky).
-- Lesson 22 in creative-brain LESSONS. Show room: `out/xai-ryanrealty-studio/show/northwest-crossing-v8/index.html`.
+- Matt kill on sight: logo on the balloon does not work. Style went off the locked stand. v8e whole batch dead.
+- Hang restored: `nwx-v8d-stand.mp4` + still `v8-walk`. Type in post. Balloon stays empty cloth.
+- Lesson 22 rewritten as the failure, not the method.
 
 **Next**
-- Matt keep/kill/change on the branded stand clip. Do not wire the live community header. 16:9 header is still a separate Make.
+- Stay on the locked stand. Do not put the wordmark in a generated frame again. Do not wire the live community header.
 
-**Do not:** live page, publish, SMS, spend, OAuth. Do not invent a listing. Do not steal Tetherow HOA / loop files. Disarm = Matt says "disarm the loop".
+**Do not:** live page, publish, SMS, spend, OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
 
-**Skills read:** creative-brain SKILL + PLAYBOOK + LESSONS + memory-endings + ai-filmmakers; design_system/ryan-realty SKILL.
+**Skills read:** creative-brain SKILL + LESSONS.
 
 # Prior — 2026-08-16 (cursor-loop-chain) — one published annual HOA on place pages
 
