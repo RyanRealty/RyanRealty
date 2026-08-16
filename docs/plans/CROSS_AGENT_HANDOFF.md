@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-sentinel) — place-page hero count grain shipped
+# Current — 2026-08-16 (cursor-loop-chain) — SFR pulse vs city-table remainder named
+
+**Surface:** Cursor cloud `bc-cf38c0a5` (`cursor/loop-chain-2026-08-16t17-19-57b8`). **Time:** 2026-08-16 ~17:55 UTC. Brief served fleet finding `f214eae4` (public-ux / fleet `5439b87e`), not G16/G32. One node only. Product **`4ca02de19`**. **`main` @** `4ca02de19`. Vercel Production **READY** (inspector `DQgDZhkkCyhxvMuQem1pMU6Q1idH`). `npm run deploy:verify` exit 0 in 580s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#44**.
+
+**Done**
+- Fleet finding [p0]: `/housing-market` printed the region SFR pulse next to seven city rows that omitted Madras, Powell Butte, Black Butte Ranch, Culver, Metolius, and Camp Sherman. The footnote only named Tumalo. Reproduced on production + `market_pulse_live` before the class (region 1840, hub sum 1025, omitted 166, TIGER remainder 649).
+- Class: SoR helper `namePulseCityRemainder` names omitted pulse cities with inventory and the TIGER/MLS remainder. DAL `getMarketPulseAllCitySnapshots`. Wired on hub, `/housing-market/central-oregon`, and `/housing-market/annual-review`. Gate `ci:pulse-city-remainder`. No public-ux ledger insert (open window `2a5054ac`).
+- After READY: pulse region **1839** (`v3-2026-05-07`); displayedSum 1024; allCitySum 1190; remainder **649**. Production 1280 + 390 — omitted cities named with counts and `/housing-market/{slug}` doors; Tumalo still named; remainder "649 more in the region pulse sit outside a city-boundary row". Screenshots `/opt/cursor/artifacts/{housing_market,central_oregon,annual_review}_footnote_{1280,390}.png`.
+- R-024 coverage note only (still LOCKED). Pulse still includes Coming Soon (G27). Do not mark G27 done.
+
+**Also on this SHA (other session, do not steal / do not undo):** place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux ledger row. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-020/R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor-loop-sentinel) — place-page hero count grain shipped
 
 **Surface:** Cursor cloud `bc-dc2e5e24` (`cursor/loop-sentinel-2026-08-16t16-50-c8df`). **Time:** 2026-08-16 ~17:20 UTC. Brief served fleet finding `97c68da5` (public-ux), not G16/G32. One node only. Product **`706327241`**. **`main` @** `706327241`. Vercel Production **READY** (inspector `6vKiLggcCckH5uH4LnDdp6mrXL9p`). `npm run deploy:verify` exit 0 in 780s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#43**.
 
