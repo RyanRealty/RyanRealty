@@ -29,7 +29,11 @@ const LOOP_PROMPT = `Run the loop. You are the scheduled loop-sentinel iteration
 
 Boot: read docs/plans/CROSS_AGENT_HANDOFF.md (Current block), then run \`npx tsx scripts/loop-brief.ts\` and follow it exactly: claim the served node, load its required reads, do the class on every blast-radius plane it names, accept against the node's own accept test with environment evidence, ship per canon (gates green, push to main, npm run deploy:verify to READY, hosted migrations in the same delivery), complete the node with evidence, update the handoff Current block. Then continue to the next served node and repeat until you are blocked.
 
-Hard limits (never cross, no exceptions): no outbound messages to real people, no public posting, no ad spend, no OAuth grants, no SkySlope mutations, no newsletter sends. A node needing one of those goes to blocked with the reason and you move on. If everything is blocked, write the blockers into the handoff and finish cleanly.`
+Hard limits (never cross, no exceptions): no outbound messages to real people, no public posting, no ad spend, no OAuth grants, no SkySlope mutations, no newsletter sends. A node needing one of those goes to blocked with the reason and you move on. If everything is blocked, write the blockers into the handoff and finish cleanly.
+
+FINAL ACT of a clean finish (after the handoff update is pushed): hand the loop to your successor by running
+  curl -s -H "Authorization: Bearer $RR_CHAIN_SECRET" "https://ryan-realty.com/api/cron/loop-sentinel?handoff=1"
+It launches the next iteration immediately if eligible work remains (its own guards decide). If RR_CHAIN_SECRET is not set in your shell, skip this — the 10-minute heartbeat chains for you.`
 
 export type SentinelDecision = {
   action: 'launched' | 'skipped' | 'dry-would-launch'
@@ -38,7 +42,13 @@ export type SentinelDecision = {
   openNodes?: number
 }
 
-export async function runLoopSentinel(opts: { dry: boolean }): Promise<SentinelDecision> {
+/**
+ * handoff=true is the zero-gap chain: the CALLER is a finishing iteration
+ * vouching that it is done, so the busy check and boot guard are waived —
+ * the successor launches immediately. Kill switch, activity standdown,
+ * open-work check, and the daily cost cap always apply.
+ */
+export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean }): Promise<SentinelDecision> {
   if (process.env.LOOP_SENTINEL === 'off') {
     return { action: 'skipped', reason: 'kill switch (LOOP_SENTINEL=off)' }
   }
@@ -74,12 +84,13 @@ export async function runLoopSentinel(opts: { dry: boolean }): Promise<SentinelD
     return { action: 'skipped', reason: `daily launch cap reached (${DAILY_LAUNCH_CAP}/24h) — cost circuit-breaker; investigate why iterations end fast`, openNodes }
   }
   const last = recent[0]
-  if (last?.logged_at && now - Date.parse(String(last.logged_at)) < BOOT_GUARD_MIN * 60_000) {
+  if (!opts.handoff && last?.logged_at && now - Date.parse(String(last.logged_at)) < BOOT_GUARD_MIN * 60_000) {
     return { action: 'skipped', reason: `boot guard (launched within ${BOOT_GUARD_MIN} min — agent may not have claimed yet)`, openNodes }
   }
   // State-based busy check: relaunch the MOMENT the previous agent is done,
   // never on a timer. Newest run CREATING/RUNNING = still working, stand down.
-  if (last?.sync_cycle_id) {
+  // Skipped on handoff: the caller IS the previous agent, mid-final-act.
+  if (!opts.handoff && last?.sync_cycle_id) {
     try {
       const resp = await fetch(
         `https://api.cursor.com/v1/agents/${encodeURIComponent(String(last.sync_cycle_id))}/runs?limit=1`,
@@ -100,8 +111,15 @@ export async function runLoopSentinel(opts: { dry: boolean }): Promise<SentinelD
     }
   }
 
-  if (opts.dry) return { action: 'dry-would-launch', reason: 'all checks passed (dry run — no agent launched)', openNodes }
+  if (opts.dry) {
+    return {
+      action: 'dry-would-launch',
+      reason: `all checks passed (dry run — no agent launched)${opts.handoff ? ' [handoff mode]' : ''}`,
+      openNodes,
+    }
+  }
 
+  const chainSecret = process.env.CRON_SECRET?.trim()
   const resp = await fetch('https://api.cursor.com/v1/agents', {
     method: 'POST',
     headers: {
@@ -110,8 +128,12 @@ export async function runLoopSentinel(opts: { dry: boolean }): Promise<SentinelD
     },
     body: JSON.stringify({
       prompt: { text: LOOP_PROMPT },
-      name: `loop-sentinel ${new Date().toISOString().slice(0, 16)}`,
+      name: `loop-${opts.handoff ? 'chain' : 'sentinel'} ${new Date().toISOString().slice(0, 16)}`,
       repos: [{ url: REPO_URL, startingRef: 'main' }],
+      // Zero-gap chain: the agent's clean finish curls ?handoff=1 with this
+      // session secret (encrypted, deleted with the agent). envVars is beta —
+      // if ignored, the prompt's fallback lets the 10-min heartbeat chain.
+      ...(chainSecret ? { envVars: { RR_CHAIN_SECRET: chainSecret } } : {}),
     }),
   })
   const body = (await resp.json().catch(() => ({}))) as { id?: string; error?: unknown }

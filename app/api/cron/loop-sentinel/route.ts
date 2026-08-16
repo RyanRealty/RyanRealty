@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
   if (denied) return denied
 
   const dry = request.nextUrl.searchParams.get('dry') === '1'
-  const decision = await runLoopSentinel({ dry })
+  const handoff = request.nextUrl.searchParams.get('handoff') === '1'
+  const decision = await runLoopSentinel({ dry, handoff })
   console.log('[loop-sentinel]', JSON.stringify(decision))
   return NextResponse.json(decision)
 }
