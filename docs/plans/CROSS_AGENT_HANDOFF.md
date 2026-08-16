@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (cursor) — G32 seeded: xAI-only gen stack + cancel list
 
-**Surface:** Cursor Grok. **Time:** 2026-08-16 ~09:15 PT. Matt ADD (R-205): one generative product — xAI. Loop stays **ARMED**. This session seeded G32; it did not claim G16 and did not fire a second sentinel (bc-406a42b5 already launched).
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~09:15 PT. Matt ADD (R-205): one generative product — xAI. Product **`f6dc09e7`**. Loop stays **ARMED**. This session seeded G32; it did not claim G16 and did not fire a second sentinel (bc-406a42b5 already launched).
 
 **Done**
 - R-213 + G32 + M7 on the version/register. Max pins **G32 · M7** and **R-213**.
