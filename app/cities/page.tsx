@@ -495,6 +495,15 @@ export default async function CitiesPage() {
                         >
                           Open houses
                         </a>
+                        {city.slug === 'bend' ? (
+                          <a
+                            href="/luxury-homes-bend"
+                            className="underline-offset-4 hover:underline"
+                            style={{ color: 'var(--navy)' }}
+                          >
+                            Luxury homes
+                          </a>
+                        ) : null}
                       </div>
                     </div>
                   </div>

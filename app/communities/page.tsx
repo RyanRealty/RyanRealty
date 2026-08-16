@@ -304,6 +304,9 @@ export default async function CommunitiesPage() {
               <Link href="/search" className="btn">
                 Search all listings <span className="arr">→</span>
               </Link>
+              <Link href="/luxury-homes-bend" className="btn ghost">
+                Luxury homes in Bend
+              </Link>
               <Link href="/subdivisions" className="btn ghost">
                 Recorded plats
               </Link>

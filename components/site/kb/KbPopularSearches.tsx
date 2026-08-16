@@ -24,6 +24,7 @@ export function KbPopularSearches({ citySlug, cityName }: { citySlug: string; ci
           <a href={`/homes-for-sale/${citySlug}/lots-and-land`} className="btn alt">{cityName} lots and land</a>
           <a href={`/homes-for-sale/${citySlug}/acreage`} className="btn alt">{cityName} homes on acreage</a>
           <a href={`/homes-for-sale/${citySlug}/new-construction`} className="btn alt">{cityName} new construction</a>
+          <Link href="/luxury-homes-bend" className="btn alt">Luxury homes in Bend</Link>
           <Link href="/communities" className="btn alt">Resort communities</Link>
         </div>
       </div>
