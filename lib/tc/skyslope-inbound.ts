@@ -123,7 +123,7 @@ export async function listSkySlopeFolders(
     const url = `${SKYSLOPE_FILES_BASE}/api/files/${kind}?${params}`
     const r = await inboundFetch(url, { method: 'GET', headers: sessionHeaders(session) })
     if (!r.ok) throw new Error(`${kind} page ${pageNumber}: HTTP ${r.status}`)
-    const j = (await r.json()) as { value?: Record<string, unknown[]> }
+    const j = (await r.json()) as { value?: Record<string, Array<Record<string, unknown>>> }
     const rows = j?.value?.[valueKey] ?? []
     for (const row of rows) {
       const id = String((kind === 'listings' ? row.listingGuid : row.saleGuid) ?? '')
