@@ -2,13 +2,18 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (Grok) — Matt said "Arm the loop"; kill switch flipped; bake deploy in flight
+# Current — 2026-08-16 (Grok) — Loop ARMED; first post-arm agent launched
 
-**Matt 2026-08-16 21:52 PT: "Arm the loop."** That is the R-211 word. `LOOP_SENTINEL=on` is written in Vercel production (overrode the encrypted `off`). A CLI redeploy of `502db045` was Canceled by ignoreCommand (~57s, same class as docs-only). This commit stamps the arm in runtime code so the git-triggered production build actually bakes the env.
+**Matt 2026-08-16 21:52 PT: "Arm the loop."** That is the R-211 word.
 
-**Not yet proven (do not treat as live until the bake is READY):** dry-run `would launch`, first agent boot, `/admin/loop` verdict ARMED. Those land in the next Current update this session.
+**Live proof (2026-08-16 ~22:28 PT):**
+- `origin/main` @ `4966f126` — Vercel production **READY** (`dpl_BKWKk2h85ZEqQp1KP3NnGgD2AKDk`)
+- Dry-run: `{"action":"dry-would-launch","openNodes":25}` (kill switch no longer blocks)
+- Live launch: `{"action":"launched","agentId":"bc-57e943fb-edb5-4a4a-bc9b-9fc6a7ee1a36","openNodes":25}`
+- Follow-up dry-run: skipped — `boot guard (launched within 15 min)`
+- `/admin/loop` on ryan-realty.com: sentinel **ARMED**; last launch **just now** `bc-57e943fb…`; 2 of 12 today; verdict still "Armed and dormant" until this agent claims. Shots: `out/loop-status-armed/` (gitignored). Zero console errors.
 
-**Do not:** create bots (Phase 3). Do not send, post, spend, or OAuth. Disarm = Matt says "disarm the loop".
+**Watch:** `/admin/loop` (Phase 2 Step 4). Healthy = this agent claims one node, ships, handoff curls the next. Disarm = "disarm the loop". Bots still Phase 3. No sends / posts / spend / OAuth.
 
 1. **`/admin/loop` status page** — superuser (`settings.system`, same gate as /admin/sync), linked from Oversight's All tools. Verdict line (armed/disarmed + running/dormant), Version-1 progress, running-now, stale claims, queue-next (fleetNodePriority order), blocked, recent done with evidence first-lines, fleet findings inbox, ledger windows with expiry, sentinel launches (n/12 cap) + orphan releases. Auto-refreshes every 60s. Renders ONLY from the rows agents mutate (`lib/data/loop/status.ts` aggregator) — no self-reported status exists. Screenshots (desktop 1400 + mobile 390, real graph data, zero console errors) verified.
 2. **One-node-per-session chaining** — sentinel LOOP_PROMPT now: claim the ONE served node, finish or block it, final-act handoff curl, STOP. Fresh context per node; the chain carries continuity.
