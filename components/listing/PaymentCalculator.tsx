@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { H2 } from '@/components/site/primitives'
+import { publishFinancingSplit } from '@/lib/finance/publish-down-payment'
 
 type Props = {
   listPrice: number
@@ -23,7 +24,8 @@ export default function PaymentCalculator({ listPrice, taxAmount, associationFee
   const [termYears, setTermYears] = useState(30)
 
   const { monthlyPandI, monthlyTax, monthlyHoa, monthlyInsurance, total } = useMemo(() => {
-    const principal = price * (1 - downPct / 100)
+    const split = publishFinancingSplit({ price, downPaymentPct: downPct })
+    const principal = split?.loanAmount ?? 0
     const monthlyRate = rate / 100 / 12
     const numPayments = termYears * 12
     const monthlyPandI =

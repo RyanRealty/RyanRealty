@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { publishFinancingSplit } from '@/lib/finance/publish-down-payment'
 
 function formatCurrency(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
@@ -67,8 +68,9 @@ export default function MortgageCalculator({
 
   const { downPayment, loanAmount, monthlyPrincipalInterest, monthlyTax, monthlyInsurance, monthlyTotal, pmi } =
     useMemo(() => {
-      const down = Math.round((homePrice * downPaymentPct) / 100)
-      const loan = homePrice - down
+      const split = publishFinancingSplit({ price: homePrice, downPaymentPct })
+      const down = split?.downPayment ?? 0
+      const loan = split?.loanAmount ?? 0
       const monthlyRate = interestRate / 100 / 12
       const numPayments = loanTermYears * 12
       const principalInterest =
@@ -185,7 +187,7 @@ export default function MortgageCalculator({
             <span className="text-lg font-normal text-muted-foreground">/month</span>
           </p>
           <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <span>Principal &amp; interest: {formatCurrency(monthlyPrincipalInterest)}</span>
+            <span>Principal and interest {formatCurrency(monthlyPrincipalInterest)}</span>
             <span>Tax: {formatCurrency(monthlyTax)}</span>
             <span>Insurance: {formatCurrency(monthlyInsurance)}</span>
           </div>

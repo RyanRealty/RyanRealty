@@ -82,6 +82,21 @@ describe('analyzeRental — reconciles to the verified rental sample', () => {
   })
 })
 
+describe('analyzeRental — listing-page down payment agrees', () => {
+  it('prints the Rockway 20% dollars, not a thousand-rounded stand-in', () => {
+    const r = analyzeRental({
+      purchasePrice: 649000,
+      downPaymentPct: 20,
+      interestRatePct: 7,
+      loanTermYears: 30,
+      grossRentMonthly: 2500,
+    })
+    expect(r.downPayment).toBe(129800)
+    expect(r.loanAmount).toBe(519200)
+    expect(r.downPayment + r.loanAmount).toBe(649000)
+  })
+})
+
 describe('analyzeRental — edge cases', () => {
   it('cash purchase (no financing) has zero debt service', () => {
     const r = analyzeRental({

@@ -10,6 +10,7 @@
  * a user must trace to this engine (CLAUDE.md §0 data-accuracy).
  */
 
+import { publishFinancingSplit } from './finance/publish-down-payment'
 import { monthlyPrincipalAndInterest } from './mortgage'
 
 /** Monthly operating-expense line items (dollars per month). */
@@ -147,10 +148,11 @@ export function analyzeRental(inputs: RentalAnalysisInputs): RentalAnalysisResul
   const rentGrowthPct = inputs.rentGrowthPct ?? 2
   const expenseGrowthPct = inputs.expenseGrowthPct ?? 2
 
-  // Acquisition
-  const downPayment = Math.round((price * downPaymentPct) / 100)
+  // Acquisition — same split the listing Monthly-payment block publishes
+  const split = publishFinancingSplit({ price, downPaymentPct })
+  const downPayment = split?.downPayment ?? 0
   const loanAmount =
-    inputs.loanAmount != null && inputs.loanAmount >= 0 ? inputs.loanAmount : Math.max(0, price - downPayment)
+    inputs.loanAmount != null && inputs.loanAmount >= 0 ? inputs.loanAmount : (split?.loanAmount ?? 0)
   const purchaseCostsCash = Math.max(0, inputs.purchaseCostsCash ?? 0)
   const rehabCost = Math.max(0, inputs.rehabCost ?? 0)
   const totalCashNeeded = downPayment + purchaseCostsCash + rehabCost

@@ -1,7 +1,10 @@
 /**
  * Shared mortgage math for estimated monthly principal & interest.
  * Default display: 20% down, current rate (env or 7%), 30-year term.
+ * Down / loan dollars come from publishFinancingSplit so listing widgets agree.
  */
+
+import { publishFinancingSplit } from './finance/publish-down-payment'
 
 /** Default interest rate for display when user has no saved preferences. Set NEXT_PUBLIC_DEFAULT_MORTGAGE_RATE to update. */
 export const DEFAULT_DISPLAY_RATE = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_DEFAULT_MORTGAGE_RATE != null
@@ -38,10 +41,9 @@ export function estimatedMonthlyPayment(
   interestRatePercent: number,
   loanTermYears: number
 ): number {
-  if (listPrice <= 0) return 0
-  const down = (listPrice * downPaymentPercent) / 100
-  const loan = listPrice - down
-  return monthlyPrincipalAndInterest(loan, interestRatePercent, loanTermYears)
+  const split = publishFinancingSplit({ price: listPrice, downPaymentPct: downPaymentPercent })
+  if (!split) return 0
+  return monthlyPrincipalAndInterest(split.loanAmount, interestRatePercent, loanTermYears)
 }
 
 export function formatMonthlyPayment(monthly: number): string {

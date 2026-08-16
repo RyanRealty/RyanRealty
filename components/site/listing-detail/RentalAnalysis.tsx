@@ -70,8 +70,8 @@ export function RentalAnalysis({ listing }: { listing: ListingDetail }) {
           embedded
           initialPrice={price}
           initialPropertyTaxesYear={taxes}
-          // Match the Monthly-payment calculator's defaults (20% down, 7% rate)
-          // so the two financing widgets on this page never disagree.
+          // Same 20% / 7% defaults as Monthly payment. Down dollars come from
+          // publishFinancingSplit so the two widgets cannot disagree.
           initialDownPaymentPct={20}
           initialInterestRate={7}
           propertyLabel={label}

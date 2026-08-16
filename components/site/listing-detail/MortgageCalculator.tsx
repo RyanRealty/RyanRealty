@@ -5,6 +5,7 @@ import {
   Body,
   Price,
 } from '@/components/site/primitives'
+import { publishFinancingSplit } from '@/lib/finance/publish-down-payment'
 
 /**
  * Listing-detail MortgageCalculator — KB section style.
@@ -63,8 +64,9 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
     const downPct = parsePercent(downPctInput)
     const ratePct = parsePercent(rateInput)
     const termYears = Math.max(1, Math.round(parsePercent(termInput)))
-    const down = price * (downPct / 100)
-    const principal = Math.max(0, price - down)
+    const split = publishFinancingSplit({ price, downPaymentPct: downPct })
+    const down = split?.downPayment ?? 0
+    const principal = split?.loanAmount ?? 0
     const pi = monthlyPI(principal, ratePct, termYears)
     const taxesPerYear = taxAnnualAmount ?? price * (TAX_FALLBACK_PCT / 100)
     const insurancePerYear = (price / 300_000) * INSURANCE_PER_300K
@@ -205,7 +207,7 @@ export function MortgageCalculator({ listPrice, taxAnnualAmount, className }: Pr
               marginTop: 4,
             }}
           >
-            Loan amount <Price value={Math.round(result.principal)} /> · <Price value={Math.round(result.down)} /> down · {termInput} year term
+            Loan amount <Price value={result.principal} exact /> · <Price value={result.down} exact /> down · {termInput} year term
           </p>
         </div>
       </div>

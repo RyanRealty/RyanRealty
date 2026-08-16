@@ -63,6 +63,14 @@ describe('mortgage', () => {
       expect(monthly).toBeCloseTo(directCalc, 2)
     })
 
+    it('uses the published Rockway loan, not a thousand-rounded stand-in', () => {
+      const monthly = estimatedMonthlyPayment(649000, 20, 7, 30)
+      const honest = monthlyPrincipalAndInterest(519200, 7, 30)
+      const rounded = monthlyPrincipalAndInterest(519000, 7, 30)
+      expect(monthly).toBeCloseTo(honest, 2)
+      expect(monthly).not.toBeCloseTo(rounded, 2)
+    })
+
     it('calculates with 0% down payment', () => {
       const monthly = estimatedMonthlyPayment(500000, 0, 7, 30)
       const directCalc = monthlyPrincipalAndInterest(500000, 7, 30)
