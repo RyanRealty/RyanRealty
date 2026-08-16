@@ -322,7 +322,7 @@
 | **Evidence pointers** | `lib/crm/scope.ts`; `lib/crm/day-one.ts`; `lib/data/brokers/resolveCrmSlug.ts`; `/admin/today`; `/admin/settings/account`; gate `ci:broker-own-book` |
 | **Public risk** | — (internal/growth thesis) |
 | **Broker product?** | **Core thesis** |
-| **Residual disposition** | **ACTIVE** (platform) — personal social OAuth (D8) still Matt-gated; /join convert is G10 |
+| **Residual disposition** | **ACTIVE** (platform) — personal social OAuth (D8) still Matt-gated; /join convert instrumented (G10) |
 
 ---
 

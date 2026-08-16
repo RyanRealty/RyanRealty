@@ -10,6 +10,7 @@ import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { isJoinInquiry, recordJoinConversion, tagRecruitJoin } from '@/lib/data/loop/join-conversion'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
 
@@ -139,6 +140,16 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
 
   await sendContactNotification({ name, email, phone, inquiryType, message }).catch(() => {})
 
+  if (isJoinInquiry(inquiryType)) {
+    await recordJoinConversion({
+      sessionId,
+      rrVid: (await cookies()).get('rr_vid')?.value ?? null,
+      personId: capturedPersonId,
+      channel: 'contact-form',
+      inquiryType,
+    })
+  }
+
   // Canonical tagging — apply audience:* + source:* + broker:* + round-robin
   // assignment to whatever CRM person sendEvent just touched. Fire-and-forget
   // so it doesn't block the response. (FUB-era tagging rules: docs/archive/fub-era/README.md)
@@ -150,6 +161,10 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
       // Enrichment gates on the native person id sendEvent returned (the old
       // FUB findPersonByEmail re-lookup was a dead no-op post-decommission).
       if (capturedPersonId) {
+        const recruit = isJoinInquiry(inquiryType)
+        if (recruit) {
+          await tagRecruitJoin(capturedPersonId)
+        } else {
         const audience = inferAudience(inquiryType)
         await canonicallyTagLead({
           fubPersonId: capturedPersonId,
@@ -171,6 +186,7 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
         await autoEnrollByFubId(capturedPersonId, { smsConsent }).catch((e: unknown) =>
           console.warn('[contact-form] instant auto-enroll failed:', e),
         )
+        }
         // Stitch this visitor to the CRM person via rr_vid always; a valid
         // session id also backfills visitor_sessions. Session-only writes
         // missed every submit that had no tracker session yet.
@@ -193,12 +209,13 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
   // intent than general inquiries; fold that into the value tier.
   const eventId = generateEventId()
   const inquiryLower = inquiryType.toLowerCase()
+  const recruit = isJoinInquiry(inquiryType)
   const leadValue = listingKey || inquiryLower.includes('property') || inquiryLower.includes('listing')
     ? 300
     : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
       ? 500
       : 200
-  await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/api/meta-capi`, {
+  if (!recruit) await fetch(`${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'}/api/meta-capi`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -221,8 +238,10 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
 
   // GA4 Measurement Protocol mirror — server-side generate_lead so the
   // conversion still lands when gtag is blocked (ad blockers, denied consent).
-  const leadType = listingKey || inquiryLower.includes('property') || inquiryLower.includes('listing')
-    ? 'listing_inquiry'
+  const leadType = recruit
+    ? 'recruit'
+    : listingKey || inquiryLower.includes('property') || inquiryLower.includes('listing')
+      ? 'listing_inquiry'
     : inquiryLower.includes('seller') || inquiryLower.includes('valuation')
       ? 'seller'
       : 'general'

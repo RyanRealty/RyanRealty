@@ -39,6 +39,7 @@ import {
   OLD_MILL_HERO,
   joinFooterColumns,
 } from './_v3/join-constants'
+import { JoinCtaTracker } from './_v3/JoinCtaTracker.client'
 
 export const revalidate = 3600
 
@@ -94,6 +95,7 @@ export default async function JoinPage() {
     <>
       <main className={V3_ROOT_CLASS}>
         <V3SectionTracker pageType="join" />
+        <JoinCtaTracker />
         <MetadataBlock
           schemas={[
             {

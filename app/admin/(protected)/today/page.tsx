@@ -13,6 +13,7 @@ import { listCmasForAdmin } from '@/lib/data'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { scopeBroker } from '@/lib/crm/scope'
 import { getDayOneChecklist } from '@/lib/data/brokers/getDayOneChecklist'
+import { getJoinConversionStats } from '@/lib/data/loop/join-conversion'
 import { dayOneComplete, dayOneRemaining } from '@/lib/crm/day-one'
 import { createServiceClient } from '@/lib/supabase/service'
 import { todayInboundYesEnabled } from '@/lib/crm/today-inbound-draft'
@@ -90,7 +91,7 @@ export default async function TodayPage() {
   const brokerScope = scopeBroker(ctx)
   const nowMs = Date.now()
 
-  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne] = await Promise.all([
+  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne, join] = await Promise.all([
     getInboundTriage(brokerScope),
     getLookingAtNow(brokerScope),
     getBrokerActionQueue({ brokerSlug: brokerScope }),
@@ -98,6 +99,7 @@ export default async function TodayPage() {
     listCmasForAdmin({ limit: 50, offset: 0, brokerSlug: brokerScope }),
     readyApprovals(),
     getDayOneChecklist(ctx),
+    getJoinConversionStats(),
   ])
 
   type CmaRow = {
@@ -133,6 +135,18 @@ export default async function TodayPage() {
           )}
         </VerdictLine>
       </div>
+
+      {join.status === 'ok' ? (
+        <div style={{ margin: '0 0 14px' }}>
+          <VerdictLine tone={join.conversions7d > 0 ? 'attention' : 'ok'}>
+            <b>
+              /join {join.visits7d} visit{join.visits7d === 1 ? '' : 's'} · {join.conversions7d} conversation
+              {join.conversions7d === 1 ? '' : 's'} this week.
+            </b>{' '}
+            {join.visitsAll} visits all-time. Same figure as the company packet.
+          </VerdictLine>
+        </div>
+      ) : null}
 
       {dayOne.applies && !dayOneComplete(dayOne.items) ? (
         <section aria-label="Day one">

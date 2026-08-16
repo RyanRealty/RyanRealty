@@ -59,6 +59,7 @@
 | Meta audience last run | **2026-08-16T09:01:26Z** · hold **not met** (last day 2026-08-16 < 2026-08-22) | `readMetaAudienceHold` / `meta_audience_log.ran_at` |
 | CMAs | **294** · look **WORKING** (`cma-19496-tumalo-reservoir`, 17 pages) | `cmas` count + `docs/plans/ENTERPRISE_MAP/look-walk-baseline.json` (production HTML 200, cover is the house, range $955,000–$1,060,000) |
 | Public look-walk | **8 / 8** beat_on routes at 390+1280 HTTP 200 | `docs/plans/ENTERPRISE_MAP/look-walk-baseline.json` · 2 WORKING · 2 PARTIAL · 4 TRAIL (home, city, Tetherow, market). Residual punches stay on the baseline. |
+| `/join` convert | **13** visits 7d · **67** visits all-time · **0** conversions | `visitor_events` via `getJoinConversionStats` (`page_url` path `/join` + `event_type=join_convert`). Distinct sessions. Fleet-test converts excluded. Probe 2026-08-16. |
 
 ## 2. What shipped
 
@@ -66,6 +67,7 @@
 |---|---|---|---|
 | Company ingest + `site_improvement_ledger.domain` | factory | Non-SEO classes can take a ledger row | `7c2bca5c` |
 | Holistic blast-radius + named surfaces | factory | Search, alerts, polygons, identity, CMA, Spark, ads keys are scored on the same packet | `2ac16199` |
+| `/join` conversion instrumented | recruit-retain | Packet recruit-retain has a named visit/convert figure | G10 `join-conversion` |
 
 ## 3. What is measuring
 
@@ -80,7 +82,7 @@ Scored from this fetch + COMPANY_IMPROVEMENT.md. Not vibes.
 
 1. **nurture** — 20,287 Nurture / **1 Lead** (G3 writer live) / 12 Active Client. **6** active listing alerts against 22,672 people. Alerts remain the rotting row.
 2. **leads / identity** — stitch class closed 2026-08-16: **32/166** map rows now carry `crm_person_id` (was 1/164). Residual: 1 stale FUB-only row with no `crm_people` match, plus visitors who never identified. CAPI `external_id` and alert stamps ride the same person.
-3. **recruit-retain** — **3** brokers. `/join` convert UNKNOWN.
+3. **recruit-retain** — **3** brokers. `/join` **13** visits 7d / **67** all-time / **0** conversions (`getJoinConversionStats`).
 4. **social-presence** — tokens are NOT the rot (corrected 2026-08-15: TikTok/YouTube/X/GBP auto-refresh via the daily heartbeat; LinkedIn parked, no provider refresh token). The rot is the pipeline: brain `measured=2`, `ready` 420, no fan-out calendar (G25).
 5. **public-ux / polygons** — **3,312** boundaries live. **0** `search_areas`. Filter facets are fresh. First look-walk recorded 2026-08-16 (8/8 beat_on at 390+1280). Whether every `geo_type` is on the map is still unwalked. Do not `ST_Within` at request time.
 
@@ -108,7 +110,7 @@ Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pu
 | sales-insights | watch | GCI live. Audience log ran today. |
 | transactions | rotting | SkySlope 66+ days stale. |
 | broker-tools | watch | 294 CMA rows. Look WORKING on `cma-19496-tumalo-reservoir`. Ease / Today queue not in this probe. |
-| recruit-retain | rotting | 3 brokers. `/join` UNKNOWN. |
+| recruit-retain | watch | 3 brokers. `/join` 13 visits 7d / 67 all-time / 0 conversions (`visitor_events` / `getJoinConversionStats`). |
 | data-sync | ok | Delta ~11 min. Spark remains ingest-only. |
 | factory | shipped | THE LOOP v1.5.x: work graph, loop-brief, G56/G57, DB triggers, adversarial verification standing. |
 | license-voice | ok this fill | Pulse v3 on 45/45. One-stat process still CAP-006 / marts / §0. |

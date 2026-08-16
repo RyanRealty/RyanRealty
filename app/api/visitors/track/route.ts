@@ -179,6 +179,7 @@ const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const ALLOWED_EVENT_TYPES = new Set<string>([
   'page_view', 'listing_view', 'search', 'scroll_depth', 'section_view', 'cta_click', 'identify', 'signin', 'save_listing',
   'intent_declared', 'welcome_back', 'email_opt', 'sms_opt',
+  'join_convert',
 ])
 
 // Map the host of the page being tracked to a canonical source_domain bucket.

@@ -7,6 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { isExpiredUnlearned } from './ledger-draft'
+import { readJoinConversionStats } from './join-conversion'
 import { readLookWalkBaseline } from './look-walk'
 import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hold'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
@@ -145,6 +146,14 @@ export type CompanyScoreboardSignals = {
     recordedAt: string | null
     source: string
   }
+  join: {
+    status: SignalStatus
+    visits7d: number
+    visitsAll: number
+    conversions7d: number
+    conversionsAll: number
+    source: string
+  }
 }
 
 const SOCIAL_TABLES = [
@@ -235,6 +244,7 @@ export async function collectCompanyScoreboardSignals(
     visitor7dRes,
     audienceHold,
     cmaRes,
+    joinStats,
     ...tokenResults
   ] = await Promise.all([
     countCrmStages(sb),
@@ -266,6 +276,7 @@ export async function collectCompanyScoreboardSignals(
     sb.from('visitor_events').select('id', { count: 'exact', head: true }).gte('event_at', since7d),
     readMetaAudienceHold(sb, now),
     sb.from('cmas').select('id', { count: 'exact', head: true }),
+    readJoinConversionStats(sb, now),
     ...SOCIAL_TABLES.map((table) =>
       sb.from(table).select(NO_REFRESH_COLUMN.has(table) ? 'expires_at' : 'expires_at,refresh_token'),
     ),
@@ -480,6 +491,15 @@ export async function collectCompanyScoreboardSignals(
     source: look.source,
   }
 
+  const join: CompanyScoreboardSignals['join'] = {
+    status: joinStats.status,
+    visits7d: joinStats.visits7d,
+    visitsAll: joinStats.visitsAll,
+    conversions7d: joinStats.conversions7d,
+    conversionsAll: joinStats.conversionsAll,
+    source: joinStats.source,
+  }
+
   return {
     fetchedAt,
     crm,
@@ -502,5 +522,6 @@ export async function collectCompanyScoreboardSignals(
     identity,
     cma,
     lookWalk,
+    join,
   }
 }

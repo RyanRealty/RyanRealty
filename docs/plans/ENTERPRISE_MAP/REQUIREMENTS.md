@@ -283,7 +283,7 @@
 | R-198 | New broker productive day one: own book, connect own socials, capabilities unlock marketing surfaces, one settings screen not hardcoded maps | BROKER-OS; MASTER-SPEC D17 | PARTIAL | G5 |
 | R-199 | Compass-caliber presence; beat Cascade Sotheby's/Hasson locally; brokerage-as-product thesis | MASTER_SPEC (2026-04-25) | PARTIAL | version target |
 | R-200 | /join stays off the exploration graph in the About cluster; chrome never sells recruiting | ia-lock | LOCKED | — |
-| R-201 | /join conversion instrumented so recruiting has a number | packet | MISSING | G10 |
+| R-201 | /join conversion instrumented so recruiting has a number | packet | VERIFIED | G10 — `visitor_events` via `getJoinConversionStats`; packet + Today read the same DAL |
 | R-202 | Recruiting toolkit deferred behind West Side proof | 03-DECISIONS A1 | PARKED | — |
 | R-203 | Inbound agent referrals: destination GCI after 25% referral fee recorded | 2026-08-14 | PARTIAL | G28 — desk live, 25% fee basis recorded at intake; `inboundFeePct` is write-only and never reaches `tc_commissions.referral_fee` (audit 2026-08-15) |
 

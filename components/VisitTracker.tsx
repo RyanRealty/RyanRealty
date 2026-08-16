@@ -185,6 +185,7 @@ export type FirstPartyEventType =
   | 'welcome_back'
   | 'email_opt'
   | 'sms_opt'
+  | 'join_convert'
 
 export type FirstPartyEventOptions = {
   /** MLS number when the event concerns one listing. */
