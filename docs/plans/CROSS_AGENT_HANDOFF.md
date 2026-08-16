@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — one published listing down-payment figure
+# Current — 2026-08-16 (cursor-loop-chain) — Awbrey index-vs-place count finding rejected
+
+**Surface:** Cursor cloud `bc-cfc9ebee` (`cursor/loop-chain-2026-08-16t21-49-e840`). **Time:** 2026-08-16 ~22:05 UTC. Brief served fleet finding `2d90a914` (public-ux / fleet `9f0392434899acb5c7543925a52e542b`), not G16/G32. One node only. No product change. **`main` @** pending this handoff. Production already **READY** on the shipped inventory class (`9cac09b1` / grain `c6c5ad1fd`). No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). No public-ux ledger insert (open window `2a5054ac`).
+
+**Done**
+- Fleet finding [p0]: Awbrey Butte index tile 52 vs place hero/stat 63, and hero "63 homes for sale in Bend". FIRST STEP reproduce: it does not. Class already shipped earlier today.
+- Production 2026-08-16T21:52Z (PRERENDER): `/neighborhoods` tile **64 Active**, `/cities/bend` row **64 ACTIVE**, place hero **64 homes for sale in Awbrey Butte**, FAQ / Dataset Active Listings **64**, `#homes` list **64** unique inventory hrefs. 0 of 52 / 63 / "homes for sale in Bend" on the place page. Probe `scripts/probe-awbrey-index-count-prod.mjs` exit 0.
+- Screenshots `/opt/cursor/artifacts/awbrey_count_{place,index_tile,city_nbh}_{1280,390}.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** listing down-payment `aba8c2222` / handoff `31e81df7b` (node `ee37b3a4` **done**). place list medians `eff056fb2`. page-grade process KILLED `9afe74a6a` (do not run `/page-grade`). NWX v8e logo-in-frame killed. Tetherow one-annual HOA. MOS withhold. Counted-set list. G33 `/admin/loop`. G32 seeded. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — one published listing down-payment figure
 
 **Surface:** Cursor cloud `bc-ee409fe5` (`cursor/loop-chain-2026-08-16t21-17-4508`). **Time:** 2026-08-16 ~21:45 UTC. Brief served fleet finding `ee37b3a4` (public-ux / fleet `0b2eea305a233f4a1d246cf2e8f1a299`), not G16/G32. One node only. Product **`aba8c2222`**. **`main` @** `aba8c2222`. Vercel Production **READY** (inspector `5BnZrcoJ1jTH6XJ35NajCE44MXam`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#49**.
 
