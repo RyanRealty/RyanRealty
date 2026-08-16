@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (cursor-grok-g15) — G15 search completeness shipped
 
-**Surface:** Cursor Grok (`cursor-grok-g15-20260816`). **Time:** 2026-08-16 ~07:55 PT. Brief served **G15** (public-ux). One node only. Loop stays **ARMED**.
+**Surface:** Cursor Grok (`cursor-grok-g15-20260816`). **Time:** 2026-08-16 ~07:55 PT. Brief served **G15** (public-ux). One node only. Product **`e6523399`**. Loop stays **ARMED**.
 
 **Done**
 - G15 Search completeness to plan acceptance (`c2c9adde-22f0-4359-971e-409d04a2ec32`) **done**. Accept: every FILTER_COMPLETENESS item dispositioned; prod TTFB p75 recorded.
