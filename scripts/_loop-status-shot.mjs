@@ -53,6 +53,9 @@ if (!page.url().includes('/admin/loop')) {
 await page.waitForTimeout(2200)
 await page.screenshot({ path: `${OUT}/loop-desktop.png` })
 await page.screenshot({ path: `${OUT}/loop-desktop-full.png`, fullPage: true })
+await page.setViewportSize({ width: 1280, height: 900 })
+await page.waitForTimeout(400)
+await page.screenshot({ path: `${OUT}/loop-desktop-1280.png` })
 console.log('desktop shots done at', page.url())
 
 const mctx = await browser.newContext({

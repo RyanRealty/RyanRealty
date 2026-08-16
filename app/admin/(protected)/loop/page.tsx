@@ -1,18 +1,27 @@
 // @no-parity — internal admin surface, no public mockup contract
-// THE LOOP status (pre-arm item 1, ARMING-RUNBOOK Step 1): the one screen that
-// answers "is an iteration running, what got done, what's improving" from the
-// SAME rows the agents mutate — work graph, ledger windows, fleet findings,
-// sentinel launch log. No self-reported status exists anywhere, so this page
-// cannot drift from reality. Superuser plumbing (settings.system, same gate as
-// /admin/sync); linked from Oversight's All tools strip.
+// THE LOOP status: what is being fixed, what is next, what just finished.
+// Same rows the agents mutate. Superuser plumbing (settings.system).
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getLoopStatus, type LoopNodeSummary } from '@/lib/data/loop/status'
 import { readIntegrationHealth } from '@/lib/data/loop/integration-health'
 import { readSearchCompletenessAccept } from '@/lib/data/loop/search-completeness'
 import { readVideoDecisionDocket } from '@/lib/data/loop/video-docket'
-import { QueueRow, QuietRow, VerdictLine, SectionHead } from '@/components/admin/v2'
+import { QueueRow, QuietRow, VerdictLine } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
+import {
+  hostPath,
+  nodeKind,
+  plainBlockedReason,
+  plainBot,
+  plainDomain,
+  plainEvidence,
+  plainFindingSeverity,
+  plainFindingStatus,
+  plainNodeTitle,
+  upcomingHint,
+} from '@/lib/data/loop/status-copy'
 import { AutoRefresh } from './AutoRefresh'
 
 export const dynamic = 'force-dynamic'
@@ -26,12 +35,41 @@ function ageWords(iso: string, nowMs: number): string {
   return `${Math.floor(m / 1440)}d ago`
 }
 
-function nodeLabel(n: LoopNodeSummary): string {
-  return n.versionGap ? `${n.versionGap} — ${n.title}` : n.title
+function Fold({
+  title,
+  hint,
+  defaultOpen = false,
+  children,
+}: {
+  title: string
+  hint?: string
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  return (
+    <details className="av2-fold" open={defaultOpen}>
+      <summary>
+        <span>{title}</span>
+        {hint ? <span className="av2-fold__hint">{hint}</span> : null}
+      </summary>
+      <div className="av2-fold__body">{children}</div>
+    </details>
+  )
 }
 
-function truncate(s: string, max = 110): string {
-  return s.length > max ? `${s.slice(0, max - 1)}…` : s
+function nodeRow(n: LoopNodeSummary, nowMs: number, opts?: { context?: string; kind?: string; tone?: 'down' | 'slow' | 'waiting' | 'ok' | 'accent'; hot?: boolean }) {
+  const { kind, tone } = nodeKind(n.title)
+  return (
+    <QueueRow
+      key={n.id}
+      kind={opts?.kind ?? kind}
+      kindTone={opts?.tone ?? tone}
+      title={plainNodeTitle(n.title)}
+      context={opts?.context ?? `On ${plainDomain(n.domain)}`}
+      age={ageWords(n.updatedAt, nowMs)}
+      hot={opts?.hot}
+    />
+  )
 }
 
 export default async function LoopStatusPage() {
@@ -43,12 +81,31 @@ export default async function LoopStatusPage() {
   const nowMs = Date.now()
 
   const running = status.nodes.runningNow
+  const next = status.nodes.queueNext[0] ?? null
+  const remainingAfterShown = Math.max(0, status.nodes.byState.open - status.nodes.queueNext.length)
   const attention =
     status.nodes.staleClaims.length +
     status.ledger.expiredCount +
     status.findings.recent.filter((f) => f.status === 'new' && (f.severity === 'p0' || f.severity === 'major')).length
 
   const lastLaunch = status.sentinel.recent.find((l) => l.kind === 'launch')
+
+  const videoLine =
+    video.status === 'ok'
+      ? video.decision.status === 'pending'
+        ? 'Still waiting on your park-or-rebuild decision'
+        : `Decision: ${video.decision.status}`
+      : 'Video decision file unreadable'
+  const integrationsLine =
+    integrations.status === 'ok'
+      ? integrations.unknownCount === 0
+        ? `Checked. ${integrations.greenCount} healthy, ${integrations.parkCount} parked`
+        : `${integrations.unknownCount} still unknown`
+      : 'Integration checks unreadable'
+  const searchLine =
+    searchCompleteness.status === 'ok'
+      ? `Search leftovers closed (${searchCompleteness.longTail.disposedCount} long-tail). Recorded ${formatDate(searchCompleteness.recordedAt)}`
+      : 'Search completeness file unreadable'
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -58,233 +115,224 @@ export default async function LoopStatusPage() {
         <VerdictLine tone={attention > 0 ? 'attention' : 'ok'}>
           {!status.armed ? (
             <>
-              <b>DISARMED.</b> Planning mode (R-211) — nothing launches until Matt arms the loop.
-              {running.length > 0 ? ' A session is working the graph by hand.' : ''}
+              <b>Off.</b> Nothing starts on its own.
+              {running.length > 0 ? ' A session is still working by hand.' : ''}
             </>
           ) : running.length > 0 ? (
             <>
-              <b>Iteration running</b> on {nodeLabel(running[0])} — claimed {ageWords(running[0].updatedAt, nowMs)}.
+              <b>Fixing now:</b> {plainNodeTitle(running[0].title)}
             </>
-          ) : status.nodes.byState.open > 0 ? (
+          ) : next ? (
             <>
-              <b>Armed and dormant</b> with {status.nodes.byState.open} open node
-              {status.nodes.byState.open === 1 ? '' : 's'} — the next heartbeat launches.
+              <b>On.</b> Next up: {plainNodeTitle(next.title)}
             </>
           ) : (
             <>
-              <b>Armed, queue empty.</b> Every node is done, blocked, or killed.
+              <b>On, and the list is empty.</b> Everything is finished, waiting on you, or dropped.
             </>
           )}
           {attention > 0 ? <> {attention} thing{attention === 1 ? '' : 's'} below need a look.</> : null}
         </VerdictLine>
       </div>
 
-      <section aria-label="Version progress" style={{ marginBottom: 18 }}>
-        <SectionHead>Version 1 progress</SectionHead>
-        <ul className="av2-quietlist" style={{ marginTop: 8 }}>
-          <QuietRow
-            name="Gap nodes done"
-            figure={`${status.version.gapsDone} of ${status.version.gapsTotal}`}
-          />
-          <QuietRow
-            name="Graph"
-            figure={`${status.nodes.byState.open} open · ${status.nodes.byState.in_progress} in progress · ${status.nodes.byState.blocked} blocked · ${status.nodes.byState.done} done`}
-          />
-          <QuietRow
-            name="Video docket"
-            state={video.status === 'ok' ? video.decision.status.toUpperCase() : 'UNREAD'}
-            figure={
-              video.status === 'ok'
-                ? `park $0 vendor · rebuild cap $5/row · ${video.inventory.deadSafeZoneImports} dead imports · M3 ${video.decision.status}`
-                : 'docket unreadable'
-            }
-          />
-          <QuietRow
-            name="Integration health"
-            state={integrations.status === 'ok' && integrations.unknownCount === 0 ? 'PROBED' : 'UNREAD'}
-            figure={
-              integrations.status === 'ok'
-                ? `unknown ${integrations.unknownCount} · green ${integrations.greenCount} · park ${integrations.parkCount} · ${integrations.probedCount} probed`
-                : 'probes unreadable'
-            }
-          />
-          <QuietRow
-            name="Search completeness"
-            state={searchCompleteness.status === 'ok' ? 'ACCEPT' : 'UNREAD'}
-            figure={
-              searchCompleteness.status === 'ok'
-                ? `${searchCompleteness.longTail.disposedCount} long-tail · TTFB p75 ${searchCompleteness.perf.p75.ttfbHomesForSaleMs}/${searchCompleteness.perf.p75.ttfbBendMs}ms · ${formatDate(searchCompleteness.recordedAt)}`
-                : 'accept ledger unreadable'
-            }
-          />
-        </ul>
-      </section>
-
       {running.length > 0 && (
-        <section aria-label="Running now" style={{ marginBottom: 18 }}>
-          <SectionHead>Running now</SectionHead>
+        <Fold title="Being fixed right now" hint={ageWords(running[0].updatedAt, nowMs)} defaultOpen>
+          <p className="av2-fold__lede">
+            {running.length === 1
+              ? 'The loop is on this one item. When it finishes, it takes the next item on the list.'
+              : `The loop has ${running.length} items in progress. When they finish, it takes the next item on the list.`}
+          </p>
           <ul className="av2-queue" style={{ marginTop: 8 }}>
-            {running.map((n) => (
-              <QueueRow
-                key={n.id}
-                kind="Running"
-                kindTone="accent"
-                title={nodeLabel(n)}
-                context={`${n.domain}${n.ownerSession ? ` · ${n.ownerSession}` : ''}`}
-                age={ageWords(n.updatedAt, nowMs)}
-              />
-            ))}
+            {running.map((n) =>
+              nodeRow(n, nowMs, { context: `On ${plainDomain(n.domain)}`, kind: 'Now', tone: 'accent' }),
+            )}
           </ul>
-        </section>
+        </Fold>
+      )}
+
+      <Fold
+        title="What's next"
+        hint={upcomingHint(status.nodes.upcomingCounts)}
+        defaultOpen
+      >
+        {status.nodes.queueNext.length > 0 ? (
+          <>
+            <p className="av2-fold__lede">
+              In the order the loop will take them. Urgent website problems go first, then other website
+              fixes, then items you asked for, then the company list.
+            </p>
+            <ul className="av2-queue" style={{ marginTop: 8 }}>
+              {status.nodes.queueNext.map((n) => nodeRow(n, nowMs))}
+            </ul>
+            {remainingAfterShown > 0 ? (
+              <p className="av2-fold__lede">
+                Showing the next {status.nodes.queueNext.length}. {remainingAfterShown} more after that.
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p className="av2-fold__lede">Nothing waiting. The loop will sit until a bot finds something or you add work.</p>
+        )}
+      </Fold>
+
+      {status.nodes.blocked.length > 0 && (
+        <Fold title="Waiting on you" hint={`${status.nodes.blocked.length}`} defaultOpen>
+          <p className="av2-fold__lede">The loop skipped these and kept going. They stay here until the wait is over.</p>
+          <ul className="av2-queue" style={{ marginTop: 8 }}>
+            {status.nodes.blocked.map((n) =>
+              nodeRow(n, nowMs, {
+                kind: 'Waiting',
+                tone: 'waiting',
+                context: plainBlockedReason(n.blockedReason),
+              }),
+            )}
+          </ul>
+        </Fold>
       )}
 
       {status.nodes.staleClaims.length > 0 && (
-        <section aria-label="Stale claims" style={{ marginBottom: 18 }}>
-          <SectionHead>Stale claims (past the 3h fresh window)</SectionHead>
-          <ul className="av2-queue" style={{ marginTop: 8 }}>
-            {status.nodes.staleClaims.map((n) => (
-              <QueueRow
-                key={n.id}
-                kind="Stale"
-                kindTone="slow"
-                title={nodeLabel(n)}
-                context={`${n.ownerSession ?? 'no owner'} — orphan release frees it when the owner run is terminal`}
-                age={ageWords(n.updatedAt, nowMs)}
-                hot
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section aria-label="Up next" style={{ marginBottom: 18 }}>
-        <SectionHead>Up next (queue order)</SectionHead>
-        {status.nodes.queueNext.length > 0 ? (
-          <ul className="av2-quietlist" style={{ marginTop: 8 }}>
-            {status.nodes.queueNext.map((n) => (
-              <QuietRow key={n.id} name={nodeLabel(n)} state="OPEN" figure={n.domain} />
-            ))}
-          </ul>
-        ) : (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 8 }}>
-            Queue is empty — nothing open.
+        <Fold title="Stuck" hint={`${status.nodes.staleClaims.length} quiet`} defaultOpen>
+          <p className="av2-fold__lede">
+            A session claimed this and then went quiet. The loop will free it and someone else will pick it up.
           </p>
-        )}
-      </section>
-
-      {status.nodes.blocked.length > 0 && (
-        <section aria-label="Blocked" style={{ marginBottom: 18 }}>
-          <SectionHead>Blocked (waiting on a human or a gate)</SectionHead>
           <ul className="av2-queue" style={{ marginTop: 8 }}>
-            {status.nodes.blocked.map((n) => (
-              <QueueRow
-                key={n.id}
-                kind="Waiting"
-                kindTone="waiting"
-                title={nodeLabel(n)}
-                context={n.blockedReason ?? 'no reason recorded'}
-                age={ageWords(n.updatedAt, nowMs)}
-              />
-            ))}
+            {status.nodes.staleClaims.map((n) =>
+              nodeRow(n, nowMs, {
+                kind: 'Stuck',
+                tone: 'slow',
+                context: `On ${plainDomain(n.domain)}`,
+                hot: true,
+              }),
+            )}
           </ul>
-        </section>
+        </Fold>
       )}
 
-      <section aria-label="Recently completed" style={{ marginBottom: 18 }}>
-        <SectionHead>Recently completed</SectionHead>
+      <Fold title="Just finished" hint={`${status.nodes.recentDone.length} recent`} defaultOpen>
         {status.nodes.recentDone.length > 0 ? (
           <ul className="av2-quietlist" style={{ marginTop: 8 }}>
             {status.nodes.recentDone.map((n) => (
               <QuietRow
                 key={n.id}
-                name={nodeLabel(n)}
+                name={plainNodeTitle(n.title)}
                 state={ageWords(n.updatedAt, nowMs)}
-                figure={n.evidenceFirstLine ? truncate(n.evidenceFirstLine) : 'evidence on the node'}
+                figure={plainEvidence(n.evidenceFirstLine)}
               />
             ))}
           </ul>
         ) : (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 8 }}>
-            Nothing completed yet.
-          </p>
+          <p className="av2-fold__lede">Nothing finished yet.</p>
         )}
-      </section>
+      </Fold>
 
-      <section aria-label="Fleet findings" style={{ marginBottom: 18 }}>
-        <SectionHead>Fleet findings inbox</SectionHead>
+      <Fold
+        title="What the bots reported"
+        hint={status.findings.recent.length ? `${status.findings.recent.length} latest` : 'None yet'}
+      >
         {status.findings.recent.length > 0 ? (
-          <ul className="av2-queue" style={{ marginTop: 8 }}>
-            {status.findings.recent.map((f, i) => (
-              <QueueRow
-                key={`${f.bot}-${f.caseId}-${i}`}
-                kind={f.severity}
-                kindTone={f.severity === 'p0' ? 'down' : f.severity === 'major' ? 'slow' : 'accent'}
-                title={`${f.bot}: ${f.caseId}`}
-                context={`${f.url} · ${f.status}`}
-                age={ageWords(f.createdAt, nowMs)}
-                hot={f.status === 'new' && (f.severity === 'p0' || f.severity === 'major')}
-              />
-            ))}
-          </ul>
+          <>
+            <p className="av2-fold__lede">
+              The six website walkers send these in. Urgent and broken items become the fix list above.
+            </p>
+            <ul className="av2-queue" style={{ marginTop: 8 }}>
+              {status.findings.recent.map((f, i) => {
+                const sev = plainFindingSeverity(f.severity)
+                return (
+                  <QueueRow
+                    key={`${f.bot}-${f.caseId}-${i}`}
+                    kind={sev.kind}
+                    kindTone={sev.tone}
+                    title={f.observed ? f.observed.slice(0, 140) : `${plainBot(f.bot)} on ${hostPath(f.url)}`}
+                    context={`${plainBot(f.bot)} · ${hostPath(f.url)} · ${plainFindingStatus(f.status)}`}
+                    age={ageWords(f.createdAt, nowMs)}
+                    hot={f.status === 'new' && (f.severity === 'p0' || f.severity === 'major')}
+                  />
+                )
+              })}
+            </ul>
+          </>
         ) : (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 8 }}>
-            No findings yet — bots are not running (fleet setup is Phase 3 of the runbook).
-          </p>
+          <p className="av2-fold__lede">No reports yet.</p>
         )}
-      </section>
+      </Fold>
 
-      <section aria-label="Ledger windows" style={{ marginBottom: 18 }}>
-        <SectionHead>Measurement windows (Learn step)</SectionHead>
+      <Fold
+        title="What we're measuring"
+        hint={
+          status.ledger.expiredCount
+            ? `${status.ledger.expiredCount} ready to score`
+            : status.ledger.openWindows.length
+              ? `${status.ledger.openWindows.length} open`
+              : 'None'
+        }
+      >
         {status.ledger.openWindows.length > 0 ? (
-          <ul className="av2-quietlist" style={{ marginTop: 8 }}>
-            {status.ledger.openWindows.map((w) => (
-              <QuietRow
-                key={w.id}
-                name={`${w.domain} — ${w.changeClass}`}
-                state={w.expired ? 'EXPIRED' : 'open'}
-                figure={
-                  w.expired
-                    ? 'unlearned — domain freezes until closed'
-                    : `ends ${formatDate(w.endsAt)}`
-                }
-              />
-            ))}
-          </ul>
+          <>
+            <p className="av2-fold__lede">
+              A measurement bet, not the fix list. One open bet per area. The website can still be
+              fixed while this is running. After the end date we score whether it worked.
+            </p>
+            <ul className="av2-quietlist" style={{ marginTop: 8 }}>
+              {status.ledger.openWindows.map((w) => (
+                <QuietRow
+                  key={w.id}
+                  name={`${plainDomain(w.domain)} · ${w.changeClass.replace(/-/g, ' ')}`}
+                  state={w.expired ? 'Score this' : 'Measuring'}
+                  figure={w.expired ? 'Window ended. Write whether it worked.' : `Score after ${formatDate(w.endsAt)}`}
+                />
+              ))}
+            </ul>
+          </>
         ) : (
-          <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 8 }}>
-            No open windows — every shipped class has been measured and closed.
-          </p>
+          <p className="av2-fold__lede">No open measurement bets.</p>
         )}
-      </section>
+      </Fold>
 
-      <section aria-label="Sentinel" style={{ marginBottom: 18 }}>
-        <SectionHead>Sentinel (the self-starter)</SectionHead>
+      <Fold
+        title="How the loop is running"
+        hint={status.armed ? 'On' : 'Off'}
+      >
         <ul className="av2-quietlist" style={{ marginTop: 8 }}>
-          <QuietRow name="State" state={status.armed ? 'ARMED' : 'DISARMED'} figure="LOOP_SENTINEL env, read live" />
           <QuietRow
-            name="Launches today"
+            name="Auto-start"
+            state={status.armed ? 'On' : 'Off'}
+            figure={status.armed ? 'Starts the next job when the last one finishes' : 'Planning only'}
+          />
+          <QuietRow
+            name="Sessions started"
             figure={`${status.sentinel.launchesToday} in 24h · no daily cap`}
           />
           <QuietRow
-            name="Last launch"
-            figure={lastLaunch ? `${ageWords(lastLaunch.loggedAt, nowMs)} · ${lastLaunch.agentId}` : 'none in 24h'}
+            name="Last start"
+            figure={lastLaunch ? ageWords(lastLaunch.loggedAt, nowMs) : 'none in 24h'}
           />
-          {status.sentinel.recent
-            .filter((l) => l.kind === 'orphan-release')
-            .slice(0, 3)
-            .map((l, i) => (
-              <QuietRow
-                key={`rel-${i}`}
-                name="Orphan release"
-                state={ageWords(l.loggedAt, nowMs)}
-                figure={`freed a dead session's claim (${l.agentId})`}
-              />
-            ))}
         </ul>
-      </section>
+      </Fold>
+
+      <Fold
+        title="Company checklist"
+        hint={`${status.version.gapsDone} of ${status.version.gapsTotal} done`}
+      >
+        <p className="av2-fold__lede">
+          The planned Company v1 list. The loop works this after urgent website problems.
+        </p>
+        <ul className="av2-quietlist" style={{ marginTop: 8 }}>
+          <QuietRow
+            name="Planned items done"
+            figure={`${status.version.gapsDone} of ${status.version.gapsTotal}`}
+          />
+          <QuietRow
+            name="Fix list"
+            figure={`${status.nodes.byState.open} waiting · ${status.nodes.byState.in_progress} in progress · ${status.nodes.byState.blocked} waiting on you · ${status.nodes.byState.done} done`}
+          />
+          <QuietRow name="Video docket" figure={videoLine} />
+          <QuietRow name="Integration health" figure={integrationsLine} />
+          <QuietRow name="Search leftovers" figure={searchLine} />
+        </ul>
+      </Fold>
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 24 }}>
-        Updated {ageWords(status.generatedAt, nowMs)} · auto-refreshes every 60s · All tools:{' '}
+        Updated {ageWords(status.generatedAt, nowMs)} · refreshes every 60s ·{' '}
         <Link href="/admin/oversight" style={{ color: 'var(--a-accent)' }}>
           Oversight
         </Link>
@@ -292,8 +340,6 @@ export default async function LoopStatusPage() {
         <Link href="/admin/sync" style={{ color: 'var(--a-accent)' }}>
           System health
         </Link>
-        {' · '}
-        runbook: docs/plans/ENTERPRISE_MAP/ARMING-RUNBOOK.md
       </p>
     </div>
   )

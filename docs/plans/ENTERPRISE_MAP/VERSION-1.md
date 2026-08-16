@@ -1,7 +1,7 @@
 # Company v1 — the first certified whole-company version
 
 **Status: OPEN** (flips to CERTIFIED by the certification pass below, in one commit)
-**Max:** G32 · M7 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
+**Max:** G33 · M7 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
 **Process:** THE LOOP v1.6.0 §Company versions (`docs/DEVELOPMENT_PROCESS.md`)
 **Substrate:** the Enterprise Map matrices (`matrix/CAPABILITIES.md` CAP-001…035, `matrix/INTEGRATIONS.md` INT-001…037, `matrix/FACTORY.md`), inventories regenerated 2026-08-08T21:00Z; live figures carry their own stamps in `COMPANY_SCOREBOARD.md` (single source — counts are not restated here).
 **Demand side:** [REQUIREMENTS.md](REQUIREMENTS.md) — every harvested Matt directive, dispositioned; the current count and split live in that file's G57 gate output, not here. MISSING/PARTIAL rows cite the gap below that carries them.
@@ -86,6 +86,7 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | G30 | **DONE 2026-08-15** — Flow Prover lane: designated fleet test identity recognized at the intake chokepoint (tag + all-channel suppression), wake-task skip, auto-enroll refusal, packet-count exclusion — all four guards proven live (fixture person 61855: tagged, suppressed, 0 tasks, enroll refused, excluded). Flows case pack + Bot 6 brief + `fleet-flow-verify` backend check shipped. | REQUIREMENTS R-208; chokepoint proof 2026-08-15 | factory |
 | G31 | Newsletter redesign (look only): restyle the branded email shell + admin rendered preview so Matt can approve the look. Enroll and send stay Matt-manual after that approve. Zero sends in this node. | REQUIREMENTS R-212; R-159 | nurture |
 | G32 | xAI-only generative stack: image, video, voice, and content text run through one product (`XAI_API_KEY`). Inventory every third-party gen vendor, produce the cancel list, put all new generate calls through `lib/grok-*.ts`. Executor must be expert in https://docs.x.ai/overview. | REQUIREMENTS R-213; D10 | social-presence |
+| G33 | **DONE 2026-08-16** — `/admin/loop` in plain English: Now / Next / Waiting / Finished; shop jargon folded. Signed-in 390 + 1400 shots in `out/loop-status`. No factory ledger insert. Node `1a6eb37a`. | REQUIREMENTS R-214 | factory |
 
 Matt-only (steered 2026-08-16 — CHANGE/HOLD/PARK/DONE recorded below; nothing else waits):
 
