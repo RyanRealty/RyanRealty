@@ -262,6 +262,10 @@
       "schedule": "0 15 * * 1"
     },
     {
+      "path": "/api/cron/review-ask-on-close",
+      "schedule": "0 16 * * *"
+    },
+    {
       "path": "/api/cron/loop-sentinel",
       "schedule": "*/10 * * * *"
     }

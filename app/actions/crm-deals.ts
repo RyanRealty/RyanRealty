@@ -13,6 +13,8 @@ import { scopeBroker } from '@/lib/crm/scope'
 import { dealInScope } from '@/lib/crm/deal-scope'
 import { getDealScopeRow } from '@/lib/data/crm/getDealScopeRow'
 import { getDealPipelines, pipelineHasStage } from '@/lib/data/crm/getDealPipelines'
+import { stageReviewAskDraft } from '@/lib/data/crm/stageReviewAskDraft'
+import { shouldStageReviewAsk } from '@/lib/crm/review-ask'
 
 export type DealActionResult = { ok: true } | { ok: false; error: string }
 
@@ -167,6 +169,25 @@ export async function restageCrmDeal(
         source: 'app',
         payload: { deal_id: dealId, from: row.stage, to: target },
       })
+    }
+
+    // Westside #9 / R-125: stage Matt's GBP review-ask as a draft. Never send.
+    // Best-effort — a draft miss must not fail the restage the broker just did.
+    const personId = row.personId
+    if (
+      personId &&
+      shouldStageReviewAsk({
+        enteringClosedStage: !!targetStage?.isClosedStage,
+        wasAlreadyClosed: !!row.actualCloseDate,
+        personId,
+      })
+    ) {
+      const staged = await stageReviewAskDraft({
+        personId,
+        brokerSlug: row.assignedBroker ?? access.brokerSlug ?? null,
+        address: row.name,
+      })
+      if (!staged.ok) console.error('[restageCrmDeal] review-ask draft', staged.error)
     }
 
     bust(dealId)

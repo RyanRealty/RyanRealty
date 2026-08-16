@@ -141,17 +141,37 @@ export async function upsertDraft(params: {
   body: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const sb = createServiceClient()
-  const { error } = await sb.from('crm_message_drafts').upsert(
-    {
-      person_id: params.personId,
-      broker_slug: ownerKey(params.brokerSlug),
-      channel: params.channel,
-      subject: params.channel === 'email' ? params.subject : null,
-      body: params.body,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'person_id,broker_slug,channel' },
-  )
+  const owner = ownerKey(params.brokerSlug)
+  const now = new Date().toISOString()
+  const payload = {
+    person_id: params.personId,
+    broker_slug: owner,
+    channel: params.channel,
+    subject: params.channel === 'email' ? params.subject : null,
+    body: params.body,
+    updated_at: now,
+  }
+  // Unique index is (person_id, coalesce(broker_slug, ''), channel) — an
+  // expression index PostgREST cannot target with onConflict. Read then
+  // insert-or-update so a draft actually persists.
+  const existing = await getDraftsForPerson(params.personId, params.brokerSlug)
+  const current = params.channel === 'email' ? existing.email : existing.text
+  if (current) {
+    let q = sb
+      .from('crm_message_drafts')
+      .update({
+        subject: payload.subject,
+        body: payload.body,
+        updated_at: now,
+      })
+      .eq('person_id', params.personId)
+      .eq('channel', params.channel)
+    q = owner === null ? q.is('broker_slug', null) : q.eq('broker_slug', owner)
+    const { error } = await q
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  }
+  const { error } = await sb.from('crm_message_drafts').insert(payload)
   if (error) return { ok: false, error: error.message }
   return { ok: true }
 }
