@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (loop-sentinel bc-fe75bb57) — G11 audience hold machinery shipped, node blocked
 
-**Surface:** Cursor cloud agent `bc-fe75bb57-b840-4d01-846f-67efa6a79fbc`. **Time:** 2026-08-16 ~11:20 UTC. Brief served **G11** (factory). One node only. **`main` @** `8247ee9b2`. Vercel Production **READY** (GitHub deployment `5930137236`, inspector `9oPuFMsP2VEtmz3E8Yet84XbKMoe`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
+**Surface:** Cursor cloud agent `bc-fe75bb57-b840-4d01-846f-67efa6a79fbc`. **Time:** 2026-08-16 ~11:20 UTC. Brief served **G11** (factory). One node only. Product **`8247ee9b2`**. Handoff lands on **`main` after G10** (`0b1ba14c9` / `ecb22e78f`). Vercel Production **READY** for the G11 product SHA (GitHub deployment `5930137236`, inspector `9oPuFMsP2VEtmz3E8Yet84XbKMoe`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
 
 **Blocked**
 - G11 Meta audience heartbeat hold (`568d807b-ac07-43cc-9eea-52b8f67460a6`) **blocked**. Accept: seven consecutive `ran_at` days ending on or after **2026-08-22**; map cell updated with evidence.
@@ -14,7 +14,7 @@
 - Planes: dal-stat (hold DAL + signals), admin-crm (`/admin/audiences`, `/admin/analytics/meta-health`), reporting (packet + INTEGRATIONS + scoreboard), ads (36h heartbeat, no spend). Public-site / alerts / identity stitch unchanged.
 - Ship: `ci:gates` green via `npm run push`; `origin/main` includes `8247ee9b2` (`c0465bc5a` + email-send-gated re-key `8247ee9b2`); production deploy success. PR #38 merged.
 
-**Do not:** flip INT-007 to KEEP before 2026-08-22. Do not insert another factory ledger row. Do not claim G10 (`/join` conversion — `in_progress` `bc-120b6b86`). G6 stays blocked (live SMS). Do not SMS, publish, spend, or OAuth. Disarm = Matt says "disarm the loop". Bots still Phase 3.
+**Do not:** flip INT-007 to KEEP before 2026-08-22. Do not insert another factory ledger row. G10 is **DONE** on main (`0b1ba14c9`) — do not redo `/join`. G6 stays blocked (live SMS). Do not SMS, publish, spend, or OAuth. Disarm = Matt says "disarm the loop". Bots still Phase 3.
 
 **Skills read:** growth-loop, DEVELOPMENT_PROCESS, DATABASE_FOR_AI_AGENTS (lookup + cache model), INTEGRATIONS INT-007, VERSION-1 G11, COMPANY_SCOREBOARD ads row, COMPANY_IMPROVEMENT blast-radius, git-commit, facebook-seller-growth (read-only; no spend).
 
