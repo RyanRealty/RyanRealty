@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — G32 seeded: xAI-only gen stack + cancel list
+# Current — 2026-08-16 (cursor-loop-chain) — one public inventory count for Bend districts
+
+**Surface:** Cursor cloud `bc-406a42b5` (`cursor-loop-chain-2026-08-16t16-01-5039`). **Time:** 2026-08-16 ~16:50 UTC. Brief served fleet finding `945d3e5e` (public-ux), not G16. One node only. Product **`9cac09b1`**. **`main` @** `9cac09b1`. Vercel Production **READY** (`AxpVMY6cXodZpfNkjSQ5M7NsJ2tY`, aliases `ryan-realty.com` + `ryanrealty.vercel.app`). `npm run deploy:verify` exit 0 in 606s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#42**.
+
+**Done**
+- Fleet finding [major]: Awbrey Butte index tile printed 52, place hero 63, FAQ 62. Reproduced on production + DB before the class change (A `listing_tile_mv.boundary_neighborhood` SFR+PUBLIC=52; B pulse `active_count`=62 includes CS; C pin Active A/B/C=63; D xref SFR+PUBLIC_ACTIVE=63).
+- Class: one DAL `lib/data/geo/neighborhood-public-inventory.ts`. Geography `listing_boundary_xref_mv` (`public.boundaries`). Property SFR. Status PUBLIC_ACTIVE (Active + AUC). Same cache on `/neighborhoods`, `/cities/bend` tiles, place hero/FAQ/metadata/Field. Timed-out ledger is `null`, not `0`. No public-ux ledger insert (open window `2a5054ac`).
+- After READY: probe D=63 (61 Active + 2 AUC). Production 1280 + 390 — `/neighborhoods` tile 63 Active, `/cities/bend` town-row 63 Active, place FAQ "There are 63 active single-family listings", mobile hero "63 homes". Screenshots `/opt/cursor/artifacts/awbrey_{neighborhoods,city_tile,place_faq,place_hero}_{1280,390}.png`.
+- Residual (not this node): browse `/homes-for-sale/bend/awbrey-butte` still uses `boundary_neighborhood` tags. Pulse still includes CS (G27). Do not flip G27.
+
+**Also on this SHA (other session, do not steal / do not undo):** G32 seeded `f6dc09e7` (xAI-only gen stack + cancel list). G6 admin SMS-agent toggle. G6 accept stays **blocked** (live marketing-line APPROVE).
+
+**Do not:** insert another public-ux ledger row. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints (likely G32 Matt ADD, else G16). This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, DATABASE_FOR_AI_AGENTS §0/§3, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-020/R-025, git-commit.
+
+# Prior — 2026-08-16 (cursor) — G32 seeded: xAI-only gen stack + cancel list
 
 **Surface:** Cursor Grok. **Time:** 2026-08-16 ~09:15 PT. Matt ADD (R-205): one generative product — xAI. Product **`f6dc09e7`**. Loop stays **ARMED**. This session seeded G32; it did not claim G16 and did not fire a second sentinel (bc-406a42b5 already launched).
 
