@@ -35,6 +35,7 @@ import {
   normalizeEventToggles,
   type AlertEventToggles,
 } from '@/lib/alerts/event-detection'
+import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
 
 /**
  * Signed-in saved-search (listing-alert) self-management.
@@ -136,19 +137,65 @@ export async function createSavedSearch(
   const searchName = name.trim() || getFilterNameFallback(normalizedFilters) || 'Saved search'
   const warm = await prewarmSearchCache(normalizedFilters, 24)
 
+  // Capture the person FIRST so the listing_alerts row is born with
+  // crm_person_id. The old order (upsert then sendEvent) left new account
+  // users untracked: resolveCrmPersonId had no row to match yet.
+  let crmPersonId: number | null = null
+  try {
+    const { sendEvent } = await import('@/lib/followupboss')
+    const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
+    const searchUrl = `${base}${buildSearchUrlFromFilters(normalizedFilters)}`
+    const summary = getFiltersSummary(normalizedFilters)
+    const count = warm.totalCount != null ? ` (${warm.totalCount} matches)` : ''
+    const result = await sendEvent({
+      type: 'Saved Property Search',
+      person: { emails: [{ value: email }] },
+      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
+      system: 'Ryan Realty Website',
+      sourceUrl: searchUrl,
+      message: `Saved search: ${searchName}${summary ? `, ${summary}` : ''}${count}`,
+    })
+    crmPersonId = result.ok ? nativeCrmPersonId(result.personId) : null
+    if (crmPersonId) {
+      const { canonicallyTagLead } = await import('@/lib/canonical-lead-tagger')
+      await canonicallyTagLead({
+        fubPersonId: crmPersonId,
+        audience: 'buyer',
+        source: 'idx-registration',
+        tier: 'warm',
+        originContext: {
+          source: 'saved-search',
+          sourceLabel: 'Saved property search',
+          landingPage: searchUrl,
+          audience: 'buyer',
+          tier: 'warm',
+          want: `Listing alerts for ${searchName}${summary ? `, ${summary}` : ''}`,
+        },
+      })
+    }
+  } catch (err) {
+    console.warn('[createSavedSearch] native lead capture failed (non-blocking):', err)
+  }
+
   const persisted = await upsertListingAlert({
     email,
     filters: normalizedFilters,
     filtersHash,
     name: searchName,
     userId: session.user.id,
+    crmPersonId,
   })
   if (!persisted.ok) return { error: 'Could not save this search. Please try again.' }
+
+  if (crmPersonId) {
+    const { stampListingAlertsCrmPerson } = await import('@/lib/data/leads/listingAlerts')
+    await stampListingAlertsCrmPerson(email, crmPersonId)
+  }
 
   // The public/social feature stays on the LEGACY saved_searches table. When
   // the user opts into sharing, mirror a legacy row carrying the public fields
   // so getPopularPublicSearches keeps receiving entries. That row is display-
-  // only — the alert cron scans listing_alerts exclusively.
+  // only. The alert cron scans listing_alerts exclusively.
   if (options?.isPublic === true) {
     const supabase = await createClient()
     const publicTitle = options.publicTitle?.trim() || searchName
@@ -167,57 +214,9 @@ export async function createSavedSearch(
     if (error) console.error('[createSavedSearch] public mirror', error.message)
   }
 
-  // Saving a search is a top buyer-intent signal — capture it natively
-  // (sendEvent → ensureNativeLead) and canonically tag the buyer so the lead
-  // enters the buyer workflow. Replaces the dead FUB trackSavedPropertySearch
-  // wrapper (FUB decommissioned 2026-06-24). Awaited (a fire-and-forget IIFE
-  // gets killed when the serverless lambda freezes on return); the catch keeps
-  // a capture blip from ever blocking the save.
-  try {
-    const { sendEvent } = await import('@/lib/followupboss')
-    const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
-    const searchUrl = `${base}${buildSearchUrlFromFilters(normalizedFilters)}`
-    const summary = getFiltersSummary(normalizedFilters)
-    const count = warm.totalCount != null ? ` (${warm.totalCount} matches)` : ''
-    const result = await sendEvent({
-      type: 'Saved Property Search',
-      person: { emails: [{ value: email }] },
-      source: base.replace(/^https?:\/\//, '').toLowerCase() || 'ryan-realty.com',
-      system: 'Ryan Realty Website',
-      sourceUrl: searchUrl,
-      message: `Saved search: ${searchName}${summary ? `, ${summary}` : ''}${count}`,
-    })
-    // Canonical buyer tagging on the native person id — the tagger's own
-    // compliance guard skips realtors / opt-outs.
-    if (result.ok && result.personId) {
-      const { canonicallyTagLead } = await import('@/lib/canonical-lead-tagger')
-      await canonicallyTagLead({
-        fubPersonId: result.personId,
-        audience: 'buyer',
-        source: 'idx-registration',
-        tier: 'warm',
-        originContext: {
-          source: 'saved-search',
-          sourceLabel: 'Saved property search',
-          landingPage: searchUrl,
-          audience: 'buyer',
-          tier: 'warm',
-          want: `Listing alerts for ${searchName}${summary ? `, ${summary}` : ''}`,
-        },
-      })
-    }
-  } catch (err) {
-    console.warn('[createSavedSearch] native lead capture failed (non-blocking):', err)
-  }
-
   return { error: null }
 }
 
-/**
- * Edit a user's own saved search — rename and/or change its parameters. Scoped
- * to the signed-in user (the DAL write carries user_id). When filters change,
- * re-warm the search cache so results render fast on the next visit.
- */
 export async function updateSavedSearch(
   id: string,
   fields: { name?: string; filters?: SavedSearchFilters }

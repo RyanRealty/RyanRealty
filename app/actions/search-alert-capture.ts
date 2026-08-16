@@ -14,6 +14,7 @@ import { sendEvent } from '@/lib/followupboss'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
+import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 
@@ -102,6 +103,7 @@ export async function submitSearchAlertSignup(input: {
   //    Best-effort: a capture blip must never block the signup or the durable
   //    persistence.
   let fubPersonId: number | null = null
+  let crmPersonId: number | null = null
   try {
     const result = await sendEvent({
       type: 'Saved Property Search',
@@ -111,7 +113,8 @@ export async function submitSearchAlertSignup(input: {
       sourceUrl: searchUrl,
       message: `Saved search: ${name}${summary ? `, ${summary}` : ''}`,
     })
-    const nativeId = result.ok ? result.personId : null
+    const nativeId = result.ok ? nativeCrmPersonId(result.personId) : null
+    crmPersonId = nativeId
     fubPersonId = nativeId
     if (nativeId) {
       try {
@@ -161,7 +164,14 @@ export async function submitSearchAlertSignup(input: {
   }
 
   // 6. Persist so the alert cron can email this guest when new homes match.
-  const persisted = await upsertListingAlert({ email, filters: normalized, filtersHash, name, fubPersonId })
+  const persisted = await upsertListingAlert({
+    email,
+    filters: normalized,
+    filtersHash,
+    name,
+    crmPersonId,
+    fubPersonId,
+  })
   if (!persisted.ok) return { ok: false, error: 'We could not set up your alert. Please try again.' }
 
   // 7. GA4 conversion mirror (best-effort, zero value: this is a free capture).

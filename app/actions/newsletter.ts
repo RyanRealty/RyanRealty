@@ -284,7 +284,7 @@ export async function adminBulkAssignSavedSearchAction(personIds: number[], name
     if (access && !(await requirePersonInScope(pid, access)).ok) { skipped++; continue }
     const contact = await getCrmPersonContact(pid)
     if (!contact) { skipped++; continue }
-    const r = await createListingAlertForLead({ email: contact.email, fubPersonId: null, name, filters: normalized, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
+    const r = await createListingAlertForLead({ email: contact.email, crmPersonId: pid, fubPersonId: null, name, filters: normalized, filtersHash: hash, origin: 'broker', assignedBy: gate.email, frequency: 'weekly' })
     if (r.ok) assigned++; else skipped++
   }
   return { ok: true, assigned, skipped }

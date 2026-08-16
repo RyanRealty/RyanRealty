@@ -13,6 +13,7 @@ import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
+import { nativeCrmPersonId } from '@/lib/alerts/enroll-identity'
 import { buildBuyerAlertFilterSets } from './alert-filters'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { resolveLeadSource, resolvePaidAttributionTags } from '@/lib/crm/lead-source'
@@ -358,6 +359,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
             filters: set.filters,
             filtersHash: set.filtersHash,
             name: set.name,
+            crmPersonId: nativeCrmPersonId(fubPersonId),
             fubPersonId,
           })
           if (!persisted.ok) {

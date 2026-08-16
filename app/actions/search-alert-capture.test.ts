@@ -100,7 +100,12 @@ describe('submitSearchAlertSignup identity stitch', () => {
     expect(h.sendEvent).toHaveBeenCalled()
     expect(h.canonicallyTagLead).toHaveBeenCalled()
     expect(h.createNativeTask).toHaveBeenCalled()
-    expect(h.upsertListingAlert).toHaveBeenCalled()
+    expect(h.upsertListingAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: EMAIL,
+        crmPersonId: PERSON_ID,
+      }),
+    )
   })
 
   it('passes a valid uuid v4 sessionId through to stitch', async () => {

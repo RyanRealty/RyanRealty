@@ -82,8 +82,11 @@ export const ROW_COLS = '*'
  */
 export async function resolveCrmPersonId(
   supabase: ReturnType<typeof createServiceClient>,
-  args: { email?: string | null; fubPersonId?: number | null },
+  args: { email?: string | null; fubPersonId?: number | null; crmPersonId?: number | null },
 ): Promise<number | null> {
+  if (args.crmPersonId && Number.isInteger(args.crmPersonId) && args.crmPersonId > 0) {
+    return args.crmPersonId
+  }
   if (args.fubPersonId) {
     const { data } = await supabase
       .from('crm_people')
@@ -93,9 +96,27 @@ export async function resolveCrmPersonId(
       .limit(1)
       .maybeSingle()
     if (data?.id) return data.id as number
+    // Post-cutover callers still pass sendEvent.personId as fubPersonId —
+    // that value IS crm_people.id. Accept it when the legacy column misses.
+    const { data: byId } = await supabase
+      .from('crm_people')
+      .select('id')
+      .eq('id', args.fubPersonId)
+      .eq('deleted', false)
+      .limit(1)
+      .maybeSingle()
+    if (byId?.id) return byId.id as number
   }
   const email = (args.email ?? '').trim().toLowerCase()
   if (email) {
+    const { data: point } = await supabase
+      .from('crm_contact_points')
+      .select('person_id')
+      .eq('kind', 'email')
+      .eq('value', email)
+      .limit(1)
+      .maybeSingle()
+    if (point?.person_id) return point.person_id as number
     const { data } = await supabase
       .from('crm_people')
       .select('id')
@@ -138,6 +159,8 @@ export type ListingAlertInput = {
   filtersHash: string
   name: string
   fubPersonId?: number | null
+  /** Native crm_people.id from sendEvent / ensureNativeLead. Prefer this over fubPersonId. */
+  crmPersonId?: number | null
   /** Auth user id when the subscriber is signed in (the /account create path). */
   userId?: string | null
 }
@@ -150,10 +173,12 @@ export type ListingAlertInput = {
 export async function upsertListingAlert(input: ListingAlertInput): Promise<{ ok: boolean; error?: string }> {
   const supabase = createServiceClient()
   const email = input.email.trim().toLowerCase()
-  const crmPersonId = await resolveCrmPersonId(supabase, {
-    email,
-    fubPersonId: input.fubPersonId,
-  })
+  const crmPersonId = input.crmPersonId
+    ?? await resolveCrmPersonId(supabase, {
+      email,
+      fubPersonId: input.fubPersonId,
+      crmPersonId: input.crmPersonId,
+    })
   // Resurrection guard: an existing explicit opt-out stays muted on re-save.
   const optedOut = await alertExplicitlyOptedOut(supabase, email, input.filtersHash)
   const { error } = await supabase.from(TABLE).upsert(
