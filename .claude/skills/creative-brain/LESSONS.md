@@ -28,3 +28,10 @@ Append-only. Every creative session that learns something adds it here with a da
 ## 2026-08-14 — Reality Law retired
 
 15. **THE REALITY LAW IS RETIRED (Matt: those rules are prohibitive; we are better at this now).** Lesson #11 stays as history of why unconstrained photoreal failed in July (porcelain elk, prompt-only Grok banners, "Ratas Rales"). It is no longer a kill-on-sight ban on rendering real places. The live standard is SKILL law 1: reference-conditioned Central Oregon place work is allowed; prompt-only scenic slop is refuse; do not invent a listing, a room, or the view from an address; do not generate people as residents; charts and numbers render in code. PLAYBOOK "reality test" is now the reference test.
+
+## 2026-08-16 — xAI studio, NorthWest Crossing stills
+
+16. **Imagine keeps or mutates street signs from the source drone.** Four of ten NWX takes passed the navy sat gate and still died on letters in the frame ("NW Crossing Dr", "Mt Washington Dr", garbled Washington). The sat gate does not read type. After every place Make, look at the island and the posts. Readable letters are a kill. Do not ask the model to remove the sign — that induces the sign (lesson 2). Crop tighter or pick a still without chrome letters.
+17. **Cream-in-the-trees can drift infrared-white.** Asking for cream left in the trees made deciduous masses glow like an IR plate. The mute still passed sat. Watch the foliage: dusty midtone, not a white flare.
+18. **Walker-and-dog is promptable; the dog is not guaranteed.** h4 and s5 landed both. s3 landed a walker and dropped the dog. If the life beat is the hang, kill the take that loses the dog rather than calling the silhouette enough.
+19. **Geo tags lie.** Area Guide 02 is tagged northwest-crossing and is Sisters downtown. Area Guide 04 is tagged as a river/canal and is Discovery Park from across the pond. Visual-verify before IMAGE_0. Discovery Pond is irrigation — do not send a fish rise.

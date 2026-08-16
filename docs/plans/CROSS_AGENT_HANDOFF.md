@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (cursor-loop-chain) — SFR pulse vs city-table remainder named
 
-**Surface:** Cursor cloud `bc-cf38c0a5` (`cursor/loop-chain-2026-08-16t17-19-57b8`). **Time:** 2026-08-16 ~17:55 UTC. Brief served fleet finding `f214eae4` (public-ux / fleet `5439b87e`), not G16/G32. One node only. Product **`4ca02de19`**. **`main` @** `4ca02de19`. Vercel Production **READY** (inspector `DQgDZhkkCyhxvMuQem1pMU6Q1idH`). `npm run deploy:verify` exit 0 in 580s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#44**.
+**Surface:** Cursor cloud `bc-cf38c0a5` (`cursor/loop-chain-2026-08-16t17-19-57b8`). **Time:** 2026-08-16 ~17:55 UTC. Brief served fleet finding `f214eae4` (public-ux / fleet `5439b87e`), not G16/G32. One node only. Product **`4ca02de19`**. **`main` @** `4ca02de19` (handoff lands after `a8f515147`). Vercel Production **READY** (inspector `DQgDZhkkCyhxvMuQem1pMU6Q1idH`). `npm run deploy:verify` exit 0 in 580s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#44**.
 
 **Done**
 - Fleet finding [p0]: `/housing-market` printed the region SFR pulse next to seven city rows that omitted Madras, Powell Butte, Black Butte Ranch, Culver, Metolius, and Camp Sherman. The footnote only named Tumalo. Reproduced on production + `market_pulse_live` before the class (region 1840, hub sum 1025, omitted 166, TIGER remainder 649).
@@ -12,11 +12,32 @@
 - After READY: pulse region **1839** (`v3-2026-05-07`); displayedSum 1024; allCitySum 1190; remainder **649**. Production 1280 + 390 — omitted cities named with counts and `/housing-market/{slug}` doors; Tumalo still named; remainder "649 more in the region pulse sit outside a city-boundary row". Screenshots `/opt/cursor/artifacts/{housing_market,central_oregon,annual_review}_footnote_{1280,390}.png`.
 - R-024 coverage note only (still LOCKED). Pulse still includes Coming Soon (G27). Do not mark G27 done.
 
-**Also on this SHA (other session, do not steal / do not undo):** place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+**Also on this SHA (other session, do not steal / do not undo):** xAI studio NWX hang `a8f515147`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
 
-**Do not:** insert another public-ux ledger row. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+**Do not:** insert another public-ux ledger row. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
 
 **Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-020/R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor) — xAI studio: NWX header + social stills
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~10:55 PT. Isolated studio in gitignored `out/xai-ryanrealty-studio/`. No product files. No live KbHero swap. No loop node. Did not claim G32 or G16. Docs **`a8f515147`**.
+
+**Done**
+- Look lock stays first-cycle Mirror Pond `keep/01-boardwalk.jpg`. Bake-off is research. CARD_TEMPLATE relocked + awareness ladder written (owned → Unsplash/Pexels/Shutterstock → parent keep → refuse).
+- Remembered NorthWest Crossing. Owned Area Guide 01 (sculpture circle) and 03 (Discovery pond). 02 is Sisters — refuse. 04 verified as the same Discovery pond, not a canal.
+- Made five 16:9 headers and five 9:16 socials. All ten passed the sat gate. Hang: `cards/places/northwest-crossing/keep/01-header.jpg` (h4 walker+dog) and `keep/02-social.jpg` (s2 sculpture vertical).
+- Show: `out/xai-ryanrealty-studio/show/northwest-crossing/index.html`. Matt looks. Nothing published.
+
+**Also on this SHA (other session, do not steal / do not undo):** place-page hero count grain `706327241`. Awbrey inventory-count class `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+
+**Next**
+- Matt keep/kill on the NWX hang pair. Do not wire the live community header.
+- Later Mirror Pond pass may add clouds / walker / one fish rise. Do not remake that library first.
+- IMAGE_1 on every Make is still the boardwalk keep.
+
+**Do not:** claim G32 done. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not send a fish rise on Discovery Pond.
+
+**Skills read:** creative-brain SKILL + PLAYBOOK + LESSONS + emotion-mechanics + neuroaesthetics + piece-brief, platform-best-practices (logo closer, not opener).
 
 # Prior — 2026-08-16 (cursor-loop-sentinel) — place-page hero count grain shipped
 
