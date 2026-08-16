@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-26bd9513) — G12 video docket shipped
+# Current — 2026-08-16 (loop-sentinel bc-4c2a67d8) — G13 integration health shipped
+
+**Surface:** Cursor cloud agent `bc-4c2a67d8-8857-473a-9878-2099c2607f5f`. **Time:** 2026-08-16 ~12:10 UTC. Brief served **G13** (factory). One node only. Product **`3f7378450`**. PR **#41**. `ci:gates` **214/214** including `ci:integration-health`. Vercel Production **READY** (GitHub deployment `5930797749`, inspector `5meRwF9WPhtuWcp9puiNXvsZCi3A`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
+
+**Done**
+- G13 Probe every unknown-health integration (`2da11e59-c3ea-43fa-8f57-c3ef5a96b66a`) **done**. Accept: INTEGRATIONS health counts **unknown = 0** with per-row evidence.
+- Class: SoR `docs/plans/ENTERPRISE_MAP/integration-health-probes.json`. DAL `readIntegrationHealth` / `integrationHealthComplete`. Packet §0 + §2 + scoreboard `integrations`. `/admin/loop` QuietRow. Gate `ci:integration-health`. No factory ledger insert (open window `ba3435dd`). No schema migration.
+- Green KEEP: INT-021 OpenAI models 118; INT-023 xAI models 12; INT-031 Unsplash results=1; INT-032 Replicate `ryanrealty` + Synthesia videos=1; INT-036 AdSense `pub-592866` in prod JS.
+- Dark PARK: INT-026 Sentry stub DSN / `org:ci` token; INT-029 NeverBounce key missing; INT-033 VAPID keys missing (0 active subs). No generate, no web-push send.
+- Accept proof: `npx tsx scripts/loop-probe-g13.ts` — `complete=true` unknownCount=0 greenCount=5 parkCount=3 probedCount=8. Matrix after flip: green 18 · amber 9 · red 0 · dark 10 · unknown 0 · KEEP 23 · PARK 10.
+- VERSION-1 G13 **DONE 2026-08-16**.
+
+**Do not:** flip R-045. Do not re-register video producers. Do not flip INT-007 to KEEP before 2026-08-22. Do not insert another factory ledger row. Do not SMS, publish, spend, OAuth, or send web-push. G6 stays blocked (live SMS). G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, MECHANICAL_GATES, AGENTIC_GRAPH_ENGINEERING, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, VERSION-1 G13, INTEGRATIONS, git-commit.
+
+# Prior — 2026-08-16 (loop-sentinel bc-26bd9513) — G12 video docket shipped
 
 **Surface:** Cursor cloud agent `bc-26bd9513-82b6-4e3e-b22e-9aba3838e83e`. **Time:** 2026-08-16 ~11:55 UTC. Brief served **G12** (factory). One node only. **`main` @** `ca8f7f636` (product `fd71eee24` + DAL deploy touch). PR **#40**. Vercel Production **READY** (GitHub deployment `5930667908`, inspector `BERhGqFnQqdf2TsFJgZ1eervPref`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). `ci:gates` **213/213** including `ci:video-docket`.
 
