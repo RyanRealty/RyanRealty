@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (cursor-loop-chain) — Awbrey index-vs-place count finding rejected
 
-**Surface:** Cursor cloud `bc-cfc9ebee` (`cursor/loop-chain-2026-08-16t21-49-e840`). **Time:** 2026-08-16 ~22:05 UTC. Brief served fleet finding `2d90a914` (public-ux / fleet `9f0392434899acb5c7543925a52e542b`), not G16/G32. One node only. No product change. **`main` @** pending this handoff. Production already **READY** on the shipped inventory class (`9cac09b1` / grain `c6c5ad1fd`). No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). No public-ux ledger insert (open window `2a5054ac`).
+**Surface:** Cursor cloud `bc-cfc9ebee` (`cursor/loop-chain-2026-08-16t21-49-e840`). **Time:** 2026-08-16 ~22:10 UTC. Brief served fleet finding `2d90a914` (public-ux / fleet `9f0392434899acb5c7543925a52e542b`), not G16/G32. One node only. No product change. **`main` @** `6f334748e` + this stamp. Production already **READY** on the shipped inventory class (`9cac09b1` / grain `c6c5ad1fd`). `npm run ci:gates` 222/222. No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). PR **#50**. No public-ux ledger insert (open window `2a5054ac`).
 
 **Done**
 - Fleet finding [p0]: Awbrey Butte index tile 52 vs place hero/stat 63, and hero "63 homes for sale in Bend". FIRST STEP reproduce: it does not. Class already shipped earlier today.
