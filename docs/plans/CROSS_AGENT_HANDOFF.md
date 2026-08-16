@@ -2,7 +2,26 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — hyphen city URLs resolve to space-form cache
+# Current — 2026-08-16 (cursor) — G33 /admin/loop in plain English shipped
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~11:55 PT. One node only: G33 `1a6eb37a` (factory). Matt ADD routed through the register (R-214) + manifest + seeded graph node — not a side feature. Product **`1f01f54f`**. **`main` @** `1f01f54f`. Vercel Production **READY** (`dpl_G9w7nisxxBiAkXh7gchLsBzMrG1y`, `npm run deploy:verify` exit 0 in 385s). No hosted migration. Loop stays **ARMED**. Node **done**. Did not claim a fleet node. No factory ledger insert (open window `ba3435dd`). Did not fire an extra sentinel.
+
+**Done**
+- `/admin/loop` is Now / Next / Waiting / Finished in plain English. Shop jargon (Fleet finding, p0, sentinel, ledger) folds away. Copy helpers in `lib/data/loop/status-copy.ts`.
+- Accept on production: signed-in 390 + 1280 at `https://ryan-realty.com/admin/loop`. Verdict + folds + human titles. No console errors. Shots `out/loop-status-prod/`.
+- R-214 VERIFIED. VERSION-1 G33 **DONE 2026-08-16**. Graph node `1a6eb37a` **done**.
+
+**Also on this SHA (other session, do not steal / do not undo):** La Pine hyphen-cache `6eded9fd` / READY `FJgUZGejwabU1xuWChDSn6A8pBpb`. SFR pulse city-remainder `4ca02de19`. NWX studio hang `a8f515147`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+
+**Next**
+- Matt keep/kill on the NWX hang pair and motion takes. Do not wire the live community header.
+- Armed sentinel keeps fleet p0s. Do not curl an extra sentinel from this session.
+
+**Do not:** claim a fleet p0. Do not insert another public-ux or factory ledger row. Do not claim G32 done. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, COMPANY_IMPROVEMENT ADD verb, admin-product-os (named-page, not a full OS grind), git-commit.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — hyphen city URLs resolve to space-form cache
 
 **Surface:** Cursor cloud `bc-875be615` (`cursor/loop-chain-2026-08-16t18-00-f801`). **Time:** 2026-08-16 ~18:40 UTC. Brief served fleet finding `7d7c74c6` (public-ux / fleet `75370225805bb52d38b151ced2dab5c1`), not G16/G32. One node only. Product **`6eded9fdb`**. **`main` @** `1f01f54f5` + this handoff. Vercel Production **READY** (inspector `FJgUZGejwabU1xuWChDSn6A8pBpb`). `npm run deploy:verify` exit 0 in 734s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#45**.
 
@@ -12,30 +31,11 @@
 - After READY: pulse `v3-2026-05-07` updated 2026-08-16T18:30:00Z — la pine **175** / $499,950 displayed **$500,000** / 50.5; powell butte 63 / $1,350,000; black butte ranch 31 / $1,073,000; camp sherman 4 / $945,000. Production 1280 + 390 — all four `/housing-market/{hyphen}` reports 200, no 404 fallback, live figures. `/homes-for-sale/la-pine` SFR widget 175 / $500,000 / 51 days. Screenshots `/opt/cursor/artifacts/la_pine_report_{1280,390}.png`, class siblings, `la_pine_homes_sfr_{1280,390}.png`.
 - R-024 coverage note only (still LOCKED). Pulse still includes Coming Soon (G27). Do not mark G27 done.
 
-**Also on this SHA (other session, do not steal / do not undo):** G33 `/admin/loop` plain English `1f01f54f5` / `77e12913c` — that session still owns `deploy:verify` + `completeWorkNode` on `1a6eb37a`. SFR city-table remainder `4ca02de19`. xAI studio NWX hang `a8f515147`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+**Also on this SHA (other session, do not steal / do not undo):** G33 `/admin/loop` plain English `1f01f54f` is **done** (node `1a6eb37a`). SFR city-table remainder `4ca02de19`. xAI studio NWX hang `a8f515147`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
 
-**Do not:** insert another public-ux or factory ledger row. Do not complete G33 for the other session. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+**Do not:** insert another public-ux or factory ledger row. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29).
 
 **Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-020/R-024, git-commit.
-
-# Prior — 2026-08-16 (cursor) — G33 /admin/loop in plain English
-
-**Surface:** Cursor Grok. **Time:** 2026-08-16 ~11:30 PT. One node only: G33 `1a6eb37a` (factory). Matt ADD routed through the register (R-214) + manifest + seeded graph node — not a side feature. Loop stays **ARMED**. Did not claim a fleet node. No factory ledger insert (open window `ba3435dd`). Did not fire an extra sentinel.
-
-**Done**
-- `/admin/loop` is Now / Next / Waiting / Finished in plain English. Shop jargon (Fleet finding, p0, sentinel, ledger) folds away. Copy helpers in `lib/data/loop/status-copy.ts`.
-- Signed-in shots: `out/loop-status/` desktop 1400 + 1280 + full, mobile 390. Verdict + folds + human titles. No console errors.
-- R-214 VERIFIED. VERSION-1 G33 **DONE 2026-08-16**.
-
-**Also on this SHA (other session, do not steal / do not undo):** SFR pulse city-remainder `4ca02de19` / READY `DQgDZhkkCyhxvMuQem1pMU6Q1idH`. City hyphen cache `6eded9fd`. NWX studio hang `a8f515147`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
-
-**Next**
-- After this push: `deploy:verify`, then `completeWorkNode` on `1a6eb37a` with READY evidence. Do not curl an extra sentinel — the armed chain already has fleet p0s.
-- Matt keep/kill on the NWX hang pair and motion takes. Do not wire the live community header.
-
-**Do not:** claim a fleet p0. Do not insert another public-ux or factory ledger row. Do not claim G32 done. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
-
-**Skills read:** growth-loop, COMPANY_IMPROVEMENT ADD verb, admin-product-os (named-page, not a full OS grind), git-commit.
 
 # Prior — 2026-08-16 (cursor) — NWX social tile motion (studio only)
 
