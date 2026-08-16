@@ -42,6 +42,7 @@
 | **CRM funnel stage mix** | `crm_people.stage` via `collectCompanyScoreboardSignals` (packet). Entry stage is **Lead** (`buildNativePersonRow` / trigger `native-create`). Advance to Nurture on `sequence-enroll` or `first-outbound` (`advanceJourneyStage`). Do not backfill the historical book. | `stage` | live |
 | **Did they open or click what we sent?** | `email_events` (`event` = `open` / `click`) | `recipient_email`, `person_id`, `occurred_at` | live webhook |
 | **Is the SkySlope recon mirror current?** | `skyslope_transactions` via `getSkySlopeMirrorFreshness` / `refreshSkySlopeMirrorInbound` (`lib/data/tc/skyslope-mirror.ts`). Inbound Files API only. Vault (`tc_deals`) is the deal SoR. | `synced_at`, `property_key`, `stage` | daily cron `/api/cron/skyslope-mirror-refresh`; current means under 36 hours |
+| **Is the Meta audience heartbeat holding?** | `meta_audience_log` via `readMetaAudienceHold` / `computeAudienceHold` (`lib/data/loop/meta-audience-hold.ts`). Same `crm_people` list feeds CAPI. Spend stays Matt-gated. | `ran_at`, `audience_id`, `dry_run`, `add_num_received` | daily crons `meta-audience-sync` 09:00 UTC + `meta-westside-audience` 14:00 UTC; current means under 36 hours; KEEP needs 7 consecutive UTC days ending ≥ 2026-08-22 |
 
 > **Don't aggregate raw `listings` for market reports.** The cache tables exist exactly so you don't have to. They're stamped with `methodology_version` and refreshed every 6 hours. Use them.
 

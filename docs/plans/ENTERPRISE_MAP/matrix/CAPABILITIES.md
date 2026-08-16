@@ -265,9 +265,9 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **3** — CAPI/pixel env; webhooks; audience + westside audience crons; pipeline docs. Not 4: audience heartbeat **stale** (last LIVE 2026-06-23); **ad spend Matt-gated**. |
+| **Maturity** | **3** — CAPI/pixel env; webhooks; audience + westside audience crons; hold DAL. Not 4: G11 KEEP waits for 2026-08-22; **ad spend Matt-gated**. |
 | **Evidence status** | **PARTIAL** |
-| **Evidence pointers** | INT-007; `meta_audience_log` n=64 last 2026-06-23 (M-live/EVIDENCE-LOG); crons `meta-audience-sync`, `meta-westside-audience`; `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`; env META_CAPI_* |
+| **Evidence pointers** | INT-007; `readMetaAudienceHold`; last LIVE 2026-08-16T09:01Z CRM 13980; crons `meta-audience-sync`, `meta-westside-audience`; `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`; env META_CAPI_* |
 | **Public risk** | High (paid + privacy) |
 | **Broker product?** | Indirect |
 | **Residual disposition** | **BLOCKED_MATT** (spend/campaign changes) + **ACTIVE** (ops) refresh audience heartbeat |

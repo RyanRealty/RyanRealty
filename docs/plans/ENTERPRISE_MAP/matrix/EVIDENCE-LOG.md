@@ -157,7 +157,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 | crm_sequences | 7 (active 4 / paused 3) |
 | crm_sequence_enrollments | 33 |
 | crm_sequence_sends | 4 (latest claimed_at 2026-07-18) |
-| meta_audience_log | 64 (latest ran_at **2026-06-23** — stale) |
+| meta_audience_log | latest ran_at **2026-08-16T09:01:26Z** LIVE CRM received 13980 (G11 probe; June-23 cell was stale) |
 
 ### CAP path proofs (disk)
 - Regenerated `inventories/R-cap-path-proofs.json`: CAP-001…035 all **disk_signal true** except **CAP-033** (Grok memory external).
@@ -190,7 +190,9 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 - Named blocker this session: cloud-agent `CRON_SECRET` is a 12-char stub (production 401); no `SKYSLOPE_*` in the VM. First refresh = Vercel cron `20 6 * * *` or a session with the real secret.
 
 ### INT-007 Meta audience ops
-- `meta_audience_log` last LIVE run **2026-06-23** (add received 13883). Heartbeat **stale** (~7 weeks).
+- Probe 2026-08-16 via `scripts/loop-probe-g11.ts` / `readMetaAudienceHold`. Newest row **2026-08-16T09:01:26Z** audience `120246504502300698` LIVE `add_num_received=13980` `remove 2 of 2`. Distinct UTC days in the last 40 rows run **2026-07-27…2026-08-16** (already ≥7 consecutive). West Side `120244510092910698` also writing (20 of those 40).
+- Disposition stays **FIX** until a consecutive streak ends on or after **2026-08-22** (G11 accept). Daily freshness threshold is 36h. Spend remains Matt-gated.
+- The June-23 “stale 7w” cell was a map lie — the log kept writing.
 
 ### INT-005 / CAP-010 email measurement
 - `email_events` **564** rows; latest **2026-08-08** → Resend/webhook path still receiving events.
@@ -295,7 +297,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 | broker_gcal_tokens | 0 | EMPTY |
 
 ### Other live signals used
-- listings 594623 · email_events 564 latest 2026-08-08 · meta_audience_log last LIVE 2026-06-23 · skyslope_transactions 33 synced_at sample 2026-06-10 · crm_message 45299 · FUB = native shim only (`lib/followupboss.ts` sendEvent → ensureNativeLead)
+- listings 594623 · email_events 564 latest 2026-08-08 · meta_audience_log last LIVE 2026-08-16T09:01Z CRM 13980 · skyslope_transactions 33 synced_at sample 2026-06-10 · crm_message 45299 · FUB = native shim only (`lib/followupboss.ts` sendEvent → ensureNativeLead)
 - Inngest: `lib/inngest.ts` is thin optional HTTP emit; **not** a job runner — disposition **PARK**
 - RentCast/SchoolDigger: keys present; little/no active product call-path → **PARK** optional
 

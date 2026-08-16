@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   ageHours,
   evalAudienceSync,
+  evalMetaAudienceHold,
   evalSkySlopeMirror,
   evalExpired,
   evalFsbo,
@@ -129,16 +130,63 @@ describe('evalMarketStats (8h threshold on max(computed_at))', () => {
   })
 })
 
-describe('evalAudienceSync (8-day threshold on max(meta_audience_log.ran_at))', () => {
-  it('green when the weekly cron logged within 8 days', () => {
-    expect(evalAudienceSync(daysAgo(6), NOW).status).toBe('green')
+describe('evalAudienceSync (36h threshold on max(meta_audience_log.ran_at))', () => {
+  it('green when the daily cron logged within 36h', () => {
+    expect(evalAudienceSync(hoursAgo(20), NOW).status).toBe('green')
     expect(evalAudienceSync(hoursAgo(1), NOW).status).toBe('green')
   })
-  it('red at/after 8 days and when it never ran, naming the dry-run-still-logs insight', () => {
-    expect(evalAudienceSync(daysAgo(8), NOW).status).toBe('red')
+  it('red at/after 36h and when it never ran, naming the dry-run-still-logs insight', () => {
+    expect(evalAudienceSync(hoursAgo(36), NOW).status).toBe('red')
     const never = evalAudienceSync(null, NOW)
     expect(never.status).toBe('red')
     expect(never.note).toContain('META_AUDIENCE_PUSH_ENABLED')
+  })
+})
+
+describe('evalMetaAudienceHold', () => {
+  it('red when unreadable or not current', () => {
+    expect(
+      evalMetaAudienceHold({
+        status: 'unreadable',
+        lastRanAt: null,
+        consecutiveDays: 0,
+        lastDay: null,
+        holdMet: false,
+        current: false,
+      }).status,
+    ).toBe('red')
+    expect(
+      evalMetaAudienceHold({
+        status: 'ok',
+        lastRanAt: daysAgo(3),
+        consecutiveDays: 20,
+        lastDay: '2026-08-13',
+        holdMet: false,
+        current: false,
+      }).status,
+    ).toBe('red')
+  })
+  it('green while holding and when the accept day is met', () => {
+    const holding = evalMetaAudienceHold({
+      status: 'ok',
+      lastRanAt: hoursAgo(1),
+      consecutiveDays: 21,
+      lastDay: '2026-08-16',
+      holdMet: false,
+      current: true,
+    })
+    expect(holding.status).toBe('green')
+    expect(holding.value).toContain('holding 21/7')
+    const met = evalMetaAudienceHold({
+      status: 'ok',
+      lastRanAt: hoursAgo(1),
+      consecutiveDays: 8,
+      lastDay: '2026-08-22',
+      holdMet: true,
+      current: true,
+    })
+    expect(met.status).toBe('green')
+    expect(met.value).toContain('hold met')
   })
 })
 

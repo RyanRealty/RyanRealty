@@ -28,6 +28,7 @@ import { createClient } from '@supabase/supabase-js'
 import { getMetaPageToken } from '@/lib/meta-env'
 import { QueueRow, SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
 import { DataList, Figures, Loading, Trouble } from '../_components/v2/kit'
+import { readMetaAudienceHold } from '@/lib/data/loop/meta-audience-hold'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -539,8 +540,26 @@ async function MetaHealthContent() {
 }
 
 export default async function MetaHealthPage() {
+  const hold = await readMetaAudienceHold(getServiceSupabase())
   return (
     <div className="av2-scope" style={{ maxWidth: 1120, margin: '0 auto', padding: 16 }}>
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={hold.status === 'unreadable' || !hold.current ? 'attention' : 'ok'}>
+          {hold.status === 'unreadable' ? (
+            <>
+              <b>Audience log unreadable.</b> INT-007 hold cannot be graded.
+            </>
+          ) : hold.holdMet ? (
+            <>
+              <b>Audience hold met.</b> {hold.consecutiveDays} consecutive UTC days ending {hold.lastDay}.
+            </>
+          ) : (
+            <>
+              <b>Audience holding {hold.consecutiveDays}/7 days.</b> Last {hold.lastDay}. KEEP waits for 2026-08-22.
+            </>
+          )}
+        </VerdictLine>
+      </div>
       <p className="av2-note">
         Live infrastructure status for the Meta ad account, pixel, lead forms, and webhook. Pairs with <code>scripts/meta-admin-setup.mjs</code> (CLI fixer) and <code>docs/META_FIX_PLAN.md</code> (runbook).
       </p>

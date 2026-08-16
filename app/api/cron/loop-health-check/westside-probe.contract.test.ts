@@ -32,10 +32,14 @@ describe('loop-health-check West Side audience probe is scoped to WESTSIDE_AUDIE
 
 describe('evalAudienceSync still grades the West Side freshness (mechanism bites)', () => {
   const NOW = new Date('2026-07-23T12:00:00Z')
-  const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString()
   it('green when a West Side push is recent, red when stale or never', () => {
-    expect(evalAudienceSync(daysAgo(2), NOW).status).toBe('green')
-    expect(evalAudienceSync(daysAgo(HEARTBEAT_THRESHOLDS.audienceSyncDays + 1), NOW).status).toBe('red')
+    expect(evalAudienceSync(new Date(NOW.getTime() - 20 * 3_600_000).toISOString(), NOW).status).toBe('green')
+    expect(
+      evalAudienceSync(
+        new Date(NOW.getTime() - HEARTBEAT_THRESHOLDS.audienceSyncHours * 3_600_000).toISOString(),
+        NOW,
+      ).status,
+    ).toBe('red')
     // never (null max) reads red — a West Side audience with ZERO ledger rows is dark.
     expect(evalAudienceSync(null, NOW).status).toBe('red')
   })

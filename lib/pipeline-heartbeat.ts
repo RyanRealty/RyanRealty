@@ -40,10 +40,11 @@ export const HEARTBEAT_THRESHOLDS = {
   expiredDays: 7,
   savedSearchHours: 26,
   marketStatsHours: 8,
-  // West Side Meta audience refresh: /api/cron/meta-westside-audience runs
-  // weekly (Mondays 14:00 UTC) and writes a meta_audience_log row every run
-  // (dry-run included) → 8 days = the 7-day cadence + a day of slack.
-  audienceSyncDays: 8,
+  // West Side + CRM Meta audience refresh: both crons are daily
+  // (westside 14:00 UTC, CRM 09:00 UTC) and write a meta_audience_log row
+  // every run (dry-run included). 36h = the daily cadence + slack.
+  // The old 8-day weekly threshold hid a missed day for a week (G11 class).
+  audienceSyncHours: 36,
   // SkySlope inbound recon mirror: /api/cron/skyslope-mirror-refresh daily
   // 06:20 UTC. 36h = the daily cadence + slack. Vault (tc_deals) stays SoR.
   skySlopeMirrorHours: 36,
@@ -190,23 +191,61 @@ export function evalMarketStats(maxComputedAt: string | null, now: Date): Pipeli
 }
 
 /**
- * West Side Meta audience refresh (Wave C). /api/cron/meta-westside-audience
- * runs weekly and writes a meta_audience_log row on EVERY run — dry-run
- * included — so max(ran_at) advancing within 8 days proves the cron is alive,
+ * West Side Meta audience refresh. /api/cron/meta-westside-audience runs
+ * daily (14:00 UTC) and writes a meta_audience_log row on EVERY run — dry-run
+ * included — so max(ran_at) advancing within 36h proves the cron is alive,
  * independent of whether META_AUDIENCE_PUSH_ENABLED gates the actual Meta push.
  * The audience Ryan Realty paid to build (17,665 parcels) silently going stale
  * is exactly the invisible-staleness class this watchdog exists to catch.
  */
 export function evalAudienceSync(maxRanAt: string | null, now: Date): PipelineCheck {
   const age = ageHours(maxRanAt, now)
-  const stale = age === null || age >= HEARTBEAT_THRESHOLDS.audienceSyncDays * 24
+  const stale = age === null || age >= HEARTBEAT_THRESHOLDS.audienceSyncHours
   return {
     name: 'pipeline:westside-audience',
     status: stale ? 'red' : 'green',
     value: `max(meta_audience_log.ran_at) ${formatAge(age)} old`,
     note: stale
-      ? 'West Side Meta audience refresh is dark — no meta_audience_log row in over 8 days. The weekly /api/cron/meta-westside-audience is likely failing (cron dropped, Meta token, or a query error); the parcel-linked Custom Audience is going stale. Dry-run runs still log, so this catches a dead cron even when META_AUDIENCE_PUSH_ENABLED is off.'
+      ? 'West Side Meta audience refresh is dark — no meta_audience_log row in over 36 hours. The daily /api/cron/meta-westside-audience is likely failing (cron dropped, Meta token, or a query error); the parcel-linked Custom Audience is going stale. Dry-run runs still log, so this catches a dead cron even when META_AUDIENCE_PUSH_ENABLED is off.'
       : undefined,
+  }
+}
+
+/**
+ * INT-007 / G11: any meta_audience_log row (CRM or westside) must land daily.
+ * Consecutive-day hold (7 days ending ≥ 2026-08-22) is scored separately so a
+ * still-open hold window does not page Matt.
+ */
+export function evalMetaAudienceHold(input: {
+  status: 'ok' | 'unreadable'
+  lastRanAt: string | null
+  consecutiveDays: number
+  lastDay: string | null
+  holdMet: boolean
+  current: boolean
+}): PipelineCheck {
+  if (input.status === 'unreadable') {
+    return {
+      name: 'pipeline:meta-audience-hold',
+      status: 'red',
+      value: 'meta_audience_log unreadable',
+      note: 'Scoreboard cannot grade the INT-007 hold. Check service-role reads of meta_audience_log.',
+    }
+  }
+  if (!input.current) {
+    return {
+      name: 'pipeline:meta-audience-hold',
+      status: 'red',
+      value: `last ran_at ${input.lastRanAt ?? 'never'} · ${input.consecutiveDays} consecutive UTC days ending ${input.lastDay ?? '—'}`,
+      note: 'Meta audience heartbeat missed a daily run (36h). /api/cron/meta-audience-sync (09:00 UTC) or /api/cron/meta-westside-audience (14:00 UTC) is dark. Spend stays Matt-gated; this is the list refresh, not an ad change.',
+    }
+  }
+  return {
+    name: 'pipeline:meta-audience-hold',
+    status: 'green',
+    value: input.holdMet
+      ? `hold met · ${input.consecutiveDays} consecutive UTC days ending ${input.lastDay}`
+      : `holding ${input.consecutiveDays}/7 consecutive UTC days · last ${input.lastDay} · KEEP waits for a day ≥ 2026-08-22`,
   }
 }
 

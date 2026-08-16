@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { isExpiredUnlearned } from './ledger-draft'
 import { readLookWalkBaseline } from './look-walk'
+import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hold'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
 
 export type SignalStatus = 'ok' | 'unreadable'
@@ -125,6 +126,7 @@ export type CompanyScoreboardSignals = {
     emailClicks7d: number
     visitorEvents7d: number
     audienceLastRanAt: string | null
+    audienceHold: MetaAudienceHold
     source: string
   }
   cma: {
@@ -231,7 +233,7 @@ export async function collectCompanyScoreboardSignals(
     emailOpenRes,
     emailClickRes,
     visitor7dRes,
-    audienceRes,
+    audienceHold,
     cmaRes,
     ...tokenResults
   ] = await Promise.all([
@@ -262,7 +264,7 @@ export async function collectCompanyScoreboardSignals(
     sb.from('email_events').select('id', { count: 'exact', head: true }).gte('occurred_at', since7d).eq('event', 'open'),
     sb.from('email_events').select('id', { count: 'exact', head: true }).gte('occurred_at', since7d).eq('event', 'click'),
     sb.from('visitor_events').select('id', { count: 'exact', head: true }).gte('event_at', since7d),
-    sb.from('meta_audience_log').select('ran_at').order('ran_at', { ascending: false }).limit(1),
+    readMetaAudienceHold(sb, now),
     sb.from('cmas').select('id', { count: 'exact', head: true }),
     ...SOCIAL_TABLES.map((table) =>
       sb.from(table).select(NO_REFRESH_COLUMN.has(table) ? 'expires_at' : 'expires_at,refresh_token'),
@@ -441,7 +443,7 @@ export async function collectCompanyScoreboardSignals(
     emailOpenRes.error ||
     emailClickRes.error ||
     visitor7dRes.error ||
-    audienceRes.error
+    audienceHold.status === 'unreadable'
   const identity: CompanyScoreboardSignals['identity'] = {
     status: identityError ? 'unreadable' : 'ok',
     identityMap: identityRes.count ?? 0,
@@ -450,9 +452,10 @@ export async function collectCompanyScoreboardSignals(
     emailOpens7d: emailOpenRes.count ?? 0,
     emailClicks7d: emailClickRes.count ?? 0,
     visitorEvents7d: visitor7dRes.count ?? 0,
-    audienceLastRanAt: (audienceRes.data?.[0]?.ran_at as string | null) ?? null,
+    audienceLastRanAt: audienceHold.lastRanAt,
+    audienceHold,
     source:
-      'visitor_identity_map + email_events (event=open|click, 7d) + visitor_events 7d + meta_audience_log.ran_at',
+      'visitor_identity_map + email_events (event=open|click, 7d) + visitor_events 7d + readMetaAudienceHold',
   }
 
   const look = readLookWalkBaseline()

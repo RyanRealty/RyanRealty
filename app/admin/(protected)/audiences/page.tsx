@@ -7,6 +7,8 @@
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getAudienceCounts } from '@/lib/data/audiences/counts'
+import { readMetaAudienceHold } from '@/lib/data/loop/meta-audience-hold'
+import { createServiceClient } from '@/lib/supabase/service'
 import { VerdictLine } from '@/components/admin/v2'
 
 export const dynamic = 'force-dynamic'
@@ -17,7 +19,10 @@ function fig(n: number | null): string {
 
 export default async function AudiencesPage() {
   await requireAdminPage('audiences.view')
-  const counts = await getAudienceCounts()
+  const [counts, hold] = await Promise.all([
+    getAudienceCounts(),
+    readMetaAudienceHold(createServiceClient()),
+  ])
   const anyUnreadable =
     counts.marketReportSubs == null || counts.listingAlerts == null || counts.newsletterSubscribers == null
 
@@ -52,6 +57,12 @@ export default async function AudiencesPage() {
       question: 'One-off email to a filtered audience.',
       href: '/admin/email/compose',
     },
+    {
+      name: 'Meta custom audiences',
+      figure: hold.lastDay ?? '',
+      question: 'CRM + West Side list refresh. Spend stays Matt-gated.',
+      href: '/admin/analytics/meta-health',
+    },
   ]
 
   return (
@@ -71,6 +82,28 @@ export default async function AudiencesPage() {
                 active subscriptions
               </b>{' '}
               across the three cadence rails.
+            </>
+          )}
+        </VerdictLine>
+      </div>
+
+      <div style={{ margin: '0 0 14px' }}>
+        <VerdictLine tone={hold.status === 'unreadable' || !hold.current ? 'attention' : 'ok'}>
+          {hold.status === 'unreadable' ? (
+            <>
+              <b>Meta audience log is unreadable.</b> Do not flip INT-007 until it reads.
+            </>
+          ) : hold.holdMet ? (
+            <>
+              <b>Meta audience hold met.</b> {hold.consecutiveDays} consecutive UTC days ending {hold.lastDay}.
+            </>
+          ) : (
+            <>
+              <b>
+                Meta audience holding {hold.consecutiveDays}/7 days
+              </b>{' '}
+              · last {hold.lastDay} · KEEP waits for a day on or after 2026-08-22. Same{' '}
+              <code>crm_people</code> list feeds CAPI.
             </>
           )}
         </VerdictLine>
