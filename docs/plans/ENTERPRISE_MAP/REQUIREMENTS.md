@@ -242,7 +242,7 @@
 | R-172 | Per-channel prospecting compliance (SMS/email/call separately) with open-channel CTAs, not one hard stop | PROSPECT_TO_CMA | MISSING | G17 |
 | R-173 | One valuation worklist (CMA/BPO/expired-audit) over one build engine; CMA kickoff ≤3 taps/≤30s from phone; async build texts broker when ready | decisions; LITMUS | VERIFIED | — |
 | R-174 | CMAs sign/send as assigned broker, Matt fallback; broker-signed deliverables recorded | decisions; RECONCILED §5.11 | LOCKED | — |
-| R-175 | Broker scoping fail-closed: own book by default, Matt sees all; entity-scope on every reader; no placebo surfaces | PHASE-0; MASTER-SPEC D17 | PARTIAL | CAP-009 residual |
+| R-175 | Broker scoping fail-closed: own book by default, Matt sees all; entity-scope on every reader; no placebo surfaces | PHASE-0; MASTER-SPEC D17 | PARTIAL | G5; CAP-022 (readers on Today/People/Messages/CMAs/batch-emails; residual readers not re-audited) |
 | R-176 | One capability model + in-body auth guards on every mutating admin action | 01-DECISIONS | LOCKED | — |
 | R-177 | Cut list frozen: 26 routes + 12 surfaces never resurrect; one deal board (CRM deals redirects to Closings) | cut-list; Track 2 | LOCKED | — |
 | R-178 | Admin v2 shell everywhere: zero legacy interiors; Geist headers; navy blacklisted as admin input; no vanity KPI walls | PHASE 11; CRM_AUDIT; 11F | LOCKED | — |

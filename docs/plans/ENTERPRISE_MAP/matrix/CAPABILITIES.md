@@ -33,8 +33,8 @@
 | Maturity band | CAPs |
 |---------------|------|
 | 4 Reliable | 001, 003, 006, 024, 028, 029 |
-| 3 Working | 002, 004, 005, 007, 008, 009, 010, 011, 013, 014, 015, 016, 018, 020, 021, 023, 025, 026, 027, 031, 032, 034 |
-| 2 Skeleton | 012, 017, 019, 022, 030, 033, 035 |
+| 3 Working | 002, 004, 005, 007, 008, 009, 010, 011, 013, 014, 015, 016, 018, 020, 021, 022, 023, 025, 026, 027, 031, 032, 034 |
+| 2 Skeleton | 012, 017, 019, 030, 033, 035 |
 | 1 Spec | — |
 | 0 Ether | — |
 
@@ -317,12 +317,12 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **2** — Three brokers in SoR; admin brokers CRUD; thesis of multi-broker platform **not productized** for recruit/day-one. |
+| **Maturity** | **3** — Day-one checklist on Today; own-book fail-closed (`scopeBroker` → `UNMAPPED_OWN_BOOK`); slug from `brokers.crm_slug`; `content.marketing` unlocked for brokers. OAuth-connect of personal socials stays Matt-gated (R-198 residual). |
 | **Evidence status** | **PARTIAL** |
-| **Evidence pointers** | brokers=3; `app/admin/(protected)/brokers/**`; `join` segment; ADVANCEMENT_PLAN premium thesis bar; recruiting toolkit audit JSON |
+| **Evidence pointers** | `lib/crm/scope.ts`; `lib/crm/day-one.ts`; `lib/data/brokers/resolveCrmSlug.ts`; `/admin/today`; `/admin/settings/account`; gate `ci:broker-own-book` |
 | **Public risk** | — (internal/growth thesis) |
 | **Broker product?** | **Core thesis** |
-| **Residual disposition** | **ACTIVE** (platform) — day-one checklist; permissions; honest packaging bar |
+| **Residual disposition** | **ACTIVE** (platform) — personal social OAuth (D8) still Matt-gated; /join convert is G10 |
 
 ---
 
