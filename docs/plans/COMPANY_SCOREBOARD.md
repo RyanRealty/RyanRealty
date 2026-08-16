@@ -21,7 +21,7 @@
 | Loop sentinel | **SELF-CHAINING** as of 2026-08-15: a finishing iteration's last act is `loop-sentinel?handoff=1` — the successor launches the moment completion is marked (zero gap). The 10-min heartbeat (token-free code, state-based busy check) backstops crashes and env gaps. Guards always: kill switch (`LOOP_SENTINEL=off`), fresh-activity standdown, 12/day cost cap. Saying "Run the loop" still works. | R-206 VERIFIED |
 | Verification fleet | **Machinery live incl. the flows lane, bots pending Matt setup**: endpoint + intake (reproduce-or-reject) + 4 case packs (core/regression/preflight/flows) + **6** paste-ready bot briefs. Flow Prover may SUBMIT real forms using the designated fleet identity — all four side-effect guards proven live 2026-08-15 (fixture person 61855: tagged, suppressed, no wake, no enroll, excluded from counts). Certification requires a clean fleet pass. | THE LOOP v1.6.0 + G30 |
 | Requirements coverage | **207 directives dispositioned**: 92 LOCKED · 38 VERIFIED · 44 PARTIAL · 25 MISSING (all gap-covered) · 7 GATED · 1 PARKED. Four rows demoted VERIFIED→PARTIAL by adversarial audit (R-025, R-095, R-137, R-203); R-207 fleet added | `ENTERPRISE_MAP/REQUIREMENTS.md` + G57 (Max-pinned; that gate's output is the count SoR) |
-| Stranded ledger windows | **0** (was 11 — all closed 2026-08-15 with §0 traces; `seo-aeo` unfrozen). Work graph: **28 nodes** · 1 done (G1) · 1 killed (audit probe) · next node G2 identity stitch | probe `ledger.expiredUnlearned` + loop-brief 2026-08-15T20:1xZ |
+| Stranded ledger windows | **0** (was 11 — all closed 2026-08-15 with §0 traces; `seo-aeo` unfrozen). Work graph: G2 identity stitch **DONE 2026-08-16** (32/166 mapped). Next served node is whatever `loop-brief` prints. | probe `ledger.expiredUnlearned` + G2 accept 2026-08-16 |
 | Adversarial audit (first R-040 pass) | **17 defects found by the machine, 0 by Matt**: 2 gate blind spots (fixed: Max pins), 3 enforcement bypasses (fixed: DB triggers + fail-closed DAL), 4 overstated register rows (corrected, product gaps G26–G28 opened), 8 stale packet/manifest claims (corrected). Escape recorded. | audit agents 2026-08-15 + `process_escape_ledger` |
 | Capabilities below Working floor | **7** (TC, video, social OAuth, broker platform, westside, Grok memory, SMS agent) | `ENTERPRISE_MAP/matrix/CAPABILITIES.md` 2026-08-08 close |
 | Needs-reauth integrations | **0 active** — GBP/YouTube/X/TikTok auto-refresh from stored refresh tokens via the daily 12:00Z heartbeat (verified live 2026-08-15, scheduled run all OK + on-demand trigger rolled expiries). LinkedIn is `needs-reauth` and **PARKED** (provider issued no refresh token). No Matt reconnect task exists. | heartbeat `sync_logs` 2026-08-15T12:00:03Z + probe `social.tokens` (`auto-refresh` vs `needs-reauth`) |
@@ -52,8 +52,8 @@
 | Boundaries (polygons) | **3,312** | `boundaries` |
 | Facet counts refreshed | **2026-08-15T14:42:00Z** (~3 min before fetch) | `search_facet_counts.refreshed_at` |
 | Filter registry | **131** fields | `lib/search/field-registry.ts` `SEARCH_FIELDS` (`key:` count). Honest Spark-visible target is still the completeness plan, not this count alone. |
-| Identity map | **164** | `visitor_identity_map` |
-| Identity mapped to CRM | **1** | `visitor_identity_map.crm_person_id` is not null |
+| Identity map | **166** | `visitor_identity_map` |
+| Identity mapped to CRM | **32** | `visitor_identity_map.crm_person_id` is not null. G2 class: stitch now writes `crm_person_id` in lockstep (was 1 because only `fub_person_id` was set). Hosted backfill + fleet-test form-submit accept 2026-08-16 (`rr_vid=g2-accept-ea08a60f-3cbc-4769-9353-c56e686588fc`, person 61855). |
 | Visitor events 7d | **11,233** | `visitor_events.event_at >= now-7d` |
 | Email events 7d | **113** · opens **11** · clicks **0** | `email_events` `event` = `open` / `click` |
 | Meta audience last run | **2026-08-15T14:03:29Z** | `meta_audience_log.ran_at` (heartbeat is live this week) |
@@ -78,7 +78,7 @@
 Scored from this fetch + COMPANY_IMPROVEMENT.md. Not vibes.
 
 1. **nurture** — 20,287 Nurture / **0 Lead** / 12 Active Client. **6** active listing alerts against 22,672 people. The journey and the alert engine are unused at company scale.
-2. **leads / identity** — 11,233 visitor events in 7d and **164** identity-map rows, but only **1** row has `crm_person_id`. Tracking is alive. The stitch to `crm_people` (and therefore ads audiences) is not. This is the “do not lose the Google / match / ads path” class.
+2. **leads / identity** — stitch class closed 2026-08-16: **32/166** map rows now carry `crm_person_id` (was 1/164). Residual: 1 stale FUB-only row with no `crm_people` match, plus visitors who never identified. CAPI `external_id` and alert stamps ride the same person.
 3. **recruit-retain** — **3** brokers. `/join` convert UNKNOWN.
 4. **social-presence** — tokens are NOT the rot (corrected 2026-08-15: TikTok/YouTube/X/GBP auto-refresh via the daily heartbeat; LinkedIn parked, no provider refresh token). The rot is the pipeline: brain `measured=2`, `ready` 420, no fan-out calendar (G25).
 5. **public-ux / polygons** — **3,312** boundaries live. **0** `search_areas`. Filter facets are fresh. Whether every `geo_type` is on the map is UNKNOWN (probe does not walk pages). Do not `ST_Within` at request time.
@@ -101,7 +101,7 @@ Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pu
 |---|---|---|
 | public-ux | watch | 131 registry fields. 3,312 polygons. 0 drawn search areas. Look still a grind. |
 | seo-aeo | unfrozen | 180 GSC benchmark rows in 28d. All 11 windows CLOSED 2026-08-15 with verdicts (1 win, 1 loss, 1 flat, 8 telemetry-gap). |
-| leads | rotting | Identity stitch 1/164. Visitor events are not becoming people. |
+| leads | watch | Identity stitch 32/166 after G2 (was 1/164). Remaining rot is stage/journey (Lead = 0), not the map write. |
 | nurture | rotting | Lead = 0. 6 active alerts. |
 | social-presence | rotting (pipeline, not tokens) | Tokens self-renew (LinkedIn parked). Rot = measured 2 / ready 420, no calendar (G25). |
 | sales-insights | watch | GCI live. Audience log ran today. |

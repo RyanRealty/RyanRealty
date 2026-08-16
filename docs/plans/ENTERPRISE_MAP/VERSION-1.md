@@ -55,7 +55,7 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | # | Work | Ref | Domain |
 |---|---|---|---|
 | G1 | **DONE 2026-08-15** — all 11 windows closed via `scripts/loop-learn-close-windows.ts` with §0 traces: 1 win (Tetherow LCP p75 60,768ms → 4,156ms), 1 loss (overlay discipline, engagement 0.144 → 0.119), 1 flat (llms.txt +3 AI sessions vs +10), 8 inconclusive (GSC page series not live in the June window — telemetry gap named per row). Probe `expiredUnlearned` = 0; domain unfrozen. Work-graph node `bcde58b9` carries the evidence. | ledger probe 2026-08-15 | seo-aeo |
-| G2 | Identity stitch class: lead-capture + sign-in writes `crm_person_id` to `visitor_identity_map` (1/164 today). Planes: identity, ads-audiences, alerts | packet §1b | leads |
+| G2 | **DONE 2026-08-16** — lead-capture + sign-in write `crm_person_id` on `visitor_identity_map` (lockstep with `fub_person_id`). Planes: identity, ads-audiences (`external_id`), alerts (`stampListingAlertsCrmPerson`). Packet §1b 1/164 → **32/166**. Accept: fleet-test form-submit stitch `rr_vid=g2-accept-ea08a60f-3cbc-4769-9353-c56e686588fc` person 61855. Gate `ci:identity-stitch-paths`. | packet §1b | leads |
 | G3 | Stage truth: Lead stage is 0 of 22,672 people — stage writers + journey advance so the funnel is real | CAP-009 | nurture |
 | G4 | Alerts coverage: enroll path from account/LP into `listing_alerts` (6 active today); sends never from legacy `saved_searches` | CAP-010, packet §1b | nurture |
 | G5 | Broker platform 2→3: day-one checklist, permissions, own-book views | CAP-022 | recruit-retain |

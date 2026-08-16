@@ -235,9 +235,10 @@ async function main() {
       }
     }
     if (deployment) {
+      const deployId = deployment.uid ?? deployment.id
       const state = deployment.state ?? 'UNKNOWN'
       if (state !== lastState) {
-        out(`deploy ${deployment.id}: ${state}`)
+        out(`deploy ${deployId}: ${state}`)
         lastState = state
       }
       if (state === 'READY') {
@@ -247,13 +248,13 @@ async function main() {
         process.exit(0)
       }
       if (state === 'ERROR' || state === 'CANCELED') {
-        err(`deployment ${state} for SHA ${sha.slice(0, 7)} (id ${deployment.id})`)
+        err(`deployment ${state} for SHA ${sha.slice(0, 7)} (id ${deployId})`)
         err(`inspector: ${deployment.inspectorUrl ?? '(none)'}`)
         if (usingCliFallback) {
           err('build-log tail unavailable in CLI fallback mode (set VERCEL_TOKEN to enable)')
         } else {
           try {
-            const events = await getBuildLogs(apiToken, deployment.id, teamId, 80)
+            const events = await getBuildLogs(apiToken, deployId, teamId, 80)
             const tail = formatLogTail(events)
             err('---- last build-log frames ----')
             for (const line of tail) process.stderr.write(line.text + '\n')

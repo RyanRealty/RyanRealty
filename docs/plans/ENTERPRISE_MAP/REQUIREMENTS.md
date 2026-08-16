@@ -191,7 +191,7 @@
 | R-131 | $1M GCI year-1 (~48 closings); north star qualified seller leads; ~10× weekly qualified leads path | MASTER_SPEC §1.3; GOAL_10X | PARTIAL | scoreboard tracks |
 | R-132 | One valuation spine /sell#get-value; step1 address only, step2 email required; written CMA within 24h every day | PUBLIC decisions | LOCKED | — |
 | R-133 | Fees: one public 3% plan; comparison matrix dead; silent on negotiability | PUBLIC decisions | LOCKED | — |
-| R-134 | Identity stitch everywhere: map Google email → crm_people → person ids → rr_vid before any ask; no fake CRM lead from cookies | PUBLIC decisions; EXECUTION | PARTIAL | G2 |
+| R-134 | Identity stitch everywhere: map Google email → crm_people → person ids → rr_vid before any ask; no fake CRM lead from cookies | PUBLIC decisions; EXECUTION | PARTIAL | G2 DONE 2026-08-16 — map write + CAPI external_id + alert stamp live; "before any ask" still open |
 | R-135 | Welcome-back names last house/search; no modal on land; consent is not the price of an account | PUBLIC decisions | VERIFIED | — |
 | R-136 | Conversion events E1–E6 instrumented; alert/save capture uses current search context, never a blank form | CONVERSION_MAP; PRODUCT | LOCKED | — |
 | R-137 | Every outbound email/SMS carries open/click tracking tied to crm_people via attributeOutbound | SAVED_SEARCH goal; attribution plan | PARTIAL | G26 — spine tracked; audit 2026-08-15 found four untracked paths (sequence email fallback, home-valuation delivery + ack, admin one-off, CMA request confirmation) |
