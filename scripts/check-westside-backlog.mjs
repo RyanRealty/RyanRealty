@@ -53,9 +53,13 @@ checks.push({
 })
 
 const cities = src('app/cities/page.tsx')
+const cityLinks = src('app/cities/CityFeaturedLinks.tsx')
 checks.push({
   label: 'cities index Bend row links /luxury-homes-bend',
-  ok: cities.includes('href="/luxury-homes-bend"') && cities.includes("city.slug === 'bend'"),
+  ok:
+    cities.includes('CityFeaturedLinks') &&
+    cityLinks.includes('href="/luxury-homes-bend"') &&
+    cityLinks.includes("slug === 'bend'"),
 })
 
 const communities = src('app/communities/page.tsx')

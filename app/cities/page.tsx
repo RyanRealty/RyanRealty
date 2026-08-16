@@ -43,6 +43,7 @@ import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { RegionalSfrAlertsBand } from '@/components/site/kb/RegionalSfrAlertsBand'
+import { CityFeaturedLinks } from '@/app/cities/CityFeaturedLinks'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import '@/components/site/kb/kb.css'
 
@@ -472,39 +473,7 @@ export default async function CitiesPage() {
                         </p>
                       )}
 
-                      {/* Links into the city */}
-                      <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
-                        <a
-                          href={`/cities/${city.slug}`}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          {city.name} guide
-                        </a>
-                        <a
-                          href={`/homes-for-sale/${city.slug}`}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          Homes for sale
-                        </a>
-                        <a
-                          href={`/open-houses/${city.slug}`}
-                          className="underline-offset-4 hover:underline"
-                          style={{ color: 'var(--navy)' }}
-                        >
-                          Open houses
-                        </a>
-                        {city.slug === 'bend' ? (
-                          <a
-                            href="/luxury-homes-bend"
-                            className="underline-offset-4 hover:underline"
-                            style={{ color: 'var(--navy)' }}
-                          >
-                            Luxury homes
-                          </a>
-                        ) : null}
-                      </div>
+                      <CityFeaturedLinks slug={city.slug} name={city.name} />
                     </div>
                   </div>
                 </article>
