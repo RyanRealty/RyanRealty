@@ -23,6 +23,7 @@
 
 import type { V3QuietItem } from '@/components/site/v3'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
+import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { slugify } from '@/lib/slug'
 
 /**
@@ -110,17 +111,18 @@ export function buildPlaceKnowledge(input: {
   const { name, content, registry } = input
   const items: V3QuietItem[] = []
 
-  if (content?.hoaMasterAnnual) {
+  const hoa = publishPlaceHoa({
+    masterAnnual: content?.hoaMasterAnnual,
+    estimateAnnual: registry?.hoa_annual_estimate,
+  })
+  if (hoa) {
     items.push({
       kind: 'prose',
-      term: 'Master HOA',
-      body: `$${content.hoaMasterAnnual.toLocaleString('en-US')} a year. Membership is separate from the home.`,
-    })
-  } else if (registry?.hoa_annual_estimate) {
-    items.push({
-      kind: 'prose',
-      term: 'HOA estimate',
-      body: `$${registry.hoa_annual_estimate.toLocaleString('en-US')} a year.`,
+      term: hoa.kind === 'master' ? 'Master HOA' : 'HOA estimate',
+      body:
+        hoa.kind === 'master'
+          ? `$${hoa.annual.toLocaleString('en-US')} a year. Membership is separate from the home.`
+          : `$${hoa.annual.toLocaleString('en-US')} a year.`,
     })
   }
 

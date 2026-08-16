@@ -10,6 +10,7 @@ import { formatPrice } from '@/lib/format/money'
 import { listingTileHref } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { ListingTile } from '@/lib/data/types/listing'
+import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 
 export function stagePoster(slug: string): string | null {
   return communityImage(slug)
@@ -20,8 +21,9 @@ export function belongingHeadline(name: string, content: ResortCommunityContent 
     String(tier.name ?? tier.tier ?? tier.label ?? '').trim(),
   )
   if (hasMembership) return 'Membership is separate from the home.'
-  if (content?.hoaMasterAnnual) {
-    return `Master HOA is $${content.hoaMasterAnnual.toLocaleString('en-US')} a year.`
+  const hoa = publishPlaceHoa({ masterAnnual: content?.hoaMasterAnnual })
+  if (hoa?.kind === 'master') {
+    return `Master HOA is $${hoa.annual.toLocaleString('en-US')} a year.`
   }
   const amenity = content?.amenities?.[0]?.name?.trim()
   if (amenity) return amenity
@@ -30,10 +32,11 @@ export function belongingHeadline(name: string, content: ResortCommunityContent 
 
 export function belongingFigures(content: ResortCommunityContent | null): V3InstrumentFigure[] {
   const figures: V3InstrumentFigure[] = []
-  if (content?.hoaMasterAnnual) {
+  const hoa = publishPlaceHoa({ masterAnnual: content?.hoaMasterAnnual })
+  if (hoa) {
     figures.push({
-      value: v3Text(`$${content.hoaMasterAnnual.toLocaleString('en-US')}`),
-      label: v3Text('master HOA a year'),
+      value: v3Text(`$${hoa.annual.toLocaleString('en-US')}`),
+      label: v3Text(hoa.kind === 'master' ? 'master HOA a year' : 'HOA estimate a year'),
     })
   }
   const tiers = (content?.membershipTiers ?? []).filter((tier) =>

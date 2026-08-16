@@ -87,6 +87,17 @@ describe('buildMarketFaq', () => {
     expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toContain('88 active')
   })
 
+  it('prints the master HOA when a higher sub-neighborhood estimate is also on file', () => {
+    const r = buildMarketFaq('Tetherow', {
+      hoaMasterAnnual: 1464,
+      hoaAnnualEstimate: 2244,
+      hoaSubEstimates: [2244, 2004, 1464],
+    })
+    const hoa = r.faqs.find((f) => f.question.includes('have an HOA'))
+    expect(hoa?.answer).toContain('$1,464')
+    expect(hoa?.answer).not.toContain('$2,244')
+  })
+
   it('drops months of supply when implied six-month closes exceed the printed year', () => {
     const r = buildMarketFaq('Tetherow', {
       activeCount: 35,

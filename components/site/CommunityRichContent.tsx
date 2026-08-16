@@ -4,6 +4,11 @@ import Link from 'next/link'
 import { Container, H2 } from '@/components/site/primitives'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { AmenityBlogPost } from '@/lib/data'
+import {
+  formatPlaceHoaAnnual,
+  placeHoaGlanceLabel,
+  publishPlaceHoa,
+} from '@/lib/market/publish-place-hoa'
 
 /**
  * Renders the rich, verified community/neighborhood content (overview prose +
@@ -35,11 +40,12 @@ export function CommunityRichContent({
 }) {
   if (!content) return null
 
+  const hoa = publishPlaceHoa({ masterAnnual: content.hoaMasterAnnual })
   const hasFacts = Boolean(
     content.founded ||
       content.acres ||
       content.architect ||
-      content.hoaMasterAnnual ||
+      hoa ||
       content.courseRankings[0],
   )
 
@@ -89,11 +95,11 @@ export function CommunityRichContent({
                       <dd className="font-medium text-foreground text-right">{content.architect}</dd>
                     </div>
                   ) : null}
-                  {content.hoaMasterAnnual ? (
+                  {hoa ? (
                     <div className="flex justify-between gap-4 border-b border-border pb-2">
-                      <dt className="text-muted-foreground">Master HOA</dt>
+                      <dt className="text-muted-foreground">{placeHoaGlanceLabel(hoa.kind)}</dt>
                       <dd className="font-medium text-foreground tabular-nums">
-                        ${content.hoaMasterAnnual.toLocaleString()}/year
+                        {formatPlaceHoaAnnual(hoa.annual)}
                       </dd>
                     </div>
                   ) : null}

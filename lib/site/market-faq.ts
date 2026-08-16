@@ -4,6 +4,7 @@ import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 
 /**
  * Structural input — a full MarketPulse satisfies this, and a geo page can also
@@ -32,10 +33,12 @@ export type MarketFaqInput = {
   /** The alias subdivision names that make up this community (registry).
    *  Emits a "what areas/subdivisions" question when there are 2+ aliases. */
   subdivisionAliases?: string[] | null
-  /** Annual HOA estimate for THIS community (top-level registry hoa_annual_estimate)
-   *  OR the lowest sub-neighborhood estimate (sub_neighborhoods[*].hoa_annual_estimate).
-   *  Only emit when the figure is a direct registry value — never estimated. */
+  /** Master assessment (rich content) and/or registry annual estimates.
+   *  buildMarketFaq runs publishPlaceHoa so FAQ cannot print a different
+   *  annual than glance on the same page. */
+  hoaMasterAnnual?: number | null
   hoaAnnualEstimate?: number | null
+  hoaSubEstimates?: ReadonlyArray<number | null | undefined> | null
   /**
    * Verified school district name for the community's city (e.g. "Bend-La Pine Schools").
    * Sourced from data/co-schools.ts DISTRICT_CITIES + DISTRICTS constants — the only
@@ -203,11 +206,16 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     })
   }
 
-  // HOA estimate — only from direct registry data, never fabricated.
-  if (pulse.hoaAnnualEstimate != null && pulse.hoaAnnualEstimate > 0) {
+  // HOA — one published annual (master preferred, else estimate floor).
+  const hoa = publishPlaceHoa({
+    masterAnnual: pulse.hoaMasterAnnual,
+    estimateAnnual: pulse.hoaAnnualEstimate,
+    subEstimates: pulse.hoaSubEstimates,
+  })
+  if (hoa) {
     faqs.push({
       question: `Does ${geoName} have an HOA?`,
-      answer: `Yes. Estimated annual HOA fees in ${geoName} start around $${pulse.hoaAnnualEstimate.toLocaleString('en-US')}. Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
+      answer: `Yes. Estimated annual HOA fees in ${geoName} start around $${hoa.annual.toLocaleString('en-US')}. Exact fees vary by lot, phase, and membership level. Verify current amounts with the HOA before any purchase.`,
     })
   }
 

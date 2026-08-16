@@ -76,6 +76,7 @@ import {
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/lib/market/publish-place-hoa'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { getDistrictForCity } from '@/data/co-schools'
 import { homesForSalePath, slugify } from '@/lib/slug'
@@ -471,12 +472,19 @@ export default async function CommunityDetailPage({ params }: Props) {
   if (richContent && seoAbout) {
     richContent.aboutProse = seoAbout
   }
+  // One published annual HOA for glance + FAQ. Master assessment wins over a
+  // sub-neighborhood "start around" estimate (Tetherow $1,464 vs Heath $2,244).
+  const publishedHoa = publishPlaceHoa({
+    masterAnnual: richContent?.hoaMasterAnnual,
+    estimateAnnual: registryEntry?.hoa_annual_estimate,
+    subEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate),
+  })
   const aboutFacts: { label: string; value: string }[] = [
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
     ...(medianDays != null ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }] : []),
     ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: kbMoneyFull(stats.medianSalePrice) ?? '—' }] : []),
-    ...(registryEntry?.hoa_annual_estimate ? [{ label: 'HOA estimate', value: `$${registryEntry.hoa_annual_estimate.toLocaleString('en-US')}/yr` }] : []),
+    ...(publishedHoa ? [{ label: placeHoaGlanceLabel(publishedHoa.kind), value: formatPlaceHoaAnnual(publishedHoa.annual) }] : []),
     { label: 'City', value: cityName },
   ]
 
@@ -618,20 +626,6 @@ export default async function CommunityDetailPage({ params }: Props) {
   // neighborhood row count and undercounts resorts with many MLS alias names.
   // The alias-aware count is the single authoritative figure for this page. (§0)
   //
-  // HOA: prefer the top-level registry entry's hoa_annual_estimate; fall back to
-  // the lowest sub-neighborhood hoa_annual_estimate when the parent has none. Only
-  // from the registry — never from pulse or invented. (§0)
-  const registryHoa = registryEntry?.hoa_annual_estimate ?? null
-  const subNeighborhoodMinHoa =
-    !registryHoa && registryEntry?.sub_neighborhoods?.length
-      ? Math.min(
-          ...registryEntry.sub_neighborhoods
-            .map((s) => s.hoa_annual_estimate ?? Infinity)
-            .filter((n) => n < Infinity),
-        ) || null
-      : null
-  const faqHoaEstimate = registryHoa ?? (subNeighborhoodMinHoa !== null && isFinite(subNeighborhoodMinHoa) ? subNeighborhoodMinHoa : null)
-
   // School district — resolved from the verified city→district registry in
   // data/co-schools.ts. This is the ONLY source allowed (§0). getDistrictForCity()
   // returns undefined for cities outside the Central Oregon service area, in which
@@ -655,7 +649,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     subdivisionAliases: registryEntry?.subdivision_aliases?.length
       ? registryEntry.subdivision_aliases
       : null,
-    hoaAnnualEstimate: faqHoaEstimate,
+    hoaMasterAnnual: richContent?.hoaMasterAnnual ?? null,
+    hoaAnnualEstimate: registryEntry?.hoa_annual_estimate ?? null,
+    hoaSubEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate) ?? null,
     // Schools district from verified registry — null when city is not in service area. (§0)
     schoolDistrictName: schoolDistrictInfo?.district ?? null,
     schoolDistrictSlug: schoolDistrictInfo?.districtSlug ?? null,
@@ -772,6 +768,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           name={community.name}
           postsBySlug={amenityPosts}
           aliases={registryEntry?.subdivision_aliases ?? []}
+          publishedHoa={publishedHoa}
         />
         {richContent ? null : aboutParagraphs.length > 0 ? (
           <KbAbout

@@ -5,6 +5,12 @@ import Link from 'next/link'
 import { slugify } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 import type { AmenityBlogPost } from '@/lib/data'
+import {
+  formatPlaceHoaAnnual,
+  placeHoaGlanceLabel,
+  publishPlaceHoa,
+  type PublishedPlaceHoa,
+} from '@/lib/market/publish-place-hoa'
 
 // The MLS SubdivisionName field is fixed-length and cuts some names off
 // mid-word ("Lodges at Bachelor V", "Triple") — they read as broken chips,
@@ -39,6 +45,7 @@ export function KbResortOverview({
   name,
   postsBySlug = {},
   aliases = [],
+  publishedHoa = null,
 }: {
   content: ResortCommunityContent | null
   name: string
@@ -48,6 +55,8 @@ export function KbResortOverview({
    *  and helps buyers who searched an alias name land here). Hidden for single-
    *  name communities (a resort whose only alias is its own label). */
   aliases?: string[]
+  /** Same publishPlaceHoa result the FAQ uses. Falls back to master on content. */
+  publishedHoa?: PublishedPlaceHoa | null
 }) {
   if (!content) return null
   // Drop the resort's own name from the alias chips; show only the constituent
@@ -57,13 +66,12 @@ export function KbResortOverview({
   // listings by; only the visible TEXT gets the display-name correction.
   const aliasChips = aliases.filter((a) => a.toLowerCase().trim() !== name.toLowerCase().trim())
 
+  const hoa = publishedHoa ?? publishPlaceHoa({ masterAnnual: content.hoaMasterAnnual })
   const facts: { label: string; value: string }[] = [
     ...(content.founded ? [{ label: 'Founded', value: String(content.founded) }] : []),
     ...(content.acres ? [{ label: 'Size', value: `${content.acres.toLocaleString('en-US')} acres` }] : []),
     ...(content.architect ? [{ label: 'Architect', value: content.architect }] : []),
-    ...(content.hoaMasterAnnual
-      ? [{ label: 'Master HOA', value: `$${content.hoaMasterAnnual.toLocaleString('en-US')}/yr` }]
-      : []),
+    ...(hoa ? [{ label: placeHoaGlanceLabel(hoa.kind), value: formatPlaceHoaAnnual(hoa.annual) }] : []),
     ...(content.courseRankings[0]
       ? [{ label: 'Recognition', value: `${content.courseRankings[0].rank} ${content.courseRankings[0].publication}` }]
       : []),
