@@ -46,9 +46,9 @@ export type FireLeadParams = {
   lp_variant: string
   /**
    * Lead taxonomy — `'seller' | 'buyer' | 'listing_inquiry' | 'exit_intent'
-   * | 'page_cta' | 'general' | 'cta_click'`. Drives dashboard pivots.
+   * | 'page_cta' | 'general' | 'cta_click' | 'recruit'`. Drives dashboard pivots.
    */
-  lead_type: 'seller' | 'buyer' | 'listing_inquiry' | 'exit_intent' | 'page_cta' | 'general' | 'cta_click'
+  lead_type: 'seller' | 'buyer' | 'listing_inquiry' | 'exit_intent' | 'page_cta' | 'general' | 'cta_click' | 'recruit'
   /** GA4 event name. Defaults to `generate_lead`. */
   event_name?: LeadEventName
   /** Lead-tier classification when known. */
