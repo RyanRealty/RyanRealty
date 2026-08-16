@@ -60,6 +60,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -342,6 +343,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const chartPriceHist = chartIsCityLevel ? cityPriceHist : priceHist
 
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
+  const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
   const marketData: KbMarketData = {
     active: activeCount ?? null,
     closed30: pulse?.closedLast30Days ?? null,
@@ -349,7 +351,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     medianList: medianListPrice,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
-    monthsSupply: pulse?.monthsOfSupply ?? null,
+    monthsSupply: monthsOfSupply,
     trend: buildMonthlyTrend(chartPriceHist),
     byTown: [],
     countyMedian: regionPulse?.medianListPrice ?? null,
@@ -361,6 +363,8 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     ...(pulse ?? {}),
     activeCount,
     medianListPrice: medianListPrice ?? pulse?.medianListPrice ?? null,
+    monthsOfSupply,
+    soldCount12mo: stats?.soldCount ?? null,
   }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(neighborhood.name, marketFaqInput)
 

@@ -23,6 +23,7 @@ import { getCmaMarketPulseRow, getCmaMarketStatsRow, getCmaMarketTrendRows } fro
 import { resortSlugForSubdivision } from '@/lib/cma/resort-guard'
 import { getCmaMarketBoardYear } from '@/lib/cma/market-board-mart'
 import type { CmaMarketContext } from '@/lib/cma/types'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 
 export { yearMartCite } from '@/lib/cma/market-board-mart'
 
@@ -100,11 +101,16 @@ export async function getCmaMarketContext(
   // verdict classification — rounding before binning flips a true 4.04 into a
   // seller's-market verdict (or 5.96 into a buyer's) that the number itself
   // contradicts. Display the rounded figure; classify off the raw one.
-  let rawMonthsOfSupply = num(pulse?.months_of_supply)
+  let rawMonthsOfSupply = publishMonthsOfSupply({
+    pulseMos: num(pulse?.months_of_supply),
+    pulseActiveCount: active,
+    displayedActiveCount: active,
+    soldCount12mo: sold365,
+  })
   let mosFormula = 'market_pulse_live.months_of_supply (canonical: active / (closed_last_6_months / 6))'
   if (rawMonthsOfSupply == null && active != null && sold365 > 0) {
     rawMonthsOfSupply = active / (sold365 / 12)
-    mosFormula = 'fallback: active_count / (sold_count_365 / 12) — pulse row missing'
+    mosFormula = 'fallback: active_count / (sold_count_365 / 12) — pulse row missing or withheld'
   }
   const monthsOfSupply = rawMonthsOfSupply != null ? +rawMonthsOfSupply.toFixed(1) : null
   let verdict: CmaMarketContext['marketVerdict'] = null

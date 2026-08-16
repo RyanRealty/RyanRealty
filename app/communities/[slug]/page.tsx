@@ -75,6 +75,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { getDistrictForCity } from '@/data/co-schools'
 import { homesForSalePath, slugify } from '@/lib/slug'
@@ -586,8 +587,8 @@ export default async function CommunityDetailPage({ params }: Props) {
   // labeled, so a city figure is never read as the community's. (§0)
   const coreCharts = chartIsCityLevel ? cityCoreCharts : commCoreCharts
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
-
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
+  const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
   const marketData: KbMarketData = {
     active: activeCount,
     closed30: pulse?.closedLast30Days ?? null,
@@ -595,10 +596,9 @@ export default async function CommunityDetailPage({ params }: Props) {
     medianList: medianListPrice,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
-    monthsSupply: pulse?.monthsOfSupply ?? null,
+    monthsSupply: monthsOfSupply,
     // 12-month rolling fallbacks (market_stats_cache) for neighborhood scope,
-    // where market_pulse_live has no row so the 30-day fields are null. Rendered
-    // with honest 12-month labels by the HUD — never as 30-day figures. (§0)
+    // where pulse 30-day fields are null. Honest 12-month HUD labels only. (§0)
     sold12mo: stats?.soldCount ?? null,
     medianDom12mo: stats?.medianDaysOnMarket ?? null,
     trend: buildMonthlyTrend(chartPriceHist),
@@ -645,7 +645,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     // cannot disagree with the page they sit on. This ran its own chain ending at
     // a closed-sale median, so the wrong number reached the structured data too.
     medianListPrice,
-    monthsOfSupply: pulse?.monthsOfSupply ?? null,
+    monthsOfSupply,
     // Prefer pulse days-to-pending; fall back to stats cache DOM (12-month rolling).
     medianDaysToPending: pulse?.medianDaysToPending ?? null,
     medianDaysOnMarket: stats?.medianDaysOnMarket ?? null,

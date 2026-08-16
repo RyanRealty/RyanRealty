@@ -48,6 +48,7 @@ import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { citySlugCandidates } from '@/lib/data/market/getCityReportSnapshot'
 import { parseRangePeriod, RANGE_PERIOD_LABELS, type RangePeriod } from '@/lib/market/range-periods'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
 import { reportCommunitiesInCity, resolveReportCommunity } from '@/lib/market/report-geo'
 import { ReportPdfDocument, type ReportPdfData } from '@/lib/pdf/report-pdf'
@@ -148,7 +149,12 @@ async function loadFacts(geo: ExportGeo, period: RangePeriod): Promise<ReportDoc
     },
     sales12mo: t12?.soldCount ?? null,
     activeCount: pulse?.activeCount ?? null,
-    monthsOfSupply: pulse?.monthsOfSupply ?? null,
+    monthsOfSupply: publishMonthsOfSupply({
+      pulseMos: pulse?.monthsOfSupply,
+      pulseActiveCount: pulse?.activeCount,
+      displayedActiveCount: pulse?.activeCount,
+      soldCount12mo: t12?.soldCount,
+    }),
     liveAsOf: pulse?.refreshedAt ? String(pulse.refreshedAt).slice(0, 10) : null,
     // Whether live inventory is published AT THIS SCOPE at all, as opposed to
     // published-and-missing. The document says which.

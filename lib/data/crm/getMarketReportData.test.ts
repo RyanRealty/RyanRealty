@@ -129,6 +129,30 @@ describe('buildAreaBlock', () => {
     expect(block!.href).toBe('/cities/bend')
   })
 
+  it('withholds live MoS when implied six-month closes cannot sit inside the printed year', () => {
+    const block = buildAreaBlock({
+      slug: 'tetherow',
+      geoType: 'neighborhood',
+      detail: {
+        medianSalePrice: 2081750,
+        soldCount: 36,
+        medianDom: 24,
+        yoyMedianPriceDeltaPct: null,
+        marketHealthLabel: 'Cool',
+        endOfPeriodInventory: 35,
+        updatedAt: '2026-08-16T00:00:00Z',
+      },
+      pulse: { activeCount: 35, monthsOfSupply: 4.6, refreshedAt: '2026-08-16T19:00:00Z' },
+    })
+    expect(block).not.toBeNull()
+    expect(block!.activeListings).toBe(35)
+    expect(block!.soldLast12mo).toBe(36)
+    // 35 / 4.6 * 6 ≈ 45.7 closes in six months cannot sit inside 36 in twelve.
+    // Fall back to the 12-month pace: 35 / (36/12) = 11.67.
+    expect(block!.monthsOfSupply).toBe(11.67)
+    expect(block!.marketVerdict).toBe('buyers')
+  })
+
   it('builds a community block with live pulse MoS (W8.1a: resorts use 6mo like cities)', () => {
     const block = buildAreaBlock({
       slug: 'tetherow',

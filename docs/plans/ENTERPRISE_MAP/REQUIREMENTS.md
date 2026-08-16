@@ -29,7 +29,7 @@
 | ID | Requirement | Source | Disposition | Covers |
 |---|---|---|---|---|
 | R-001 | Every published figure carries a live verification trace or is cut; no trace no ship | CLAUDE.md §0 | LOCKED | — |
-| R-002 | Months of supply = active/(closed_6mo/6); verdict pill must match thresholds ≤4/4–6/≥6 | CLAUDE.md §0; SITE_SPEC | LOCKED | gate `ci:market-formula` |
+| R-002 | Months of supply = active/(closed_6mo/6); verdict pill must match thresholds ≤4/4–6/≥6 | CLAUDE.md §0; SITE_SPEC | LOCKED | gate `ci:market-formula`. Pulse MOS withholds when the row's numerator is not the count on screen, or implied six-month closes exceed a printed 12-month sold count (fleet 5d55abbd72a67d25a5d7232b46fd2fb0, 2026-08-16). Gate `ci:publish-months-of-supply` |
 | R-003 | Never invent timelines, forecasts, estimates; a date is a number needing a named basis | CLAUDE.md §0 (Matt 2026-07-29) | LOCKED | — |
 | R-004 | Absence claims need a second differently-shaped counter-query before reaching Matt | CLAUDE.md §0 (Matt 2026-08-06) | LOCKED | — |
 | R-005 | Spark×Supabase reconciliation is a hard pre-render gate; stop on delta>1% | CLAUDE.md §0 | LOCKED | — |

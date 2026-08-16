@@ -51,6 +51,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { marketVerdict } from '@/lib/market/classify'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { zonedDateKey } from '@/lib/format/date'
 import { valuationHref } from '@/lib/site/valuation-href'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -138,15 +139,21 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const currentMonthKey = zonedDateKey(new Date()).slice(0, 7)
   const completePriceMonths = priceHistory.filter((p) => p.periodStart.slice(0, 7) !== currentMonthKey)
 
-  const mosRaw =
-    pulse?.monthsOfSupply != null && pulse.monthsOfSupply > 0 ? pulse.monthsOfSupply : null
+  const mosRaw = publishMonthsOfSupply({
+    pulseMos: pulse?.monthsOfSupply,
+    pulseActiveCount: pulse?.activeCount,
+    displayedActiveCount: pulse?.activeCount,
+    soldCount12mo: detailRolling?.soldCount,
+  })
   const mosText = mosRaw != null ? formatMonthsOfSupply(mosRaw) : null
   const verdict = marketVerdict(mosRaw)
 
   const refreshedAt = pulse?.refreshedAt ?? null
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     geoName,
-    pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null },
+    pulse
+      ? { ...pulse, monthsOfSupply: mosRaw, soldCount12mo: detailRolling?.soldCount ?? null }
+      : { activeCount: null, medianListPrice: null, refreshedAt: null },
   )
 
   const schemas: SchemaInput[] = [

@@ -29,10 +29,13 @@
  * prefer live pulse MoS (6-month base) when the row exists. `soldLast12mo`
  * remains the trailing-12-month close count for the email volume line, so
  * `monthsOfSupply` need not equal `activeListings / (soldLast12mo / 12)` —
- * same city pattern, now applied to resorts. When pulse MoS is null (sparse
- * slow-turnover geos with zero recent closes), fall back to computing MoS from
- * the rolling_365d sold count via `rawMonthsOfSupply` so the email still has a
- * real figure rather than a blank.
+ * same city pattern, now applied to resorts. Pulse MOS still withholds when
+ * the implied six-month closes cannot sit inside the printed 12-month sold
+ * count, or when the live numerator is not the count on the block
+ * (`publishMonthsOfSupply`). When pulse MoS is null or withheld (sparse
+ * slow-turnover geos, or impossible arithmetic), fall back to computing MoS
+ * from the rolling_365d sold count via `rawMonthsOfSupply` so the email still
+ * has a real figure rather than a blank.
  *
  * Slug resolution: the subscribable areas (lib/data/crm/getContactReportSubscriptions
  * buildMarketReportAreas) are the 7 Central Oregon cities + the 14 resort
@@ -53,6 +56,7 @@ import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
 import { marketVerdict } from '@/lib/market/classify'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import type { MoSVerdict } from '@/lib/data/types/market'
 import { formatDate } from '@/lib/format/date'
 
@@ -326,7 +330,12 @@ export function buildAreaBlock(args: {
   // the number shown is rounded to one decimal, so a true 4.04 bins as balanced
   // (not seller's) and a true 5.96 as balanced (not buyer's) — the pill can
   // never contradict the underlying absorption rate.
-  const liveMos = pulse ? toNum(pulse.monthsOfSupply) : null
+  const liveMos = publishMonthsOfSupply({
+    pulseMos: pulse ? toNum(pulse.monthsOfSupply) : null,
+    pulseActiveCount: liveActive,
+    displayedActiveCount: activeListings,
+    soldCount12mo: soldLast12mo,
+  })
   const rawMos = liveMos != null ? liveMos : rawMonthsOfSupply(activeListings, soldLast12mo)
   // Keep two-decimal precision so the display can stay consistent with the
   // raw-derived verdict at the 4.0 / 6.0 boundaries (formatMonths shows the

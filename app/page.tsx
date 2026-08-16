@@ -10,6 +10,7 @@ import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildMapPointFeatures } from '@/lib/kb/place-sections'
 import { listingDetailPath } from '@/lib/slug'
 import { buildYearSeries } from '@/lib/kb/year-series'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -165,7 +166,11 @@ export default async function Home() {
     medianList: pulse?.medianListPrice ?? null,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
-    monthsSupply: pulse?.monthsOfSupply ?? null,
+    monthsSupply: publishMonthsOfSupply({
+      pulseMos: pulse?.monthsOfSupply,
+      pulseActiveCount: pulse?.activeCount,
+      displayedActiveCount: pulse?.activeCount,
+    }),
     trend: priceHist
       .slice(-13)
       .filter((p) => p.medianSalePrice != null)

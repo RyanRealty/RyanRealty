@@ -3,6 +3,7 @@ import type { StatValue } from '@/lib/site/json-ld'
 import { marketVerdict, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 
 /**
  * Structural input — a full MarketPulse satisfies this, and a geo page can also
@@ -18,6 +19,8 @@ export type MarketFaqInput = {
   activeCount?: number | null
   medianListPrice?: number | null
   monthsOfSupply?: number | null
+  /** Pulse row active_count when it differs from the page's displayed count. */
+  pulseActiveCount?: number | null
   medianDaysToPending?: number | null
   refreshedAt?: string | null
   /** Median days on market from market_stats_cache (rolling 365d). Emits a DOM question
@@ -122,7 +125,13 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     datasetVariables.push({ name: 'Active Listings', value: pulse.activeCount })
   }
 
-  if (pulse.monthsOfSupply != null && pulse.monthsOfSupply > 0) {
+  const publishedMos = publishMonthsOfSupply({
+    pulseMos: pulse.monthsOfSupply,
+    pulseActiveCount: pulse.pulseActiveCount ?? pulse.activeCount,
+    displayedActiveCount: pulse.activeCount,
+    soldCount12mo: pulse.soldCount12mo,
+  })
+  if (publishedMos != null && publishedMos > 0) {
     // CLASSIFY THE RAW VALUE, FORMAT ONLY FOR DISPLAY, AND DO NOT LET THE FORMATTING
     // CROSS THE THRESHOLD THE CLASSIFICATION DID NOT. CLAUDE.md section 0: "Never
     // round in a way that changes the narrative."
@@ -143,10 +152,10 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
     // the single boundary-safe display rule (design-audit P2): 4.02 prints 4.1, 5.97
     // prints 5.9. Every public surface that renders this figure already went through
     // it; this builder was the one that did not.
-    const displayMos = formatMonthsOfSupply(pulse.monthsOfSupply)
+    const displayMos = formatMonthsOfSupply(publishedMos)
     faqs.push({
       question: `Is ${geoName} a buyer's or seller's market?`,
-      answer: `${geoName} has ${displayMos} months of supply, which is a ${marketType(pulse.monthsOfSupply)} market. ${MOS_THRESHOLD_CLAUSE}`,
+      answer: `${geoName} has ${displayMos} months of supply, which is a ${marketType(publishedMos)} market. ${MOS_THRESHOLD_CLAUSE}`,
     })
     // Number(), not the raw value: the Dataset variable is the machine-readable copy
     // of the sentence above it, so it publishes the number that is on the screen.

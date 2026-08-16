@@ -87,6 +87,18 @@ describe('buildMarketFaq', () => {
     expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toContain('88 active')
   })
 
+  it('drops months of supply when implied six-month closes exceed the printed year', () => {
+    const r = buildMarketFaq('Tetherow', {
+      activeCount: 35,
+      monthsOfSupply: 4.6,
+      soldCount12mo: 36,
+      refreshedAt: null,
+    })
+    expect(r.faqs.find((f) => f.question.includes("buyer's or seller's"))).toBeUndefined()
+    expect(r.datasetVariables.find((v) => v.name === 'Months of Supply')).toBeUndefined()
+    expect(r.faqs.find((f) => f.question.includes('sold in Tetherow'))?.answer).toContain('36 single-family')
+  })
+
   it('null or non-positive stats produce no question and no dataset variable', () => {
     const r = buildMarketFaq('Sisters', {
       activeCount: 0,

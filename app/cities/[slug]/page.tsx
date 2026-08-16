@@ -39,6 +39,7 @@ import {
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -391,6 +392,7 @@ export default async function CityDetailPage({ params }: Props) {
 
   // Market HUD.
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
+  const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: pulse?.activeCount ?? snapshot.activeSfrCount })
   const marketData: KbMarketData = {
     active: pulse?.activeCount ?? null,
     closed30: pulse?.closedLast30Days ?? null,
@@ -398,7 +400,7 @@ export default async function CityDetailPage({ params }: Props) {
     medianList: pulse?.medianListPrice ?? null,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
-    monthsSupply: pulse?.monthsOfSupply ?? null,
+    monthsSupply: monthsOfSupply,
     trend: buildMonthlyTrend(priceHist),
     byTown: bendNeighborhoodItems.filter((n) => n.medianPrice != null).map((n) => ({ name: n.name, median: n.medianPrice as number })),
     countyMedian: regionPulse?.medianListPrice ?? null,
@@ -410,11 +412,7 @@ export default async function CityDetailPage({ params }: Props) {
   // must not vanish when getMarketPulse times out or has no row. Fall back to the
   // always-present geo snapshot (active SFR count + median list + as-of), which is
   // awaited above and never null. Every figure stays verified (§0).
-  const marketFaqInput: MarketFaqInput = pulse ?? {
-    activeCount: snapshot.activeSfrCount,
-    medianListPrice: snapshot.medianListPrice,
-    refreshedAt: snapshot.refreshedAt,
-  }
+  const marketFaqInput: MarketFaqInput = { ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }), monthsOfSupply }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)
   const hasMap = mapFeatures.length > 0
   const citySchemas: SchemaInput[] = [
