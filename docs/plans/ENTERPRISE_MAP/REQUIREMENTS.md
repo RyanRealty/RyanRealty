@@ -176,8 +176,8 @@
 | R-121 | Sitemap integrity: child sitemaps serve listing/geo URLs in prod; canonical/robots/sitemap match live routes | 2026-08-02; seo-url-guardrails | VERIFIED | gate `ci:sitemap-resolvable` |
 | R-122 | Never thin indexed geo/listing families; cuts need GSC evidence + 301; /lp/* noindexed off the organic graph | ia-lock; decisions | LOCKED | — |
 | R-123 | Zero-inventory city×preset pages noindex + out of sitemap; plats ≥10 lifetime sales indexable; out-of-area ≥5 active, TOP_N=100 | DECISIONS-RECORDED | VERIFIED | — |
-| R-124 | Crawl-budget pruning when GSC reports starvation; hub-to-tail links; internal-link /luxury-homes-bend from money surfaces | WESTSIDE_BACKLOG | MISSING | G22 |
-| R-125 | GBP review-ask: on deal close, stage Matt's template as ready CRM draft with write-review URL | WESTSIDE_BACKLOG | MISSING | G22 |
+| R-124 | Crawl-budget pruning when GSC reports starvation; hub-to-tail links; internal-link /luxury-homes-bend from money surfaces | WESTSIDE_BACKLOG | PARTIAL | G22 — luxury links SHIPPED G7 2026-08-16 (nav, city rail, /cities Bend, /communities). Crawl prune still condition-gated on GSC indexed counts. |
+| R-125 | GBP review-ask: on deal close, stage Matt's template as ready CRM draft with write-review URL | WESTSIDE_BACKLOG | VERIFIED | G7 done 2026-08-16 — `restageCrmDeal` + daily `review-ask-on-close` stage `crm_message_drafts` with `GBP_REVIEW_URL`. Never sends. |
 | R-126 | Win contestable SERPs (community/market/sell/lifestyle×homes); accept portal head-term dominance; funnel scoring on every page | TOP_SITE_GOAL; BROKER-OS Loop F | PARTIAL | G22 |
 | R-127 | Answer-shaped H2s + real freshness stamps on geo/market pages; long-form dated citable editorial for neighborhoods/resorts | 2026-08-02 | VERIFIED | — |
 | R-128 | Dual-source measurement: first-party primary; GA4-only dead-traffic claims banned; CrUX field CWV on | GOAL_10X; 2026-08-02 | LOCKED | — |
@@ -207,7 +207,7 @@
 | R-147 | Kill FUB/Beacon archived nurture emails still sending via connected Gmail; purge FUB vocabulary/keys | EMAIL_SEND_AUDIT; twilio-cutover | MISSING | G23 |
 | R-148 | NO native sponsorship, preferred lenders, title companies; AdSense informational surfaces only, never conversion surfaces | MASTER_SPEC (Matt 2026-04-25) | LOCKED | — |
 | R-149 | Newsletter is named buyer capture; signup stitches rr_vid; buyer opt-in gets listing mail not seller drips | BROKER-OS; PRODUCT | VERIFIED | — |
-| R-150 | West Side: target the list, measure it, exclude existing book; audience refresh runs and logs | MASTER-SPEC D2; W1.1 | PARTIAL | G7 |
+| R-150 | West Side: target the list, measure it, exclude existing book; audience refresh runs and logs | MASTER-SPEC D2; W1.1 | PARTIAL | G7 done 2026-08-16 — backlog dispositioned; `meta-westside-audience` + `westside-cohort-digest` already live. Residual: live Meta push still flag-gated. |
 | R-151 | Referral-capture tier for out-of-area cities, not full page builds | RR-PLATFORM W12 | MISSING | G22 |
 
 ## nurture

@@ -33,8 +33,8 @@
 | Maturity band | CAPs |
 |---------------|------|
 | 4 Reliable | 001, 003, 006, 024, 028, 029 |
-| 3 Working | 002, 004, 005, 007, 008, 009, 010, 011, 013, 014, 015, 016, 018, 020, 021, 022, 023, 025, 026, 027, 031, 032, 034 |
-| 2 Skeleton | 012, 017, 019, 030, 033, 035 |
+| 3 Working | 002, 004, 005, 007, 008, 009, 010, 011, 013, 014, 015, 016, 018, 020, 021, 022, 023, 025, 026, 027, 030, 031, 032, 034 |
+| 2 Skeleton | 012, 017, 019, 033, 035 |
 | 1 Spec | — |
 | 0 Ether | — |
 
@@ -421,12 +421,12 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **2** — Program artifacts + crons (westside cohort digest, meta westside audience) exist; backlog not fully executed. |
+| **Maturity** | **3** — Backlog fully dispositioned 2026-08-16 (G7). Luxury money-surface links + review-ask drafts shipped. Audience + cohort crons already live. Residual: crawl prune (GSC-gated), community depth (G22), paid/expired sends (Matt-gated). |
 | **Evidence status** | **PARTIAL** |
-| **Evidence pointers** | `docs/plans/WESTSIDE_BACKLOG.md`; cron `westside-cohort-digest`, `meta-westside-audience`; admin CRM reporting westside; ADVANCEMENT_PLAN growth stream |
+| **Evidence pointers** | `docs/plans/WESTSIDE_BACKLOG.md`; crons `westside-cohort-digest`, `meta-westside-audience`, `review-ask-on-close`; gate `ci:westside-backlog`; admin CRM reporting westside |
 | **Public risk** | High (local authority) |
 | **Broker product?** | Indirect |
-| **Residual disposition** | **ACTIVE** (growth) — every backlog item execute or re-rank with evidence |
+| **Residual disposition** | **ACTIVE** (growth) — crawl prune + community depth on G22; paid/expired on M-class |
 
 ---
 

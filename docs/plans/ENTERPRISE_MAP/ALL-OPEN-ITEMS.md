@@ -72,7 +72,7 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 | CAP-026–027 | Design residue | ACTIVE |
 | CAP-028 | Voice rewrite residual | ACTIVE |
 | CAP-029 | AEO continuous | KEEP |
-| CAP-030 | Westside every backlog item | ACTIVE |
+| CAP-030 | Westside every backlog item | G7 DONE 2026-08-16 — residual crawl/depth on G22; paid/expired Matt-gated |
 | CAP-031 | Snapshot health + google-ads env | ACTIVE |
 | CAP-032 | Process OS enforce | KEEP |
 | CAP-033 | Grok memory assist only | KEEP |
