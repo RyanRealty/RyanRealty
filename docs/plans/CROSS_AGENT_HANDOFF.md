@@ -4,18 +4,20 @@
 
 # Current — 2026-08-16 (cursor-grok-g15) — G15 search completeness shipped
 
-**Surface:** Cursor Grok (`cursor-grok-g15-20260816`). **Time:** 2026-08-16 ~07:55 PT. Brief served **G15** (public-ux). One node only. Product **`e6523399`**. Loop stays **ARMED**.
+**Surface:** Cursor Grok (`cursor-grok-g15-20260816`). **Time:** 2026-08-16 ~08:20 PT. Brief served **G15** (public-ux). One node only. Product **`e6523399`**. **`main` @** `0524b4ee`. Vercel Production **READY** (`dpl_GZNBEt5SVpbXwFMRL9rXTKzgd43Y`, aliases `ryan-realty.com` + `ryanrealty.vercel.app`). `npm run deploy:verify` exit 0 in 644.9s. No hosted migration. Loop stays **ARMED**.
 
 **Done**
 - G15 Search completeness to plan acceptance (`c2c9adde-22f0-4359-971e-409d04a2ec32`) **done**. Accept: every FILTER_COMPLETENESS item dispositioned; prod TTFB p75 recorded.
 - Class: SoR `docs/plans/ENTERPRISE_MAP/search-completeness-accept.json`. DAL `readSearchCompletenessAccept` / `searchCompletenessComplete`. Packet §0 + §1b + §2 + scoreboard `searchCompleteness`. `/admin/loop` QuietRow. Gate `ci:search-completeness-accept`. No public-ux ledger insert (open window `2a5054ac`). No schema migration.
 - 268 long-tail concepts (222 custom + 46 standard) dispositioned, unexplained = 0. Every `registry-report.json` long-tail concept is in the ledger.
 - Prod TTFB p75 (8 curl samples, 2026-08-16): `/homes-for-sale` **275ms**, `/homes-for-sale/bend` **254ms** (target 600ms).
+- Post-deploy check (2026-08-16 ~08:19 PT, after READY): `https://ryan-realty.com/homes-for-sale` HTTP 200 (488/315/365ms); `/homes-for-sale/bend` HTTP 200 (233/248/379ms). All under 600ms.
 - Register: R-097, R-098, R-099, R-100, R-102, R-103, R-106 **VERIFIED**. R-101 **PARTIAL** (VOW live; sold browse still legacy RPC). R-104 **PARTIAL** (TTFB measured; client filter-paint / pan-pin RUM residual). R-105 already VERIFIED. Max pin **R-212** unchanged.
-- Accept proof: `npx tsx scripts/loop-probe-g15.ts` — `complete=true` longTailDisposed=268 unexplained=0 ttfb 275/254 samples=8. Gate 10/10. Tests 11564. `npm run build` exit 0.
+- Accept proof: `npx tsx scripts/loop-probe-g15.ts` — `complete=true` longTailDisposed=268 unexplained=0 ttfb 275/254 samples=8. Gate 10/10. Tests 11564. `npm run build` exit 0. `ci:gates` 215/215 on push of `0524b4ee`.
 - VERSION-1 G15 **DONE 2026-08-16**.
+- Concurrent dirty tree (do not steal): CRM broker SMS-agent files on this checkout (`app/actions/crm-brokers.ts`, `SmsAgentToggle.tsx`, inbound-sms route). Leave them to that session.
 
-**Do not:** insert another public-ux ledger row. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G27 done. Do not unpause TC. G6 stays blocked (live SMS). G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints (likely G16).
+**Do not:** insert another public-ux ledger row. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G27 done. Do not unpause TC. G6 stays blocked (live SMS). G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints (likely G16). This session does not claim a second node.
 
 **Skills read:** growth-loop, DEVELOPMENT_PROCESS, MECHANICAL_GATES, FILTER_COMPLETENESS plan §3/§4.8/§15, REQUIREMENTS R-097…R-106, VERSION-1 G15, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, git-commit.
 
