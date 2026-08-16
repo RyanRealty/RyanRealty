@@ -39,7 +39,6 @@ import {
   recordRecipientSend,
   type NewsletterRow,
 } from '@/lib/data'
-import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 // Bulk newsletter identity sends from the isolated news. subdomain (audit A4).
@@ -180,8 +179,8 @@ async function sendNewsletterToContactCore(
     if (!sub?.unsubscribe_token) return { ok: false, error: 'Could not resolve subscriber' }
 
     const u = unsubUrl(sub.unsubscribe_token as string)
-    const actingSlug: CrmBrokerSlug =
-      access.brokerSlug ?? ((person.assigned_broker as CrmBrokerSlug | null) ?? 'matt')
+    const actingSlug =
+      access.brokerSlug ?? ((person.assigned_broker as string | null) ?? 'matt')
     const fubId = (person.fub_legacy_id as number | null) ?? null
 
     // Build the HTML: shell + unsub footer, then attribute every site link to

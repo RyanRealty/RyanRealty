@@ -23,7 +23,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_BROKERS, CRM_BROKER_DISPLAY } from '@/lib/crm/constants'
 import { getBrokerNewsletterAnalytics, getBrokerWarmList } from '@/lib/data'
 import {
   ReportGrid,
@@ -76,13 +76,13 @@ export default async function NewsletterAnalyticsPage({
   // pick any broker (or 'all') via the query param — that param is never
   // consulted for a restricted broker.
   const isSuperuser = restrictedSlug === null
-  const selectedBroker: CrmBrokerSlug | 'all' = isSuperuser
+  const selectedBroker: string | 'all' = isSuperuser
     ? (CRM_BROKERS as readonly string[]).includes(requestedBroker ?? '')
-      ? (requestedBroker as CrmBrokerSlug)
+      ? (requestedBroker as string)
       : 'all'
     : restrictedSlug
 
-  const slugsToShow: CrmBrokerSlug[] = selectedBroker === 'all' ? [...CRM_BROKERS] : [selectedBroker]
+  const slugsToShow: string[] = selectedBroker === 'all' ? [...CRM_BROKERS] : [selectedBroker]
 
   const perBroker = await Promise.all(
     slugsToShow.map(async (slug) => ({
@@ -134,8 +134,8 @@ export default async function NewsletterAnalyticsPage({
   const heading = isSuperuser
     ? selectedBroker === 'all'
       ? 'All brokers'
-      : CRM_BROKER_DISPLAY[selectedBroker]
-    : CRM_BROKER_DISPLAY[restrictedSlug]
+      : (CRM_BROKER_DISPLAY[selectedBroker] ?? selectedBroker)
+    : (CRM_BROKER_DISPLAY[restrictedSlug] ?? restrictedSlug)
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>

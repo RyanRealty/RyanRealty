@@ -23,7 +23,7 @@ import { redirect } from 'next/navigation'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
 import { scopeBroker } from '@/lib/crm/scope'
-import { CRM_BROKERS, CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_BROKER_DISPLAY, type CrmBrokerSlug } from '@/lib/crm/constants'
 import { mergePeopleCore } from '@/lib/crm/merge-people'
 
 export type CrmPersonGapResult = { ok: true } | { ok: false; error: string }
@@ -45,7 +45,7 @@ export async function addCrmCollaboratorAction(
   const scope = await requirePersonInScope(personId, access)
   if (!scope.ok) return scope
 
-  if (!CRM_BROKERS.includes(brokerSlug as CrmBrokerSlug)) {
+  if (!brokerSlug.trim()) {
     return { ok: false, error: `Unknown broker slug: ${brokerSlug}` }
   }
 

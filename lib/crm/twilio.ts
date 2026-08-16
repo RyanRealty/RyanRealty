@@ -111,11 +111,11 @@ export const MARKETING_NUMBER = (process.env.TWILIO_NUMBER_MARKETING || '+154122
 /** Default desk for the shared marketing line + the no-forward-resolved fallback. */
 export const DEFAULT_DESK_BROKER: CrmBrokerSlug = 'matt'
 
-function envTwilioNumber(slug: CrmBrokerSlug): string | undefined {
-  return { matt: process.env.TWILIO_NUMBER_MATT, rebecca: process.env.TWILIO_NUMBER_REBECCA, paul: process.env.TWILIO_NUMBER_PAUL }[slug]?.trim()
+function envTwilioNumber(slug: string): string | undefined {
+  return ({ matt: process.env.TWILIO_NUMBER_MATT, rebecca: process.env.TWILIO_NUMBER_REBECCA, paul: process.env.TWILIO_NUMBER_PAUL } as Record<string, string | undefined>)[slug]?.trim()
 }
-function envForward(slug: CrmBrokerSlug): string | undefined {
-  return { matt: process.env.TWILIO_FORWARD_MATT, rebecca: process.env.TWILIO_FORWARD_REBECCA, paul: process.env.TWILIO_FORWARD_PAUL }[slug]?.trim()
+function envForward(slug: string): string | undefined {
+  return ({ matt: process.env.TWILIO_FORWARD_MATT, rebecca: process.env.TWILIO_FORWARD_REBECCA, paul: process.env.TWILIO_FORWARD_PAUL } as Record<string, string | undefined>)[slug]?.trim()
 }
 
 /**
@@ -126,7 +126,7 @@ function envForward(slug: CrmBrokerSlug): string | undefined {
  * null for the shared marketing line or an unrecognized number — the caller then
  * picks DEFAULT_DESK_BROKER (or the caller's existing assignment).
  */
-export async function brokerForTwilioNumber(toRaw: string | null | undefined): Promise<CrmBrokerSlug | null> {
+export async function brokerForTwilioNumber(toRaw: string | null | undefined): Promise<string | null> {
   const ten = normalizeTo10(toRaw)
   if (!ten) return null
   if (normalizeTo10(MARKETING_NUMBER) === ten) return null // shared line, no single owner
@@ -146,7 +146,7 @@ export async function brokerForTwilioNumber(toRaw: string | null | undefined): P
  * forward returns null so the caller routes to voicemail and logs a config error
  * instead of silently misrouting to a baked-in cell.
  */
-export async function forwardCellForBroker(slug: CrmBrokerSlug | null): Promise<string | null> {
+export async function forwardCellForBroker(slug: string | null): Promise<string | null> {
   let tel: Awaited<ReturnType<typeof getBrokerTelephony>> | null = null
   try { tel = await getBrokerTelephony() } catch { tel = null }
   if (slug) {
@@ -185,7 +185,7 @@ export function toE164(phone: string | null | undefined): string | null {
 }
 
 /** A broker's public Twilio business line (E.164). DB source of truth, env fallback. */
-export async function brokerTwilioNumber(slug: CrmBrokerSlug): Promise<string | null> {
+export async function brokerTwilioNumber(slug: string): Promise<string | null> {
   try {
     const tel = await getBrokerTelephony()
     const n = tel.bySlug[slug]?.twilioNumber

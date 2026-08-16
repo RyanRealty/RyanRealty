@@ -2,7 +2,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
-import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
+import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 
 /**
  * Broker telephony — the single source of truth tying each CRM broker to their
@@ -17,9 +17,9 @@ import { CRM_BROKER_BY_EMAIL, type CrmBrokerSlug } from '@/lib/crm/constants'
  */
 export type BrokerTelephonyEntry = { twilioNumber: string | null; forwardToCell: string | null; smsOptIn: boolean }
 export type BrokerTelephony = {
-  bySlug: Partial<Record<CrmBrokerSlug, BrokerTelephonyEntry>>
+  bySlug: Record<string, BrokerTelephonyEntry>
   /** normalized last-10 of each broker's twilio_number → CRM slug */
-  byTwilioLast10: Record<string, CrmBrokerSlug>
+  byTwilioLast10: Record<string, string>
 }
 
 function last10(v: string | null | undefined): string | null {

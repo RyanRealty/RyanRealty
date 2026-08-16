@@ -23,7 +23,6 @@ import { buildMergeContext } from '@/lib/crm/merge-context'
 import { sendSms, sendSmsViaMessagingService, brokerTwilioNumber } from '@/lib/crm/twilio'
 import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
 import { recordConversationMessage } from '@/lib/crm/record-message'
-import type { CrmBrokerSlug } from '@/lib/crm/constants'
 import { checkSendGuards } from './guards'
 import type { GovernedSmsRequest, GovernedSmsResult } from './types'
 
@@ -42,8 +41,8 @@ export async function sendGovernedSms(req: GovernedSmsRequest): Promise<Governed
     }
     const person = target.person
     const to = target.phone
-    const slug: CrmBrokerSlug =
-      req.initiator.broker ?? (person.assigned_broker as CrmBrokerSlug | null) ?? 'matt'
+    const slug =
+      req.initiator.broker ?? (person.assigned_broker as string | null) ?? 'matt'
 
     // Merge tokens — a template body with %first% must never reach a client
     // literally. Same context resolution as every other send surface.

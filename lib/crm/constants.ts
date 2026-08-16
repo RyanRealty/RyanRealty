@@ -9,7 +9,8 @@ export const CRM_STAGES = [
 ] as const
 
 export const CRM_BROKERS = ['matt', 'rebecca', 'paul'] as const
-export type CrmBrokerSlug = (typeof CRM_BROKERS)[number]
+/** Table-first slugs are not a closed three-name union. Seeded desks stay in CRM_BROKERS. */
+export type CrmBrokerSlug = string
 
 /** Admin sign-in email → CRM broker slug (the short slugs used in assigned_broker + broker: tags). */
 export const CRM_BROKER_BY_EMAIL: Record<string, CrmBrokerSlug> = {
@@ -25,7 +26,7 @@ export const FUB_USER_ID_BY_BROKER: Record<CrmBrokerSlug, number> = {
   paul: 3,
 }
 
-export const CRM_BROKER_DISPLAY: Record<CrmBrokerSlug, string> = {
+export const CRM_BROKER_DISPLAY: Record<string, string> = {
   matt: 'Matt Ryan',
   rebecca: 'Rebecca Peterson',
   paul: 'Paul Stevenson',

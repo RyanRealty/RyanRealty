@@ -332,7 +332,7 @@ export default async function AgentActivityPage({
           currentView={view}
           currentCols={currentCols}
           isSuperuser={isSuperuser}
-          lockedBrokerLabel={scope ? CRM_BROKER_DISPLAY[scope] : undefined}
+          lockedBrokerLabel={scope ? (CRM_BROKER_DISPLAY[scope] ?? scope) : undefined}
           brokers={CRM_BROKERS.map((slug) => ({
             slug,
             label: CRM_BROKER_DISPLAY[slug],

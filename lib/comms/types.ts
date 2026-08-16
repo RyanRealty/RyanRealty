@@ -32,7 +32,7 @@ import type { CrmAttachmentRef } from '@/lib/crm/attachment-limits'
  */
 export type GovernedInitiator = {
   kind: 'broker' | 'system'
-  broker?: CrmBrokerSlug | null
+  broker?: string | null
   source?: string
 }
 
