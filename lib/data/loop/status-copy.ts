@@ -128,6 +128,17 @@ export function plainEvidence(line: string | null): string {
   return text.length > 160 ? `${text.slice(0, 159).trim()}…` : text
 }
 
+export function plainShipClass(key: string): string {
+  if (key.includes(':place-pages')) return 'place pages'
+  if (key.includes(':listing-detail')) return 'listing pages'
+  if (key.includes(':search')) return 'search'
+  if (key.includes(':seller')) return 'seller pages'
+  if (key.includes(':team')) return 'team pages'
+  if (key.startsWith('gap:')) return key.slice(4)
+  if (key.startsWith('matt:') || key.startsWith('solo:')) return 'this item'
+  return 'this set'
+}
+
 export function upcomingHint(counts: { urgent: number; fix: number; polish: number; plan: number }): string {
   const bits: string[] = []
   if (counts.urgent) bits.push(`${counts.urgent} urgent`)

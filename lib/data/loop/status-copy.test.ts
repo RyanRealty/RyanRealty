@@ -9,6 +9,7 @@ import {
   plainFindingSeverity,
   plainFindingStatus,
   plainNodeTitle,
+  plainShipClass,
   upcomingHint,
 } from './status-copy'
 
@@ -79,6 +80,12 @@ describe('loop status copy (Matt-facing, no shop jargon)', () => {
       '17 urgent · 20 website fixes · 19 polish · 16 on the company list',
     )
     expect(upcomingHint({ urgent: 0, fix: 0, polish: 0, plan: 0 })).toBe('Nothing waiting')
+  })
+
+  it('names a ship class the way a person would', () => {
+    expect(plainShipClass('fleet:public-ux:place-pages')).toBe('place pages')
+    expect(plainShipClass('gap:G32')).toBe('G32')
+    expect(plainShipClass('solo:factory:abc')).toBe('this item')
   })
 
   it('shows a page path instead of a full URL', () => {

@@ -11,10 +11,10 @@
 **Step 1. Say: "Build the pre-arm items."**
 The session builds, ships, and screenshots the three items the plan calls for before anything runs unattended:
 1. **`/admin/loop` status page** — is an iteration running now (and on what node), last ~10 completed nodes with one-line evidence, version progress, fleet findings inbox, ledger windows, sentinel launch log (count in 24h, no daily cap). Renders from the same rows agents mutate; no self-reported status anywhere.
-2. **One-node-per-session chaining** — the sentinel prompt changes from "grind until blocked" to "complete ONE node, hand off, die." Fresh context per node; the zero-gap chain carries continuity.
+2. **One-ship-class-per-session chaining** — the sentinel prompt is "complete ONE SHIP CLASS, hand off, die." Same-category fleet findings share one rebuild (Matt 2026-08-16). Planned G-rows stay a class of one. Fresh context per class; the zero-gap chain carries continuity.
 3. **Orphan auto-release** — sentinel checks stale `in_progress` claims against the Cursor API; owner run terminal → node flips back to `open` automatically.
 
-**DONE 2026-08-16.** `/admin/loop` renders live graph data (desktop + mobile screenshots, zero console errors). Sentinel prompt is one-node-per-session. Orphan auto-release is in the sentinel with tests. The loop is still off.
+**DONE 2026-08-16.** `/admin/loop` renders live graph data (desktop + mobile screenshots, zero console errors). Sentinel prompt was one-node-per-session at arm; **amended 2026-08-16 to one-ship-class-per-session** (R-216) so bot findings in one category do not each pay a full rebuild. Orphan auto-release is in the sentinel with tests.
 
 ## Phase 2 — First light (an evening Matt is around, ~1 hour of glancing)
 
@@ -25,7 +25,7 @@ The session flips `LOOP_SENTINEL` to `on`, redeploys so it takes effect, proves 
 
 **DONE 2026-08-16 21:52 PT.** Matt said the word. `LOOP_SENTINEL=on` written to Vercel production. Bake deploy + first-boot proof are the rest of this session.
 
-**Step 4. Watch 2–3 iterations on the status page.** Healthy looks like: node claimed → done with evidence in under ~2 hours; commits on main; deploy READY; next node claimed by a fresh agent within minutes. Anything looks wrong → say **"disarm the loop"** (kill switch back on within one session; running agent finishes or is canceled on request).
+**Step 4. Watch 2–3 iterations on the status page.** Healthy looks like: a ship class claimed → done with evidence in under ~2 hours; one push; deploy READY; next class claimed by a fresh agent within minutes. Anything looks wrong → say **"disarm the loop"** (kill switch back on within one session; running agent finishes or is canceled on request).
 
 **Step 5. Decide overnight posture.** Default: leave it armed — one active agent at a time, no daily launch cap, no sends/posts/spend/OAuth ever. Or say "disarm until morning."
 

@@ -133,6 +133,21 @@ export async function claimWorkNode(id: string, ownerSession: string) {
   return transition(id, 'in_progress', { owner_session: ownerSession, blocked_reason: null })
 }
 
+/** Claim every node in a ship class so another session cannot steal a sibling and push alone. */
+export async function claimShipClass(ids: string[], ownerSession: string) {
+  const claimed: string[] = []
+  const failed: string[] = []
+  for (const id of ids) {
+    const result = await claimWorkNode(id, ownerSession)
+    if (result.data?.id) claimed.push(result.data.id)
+    else failed.push(`${id}: ${result.error ?? 'claim failed'}`)
+  }
+  if (claimed.length === 0) {
+    return { data: null, error: failed.join('; ') || 'no ids to claim' }
+  }
+  return { data: { claimed, failed }, error: null }
+}
+
 export async function blockWorkNode(id: string, reason: string) {
   if (!reason.trim()) return { data: null, error: 'blocked_reason is required' }
   return transition(id, 'blocked', { blocked_reason: reason })

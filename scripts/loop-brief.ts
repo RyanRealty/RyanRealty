@@ -9,7 +9,9 @@
  *   npx tsx scripts/loop-brief.ts
  *
  * Matt's prompt is one line: "Run the loop." The session runs this, works
- * exactly ONE node, completes it with evidence, updates the handoff, ships.
+ * ONE SHIP CLASS (same-category fleet findings share one rebuild; planned
+ * G-rows stay a class of one), completes each node with evidence, updates
+ * the handoff, ships once.
  */
 import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
@@ -17,6 +19,7 @@ import { config } from 'dotenv'
 import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/data/loop/domains'
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
+import { selectShipClass } from '../lib/data/loop/ship-class'
 import { fleetNodePriority, isStaleInProgress, type WorkNodeState } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
@@ -170,26 +173,54 @@ async function main() {
     push(`  BLOCKED ${n.version_gap ?? '-'} [${n.domain}] ${n.title} — ${n.blocked_reason ?? 'no reason recorded'}`)
   }
   push('')
-  push('--- NEXT NODE (work exactly this one) ---')
+  push('--- SHIP CLASS (one rebuild for this whole set) ---')
   if (!next) {
     push('No eligible open node. Close blocked/in_progress work or open the next version gap.')
   } else {
-    push(`${next.version_gap ?? '(ad-hoc)'} [${next.domain}] ${next.title}`)
-    push(`objective: ${next.objective}`)
-    push(`output:    ${next.output}`)
-    push(`accept:    ${next.accept}`)
-    push(`claim it:  state open -> in_progress (lib/data/loop/work-graph.ts claimWorkNode)`)
+    const ship = selectShipClass(
+      eligible.map((n) => ({
+        id: n.id,
+        domain: n.domain,
+        title: n.title,
+        objective: n.objective,
+        versionGap: n.version_gap,
+      })),
+      {
+        id: next.id,
+        domain: next.domain,
+        title: next.title,
+        objective: next.objective,
+        versionGap: next.version_gap,
+      },
+    )
+    const shipNodes = ship.nodes
+      .map((s) => eligible.find((n) => n.id === s.id))
+      .filter((n): n is NodeRow => n != null)
+    push(`class: ${ship.key} · ${shipNodes.length} node(s)${ship.remaining ? ` · ${ship.remaining} leftover sibling(s) stay open for the next ship of this class` : ''}`)
+    push('DO NOT run npm run push or deploy:verify until every node below is locally accepted or blocked.')
+    push('Then ONE push, ONE deploy:verify, complete all shipped nodes with that READY SHA.')
+    push(`claim them: claimShipClass([${shipNodes.map((n) => n.id).join(', ')}], owner)  (lib/data/loop/work-graph.ts)`)
     const reads = DOMAIN_REQUIRED_READS[next.domain as CompanyImprovementDomain] ?? []
-    push(`load first (this animal's discipline — read before working):`)
+    push('load first (this animal\'s discipline — read before working):')
     for (const r of reads) push(`  - ${r}`)
-    push(`  - REQUIREMENTS.md rows covering this node (grep the gap ref) + the canon preflight for whatever the change touches`)
+    push('  - REQUIREMENTS.md rows covering this class (grep the gap ref) + the canon preflight for whatever the change touches')
+    push('')
+    for (const [i, n] of shipNodes.entries()) {
+      push(`--- NODE ${i + 1}/${shipNodes.length} ---`)
+      push(`${n.version_gap ?? '(ad-hoc)'} [${n.domain}] ${n.title}`)
+      push(`id:        ${n.id}`)
+      push(`objective: ${n.objective}`)
+      push(`output:    ${n.output}`)
+      push(`accept:    ${n.accept}`)
+    }
   }
   push('')
   push('--- RULES (v1.6.0) ---')
-  push('1. One node per cycle. Claim before working; evidence before done.')
-  push('2. Only environment-verified facts enter durable state (probe rows, screenshots, deploy READY).')
-  push('3. Update CROSS_AGENT_HANDOFF Current before stopping. The chat is disposable; the graph is not.')
-  push('4. Matt gates: outbound to real people, public posts, ad spend, OAuth grants. Nothing else waits.')
+  push('1. One ship class per cycle. Claim the whole class before working; evidence before done.')
+  push('2. Same-category fleet findings share ONE npm run push and ONE deploy:verify. Do not rebuild after each finding.')
+  push('3. Only environment-verified facts enter durable state (probe rows, screenshots, deploy READY).')
+  push('4. Update CROSS_AGENT_HANDOFF Current before stopping. The chat is disposable; the graph is not.')
+  push('5. Matt gates: outbound to real people, public posts, ad spend, OAuth grants. Nothing else waits.')
   push('============================================')
 
   console.log(lines.join('\n'))

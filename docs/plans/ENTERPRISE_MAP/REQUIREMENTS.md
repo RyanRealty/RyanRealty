@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-215 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-216 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -303,6 +303,7 @@
 | R-213 | One generative product: xAI only (image, video, voice, content text) via `XAI_API_KEY`. Social/video/VO/stills go through `lib/grok-*.ts`. Third-party gen vendors are inventoried and canceled. Executor reads https://docs.x.ai/overview before any generate call | Matt 2026-08-16 ADD; D10 | MISSING | G32 |
 | R-214 | `/admin/loop` is written for Matt: what is being fixed, what is next, what just finished, in plain English. Shop jargon folds away. Matt instructions land as graph nodes (ADD/CHANGE/STOP), never as a side feature the loop cannot see | Matt 2026-08-16 ADD | VERIFIED | G33 done — Now / Next / Waiting / Finished in plain English; bots / measuring / how it runs folded; ADD landed as graph node `1a6eb37a` |
 | R-215 | Page-grade is dead. Do not grade, grind, capture a universe, write cards, fix-to-a-rubric, or regrade. Public look is Matt keep/kill on real pages | Matt 2026-08-16 STOP | LOCKED | skill refuse stubs; `ci:process-canon` asserts KILLED |
+| R-216 | Same-category fleet findings share one ship: claim the class, one `npm run push`, one `deploy:verify`. Do not rebuild after each bot finding | Matt 2026-08-16 | VERIFIED | `lib/data/loop/ship-class.ts` + loop-brief SHIP CLASS + sentinel ONE SHIP CLASS prompt; G44 asserts no regression |
 
 ## Standing Matt gates (never agent-closed)
 

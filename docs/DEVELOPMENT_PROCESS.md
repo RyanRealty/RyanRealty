@@ -86,7 +86,7 @@ session from the same node.
 
 **MEA mapping (Manage–Execute–Audit):** the Manager is `loop-brief` + the scored gap
 list (derives ONE bounded node from durable state + the version goal). The Executor is
-any session, fresh context, exactly one node per cycle, claimed before worked. The
+any session, fresh context, one ship class per cycle (same-category fleet findings share one rebuild; planned G-rows stay a class of one), claimed before worked. The
 Auditor is accept-against-goal + the gates: `completeWorkNode` refuses `done` without
 evidence, and evidence means the environment said so (probe rows, screenshots at
 390+1280, deploy READY, ledger verdicts) — never the session's self-report.
@@ -215,6 +215,7 @@ W13.1 Batch 2 (2026-07-27): deleted superseded audits, phase briefs, dated sessi
 
 ## Changelog
 
+- **1.6.0 ship-class (2026-08-16)** — Matt: bots mint many findings in one category; the graph must not rebuild after each one. `selectShipClass` groups fleet nodes by domain + surface family (place pages, search, listing detail). Brief prints the class; sentinel prompt is ONE SHIP CLASS; one `npm run push` + one `deploy:verify` per class. Cap 8; leftovers stay open for the next slice of the same class. G44 asserts the prompt and brief cannot regress to one-node-one-rebuild. R-216.
 - **1.6.0 (2026-08-15)** — External verification fleet: Grok Bots (each on its own cloud computer/browser) walk production as users on routines. Machinery: `fleet_findings` table + `/api/fleet/findings` endpoint (fleet secret), `scripts/fleet-test-cases.ts` (regression pack from DONE nodes' accepts + core money paths + preflight walks), `scripts/fleet-intake.ts` (findings → work nodes, reproduce-or-reject). Bot briefs + rails in `ENTERPRISE_MAP/VERIFICATION-FLEET.md`. Certification now requires a clean fleet pass. Phase-2 (analytics sign-in, form E2E) stays Matt-gated.
 - **1.5.1 (2026-08-15)** — Adversarial verification standing (R-040 enforced): high-stakes classes get a fresh-context breaker pass before ship. Driven by the first such audit finding 17 defects in self-graded work: tail-row deletion blind spot in G56/G57 (fixed with Max pins), DAL-only state machine (fixed with DB triggers `loop_work_nodes_guard` + `site_improvement_ledger_guard`, migration 20260815210000), fail-open ledger guard (now fail-closed + one-open-per-domain), four overstated register rows (corrected; product gaps G26–G28 opened), stale packet sections including a revived reconnect ask (purged).
 - **1.5.0 (2026-08-15)** — Requirements register: 572 raw Matt directives harvested from the full corpus (five parallel readers), deduped to 203 dispositioned rows in `ENTERPRISE_MAP/REQUIREMENTS.md`; 25 MISSING rows drove new manifest gaps G15–G25 + seeded work nodes. G57 `ci:requirements-register` makes the register unshrinkable. Loop-brief prints the demand line.

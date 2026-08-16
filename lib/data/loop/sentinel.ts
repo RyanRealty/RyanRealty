@@ -5,8 +5,9 @@
  *
  * Every few hours the cron asks one question: is the loop dormant while
  * eligible work exists? If yes, launch a Cursor cloud agent whose entire
- * prompt is "run the loop for exactly ONE node, then chain." Nobody has to
- * say it. One node per session (pre-arm item 2): fresh context per node, the
+ * prompt is "run the loop for ONE SHIP CLASS, then chain." Nobody has to
+ * say it. One ship class per session (Matt 2026-08-16): same-category fleet
+ * findings share one rebuild; planned G-rows stay a class of one. The
  * zero-gap chain carries continuity. Orphan auto-release (pre-arm item 3):
  * claims whose cloud-agent owner's newest run is terminal release to open.
  *
@@ -29,11 +30,13 @@ const REPO_URL = 'https://github.com/RyanRealty/RyanRealty'
 const ACTIVE_WINDOW_MIN = 180
 const BOOT_GUARD_MIN = 15
 
-const LOOP_PROMPT = `Run the loop for exactly ONE node. You are a loop-sentinel iteration for Ryan Realty (THE LOOP — docs/DEVELOPMENT_PROCESS.md is canon). One node per session is the design: every node gets full fresh context, and the chain — not this session — carries continuity.
+const LOOP_PROMPT = `Run the loop for ONE SHIP CLASS. You are a loop-sentinel iteration for Ryan Realty (THE LOOP — docs/DEVELOPMENT_PROCESS.md is canon). A ship class is the set the brief prints under SHIP CLASS: same-category fleet findings (same domain + surface family) that share one rebuild. Planned G-rows and Matt ADD/CHANGE stay a class of one.
 
-Boot: read docs/plans/CROSS_AGENT_HANDOFF.md (Current block), then run \`npx tsx scripts/loop-brief.ts\` and follow it exactly: claim the ONE served node, load its required reads, do the class on every blast-radius plane it names, accept against the node's own accept test with environment evidence, ship per canon (gates green, push to main, npm run deploy:verify to READY, hosted migrations in the same delivery), complete the node with evidence, update the handoff Current block. Do NOT claim a second node — after this node reaches done or blocked, your only remaining job is the final act below.
+Boot: read docs/plans/CROSS_AGENT_HANDOFF.md (Current block), then run \`npx tsx scripts/loop-brief.ts\` and follow it exactly. Claim EVERY node in the served ship class (claimShipClass, or claimWorkNode on each id). Load the required reads once. For each node: reproduce-or-reject, fix the class on every blast-radius plane, accept locally against that node's own accept test.
 
-If the served node cannot proceed, move it to blocked with the concrete reason, write the blocker into the handoff, and go straight to the final act (your successor picks the next node). If the brief serves nothing, update the handoff and finish cleanly without the final act.
+DO NOT run \`npm run push\` or \`npm run deploy:verify\` after an individual node. Commit locally if you need restore points. After every node in the served class is locally accepted or blocked with a concrete reason: ONE \`npm run push\`, ONE \`npm run deploy:verify\` to READY, hosted migrations in the same delivery. Then complete every shipped node with that READY SHA as evidence and update the handoff Current block. If the brief caps the class, do the printed set only — leftovers stay open for the next iteration of the same class.
+
+If a node cannot proceed, block it with the reason and continue the rest of the class. If the brief serves nothing, update the handoff and finish cleanly without the final act.
 
 Hard limits (never cross, no exceptions): no outbound messages to real people, no public posting, no ad spend, no OAuth grants, no SkySlope mutations, no newsletter sends. A node needing one of those goes to blocked with the reason.
 

@@ -1,8 +1,26 @@
-> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next node contract), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
+> **FLEET + MAP:** Enterprise Map SoR = `docs/plans/ENTERPRISE_MAP/` — start `SESSION_HANDOFF.md`. **Company start ritual (THE LOOP v1.6.0): `npx tsx scripts/loop-brief.ts`** (work graph + scoreboard + next ship class), then the version manifest `docs/plans/ENTERPRISE_MAP/VERSION-1.md`. Blast-radius required. Stranded ledger domains are frozen (mechanical); manifest shrinkage fails G56. Full open list: `ALL-OPEN-ITEMS.md`.
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-sentinel) — Awbrey 52/63/62 three-count finding rejected
+# Current — 2026-08-16 (cursor) — ship class: one rebuild per category
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~16:30 PT. Matt ADD (R-216). Not a fleet node. No public-ux or factory ledger insert (open windows `2a5054ac` / `ba3435dd`). Loop stays **ARMED**.
+
+**Done**
+- Bots were minting many same-category findings. The graph served one node per cycle; each cycle ran isolated `next build` + `deploy:verify`. That is the Build CPU burn.
+- Class: `selectShipClass` groups fleet nodes by domain + surface family (place pages, search, listing detail). Planned G-rows stay a class of one. Cap 8; leftovers stay open for the next slice of the same class.
+- Brief prints **SHIP CLASS** and forbids push until the printed set is locally accepted. Sentinel prompt is ONE SHIP CLASS, one `npm run push`, one `deploy:verify`. `claimShipClass` claims the set so another session cannot steal a sibling and push alone.
+- `/admin/loop` says when the next items rebuild together. G44 fails if the prompt or brief regresses to one-node-one-rebuild. R-216 VERIFIED. Max pin R-216.
+
+**Next**
+- Already-launched cloud agents still have the old one-node prompt until this SHA is READY. The next sentinel launch uses the new prompt.
+- Do not start another Tetherow/Awbrey/Ridge instance fix from this session.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, git-commit, REQUIREMENTS R-216.
+
+# Prior — 2026-08-16 (cursor-loop-sentinel) — Awbrey 52/63/62 three-count finding rejected
 
 **Surface:** Cursor cloud `bc-c33f68f1` (`cursor/loop-sentinel-2026-08-16t23-10-7e09`). **Time:** 2026-08-16 ~23:20 UTC. Brief served fleet finding `5688e089` (public-ux / fleet `c2764a13014ffde27bb0758f43bdb546`), not G16/G32. One node only. No product change. **`main` @** `d688cd4ef` + this stamp. Production already **READY** on the shipped neighborhood inventory class (`9cac09b1` / plat pulse `3f34bf653`). `npm run ci:gates` 224/224. No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). Finding `87884938` status rejected. No public-ux ledger insert (open window `2a5054ac`). Collision: `cursor-loop-chain-2026-08-16t23-10-c1cd` overwrote the claim at 23:13:58 with no evidence; this session completed it.
 

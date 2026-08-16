@@ -124,6 +124,37 @@ for (const d of regDirs) {
 }
 const planFiles = planMd // for the summary line below
 
+// Ship class (Matt 2026-08-16 / R-216): same-category fleet findings share
+// one rebuild. If the sentinel prompt or brief regresses to one-node-one-push,
+// the bots burn a full isolated next build per finding.
+const sentinelSrc = existsSync('lib/data/loop/sentinel.ts')
+  ? readFileSync('lib/data/loop/sentinel.ts', 'utf8')
+  : ''
+if (!sentinelSrc.includes('Run the loop for ONE SHIP CLASS')) {
+  fails.push('lib/data/loop/sentinel.ts: LOOP_PROMPT must start a session on ONE SHIP CLASS (R-216)')
+}
+if (sentinelSrc.includes('Run the loop for exactly ONE node')) {
+  fails.push('lib/data/loop/sentinel.ts: one-node-one-rebuild prompt is banned (R-216)')
+}
+if (!sentinelSrc.includes('npm run push') || !/ONE .+npm run push/.test(sentinelSrc)) {
+  fails.push('lib/data/loop/sentinel.ts: prompt must require ONE npm run push for the class')
+}
+const briefSrc = existsSync('scripts/loop-brief.ts')
+  ? readFileSync('scripts/loop-brief.ts', 'utf8')
+  : ''
+if (!briefSrc.includes('SHIP CLASS') || !briefSrc.includes('selectShipClass')) {
+  fails.push('scripts/loop-brief.ts: must print SHIP CLASS via selectShipClass (R-216)')
+}
+const growthSkill = existsSync('.claude/skills/growth-loop/SKILL.md')
+  ? readFileSync('.claude/skills/growth-loop/SKILL.md', 'utf8')
+  : ''
+if (!growthSkill.includes('ship class') && !growthSkill.includes('SHIP CLASS')) {
+  fails.push('.claude/skills/growth-loop/SKILL.md: must name ship class (R-216)')
+}
+if (!existsSync('lib/data/loop/ship-class.ts')) {
+  fails.push('lib/data/loop/ship-class.ts missing — ship-class grouping is the R-216 mechanism')
+}
+
 // Page-grade is KILLED (Matt 2026-08-16). Both skill copies must stay refuse stubs.
 for (const skill of [
   '.claude/skills/page-grade/SKILL.md',

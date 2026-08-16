@@ -13,7 +13,7 @@ The enterprise map (`docs/plans/ENTERPRISE_MAP/`) is the whole-system SoR for wh
 what is verified, and what is open — not a side doc. Subject work (admin, CRM, growth)
 still runs; it does not erase other planes from Sense.
 
-**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work).
+**Every development cycle routes through THE LOOP v1.6.0 — [`docs/DEVELOPMENT_PROCESS.md`](docs/DEVELOPMENT_PROCESS.md).** Session boot: `npx tsx scripts/loop-brief.ts` (the durable work graph, not the chat, is the source of record for in-flight work). The brief serves a **ship class**: same-category fleet findings share one `npm run push` and one `deploy:verify`. Do not rebuild after each bot finding.
 One self-improving cycle: ingest telemetry → diagnose → prioritize → fix the class → verify
 exhaustively → ship → measure → learn → lock behind a gate → compete. It carries the preflight
 contract, the live-environment rules, the escape-ledger protocol, and the approval model.
@@ -713,7 +713,7 @@ next.
 | MoS formula + thresholds | gated | `check-market-formula.mjs` |
 | Schema snapshot + DAL index stay current | gated, local/nightly (needs DB creds) | `check-data-access.mjs` |
 | Every cron route registered in `vercel.json` | gated | `check-cron-registered.mjs` |
-| THE LOOP process canon, no rogue plan files | gated | `check-process-canon.mjs` |
+| THE LOOP process canon, no rogue plan files, ship-class (no rebuild per fleet finding) | gated | `check-process-canon.mjs` |
 | Loop skills stay on the 2026-07-21 approval model | gated | `check-loop-skills-canon.mjs` |
 | Every `scripts/check-*.mjs` actually runs somewhere | gated (meta) | `check-gates-wired.mjs` |
 | A ledger row cannot claim "done" without a real mechanism | gated (meta) | `check-program-complete.mjs` |

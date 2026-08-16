@@ -20,6 +20,7 @@ import {
   plainFindingSeverity,
   plainFindingStatus,
   plainNodeTitle,
+  plainShipClass,
   upcomingHint,
 } from '@/lib/data/loop/status-copy'
 import { AutoRefresh } from './AutoRefresh'
@@ -82,6 +83,9 @@ export default async function LoopStatusPage() {
 
   const running = status.nodes.runningNow
   const next = status.nodes.queueNext[0] ?? null
+  const nextClass = next
+    ? status.nodes.queueNext.filter((n) => n.shipClass === next.shipClass)
+    : []
   const remainingAfterShown = Math.max(0, status.nodes.byState.open - status.nodes.queueNext.length)
   const attention =
     status.nodes.staleClaims.length +
@@ -125,6 +129,9 @@ export default async function LoopStatusPage() {
           ) : next ? (
             <>
               <b>On.</b> Next up: {plainNodeTitle(next.title)}
+              {nextClass.length > 1
+                ? ` and ${nextClass.length - 1} more ${plainShipClass(next.shipClass)} ${nextClass.length - 1 === 1 ? 'item' : 'items'} that rebuild with it`
+                : ''}
             </>
           ) : (
             <>
@@ -139,8 +146,8 @@ export default async function LoopStatusPage() {
         <Fold title="Being fixed right now" hint={ageWords(running[0].updatedAt, nowMs)} defaultOpen>
           <p className="av2-fold__lede">
             {running.length === 1
-              ? 'The loop is on this one item. When it finishes, it takes the next item on the list.'
-              : `The loop has ${running.length} items in progress. When they finish, it takes the next item on the list.`}
+              ? 'The loop is on this one item. When it finishes, it takes the next ship class on the list.'
+              : `The loop has ${running.length} items in one ship. They share one site rebuild. When they finish, it takes the next class.`}
           </p>
           <ul className="av2-queue" style={{ marginTop: 8 }}>
             {running.map((n) =>
@@ -160,6 +167,9 @@ export default async function LoopStatusPage() {
             <p className="av2-fold__lede">
               In the order the loop will take them. Urgent website problems go first, then other website
               fixes, then items you asked for, then the company list.
+              {next && nextClass.length > 1
+                ? ` The next ${nextClass.length} ${plainShipClass(next.shipClass)} items ship together so the site rebuilds once.`
+                : ''}
             </p>
             <ul className="av2-queue" style={{ marginTop: 8 }}>
               {status.nodes.queueNext.map((n) => nodeRow(n, nowMs))}

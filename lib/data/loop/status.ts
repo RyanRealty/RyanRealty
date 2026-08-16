@@ -11,6 +11,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { listWorkNodes, type WorkNode } from './work-graph'
+import { shipClassKey } from './ship-class'
 import { fleetNodePriority, type WorkNodeState } from './work-node'
 import { upcomingBucket } from './status-copy'
 import { isExpiredUnlearned, windowEndsAt } from './ledger-draft'
@@ -22,6 +23,7 @@ export type LoopNodeSummary = {
   title: string
   versionGap: string | null
   domain: string
+  shipClass: string
   state: WorkNodeState
   ownerSession: string | null
   blockedReason: string | null
@@ -91,6 +93,13 @@ function summarize(n: WorkNode): LoopNodeSummary {
     title: n.title,
     versionGap: n.versionGap,
     domain: n.domain,
+    shipClass: shipClassKey({
+      id: n.id,
+      domain: n.domain,
+      title: n.title,
+      objective: n.objective,
+      versionGap: n.versionGap,
+    }),
     state: n.state,
     ownerSession: n.ownerSession,
     blockedReason: n.blockedReason,

@@ -56,8 +56,9 @@ July 2026 Pro spend was dominated by **Build CPU Minutes**, not traffic. Change 
 1. **Runtime changes** (`app/`, `components/`, `lib/`, `public/` used by the app, `package.json` / lockfile, `next.config.*`, `vercel.json`, `supabase/migrations/`) → finish the task, **one commit on `main`**, `NODE_OPTIONS=--max-old-space-size=8192 npm run push`, then `npm run deploy:verify` when the user-facing app changed.
 2. **Docs / skills / rules / plans / handoffs only** → **batch into one commit**, then push once. Local `npm run push` already skips `next build` for non-buildable diffs; Vercel skips the remote build via `ignoreCommand`. Do not drip many docs commits that each burn local `ci:gates`.
 3. **Do not push mid-thought.** Commit locally while iterating if you need a restore point; push when the unit of work is coherent.
-4. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
-5. **Worktree branches:** keep them **local** until merge time. Pushing `wt/*` to `origin` creates Vercel **preview** builds (extra Build CPU) unless previews are disabled in the project dashboard. Prefer merge → push `main` only.
+4. **Ship class (fleet / loop):** same-category bot findings share one isolated verify + one production deploy. `loop-brief` prints the class. Do not run `npm run push` after each finding.
+5. **Release / changelog:** GitHub Releases carry the notes. Do not recreate a `chore: update changelog` commit on `main` — that path burned hundreds of full production builds.
+6. **Worktree branches:** keep them **local** until merge time. Pushing `wt/*` to `origin` creates Vercel **preview** builds (extra Build CPU) unless previews are disabled in the project dashboard. Prefer merge → push `main` only.
 
 ### Worktrees (allowed — design against stranded work)
 
