@@ -23,6 +23,17 @@ export type BrokerSettingsPayload = {
   /** Opt-in for SMS lead/activity alerts (default OFF). Gates queueBrokerAlert. */
   notify_sms?: boolean
   email_signature?: string
+  social_instagram?: string
+  social_facebook?: string
+  social_linkedin?: string
+}
+
+function sanitizeSocialUrl(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  if (trimmed.length > 500) return null
+  if (!/^https:\/\//i.test(trimmed)) return null
+  return trimmed
 }
 
 function bust(brokerId: string) {
@@ -30,6 +41,8 @@ function bust(brokerId: string) {
   // getBrokerTelephony (the SMS opt-in source for queueBrokerAlert) is tagged here.
   revalidateTag(cacheTag.brokers, 'max')
   revalidatePath('/admin/settings')
+  revalidatePath('/admin/settings/account')
+  revalidatePath('/admin/today')
   revalidatePath(`/admin/brokers/edit?id=${brokerId}`)
 }
 
@@ -70,6 +83,9 @@ export async function saveBrokerSettingsAction(
   if (typeof payload.notify_task_due === 'boolean') update.notify_task_due = payload.notify_task_due
   if (typeof payload.notify_sms === 'boolean') update.notify_sms = payload.notify_sms
   if (typeof payload.email_signature === 'string') update.email_signature = payload.email_signature.slice(0, 4000)
+  if (typeof payload.social_instagram === 'string') update.social_instagram = sanitizeSocialUrl(payload.social_instagram)
+  if (typeof payload.social_facebook === 'string') update.social_facebook = sanitizeSocialUrl(payload.social_facebook)
+  if (typeof payload.social_linkedin === 'string') update.social_linkedin = sanitizeSocialUrl(payload.social_linkedin)
 
   if (Object.keys(update).length === 0) return { ok: true }
 

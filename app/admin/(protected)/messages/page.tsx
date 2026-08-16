@@ -7,6 +7,7 @@
 // one tap away on /admin/crm/inbox until that machinery migrates.
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
+import { scopeBroker } from '@/lib/crm/scope'
 import { getInboxFolderQueue } from '@/lib/data/crm/getInboxQueue'
 import { getConversationThreadFull, getInboxContactCard } from '@/lib/data/crm/getInboxThread'
 import { inSmsQuietHours } from '@/lib/crm/quiet-hours'
@@ -39,7 +40,7 @@ export default async function MessagesPage({
   searchParams: Promise<{ c?: string }>
 }) {
   const ctx = await requireAdminPage('inbox.view')
-  const brokerScope = ctx.role === 'superuser' ? null : ctx.brokerSlug
+  const brokerScope = scopeBroker(ctx)
   const selectedId = Number((await searchParams).c) || null
 
   const [queue, thread, card] = await Promise.all([

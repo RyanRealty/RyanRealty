@@ -18,7 +18,7 @@ const GROUPS: Group[] = [
   {
     title: 'You',
     doors: [
-      { name: 'My account', href: '/admin/settings/account', what: 'Notifications, signature, push.', cap: 'settings.account' },
+      { name: 'My account', href: '/admin/settings/account', what: 'Notifications, signature, socials, day one.', cap: 'settings.account' },
     ],
   },
   {

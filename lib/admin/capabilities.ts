@@ -1,5 +1,4 @@
 import type { AdminRoleType } from '@/app/actions/admin-roles'
-import type { CrmBrokerSlug } from '@/lib/crm/constants'
 
 /**
  * The ONE capability model — the single source of admin access truth.
@@ -143,7 +142,7 @@ export const CAPABILITY_ROLES: Record<Capability, AdminRoleType[]> = {
   'content.site': [], // superuser only (RC5 public-site write security)
   'content.media': [],
   'content.communities': [],
-  'content.marketing': [],
+  'content.marketing': ['broker'],
   // Settings
   'settings.account': ['broker', 'report_viewer'],
   'settings.team': [],
@@ -184,7 +183,7 @@ export interface AdminCapabilityContext {
   email: string
   role: AdminRoleType
   brokerId: string | null
-  brokerSlug: CrmBrokerSlug | null
+  brokerSlug: string | null
   flags: { canExport: boolean; pauseLeads: boolean }
 }
 

@@ -11,6 +11,9 @@ import { getTaskQueue } from '@/lib/data/crm/getTaskQueue'
 import { getBrokerActionQueue } from '@/lib/data/crm/getBrokerActionQueue'
 import { listCmasForAdmin } from '@/lib/data'
 import { requireAdminPage } from '@/lib/admin/require-admin'
+import { scopeBroker } from '@/lib/crm/scope'
+import { getDayOneChecklist } from '@/lib/data/brokers/getDayOneChecklist'
+import { dayOneComplete, dayOneRemaining } from '@/lib/crm/day-one'
 import { createServiceClient } from '@/lib/supabase/service'
 import { todayInboundYesEnabled } from '@/lib/crm/today-inbound-draft'
 import { Button, QueueRow, SectionHead, VerdictLine } from '@/components/admin/v2'
@@ -84,17 +87,17 @@ function draftHeadline(row: {
 
 export default async function TodayPage() {
   const ctx = await requireAdminPage('today.view')
-  // Own book for brokers; company-wide for the principal (scopeBroker semantics).
-  const brokerScope = ctx.role === 'superuser' ? null : ctx.brokerSlug
+  const brokerScope = scopeBroker(ctx)
   const nowMs = Date.now()
 
-  const [triage, lookingAt, parked, tasks, cmas, approvals] = await Promise.all([
+  const [triage, lookingAt, parked, tasks, cmas, approvals, dayOne] = await Promise.all([
     getInboundTriage(brokerScope),
     getLookingAtNow(brokerScope),
     getBrokerActionQueue({ brokerSlug: brokerScope }),
     getTaskQueue({ brokerScope, view: 'today' }),
-    listCmasForAdmin({ limit: 50, offset: 0 }),
+    listCmasForAdmin({ limit: 50, offset: 0, brokerSlug: brokerScope }),
     readyApprovals(),
+    getDayOneChecklist(ctx),
   ])
 
   type CmaRow = {
@@ -130,6 +133,29 @@ export default async function TodayPage() {
           )}
         </VerdictLine>
       </div>
+
+      {dayOne.applies && !dayOneComplete(dayOne.items) ? (
+        <section aria-label="Day one">
+          <SectionHead>Day one</SectionHead>
+          <ul className="av2-quietlist">
+            {dayOneRemaining(dayOne.items).map((item) => (
+              <li key={item.id} className="av2-quiet">
+                <Link href={item.href} className="av2-quiet__name" style={{ textDecoration: 'none', color: 'var(--a-text)' }}>
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {dayOne.applies && dayOneComplete(dayOne.items) && brokerScope ? (
+        <div style={{ margin: '0 0 14px' }}>
+          <VerdictLine tone="ok">
+            Day one is done. This queue is scoped to {brokerScope}.
+          </VerdictLine>
+        </div>
+      ) : null}
 
       <section aria-label="Produce a draft">
         <SectionHead>Produce a draft</SectionHead>

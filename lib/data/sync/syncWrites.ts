@@ -864,16 +864,21 @@ export async function upsertCmaRowBySlug(
 export async function listCmasForAdmin(options: {
   limit: number
   offset: number
+  /** Own-book filter from scopeBroker(). Null = superuser (all). */
+  brokerSlug?: string | null
 }): Promise<{ rows: Array<Record<string, unknown>>; total: number }> {
   const sb = client()
   if (!sb) return { rows: [], total: 0 }
-  const { data, count } = await sb
+  let q = sb
     .from('cmas')
     .select(
       'id, slug, doc_type, subject_address, subject_subdivision, subject_city, subject_listing_key, client_name, client_email, broker_slug, value_low, value_high, recommended_list, comps_count, status, generation_reason, created_at, finalized_at, delivered_at, built_at, build_error, html_path, price_override, build_summary, published_to_listing, published_at',
       { count: 'exact' },
     )
-    .is('archived_at', null).or('doc_type.eq.cma,doc_type.is.null').order('created_at', { ascending: false })
+    .is('archived_at', null).or('doc_type.eq.cma,doc_type.is.null')
+  if (options.brokerSlug) q = q.eq('broker_slug', options.brokerSlug)
+  const { data, count } = await q
+    .order('created_at', { ascending: false })
     .range(options.offset, options.offset + options.limit - 1)
   return { rows: (data ?? []) as Array<Record<string, unknown>>, total: count ?? data?.length ?? 0 }
 }

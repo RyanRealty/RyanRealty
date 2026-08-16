@@ -13,6 +13,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
+import { scopeBroker } from '@/lib/crm/scope'
 import { getMarketReportSubscribers } from '@/lib/data/crm/getMarketReportSubscribers'
 import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscriptions'
 import { MarketReportPreviewDialog } from '@/app/admin/(protected)/crm/settings/_components/MarketReportPreviewDialog'
@@ -40,8 +41,7 @@ export default async function CrmMarketReportSubscribersPage() {
   const access = await getCrmAccess()
   if (!access) redirect('/admin/access-denied')
 
-  // Superusers see every subscriber; a broker sees only their own contacts.
-  const scope = access.role === 'superuser' ? null : access.brokerSlug
+  const scope = scopeBroker(access)
   const subscribers = await getMarketReportSubscribers(scope)
 
   const activeCount = subscribers.filter((s) => s.isActive).length

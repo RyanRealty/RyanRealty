@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { getCrmAccess, requirePersonInScope } from '@/app/actions/crm'
+import { scopeBroker } from '@/lib/crm/scope'
 import { checkAdminAction } from '@/lib/admin/require-admin'
 import { searchPeopleByName } from '@/lib/data/crm/searchPeople'
 import {
@@ -110,7 +111,7 @@ export async function searchPeopleForDealAction(query: string): Promise<{
   const auth = await checkAdminAction('transactions.edit')
   if (!auth.ok) return { data: [], error: auth.error }
   const access = await getCrmAccess()
-  const brokerScope = access?.role === 'superuser' ? null : access?.brokerSlug ?? null
+  const brokerScope = access ? scopeBroker(access) : null
   const data = await searchPeopleByName({ query, brokerScope })
   return { data, error: null }
 }

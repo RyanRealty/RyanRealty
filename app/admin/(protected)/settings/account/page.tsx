@@ -30,9 +30,9 @@
 // active/status predicate, so "active" was not something this page checks.
 import { redirect } from 'next/navigation'
 import { getSession } from '@/app/actions/auth'
+import { getCrmAccess } from '@/app/actions/crm'
 import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
 import { BROKER_HEADSHOTS } from '@/app/admin/(protected)/crm/inbox/_components/mobile/mobile-data'
 import { VerdictLine } from '@/components/admin/v2'
 import MySettingsForm from '../MySettingsForm'
@@ -55,14 +55,15 @@ export default async function MySettingsPage() {
   const sb = createServiceClient()
   const { data: broker } = await sb
     .from('brokers')
-    .select('id, display_name, email, notify_new_leads, notify_deal_activity, notify_task_due, notify_sms, email_signature, gmail_signature_html, gmail_signature_synced_at')
+    .select('id, display_name, email, notify_new_leads, notify_deal_activity, notify_task_due, notify_sms, email_signature, gmail_signature_html, gmail_signature_synced_at, social_instagram, social_facebook, social_linkedin')
     .eq('email', email)
     .maybeSingle()
 
   // Mobile audit P2-8 (2026-07-02): the profile card wears the same broker
   // headshot the CRM headers use — the real headshot for the three brokers,
   // falling back to the OAuth avatar (then initials) for others.
-  const crmSlug = CRM_BROKER_BY_EMAIL[email] ?? null
+  const access = await getCrmAccess()
+  const crmSlug = access?.brokerSlug ?? null
   const avatarUrl: string | null =
     (crmSlug ? BROKER_HEADSHOTS[crmSlug] : null) ??
     session?.user?.user_metadata?.avatar_url ??
@@ -123,6 +124,9 @@ export default async function MySettingsPage() {
             emailSignature={broker.email_signature ?? ''}
             gmailSignatureHtml={broker.gmail_signature_html ?? null}
             gmailSignatureSyncedAt={broker.gmail_signature_synced_at ?? null}
+            socialInstagram={broker.social_instagram ?? ''}
+            socialFacebook={broker.social_facebook ?? ''}
+            socialLinkedin={broker.social_linkedin ?? ''}
           />
         ) : null}
 

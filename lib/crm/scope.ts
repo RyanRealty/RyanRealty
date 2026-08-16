@@ -18,21 +18,29 @@
  *   - a slug  → restricted to that broker's own assigned_broker (Rebecca, Paul).
  */
 
-import type { CrmBrokerSlug } from '@/lib/crm/constants'
-
 /** The minimal shape scopeBroker needs — matches CrmAccess from app/actions/crm.ts. */
 export type ScopeAccess = {
   role: 'superuser' | 'broker' | 'report_viewer'
-  brokerSlug: CrmBrokerSlug | null
+  /** Own CRM slug when mapped. Null means unmapped — scopeBroker fail-closes. */
+  brokerSlug: string | null
 }
 
 /**
- * The policy decision (Option A). `null` = unrestricted/all-brokers (Matt);
- * a non-superuser returns their own slug (or null if their email maps to none,
- * which leaves an unmapped admin unrestricted — there is no such admin today).
+ * Sentinel assigned_broker filter for an unmapped non-superuser.
+ * Matches no live row. Callers that `.eq('assigned_broker', slug)` when
+ * slug is truthy therefore return an empty book — never the company book.
  */
-export function scopeBroker(access: ScopeAccess): CrmBrokerSlug | null {
-  return access.role === 'superuser' ? null : access.brokerSlug
+export const UNMAPPED_OWN_BOOK = '__unmapped__'
+
+/**
+ * The policy decision (Option A). `null` = unrestricted/all-brokers (Matt).
+ * A mapped non-superuser returns their own slug. An unmapped non-superuser
+ * returns UNMAPPED_OWN_BOOK (empty book). Never fail open.
+ */
+export function scopeBroker(access: ScopeAccess): string | null {
+  if (access.role === 'superuser') return null
+  const slug = (access.brokerSlug ?? '').trim()
+  return slug || UNMAPPED_OWN_BOOK
 }
 
 /**
@@ -45,9 +53,10 @@ export function scopeBroker(access: ScopeAccess): CrmBrokerSlug | null {
  *   - otherwise                → not authorized (missing owner OR a different broker).
  */
 export function isPersonInScope(
-  slug: CrmBrokerSlug | null,
+  slug: string | null,
   assignedBroker: string | null | undefined,
 ): boolean {
   if (!slug) return true
+  if (slug === UNMAPPED_OWN_BOOK) return false
   return assignedBroker === slug
 }

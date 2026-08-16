@@ -13,19 +13,15 @@
 // became SectionHeads, and the lead sentence became a verdict that counts the
 // links actually rendered.
 import { requireAdminPage } from '@/lib/admin/require-admin'
-import type { BrokerSlug } from '@/lib/agent-attribution'
+import { getCrmAccess } from '@/app/actions/crm'
+import { scopeBroker } from '@/lib/crm/scope'
+import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
 import { ReportGrid, SectionHead, VerdictLine, type ReportColumn } from '@/components/admin/v2'
 import { CopyLinkButton } from './CopyLinkButton'
 
 export const dynamic = 'force-dynamic'
 
 export const metadata = { title: 'Ad links' }
-
-const BROKERS: { slug: BrokerSlug; name: string }[] = [
-  { slug: 'matt', name: 'Matt Ryan' },
-  { slug: 'rebecca', name: 'Rebecca Peterson' },
-  { slug: 'paul', name: 'Paul Stevenson' },
-]
 
 const LPS: { slug: string; label: string }[] = [
   { slug: 'seller-home-value', label: 'Seller — Home value' },
@@ -55,6 +51,10 @@ function siteUrl(): string {
 
 export default async function BrokerLinksPage() {
   await requireAdminPage('content.marketing')
+  const access = await getCrmAccess()
+  const scope = access ? scopeBroker(access) : '__unmapped__'
+  const roster = (await getCrmBrokers()).filter((b) => b.crmActive)
+  const brokers = scope ? roster.filter((b) => b.slug === scope) : roster
   const base = siteUrl()
 
   return (
@@ -62,8 +62,8 @@ export default async function BrokerLinksPage() {
       <div style={{ margin: '0 0 14px' }}>
         <VerdictLine tone="ok">
           <b>
-            {BROKERS.length * LPS.length} links — {LPS.length} landing pages for each of the{' '}
-            {BROKERS.length} brokers.
+            {brokers.length * LPS.length} links. {LPS.length} landing pages
+            {scope ? ` for ${scope}` : ` for each of the ${brokers.length} brokers`}.
           </b>{' '}
           A lead captured on your link is assigned to you in the CRM.
         </VerdictLine>
@@ -74,7 +74,7 @@ export default async function BrokerLinksPage() {
         the exact same creative as everyone else; just use your own link.
       </p>
 
-      {BROKERS.map((b) => (
+      {brokers.map((b) => (
         <div key={b.slug}>
           <SectionHead>{b.name}</SectionHead>
           <ReportGrid

@@ -19,10 +19,10 @@ import { normalizeCrmPhone } from '@/lib/crm/mirror'
 import {
   CRM_STAGES,
   CRM_BROKERS,
-  CRM_BROKER_BY_EMAIL,
   FUB_USER_ID_BY_BROKER,
   type CrmBrokerSlug,
 } from '@/lib/crm/constants'
+import { resolveCrmSlugForAccess } from '@/lib/data/brokers/resolveCrmSlug'
 import { scopeBroker, isPersonInScope } from '@/lib/crm/scope'
 import { isQualifyingStage, fireQualifiedLeadEvent } from '@/lib/meta/qualifiedEvent'
 import { buildCrmPeopleQuery, CRM_PEOPLE_SELECT } from '@/lib/data/crm/buildCrmPeopleQuery'
@@ -35,8 +35,8 @@ export type CrmActionResult = { ok: true } | { ok: false; error: string }
 export type CrmAccess = {
   email: string
   role: 'superuser' | 'broker' | 'report_viewer'
-  /** The signed-in user's own broker slug, when their email maps to one. */
-  brokerSlug: CrmBrokerSlug | null
+  /** The signed-in user's own broker slug, when brokers.crm_slug (or the seeded map) resolves. */
+  brokerSlug: string | null
 }
 
 // Request-memoized resolver: hot admin pages call getCrmAccess 3-5 times per
@@ -50,7 +50,8 @@ const resolveCrmAccess = cache(async (): Promise<CrmAccess | null> => {
   const email = session?.user?.email?.trim().toLowerCase() ?? null
   const role = await getAdminRoleForEmail(email)
   if (!role || !email) return null
-  return { email, role: role.role, brokerSlug: CRM_BROKER_BY_EMAIL[email] ?? null }
+  const brokerSlug = await resolveCrmSlugForAccess({ email, brokerId: role.brokerId })
+  return { email, role: role.role, brokerSlug }
 })
 
 /** Resolve the caller's CRM access (role + own-broker slug). Null when not an admin. */

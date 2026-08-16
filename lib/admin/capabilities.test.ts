@@ -32,6 +32,7 @@ describe('capability model', () => {
     expect(hasCapability(b, 'settings.templates')).toBe(true) // daily messaging surface, page allows
     expect(hasCapability(b, 'settings.automations')).toBe(true)
     expect(hasCapability(b, 'settings.profile')).toBe(true) // /admin/brokers allows brokers
+    expect(hasCapability(b, 'content.marketing')).toBe(true)
     // superuser-only
     // performance.view is su-only until spec 06 lands the scoped own-book page —
     // /admin/analytics is superuser-gated, so granting it would nav-dead-end brokers.
@@ -110,11 +111,11 @@ describe('nav generator projects the capability map', () => {
 })
 
 describe('shell projection (one nav source for every surface)', () => {
-  it('renders the nav budget: 35 superuser items, 24 broker items (P3: Pipeline child folded into Closings)', () => {
+  it('renders the nav budget: 35 superuser items, 25 broker items (G5 unlocked content.marketing)', () => {
     const count = (role: AdminRoleType) =>
       toShellSections(buildNav(ctx(role))).reduce((n, s) => n + s.items.length, 0)
     expect(count('superuser')).toBe(35)
-    expect(count('broker')).toBe(24)
+    expect(count('broker')).toBe(25)
   })
 
   it('leaf destinations render as single items; hubs as their children', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scopeBroker, isPersonInScope, type ScopeAccess } from './scope'
+import { scopeBroker, isPersonInScope, UNMAPPED_OWN_BOOK, type ScopeAccess } from './scope'
 
 describe('scopeBroker (Option A — Matt is owner/superuser)', () => {
   it('owner/superuser → null (unrestricted, sees ALL brokers)', () => {
@@ -20,9 +20,14 @@ describe('scopeBroker (Option A — Matt is owner/superuser)', () => {
     expect(scopeBroker(paul)).toBe('paul')
   })
 
-  it('report_viewer is scoped like any non-superuser (own slug, or null if unmapped)', () => {
+  it('report_viewer is scoped like any non-superuser (own slug)', () => {
     expect(scopeBroker({ role: 'report_viewer', brokerSlug: 'paul' })).toBe('paul')
-    expect(scopeBroker({ role: 'report_viewer', brokerSlug: null })).toBeNull()
+  })
+
+  it('unmapped non-superuser fail-closes to UNMAPPED_OWN_BOOK (empty book, never all)', () => {
+    expect(scopeBroker({ role: 'broker', brokerSlug: null })).toBe(UNMAPPED_OWN_BOOK)
+    expect(scopeBroker({ role: 'broker', brokerSlug: '  ' })).toBe(UNMAPPED_OWN_BOOK)
+    expect(scopeBroker({ role: 'report_viewer', brokerSlug: null })).toBe(UNMAPPED_OWN_BOOK)
   })
 })
 
@@ -45,5 +50,11 @@ describe('isPersonInScope (the pure ownership decision behind requirePersonInSco
   it('missing/null contact owner under a restricted broker → not ok', () => {
     expect(isPersonInScope('rebecca', null)).toBe(false)
     expect(isPersonInScope('rebecca', undefined)).toBe(false)
+  })
+
+  it('unmapped sentinel never owns a contact', () => {
+    expect(isPersonInScope(UNMAPPED_OWN_BOOK, 'paul')).toBe(false)
+    expect(isPersonInScope(UNMAPPED_OWN_BOOK, UNMAPPED_OWN_BOOK)).toBe(false)
+    expect(isPersonInScope(UNMAPPED_OWN_BOOK, null)).toBe(false)
   })
 })

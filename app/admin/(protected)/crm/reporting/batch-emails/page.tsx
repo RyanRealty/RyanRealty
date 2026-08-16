@@ -146,10 +146,7 @@ export default async function BatchEmailsPage({
   const sp = await searchParams
   const scope = scopeBroker(access)
 
-  // Superusers (Matt) see all campaigns. Scoped brokers see only their own.
-  const brokerFilter = access.role === 'superuser' ? null : scope
-
-  const result = await getBatchEmailsReport(brokerFilter).catch(() => null)
+  const result = await getBatchEmailsReport(scope).catch(() => null)
   const rows: BatchEmailRow[] = result?.rows ?? []
   const unreadable = result?.unreadable ?? false
 

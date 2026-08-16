@@ -7,6 +7,7 @@
 // destination returns here under its job name.)
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
+import { scopeBroker } from '@/lib/crm/scope'
 import { searchCrmPeople } from '@/lib/data/crm/searchCrmPeople'
 import { StateWord } from '@/components/admin/v2'
 
@@ -18,7 +19,7 @@ export default async function PeoplePage({
   searchParams: Promise<{ q?: string }>
 }) {
   const ctx = await requireAdminPage('people.view')
-  const brokerScope = ctx.role === 'superuser' ? null : ctx.brokerSlug
+  const brokerScope = scopeBroker(ctx)
   const q = ((await searchParams).q ?? '').trim() || null
 
   const hits = await searchCrmPeople({ q, brokerScope, limit: 25 })

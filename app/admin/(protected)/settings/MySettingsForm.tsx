@@ -46,6 +46,9 @@ type Props = {
    *  THE signature on every CRM email, so CRM sends match Gmail exactly. */
   gmailSignatureHtml?: string | null
   gmailSignatureSyncedAt?: string | null
+  socialInstagram?: string
+  socialFacebook?: string
+  socialLinkedin?: string
 }
 
 export default function MySettingsForm({
@@ -58,6 +61,9 @@ export default function MySettingsForm({
   emailSignature: initSig,
   gmailSignatureHtml = null,
   gmailSignatureSyncedAt = null,
+  socialInstagram: initIg = '',
+  socialFacebook: initFb = '',
+  socialLinkedin: initLi = '',
 }: Props) {
   const router = useRouter()
   const [notifyNewLeads, setNotifyNewLeads] = useState(initNewLeads)
@@ -65,6 +71,9 @@ export default function MySettingsForm({
   const [notifyTaskDue, setNotifyTaskDue] = useState(initTaskDue)
   const [notifySms, setNotifySms] = useState(initSms)
   const [emailSignature, setEmailSignature] = useState(initSig)
+  const [socialInstagram, setSocialInstagram] = useState(initIg)
+  const [socialFacebook, setSocialFacebook] = useState(initFb)
+  const [socialLinkedin, setSocialLinkedin] = useState(initLi)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
   const [syncing, setSyncing] = useState(false)
@@ -99,6 +108,9 @@ export default function MySettingsForm({
       notify_task_due: notifyTaskDue,
       notify_sms: notifySms,
       email_signature: emailSignature,
+      social_instagram: socialInstagram,
+      social_facebook: socialFacebook,
+      social_linkedin: socialLinkedin,
     })
     setSaving(false)
     setMessage(result.ok
@@ -206,6 +218,47 @@ export default function MySettingsForm({
           style={{ fontFamily: 'var(--a-font-mono)' }}
         />
         <p className="text-xs text-right" style={{ color: 'var(--a-text-2)' }}>{emailSignature.length}/4,000</p>
+      </section>
+
+      <section className="rounded-xl border px-6 py-5 space-y-4" style={CARD_STYLE}>
+        <h2 className="text-sm font-semibold" style={{ color: 'var(--a-text)' }}>Your socials</h2>
+        <p className="text-xs -mt-2" style={{ color: 'var(--a-text-2)' }}>
+          Public profile URLs for your book. https only. Connecting a personal ad account is a
+          separate Matt-approved OAuth step.
+        </p>
+        <label className="block space-y-1">
+          <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>Instagram</span>
+          <input
+            className="av2-input w-full"
+            type="url"
+            value={socialInstagram}
+            onChange={(e) => setSocialInstagram(e.target.value)}
+            placeholder="https://instagram.com/you"
+            maxLength={500}
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>Facebook</span>
+          <input
+            className="av2-input w-full"
+            type="url"
+            value={socialFacebook}
+            onChange={(e) => setSocialFacebook(e.target.value)}
+            placeholder="https://facebook.com/you"
+            maxLength={500}
+          />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>LinkedIn</span>
+          <input
+            className="av2-input w-full"
+            type="url"
+            value={socialLinkedin}
+            onChange={(e) => setSocialLinkedin(e.target.value)}
+            placeholder="https://linkedin.com/in/you"
+            maxLength={500}
+          />
+        </label>
       </section>
 
       {/* Actions */}
