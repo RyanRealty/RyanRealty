@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-66d23ef1) — G9 look-walk baselines shipped
+# Current — 2026-08-16 (loop-sentinel bc-fe75bb57) — G11 audience hold machinery shipped, node blocked
+
+**Surface:** Cursor cloud agent `bc-fe75bb57-b840-4d01-846f-67efa6a79fbc`. **Time:** 2026-08-16 ~11:20 UTC. Brief served **G11** (factory). One node only. **`main` @** `8247ee9b2`. Vercel Production **READY** (GitHub deployment `5930137236`, inspector `9oPuFMsP2VEtmz3E8Yet84XbKMoe`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
+
+**Blocked**
+- G11 Meta audience heartbeat hold (`568d807b-ac07-43cc-9eea-52b8f67460a6`) **blocked**. Accept: seven consecutive `ran_at` days ending on or after **2026-08-22**; map cell updated with evidence.
+- Class shipped (do not redo): named hold DAL `readMetaAudienceHold` / `computeAudienceHold` (`META_AUDIENCE_HOLD_END=2026-08-22`, `HOLD_DAYS=7`, `CURRENT_HOURS=36`). Heartbeat `audienceSyncHours: 36` + `evalMetaAudienceHold`. Admin audiences + meta-health. Gate `ci:meta-audience-hold`. Signals `identity.audienceHold`. INT-007 cell updated (still **FIX**). VERSION-1 G11 machinery note only — **not DONE**. No factory ledger insert (domain already has open window `ba3435dd`).
+- Accept proof (environment): `npx tsx scripts/loop-probe-g11.ts` — `meta_audience_log` 79 rows; consecutive UTC days **55** (`2026-06-23`…`2026-08-16`); last LIVE **2026-08-16T09:01:26Z** CRM `120246504502300698` `add_num_received=13980`; westside `120244510092910698` last **2026-08-15T14:03:29Z** (daily 14:00 UTC; still current under 36h). `holdMet=false` because `lastDay=2026-08-16` < 2026-08-22. June-23 INT-007 cell was stale — the log never stopped.
+- Blocker: calendar accept cannot be met until a consecutive streak ends on or after 2026-08-22. Unblock then when `readMetaAudienceHold.holdMet === true`; flip INT-007 FIX→KEEP; mark VERSION-1 G11 DONE; `completeWorkNode` with probe evidence. Spend stays Matt-gated.
+- Planes: dal-stat (hold DAL + signals), admin-crm (`/admin/audiences`, `/admin/analytics/meta-health`), reporting (packet + INTEGRATIONS + scoreboard), ads (36h heartbeat, no spend). Public-site / alerts / identity stitch unchanged.
+- Ship: `ci:gates` green via `npm run push`; `origin/main` includes `8247ee9b2` (`c0465bc5a` + email-send-gated re-key `8247ee9b2`); production deploy success. PR #38 merged.
+
+**Do not:** flip INT-007 to KEEP before 2026-08-22. Do not insert another factory ledger row. Do not claim G10 (`/join` conversion — `in_progress` `bc-120b6b86`). G6 stays blocked (live SMS). Do not SMS, publish, spend, or OAuth. Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, DATABASE_FOR_AI_AGENTS (lookup + cache model), INTEGRATIONS INT-007, VERSION-1 G11, COMPANY_SCOREBOARD ads row, COMPANY_IMPROVEMENT blast-radius, git-commit, facebook-seller-growth (read-only; no spend).
+
+# Prior — 2026-08-16 (loop-sentinel bc-66d23ef1) — G9 look-walk baselines shipped
 
 **Surface:** Cursor cloud agent `bc-66d23ef1-fc40-4fe7-87ec-b7dc59ce4f39`. **Time:** 2026-08-16 ~10:12 UTC. Brief served **G9** (public-ux). One node only. **`main` @** `8a847a8e7`. Vercel Production **READY** (GitHub deployment `5929885543`, inspector `46WCQ6dmZSQvuBbfdkfeDNwNmyQS`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
 
