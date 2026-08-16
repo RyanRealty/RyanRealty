@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — withhold parent pulse on registry plat pages
+# Current — 2026-08-16 (cursor-loop-sentinel) — Awbrey 52/63/62 three-count finding rejected
+
+**Surface:** Cursor cloud `bc-c33f68f1` (`cursor/loop-sentinel-2026-08-16t23-10-7e09`). **Time:** 2026-08-16 ~23:20 UTC. Brief served fleet finding `5688e089` (public-ux / fleet `c2764a13014ffde27bb0758f43bdb546`), not G16/G32. One node only. No product change. **`main` @** `d688cd4ef` + this stamp. Production already **READY** on the shipped neighborhood inventory class (`9cac09b1` / plat pulse `3f34bf653`). `npm run ci:gates` 224/224. No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). Finding `87884938` status rejected. No public-ux ledger insert (open window `2a5054ac`). Collision: `cursor-loop-chain-2026-08-16t23-10-c1cd` overwrote the claim at 23:13:58 with no evidence; this session completed it.
+
+**Done**
+- Fleet finding [p0]: Awbrey Butte index tile 52 ACTIVE / $1,385,000 vs place hero 63 homes / 63 ACTIVE vs FAQ 62. FIRST STEP reproduce: it does not. Class already shipped (`getNeighborhoodPublicInventory`).
+- Production 2026-08-16T23:13Z (HIT): `/neighborhoods` tile **64 Active $1,363,000**, `/cities/bend` row **64 Active $1,363,000**, place hero **64 homes for sale in Awbrey Butte** + **Median list $1,363,000**, FAQ / Dataset Active Listings **64**, `#homes` list **64** unique inventory hrefs. 0 of 52 / 62 / 63 / $1,385,000. Probe `scripts/probe-awbrey-three-counts-prod.mjs` exit 0.
+- Screenshots `/opt/cursor/artifacts/awbrey_three_{place,index_tile}_{1280,390}.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** Ridge plat parent-pulse `3f34bf653` / stamp `d688cd4ef` (node `a8726dc3` **done**). Ridge plat SFR count `846193510` / stamp `7bf89b6ab` (node `390ea7a4` **done**). Awbrey index-vs-place reject `6f334748e` / stamp `09de2a587` (node `2d90a914` **done**, does not reproduce). listing down-payment `aba8c2222` / handoff `31e81df7b` (node `ee37b3a4` **done**). place list medians `eff056fb2`. page-grade process KILLED `9afe74a6a` (do not run `/page-grade`). NWX v8e logo-in-frame killed. Tetherow one-annual HOA. MOS withhold. Counted-set list. G33 `/admin/loop`. G32 seeded. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — withhold parent pulse on registry plat pages
 
 **Surface:** Cursor cloud `bc-99a3fd18` (`cursor/loop-chain-2026-08-16t22-47-1f61`). **Time:** 2026-08-16 ~23:10 UTC. Brief served fleet finding `a8726dc3` (public-ux / fleet `6a52801e3ef9e0d041b830497794290d`), not G16/G32. One node only. Product **`3f34bf653`**. **`main` @** `3f34bf653` + this stamp. Vercel Production **READY** (inspector `Bns3BZiz96Whq1EtiUkcFBfbbVnR`). `npm run deploy:verify` exit 0 in 671s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). `npm run ci:gates` 224/224. No hosted migration. Loop stays **ARMED**. Node **done**. PR **#51**. No public-ux ledger insert (open window `2a5054ac`).
 
