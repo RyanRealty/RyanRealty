@@ -58,12 +58,17 @@ checks.push({
 
 const seq = readFileSync('app/api/cron/crm-sequence-engine/route.ts', 'utf8')
 checks.push({
-  label: 'sequence engine stamps first-outbound after email send',
-  ok: /stampFirstBrokerActionIfEmpty\(sb,\s*person\.id,\s*\{\s*kind:\s*'email_out'/.test(seq),
+  label: 'sequence engine records outbound after email send',
+  ok: /recordSequenceOutbound\(sb,\s*\{[\s\S]*?kind:\s*'email_out'/.test(seq),
 })
 checks.push({
-  label: 'sequence engine stamps first-outbound after SMS send',
-  ok: /stampFirstBrokerActionIfEmpty\(sb,\s*person\.id,\s*\{\s*kind:\s*'sms_out'/.test(seq),
+  label: 'sequence engine records outbound after SMS send',
+  ok: /recordSequenceOutbound\(sb,\s*\{[\s\S]*?kind:\s*'sms_out'/.test(seq),
+})
+const outbound = readFileSync('lib/crm/sequence-outbound.ts', 'utf8')
+checks.push({
+  label: 'sequence outbound helper stamps first-outbound',
+  ok: /stampFirstBrokerActionIfEmpty\(sb,\s*input\.personId/.test(outbound),
 })
 checks.push({
   label: 'sequence engine change_stage names sequence-change-stage',

@@ -30,7 +30,7 @@ import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
 import { isConditionNode, type AnyStepOrCondition } from '@/lib/crm/sequence-step-schema'
 import { resolveConditionPath } from '@/lib/crm/conditions-eval'
 import { manualEnrollPerson } from '@/lib/crm/enroll'
-import { stampFirstBrokerActionIfEmpty } from '@/lib/crm/first-broker-action'
+import { recordSequenceOutbound } from '@/lib/crm/sequence-outbound'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
@@ -301,14 +301,10 @@ export async function GET(request: Request) {
             track: { personId: person.id, emailKey: `seq:${seq.name}:${en.step_index}`, label: subject },
           })
           if (!sent.ok) { await releaseSend(); await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log(`Sequence email send failed, retrying in 30m`, sent.error); errored++; continue }
-          await sb.from('crm_timeline').insert({
-            person_id: person.id, kind: 'email_out', title: subject, body: sent.plainBody,
+          await recordSequenceOutbound(sb, {
+            personId: person.id, kind: 'email_out', title: subject, body: sent.plainBody,
             payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to },
-            broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
-          })
-          await stampFirstBrokerActionIfEmpty(sb, person.id, {
-            kind: 'email_out',
-            broker: mailbox.slug,
+            broker: mailbox.slug, dedupeKey: `gmail:${sent.gmailId}:p${person.id}`,
           })
         }
         // emailClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
@@ -424,23 +420,16 @@ export async function GET(request: Request) {
               continue
             }
             smsThisRun++
-            await sb.from('crm_timeline').insert({
-              person_id: person.id, kind: 'sms_out', title: 'Text sent', body,
+            await recordSequenceOutbound(sb, {
+              personId: person.id, kind: 'sms_out', title: 'Text sent', body,
               payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
-              broker: mailbox.slug, source: 'sequence', dedupe_key: `twilio:${sent.sid}:p${person.id}`,
-            })
-            await stampFirstBrokerActionIfEmpty(sb, person.id, {
-              kind: 'sms_out',
-              broker: mailbox.slug,
+              broker: mailbox.slug, dedupeKey: `twilio:${sent.sid}:p${person.id}`,
             })
           }
           // smsClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
         } else if (step.fallbackEmailBody) {
-          // A2P not live — NEVER route a lead text through a personal iMessage
+          // A2P not live. Never route a lead text through a personal iMessage
           // (incident 2026-06-16). Fall back to email so the touch still lands.
-          // Reuses the email suppression + send path.
-          // Texting unavailable and no relay — fall back to email so the touch
-          // still lands. Reuses the email suppression + send path.
           const fbTo = (person.emails as Array<{ value?: string }>)?.[0]?.value
           if (fbTo && !(await isSuppressed(person.id, 'email')).suppressed) {
             // Claim the step before the fallback send (at-most-once across a crash).
@@ -451,14 +440,10 @@ export async function GET(request: Request) {
               const fbBody = renderMerge(step.fallbackEmailBody, person, mergeCtx)
               const sent = await sendCrmEmail({ fromMailbox: mailbox.email, to: fbTo, subject: fbSubject, bodyText: fbBody, withSignature: true })
               if (!sent.ok) { await releaseSend(); await finish({ next_run_at: new Date(Date.now() + 30 * 60000).toISOString() }); await log('Fallback email send failed, retrying in 30m', sent.error); errored++; continue }
-              await sb.from('crm_timeline').insert({
-                person_id: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,
+              await recordSequenceOutbound(sb, {
+                personId: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,
                 payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, via: 'sms-email-fallback', to: fbTo },
-                broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
-              })
-              await stampFirstBrokerActionIfEmpty(sb, person.id, {
-                kind: 'email_out',
-                broker: mailbox.slug,
+                broker: mailbox.slug, dedupeKey: `gmail:${sent.gmailId}:p${person.id}`,
               })
             }
             // fbClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
