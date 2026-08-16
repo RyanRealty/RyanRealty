@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (loop-sentinel bc-57e943fb) — G4 alerts enrollment shipped
 
-**Surface:** Cursor cloud agent `bc-57e943fb-edb5-4a4a-bc9b-9fc6a7ee1a36`. **Time:** 2026-08-16 ~05:35 UTC. Brief served **G4** (nurture). One node only.
+**Surface:** Cursor cloud agent `bc-57e943fb-edb5-4a4a-bc9b-9fc6a7ee1a36`. **Time:** 2026-08-16 ~06:10 UTC. Brief served **G4** (nurture). One node only. **`main` @** `60de1bee0`. Vercel Production **READY** (GitHub deployment `5928216460`, inspector `7rfmRDpzVR8CtAGa2X9vQqVfGffm`).
 
 **Done**
 - G4 Alerts coverage (`6ac2ce94-131d-47a6-8788-f8ae5c17a6cb`) **done**. Accept: a real saved search creates an active `listing_alerts` row with `crm_person_id`.
@@ -12,6 +12,7 @@
 - Accept proof: fleet-test person **61945** / alert `047ddf18-239e-4043-b8ee-152f8ffa5a6c` (`g4-accept-fleet-test@example.com`, active, `crm_person_id=61945`, all-channel suppressed). Prior live guest save 2026-08-15 `pjmlikesgolf@yahoo.com` already had `crm_person_id=61854`.
 - Packet-eligible (ex-fleet-test): **7 active / 7 with crm_person_id** (seed said 6). Gate `ci:listing-alert-enroll`. R-152 VERIFIED. No new nurture ledger row: G3 window `2371813a` is still open (one-open-per-domain).
 - Planes: dal-stat (`listingAlerts.ts`), public-site (SaveSearchButton / account / buyer LP), admin-crm (bulk assign), alerts-newsletters (cron/engine), identity (`crm_person_id`), reporting (packet counts). Ads audiences unchanged (same `crm_people`).
+- Ship: `ci:gates` 206/206; `origin/main` includes `60de1bee0`; production deploy success. No schema migration.
 
 **Do not:** mass-enroll the historical book (would send to real people). Do not send, post, spend, or OAuth. Disarm = Matt says "disarm the loop". Bots still Phase 3. R-153 / R-154 / R-164 remain MISSING (engine completeness, Flexmls, subscriptions panel).
 
