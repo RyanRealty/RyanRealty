@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-95a666b5) — G6 blocked on live marketing-line SMS
+# Current — 2026-08-16 (loop-sentinel bc-311e4201) — G7 westside backlog shipped
+
+**Surface:** Cursor cloud agent `bc-311e4201-0cc8-4ade-b44d-879873938822`. **Time:** 2026-08-16 ~08:35 UTC. Brief served **G7** (seo-aeo). One node only. **`main` @** `d8a401d68`. Vercel Production **READY** (GitHub deployment `5929208475`, inspector `739vhk2QJQx35X2vnuFzwcy5NCL7`).
+
+**Done**
+- G7 Westside backlog (`f10b9c7c-c4ad-4d55-bdbe-3294000a8e62`) **done**. Accept: no backlog row without a disposition; shipped items carry ledger rows.
+- Class: #10 luxury money-surface links (`/luxury-homes-bend` on city popular-searches, Bend `/cities` row via `CityFeaturedLinks`, `/communities` hero). #9 review-ask drafts on CRM close + daily TC 14-day scan — stages `crm_message_drafts` only, never sends, never overwrites a broker draft. `upsertDraft` insert-or-update (expression unique index). #2/#5 RE-RANKED → G22. #7/#8 GATED (spend / outbound).
+- Accept proof: fleet-test person **61945** review-ask draft `already` (body has `GBP_REVIEW_URL`). Westside audience `120244510092910698` last LIVE 2026-08-15 `add_would_upload` 13588. Live `/cities` + `/communities` 200 with `href="/luxury-homes-bend"`. Newest TC close 2026-05-15 (outside 14-day window — first cron stages 0 real-client drafts). Gate `ci:westside-backlog` 14/14.
+- Ledger `c058cfdf-0a1a-4c6e-a35b-a4a90ae092e4` (seo-aeo). CAP-030 maturity 3 (PARTIAL residual: crawl/depth G22, paid/expired Matt-gated). R-125 VERIFIED. R-124 PARTIAL. R-150 PARTIAL. No schema migration.
+- Planes: dal-stat (`stageReviewAskDraft`, `stageReviewAsksForRecentCloses`, `upsertDraft`), public-site (luxury links), admin-crm (restage → draft), identity (`crm_people.id`), reporting (CAP-030 / register). Ads unchanged. Alerts/newsletters none (never sends).
+- Ship: `ci:gates` green via `npm run push`; `origin/main` includes `d8a401d68`; production deploy success.
+
+**Do not:** SMS anyone. Do not publish, spend, or OAuth. Do not invent an approval stamp. Do not overwrite a broker email draft. Do not mass-enroll or send expired/FSBO. Do not prune sitemaps without GSC indexed-count evidence (R-122). Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, GOAL_10X_EXECUTABLE, WESTSIDE_BACKLOG, CAP-030, REQUIREMENTS R-124/R-125/R-150, COMPANY_IMPROVEMENT blast-radius, VOICE.md, local-seo (review-ask context), git-commit.
+
+# Prior — 2026-08-16 (loop-sentinel bc-95a666b5) — G6 blocked on live marketing-line SMS
 
 **Surface:** Cursor cloud agent `bc-95a666b5-6588-4122-88d5-60cbe9ba54d8`. **Time:** 2026-08-16 ~07:50 UTC. Brief served **G6** (broker-tools). One node only. **`main` @** `b278e28f5` at claim. No product ship this node.
 
