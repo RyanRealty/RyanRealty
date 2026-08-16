@@ -151,9 +151,11 @@ export default async function HousingMarketGeoPage({ params }: Props) {
   const refreshedAt = pulse?.refreshedAt ?? null
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(
     geoName,
-    pulse
-      ? { ...pulse, monthsOfSupply: mosRaw, soldCount12mo: detailRolling?.soldCount ?? null }
-      : { activeCount: null, medianListPrice: null, refreshedAt: null },
+    {
+      ...(pulse ?? { activeCount: null, medianListPrice: null, refreshedAt: null }),
+      monthsOfSupply: mosRaw,
+      soldCount12mo: detailRolling?.soldCount ?? null,
+    },
   )
 
   const schemas: SchemaInput[] = [
