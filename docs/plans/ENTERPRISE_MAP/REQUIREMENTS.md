@@ -214,7 +214,7 @@
 
 | ID | Requirement | Source | Disposition | Covers |
 |---|---|---|---|---|
-| R-152 | Saved searches + listing alerts are ONE concept, one storage model, same engine front/back; sends from listing_alerts only | ADMIN_CONSOLIDATION; MASTER-SPEC D12 | PARTIAL | G4 |
+| R-152 | Saved searches + listing alerts are ONE concept, one storage model, same engine front/back; sends from listing_alerts only | ADMIN_CONSOLIDATION; MASTER-SPEC D12 | VERIFIED | G4 done 2026-08-16 — enroll writers stamp crm_person_id; cron/engine never read saved_searches |
 | R-153 | Alert engine completeness: typed events (new/price/status/open-house/coming-soon), preview/approval mode, household recipients with independent unsubscribe | SEARCH_OPT | MISSING | G4 |
 | R-154 | Matt's seven Flexmls subscriptions run in-house as sender | SEARCH_OPT | MISSING | G4 |
 | R-155 | Users build/edit/pause saved searches full-fidelity with branded HTML alerts; self-subscribe to market reports per area | SAVED_SEARCH goal | VERIFIED | — |
