@@ -254,6 +254,17 @@ const SEEDS = [
       'xai-stack-accept.json lists every billed gen vendor with cancel-now | cancel-after-cutover | keep-not-gen. cancel-now rows have no required live path. lib/grok-voice.ts exists. Required reads in xai-stack.md were loaded. No public post and no outbound in the evidence.',
   },
   {
+    versionGap: 'G33',
+    domain: 'factory',
+    title: 'Matt ADD [major]: /admin/loop in plain English',
+    objective:
+      'REQUIREMENTS R-214 / Matt 2026-08-16 ADD: /admin/loop is the status surface for the work graph. Matt must be able to see what is being fixed, what is next, and what just finished, without shop jargon (sentinel, ledger, gap, p0, RUN-TOKEN, owner session ids). Sections fold. Do not invent a second status source. No factory ledger insert (open window ba3435dd). Do not claim a fleet node in the same session.',
+    output:
+      'Rewritten /admin/loop: Now / Next / Waiting / Finished in plain English; bots, measurement bets, and auto-start folded. Copy helpers under lib/data/loop/status-copy.ts.',
+    accept:
+      'Signed-in /admin/loop at 390+1280 shows a one-sentence now/next verdict, a Next list of real upcoming titles without Fleet finding / p0 / sentinel jargon, and Just finished in plain English. Folds work. Screenshot evidence. No factory ledger insert.',
+  },
+  {
     versionGap: 'G29',
     domain: 'factory',
     title: 'Stand the verification fleet up',

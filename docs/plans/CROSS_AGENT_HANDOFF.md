@@ -2,7 +2,42 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — SFR pulse vs city-table remainder named
+# Current — 2026-08-16 (cursor) — G33 /admin/loop in plain English
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~11:30 PT. One node only: G33 `1a6eb37a` (factory). Matt ADD routed through the register (R-214) + manifest + seeded graph node — not a side feature. Loop stays **ARMED**. Did not claim a fleet node. No factory ledger insert (open window `ba3435dd`). Did not fire an extra sentinel.
+
+**Done**
+- `/admin/loop` is Now / Next / Waiting / Finished in plain English. Shop jargon (Fleet finding, p0, sentinel, ledger) folds away. Copy helpers in `lib/data/loop/status-copy.ts`.
+- Signed-in shots: `out/loop-status/` desktop 1400 + 1280 + full, mobile 390. Verdict + folds + human titles. No console errors.
+- R-214 VERIFIED. VERSION-1 G33 **DONE 2026-08-16**.
+
+**Also on this SHA (other session, do not steal / do not undo):** SFR pulse city-remainder `4ca02de19` / READY `DQgDZhkkCyhxvMuQem1pMU6Q1idH`. City hyphen cache `6eded9fd`. NWX studio hang `a8f515147`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+
+**Next**
+- After this push: `deploy:verify`, then `completeWorkNode` on `1a6eb37a` with READY evidence. Do not curl an extra sentinel — the armed chain already has fleet p0s.
+- Matt keep/kill on the NWX hang pair and motion takes. Do not wire the live community header.
+
+**Do not:** claim a fleet p0. Do not insert another public-ux or factory ledger row. Do not claim G32 done. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, COMPANY_IMPROVEMENT ADD verb, admin-product-os (named-page, not a full OS grind), git-commit.
+
+# Prior — 2026-08-16 (cursor) — NWX social tile motion (studio only)
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~11:26 PT. Studio only. Not a fleet node. Did not claim G32/G16.
+
+**Done**
+- Discovery lifestyle batch refused (off the rails; not Bend). Stayed on the hung NWX social tile `keep/02-social-v2.jpg` / `v2-s1-sculpture`.
+- Two 8s i2v takes from that still. Hang: `out/xai-ryanrealty-studio/show/northwest-crossing-v2/nwx-social-a-car-bike.mp4` (car through the existing circle, balloon, then cyclist). B is the dog-walker alternate.
+- Viewing room: `out/xai-ryanrealty-studio/show/northwest-crossing-v2/index.html`. Lessons 25–26.
+
+**Next**
+- Matt keep/kill on motion A (and B if he wants the dog). Do not remake Discovery. Do not wire the live community header.
+
+**Do not:** live page, publish, SMS, spend, OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** creative-brain SKILL, LESSONS, attention-editing, ai-filmmakers.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — SFR pulse vs city-table remainder named
 
 **Surface:** Cursor cloud `bc-cf38c0a5` (`cursor/loop-chain-2026-08-16t17-19-57b8`). **Time:** 2026-08-16 ~17:55 UTC. Brief served fleet finding `f214eae4` (public-ux / fleet `5439b87e`), not G16/G32. One node only. Product **`4ca02de19`**. **`main` @** `4ca02de19` (handoff lands after `a8f515147`). Vercel Production **READY** (inspector `DQgDZhkkCyhxvMuQem1pMU6Q1idH`). `npm run deploy:verify` exit 0 in 580s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#44**.
 

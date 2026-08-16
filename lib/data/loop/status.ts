@@ -12,6 +12,7 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import { listWorkNodes, type WorkNode } from './work-graph'
 import { fleetNodePriority, type WorkNodeState } from './work-node'
+import { upcomingBucket } from './status-copy'
 import { isExpiredUnlearned, windowEndsAt } from './ledger-draft'
 
 const ACTIVE_WINDOW_MIN = 180
@@ -33,8 +34,16 @@ export type LoopFindingSummary = {
   severity: string
   caseId: string
   url: string
+  observed: string
   status: string
   createdAt: string
+}
+
+export type LoopUpcomingCounts = {
+  urgent: number
+  fix: number
+  polish: number
+  plan: number
 }
 
 export type LoopLedgerWindow = {
@@ -68,6 +77,7 @@ export type LoopStatus = {
     recentDone: LoopNodeSummary[]
     /** What the brief would serve next, in queue order. */
     queueNext: LoopNodeSummary[]
+    upcomingCounts: LoopUpcomingCounts
   }
   version: { gapsTotal: number; gapsDone: number }
   findings: { newCount: number; recent: LoopFindingSummary[] }
@@ -97,7 +107,7 @@ export async function getLoopStatus(now: Date = new Date()): Promise<LoopStatus>
     listWorkNodes(),
     sb
       .from('fleet_findings')
-      .select('bot,severity,case_id,url,status,created_at')
+      .select('bot,severity,case_id,url,observed,status,created_at')
       .order('created_at', { ascending: false })
       .limit(10),
     sb
@@ -131,11 +141,12 @@ export async function getLoopStatus(now: Date = new Date()): Promise<LoopStatus>
     .slice(0, 10)
     .map(summarize)
 
-  const queueNext = allNodes
+  const openSorted = allNodes
     .filter((n) => n.state === 'open')
     .sort((a, b) => fleetNodePriority(a.title) - fleetNodePriority(b.title) || Date.parse(a.createdAt) - Date.parse(b.createdAt))
-    .slice(0, 3)
-    .map(summarize)
+  const upcomingCounts: LoopUpcomingCounts = { urgent: 0, fix: 0, polish: 0, plan: 0 }
+  for (const n of openSorted) upcomingCounts[upcomingBucket(n.title)] += 1
+  const queueNext = openSorted.slice(0, 12).map(summarize)
 
   const gapNodes = allNodes.filter((n) => n.versionGap)
   const gapsDone = gapNodes.filter((n) => n.state === 'done').length
@@ -145,6 +156,7 @@ export async function getLoopStatus(now: Date = new Date()): Promise<LoopStatus>
     severity: String(r.severity),
     caseId: String(r.case_id),
     url: String(r.url),
+    observed: String(r.observed ?? ''),
     status: String(r.status),
     createdAt: String(r.created_at),
   }))
@@ -173,7 +185,7 @@ export async function getLoopStatus(now: Date = new Date()): Promise<LoopStatus>
   return {
     generatedAt: now.toISOString(),
     armed: process.env.LOOP_SENTINEL !== 'off',
-    nodes: { total: allNodes.length, byState, runningNow, staleClaims, blocked, recentDone, queueNext },
+    nodes: { total: allNodes.length, byState, runningNow, staleClaims, blocked, recentDone, queueNext, upcomingCounts },
     version: { gapsTotal: gapNodes.length, gapsDone },
     findings: { newCount, recent: findings },
     ledger: { openWindows, expiredCount: openWindows.filter((w) => w.expired).length },
