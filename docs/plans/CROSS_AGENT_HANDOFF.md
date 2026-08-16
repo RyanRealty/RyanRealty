@@ -4,13 +4,14 @@
 
 # Current — 2026-08-16 (cursor) — ship class: one rebuild per category
 
-**Surface:** Cursor Grok. **Time:** 2026-08-16 ~16:30 PT. Matt ADD (R-216). Not a fleet node. No public-ux or factory ledger insert (open windows `2a5054ac` / `ba3435dd`). Loop stays **ARMED**.
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~16:30 PT. Matt ADD (R-216). Not a fleet node. No public-ux or factory ledger insert (open windows `2a5054ac` / `ba3435dd`). Loop stays **ARMED**. **`main` @** `63422a307` + Southern Crossing reject stamp from `bc-b448549b`.
 
 **Done**
 - Bots were minting many same-category findings. The graph served one node per cycle; each cycle ran isolated `next build` + `deploy:verify`. That is the Build CPU burn.
 - Class: `selectShipClass` groups fleet nodes by domain + surface family (place pages, search, listing detail). Planned G-rows stay a class of one. Cap 8; leftovers stay open for the next slice of the same class.
 - Brief prints **SHIP CLASS** and forbids push until the printed set is locally accepted. Sentinel prompt is ONE SHIP CLASS, one `npm run push`, one `deploy:verify`. `claimShipClass` claims the set so another session cannot steal a sibling and push alone.
 - `/admin/loop` says when the next items rebuild together. G44 fails if the prompt or brief regresses to one-node-one-rebuild. R-216 VERIFIED. Max pin R-216.
+- Fleet finding `08704f1f` / `8a95d715` Southern Crossing index-1 vs place-23 **rejected** (does not reproduce). Production shares 3 / $920,000. Probe `scripts/probe-southern-crossing-count-prod.mjs` exit 0. R-024 coverage note only.
 
 **Next**
 - Already-launched cloud agents still have the old one-node prompt until this SHA is READY. The next sentinel launch uses the new prompt.
@@ -18,7 +19,23 @@
 
 **Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
 
-**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, git-commit, REQUIREMENTS R-216.
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, git-commit, REQUIREMENTS R-216, frontend-design, R-024.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — Southern Crossing index-1 vs place-23 finding rejected
+
+**Surface:** Cursor cloud `bc-b448549b` (`cursor/loop-chain-2026-08-16t23-20-2fa9`). **Time:** 2026-08-16 ~23:35 UTC. Brief served fleet finding `08704f1f` (public-ux / fleet `8a95d715ef63989d964b9d643d2938f4`), not G16/G32. One node only. No product change. Production already **READY** on the shipped neighborhood inventory class (`9cac09b1` / plat pulse `3f34bf653`). `npm run ci:gates` 224/224. No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). Finding `8a95d715` status rejected. No public-ux ledger insert (open window `2a5054ac`). Collision: `cursor-loop-chain-2026-08-16t23-20-dd33` claimed first and wrote graph evidence at 23:25:36 (xref SFR+PUBLIC_ACTIVE=3; all-types Active=23 explains the stale 23). This session independently reproduced the same reject and stamps the handoff. Rebased onto ship-class `63422a307` (R-216 stays Current).
+
+**Done**
+- Fleet finding [p0]: Southern Crossing index tile 1 active vs place hero/map 23 homes / 23 ACTIVE LISTINGS vs FAQ 3 vs visible cards ~21. FIRST STEP reproduce: it does not. Class already shipped (`getNeighborhoodPublicInventory`).
+- Production 2026-08-16T23:22Z (HIT/STALE): `/neighborhoods` tile **3 Active $920,000**, `/cities/bend` row **3 Active $920,000**, place hero **3 homes for sale in Southern Crossing** + **Median list $920,000**, FAQ / Dataset Active Listings **3**, `#homes` list **3** unique inventory hrefs, hydrated map badge **3 ACTIVE LISTINGS**. 0 of 1 / 21 / 23. Probe `scripts/probe-southern-crossing-count-prod.mjs` exit 0.
+- Screenshots `/opt/cursor/artifacts/southern_crossing_count_{place,index_tile,city_nbh,city_ledger,place_map}_{1280,390}.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** ship-class R-216 `63422a307`. Awbrey 52/63/62 reject `1faedbd9b` (node `5688e089` **done**, does not reproduce). Ridge plat parent-pulse `3f34bf653` / stamp `d688cd4ef` (node `a8726dc3` **done**). Ridge plat SFR count `846193510` / stamp `7bf89b6ab` (node `390ea7a4` **done**). Awbrey index-vs-place reject `6f334748e` / stamp `09de2a587` (node `2d90a914` **done**, does not reproduce). listing down-payment `aba8c2222` / handoff `31e81df7b` (node `ee37b3a4` **done**). place list medians `eff056fb2`. page-grade process KILLED `9afe74a6a` (do not run `/page-grade`). NWX v8e logo-in-frame killed. Tetherow one-annual HOA. MOS withhold. Counted-set list. G33 `/admin/loop`. G32 seeded. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-024, git-commit.
 
 # Prior — 2026-08-16 (cursor-loop-sentinel) — Awbrey 52/63/62 three-count finding rejected
 
