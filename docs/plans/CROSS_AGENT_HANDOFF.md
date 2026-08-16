@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (cursor-grok-town-doors) — town doors at rest + daily launch cap removed
 
-**Surface:** Cursor Grok (`cursor-grok-town-doors-20260816`). **Time:** 2026-08-16 ~08:45 PT. Brief served fleet finding `071bd6f0` (public-ux), not G16. One node only. Product **`b33fe504`**. Baseline **`eddccdbd`**. **`main` @** `42457ec1` (includes later SMS-toggle commits `0e7d6eed` + `42457ec1`). Vercel Production **READY** (`dpl_49opLtX7FCPXPmAMaB5hQVaL1zGq`, aliases `ryan-realty.com` + `ryanrealty.vercel.app`). `npm run deploy:verify` exit 0. No hosted migration. Loop stays **ARMED**. Daily launch cap **removed** (Matt 2026-08-16). Node **done**.
+**Surface:** Cursor Grok (`cursor-grok-town-doors-20260816`). **Time:** 2026-08-16 ~08:57 PT. Brief served fleet finding `071bd6f0` (public-ux), not G16. One node only. Product **`b33fe504`**. Baseline **`eddccdbd`**. **`main` @** `9ac608ab`. Vercel Production **READY** (`dpl_49opLtX7FCPXPmAMaB5hQVaL1zGq`, aliases `ryan-realty.com` + `ryanrealty.vercel.app`). Product already live; this commit is the handoff. No hosted migration. Loop stays **ARMED**. Daily launch cap **removed** (Matt 2026-08-16). Node **done**.
 
 **Done**
 - Fleet finding [major]: six town doors had CSS background photos at `opacity:0` at rest (`KbExploreTowns` + `.town-fill` in `components/site/kb/kb.css`). Reproduced on production before the class change at 1280 + 390.
