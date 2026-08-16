@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   ageHours,
   evalAudienceSync,
+  evalSkySlopeMirror,
   evalExpired,
   evalFsbo,
   evalMarketStats,
@@ -146,6 +147,20 @@ describe('probeFailed', () => {
     const c = probeFailed('pipeline:fsbo-scrape', 'relation missing')
     expect(c.status).toBe('red')
     expect(c.note).toBe('relation missing')
+  })
+})
+
+describe('evalSkySlopeMirror (36h threshold on skyslope_transactions.synced_at)', () => {
+  it('green when the inbound cron stamped within 36h', () => {
+    expect(evalSkySlopeMirror(hoursAgo(12), NOW).status).toBe('green')
+    expect(evalSkySlopeMirror(hoursAgo(35.9), NOW).status).toBe('green')
+  })
+  it('red at 36h, never, and the June 10 founding sample', () => {
+    expect(evalSkySlopeMirror(hoursAgo(36), NOW).status).toBe('red')
+    expect(evalSkySlopeMirror(null, NOW).status).toBe('red')
+    const founding = evalSkySlopeMirror('2026-06-10T00:35:10.142Z', NOW)
+    expect(founding.status).toBe('red')
+    expect(founding.note).toMatch(/skyslope-mirror-refresh/i)
   })
 })
 
