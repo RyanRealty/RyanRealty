@@ -262,9 +262,17 @@ fi
 # lockfile the current clone was made for.
 LOCK_SNAPSHOT="$VERIFY_DIR/node_modules/.rr-lock-snapshot"
 if [ "$PUSH_GATES_REFRESH_DEPS" = "1" ] || [ ! -d "$VERIFY_DIR/node_modules" ] || ! cmp -s "$VERIFY_DIR/package-lock.json" "$LOCK_SNAPSHOT"; then
-  echo "push: cloning node_modules into verify tree (APFS clone)…"
+  echo "push: cloning node_modules into verify tree…"
   rm -rf "$VERIFY_DIR/node_modules"
-  cp -Rc "$REPO_ROOT/node_modules" "$VERIFY_DIR/node_modules"
+  # macOS APFS clone (`cp -c`) is not portable. Linux uses reflink when the
+  # filesystem supports it; otherwise a plain archive copy.
+  if cp -Rc "$REPO_ROOT/node_modules" "$VERIFY_DIR/node_modules" 2>/dev/null; then
+    :
+  elif cp -a --reflink=auto "$REPO_ROOT/node_modules" "$VERIFY_DIR/node_modules" 2>/dev/null; then
+    :
+  else
+    cp -a "$REPO_ROOT/node_modules" "$VERIFY_DIR/node_modules"
+  fi
   cp -f "$VERIFY_DIR/package-lock.json" "$LOCK_SNAPSHOT"
 fi
 
