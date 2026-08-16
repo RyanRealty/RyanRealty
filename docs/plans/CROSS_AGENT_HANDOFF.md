@@ -2,13 +2,13 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — Pre-arm items LIVE (runbook Step 1 done); loop stays DISARMED
+# Current — 2026-08-16 (Grok) — Matt said "Arm the loop"; kill switch flipped; bake deploy in flight
 
-**Matt said "Build the Pre-Arm Items" then "keep going."** All three are on `origin/main` @ `502db045` with Vercel production **READY** (`dpl_51vgJ4UgUvEsDLRWj1Lypz1fs6EQ`). Hosted schema unchanged. Loop remains DISARMED (R-211).
+**Matt 2026-08-16 21:52 PT: "Arm the loop."** That is the R-211 word. `LOOP_SENTINEL=on` is written in Vercel production (overrode the encrypted `off`). A CLI redeploy of `502db045` was Canceled by ignoreCommand (~57s, same class as docs-only). This commit stamps the arm in runtime code so the git-triggered production build actually bakes the env.
 
-**Production proof (2026-08-16):**
-- Kill switch dry-run: `{"action":"skipped","reason":"kill switch (LOOP_SENTINEL=off)"}`
-- Live `/admin/loop` on ryan-realty.com: verdict **DISARMED. Planning mode (R-211)**; graph 25 open · 0 in progress · 3 done (G1–G3); sentinel row DISARMED; 0 console errors. Shots: `out/loop-status-prod/loop-desktop-full.png` + `loop-mobile.png` (gitignored).
+**Not yet proven (do not treat as live until the bake is READY):** dry-run `would launch`, first agent boot, `/admin/loop` verdict ARMED. Those land in the next Current update this session.
+
+**Do not:** create bots (Phase 3). Do not send, post, spend, or OAuth. Disarm = Matt says "disarm the loop".
 
 1. **`/admin/loop` status page** — superuser (`settings.system`, same gate as /admin/sync), linked from Oversight's All tools. Verdict line (armed/disarmed + running/dormant), Version-1 progress, running-now, stale claims, queue-next (fleetNodePriority order), blocked, recent done with evidence first-lines, fleet findings inbox, ledger windows with expiry, sentinel launches (n/12 cap) + orphan releases. Auto-refreshes every 60s. Renders ONLY from the rows agents mutate (`lib/data/loop/status.ts` aggregator) — no self-reported status exists. Screenshots (desktop 1400 + mobile 390, real graph data, zero console errors) verified.
 2. **One-node-per-session chaining** — sentinel LOOP_PROMPT now: claim the ONE served node, finish or block it, final-act handoff curl, STOP. Fresh context per node; the chain carries continuity.
@@ -18,9 +18,7 @@
 
 **Build hygiene:** `tmp` added to tsconfig excludes (scratch files could fail the Next typecheck — class fix; two stray scratch scripts moved to tmp/). Screenshot tool for this page: `scripts/_loop-status-shot.mjs` (magic-link pattern).
 
-**Arming is still Matt's word** ("arm the loop" → flip env, redeploy, watch /admin/loop per ARMING-RUNBOOK Phase 2). Kill switch `LOOP_SENTINEL=off` is live in production. Bots: none created yet.
-
-**Start procedure now at Phase 2:** bookmark `/admin/loop`, then say "Arm the loop" when ready. Runbook: `ENTERPRISE_MAP/ARMING-RUNBOOK.md`.
+**Watch:** `/admin/loop`. Runbook Phase 2 Step 4. Disarm = "disarm the loop". Bots still Phase 3.
 
 # Prior — 2026-08-16 (loop-sentinel bc-7b28f874) — G3 shipped; successor launch refused by kill switch
 

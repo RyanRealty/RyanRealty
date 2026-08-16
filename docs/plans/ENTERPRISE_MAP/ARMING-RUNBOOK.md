@@ -1,6 +1,6 @@
 # Arming Runbook — from DISARMED to a running, visible, self-chaining loop
 
-**State this assumes (true as of 2026-08-16):** THE LOOP v1.6.0 infrastructure is built, shipped, and DISARMED (`LOOP_SENTINEL=off` baked in production, verified live). Pre-arm items (Step 1) are built. Work graph: G1–G3 done, rest open. Register at R-211. No bots exist yet. R-211 (LOCKED): nothing launches until Matt explicitly arms it.
+**State this assumes (true as of 2026-08-16 21:52 PT):** THE LOOP v1.6.0 infrastructure is built and shipped. Pre-arm items (Step 1) are live. Matt said **"Arm the loop"** — Phase 2 Step 3. `LOOP_SENTINEL=on` is set in Vercel production. Work graph: G1–G3 done, rest open. Register R-211 stays LOCKED (disarm still requires the word). No bots exist yet (Phase 3).
 
 **Matt never touches a terminal.** Every step below is either a sentence Matt says in a Cursor chat, or clicks inside the Grok Bot app (the one surface only he has). The agent does everything else.
 
@@ -22,6 +22,8 @@ The session builds, ships, and screenshots the three items the plan calls for be
 
 **Step 3. Say: "Arm the loop."**
 The session flips `LOOP_SENTINEL` to `on`, redeploys so it takes effect, proves the dry-run says `would launch`, and confirms the first agent boots. (R-211 stays in the register; its evidence cell gets the arm date.)
+
+**DONE 2026-08-16 21:52 PT.** Matt said the word. `LOOP_SENTINEL=on` written to Vercel production. Bake deploy + first-boot proof are the rest of this session.
 
 **Step 4. Watch 2–3 iterations on the status page.** Healthy looks like: node claimed → done with evidence in under ~2 hours; commits on main; deploy READY; next node claimed by a fresh agent within minutes. Anything looks wrong → say **"disarm the loop"** (kill switch back on within one session; running agent finishes or is canceled on request).
 

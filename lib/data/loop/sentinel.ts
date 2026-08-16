@@ -78,6 +78,8 @@ async function fetchNewestRunStatus(agentId: string, apiKey: string): Promise<Ru
  * open-work check, and the daily cost cap always apply.
  */
 export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean }): Promise<SentinelDecision> {
+  // Kill switch. Matt arms with "arm the loop" (LOOP_SENTINEL=on) and disarms
+  // with "disarm the loop" (off). Armed 2026-08-16 21:52 PT after that word.
   if (process.env.LOOP_SENTINEL === 'off') {
     return { action: 'skipped', reason: 'kill switch (LOOP_SENTINEL=off)' }
   }
