@@ -2,7 +2,28 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-sentinel) — place-page hero count grain shipped
+# Current — 2026-08-16 (cursor) — xAI studio: NWX header + social stills
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~10:55 PT. Isolated studio in gitignored `out/xai-ryanrealty-studio/`. No product files. No live KbHero swap. No loop node. Did not claim G32 or G16.
+
+**Done**
+- Look lock stays first-cycle Mirror Pond `keep/01-boardwalk.jpg`. Bake-off is research. CARD_TEMPLATE relocked + awareness ladder written (owned → Unsplash/Pexels/Shutterstock → parent keep → refuse).
+- Remembered NorthWest Crossing. Owned Area Guide 01 (sculpture circle) and 03 (Discovery pond). 02 is Sisters — refuse. 04 verified as the same Discovery pond, not a canal.
+- Made five 16:9 headers and five 9:16 socials. All ten passed the sat gate. Hang: `cards/places/northwest-crossing/keep/01-header.jpg` (h4 walker+dog) and `keep/02-social.jpg` (s2 sculpture vertical).
+- Show: `out/xai-ryanrealty-studio/show/northwest-crossing/index.html`. Matt looks. Nothing published.
+
+**Also on this SHA (other session, do not steal / do not undo):** place-page hero count grain `706327241`. Awbrey inventory-count class `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+
+**Next**
+- Matt keep/kill on the NWX hang pair. Do not wire the live community header.
+- Later Mirror Pond pass may add clouds / walker / one fish rise. Do not remake that library first.
+- IMAGE_1 on every Make is still the boardwalk keep.
+
+**Do not:** claim G32 done. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not send a fish rise on Discovery Pond.
+
+**Skills read:** creative-brain SKILL + PLAYBOOK + LESSONS + emotion-mechanics + neuroaesthetics + piece-brief, platform-best-practices (logo closer, not opener).
+
+# Prior — 2026-08-16 (cursor-loop-sentinel) — place-page hero count grain shipped
 
 **Surface:** Cursor cloud `bc-dc2e5e24` (`cursor/loop-sentinel-2026-08-16t16-50-c8df`). **Time:** 2026-08-16 ~17:20 UTC. Brief served fleet finding `97c68da5` (public-ux), not G16/G32. One node only. Product **`706327241`**. **`main` @** `706327241`. Vercel Production **READY** (inspector `6vKiLggcCckH5uH4LnDdp6mrXL9p`). `npm run deploy:verify` exit 0 in 780s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#43**.
 
