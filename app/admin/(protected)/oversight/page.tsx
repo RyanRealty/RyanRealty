@@ -413,6 +413,10 @@ export default async function OversightPage() {
 
       <p style={{ fontSize: 'var(--a-text-sm)', color: 'var(--a-text-2)', marginTop: 24 }}>
         All tools:{' '}
+        <Link href="/admin/loop" style={{ color: 'var(--a-accent)' }}>
+          Loop
+        </Link>
+        {' · '}
         <Link href="/admin/operations" style={{ color: 'var(--a-accent)' }}>
           Operations
         </Link>

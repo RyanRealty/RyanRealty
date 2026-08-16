@@ -77,3 +77,34 @@ export function isStaleInProgress(
   const ageMs = now.getTime() - Date.parse(node.updatedAt)
   return ageMs > STALE_IN_PROGRESS_DAYS * 24 * 60 * 60 * 1000
 }
+
+// ── Orphan auto-release (pre-arm item 3, ARMING-RUNBOOK Step 1) ──────────────
+// A cloud agent that dies mid-node (crash, token exhaustion, cancellation)
+// leaves its claim in_progress. When the owner's newest run is TERMINAL, the
+// claim is an orphan — the sentinel releases it back to open instead of
+// waiting out the 3-hour standdown.
+
+/** Cloud-agent owner sessions are the Cursor agent id the sentinel stamped. */
+export function isCloudAgentSession(owner: string | null): boolean {
+  return typeof owner === 'string' && /^bc-[0-9a-f][0-9a-f-]{6,}/i.test(owner.trim())
+}
+
+/**
+ * Release only when ALL hold: the node is in_progress, its owner is a cloud
+ * agent (human sessions have no API status — they age out via staleness),
+ * the owner's newest run is terminal, and a short grace period has passed
+ * since the last node update (never race a completion that is mid-write).
+ */
+export const ORPHAN_GRACE_MIN = 10
+
+export function shouldAutoRelease(
+  node: { state: WorkNodeState; ownerSession: string | null; updatedAt: string },
+  ownerRunTerminal: boolean,
+  now: Date = new Date(),
+): boolean {
+  if (node.state !== 'in_progress') return false
+  if (!isCloudAgentSession(node.ownerSession)) return false
+  if (!ownerRunTerminal) return false
+  const ageMs = now.getTime() - Date.parse(node.updatedAt)
+  return ageMs > ORPHAN_GRACE_MIN * 60 * 1000
+}

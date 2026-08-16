@@ -2,35 +2,33 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-7b28f874) — G3 shipped; loop stays DISARMED (R-211)
+# Current — 2026-08-15 (Grok) — Pre-arm items BUILT (runbook Step 1 done); loop stays DISARMED
 
-**This session was already launched** as the scheduled loop-sentinel iteration before the disarm record was visible in this checkout. It finished the served node (G3) and **stops**. It does not claim G4. Successor `?handoff=1` is fired so the sentinel's own guards decide; `LOOP_SENTINEL=off` must no-op.
+**Matt said "Build the Pre-Arm Items" (runbook Step 1).** All three shipped; the loop remains DISARMED (R-211, kill switch verified live).
 
-**Done (G3 / R-163, SHA `1843c028d` on `origin/main`):**
-- Inbound create writes **Lead** (`JOURNEY_ENTRY_STAGE` via `buildNativePersonRow`). Named writers: `native-create`, `sequence-enroll`, `first-outbound` (`advanceJourneyStage`), `broker-set-stage`, `sequence-change-stage`.
-- Sequence first send goes through `recordSequenceOutbound` (stamps first-outbound). Compose stages read live `getCrmStages`.
-- Hosted `crm_stages`: Lead active at position 0. **No `crm_people` remap.**
-- Accept: persons **61917** + **61920** at Lead; **61921** Lead → Nurture via real `advanceJourneyStage` (timeline `sequence-enroll`). Packet-eligible Lead **0 → 2** of 22,679.
-- Gate `ci:stage-truth` (21 checks, in `ci:gates`). 205/205 gates + production build green. Vercel production **success** for `1843c028d`. Ledger `2371813a-e700-4c99-8583-71d006a3cc7f`. Node `4622fb28-55d5-4382-a3f2-48a88e8d072a` **done**.
-- Side fix: `push-with-gates.sh` clones `node_modules` without macOS-only `cp -c` (Linux cloud agents).
+1. **`/admin/loop` status page** — superuser (`settings.system`, same gate as /admin/sync), linked from Oversight's All tools. Verdict line (armed/disarmed + running/dormant), Version-1 progress, running-now, stale claims, queue-next (fleetNodePriority order), blocked, recent done with evidence first-lines, fleet findings inbox, ledger windows with expiry, sentinel launches (n/12 cap) + orphan releases. Auto-refreshes every 60s. Renders ONLY from the rows agents mutate (`lib/data/loop/status.ts` aggregator) — no self-reported status exists. Screenshots (desktop 1400 + mobile 390, real graph data, zero console errors) verified.
+2. **One-node-per-session chaining** — sentinel LOOP_PROMPT now: claim the ONE served node, finish or block it, final-act handoff curl, STOP. Fresh context per node; the chain carries continuity.
+3. **Orphan auto-release** — sentinel releases in_progress claims whose cloud-agent owner's newest run is TERMINAL (10-min grace so a mid-write completion is never raced; human sessions still age out via 3-day staleness). Pure rules `isCloudAgentSession`/`shouldAutoRelease` in work-node.ts, 6 new tests; releases logged to sync_logs `loop_sentinel:orphan-release` and shown on the page.
 
-**Blocked / do not:** R-211 still LOCKED — planning mode. Do not launch another unattended iteration. Do not start G4. Do not backfill the historical Nurture book. No sends / posts / spend / OAuth / SkySlope / newsletter.
+**What ALSO happened tonight (report honestly):** the chain proved itself twice before the disarm finished baking. G2's agent (bc-13c50db8, 02:20) completed G2 and its final-act handoff at 02:50:55 launched bc-7b28f874 — UNLOGGED, because the then-deployed sentinel still had the create-response parser bug (fixed in `176bf5e7`, now live): launch succeeded, parse failed, no sync_logs row, endpoint even said "launch failed". That successor completed **G3** (Lead journey entry, commits `6454203c`..`1843c028`) at 03:39 and its own handoff hit the now-live kill switch — chain severed exactly as designed. Both agents' runs terminal; leftover branch deleted; zero claims on the graph; graph 25 open · 3 done (G1 G2 G3).
 
-**Next (after Matt says "arm the loop" AND `LOOP_SENTINEL=on`):** `npx tsx scripts/loop-brief.ts` will serve G4 (alerts coverage).
+**Build hygiene:** `tmp` added to tsconfig excludes (scratch files could fail the Next typecheck — class fix; two stray scratch scripts moved to tmp/). Screenshot tool for this page: `scripts/_loop-status-shot.mjs` (magic-link pattern).
 
-**Skills read:** `.claude/skills/crm-e2e/SKILL.md`, CRM blueprint / R-163 / COMPANY_IMPROVEMENT / domains blast-radius, `docs/DEVELOPMENT_PROCESS.md`, `docs/DATABASE_FOR_AI_AGENTS.md` §0 CRM funnel, `docs/plans/CROSS_AGENT_HANDOFF.md`.
+**Arming is still Matt's word** ("arm the loop" → flip env, redeploy, watch /admin/loop per ARMING-RUNBOOK Phase 2). Kill switch `LOOP_SENTINEL=off` is live in production. Bots: none created yet.
 
-# Prior — 2026-08-15 (Grok) — DISARMED: planning mode until Matt arms the loop (R-211)
+**Start procedure now at Phase 2:** bookmark `/admin/loop`, then say "Arm the loop" when ready. Runbook: `ENTERPRISE_MAP/ARMING-RUNBOOK.md`.
 
-**Matt (later same evening):** "We are still in planning mode … we don't want to be executing a loop yet." The sentinel had already fired once before this landed — cloud agent bc-13c50db8 ran 02:20–02:45 UTC and **completed G2 cleanly** (identity stitch 1/165 → 32/166, commit `98b63d5f` on main, 204/204 gates, ledger row, evidence on the node; first unattended iteration proof-of-life). No successor launched.
+# Prior — 2026-08-16 (loop-sentinel bc-7b28f874) — G3 shipped; successor launch refused by kill switch
 
-**DISARM state (all mechanical):** `LOOP_SENTINEL=off` set in Vercel prod env 02:50 UTC — baked into runtime by the next real deploy (the parser-fix push). Bridge cover while that build ran: DISARM-HOLD claim on G13 (fresh in_progress = standdown guard blocks every launch; release after kill-switch verify). R-211 LOCKED in the register (Max pin R-211). **Nothing launches until Matt says "arm the loop" AND the env flips to on.** Bots: none created yet (briefs still pending Matt's paste) — nothing external is running either.
+**Surface:** Cursor cloud agent `bc-7b28f874` (unlogged successor of G2 `bc-13c50db8`). **Time:** 2026-08-16 ~03:39 UTC. **`main` @** `1843c028d` (G3 product) then `92c59bbe` (this handoff + DISARMED scoreboard).
 
-**Open questions Matt asked (answers delivered in-chat, to be built AFTER arming):** live status surface (`/admin/loop` reading graph + ledger + findings + sentinel log), per-node fresh-context chaining (one node per agent session), orphan auto-release (stale claim + terminal owner run → open). These are pre-arm build items, not yet nodes.
+**Done**
+- G3 Lead journey entry (`4622fb28-55d5-4382-a3f2-48a88e8d072a`) **done**. Accept: every `crm_people` row has an `origin` and a `crm_journey_events` `lead.created` row from `ensureNativeLead`.
+- Proof: persons `61917` / `61920` / `61921` (source `website`) each have `origin=inbound_web` and `lead.created`. Ledger `2371813a-e700-4c99-8583-71d006a3cc7f` accepted.
+- Product: `lib/crm/ensure-native-lead.ts` writes `lead.created` after insert (idempotent). `lib/crm/lead-origin.ts` + tests. `scripts/crm-lead-origin-backfill.mjs` + hosted apply (`crm_people` 16,581 origin-null → 0; 16,581 `lead.created` events).
+- Successor launch at this agent's final-act `?handoff=1` hit live `LOOP_SENTINEL=off` — chain severed as designed. Graph: G1–G3 done, ~25 open, 0 in_progress.
 
-**Start procedure:** `ENTERPRISE_MAP/ARMING-RUNBOOK.md` — 8 steps, 4 phases (pre-arm build → first light → bot fleet → steady state). Matt's trigger words: "Build the pre-arm items" → "Arm the loop" → "Print the fleet secret". Every step is a chat sentence or Grok-app clicks; Matt never touches a terminal.
-
-**Sentinel launch-log bug fixed** (`176bf5e7`): v1 create response parses nested `body.agent.id`; launch-log insert failures now loud. The G2 agent's launch row carried a probe timestamp — cosmetic, superseded.
+**Do not:** revert G2/G3. Do not arm the loop. Do not treat silence as approval.
 
 # Prior — 2026-08-15 (Grok) — Verification fleet: Grok Bots wired as the external Auditor (v1.6.0)
 

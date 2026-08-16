@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
   assertTransition,
   assertWorkNodeDraft,
+  isCloudAgentSession,
   isLegalTransition,
   isStaleInProgress,
+  shouldAutoRelease,
 } from './work-node'
 
 describe('work-node contract (a node is a bounded job)', () => {
@@ -69,5 +71,43 @@ describe('stale in_progress detection (stranded work surfaces on the packet)', (
     expect(
       isStaleInProgress({ state: 'open' as const, updatedAt: '2026-08-01T00:00:00Z' }, new Date('2026-08-15T00:00:00Z')),
     ).toBe(false)
+  })
+})
+
+describe('orphan auto-release (dead cloud sessions never hold the floor)', () => {
+  const now = new Date('2026-08-16T12:00:00Z')
+  const orphan = {
+    state: 'in_progress' as const,
+    ownerSession: 'bc-13c50db8-d7f2-4c5a-9b18-61ba7166475b',
+    updatedAt: '2026-08-16T11:00:00Z', // 60 min old — past the grace window
+  }
+
+  it('recognizes cloud-agent owner sessions and nothing else', () => {
+    expect(isCloudAgentSession('bc-13c50db8-d7f2-4c5a-9b18-61ba7166475b')).toBe(true)
+    expect(isCloudAgentSession('grok-2026-08-15')).toBe(false)
+    expect(isCloudAgentSession('DISARM-HOLD (Matt: planning mode)')).toBe(false)
+    expect(isCloudAgentSession(null)).toBe(false)
+  })
+
+  it('releases when the owner run is terminal and grace has passed', () => {
+    expect(shouldAutoRelease(orphan, true, now)).toBe(true)
+  })
+
+  it('never releases while the owner run is still active', () => {
+    expect(shouldAutoRelease(orphan, false, now)).toBe(false)
+  })
+
+  it('never releases inside the grace window — a completion may be mid-write', () => {
+    const justUpdated = { ...orphan, updatedAt: '2026-08-16T11:55:00Z' } // 5 min old
+    expect(shouldAutoRelease(justUpdated, true, now)).toBe(false)
+  })
+
+  it('never releases human-session claims — they age out via staleness instead', () => {
+    const human = { ...orphan, ownerSession: 'grok-session-2026-08-16' }
+    expect(shouldAutoRelease(human, true, now)).toBe(false)
+  })
+
+  it('only in_progress nodes are candidates', () => {
+    expect(shouldAutoRelease({ ...orphan, state: 'open' as const }, true, now)).toBe(false)
   })
 })

@@ -1,6 +1,6 @@
 # Arming Runbook — from DISARMED to a running, visible, self-chaining loop
 
-**State this assumes (true as of 2026-08-16):** THE LOOP v1.6.0 infrastructure is built, shipped, and DISARMED (`LOOP_SENTINEL=off` baked in production, verified live). Work graph has 29 nodes (G1, G2 done). Register at R-211. No bots exist yet. R-211 (LOCKED): nothing launches until Matt explicitly arms it.
+**State this assumes (true as of 2026-08-16):** THE LOOP v1.6.0 infrastructure is built, shipped, and DISARMED (`LOOP_SENTINEL=off` baked in production, verified live). Pre-arm items (Step 1) are built. Work graph: G1–G3 done, rest open. Register at R-211. No bots exist yet. R-211 (LOCKED): nothing launches until Matt explicitly arms it.
 
 **Matt never touches a terminal.** Every step below is either a sentence Matt says in a Cursor chat, or clicks inside the Grok Bot app (the one surface only he has). The agent does everything else.
 
@@ -14,7 +14,7 @@ The session builds, ships, and screenshots the three items the plan calls for be
 2. **One-node-per-session chaining** — the sentinel prompt changes from "grind until blocked" to "complete ONE node, hand off, die." Fresh context per node; the zero-gap chain carries continuity.
 3. **Orphan auto-release** — sentinel checks stale `in_progress` claims against the Cursor API; owner run terminal → node flips back to `open` automatically.
 
-Done when: screenshot of `/admin/loop` rendering real graph data, gates green, deploy READY. The loop is still off.
+**DONE 2026-08-16.** `/admin/loop` renders live graph data (desktop + mobile screenshots, zero console errors). Sentinel prompt is one-node-per-session. Orphan auto-release is in the sentinel with tests. The loop is still off.
 
 ## Phase 2 — First light (an evening Matt is around, ~1 hour of glancing)
 
