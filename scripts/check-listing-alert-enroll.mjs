@@ -59,7 +59,7 @@ checks.push({
 const lp = src('app/lp/buyer-listing-alerts/actions.ts')
 checks.push({
   label: 'buyer LP passes crmPersonId (native id) into upsertListingAlert',
-  ok: /crmPersonId: nativeCrmPersonId\(eventResult\.personId\)/.test(lp),
+  ok: /crmPersonId: nativeCrmPersonId\(eventResult\.ok \? eventResult\.personId : null\)/.test(lp),
 })
 
 const bulk = src('app/actions/newsletter.ts')
