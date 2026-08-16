@@ -10,6 +10,8 @@
 
 **Open questions Matt asked (answers delivered in-chat, to be built AFTER arming):** live status surface (`/admin/loop` reading graph + ledger + findings + sentinel log), per-node fresh-context chaining (one node per agent session), orphan auto-release (stale claim + terminal owner run → open). These are pre-arm build items, not yet nodes.
 
+**Start procedure:** `ENTERPRISE_MAP/ARMING-RUNBOOK.md` — 8 steps, 4 phases (pre-arm build → first light → bot fleet → steady state). Matt's trigger words: "Build the pre-arm items" → "Arm the loop" → "Print the fleet secret". Every step is a chat sentence or Grok-app clicks; Matt never touches a terminal.
+
 **Sentinel launch-log bug fixed** (`176bf5e7`): v1 create response parses nested `body.agent.id`; launch-log insert failures now loud. The G2 agent's launch row carried a probe timestamp — cosmetic, superseded.
 
 # Prior — 2026-08-15 (Grok) — Verification fleet: Grok Bots wired as the external Auditor (v1.6.0)
