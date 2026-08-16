@@ -103,7 +103,7 @@ export default async function Home() {
   ])
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
-  const towns: KbTownItem[] = TOWN_ORDER.map((slug) => {
+  const towns: KbTownItem[] = TOWN_ORDER.map((slug): KbTownItem | null => {
     const c = cityBySlug.get(slug)
     if (!c) return null
     return { name: c.name, activeCount: c.activeCount, medianPrice: c.medianPrice, href: `/cities/${slug}`, img: TOWN_IMG[slug] }
