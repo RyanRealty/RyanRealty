@@ -554,10 +554,10 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
 
       <Separator />
 
-      {/* Row 2: filters are one control. 390 shows All filters only so pills
-          do not clip. sm+ shows the chip set plus All filters. */}
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:px-4">
-        <div className="hidden flex-wrap items-center gap-2 sm:contents">
+      {/* Row 2: chips + All filters. 390 keeps the chip set on one
+          horizontal row so Price/Beds/Baths stay tappable. */}
+      <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
+        <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto no-scrollbar">
         {/* For Sale / Status */}
         <FilterDropdown
           label={STATUS_OPTIONS.find((s) => s.value === (initialFilters.status ?? 'Active'))?.label ?? 'For sale'}
@@ -775,7 +775,7 @@ export default function SearchFilters({ initialFilters, signedIn = false }: Prop
         </FilterDropdown>
       </div>
 
-        {/* All filters — the one 390 control. Chip set above is sm+ only. */}
+        {/* All filters — always present. Chip set scrolls on 390. */}
         <Button
           type="button"
           variant={moreFilterCount > 0 ? 'default' : 'outline'}

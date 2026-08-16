@@ -17,6 +17,7 @@ import {
 import { buildMapDrawPayload, buildZeroResultsPayload } from '@/lib/search/search-events'
 import { fireSearchEvent } from '@/components/search/search-events.client'
 import { ALL_SEARCH_URL_PARAMS, SEARCH_FIELDS } from '@/lib/search/field-registry'
+import { publishSearchCountPair } from '@/lib/search/publish-search-count'
 import { GEO_SCOPE_KEYS, geoScopeLabel, stripGeoScope } from '@/components/search/geo-scope'
 import { listingDetailPath, displaySubdivision } from '@/lib/slug'
 import { getHiddenListingKeys } from '@/app/actions/hidden-listings'
@@ -391,6 +392,7 @@ export default function MapSearchView({
   // when the matches are simply outside the current map (rural listings around
   // a city are the common case).
   const [beyondViewportCount, setBeyondViewportCount] = useState<number | null>(null)
+  const [matchCount, setMatchCount] = useState<number | null>(null)
   const hasDrawnShapes = drawnShapes.length > 0
   useEffect(() => {
     if (totalCount !== 0 || !hasNarrowingFilters || hasDrawnShapes) {
@@ -417,6 +419,27 @@ export default function MapSearchView({
       cancelled = true
     }
   }, [totalCount, hasNarrowingFilters, hasDrawnShapes, scopeDropped, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Filter-match count (no bbox) — the coherent number for the URL filters.
+  // Viewport totalCount is a different population and may only print labeled.
+  useEffect(() => {
+    let cancelled = false
+    const params: Record<string, string> = {}
+    for (const [k, v] of Object.entries(filters as Record<string, string | undefined>)) {
+      if (scopeDropped && (GEO_SCOPE_KEYS as readonly string[]).includes(k)) continue
+      if (typeof v === 'string' && v.trim() !== '') params[k] = v
+    }
+    countSearchListings(params)
+      .then((n) => {
+        if (!cancelled) setMatchCount(n)
+      })
+      .catch(() => {
+        if (!cancelled) setMatchCount(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [scopeDropped, filtersSnapshot]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-seed from server props whenever the URL filters change (new SSR payload).
   // The SSR payload is scoped again, so the scope-drop resets with it — the
@@ -683,14 +706,22 @@ export default function MapSearchView({
   )
   const mapListings = useMemo(() => visibleListings.map(toMapListing), [visibleListings])
 
-  const countLabel = capped ? `${totalCount.toLocaleString()}+` : totalCount.toLocaleString()
+  const publishedCounts = publishSearchCountPair({
+    matchCount,
+    viewportCount: totalCount,
+    viewportCapped: capped,
+  })
   const filtersSummary = useMemo(() => buildFiltersSummary(filters), [filters])
-  // Name the set on screen. 390 list has no map, so it cannot say "map view".
-  // Desktop split shows the map, so that phrase stays true there.
-  const homeWord = totalCount === 1 ? 'home' : 'homes'
-  const listCountPhrase = totalCount === 0 ? 'No homes' : `${countLabel} ${homeWord}`
+  // Filter-match is the coherent number for the URL filters. Viewport prints
+  // only when it differs, labeled "in this map view".
+  const listCountPhrase =
+    totalCount === 0 && matchCount == null
+      ? 'No homes'
+      : (publishedCounts.match?.phrase ?? publishedCounts.viewport?.phrase ?? 'Homes')
   const mapCountPhrase =
-    totalCount === 0 ? 'No homes in this map view' : `${countLabel} ${homeWord} in this map view`
+    publishedCounts.viewport?.phrase ??
+    publishedCounts.match?.phrase ??
+    (totalCount === 0 ? 'No homes in this map view' : `${totalCount.toLocaleString('en-US')} homes in this map view`)
 
   // listPanel is mounted once (desktop rail + mobile bottom sheet share the
   // node via CSS). Mobile List expands the sheet; Map hides it (count pill).
@@ -699,14 +730,16 @@ export default function MapSearchView({
   const listPanel = (
     <div ref={listContainerRef} className="flex-1 min-h-0 overflow-y-auto bg-muted">
       {/* Mockup G2: "N homes · filters · Sort" sticky count/sort row. */}
-      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2 sm:py-3">
+      <div className="sticky top-0 z-10 hidden flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-2 sm:py-3 lg:flex">
         <p className="min-w-0 flex-1 text-sm text-muted-foreground tabular-nums" aria-live="polite">
           {resultsDegraded ? (
             <span className="font-semibold text-foreground">Search delayed</span>
           ) : (
             <>
-              <span className="font-semibold text-foreground lg:hidden">{listCountPhrase}</span>
-              <span className="hidden font-semibold text-foreground lg:inline">{mapCountPhrase}</span>
+              <span className="font-semibold text-foreground">{listCountPhrase}</span>
+              {publishedCounts.viewport ? (
+                <span className="ml-2">{publishedCounts.viewport.phrase}</span>
+              ) : null}
               {filtersSummary ? (
                 <span className="hidden sm:inline"> · {filtersSummary}</span>
               ) : null}
@@ -958,7 +991,7 @@ export default function MapSearchView({
   return (
     <div className="map-search-shell flex w-full flex-col overflow-hidden" style={{ contain: 'layout' }}>
       {/* Mobile segmented toggle — list-first default; Map hides the sheet. */}
-      <div className="flex shrink-0 border-b border-border bg-card lg:hidden">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-2 py-1 lg:hidden">
         <ToggleGroup
           type="single"
           value={mobileView}
@@ -967,7 +1000,7 @@ export default function MapSearchView({
               setMobileView(v)
             }
           }}
-          className="w-full rounded-none border-0"
+          className="min-w-0 flex-1 rounded-none border-0"
           variant="outline"
           size="sm"
         >
@@ -978,6 +1011,21 @@ export default function MapSearchView({
             Map
           </ToggleGroupItem>
         </ToggleGroup>
+        <p className="min-w-0 shrink truncate text-xs font-semibold tabular-nums text-foreground" aria-live="polite">
+          {resultsDegraded ? 'Search delayed' : listCountPhrase}
+        </p>
+        <Select value={sortValue} onValueChange={handleSortChange}>
+          <SelectTrigger className="h-9 w-[7.5rem] shrink-0" aria-label="Sort results" size="sm">
+            <SelectValue placeholder="Newest" />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* List + map, ONE mount each. Desktop: side-by-side. Mobile: list-first

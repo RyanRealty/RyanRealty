@@ -342,11 +342,11 @@ describe('geo scope drops on user map move (W4.2, 2026-07-22)', () => {
   })
 
   it('mobile map view shows the result count from the SAME query that renders the pins (§0)', () => {
-    // The count pill renders countLabel — derived from the totalCount state
-    // that getViewportSearch returned alongside the pin listings. No separate
-    // estimate query.
+    // Viewport pins stay on getViewportSearch totalCount. The list phrase is
+    // the filter-match number; a different viewport count prints labeled.
     expect(src).toMatch(/tabular-nums lg:hidden/)
-    expect(src).toMatch(/const countLabel = capped \? `\$\{totalCount\.toLocaleString\(\)\}\+` : totalCount\.toLocaleString\(\)/)
+    expect(src).toMatch(/publishSearchCountPair\(/)
+    expect(src).toMatch(/countSearchListings\(/)
   })
 })
 

@@ -11,9 +11,10 @@
  * hands the parent a full param-update map on Apply.
  */
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { publishSearchCount } from '@/lib/search/publish-search-count'
 import {
   ALL_SEARCH_URL_PARAMS,
   SEARCH_FIELDS,
@@ -409,6 +410,7 @@ export default function AllFiltersSheet({
   const [narrowNotice, setNarrowNotice] = useState<{ prev: string; label: string } | null>(null)
   // Zero-result culprit (plan §7.1 rule 3)
   const [culprit, setCulprit] = useState<{ label: string; params: readonly string[]; recovered: number } | null>(null)
+  const applyLock = useRef(false)
 
   // Re-seed the draft from the URL each time the sheet opens.
   useEffect(() => {
@@ -423,6 +425,7 @@ export default function AllFiltersSheet({
     setFindQuery('')
     setNarrowNotice(null)
     setCulprit(null)
+    applyLock.current = false
     // Seed on open only — while editing, the draft is the source of truth.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -644,6 +647,8 @@ export default function AllFiltersSheet({
   )
 
   function handleApply() {
+    if (applyLock.current) return
+    applyLock.current = true
     const updates: Record<string, string | undefined> = {}
     for (const param of ALL_SEARCH_URL_PARAMS) updates[param] = draft[param] || undefined
     for (const param of EXTRA_SHEET_PARAMS) updates[param] = draft[param] || undefined
@@ -651,9 +656,10 @@ export default function AllFiltersSheet({
     onOpenChange(false)
   }
 
+  const applyPublished = publishSearchCount({ value: count, grain: 'filter-match' })
   const applyLabel =
-    !closedScope && enableCount && count != null
-      ? `Show ${count.toLocaleString()} ${count === 1 ? 'home' : 'homes'}`
+    !closedScope && enableCount && applyPublished
+      ? `Show ${applyPublished.phrase}`
       : 'Apply filters'
 
   const visibleCategories = SEARCH_FIELD_CATEGORIES.map(({ id, label }) => ({
@@ -898,7 +904,12 @@ export default function AllFiltersSheet({
           >
             Reset
           </Button>
-          <Button type="button" className="flex-1" onClick={handleApply}>
+          <Button
+            type="button"
+            className="flex-1"
+            onPointerDown={handleApply}
+            onClick={handleApply}
+          >
             {applyLabel}
           </Button>
         </SheetFooter>

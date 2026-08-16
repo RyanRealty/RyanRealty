@@ -63,6 +63,7 @@ import { renderGolfLanding } from './sections/GolfBranch'
 import { renderMapSplitView } from './sections/MapSplitView'
 import { ListingsResults } from './sections/ListingsResults'
 import { SearchSeoTail } from './sections/SeoTail'
+import { publishSearchCount } from '@/lib/search/publish-search-count'
 
 export async function generateStaticParams() {
   return buildSearchStaticParams()
@@ -275,9 +276,11 @@ export default async function SearchPage({
   // the only available source is a city-wide cached value that misrepresents a
   // price-filtered preset, so per the data-accuracy rule it is cut, not faked.
   const headerCount = totalCount > 0 ? totalCount : null
-  const headerIntroParts: string[] = []
-  if (headerCount != null) headerIntroParts.push(`${headerCount.toLocaleString()} ${headerCount === 1 ? 'home' : 'homes'} for sale.`)
-  const headerIntro = headerIntroParts.join(' ')
+  const headerPublished = publishSearchCount({
+    value: headerCount,
+    grain: filterOpts.propertyType ? 'filter-match' : 'all-types',
+  })
+  const headerIntro = headerPublished ? `${headerPublished.phrase}.` : ''
   // Header title adapts: preset label folds into placeName, filter-only searches
   // use the derived presetLabel, everything else is "Homes for sale in <place>".
   // The preset's own `label` is the grammatical noun phrase ("Duplexes for
