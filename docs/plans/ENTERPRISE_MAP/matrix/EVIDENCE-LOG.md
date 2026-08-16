@@ -165,7 +165,7 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 - CAP-002 public surface includes `search` route inventory row; homes-for-sale may be rewrite-backed (0 literal inventory path).
 - CAP-008: `app/lp/*` dirs present (sell-your-home, buyer-listing-alerts, fsbo, expired-listing, …).
 - CAP-010: `app/api/cron/crm-sequence-engine` present + live enrollments/sends tables.
-- CAP-017: Remotion under `listing_video_v4/` (productization still low).
+- CAP-017: Remotion under `listing_video_v4/` (productization still low). G12 docket `docs/plans/ENTERPRISE_MAP/video-decision-docket.json` 2026-08-16: park $0 vendor / rebuild $0.05/1k Turbo + $5/row cap; 11 dead safe-zone imports; R-045 still LOCKED; M3 pending.
 - CAP-031: snapshot-channels PLATFORMS includes **google-ads** (prior orphan fix still on disk).
 
 ### INT social token health (auth tables — no secrets logged)

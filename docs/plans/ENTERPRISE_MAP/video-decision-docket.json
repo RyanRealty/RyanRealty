@@ -1,0 +1,134 @@
+{
+  "status": "ok",
+  "recordedAt": "2026-08-16T11:28:00.000Z",
+  "source": "docs/plans/ENTERPRISE_MAP/video-decision-docket.json",
+  "capability": "CAP-017",
+  "versionGap": "G12",
+  "mattMove": "M3",
+  "decision": {
+    "status": "pending",
+    "recordedAt": null,
+    "choice": null,
+    "note": "G12 delivers the docket. M3 records park or rebuild when Matt answers."
+  },
+  "inventory": {
+    "remotionConfigs": 16,
+    "videoDirs": 19,
+    "captionModulesRemaining": 3,
+    "decommissionedProducers": 24,
+    "deletedCapabilitySkills": 13,
+    "deadSafeZoneImports": 11,
+    "videoActionTypesInInboxParser": 18,
+    "mp4OnDisk": 84,
+    "disk": {
+      "video": "83M",
+      "listingVideoV4": "1.3G",
+      "listingVideoV4Public": "1.2G",
+      "captionModules": "40K"
+    },
+    "decommissionedAt": "2026-06-14",
+    "skillsDeletedAt": "2026-06-15",
+    "sources": [
+      "find video listing_video_v4 -name remotion.config.* (16)",
+      "ls video (19 dirs)",
+      "video_production_skills/captions/canonical (3 files; safe-zones/ missing)",
+      "marketing_brain_skills/producers/REGISTRY.md VIDEO PRODUCERS DECOMMISSIONED list (24 names)",
+      "REGISTRY.md capability-skills paragraph (13 names)",
+      "rg from '.../video_production_skills/safe-zones/canonical/safe-zones' in video/ (11 comps)",
+      "lib/marketing-brain/inbox-parser.ts VALID_ACTION_TYPES video-ish keys (18)",
+      "find public listing_video_v4/public -name '*.mp4' (84)",
+      "du -sh video listing_video_v4 video_production_skills"
+    ]
+  },
+  "knownBreakage": [
+    {
+      "id": "dead-safe-zones-path",
+      "count": 11,
+      "path": "video_production_skills/safe-zones/canonical/safe-zones",
+      "exists": false,
+      "canonicalSurvivor": "video_production_skills/captions/canonical/safe-zones.ts",
+      "comps": [
+        "video/tumalo-aerial/src/NeighborhoodSocial.tsx",
+        "video/tiktok_listing_tour/src/TikTokListingTour.tsx",
+        "video/school_district_overlay/src/SchoolDistrictOverlay.tsx",
+        "video/meme_content/src/MemeComp.tsx",
+        "video/news_video/src/BendMedianPriceNews.tsx",
+        "video/market-report-yt-long/src/KineticCaptions.tsx",
+        "video/map_route_video/src/SingleWordCaptionLocal.tsx",
+        "video/map_route_video/src/MapRouteVideo.tsx",
+        "video/listing_reveal/src/ListingRevealComp.tsx",
+        "video/data_viz_video/src/DataVizComp.tsx",
+        "video/area_guides/src/AreaGuide.tsx"
+      ],
+      "source": "CLAUDE.md §4 known breakage + this-session rg 2026-08-16"
+    },
+    {
+      "id": "registry-empty",
+      "count": 24,
+      "note": "Brain resolves producers only through REGISTRY.md. Video content:* types do not resolve and cannot dispatch.",
+      "source": "marketing_brain_skills/producers/REGISTRY.md 2026-06-14"
+    },
+    {
+      "id": "inbox-falls-to-matt-alert",
+      "count": 18,
+      "note": "inbox-producer-registry omits video action_types on purpose so producer-runtime does not die on a missing SKILL.md. Dispatcher falls through to comms:matt_alert.",
+      "source": "lib/marketing-brain/inbox-producer-registry.ts header invariant"
+    },
+    {
+      "id": "r045-locked",
+      "count": 1,
+      "note": "R-045 LOCKED: video producers stay out of the brain REGISTRY; local worker only.",
+      "source": "docs/plans/ENTERPRISE_MAP/REQUIREMENTS.md R-045"
+    }
+  ],
+  "park": {
+    "label": "Park",
+    "incrementalVendorUsd": 0,
+    "diskRetained": "1.4G Remotion + 84 mp4s stay on disk; no delete in this node",
+    "brainPath": "Keep R-045. Inbox video types stay matt_alert. Local worker fulfills if Matt asks.",
+    "breakageLeft": "11 dead safe-zone imports stay. CAP-017 stays maturity 2.",
+    "register": "R-045 stays LOCKED. M3 records PARK. CAP-017 residual flips to PARKED.",
+    "sources": [
+      "incremental vendor $0 — no ElevenLabs call, no Remotion render, no brain dispatch (this docket)",
+      "REQUIREMENTS.md R-045 LOCKED",
+      "inbox-producer-registry.ts omit→matt_alert"
+    ]
+  },
+  "rebuild": {
+    "label": "Rebuild",
+    "brainPath": "Re-add the 24 REGISTRY rows and matching inbox-producer-registry paths, with SKILL.md on the deployed repo so producer-runtime can load them. Content engine stays the only content path.",
+    "registerChange": "Requires Matt to CHANGE or SUPERSEDE R-045 (currently LOCKED: producers stay out of REGISTRY).",
+    "elevenLabsTurboUsdPer1kChars": 0.05,
+    "elevenLabsPriceUrl": "https://elevenlabs.io/pricing/api",
+    "elevenLabsPriceFetchedAt": "2026-08-16",
+    "producerCapPerRowUsd": 5,
+    "producerCapPerRunUsd": 15,
+    "sampleVo": {
+      "path": "listing_video_v4/vo_script_v5.txt",
+      "chars": 2256,
+      "notesWords": 200,
+      "notesSpeechSec": 91,
+      "notesTotalSec": 118,
+      "turboUsdAtListedRate": 0.11,
+      "caveat": "Schoolhouse v5 long-form sample on disk. Current §4 viral floor is 30-45s. Do not treat 118s as the rebuild default length."
+    },
+    "fixCounts": {
+      "reRegisterProducers": 24,
+      "restoreCapabilitySkills": 13,
+      "repointDeadSafeZoneImports": 11
+    },
+    "stillMattGated": [
+      "public posting",
+      "first 30 days human review for a brand-new format (CLAUDE.md §4)",
+      "no MP4 ships without Matt approval"
+    ],
+    "sources": [
+      "ElevenLabs API Flash/Turbo $0.05 per 1,000 characters — https://elevenlabs.io/pricing/api fetched 2026-08-16",
+      "CLAUDE.md §5 producer-runtime cost cap $5/row $15/run",
+      "listing_video_v4/vo_script_v5.txt 2256 chars; notes say 200 words / ~91s speech",
+      "REGISTRY.md 24 decommissioned producers + 13 deleted capability skills",
+      "11 dead safe-zone imports (this-session rg)",
+      "REQUIREMENTS.md R-045 LOCKED — rebuild is a register change, not only code"
+    ]
+  }
+}

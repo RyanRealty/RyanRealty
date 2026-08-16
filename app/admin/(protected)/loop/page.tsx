@@ -8,6 +8,7 @@
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getLoopStatus, type LoopNodeSummary } from '@/lib/data/loop/status'
+import { readVideoDecisionDocket } from '@/lib/data/loop/video-docket'
 import { QueueRow, QuietRow, VerdictLine, SectionHead } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
 import { AutoRefresh } from './AutoRefresh'
@@ -34,6 +35,7 @@ function truncate(s: string, max = 110): string {
 export default async function LoopStatusPage() {
   await requireAdminPage('settings.system')
   const status = await getLoopStatus()
+  const video = readVideoDecisionDocket()
   const nowMs = Date.now()
 
   const running = status.nodes.runningNow
@@ -83,6 +85,15 @@ export default async function LoopStatusPage() {
           <QuietRow
             name="Graph"
             figure={`${status.nodes.byState.open} open · ${status.nodes.byState.in_progress} in progress · ${status.nodes.byState.blocked} blocked · ${status.nodes.byState.done} done`}
+          />
+          <QuietRow
+            name="Video docket"
+            state={video.status === 'ok' ? video.decision.status.toUpperCase() : 'UNREAD'}
+            figure={
+              video.status === 'ok'
+                ? `park $0 vendor · rebuild cap $5/row · ${video.inventory.deadSafeZoneImports} dead imports · M3 ${video.decision.status}`
+                : 'docket unreadable'
+            }
           />
         </ul>
       </section>

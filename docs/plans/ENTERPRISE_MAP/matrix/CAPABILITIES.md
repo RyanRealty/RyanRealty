@@ -257,7 +257,7 @@
 | **Evidence pointers** | `listing_video_v4/`; `video/`; Claude.md §4; `scripts/check_first_frame.py`; three caption modules only under `video_production_skills/`; EVIDENCE-LOG CAP-017 |
 | **Public risk** | Med |
 | **Broker product?** | Partial |
-| **Residual disposition** | **PARKED** or **ACTIVE** (product decision) — explicit park **or** re-register brain path; fix known safe-zones compile breakage when touched |
+| **Residual disposition** | **ACTIVE** until M3 — G12 docket delivered (`docs/plans/ENTERPRISE_MAP/video-decision-docket.json`). Park = $0 vendor / keep R-045. Rebuild = $0.05/1k Turbo + $5/row cap + change R-045 + fix 11 dead safe-zone imports. |
 
 ---
 

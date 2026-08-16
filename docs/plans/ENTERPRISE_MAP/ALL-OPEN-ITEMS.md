@@ -62,7 +62,7 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 | CAP-014 | FSBO hygiene continuous | ACTIVE |
 | CAP-015 | Publish identity + ready drain; measured status class | PARTIAL — status flip **shipped** |
 | CAP-016 | NO_SCRIPT residual | ACTIVE |
-| CAP-017 | Video park or rebuild | ACTIVE decision |
+| CAP-017 | Video park or rebuild | ACTIVE decision — G12 docket delivered; waiting M3 |
 | CAP-018 | Ads spend | BLOCKED_MATT |
 | CAP-019 | ~~Reconnect expired OAuth~~ **SCRUBBED 2026-08-15** — tokens auto-refresh via daily heartbeat (verified live); LinkedIn PARKED (no provider refresh token). Residual: publish cadence productization | ACTIVE |
 | CAP-020 | First cohort send | BLOCKED_MATT |

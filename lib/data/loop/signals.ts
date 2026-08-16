@@ -10,6 +10,7 @@ import { isExpiredUnlearned } from './ledger-draft'
 import { readJoinConversionStats } from './join-conversion'
 import { readLookWalkBaseline } from './look-walk'
 import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hold'
+import { readVideoDecisionDocket } from './video-docket'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
 
 export type SignalStatus = 'ok' | 'unreadable'
@@ -152,6 +153,14 @@ export type CompanyScoreboardSignals = {
     visitsAll: number
     conversions7d: number
     conversionsAll: number
+    source: string
+  }
+  video: {
+    status: SignalStatus
+    decision: 'pending' | 'park' | 'rebuild'
+    parkUsd: number
+    rebuildCapPerRowUsd: number
+    deadSafeZoneImports: number
     source: string
   }
 }
@@ -500,6 +509,16 @@ export async function collectCompanyScoreboardSignals(
     source: joinStats.source,
   }
 
+  const videoDocket = readVideoDecisionDocket()
+  const video: CompanyScoreboardSignals['video'] = {
+    status: videoDocket.status,
+    decision: videoDocket.decision.status,
+    parkUsd: videoDocket.park.incrementalVendorUsd ?? -1,
+    rebuildCapPerRowUsd: videoDocket.rebuild.producerCapPerRowUsd ?? -1,
+    deadSafeZoneImports: videoDocket.inventory.deadSafeZoneImports,
+    source: videoDocket.source,
+  }
+
   return {
     fetchedAt,
     crm,
@@ -523,5 +542,6 @@ export async function collectCompanyScoreboardSignals(
     cma,
     lookWalk,
     join,
+    video,
   }
 }
