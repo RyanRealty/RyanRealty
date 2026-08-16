@@ -53,6 +53,7 @@ export function PlaceInventoryMap({
         centerLonLat={centerLonLat}
         viewAllHref={viewAllHref}
         viewAllLabel={viewAllLabel}
+        sectionId="homes"
       />
     )
   }

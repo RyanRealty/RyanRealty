@@ -763,6 +763,7 @@ export default async function CommunityDetailPage({ params }: Props) {
           // Fix 6: descriptive alt text for the hero image. (§0)
           posterAlt={`${community.name} in ${cityName}, Oregon`}
           mediaCaption={mediaCaption}
+          cta={{ href: '#homes', label: `See ${community.name} homes` }}
         />
         {/* Overview directly after the hero (Matt 2026-07-29, supersedes the
             inventory-first order): hero → overview → homes → map → market. */}
@@ -783,7 +784,7 @@ export default async function CommunityDetailPage({ params }: Props) {
         <KbFeatured
           items={featuredItems}
           eyebrow={`${community.name} · For sale`}
-          viewAllHref={homesForSalePath(cityName, community.name)}
+          viewAllHref="#homes"
           viewAllLabel={`See every ${community.name} home for sale`} viewAllPlace={community.name}
           totalCount={activeCount || null}
         />

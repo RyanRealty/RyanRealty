@@ -75,7 +75,15 @@ export function lifestyleForCentroid(
   return lifestyleNearLatLng(centroid.lat, centroid.lng)
 }
 
-/** Dual-pane list rows from map tiles. */
+/**
+ * City-scale inventory is a preview. Pass this cap from the city page only.
+ * Community / neighborhood / plat pages list the counted set — a silent 24-row
+ * slice is what made /communities/tetherow print 35 and show 19 listing doors
+ * (fleet a1851580, 2026-08-16).
+ */
+export const CITY_PLACE_LIST_CAP = 24
+
+/** Dual-pane list rows from map tiles. Default is the full counted set. */
 export function splitRowsFromTiles(
   mapTiles: Array<{
     listingKey: string
@@ -92,10 +100,11 @@ export function splitRowsFromTiles(
     lat: number | null
     lng: number | null
   }>,
+  options?: { cap?: number },
 ) {
-  return mapTiles
-    .filter((t) => t.lat != null && t.lng != null)
-    .slice(0, 24)
+  const rows = [...mapTiles]
+    .filter((t) => Boolean(t.listingKey))
+    .sort((a, b) => (b.listPrice ?? 0) - (a.listPrice ?? 0))
     .map((t) => {
       const street = [t.streetNumber, t.streetName, t.streetSuffix].filter(Boolean).join(' ').trim()
       return {
@@ -116,6 +125,7 @@ export function splitRowsFromTiles(
         lng: t.lng,
       }
     })
+  return options?.cap != null ? rows.slice(0, options.cap) : rows
 }
 
 export type SubdivMarketExtras = {

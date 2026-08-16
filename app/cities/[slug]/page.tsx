@@ -80,7 +80,7 @@ import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 // KbListingMap remains in the parity contract; PlaceMapListSplit composes it for dual-pane.
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
-import { splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
+import { CITY_PLACE_LIST_CAP, splitRowsFromTiles } from '@/lib/explore/subdivision-page-extras'
 import { KbTicker } from '@/components/site/kb/KbTicker.client'
 import { KbMarketHud } from '@/components/site/kb/KbMarketHud.client'
 import { MarketCoreCharts } from '@/components/market/MarketCoreCharts'
@@ -485,7 +485,7 @@ export default async function CityDetailPage({ params }: Props) {
         />
         {hasMap && mapTiles.length > 0 ? (
           <PlaceMapListSplit
-            rows={splitRowsFromTiles(mapTiles)}
+            rows={splitRowsFromTiles(mapTiles, { cap: CITY_PLACE_LIST_CAP })}
             mapGeo={mapGeo}
             polygons={neighborhoodPolygons}
             eyebrow={`${cityName} · For sale`}

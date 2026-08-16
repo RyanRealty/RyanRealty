@@ -537,7 +537,10 @@ describe('design directive contracts', () => {
 
   it('D114 — community Homes and Market doors keep the place filter', () => {
     const page = readSrc('app/communities/[slug]/page.tsx')
-    expect(page).toMatch(/homesForSalePath\(cityName, community\.name\)/)
+    // Counted-set door is this page's list (#homes). The literal-name browse
+    // undercounts alias-aware resorts, so "See every" must not leave the set.
+    expect(page).toMatch(/viewAllHref="#homes"/)
+    expect(page).toMatch(/href: '#homes'/)
     expect(page).toMatch(/homesForSalePath\(cityName, community\.subdivision\)/)
   })
 

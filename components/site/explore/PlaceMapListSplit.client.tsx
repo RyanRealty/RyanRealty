@@ -6,10 +6,11 @@
  * Editorial ledger + KbListingMap (no second card grid).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
 import { formatPrice } from '@/lib/format/money'
+import { placeListShowingLabel } from '@/lib/explore/place-list-showing'
 
 export type PlaceMapListRow = {
   key: string
@@ -37,6 +38,8 @@ type Props = {
   viewAllLabel?: string
   /** Empty-map center when pins exist but dual-pane still wants a registry fallback. */
   centerLonLat?: [number, number]
+  /** In-page jump target for the hero / featured "see these homes" doors. */
+  sectionId?: string
 }
 
 export function PlaceMapListSplit({
@@ -50,9 +53,11 @@ export function PlaceMapListSplit({
   viewAllHref,
   viewAllLabel,
   centerLonLat,
+  sectionId = 'homes',
 }: Props) {
   const [activeKey, setActiveKey] = useState<string | null>(null)
-  const list = useMemo(() => rows.slice(0, 24), [rows])
+  const list = rows
+  const showingLabel = placeListShowingLabel(list.length, totalActive)
   const listScrollRef = useRef<HTMLDivElement>(null)
   const rowRefs = useRef<Map<string, HTMLLIElement>>(new Map())
 
@@ -70,7 +75,7 @@ export function PlaceMapListSplit({
   if (list.length === 0) return null
 
   return (
-    <section className="section" aria-label={title}>
+    <section className="section" id={sectionId} aria-label={title}>
       <div className="wrap">
         <div className="sec-head">
           <span className="sec-index">{eyebrow}</span>
@@ -79,6 +84,11 @@ export function PlaceMapListSplit({
         {subtitle ? (
           <p className="mt-2 max-w-prose text-sm" style={{ color: 'var(--navy-70)' }}>
             {subtitle}
+          </p>
+        ) : null}
+        {showingLabel ? (
+          <p className="mt-2 text-sm" style={{ color: 'var(--navy-70)' }}>
+            {showingLabel}
           </p>
         ) : null}
         <div className="place-map-split mt-6 grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
