@@ -200,7 +200,10 @@ async function main() {
     loadVercelCliToken() ||
     ''
   ).trim()
-  const usingCliFallback = !apiToken
+  // let, not const: an INVALID token (expired/rotated → API 403 invalidToken)
+  // flips us to the CLI fallback mid-run instead of dying (2026-08-15: a token
+  // went stale and every deploy:verify errored while the CLI stayed authed).
+  let usingCliFallback = !apiToken
 
   const { projectId, teamId } = loadProjectMeta()
   const sha = (targetSha || getHeadSha()).toLowerCase()
@@ -216,9 +219,21 @@ async function main() {
   let lastState = null
 
   while (Date.now() - startedAt < TIMEOUT_MS) {
-    deployment = usingCliFallback
-      ? findDeploymentForShaViaCli(sha)
-      : await findDeploymentForSha(apiToken, projectId, teamId, sha)
+    if (usingCliFallback) {
+      deployment = findDeploymentForShaViaCli(sha)
+    } else {
+      try {
+        deployment = await findDeploymentForSha(apiToken, projectId, teamId, sha)
+      } catch (e) {
+        const msg = String(e?.message ?? '')
+        if (msg.includes('invalidToken') || msg.includes(' 403 ') || msg.includes(' 401 ')) {
+          out('API token rejected — switching to Vercel CLI auth fallback (rotate VERCEL_TOKEN when convenient)')
+          usingCliFallback = true
+          continue
+        }
+        throw e
+      }
+    }
     if (deployment) {
       const state = deployment.state ?? 'UNKNOWN'
       if (state !== lastState) {
