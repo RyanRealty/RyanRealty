@@ -136,20 +136,32 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
       ...(chainSecret ? { envVars: { RR_CHAIN_SECRET: chainSecret } } : {}),
     }),
   })
-  const body = (await resp.json().catch(() => ({}))) as { id?: string; error?: unknown }
-  if (!resp.ok || !body?.id) {
+  // v1 create returns { agent: { id }, run: { id } }; tolerate a flat id too.
+  // (2026-08-15 escape: reading body.id logged the FIRST successful launch as
+  // a failure and skipped the audit row the cap/busy-check depend on.)
+  const body = (await resp.json().catch(() => ({}))) as {
+    id?: string
+    agent?: { id?: string }
+    error?: unknown
+  }
+  const agentId = body?.agent?.id ?? body?.id
+  if (!resp.ok || !agentId) {
     return { action: 'skipped', reason: `launch failed: HTTP ${resp.status} ${JSON.stringify(body).slice(0, 200)}`, openNodes }
   }
 
-  await sb.from('sync_logs').insert({
+  const { error: logErr } = await sb.from('sync_logs').insert({
     endpoint: 'loop_sentinel:launch',
     method: 'POST',
     response_status: 200,
     environment: process.env.VERCEL_ENV ?? 'development',
     error_message: null,
     alert_sent: false,
-    sync_cycle_id: body.id,
+    sync_cycle_id: agentId,
   })
+  if (logErr) {
+    // The cap and busy-check read this log — a silent miss must be loud.
+    console.error('[loop-sentinel] LAUNCH LOG WRITE FAILED (cap/busy-check blind):', logErr.message)
+  }
 
-  return { action: 'launched', reason: 'loop was dormant with eligible work', agentId: body.id, openNodes }
+  return { action: 'launched', reason: 'loop was dormant with eligible work', agentId, openNodes }
 }
