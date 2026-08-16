@@ -2,7 +2,25 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — DISARMED: planning mode until Matt arms the loop (R-211)
+# Current — 2026-08-16 (loop-sentinel bc-7b28f874) — G3 shipped; loop stays DISARMED (R-211)
+
+**This session was already launched** as the scheduled loop-sentinel iteration before the disarm record was visible in this checkout. It finished the served node (G3) and **stops**. It does not claim G4. Successor `?handoff=1` is fired so the sentinel's own guards decide; `LOOP_SENTINEL=off` must no-op.
+
+**Done (G3 / R-163, SHA `1843c028d` on `origin/main`):**
+- Inbound create writes **Lead** (`JOURNEY_ENTRY_STAGE` via `buildNativePersonRow`). Named writers: `native-create`, `sequence-enroll`, `first-outbound` (`advanceJourneyStage`), `broker-set-stage`, `sequence-change-stage`.
+- Sequence first send goes through `recordSequenceOutbound` (stamps first-outbound). Compose stages read live `getCrmStages`.
+- Hosted `crm_stages`: Lead active at position 0. **No `crm_people` remap.**
+- Accept: persons **61917** + **61920** at Lead; **61921** Lead → Nurture via real `advanceJourneyStage` (timeline `sequence-enroll`). Packet-eligible Lead **0 → 2** of 22,679.
+- Gate `ci:stage-truth` (21 checks, in `ci:gates`). 205/205 gates + production build green. Vercel production **success** for `1843c028d`. Ledger `2371813a-e700-4c99-8583-71d006a3cc7f`. Node `4622fb28-55d5-4382-a3f2-48a88e8d072a` **done**.
+- Side fix: `push-with-gates.sh` clones `node_modules` without macOS-only `cp -c` (Linux cloud agents).
+
+**Blocked / do not:** R-211 still LOCKED — planning mode. Do not launch another unattended iteration. Do not start G4. Do not backfill the historical Nurture book. No sends / posts / spend / OAuth / SkySlope / newsletter.
+
+**Next (after Matt says "arm the loop" AND `LOOP_SENTINEL=on`):** `npx tsx scripts/loop-brief.ts` will serve G4 (alerts coverage).
+
+**Skills read:** `.claude/skills/crm-e2e/SKILL.md`, CRM blueprint / R-163 / COMPANY_IMPROVEMENT / domains blast-radius, `docs/DEVELOPMENT_PROCESS.md`, `docs/DATABASE_FOR_AI_AGENTS.md` §0 CRM funnel, `docs/plans/CROSS_AGENT_HANDOFF.md`.
+
+# Prior — 2026-08-15 (Grok) — DISARMED: planning mode until Matt arms the loop (R-211)
 
 **Matt (later same evening):** "We are still in planning mode … we don't want to be executing a loop yet." The sentinel had already fired once before this landed — cloud agent bc-13c50db8 ran 02:20–02:45 UTC and **completed G2 cleanly** (identity stitch 1/165 → 32/166, commit `98b63d5f` on main, 204/204 gates, ledger row, evidence on the node; first unattended iteration proof-of-life). No successor launched.
 
