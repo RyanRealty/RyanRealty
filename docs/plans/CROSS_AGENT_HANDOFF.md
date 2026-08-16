@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — one published annual HOA on place pages
+# Current — 2026-08-16 (cursor) — NWX brand on the balloon (studio)
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~13:20 PT. Studio only. Not a fleet node. Did not claim G32/G16.
+
+**Done**
+- Matt locked stand life: people on the far corner, cyclist on the walk, car in the ring, navy and cream.
+- Brand home is the balloon. Real `logo-blue.png` painted into the cream cloth of `v8e-hold-mark-big.jpg`. Imagine-typeset mark-a/mark-b killed.
+- Hung motion: `out/xai-ryanrealty-studio/show/northwest-crossing-v8/nwx-v8e-stand.mp4`. Drift useful. Ring kill (brick + second car + mark in the sky).
+- Lesson 22 in creative-brain LESSONS. Show room: `out/xai-ryanrealty-studio/show/northwest-crossing-v8/index.html`.
+
+**Next**
+- Matt keep/kill/change on the branded stand clip. Do not wire the live community header. 16:9 header is still a separate Make.
+
+**Do not:** live page, publish, SMS, spend, OAuth. Do not invent a listing. Do not steal Tetherow HOA / loop files. Disarm = Matt says "disarm the loop".
+
+**Skills read:** creative-brain SKILL + PLAYBOOK + LESSONS + memory-endings + ai-filmmakers; design_system/ryan-realty SKILL.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — one published annual HOA on place pages
 
 **Surface:** Cursor cloud `bc-494f1515` (`cursor/loop-chain-2026-08-16t19-46-e7c1`) shipped the class. Cursor Grok claimed the node, dropped a duplicate grain-naming commit, and wrote the graph evidence. This session rebased the accept/handoff stamp onto that complete. **Time:** 2026-08-16 ~20:20 UTC. Brief served fleet finding `b25bf5f4` (public-ux / fleet `eab91ac8dfa9b833ade88640c6cce7d4`), not G16/G32. One node only. Product **`7e8c0fc99`**. **`main` @** `26307c1b9`. Vercel Production **READY** (inspector `4PWdPQmmXFseriLDjReZcXJWspJd`). `npm run deploy:verify` exit 0 in 382s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#47**. No public-ux ledger insert (open window `2a5054ac`).
 
