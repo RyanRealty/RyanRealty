@@ -155,6 +155,30 @@ if (!existsSync('lib/data/loop/ship-class.ts')) {
   fails.push('lib/data/loop/ship-class.ts missing — ship-class grouping is the R-216 mechanism')
 }
 
+// Full-site review (Matt 2026-08-16 / R-217): packs are the floor, not the
+// ceiling. Token match must not end walker runs. Flow Prover may still END.
+const fleetBriefsSrc = existsSync('lib/data/loop/fleet-briefs.ts')
+  ? readFileSync('lib/data/loop/fleet-briefs.ts', 'utf8')
+  : ''
+if (!fleetBriefsSrc.includes('SITE REVIEW')) {
+  fails.push('lib/data/loop/fleet-briefs.ts: walker job must name SITE REVIEW (R-217)')
+}
+if (!fleetBriefsSrc.includes('does not end this run')) {
+  fails.push('lib/data/loop/fleet-briefs.ts: token match must not end walker runs (R-217)')
+}
+if (!fleetBriefsSrc.includes("'walker-mobile'") || !/walker-mobile[\s\S]*SITE REVIEW/.test(fleetBriefsSrc)) {
+  fails.push('lib/data/loop/fleet-briefs.ts: walker-mobile must include SITE REVIEW (R-217)')
+}
+if (!fleetBriefsSrc.includes("'walker-desktop'") || !/walker-desktop[\s\S]*SITE REVIEW/.test(fleetBriefsSrc)) {
+  fails.push('lib/data/loop/fleet-briefs.ts: walker-desktop must include SITE REVIEW (R-217)')
+}
+const fleetCasesSrc = existsSync('lib/data/loop/fleet-cases.ts')
+  ? readFileSync('lib/data/loop/fleet-cases.ts', 'utf8')
+  : ''
+if (fleetCasesSrc.includes('END this run now')) {
+  fails.push('lib/data/loop/fleet-cases.ts: pack header must not tell every bot to END on token match (R-217)')
+}
+
 // Page-grade is KILLED (Matt 2026-08-16). Both skill copies must stay refuse stubs.
 for (const skill of [
   '.claude/skills/page-grade/SKILL.md',

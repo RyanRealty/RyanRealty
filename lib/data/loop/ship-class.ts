@@ -21,7 +21,17 @@ export type ShipClassInput = {
   versionGap?: string | null
 }
 
-const PLACE_PREFIXES = ['/communities', '/cities', '/neighborhoods', '/housing-market']
+const PLACE_PREFIXES = [
+  '/communities',
+  '/cities',
+  '/neighborhoods',
+  '/housing-market',
+  '/subdivisions',
+  '/oregon',
+  '/schools',
+  '/parks',
+  '/central-oregon',
+]
 
 /** URL the fleet-intake objective stamps after `at `. */
 export function extractUrlFromObjective(objective: string): string | null {

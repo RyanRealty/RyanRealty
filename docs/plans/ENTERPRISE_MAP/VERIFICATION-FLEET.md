@@ -17,7 +17,7 @@ creating the bot in the app; bots report findings by POSTing to our own endpoint
 | Step | What | Where |
 |---|---|---|
 | 1. Cases served LIVE from durable state | `GET /api/fleet/cases/{core,regression,preflight,flows}` (`x-fleet-secret` header) — generated from the work graph at request time, so every closed node updates the fleet's instructions automatically. First line is a RUN-TOKEN that changes only when the graph or deploy changed. (`scripts/fleet-test-cases.ts` remains for local preview only.) | app endpoint |
-| 2. Bots heartbeat, not timer-grind | each routine fires on a cheap heartbeat, fetches its pack, compares RUN-TOKEN to its previous run: match → end in seconds ("no changes"); new token → full run. Effective execution is event-driven (something shipped) with near-zero idle spend. | bot cloud computers |
+| 2. Bots heartbeat, then work | each routine fires on a heartbeat, fetches its **live brief** then its packs. RUN-TOKEN says whether the pack text changed: a match skips re-POSTing identical pack findings; it does **not** end walker / money / stats / lane runs (R-217). Those bots still walk pack cases and do SITE REVIEW. Only Flow Prover ends on a flows-pack token match (do not re-submit). | bot cloud computers |
 | 3. Findings reported | POST `https://ryanrealty.vercel.app/api/fleet/findings` (`x-fleet-secret` header; JSON: bot, caseId, url, viewport, expected, observed, severity p0/major/minor/info, evidence) → `fleet_findings` table, fingerprint-deduped | app endpoint |
 | 4. Findings become work | `npx tsx scripts/fleet-intake.ts` — info→baseline recorded; minor/major/p0→OPEN work node tagged `fleet:<fingerprint>`, whose FIRST step is reproduce-or-reject | intake script |
 | 5. Loop fixes | the brief serves fleet nodes like any other; accept = the original expected state holds | normal loop cycle |
@@ -38,9 +38,10 @@ is a top validated use case):
    the no-data policy. Use the app's **Test run** after creating or editing a routine.
 3. **No-data policy is explicit:** if the site is unreachable or a page errors, report
    THAT as a finding (severity major) — never proceed on memory, never reuse old data.
-4. **Re-test after the site changes — automatic.** Packs are served live from the work
-   graph at `/api/fleet/cases/<pack>`; a closed node changes the pack (and its RUN-TOKEN)
-   with zero human step. Nobody pastes packs; bots fetch at every heartbeat.
+4. **Re-test after the site changes — automatic.** Briefs and packs are served live.
+   A closed node changes the pack (and its RUN-TOKEN) with zero human step. Token
+   match does not end walker / money / stats / lane runs — they still do SITE REVIEW
+   (R-217). Nobody pastes packs; bots fetch brief + packs at every heartbeat.
 5. **Memory is not a source.** Bots compare against the pasted pack and the live page,
    never against what they remember from prior runs (this is why Stats Truth checks
    page-internal contradictions only).
@@ -71,17 +72,28 @@ bootstrap (replace the two placeholders; ask any session: "print the fleet secre
 > and it may change between runs. If the fetch fails, message "brief unreachable" and stop.
 
 Then: run once supervised → save the method as a skill → schedule the heartbeat routine
-per the six-point checklist above. Bot ids: `walker-mobile`, `walker-desktop`,
-`money-path`, `stats-truth`, `regression-certifier`, `flow-prover`.
+per the six-point checklist above. Bot ids: the core six plus the site-review
+lanes in the table below (`page-core`, `content-blog`, `geo-*`, `listings-*`, …).
 
 | Bot | Heartbeat (PT) | Job in one line |
 |---|---|---|
-| walker-mobile | every 2h on the even hour, 7 AM–9 PM | walk core+regression packs at 390px like a shopper |
-| walker-desktop | every 2h on the odd hour, 8 AM–10 PM | same at 1280px (cross-viewport confirmation within the hour) |
-| money-path | hourly at :30, 7:30 AM–8:30 PM | the four revenue journeys; any broken step is p0 |
-| stats-truth | every 4h, 8 AM–8 PM | page-internal number contradictions (license risk); today's pages only |
-| regression-certifier | on demand ("certify") | full regression pack both widths; required for version certification |
-| flow-prover | 12:30 PM + 8 PM | the ONE submitter — four conversion flows with the fleet identity only |
+| walker-mobile | every 2h on the even hour, 7 AM–9 PM | core+regression packs at 390px, then SITE REVIEW (token match does not end the run) |
+| walker-desktop | every 2h on the odd hour, 8 AM–10 PM | same at 1280px, then SITE REVIEW |
+| money-path | hourly at :30, 7:30 AM–8:30 PM | the four revenue journeys every run, then money-surface SITE REVIEW; broken step is p0 |
+| stats-truth | every 4h, 8 AM–8 PM | page-internal number contradictions on home, market, cities, places, one listing |
+| regression-certifier | on demand ("certify" / "full review") | full regression pack both widths plus SITE REVIEW; required for version certification |
+| flow-prover | 12:30 PM + 8 PM | the ONE submitter — four conversion flows with the fleet identity only; no site review |
+| page-core | already live | core IA: home, sell, team, contact, /buy, open houses, price drops |
+| chrome-nav | already live | header, footer, real 404 |
+| content-blog | already live | /blog index + rotating posts (scroll stays on the post) |
+| geo-cities | already live | /cities + /oregon/{city} aliases |
+| geo-places | already live | neighborhoods, communities, area guides |
+| geo-subdivisions | already live | /subdivisions index + plat pages |
+| listings-bend / -central / -state | already live | listing inventory by geography |
+| matrix-a / matrix-b | already live | search filters vs map lockstep |
+| LEGAL | already live | footer legal doors, ODS on a listing, dated market-post month vs figures |
+| SOCIALS | already live | footer social + share controls (never post) |
+| e2e-proof | already live | homepage reachable; do not wander |
 
 The historical full-brief texts that previously lived in this section moved into
 `fleet-briefs.ts` verbatim (single source; this table is the human summary).

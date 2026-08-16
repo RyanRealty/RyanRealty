@@ -47,6 +47,8 @@ describe('loop status copy (Matt-facing, no shop jargon)', () => {
     expect(plainBot('stats-truth')).toBe('Number check')
     expect(plainBot('walker-mobile')).toBe('Phone walk')
     expect(plainBot('flow-prover')).toBe('Form submit test')
+    expect(plainBot('content-blog')).toBe('Blog walk')
+    expect(plainBot('geo-subdivisions')).toBe('Plat pages')
   })
 
   it('translates finding status and severity', () => {
@@ -84,6 +86,7 @@ describe('loop status copy (Matt-facing, no shop jargon)', () => {
 
   it('names a ship class the way a person would', () => {
     expect(plainShipClass('fleet:public-ux:place-pages')).toBe('place pages')
+    expect(plainShipClass('fleet:public-ux:blog')).toBe('blog posts')
     expect(plainShipClass('gap:G32')).toBe('G32')
     expect(plainShipClass('solo:factory:abc')).toBe('this item')
   })

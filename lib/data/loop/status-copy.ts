@@ -26,6 +26,19 @@ const BOT_PLAIN: Record<string, string> = {
   'stats-truth': 'Number check',
   'regression-certifier': 'Recheck of finished work',
   'flow-prover': 'Form submit test',
+  'page-core': 'Core pages',
+  'chrome-nav': 'Header and footer',
+  'content-blog': 'Blog walk',
+  'geo-cities': 'City pages',
+  'geo-places': 'Place pages',
+  'geo-subdivisions': 'Plat pages',
+  'listings-bend': 'Bend listings',
+  'listings-central': 'Town listings',
+  'listings-state': 'Oregon listings',
+  'matrix-a': 'Search filters',
+  'matrix-b': 'Search map',
+  LEGAL: 'Legal copy',
+  SOCIALS: 'Share links',
   'e2e-proof': 'Setup test',
 }
 
@@ -134,6 +147,8 @@ export function plainShipClass(key: string): string {
   if (key.includes(':search')) return 'search'
   if (key.includes(':seller')) return 'seller pages'
   if (key.includes(':team')) return 'team pages'
+  if (key.includes(':blog')) return 'blog posts'
+  if (key.includes(':buy')) return 'buyer guides'
   if (key.startsWith('gap:')) return key.slice(4)
   if (key.startsWith('matt:') || key.startsWith('solo:')) return 'this item'
   return 'this set'

@@ -42,6 +42,14 @@ describe('ship class (same-category fleet findings share one rebuild)', () => {
     expect(surfaceFamilyFromUrl('https://ryan-realty.com/cities/la-pine')).toBe('place-pages')
     expect(surfaceFamilyFromUrl('/neighborhoods/awbrey-butte')).toBe('place-pages')
     expect(surfaceFamilyFromUrl('https://ryan-realty.com/housing-market/bend')).toBe('place-pages')
+    expect(surfaceFamilyFromUrl('https://ryan-realty.com/subdivisions/ridge-at-eagle-crest')).toBe(
+      'place-pages',
+    )
+    expect(surfaceFamilyFromUrl('https://ryan-realty.com/oregon/bend')).toBe('place-pages')
+  })
+
+  it('groups blog posts as their own family', () => {
+    expect(surfaceFamilyFromUrl('https://ryan-realty.com/blog/retirement-central-oregon')).toBe('blog')
   })
 
   it('keeps listing detail and search off the place-page class', () => {

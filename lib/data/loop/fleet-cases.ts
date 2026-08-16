@@ -5,9 +5,10 @@
  *
  * Packs are generated FROM the work graph AT REQUEST TIME, so every closed
  * node updates what the bots test with zero human step. Each pack carries a
- * RUN-TOKEN that changes only when the graph or the deployed build changed —
- * bots fetch, compare to their last token, and end the run in seconds when
- * nothing is new (timers become cheap heartbeats; execution is event-driven).
+ * RUN-TOKEN that changes only when the graph or the deployed build changed.
+ * A token match means the pack text is unchanged — skip re-POSTing identical
+ * pack findings — then continue the rest of the live brief (R-217). Only
+ * Flow Prover ends the run on a flows-pack token match (do not re-submit).
  */
 import 'server-only'
 
@@ -178,7 +179,7 @@ export async function buildFleetPack(pack: FleetPack): Promise<{ markdown: strin
     `# Fleet case pack: ${pack}`,
     ``,
     `Generated live ${new Date().toISOString()} from the durable work graph (deploy ${deploySha}).`,
-    `IF the RUN-TOKEN above equals the one from your previous run: nothing changed — reply "no changes since last run (token match)" and END this run now.`,
+    `RUN-TOKEN identifies this pack version. If it matches your previous run of this pack, the pack text is unchanged — do not re-POST identical pack findings. Then continue the rest of the job your live brief names. Only Flow Prover ends the run on a flows-pack token match (do not re-submit). Regression Certifier ignores this line and always runs every case.`,
     `Run each case at BOTH viewports unless your bot brief narrows it: mobile 390 wide first, then desktop 1280.`,
     `Rails (non-negotiable, also in your bot brief): browse signed-out on production only; LOOK never touch (Flow Prover's four flow submits with the designated fleet identity are the only exception anywhere); no admin; facts only.`,
     ``,
