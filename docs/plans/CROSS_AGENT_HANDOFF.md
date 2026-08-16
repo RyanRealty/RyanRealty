@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (cursor) — G6 admin SMS-agent toggle shipped
 
-**Surface:** Cursor local. **Time:** 2026-08-16 ~08:35 PT. Matt-directed ADD on G6 (not a loop-brief node). Product SHA pending this commit. Loop stays **ARMED**. G6 accept stays **blocked**.
+**Surface:** Cursor local. **Time:** 2026-08-16 ~08:37 PT. Matt-directed ADD on G6 (not a loop-brief node). Product **`0e7d6eed`**. Loop stays **ARMED**. G6 accept stays **blocked**.
 
 **Done**
 - Superuser per-broker SMS-agent Switch on `/admin/crm/settings/brokers` (SMS agent section). Writes `brokers.sms_agent_enabled` via existing DAL `setAgentEnabled`.
