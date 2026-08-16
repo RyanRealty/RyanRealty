@@ -7,7 +7,8 @@ import { recordPartnerReferral } from '@/app/actions/partnership-revenue'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead, type LeadSource } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
-import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
+import { cookies } from 'next/headers'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -100,16 +101,15 @@ export async function trackHomeValuationCta(campaign?: CampaignInput, sessionId?
   const resolvedPersonId = (result.ok ? result.personId : null) ?? cookiePersonId ?? null
 
   // Stitch the anonymous browsing session to this known person at the moment
-  // they click the valuation CTA. Requires a resolved person id + a valid
-  // session uuid. Non-blocking; this is what lets the dashboard match the
-  // visit to a name even when the lead never fills a separate form.
-  if (resolvedPersonId && sessionId && UUID_V4_RE.test(sessionId)) {
-    void backfillSessionToFub({
-      sessionId,
-      fubPersonId: resolvedPersonId,
-      email: email ?? undefined,
-      identifiedVia: 'form_submit',
-    }).catch((err) => console.warn('[home-valuation-cta] session stitch failed (non-blocking):', err))
+  // they click the valuation CTA. rr_vid covers callers that omit sessionId.
+  if (resolvedPersonId) {
+    const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+    await stitchFormSubmitIdentity({
+      personId: resolvedPersonId,
+      email: email ?? '',
+      rrVid,
+      sessionId: sessionId && UUID_V4_RE.test(sessionId) ? sessionId : null,
+    })
   }
 
   // A home-valuation CTA is a Seller Inquiry — tag it into the canonical
@@ -210,17 +210,15 @@ export async function submitExitIntentLead(input: {
         tier: 'nurture',
       })
 
-      // Stitch the anonymous browsing history to this person and mark the
-      // visitor_sessions row identified — what the Marketing ROI dashboard
-      // counts as "matched to a name".
-      if (input.sessionId && UUID_V4_RE.test(input.sessionId)) {
-        await backfillSessionToFub({
-          sessionId: input.sessionId,
-          fubPersonId: result.personId,
-          email,
-          identifiedVia: 'form_submit',
-        })
-      }
+      // Stitch via rr_vid always. Session-only writes missed submits that
+      // had no tracker session yet.
+      const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+      await stitchFormSubmitIdentity({
+        personId: result.personId,
+        email,
+        rrVid,
+        sessionId: input.sessionId && UUID_V4_RE.test(input.sessionId) ? input.sessionId : null,
+      })
     }
   } catch (err) {
     console.warn('[exit-intent] canonical tagging / session stitch failed (non-blocking):', err)

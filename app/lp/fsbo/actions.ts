@@ -11,7 +11,7 @@ import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { createCmaRequest } from '@/lib/cma-request'
-import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
@@ -225,13 +225,14 @@ export async function submitFsboLPForm(submission: FsboLPSubmission): Promise<Fs
     }
 
     // ─── Anonymous-to-known backfill (non-blocking, idempotent) ────────────
-    if (fubPersonId && submission.sessionId && UUID_V4_RE.test(submission.sessionId)) {
-      void backfillSessionToFub({
-        sessionId: submission.sessionId,
-        fubPersonId,
+    if (fubPersonId && email) {
+      const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+      await stitchFormSubmitIdentity({
+        personId: fubPersonId,
         email,
-        identifiedVia: 'form_submit',
-      }).catch((e) => console.warn('[fsbo-lp] session backfill failed (non-blocking):', e))
+        rrVid,
+        sessionId: submission.sessionId && UUID_V4_RE.test(submission.sessionId) ? submission.sessionId : null,
+      })
     }
 
     // ─── Compliance gate ───────────────────────────────────────────────────

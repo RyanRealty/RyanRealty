@@ -542,5 +542,30 @@ export async function deactivateListingAlertByToken(token: string): Promise<{ ok
   }
 }
 
+/**
+ * Identity-stitch companion: stamp crm_person_id onto existing alert rows for
+ * this email when the column is still null. Open/click attribution and packet
+ * §1b "alerts with crm_person_id" read this column. Best-effort; never throws.
+ */
+export async function stampListingAlertsCrmPerson(
+  email: string,
+  crmPersonId: number,
+): Promise<number> {
+  const normalized = (email ?? '').trim().toLowerCase()
+  if (!normalized || !Number.isInteger(crmPersonId) || crmPersonId <= 0) return 0
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from(TABLE)
+    .update({ crm_person_id: crmPersonId, updated_at: new Date().toISOString() })
+    .eq('email', normalized)
+    .is('crm_person_id', null)
+    .select('id')
+  if (error) {
+    console.error('[stampListingAlertsCrmPerson]', error.message)
+    return 0
+  }
+  return data?.length ?? 0
+}
+
 // Session-user-scoped reads/writes + sign-in claim live in listingAlertsUser.ts.
 export * from '@/lib/data/leads/listingAlertsUser'

@@ -14,8 +14,9 @@ import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 import { isSuppressedByEmail } from '@/lib/crm/suppressions'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { after } from 'next/server'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 
 const source = (process.env.NEXT_PUBLIC_SITE_URL ?? 'ryan-realty.com').replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
@@ -195,6 +196,15 @@ export async function submitValuationRequest(formData: FormData): Promise<Valuat
         address: fullAddress,
         state: state || undefined,
       })
+      if (email) {
+        const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+        await stitchFormSubmitIdentity({
+          personId: capturedPersonId,
+          email,
+          rrVid,
+          sessionId: null,
+        })
+      }
     }
   } catch (err) {
     console.warn('[valuation] canonical tagging failed (non-blocking):', err)
@@ -329,7 +339,7 @@ async function runValuationFollowUp(ctx: {
         })
         const sent = await sendEmail({
           to: email,
-          subject: `Your Home Valuation – ${fullAddress || 'Property'}`,
+          subject: `Your Home Valuation - ${fullAddress || 'Property'}`,
           text: `Hi${name ? ` ${name.split(/\s+/)[0]}` : ''},\n\nAttached is your Comparative Market Analysis for ${fullAddress || 'your property'}.\n\nIf you have questions or want to discuss next steps, reply to this email or give us a call.\n\nBest,\nRyan Realty`,
           attachments: [{ filename: 'home-valuation.pdf', content: Buffer.from(buffer) }],
         })

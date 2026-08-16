@@ -1,13 +1,13 @@
 'use server'
 
 import { after } from 'next/server'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { sendEvent } from '@/lib/followupboss'
 import { sendContactNotification } from '@/lib/resend'
 import { canonicallyTagLead, type LeadAudience } from '@/lib/canonical-lead-tagger'
 import { classifyPropertyGeo, referralIntakeTags } from '@/lib/referral-geo'
-import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
 
@@ -171,16 +171,16 @@ export async function submitContactForm(formData: FormData): Promise<ContactForm
         await autoEnrollByFubId(capturedPersonId, { smsConsent }).catch((e: unknown) =>
           console.warn('[contact-form] instant auto-enroll failed:', e),
         )
-        // Stitch this visitor's prior anonymous browsing history to the CRM
-        // person. Idempotent; only runs when a real session id came through.
-        if (sessionId && UUID_V4_RE.test(sessionId)) {
-          await backfillSessionToFub({
-            sessionId,
-            fubPersonId: capturedPersonId,
-            email,
-            identifiedVia: 'form_submit',
-          })
-        }
+        // Stitch this visitor to the CRM person via rr_vid always; a valid
+        // session id also backfills visitor_sessions. Session-only writes
+        // missed every submit that had no tracker session yet.
+        const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+        await stitchFormSubmitIdentity({
+          personId: capturedPersonId,
+          email,
+          rrVid,
+          sessionId: sessionId && UUID_V4_RE.test(sessionId) ? sessionId : null,
+        })
       }
     } catch (err) {
       console.warn('[contact-form] canonical tagging failed (non-blocking):', err)

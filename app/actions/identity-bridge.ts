@@ -124,6 +124,16 @@ async function bridgeIdentifiedPerson(
     }
   }
 
+  // rr_vid stitch even when the client omitted session_id — otherwise an
+  // email-click identify never writes visitor_identity_map.crm_person_id.
+  const rrVid = cookieStore.get('rr_vid')?.value ?? null
+  await stitchVisitorIdentity({
+    rrVid,
+    fubPersonId: id,
+    sessionId: sessionId && UUID_V4_RE.test(sessionId) ? sessionId : null,
+    source: via,
+  })
+
   return { ok: true }
 }
 

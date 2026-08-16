@@ -10,7 +10,7 @@ import { saveAnonymousPartialAddress } from '@/lib/data'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
-import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
@@ -193,13 +193,14 @@ export async function submitExpiredLPForm(submission: ExpiredLPSubmission): Prom
     // ─── Stitch anonymous browsing history to this FUB person ──────────────
     // Replays prior anonymous visitor_events for this session into FUB and
     // marks the visitor_sessions row identified. Non-blocking, idempotent.
-    if (fubPersonId && submission.sessionId && UUID_V4_RE.test(submission.sessionId)) {
-      void backfillSessionToFub({
-        sessionId: submission.sessionId,
-        fubPersonId,
+    if (fubPersonId && email) {
+      const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+      await stitchFormSubmitIdentity({
+        personId: fubPersonId,
         email,
-        identifiedVia: 'form_submit',
-      }).catch((e) => console.warn('[expired-lp] session backfill failed (non-blocking):', e))
+        rrVid,
+        sessionId: submission.sessionId && UUID_V4_RE.test(submission.sessionId) ? submission.sessionId : null,
+      })
     }
 
     // ─── Compliance gate ───────────────────────────────────────────────────

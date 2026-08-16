@@ -11,7 +11,7 @@ import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { buildLeadOriginNote, type LeadOriginContext } from '@/lib/fub-lead-origin-note'
 import { createCmaRequest } from '@/lib/cma-request'
-import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { geocodeAndTagLead } from '@/lib/lead-geocode'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
@@ -389,15 +389,15 @@ export async function submitSellerLPForm(submission: SellerLPSubmission): Promis
     // visitor_sessions row (identified_at + fub_person_id) and replay all prior
     // anonymous visitor_events for this browser into FUB as Viewed Property /
     // Viewed Page events. Idempotent + never throws (see lib/visitor-backfill).
-    // Fire-and-forget — lead capture must never block on the replay.
     const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    if (fubPersonId && email && submission.sessionId && UUID_V4_RE.test(submission.sessionId)) {
-      void backfillSessionToFub({
-        sessionId: submission.sessionId,
-        fubPersonId,
+    if (fubPersonId && email) {
+      const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+      await stitchFormSubmitIdentity({
+        personId: fubPersonId,
         email,
-        identifiedVia: 'form_submit',
-      }).catch((e) => console.warn('[seller-lp] session backfill failed (non-blocking):', e))
+        rrVid,
+        sessionId: submission.sessionId && UUID_V4_RE.test(submission.sessionId) ? submission.sessionId : null,
+      })
     }
 
     // ─── Compliance gate ───────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import { sendServerEvent, type MetaCapiUserData } from '@/lib/meta-capi'
 import { shouldExcludeFromSharing } from '@/lib/crm/gpc'
 import { getPersonIdsByEmail } from '@/lib/data/crm/getPersonIdsByEmail'
 import { getPersonSuppressions } from '@/lib/data/crm/getPersonSuppressions'
+import { getStitchedCrmPersonId } from '@/lib/data/crm/getStitchedCrmPersonId'
 
 export const runtime = 'nodejs'
 
@@ -142,19 +143,34 @@ export async function POST(req: NextRequest) {
     // shouldExcludeFromSharing helper decide. This can only turn LDU ON, never
     // off -- a cookie/body LDU=true is never downgraded. Best-effort + never
     // throws: a lookup failure leaves the existing LDU decision untouched.
-    if (!ldu && email?.trim()) {
+    let resolvedPersonId: number | null = null
+    if (email?.trim()) {
       try {
         const personIds = await getPersonIdsByEmail(email)
-        for (const pid of personIds) {
-          const suppressions = await getPersonSuppressions(pid)
-          if (shouldExcludeFromSharing(suppressions)) {
-            ldu = true
-            break
+        resolvedPersonId = personIds[0] ?? null
+        if (!ldu) {
+          for (const pid of personIds) {
+            const suppressions = await getPersonSuppressions(pid)
+            if (shouldExcludeFromSharing(suppressions)) {
+              ldu = true
+              break
+            }
           }
         }
       } catch (e) {
         console.warn('[Meta CAPI] suppression LDU check failed:', e instanceof Error ? e.message : String(e))
       }
+    }
+    if (resolvedPersonId == null) {
+      try {
+        const rrVid = cookies.find((c) => c.name === 'rr_vid')?.value
+        resolvedPersonId = await getStitchedCrmPersonId(rrVid)
+      } catch (e) {
+        console.warn('[Meta CAPI] identity-map person lookup failed:', e instanceof Error ? e.message : String(e))
+      }
+    }
+    if (resolvedPersonId != null) {
+      userData.external_id = hashPII(String(resolvedPersonId))
     }
 
     // Send to Meta CAPI

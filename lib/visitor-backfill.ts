@@ -49,10 +49,42 @@ function getServiceSupabase(): SupabaseClient | null {
  * user. The single stitch reused by EVERY identify path — the WordPress One-Tap
  * bridge (backfillSessionToFub, below) AND the Vercel Supabase OAuth callback
  * (app/auth/callback) — so a Google/Facebook login feeds the Phase-5 identity
- * graph just like a form submit does. email / fub / user_id are set
- * when-present so a re-identify never clobbers a previously-captured value.
+ * graph just like a form submit does. email / fub / crm_person_id / user_id
+ * are set when-present so a re-identify never clobbers a previously-captured
+ * value. crm_person_id is written in lockstep with fub_person_id (same native
+ * id) — that is the column the packet §1b stitch rate counts.
  * Service-role write; never throws (must not block sign-in or tracking).
  */
+/**
+ * Pure identity-map upsert payload. The packet counts
+ * visitor_identity_map.crm_person_id — fub_person_id is the legacy lockstep
+ * column (same native crm_people.id post-cutover). A stitch that writes only
+ * fub_person_id is invisible to §1b.
+ */
+export function buildIdentityMapPatch(params: {
+  rrVid: string
+  fubPersonId?: number | null
+  email?: string | null
+  userId?: string | null
+  sessionId?: string | null
+  source: string
+  identifiedAt?: string
+}): Record<string, unknown> {
+  const row: Record<string, unknown> = {
+    rr_vid: params.rrVid,
+    identify_source: params.source,
+    identified_at: params.identifiedAt ?? new Date().toISOString(),
+  }
+  if (params.fubPersonId != null) {
+    row.fub_person_id = params.fubPersonId
+    row.crm_person_id = params.fubPersonId
+  }
+  if (params.email) row.email = params.email.toLowerCase()
+  if (params.userId) row.user_id = params.userId
+  if (params.sessionId) row.session_id = params.sessionId
+  return row
+}
+
 export async function stitchVisitorIdentity(params: {
   rrVid: string | null | undefined
   fubPersonId?: number | null
@@ -64,19 +96,30 @@ export async function stitchVisitorIdentity(params: {
   if (!params.rrVid) return
   const supabase = getServiceSupabase()
   if (!supabase) return
-  const row: Record<string, unknown> = {
-    rr_vid: params.rrVid,
-    identify_source: params.source,
-    identified_at: new Date().toISOString(),
-  }
-  if (params.fubPersonId != null) row.fub_person_id = params.fubPersonId
-  if (params.email) row.email = params.email.toLowerCase()
-  if (params.userId) row.user_id = params.userId
-  if (params.sessionId) row.session_id = params.sessionId
+  const row = buildIdentityMapPatch({
+    rrVid: params.rrVid,
+    fubPersonId: params.fubPersonId,
+    email: params.email,
+    userId: params.userId,
+    sessionId: params.sessionId,
+    source: params.source,
+  })
   try {
     await supabase.from('visitor_identity_map').upsert(row, { onConflict: 'rr_vid' })
   } catch {
     /* never block the caller (sign-in / tracking) on a graph write */
+  }
+
+  // Alerts plane: a known person + email must stamp listing_alerts.crm_person_id
+  // so open/click attribution and the packet §1b alert stitch count stay on
+  // the same person the identity map just wrote.
+  if (params.email && params.fubPersonId != null) {
+    try {
+      const { stampListingAlertsCrmPerson } = await import('@/lib/data/leads/listingAlerts')
+      await stampListingAlertsCrmPerson(params.email, params.fubPersonId)
+    } catch {
+      /* never block sign-in / capture on an alert stamp */
+    }
   }
 
   // Flip this browser's anonymous sessions to identified (not anonymous). The

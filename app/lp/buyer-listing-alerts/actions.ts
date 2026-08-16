@@ -9,7 +9,7 @@ import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { isHardStopped } from '@/lib/canonical-lead-tagger'
 import { readAttributedAgentServer } from '@/app/actions/agent-attribution-read'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
-import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead, enrichNativeLead, createNativeTask } from '@/lib/data/crm/ensureNativeLead'
 import { recordMarketingAssignment } from '@/lib/data/crm/recordMarketingAssignment'
 import { upsertListingAlert } from '@/lib/data/leads/listingAlerts'
@@ -110,7 +110,7 @@ async function recordBuyerAssignment(params: {
  * Submit the dedicated buyer landing page form.
  *
  * Buyer LP intake (cadence research from the FUB era lives in
- * docs/archive/fub-era/README.md; live path is in-house CRM):
+ * docs/archive/fub-era/README.md. live path is in-house CRM):
  *  1. Resolve or create CRM person (email match > cookie > new)
  *  2. Round-robin assign to Matt or Rebecca via marketing_assignments
  *  3. Apply canonical tags: audience:buyer + buyer:tier + source:buyer-lp + broker:slug
@@ -120,7 +120,7 @@ async function recordBuyerAssignment(params: {
  *
  * Downstream: canonicallyTagLead applies `audience:buyer` and the native
  * CRM auto-enrolls the lead in its buyer sequence (FUB decommissioned
- * 2026-06-24; the old FUB action-plan + pause-on-reply cron are gone —
+ * 2026-06-24. the old FUB action-plan + pause-on-reply cron are gone —
  * pause-on-reply now lives in the native sequence engine).
  */
 export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<BuyerLPResult> {
@@ -171,7 +171,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         }
 
     const budgetStr = budgetMin || budgetMax
-      ? `$${budgetMin ?? '?'}–$${budgetMax ?? '?'}`
+      ? `$${budgetMin ?? '?'}-$${budgetMax ?? '?'}`
       : 'unspecified'
     const areasStr = searchAreasArr.length ? searchAreasArr.join(', ') : 'unspecified'
 
@@ -250,7 +250,7 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
         })
         if (native.created || native.personId > 0) {
           console.warn(
-            `[buyer-lp] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+            `[buyer-lp] FUB push failed. native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
           )
         }
       } catch (e) {
@@ -258,16 +258,16 @@ export async function submitBuyerLPForm(submission: BuyerLPSubmission): Promise<
       }
     }
 
-    // ─── Stitch anonymous browsing history to this FUB person ──────────────
-    // Replays prior anonymous visitor_events for this session into FUB and
-    // marks the visitor_sessions row identified. Non-blocking, idempotent.
-    if (fubPersonId && submission.sessionId && UUID_V4_RE.test(submission.sessionId)) {
-      void backfillSessionToFub({
-        sessionId: submission.sessionId,
-        fubPersonId,
+    // ─── Stitch anonymous browsing history to this CRM person ──────────────
+    // rr_vid always. A valid session id also backfills visitor_sessions.
+    if (fubPersonId && email) {
+      const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+      await stitchFormSubmitIdentity({
+        personId: fubPersonId,
         email,
-        identifiedVia: 'form_submit',
-      }).catch((e) => console.warn('[buyer-lp] session backfill failed (non-blocking):', e))
+        rrVid,
+        sessionId: submission.sessionId && UUID_V4_RE.test(submission.sessionId) ? submission.sessionId : null,
+      })
     }
 
     // ─── Compliance gate ───────────────────────────────────────────────────

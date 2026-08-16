@@ -11,6 +11,8 @@ export type MetaCapiUserData = {
   ph?: string // sha256 phone
   fn?: string // sha256 first name
   ln?: string // sha256 last name
+  /** SHA-256 of crm_people.id — same person the CRM custom audience uploads. */
+  external_id?: string
   client_ip_address?: string
   client_user_agent?: string
   fbc?: string

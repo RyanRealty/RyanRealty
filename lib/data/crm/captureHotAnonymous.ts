@@ -30,18 +30,9 @@ import type { CrmBrokerSlug } from '@/lib/crm/constants'
  *      write path (stitchVisitorIdentity), recording identify_source so the
  *      visitor is marked captured and the same upsert-on-rr_vid row is enriched.
  *
- * PHASE 1.1 DEPENDENCY (FLAGGED, load-bearing)
- * --------------------------------------------
- * The durable rr_vid -> crm_person bridge is `visitor_identity_map.crm_person_id`,
- * which is a FLAGGED, NOT-YET-APPLIED Phase 1.1 column. It does NOT exist in the
- * live schema today. This function MUST NOT write it (a write would 400 the
- * upsert). Instead we stitch via stitchVisitorIdentity, which only sets columns
- * that exist today (rr_vid, identify_source, identified_at, and email/fub/user
- * when present). The new crm_people.id is returned + recorded on the person row's
- * own tags so the bridge is reconstructable; once Phase 1.1 lands its migration
- * + backfill (crm_people.fub_legacy_id / rr_vid join), the rr_vid -> crm_person
- * link is materialized as a column and resolvePersonIdentity reads it directly.
- * Until then the link is best-effort via the identity map + the source tag.
+ * The durable rr_vid -> crm_person bridge is `visitor_identity_map.crm_person_id`
+ * (live column). stitchVisitorIdentity writes it in lockstep with fub_person_id
+ * using the native crm_people.id created above.
  *
  * Idempotent on the identity side: stitchVisitorIdentity upserts on rr_vid, and
  * we re-read the latest identity before creating so a second run for a now-known
@@ -73,6 +64,7 @@ type SessionRow = {
 type IdentityMapRow = {
   email: string | null
   fub_person_id: number | null
+  crm_person_id: number | null
   user_id: string | null
 }
 
@@ -102,7 +94,7 @@ async function loadSignalsByRrVid(
   // email / fub person / auth user if the visitor was ever stitched.
   const { data: idmapRow } = await sb
     .from('visitor_identity_map')
-    .select('email, fub_person_id, user_id')
+    .select('email, fub_person_id, crm_person_id, user_id')
     .eq('rr_vid', rrVid)
     .maybeSingle()
   const idmap = (idmapRow ?? null) as IdentityMapRow | null
@@ -132,10 +124,7 @@ async function loadSignalsByRrVid(
       fubPersonId: idmap?.fub_person_id ?? sessionFubPersonId,
       email: idmap?.email ?? null,
       authUserId: idmap?.user_id ?? null,
-      // The rr_vid -> crm_person bridge column is Phase 1.1 (not yet applied), so
-      // there is no existing-crm-person flag to read today. Left null; the
-      // already-identified guard above still catches every known-record case.
-      existingCrmPersonId: null,
+      existingCrmPersonId: idmap?.crm_person_id ?? null,
     },
   }
 
@@ -184,9 +173,8 @@ export async function captureHotAnonymous(
   // entry stage; the legacy 'Lead' stage was retired 2026-07-03 and a 'Lead' row
   // would be invisible to every active-stage surface). No email/phone yet — this
   // lead is identified by behavior + the rr_vid bridge, so it carries no
-  // crm_contact_points. buildNativePersonRow stamps the source:<x> tag; the
-  // rr_vid tag carries the bridge until the Phase 1.1 crm_person_id column
-  // materializes it as a real FK.
+  // crm_contact_points. buildNativePersonRow stamps the source:<x> tag. The
+  // identity-map crm_person_id write below is the durable rr_vid bridge.
   const personRow = buildNativePersonRow({
     name: `Anonymous shopper ${vid.slice(0, 8)}`,
     first_name: null,
@@ -212,13 +200,10 @@ export async function captureHotAnonymous(
     return { status: 'skipped', reason: 'create_failed' }
   }
 
-  // Stitch the durable rr_vid -> known-record link through the EXISTING identity
-  // map write path. This upserts on rr_vid and sets identify_source + identified_at
-  // (and never clobbers a previously-captured email/fub/user). It intentionally
-  // does NOT write crm_person_id — that column is the FLAGGED Phase 1.1 bridge and
-  // does not exist in the live schema yet. stitchVisitorIdentity never throws.
+  // Stitch the durable rr_vid -> known-record link, including crm_person_id.
   await stitchVisitorIdentity({
     rrVid: vid,
+    fubPersonId: crmPersonId,
     sessionId: loaded.sessionIds[0] ?? null,
     source: HOT_ANONYMOUS_SOURCE,
   })

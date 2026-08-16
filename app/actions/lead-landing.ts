@@ -6,8 +6,9 @@ import type { LeadLandingAudience } from '@/lib/lead-landing-content'
 import { generateEventId } from '@/lib/meta-pixel-helpers'
 import { canonicallyTagLead } from '@/lib/canonical-lead-tagger'
 import { fireLeadGenerated } from '@/lib/lead-tracking'
-import { backfillSessionToFub } from '@/lib/visitor-backfill'
+import { stitchFormSubmitIdentity } from '@/lib/visitor-backfill'
 import { ensureNativeLead } from '@/lib/data/crm/ensureNativeLead'
+import { cookies } from 'next/headers'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -114,7 +115,7 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
         })
         if (native.created || native.personId > 0) {
           console.warn(
-            `[lead-landing] FUB push failed; native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
+            `[lead-landing] FUB push failed. native fallback lead ${native.created ? 'created' : 'reused'} crm person ${native.personId}`,
           )
         }
       } catch (e) {
@@ -170,19 +171,15 @@ export async function submitLeadLandingForm(input: SubmitLeadLandingInput): Prom
           source: input.audience === 'seller' ? 'seller-lp' : 'buyer-lp',
         })
 
-        // Stitch the anonymous browsing history to this CRM person and mark
-        // the visitor_sessions row identified. This is the join that ties a
-        // Facebook ad click (utm_source=facebook, stored on the session) to a
-        // real name — and what the Marketing ROI dashboard counts as
-        // "matched to a name". Mirrors the buyer LP gold standard.
-        if (input.sessionId && UUID_V4_RE.test(input.sessionId)) {
-          await backfillSessionToFub({
-            sessionId: input.sessionId,
-            fubPersonId: result.personId,
-            email,
-            identifiedVia: 'form_submit',
-          })
-        }
+        // Stitch via rr_vid always. Session-only writes missed submits that
+        // had no tracker session yet.
+        const rrVid = (await cookies()).get('rr_vid')?.value ?? null
+        await stitchFormSubmitIdentity({
+          personId: result.personId,
+          email,
+          rrVid,
+          sessionId: input.sessionId && UUID_V4_RE.test(input.sessionId) ? input.sessionId : null,
+        })
       }
     } catch (err) {
       console.warn('[lead-landing] canonical tagging / session stitch failed (non-blocking):', err)
