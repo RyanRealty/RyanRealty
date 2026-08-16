@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-311e4201) — G7 westside backlog shipped
+# Current — 2026-08-16 (loop-sentinel bc-0369d0e1) — G8 SkySlope mirror ops shipped
+
+**Surface:** Cursor cloud agent `bc-0369d0e1-5c3f-43e2-9a78-9cddc20f2c4c`. **Time:** 2026-08-16 ~09:45 UTC. Brief served **G8** (transactions). One node only. **`main` @** `8bb2c6327`. Vercel Production **READY** (GitHub deployment `5929663437`, inspector `3LKLi3cQjgcKFvhLEXyU7N4AGPx8`).
+
+**Done**
+- G8 SkySlope mirror re-sync ops (`05980864-bfd1-4556-8145-0ddac4fbb0d1`) **done**. Accept: latest `synced_at` current **or** the blocker named on the packet.
+- Class: inbound Files refresh cron `/api/cron/skyslope-mirror-refresh` (HMAC login POST + GET folder list/detail only; no PUT/PATCH/DELETE). DAL `getSkySlopeMirrorFreshness` / `refreshSkySlopeMirrorInbound`. Closings VerdictLine. Heartbeat `evalSkySlopeMirror` from `loop-health-check`. Scoreboard uses DAL `rowCount`. Gate `ci:skyslope-mirror` 12/12. Vault `tc_deals` stays SoR.
+- Accept proof: production route live — unauth JSON **401**; missing sibling path **404** (same dpl). Probe `scripts/loop-probe-g8.ts`: 33 rows (= `tc_deals`), newest `synced_at` **2026-06-10T00:35:10Z**, age **1617h**, `current=false`. Named blocker: this VM's injected `CRON_SECRET` is a 12-char stub (production 401); no `SKYSLOPE_*` keys here. First refresh = Vercel cron `20 6 * * *` or a session with the real secret.
+- Ledger `1b9367f1-908a-4902-890d-c34d981a9a80` (transactions, class `skyslope-mirror-ops`). INT-017 ops KEEP; freshness residual. R-190 LOCKED. R-191 stays PARTIAL (M2 cutover). No schema migration.
+- Planes: dal-stat (mirror DAL), admin-crm (`/admin/closings`), reporting/heartbeat (`evalSkySlopeMirror`). Public-site / ads / alerts / identity unchanged (mirror is not a public number).
+- Ship: `ci:gates` green via `npm run push`; `origin/main` includes `8bb2c6327`; production deploy success.
+
+**Do not:** mutate SkySlope files (no PUT/PATCH/DELETE). Do not treat SkySlope as transaction SoR. Do not SMS, publish, spend, or OAuth. Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, tc-builder, oregon-orea-principal-broker, skyslope-api, TC_SYSTEM, COMPANY_IMPROVEMENT blast-radius, VERSION-1 G8, INT-017, R-190/R-191, DEVELOPMENT_PROCESS, git-commit.
+
+# Prior — 2026-08-16 (loop-sentinel bc-311e4201) — G7 westside backlog shipped
 
 **Surface:** Cursor cloud agent `bc-311e4201-0cc8-4ade-b44d-879873938822`. **Time:** 2026-08-16 ~08:35 UTC. Brief served **G7** (seo-aeo). One node only. **`main` @** `d8a401d68`. Vercel Production **READY** (GitHub deployment `5929208475`, inspector `739vhk2QJQx35X2vnuFzwcy5NCL7`).
 

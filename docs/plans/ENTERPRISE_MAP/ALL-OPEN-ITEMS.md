@@ -89,7 +89,7 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 | INT-004–008 | Deeper health probes | ACTIVE |
 | INT-009–013 | ~~Token reconnect~~ **DONE 2026-08-15** — GBP/TikTok/YouTube/X auto-refresh verified live (heartbeat + on-demand); INT-010 LinkedIn **PARKED** (refresh_token NULL from provider) | DONE / PARKED |
 | INT-014–016 | Threads/Nextdoor/Pinterest | **PARKED** |
-| INT-017 | SkySlope mirror re-sync | ACTIVE FIX |
+| INT-017 | SkySlope mirror freshness (ops path LIVE 2026-08-16; rows still 2026-06-10 until first successful cron) | FRESHNESS RESIDUAL |
 | INT-018 | FUB residue cleanup optional | LEGACY |
 | INT-021–036 | unknown→probed over time | ACTIVE |
 | INT-037 | Tooling keys bucket | DONE disposition |

@@ -184,8 +184,10 @@ marketing-daily-digest, analytics-daily-digest, gbp-monthly-digest, marketing-we
 **VERIFIED class:** multi-social is not “connected once forever” — most tokens expired or never connected. CAP-019 health is **red/amber**, not green.
 
 ### INT-017 SkySlope live
-- `skyslope_transactions` count **33** (matches tc_deals).
-- Sample `synced_at` **2026-06-10** — mirror freshness **STALE** relative to “today”; needs sync-health Sense, not just row presence.
+- `skyslope_transactions` count **33** (matches `tc_deals`). Probe 2026-08-16 ~09:40 UTC via `scripts/loop-probe-g8.ts`.
+- Newest `synced_at` **2026-06-10T00:35:10Z** (age **1617h**, `current=false`). Meta row same stamp.
+- **Ops path LIVE** on production SHA `8bb2c6327` / dpl `3LKLi3cQjgcKFvhLEXyU7N4AGPx8`: `GET /api/cron/skyslope-mirror-refresh` returns JSON 401; a missing sibling path 404s. Inbound-only (login POST + GET). Vault remains SoR.
+- Named blocker this session: cloud-agent `CRON_SECRET` is a 12-char stub (production 401); no `SKYSLOPE_*` in the VM. First refresh = Vercel cron `20 6 * * *` or a session with the real secret.
 
 ### INT-007 Meta audience ops
 - `meta_audience_log` last LIVE run **2026-06-23** (add received 13883). Heartbeat **stale** (~7 weeks).
