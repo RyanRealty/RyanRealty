@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (cursor-loop-chain) — Old Bend 6/9/7/8 three-count finding rejected
 
-**Surface:** Cursor cloud `bc-2b718dff` (`cursor/loop-chain-2026-08-16t23-30-c3e9`). **Time:** 2026-08-16 ~23:45 UTC. Brief served fleet finding `aa0849fc` (public-ux / fleet `f9d85a124cbb4c58bfbf246112b89085`), not G16/G32. One node only (this session launched on the pre-R-216 one-node prompt). No product change. **`main` @** `391d941ad` + this stamp. Production already **READY** on the shipped neighborhood inventory class (`9cac09b1`). `npm run ci:gates` 224/224. No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). No public-ux ledger insert (open window `2a5054ac`).
+**Surface:** Cursor cloud `bc-2b718dff` (`cursor/loop-chain-2026-08-16t23-30-c3e9`). **Time:** 2026-08-16 ~23:45 UTC. Brief served fleet finding `aa0849fc` (public-ux / fleet `f9d85a124cbb4c58bfbf246112b89085`), not G16/G32. One node only (this session launched on the pre-R-216 one-node prompt). No product change. **`main` @** `391d941ad` + this stamp. Production already **READY** on the shipped neighborhood inventory class (`9cac09b1`). `npm run ci:gates` 224/224. No hosted migration. Loop stays **ARMED**. Node **done** (rejected: does not reproduce). Finding `e11963b4` status rejected. No public-ux ledger insert (open window `2a5054ac`).
 
 **Done**
 - Fleet finding [p0]: Old Bend index tile 6 active vs place hero/map badge 9 vs FAQ 7 vs visible cards 8. FIRST STEP reproduce: it does not. Class already shipped (`getNeighborhoodPublicInventory`).
