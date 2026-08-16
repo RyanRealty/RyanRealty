@@ -26,7 +26,9 @@
  *     scope's heading.
  *   · Every eyebrow / heading / subtitle string. The open-house and activity
  *     feeds are fetched CITY-wide on all three pages, so each page labels them
- *     with the city on purpose.
+ *     with the city on purpose. The hero count continuation is the exception:
+ *     it goes through `placeHeroLead` so a neighborhood/community count cannot
+ *     read as the parent city's.
  *   · The active-count resolution. Each page has its own priority chain
  *     (alias-aware resort count · in-boundary pins · pulse · snapshot) and
  *     ci:count-degraded-read Rule 1 reads the `activeCount` declaration inside

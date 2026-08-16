@@ -438,3 +438,15 @@ Source: Matt 2026-08-16. One product: xAI (https://docs.x.ai/overview). Cancel l
 | M3 CHANGE | Park-in-practice lifted for xAI; rebuild is Imagine + Voice, not ElevenLabs Turbo | VERSION-1 M3; CAP-017 |
 | Cancel-now | fal.ai + Synthesia — no required live generate path | xai-stack-accept.json |
 | Cancel-after-cutover | ElevenLabs, Replicate, OpenAI, Anthropic | same SoR |
+
+## 2026-08-16 — Place-page hero count grain (fleet 97c68da5)
+
+Production `/cities/bend/awbrey-butte` hero lead was `in Bend` under a neighborhood-scoped `activeCount`, so KbHero rendered "N homes for sale in Bend". Class: every KB place hero continues the count with `placeHeroLead` (this page's grain). Gate `ci:place-hero-grain`.
+
+| Surface | Recorded | Evidence |
+|---|---|---|
+| Neighborhood | `in {neighborhood.name}` | `app/cities/[slug]/[neighborhoodSlug]/page.tsx` |
+| Community | `in {community.name}` (was `in {cityName}` when counted) | `app/communities/[slug]/page.tsx` |
+| City | `in {cityName}` | `app/cities/[slug]/page.tsx` |
+| Subdivision | `in {displayName}` | `app/subdivisions/[slug]/page.tsx` |
+| ZIP | `in {zip}` (was `in {area}`) | `app/zip/[zip]/page.tsx` |

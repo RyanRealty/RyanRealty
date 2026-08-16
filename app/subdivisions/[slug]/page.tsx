@@ -55,6 +55,7 @@ import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { getListingsWithVideos } from '@/app/actions/videos'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { cityHero } from '@/lib/geo-images'
 import resortCommunitiesData from '@/data/resort-communities.json'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -295,16 +296,15 @@ export default async function SubdivisionPage({ params }: Props) {
 
   // ── Hero copy ─────────────────────────────────────────────────────────────
   // KbHero already renders "<N> homes for sale" ahead of this text when
-  // activeCount is non-null (see KbHero's `lead` prop contract), so this
-  // string is a continuation fragment in that case and a full sentence only
-  // when the count is unknown — never both, or the page reads "5 homes for
-  // sale 5 homes for sale in X."
-  const placeBit =
-    cityName !== 'Central Oregon' ? `${displayName}, ${cityName}` : displayName
-  const lede =
-    activeCount == null
-      ? `Single-family homes in ${placeBit}. Live inventory from the regional MLS.`
-      : `in ${displayName}. Live inventory from the regional MLS.`
+  // activeCount is non-null. The continuation names THIS plat, never a
+  // coarser city grain (fleet 97c68da5).
+  const lede = placeHeroLead({
+    placeName: displayName,
+    parentName: cityName !== 'Central Oregon' ? cityName : null,
+    activeCount,
+    knownSuffix: 'Live inventory from the regional MLS.',
+    unknownSuffix: 'Live inventory from the regional MLS.',
+  })
 
   // ── Hero image ────────────────────────────────────────────────────────────
   // Use city hero as a sensible default for any subdivision plat. No

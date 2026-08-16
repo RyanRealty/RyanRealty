@@ -156,7 +156,7 @@
 | R-106 | Account portal unifies alerts, saved searches, saved homes, named areas, activity | SEARCH_OPT | VERIFIED | G15 accept 2026-08-16 (A10; `/account` rails live) |
 | R-107 | Nav/IA residual: site nav covers brokerage/buy/sell/market/tools/communities; city section order fans out to neighborhood/community | PROSPECT_TO_CMA IA | PARTIAL | G21 |
 | R-108 | KB desktop density pass; fix duplicate DOM streaming containers (~40% waste) | PROSPECT_TO_CMA | MISSING | G21 |
-| R-109 | Mobile classes: map cards never dead-end; sub-city surfaces scoped data; interstitials never stack over hero; sticky broker bar site-wide | MOBILE_GRIND | PARTIAL | G21 |
+| R-109 | Mobile classes: map cards never dead-end; sub-city surfaces scoped data; interstitials never stack over hero; sticky broker bar site-wide | MOBILE_GRIND | PARTIAL | G21. Hero count grain locked 2026-08-16 (`placeHeroLead` + `ci:place-hero-grain`): neighborhood/community/ZIP heroes label the page grain, not the parent city (fleet 97c68da5). Residual: map-card dead-ends, interstitial stack, sticky broker bar |
 | R-110 | One count per geography per page; partial plat coverage draws honest count, never hull-fill | MOBILE_GRIND | VERIFIED | — |
 | R-111 | Place doors: neighborhoods + subdivisions indexes live, photographed, no invented cutoff | handoff 2026-08-15 | VERIFIED | — |
 | R-112 | Listing detail: vacation-rental projection only with real STR data; Transparent-CMA summary after comp rework | PROSPECT_TO_CMA | MISSING | G16/G21 |

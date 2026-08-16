@@ -21,7 +21,7 @@ type KbHeroProps = {
   /** Two H1 lines (the second is indented). */
   titleTop?: string
   titleBottom?: string
-  /** The sentence after "<n> homes for sale". */
+  /** Continuation after "<n> homes for sale". Must name this page's grain (`placeHeroLead`). */
   lead?: string
   /** Background video (mp4). If omitted, the poster image renders instead. */
   videoSrc?: string | null

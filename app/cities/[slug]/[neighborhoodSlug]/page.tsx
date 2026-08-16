@@ -58,6 +58,7 @@ import {
   buildTickerItems,
   isTrendSeriesTooSparse,
 } from '@/lib/kb/place-sections'
+import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -433,7 +434,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
           eyebrow={neighborhoodLabel}
           titleTop={neighborhood.name}
           titleBottom="Homes for Sale"
-          lead={`in ${cityName}. List prices and days on market, pulled live.`}
+          lead={placeHeroLead({
+            placeName: neighborhood.name,
+            parentName: cityName,
+            activeCount,
+          })}
           videoSrc={null}
           posterSrc={heroPhoto}
           posterAlt={`${neighborhood.name} in ${cityName}, Oregon`}

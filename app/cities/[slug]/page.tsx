@@ -48,6 +48,7 @@ import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.jso
 import { cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
+import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
@@ -470,7 +471,7 @@ export default async function CityDetailPage({ params }: Props) {
           eyebrow={`${cityName} · Oregon`}
           titleTop={cityName}
           titleBottom="Homes for Sale"
-          lead={`in ${cityName}. List prices and days on market, pulled live.`}
+          lead={placeHeroLead({ placeName: cityName, activeCount: pulse?.activeCount ?? null })}
           videoSrc={heroVideoSrc}
           posterSrc={heroPosterSrc}
           posterAlt={`${cityName}, Oregon`}

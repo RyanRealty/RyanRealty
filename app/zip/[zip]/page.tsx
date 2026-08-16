@@ -38,6 +38,7 @@ import { homesForSalePath } from '@/lib/slug'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
+import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -391,11 +392,13 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
           eyebrow={`${zip} · ${area} · Oregon`}
           titleTop="Homes for sale in"
           titleBottom={zip}
-          lead={
-            activeCount == null
-              ? `Single-family homes in ${area}, Oregon. Live inventory from the regional MLS.`
-              : `in ${area}, Oregon. Live inventory from the regional MLS.`
-          }
+          lead={placeHeroLead({
+            placeName: zip,
+            parentName: area,
+            activeCount,
+            knownSuffix: 'Live inventory from the regional MLS.',
+            unknownSuffix: 'Live inventory from the regional MLS.',
+          })}
           videoSrc={null}
           posterSrc={posterSrc}
         />

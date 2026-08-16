@@ -73,6 +73,7 @@ import {
   buildTickerItems,
   isTrendSeriesTooSparse,
 } from '@/lib/kb/place-sections'
+import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { getDistrictForCity } from '@/data/co-schools'
 import { homesForSalePath, slugify } from '@/lib/slug'
@@ -753,12 +754,15 @@ export default async function CommunityDetailPage({ params }: Props) {
           titleTop={`${community.name},`}
           titleBottom="Homes for Sale"
           // KbHero prefixes "<N> homes for sale" when activeCount is known.
-          // Full sentence only when the count is unknown — never double the place name.
-          lead={
-            activeCount == null
-              ? `Single-family homes in ${community.name}, ${cityName}. Live inventory from the regional MLS.`
-              : `in ${cityName}. Live inventory from the regional MLS.`
-          }
+          // The continuation names THIS community, never the parent city
+          // (fleet 97c68da5 — "N homes for sale in Bend" on a finer-grain page).
+          lead={placeHeroLead({
+            placeName: community.name,
+            parentName: cityName,
+            activeCount,
+            knownSuffix: 'Live inventory from the regional MLS.',
+            unknownSuffix: 'Live inventory from the regional MLS.',
+          })}
           videoSrc={null}
           posterSrc={heroPhoto}
           // Fix 6: descriptive alt text for the hero image. (§0)
