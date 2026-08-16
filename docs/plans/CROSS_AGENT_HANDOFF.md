@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — SFR pulse vs city-table remainder named
+# Current — 2026-08-16 (cursor-loop-chain) — hyphen city URLs resolve to space-form cache
+
+**Surface:** Cursor cloud `bc-875be615` (`cursor/loop-chain-2026-08-16t18-00-f801`). **Time:** 2026-08-16 ~18:38 UTC. Brief served fleet finding `7d7c74c6` (public-ux / fleet `75370225805bb52d38b151ced2dab5c1`), not G16/G32. One node only. Product **`6eded9fdb`**. **`main` @** `6eded9fdb` (this handoff lands after). Vercel Production **READY** (inspector `FJgUZGejwabU1xuWChDSn6A8pBpb`). `npm run deploy:verify` exit 0 in 734s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#45**.
+
+**Done**
+- Fleet finding [p0]: hub city table printed La Pine 175 SFR / $500,000 / 50.5 days to pending, but `/housing-market/la-pine` 404ed (`NEXT_HTTP_ERROR_FALLBACK;404`). Same class: powell-butte, black-butte-ranch, camp-sherman. Reproduced on production + `market_pulse_live` before the class (space-form keys only; hyphen rows absent).
+- Class: SoR helper `canonicalCityCacheSlug` / `citySlugCandidates` maps URL hyphens to the space-form cache key (`la pine`). Wired on housing-market `resolveGeo`, MarketSnapshot, city/neighborhood/community/ZIP pages, search + OG, mega menu, CRM report, golf/events/venues/trails, agent market tool, pulse populate. Gate `ci:city-cache-slug`. No public-ux ledger insert (open window `2a5054ac`).
+- After READY: pulse `v3-2026-05-07` updated 2026-08-16T18:30:00Z — la pine **175** / $499,950 displayed **$500,000** / 50.5; powell butte 63 / $1,350,000; black butte ranch 31 / $1,073,000; camp sherman 4 / $945,000. Production 1280 + 390 — all four `/housing-market/{hyphen}` reports 200, no 404 fallback, live figures. `/homes-for-sale/la-pine` SFR widget 175 / $500,000 / 51 days. Screenshots `/opt/cursor/artifacts/la_pine_report_{1280,390}.png`, class siblings, `la_pine_homes_sfr_{1280,390}.png`.
+- R-024 coverage note only (still LOCKED). Pulse still includes Coming Soon (G27). Do not mark G27 done.
+
+**Also on this SHA (other session, do not steal / do not undo):** SFR city-table remainder `4ca02de19`. xAI studio NWX hang `a8f515147`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux ledger row. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-020/R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — SFR pulse vs city-table remainder named
 
 **Surface:** Cursor cloud `bc-cf38c0a5` (`cursor/loop-chain-2026-08-16t17-19-57b8`). **Time:** 2026-08-16 ~17:55 UTC. Brief served fleet finding `f214eae4` (public-ux / fleet `5439b87e`), not G16/G32. One node only. Product **`4ca02de19`**. **`main` @** `4ca02de19` (handoff lands after `a8f515147`). Vercel Production **READY** (inspector `DQgDZhkkCyhxvMuQem1pMU6Q1idH`). `npm run deploy:verify` exit 0 in 580s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#44**.
 
