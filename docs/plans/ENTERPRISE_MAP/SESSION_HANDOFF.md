@@ -92,10 +92,11 @@ Full residual list: **`ALL-OPEN-ITEMS.md`**. Plan: **`synthesis/ADVANCEMENT_PLAN
 ## Matt-only blockers (stop and surface — do not invent approval)
 
 - ~~F7 MV migration maintenance window~~ **DONE** prod 2026-07-29 (do not re-open as Matt gate)  
-- Newsletter first cohort send  
-- Ad spend / publish / outbound to real people  
-- DNS cutover timing  
-- Unpausing TC_BUILDOUT  
+- ~~DNS cutover timing~~ **DONE 2026-08-16** — ryan-realty.com is the live host  
+- Newsletter look-approve after G31 (enroll/send stay Matt-manual)  
+- Ad spend PARKED for v1 · public publish · outbound to real people  
+- TC cutover HOLD until TMS thoroughly tested (do not unpause TC_BUILDOUT)  
+- Video silence = park-in-practice (no rebuild unless Matt says rebuild)  
 - GO on agentic graph workflows if executing P-005 waves  
 
 Everything else: execute.

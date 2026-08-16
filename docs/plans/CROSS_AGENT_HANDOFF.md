@@ -2,21 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-4c2a67d8) — G13 integration health shipped
+# Current — 2026-08-16 (Cursor) — Matt steered M1–M6; G31 seeded; G27 residual confirmed
 
-**Surface:** Cursor cloud agent `bc-4c2a67d8-8857-473a-9878-2099c2607f5f`. **Time:** 2026-08-16 ~12:10 UTC. Brief served **G13** (factory). One node only. Product **`3f7378450`**. PR **#41**. `ci:gates` **214/214** including `ci:integration-health`. Vercel Production **READY** (GitHub deployment `5930797749`, inspector `5meRwF9WPhtuWcp9puiNXvsZCi3A`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
+**Surface:** Cursor local. **Time:** 2026-08-16 ~07:50 PT. Steering delivery (R-205). No product class this session. G15 is **in_progress** under `cursor-grok-g15-20260816` (claimed 14:35Z) — do not steal it.
 
-**Done**
-- G13 Probe every unknown-health integration (`2da11e59-c3ea-43fa-8f57-c3ef5a96b66a`) **done**. Accept: INTEGRATIONS health counts **unknown = 0** with per-row evidence.
-- Class: SoR `docs/plans/ENTERPRISE_MAP/integration-health-probes.json`. DAL `readIntegrationHealth` / `integrationHealthComplete`. Packet §0 + §2 + scoreboard `integrations`. `/admin/loop` QuietRow. Gate `ci:integration-health`. No factory ledger insert (open window `ba3435dd`). No schema migration.
-- Green KEEP: INT-021 OpenAI models 118; INT-023 xAI models 12; INT-031 Unsplash results=1; INT-032 Replicate `ryanrealty` + Synthesia videos=1; INT-036 AdSense `pub-592866` in prod JS.
-- Dark PARK: INT-026 Sentry stub DSN / `org:ci` token; INT-029 NeverBounce key missing; INT-033 VAPID keys missing (0 active subs). No generate, no web-push send.
-- Accept proof: `npx tsx scripts/loop-probe-g13.ts` — `complete=true` unknownCount=0 greenCount=5 parkCount=3 probedCount=8. Matrix after flip: green 18 · amber 9 · red 0 · dark 10 · unknown 0 · KEEP 23 · PARK 10.
-- VERSION-1 G13 **DONE 2026-08-16**.
+**Done (durable state only)**
+- M1 CHANGE: newsletter first-cohort blast is not the v1 gate. Loop work is **G31** redesign (look only). After Matt approves the look, he enrolls and sends manually. R-212 MISSING→G31. R-159 PARTIAL.
+- M2 HOLD: TC cutover held until TMS thoroughly tested. Do not unpause TC_BUILDOUT.
+- M3 SILENCE: park-in-practice. R-045 LOCKED. Docket `decision.status` stays pending (ci:video-docket). No rebuild until Matt says rebuild.
+- M4 PARKED: no ad spend for v1. Audience heartbeat continues.
+- M5 DONE 2026-08-16: ryan-realty.com live (A 76.76.21.21, `server: Vercel`). DNS cutover removed as an open gate (row kept, marked DONE).
+- M6 REVIEWED: KEEP socials connected (TikTok/YT/X/GBP + refresh). LinkedIn expired 2026-07-09 no refresh. Threads/Pinterest/Nextdoor auth empty. No reconnect ask.
+- G27 **not done**. 2026-08-02 session sealed public CS access. Pulse `active_count` still includes CS. Bend pulse 486; City=Bend SFR CS = 5. Node `2891d28e` stays open.
+- Manifest Max pin **G31 · M6**. Register Max **R-212**.
 
-**Do not:** flip R-045. Do not re-register video producers. Do not flip INT-007 to KEEP before 2026-08-22. Do not insert another factory ledger row. Do not SMS, publish, spend, OAuth, or send web-push. G6 stays blocked (live SMS). G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3.
+**Do not:** flip R-045. Do not SMS, publish, spend, or OAuth. Do not steal G15. Do not mark G27 done. Do not unpause TC. Disarm = Matt says "disarm the loop". Bots still need Matt to create them (G29).
 
-**Skills read:** growth-loop, DEVELOPMENT_PROCESS, MECHANICAL_GATES, AGENTIC_GRAPH_ENGINEERING, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, VERSION-1 G13, INTEGRATIONS, git-commit.
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, COMPANY_IMPROVEMENT §How Matt steers, VERSION-1, REQUIREMENTS, VERIFICATION-FLEET, BROKER_SMS_AGENT DoD, git-commit.
 
 # Prior — 2026-08-16 (loop-sentinel bc-26bd9513) — G12 video docket shipped
 

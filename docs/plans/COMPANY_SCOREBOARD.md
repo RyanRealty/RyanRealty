@@ -94,12 +94,14 @@ Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pu
 
 ## 5. Matt-only
 
-- Newsletter first cohort send (5,346 subscribers)
-- Ad spend (Demand parked). Audience *wiring* may be fixed without spend.
+- **M1** Newsletter look-approve after G31 redesign. Enroll/send are Matt-manual. 5,346 subscribers.
+- **M2** TC cutover HOLD until the TMS is thoroughly tested. Do not unpause TC_BUILDOUT.
+- **M3 video:** silence 2026-08-16 = park-in-practice. Park = $0 vendor, keep R-045. Rebuild = $0.05/1k Turbo, $5/row cap, change R-045. Docket: `docs/plans/ENTERPRISE_MAP/video-decision-docket.json`. No rebuild until Matt says rebuild.
+- **M4** Ads spend PARKED for v1. Audience wiring continues.
+- **M5** DONE 2026-08-16 — ryan-realty.com live on Vercel.
 - Taste stops (packets, posts, CMA look)
-- SkySlope mutation / Closings cutover
 - First listing-alert send to a real person who is not already in a measured test
-- **M3 video:** park ($0 vendor, keep R-045) or rebuild ($0.05/1k Turbo, $5/row cap, change R-045). Docket: `docs/plans/ENTERPRISE_MAP/video-decision-docket.json`.
+- Outbound / public publish / new OAuth grants
 
 ---
 

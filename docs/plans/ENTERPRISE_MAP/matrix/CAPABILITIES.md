@@ -24,11 +24,11 @@
 | Evidence status | Count | CAP IDs |
 |-----------------|------:|---------|
 | VERIFIED | **6** | 006, 009, 014, 015, 019, 024 |
-| PARTIAL | **27** | 001–005, 007–008, 010–013, 016–018, 021–023, 025–032, 034–035 |
+| PARTIAL | **28** | 001–005, 007–008, 010–013, 016–018, 020–023, 025–032, 034–035 |
 | UNKNOWN | **1** | 033 |
-| BLOCKED_MATT | **1** | 020 (ops / first cohort; code is Working) |
+| BLOCKED_MATT | **0** | — (CAP-020 first-cohort gate closed 2026-08-16; look-approve remains M1 after G31) |
 
-*Note:* Several PARTIAL cells carry **residual** BLOCKED_MATT (F7, ad spend, DNS, newsletter send) — residual ≠ primary evidence status unless the whole CAP is Matt-gated.
+*Note:* Residuals that still need a human click: newsletter look-approve (M1), outbound/publish, TC HOLD (M2). Ads spend PARKED. DNS DONE. Video silence = park-in-practice.
 
 | Maturity band | CAPs |
 |---------------|------|
@@ -44,12 +44,12 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **4** — Large production Next surface (296 `page.tsx` routes in `A-routes.txt`); app segments 72 (`J-app-segments.txt`); ship discipline on `main`/Vercel. Not 5: DNS cutover / multi-host ops still separate from code reliability. |
+| **Maturity** | **4** — Large production Next surface (296 `page.tsx` routes in `A-routes.txt`); app segments 72 (`J-app-segments.txt`); ship discipline on `main`/Vercel. Live host is ryan-realty.com (M5 DONE 2026-08-16). |
 | **Evidence status** | **PARTIAL** |
 | **Evidence pointers** | `inventories/A-routes.txt` (296); `inventories/J-app-segments.txt` (72); `inventories/Z-inventory-meta.json`; production host historically ryanrealty.vercel.app — **no full route smoke this pass** |
 | **Public risk** | High |
 | **Broker product?** | Yes (brand surface) |
-| **Residual disposition** | **ACTIVE** (ops/growth) — DNS cutover ops; continuous route smoke of money paths |
+| **Residual disposition** | **ACTIVE** (ops/growth) — continuous route smoke of money paths. DNS cutover closed (M5 DONE 2026-08-16). |
 
 ---
 
@@ -192,7 +192,7 @@
 | **Evidence pointers** | `tc_deals`=33, `skyslope_transactions`=33 (M-live); EVIDENCE-LOG INT-017; admin `closings`, `deals`, `signing`, `transactions`; plans `TC_BUILDOUT_HANDOFF.md`, `TC_ARCHITECTURE_REVIEW.md`; skills skyslope-form-compliance / tc-builder |
 | **Public risk** | High (compliance) |
 | **Broker product?** | Yes |
-| **Residual disposition** | **PARKED** / **ACTIVE** (ops) — unpause decision required; SkySlope strangler; refresh mirror; vault remains SoR |
+| **Residual disposition** | **HOLD** (Matt 2026-08-16) — TC cutover held until TMS thoroughly tested. Do not unpause TC_BUILDOUT. SkySlope stays live TMS; vault remains SoR. Mirror freshness is G8 residual. |
 
 ---
 
@@ -257,7 +257,7 @@
 | **Evidence pointers** | `listing_video_v4/`; `video/`; Claude.md §4; `scripts/check_first_frame.py`; three caption modules only under `video_production_skills/`; EVIDENCE-LOG CAP-017 |
 | **Public risk** | Med |
 | **Broker product?** | Partial |
-| **Residual disposition** | **ACTIVE** until M3 — G12 docket delivered (`docs/plans/ENTERPRISE_MAP/video-decision-docket.json`). Park = $0 vendor / keep R-045. Rebuild = $0.05/1k Turbo + $5/row cap + change R-045 + fix 11 dead safe-zone imports. |
+| **Residual disposition** | **PARK-IN-PRACTICE** (Matt silence 2026-08-16) — G12 docket delivered (`docs/plans/ENTERPRISE_MAP/video-decision-docket.json`). Park = $0 vendor / keep R-045. Rebuild = $0.05/1k Turbo + $5/row cap + change R-045 + fix 11 dead safe-zone imports. No rebuild until Matt says rebuild. |
 
 ---
 
@@ -270,7 +270,7 @@
 | **Evidence pointers** | INT-007; `readMetaAudienceHold`; last LIVE 2026-08-16T09:01Z CRM 13980; crons `meta-audience-sync`, `meta-westside-audience`; `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`; env META_CAPI_* |
 | **Public risk** | High (paid + privacy) |
 | **Broker product?** | Indirect |
-| **Residual disposition** | **BLOCKED_MATT** (spend/campaign changes) + **ACTIVE** (ops) refresh audience heartbeat |
+| **Residual disposition** | **PARKED** spend for v1 (Matt 2026-08-16) + **ACTIVE** (ops) refresh audience heartbeat |
 
 ---
 
@@ -291,12 +291,12 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **3** (code) — Admin newsletters, subscribers 5346, draft/send crons. **Ops blocked** for first cohort / reputation decisions. |
-| **Evidence status** | **BLOCKED_MATT** (first cohort / send policy); code path **PARTIAL** underlying |
+| **Maturity** | **3** (code) — Admin newsletters, subscribers 5346, draft/send crons. Look redesign is G31. Send stays Matt-manual after look-approve. |
+| **Evidence status** | **PARTIAL** (G31 redesign open); send is Matt-manual (M1 CHANGE 2026-08-16) |
 | **Evidence pointers** | newsletter_subscribers=5346; newsletters total 24 (draft 15 / failed 5 / sent 4) EVIDENCE-LOG; crons newsletter-*; `app/admin/(protected)/newsletters/**`; `app/newsletter` |
 | **Public risk** | Med (reputation) |
 | **Broker product?** | Yes |
-| **Residual disposition** | **BLOCKED_MATT** — first cohort send; compliance/reputation gates; cron health continuous |
+| **Residual disposition** | **ACTIVE** G31 redesign + **M1** look-approve. Enroll/send stay Matt-manual. |
 
 ---
 

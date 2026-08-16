@@ -1,7 +1,7 @@
 # Company v1 — the first certified whole-company version
 
 **Status: OPEN** (flips to CERTIFIED by the certification pass below, in one commit)
-**Max:** G30 · M6 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
+**Max:** G31 · M6 (the tail pin — G56 fails if rows above these numbers vanish or the pin goes stale)
 **Process:** THE LOOP v1.6.0 §Company versions (`docs/DEVELOPMENT_PROCESS.md`)
 **Substrate:** the Enterprise Map matrices (`matrix/CAPABILITIES.md` CAP-001…035, `matrix/INTEGRATIONS.md` INT-001…037, `matrix/FACTORY.md`), inventories regenerated 2026-08-08T21:00Z; live figures carry their own stamps in `COMPANY_SCOREBOARD.md` (single source — counts are not restated here).
 **Demand side:** [REQUIREMENTS.md](REQUIREMENTS.md) — every harvested Matt directive, dispositioned; the current count and split live in that file's G57 gate output, not here. MISSING/PARTIAL rows cite the gap below that carries them.
@@ -80,23 +80,24 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 | G24 | Admin dark mode: both themes ship and are reachable | REQUIREMENTS R-116 | broker-tools |
 | G25 | Social fan-out calendar (build side): one idea becomes per-channel variants, Loop G draft-first calendar on Today; publishes stay approval-gated | REQUIREMENTS R-186 | social-presence |
 | G26 | Email tracking completeness: route the four untracked send paths (sequence SMS-to-email fallback, home-valuation CMA delivery + acknowledgment, admin one-off composer, CMA request confirmation) through `attributeOutbound`/track | REQUIREMENTS R-137; adversarial audit 2026-08-15 | nurture |
-| G27 | Coming Soon count truth: pulse `active_count` includes Coming Soon by design while R-025 says exclude — either exclude from the served for-sale counts or label the definition explicitly on every surface (Matt may pick); §0 blast-radius: dal-stat, public-site, reporting | REQUIREMENTS R-025; audit 2026-08-15 | sales-insights |
+| G27 | Coming Soon count truth — **not done**. Dedicated session (2026-08-02) sealed public listing access (RLS + `listing-status-public` + sitemap). Residual: pulse `active_count` still SQL-includes Coming Soon (`refresh_market_pulse` FILTER Active+CS). Live 2026-08-16: Bend pulse 486 (v3); City=Bend SFR Coming Soon = 5 (second shape). Public listing counts exclude CS; the served pulse number does not. Loop node `2891d28e` stays **open**. | REQUIREMENTS R-025; audit 2026-08-15; probe 2026-08-16 | sales-insights |
 | G28 | Referral fee reaches the money math: `inboundFeePct` (recorded 25%) currently write-only — wire it into `tc_commissions.referral_fee` when a referred person's deal closes | REQUIREMENTS R-203; audit 2026-08-15 | transactions |
 | G29 | Stand the verification fleet up: Matt creates the 6 starter bots from VERIFICATION-FLEET.md briefs; endpoint proven with a synthetic finding end-to-end (POST → table → intake → node → rejected-as-test); first core+regression pass runs | REQUIREMENTS R-207; VERIFICATION-FLEET.md | factory |
 | G30 | **DONE 2026-08-15** — Flow Prover lane: designated fleet test identity recognized at the intake chokepoint (tag + all-channel suppression), wake-task skip, auto-enroll refusal, packet-count exclusion — all four guards proven live (fixture person 61855: tagged, suppressed, 0 tasks, enroll refused, excluded). Flows case pack + Bot 6 brief + `fleet-flow-verify` backend check shipped. | REQUIREMENTS R-208; chokepoint proof 2026-08-15 | factory |
+| G31 | Newsletter redesign (look only): restyle the branded email shell + admin rendered preview so Matt can approve the look. Enroll and send stay Matt-manual after that approve. Zero sends in this node. | REQUIREMENTS R-212; R-159 | nurture |
 
-Matt-only (the complete list of human dependencies for v1 — nothing else waits on you):
+Matt-only (steered 2026-08-16 — CHANGE/HOLD/PARK/DONE recorded below; nothing else waits):
 
 | # | Move | Ref |
 |---|---|---|
-| M1 | Newsletter first cohort send (5,346 subscribers waiting) | CAP-020 |
-| M2 | TC: unpause TC_BUILDOUT or hold, and the SkySlope cutover decision | CAP-012 |
-| M3 | Video: park or rebuild (after G12 docket) | CAP-017 |
-| M4 | Ads spend: fund or explicitly park for v1 (audience wiring is agent work either way) | CAP-018 |
-| M5 | DNS cutover timing (ryan-realty.com) | CAP-001 |
-| M6 | One-line PARK sign-off: LinkedIn / INT-010 (no provider refresh token — a new grant only if you ever want LinkedIn distribution), Threads, Nextdoor, Pinterest, RentCast, SchoolDigger, Inngest, and Grok memory as SoR (CAP-033 — stays assist-only) stay parked for v1 | INT PARK list + CAP-033 |
+| M1 | **CHANGE 2026-08-16** — first-cohort blast is no longer the v1 gate. Loop work is G31 redesign. After Matt approves the look, he enrolls and sends manually. | CAP-020 |
+| M2 | **HOLD 2026-08-16** — TC cutover held until the TMS has been thoroughly tested. Do not unpause TC_BUILDOUT. Vault stays SoR; SkySlope stays live TMS. | CAP-012 |
+| M3 | **SILENCE 2026-08-16** — park-in-practice. R-045 stays LOCKED. Docket remains (park $0 / rebuild $0.05/1k Turbo + $5/row). No rebuild until Matt says rebuild. | CAP-017 |
+| M4 | **PARKED 2026-08-16** — no ad spend for v1. Audience wiring and the Meta heartbeat continue. | CAP-018 |
+| M5 | **DONE 2026-08-16** — ryan-realty.com has been the live host for a long time (A 76.76.21.21, `server: Vercel`). DNS cutover is not an open gate. | CAP-001 |
+| M6 | **REVIEWED 2026-08-16** — Matt said the OAuth/env set is connected. Live probe: TikTok / YouTube / X / GBP have rows + refresh tokens (KEEP, heartbeat). LinkedIn has a row but expired 2026-07-09 with **no refresh token** (PARK). Threads / Pinterest / Nextdoor auth **empty** (PARK). RentCast / SchoolDigger / Inngest are env keys, not OAuth — still PARK as product paths. No reconnect ask. | INT PARK list + CAP-033 |
 
-There is no OAuth reconnect task. Tokens self-renew by design (Matt 2026-08-15: the credentials are env-side; stop asking). The prior M1 was an escape — see `process_escape_ledger`.
+There is no OAuth reconnect task. Tokens that can refresh self-renew (Matt 2026-08-15). The prior M1-as-reconnect was an escape — see `process_escape_ledger`.
 
 ## Certification pass (run when the gap list is empty)
 

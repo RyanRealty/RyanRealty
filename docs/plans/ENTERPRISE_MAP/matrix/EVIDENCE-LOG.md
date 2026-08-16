@@ -411,3 +411,19 @@ SoR: `docs/plans/ENTERPRISE_MAP/integration-health-probes.json` via `readIntegra
 | INT-036 AdSense | **green** KEEP | `NEXT_PUBLIC_ADSENSE_CLIENT_ID` present (`pub-592866…`); production homepage JS chunks contain `adsbygoogle`, `googlesyndication`, and `pub-592866`; first HTML has no `ins` (consent + lazyOnload); slots `/tools/appreciation` 1001003001 and `/activity` 1001003002 |
 
 Health counts after: green 18 · amber 9 · red 0 · dark 10 · **unknown 0** · sum 37. Dispositions: KEEP 23 · PARK 10. No factory ledger insert (open window `ba3435dd`).
+
+---
+
+## 2026-08-16 — Matt steering (M1–M6) + G27 residual + G31 seed
+
+Source: Matt 2026-08-16 session. Recorded in VERSION-1 + REQUIREMENTS R-212. No product ship this entry.
+
+| Move | Recorded | Evidence |
+|---|---|---|
+| M1 CHANGE | Redesign is G31; look-approve then Matt-manual enroll/send | R-159 PARTIAL; R-212 MISSING→G31 |
+| M2 HOLD | TC cutover held until TMS thoroughly tested | CAP-012 residual HOLD |
+| M3 SILENCE | Park-in-practice; R-045 LOCKED; docket `decision.status` stays pending | video-decision-docket.json note |
+| M4 PARKED | No ad spend for v1 | CAP-018 residual |
+| M5 DONE | ryan-realty.com live: A `76.76.21.21`, `server: Vercel` (curl 2026-08-16; 403 is bot-UA screen) | CAP-001 residual closed |
+| M6 REVIEWED | TikTok/YT/X/GBP rows + refresh. LinkedIn expired 2026-07-09 no refresh. Threads/Pin/Nextdoor empty. | live auth tables 2026-08-16 |
+| G27 | **Not done.** Public CS lockdown 2026-08-02. Pulse `active_count` still includes CS. Bend pulse 486; City=Bend SFR CS = 5. Node `2891d28e` stays open. | `refresh_market_pulse` FILTER Active+CS; probe this session |

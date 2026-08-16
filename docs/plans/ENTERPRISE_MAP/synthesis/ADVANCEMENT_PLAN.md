@@ -115,11 +115,11 @@ See `inventories/M-live-db-counts.json` / EVIDENCE-LOG. Snapshot includes listin
 ## 4. Matt-gated (cannot agent-close)
 
 - ~~F7 MV maintenance window~~ **SCRUBBED** (prod 2026-07-29)  
-- Newsletter first cohort send  
-- Ad spend / outbound to real people / public social publish approvals  
-- ~~OAuth reconnect logins~~ **SCRUBBED 2026-08-15** (auto-refresh verified; LinkedIn parked)  
-- DNS cutover timing  
-- TC_BUILDOUT unpause  
+- Newsletter look-approve after G31 (enroll/send Matt-manual)  
+- Ad spend PARKED for v1 · outbound to real people / public social publish  
+- ~~OAuth reconnect logins~~ **SCRUBBED 2026-08-15** (auto-refresh verified; LinkedIn parked; M6 reviewed 2026-08-16)  
+- ~~DNS cutover timing~~ **DONE 2026-08-16** (ryan-realty.com live)  
+- TC cutover HOLD until TMS thoroughly tested  
 - GO on agentic graph waves  
 
 ---

@@ -46,7 +46,7 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 
 | ID | Residual | Status |
 |----|----------|--------|
-| CAP-001 | DNS cutover ops | BLOCKED_MATT timing |
+| CAP-001 | ~~DNS cutover~~ DONE 2026-08-16 (ryan-realty.com live) | DONE |
 | CAP-002 | Search filter/opt plans residual; **F7 MV DONE prod 2026-07-29** (T-017) | ACTIVE |
 | CAP-003 | Showcase polish continuous | ACTIVE |
 | CAP-004 | EXPERIENCE archetype completion | ACTIVE |
@@ -57,15 +57,15 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 | CAP-009 | Stage model; multi-broker product | ACTIVE |
 | CAP-010 | Measurement parity for all send classes | ACTIVE |
 | CAP-011 | 11F inbox completion | ACTIVE (parallel) |
-| CAP-012 | TC unpause + quality | BLOCKED_MATT / GO_GATED |
+| CAP-012 | TC cutover HOLD until TMS tested | HOLD (Matt 2026-08-16) |
 | CAP-013 | CMA production pipeline | ACTIVE |
 | CAP-014 | FSBO hygiene continuous | ACTIVE |
 | CAP-015 | Publish identity + ready drain; measured status class | PARTIAL — status flip **shipped** |
 | CAP-016 | NO_SCRIPT residual | ACTIVE |
-| CAP-017 | Video park or rebuild | ACTIVE decision — G12 docket delivered; waiting M3 |
-| CAP-018 | Ads spend | BLOCKED_MATT |
+| CAP-017 | Video silence = park-in-practice | PARK-IN-PRACTICE (Matt silence 2026-08-16) |
+| CAP-018 | Ads spend PARKED for v1; audience wiring continues | PARKED (Matt 2026-08-16) |
 | CAP-019 | ~~Reconnect expired OAuth~~ **SCRUBBED 2026-08-15** — tokens auto-refresh via daily heartbeat (verified live); LinkedIn PARKED (no provider refresh token). Residual: publish cadence productization | ACTIVE |
-| CAP-020 | First cohort send | BLOCKED_MATT |
+| CAP-020 | Newsletter redesign G31; look-approve then Matt-manual send | ACTIVE (G31) + M1 look-approve |
 | CAP-021–023 | Broker/portal productization | ACTIVE |
 | CAP-024 | Shell maintain | KEEP |
 | CAP-025 | Remaining 11F islands | ACTIVE |
@@ -149,11 +149,11 @@ Tracked in ADVANCEMENT_PLAN.md §2. All streams remain visible.
 | Item |
 |------|
 | ~~F7 MV window~~ **SCRUBBED** — applied prod 2026-07-29 (T-017 / F7-sync-contention.md); residual latency ≠ unapplied F7 |
-| Newsletter first cohort |
-| Ad spend / outbound / public publish approvals |
-| ~~OAuth reconnect logins~~ **SCRUBBED 2026-08-15** — auto-refresh verified; LinkedIn parked. Only a future "connect LinkedIn/Threads/Pinterest/Nextdoor" decision would be Matt's |
-| DNS cutover |
-| TC_BUILDOUT unpause |
+| Newsletter look-approve after G31 (enroll/send Matt-manual) |
+| Ad spend PARKED for v1 · outbound / public publish approvals |
+| ~~OAuth reconnect logins~~ **SCRUBBED 2026-08-15** — auto-refresh verified; LinkedIn parked. M6 reviewed 2026-08-16: KEEP set connected; Threads/Pin/Nextdoor empty; no reconnect ask |
+| ~~DNS cutover~~ **DONE 2026-08-16** |
+| TC cutover HOLD until TMS tested |
 | Agentic graph Wave GO |
 
 ---

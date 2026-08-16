@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-211 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-212 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -52,7 +52,7 @@
 | R-022 | No invented five-year percentages or 0–10 scores on listing intelligence; over/under or refuse | public look 2026-08-14 | LOCKED | — |
 | R-023 | Imagery: reference-conditioned place work allowed; never invent a listing room/view; no people-as-residents | imagery canon 2026-08-14 | LOCKED | — |
 | R-024 | Same-labeled figures on one page share one SFR source; label type_scope SFR vs all | DESIGN_DIRECTIVES; SALES_INTELLIGENCE | LOCKED | — |
-| R-025 | Exclude Coming Soon from for-sale counts and anon access everywhere | handoff 2026-08-02; COMING_SOON_SQL | PARTIAL | G27 — anon access verified sealed (RLS + trigger + gate); pulse `active_count` still includes Coming Soon by design (audit 2026-08-15: Bend 487 contained 4 CS) |
+| R-025 | Exclude Coming Soon from for-sale counts and anon access everywhere | handoff 2026-08-02; COMING_SOON_SQL | PARTIAL | G27 — anon/public listing access sealed (2026-08-02 session). Residual: pulse `active_count` still SQL-includes CS (probe 2026-08-16: Bend pulse 486; City=Bend SFR CS = 5) |
 | R-026 | Every number in packets/newsletters is a compliance artifact; one definition per metric | ADMIN 00-REASONING | PARTIAL | G18 |
 | R-027 | Oregon TC disclosures derive from role×property with primary-source citations | RECONCILED-RULES §1.15 | GATED | M2 (TC resume) |
 | R-028 | Public competitor brokerage names locked off forever (I6); admin desk may keep names | PRODUCT.md | LOCKED | — |
@@ -221,7 +221,7 @@
 | R-156 | Admin Subscriptions hub: subscribe any contact, edit criteria in place with live English summary + count, bulk manage | SAVED_SEARCH; ADMIN_CONSOLIDATION | VERIFIED | — |
 | R-157 | Sequences: monitoring-first weekly, authoring under Settings, pause-on-reply; ENROLLMENT_EPOCH — never mass-enroll the historical book | PHASE-0; RECONCILED §6.4 | LOCKED | — |
 | R-158 | Expired capture floor: SFR $500K+ six cities; auto-enroll stays paused; never solicit re-listed expireds (re-check at send) | DECISIONS-RECORDED §9; RECONCILED §1.10 | LOCKED | — |
-| R-159 | Newsletter: auto-draft on the 1st, Matt approves, engagement-tiered gradual delivery; first cohort = past clients + engaged + West Side | LIFECYCLE goal; DECISIONS §9 | GATED | M1 |
+| R-159 | Newsletter: auto-draft on the 1st; Matt approves the rendered look; he enrolls and sends manually. First-cohort blast is not a loop gate (CHANGE 2026-08-16) | LIFECYCLE goal; DECISIONS §9; Matt 2026-08-16 | PARTIAL | G31 + M1 look-approve |
 | R-160 | Draft-first everywhere: CMA/BPO/newsletter build allowed, send to real lead requires human click; approval surfaces show rendered previews | LIFECYCLE; crm-up-to-snuff | LOCKED | — |
 | R-161 | One tracked send layer: composers only; one send chokepoint conversation→governed-send→provider; idempotency keys, no double-send | 01-DECISIONS; MASTER-SPEC D13 | LOCKED | — |
 | R-162 | Visitor hot-lead handling: five-minute call task only; escalate email off | Track 2 P3 | VERIFIED | — |
@@ -299,7 +299,8 @@
 | R-209 | No idle waste, no stale instructions: bot packs served live from the work graph (auto-update every iteration); routines are check-first heartbeats ending in seconds on RUN-TOKEN match — effective execution is event-driven, the loop never waits on bots | Matt 2026-08-15 (thoughtful sequencing, minimize downtime) | VERIFIED | `/api/fleet/cases/[pack]` + RUN-TOKEN protocol in every brief; loop-inline verification remains the ship gate |
 | R-210 | Full co-evolution: bot findings enter through the steering verbs (intake at every loop boot; p0/major findings outrank planned work; regressions carry the CHANGE duty into their node); the loop rewrites full bot briefs in code, served live — bots follow next heartbeat, nothing re-pasted | Matt 2026-08-15 ("everything grows together") | VERIFIED | `/api/fleet/briefs/[bot]` + `fleet-intake-core` in loop-brief boot + `fleetNodePriority` queue ordering |
 | R-211 | THE LOOP stays DISARMED until Matt explicitly arms it ("arm the loop"). After that word, it stays armed until he says "disarm the loop". Planning-mode hold: infrastructure may be built and pushed, but no unattended iteration launches while `LOOP_SENTINEL=off`. One iteration ran before the hold landed (bc-13c50db8 completed G2 cleanly, 2026-08-16 02:20–02:45 UTC); the system was disarmed the same hour, then armed on Matt's word | Matt 2026-08-15 ("we are still in planning mode … we don't want to be executing a loop yet"); Matt 2026-08-16 21:52 PT ("Arm the loop") | LOCKED | Armed 2026-08-16 21:52 PT: `LOOP_SENTINEL=on` written to Vercel production; bake deploy follows this row. Disarm requires the same explicit word. Silence never arms or disarms |
+| R-212 | Newsletter redesign is loop work: restyle the branded email shell + admin rendered preview; Matt approves the look; enroll and send stay Matt-manual. Zero agent sends | Matt 2026-08-16 (M1 CHANGE) | MISSING | G31 |
 
 ## Standing Matt gates (never agent-closed)
 
-Outbound to real people · public posts · ad spend · OAuth grants/new-platform connects · newsletter first cohort (M1) · TC resume/SkySlope cutover (M2) · video park-or-rebuild (M3) · ads fund-or-park (M4) · DNS timing (M5) · park sign-offs (M6) · press pitches · GBP/Zillow/Yelp profile corrections · severity-gate loosening · referral agreements.
+Outbound to real people · public posts · ad spend · OAuth grants/new-platform connects · newsletter look-approve after G31 (M1) · TC cutover HOLD until TMS tested (M2) · video silence = park-in-practice (M3; rebuild only if Matt says rebuild) · ads spend PARKED for v1 (M4) · ~~DNS timing (M5)~~ DONE 2026-08-16 · OAuth/env review recorded (M6; no reconnect ask) · press pitches · GBP/Zillow/Yelp profile corrections · severity-gate loosening · referral agreements.

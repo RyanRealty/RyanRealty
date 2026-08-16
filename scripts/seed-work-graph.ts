@@ -229,9 +229,18 @@ const SEEDS = [
     domain: 'sales-insights',
     title: 'Coming Soon count truth on served for-sale counts',
     objective:
-      'REQUIREMENTS R-025 / audit 2026-08-15: pulse active_count includes Coming Soon by design while the directive says exclude. Either exclude CS from served for-sale counts or label the definition on every surface that shows it. Matt may pick the definition; blast-radius dal-stat + public-site + reporting; §0 applies.',
-    output: 'One definition, applied and labeled everywhere the count renders.',
-    accept: 'Bend spot-check: served count matches its stated definition exactly (verified against boundary SFR query both ways).',
+      'REQUIREMENTS R-025: public listing access is sealed (2026-08-02). Residual: pulse active_count still SQL-includes Coming Soon. Exclude CS from served for-sale pulse counts or label the definition on every surface that shows the pulse number. Blast-radius dal-stat + public-site + reporting; §0 applies.',
+    output: 'One definition, applied and labeled everywhere the pulse count renders.',
+    accept: 'Bend spot-check: served pulse active_count matches its stated definition exactly (verified against boundary SFR query both ways: with CS and without).',
+  },
+  {
+    versionGap: 'G31',
+    domain: 'nurture',
+    title: 'Newsletter redesign (look only)',
+    objective:
+      'REQUIREMENTS R-212 / Matt 2026-08-16 M1 CHANGE: restyle wrapBrandedEmail / wrapNewsletterHtml and the admin rendered preview so Matt can approve the look. Enroll and send stay Matt-manual. Zero sends. Do not change cohort enrollment logic in this node.',
+    output: 'Redesigned shell + /admin/newsletters preview at 375 and 640; screenshots; G-NL-7 still green.',
+    accept: 'Rendered preview at 375 and 640 is the look Matt can approve from /admin/newsletters/[id]. Brand-voice clean. Zero newsletter sends in the node evidence.',
   },
   {
     versionGap: 'G29',
