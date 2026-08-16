@@ -325,8 +325,8 @@ export default async function LoopStatusPage() {
             name="Fix list"
             figure={`${status.nodes.byState.open} waiting · ${status.nodes.byState.in_progress} in progress · ${status.nodes.byState.blocked} waiting on you · ${status.nodes.byState.done} done`}
           />
-          <QuietRow name="Video" figure={videoLine} />
-          <QuietRow name="Connected tools" figure={integrationsLine} />
+          <QuietRow name="Video docket" figure={videoLine} />
+          <QuietRow name="Integration health" figure={integrationsLine} />
           <QuietRow name="Search leftovers" figure={searchLine} />
         </ul>
       </Fold>
