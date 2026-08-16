@@ -18,6 +18,14 @@ export async function stampFirstBrokerActionIfEmpty(
 ): Promise<boolean> {
   if (!Number.isFinite(personId) || personId <= 0) return false
   if (!OUTBOUND.has(input.kind)) return false
+  // Named writer: first outbound advances Lead → Nurture (G3). No-op when the
+  // person is already past Lead. Runs even when the stamp is already set.
+  try {
+    const { advanceJourneyStage } = await import('@/lib/data/crm/advanceJourneyStage')
+    await advanceJourneyStage({ personId, trigger: 'first-outbound' })
+  } catch (e) {
+    console.warn('[stampFirstBrokerActionIfEmpty] journey advance failed:', e)
+  }
   const at = input.at ?? new Date().toISOString()
 
   const { data, error } = await sb

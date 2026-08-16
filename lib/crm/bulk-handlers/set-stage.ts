@@ -105,7 +105,7 @@ export const setStageHandler: BulkHandler = async (ids, params): Promise<Partial
       person_id: id,
       kind: 'stage_change',
       title: `Stage: ${prev || '(none)'} → ${stageLabel} (bulk)`,
-      source: 'app',
+      source: 'broker-set-stage',
     })
     result.processed++
     bump('staged')

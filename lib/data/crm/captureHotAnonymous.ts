@@ -20,10 +20,9 @@ import type { CrmBrokerSlug } from '@/lib/crm/constants'
  * visitor (an rr_vid), it reads the visitor's signals, runs the PURE
  * isSustainedHotAnonymous rule, and on a qualify:
  *
- *   1. Creates ONE native crm_people { source:'hot-anonymous', stage:'Nurture' }
+ *   1. Creates ONE native crm_people { source:'hot-anonymous', stage:'Lead' }
  *      lead via buildNativePersonRow — the canonical native-create chokepoint,
- *      which stamps the streamline-v2 entry stage (the legacy 'Lead' stage was
- *      retired/deactivated 2026-07-03) and the source tag. No email/phone yet —
+ *      which stamps the inbound entry stage (G3) and the source tag. No email/phone yet —
  *      this is a behavior-only lead, tagged so it is queryable +
  *      remarketing-addressable, routed to the default broker.
  *   2. Stitches the rr_vid -> known-record link through the EXISTING identity-map
@@ -169,9 +168,8 @@ export async function captureHotAnonymous(
   const sb = createServiceClient()
 
   // Create the behavior-only native lead through the canonical builder so it
-  // satisfies the native-create contract (stage 'Nurture' — the streamline-v2
-  // entry stage; the legacy 'Lead' stage was retired 2026-07-03 and a 'Lead' row
-  // would be invisible to every active-stage surface). No email/phone yet — this
+  // satisfies the native-create contract (stage 'Lead' — inbound entry; Nurture
+  // is earned by sequence-enroll or first-outbound). No email/phone yet — this
   // lead is identified by behavior + the rr_vid bridge, so it carries no
   // crm_contact_points. buildNativePersonRow stamps the source:<x> tag. The
   // identity-map crm_person_id write below is the durable rr_vid bridge.

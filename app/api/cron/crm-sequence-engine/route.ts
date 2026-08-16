@@ -30,6 +30,7 @@ import { instrumentSmsLinks } from '@/lib/data/crm/shortLinks'
 import { isConditionNode, type AnyStepOrCondition } from '@/lib/crm/sequence-step-schema'
 import { resolveConditionPath } from '@/lib/crm/conditions-eval'
 import { manualEnrollPerson } from '@/lib/crm/enroll'
+import { stampFirstBrokerActionIfEmpty } from '@/lib/crm/first-broker-action'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
 
 export const runtime = 'nodejs'
@@ -305,6 +306,10 @@ export async function GET(request: Request) {
             payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to },
             broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
           })
+          await stampFirstBrokerActionIfEmpty(sb, person.id, {
+            kind: 'email_out',
+            broker: mailbox.slug,
+          })
         }
         // emailClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
       } else if (step.channel === 'sms') {
@@ -424,6 +429,10 @@ export async function GET(request: Request) {
               payload: { twilioSid: sent.sid, sequence: seq.name, step: en.step_index, templateKey: step.templateKey ?? null, to: toPhone },
               broker: mailbox.slug, source: 'sequence', dedupe_key: `twilio:${sent.sid}:p${person.id}`,
             })
+            await stampFirstBrokerActionIfEmpty(sb, person.id, {
+              kind: 'sms_out',
+              broker: mailbox.slug,
+            })
           }
           // smsClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
         } else if (step.fallbackEmailBody) {
@@ -446,6 +455,10 @@ export async function GET(request: Request) {
                 person_id: person.id, kind: 'email_out', title: fbSubject, body: sent.plainBody,
                 payload: { gmailId: sent.gmailId, sequence: seq.name, step: en.step_index, via: 'sms-email-fallback', to: fbTo },
                 broker: mailbox.slug, source: 'sequence', dedupe_key: `gmail:${sent.gmailId}:p${person.id}`,
+              })
+              await stampFirstBrokerActionIfEmpty(sb, person.id, {
+                kind: 'email_out',
+                broker: mailbox.slug,
               })
             }
             // fbClaim === 'duplicate' → already sent on a prior crashed run; fall through to advance.
@@ -496,7 +509,7 @@ export async function GET(request: Request) {
         await sb.from('crm_timeline').insert({
           person_id: person.id, kind: 'stage_change',
           title: `Stage updated by workflow "${seq.name}": ${stage}`,
-          source: 'sequence',
+          source: 'sequence-change-stage',
         })
 
       } else if (step.channel === 'add_note') {

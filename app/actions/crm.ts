@@ -1147,7 +1147,7 @@ export async function updateCrmStageAction(formData: FormData): Promise<CrmActio
   if (error) return { ok: false, error: error.message }
   await sb.from('crm_timeline').insert({
     person_id: personId, kind: 'stage_change',
-    title: `Stage: ${person.stage} → ${stage}`, source: 'app',
+    title: `Stage: ${person.stage} → ${stage}`, source: 'broker-set-stage',
   })
   // Automation trigger dispatch: fire stage_changed so any crm_automation_rules
   // rows or sequence-level triggers that match this stage can enroll the person.

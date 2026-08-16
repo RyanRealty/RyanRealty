@@ -225,7 +225,7 @@
 | R-160 | Draft-first everywhere: CMA/BPO/newsletter build allowed, send to real lead requires human click; approval surfaces show rendered previews | LIFECYCLE; crm-up-to-snuff | LOCKED | — |
 | R-161 | One tracked send layer: composers only; one send chokepoint conversation→governed-send→provider; idempotency keys, no double-send | 01-DECISIONS; MASTER-SPEC D13 | LOCKED | — |
 | R-162 | Visitor hot-lead handling: five-minute call task only; escalate email off | Track 2 P3 | VERIFIED | — |
-| R-163 | Stage truth: journey stages advance from real events; Lead stage nonzero from real signal | COMPANY_IMPROVEMENT; probe | MISSING | G3 |
+| R-163 | Stage truth: journey stages advance from real events; Lead stage nonzero from real signal | COMPANY_IMPROVEMENT; probe | VERIFIED | G3 done — native-create writes Lead; sequence-enroll/first-outbound advance via advanceJourneyStage; persons 61917 + 61920 Lead; 61921 advanced Lead→Nurture; packet Lead 2 |
 | R-164 | Per-person subscriptions panel (alerts, reports, newsletter) in Audiences | ADMIN decisions | MISSING | G4 |
 | R-165 | Inbound email replies get reply-intent classification parity with SMS | W5.3 (2026-07-23) | VERIFIED | — |
 

@@ -36,7 +36,7 @@ number).
 - **Capabilities:** 6 Reliable · 22 Working · 7 Skeleton · 0 below Skeleton. Evidence: 6 VERIFIED · 27 PARTIAL · 1 UNKNOWN · 1 BLOCKED_MATT.
 - **Integrations:** the 2026-08-08 map close called GBP, LinkedIn, YouTube, and X red "reconnect" items. **Corrected 2026-08-15 with live evidence:** GBP, YouTube, and X carry 1–2 hour access tokens by provider design and auto-refresh from stored refresh tokens via the daily 12:00Z token-heartbeat (scheduled run 2026-08-15T12:00:03Z all OK; live trigger rolled expiries forward on demand). TikTok same, verified. Only LinkedIn is dead — its provider issued no refresh token — and it is **PARKED**, not a reconnect ask. Red count after correction: **0**.
 - **Ledger:** 12 rows · 12 open windows · **11 expired-unlearned, all `seo-aeo`** — the measured proof of the ad-hoc habit. The WIP guard now refuses new classes in that domain until they close.
-- **Live seams:** identity 1/164 stitched · Lead stage = 0 of 22,672 people · 6 active listing alerts · email clicks 7d = 0.
+- **Live seams:** identity 32/166 stitched · Lead stage = 2 of 22,679 people (G3 writer) · 6 active listing alerts · email clicks 7d = 0.
 
 ## The v1 floor (all seven, together)
 
@@ -56,7 +56,7 @@ Agent-executable (each is a normal loop class: ledger row → blast-radius plane
 |---|---|---|---|
 | G1 | **DONE 2026-08-15** — all 11 windows closed via `scripts/loop-learn-close-windows.ts` with §0 traces: 1 win (Tetherow LCP p75 60,768ms → 4,156ms), 1 loss (overlay discipline, engagement 0.144 → 0.119), 1 flat (llms.txt +3 AI sessions vs +10), 8 inconclusive (GSC page series not live in the June window — telemetry gap named per row). Probe `expiredUnlearned` = 0; domain unfrozen. Work-graph node `bcde58b9` carries the evidence. | ledger probe 2026-08-15 | seo-aeo |
 | G2 | **DONE 2026-08-16** — lead-capture + sign-in write `crm_person_id` on `visitor_identity_map` (lockstep with `fub_person_id`). Planes: identity, ads-audiences (`external_id`), alerts (`stampListingAlertsCrmPerson`). Packet §1b 1/164 → **32/166**. Accept: fleet-test form-submit stitch `rr_vid=g2-accept-ea08a60f-3cbc-4769-9353-c56e686588fc` person 61855. Gate `ci:identity-stitch-paths`. | packet §1b | leads |
-| G3 | Stage truth: Lead stage is 0 of 22,672 people — stage writers + journey advance so the funnel is real | CAP-009 | nurture |
+| G3 | **DONE 2026-08-16** — inbound `buildNativePersonRow` writes Lead (trigger `native-create`); `sequence-enroll` + `first-outbound` advance Lead → Nurture via `advanceJourneyStage`. Sequence first send stamps first-outbound. Compose stages read `getCrmStages`. Broker/bulk writes name `broker-set-stage`. Lead stage reactivated at position 0 (no people remap). Accept: writer created 61917 + 61920 at Lead; `advanceJourneyStage` moved 61921 Lead → Nurture (timeline source `sequence-enroll`). Packet-eligible Lead 0 → **2**. Gate `ci:stage-truth`. | CAP-009; R-163 | nurture |
 | G4 | Alerts coverage: enroll path from account/LP into `listing_alerts` (6 active today); sends never from legacy `saved_searches` | CAP-010, packet §1b | nurture |
 | G5 | Broker platform 2→3: day-one checklist, permissions, own-book views | CAP-022 | recruit-retain |
 | G6 | SMS agent to its plan's definition of done | CAP-035 | broker-tools |

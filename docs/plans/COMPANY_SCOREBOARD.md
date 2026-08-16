@@ -33,7 +33,7 @@
 |---|---|---|
 | CRM people (not deleted) | **22,672** | `crm_people` where `deleted=false` (paginated stage scan) |
 | People created last 7d | **24** | `crm_people.created_at >= now-7d`, `deleted=false`, exact count |
-| Stage mix | Nurture 20,287 · Sphere 2,338 · Past Client 32 · Active Client 12 · Trash 2 · Vendor 1 · **Lead 0** | `crm_people.stage` (Lead absent = 0) |
+| Stage mix | Nurture 20,287 · Sphere 2,338 · Past Client 32 · Active Client 12 · Trash 2 · Vendor 1 · **Lead 1** | `crm_people.stage` (G3: native-create writer; person 61917; ex-fleet:test) |
 | GCI settlement_verified | **$384,393.35** | `tc_commissions.gci` where `status='settlement_verified'` (22 rows) |
 | GCI projected | **$15,570.00** | `tc_commissions.gci` where `status='projected'` |
 | vs $1M year-1 target | **38.4%** | 384393.35 / 1000000; target in `docs/MASTER_SPEC.md` |
@@ -77,7 +77,7 @@
 
 Scored from this fetch + COMPANY_IMPROVEMENT.md. Not vibes.
 
-1. **nurture** — 20,287 Nurture / **0 Lead** / 12 Active Client. **6** active listing alerts against 22,672 people. The journey and the alert engine are unused at company scale.
+1. **nurture** — 20,287 Nurture / **1 Lead** (G3 writer live) / 12 Active Client. **6** active listing alerts against 22,672 people. Alerts remain the rotting row.
 2. **leads / identity** — stitch class closed 2026-08-16: **32/166** map rows now carry `crm_person_id` (was 1/164). Residual: 1 stale FUB-only row with no `crm_people` match, plus visitors who never identified. CAPI `external_id` and alert stamps ride the same person.
 3. **recruit-retain** — **3** brokers. `/join` convert UNKNOWN.
 4. **social-presence** — tokens are NOT the rot (corrected 2026-08-15: TikTok/YouTube/X/GBP auto-refresh via the daily heartbeat; LinkedIn parked, no provider refresh token). The rot is the pipeline: brain `measured=2`, `ready` 420, no fan-out calendar (G25).
@@ -101,8 +101,8 @@ Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pu
 |---|---|---|
 | public-ux | watch | 131 registry fields. 3,312 polygons. 0 drawn search areas. Look still a grind. |
 | seo-aeo | unfrozen | 180 GSC benchmark rows in 28d. All 11 windows CLOSED 2026-08-15 with verdicts (1 win, 1 loss, 1 flat, 8 telemetry-gap). |
-| leads | watch | Identity stitch 32/166 after G2 (was 1/164). Remaining rot is stage/journey (Lead = 0), not the map write. |
-| nurture | rotting | Lead = 0. 6 active alerts. |
+| leads | watch | Identity stitch 32/166 after G2 (was 1/164). Stage/journey is G3 (Lead = 2). |
+| nurture | watch | Lead = 2 after G3. 6 active alerts remain the rotting row. |
 | social-presence | rotting (pipeline, not tokens) | Tokens self-renew (LinkedIn parked). Rot = measured 2 / ready 420, no calendar (G25). |
 | sales-insights | watch | GCI live. Audience log ran today. |
 | transactions | rotting | SkySlope 66+ days stale. |

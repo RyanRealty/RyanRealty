@@ -174,6 +174,12 @@ export async function autoEnrollPerson(personId: number): Promise<AutoEnrollResu
     title: `Enrolled in "${seq.name}" — first touch sending automatically`,
     source: 'auto-enroll',
   })
+  try {
+    const { advanceJourneyStage } = await import('@/lib/data/crm/advanceJourneyStage')
+    await advanceJourneyStage({ personId, trigger: 'sequence-enroll' })
+  } catch (e) {
+    console.warn('[autoEnrollPerson] journey advance failed:', e)
+  }
   return { enrolled: true, sequence: seq.name }
 }
 
@@ -232,6 +238,12 @@ export async function manualEnrollPerson(personId: number, sequenceId: number, e
     title: `Enrolled in "${seq.name}" by ${enrolledBy}`,
     source: 'manual-enroll',
   })
+  try {
+    const { advanceJourneyStage } = await import('@/lib/data/crm/advanceJourneyStage')
+    await advanceJourneyStage({ personId, trigger: 'sequence-enroll' })
+  } catch (e) {
+    console.warn('[manualEnrollPerson] journey advance failed:', e)
+  }
   return { enrolled: true, sequence: seq.name }
 }
 

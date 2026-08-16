@@ -1,7 +1,7 @@
 import 'server-only'
 import { getCrmSavedViews } from '@/lib/data/crm/getCrmSavedViews'
 import { getCrmTemplatesAdmin } from '@/lib/data/crm/getCrmTemplatesAdmin'
-import { CRM_STAGES } from '@/lib/crm/constants'
+import { getCrmStages } from '@/lib/data/crm/getCrmStages'
 import type { ScopeAccess } from '@/lib/crm/scope'
 
 /**
@@ -16,10 +16,12 @@ import type { ScopeAccess } from '@/lib/crm/scope'
  *     channel only — SMS templates can't be a cohort email).
  *   - stages: the pipeline stages a "send to a stage" audience can pick.
  *
- * DAL boundary (G1): no raw .from() here. It composes two existing DAL readers
- * (getCrmSavedViews, getCrmTemplatesAdmin) + a static constant. The per-caller
+ * DAL boundary (G1): no raw .from() here. It composes existing DAL readers
+ * (getCrmSavedViews, getCrmTemplatesAdmin, getCrmStages). Stages come from the
+ * live crm_stages table (active rows only) so compose stays on the same source
+ * as the CRM picker, not the retired static stage list. The per-caller
  * scope means the saved-view counts are NOT cached (getCrmSavedViews handles that);
- * the templates read is cached by getCrmTemplatesAdmin.
+ * the templates and stages reads are cached by their DAL functions.
  */
 
 export type ComposeTemplateOption = {
@@ -47,9 +49,10 @@ export type ComposeAudienceOptions = {
 export async function getComposeAudienceOptions(
   access: ScopeAccess & { email: string },
 ): Promise<ComposeAudienceOptions> {
-  const [views, templates] = await Promise.all([
+  const [views, templates, stages] = await Promise.all([
     getCrmSavedViews(access),
     getCrmTemplatesAdmin(),
+    getCrmStages(),
   ])
 
   const savedViews: ComposeViewOption[] = views.map((v) => ({
@@ -69,5 +72,9 @@ export async function getComposeAudienceOptions(
       category: t.category,
     }))
 
-  return { savedViews, templates: templateOptions, stages: CRM_STAGES }
+  return {
+    savedViews,
+    templates: templateOptions,
+    stages: stages.filter((s) => s.isActive).map((s) => s.label),
+  }
 }
