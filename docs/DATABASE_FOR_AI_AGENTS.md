@@ -41,6 +41,7 @@
 | **Did this visitor become a known person?** | `visitor_identity_map` + `crm_people` (Google / email-click / form). Same row feeds CAPI and Meta audiences. Path: `docs/MARKETING_LEAD_FLOW.md` §9. | `rr_vid`, `crm_person_id`, `user_id`, `identify_source` | live |
 | **CRM funnel stage mix** | `crm_people.stage` via `collectCompanyScoreboardSignals` (packet). Entry stage is **Lead** (`buildNativePersonRow` / trigger `native-create`). Advance to Nurture on `sequence-enroll` or `first-outbound` (`advanceJourneyStage`). Do not backfill the historical book. | `stage` | live |
 | **Did they open or click what we sent?** | `email_events` (`event` = `open` / `click`) | `recipient_email`, `person_id`, `occurred_at` | live webhook |
+| **Is the SkySlope recon mirror current?** | `skyslope_transactions` via `getSkySlopeMirrorFreshness` / `refreshSkySlopeMirrorInbound` (`lib/data/tc/skyslope-mirror.ts`). Inbound Files API only. Vault (`tc_deals`) is the deal SoR. | `synced_at`, `property_key`, `stage` | daily cron `/api/cron/skyslope-mirror-refresh`; current means under 36 hours |
 
 > **Don't aggregate raw `listings` for market reports.** The cache tables exist exactly so you don't have to. They're stamped with `methodology_version` and refreshed every 6 hours. Use them.
 

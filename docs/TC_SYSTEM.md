@@ -108,6 +108,21 @@ documents are EMAILED to recipients and signing must be easy straight from the e
 | 5 | Dashboard reads tc_* natively; Gmail gap-hunt + FUB person links surfaced per deal | After 3 |
 | 6 | Cutover: archive export verified, SkySlope canceled | After a clean parallel deal |
 
+## SkySlope inbound recon mirror (ops)
+
+`skyslope_transactions` / `skyslope_dashboard_meta` are a **read-only recon snapshot**, not the deal SoR. Closings read `tc_deals`. The class that left the mirror stale from 2026-06-10 was "refresh lives only on a Mac script."
+
+**Ops path (inbound only — no SkySlope file mutations):**
+
+1. Production cron `GET /api/cron/skyslope-mirror-refresh` daily 06:20 UTC (`vercel.json`), `Authorization: Bearer $CRON_SECRET`.
+2. DAL: `refreshSkySlopeMirrorInbound()` + `getSkySlopeMirrorFreshness()` in `lib/data/tc/skyslope-mirror.ts`.
+3. Client: `lib/tc/skyslope-inbound.ts` — HMAC `POST /auth/login`, then GET folder list + detail. Runtime allowlist refuses PUT/PATCH/DELETE and any POST except login.
+4. Manual: same cron URL against production, or `npx tsx scripts/loop-probe-g8.ts` to read freshness.
+5. Heartbeat: `evalSkySlopeMirror` in `/api/cron/loop-health-check` (red if `synced_at` older than 36h).
+6. Blocker if keys are missing: set `SKYSLOPE_ACCESS_KEY` / `SKYSLOPE_ACCESS_SECRET` / `SKYSLOPE_CLIENT_ID` / `SKYSLOPE_CLIENT_SECRET` on Vercel production (existing Files API HMAC — not a new OAuth grant) and re-run the cron.
+
+The heavier Mac chain (`scripts/skyslope-dashboard-refresh.mjs`) still exists for a full document-list inventory. It is not the freshness path.
+
 ## Invariants (carry from CLAUDE.md + the compliance skill)
 
 - Draft-first: UI/code deliverables reviewed before commit; SkySlope mutations still require explicit approval per action while it remains live.
