@@ -29,6 +29,7 @@
 // available for active brokers". The read is `brokers` filtered by email with no
 // active/status predicate, so "active" was not something this page checks.
 import { getSession } from '@/app/actions/auth'
+import { getAdminRoleForEmail } from '@/app/actions/admin-roles'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { createServiceClient } from '@/lib/supabase/service'
 import { BROKER_HEADSHOTS } from '@/app/admin/(protected)/crm/inbox/_components/mobile/mobile-data'
@@ -45,6 +46,7 @@ export default async function MySettingsPage() {
   const ctx = await requireAdminPage('settings.account')
   const email = ctx.email
   const session = await getSession()
+  const roleRow = await getAdminRoleForEmail(email)
 
   // Find the matching broker row by email
   const sb = createServiceClient()
@@ -81,7 +83,7 @@ export default async function MySettingsPage() {
       {/* < md — mob-06 Settings modal structure */}
       <MobileSettingsScreen
         broker={mobileBroker}
-        role={ctx.role}
+        role={roleRow?.role ?? ctx.role}
         email={email}
         avatarUrl={avatarUrl}
         appVersion={pkg.version}
