@@ -1,6 +1,7 @@
 /**
  * CAP-017 park-or-rebuild docket. Packet + /admin/loop read this file.
  * reachability: collectCompanyScoreboardSignals, /admin/loop, scripts/check-video-docket.mjs
+ * Shipped G12 2026-08-16 so a docs-only tip cannot hide this file from Vercel.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
