@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — place list medians labeled with their geography
+# Current — 2026-08-16 (cursor-loop-chain) — one published listing down-payment figure
+
+**Surface:** Cursor cloud `bc-ee409fe5` (`cursor/loop-chain-2026-08-16t21-17-4508`). **Time:** 2026-08-16 ~21:45 UTC. Brief served fleet finding `ee37b3a4` (public-ux / fleet `0b2eea305a233f4a1d246cf2e8f1a299`), not G16/G32. One node only. Product **`aba8c2222`**. **`main` @** `aba8c2222`. Vercel Production **READY** (inspector `5BnZrcoJ1jTH6XJ35NajCE44MXam`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#49**.
+
+**Done**
+- Fleet finding [p0]: `/homes-for-sale/bend/61579-rockway-220226183` printed Monthly payment $130,000 down / $519,000 loan next to Rental analysis 20% · $129,800. 20% of the listed $649,000 is $129,800. Reproduced on production before the class.
+- Class: SoR `publishFinancingSplit` is whole-dollar down plus remainder loan. Display those dollars exact, never nearest-thousand. Wired on listing Monthly payment, rental engine, estimated monthly payment, standalone mortgage calculator, and showcase payment. Gate `ci:publish-down-payment`. No public-ux ledger insert (open window `2a5054ac`).
+- After READY: production 1280 + 390 — Monthly payment **$519,200 · $129,800 down**. Rental analysis **20% · $129,800**. 0 of $130,000 / $519,000. Probe `scripts/probe-rockway-down-payment-prod.mjs` exit 0. Screenshots `/opt/cursor/artifacts/rockway_down_{1280,390}_{monthly,rental,monthly_results}.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** place list medians `eff056fb2` / handoff `fd72195e6` (node `6cc544ec` **done**). page-grade process KILLED `9afe74a6a` (do not run `/page-grade`). NWX v8e logo-in-frame killed `a67f17d6f`. Tetherow one-annual HOA. MOS withhold. Counted-set list. G33 `/admin/loop`. G32 seeded. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — place list medians labeled with their geography
 
 **Surface:** Cursor cloud `bc-b007f583` (`cursor/loop-sentinel-2026-08-16t20-10-291a`). **Time:** 2026-08-16 ~21:15 UTC. Brief served fleet finding `6cc544ec` (public-ux / fleet `5f0ec58d60988a52e76b8a559ef22f0c`), not G16/G32. One node only. Product **`eff056fb2`**. **`main` @** `9afe74a6a` + this handoff. Vercel Production **READY** (inspector `AWXRagFsuxjPARVYVgLpe1AQLsMu`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#48**.
 
