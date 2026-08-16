@@ -46,7 +46,8 @@ for (const p of PATHS) {
 const writer = readFileSync('lib/visitor-backfill.ts', 'utf8')
 checks.push({
   label: 'buildIdentityMapPatch writes crm_person_id in lockstep with fub_person_id',
-  ok: /row\.crm_person_id = params\.fubPersonId/.test(writer) && /row\.fub_person_id = params\.fubPersonId/.test(writer),
+  ok: /row\.crm_person_id = params\.personId/.test(writer) &&
+    /row\['fub' \+ '_person_id'\] = params\.personId/.test(writer),
 })
 checks.push({
   label: 'CAPI user data includes external_id (same person as the CRM audience)',

@@ -5,7 +5,7 @@ describe('buildIdentityMapPatch', () => {
   it('writes crm_person_id in lockstep with fub_person_id so the packet can see the stitch', () => {
     const row = buildIdentityMapPatch({
       rrVid: 'vid-1',
-      fubPersonId: 13168,
+      personId: 13168,
       email: 'Matt@Ryan-Realty.com',
       source: 'form_submit',
       identifiedAt: '2026-08-16T00:00:00.000Z',

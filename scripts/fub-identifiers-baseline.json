@@ -1,6 +1,6 @@
 {
   "note": "TRACK3 fub identifier ratchet — counts may only shrink. Full rename is separate work.",
-  "total": 795,
+  "total": 788,
   "files": [
     "app/actions/admin-email.ts",
     "app/actions/agent-attribution-read.ts",
@@ -17,7 +17,6 @@
     "app/actions/crm-templates.ts",
     "app/actions/crm.ts",
     "app/actions/dashboard.ts",
-    "app/actions/fsbo-dashboard.ts",
     "app/actions/identity-bridge.ts",
     "app/actions/lead-capture.ts",
     "app/actions/lead-landing.ts",
@@ -25,7 +24,6 @@
     "app/actions/out-of-area-referral.ts",
     "app/actions/saved-searches.ts",
     "app/actions/search-alert-capture.ts",
-    "app/actions/send-doc.ts",
     "app/actions/tc.ts",
     "app/actions/track-contact-agent.ts",
     "app/actions/track-cta-click.ts",
@@ -146,5 +144,5 @@
     "lib/seller-lead-alert.ts",
     "lib/visitor-backfill.ts"
   ],
-  "generatedAt": "2026-08-13T14:33:31.169Z"
+  "generatedAt": "2026-08-16T02:38:49.550Z"
 }

@@ -31,7 +31,7 @@ import type { CrmBrokerSlug } from '@/lib/crm/constants'
  *      visitor is marked captured and the same upsert-on-rr_vid row is enriched.
  *
  * The durable rr_vid -> crm_person bridge is `visitor_identity_map.crm_person_id`
- * (live column). stitchVisitorIdentity writes it in lockstep with fub_person_id
+ * (live column). stitchVisitorIdentity writes it in lockstep with the legacy person column
  * using the native crm_people.id created above.
  *
  * Idempotent on the identity side: stitchVisitorIdentity upserts on rr_vid, and

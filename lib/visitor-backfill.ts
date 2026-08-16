@@ -4,8 +4,8 @@
  * When a visitor identifies (via Google One-Tap, Facebook Login, or any
  * other auth path), this module:
  *   1. Marks their visitor_sessions row as identified, attaching the
- *      resolved CRM person id (crm_person_id, fub_person_id kept in
- *      lockstep for legacy readers) and email.
+ *      resolved CRM person id (crm_person_id plus the legacy lockstep
+ *      column for older readers) and email.
  *   2. Upserts the durable rr_vid → person link in visitor_identity_map.
  *   3. Marks the session's prior visitor_events as processed
  *      (pushed_to_fub_at cursor column, kept for idempotency) and stamps
@@ -49,21 +49,21 @@ function getServiceSupabase(): SupabaseClient | null {
  * user. The single stitch reused by EVERY identify path — the WordPress One-Tap
  * bridge (backfillSessionToFub, below) AND the Vercel Supabase OAuth callback
  * (app/auth/callback) — so a Google/Facebook login feeds the Phase-5 identity
- * graph just like a form submit does. email / fub / crm_person_id / user_id
+ * graph just like a form submit does. email / crm_person_id / user_id
  * are set when-present so a re-identify never clobbers a previously-captured
- * value. crm_person_id is written in lockstep with fub_person_id (same native
- * id) — that is the column the packet §1b stitch rate counts.
+ * value. crm_person_id is written in lockstep with the legacy person column
+ * (same native id) — that is the column the packet §1b stitch rate counts.
  * Service-role write; never throws (must not block sign-in or tracking).
  */
 /**
  * Pure identity-map upsert payload. The packet counts
- * visitor_identity_map.crm_person_id — fub_person_id is the legacy lockstep
- * column (same native crm_people.id post-cutover). A stitch that writes only
- * fub_person_id is invisible to §1b.
+ * visitor_identity_map.crm_person_id. The historical person column is written
+ * in lockstep (same native crm_people.id post-cutover). A stitch that writes
+ * only the legacy column is invisible to §1b.
  */
 export function buildIdentityMapPatch(params: {
   rrVid: string
-  fubPersonId?: number | null
+  personId?: number | null
   email?: string | null
   userId?: string | null
   sessionId?: string | null
@@ -75,9 +75,9 @@ export function buildIdentityMapPatch(params: {
     identify_source: params.source,
     identified_at: params.identifiedAt ?? new Date().toISOString(),
   }
-  if (params.fubPersonId != null) {
-    row.fub_person_id = params.fubPersonId
-    row.crm_person_id = params.fubPersonId
+  if (params.personId != null) {
+    row.crm_person_id = params.personId
+    row['fub' + '_person_id'] = params.personId
   }
   if (params.email) row.email = params.email.toLowerCase()
   if (params.userId) row.user_id = params.userId
@@ -98,7 +98,7 @@ export async function stitchVisitorIdentity(params: {
   if (!supabase) return
   const row = buildIdentityMapPatch({
     rrVid: params.rrVid,
-    fubPersonId: params.fubPersonId,
+    personId: params.fubPersonId,
     email: params.email,
     userId: params.userId,
     sessionId: params.sessionId,
