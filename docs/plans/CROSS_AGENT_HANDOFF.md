@@ -2,7 +2,27 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — G33 /admin/loop in plain English shipped
+# Current — 2026-08-16 (cursor) — Tetherow counted-set list shipped
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~12:40 PT. One node only: fleet `a1851580` / graph `bff867b9` (public-ux). Product **`dada087f`**. Vercel Production **READY** (`dpl_3Rf1T6djVVd332EgHTQzW6MxGsZY`, `npm run deploy:verify` exit 0 in 830s). No hosted migration. Loop stays **ARMED**. Node **done**. No public-ux ledger insert (open window `2a5054ac`). Did not fire an extra sentinel.
+
+**Done**
+- Fleet finding [p0]: Tetherow hero said 35 homes; a `/bend/tetherow/`-only URL grep saw 19. Reproduced: inventory doors were 25 (19 Tetherow + 3 Braeburn + 3 Lodges at Bachelor V) because `splitRowsFromTiles` silently capped at 24 and dropped no-geo tiles; featured/hero doors missed `#homes`.
+- Class: place pages list the counted set (no default cap; keep no-geo rows). City pages keep `CITY_PLACE_LIST_CAP = 24` with a showing label. Hero + featured CTAs jump to `#homes`. Alias homes keep MLS subdivision URLs — do not rewrite them to `/tetherow/` to game the bot.
+- After READY: production `https://ryan-realty.com/communities/tetherow` 200 PRERENDER. Hero **35 homes for sale in Tetherow**. `#homes` list **35** unique inventory hrefs (28 `/bend/tetherow/` + alias slugs). Map **LIVE · MLS 35**. Hero CTA `#homes`. Featured **See all 35 Tetherow homes for sale** → `#homes`. Playwright 1280 + 390 `listRows=35`. Shots `out/tetherow-count-prod/`.
+- Pre-existing console noise only: `/api/visitors/track` 400; React 418 hydration on the KB hero. Not this class.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** Tetherow MoS withhold `a15404f2`. Housing-market pulse JSON-LD fallback `0028904a`. G33 `/admin/loop` `1f01f54f`. La Pine hyphen-cache `6eded9fd`. SFR pulse remainder `4ca02de19`. Place-hero grain `706327241`. Awbrey inventory `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**. Local-only lessons commit `be938f10` (NWX v8 walk) rides this handoff push.
+
+**Next**
+- Matt keep/kill on the NWX hang pair and motion takes. Do not wire the live community header.
+- Armed sentinel keeps fleet p0s. This session does not claim a second node until the handoff is on `origin/main`.
+
+**Do not:** insert another public-ux or factory ledger row. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not claim G32 done. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not wire the live NWX community header. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, database-canonical-reference, git-commit.
+
+# Prior — 2026-08-16 (cursor) — G33 /admin/loop in plain English shipped
 
 **Surface:** Cursor Grok. **Time:** 2026-08-16 ~11:55 PT. One node only: G33 `1a6eb37a` (factory). Matt ADD routed through the register (R-214) + manifest + seeded graph node — not a side feature. Product **`1f01f54f`**. **`main` @** `1f01f54f`. Vercel Production **READY** (`dpl_G9w7nisxxBiAkXh7gchLsBzMrG1y`, `npm run deploy:verify` exit 0 in 385s). No hosted migration. Loop stays **ARMED**. Node **done**. Did not claim a fleet node. No factory ledger insert (open window `ba3435dd`). Did not fire an extra sentinel.
 
@@ -12,10 +32,6 @@
 - R-214 VERIFIED. VERSION-1 G33 **DONE 2026-08-16**. Graph node `1a6eb37a` **done**.
 
 **Also on this SHA (other session, do not steal / do not undo):** La Pine hyphen-cache `6eded9fd` / READY `FJgUZGejwabU1xuWChDSn6A8pBpb`. SFR pulse city-remainder `4ca02de19`. NWX studio hang `a8f515147`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
-
-**Next**
-- Matt keep/kill on the NWX hang pair and motion takes. Do not wire the live community header.
-- Armed sentinel keeps fleet p0s. Do not curl an extra sentinel from this session.
 
 **Do not:** claim a fleet p0. Do not insert another public-ux or factory ledger row. Do not claim G32 done. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
 
