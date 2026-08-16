@@ -10,7 +10,6 @@
 import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
-import { createClient } from '@supabase/supabase-js'
 import {
   groupFoldersIntoProperties,
   isSkySlopeMirrorCurrent,
@@ -106,9 +105,10 @@ export async function refreshSkySlopeMirrorInbound(): Promise<SkySlopeMirrorRefr
     const pulled = await pullSkySlopeInboundFolders()
     const properties = groupFoldersIntoProperties([...pulled.sales, ...pulled.listings])
     const syncedAt = new Date().toISOString()
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url?.trim() || !key?.trim()) {
+    let sb
+    try {
+      sb = createServiceClient()
+    } catch {
       return {
         ok: false,
         error: 'Supabase service role missing',
@@ -120,7 +120,6 @@ export async function refreshSkySlopeMirrorInbound(): Promise<SkySlopeMirrorRefr
         syncedAt: null,
       }
     }
-    const sb = createClient(url, key)
     const rows = properties.map((p) => ({
       property_key: p.property_key,
       address: p.address,

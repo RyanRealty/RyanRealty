@@ -9,8 +9,8 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
-import { createClient } from '@supabase/supabase-js'
 import { requireCronAuth } from '@/lib/auth/cron-auth'
+import { createServiceClient } from '@/lib/supabase/service'
 import { refreshSkySlopeMirrorInbound } from '@/lib/data/tc/skyslope-mirror'
 
 export const runtime = 'nodejs'
@@ -25,10 +25,7 @@ async function writeLog(input: {
   cycleId: string
 }) {
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url || !key) return
-    const sb = createClient(url, key)
+    const sb = createServiceClient()
     await sb.from('sync_logs').insert({
       endpoint: 'skyslope_mirror_refresh',
       method: 'GET',
