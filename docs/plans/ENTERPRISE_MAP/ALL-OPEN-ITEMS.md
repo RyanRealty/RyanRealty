@@ -91,7 +91,7 @@ Every CAP has a matrix row. Below = **ship residual only** (not re-list full mat
 | INT-014–016 | Threads/Nextdoor/Pinterest | **PARKED** |
 | INT-017 | SkySlope mirror freshness (ops path LIVE 2026-08-16; rows still 2026-06-10 until first successful cron) | FRESHNESS RESIDUAL |
 | INT-018 | FUB residue cleanup optional | LEGACY |
-| INT-021–036 | unknown→probed over time | ACTIVE |
+| INT-021–036 | **DONE 2026-08-16** — unknown = 0. Green: 021/023/031/032/036. Park: 026/029/033. SoR `integration-health-probes.json` | DONE |
 | INT-037 | Tooling keys bucket | DONE disposition |
 
 ---

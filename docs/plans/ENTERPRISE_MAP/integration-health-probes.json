@@ -1,0 +1,94 @@
+{
+  "status": "ok",
+  "recordedAt": "2026-08-16T11:43:42.231Z",
+  "source": "docs/plans/ENTERPRISE_MAP/integration-health-probes.json",
+  "versionGap": "G13",
+  "unknownBefore": [
+    "INT-021",
+    "INT-023",
+    "INT-026",
+    "INT-029",
+    "INT-031",
+    "INT-032",
+    "INT-033",
+    "INT-036"
+  ],
+  "unknownCount": 0,
+  "probedCount": 8,
+  "greenCount": 5,
+  "parkCount": 3,
+  "rows": [
+    {
+      "id": "INT-021",
+      "system": "OpenAI",
+      "health": "green",
+      "disposition": "KEEP",
+      "probedAt": "2026-08-16T11:43:08.533Z",
+      "httpStatus": 200,
+      "evidence": "GET https://api.openai.com/v1/models HTTP 200; models=118; sample=text-embedding-ada-002. Call path live. No completion spend."
+    },
+    {
+      "id": "INT-023",
+      "system": "xAI",
+      "health": "green",
+      "disposition": "KEEP",
+      "probedAt": "2026-08-16T11:43:08.533Z",
+      "httpStatus": 200,
+      "evidence": "GET https://api.x.ai/v1/models HTTP 200; models=12; sample=grok-4.20-0309-non-reasoning. Call path live. No generate."
+    },
+    {
+      "id": "INT-026",
+      "system": "Sentry",
+      "health": "dark",
+      "disposition": "PARK",
+      "probedAt": "2026-08-16T11:43:42.231Z",
+      "httpStatus": 200,
+      "evidence": "SENTRY_AUTH_TOKEN GET https://sentry.io/api/0/ HTTP 200 scopes=[org:ci] only. Projects 403. DSN host o0.ingest.sentry.io project 0 (stub). Production homepage JS has the word sentry, not ingest.sentry.io. Ingest not confirmed. SDK may stay; do not treat as live observability."
+    },
+    {
+      "id": "INT-029",
+      "system": "NeverBounce",
+      "health": "dark",
+      "disposition": "PARK",
+      "probedAt": "2026-08-16T11:43:08.533Z",
+      "httpStatus": null,
+      "evidence": "NEVERBOUNCE_API_KEY missing in this environment. Only caller is scripts/_neverbounce-validate.mjs (ops CSV). No product path. Park until an email-hygiene job is funded."
+    },
+    {
+      "id": "INT-031",
+      "system": "Stock media",
+      "health": "green",
+      "disposition": "KEEP",
+      "probedAt": "2026-08-16T11:43:08.533Z",
+      "httpStatus": 200,
+      "evidence": "Unsplash GET /search/photos?query=bend%20oregon&per_page=1 HTTP 200 results=1. Pexels and Shutterstock keys missing here. Live path is Unsplash via lib/photo-api.ts."
+    },
+    {
+      "id": "INT-032",
+      "system": "Gen media",
+      "health": "green",
+      "disposition": "KEEP",
+      "probedAt": "2026-08-16T11:43:08.533Z",
+      "httpStatus": 200,
+      "evidence": "Replicate GET /v1/account HTTP 200 username=ryanrealty. Synthesia GET /v2/videos?limit=1 HTTP 200 videos=1. FAL_KEY missing. No generate this probe."
+    },
+    {
+      "id": "INT-033",
+      "system": "VAPID",
+      "health": "dark",
+      "disposition": "PARK",
+      "probedAt": "2026-08-16T11:43:08.533Z",
+      "httpStatus": 200,
+      "evidence": "VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT missing in this environment. push_subscriptions=1 active=0. Production /sw.js HTTP 200 has a push listener. Channel is DARK without keys. No send."
+    },
+    {
+      "id": "INT-036",
+      "system": "AdSense",
+      "health": "green",
+      "disposition": "KEEP",
+      "probedAt": "2026-08-16T11:43:42.231Z",
+      "httpStatus": 200,
+      "evidence": "NEXT_PUBLIC_ADSENSE_CLIENT_ID present (pub-592866…). Production homepage JS chunks contain adsbygoogle, googlesyndication, and pub-592866. First HTML has no ins (consent + lazyOnload). Slots: /tools/appreciation 1001003001, /activity 1001003002."
+    }
+  ]
+}

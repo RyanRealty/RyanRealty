@@ -31,22 +31,22 @@ Disposition: **KEEP** · **FIX** · **RECONNECT** · **PARK** · **LEGACY_RESIDU
 | INT-018 | Follow Up Boss | `FOLLOWUPBOSS_API_KEY`, `FOLLOWUPBOSS_SYSTEM`, `FOLLOWUPBOSS_SYSTEM_KEY`, `FUB_LOGIN_EMAIL`, `FUB_LOGIN_PASSWORD`, `NEXT_PUBLIC_FUB_PIXEL_ID`, `NEXT_PUBLIC_FUB_EMAIL_CLICK_PARAM` | `lib/followupboss.ts` = **native shim** (`sendEvent` → `ensureNativeLead`); cutover 2026-06-24 | CRM SoR is `crm_people` (22978); FUB HTTP intentionally dead | **Legacy** | **dark** | **LEGACY_RESIDUE** | CRM loop — **must not be SoR**. Keys may remain for historical verify-env; remove public FUB pixel/params when safe |
 | INT-019 | ElevenLabs | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `ELEVENLABS_VOICE_ID_VICTORIA`, `ELEVENLABS_VOICE_ID_ELLEN` | `lib/voice/*`, `scripts/_voice_lib.py`; Victoria locked | keys present; VO pipeline code live | **Runtime** creative | **green** | **KEEP** | Creative/VO loop — Victoria only for public VO; Ellen id is alt inventory |
 | INT-020 | Apify | `APIFY_API_TOKEN` | `lib/fsbo-detector.ts`, `lib/marketing-brain/competitor-recon.ts` | token present; FSBO/recon paths | **Runtime** scrape | **green** | **KEEP** | Prospecting loop — FSBO / competitor recon |
-| INT-021 | OpenAI | `OPENAI_API_KEY` | AI features across app/scripts | key present | **Runtime** AI | **unknown** | **KEEP** | AI loop — no per-call ledger probed this pass |
+| INT-021 | OpenAI | `OPENAI_API_KEY` | AI features across app/scripts | GET `/v1/models` **200** models **118** (2026-08-16) | **Runtime** AI | **green** | **KEEP** | AI loop — models list live; no completion spend this probe |
 | INT-022 | Anthropic | `ANTHROPIC_API_KEY` | `lib/ai/anthropic.ts`, producer-runtime, voice reviewer | key present; producers depend | **Runtime** AI | **green** | **KEEP** | Brain/producer loop — primary model path for many rows |
-| INT-023 | xAI | `XAI_API_KEY` | `lib/grok-*.ts` | key present | **Runtime** AI | **unknown** | **KEEP** | Grok creative loop |
+| INT-023 | xAI | `XAI_API_KEY` | `lib/grok-*.ts` | GET `/v1/models` **200** models **12** (2026-08-16) | **Runtime** AI | **green** | **KEEP** | Grok creative loop — models list live; no generate this probe |
 | INT-024 | Google Maps | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, `REMOTION_GOOGLE_MAPS_KEY` | maps UI, CMA maps, Remotion | keys present; site maps critical path | **Runtime** maps | **green** | **KEEP** | Product maps loop |
 | INT-025 | Upstash Redis | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | `lib/x.ts`, `lib/pinterest.ts` OAuth state, rate limits | keys present; used as ephemeral OAuth state store | **Runtime** cache | **green** | **KEEP** | Platform loop — OAuth CSRF/state depends on Redis where used |
-| INT-026 | Sentry | `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Next/Sentry SDK wiring | DSN present | **Runtime** monitoring | **unknown** | **KEEP** | Observability — confirm event ingest separately if needed |
+| INT-026 | Sentry | `SENTRY_DSN`, `SENTRY_AUTH_TOKEN` | Next/Sentry SDK wiring | token `org:ci` only; DSN project **0** stub; no ingest host in prod JS | **Optional** monitoring | **dark** | **PARK** | Observability — SDK may stay; ingest is not live. Do not treat as a production monitor |
 | INT-027 | RentCast | `RENTCAST_API_KEY` | changelog notes HUD FMR preferred; calc accepts optional estimate | key in env; little/no live `.ts` call sites found this pass | **Optional** data | **dark** | **PARK** | DSCR/tools loop — prefer `lib/hud-fmr`; key may be residue until AVM product re-enabled |
 | INT-028 | SchoolDigger | `SCHOOLDIGGER_API_KEY`, `SCHOOLDIGGER_APP_ID` | research JSON / school URLs; tool inventory “configured” | keys present; static research more than live API traffic | **Optional** data | **dark** | **PARK** | Content/SEO schools — park live API until school pages re-wire to API; static data remains |
-| INT-029 | NeverBounce | `NEVERBOUNCE_API_KEY` | `scripts/_neverbounce-validate.mjs` | key present; script tooling | **Runtime**/Tooling | **unknown** | **KEEP** | Email hygiene loop — ops script; not continuous product path |
+| INT-029 | NeverBounce | `NEVERBOUNCE_API_KEY` | `scripts/_neverbounce-validate.mjs` | key **missing** this env; ops CSV only | **Optional**/Tooling | **dark** | **PARK** | Email hygiene — no product path. Park until a funded hygiene job |
 | INT-030 | BatchData | `BATCHDATA_API_KEY` | `lib/owner-resolution.mjs`, expired owner lookup | key present; skip-trace path in expired processor | **Runtime** enrichment | **green** | **KEEP** | Expired/FSBO prospecting — Vercel must have key or skip-trace fails soft |
-| INT-031 | Stock media | `PEXELS_API_KEY`, `UNSPLASH_ACCESS_KEY`, `SHUTTERSTOCK_API_KEY`, `SHUTTERSTOCK_API_SECRET` | `lib/pexels-api.ts`, `lib/shutterstock-api.ts`, asset credits | keys present | **Runtime** creative | **unknown** | **KEEP** | Creative assets loop |
-| INT-032 | Gen media | `REPLICATE_API_TOKEN`, `FAL_KEY`, `SYNTHESIA_API_KEY` | `app/actions/broker-headshot.ts`, `app/actions/synthesia.ts`, video scripts | keys present | **Runtime** creative | **unknown** | **KEEP** | Creative gen loop — optional per deliverable |
-| INT-033 | VAPID (web push) | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `app/api/push/_lib/web-push.ts` | keys present | **Runtime** | **unknown** | **KEEP** | Push notifications loop — no subscription volume probed |
+| INT-031 | Stock media | `PEXELS_API_KEY`, `UNSPLASH_ACCESS_KEY`, `SHUTTERSTOCK_API_KEY`, `SHUTTERSTOCK_API_SECRET` | `lib/pexels-api.ts`, `lib/photo-api.ts`, `lib/shutterstock-api.ts` | Unsplash search **200** results=1 (2026-08-16); Pexels/Shutterstock missing here | **Runtime** creative | **green** | **KEEP** | Creative assets — Unsplash is the live path |
+| INT-032 | Gen media | `REPLICATE_API_TOKEN`, `FAL_KEY`, `SYNTHESIA_API_KEY` | `app/actions/broker-headshot.ts`, `app/actions/synthesia.ts`, video scripts | Replicate account **200** `ryanrealty`; Synthesia videos **200** n=1; FAL missing | **Runtime** creative | **green** | **KEEP** | Creative gen — account paths live; no generate this probe |
+| INT-033 | VAPID (web push) | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | `app/api/push/_lib/web-push.ts`; `/sw.js` | keys **missing** this env; `push_subscriptions` 1/0 active; `/sw.js` 200 | **Optional** | **dark** | **PARK** | Push channel code live, unconfigured. No send. Park until VAPID keys are provisioned |
 | INT-034 | Inngest | `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` | `lib/inngest.ts` thin HTTP `send` (no-op if key missing); `app/api/admin/sync*` emits events | keys present; **no Inngest functions/worker surface** in repo — fire-and-forget only | **Optional**/Tooling | **amber** | **PARK** | Sync UX loop — **depth: not production job runner**. Crons own real work. Keep keys or drop; do not plan jobs on Inngest without re-architecture |
 | INT-035 | Google OAuth / CrUX | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_CRUX_API_KEY`, `GCP_USER_REFRESH_TOKEN` | GBP/YouTube/etc OAuth fallback; `scripts/measure-search-and-analytics.mjs` (CrUX) | OAuth clients present; dependent social tokens auto-refresh via heartbeat (verified 2026-08-15) | **Runtime**/Tooling | **amber** | **KEEP** | Shared OAuth client + perf tooling; CrUX is measure script only |
-| INT-036 | AdSense | `NEXT_PUBLIC_ADSENSE_CLIENT_ID` | public ad client id in env | id present | **Optional** | **unknown** | **KEEP** | Monetization optional — confirm slots live on money pages separately |
+| INT-036 | AdSense | `NEXT_PUBLIC_ADSENSE_CLIENT_ID` | `components/AdUnit.tsx`, `GoogleAnalytics.tsx` | prod JS has `adsbygoogle` + `pub-592866…` (2026-08-16); consent + lazyOnload | **Optional** | **green** | **KEEP** | Monetization — client in production bundle; slots on `/tools/appreciation` + `/activity` |
 | INT-037 | OTHER / tooling bucket | Leftover & cross-cutting keys from `D-env-keys.txt` not owned solely by INT-001…036 (see table below) | scattered flags, TC ingest, Vertex, Cursor, site URL | mixed (flags + tooling keys present) | **Tooling** / flags | **amber** | **TOOLING** | Map hygiene — do not invent INT rows for every flag; review annually for dead keys |
 
 ## INT-037 leftover key map (from `inventories/D-env-keys.txt`)
@@ -79,6 +79,9 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 | **INT-016** | Pinterest | No client keys in env; `pinterest_auth` n=0; library only |
 | **INT-027** | RentCast | Key present; product prefers HUD FMR; no active call-site census |
 | **INT-028** | SchoolDigger | Keys present; static research dominates; live API not product-critical |
+| **INT-026** | Sentry | Stub DSN project 0; CI token `org:ci` only; ingest not live |
+| **INT-029** | NeverBounce | Key missing; ops CSV script only; no product path |
+| **INT-033** | VAPID | Keys missing; 0 active push subscriptions; `/sw.js` present |
 | **INT-034** | Inngest | Optional event emit only; not job orchestrator |
 
 ## Health Sense rollup (required fields)
@@ -103,31 +106,38 @@ Keys **not** fully covered as primary credentials of INT-001…036, or dual-use 
 | INT-016 | never | n/a | n/a PARK | n/a | — |
 | INT-017 | ops live 2026-08-16; synced_at still 2026-06-10 | n/a | Mirror only (ok) | stale until first cron | TC |
 | INT-018 | cutover 2026-06-24 | n/a | **must be false as SoR** | n/a | CRM legacy |
-| INT-019…033 | keys present | n/a | yes where used | unknown | per row |
+| INT-019…025 | keys present / probed | n/a | yes where used | n/a | per row |
+| INT-021 | models 118 at 2026-08-16 | n/a | yes | n/a | AI |
+| INT-023 | models 12 at 2026-08-16 | n/a | yes | n/a | Grok |
+| INT-026 | stub DSN; org:ci token | n/a | no ingest | n/a | PARK |
+| INT-029 | key missing | n/a | n/a PARK | n/a | PARK |
+| INT-031 | Unsplash 200 (2026-08-16) | n/a | yes | n/a | Creative |
+| INT-032 | Replicate+Synthesia 200 | n/a | yes | n/a | Creative |
+| INT-033 | keys missing; 0 active subs | n/a | n/a PARK | n/a | PARK |
 | INT-034 | n/a (optional emit) | n/a | optional | n/a | PARK |
 | INT-035 | CrUX script-only; OAuth shared | see socials | partial | n/a | OAuth |
-| INT-036 | unknown | n/a | optional | n/a | Ads optional |
+| INT-036 | prod JS pub-592866 + adsbygoogle 2026-08-16 | n/a | optional live | n/a | Ads |
 | INT-037 | n/a | n/a | tooling | n/a | Hygiene |
 
-## Health counts (corrected 2026-08-15 — token auto-refresh verified live; supersedes the 2026-08-08 red readings) — 37 rows
+## Health counts (corrected 2026-08-16 — G13 unknown-health probes; supersedes the 2026-08-15 unknown=8) — 37 rows
 
 | Health | n | IDs |
 |--------|--:|-----|
-| **green** | **13** | 001 Supabase · 003 Vercel · 005 Resend · 009 GBP · 011 TikTok · 012 YouTube · 013 X · 019 ElevenLabs · 020 Apify · 022 Anthropic · 024 Maps · 025 Upstash · 030 BatchData |
+| **green** | **18** | 001 Supabase · 003 Vercel · 005 Resend · 009 GBP · 011 TikTok · 012 YouTube · 013 X · 019 ElevenLabs · 020 Apify · 021 OpenAI · 022 Anthropic · 023 xAI · 024 Maps · 025 Upstash · 030 BatchData · 031 Stock · 032 Gen media · 036 AdSense |
 | **amber** | **9** | 002 Spark · 004 Twilio · 006 Google SA · 007 Meta · 008 GA4/GTM · 017 SkySlope · 034 Inngest · 035 Google OAuth/CrUX · 037 OTHER/tooling |
 | **red** | **0** | — (2026-08-08 called 009/010/012/013 red from `expires_at` alone; that read ignored refresh tokens + the heartbeat — see EVIDENCE-LOG 2026-08-15 and `process_escape_ledger`) |
-| **dark** | **7** | 010 LinkedIn (parked, no provider refresh token) · 014 Threads · 015 Nextdoor · 016 Pinterest · 018 FUB · 027 RentCast · 028 SchoolDigger |
-| **unknown** | **8** | 021 OpenAI · 023 xAI · 026 Sentry · 029 NeverBounce · 031 Stock · 032 Gen media · 033 VAPID · 036 AdSense |
+| **dark** | **10** | 010 LinkedIn (parked, no provider refresh token) · 014 Threads · 015 Nextdoor · 016 Pinterest · 018 FUB · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID |
+| **unknown** | **0** | — |
 | **sum** | **37** | |
 
 ## Disposition counts
 
 | Disposition | n | IDs / notes |
 |-------------|--:|-------------|
-| **KEEP** | 26 | runtime retain (greens + most amber/unknown keepers, incl. 009/012/013 auto-refresh + 035 shared OAuth clients) |
+| **KEEP** | 23 | runtime retain (greens + most amber keepers, incl. 009/012/013 auto-refresh + 035 shared OAuth clients) |
 | **FIX** | 2 | 007 Meta audience heartbeat (first green 2026-08-15, hold 7d) · 017 SkySlope mirror freshness |
 | **RECONNECT** | 0 | none — auto-refresh verified; there is no standing "Matt reconnect" task (Matt 2026-08-15) |
-| **PARK** | 7 | 010 LinkedIn · 014 Threads · 015 Nextdoor · 016 Pinterest · 027 RentCast · 028 SchoolDigger · 034 Inngest |
+| **PARK** | 10 | 010 LinkedIn · 014 Threads · 015 Nextdoor · 016 Pinterest · 026 Sentry · 027 RentCast · 028 SchoolDigger · 029 NeverBounce · 033 VAPID · 034 Inngest |
 | **LEGACY_RESIDUE** | 1 | 018 FUB |
 | **TOOLING** | 1 | 037 OTHER bucket |
 

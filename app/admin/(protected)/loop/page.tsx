@@ -8,6 +8,7 @@
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getLoopStatus, type LoopNodeSummary } from '@/lib/data/loop/status'
+import { readIntegrationHealth } from '@/lib/data/loop/integration-health'
 import { readVideoDecisionDocket } from '@/lib/data/loop/video-docket'
 import { QueueRow, QuietRow, VerdictLine, SectionHead } from '@/components/admin/v2'
 import { formatDate } from '@/lib/format/date'
@@ -36,6 +37,7 @@ export default async function LoopStatusPage() {
   await requireAdminPage('settings.system')
   const status = await getLoopStatus()
   const video = readVideoDecisionDocket()
+  const integrations = readIntegrationHealth()
   const nowMs = Date.now()
 
   const running = status.nodes.runningNow
@@ -93,6 +95,15 @@ export default async function LoopStatusPage() {
               video.status === 'ok'
                 ? `park $0 vendor · rebuild cap $5/row · ${video.inventory.deadSafeZoneImports} dead imports · M3 ${video.decision.status}`
                 : 'docket unreadable'
+            }
+          />
+          <QuietRow
+            name="Integration health"
+            state={integrations.status === 'ok' && integrations.unknownCount === 0 ? 'PROBED' : 'UNREAD'}
+            figure={
+              integrations.status === 'ok'
+                ? `unknown ${integrations.unknownCount} · green ${integrations.greenCount} · park ${integrations.parkCount} · ${integrations.probedCount} probed`
+                : 'probes unreadable'
             }
           />
         </ul>

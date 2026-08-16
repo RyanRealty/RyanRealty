@@ -27,6 +27,7 @@
 | Needs-reauth integrations | **0 active** — GBP/YouTube/X/TikTok auto-refresh from stored refresh tokens via the daily 12:00Z heartbeat (verified live 2026-08-15, scheduled run all OK + on-demand trigger rolled expiries). LinkedIn is `needs-reauth` and **PARKED** (provider issued no refresh token). No Matt reconnect task exists. | heartbeat `sync_logs` 2026-08-15T12:00:03Z + probe `social.tokens` (`auto-refresh` vs `needs-reauth`) |
 | Meta audience heartbeat | last LIVE **2026-08-16T09:01:26Z** CRM received 13980. consecutive UTC days already ≥7 (`readMetaAudienceHold`). KEEP waits for a day **≥ 2026-08-22** (G11 accept). Daily freshness 36h. | `lib/data/loop/meta-audience-hold.ts` |
 | Video park-or-rebuild docket | **Delivered.** Park = incremental vendor $0 (keep R-045, inbox stays matt_alert). Rebuild = ElevenLabs Turbo $0.05/1k + producer cap $5/row $15/run; 24 REGISTRY rows + 11 dead safe-zone imports; requires changing R-045. Decision **pending** (M3). | `docs/plans/ENTERPRISE_MAP/video-decision-docket.json` via `readVideoDecisionDocket` |
+| Integration health (INT-021…036) | **unknown = 0.** Green 5 (OpenAI, xAI, Unsplash, Replicate+Synthesia, AdSense). Park 3 (Sentry stub, NeverBounce, VAPID). | `docs/plans/ENTERPRISE_MAP/integration-health-probes.json` via `readIntegrationHealth` |
 
 ## 1. Money and license
 
@@ -70,6 +71,7 @@
 | Holistic blast-radius + named surfaces | factory | Search, alerts, polygons, identity, CMA, Spark, ads keys are scored on the same packet | `2ac16199` |
 | `/join` conversion instrumented | recruit-retain | Packet recruit-retain has a named visit/convert figure | G10 `join-conversion` |
 | Video park-or-rebuild docket | factory | Packet + `/admin/loop` carry both options costed; M3 still pending | G12 `video-docket` |
+| Unknown-health integrations probed | factory | INTEGRATIONS health counts unknown = 0 with per-row evidence | G13 `integration-health` |
 
 ## 3. What is measuring
 

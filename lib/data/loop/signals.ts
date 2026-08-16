@@ -10,6 +10,7 @@ import { isExpiredUnlearned } from './ledger-draft'
 import { readJoinConversionStats } from './join-conversion'
 import { readLookWalkBaseline } from './look-walk'
 import { readMetaAudienceHold, type MetaAudienceHold } from './meta-audience-hold'
+import { readIntegrationHealth } from './integration-health'
 import { readVideoDecisionDocket } from './video-docket'
 import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
 
@@ -161,6 +162,14 @@ export type CompanyScoreboardSignals = {
     parkUsd: number
     rebuildCapPerRowUsd: number
     deadSafeZoneImports: number
+    source: string
+  }
+  integrations: {
+    status: SignalStatus
+    unknownCount: number
+    probedCount: number
+    greenCount: number
+    parkCount: number
     source: string
   }
 }
@@ -519,6 +528,16 @@ export async function collectCompanyScoreboardSignals(
     source: videoDocket.source,
   }
 
+  const intHealth = readIntegrationHealth()
+  const integrations: CompanyScoreboardSignals['integrations'] = {
+    status: intHealth.status,
+    unknownCount: intHealth.unknownCount,
+    probedCount: intHealth.probedCount,
+    greenCount: intHealth.greenCount,
+    parkCount: intHealth.parkCount,
+    source: intHealth.source,
+  }
+
   return {
     fetchedAt,
     crm,
@@ -543,5 +562,6 @@ export async function collectCompanyScoreboardSignals(
     lookWalk,
     join,
     video,
+    integrations,
   }
 }

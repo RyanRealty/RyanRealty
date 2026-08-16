@@ -394,3 +394,20 @@ Notes:
 - LinkedIn: lib has full refresh logic (`lib/linkedin.ts` refreshLinkedInToken) but the provider issued no refresh token at grant time → cannot self-renew → **PARKED per Matt 2026-08-15**. Heartbeat will log linkedin 500 daily while parked; expected, not a defect.
 - Check added: `lib/data/loop/signals.ts` TokenHealth now carries `refreshTokenPresent` and statuses `auto-refresh` / `needs-reauth` (replaces the misleading `expired`). Escape recorded in `process_escape_ledger`.
 - Cells corrected: INTEGRATIONS INT-009/010/011/012/013/035 + health counts (red 4 → 0, green 9 → 13, dark 6 → 7) + dispositions (RECONNECT 5 → 0, PARK 6 → 7, KEEP 22 → 26); SOCIAL-PARKS; CAP-019; ALL-OPEN §1/§2/§8; ADVANCEMENT_PLAN S5/§4/§6; SESSION_HANDOFF highlights + step 4; REMAINING; DUAL-PASS residual row; VERSION-1 (M-list has no OAuth move); COMPANY_SCOREBOARD §0.
+
+### G13 unknown-health probes 2026-08-16 (loop-sentinel bc-4c2a67d8)
+
+SoR: `docs/plans/ENTERPRISE_MAP/integration-health-probes.json` via `readIntegrationHealth`. Accept: health counts **unknown = 0**. No generate, no send, no spend.
+
+| ID | Result | Evidence |
+|----|--------|----------|
+| INT-021 OpenAI | **green** KEEP | GET `https://api.openai.com/v1/models` HTTP 200; models=118; sample=`text-embedding-ada-002` |
+| INT-023 xAI | **green** KEEP | GET `https://api.x.ai/v1/models` HTTP 200; models=12; sample=`grok-4.20-0309-non-reasoning` |
+| INT-026 Sentry | **dark** PARK | Auth GET `https://sentry.io/api/0/` HTTP 200 scopes=`org:ci` only; projects 403; DSN host `o0.ingest.sentry.io` project 0 (stub); prod JS has the word sentry, not `ingest.sentry.io` |
+| INT-029 NeverBounce | **dark** PARK | `NEVERBOUNCE_API_KEY` missing; only caller `scripts/_neverbounce-validate.mjs` |
+| INT-031 Stock | **green** KEEP | Unsplash GET `/search/photos?query=bend%20oregon&per_page=1` HTTP 200 results=1; Pexels/Shutterstock keys missing here |
+| INT-032 Gen media | **green** KEEP | Replicate GET `/v1/account` HTTP 200 username=`ryanrealty`; Synthesia GET `/v2/videos?limit=1` HTTP 200 videos=1; `FAL_KEY` missing; no generate |
+| INT-033 VAPID | **dark** PARK | VAPID keys missing; `push_subscriptions` 1 total / 0 active; production `/sw.js` HTTP 200 has a push listener; no send |
+| INT-036 AdSense | **green** KEEP | `NEXT_PUBLIC_ADSENSE_CLIENT_ID` present (`pub-592866…`); production homepage JS chunks contain `adsbygoogle`, `googlesyndication`, and `pub-592866`; first HTML has no `ins` (consent + lazyOnload); slots `/tools/appreciation` 1001003001 and `/activity` 1001003002 |
+
+Health counts after: green 18 · amber 9 · red 0 · dark 10 · **unknown 0** · sum 37. Dispositions: KEEP 23 · PARK 10. No factory ledger insert (open window `ba3435dd`).
