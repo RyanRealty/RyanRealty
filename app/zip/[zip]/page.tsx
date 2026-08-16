@@ -39,6 +39,7 @@ import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeo
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
@@ -192,7 +193,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     // not cached in market_stats_cache. Always relabeled as city-level so no
     // city figure is presented as the ZIP's own trend. (§0)
     withTimeoutFallback(
-      getPriceHistory('city', citySlug, 'monthly', 60),
+      getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60),
       [] as Awaited<ReturnType<typeof getPriceHistory>>,
       4500,
       'zip:cityPriceHistory',

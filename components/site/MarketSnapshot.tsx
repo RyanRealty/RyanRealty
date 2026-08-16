@@ -1,5 +1,6 @@
 import { getRegionPulse } from '@/lib/data/market/getRegionPulse'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import {
   Body,
   Container,
@@ -122,7 +123,10 @@ export default async function MarketSnapshot({ citySlug, cityName }: Props = {})
   let updatedAt = ''
 
   if (citySlug) {
-    const pulse = await getMarketPulse({ geoType: 'city', geoSlug: citySlug })
+    const pulse = await getMarketPulse({
+      geoType: 'city',
+      geoSlug: canonicalCityCacheSlug(citySlug),
+    })
     if (pulse) {
       activeCount = pulse.activeCount
       medianListPrice = pulse.medianListPrice

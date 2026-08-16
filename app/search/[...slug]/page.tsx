@@ -24,6 +24,7 @@ import {
   isSortOnlyPreset,
 } from '@/lib/site/preset-faq'
 import { getMarketPulse, getDerivedPopularSearches } from '@/lib/data'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import SearchFilterBar from '../../../components/SearchFilterBar'
 import ShareButton from '../../../components/ShareButton'
 import {
@@ -324,7 +325,10 @@ export default async function SearchPage({
   // §0: area-scoped totalCount must name the area, not the city.
   const presetAreaLabel = subdivision ? placeName : null
   const cityPulse = (isPlainCityPage || isPresetDepthPage) && relatedCitySlug
-    ? await getMarketPulse({ geoType: 'city', geoSlug: relatedCitySlug }).catch(() => null)
+    ? await getMarketPulse({
+        geoType: 'city',
+        geoSlug: canonicalCityCacheSlug(relatedCitySlug),
+      }).catch(() => null)
     : null
   const cityMarketFaq = isPlainCityPage && city ? buildMarketFaq(city, cityPulse) : null
   const presetDepth =

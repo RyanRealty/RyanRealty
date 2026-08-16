@@ -14,6 +14,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getTrailBySlug, CO_TRAILS, type CoTrail } from '@/data/co-trails'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
@@ -154,7 +155,10 @@ async function fetchTrailDetail(slug: string): Promise<TrailDetail | null> {
   await attachTileVideos(homes)
   const relatedTrails = CO_TRAILS.filter((t) => t.slug !== trail.slug && t.city === trail.city)
 
-  const pulse = await getMarketPulse({ geoType: 'city', geoSlug: trail.geoSlug }).catch(() => null)
+  const pulse = await getMarketPulse({
+    geoType: 'city',
+    geoSlug: canonicalCityCacheSlug(trail.geoSlug),
+  }).catch(() => null)
   const cityMarket: AreaMarket | null = pulse
     ? {
         city: trail.city,

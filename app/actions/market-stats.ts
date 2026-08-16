@@ -2,6 +2,7 @@
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { slugify, subdivisionEntityKey } from '@/lib/slug'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import type { CityMarketStats } from '@/app/actions/listings'
 import { MARKET_REPORT_DEFAULT_CITIES } from '@/lib/data/geo/report-cities'
 
@@ -152,7 +153,7 @@ function cachedToMarketStats(cached: CachedStatRow): CityMarketStats {
 export async function getMarketStatsForCity(
   cityName: string
 ): Promise<CityMarketStats> {
-  const geoSlug = slugify(cityName)
+  const geoSlug = canonicalCityCacheSlug(cityName)
   const [pulse, cached] = await Promise.all([
     getLiveMarketPulse({ geoType: 'city', geoSlug }),
     getCachedStats({ geoType: 'city', geoSlug }),
@@ -168,7 +169,7 @@ export async function getMarketStatsForCity(
 export async function populateMarketPulseForCity(cityName: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const supabase = createServiceClient()
-    const geoSlug = slugify(cityName)
+    const geoSlug = canonicalCityCacheSlug(cityName)
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const sevenDaysAgo = new Date()

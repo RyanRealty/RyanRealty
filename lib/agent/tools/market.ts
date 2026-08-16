@@ -10,6 +10,7 @@
  */
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import type { GeoType } from '@/lib/data/types/shared'
 import type { AgentContext, AgentCitation, AgentTool, ToolOutcome } from '@/lib/agent/types'
 
@@ -40,7 +41,7 @@ async function marketStatsHandler(input: Record<string, unknown>, _ctx: AgentCon
   const cityRaw = typeof input.city === 'string' ? input.city.trim() : ''
   if (!cityRaw) return { result: { error: 'city is required' } }
   const geoType: GeoType = isGeoType(input.geoType) ? input.geoType : 'city'
-  const geoSlug = toGeoSlug(cityRaw)
+  const geoSlug = geoType === 'city' ? canonicalCityCacheSlug(cityRaw) : toGeoSlug(cityRaw)
 
   const [pulse, detail] = await Promise.all([
     getMarketPulse({ geoType, geoSlug }),

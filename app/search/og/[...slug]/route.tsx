@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { getPresetBySlug } from '@/lib/search-presets'
 import { getLiveMarketPulse } from '@/app/actions/market-stats'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 
 export const runtime = 'edge'
 
@@ -23,7 +24,9 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string[
   const place = subdivision ? `${subdivision}, ${city}` : city
   const title = preset ? `${preset.label} in ${place}` : `Homes for Sale in ${place}`
 
-  const pulse = citySlug ? await getLiveMarketPulse({ geoType: 'city', geoSlug: citySlug }) : null
+  const pulse = citySlug
+    ? await getLiveMarketPulse({ geoType: 'city', geoSlug: canonicalCityCacheSlug(citySlug) })
+    : null
 
   const active = pulse?.active_count != null ? Math.round(Number(pulse.active_count)).toLocaleString() : 'N/A'
   const pending = pulse?.pending_count != null ? Math.round(Number(pulse.pending_count)).toLocaleString() : 'N/A'

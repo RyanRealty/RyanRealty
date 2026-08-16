@@ -14,6 +14,7 @@ import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { GOLF_COURSES, type GolfCourse } from '@/data/golf/courses'
 import { cityToGeoSlug } from '@/lib/golf-format'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
@@ -161,7 +162,10 @@ async function fetchGolfDetail(slug: string): Promise<GolfDetail | null> {
     (c) => c.slug !== course.slug && cityToGeoSlug(c.city) === geoSlug,
   )
 
-  const pulse = await getMarketPulse({ geoType: 'city', geoSlug }).catch(() => null)
+  const pulse = await getMarketPulse({
+    geoType: 'city',
+    geoSlug: canonicalCityCacheSlug(geoSlug),
+  }).catch(() => null)
   const cityMarket: AreaMarket | null = pulse
     ? {
         city: course.city.replace(/\s*\(.*?\)/g, '').split('/')[0].trim(),

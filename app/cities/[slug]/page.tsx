@@ -38,6 +38,7 @@ import {
 } from '@/lib/data'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -162,7 +163,7 @@ export default async function CityDetailPage({ params }: Props) {
   // market_pulse_live + market_stats_cache store city geo_slug SPACE-separated
   // ("la pine", "powell butte") — normalize for those reads, or multi-word cities
   // come back stat-dead. Keep the hyphenated `slug` for URLs / cityHero / config.
-  const geoSlug = slug.replace(/-/g, ' ')
+  const geoSlug = canonicalCityCacheSlug(slug)
 
   const [
     pulse, regionPulse, mktStats, priceHist, communities, neighborhoodStats,

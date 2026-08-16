@@ -35,6 +35,7 @@ import { marketVerdict } from '@/lib/market/classify'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getGeoSnapshot } from '@/lib/data/geo/getGeoSnapshot'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { getMarketStats } from '@/lib/data/market/getMarketStats'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
 import { getRecentBlogPosts } from '@/lib/data/blog/getRecentBlogPosts'
@@ -286,7 +287,7 @@ async function buildCity(citySlug: string): Promise<MegaMenuCity> {
   const name = CITY_NAME_BY_SLUG.get(citySlug) ?? citySlug
   const [snapshot, pulse] = await Promise.all([
     getGeoSnapshot({ geoType: 'city', geoKey: citySlug }),
-    getMarketPulse({ geoType: 'city', geoSlug: citySlug }),
+    getMarketPulse({ geoType: 'city', geoSlug: canonicalCityCacheSlug(citySlug) }),
   ])
   return {
     name,

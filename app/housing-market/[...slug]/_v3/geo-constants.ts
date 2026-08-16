@@ -12,6 +12,7 @@
  */
 
 import { RESORT_SLUG_TO_CITY } from '@/lib/community-slug'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 
 /**
  * Pre-heat these city reports at build time. Resorts in this list are still
@@ -106,7 +107,7 @@ export function resolveGeo(slug: string[]): GeoResolution {
 
   return {
     geoType: 'city',
-    geoSlug: citySlug,
+    geoSlug: canonicalCityCacheSlug(citySlug),
     citySlug,
     communitySlug: null,
     cityName,

@@ -59,6 +59,7 @@ import {
   isTrendSeriesTooSparse,
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -154,7 +155,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const cityName = neighborhood.cityName
   // market_pulse_live + market_stats_cache store city geo_slug SPACE-separated
   // ("la pine", "powell butte") — normalize for those reads.
-  const cityGeoSlug = citySlug.replace(/-/g, ' ')
+  const cityGeoSlug = canonicalCityCacheSlug(citySlug)
 
   // Boundary polygon slug for neighborhoods: "{citySlug}-{neighborhoodSlug}"
   const boundaryNeighborhoodSlug = `${citySlug}-${neighborhoodSlug}`

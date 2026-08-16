@@ -19,6 +19,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getEventBySlug, CO_EVENTS, type CoEvent } from '@/data/co-events'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
@@ -189,7 +190,10 @@ async function fetchEventDetail(slug: string): Promise<EventDetail | null> {
 
   // Live city market snapshot (the moat). Resilient: a miss/timeout degrades to
   // null and the page simply omits the band — it never fails the event page.
-  const pulse = await getMarketPulse({ geoType: 'city', geoSlug: event.geoSlug }).catch(() => null)
+  const pulse = await getMarketPulse({
+    geoType: 'city',
+    geoSlug: canonicalCityCacheSlug(event.geoSlug),
+  }).catch(() => null)
   const cityMarket: AreaMarket | null = pulse
     ? {
         city: event.city,

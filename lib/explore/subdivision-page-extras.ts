@@ -4,6 +4,7 @@
  */
 
 import { listingDetailPath, slugify } from '@/lib/slug'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import resortCommunitiesData from '@/data/resort-communities.json'
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import { lifestyleNearLatLng, type LifestyleNearItem } from '@/lib/explore/lifestyle-near'
@@ -132,7 +133,7 @@ export async function fetchSubdivMarketExtras(input: {
   const [cityPulse, communityPulse] = await Promise.all([
     input.citySlug
       ? withTimeoutFallback(
-          getMarketPulse({ geoType: 'city', geoSlug: input.citySlug }),
+          getMarketPulse({ geoType: 'city', geoSlug: canonicalCityCacheSlug(input.citySlug) }),
           null,
           3000,
           'sub:city-pulse',

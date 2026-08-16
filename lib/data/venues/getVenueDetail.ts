@@ -18,6 +18,7 @@ import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { getVenueBySlug, CO_VENUES, type CoVenue } from '@/data/co-venues'
 import { CO_EVENTS, type CoEvent } from '@/data/co-events'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { getListingVideos } from '@/lib/data/videos/getListingVideos'
 import { toTileBackgroundVideo } from '@/lib/video-embed'
 import type { AreaMarket } from '@/lib/area-market'
@@ -188,7 +189,10 @@ async function fetchVenueDetail(slug: string): Promise<VenueDetail | null> {
       a.name.localeCompare(b.name),
   )
 
-  const pulse = await getMarketPulse({ geoType: 'city', geoSlug: venue.geoSlug }).catch(() => null)
+  const pulse = await getMarketPulse({
+    geoType: 'city',
+    geoSlug: canonicalCityCacheSlug(venue.geoSlug),
+  }).catch(() => null)
   const cityMarket: AreaMarket | null = pulse
     ? {
         city: venue.city,

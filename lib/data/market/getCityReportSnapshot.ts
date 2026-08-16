@@ -43,7 +43,13 @@
 
 import { getCityMarketDetail } from '@/lib/data/market/getCityMarketDetail'
 import { getMarketPulse } from '@/lib/data/market/getMarketPulse'
+import {
+  citySlugCandidates,
+  cityUrlSlug,
+} from '@/lib/market/city-cache-slug'
 import type { MarketDetail, MarketPulse } from '@/lib/data/types/market'
+
+export { citySlugCandidates, cityUrlSlug } from '@/lib/market/city-cache-slug'
 
 /** Live (market_pulse_live) figures — one window: "right now". */
 export type CityReportLiveBlock = {
@@ -84,23 +90,6 @@ function toNum(v: unknown): number | null {
   if (v == null) return null
   const n = typeof v === 'number' ? v : Number(v)
   return Number.isFinite(n) ? n : null
-}
-
-/**
- * Candidate cache geo_slugs for a city display name, space-separated first
- * (the spelling the live city pages read), hyphenated second (the legacy
- * spelling some cache rows carry). Pure — exported for unit tests.
- */
-export function citySlugCandidates(cityLabel: string): string[] {
-  const lower = cityLabel.trim().toLowerCase()
-  const spaced = lower.replace(/[^a-z0-9]+/g, ' ').trim()
-  const hyphen = lower.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-  return Array.from(new Set([spaced, hyphen].filter(Boolean)))
-}
-
-/** Hyphenated URL slug for /cities/<slug>. Pure — exported for unit tests. */
-export function cityUrlSlug(cityLabel: string): string {
-  return cityLabel.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 }
 
 /**

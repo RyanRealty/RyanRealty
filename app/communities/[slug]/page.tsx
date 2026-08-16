@@ -74,6 +74,7 @@ import {
   isTrendSeriesTooSparse,
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { getDistrictForCity } from '@/data/co-schools'
 import { homesForSalePath, slugify } from '@/lib/slug'
@@ -309,7 +310,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     // own neighborhood close-sale series is too thin for a real multi-year trend
     // (most subdivisions cache only a handful of recent months). Relabeled as
     // city-level when used, so no city figure is passed off as the community's. (§0)
-    withTimeoutFallback(getPriceHistory('city', citySlug, 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
+    withTimeoutFallback(getPriceHistory('city', canonicalCityCacheSlug(citySlug), 'monthly', 60), [], 4500, 'comm:cityPriceHistory'),
     // Approved per-location AREA GUIDE video for THIS community's geo slug (EXACT
     // match, null when the location has no guide video). The slot self-hides when
     // null, so it is always safe to render. (§0)
@@ -325,7 +326,7 @@ export default async function CommunityDetailPage({ params }: Props) {
     ),
     withTimeoutFallback(
       // City cache rows key multi-word cities space-separated ("la pine").
-      getCoreChartSeries({ geoType: 'city', geoSlug: citySlug.replace(/-/g, ' ') }),
+      getCoreChartSeries({ geoType: 'city', geoSlug: canonicalCityCacheSlug(citySlug) }),
       null,
       4500,
       'comm:cityCoreCharts',

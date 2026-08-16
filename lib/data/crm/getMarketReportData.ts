@@ -52,6 +52,7 @@ import { buildMarketReportAreas } from '@/lib/data/crm/getContactReportSubscript
 import { hrefForNeighborhoodSlug } from '@/lib/neighborhood-areas'
 import { REPORT_CITY_SLUG_SET } from '@/lib/data/geo/report-cities'
 import { marketVerdict } from '@/lib/market/classify'
+import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import type { MoSVerdict } from '@/lib/data/types/market'
 import { formatDate } from '@/lib/format/date'
 
@@ -383,15 +384,16 @@ export async function getMarketReportData(
   const blocks = await Promise.all(
     slugs.map(async (slug): Promise<MarketReportAreaBlock | null> => {
       const geoType = resolveAreaGeoType(slug)
+      const cacheSlug = geoType === 'city' ? canonicalCityCacheSlug(slug) : slug
 
       const [detail, pulse, trendPoints] = await Promise.all([
-        getCityMarketDetail({ geoType, geoSlug: slug, periodType: 'rolling_365d' }),
+        getCityMarketDetail({ geoType, geoSlug: cacheSlug, periodType: 'rolling_365d' }),
         // W8.1a: live pulse for cities AND resort neighborhoods (6-month MoS).
         // Neighborhood rows come from refresh_community_market_pulse (BL-016).
-        getMarketPulse({ geoType, geoSlug: slug }),
+        getMarketPulse({ geoType, geoSlug: cacheSlug }),
         // Monthly series for the email charts + month-over-month context.
         // Resilient-cached with an [] fallback — a miss never blocks the block.
-        getMarketTrend(geoType, slug, 12),
+        getMarketTrend(geoType, cacheSlug, 12),
       ])
 
       const block = buildAreaBlock({
