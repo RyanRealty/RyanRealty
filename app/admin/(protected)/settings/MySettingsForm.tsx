@@ -21,7 +21,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button, Switch } from '@/components/admin/v2'
+import { Button, SectionHead, Switch, TextField } from '@/components/admin/v2'
 import { saveBrokerSettingsAction, syncGmailSignatureAction } from '@/app/actions/broker-settings'
 import { buildEmailPreviewDoc } from '@/lib/crm/email-body'
 import { CONTACT, BRAND } from '@/lib/brand/contact'
@@ -221,44 +221,35 @@ export default function MySettingsForm({
       </section>
 
       <section className="rounded-xl border px-6 py-5 space-y-4" style={CARD_STYLE}>
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--a-text)' }}>Your socials</h2>
+        <SectionHead>Your socials</SectionHead>
         <p className="text-xs -mt-2" style={{ color: 'var(--a-text-2)' }}>
           Public profile URLs for your book. https only. Connecting a personal ad account is a
           separate Matt-approved OAuth step.
         </p>
-        <label className="block space-y-1">
-          <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>Instagram</span>
-          <input
-            className="av2-input w-full"
-            type="url"
-            value={socialInstagram}
-            onChange={(e) => setSocialInstagram(e.target.value)}
-            placeholder="https://instagram.com/you"
-            maxLength={500}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>Facebook</span>
-          <input
-            className="av2-input w-full"
-            type="url"
-            value={socialFacebook}
-            onChange={(e) => setSocialFacebook(e.target.value)}
-            placeholder="https://facebook.com/you"
-            maxLength={500}
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-xs" style={{ color: 'var(--a-text-2)' }}>LinkedIn</span>
-          <input
-            className="av2-input w-full"
-            type="url"
-            value={socialLinkedin}
-            onChange={(e) => setSocialLinkedin(e.target.value)}
-            placeholder="https://linkedin.com/in/you"
-            maxLength={500}
-          />
-        </label>
+        <TextField
+          label="Instagram"
+          type="url"
+          value={socialInstagram}
+          onChange={(e) => setSocialInstagram(e.target.value)}
+          placeholder="https://instagram.com/you"
+          maxLength={500}
+        />
+        <TextField
+          label="Facebook"
+          type="url"
+          value={socialFacebook}
+          onChange={(e) => setSocialFacebook(e.target.value)}
+          placeholder="https://facebook.com/you"
+          maxLength={500}
+        />
+        <TextField
+          label="LinkedIn"
+          type="url"
+          value={socialLinkedin}
+          onChange={(e) => setSocialLinkedin(e.target.value)}
+          placeholder="https://linkedin.com/in/you"
+          maxLength={500}
+        />
       </section>
 
       {/* Actions */}
