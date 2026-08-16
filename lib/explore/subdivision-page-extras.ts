@@ -1,10 +1,10 @@
 /**
- * Pure + async helpers for the subdivision explore stack.
+ * Pure helpers for the subdivision explore stack.
  * Keeps app/subdivisions/[slug]/page.tsx under the file-size budget.
+ * Plat live figures go through publishPlatFigures — do not fetch parent pulse here.
  */
 
 import { listingDetailPath, slugify } from '@/lib/slug'
-import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import resortCommunitiesData from '@/data/resort-communities.json'
 import { resolvePlaceContextFromListing } from '@/lib/data/geo/resolvePlaceContext'
 import { lifestyleNearLatLng, type LifestyleNearItem } from '@/lib/explore/lifestyle-near'
@@ -128,35 +128,3 @@ export function splitRowsFromTiles(
   return options?.cap != null ? rows.slice(0, options.cap) : rows
 }
 
-export type SubdivMarketExtras = {
-  cityPulse: Awaited<ReturnType<typeof import('@/lib/data').getMarketPulse>>
-  communityPulse: Awaited<ReturnType<typeof import('@/lib/data').getMarketPulse>>
-}
-
-/** City + community pulse for hero/sell — never invents plat-level stats. */
-export async function fetchSubdivMarketExtras(input: {
-  citySlug: string | null
-  resortSlug: string | null
-}): Promise<SubdivMarketExtras> {
-  const { getMarketPulse } = await import('@/lib/data')
-  const { withTimeoutFallback } = await import('@/lib/with-timeout-fallback')
-  const [cityPulse, communityPulse] = await Promise.all([
-    input.citySlug
-      ? withTimeoutFallback(
-          getMarketPulse({ geoType: 'city', geoSlug: canonicalCityCacheSlug(input.citySlug) }),
-          null,
-          3000,
-          'sub:city-pulse',
-        )
-      : Promise.resolve(null),
-    input.resortSlug
-      ? withTimeoutFallback(
-          getMarketPulse({ geoType: 'community', geoSlug: input.resortSlug }),
-          null,
-          3000,
-          'sub:community-pulse',
-        )
-      : Promise.resolve(null),
-  ])
-  return { cityPulse, communityPulse }
-}

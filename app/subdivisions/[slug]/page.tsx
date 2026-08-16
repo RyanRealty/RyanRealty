@@ -38,13 +38,13 @@ import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import {
-  fetchSubdivMarketExtras,
   lifestyleForCentroid,
   mapCentroid,
   peerPlatsForResort,
   splitRowsFromTiles,
   subdivisionPlaceContext,
 } from '@/lib/explore/subdivision-page-extras'
+import { publishPlatFigures } from '@/lib/market/publish-plat-figures'
 import { isSubdivisionIndexable } from '@/lib/data/subdivisions/getIndexableSubdivisions'
 import { getSubdivisionSalesHistory } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 import { SubdivisionSalesHistory } from './SubdivisionSalesHistory'
@@ -361,7 +361,7 @@ export default async function SubdivisionPage({ params }: Props) {
   // RPC (fails soft to [] until the migration is applied); stats = the
   // market_stats_cache geo_type='subdivision' row when one exists (most plats
   // have none until the cache backfill — the section feature-detects both).
-  const [salesHistory, subdivisionStats, subdivisionSchools, marketExtras] =
+  const [salesHistory, subdivisionStats, subdivisionSchools] =
     await Promise.all([
       withTimeoutFallback(getSubdivisionSalesHistory(slug), [], 4500, 'sub:sales-history'),
       withTimeoutFallback(
@@ -378,20 +378,14 @@ export default async function SubdivisionPage({ params }: Props) {
             'sub:schools',
           )
         : Promise.resolve([]),
-      fetchSubdivMarketExtras({ citySlug, resortSlug }),
     ])
-  const { cityPulse, communityPulse } = marketExtras
   const placeContext = subdivisionPlaceContext({ cityName, citySlug, displayName, slug })
   const peerPlats = peerPlatsForResort(resortSlug, slug)
   const centroid = mapCentroid(mapTiles)
   const lifestyleItems = lifestyleForCentroid(centroid)
-  const heroMedian =
-    inventory?.medianListPrice ??
-    communityPulse?.medianListPrice ??
-    cityPulse?.medianListPrice ??
-    null
-  const heroDom =
-    communityPulse?.medianDaysToPending ?? cityPulse?.medianDaysToPending ?? null
+  const platFigures = publishPlatFigures({
+    platMedianListPrice: inventory?.medianListPrice,
+  })
 
   // ── JSON-LD ───────────────────────────────────────────────────────────────
   const schemas: SchemaInput[] = [
@@ -445,8 +439,8 @@ export default async function SubdivisionPage({ params }: Props) {
         <KbHero
           data={{
             activeCount,
-            medianListPrice: heroMedian,
-            medianDaysToPending: heroDom,
+            medianListPrice: platFigures.medianListPrice,
+            medianDaysToPending: platFigures.medianDaysToPending,
           }}
           eyebrow={eyebrow}
           titleTop={`${displayName},`}
@@ -521,9 +515,9 @@ export default async function SubdivisionPage({ params }: Props) {
           resortSlug={resortSlug}
           cityName={cityName}
           citySlug={citySlug}
-          heroMedian={heroMedian}
-          heroDom={heroDom}
-          soldCount={cityPulse?.closedLast30Days ?? null}
+          heroMedian={platFigures.medianListPrice}
+          heroDom={platFigures.medianDaysToPending}
+          soldCount={platFigures.soldCount30d}
         />
         <KbFooter towns={[]} />
       </SmoothScrollProvider>
