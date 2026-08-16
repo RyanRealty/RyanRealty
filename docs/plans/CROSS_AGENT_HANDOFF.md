@@ -2,7 +2,22 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-36c5e37a) — G5 broker day-one + own-book shipped
+# Current — 2026-08-16 (loop-sentinel bc-95a666b5) — G6 blocked on live marketing-line SMS
+
+**Surface:** Cursor cloud agent `bc-95a666b5-6588-4122-88d5-60cbe9ba54d8`. **Time:** 2026-08-16 ~07:50 UTC. Brief served **G6** (broker-tools). One node only. **`main` @** `b278e28f5` at claim. No product ship this node.
+
+**Blocked**
+- G6 Broker SMS agent DoD (`c8bbccaa-84ef-492c-8ce8-9af437833e31`) **blocked**. Accept: end-to-end broker text → agent reply → approval stamp on the marketing line (+15412245025).
+- Hard limit: no outbound messages to real people. Completing the accept would `sendAgentSms` to Matt `+15412136706`. DoD 3 (live IG post) is public posting. DoD 10 (Matt-only pilot ≥1 week) needs calendar time after a live APPROVE.
+- Environment (probed, no sends): `sms_agent_enabled` matt=true / paul=false / rebecca=false. Sessions=2 (last 2026-08-03). Turns=5, all 2026-08-02 in-process Redmond Q&A smoke (`SMe2e*`), not a webhook APPROVE. `generated_by=broker_sms_agent` rows=2 (`d4711088`, `7fc5fa8b`), both `killed`, `approved_by` null — thin-payload approval-gate tests (S6 missing `editorial_subhead`/`hero_photo`; city:Bend missing template). Zero SMS-agent approval stamps ever. CAP-035 stays 2. R-180 stays PARTIAL. No ledger row (no class shipped).
+- Residual class when unblocked: `create_action` from SMS does not hydrate listing/template/hero fields, so IG rows never reach `ready` and APPROVE cannot stamp. No admin surface lists agent sessions.
+- Unblock: Matt texts APPROVE on the marketing line against a ready draft, or authorizes one smoke text to his cell that includes APPROVE (still no live publish).
+
+**Do not:** SMS Matt/Paul/Rebecca. Do not publish. Do not set Paul/Rebecca `sms_agent_enabled`. Do not invent an approval stamp. Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, admin-product-os, DEVELOPMENT_PROCESS, BROKER_SMS_AGENT plan DoD, REQUIREMENTS R-180, CAP-035, BROKER-OPERATING-SYSTEM-PLAN, COMPANY_IMPROVEMENT blast-radius.
+
+# Prior — 2026-08-16 (loop-sentinel bc-36c5e37a) — G5 broker day-one + own-book shipped
 
 **Surface:** Cursor cloud agent `bc-36c5e37a-973a-4b3c-8198-8085b9dca744`. **Time:** 2026-08-16 ~07:35 UTC. Brief served **G5** (recruit-retain). One node only. **`main` @** `7de1b6252`. Vercel Production **READY** (GitHub deployment `5928709859`, inspector `8AhizwMJsKnZ8J6RucBM32mhXi1X`).
 

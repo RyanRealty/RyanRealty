@@ -350,6 +350,14 @@ as per-action Matt approval.
   Vercel prod — CLI write was permission-blocked) 11◐(spine harness-verified; live run needs
   a real shoot email) 12✅ 13✅(broker-provided-fact protocol in prompt + produce tool).
 
+- **2026-08-16 (loop G6 — BLOCKED).** Accept (broker text → agent reply → APPROVE stamp on
+  the marketing line) cannot run under the loop hard limit (no outbound to real people).
+  Production probe: `sms_agent_enabled` matt only; 5 turns (2026-08-02 Redmond Q&A smoke);
+  2 `broker_sms_agent` action rows, both killed, `approved_by` null. Residual when
+  unblocked: `create_action` does not hydrate template/hero/editorial fields so IG rows
+  never reach `ready`. Unblock = Matt texts APPROVE or authorizes one smoke to his cell.
+  Graph node `c8bbccaa`.
+
 ## Risks
 
 - Render-worker liveness bounds visual-format latency (CMA/flyer/carousel); the agent's ETA
