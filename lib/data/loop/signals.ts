@@ -7,6 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { isExpiredUnlearned } from './ledger-draft'
+import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 
 export type SignalStatus = 'ok' | 'unreadable'
 
@@ -203,7 +204,7 @@ export async function collectCompanyScoreboardSignals(
     gscRes,
     sequencesRes,
     dealsRes,
-    skyRes,
+    skyFreshness,
     formRes,
     alertsRes,
     alertsActiveRes,
@@ -234,7 +235,7 @@ export async function collectCompanyScoreboardSignals(
     sb.from('target_query_benchmark').select('query', { count: 'exact', head: true }).gte('date', since28d),
     sb.from('crm_sequences').select('id', { count: 'exact', head: true }),
     sb.from('tc_deals').select('id', { count: 'exact', head: true }),
-    sb.from('skyslope_transactions').select('synced_at').order('synced_at', { ascending: false }).limit(1),
+    getSkySlopeMirrorFreshness(now),
     sb.from('tc_form_catalog_items').select('id', { count: 'exact', head: true }).eq('disposition', 'updated'),
     sb.from('listing_alerts').select('id', { count: 'exact', head: true }).not('email', 'ilike', '%fleet-test%'),
     sb.from('listing_alerts').select('id', { count: 'exact', head: true }).eq('is_active', true).not('email', 'ilike', '%fleet-test%'),
@@ -391,14 +392,13 @@ export async function collectCompanyScoreboardSignals(
     source: 'crm_sequences count',
   }
 
-  const skyRows = skyRes.data ?? []
   const tc: CompanyScoreboardSignals['tc'] = {
-    status: dealsRes.error || skyRes.error || formRes.error ? 'unreadable' : 'ok',
+    status: dealsRes.error || skyFreshness.status === 'unreadable' || formRes.error ? 'unreadable' : 'ok',
     deals: dealsRes.count ?? 0,
-    skySlopeRows: skyRows.length,
-    skySlopeLatestSyncedAt: (skyRows[0]?.synced_at as string | null) ?? null,
+    skySlopeRows: skyFreshness.rowCount,
+    skySlopeLatestSyncedAt: skyFreshness.latestSyncedAt,
     formUpdates: formRes.count ?? 0,
-    source: 'tc_deals + skyslope_transactions.synced_at + tc_form_catalog_items disposition=updated',
+    source: 'tc_deals + getSkySlopeMirrorFreshness + tc_form_catalog_items disposition=updated',
   }
 
   const searchError =

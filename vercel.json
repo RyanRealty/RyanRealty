@@ -218,6 +218,10 @@
       "schedule": "30 8 * * *"
     },
     {
+      "path": "/api/cron/skyslope-mirror-refresh",
+      "schedule": "20 6 * * *"
+    },
+    {
       "path": "/api/cron/saved-search-alerts",
       "schedule": "0 * * * *"
     },

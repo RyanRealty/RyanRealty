@@ -44,6 +44,9 @@ export const HEARTBEAT_THRESHOLDS = {
   // weekly (Mondays 14:00 UTC) and writes a meta_audience_log row every run
   // (dry-run included) → 8 days = the 7-day cadence + a day of slack.
   audienceSyncDays: 8,
+  // SkySlope inbound recon mirror: /api/cron/skyslope-mirror-refresh daily
+  // 06:20 UTC. 36h = the daily cadence + slack. Vault (tc_deals) stays SoR.
+  skySlopeMirrorHours: 36,
 } as const
 
 export function ageHours(iso: string | null | undefined, now: Date): number | null {
@@ -203,6 +206,24 @@ export function evalAudienceSync(maxRanAt: string | null, now: Date): PipelineCh
     value: `max(meta_audience_log.ran_at) ${formatAge(age)} old`,
     note: stale
       ? 'West Side Meta audience refresh is dark — no meta_audience_log row in over 8 days. The weekly /api/cron/meta-westside-audience is likely failing (cron dropped, Meta token, or a query error); the parcel-linked Custom Audience is going stale. Dry-run runs still log, so this catches a dead cron even when META_AUDIENCE_PUSH_ENABLED is off.'
+      : undefined,
+  }
+}
+
+/**
+ * SkySlope inbound recon mirror. Daily cron stamps
+ * skyslope_transactions.synced_at. A 67-day-stale sample (2026-06-10) is the
+ * founding failure: the only refresh was a Mac-local script with no cron.
+ */
+export function evalSkySlopeMirror(latestSyncedAt: string | null, now: Date): PipelineCheck {
+  const age = ageHours(latestSyncedAt, now)
+  const stale = age === null || age >= HEARTBEAT_THRESHOLDS.skySlopeMirrorHours
+  return {
+    name: 'pipeline:skyslope-mirror',
+    status: stale ? 'red' : 'green',
+    value: `skyslope_transactions.max(synced_at) ${formatAge(age)} old`,
+    note: stale
+      ? 'Inbound SkySlope recon mirror is stale. /api/cron/skyslope-mirror-refresh is dark or SKYSLOPE_* Files API keys are missing. Vault (tc_deals) stays the deal SoR; the mirror is recon only.'
       : undefined,
   }
 }

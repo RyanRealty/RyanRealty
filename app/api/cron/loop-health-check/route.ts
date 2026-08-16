@@ -24,6 +24,7 @@ import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { sendEmail } from '@/lib/resend'
 import {
   evalAudienceSync,
+  evalSkySlopeMirror,
   evalExpired,
   evalFsbo,
   evalMarketStats,
@@ -35,6 +36,7 @@ import {
   type PipelineCheck,
 } from '@/lib/pipeline-heartbeat'
 import { WESTSIDE_AUDIENCE_ID } from '@/lib/meta-westside-audience'
+import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -356,6 +358,16 @@ export async function GET(req: NextRequest) {
     })
     if (ran.error) pipeline.push(probeFailed('pipeline:westside-audience', ran.error))
     else pipeline.push(evalAudienceSync(ran.iso, now))
+  }
+
+  // 8. SkySlope inbound recon mirror (daily 06:20 UTC).
+  {
+    const freshness = await getSkySlopeMirrorFreshness(now)
+    if (freshness.status === 'unreadable') {
+      pipeline.push(probeFailed('pipeline:skyslope-mirror', 'skyslope_transactions unreadable'))
+    } else {
+      pipeline.push(evalSkySlopeMirror(freshness.latestSyncedAt, now))
+    }
   }
 
   for (const pc of pipeline) push(pc.name, pc.status, pc.value, pc.note)

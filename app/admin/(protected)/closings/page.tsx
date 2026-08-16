@@ -11,6 +11,7 @@
 import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getClosingsBoard, type ClosingDealRow } from '@/lib/data/tc/closings'
+import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
 import { formatDate } from '@/lib/format/date'
 import { QueueRow, QuietRow, VerdictLine } from '@/components/admin/v2'
 
@@ -51,7 +52,7 @@ function rowContext(d: ClosingDealRow, nowMs: number): string {
 export default async function ClosingsPage() {
   await requireAdminPage('transactions.view')
   const nowMs = Date.now()
-  const board = await getClosingsBoard()
+  const [board, mirror] = await Promise.all([getClosingsBoard(), getSkySlopeMirrorFreshness()])
 
   const inEscrow = board.deals.filter((d) => d.stage === 'pending')
   const activeListings = board.deals.filter((d) => d.stage === 'active_listing')
@@ -85,6 +86,28 @@ export default async function ClosingsPage() {
             ) : (
               <>
                 <b>Nothing in flight.</b> {closed.length} closed on record.
+              </>
+            )}
+          </VerdictLine>
+        )}
+        {mirror.status === 'unreadable' ? (
+          <VerdictLine tone="attention">
+            SkySlope recon mirror is unreadable. Closings still read Vault.
+          </VerdictLine>
+        ) : (
+          <VerdictLine tone={mirror.current ? 'ok' : 'attention'}>
+            {mirror.current ? (
+              <>
+                SkySlope recon mirror is current ({mirror.rowCount} properties). Vault is the deal
+                list.
+              </>
+            ) : (
+              <>
+                SkySlope recon mirror is stale
+                {mirror.latestSyncedAt
+                  ? ` (synced ${mirror.latestSyncedAt.slice(0, 10)}, ${mirror.ageHours != null ? `${Math.round(mirror.ageHours / 24)}d` : 'age unknown'})`
+                  : ''}
+                . Closings still read Vault. Inbound refresh is /api/cron/skyslope-mirror-refresh.
               </>
             )}
           </VerdictLine>
