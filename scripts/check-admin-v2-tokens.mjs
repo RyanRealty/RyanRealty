@@ -276,6 +276,7 @@ const SCAN_DIRS = [
   'app/admin/(protected)/crm/settings/areas/page.tsx',
   'app/admin/(protected)/crm/settings/appointments/page.tsx',
   'app/admin/(protected)/crm/settings/brokers/page.tsx',
+  'app/admin/(protected)/crm/settings/brokers/SmsAgentToggle.tsx',
   'app/admin/(protected)/crm/settings/company/registration/page.tsx',
   'app/admin/(protected)/crm/settings/page.tsx',
   'app/admin/(protected)/crm/settings/team/page.tsx',

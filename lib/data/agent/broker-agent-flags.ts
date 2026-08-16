@@ -14,9 +14,19 @@
  * through email, the same join key lib/data/crm/getBrokerTelephony.ts uses.
  */
 
+import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
-import { CRM_BROKER_BY_EMAIL } from '@/lib/crm/constants'
+import { CRM_BROKER_BY_EMAIL, CRM_BROKERS } from '@/lib/crm/constants'
 import type { BrokerSlug } from '@/lib/agent/types'
+
+export function isSmsAgentBrokerSlug(slug: string): slug is BrokerSlug {
+  return (CRM_BROKERS as readonly string[]).includes(slug)
+}
+
+/** Site-wide kill switch. Per-broker flags do nothing while this is off. */
+export function isBrokerSmsAgentEnvEnabled(): boolean {
+  return process.env.BROKER_SMS_AGENT_ENABLED === 'true'
+}
 
 const EMAIL_BY_BROKER_SLUG: Partial<Record<BrokerSlug, string>> = (() => {
   const out: Partial<Record<BrokerSlug, string>> = {}
@@ -45,8 +55,8 @@ export async function isAgentEnabledForBroker(slug: BrokerSlug): Promise<boolean
   return (data as { sms_agent_enabled?: boolean | null } | null)?.sms_agent_enabled === true
 }
 
-/** Flip the pilot flag. Used by R5.2 pilot enrollment and by the (future)
- *  PAUSE-keyword handler / re-enable path (R2.4, downstream of this rung). */
+/** Flip the pilot flag. Used by the admin toggle, R5.2 pilot enrollment,
+ *  and the STOP/PAUSE keyword path. */
 export async function setAgentEnabled(slug: BrokerSlug, enabled: boolean): Promise<{ ok: boolean; error?: string }> {
   const email = EMAIL_BY_BROKER_SLUG[slug]
   if (!email) return { ok: false, error: `no email mapping for broker slug "${slug}"` }

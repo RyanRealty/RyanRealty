@@ -18,6 +18,7 @@ describe('mapCrmBrokerRow', () => {
       title: null,
       crmActive: true,
       routingEligible: true,
+      smsAgentEnabled: false,
     } satisfies CrmBroker)
   })
 
@@ -87,6 +88,7 @@ describe('mapCrmBrokerRow', () => {
       title: null,
       crmActive: false,
       routingEligible: false,
+      smsAgentEnabled: false,
     } satisfies CrmBroker)
   })
 
@@ -100,6 +102,28 @@ describe('mapCrmBrokerRow', () => {
     })
     expect(b?.crmActive).toBe(false)
     expect(b?.routingEligible).toBe(false)
+    expect(b?.smsAgentEnabled).toBe(false)
+  })
+
+  it('maps sms_agent_enabled true only when the column is true', () => {
+    const on = mapCrmBrokerRow({
+      crm_slug: 'matt',
+      display_name: 'Matt Ryan',
+      email: 'matt@ryan-realty.com',
+      crm_active: true,
+      routing_eligible: true,
+      sms_agent_enabled: true,
+    })
+    const off = mapCrmBrokerRow({
+      crm_slug: 'paul',
+      display_name: 'Paul Stevenson',
+      email: 'paul@ryan-realty.com',
+      crm_active: true,
+      routing_eligible: false,
+      sms_agent_enabled: false,
+    })
+    expect(on?.smsAgentEnabled).toBe(true)
+    expect(off?.smsAgentEnabled).toBe(false)
   })
 
   it('coerces a missing display_name to an empty string', () => {

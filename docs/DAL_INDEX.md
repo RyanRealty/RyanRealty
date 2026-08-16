@@ -82,7 +82,7 @@ Companion files:
 
 ### `lib/data/agent/broker-agent-flags.ts`
 
-**Exports:** `isAgentEnabledForBroker`, `setAgentEnabled`
+**Exports:** `isAgentEnabledForBroker`, `setAgentEnabled`, `isSmsAgentBrokerSlug`, `isBrokerSmsAgentEnvEnabled`
 
 **Tables:** `brokers`
 

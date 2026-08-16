@@ -317,7 +317,7 @@ if (existsSync(join(ROOT, PRODUCER_RUNTIME))) {
 if (existsSync(join(ROOT, INBOUND_SMS))) {
   const src = readFileSync(join(ROOT, INBOUND_SMS), 'utf8')
   if (src.includes('handleAgentInbound')) {
-    if (!src.includes('BROKER_SMS_AGENT_ENABLED')) {
+    if (!src.includes('BROKER_SMS_AGENT_ENABLED') && !src.includes('isBrokerSmsAgentEnvEnabled')) {
       problems.push(
         `${INBOUND_SMS}: references \`handleAgentInbound\` but never checks \`BROKER_SMS_AGENT_ENABLED\` — the global kill switch (R1.4) is not gating the agent branch.`,
       )

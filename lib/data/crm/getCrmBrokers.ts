@@ -37,6 +37,8 @@ export type CrmBroker = {
   crmActive: boolean
   /** May this broker receive round-robin lead routing. */
   routingEligible: boolean
+  /** May this broker text the marketing line and get the SMS agent (R1.4). */
+  smsAgentEnabled: boolean
 }
 
 type RawBrokerRow = {
@@ -47,6 +49,7 @@ type RawBrokerRow = {
   title?: string | null
   crm_active: boolean | null
   routing_eligible: boolean | null
+  sms_agent_enabled?: boolean | null
 }
 
 /**
@@ -64,6 +67,7 @@ export function mapCrmBrokerRow(r: RawBrokerRow): CrmBroker | null {
     title: (r.title ?? '').trim() || null,
     crmActive: r.crm_active ?? false,
     routingEligible: r.routing_eligible ?? false,
+    smsAgentEnabled: r.sms_agent_enabled === true,
   }
 }
 
@@ -87,7 +91,7 @@ export const getCrmBrokers = unstable_cache(
     if (!sb) return []
     const { data, error } = await sb
       .from('brokers')
-      .select('crm_slug,display_name,email,phone,title,crm_active,routing_eligible')
+      .select('crm_slug,display_name,email,phone,title,crm_active,routing_eligible,sms_agent_enabled')
       .not('crm_slug', 'is', null)
       .order('sort_order', { ascending: true })
       .order('crm_slug', { ascending: true })
@@ -97,7 +101,7 @@ export const getCrmBrokers = unstable_cache(
     }
     return mapCrmBrokerRows(data as RawBrokerRow[])
   },
-  ['crm-brokers-v2'],
+  ['crm-brokers-v3'],
   { revalidate: 300, tags: ['crm-brokers'] },
 )
 

@@ -23,6 +23,7 @@ import { classifyInboundReply, REPLY_INTENT_LABELS, type ReplyClassification } f
 import { prospectOutreachContext } from '@/lib/crm/prospect-context'
 import { buildSuggestedReplyLink } from '@/components/admin/crm/composer-preload'
 import { handleAgentInbound, processAfterDebounce } from '@/lib/agent/ingress'
+import { isBrokerSmsAgentEnvEnabled } from '@/lib/data/agent/broker-agent-flags'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -129,7 +130,7 @@ export async function POST(request: Request) {
   if (
     isBrokerCell &&
     normalizeTo10(to) === normalizeTo10(MARKETING_NUMBER) &&
-    process.env.BROKER_SMS_AGENT_ENABLED === 'true'
+    isBrokerSmsAgentEnvEnabled()
   ) {
     const result = await handleAgentInbound({ from, to, body, messageSid: sid, mediaUrls: rawMediaUrls(params) })
     if (result.status === 'queued') {

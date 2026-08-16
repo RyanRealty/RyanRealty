@@ -1,14 +1,15 @@
 // @no-parity — internal admin surface, no public mockup contract
 // Brokers (11C, v2 language migration): the CRM broker roster — who is inside
-// the CRM, and who takes routed leads. Presentation only: the same cached DAL
-// read (getCrmBrokers) and the same owner-guarded server actions in
-// app/actions/crm-brokers.ts, posting the same `crmSlug` + `value` fields.
+// the CRM, who takes routed leads, and who has the SMS agent. Presentation:
+// getCrmBrokers plus owner-guarded actions in app/actions/crm-brokers.ts.
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCrmAccess } from '@/app/actions/crm'
 import { getCrmBrokers } from '@/lib/data/crm/getCrmBrokers'
+import { isBrokerSmsAgentEnvEnabled, isSmsAgentBrokerSlug } from '@/lib/data/agent/broker-agent-flags'
 import { setCrmBrokerActiveAction, setCrmBrokerRoutingEligibleAction } from '@/app/actions/crm-brokers'
 import { Button, QueueRow, SectionHead, StateWord, VerdictLine } from '@/components/admin/v2'
+import { SmsAgentToggle } from './SmsAgentToggle'
 
 export const metadata = { title: 'Brokers | CRM settings' }
 export const dynamic = 'force-dynamic'
@@ -40,6 +41,9 @@ export default async function CrmBrokersSettingsPage() {
 
   const inCrm = brokers.filter((b) => b.crmActive).length
   const routing = brokers.filter((b) => b.routingEligible).length
+  const smsBrokers = brokers.filter((b) => isSmsAgentBrokerSlug(b.slug))
+  const smsOn = smsBrokers.filter((b) => b.smsAgentEnabled).length
+  const envOn = isBrokerSmsAgentEnvEnabled()
 
   return (
     <div className="av2-scope" style={{ maxWidth: 760, margin: '0 auto', padding: 16 }}>
@@ -50,7 +54,7 @@ export default async function CrmBrokersSettingsPage() {
       </p>
 
       <div style={{ margin: '0 0 14px' }}>
-        <VerdictLine tone={brokers.length === 0 ? 'attention' : 'ok'}>
+        <VerdictLine tone={brokers.length === 0 || !envOn ? 'attention' : 'ok'}>
           {brokers.length === 0 ? (
             <>
               <b>No CRM brokers.</b> Apply the broker config migration, then assign each broker a CRM slug.
@@ -60,7 +64,11 @@ export default async function CrmBrokersSettingsPage() {
               <b>
                 {inCrm} of {brokers.length} broker{brokers.length === 1 ? '' : 's'} inside the CRM.
               </b>{' '}
-              {routing} take{routing === 1 ? 's' : ''} routed leads.
+              {routing} take{routing === 1 ? 's' : ''} routed leads.{' '}
+              {smsOn} SMS agent{smsOn === 1 ? '' : 's'} on.
+              {envOn
+                ? ' Site-wide env is on.'
+                : ' Site-wide env is off, so the marketing line will not reply.'}
             </>
           )}
         </VerdictLine>
@@ -104,6 +112,35 @@ export default async function CrmBrokersSettingsPage() {
                       </Button>
                     </form>
                   </span>
+                }
+              />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {smsBrokers.length > 0 ? (
+        <section aria-label="SMS agent">
+          <SectionHead>SMS agent</SectionHead>
+          <ul className="av2-queue">
+            {smsBrokers.map((b) => (
+              <QueueRow
+                key={`sms-${b.slug}`}
+                kind={b.smsAgentEnabled ? 'On' : 'Off'}
+                kindTone={b.smsAgentEnabled ? (envOn ? 'ok' : 'slow') : 'waiting'}
+                title={
+                  <Link href="/admin/brokers" style={{ color: 'var(--a-text)' }}>
+                    {b.name || b.slug}
+                  </Link>
+                }
+                context="Texts from this broker cell to the marketing line."
+                action={
+                  <SmsAgentToggle
+                    crmSlug={b.slug}
+                    brokerName={b.name || b.slug}
+                    initialEnabled={b.smsAgentEnabled}
+                    envEnabled={envOn}
+                  />
                 }
               />
             ))}

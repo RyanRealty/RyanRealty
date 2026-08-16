@@ -12,6 +12,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCrmAccess } from '@/app/actions/crm'
+import { isSmsAgentBrokerSlug, setAgentEnabled } from '@/lib/data/agent/broker-agent-flags'
 
 export type CrmBrokerResult = { ok: true } | { ok: false; error: string }
 
@@ -47,4 +48,19 @@ export async function setCrmBrokerActiveAction(formData: FormData): Promise<CrmB
 /** Toggle whether a broker may receive round-robin lead routing. */
 export async function setCrmBrokerRoutingEligibleAction(formData: FormData): Promise<CrmBrokerResult> {
   return setBrokerFlag(String(formData.get('crmSlug') ?? ''), 'routing_eligible', String(formData.get('value') ?? '') === 'on')
+}
+
+/** Toggle whether a broker's cell gets the SMS agent on the marketing line. */
+export async function setCrmBrokerSmsAgentAction(
+  crmSlug: string,
+  enabled: boolean,
+): Promise<CrmBrokerResult> {
+  const gate = await requireOwner()
+  if (!gate.ok) return gate
+  const slug = String(crmSlug ?? '').trim()
+  if (!isSmsAgentBrokerSlug(slug)) return { ok: false, error: 'Unknown broker' }
+  const result = await setAgentEnabled(slug, enabled === true)
+  if (!result.ok) return { ok: false, error: result.error ?? 'Failed to update SMS agent' }
+  bust()
+  return { ok: true }
 }

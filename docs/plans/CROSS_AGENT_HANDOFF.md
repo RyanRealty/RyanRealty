@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-grok-g15) — G15 search completeness shipped
+# Current — 2026-08-16 (cursor) — G6 admin SMS-agent toggle shipped
+
+**Surface:** Cursor local. **Time:** 2026-08-16 ~08:35 PT. Matt-directed ADD on G6 (not a loop-brief node). Product SHA pending this commit. Loop stays **ARMED**. G6 accept stays **blocked**.
+
+**Done**
+- Superuser per-broker SMS-agent Switch on `/admin/crm/settings/brokers` (SMS agent section). Writes `brokers.sms_agent_enabled` via existing DAL `setAgentEnabled`.
+- Site-wide `BROKER_SMS_AGENT_ENABLED` shown read-only on the verdict. Inbound route uses `isBrokerSmsAgentEnvEnabled()`.
+- `getCrmBrokers` now projects `smsAgentEnabled` (fail-closed). Cache key `crm-brokers-v3`.
+- Action `setCrmBrokerSmsAgentAction` is owner-only; unknown slugs never hit the DAL. Tests: mapper, action auth, env helper.
+- Local render: 3 switches, Matt On / Paul Off / Rebecca Off, env on. Screenshots `/tmp/rr-sms-agent-toggle/brokers-1280.png` + `brokers-390.png`.
+- G6 node `c8bbccaa` stays blocked. VERSION-1 G6 residual named. No SMS sent. Paul/Rebecca flags not flipped.
+
+**Do not:** mark G6 done. Do not SMS, publish, spend, or OAuth. Do not flip R-045. Do not mark G27 done. Do not unpause TC. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29).
+
+**Skills read:** admin-product-os, tdd, verification-before-completion, requesting-code-review, git-commit, BROKER_SMS_AGENT R1.4.
+
+# Prior — 2026-08-16 (cursor-grok-g15) — G15 search completeness shipped
 
 **Surface:** Cursor Grok (`cursor-grok-g15-20260816`). **Time:** 2026-08-16 ~08:20 PT. Brief served **G15** (public-ux). One node only. Product **`e6523399`**. **`main` @** `0524b4ee`. Vercel Production **READY** (`dpl_GZNBEt5SVpbXwFMRL9rXTKzgd43Y`, aliases `ryan-realty.com` + `ryanrealty.vercel.app`). `npm run deploy:verify` exit 0 in 644.9s. No hosted migration. Loop stays **ARMED**.
 
@@ -15,7 +31,6 @@
 - Register: R-097, R-098, R-099, R-100, R-102, R-103, R-106 **VERIFIED**. R-101 **PARTIAL** (VOW live; sold browse still legacy RPC). R-104 **PARTIAL** (TTFB measured; client filter-paint / pan-pin RUM residual). R-105 already VERIFIED. Max pin **R-212** unchanged.
 - Accept proof: `npx tsx scripts/loop-probe-g15.ts` — `complete=true` longTailDisposed=268 unexplained=0 ttfb 275/254 samples=8. Gate 10/10. Tests 11564. `npm run build` exit 0. `ci:gates` 215/215 on push of `0524b4ee`.
 - VERSION-1 G15 **DONE 2026-08-16**.
-- Concurrent dirty tree (do not steal): CRM broker SMS-agent files on this checkout (`app/actions/crm-brokers.ts`, `SmsAgentToggle.tsx`, inbound-sms route). Leave them to that session.
 
 **Do not:** insert another public-ux ledger row. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G27 done. Do not unpause TC. G6 stays blocked (live SMS). G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints (likely G16). This session does not claim a second node.
 

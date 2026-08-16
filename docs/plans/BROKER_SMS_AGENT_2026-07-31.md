@@ -154,7 +154,8 @@ line, through a hard broker-cell whitelist.
 - **R1.4** Controls: `BROKER_SMS_AGENT_ENABLED` env kill switch; per-broker enable flag
   (`brokers.sms_agent_enabled`, default false — this is also the pilot mechanism and the
   lost-phone deregistration); STOP on the agent thread disables that broker's flag and
-  confirms. *Accept:* flipping each control changes behavior in a fixture test.
+  confirms. Superuser toggle at `/admin/crm/settings/brokers` (SMS agent section).
+  *Accept:* flipping each control changes behavior in a fixture test.
 
 ### Phase 2 — agent core (transport-agnostic)
 

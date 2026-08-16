@@ -177,7 +177,7 @@ export default async function CrmSettingsPage() {
         {
           href: '/admin/crm/settings/brokers',
           title: 'Brokers',
-          description: 'The CRM broker roster used for assignment and round-robin routing.',
+          description: 'The CRM broker roster used for assignment, routing, and the SMS agent.',
           count: brokers.length,
           countLabel: brokers.length === 1 ? 'broker' : 'brokers',
         },
