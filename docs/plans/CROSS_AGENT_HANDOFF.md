@@ -2,7 +2,26 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor-loop-chain) — withhold pulse MOS when the page count is a different set
+# Current — 2026-08-16 (cursor) — Tetherow HOA one published annual verified
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~13:10 PT. One node: fleet `eab91ac8` / graph `b25bf5f4` (public-ux). Product **`7e8c0fc9`** (other session: `publishPlaceHoa`, master preferred). This session claimed the node, reproduced $1,464 vs $2,244, dropped a duplicate grain-naming commit after the collision, then verified accept. Vercel Production **READY** (`dpl_4PWdPQmmXFseriLDjReZcXJWspJd`, `deploy:verify` exit 0 in 402s). No hosted migration. Loop stays **ARMED**. Node **done**. No public-ux ledger insert (open window `2a5054ac`). Did not fire an extra sentinel.
+
+**Done**
+- Fleet finding [p0]: Glance Master HOA $1,464/yr next to FAQ "start around $2,244". Reproduced on production HTML before the class.
+- Class (already on `main`): one published annual HOA. Prefer master. Phase totals stay on phase / LP pages. Gate `ci:publish-place-hoa`.
+- After READY: production `https://ryan-realty.com/communities/tetherow` — Glance **Master HOA $1,464/yr**. FAQ **start around $1,464**. **$2,244 gone**. Playwright 1280 + 390. Shots `out/tetherow-hoa-prod/`.
+
+**Also on origin/main (do not steal / do not undo):** Tetherow counted-set list `dada087f` / handoff `fd628a6d` (node `bff867b9` **done**). Tetherow MoS withhold `a15404f2` / `0028904a` / handoff `056ba6cd`. G33 `1f01f54f`. La Pine hyphen-cache `6eded9fd`. G32 seeded `f6dc09e7`. G6 accept stays **blocked**.
+
+**Next**
+- Matt keep/kill on the NWX hang pair. Do not wire the live community header.
+- This session does not claim another node after this stamp.
+
+**Do not:** insert another public-ux or factory ledger row. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not wire the live NWX community header. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, git-commit.
+
+# Prior — 2026-08-16 (cursor-loop-chain) — withhold pulse MOS when the page count is a different set
 
 **Surface:** Cursor cloud `bc-5ffa2bf0` (`cursor/loop-sentinel-2026-08-16t19-00-d437`). **Time:** 2026-08-16 ~19:50 UTC. Brief served fleet finding `57a2abd4` (public-ux / fleet `5d55abbd72a67d25a5d7232b46fd2fb0`), not G16/G32. One node only. Product **`0028904a8`**. **`main` @** `fd628a6de` + this handoff. Vercel Production **READY** (inspector `6ySP1fBHNPYCa7nm6w4WUtYS1dJ7`). `npm run deploy:verify` exit 0 in 763s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#46**.
 
