@@ -34,3 +34,12 @@ describe('fleet test identity (bots submit as humans, safely)', () => {
     expect(hasFleetTestTag(null)).toBe(false)
   })
 })
+
+describe('fleet node priority (live defects outrank planned work)', async () => {
+  const { fleetNodePriority } = await import('../data/loop/work-node')
+  it('p0 findings beat major findings beat gap work', () => {
+    expect(fleetNodePriority('Fleet finding [p0]: sell funnel dead')).toBe(0)
+    expect(fleetNodePriority('Fleet finding [major]: filter broken')).toBe(1)
+    expect(fleetNodePriority('Search completeness to plan acceptance')).toBe(2)
+  })
+})

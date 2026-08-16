@@ -15,8 +15,9 @@ import { readFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
 import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/data/loop/domains'
+import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
-import { isStaleInProgress, type WorkNodeState } from '../lib/data/loop/work-node'
+import { fleetNodePriority, isStaleInProgress, type WorkNodeState } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
@@ -88,6 +89,10 @@ async function main() {
   const sb = createClient(url, key)
   const now = new Date()
 
+  // Fleet intake runs at every boot: bot findings become work nodes (ADD verb)
+  // BEFORE the session picks its node — the fleet's output is never waiting.
+  const intake = await runFleetIntake(sb)
+
   const [signals, nodesRes] = await Promise.all([
     collectCompanyScoreboardSignals(sb, now),
     sb
@@ -105,7 +110,11 @@ async function main() {
   const blocked = nodes.filter((n) => n.state === 'blocked')
   const eligible = nodes
     .filter((n) => n.state === 'open' && n.depends_on.every((d) => doneIds.has(d)))
-    .sort((a, b) => gapOrder(a.version_gap) - gapOrder(b.version_gap))
+    .sort(
+      (a, b) =>
+        fleetNodePriority(a.title) - fleetNodePriority(b.title) ||
+        gapOrder(a.version_gap) - gapOrder(b.version_gap),
+    )
 
   const strandedDomains = Object.keys(signals.ledger.expiredByDomain)
   // Learn-first: a domain with expired unlearned windows must close them
@@ -142,6 +151,14 @@ async function main() {
   push(
     `tokens needing re-auth: ${needsReauth.length ? needsReauth.map((t) => `${t.table} (PARKED unless Matt wants it)`).join(', ') : 'none — the rest auto-refresh via the daily heartbeat'}`,
   )
+  push('')
+  push('--- FLEET INTAKE (ran at this boot) ---')
+  push(
+    intake.processed === 0
+      ? 'no new bot findings'
+      : `processed ${intake.processed}: ${intake.created.length} new node(s) · ${intake.duplicates} duplicate(s) · ${intake.baselines} baseline(s)${intake.errors.length ? ` · ERRORS: ${intake.errors.join('; ')}` : ''}`,
+  )
+  for (const c of intake.created) push(`  + ${c.title}`)
   push('')
   push('--- WORK GRAPH ---')
   push(`nodes: ${nodes.length} · open ${nodes.filter((n) => n.state === 'open').length} · in_progress ${inProgress.length} · blocked ${blocked.length} · done ${nodes.filter((n) => n.state === 'done').length}`)

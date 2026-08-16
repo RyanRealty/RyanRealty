@@ -55,6 +55,17 @@ export function assertTransition(from: WorkNodeState, to: WorkNodeState): void {
   }
 }
 
+/**
+ * Queue priority for the brief's next-node pick. Fleet-reported live defects
+ * outrank planned gap work: a p0 (money path broken / wrong public number)
+ * beats everything, a major beats gap order. Lower = served first.
+ */
+export function fleetNodePriority(title: string): number {
+  if (title.startsWith('Fleet finding [p0]')) return 0
+  if (title.startsWith('Fleet finding [major]')) return 1
+  return 2
+}
+
 /** A node in_progress with no update for this many days is stranded work. */
 export const STALE_IN_PROGRESS_DAYS = 3
 
