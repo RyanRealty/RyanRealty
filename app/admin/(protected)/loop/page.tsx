@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { requireAdminPage } from '@/lib/admin/require-admin'
 import { getLoopStatus, type LoopNodeSummary } from '@/lib/data/loop/status'
 import { QueueRow, QuietRow, VerdictLine, SectionHead } from '@/components/admin/v2'
+import { formatDate } from '@/lib/format/date'
 import { AutoRefresh } from './AutoRefresh'
 
 export const dynamic = 'force-dynamic'
@@ -211,7 +212,7 @@ export default async function LoopStatusPage() {
                 figure={
                   w.expired
                     ? 'unlearned — domain freezes until closed'
-                    : `ends ${new Date(w.endsAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                    : `ends ${formatDate(w.endsAt)}`
                 }
               />
             ))}

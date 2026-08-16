@@ -15,8 +15,8 @@ for (const line of fs.readFileSync('.env.local', 'utf8').split('\n')) {
   if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '')
 }
 
-const BASE = 'http://localhost:3021'
-const OUT = 'out/loop-status'
+const BASE = process.env.LOOP_SHOT_BASE || 'http://localhost:3021'
+const OUT = process.env.LOOP_SHOT_OUT || 'out/loop-status'
 fs.mkdirSync(OUT, { recursive: true })
 
 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
