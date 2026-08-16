@@ -10,7 +10,7 @@
 
 **Step 1. Say: "Build the pre-arm items."**
 The session builds, ships, and screenshots the three items the plan calls for before anything runs unattended:
-1. **`/admin/loop` status page** — is an iteration running now (and on what node), last ~10 completed nodes with one-line evidence, version progress, fleet findings inbox, ledger windows, sentinel launch log + daily cost cap remaining. Renders from the same rows agents mutate; no self-reported status anywhere.
+1. **`/admin/loop` status page** — is an iteration running now (and on what node), last ~10 completed nodes with one-line evidence, version progress, fleet findings inbox, ledger windows, sentinel launch log (count in 24h, no daily cap). Renders from the same rows agents mutate; no self-reported status anywhere.
 2. **One-node-per-session chaining** — the sentinel prompt changes from "grind until blocked" to "complete ONE node, hand off, die." Fresh context per node; the zero-gap chain carries continuity.
 3. **Orphan auto-release** — sentinel checks stale `in_progress` claims against the Cursor API; owner run terminal → node flips back to `open` automatically.
 
@@ -27,7 +27,7 @@ The session flips `LOOP_SENTINEL` to `on`, redeploys so it takes effect, proves 
 
 **Step 4. Watch 2–3 iterations on the status page.** Healthy looks like: node claimed → done with evidence in under ~2 hours; commits on main; deploy READY; next node claimed by a fresh agent within minutes. Anything looks wrong → say **"disarm the loop"** (kill switch back on within one session; running agent finishes or is canceled on request).
 
-**Step 5. Decide overnight posture.** Default: leave it armed — hard limits hold it to 12 launches/day, one active agent at a time, no sends/posts/spend/OAuth ever. Or say "disarm until morning."
+**Step 5. Decide overnight posture.** Default: leave it armed — one active agent at a time, no daily launch cap, no sends/posts/spend/OAuth ever. Or say "disarm until morning."
 
 ## Phase 3 — Bot fleet (separate gate; ~45 min of Matt clicking; loop keeps running either way)
 

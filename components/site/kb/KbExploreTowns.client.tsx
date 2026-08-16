@@ -6,11 +6,12 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbTownItem } from './types'
 
 /**
- * KB Explore ledger (01) — the page leads with place. Editorial row-list; hover
- * reveals a full-bleed photo (when an item has one). Live per-row active count +
- * median. The homepage uses it for the six cities; a city page reuses it (props,
- * no fork) for its NEIGHBORHOODS ledger, its golf/master-planned COMMUNITIES
- * ledger, and the "Explore other cities" nearby list. Renders null when empty.
+ * KB Explore ledger (01) — the page leads with place. Editorial row-list; each
+ * row with an image shows that photograph at rest (navy scrim + cream type).
+ * Live per-row active count + median. The homepage uses it for the six cities;
+ * a city page reuses it (props, no fork) for its NEIGHBORHOODS ledger, its
+ * golf/master-planned COMMUNITIES ledger, and the "Explore other cities"
+ * nearby list. Renders null when empty.
  */
 export function KbExploreTowns({
   towns,
@@ -78,9 +79,6 @@ export function KbExploreTowns({
                   <span className="town-price mono-num">{kbMoneyFull(t.medianPrice)} median</span>
                 ) : null}
               </span>
-              {/* Persistent affordance for touch devices — the hover-only photo
-                  reveal left phone rows reading as a static stats table
-                  (design-audit P2). Shown via CSS on hover:none only. */}
               <span className="town-arr" aria-hidden="true">→</span>
             </a>
           ))}

@@ -17,7 +17,7 @@
  * (LOOP_SENTINEL=off) · fresh-activity standdown (a working session holds
  * the floor) · busy check via the Cursor API (newest run CREATING/RUNNING)
  * · 15-min boot guard (covers the window before an agent's first claim) ·
- * daily launch cap (cost circuit-breaker) · missing key = skip + say so.
+ * missing key = skip + say so. No daily launch cap (removed 2026-08-16).
  */
 import 'server-only'
 
@@ -28,7 +28,6 @@ import { shouldAutoRelease } from './work-node'
 const REPO_URL = 'https://github.com/RyanRealty/RyanRealty'
 const ACTIVE_WINDOW_MIN = 180
 const BOOT_GUARD_MIN = 15
-const DAILY_LAUNCH_CAP = 12
 
 const LOOP_PROMPT = `Run the loop for exactly ONE node. You are a loop-sentinel iteration for Ryan Realty (THE LOOP — docs/DEVELOPMENT_PROCESS.md is canon). One node per session is the design: every node gets full fresh context, and the chain — not this session — carries continuity.
 
@@ -75,7 +74,7 @@ async function fetchNewestRunStatus(agentId: string, apiKey: string): Promise<Ru
  * handoff=true is the zero-gap chain: the CALLER is a finishing iteration
  * vouching that it is done, so the busy check and boot guard are waived —
  * the successor launches immediately. Kill switch, activity standdown,
- * open-work check, and the daily cost cap always apply.
+ * and the open-work check always apply. There is no daily launch cap.
  */
 export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean }): Promise<SentinelDecision> {
   // Kill switch. Matt arms with "arm the loop" (LOOP_SENTINEL=on) and disarms
@@ -164,9 +163,6 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
     .gte('logged_at', new Date(now - 24 * 60 * 60_000).toISOString())
     .order('logged_at', { ascending: false })
   const recent = launches ?? []
-  if (recent.length >= DAILY_LAUNCH_CAP) {
-    return { action: 'skipped', reason: `daily launch cap reached (${DAILY_LAUNCH_CAP}/24h) — cost circuit-breaker; investigate why iterations end fast`, openNodes, orphanReleases }
-  }
   const last = recent[0]
   if (!opts.handoff && last?.logged_at && now - Date.parse(String(last.logged_at)) < BOOT_GUARD_MIN * 60_000) {
     return { action: 'skipped', reason: `boot guard (launched within ${BOOT_GUARD_MIN} min — agent may not have claimed yet)`, openNodes, orphanReleases }
@@ -211,7 +207,7 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
   })
   // v1 create returns { agent: { id }, run: { id } }; tolerate a flat id too.
   // (2026-08-15 escape: reading body.id logged the FIRST successful launch as
-  // a failure and skipped the audit row the cap/busy-check depend on.)
+  // a failure and skipped the audit row the busy-check depends on.)
   const body = (await resp.json().catch(() => ({}))) as {
     id?: string
     agent?: { id?: string }
@@ -232,8 +228,8 @@ export async function runLoopSentinel(opts: { dry: boolean; handoff?: boolean })
     sync_cycle_id: agentId,
   })
   if (logErr) {
-    // The cap and busy-check read this log — a silent miss must be loud.
-    console.error('[loop-sentinel] LAUNCH LOG WRITE FAILED (cap/busy-check blind):', logErr.message)
+    // The busy-check reads this log — a silent miss must be loud.
+    console.error('[loop-sentinel] LAUNCH LOG WRITE FAILED (busy-check blind):', logErr.message)
   }
 
   return { action: 'launched', reason: 'loop was dormant with eligible work', agentId, openNodes, orphanReleases }

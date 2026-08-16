@@ -537,6 +537,14 @@ describe('design directive contracts', () => {
     expect(page).toMatch(/<KbCommunities/)
   })
 
+  it('D103b — town-door photographs are visible at rest (not hover-only)', () => {
+    const css = readSrc('components/site/kb/kb.css')
+    const fill = css.match(/\.kb-root \.town-fill\{[^}]+\}/)?.[0] ?? ''
+    expect(fill).toMatch(/opacity:\s*1/)
+    expect(fill).not.toMatch(/opacity:\s*0/)
+    expect(css).not.toMatch(/town-row:hover \.town-fill\{opacity:1\}/)
+  })
+
   it('D99 — homepage market HUD is live pulse, not a second sale-series caption (§0)', () => {
     const page = readSrc('app/page.tsx')
     expect(page).toMatch(/from ['"]@\/components\/site\/kb\/KbMarketHud/)

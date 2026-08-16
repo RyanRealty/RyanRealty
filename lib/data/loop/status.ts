@@ -14,7 +14,6 @@ import { listWorkNodes, type WorkNode } from './work-graph'
 import { fleetNodePriority, type WorkNodeState } from './work-node'
 import { isExpiredUnlearned, windowEndsAt } from './ledger-draft'
 
-const SENTINEL_DAILY_CAP = 12
 const ACTIVE_WINDOW_MIN = 180
 
 export type LoopNodeSummary = {
@@ -73,7 +72,7 @@ export type LoopStatus = {
   version: { gapsTotal: number; gapsDone: number }
   findings: { newCount: number; recent: LoopFindingSummary[] }
   ledger: { openWindows: LoopLedgerWindow[]; expiredCount: number }
-  sentinel: { launchesToday: number; cap: number; recent: LoopSentinelLaunch[] }
+  sentinel: { launchesToday: number; recent: LoopSentinelLaunch[] }
 }
 
 function summarize(n: WorkNode): LoopNodeSummary {
@@ -180,7 +179,6 @@ export async function getLoopStatus(now: Date = new Date()): Promise<LoopStatus>
     ledger: { openWindows, expiredCount: openWindows.filter((w) => w.expired).length },
     sentinel: {
       launchesToday: launches.filter((l) => l.kind === 'launch').length,
-      cap: SENTINEL_DAILY_CAP,
       recent: launches,
     },
   }

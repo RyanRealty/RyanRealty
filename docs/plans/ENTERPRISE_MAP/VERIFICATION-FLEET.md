@@ -92,7 +92,7 @@ The historical full-brief texts that previously lived in this section moved into
 
 - **Analytics Reader** — signs into GA4/GSC with Matt's Google (OAuth grant) and reports weekly deltas. Blocked on the grant.
 - **Admin Walker** — signs into admin with a limited viewer credential and walks broker workflows (Today, person pages, subscriptions hub). Blocked on Matt creating that credential. Until then, admin-side effects are verified by the loop (`fleet-flow-verify`, node accept tests, int tests) rather than by bots.
-- ~~Scheduled unattended loop iterations (R-206)~~ **SHIPPED 2026-08-15** — the loop-sentinel cron (`/api/cron/loop-sentinel`, every 10 minutes, deterministic code) relaunches a cloud loop iteration the moment the previous one ends: state-based busy check against the Cursor API, never a blind timer (max dormancy ≈ 10 min). Kill switch: env `LOOP_SENTINEL=off` (or pause the cron in Vercel). Cost circuit-breaker: 12 launches/day.
+- ~~Scheduled unattended loop iterations (R-206)~~ **SHIPPED 2026-08-15** — the loop-sentinel cron (`/api/cron/loop-sentinel`, every 10 minutes, deterministic code) relaunches a cloud loop iteration the moment the previous one ends: state-based busy check against the Cursor API, never a blind timer (max dormancy ≈ 10 min). Kill switch: env `LOOP_SENTINEL=off` (or pause the cron in Vercel). Daily launch cap removed 2026-08-16.
 
 ## Rails (hard, in every brief)
 

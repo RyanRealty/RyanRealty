@@ -263,7 +263,7 @@ export default async function LoopStatusPage() {
           <QuietRow name="State" state={status.armed ? 'ARMED' : 'DISARMED'} figure="LOOP_SENTINEL env, read live" />
           <QuietRow
             name="Launches today"
-            figure={`${status.sentinel.launchesToday} of ${status.sentinel.cap} (daily cost cap)`}
+            figure={`${status.sentinel.launchesToday} in 24h · no daily cap`}
           />
           <QuietRow
             name="Last launch"
