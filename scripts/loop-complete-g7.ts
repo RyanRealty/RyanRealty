@@ -1,73 +1,69 @@
 /**
- * Complete G7 after accept evidence is in hand.
- * Usage: npx tsx scripts/loop-complete-g7.ts
+ * Complete G7 with environment evidence. Not imported by the app.
+ *
+ *   npx tsx scripts/loop-complete-g7.ts <evidence>
  */
 import { createClient } from '@supabase/supabase-js'
-import { readFileSync } from 'node:fs'
+import { config } from 'dotenv'
+import { isLegalTransition } from '../lib/data/loop/work-node'
 
-function loadEnv() {
-  const env: Record<string, string> = { ...process.env } as Record<string, string>
-  try {
-    const raw = readFileSync('.env.local', 'utf8')
-    for (const line of raw.split('\n')) {
-      const m = line.match(/^([A-Z0-9_]+)=(.*)$/)
-      if (m && !env[m[1]]) env[m[1]] = m[2].replace(/^["']|["']$/g, '')
-    }
-  } catch {
-    /* optional */
-  }
-  return env
-}
+config({ path: '.env.local' })
 
-const env = loadEnv()
-const url = env.NEXT_PUBLIC_SUPABASE_URL
-const key = env.SUPABASE_SERVICE_ROLE_KEY
-if (!url || !key) {
-  console.error('missing supabase env')
-  process.exit(1)
-}
-
-const NODE_ID = 'f10b9c7c-c4ad-4d55-bdbe-3294000a8e62'
+const ID = 'f10b9c7c-c4ad-4d55-bdbe-3294000a8e62'
 const OWNER = 'bc-311e4201-0cc8-4ade-b44d-879873938822'
 
-const evidence = process.argv[2]
+const evidence = process.argv.slice(2).join(' ').trim()
 if (!evidence) {
-  console.error('pass evidence string as argv[2]')
-  process.exit(1)
+  console.error('usage: npx tsx scripts/loop-complete-g7.ts <evidence>')
+  process.exit(2)
 }
 
-const sb = createClient(url, key, { auth: { persistSession: false } })
-
-const { data: node, error: readErr } = await sb
-  .from('loop_nodes')
-  .select('id, status, owner, claimed_at')
-  .eq('id', NODE_ID)
-  .maybeSingle()
-
-if (readErr || !node) {
-  console.error(readErr ?? 'node missing')
-  process.exit(1)
+async function main() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url?.trim() || !key?.trim()) {
+    console.error('UNREADABLE: Supabase env missing')
+    process.exit(2)
+  }
+  const sb = createClient(url, key)
+  const { data: row, error: readErr } = await sb
+    .from('loop_work_nodes')
+    .select('id,state,owner_session')
+    .eq('id', ID)
+    .single()
+  if (readErr || !row) {
+    console.error('read failed', readErr?.message)
+    process.exit(1)
+  }
+  if (row.owner_session !== OWNER) {
+    console.error('refusing complete: owner mismatch', row)
+    process.exit(1)
+  }
+  if (!isLegalTransition(row.state, 'done')) {
+    console.error('illegal transition', row.state, '-> done')
+    process.exit(1)
+  }
+  const { data, error } = await sb
+    .from('loop_work_nodes')
+    .update({
+      state: 'done',
+      evidence,
+      blocked_reason: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', ID)
+    .eq('state', row.state)
+    .eq('owner_session', OWNER)
+    .select('id,state')
+    .single()
+  if (error || !data?.id) {
+    console.error('update failed', error?.message ?? 'no row')
+    process.exit(1)
+  }
+  console.log(JSON.stringify({ ok: true, id: data.id, state: data.state }, null, 2))
 }
 
-if (node.status !== 'in_progress' || node.owner !== OWNER) {
-  console.error('refusing complete: status/owner mismatch', node)
+main().catch((err) => {
+  console.error(err)
   process.exit(1)
-}
-
-const { error } = await sb
-  .from('loop_nodes')
-  .update({
-    status: 'done',
-    completed_at: new Date().toISOString(),
-    evidence,
-  })
-  .eq('id', NODE_ID)
-  .eq('status', 'in_progress')
-  .eq('owner', OWNER)
-
-if (error) {
-  console.error(error)
-  process.exit(1)
-}
-
-console.log(JSON.stringify({ ok: true, id: NODE_ID, status: 'done' }, null, 2))
+})
