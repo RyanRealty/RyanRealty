@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — Tetherow counted-set list shipped
+# Current — 2026-08-16 (cursor-loop-chain) — withhold pulse MOS when the page count is a different set
+
+**Surface:** Cursor cloud `bc-5ffa2bf0` (`cursor/loop-sentinel-2026-08-16t19-00-d437`). **Time:** 2026-08-16 ~19:50 UTC. Brief served fleet finding `57a2abd4` (public-ux / fleet `5d55abbd72a67d25a5d7232b46fd2fb0`), not G16/G32. One node only. Product **`0028904a8`**. **`main` @** `fd628a6de` + this handoff. Vercel Production **READY** (inspector `6ySP1fBHNPYCa7nm6w4WUtYS1dJ7`). `npm run deploy:verify` exit 0 in 763s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#46**.
+
+**Done**
+- Fleet finding [p0]: `/communities/tetherow` printed 4.6 months of supply next to 35 actives (implies ~45.7 six-month closes) against FAQ 36 sold in 12 months. Pulse row was honest for 19 actives / 4.56 MOS. Reproduced on production + `market_pulse_live` / `market_stats_cache` before the class.
+- Class: SoR helper `publishMonthsOfSupply` withholds when the pulse numerator differs from the count on screen, or when implied six-month closes exceed the printed 12-month sold count. Public pages withhold (no invented 12-month MOS under the same label). CRM/CMA may fall back after null. Wired on community, city, neighborhood, homepage, housing-market, FAQ, CRM, CMA, report export. Gate `ci:publish-months-of-supply`. No public-ux ledger insert (open window `2a5054ac`).
+- After READY: production 1280 + 390 — Tetherow HUD is 35 homes / $1,499,000 / 19 days, no 4.6 MOS. FAQ keeps 36 sold / 12 months and drops the buyer/seller MOS question. JSON-LD has no Months of Supply. Awbrey Glen HUD is 8 homes, no MOS. Bend city still prints honest 3.5 MOS (pulse numerator matches). Screenshots `/opt/cursor/artifacts/tetherow_{1280,390,faq_1280,faq_390}.png`, `awbrey_glen_1280.png`, `bend_city_1280.png`.
+- R-002 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** Tetherow counted-set list `dada087f8` / handoff `fd628a6de` (node `bff867b9` **done**). NWX v8 walk lessons `be938f107`. G33 `/admin/loop` `1f01f54f` (node `1a6eb37a` **done**). La Pine hyphen-cache `6eded9fd`. SFR city-table remainder `4ca02de19`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux or factory ledger row. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-002, git-commit.
+
+# Prior — 2026-08-16 (cursor) — Tetherow counted-set list shipped
 
 **Surface:** Cursor Grok. **Time:** 2026-08-16 ~12:40 PT. One node only: fleet `a1851580` / graph `bff867b9` (public-ux). Product **`dada087f`**. Vercel Production **READY** (`dpl_3Rf1T6djVVd332EgHTQzW6MxGsZY`, `npm run deploy:verify` exit 0 in 830s). No hosted migration. Loop stays **ARMED**. Node **done**. No public-ux ledger insert (open window `2a5054ac`). Did not fire an extra sentinel.
 
@@ -13,10 +29,6 @@
 - Pre-existing console noise only: `/api/visitors/track` 400; React 418 hydration on the KB hero. Not this class.
 
 **Also on origin/main (other sessions, do not steal / do not undo):** Tetherow MoS withhold `a15404f2`. Housing-market pulse JSON-LD fallback `0028904a`. G33 `/admin/loop` `1f01f54f`. La Pine hyphen-cache `6eded9fd`. SFR pulse remainder `4ca02de19`. Place-hero grain `706327241`. Awbrey inventory `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**. Local-only lessons commit `be938f10` (NWX v8 walk) rides this handoff push.
-
-**Next**
-- Matt keep/kill on the NWX hang pair and motion takes. Do not wire the live community header.
-- Armed sentinel keeps fleet p0s. This session does not claim a second node until the handoff is on `origin/main`.
 
 **Do not:** insert another public-ux or factory ledger row. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not claim G32 done. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not wire the live NWX community header. Disarm = Matt says "disarm the loop".
 
