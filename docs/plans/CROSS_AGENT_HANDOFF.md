@@ -4,7 +4,7 @@
 
 # Current — 2026-08-16 (loop-sentinel bc-26bd9513) — G12 video docket shipped
 
-**Surface:** Cursor cloud agent `bc-26bd9513-82b6-4e3e-b22e-9aba3838e83e`. **Time:** 2026-08-16 ~11:35 UTC. Brief served **G12** (factory). One node only. Product **`fd71eee24`**. PR **#40**. `ci:gates` **213/213** including `ci:video-docket`.
+**Surface:** Cursor cloud agent `bc-26bd9513-82b6-4e3e-b22e-9aba3838e83e`. **Time:** 2026-08-16 ~11:55 UTC. Brief served **G12** (factory). One node only. **`main` @** `ca8f7f636` (product `fd71eee24` + DAL deploy touch). PR **#40**. Vercel Production **READY** (GitHub deployment `5930667908`, inspector `BERhGqFnQqdf2TsFJgZ1eervPref`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). `ci:gates` **213/213** including `ci:video-docket`.
 
 **Done**
 - G12 Video decision docket (`53355a5b-fafc-4136-8cbd-dc98aa73ed05`) **done**. Accept: docket exists with both options costed. Decision stays **pending** (M3) until Matt answers.
@@ -13,6 +13,7 @@
 - Rebuild: ElevenLabs Turbo **$0.05/1k** (https://elevenlabs.io/pricing/api fetched 2026-08-16) + producer cap **$5/row $15/run**. Re-register 24 producers, restore 13 capability skills, repoint 11 dead imports. Requires Matt to CHANGE/SUPERSEDE R-045.
 - Accept proof: `npx tsx scripts/loop-probe-g12.ts` — `complete=true` parkUsd=0 rebuildTurboPer1k=0.05 rebuildCapPerRow=5 deadSafeZoneImports=11 decommissionedProducers=24 remotionConfigs=16 mp4OnDisk=84 decision=pending.
 - VERSION-1 G12 **DONE 2026-08-16**. M3 still open. R-045 stays LOCKED. No schema migration.
+- Ship: `ci:gates` 213/213; `origin/main` includes `ca8f7f636`; production deploy success. PR #40.
 
 **Do not:** flip R-045. Do not re-register video producers. Do not SMS, publish, spend, or OAuth. Do not flip INT-007 to KEEP before 2026-08-22. G6 stays blocked (live SMS). G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3.
 
