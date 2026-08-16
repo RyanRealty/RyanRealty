@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — page-grade process KILLED
+# Current — 2026-08-16 (cursor-loop-chain) — place list medians labeled with their geography
+
+**Surface:** Cursor cloud `bc-b007f583` (`cursor/loop-sentinel-2026-08-16t20-10-291a`). **Time:** 2026-08-16 ~21:15 UTC. Brief served fleet finding `6cc544ec` (public-ux / fleet `5f0ec58d60988a52e76b8a559ef22f0c`), not G16/G32. One node only. Product **`eff056fb2`**. **`main` @** `9afe74a6a` + this handoff. Vercel Production **READY** (inspector `AWXRagFsuxjPARVYVgLpe1AQLsMu`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#48**.
+
+**Done**
+- Fleet finding [p0]: `/communities/tetherow` printed $1,499,000 as Regional median. Same number as the Tetherow list median on the hero. Reproduced on production before the class. Membership Initiation / Monthly dues printed as em-dashes. RSC leaked `market_stats_cache` / `geo_slug='bend'`.
+- Class: SoR `publishSellMedian` pairs a place number with `{place} median`. "Regional median" only for the region pulse. KbSell withholds a price with no caption. Empty membership facts withhold (`publishFactValue`). Public chart sources go through `toPublicCoreChartSeries` (Oregon Data Share + human geography). Wired on community, city, neighborhood, homepage, ZIP, subdivision tail, listing market charts. Gate `ci:publish-median-caption`. No public-ux ledger insert (open window `2a5054ac`).
+- After READY: production 1280 + 390 — Tetherow footer **$1,499,000 Tetherow median**, 0 Regional median. Membership has no Initiation / Monthly dues rows. HTML has 0 table-name leaks. Homepage **$730,000 Regional median** (honest). Bend city **$756,000 Bend median**. Screenshots `/opt/cursor/artifacts/tetherow_sell_{1280,390}.png`, `tetherow_membership_{1280,390}.png`, `bend_sell_1280.png`, `home_sell_1280.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Also on origin/main (other sessions, do not steal / do not undo):** page-grade process KILLED `9afe74a6a` (do not run `/page-grade`). NWX v8e logo-in-frame killed `a67f17d6f`. Tetherow one-annual HOA `7e8c0fc99`. MOS withhold. Counted-set list. G33 `/admin/loop`. G32 seeded. G6 toggle. G6 accept stays **blocked**.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor) — page-grade process KILLED
 
 **Surface:** Cursor Grok. **Time:** 2026-08-16 ~13:40 PT. Docs/skills only. Not a fleet node. No public-ux ledger insert (open window `2a5054ac`).
 
