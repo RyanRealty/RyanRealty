@@ -697,6 +697,23 @@ Places are still legacy. Chrome unit = `app/layout.tsx` PublicNav → V3Chrome.
 `state.json` and `work-queue.json` in this folder are not authority.
 Do not start Public Product OS 2.
 
+## 2026-08-16 — Page-grade process KILLED (Matt)
+
+Matt: the whole process is fucked. Get rid of it.
+
+The 2026-08-14 grind deleted photography, maps, and listing facts so a
+caption rule could pass. Agents called Looks green. The phone looked
+like a 1998 template. That is the class.
+
+**Dead:** `/page-grade`, "run the grind", "run the grade", grade-universe
+capture, grade-ledger scoring, fix-every-open-class, regrade. The skill
+files are refuse stubs. `PAGE-GRADE.md` is evidence, not instructions.
+
+**Still binding:** six v3 patterns, one shop / five place rhythms, brand,
+voice, §0, PRODUCT.md. Public look is Matt keep/kill on real pages.
+
+Do not invent a replacement rubric in the same delivery.
+
 ## 2026-08-15 — Ban new UI components (Matt)
 
 The public shop does not grow a new component for a new job. Six patterns.

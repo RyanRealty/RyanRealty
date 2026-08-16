@@ -5,7 +5,7 @@
   "source": "docs/plans/ENTERPRISE_MAP/look-walk-baseline.json",
   "base": "https://ryan-realty.com",
   "capture": "out/look-walk/capture.json",
-  "rubric": "docs/plans/PUBLIC_PRODUCT/PAGE-GRADE.md v2.4 first-screen only (G9 baseline, not a full 18-point regrade)",
+  "rubric": "G9 look-walk URL set only. Page-grade process KILLED 2026-08-16. This file is a first-screen baseline, not a regrade.",
   "public": {
     "routes": [
       {

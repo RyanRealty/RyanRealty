@@ -124,6 +124,21 @@ for (const d of regDirs) {
 }
 const planFiles = planMd // for the summary line below
 
+// Page-grade is KILLED (Matt 2026-08-16). Both skill copies must stay refuse stubs.
+for (const skill of [
+  '.claude/skills/page-grade/SKILL.md',
+  '.cursor/skills/page-grade/SKILL.md',
+]) {
+  if (!existsSync(skill)) {
+    fails.push(`${skill}: missing — restore the KILLED refuse stub, do not delete the stop`)
+    continue
+  }
+  const src = readFileSync(skill, 'utf8')
+  if (!src.includes('KILLED 2026-08-16') || !src.includes('Do not grade')) {
+    fails.push(`${skill}: page-grade must stay a KILLED refuse stub (Matt 2026-08-16)`)
+  }
+}
+
 console.log('Process-canon sync check (G44)')
 console.log('==============================')
 console.log(`Canon version: v${version ?? '?'} · entry points: ${ENTRY_POINTS.length} · plan docs: ${planFiles.length}`)

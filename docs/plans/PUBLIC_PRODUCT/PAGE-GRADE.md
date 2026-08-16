@@ -1,21 +1,29 @@
-# Page Grade v2.4 — agent instructions
+# Page Grade v2.4 — KILLED 2026-08-16
 
-The loop that reruns this rubric is `.claude/skills/page-grade/SKILL.md`
-(Cursor: `.cursor/skills/page-grade/SKILL.md`). Ledger:
-`docs/plans/PUBLIC_PRODUCT/grade-ledger.json`. Grade every unique public page plus one live exemplar per template.
+**Do not use this file.** Matt 2026-08-16: the whole process is fucked.
+Get rid of it. The skill is a refuse stub. This document is evidence of
+the failure that flattened the shop (photography, maps, and listing
+facts deleted so a caption rule could pass). It is not a loop. It is
+not a ship gate. Do not grade. Do not regrade. Do not fix-to-a-rubric.
+
+---
+
+# Page Grade v2.4 — fossil (do not execute)
+
+Everything below this line is the retired rubric. Do not score. Do not
+regrade. Do not fix-to-a-rubric. Kept so the next agent can see what
+broke the shop.
+
+The loop that reran this rubric is dead. Ledger
+`docs/plans/PUBLIC_PRODUCT/grade-ledger.json` is a fossil. Do not grade every unique public page plus one live exemplar per template.
 Do not score every city, every master-plan, every plat, or every listing.
 Do not treat this file as a second OS.
 
-Use this file to score a page. Do not use SITE_SPEC checkboxes, the PUBLIC_UI
-self-scorecard, a Looks GREEN note, or `ci:gates` as a pass. Those are how the
-2026-08-13 v3 roll shipped a site that still misses.
+This file was diagnosis. A score was not a redesign license. The
+page-grade skill is a refuse stub. It does not look, score, or write
+product code.
 
-**This file is diagnosis.** A score is not a redesign license. The
-page-grade skill looks and scores. It does not write product code.
-A punch without a quieter control is not a punch. Building the
-control is a later `fix` command, not this file.
-
-**Product we are grading toward:** every path is known from the first screen
+**What the dead process claimed to grade toward:** every path is known from the first screen
 to the finish. A stranger understands what is going on from the layout, not
 from copy. The full housing record is findable. The screen is quiet. The
 same page beats every named competitor on the job — measured, not asserted.

@@ -8,7 +8,11 @@ Matt, Aug 14: it has to be super easy. What are you trying to do. Buy a home, se
 
 The look (PropXYZ cards, Tremor instruments, HouseMe report) is how the data is shown. It is not the product.
 
-Do not run page-grade. Do not start Public Product OS 2. Do not ask Matt to restate this.
+**Page-grade is KILLED (Matt 2026-08-16).** Do not run it. Do not score
+pages against PAGE-GRADE.md. Do not fix the shop to pass a rubric. The
+skill is a refuse stub. Look is Matt keep/kill on real pages.
+
+Do not start Public Product OS 2. Do not ask Matt to restate this.
 
 **Ban new UI components (Matt, 2026-08-15).** The shop is the six v3 patterns plus chrome. Jobs wire into Field, Instrument, Ledger, Stage, Sheet, Quiet, and the search that already exists. Do not add an island, a card system, a quiz surface, or a seventh pattern. A new file under `components/` that draws its own chrome is a lock break. Fold a job into a primitive or a page. Do not invent a component so the job has a home.
 
@@ -289,7 +293,7 @@ The argument is PRODUCT.md. Done means a real person can walk the site and do th
 - Outbound looking-at SMS or buyer-packet send — CLAUDE.md §1, per-action approval. The ask can exist. The send cannot.
 - Ad spend. Ads stay parked.
 - Competitor names on the public site (I6).
-- Page-grade. New Public Product OS. Tremor npm. PropXYZ purchase.
+- Page-grade (KILLED 2026-08-16). New Public Product OS. Tremor npm. PropXYZ purchase.
 
 **Progress** is the Order list above. Steps 1–9 are live on `origin/main` `4cfc1a9e`, Vercel production READY, walked 2026-08-15 on https://ryan-realty.com. Named stops still hold: looking-at send, ad spend, I6, page-grade, new OS.
 

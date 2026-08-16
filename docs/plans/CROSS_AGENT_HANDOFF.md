@@ -2,7 +2,25 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — NWX v8e logo-in-frame killed
+# Current — 2026-08-16 (cursor) — page-grade process KILLED
+
+**Surface:** Cursor Grok. **Time:** 2026-08-16 ~13:40 PT. Docs/skills only. Not a fleet node. No public-ux ledger insert (open window `2a5054ac`).
+
+**Done**
+- Matt STOP: page-grade is fucked. Kill the process (grade → flatten to pass Quiet → regrade). Not a live-site restyle.
+- Both skill copies are refuse stubs (`KILLED 2026-08-16`, `Do not grade`). `ci:process-canon` asserts that.
+- `PAGE-GRADE.md` is evidence, not instructions. `grade-ledger.json` `status: killed`. Look-walk stays a G9 URL set, not a regrade.
+- R-215 LOCKED. R-051 amended. Max pin R-215. CLAUDE §9, PRODUCT.md, SESSION_BOOT, public-product-os, both skill registries marked dead.
+- Public look is Matt keep/kill on real pages. Do not invent a replacement rubric.
+
+**Next**
+- Wait for Matt to name the source look. Do not resume the rejected unification after family. Do not run `/page-grade`.
+
+**Do not:** product UI from this kill. Do not grade. Do not SMS, publish, spend, OAuth. Do not invent a listing. Do not wire the live NWX community header. Disarm = Matt says "disarm the loop".
+
+**Skills read:** page-grade (refuse stub), public-product-os, git-commit, CLAUDE §9, PRODUCT.md, decisions.md.
+
+# Prior — 2026-08-16 (cursor) — NWX v8e logo-in-frame killed
 
 **Surface:** Cursor Grok. **Time:** 2026-08-16 ~13:26 PT. Studio only. Not a fleet node.
 
