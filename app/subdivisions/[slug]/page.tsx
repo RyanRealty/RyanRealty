@@ -14,8 +14,8 @@
  *   2. Registry alias — data/resort-communities.json subdivision_aliases contains a
  *      match (slugify(alias) === slug). Captures the canonical alias name, parent
  *      resort slug, city, and city_slug for listing fetches.
- *   3. Active listings — getCommunityListings(city, canonicalName, limit) finds
- *      active homes tagged with that MLS SubdivisionName in any service-area city.
+ *   3. Active listings — getPlatPublicInventory(slug) finds SFR + PUBLIC_ACTIVE
+ *      homes tagged with that MLS SubdivisionName in the parent city.
  * permanentRedirect fires ONLY for marketing-level slugs (resolveSubdivisionAreaRedirect).
  * notFound fires ONLY when all three paths return empty.
  *
@@ -23,18 +23,18 @@
  * video tours · map · sales history · schools · lifestyle · parents/peers ·
  * SELL · footer. Inventory leads; no dead-end after history.
  *
- * Data ONLY through @/lib/data and @/app/actions/communities. No raw .from().
+ * Data ONLY through @/lib/data. No raw .from().
  */
 
 import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
-import { getCommunityListings } from '@/app/actions/communities'
 import {
   getGeoBoundaryMapData,
   getListingTiles,
   getMarketStats,
 } from '@/lib/data'
+import { getPlatPublicInventory } from '@/lib/data/geo/plat-public-inventory'
 import { SubdivisionExploreTail } from '@/components/site/explore/SubdivisionExploreTail'
 import { PlaceMapListSplit } from '@/components/site/explore/PlaceMapListSplit.client'
 import {
@@ -166,17 +166,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SubdivisionPage({ params }: Props) {
   const { slug } = await params
 
-  // ── PATH 1: GIS boundary (plat polygon + spatial pins) ───────────────────
-  const boundaryRead = await withTimeoutFallbackResult(
-    getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
-    { polygon: null, pins: [] },
-    4500,
-    'sub:boundary',
-  )
+  // ── PATH 1: GIS boundary (plat polygon for the map) ──────────────────────
+  // ── PATH 2: Registry alias + the public SFR inventory SoR ────────────────
+  const [boundaryRead, inventory] = await Promise.all([
+    withTimeoutFallbackResult(
+      getGeoBoundaryMapData({ geoType: 'subdivision', geoSlug: slug }),
+      { polygon: null, pins: [] },
+      4500,
+      'sub:boundary',
+    ),
+    getPlatPublicInventory(slug),
+  ])
   const boundary = boundaryRead.value
   const hasBoundary = Boolean(boundary.polygon)
 
-  // ── PATH 2: Registry alias (resort-communities.json) ─────────────────────
   const registryMatch = resolveRegistryAlias(slug)
 
   // ── Redirect: known marketing-area slug → canonical page ─────────────────
@@ -187,62 +190,38 @@ export default async function SubdivisionPage({ params }: Props) {
     if (dest) permanentRedirect(dest)
   }
 
-  // ── PATH 3: Active listings by registry alias or boundary pins ────────────
-  // If the boundary has spatial pins, hydrate them into tiles.
-  // If a registry alias matched, fetch via getCommunityListings(city, alias).
-  // If neither, this slug truly 404s.
-  const boundaryListingKeys = boundary.pins.map((p) => p.listingKey)
+  // ── PATH 3: Counted set = registry plat inventory (SFR + PUBLIC_ACTIVE) ──
+  // Same payload as /subdivisions tiles (getRegistryPlatPublicInventory).
+  // Do not fall back to a capped featured fetch or unfiltered pin count
+  // (all property types) — those were the 12 / 14 / 26 split on Ridge At
+  // Eagle Crest (2026-08-16). A measured empty must not revive townhouses.
+  const inventoryOk = inventory != null
+  const countedKeys = inventoryOk ? inventory.listingKeys : []
+  const boundaryListingKeys = inventoryOk
+    ? countedKeys
+    : boundary.pins.map((p) => p.listingKey)
 
-  // Fetch featured/listing data from the best available source.
-  // Priority: registry alias (MLS subdivision-name query) > boundary pins.
-  let featuredTiles: Awaited<ReturnType<typeof getCommunityListings>> = []
   let mapTiles: Awaited<ReturnType<typeof getListingTiles>> = []
-
-  if (registryMatch) {
-    // Registry alias: getCommunityListings gives us MLS-tagged homes across all
-    // alias variants via getSubdivisionMatchNames internally.
-    featuredTiles = await withTimeoutFallback(
-      getCommunityListings(registryMatch.city, registryMatch.canonicalName, 14),
-      [],
-      4500,
-      'sub:featured-registry',
-    )
-    // Map tiles: if boundary pins exist use them for spatial context;
-    // otherwise fetch active listings by the canonical MLS name for pins.
-    if (boundaryListingKeys.length > 0) {
-      // §0: the map subtitle claims "every active SINGLE-FAMILY listing". The plat
-      // boundary RPC filters only StandardStatus='Active', so propertyType:'A' has to
-      // be applied here or the sentence is false.
-      mapTiles = await withTimeoutFallback(
-        getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 200 }),
-        [],
-        4500,
-        'sub:map-boundary',
-      )
-    } else {
-      // Re-fetch via getListingTiles so we get proper ListingTile[] with lat/lng.
-      mapTiles = await withTimeoutFallback(
-        getListingTiles({ subdivision: registryMatch.canonicalName, city: registryMatch.city, status: 'active', propertyType: 'A', limit: 200 }),
-        [],
-        4500,
-        'sub:map-registry',
-      )
-    }
-  } else if (boundaryListingKeys.length > 0) {
-    // Boundary-only path: hydrate pins into tiles.
+  if (boundaryListingKeys.length > 0) {
     mapTiles = await withTimeoutFallback(
-      // §0: single-family claim in the map subtitle — see sub:map-boundary above.
-      getListingTiles({ listingKeys: boundaryListingKeys, status: 'active', propertyType: 'A', limit: 200 }),
+      getListingTiles({
+        listingKeys: boundaryListingKeys,
+        status: 'active',
+        propertyType: 'A',
+        limit: 250,
+      }),
       [],
       4500,
-      'sub:map-pins',
+      inventoryOk ? 'sub:inventory-tiles' : 'sub:map-pins',
     )
-    // For the featured rail, reuse these same tiles (no registry match).
-    featuredTiles = []
+  }
+  if (inventoryOk) {
+    const allowed = new Set(countedKeys)
+    mapTiles = mapTiles.filter((t) => allowed.has(t.listingKey))
   }
 
   // notFound: no boundary, no registry alias, no listings anywhere.
-  const hasListings = featuredTiles.length > 0 || mapTiles.length > 0
+  const hasListings = mapTiles.length > 0
   if (!hasBoundary && !registryMatch && !hasListings) {
     notFound()
   }
@@ -285,14 +264,7 @@ export default async function SubdivisionPage({ params }: Props) {
   // boundary read that timed out leaves it `[]`, indistinguishable from a real
   // empty plat, and the lede published "No active listings right now" as fact.
   // null = unknown, and the lede + count below suppress the claim instead.
-  const activeCount: number | null =
-    hasBoundary
-      ? boundary.pins.length
-      : registryMatch
-      ? featuredTiles.length
-      : boundaryRead.ok
-      ? mapTiles.length
-      : null
+  const activeCount: number | null = inventory?.activeCount ?? null
 
   // ── Hero copy ─────────────────────────────────────────────────────────────
   // KbHero already renders "<N> homes for sale" ahead of this text when
@@ -317,40 +289,10 @@ export default async function SubdivisionPage({ params }: Props) {
     : 'Central Oregon · Cascade Range'
 
   // ── Featured items ────────────────────────────────────────────────────────
-  // If we have registry-fetched featured tiles (ListingRow[]), convert to the
-  // ListingTile-compatible shape that resolveFeaturedItems accepts, then resolve.
-  // If only boundary-derived mapTiles exist, use those directly.
+  // Same counted set as the hero and the #homes list.
   let featuredItems: KbFeaturedItem[] = []
   if (mapTiles.length > 0) {
-    // mapTiles is always proper ListingTile[] (from getListingTiles or boundary
-    // pin hydration). Use it as the canonical source for both paths so
-    // resolveFeaturedItems always receives the right type.
     featuredItems = await resolveFeaturedItems(mapTiles.filter((t) => Boolean(t.photoUrl)))
-  } else if (featuredTiles.length > 0) {
-    // Registry path where mapTiles fetch timed out: fall back to the ListingRow[]
-    // from getCommunityListings, converting to the subset resolveFeaturedItems
-    // needs. The community page uses the same cast pattern (§ featured rail).
-    const tileCandidates = featuredTiles
-      .map((r) => ({
-        listingKey: r.ListingKey ?? '',
-        listNumber: r.ListNumber ?? null,
-        listPrice: r.ListPrice,
-        beds: r.BedroomsTotal,
-        baths: r.BathroomsTotal,
-        sqft: r.TotalLivingAreaSqFt ?? null,
-        streetNumber: r.StreetNumber,
-        streetName: r.StreetName,
-        city: r.City,
-        postalCode: r.PostalCode,
-        subdivisionName: r.SubdivisionName,
-        lat: r.Latitude,
-        lng: r.Longitude,
-        photoUrl: r.PhotoURL,
-        status: r.StandardStatus ?? null,
-      }))
-      .filter((t) => t.listingKey)
-    // Cast mirrors the community page's `featuredCommunityTiles as unknown as Parameters<typeof resolveFeaturedItems>[0]` pattern.
-    featuredItems = await resolveFeaturedItems(tileCandidates as unknown as Parameters<typeof resolveFeaturedItems>[0])
   }
 
   // ── Map data ─────────────────────────────────────────────────────────────
@@ -444,7 +386,10 @@ export default async function SubdivisionPage({ params }: Props) {
   const centroid = mapCentroid(mapTiles)
   const lifestyleItems = lifestyleForCentroid(centroid)
   const heroMedian =
-    communityPulse?.medianListPrice ?? cityPulse?.medianListPrice ?? null
+    inventory?.medianListPrice ??
+    communityPulse?.medianListPrice ??
+    cityPulse?.medianListPrice ??
+    null
   const heroDom =
     communityPulse?.medianDaysToPending ?? cityPulse?.medianDaysToPending ?? null
 

@@ -10,12 +10,13 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
-  getAllCommunitySnapshots,
   getSurfaceImages,
   pickSurfaceImage,
 } from '@/lib/data'
-import { slugify } from '@/lib/slug'
-import { resolveSubdivisionAreaRedirect } from '@/lib/subdivision-area-redirects'
+import {
+  getRegistryPlatPublicInventory,
+  registryChildPlats,
+} from '@/lib/data/geo/plat-public-inventory'
 import { communityImage, cityHero } from '@/lib/geo-images'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
@@ -26,7 +27,6 @@ import { KbBreadcrumb } from '@/components/site/kb/KbBreadcrumb'
 import { KbFooter } from '@/components/site/kb/KbFooter.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import type { SchemaInput } from '@/lib/site/json-ld'
-import resortCommunitiesRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import '@/components/site/kb/kb.css'
 
 export const revalidate = 1800
@@ -40,14 +40,6 @@ export const metadata: Metadata = pageMetadata({
   path: '/subdivisions',
 })
 
-type RegistryCommunity = {
-  slug: string
-  label: string
-  city: string
-  city_slug: string
-  subdivision_aliases: string[]
-}
-
 type FeaturedPlat = {
   slug: string
   name: string
@@ -57,37 +49,9 @@ type FeaturedPlat = {
   citySlug: string
 }
 
-function isDisplayablePlatName(alias: string): boolean {
-  const t = alias.trim()
-  if (t.length < 6) return false
-  if (/^[A-Za-z]{2,5}$/.test(t)) return false
-  if (/^(drrh|oww|bbr|stoneth)/i.test(t)) return false
-  return true
-}
-
 function fmtPrice(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
   return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
-}
-
-function registryChildPlats(registry: ReadonlyArray<RegistryCommunity>): FeaturedPlat[] {
-  const out: FeaturedPlat[] = []
-  for (const r of registry) {
-    for (const alias of r.subdivision_aliases) {
-      if (!isDisplayablePlatName(alias)) continue
-      const slug = slugify(alias)
-      if (resolveSubdivisionAreaRedirect(slug)) continue
-      out.push({
-        slug,
-        name: alias,
-        parent: r.label,
-        parentSlug: r.slug,
-        city: r.city,
-        citySlug: r.city_slug,
-      })
-    }
-  }
-  return out
 }
 
 function pickFeaturedPlats(children: FeaturedPlat[], cap = 12): FeaturedPlat[] {
@@ -107,25 +71,18 @@ function pickFeaturedPlats(children: FeaturedPlat[], cap = 12): FeaturedPlat[] {
 }
 
 export default async function SubdivisionsPage() {
-  const registry = resortCommunitiesRegistry.communities as ReadonlyArray<RegistryCommunity>
-  const childPlats = registryChildPlats(registry)
+  const childPlats = registryChildPlats()
   const featuredSeeds = pickFeaturedPlats(childPlats)
 
-  const [snapshots, heroPhotoPool] = await Promise.all([
-    getAllCommunitySnapshots(),
+  const [inventory, heroPhotoPool] = await Promise.all([
+    getRegistryPlatPublicInventory(),
     getSurfaceImages('hero'),
   ])
-
-  const snapBySlug = new Map<string, (typeof snapshots)[number]>()
-  for (const s of snapshots) {
-    const label = s.geoKey.split(':')[1] ?? ''
-    const slug = slugify(label)
-    const prev = snapBySlug.get(slug)
-    if (!prev || s.activeSfrCount > prev.activeSfrCount) snapBySlug.set(slug, s)
-  }
+  const inventoryOk = inventory.length > 0
+  const invByKey = new Map(inventory.map((row) => [row.key, row]))
 
   const featured = featuredSeeds.map((p) => {
-    const snap = snapBySlug.get(p.slug) ?? null
+    const inv = invByKey.get(`${p.citySlug}:${p.slug}`) ?? null
     const curated = communityImage(p.parentSlug)
     const fallbackHero = cityHero(p.citySlug)
     const pooled = pickSurfaceImage(heroPhotoPool, {
@@ -140,8 +97,8 @@ export default async function SubdivisionsPage() {
       photoSrc: pooled ?? curated ?? fallbackHero.src,
       photoAlt: curated ? `${p.name}, ${p.city} Oregon` : fallbackHero.alt,
       photoIsPlat: curated != null,
-      activeCount: snap?.activeSfrCount ?? 0,
-      medianPrice: snap?.medianListPrice ?? null,
+      activeCount: inventoryOk ? (inv?.activeCount ?? 0) : null,
+      medianPrice: inventoryOk ? (inv?.medianListPrice ?? null) : null,
     }
   })
 
@@ -149,18 +106,21 @@ export default async function SubdivisionsPage() {
   const azSource = childPlats.flatMap((p) => {
     if (azSeen.has(p.slug)) return []
     azSeen.add(p.slug)
+    const inv = invByKey.get(`${p.citySlug}:${p.slug}`) ?? null
     return [
       {
         slug: p.slug,
         name: p.name,
         city: p.city,
-        activeCount: snapBySlug.get(p.slug)?.activeSfrCount ?? 0,
-        href: `/subdivisions/${p.slug}`,
+                activeCount: inventoryOk ? (inv?.activeCount ?? 0) : 0,
+                href: `/subdivisions/${p.slug}`,
       },
     ]
   })
 
-  const totalActive = azSource.reduce((sum, p) => sum + p.activeCount, 0)
+  const totalActive = inventoryOk
+    ? azSource.reduce((sum, p) => sum + (p.activeCount ?? 0), 0)
+    : null
   const platCount = azSource.length
 
   const schemas: SchemaInput[] = [
@@ -230,7 +190,7 @@ export default async function SubdivisionsPage() {
             <div className="region-grid" style={{ marginTop: '26px' }}>
               <div className="stat-cell">
                 <span className="stat-num mono-num">
-                  {totalActive > 0 ? totalActive.toLocaleString() : '-'}
+                  {totalActive != null && totalActive > 0 ? totalActive.toLocaleString() : '-'}
                 </span>
                 <span className="stat-label">Homes for sale across these plats</span>
               </div>
@@ -320,7 +280,7 @@ export default async function SubdivisionsPage() {
                             className="display mono-num"
                             style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}
                           >
-                            {p.activeCount.toLocaleString()}
+                            {p.activeCount != null ? p.activeCount.toLocaleString() : '-'}
                           </p>
                           <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
                             Active

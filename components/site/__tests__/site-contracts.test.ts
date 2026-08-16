@@ -624,7 +624,7 @@ describe('place-family indexes', () => {
     expect(neighborhoods).toMatch(/KbBreadcrumb/)
     expect(neighborhoods).toMatch(/\/cities\/\$\{n\.citySlug\}\/\$\{n\.slug\}/)
     expect(subdivisions).toMatch(/from '@\/lib\/data'/)
-    expect(subdivisions).toMatch(/getAllCommunitySnapshots/)
+    expect(subdivisions).toMatch(/getRegistryPlatPublicInventory/)
     expect(subdivisions).toMatch(/CommunityIndexBrowser/)
     expect(subdivisions).toMatch(/href: `\/subdivisions\/\$\{/)
   })
