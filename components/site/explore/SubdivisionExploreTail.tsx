@@ -7,6 +7,7 @@ import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSec
 import { PlaceParentsSection } from '@/components/site/explore/PlaceParentsSection'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbSell } from '@/components/site/kb/KbSell.client'
+import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import type { PlaceContext } from '@/lib/data/geo/resolvePlaceContext'
 import type { LifestyleNearItem } from '@/lib/explore/lifestyle-near'
 import type { KbTownItem } from '@/components/site/kb/types'
@@ -40,6 +41,11 @@ export function SubdivisionExploreTail({
   heroDom,
   soldCount,
 }: Props) {
+  const sellMedian = publishSellMedian({
+    placeMedian: heroMedian,
+    grain: 'subdivision',
+    placeName: displayName,
+  })
   return (
     <>
       <LifestyleNearSection
@@ -74,7 +80,8 @@ export function SubdivisionExploreTail({
       ) : null}
       <KbSell
         data={{
-          medianListPrice: heroMedian,
+          medianListPrice: sellMedian?.value ?? null,
+          medianCaption: sellMedian?.caption ?? null,
           medianDaysToPending: heroDom,
           soldCount30d: soldCount,
         }}

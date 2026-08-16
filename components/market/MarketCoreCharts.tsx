@@ -150,11 +150,11 @@ export function MarketCoreCharts({ data, heading, scopeLabel, className }: Marke
           series={chart.series}
         />
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-          {tab.period} · regional MLS via {tab.metric === 'monthsOfSupply'
-            ? 'the market stats cache. Months of supply is active inventory divided by average monthly closed sales over the trailing 6 months. Four or less is a seller\'s market, four to six is balanced, six or more is a buyer\'s market.'
+          {tab.period} · {tab.source}. {tab.metric === 'monthsOfSupply'
+            ? 'Months of supply is active inventory divided by average monthly closed sales over the trailing 6 months. Four or less is a seller\'s market, four to six is balanced, six or more is a buyer\'s market.'
             : tab.metric === 'priceCutShare'
-              ? 'the weekly market history snapshot. Share of active listings with at least one price cut.'
-              : 'the market stats cache. Completed months only.'}
+              ? 'Share of active listings with at least one price cut.'
+              : 'Completed months only.'}
         </p>
       </div>
     </div>

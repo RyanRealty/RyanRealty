@@ -11,6 +11,7 @@ import {
   publishPlaceHoa,
   type PublishedPlaceHoa,
 } from '@/lib/market/publish-place-hoa'
+import { publishFactValue } from '@/lib/market/publish-fact-value'
 
 // The MLS SubdivisionName field is fixed-length and cuts some names off
 // mid-word ("Lodges at Bachelor V", "Triple") — they read as broken chips,
@@ -274,16 +275,16 @@ export function KbResortOverview({
                   {t.description ? <p className="ov-tier-desc">{t.description}</p> : null}
                   {Array.isArray(t.details) && t.details.length > 0 ? (
                     <dl className="ov-tier-details">
-                      {t.details.map((d, j) => (
+                      {t.details.map((d, j) => {
+                        const value = publishFactValue(d.value)
+                        if (!value) return null
+                        return (
                         <div key={j} className="ov-fact">
                           <dt>{d.label}</dt>
-                          {/* One value per row, or an em-dash. The club's number
-                              lives ONCE, at the foot of the block — repeating it
-                              per row printed "Ask the club · <phone>" six times
-                              on Tetherow (C-08). */}
-                          <dd className="mono-num">{d.value}</dd>
+                          <dd className="mono-num">{value}</dd>
                         </div>
-                      ))}
+                        )
+                      })}
                     </dl>
                   ) : null}
                   {t.waitlist_status ? <span className="ov-tier-wait">{t.waitlist_status}</span> : null}

@@ -11,6 +11,7 @@ import { buildMapPointFeatures } from '@/lib/kb/place-sections'
 import { listingDetailPath } from '@/lib/slug'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -102,6 +103,12 @@ export default async function Home() {
     getMarketStatsCacheRowForGeo({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
   ])
+
+  const sellMedian = publishSellMedian({
+    placeMedian: pulse?.medianListPrice ?? null,
+    grain: 'region',
+    placeName: 'Central Oregon',
+  })
 
   const cityBySlug = new Map(cities.map((c) => [c.slug, c]))
   const towns: KbTownItem[] = TOWN_ORDER.map((slug): KbTownItem | null => {
@@ -229,7 +236,8 @@ export default async function Home() {
             a 10-viewport mobile scroll (design-audit P2). */}
         <KbSell
           data={{
-            medianListPrice: pulse?.medianListPrice ?? null,
+            medianListPrice: sellMedian?.value ?? null,
+            medianCaption: sellMedian?.caption ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.soldCount30d ?? null,
           }}

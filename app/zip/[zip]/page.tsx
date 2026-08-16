@@ -39,6 +39,7 @@ import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeo
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
+import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import type { SchemaInput } from '@/lib/site/json-ld'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
@@ -218,6 +219,11 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
     .filter((n): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0)
 
   const medianListPrice = median(listPrices)
+  const sellMedian = publishSellMedian({
+    placeMedian: medianListPrice,
+    grain: 'zip',
+    placeName: zip,
+  })
   const medianPricePerSqft = median(pricePerSqfts)
   const medianDom = median(doms)
 
@@ -468,7 +474,8 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
 
         <KbSell
           data={{
-            medianListPrice,
+            medianListPrice: sellMedian?.value ?? null,
+            medianCaption: sellMedian?.caption ?? null,
             medianDaysToPending: null,
             medianDomActive: medianDom,
             soldCount30d: null,

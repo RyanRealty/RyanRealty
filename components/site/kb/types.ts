@@ -38,6 +38,12 @@ export interface KbCommunityItem {
 
 export interface KbSellData {
   medianListPrice: number | null
+  /**
+   * Caption for `medianListPrice`. Required to print the median — a price
+   * without a geography caption is withheld. "Regional median" only when
+   * the number is the region pulse (`publishSellMedian`).
+   */
+  medianCaption?: string | null
   /** market_pulse_live only — see KbHeroData.medianDaysToPending. */
   medianDaysToPending: number | null
   /** Median days on market of CURRENTLY-ACTIVE inventory, own label. */

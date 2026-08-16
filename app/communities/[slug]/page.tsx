@@ -77,6 +77,8 @@ import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/lib/market/publish-place-hoa'
+import { publishSellMedian } from '@/lib/market/publish-median-caption'
+import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { getDistrictForCity } from '@/data/co-schools'
 import { homesForSalePath, slugify } from '@/lib/slug'
@@ -593,10 +595,12 @@ export default async function CommunityDetailPage({ params }: Props) {
   // Core-chart module scope mirrors the SAME sparse-community decision: the
   // community's own series when dense enough, else the parent city's — always
   // labeled, so a city figure is never read as the community's. (§0)
-  const coreCharts = chartIsCityLevel ? cityCoreCharts : commCoreCharts
+  const coreChartsRaw = chartIsCityLevel ? cityCoreCharts : commCoreCharts
+  const coreCharts = coreChartsRaw ? toPublicCoreChartSeries(coreChartsRaw) : coreChartsRaw
   const coreChartsScopeLabel = chartIsCityLevel && cityName ? `${cityName} (city)` : undefined
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: activeCount, soldCount12mo: stats?.soldCount })
+  const sellMedian = publishSellMedian({ placeMedian: medianListPrice, regionMedian: regionPulse?.medianListPrice ?? null, grain: 'community', placeName: community.name })
   const marketData: KbMarketData = {
     active: activeCount,
     closed30: pulse?.closedLast30Days ?? null,
@@ -889,17 +893,13 @@ export default async function CommunityDetailPage({ params }: Props) {
           city={cityName}
           subdivision={community.subdivision}
         />
-        {/* Seller conversion — address capture hands off to /sell/valuation
-            (same KbSell path as city / open-house / market pages). Lives after
-            buyer CTAs so each audience gets a dedicated block. Figures from
-            community-scoped pulse with region fallback when local is null. */}
+        {/* Seller conversion — address capture hands off to /sell/valuation. */}
         <KbSell
           data={{
-            medianListPrice: medianListPrice ?? regionPulse?.medianListPrice ?? null,
-            medianDaysToPending:
-              pulse?.medianDaysToPending ?? regionPulse?.medianDaysToPending ?? null,
-            // pulse (getMarketPulse) → closedLast30Days; region (getRegionPulse) → soldCount30d
-            soldCount30d: pulse?.closedLast30Days ?? regionPulse?.soldCount30d ?? null,
+            medianListPrice: sellMedian?.value ?? null,
+            medianCaption: sellMedian?.caption ?? null,
+            medianDaysToPending: pulse?.medianDaysToPending ?? null,
+            soldCount30d: pulse?.closedLast30Days ?? null,
           }}
           eyebrow={`Sell in ${community.name}`}
         />

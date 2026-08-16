@@ -61,6 +61,7 @@ import {
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { withTimeoutFallback, withTimeoutFallbackResult } from '@/lib/with-timeout-fallback'
@@ -227,6 +228,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   const activeCount: number | null = inventory?.activeCount ?? null
   const medianListPrice =
     activeCount == null ? null : inventory?.medianListPrice ?? pulse?.medianListPrice ?? null
+  const sellMedian = publishSellMedian({
+    placeMedian: medianListPrice,
+    grain: 'neighborhood',
+    placeName: neighborhood.name,
+  })
   const medianDays = pulse?.medianDaysToPending ?? stats?.medianDaysOnMarket ?? null
   const nbhCentroid = mapCentroid(listingTiles)
   const nbhLifestyle = lifestyleNearLatLng(nbhCentroid?.lat, nbhCentroid?.lng)
@@ -549,11 +555,12 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
         {/* Convert before trust, and BOTH before the exit links. */}
         <KbSell
           data={{
-            medianListPrice,
+            medianListPrice: sellMedian?.value ?? null,
+            medianCaption: sellMedian?.caption ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.closedLast30Days ?? null,
           }}
-          eyebrow={`Sell in ${cityName}`}
+          eyebrow={`Sell in ${neighborhood.name}`}
         />
         <KbArticles
           posts={articlePosts}

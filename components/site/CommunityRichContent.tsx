@@ -9,6 +9,7 @@ import {
   placeHoaGlanceLabel,
   publishPlaceHoa,
 } from '@/lib/market/publish-place-hoa'
+import { publishFactValue } from '@/lib/market/publish-fact-value'
 
 /**
  * Renders the rich, verified community/neighborhood content (overview prose +
@@ -292,22 +293,24 @@ export function CommunityRichContent({
                   ) : null}
                   {Array.isArray(t.details) && t.details.length > 0 ? (
                     <dl className="mt-4 space-y-1.5 text-sm">
-                      {t.details.map((d, j) => (
+                      {t.details.map((d, j) => {
+                        const value = publishFactValue(d.value)
+                        if (!value) return null
+                        return (
                         <div key={j} className="flex justify-between gap-4">
                           <dt className="text-muted-foreground">{d.label}</dt>
-                          {/* Placeholder-with-no-next-step fix — see the
-                              matching change in KbResortOverview.tsx. */}
-                          {d.value === 'Confirmed at office' && content.membershipOfficePhone ? (
+                          {value === 'Confirmed at office' && content.membershipOfficePhone ? (
                             <dd className="font-medium text-foreground text-right">
                               <a href={`tel:${content.membershipOfficePhone.replace(/[^0-9+]/g, '')}`} className="underline underline-offset-2">
                                 Ask the club · {content.membershipOfficePhone}
                               </a>
                             </dd>
                           ) : (
-                            <dd className="font-medium text-foreground text-right">{d.value}</dd>
+                            <dd className="font-medium text-foreground text-right">{value}</dd>
                           )}
                         </div>
-                      ))}
+                        )
+                      })}
                     </dl>
                   ) : null}
                   {t.waitlist_status ? (

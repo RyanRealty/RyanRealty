@@ -40,6 +40,8 @@ import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCa
 import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
+import { publishSellMedian } from '@/lib/market/publish-median-caption'
+import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -103,12 +105,7 @@ import { FAQBlock } from '@/components/site/FAQBlock'
 import CityPageTracker from '@/components/city/CityPageTracker'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { kbMoneyFull } from '@/components/site/kb/types'
-import type {
-  KbTownItem,
-  KbCommunityItem,
-  KbFeaturedItem,
-  KbMarketData,
-} from '@/components/site/kb/types'
+import type { KbTownItem, KbCommunityItem, KbFeaturedItem, KbMarketData } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
 import '@/components/site/kb/kb.css'
 
@@ -215,6 +212,7 @@ export default async function CityDetailPage({ params }: Props) {
   // photo). DB hero_image_url override wins. (§D86)
   // §0 UNKNOWN IS NOT ZERO: `?? 0` published a fabricated "0 homes for sale" whenever the pulse read timed out.
   const activeCount: number | null = pulse?.activeCount ?? null
+  const sellMedian = publishSellMedian({ placeMedian: pulse?.medianListPrice ?? null, grain: 'city', placeName: cityName })
   const curatedHero = cityHero(slug)
   const heroImageUrl = cityMeta?.hero_image_url ?? null
   const heroPhoto = heroImageUrl ? { src: heroImageUrl, verified: true } : curatedHero
@@ -524,7 +522,7 @@ export default async function CityDetailPage({ params }: Props) {
         <KbMarketHud data={marketData} eyebrow={`${cityName} · The market`} geoName={cityName} asOf={pulse?.refreshedAt ?? null} byTownKind="neighborhood">
           {coreCharts ? (
             <div className="pt-10" aria-label={`${cityName} market trend charts`}>
-              <MarketCoreCharts data={coreCharts} heading={`${cityName} market trends`} />
+              <MarketCoreCharts data={toPublicCoreChartSeries(coreCharts)} heading={`${cityName} market trends`} />
             </div>
           ) : null}
         </KbMarketHud>
@@ -557,7 +555,8 @@ export default async function CityDetailPage({ params }: Props) {
         {/* Convert before trust + exit links (E3 CTA clarity). City eyebrow. */}
         <KbSell
           data={{
-            medianListPrice: pulse?.medianListPrice ?? null,
+            medianListPrice: sellMedian?.value ?? null,
+            medianCaption: sellMedian?.caption ?? null,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
             soldCount30d: pulse?.closedLast30Days ?? null,
           }}

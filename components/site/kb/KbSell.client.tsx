@@ -55,7 +55,8 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
     router.push(qs ? `${valuationPath()}?${qs}` : valuationPath())
   }
 
-  const median = kbMoneyFull(data.medianListPrice)
+  const medianCaption = data.medianCaption?.trim() || null
+  const median = medianCaption ? kbMoneyFull(data.medianListPrice) : null
 
   return (
     <section className="section sell" id="sell" ref={root}>
@@ -90,7 +91,7 @@ export function KbSell({ data, eyebrow = 'Sell with us' }: { data: KbSellData; e
             {median ? (
               <div className="d">
                 <div className="n mono-num">{median}</div>
-                <div className="l">Regional median</div>
+                <div className="l">{medianCaption}</div>
               </div>
             ) : null}
             {data.medianDaysToPending != null ? (
