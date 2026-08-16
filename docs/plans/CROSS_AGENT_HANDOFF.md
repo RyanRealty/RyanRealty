@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-fe75bb57) — G11 audience hold machinery shipped, node blocked
+# Current — 2026-08-16 (loop-sentinel bc-26bd9513) — G12 video docket shipped
+
+**Surface:** Cursor cloud agent `bc-26bd9513-82b6-4e3e-b22e-9aba3838e83e`. **Time:** 2026-08-16 ~11:35 UTC. Brief served **G12** (factory). One node only. Product **`fd71eee24`**. PR **#40**. `ci:gates` **213/213** including `ci:video-docket`.
+
+**Done**
+- G12 Video decision docket (`53355a5b-fafc-4136-8cbd-dc98aa73ed05`) **done**. Accept: docket exists with both options costed. Decision stays **pending** (M3) until Matt answers.
+- Class: SoR `docs/plans/ENTERPRISE_MAP/video-decision-docket.json`. DAL `readVideoDecisionDocket` / `videoDocketComplete`. Packet §0 + §5 + scoreboard `video`. `/admin/loop` QuietRow. Gate `ci:video-docket`. No factory ledger insert (open window `ba3435dd`).
+- Park: incremental vendor **$0**. Keep R-045. Inbox video types stay `comms:matt_alert`. 11 dead safe-zone imports stay. CAP-017 stays maturity 2 until M3.
+- Rebuild: ElevenLabs Turbo **$0.05/1k** (https://elevenlabs.io/pricing/api fetched 2026-08-16) + producer cap **$5/row $15/run**. Re-register 24 producers, restore 13 capability skills, repoint 11 dead imports. Requires Matt to CHANGE/SUPERSEDE R-045.
+- Accept proof: `npx tsx scripts/loop-probe-g12.ts` — `complete=true` parkUsd=0 rebuildTurboPer1k=0.05 rebuildCapPerRow=5 deadSafeZoneImports=11 decommissionedProducers=24 remotionConfigs=16 mp4OnDisk=84 decision=pending.
+- VERSION-1 G12 **DONE 2026-08-16**. M3 still open. R-045 stays LOCKED. No schema migration.
+
+**Do not:** flip R-045. Do not re-register video producers. Do not SMS, publish, spend, or OAuth. Do not flip INT-007 to KEEP before 2026-08-22. G6 stays blocked (live SMS). G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, MECHANICAL_GATES, AGENTIC_GRAPH_ENGINEERING, REQUIREMENTS R-042/R-043/R-044/R-045, VERSION-1 G12/M3, CAP-017, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, git-commit.
+
+# Prior — 2026-08-16 (loop-sentinel bc-fe75bb57) — G11 audience hold machinery shipped, node blocked
 
 **Surface:** Cursor cloud agent `bc-fe75bb57-b840-4d01-846f-67efa6a79fbc`. **Time:** 2026-08-16 ~11:20 UTC. Brief served **G11** (factory). One node only. Product **`8247ee9b2`**. Handoff lands on **`main` after G10** (`0b1ba14c9` / `ecb22e78f`). Vercel Production **READY** for the G11 product SHA (GitHub deployment `5930137236`, inspector `9oPuFMsP2VEtmz3E8Yet84XbKMoe`). `npm run deploy:verify` exit 0 (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`).
 
