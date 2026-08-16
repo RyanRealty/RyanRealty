@@ -2,24 +2,21 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — Tetherow HOA one published annual verified
+# Current — 2026-08-16 (cursor-loop-chain) — one published annual HOA on place pages
 
-**Surface:** Cursor Grok. **Time:** 2026-08-16 ~13:10 PT. One node: fleet `eab91ac8` / graph `b25bf5f4` (public-ux). Product **`7e8c0fc9`** (other session: `publishPlaceHoa`, master preferred). This session claimed the node, reproduced $1,464 vs $2,244, dropped a duplicate grain-naming commit after the collision, then verified accept. Vercel Production **READY** (`dpl_4PWdPQmmXFseriLDjReZcXJWspJd`, `deploy:verify` exit 0 in 402s). No hosted migration. Loop stays **ARMED**. Node **done**. No public-ux ledger insert (open window `2a5054ac`). Did not fire an extra sentinel.
+**Surface:** Cursor cloud `bc-494f1515` (`cursor/loop-chain-2026-08-16t19-46-e7c1`) shipped the class. Cursor Grok claimed the node, dropped a duplicate grain-naming commit, and wrote the graph evidence. **Time:** 2026-08-16 ~20:10 UTC. Brief served fleet finding `b25bf5f4` (public-ux / fleet `eab91ac8dfa9b833ade88640c6cce7d4`), not G16/G32. One node only. Product **`7e8c0fc99`**. **`main` @** `e45be0ea1` + this handoff. Vercel Production **READY** (inspector `4PWdPQmmXFseriLDjReZcXJWspJd`). `npm run deploy:verify` exit 0 in 382s (GitHub Vercel status fallback; this VM has no `VERCEL_TOKEN`). No hosted migration. Loop stays **ARMED**. Node **done**. PR **#47**. No public-ux ledger insert (open window `2a5054ac`).
 
 **Done**
-- Fleet finding [p0]: Glance Master HOA $1,464/yr next to FAQ "start around $2,244". Reproduced on production HTML before the class.
-- Class (already on `main`): one published annual HOA. Prefer master. Phase totals stay on phase / LP pages. Gate `ci:publish-place-hoa`.
-- After READY: production `https://ryan-realty.com/communities/tetherow` — Glance **Master HOA $1,464/yr**. FAQ **start around $1,464**. **$2,244 gone**. Playwright 1280 + 390. Shots `out/tetherow-hoa-prod/`.
+- Fleet finding [p0]: `/communities/tetherow` printed Master HOA $1,464/yr in glance and FAQ "start around $2,244" (Heath sub-neighborhood estimate). Reproduced on production before the class (glance 1,464; FAQ + FAQPage JSON-LD 2,244).
+- Class: SoR helper `publishPlaceHoa` prefers the master assessment, else the floor of registry estimates. Glance, FAQ, and Dataset share that annual. Phase totals stay on phase / LP pages. Wired on community page, KbResortOverview, CommunityRichContent, V3 place-knowledge / opening, `buildMarketFaq`. Gate `ci:publish-place-hoa`.
+- After READY: production 1280 + 390 — glance Master HOA $1,464/yr; FAQ and JSON-LD start around $1,464; no $2,244. Playwright accept `scripts/probe-tetherow-hoa-prod.mjs` exit 0. Screenshots `/opt/cursor/artifacts/tetherow_hoa_{1280,390}_{overview,faq}.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
 
-**Also on origin/main (do not steal / do not undo):** Tetherow counted-set list `dada087f` / handoff `fd628a6d` (node `bff867b9` **done**). Tetherow MoS withhold `a15404f2` / `0028904a` / handoff `056ba6cd`. G33 `1f01f54f`. La Pine hyphen-cache `6eded9fd`. G32 seeded `f6dc09e7`. G6 accept stays **blocked**.
+**Also on origin/main (other sessions, do not steal / do not undo):** Tetherow MOS withhold `a15404f23` / handoff `056ba6cd0` (node `57a2abd4` **done**). Tetherow counted-set list `dada087f8` / handoff `fd628a6de` (node `bff867b9` **done**). NWX v8 walk lessons `be938f107`. G33 `/admin/loop` `1f01f54f` (node `1a6eb37a` **done**). La Pine hyphen-cache `6eded9fd`. SFR city-table remainder `4ca02de19`. Place-hero grain `706327241`. Awbrey inventory-count `9cac09b1`. G32 seeded `f6dc09e7`. G6 toggle. G6 accept stays **blocked**.
 
-**Next**
-- Matt keep/kill on the NWX hang pair. Do not wire the live community header.
-- This session does not claim another node after this stamp.
+**Do not:** insert another public-ux or factory ledger row. Do not change listing URL contract to force `/tetherow/` on alias homes. Do not cancel ElevenLabs/Replicate/OpenAI/Anthropic until G32 flips those paths. Do not invent a listing. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Do not wire the live NWX community header. Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints. This session does not claim a second node.
 
-**Do not:** insert another public-ux or factory ledger row. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not wire the live NWX community header. Disarm = Matt says "disarm the loop".
-
-**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, git-commit.
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, DATABASE_FOR_AI_AGENTS lookup, REQUIREMENTS R-024, git-commit.
 
 # Prior — 2026-08-16 (cursor-loop-chain) — withhold pulse MOS when the page count is a different set
 
