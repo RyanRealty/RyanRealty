@@ -35,7 +35,7 @@ export type CrmActionResult = { ok: true } | { ok: false; error: string }
 export type CrmAccess = {
   email: string
   role: 'superuser' | 'broker' | 'report_viewer'
-  /** The signed-in user's own broker slug, when brokers.crm_slug (or the seeded map) resolves. */
+  /** Own CRM slug from brokers.crm_slug (table-first). */
   brokerSlug: string | null
 }
 
@@ -50,8 +50,7 @@ const resolveCrmAccess = cache(async (): Promise<CrmAccess | null> => {
   const email = session?.user?.email?.trim().toLowerCase() ?? null
   const role = await getAdminRoleForEmail(email)
   if (!role || !email) return null
-  const brokerSlug = await resolveCrmSlugForAccess({ email, brokerId: role.brokerId })
-  return { email, role: role.role, brokerSlug }
+  return { email, role: role.role, brokerSlug: await resolveCrmSlugForAccess({ email, brokerId: role.brokerId }) }
 })
 
 /** Resolve the caller's CRM access (role + own-broker slug). Null when not an admin. */
