@@ -2,7 +2,26 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-57e943fb) — G4 alerts enrollment shipped
+# Current — 2026-08-16 (loop-sentinel bc-1821c58a) — stood down; G5 claimed by concurrent agent
+
+**Surface:** Cursor cloud agent `bc-1821c58a-f713-47b4-9a33-2f2f802bdea0`. **Time:** 2026-08-16 ~06:20 UTC. Brief served **G5** (recruit-retain). One node only. **Did not claim. Did not ship. Did not chain.**
+
+**Stand-down (claim race)**
+- Boot brief at 06:12Z served G5 `468febf9-3e86-46d1-96cc-a327061bcae0` (open, 0 in_progress).
+- Concurrent `loop-chain` `bc-36c5e37a-973a-4b3c-8198-8085b9dca744` (launched 06:11, one minute after this heartbeat) claimed G5 at 06:15:06Z and is still RUNNING.
+- This session does not steal a live claim, does not block a live node, and does not final-act (that would launch a third agent). Successor is the live G5 owner.
+- Double-launch class: G4 READY + 10-min heartbeat overlapped the G4 `?handoff=1` successor. Sentinel busy-check did not serialize them.
+
+**G5 contract (for the owner, not this session)**
+- Objective: CAP-022 Skeleton→Working. Day-one path + own-book only.
+- Accept: a non-Matt broker walks day-one; own-book scoping verified signed-in.
+- Class already mapped here: `getCrmAccess` still uses hardcoded `CRM_BROKER_BY_EMAIL` (unmapped broker `brokerSlug=null` fail-opens to the whole book); Today `listCmasForAdmin` + `readyApprovals` are unscoped; `/admin/performance` redirects to su-only `/admin/analytics`; no day-one checklist.
+
+**Do not:** steal G5 from `bc-36c5e37a`. Do not send, post, spend, or OAuth. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, admin-product-os, BROKER-OPERATING-SYSTEM-PLAN, MASTER_SPEC, REQUIREMENTS R-198, CAP-022, COMPANY_IMPROVEMENT, DEVELOPMENT_PROCESS.
+
+# Prior — 2026-08-16 (loop-sentinel bc-57e943fb) — G4 alerts enrollment shipped
 
 **Surface:** Cursor cloud agent `bc-57e943fb-edb5-4a4a-bc9b-9fc6a7ee1a36`. **Time:** 2026-08-16 ~06:10 UTC. Brief served **G4** (nurture). One node only. **`main` @** `60de1bee0`. Vercel Production **READY** (GitHub deployment `5928216460`, inspector `7rfmRDpzVR8CtAGa2X9vQqVfGffm`).
 
