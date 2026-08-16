@@ -7,9 +7,14 @@
  * eligible work exists? If yes, launch a Cursor cloud agent whose entire
  * prompt is "run the loop, grind until blocked." Nobody has to say it.
  *
- * Guards: kill switch (env LOOP_SENTINEL=off) · activity check (a fresh
- * in_progress node = a session is working; stand down) · cooldown (one
- * launch per 3h, tracked in sync_logs) · missing API key = skip + say so.
+ * STATE-BASED, not timer-based (Matt 2026-08-15: a 1-hour iteration must not
+ * leave 3 dormant hours). The cron heartbeats every 10 minutes — pure
+ * deterministic code, no model tokens — and relaunches the moment the
+ * previous agent's newest run is terminal. Guards: kill switch
+ * (LOOP_SENTINEL=off) · fresh-activity standdown (a working session holds
+ * the floor) · busy check via the Cursor API (newest run CREATING/RUNNING)
+ * · 15-min boot guard (covers the window before an agent's first claim) ·
+ * daily launch cap (cost circuit-breaker) · missing key = skip + say so.
  */
 import 'server-only'
 
@@ -17,7 +22,8 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 const REPO_URL = 'https://github.com/RyanRealty/RyanRealty'
 const ACTIVE_WINDOW_MIN = 180
-const COOLDOWN_MIN = 180
+const BOOT_GUARD_MIN = 15
+const DAILY_LAUNCH_CAP = 12
 
 const LOOP_PROMPT = `Run the loop. You are the scheduled loop-sentinel iteration for Ryan Realty (THE LOOP — docs/DEVELOPMENT_PROCESS.md is canon).
 
@@ -54,19 +60,45 @@ export async function runLoopSentinel(opts: { dry: boolean }): Promise<SentinelD
   const openNodes = (nodes ?? []).filter((n) => n.state === 'open').length
   if (openNodes === 0) return { action: 'skipped', reason: 'no eligible open nodes (all done or blocked)', openNodes }
 
-  const { data: lastLaunch } = await sb
-    .from('sync_logs')
-    .select('logged_at')
-    .eq('endpoint', 'loop_sentinel:launch')
-    .order('logged_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (lastLaunch?.logged_at && now - Date.parse(String(lastLaunch.logged_at)) < COOLDOWN_MIN * 60_000) {
-    return { action: 'skipped', reason: `cooldown (launched within ${COOLDOWN_MIN} min)`, openNodes }
-  }
-
   const apiKey = process.env.CURSOR_API_KEY?.trim()
   if (!apiKey) return { action: 'skipped', reason: 'CURSOR_API_KEY missing in this environment', openNodes }
+
+  const { data: launches } = await sb
+    .from('sync_logs')
+    .select('logged_at,sync_cycle_id')
+    .eq('endpoint', 'loop_sentinel:launch')
+    .gte('logged_at', new Date(now - 24 * 60 * 60_000).toISOString())
+    .order('logged_at', { ascending: false })
+  const recent = launches ?? []
+  if (recent.length >= DAILY_LAUNCH_CAP) {
+    return { action: 'skipped', reason: `daily launch cap reached (${DAILY_LAUNCH_CAP}/24h) — cost circuit-breaker; investigate why iterations end fast`, openNodes }
+  }
+  const last = recent[0]
+  if (last?.logged_at && now - Date.parse(String(last.logged_at)) < BOOT_GUARD_MIN * 60_000) {
+    return { action: 'skipped', reason: `boot guard (launched within ${BOOT_GUARD_MIN} min — agent may not have claimed yet)`, openNodes }
+  }
+  // State-based busy check: relaunch the MOMENT the previous agent is done,
+  // never on a timer. Newest run CREATING/RUNNING = still working, stand down.
+  if (last?.sync_cycle_id) {
+    try {
+      const resp = await fetch(
+        `https://api.cursor.com/v1/agents/${encodeURIComponent(String(last.sync_cycle_id))}/runs?limit=1`,
+        { headers: { Authorization: `Basic ${Buffer.from(`${apiKey}:`).toString('base64')}` } },
+      )
+      if (resp.ok) {
+        const runs = (await resp.json()) as { runs?: Array<{ status?: string }> } | Array<{ status?: string }>
+        const list = Array.isArray(runs) ? runs : (runs?.runs ?? [])
+        const status = String(list[0]?.status ?? '').toUpperCase()
+        if (status === 'CREATING' || status === 'RUNNING') {
+          return { action: 'skipped', reason: `previous loop agent still working (run ${status})`, openNodes }
+        }
+      }
+      // Non-OK (agent expired/archived/404): treat as not busy — the boot
+      // guard and the claim mutex bound any duplicate risk.
+    } catch {
+      // Network hiccup: same fail-toward-launch posture, bounded by guards.
+    }
+  }
 
   if (opts.dry) return { action: 'dry-would-launch', reason: 'all checks passed (dry run — no agent launched)', openNodes }
 
