@@ -95,3 +95,28 @@ export const getMarketPulseCitySnapshots = makeResilientCached(
   },
   [],
 )
+
+/** Every city pulse row. Required when a page prints a region total next to
+ * a city table so `namePulseCityRemainder` can name omitted cities (fleet
+ * 5439b87e). THROWS on query error so a blip is not cached as "no cities". */
+async function fetchAllMarketPulseCitySnapshots(): Promise<MarketPulseSnapshot[]> {
+  const sb = supabaseAnon()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('market_pulse_live')
+    .select(COLUMNS)
+    .eq('geo_type', 'city')
+    .eq('property_type', 'A')
+  if (error) throw new Error(`market_pulse_live all city snapshots: ${error.message}`)
+  return ((data ?? []) as Array<Record<string, unknown>>).map(toSnapshot)
+}
+
+export const getMarketPulseAllCitySnapshots = makeResilientCached(
+  fetchAllMarketPulseCitySnapshots,
+  ['market-pulse-all-city-snapshots-v1'],
+  {
+    revalidate: CACHE_WINDOWS.marketPulse,
+    tags: [cacheTag.market],
+  },
+  [],
+)

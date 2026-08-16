@@ -127,7 +127,8 @@
 
 import type { Metadata } from 'next'
 import { marketVerdict, MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { getMarketPulse, getMarketPulseCitySnapshots, getCityMarketDetail, getPriceHistory } from '@/lib/data'
+import { getMarketPulse, getCityMarketDetail, getPriceHistory } from '@/lib/data'
+import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { REPORT_CITIES, NON_MLS_CITY_EXEMPTIONS } from '@/lib/data/geo/report-cities'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
@@ -196,7 +197,7 @@ export default async function AnnualReviewPage() {
   const [regionPulse, regionDetail, citySnapshots, cityDetails, priceHistory] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: REGION_GEO_SLUG }),
     getCityMarketDetail({ geoType: 'region', geoSlug: REGION_GEO_SLUG, periodType: PERIOD_TYPE }),
-    getMarketPulseCitySnapshots(REPORT_CITIES.map((c) => c.label)),
+    getMarketPulseAllCitySnapshots(),
     Promise.all(
       GRID_CITIES.map((c) =>
         getCityMarketDetail({ geoType: 'city', geoSlug: dbGeoSlug(c.slug), periodType: PERIOD_TYPE }),
@@ -267,7 +268,9 @@ export default async function AnnualReviewPage() {
     mosRaw,
     medianListDisplay,
   )
-  const inventory = buildInventoryLedger(GRID_CITIES, citySnapshots)
+  const inventory = buildInventoryLedger(GRID_CITIES, citySnapshots, {
+    regionActive: regionPulse?.activeCount ?? null,
+  })
   const [firstInventoryRow, ...restInventoryRows] = inventory.rows
   const closed = buildClosedInstrument(regionDetail)
   const [firstClosedFigure, ...restClosedFigures] = closed.figures
@@ -370,7 +373,7 @@ export default async function AnnualReviewPage() {
   }
   const doored = new Set<string>()
   for (const city of [...inventory.missing, ...year.missing] as MissingCity[]) {
-    if (doored.has(city.slug)) continue
+    if (!city.slug || doored.has(city.slug)) continue
     doored.add(city.slug)
     coverage.push({ label: `${city.label} market report`, href: `/housing-market/${city.slug}` })
   }

@@ -23,6 +23,7 @@ import {
   type V3InstrumentFigure,
   type V3LedgerFigureRow,
 } from '@/components/site/v3'
+import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
 import { CITY_LABELS, CITY_SLUG, HISTORY_PATH } from './hub-constants'
 import {
   buildAllTypeFigures,
@@ -36,7 +37,7 @@ import {
 } from './closed-kpis'
 import { buildCompositionChart } from './market-charts'
 
-export type CityFootnote = { label: string; fact: string }
+export type CityFootnote = { label: string; fact: string; slug?: string }
 
 export type CityLedger = {
   rows: V3LedgerFigureRow[]
@@ -52,7 +53,10 @@ export type CityLedger = {
  *
  * The stamp comes from the returned city rows, not from the region row.
  */
-export function buildCityLedger(snapshots: MarketPulseSnapshot[]): CityLedger {
+export function buildCityLedger(
+  snapshots: MarketPulseSnapshot[],
+  options?: { regionActive?: number | null },
+): CityLedger {
   const snapshotByLabel = new Map(snapshots.map((s) => [s.geo_label, s]))
   const rows: V3LedgerFigureRow[] = []
   const rowed = new Set<string>()
@@ -76,19 +80,42 @@ export function buildCityLedger(snapshots: MarketPulseSnapshot[]): CityLedger {
   }
   rows.sort((a, b) => String(a.what).localeCompare(String(b.what)))
 
-  const footnotes = CITY_LABELS.filter(
+  const footnotes: CityFootnote[] = CITY_LABELS.filter(
     (label) => CITY_SLUG[label] !== undefined && !rowed.has(label),
   ).map((label) => {
     const snapshot = snapshotByLabel.get(label)
-    if (!snapshot) return { label, fact: `${label} returned no market row in the latest sync` }
+    const slug = CITY_SLUG[label]
+    if (!snapshot) {
+      return { label, slug, fact: `${label} returned no market row in the latest sync` }
+    }
     if (snapshot.active_count === 0) {
-      return { label, fact: `${label} shows no active single-family listings` }
+      return { label, slug, fact: `${label} shows no active single-family listings` }
     }
     return {
       label,
+      slug,
       fact: `${label} shows ${snapshot.active_count.toLocaleString('en-US')} active with no published median`,
     }
   })
+  const remainder = namePulseCityRemainder({
+    regionActive: options?.regionActive,
+    displayedLabels: CITY_LABELS,
+    allCities: snapshots.map((s) => ({
+      label: s.geo_label,
+      active: s.active_count,
+      slug: pulseCityHrefSlug(s.geo_slug || s.geo_label),
+    })),
+  })
+  for (const city of remainder.omitted) {
+    footnotes.push({
+      label: city.label,
+      slug: city.slug,
+      fact: `${city.label} has ${city.active.toLocaleString('en-US')} active single-family listings not in the table above`,
+    })
+  }
+  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the region pulse'))) {
+    footnotes.push({ label: 'Outside city rows', fact })
+  }
 
   const stamp = snapshots
     .map((s) => s.updated_at)

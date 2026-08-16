@@ -51,10 +51,10 @@
 import type { Metadata } from 'next'
 import {
   getMarketPulse,
-  getMarketPulseCitySnapshots,
   getRecentBlogPosts,
   getPriceHistory,
 } from '@/lib/data'
+import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getCoMarketAnnual } from '@/lib/data/analytics/getCoMarketAnnual'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { buildMarketFaq } from '@/lib/site/market-faq'
@@ -80,7 +80,7 @@ import {
 } from '@/components/site/v3'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketInquirySheet } from './_v3/MarketInquirySheet.client'
-import { CITY_LABELS, CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
+import { CITY_SLUG, CLOSED_SALES_YEAR, HISTORY_PATH } from './_v3/hub-constants'
 import { buildCityLedger, buildHubLead, buildSfrFollowFigures } from './_v3/hub-sections'
 import { buildRegionMedianChart, dropInProgressMonth } from './_v3/market-charts'
 import './_v3/tremor-density.css'
@@ -113,7 +113,7 @@ export default async function HousingMarketHubPage() {
   // confident empty page. Nothing is fetched that this page does not render.
   const [regionPulse, citySnapshots, blogPosts, closedYear, priceHistory] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
-    getMarketPulseCitySnapshots(CITY_LABELS),
+    getMarketPulseAllCitySnapshots(),
     getRecentBlogPosts({ limit: 3 }),
     getCoMarketAnnual({ year: CLOSED_SALES_YEAR, typeScope: 'all' }),
     getPriceHistory('region', 'central-oregon', 'monthly', 60),
@@ -184,7 +184,9 @@ export default async function HousingMarketHubPage() {
 
   // City rows. D9 leftover lives on the builder: each city is a door, and a
   // line through cities invents a sequence V3Chart is not for.
-  const cityLedger = buildCityLedger(citySnapshots)
+  const cityLedger = buildCityLedger(citySnapshots, {
+    regionActive: regionPulse?.activeCount ?? null,
+  })
   const [firstCityRow, ...restCityRows] = cityLedger.rows
   const cityFootnotes = cityLedger.footnotes
   const cityRefreshedAt = cityLedger.stamp
@@ -251,9 +253,11 @@ export default async function HousingMarketHubPage() {
       body: `${cityFootnotes.map((c) => c.fact).join('. ')}.`,
     })
     for (const city of cityFootnotes) {
+      const slug = city.slug ?? CITY_SLUG[city.label]
+      if (!slug) continue
       exploreItems.push({
         label: `${city.label} market report`,
-        href: `/housing-market/${CITY_SLUG[city.label] as string}`,
+        href: `/housing-market/${slug}`,
       })
     }
   }

@@ -37,6 +37,7 @@
 import type { MarketDetail, MarketPulse, MarketPulseSnapshot } from '@/lib/data'
 import type { ReportCity } from '@/lib/data/geo/report-cities'
 import { marketVerdict } from '@/lib/market/classify'
+import { namePulseCityRemainder, pulseCityHrefSlug } from '@/lib/market/pulse-city-remainder'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatPrice } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
@@ -135,6 +136,7 @@ export function buildRegionFigures(
 export function buildInventoryLedger(
   cities: readonly ReportCity[],
   snapshots: readonly MarketPulseSnapshot[],
+  options?: { regionActive?: number | null },
 ): CityLedger {
   const byLabel = new Map(snapshots.map((s) => [s.geo_label, s]))
   const rows: V3LedgerFigureRow[] = []
@@ -174,6 +176,26 @@ export function buildInventoryLedger(
       value: v3Text(formatPrice(snapshot.median_list_price)),
       id: city.slug,
     })
+  }
+
+  const remainder = namePulseCityRemainder({
+    regionActive: options?.regionActive,
+    displayedLabels: cities.map((c) => c.label),
+    allCities: snapshots.map((s) => ({
+      label: s.geo_label,
+      active: s.active_count,
+      slug: pulseCityHrefSlug(s.geo_slug || s.geo_label),
+    })),
+  })
+  for (const city of remainder.omitted) {
+    missing.push({
+      label: city.label,
+      slug: city.slug,
+      fact: `${city.label} has ${city.active.toLocaleString('en-US')} active single-family listings not in the table above`,
+    })
+  }
+  for (const fact of remainder.facts.filter((line) => !line.startsWith('Also in the region pulse'))) {
+    missing.push({ label: 'Outside city rows', slug: '', fact })
   }
 
   return { rows, stamp: stamps.sort().at(-1), missing }

@@ -99,10 +99,10 @@
 import type { Metadata } from 'next'
 import {
   getMarketPulse,
-  getMarketPulseCitySnapshots,
   getRecentBlogPosts,
   getPriceHistory,
 } from '@/lib/data'
+import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
 import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
 import { buildMarketFaq } from '@/lib/site/market-faq'
@@ -128,7 +128,6 @@ import {
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { RegionInquirySheet } from './_v3/RegionInquirySheet.client'
 import {
-  CITY_LABELS,
   CLOSED_SALES_FROM_YEAR,
   CLOSED_SALES_TO_YEAR,
   HISTORY_PATH,
@@ -189,7 +188,7 @@ export default async function CentralOregonRegionPage() {
   // /housing-market hub's three posts.
   const [regionPulse, citySnapshots, blogPosts, closedSeries, priceHistory] = await Promise.all([
     getMarketPulse({ geoType: 'region', geoSlug: 'central-oregon' }),
-    getMarketPulseCitySnapshots(CITY_LABELS),
+    getMarketPulseAllCitySnapshots(),
     getRecentBlogPosts({ limit: 3, offset: 3 }),
     getCoMarketAnnualSeries({
       fromYear: CLOSED_SALES_FROM_YEAR,
@@ -248,7 +247,9 @@ export default async function CentralOregonRegionPage() {
   const [firstLeadFigure, ...restLeadFigures] = lead.figures
   const [firstLiveFigure, ...restLiveFigures] = withoutMosFigures(region.live.figures)
   const [firstPaceFigure, ...restPaceFigures] = region.pace.figures
-  const cityLedger = buildCityLedger(citySnapshots)
+  const cityLedger = buildCityLedger(citySnapshots, {
+    regionActive: regionPulse?.activeCount ?? null,
+  })
   const [firstCityRow, ...restCityRows] = cityLedger.rows
   const closedLedger = buildClosedLedger(closedSeries)
   const [firstClosedRow, ...restClosedRows] = closedLedger.rows
