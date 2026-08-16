@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — G6 admin SMS-agent toggle shipped
+# Current — 2026-08-16 (cursor-grok-town-doors) — town doors at rest + daily launch cap removed
+
+**Surface:** Cursor Grok (`cursor-grok-town-doors-20260816`). **Time:** 2026-08-16 ~08:45 PT. Brief served fleet finding `071bd6f0` (public-ux), not G16. One node only. Product **`b33fe504`**. Baseline **`eddccdbd`**. **`main` @** `42457ec1` (includes later SMS-toggle commits `0e7d6eed` + `42457ec1`). Vercel Production **READY** (`dpl_49opLtX7FCPXPmAMaB5hQVaL1zGq`, aliases `ryan-realty.com` + `ryanrealty.vercel.app`). `npm run deploy:verify` exit 0. No hosted migration. Loop stays **ARMED**. Daily launch cap **removed** (Matt 2026-08-16). Node **done**.
+
+**Done**
+- Fleet finding [major]: six town doors had CSS background photos at `opacity:0` at rest (`KbExploreTowns` + `.town-fill` in `components/site/kb/kb.css`). Reproduced on production before the class change at 1280 + 390.
+- Class: `.town-fill` is `opacity:1` at rest. Rows with a fill use cream type on a navy scrim. Hover still `translateX`s the name. Contract D103b. No public-ux ledger insert (open window `2a5054ac`).
+- After READY: Playwright 1280 + 390 — all six names (Bend, La Pine, Redmond, Sunriver, Sisters, Terrebonne), each `/cities/{slug}` href, all six fills opacity 1. Screenshots `/tmp/rr-town-doors/prod-after-1280.png` + `prod-after-390.png`.
+- Sentinel daily launch cap removed: no `DAILY_LAUNCH_CAP`; `/admin/loop` figure is `N in 24h · no daily cap`. Kill switch, activity standdown, boot guard, busy check stay. R-206 covers the removal.
+- R-095 stays **PARTIAL** (photos visible at rest; still curated scenics, not live MLS — G21).
+
+**Also on this SHA (other session, do not steal / do not undo):** G6 admin SMS-agent toggle `0e7d6eed`. G6 accept stays **blocked** (live marketing-line APPROVE). Toggle does not satisfy G6 accept.
+
+**Do not:** claim the minor two-CTA fleet finding. Do not insert another public-ux ledger row. Do not lift VOW sold data onto a public index. Do not flip R-045. Do not flip INT-007 to KEEP before 2026-08-22. Do not SMS, publish, spend, or OAuth. Do not mark G6 or G27 done. Do not unpause TC. G11 stays blocked (calendar accept). Disarm = Matt says "disarm the loop". Bots still Phase 3 (G29). Next open node after this handoff is whatever `loop-brief` prints (likely G16). This session does not claim a second node.
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, REQUIREMENTS R-095 / R-206, kb.css town-door class, git-commit.
+
+# Prior — 2026-08-16 (cursor) — G6 admin SMS-agent toggle shipped
 
 **Surface:** Cursor local. **Time:** 2026-08-16 ~08:37 PT. Matt-directed ADD on G6 (not a loop-brief node). Product **`0e7d6eed`**. Loop stays **ARMED**. G6 accept stays **blocked**.
 
