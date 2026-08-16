@@ -260,6 +260,10 @@
     {
       "path": "/api/cron/westside-cohort-digest",
       "schedule": "0 15 * * 1"
+    },
+    {
+      "path": "/api/cron/loop-sentinel",
+      "schedule": "0 3,7,11,15,19,23 * * *"
     }
   ]
 }
