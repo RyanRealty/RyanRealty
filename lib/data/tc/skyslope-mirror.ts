@@ -15,18 +15,14 @@ import {
   isSkySlopeMirrorCurrent,
   SKYSLOPE_MIRROR_CURRENT_HOURS,
 } from '@/lib/tc/skyslope-mirror-shape'
+import {
+  readSkySlopeMirrorFreshness,
+  type SkySlopeMirrorFreshness,
+} from '@/lib/tc/skyslope-mirror-freshness'
 import { hasSkySlopeInboundCreds, pullSkySlopeInboundFolders } from '@/lib/tc/skyslope-inbound'
 
 export { SKYSLOPE_MIRROR_CURRENT_HOURS, isSkySlopeMirrorCurrent }
-
-export type SkySlopeMirrorFreshness = {
-  status: 'ok' | 'unreadable'
-  rowCount: number
-  latestSyncedAt: string | null
-  ageHours: number | null
-  current: boolean
-  source: string
-}
+export type { SkySlopeMirrorFreshness }
 
 export type SkySlopeMirrorRefreshResult = {
   ok: boolean
@@ -39,40 +35,11 @@ export type SkySlopeMirrorRefreshResult = {
   syncedAt: string | null
 }
 
-const SOURCE = 'skyslope_transactions via getSkySlopeMirrorFreshness (inbound recon; Vault is SoR)'
-
 export async function getSkySlopeMirrorFreshness(
   now: Date = new Date(),
 ): Promise<SkySlopeMirrorFreshness> {
   try {
-    const sb = createServiceClient()
-    const [{ count, error: countErr }, { data: newest, error: newestErr }] = await Promise.all([
-      sb.from('skyslope_transactions').select('property_key', { count: 'exact', head: true }),
-      sb.from('skyslope_transactions').select('synced_at').order('synced_at', { ascending: false }).limit(1),
-    ])
-    if (countErr || newestErr) {
-      return {
-        status: 'unreadable',
-        rowCount: 0,
-        latestSyncedAt: null,
-        ageHours: null,
-        current: false,
-        source: SOURCE,
-      }
-    }
-    const latestSyncedAt = (newest?.[0]?.synced_at as string | null) ?? null
-    const ageHours =
-      latestSyncedAt && Number.isFinite(new Date(latestSyncedAt).getTime())
-        ? (now.getTime() - new Date(latestSyncedAt).getTime()) / 3_600_000
-        : null
-    return {
-      status: 'ok',
-      rowCount: count ?? 0,
-      latestSyncedAt,
-      ageHours,
-      current: isSkySlopeMirrorCurrent(latestSyncedAt, now),
-      source: SOURCE,
-    }
+    return await readSkySlopeMirrorFreshness(createServiceClient(), now)
   } catch (err) {
     console.error('[getSkySlopeMirrorFreshness]', err)
     return {
@@ -81,7 +48,7 @@ export async function getSkySlopeMirrorFreshness(
       latestSyncedAt: null,
       ageHours: null,
       current: false,
-      source: SOURCE,
+      source: 'skyslope_transactions via getSkySlopeMirrorFreshness (inbound recon; Vault is SoR)',
     }
   }
 }

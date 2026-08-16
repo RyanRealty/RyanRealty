@@ -139,7 +139,7 @@
 | R-089 | Lead-gen machine that never acts like it; machine objective only via visitor objective | PUBLIC decisions | LOCKED | — |
 | R-090 | Six section patterns (Instrument Field Ledger Stage Sheet Quiet); no two adjacent same; ≤4 per page; chart atom inside Instrument | PUBLIC decisions; D9 | LOCKED | — |
 | R-091 | Brand sacred: navy/cream, Amboqia display + Geist body; shadcn-only controls; ban new UI components drawing own chrome | decisions; DESIGN_DIRECTIVES | LOCKED | gates design-tokens/public-ui |
-| R-092 | Mobile-first: 390 is truth, 1280 second; visual inspection on live numbers is law — code review is not the look | BROKER-OS v0.6 | LOCKED | G9 baselines |
+| R-092 | Mobile-first: 390 is truth, 1280 second; visual inspection on live numbers is law — code review is not the look | BROKER-OS v0.6 | LOCKED | G9 baselines 2026-08-16 (`look-walk-baseline.json`) |
 | R-093 | Stamped look: PropXYZ cards/map + Tremor-style market blocks + HouseMe listing intelligence; no Magic UI; no Tremor npm | Matt stamp 2026-08-14 | PARTIAL | sibling owns rollout |
 | R-094 | Listing opens on Stage: real MLS photo/video hero, UNMUTE top-right, poster until video ready; beats Zillow Showcase | Track 1; DESIGN_DIRECTIVES | VERIFIED | — |
 | R-095 | Home page: search door + six town doors with live MLS photography; Places/Opens first screenful photographed and door-through | Track 1 2026-08-13 | PARTIAL | G21 — doors + search verified live; town photos are curated static scenics (`TOWN_IMG` in app/page.tsx), not live MLS (audit 2026-08-15) |

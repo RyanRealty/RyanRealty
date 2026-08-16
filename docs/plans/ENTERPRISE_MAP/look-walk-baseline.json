@@ -1,0 +1,152 @@
+{
+  "status": "ok",
+  "recordedAt": "2026-08-16T09:53:12.918Z",
+  "viewports": ["390", "1280"],
+  "source": "docs/plans/ENTERPRISE_MAP/look-walk-baseline.json",
+  "base": "https://ryan-realty.com",
+  "capture": "out/look-walk/capture.json",
+  "rubric": "docs/plans/PUBLIC_PRODUCT/PAGE-GRADE.md v2.4 first-screen only (G9 baseline, not a full 18-point regrade)",
+  "public": {
+    "routes": [
+      {
+        "id": "home",
+        "route": "/",
+        "label": "Home",
+        "http390": 200,
+        "http1280": 200,
+        "jobNoun": "houses",
+        "knownPath": {
+          "start": "see homes",
+          "now": "hero search",
+          "next": "SEARCH"
+        },
+        "quiet": { "copyBudgetWords": 8, "foci": 5 },
+        "verdict": "TRAIL",
+        "punch": "Houses are the first screen. Search is a filter on that Field, not a photo hero with a count caption."
+      },
+      {
+        "id": "homes-browse",
+        "route": "/homes-for-sale",
+        "label": "Homes browse",
+        "http390": 200,
+        "http1280": 200,
+        "jobNoun": "houses",
+        "knownPath": {
+          "start": "see homes",
+          "now": "house cards",
+          "next": "open a house"
+        },
+        "quiet": { "copyBudgetWords": 6, "foci": 5 },
+        "verdict": "PARTIAL",
+        "punch": "390 has the house but not the map. 1280 split is one Field. Search text 3 bed under 800 in Tetherow sat above a $1,445,000 NorthWest Crossing card."
+      },
+      {
+        "id": "city",
+        "route": "/cities/bend",
+        "label": "City (Bend)",
+        "http390": 200,
+        "http1280": 200,
+        "jobNoun": "Bend houses",
+        "knownPath": {
+          "start": "does Bend fit",
+          "now": "mountain hero",
+          "next": "SEARCH"
+        },
+        "quiet": { "copyBudgetWords": 14, "foci": 6 },
+        "verdict": "TRAIL",
+        "punch": "Bend houses fill the fold. Verdict stays a caption. Seller CTA is not the buyer primary."
+      },
+      {
+        "id": "master-plan",
+        "route": "/communities/tetherow",
+        "label": "Master-plan (Tetherow)",
+        "http390": 200,
+        "http1280": 200,
+        "jobNoun": "Tetherow houses",
+        "knownPath": {
+          "start": "does belonging here fit",
+          "now": "golf hero",
+          "next": "SEARCH"
+        },
+        "quiet": { "copyBudgetWords": 16, "foci": 6 },
+        "verdict": "TRAIL",
+        "punch": "Tetherow houses plus belonging fill the fold. Caption named Bend (35 homes for sale in Bend) on a Tetherow page."
+      },
+      {
+        "id": "listing",
+        "route": "/homes-for-sale/bend/tetherow/61281-mcroberts-220218727",
+        "label": "Listing (McRoberts)",
+        "http390": 200,
+        "http1280": 200,
+        "jobNoun": "this house",
+        "knownPath": {
+          "start": "this house",
+          "now": "this house",
+          "next": "tour or photos"
+        },
+        "quiet": { "copyBudgetWords": 4, "foci": 4 },
+        "verdict": "WORKING",
+        "punch": null
+      },
+      {
+        "id": "sell",
+        "route": "/sell",
+        "label": "Sell",
+        "http390": 200,
+        "http1280": 200,
+        "jobNoun": "address field",
+        "knownPath": {
+          "start": "what is mine worth",
+          "now": "address field",
+          "next": "Value my home"
+        },
+        "quiet": { "copyBudgetWords": 10, "foci": 5 },
+        "verdict": "PARTIAL",
+        "punch": "The address field is the first screen. The mountain hero still takes most of 390."
+      },
+      {
+        "id": "market",
+        "route": "/housing-market",
+        "label": "Market",
+        "http390": 200,
+        "http1280": 200,
+        "jobNoun": "the number",
+        "knownPath": {
+          "start": "what is the market",
+          "now": "type-mix dump",
+          "next": "a place or the houses"
+        },
+        "quiet": { "copyBudgetWords": 6, "foci": 9 },
+        "verdict": "TRAIL",
+        "punch": "Live pulse and verdict are the fold. Type-mix counts are layer 1, not eight cards on first screen."
+      },
+      {
+        "id": "about",
+        "route": "/about",
+        "label": "About",
+        "http390": 200,
+        "http1280": 200,
+        "jobNoun": "these people",
+        "knownPath": {
+          "start": "who is this",
+          "now": "these people",
+          "next": "Call or Text"
+        },
+        "quiet": { "copyBudgetWords": 0, "foci": 3 },
+        "verdict": "WORKING",
+        "punch": null
+      }
+    ]
+  },
+  "cma": {
+    "status": "ok",
+    "slug": "cma-19496-tumalo-reservoir",
+    "url": "https://ryan-realty.com/cmas/cma-19496-tumalo-reservoir/cma.html",
+    "pageCount": 17,
+    "sellerReadableOnePass": true,
+    "numbersHaveUnits": true,
+    "coverIsHouse": true,
+    "verdict": "WORKING",
+    "notes": "Production HTML 200. Cover is the MLS house photo (Mar 2026, MLS 220215931), not a brand card. Page 1 states estimated range $955,000 to $1,060,000 and recommended list $1,050,000 with beds/baths/sqft/lot/year. 17 pages: comps, adjustment grid, flyers, Bend market, pricing, why, disclosure, next step. Seller can read the number on page 1. Residual: page 17 opener is a throat-clear; the packet is long for a one-sitting read of every page."
+  }
+}

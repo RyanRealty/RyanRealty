@@ -57,7 +57,8 @@
 | Visitor events 7d | **11,233** | `visitor_events.event_at >= now-7d` |
 | Email events 7d | **113** · opens **11** · clicks **0** | `email_events` `event` = `open` / `click` |
 | Meta audience last run | **2026-08-15T14:03:29Z** | `meta_audience_log.ran_at` (heartbeat is live this week) |
-| CMAs | **294** | `cmas` count. Look/feel is UNKNOWN until a rendered pass. |
+| CMAs | **294** · look **WORKING** (`cma-19496-tumalo-reservoir`, 17 pages) | `cmas` count + `docs/plans/ENTERPRISE_MAP/look-walk-baseline.json` (production HTML 200, cover is the house, range $955,000–$1,060,000) |
+| Public look-walk | **8 / 8** beat_on routes at 390+1280 HTTP 200 | `docs/plans/ENTERPRISE_MAP/look-walk-baseline.json` · 2 WORKING · 2 PARTIAL · 4 TRAIL (home, city, Tetherow, market). Residual punches stay on the baseline. |
 
 ## 2. What shipped
 
@@ -81,9 +82,9 @@ Scored from this fetch + COMPANY_IMPROVEMENT.md. Not vibes.
 2. **leads / identity** — stitch class closed 2026-08-16: **32/166** map rows now carry `crm_person_id` (was 1/164). Residual: 1 stale FUB-only row with no `crm_people` match, plus visitors who never identified. CAPI `external_id` and alert stamps ride the same person.
 3. **recruit-retain** — **3** brokers. `/join` convert UNKNOWN.
 4. **social-presence** — tokens are NOT the rot (corrected 2026-08-15: TikTok/YouTube/X/GBP auto-refresh via the daily heartbeat; LinkedIn parked, no provider refresh token). The rot is the pipeline: brain `measured=2`, `ready` 420, no fan-out calendar (G25).
-5. **public-ux / polygons** — **3,312** boundaries live. **0** `search_areas`. Filter facets are fresh. Whether every `geo_type` is on the map is UNKNOWN (probe does not walk pages). Do not `ST_Within` at request time.
+5. **public-ux / polygons** — **3,312** boundaries live. **0** `search_areas`. Filter facets are fresh. First look-walk recorded 2026-08-16 (8/8 beat_on at 390+1280). Whether every `geo_type` is on the map is still unwalked. Do not `ST_Within` at request time.
 
-Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pulse all v3). **sales-insights** (GCI live; audience cron ran this morning). **transactions** (SkySlope still 2026-06-10). **broker-tools** (294 CMAs; look UNKNOWN).
+Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pulse all v3). **sales-insights** (GCI live; audience cron ran this morning). **transactions** (SkySlope still 2026-06-10). **broker-tools** (294 CMAs; look WORKING on the Tumalo exemplar).
 
 ## 5. Matt-only
 
@@ -99,14 +100,14 @@ Not in the top 5 this week: **data-sync** (delta ~11 min). **license-voice** (pu
 
 | Domain | Status | Notes |
 |---|---|---|
-| public-ux | watch | 131 registry fields. 3,312 polygons. 0 drawn search areas. Look still a grind. |
+| public-ux | watch | 131 registry fields. 3,312 polygons. 0 drawn search areas. Look-walk baseline recorded (4 TRAIL punches remain). |
 | seo-aeo | unfrozen | 180 GSC benchmark rows in 28d. All 11 windows CLOSED 2026-08-15 with verdicts (1 win, 1 loss, 1 flat, 8 telemetry-gap). |
 | leads | watch | Identity stitch 32/166 after G2 (was 1/164). Stage/journey is G3 (Lead = 2). |
 | nurture | watch | Lead = 2 after G3. 6 active alerts remain the rotting row. |
 | social-presence | rotting (pipeline, not tokens) | Tokens self-renew (LinkedIn parked). Rot = measured 2 / ready 420, no calendar (G25). |
 | sales-insights | watch | GCI live. Audience log ran today. |
 | transactions | rotting | SkySlope 66+ days stale. |
-| broker-tools | UNKNOWN look | 294 CMA rows. Ease / Today queue not in this probe. |
+| broker-tools | watch | 294 CMA rows. Look WORKING on `cma-19496-tumalo-reservoir`. Ease / Today queue not in this probe. |
 | recruit-retain | rotting | 3 brokers. `/join` UNKNOWN. |
 | data-sync | ok | Delta ~11 min. Spark remains ingest-only. |
 | factory | shipped | THE LOOP v1.5.x: work graph, loop-brief, G56/G57, DB triggers, adversarial verification standing. |

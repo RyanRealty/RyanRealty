@@ -75,7 +75,7 @@ checks.push({
 const signals = src('lib/data/loop/signals.ts')
 checks.push({
   label: 'scoreboard reads mirror count from the DAL (not limit-1 length)',
-  ok: /getSkySlopeMirrorFreshness/.test(signals) && /skyFreshness\.rowCount/.test(signals),
+  ok: /readSkySlopeMirrorFreshness/.test(signals) && /skyFreshness\.rowCount/.test(signals),
 })
 
 const closings = src('app/admin/(protected)/closings/page.tsx')

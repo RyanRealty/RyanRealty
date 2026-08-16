@@ -7,7 +7,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { isExpiredUnlearned } from './ledger-draft'
-import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
+import { readLookWalkBaseline } from './look-walk'
+import { readSkySlopeMirrorFreshness } from '@/lib/tc/skyslope-mirror-freshness'
 
 export type SignalStatus = 'ok' | 'unreadable'
 
@@ -129,6 +130,17 @@ export type CompanyScoreboardSignals = {
   cma: {
     status: SignalStatus
     rows: number
+    look: SignalStatus
+    lookVerdict: string | null
+    lookSlug: string | null
+    source: string
+  }
+  lookWalk: {
+    status: SignalStatus
+    publicRoutes: number
+    publicOk: number
+    viewports: string[]
+    recordedAt: string | null
     source: string
   }
 }
@@ -235,7 +247,7 @@ export async function collectCompanyScoreboardSignals(
     sb.from('target_query_benchmark').select('query', { count: 'exact', head: true }).gte('date', since28d),
     sb.from('crm_sequences').select('id', { count: 'exact', head: true }),
     sb.from('tc_deals').select('id', { count: 'exact', head: true }),
-    getSkySlopeMirrorFreshness(now),
+    readSkySlopeMirrorFreshness(sb, now),
     sb.from('tc_form_catalog_items').select('id', { count: 'exact', head: true }).eq('disposition', 'updated'),
     sb.from('listing_alerts').select('id', { count: 'exact', head: true }).not('email', 'ilike', '%fleet-test%'),
     sb.from('listing_alerts').select('id', { count: 'exact', head: true }).eq('is_active', true).not('email', 'ilike', '%fleet-test%'),
@@ -398,7 +410,7 @@ export async function collectCompanyScoreboardSignals(
     skySlopeRows: skyFreshness.rowCount,
     skySlopeLatestSyncedAt: skyFreshness.latestSyncedAt,
     formUpdates: formRes.count ?? 0,
-    source: 'tc_deals + getSkySlopeMirrorFreshness + tc_form_catalog_items disposition=updated',
+    source: 'tc_deals + readSkySlopeMirrorFreshness + tc_form_catalog_items disposition=updated',
   }
 
   const searchError =
@@ -443,10 +455,26 @@ export async function collectCompanyScoreboardSignals(
       'visitor_identity_map + email_events (event=open|click, 7d) + visitor_events 7d + meta_audience_log.ran_at',
   }
 
+  const look = readLookWalkBaseline()
+  const cmaLookOk = look.status === 'ok' && look.cma.status === 'ok'
   const cma: CompanyScoreboardSignals['cma'] = {
     status: cmaRes.error ? 'unreadable' : 'ok',
     rows: cmaRes.count ?? 0,
-    source: 'cmas count',
+    look: cmaLookOk ? 'ok' : 'unreadable',
+    lookVerdict: look.cma.verdict,
+    lookSlug: look.cma.slug,
+    source: cmaLookOk
+      ? `cmas count + look-walk baseline ${look.cma.slug} (${look.cma.verdict})`
+      : 'cmas count (CMA look unread — look-walk baseline missing or ungraded)',
+  }
+  const publicOk = look.public.routes.filter((r) => r.http390 === 200 && r.http1280 === 200).length
+  const lookWalk: CompanyScoreboardSignals['lookWalk'] = {
+    status: look.status === 'ok' && look.public.routes.length > 0 ? 'ok' : 'unreadable',
+    publicRoutes: look.public.routes.length,
+    publicOk,
+    viewports: look.viewports,
+    recordedAt: look.recordedAt,
+    source: look.source,
   }
 
   return {
@@ -470,5 +498,6 @@ export async function collectCompanyScoreboardSignals(
     search,
     identity,
     cma,
+    lookWalk,
   }
 }
