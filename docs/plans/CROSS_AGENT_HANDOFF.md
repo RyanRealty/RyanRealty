@@ -2,7 +2,17 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-15 (Grok) — Verification fleet: Grok Bots wired as the external Auditor (v1.6.0)
+# Current — 2026-08-15 (Grok) — DISARMED: planning mode until Matt arms the loop (R-211)
+
+**Matt (later same evening):** "We are still in planning mode … we don't want to be executing a loop yet." The sentinel had already fired once before this landed — cloud agent bc-13c50db8 ran 02:20–02:45 UTC and **completed G2 cleanly** (identity stitch 1/165 → 32/166, commit `98b63d5f` on main, 204/204 gates, ledger row, evidence on the node; first unattended iteration proof-of-life). No successor launched.
+
+**DISARM state (all mechanical):** `LOOP_SENTINEL=off` set in Vercel prod env 02:50 UTC — baked into runtime by the next real deploy (the parser-fix push). Bridge cover while that build ran: DISARM-HOLD claim on G13 (fresh in_progress = standdown guard blocks every launch; release after kill-switch verify). R-211 LOCKED in the register (Max pin R-211). **Nothing launches until Matt says "arm the loop" AND the env flips to on.** Bots: none created yet (briefs still pending Matt's paste) — nothing external is running either.
+
+**Open questions Matt asked (answers delivered in-chat, to be built AFTER arming):** live status surface (`/admin/loop` reading graph + ledger + findings + sentinel log), per-node fresh-context chaining (one node per agent session), orphan auto-release (stale claim + terminal owner run → open). These are pre-arm build items, not yet nodes.
+
+**Sentinel launch-log bug fixed** (`176bf5e7`): v1 create response parses nested `body.agent.id`; launch-log insert failures now loud. The G2 agent's launch row carried a probe timestamp — cosmetic, superseded.
+
+# Prior — 2026-08-15 (Grok) — Verification fleet: Grok Bots wired as the external Auditor (v1.6.0)
 
 **Matt:** Wants self-feeding external verification — grok bots browse like users after each iteration, output returns to the loop. Product confirmed installed (`/Applications/Grok Bot.app`, beta 2026-08-11; own cloud computer + browser per bot, routines, parallel threads; conversational setup, no public API).
 

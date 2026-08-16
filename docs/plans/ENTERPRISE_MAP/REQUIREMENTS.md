@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-210 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-211 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -298,6 +298,7 @@
 | R-208 | Bots test the system like humans end-to-end including real submits (newsletter, valuation, listing contact, alert save) and the workflows behind them — via the designated fleet test identity with all side effects neutralized; admin-side effects verified by the loop | Matt 2026-08-15 ("use the system like a human, catch all use cases") | VERIFIED | G30 done — four chokepoint guards proven live (fixture 61855); Flow Prover brief + flows pack + fleet-flow-verify shipped |
 | R-209 | No idle waste, no stale instructions: bot packs served live from the work graph (auto-update every iteration); routines are check-first heartbeats ending in seconds on RUN-TOKEN match — effective execution is event-driven, the loop never waits on bots | Matt 2026-08-15 (thoughtful sequencing, minimize downtime) | VERIFIED | `/api/fleet/cases/[pack]` + RUN-TOKEN protocol in every brief; loop-inline verification remains the ship gate |
 | R-210 | Full co-evolution: bot findings enter through the steering verbs (intake at every loop boot; p0/major findings outrank planned work; regressions carry the CHANGE duty into their node); the loop rewrites full bot briefs in code, served live — bots follow next heartbeat, nothing re-pasted | Matt 2026-08-15 ("everything grows together") | VERIFIED | `/api/fleet/briefs/[bot]` + `fleet-intake-core` in loop-brief boot + `fleetNodePriority` queue ordering |
+| R-211 | THE LOOP stays DISARMED until Matt explicitly arms it ("arm the loop"). Planning mode: infrastructure may be built and pushed, but no unattended iteration launches — `LOOP_SENTINEL=off` in production env is the mechanical stop. One iteration ran before this directive landed (bc-13c50db8 completed G2 cleanly, 2026-08-16 02:20–02:45 UTC); the system was disarmed the same hour | Matt 2026-08-15 ("we are still in planning mode … we don't want to be executing a loop yet") | LOCKED | Kill switch `LOOP_SENTINEL=off` set in Vercel production 2026-08-16 02:50 UTC + baked by the next deploy; DISARM-HOLD claim placed on the graph as bridge cover; arming requires Matt's explicit word + env flip |
 
 ## Standing Matt gates (never agent-closed)
 
