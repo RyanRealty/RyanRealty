@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (loop-sentinel bc-57e943fb) — G4 alerts enrollment shipped
+# Current — 2026-08-16 (loop-sentinel bc-36c5e37a) — G5 broker day-one + own-book shipped
+
+**Surface:** Cursor cloud agent `bc-36c5e37a-973a-4b3c-8198-8085b9dca744`. **Time:** 2026-08-16 ~07:35 UTC. Brief served **G5** (recruit-retain). One node only. **`main` @** `7de1b6252`. Vercel Production **READY** (GitHub deployment `5928709859`, inspector `8AhizwMJsKnZ8J6RucBM32mhXi1X`).
+
+**Done**
+- G5 Broker platform 2→3 (`468febf9-3e86-46d1-96cc-a327061bcae0`) **done**. Accept: a non-Matt broker walks day-one; own-book scoping verified signed-in.
+- Class: `scopeBroker` fail-opened unmapped brokers to the company book (`null`). Slug came only from `CRM_BROKER_BY_EMAIL`. Fix: unmapped → `UNMAPPED_OWN_BOOK`; slug from `admin_roles.broker_id` → `brokers.crm_slug`; Today/People/Messages/CMAs/batch-emails use `scopeBroker`; day-one checklist; `content.marketing` unlocked; public social URLs on My settings.
+- Accept proof: signed-in `paul@ryan-realty.com` on https://ryan-realty.com/admin/today (Day one: socials still open) and /admin/people (recently-touched all `assigned paul`). DB: slug `paul`, people 71 vs company 23009, sentinel 0. Gate `ci:broker-own-book`.
+- CAP-022 maturity 3 (PARTIAL; OAuth residual). R-198 stays PARTIAL. R-175 stays PARTIAL (Today ready-approvals still company-wide). No new recruit-retain ledger row. No schema migration.
+- Planes: dal-stat (`resolveCrmSlugForAccess`, `getDayOneChecklist`, scoped `listCmasForAdmin`), admin-crm (Today/People/settings/broker-links), reporting (market-report subscribers), alerts-newsletters (marketing unlock; company letter list), identity (`admin_roles.broker_id`). Ads/public-site unchanged.
+- Ship: `ci:gates` 207/207; `origin/main` includes `7de1b6252`; production deploy success.
+
+**Do not:** connect personal social OAuth (Matt-gated). Do not send, post, spend, or write fake socials onto Paul's row. Disarm = Matt says "disarm the loop". Bots still Phase 3.
+
+**Skills read:** growth-loop, admin-product-os, DEVELOPMENT_PROCESS, REQUIREMENTS R-175/R-198, CAP-022, BROKER-OPERATING-SYSTEM-PLAN, COMPANY_IMPROVEMENT blast-radius.
+
+# Prior — 2026-08-16 (loop-sentinel bc-57e943fb) — G4 alerts enrollment shipped
 
 **Surface:** Cursor cloud agent `bc-57e943fb-edb5-4a4a-bc9b-9fc6a7ee1a36`. **Time:** 2026-08-16 ~06:10 UTC. Brief served **G4** (nurture). One node only. **`main` @** `60de1bee0`. Vercel Production **READY** (GitHub deployment `5928216460`, inspector `7rfmRDpzVR8CtAGa2X9vQqVfGffm`).
 
