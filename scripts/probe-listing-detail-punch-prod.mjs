@@ -9,6 +9,7 @@ import { chromium } from 'playwright'
 
 const BASE = (process.env.BASE_URL || 'https://ryan-realty.com').replace(/\/$/, '')
 const ART = '/opt/cursor/artifacts'
+const PREFIX = process.env.PROBE_PREFIX || ''
 
 const CASES = [
   {
@@ -89,7 +90,7 @@ async function measureListing(page) {
 }
 
 async function shot(page, name) {
-  const path = `${ART}/${name}.png`
+  const path = `${ART}/${PREFIX}${name}.png`
   await page.screenshot({ path, fullPage: false })
   return path
 }
@@ -151,7 +152,7 @@ async function main() {
     out.viewports[String(w)] = await runViewport(browser, w, h)
   }
   await browser.close()
-  writeFileSync(`${ART}/listing_detail_punch_probe.json`, JSON.stringify(out, null, 2))
+  writeFileSync(`${ART}/${PREFIX}listing_detail_punch_probe.json`, JSON.stringify(out, null, 2))
   console.log(JSON.stringify(out, null, 2))
 }
 
