@@ -18,6 +18,7 @@ import {
 import AddressAutocomplete from '@/components/seller-lp/AddressAutocomplete'
 import { SmsConsentDisclosure } from '@/components/site/SmsConsentDisclosure'
 import { CONTACT } from '@/lib/brand/contact'
+import { publishSellValuationConfirm } from '@/lib/sell/publish-sell-valuation'
 
 declare global {
   interface Window {
@@ -111,10 +112,6 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
     e.preventDefault()
     setError(null)
     const trimmedEmail = email.trim()
-    if (!name.trim() || name.trim().length < 2) {
-      setError('Please enter your name.')
-      return
-    }
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       setError('Please enter a valid email.')
       return
@@ -128,10 +125,7 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
         <h2 className="font-display text-2xl font-semibold text-primary">
           Got it. Your home value is on its way.
         </h2>
-        <p className="mt-3 text-foreground">
-          We will prepare a comparative market analysis from recent local sales and send it.
-          {isHot ? ' Your timeline is short, so a broker will reach out soon to walk through the number.' : ' A broker will follow up with the number and answer questions.'}
-        </p>
+        <p className="mt-3 text-foreground">{publishSellValuationConfirm(isHot)}</p>
         <p className="mt-3 text-muted-foreground">
           Prefer to talk right now? Call Matt at{' '}
           <a href={`tel:${CONTACT.phoneDirectTel}`} className="font-semibold text-primary underline underline-offset-2 tabular-nums">
@@ -164,13 +158,14 @@ export function SellValueForm({ pagePath = '/sell', formId = 'get-value' }: Prop
 
         <div className="mt-5 grid gap-4">
           <div>
-            <Label htmlFor="sell-value-name">Your name</Label>
+            <Label htmlFor="sell-value-name">
+              Your name <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
             <Input
               id="sell-value-name"
               name="name"
               type="text"
               autoComplete="name"
-              required
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-2"
