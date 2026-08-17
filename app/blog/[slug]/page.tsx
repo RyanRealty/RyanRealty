@@ -41,6 +41,7 @@ import {
   publishBlogCurrentMos,
   rewriteBlogCurrentMos,
 } from '@/lib/blog/publish-blog-current-mos'
+import { rewriteBlogMosVerdicts } from '@/lib/blog/publish-blog-mos-verdicts'
 import '@/components/site/v3/V3ArticleIsland.css'
 import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
@@ -163,7 +164,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       : undefined,
     author_name: post.author_name,
   })
-  const articleBody = blogClaimsCurrentMos(rawBody)
+  const currentMosBody = blogClaimsCurrentMos(rawBody)
     ? rewriteBlogCurrentMos(
         rawBody,
         publishBlogCurrentMos(
@@ -176,6 +177,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         ),
       )
     : rawBody
+  const articleBody = rewriteBlogMosVerdicts(currentMosBody)
   const title = period.displayTitle.trim()
   if (!title) notFound()
   const category = post.category?.trim()

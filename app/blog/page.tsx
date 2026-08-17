@@ -40,6 +40,7 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { blogIndexCaption, blogIndexRow } from './_v3/blog-index-rows'
+import { publishBlogIndexItemList } from '@/lib/blog/publish-blog-index-list'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const defaultOgImage = `${siteUrl}/api/og?type=default`
@@ -144,15 +145,12 @@ export default async function BlogIndexPage({ searchParams }: PageProps) {
     url: `${siteUrl}/blog`,
     description:
       'How homes are selling in Bend and the towns around it. Monthly numbers, neighborhood context, and what changed.',
-    mainEntity: {
-      '@type': 'ItemList',
-      itemListElement: posts.map((p, i) => ({
-        '@type': 'ListItem',
-        position: i + 1,
-        url: `${siteUrl}/blog/${encodeURIComponent(p.slug)}`,
-        name: p.title,
-      })),
-    },
+    mainEntity: publishBlogIndexItemList({
+      posts,
+      offset,
+      total,
+      siteUrl,
+    }),
   }
 
   return (
