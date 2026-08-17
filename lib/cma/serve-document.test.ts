@@ -23,7 +23,8 @@ vi.mock('@/lib/data/cma/builderReads', () => ({
 }))
 
 vi.mock('@/lib/cma/immersive', () => ({
-  renderImmersiveCmaHtml: (...args: unknown[]) => renderImmersiveCmaHtml(...args),
+  renderImmersiveCmaHtml: (...args: unknown[]) =>
+    (renderImmersiveCmaHtml as (...inner: unknown[]) => string)(...args),
 }))
 
 vi.mock('@/lib/cma/market-area-hydrate', () => ({

@@ -77,9 +77,10 @@ export default async function ContactPage({ searchParams }: PageProps) {
   const intent =
     params.intent === 'tour' ? ('tour' as const) : params.intent === 'question' ? ('question' as const) : undefined
 
-  const listingTile = params.listingKey
+  const listingKeyParam = params.listingKey?.trim()
+  const listingTile = listingKeyParam
     ? await (async () => {
-        const key = params.listingKey
+        const key = listingKeyParam
         const [byKey, byNumber] = await Promise.all([
           getListingTiles({ listingKeys: [key], status: 'all', limit: 1 }).catch(() => []),
           getListingTiles({ listNumbers: [key], status: 'all', limit: 1 }).catch(() => []),
