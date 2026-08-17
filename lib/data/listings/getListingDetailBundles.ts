@@ -345,13 +345,52 @@ export async function getListingKeysWithPriceChangeSince(sinceIso: string): Prom
   return keys
 }
 
+export type ListingHistorySeed = {
+  onMarketDate?: string | null
+  listPrice?: number | null
+}
+
+function asPublishedHistoryRows(
+  listingKey: string,
+  rows: ReturnType<typeof publishListingHistory>,
+): ListingHistoryEventRow[] {
+  return rows.map((row, i) => ({
+    id: `pub-hist-${listingKey}-${i}`,
+    listing_key: listingKey,
+    event: row.event,
+    event_date: row.event_date,
+    price: row.price ?? null,
+    price_change: row.price_change ?? null,
+    description: row.description ?? null,
+  }))
+}
+
+/**
+ * Listed row from the already-loaded listing. The detail page uses this as the
+ * timeout fallback so a slow status/price merge cannot cache an empty timeline.
+ */
+export function seedListingDetailHistory(
+  listingKey: string,
+  seed: ListingHistorySeed = {},
+): ListingHistoryEventRow[] {
+  return asPublishedHistoryRows(
+    listingKey,
+    publishListingHistory({
+      onMarketDate: seed.onMarketDate ?? null,
+      listPrice: seed.listPrice ?? null,
+    }),
+  )
+}
+
 /** Full listing_history events for the timeline view (capped at 100). */
 export async function getListingDetailHistory(
-  listingKey: string
+  listingKey: string,
+  seed?: ListingHistorySeed,
 ): Promise<ListingHistoryEventRow[]> {
   const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const sb = supabaseAnon()
-  if (!sb) return []
+  if (!sb) return seedListingDetailHistory(canonicalKey, seed)
+  const hasSeed = seed != null && (seed.onMarketDate !== undefined || seed.listPrice !== undefined)
   const [historyRes, statusRes, priceRes, listingRes] = await Promise.all([
     sb
       .from('listing_history')
@@ -371,29 +410,30 @@ export async function getListingDetailHistory(
       .eq('listing_key', canonicalKey)
       .order('changed_at', { ascending: true })
       .limit(100),
-    sb
-      .from('listings')
-      .select('OnMarketDate, ListPrice')
-      .eq('ListingKey', canonicalKey)
-      .maybeSingle(),
+    hasSeed
+      ? Promise.resolve({
+          data: {
+            OnMarketDate: seed.onMarketDate ?? null,
+            ListPrice: seed.listPrice ?? null,
+          },
+        })
+      : sb
+          .from('listings')
+          .select('OnMarketDate, ListPrice')
+          .eq('ListingKey', canonicalKey)
+          .maybeSingle(),
   ])
   const listingRow = listingRes.data as { OnMarketDate?: string | null; ListPrice?: number | null } | null
-  const published = publishListingHistory({
-    listingHistory: (historyRes.data ?? []) as ListingHistoryEventRow[],
-    statusHistory: statusRes.data ?? [],
-    priceHistory: priceRes.data ?? [],
-    onMarketDate: listingRow?.OnMarketDate ?? null,
-    listPrice: listingRow?.ListPrice ?? null,
-  })
-  return published.map((row, i) => ({
-    id: `pub-hist-${canonicalKey}-${i}`,
-    listing_key: canonicalKey,
-    event: row.event,
-    event_date: row.event_date,
-    price: row.price ?? null,
-    price_change: row.price_change ?? null,
-    description: row.description ?? null,
-  }))
+  return asPublishedHistoryRows(
+    canonicalKey,
+    publishListingHistory({
+      listingHistory: (historyRes.data ?? []) as ListingHistoryEventRow[],
+      statusHistory: statusRes.data ?? [],
+      priceHistory: priceRes.data ?? [],
+      onMarketDate: listingRow?.OnMarketDate ?? seed?.onMarketDate ?? null,
+      listPrice: listingRow?.ListPrice ?? seed?.listPrice ?? null,
+    }),
+  )
 }
 
 /** Community + neighborhood + city resolution by community slug. */

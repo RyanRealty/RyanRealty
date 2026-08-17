@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import {
   getListingDetail,
   getListingDetailHistory,
+  seedListingDetailHistory,
   getListingPhotos,
   getListingVideos,
   getListingDetailOpenHouses,
@@ -219,7 +220,18 @@ export default async function ListingDetailPage({ params }: PageProps) {
         4500,
         'listing:related',
       ),
-      withTimeoutFallback(getListingDetailHistory(listingKey), [], 3000, 'listing:history'),
+      withTimeoutFallback(
+        getListingDetailHistory(listing.listingKey, {
+          onMarketDate: listing.onMarketDate,
+          listPrice: listing.listPrice,
+        }),
+        seedListingDetailHistory(listing.listingKey, {
+          onMarketDate: listing.onMarketDate,
+          listPrice: listing.listPrice,
+        }),
+        4500,
+        'listing:history',
+      ),
       withTimeoutFallback(getListingPhotos(listingKey), [], 4000, 'listing:photos'),
       withTimeoutFallback(getListingVideos(listingKey), [], 3000, 'listing:videos'),
       withTimeoutFallback(getBrokers(), [], 3000, 'listing:brokers'),

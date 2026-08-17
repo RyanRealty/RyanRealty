@@ -875,9 +875,17 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
   const virtualTours = extractVirtualToursFromRow(listingRow)
 
   // DAL: listing_history + engagement_metrics in parallel via lib/data.
-  const { getListingDetailHistory, getEngagementForListing } = await import('@/lib/data')
+  const { getListingDetailHistory, getEngagementForListing, seedListingDetailHistory } = await import('@/lib/data')
+  const historySeed = {
+    onMarketDate: (listingRow.OnMarketDate as string | null | undefined) ?? null,
+    listPrice: safeNum(listingRow.ListPrice),
+  }
   const [histRowsRaw, engagementRaw] = await Promise.all([
-    withTimeout(getListingDetailHistory(canonicalKey), [], 2500),
+    withTimeout(
+      getListingDetailHistory(canonicalKey, historySeed),
+      seedListingDetailHistory(canonicalKey, historySeed),
+      4500,
+    ),
     withTimeout(getEngagementForListing(canonicalKey), null, 1200),
   ])
 
@@ -944,7 +952,8 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
     const eventDate = h.event_date ?? ''
     let evt: ListingHistoryEvent | null = null
 
-    if (h.event === 'NewListing') {
+    const publishedEvent = String(h.event ?? '').toLowerCase().replace(/[\s_-]+/g, '')
+    if (h.event === 'NewListing' || publishedEvent === 'listed' || publishedEvent === 'newlisting') {
       evt = {
         id: h.id ?? `lh-new-${listingHistory.length}`,
         listing_key: canonicalKey,
@@ -956,7 +965,31 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
         new_value: null,
         change_pct: null,
       }
-    } else if (h.event === 'BackOnMarket') {
+    } else if (publishedEvent === 'pending' || publishedEvent === 'statuspending') {
+      evt = {
+        id: h.id ?? `lh-pending-${listingHistory.length}`,
+        listing_key: canonicalKey,
+        event_date: eventDate,
+        event_type: 'status_change',
+        label: 'Pending',
+        price: h.price ?? null,
+        old_value: null,
+        new_value: 'Pending',
+        change_pct: null,
+      }
+    } else if (publishedEvent === 'pricechange' || publishedEvent === 'pricedrop' || publishedEvent === 'priceincrease') {
+      evt = {
+        id: h.id ?? `lh-price-${listingHistory.length}`,
+        listing_key: canonicalKey,
+        event_date: eventDate,
+        event_type: 'price_change',
+        label: `Price changed to ${formatHistoryPrice(h.price)}`,
+        price: h.price ?? null,
+        old_value: null,
+        new_value: h.price != null ? String(h.price) : null,
+        change_pct: h.price_change != null ? h.price_change : null,
+      }
+    } else if (h.event === 'BackOnMarket' || publishedEvent === 'backonmarket') {
       evt = {
         id: h.id ?? `lh-bom-${listingHistory.length}`,
         listing_key: canonicalKey,

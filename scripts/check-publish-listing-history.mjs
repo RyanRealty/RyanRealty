@@ -36,7 +36,8 @@ checks.push({
     /publishListingHistory\(/.test(dal) &&
     dal.includes(".from('status_history')") &&
     dal.includes(".from('price_history')") &&
-    dal.includes('OnMarketDate'),
+    dal.includes('OnMarketDate') &&
+    /export function seedListingDetailHistory/.test(dal),
 })
 
 const page = src('app/listing/[listingKey]/page.tsx')
@@ -45,6 +46,24 @@ checks.push({
   ok:
     /getListingDetailHistory/.test(page) &&
     /<PropertyHistory history=\{history\}/.test(page),
+})
+checks.push({
+  label: 'listing history timeout falls back to OnMarketDate seed, not empty',
+  ok:
+    /seedListingDetailHistory/.test(page) &&
+    /listing\.listingKey/.test(page) &&
+    /onMarketDate:\s*listing\.onMarketDate/.test(page) &&
+    /4500/.test(page),
+})
+
+const action = src('app/actions/listing-detail.ts')
+checks.push({
+  label: 'listing-detail action maps published listed/pending without raw.Field',
+  ok:
+    /seedListingDetailHistory/.test(action) &&
+    /publishedEvent === 'listed'/.test(action) &&
+    /publishedEvent === 'pending'/.test(action) &&
+    /4500/.test(action),
 })
 
 const failed = checks.filter((c) => !c.ok)
