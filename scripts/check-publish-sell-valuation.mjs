@@ -54,7 +54,7 @@ checks.push({
     ac.includes("suggesting && 'pb-48'") &&
     ac.includes('.pac-container') &&
     ac.includes('el.remove()') &&
-    ac.includes('ignoreClearUntilRef') &&
+    ac.includes('ignoreEmptyRef') &&
     ac.includes('place_changed'),
 })
 

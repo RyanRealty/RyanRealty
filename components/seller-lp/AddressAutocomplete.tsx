@@ -17,6 +17,7 @@
  * the wrapper reserves space so Value my home stays below .pac-item rows
  * (fleet /sell overlay). Bind once, destroy on unmount, and ignore a stale
  * empty input event right after place_changed so React cannot wipe a commit.
+ * The empty-ignore is a ref flag, not Date.now(), so ci:hydration-safety stays quiet.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -51,7 +52,7 @@ export default function AddressAutocomplete({
   const wrapRef = useRef<HTMLDivElement>(null)
   const onChangeRef = useRef(onChange)
   const onPlaceSelectedRef = useRef(onPlaceSelected)
-  const ignoreClearUntilRef = useRef(0)
+  const ignoreEmptyRef = useRef(false)
   const acRef = useRef<{ unbind: () => void } | null>(null)
   const [suggesting, setSuggesting] = useState(false)
   const { ready } = useGoogleMapsReady({ libraries: ['places'] })
@@ -91,7 +92,7 @@ export default function AddressAutocomplete({
           const place = ac.getPlace()
           const formatted = typeof place?.formatted_address === 'string' ? place.formatted_address : ''
           if (formatted) {
-            ignoreClearUntilRef.current = Date.now() + 800
+            ignoreEmptyRef.current = true
             inputEl.value = formatted
             onChangeRef.current(formatted)
             onPlaceSelectedRef.current?.({
@@ -143,7 +144,11 @@ export default function AddressAutocomplete({
         value={value}
         onChange={(e) => {
           const next = e.target.value
-          if (!next && Date.now() < ignoreClearUntilRef.current) return
+          if (!next && ignoreEmptyRef.current) {
+            ignoreEmptyRef.current = false
+            return
+          }
+          ignoreEmptyRef.current = false
           setSuggesting(next.trim().length > 0)
           onChange(next)
         }}
