@@ -2,7 +2,7 @@
   "route": "app/page.tsx",
   "mockup": "design_system/ryan-realty/ui_kits/homepage-v6/index.html",
   "status": "restored-kb-2026-08-15",
-  "note": "Working homepage restored: KbHero, towns, communities, featured homes, region map, ticker, sell, reviews, team, market HUD.",
+  "note": "Working homepage restored: KbHero, towns, communities, featured homes, region map, ticker, sell, reviews, team, market HUD. ArrivalIntent quiz unmounted 2026-08-16 (Matt CHANGE / R-218).",
   "requiredComponents": [
     { "name": "KbHero", "section": "drone/photo hero + live count" },
     { "name": "KbExploreTowns", "section": "towns ledger" },
@@ -14,7 +14,6 @@
     { "name": "KbTestimonials", "section": "Google reviews" },
     { "name": "KbTeam", "section": "the three brokers" },
     { "name": "KbMarketHud", "section": "live market figures" },
-    { "name": "KbFooter", "section": "footer" },
-    { "name": "ArrivalIntent", "section": "Buy / Sell / Look on a first visit" }
+    { "name": "KbFooter", "section": "footer" }
   ]
 }

@@ -2,8 +2,9 @@
  * Arrival classification for the homepage island.
  *
  * Google / ad / email / text / shared listing: let them go. Infer intent
- * from the URL. Buy · Sell · Look only on typed-in blank `/` with no
- * visitor and no person. Welcome back names the house or search they left.
+ * from the URL. Classification may still mark unknown direct as showQuiz
+ * for analytics. The public homepage does not render a Buy/Sell/Look bar
+ * (Matt CHANGE 2026-08-16). Welcome back names the house or search they left.
  */
 
 export type DeclaredIntent = 'buyer' | 'seller' | 'look'

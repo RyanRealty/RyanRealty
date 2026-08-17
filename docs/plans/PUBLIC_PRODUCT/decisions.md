@@ -755,9 +755,11 @@ shared listing. Do not ask what they are trying to do. The click is the job.
 **Always map them first.** Google account email → `crm_people`, then person ids,
 then `rr_vid`. Continue with Google is identity, not an intent quiz.
 
-**Ask Buy · Sell · Look** only on a direct / blank arrival with no visitor and
-no person we can attach. Look is the site. Welcome back names the thing they
-left. No modal on land.
+**Ask Buy · Sell · Look** is retired on public `/` (Matt CHANGE 2026-08-16).
+It is not a nav. Do not render it as a second bar. Intent belongs on the
+Google sign-on screen, not first paint. Do not remount ArrivalIntent. Do not
+ship a new modal for it. Welcome back names the thing they left when that
+island is mounted. No modal on land.
 
 **Continue with Google is the comms door.** Phone + unchecked email + unchecked
 carrier SMS sentence on the same card, before the redirect. Consent is not the

@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import { fireFirstPartyEvent } from '@/components/VisitTracker'
 import {
   classifyArrival,
-  persistIntent,
   readLastThing,
   readPersistedIntent,
   setSessionFlag,
@@ -18,7 +17,7 @@ import {
   type LastThing,
 } from '@/lib/site/arrival-intent'
 
-type View = 'hidden' | 'quiz' | 'welcome'
+type View = 'hidden' | 'welcome'
 
 function readSessionIdentity(): { hasVisitor: boolean; hasPerson: boolean } {
   let hasVisitor = false
@@ -55,8 +54,9 @@ function fireWelcome(thing: LastThing) {
 }
 
 /**
- * Homepage arrival island. Not a seventh pattern. In the page, not an overlay.
- * Cookie is one interrupt. Sign-in already waits. This stays in the page.
+ * Leftover arrival island. Not mounted on public `/` (Matt CHANGE 2026-08-16).
+ * Buy/Sell/Look is not a nav. Do not remount this as a second bar. Do not
+ * ship a modal. Intent declaration belongs on Google sign-on.
  */
 export function ArrivalIntent() {
   const [view, setView] = useState<View>('hidden')
@@ -87,19 +87,10 @@ export function ArrivalIntent() {
       return
     }
 
-    if (arrival.showQuiz) {
-      setView('quiz')
-      return
-    }
-
+    // Matt CHANGE 2026-08-16: Buy/Sell/Look is not a nav. Do not render a
+    // second bar on first paint. Intent belongs on Google sign-on.
     setView('hidden')
   }, [])
-
-  function onTap(intent: DeclaredIntent) {
-    persistIntent(intent)
-    fireDeclared(intent, 'tap')
-    setView('hidden')
-  }
 
   if (view === 'welcome' && thing) {
     const welcome = welcomeThing(thing)
@@ -110,34 +101,6 @@ export function ArrivalIntent() {
           {welcome.label}
         </Link>
       </p>
-    )
-  }
-
-  if (view === 'quiz') {
-    return (
-      <nav aria-label="What are you trying to do" className={cn('flex flex-wrap items-center gap-2 px-4 py-3')}>
-        <Link
-          href="/homes-for-sale"
-          onClick={() => onTap('buyer')}
-          className="inline-flex h-11 items-center px-3 text-sm font-medium text-foreground"
-        >
-          Buy
-        </Link>
-        <Link
-          href="/sell#get-value"
-          onClick={() => onTap('seller')}
-          className="inline-flex h-11 items-center px-3 text-sm font-medium text-foreground"
-        >
-          Sell
-        </Link>
-        <Link
-          href="/"
-          onClick={() => onTap('look')}
-          className="inline-flex h-11 items-center px-3 text-sm font-medium text-foreground"
-        >
-          Look
-        </Link>
-      </nav>
     )
   }
 

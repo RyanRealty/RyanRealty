@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-217 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-218 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -160,7 +160,7 @@
 | R-110 | One count per geography per page; partial plat coverage draws honest count, never hull-fill | MOBILE_GRIND | VERIFIED | — |
 | R-111 | Place doors: neighborhoods + subdivisions indexes live, photographed, no invented cutoff | handoff 2026-08-15 | VERIFIED | — |
 | R-112 | Listing detail: vacation-rental projection only with real STR data; Transparent-CMA summary after comp rework | PROSPECT_TO_CMA | MISSING | G16/G21 |
-| R-113 | V3Chrome only in layout; page never remounts header; gate contracts move with migrations; PWA offline minimal | migration-recipe; decisions | LOCKED | — |
+| R-113 | V3Chrome only in layout; page never remounts header; gate contracts move with migrations; PWA offline minimal | migration-recipe; decisions | LOCKED | ArrivalIntent quiz unmounted from public `/` (Matt CHANGE 2026-08-16 / R-218). D103 + homepage-v6 parity forbid a second Buy/Sell/Look bar. |
 | R-114 | Experience archetypes one language across public; parity.json per migrated family; zero sliders, arrows-only carousels | EXPERIENCE; sliders rule | PARTIAL | Experience loop |
 | R-115 | Admin IA locked: 11 destinations; mobile 5 tabs; Tasks/Calendar fold into Today; legacy URLs redirect forever | ia-lock; .auto-memory 2026-07-17 | LOCKED | — |
 | R-116 | Dark mode: admin ships both themes reachable | 11F UNIT 1 | MISSING | G24 |
@@ -305,6 +305,7 @@
 | R-215 | Page-grade is dead. Do not grade, grind, capture a universe, write cards, fix-to-a-rubric, or regrade. Public look is Matt keep/kill on real pages | Matt 2026-08-16 STOP | LOCKED | skill refuse stubs; `ci:process-canon` asserts KILLED |
 | R-216 | Same-category fleet findings share one ship: claim the class, one `npm run push`, one `deploy:verify`. Do not rebuild after each bot finding | Matt 2026-08-16 | VERIFIED | `lib/data/loop/ship-class.ts` + loop-brief SHIP CLASS + sentinel ONE SHIP CLASS prompt; G44 asserts no regression |
 | R-217 | Fleet walkers do a full site review every run. Packs are the floor, not the ceiling. A RUN-TOKEN match must not end walker / money / stats / lane runs. Flow Prover stays on the four flows and may end on token match so it does not re-submit | Matt 2026-08-16 (instructions were too limited; full site review) | VERIFIED | `fleet-briefs.ts` SITE REVIEW + walker token protocol; pack header no longer says END this run now; G44 asserts the language |
+| R-218 | Homepage first paint is V3Chrome only. ArrivalIntent Buy/Sell/Look is not a nav and must not render on `/`. Intent declaration belongs on Google sign-on, not first paint. Do not restyle the strip into another bar or ship a new modal for it | Matt CHANGE 2026-08-16 | VERIFIED | `app/page.tsx` unmounts ArrivalIntent; quiz view removed; D103 + homepage-v6 parity; `arrival-intent.test.ts` |
 
 ## Standing Matt gates (never agent-closed)
 
