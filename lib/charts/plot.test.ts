@@ -52,6 +52,25 @@ describe('shared chart plot', () => {
     expect(plot && plot.kind === 'bars' ? plot.yMaxLabel : '').toBe('80.0%')
   })
 
+  it('vertical bar ticks leave room for 3-letter month labels', () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const plot = buildBarPlot([
+      {
+        name: 'Days',
+        points: months.map((tick, i) => ({ value: 10 + i, tick, label: String(10 + i) })),
+      },
+    ])
+    expect(plot?.kind).toBe('bars')
+    if (plot?.kind !== 'bars') return
+    const first = plot.ticks[0]
+    const last = plot.ticks[plot.ticks.length - 1]
+    expect(first?.tick).toBe('Jan')
+    expect(last?.tick).toBe('Dec')
+    expect(first!.x).toBeGreaterThanOrEqual(12)
+    expect(last!.x).toBeLessThanOrEqual(plot.vbW - 12)
+    expect(first!.y).toBeLessThanOrEqual(plot.vbH - 4)
+  })
+
   it('linePath never emits a cubic', () => {
     const d = linePath([
       { x: 0, y: 10, plot: true, label: 'a', tick: '1' },

@@ -130,8 +130,10 @@ img{max-width:100%;display:block}
 .btn.ter{color:var(--ink70);text-decoration:underline;text-underline-offset:4px;padding-left:8px;padding-right:8px}
 .sig{font-size:14.5px;font-weight:600}
 .fine{font-size:12px;opacity:.55;margin-top:14px;max-width:640px;line-height:1.5}
-#bar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;gap:16px;padding:12px 20px;background:rgba(250,248,244,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--ink12);transform:translateY(-110%);transition:transform .3s ease}
+#bar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;gap:16px;padding:12px 20px;background:var(--cream);border-bottom:1px solid var(--ink12);transform:translateY(-110%);transition:transform .3s ease}
 #bar.on{transform:none}
+html.bar-on{scroll-padding-top:56px}
+html.bar-on .h,html.bar-on h2{scroll-margin-top:56px}
 #bar .bt{font-size:14px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #bar a{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;border:1px solid var(--ink12);padding:6px 14px}
 #prog{position:absolute;bottom:-1px;left:0;height:2px;background:var(--navy);width:0}

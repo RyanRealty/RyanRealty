@@ -12,7 +12,7 @@
  * Self-contained: inline CSS + inline JS (site CSP allows both), photos from
  * the MLS CDN, Amboqia from /fonts on the serving origin. Every motion
  * respects prefers-reduced-motion, content is never hidden without JS, and
- * count-ups always end at the exact markup number (snapped on print/hide).
+ * secondary counts may animate. The recommended list never tweens.
  */
 
 import type { RenderCmaArgs } from '@/lib/cma/render'
@@ -23,7 +23,7 @@ import { inboundImmersiveHeroKick, inboundImmersiveTitle, resolveThisHomePlan } 
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { formatDate } from '@/lib/format/date'
 import { cleanText } from '@/lib/cma/render-blocks'
-import { clientSourceLine, formatClientMlsField, whyThisListPrice } from '@/lib/cma/client-facing'
+import { clientFacingListingPlan, clientSourceLine, formatClientMlsField, whyThisListPrice } from '@/lib/cma/client-facing'
 import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
 import { renderCompStripHtml } from '@/lib/cma/comp-strip'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
@@ -167,14 +167,14 @@ function thisHomeScene(a: ImmersiveArgs): string {
 }
 
 function planScene(a: ImmersiveArgs): string {
-  const p = a.listingPlan
+  const p = clientFacingListingPlan(a.listingPlan)
   if (!p) return ''
   const cards = p.items
     .map(
       (i) => `<div class="plan r">
       <div class="plan-t">${esc(i.trigger)}</div>
       <div class="plan-a">${esc(i.action)}</div>
-      <div class="plan-b">${esc(i.basis)}</div>
+      ${i.basis ? `<div class="plan-b">${esc(i.basis)}</div>` : ''}
     </div>`,
     )
     .join('')
@@ -335,7 +335,7 @@ function compsScene(a: ImmersiveArgs): string {
     <div class="in wide">
       <div class="kick r">The evidence</div>
       <h2 class="h r">${a.comps.length} closed sales set this price</h2>
-      <p class="lede r">Each kept sale is adjusted to your home. Pin numbers match the map in the print report.</p>
+      <p class="lede r">Each kept sale is adjusted to your home.</p>
       <div class="r">${renderCompStripHtml(a.comps)}</div>
     </div>
   </section>`
@@ -522,7 +522,7 @@ ${immersiveStylesheet()}
 <section class="sc sc-cream" id="answer">
   <div class="in">
     <div class="ans-l r">Recommended list price</div>
-    <div class="ans-n r" data-count>${usd(p.recommended)}</div>
+    <div class="ans-n r">${usd(p.recommended)}</div>
     <div class="r"><span class="conf">Confidence: ${esc(conf)}</span></div>
     <div class="range r">
       <div class="range-track"><div class="range-fill" style="--w:100%"></div></div>
@@ -559,7 +559,9 @@ ${sourcesScene(a)}
     function onScroll(){
       var max=document.documentElement.scrollHeight-window.innerHeight
       var y=window.scrollY||0
-      bar.classList.toggle('on',y>window.innerHeight*0.7)
+      var show=y>window.innerHeight*0.7
+      bar.classList.toggle('on',show)
+      document.documentElement.classList.toggle('bar-on',show)
       prog.style.width=(max>0?Math.min(100,y/max*100):0)+'%'
     }
     window.addEventListener('scroll',onScroll,{passive:true});onScroll()
@@ -576,6 +578,7 @@ ${sourcesScene(a)}
     var cio=new IntersectionObserver(function(es){es.forEach(function(e){
       if(!e.isIntersecting)return;cio.unobserve(e.target)
       var el=e.target,f=el.textContent
+      if(el.classList&&el.classList.contains('ans-n'))return
       var m=/^([^0-9]*)([\\d,]+(?:\\.\\d+)?)(.*)$/.exec(f.trim());if(!m)return
       var t=parseFloat(m[2].replace(/,/g,''));if(!isFinite(t)||t===0)return
       var dcs=(m[2].split('.')[1]||'').length,a={el:el,f:f,done:false};live.push(a)
