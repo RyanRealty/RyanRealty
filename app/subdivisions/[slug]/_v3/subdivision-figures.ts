@@ -37,36 +37,44 @@ import { v3Text, type V3InstrumentFigure, type V3ChartProps, type V3ChartPoint }
 import { formatPrice } from '@/lib/format/money'
 import type { MarketPulse, MarketStats } from '@/lib/data'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
+import { currentYearSalesRow, publishPlatYtdStats } from '@/lib/market/publish-plat-year-sales'
 
 /**
  * The plat's own closed statistics. The guard is the KB section's own guard, a
  * median or a sold count, so a row carrying nothing but a days-on-market value
  * does not open a section that used to stay shut.
  */
-export function platStatsFigures(stats: MarketStats | null): V3InstrumentFigure[] {
-  if (!stats) return []
-  if (stats.medianSalePrice == null && stats.soldCount == null) return []
+export function platStatsFigures(
+  stats: MarketStats | null,
+  history: readonly SubdivisionSalesYear[] = [],
+): V3InstrumentFigure[] {
+  const published = publishPlatYtdStats({
+    stats,
+    currentYear: currentYearSalesRow(history),
+  })
+  if (!published) return []
+  if (published.medianSalePrice == null && published.soldCount == null) return []
   const figures: V3InstrumentFigure[] = []
-  if (stats.medianSalePrice != null) {
+  if (published.medianSalePrice != null) {
     figures.push({
-      value: v3Text(formatPrice(stats.medianSalePrice)),
+      value: v3Text(formatPrice(published.medianSalePrice)),
       label: v3Text('median sale price'),
     })
   }
-  if (stats.medianDaysOnMarket != null) {
+  if (published.medianDaysOnMarket != null) {
     figures.push({
-      value: v3Text(`${Math.round(stats.medianDaysOnMarket)} days`),
+      value: v3Text(`${Math.round(published.medianDaysOnMarket)} days`),
       label: v3Text('median days on market'),
     })
   }
-  if (stats.soldCount != null) {
+  if (published.soldCount != null) {
     figures.push({
-      value: v3Text(stats.soldCount.toLocaleString('en-US')),
+      value: v3Text(published.soldCount.toLocaleString('en-US')),
       label: v3Text('homes sold'),
     })
   }
-  if (stats.yoyChangePct != null) {
-    const pct = stats.yoyChangePct
+  if (published.yoyChangePct != null) {
+    const pct = published.yoyChangePct
     const sign = pct > 0 ? '+' : pct < 0 ? '-' : ''
     figures.push({
       value: v3Text(`${sign}${Math.abs(pct).toFixed(1)}%`),

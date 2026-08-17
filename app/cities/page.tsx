@@ -29,7 +29,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { sortCitiesWithPrimaryFirst } from '@/lib/cities'
-import { getAllCitySnapshots, getRegionPulse, getMarketPulseCitySnapshots } from '@/lib/data'
+import { getAllCitySnapshots, getRegionPulse } from '@/lib/data'
+import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
+import { cityIndexRemainder } from '@/app/cities/city-index-remainder'
 import { getCityContent } from '@/lib/city-content'
 import { cityHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
@@ -112,19 +114,13 @@ function verdictFromMos(mos: number | null): string | null {
 }
 
 export default async function CitiesPage() {
-  // market_pulse_live filters by geo_label (display name) — include known
-  // aliases (Lapine/La Pine, Sun River/Sunriver); rows are re-keyed by
-  // geo_slug below so the alias spelling never leaks into the UI.
-  const featuredLabels = [
-    'Bend', 'Redmond', 'Sisters', 'Sunriver', 'Sun River', 'La Pine', 'Lapine',
-    'Tumalo', 'Terrebonne', 'Prineville', 'Madras', 'Powell Butte',
-    'Crooked River Ranch', 'Culver',
-  ]
+  // Every city pulse row so the region hero can name omitted cities and the
+  // TIGER remainder. geo_slug is re-keyed to hyphens below.
   const [allCities, allSnapshots, regionPulse, citySnapshots] = await Promise.all([
     getCitiesForIndex(),
     getAllCitySnapshots(),
     withTimeoutFallback(getRegionPulse(), null, 3500, 'cities:regionPulse'),
-    withTimeoutFallback(getMarketPulseCitySnapshots(featuredLabels), [], 3500, 'cities:cityPulse'),
+    withTimeoutFallback(getMarketPulseAllCitySnapshots(), [], 3500, 'cities:cityPulse'),
   ])
 
   const sortedCities = sortCitiesWithPrimaryFirst(allCities)
@@ -189,6 +185,11 @@ export default async function CitiesPage() {
 
   const featuredSlugs = new Set(featured.map((f) => f.slug))
   const others = visibleCities.filter((c) => featuredSlugs.has(c.slug) === false)
+  const cityRemainder = cityIndexRemainder({
+    regionActive: regionPulse?.activeCount,
+    displayedLabels: [...featured.map((c) => c.name), ...others.map((c) => c.name)],
+    citySnapshots,
+  })
 
   // Region totals — live pulse first, mv fallback. §0 UNKNOWN IS NOT ZERO: both
   // sources are guarded reads, and `[].reduce(…, 0)` turns a doubly-degraded
@@ -534,6 +535,16 @@ export default async function CitiesPage() {
                   )
                 })}
               </div>
+            </div>
+          </section>
+        ) : null}
+
+        {cityRemainder.facts.length > 0 ? (
+          <section className="section" id="city-remainder" aria-label="Region inventory remainder">
+            <div className="wrap">
+              <p className="neigh-sub" style={{ margin: 0, maxWidth: '42rem' }}>
+                {cityRemainder.facts.join(' ')}
+              </p>
             </div>
           </section>
         ) : null}
