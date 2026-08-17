@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
+# Current — 2026-08-17 (cursor-loop-chain) — listing-detail crumb-ask / rooms slice
+
+**Surface:** Cursor cloud `bc-1e5f4c0a` (`cursor/loop-chain-2026-08-17t05-41-9db6`). **Time:** 2026-08-17 ~06:20 UTC. Boot brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 498). Claimed parent only (stole from setup-only sibling `cursor-loop-sentinel-2026-08-17t05-40-bb7d`). Product **`f11d668c6`** on this branch. Draft PR **#75**. Isolated `npm run push` green. **Production is not this SHA** — cloud run stays off `main`. `deploy:verify` found no production deploy for `f11d668` (Vercel CLI hung on device OAuth; no `VERCEL_TOKEN`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (490 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280 on production before the ship: Bryant tax-only **rejected** (H1 + strip $1,073,000). Old Bend 725 Broadway **$0 reproduced** (MLS ListPrice 2.4, type G). Old Farm both cards **$0 reproduced** (1.2 / 1.08 lease crumbs). Agness 23/22/1,000 **reproduced**. Empire HOA $135 vs $0 **rejected** (Facts + True cost $135). Empire wheel → /neighborhoods **rejected** (pageCount 1). Foley HOA $22 vs $0 **rejected** (Facts + True cost $22).
+- Class: `publishListingAsk` withholds ask `< $1000` (`MIN_PUBLIC_SALE_ASK`). `publishListingRooms` withholds beds+baths when 8+ rooms cannot fit living area. Cards, hero, Facts, JSON-LD, map popup, builder ledger, listing-alert email share both. Gates `ci:publish-listing-ask` 5/5, `ci:publish-listing-rooms` 4/4.
+- Local accept: 64 targeted tests + full pre-commit 6011. File-size budget held. Before shots `/opt/cursor/artifacts/{old-bend,old-farm,agness,bryant,empire,foley}_{390,1280}_*.png`.
+- Punch dispositions appended (parent not completed): 3 fixed + 5 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Merge PR 75 so production picks up crumb-ask withhold and Agness room withhold. Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, git-commit, DATABASE_FOR_AI_AGENTS lookup (listing ask floor + rooms).
+
+# Prior — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
 
 **Surface:** Cursor cloud `bc-42b57373` (`cursor/loop-chain-2026-08-17t04-57-75e4`). **Time:** 2026-08-17 ~05:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 506). Claimed parent only. Product **`cf90a3c2e`** landed on **`main`**. Vercel Production **READY** (`F3jT3EERo8nwXtMpMdLnfUZ4jK73`). `npm run deploy:verify` exit 0 in 448s. Draft PR **#72** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (498 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
