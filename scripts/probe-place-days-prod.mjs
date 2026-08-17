@@ -11,6 +11,7 @@ import { CI_PROBE_HEADERS } from './lib/ci-probe-ua.mjs'
 
 const BASE = (process.env.BASE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const PAGES = [
+  { path: '/', half: '23.5', rounded: '24 days' },
   { path: '/communities/black-butte-ranch', half: '39.5', rounded: '40 days' },
   { path: '/communities/northwest-crossing', half: '10.5', rounded: '11 days' },
   { path: '/communities/broken-top', half: '8.5', rounded: '9 days' },

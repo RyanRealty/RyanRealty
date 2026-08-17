@@ -61,6 +61,10 @@ const surfaces = [
     path: 'lib/crm/market-report-format.ts',
     label: 'CRM market-report days use formatPlaceDays',
   },
+  {
+    path: 'app/cities/[slug]/[neighborhoodSlug]/_v3/neighborhood-sections.ts',
+    label: 'neighborhood v3 liveFigures gates days through formatPlaceDaysNumber',
+  },
 ]
 
 for (const surface of surfaces) {
@@ -69,7 +73,7 @@ for (const surface of surfaces) {
     label: surface.label,
     ok:
       /from ['"]@\/lib\/market\/publish-place-days['"]/.test(text) &&
-      (/publishPlaceDays\(/.test(text) || /formatPlaceDays\(/.test(text)),
+      (/publishPlaceDays\(/.test(text) || /formatPlaceDays(?:Number)?\(/.test(text)),
   })
 }
 

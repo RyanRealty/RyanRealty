@@ -32,6 +32,7 @@ import {
 } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { formatPlaceDaysNumber } from '@/lib/market/publish-place-days'
 import { listingDetailPath } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 
@@ -273,7 +274,7 @@ export function liveFigures(
   }
   if (shipsFigure(pulse.medianDaysToPending) && pulse.medianDaysToPending != null) {
     figures.push({
-      value: v3Text(String(Math.round(pulse.medianDaysToPending))),
+      value: v3Text(formatPlaceDaysNumber(pulse.medianDaysToPending)),
       label: v3Text('median days to pending, single-family'),
       href: links.cityReport,
     })

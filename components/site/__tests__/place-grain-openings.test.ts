@@ -61,6 +61,7 @@ describe('neighborhood pace', () => {
       'median days to pending, single-family',
     ])
     expect(figures[0]?.value).toBe('4.2')
+    expect(figures[1]?.value).toBe('28.6')
     expect(figures.some((figure) => /home|inventory|list price/i.test(String(figure.label)))).toBe(false)
   })
 
