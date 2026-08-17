@@ -25,6 +25,7 @@ import { formatDate } from '@/lib/format/date'
 import { cleanText } from '@/lib/cma/render-blocks'
 import { clientSourceLine, formatClientMlsField, whyThisListPrice } from '@/lib/cma/client-facing'
 import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
+import { renderCompStripHtml } from '@/lib/cma/comp-strip'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
 
 type ImmersiveArgs = RenderCmaArgs & { broker: CmaBroker }
@@ -328,32 +329,13 @@ function subdivisionStoryScene(a: ImmersiveArgs): string {
 }
 
 function compsScene(a: ImmersiveArgs): string {
-  const cards = a.comps
-    .map((c, i) => {
-      const ppsf = c.sqft > 0 ? Math.round(c.closePrice / c.sqft) : null
-      const img = c.photoUrl
-        ? `<img class="cmp-img" src="${esc(c.photoUrl)}" alt="${esc(c.address)}" loading="lazy" referrerpolicy="no-referrer"/>`
-        : `<div class="cmp-img ph" aria-hidden="true">${i + 1}</div>`
-      return `<article class="cmp r">
-        ${img}
-        <div class="cmp-b">
-          <div class="cmp-a">${esc(c.address)}</div>
-          <div class="cmp-p">${usd(c.closePrice)}</div>
-          <div class="cmp-m">Closed ${dateLong(c.closeDate)}${c.proximity ? ` · ${esc(c.proximity)}` : ''}</div>
-          <div class="cmp-m">${int(c.sqft)} sqft${ppsf ? ` · $${ppsf}/sqft` : ''}${c.yearBuilt ? ` · built ${c.yearBuilt}` : ''}</div>
-          <div class="cmp-adj">Adjusted to your home: <strong>${usd(c.adjustedPrice)}</strong></div>
-        </div>
-      </article>`
-    })
-    .join('')
   return `
   <section class="sc sc-cream" id="evidence">
     <div class="in wide">
       <div class="kick r">The evidence</div>
       <h2 class="h r">${a.comps.length} closed sales set this price</h2>
-      <p class="lede r">Each one is adjusted for how long ago it closed and how its size compares to yours.</p>
-      <div class="cmp-grid">${cards}</div>
-
+      <p class="lede r">Each kept sale is adjusted to your home. Pin numbers match the map in the print report.</p>
+      <div class="r">${renderCompStripHtml(a.comps)}</div>
     </div>
   </section>`
 }
@@ -555,8 +537,8 @@ ${immersiveStylesheet()}
 
 ${whyScene(a)}
 ${thisHomeScene(a)}
-${subdivisionStoryScene(a)}
 ${compsScene(a)}
+${subdivisionStoryScene(a)}
 ${storyScene(a)}
 ${competitionScene(a)}
 ${seasonalityScene(a)}

@@ -41,6 +41,7 @@ import { buildSubdivisionStory, SUBDIVISION_STORY_YEARS } from '@/lib/cma/subdiv
 import { getCmaSubdivisionHistory } from '@/lib/data/cma/builderReads'
 import { auditCma } from '@/lib/cma/audit'
 import { evaluateAccuracyContract } from '@/lib/cma/contract'
+import { applyCompVerdicts } from '@/lib/cma/client-facing'
 import { getBpoListingCyclesByAddress } from '@/lib/data/bpo/reads'
 import { getListingPhotosCount } from '@/lib/data/cma/builderReads'
 import { getExpiredOwnershipSince } from '@/lib/data/prospecting/get'
@@ -66,7 +67,6 @@ import { reviewProse } from '@/lib/voice/reviewer'
 import type { CmaBroker, CmaBuildInput, CmaBuildResult } from '@/lib/cma/types'
 
 export const CMA_BUILDER_VERSION = 'deterministic-v1 (2026-07-07)'
-
 const DEFAULT_BROKER_SLUG = (process.env.CMA_DEFAULT_BROKER_SLUG ?? 'matthew-ryan').trim().toLowerCase()
 
 async function resolveBroker(input: CmaBuildInput): Promise<CmaBroker> {
@@ -692,7 +692,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
     // price when only the signer changed (CLAUDE.md section 0).
     const renderArgs = {
       subject,
-      comps: adjusted,
+      comps: applyCompVerdicts(adjusted, judgment?.verdicts ?? []),
       market,
       pricing,
       client: input.client,

@@ -94,14 +94,65 @@ export function cmaSectionStyles(): string {
     display: block;
     margin-bottom: 14px;
   }
-  .map-key { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .comp-strip { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 4px; }
+  .comp-row {
+    display: grid;
+    grid-template-columns: 1.15in 1fr;
+    gap: 12px;
+    border: 1px solid var(--navy-line);
+    background: #fff;
+    overflow: hidden;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .comp-media { position: relative; }
+  .comp-ph {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    display: block;
+    border-radius: 0;
+    background: var(--navy-fill);
+  }
+  .comp-ph.is-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cream);
+    background: var(--navy);
+    font-size: 22px;
+  }
+  .comp-pin {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 18px;
+    height: 18px;
+    border-radius: 0;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .comp-body { padding: 7px 9px 8px; }
+  .comp-addr { font-size: 12px; font-weight: 600; color: var(--navy); line-height: 1.25; }
+  .comp-nums { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 4px; }
+  .comp-nl { display: block; font-size: 7.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .comp-nv { font-size: 12px; font-weight: 600; color: var(--navy); font-variant-numeric: tabular-nums; }
+  .comp-facts { font-size: 9px; color: var(--muted); line-height: 1.35; font-variant-numeric: tabular-nums; }
+  .comp-why { font-size: 9.5px; line-height: 1.4; color: var(--navy); margin: 6px 0 0; }
+
+  .map-key { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .map-key .k {
     background: var(--navy-fill);
     padding: 8px 10px;
-    border-radius: 6px;
+    border-radius: 0;
     display: flex;
     gap: 10px;
-    align-items: center;
+    align-items: flex-start;
   }
   .map-key .k .pin {
     display: inline-flex;
@@ -308,7 +359,7 @@ export function cmaSectionStyles(): string {
 
   /* ── Print + PDF fidelity ─────────────────────────────────────────────── */
   p, li { orphans: 3; widows: 3; }
-  .comp-card, .tier, .hl, .map-key .k, .trace, .flyer-features .f, .use-card, .zone-mast { break-inside: avoid; page-break-inside: avoid; }
+  .comp-card, .comp-row, .tier, .hl, .map-key .k, .trace, .flyer-features .f, .use-card, .zone-mast { break-inside: avoid; page-break-inside: avoid; }
   @media (max-width: 700px) {
     .use-board { grid-template-columns: 1fr; }
   }

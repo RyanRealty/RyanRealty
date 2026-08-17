@@ -368,9 +368,8 @@ describe('client document look', () => {
     expect(html).not.toMatch(/\.hero-photo\s*\{[^}]*border-radius:\s*[1-9]/)
     expect(html).not.toMatch(/\.comp-card\s*\{[^}]*border-radius:\s*[1-9]/)
     const immersive = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    expect(immersive).toContain('.cmp{background:#fff;border:1px solid var(--ink12);overflow:hidden}')
-    expect(immersive).toContain('.cmp-img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;border-radius:0}')
-    expect(immersive).not.toMatch(/\.cmp\{[^}]*border-radius:1[68]px/)
+    expect(immersive).toContain('.comp-ph{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;border-radius:0}')
+    expect(immersive).not.toMatch(/\.comp-ph\{[^}]*border-radius:1[68]px/)
   })
 
   it('print CSS keeps safe @page margins', () => {

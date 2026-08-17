@@ -20,6 +20,7 @@ import { NextResponse } from 'next/server'
 import { getCmaHtmlBySlug, getCmaAccessIdentity } from '@/lib/data'
 import { getCmaBrokerBySlugOrEmail } from '@/lib/data/cma/builderReads'
 import { renderImmersiveCmaHtml } from '@/lib/cma/immersive'
+import { applyCompVerdicts, verdictsFromBuildSummary } from '@/lib/cma/client-facing'
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
 import { getSession } from '@/app/actions/auth'
@@ -148,8 +149,13 @@ export async function GET(
           phone: (brokerRow?.twilio_number as string | null) ?? null,
           photoUrl: (brokerRow?.photo_url as string | null) ?? null,
         }
+        const stored = row.render_args as unknown as RenderCmaArgs
+        const comps = applyCompVerdicts(
+          stored.comps ?? [],
+          verdictsFromBuildSummary(row.build_summary),
+        )
         const immersive = renderImmersiveCmaHtml(
-          { ...(row.render_args as unknown as RenderCmaArgs), broker },
+          { ...stored, comps, broker },
           origin,
         )
         const tracked = immersive.includes('</body>')

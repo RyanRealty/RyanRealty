@@ -10,7 +10,13 @@ import { formatPriceExact } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { cleanText } from '@/lib/cma/render-blocks'
-import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
+import type {
+  CmaAdjustedComp,
+  CmaCompKeepTier,
+  CmaMarketContext,
+  CmaPricing,
+  CmaSubject,
+} from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
 
@@ -215,4 +221,74 @@ export function whyThisListPrice(input: {
     ownership: ownershipLine(input.equity),
     strategy: strategyLine({ pricing: input.pricing, failedAsk }),
   }
+}
+
+export function applyCompVerdicts(
+  comps: readonly CmaAdjustedComp[],
+  verdicts: readonly { listingKey?: string; tier?: string; reason?: string }[],
+): CmaAdjustedComp[] {
+  const byKey = new Map<string, { tier: CmaCompKeepTier; reason: string }>()
+  for (const v of verdicts) {
+    if (!v.listingKey || (v.tier !== 'strong' && v.tier !== 'weak')) continue
+    byKey.set(v.listingKey, { tier: v.tier, reason: (v.reason ?? '').trim() })
+  }
+  return comps.map((c) => {
+    const hit = byKey.get(c.listingKey)
+    if (!hit) return { ...c }
+    return { ...c, keepTier: hit.tier, keepReason: hit.reason }
+  })
+}
+
+export function verdictsFromBuildSummary(summary: unknown): Array<{
+  listingKey: string
+  tier: string
+  reason: string
+}> {
+  if (!summary || typeof summary !== 'object') return []
+  const judgment = (summary as Record<string, unknown>).judgment
+  if (!judgment || typeof judgment !== 'object') return []
+  const raw = (judgment as Record<string, unknown>).verdicts
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((row) => {
+      if (!row || typeof row !== 'object') return null
+      const v = row as Record<string, unknown>
+      const listingKey = typeof v.listingKey === 'string' ? v.listingKey : ''
+      const tier = typeof v.tier === 'string' ? v.tier : ''
+      const reason = typeof v.reason === 'string' ? v.reason : ''
+      if (!listingKey) return null
+      return { listingKey, tier, reason }
+    })
+    .filter((v): v is { listingKey: string; tier: string; reason: string } => v != null)
+}
+
+function clientKeepReason(raw: string | null | undefined): string | null {
+  const t = cleanText(raw)
+  if (!t || isClientInternalLeak(t)) return null
+  if (/\bListingKey\b|[0-9]{20,}/i.test(t)) return null
+  return t.replace(/\s+/g, ' ').trim()
+}
+
+/** One sentence: strong/weak + judge reason, or a fact fallback. Never N/A. */
+export function whyWeKeptComp(comp: CmaAdjustedComp): {
+  tier: CmaCompKeepTier | null
+  sentence: string
+} {
+  const tier = comp.keepTier === 'strong' || comp.keepTier === 'weak' ? comp.keepTier : null
+  const reason = clientKeepReason(comp.keepReason)
+  if (tier && reason) {
+    const label = tier === 'strong' ? 'Strong' : 'Weak'
+    const body = /[.!?]$/.test(reason) ? reason : `${reason}.`
+    return { tier, sentence: `${label}. ${body}` }
+  }
+  if (comp.competingArea) {
+    return {
+      tier,
+      sentence: `Kept as a competing-area sale${comp.proximity ? `, ${comp.proximity} from the subject` : ''} to bracket the range.`,
+    }
+  }
+  if (comp.proximity) {
+    return { tier, sentence: `Kept as a closed sale ${comp.proximity} from the subject.` }
+  }
+  return { tier, sentence: 'Kept as a closed sale in this comparable set.' }
 }
