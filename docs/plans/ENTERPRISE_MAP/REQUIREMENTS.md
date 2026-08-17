@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-217 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-218 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -251,6 +251,7 @@
 | R-181 | Twilio: per-broker business numbers public + forwarding, recording, transcription, click-to-call; one A2P campaign | twilio-cutover | PARTIAL | CAP residual |
 | R-182 | /admin home is what-needs-attention-now; lead hub shows one person's everything | ADMIN_CONSOLIDATION | VERIFIED | — |
 | R-183 | Restyle send chokepoints without touching the send path | P11 (2026-08-07) | LOCKED | — |
+| R-218 | Every seller CMA is one price-opinion spine: price first, why, named band rivals, three sales with tap-pin, subdivision, wider-market charts. No marketing pitch, confidence pills, ZIP lines, or query traces. Numbers from `lib/pricing/` only. Applies to inbound, expired, FSBO, and rebuild — not a one-off | Matt 2026-08-17 ADD | PARTIAL | G16; gate `ci:cma-opinion-spine` |
 
 ## social-presence
 

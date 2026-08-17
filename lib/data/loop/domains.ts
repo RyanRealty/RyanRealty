@@ -72,6 +72,8 @@ export const DOMAIN_REQUIRED_READS: Record<CompanyImprovementDomain, readonly st
     'docs/DATABASE_FOR_AI_AGENTS.md',
     'marketing_brain_skills/producers/cma/SKILL.md',
     '.cursor/rules/cma-data-model.mdc',
+    'docs/plans/CMA_PRICE_OPINION_SPINE.md',
+    'lib/pricing/classes.ts',
   ],
   transactions: [
     '.claude/skills/tc-builder/SKILL.md',
@@ -82,6 +84,8 @@ export const DOMAIN_REQUIRED_READS: Record<CompanyImprovementDomain, readonly st
     '.claude/skills/admin-product-os/SKILL.md',
     'docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md',
     'docs/plans/ADMIN_PRODUCT/EXECUTION.md (live board)',
+    'docs/plans/CMA_PRICE_OPINION_SPINE.md',
+    'lib/pricing/classes.ts',
   ],
   'recruit-retain': ['docs/plans/ADMIN_PRODUCT/BROKER-OPERATING-SYSTEM-PLAN.md', 'docs/MASTER_SPEC.md'],
   'data-sync': ['.cursor/rules/sync-pipeline.mdc', 'docs/DATABASE_FOR_AI_AGENTS.md'],
