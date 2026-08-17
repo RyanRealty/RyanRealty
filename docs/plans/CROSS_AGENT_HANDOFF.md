@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — blog related-homes / CTA slice
+# Current — 2026-08-17 (cursor-loop-chain) — blog CTA / related-homes / CMS-math slice
+
+**Surface:** Cursor cloud `bc-b2e8bbfa` (`cursor/loop-chain-2026-08-17t11-17-6f89`). **Time:** 2026-08-17 ~11:40 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 434). Claimed parent only. No product class-fix. Production remains **READY** on **`10a8a7a77`** (`PKBGTWs5K9Bcdg7SdpsVyvLfSarC`, `npm run deploy:verify` exit 0). Docs/probe **`e64869efb`**. Draft PR **#83**. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (426 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 blog lines) at 390+1280: retirement missing CTA **rejected** (Talk to a broker → `/contact` at `#explore`). Retirement tax-range math **rejected** (CMS; `$40k–$60k` spending vs 7–10% on taxable purchases, not a same-label pair). Broken Top related-homes **rejected** (`#related-homes` + See Broken Top homes). Broken Top HOA+$golf **rejected** (CMS typical band `$1,000–$1,300`, not published SFR). Relocation self-nav **rejected** (isolated scroll: URL held, 0 extra tabs, no schools-guide href). Sunriver `$456` vs `$430` **rejected** (market 11 closings vs 7 inside resort boundary). May 503 vs June 10 531 **rejected** (different as-of). Families related-homes **rejected** (`#related-homes` + See Bend homes).
+- No class-fix. Prior `publishBlogRelatedHomes` / `publishBlogContextualCta` already hold. Probe `scripts/probe-blog-punch-v7.mjs` + isolated nav. Shots `/opt/cursor/artifacts/reject_{retirement-central-oregon,broken-top-bend-golf-community,best-neighborhoods-bend-families,price-per-sqft-trends-central-oregon,bend-oregon-market-report-june-2026}_*`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover blog + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, SITE_PAGE_STANDARD §7, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — blog related-homes / CTA slice
 
 **Surface:** Cursor cloud `bc-e459ecbb` (`cursor/loop-chain-2026-08-17t10-35-b6a3`). **Time:** 2026-08-17 ~11:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 442). Claimed parent only. Product **`10a8a7a77`** landed on **`main`**. Vercel Production **READY** (`PKBGTWs5K9Bcdg7SdpsVyvLfSarC`, `npm run deploy:verify` exit 0). Draft PR **#82** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (434 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
