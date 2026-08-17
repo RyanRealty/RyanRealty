@@ -76,6 +76,19 @@ function str(v: unknown): string | null {
   return s || null
 }
 
+function mlsText(v: unknown): string | null {
+  if (v == null) return null
+  if (typeof v === 'string') return v.trim() || null
+  if (typeof v === 'object') {
+    try {
+      return JSON.stringify(v)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
   const closePrice = num(row['ClosePrice'])
   const sqft = num(row['TotalLivingAreaSqFt'])
@@ -109,7 +122,7 @@ function rowToComp(row: CmaListingRow, tier: string): CmaComp | null {
     yearBuilt: saneYearBuilt(num(row['year_built'])),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
-    viewDescription: str(row['view_description']),
+    viewDescription: mlsText(row['view_description']),
     taxAnnual: num(row['tax_annual_amount']),
     listPrice: num(row['ListPrice']),
     closePrice,

@@ -74,6 +74,17 @@ export function cmaStylesheet(siteUrl: string): string {
     }
   }
 
+  @media screen and (max-width: 700px) {
+    html, body { background: var(--cream); }
+    .page {
+      width: 100%;
+      min-height: 0;
+      margin: 0;
+      padding: 20px 16px 32px;
+      box-shadow: none;
+    }
+  }
+
   .pg-header {
     display: flex;
     justify-content: space-between;
@@ -152,7 +163,8 @@ export function cmaStylesheet(siteUrl: string): string {
     height: 280px;
     object-fit: cover;
     object-position: center;
-    border-radius: 8px;
+    border-radius: 0;
+    overflow: hidden;
     background: var(--navy-fill);
     margin-bottom: 6px;
     display: block;
@@ -248,10 +260,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
 
   .presented-by {
-    position: absolute;
-    left: 0.6in;
-    right: 0.6in;
-    bottom: 0.72in;
+    margin-top: 28px;
     padding-top: 14px;
     border-top: 1px solid var(--navy-line);
     font-size: 10.5px;
@@ -300,7 +309,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   .comp-card {
     border: 1px solid var(--navy-line);
-    border-radius: 6px;
+    border-radius: 0;
     overflow: hidden;
     background: white;
   }
@@ -521,7 +530,10 @@ export function cmaStylesheet(siteUrl: string): string {
   /* ONE artifact, two media (Matt 2026-08-05): the per-page header (and the
      running footer Chrome draws in the print margin) are PRINT chrome. The
      web view is the same document without them. */
-  @media screen { .pg-header { display: none; } }
+  @media screen {
+    .pg-header, .pg-footer { display: none; }
+    ol.toc li .p { display: none; }
+  }
 
   @media print {
     body { background: white; margin: 0; padding: 0; }
@@ -529,10 +541,7 @@ export function cmaStylesheet(siteUrl: string): string {
       box-shadow: none;
       margin: 0;
       width: auto;
-      /* Fill the sheet so the cover's absolutely-positioned "presented by"
-         block still anchors to the bottom of the paper, while still being free
-         to grow past it when a section runs long. Content-box height =
-         11in - 0.4in top - 0.7in bottom. */
+      /* Content-box height = 11in - 0.4in top - 0.7in bottom. */
       min-height: 9.9in;
       padding: 0;
     }

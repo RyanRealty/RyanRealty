@@ -73,6 +73,21 @@ function str(v: unknown): string | null {
   return s || null
 }
 
+/** View / amenity fields may arrive as JSON objects from jsonb. Keep the
+ *  string form so the client formatter can turn truthy keys into labels. */
+function mlsText(v: unknown): string | null {
+  if (v == null) return null
+  if (typeof v === 'string') return v.trim() || null
+  if (typeof v === 'object') {
+    try {
+      return JSON.stringify(v)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
 /** Strict tri-state read. Anything the MLS did not say stays null, never false. */
 function bool(v: unknown): boolean | null {
   if (typeof v === 'boolean') return v
@@ -125,7 +140,7 @@ export function rowToSubject(row: CmaListingRow): CmaSubject {
     garageSpaces: num(row['garage_spaces']),
     photoUrl: str(row['PhotoURL']),
     publicRemarks: str(row['public_remarks']),
-    viewDescription: str(row['view_description']),
+    viewDescription: mlsText(row['view_description']),
     taxAnnual: num(row['tax_annual_amount']),
     standardStatus: status,
     lastListPrice: listPrice,

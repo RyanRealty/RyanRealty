@@ -33,7 +33,8 @@ export function cmaSectionStyles(): string {
     height: 3.4in;
     object-fit: cover;
     object-position: center;
-    border-radius: 8px;
+    border-radius: 0;
+    overflow: hidden;
     background: var(--navy-fill);
     display: block;
     margin-bottom: 9px;
@@ -87,7 +88,8 @@ export function cmaSectionStyles(): string {
   .map-img {
     width: 100%;
     height: auto;
-    border-radius: 10px;
+    border-radius: 0;
+    overflow: hidden;
     background: var(--navy-fill);
     display: block;
     margin-bottom: 14px;

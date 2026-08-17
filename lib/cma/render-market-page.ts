@@ -84,36 +84,36 @@ export function marketPage(input: {
       label: 'Homes',
       sales: int(input.comps.length),
       market: int(m.soldCount365),
-      pending: m.pendingCount != null ? int(m.pendingCount) : 'n/a',
-      active: m.activeCount != null ? int(m.activeCount) : 'n/a',
+      pending: m.pendingCount != null ? int(m.pendingCount) : '',
+      active: m.activeCount != null ? int(m.activeCount) : '',
     },
     {
       label: 'Median price',
-      sales: median(closes) != null ? usd(Math.round(median(closes)!)) : 'n/a',
-      market: m.medianSalePrice != null ? usd(m.medianSalePrice) : 'n/a',
-      pending: 'n/a',
-      active: m.medianListPrice != null ? usd(m.medianListPrice) : 'n/a',
+      sales: median(closes) != null ? usd(Math.round(median(closes)!)) : '',
+      market: m.medianSalePrice != null ? usd(m.medianSalePrice) : '',
+      pending: '',
+      active: m.medianListPrice != null ? usd(m.medianListPrice) : '',
     },
     {
       label: 'Low / high',
-      sales: closes.length ? `${usd(Math.min(...closes))} / ${usd(Math.max(...closes))}` : 'n/a',
-      market: 'n/a',
-      pending: 'n/a',
-      active: 'n/a',
+      sales: closes.length ? `${usd(Math.min(...closes))} / ${usd(Math.max(...closes))}` : '',
+      market: '',
+      pending: '',
+      active: '',
     },
     {
       label: 'Median $ / sqft',
-      sales: median(ppsf) != null ? usd(Math.round(median(ppsf)!)) : 'n/a',
-      market: m.medianPpsf != null ? usd(Math.round(m.medianPpsf)) : 'n/a',
-      pending: 'n/a',
-      active: 'n/a',
+      sales: median(ppsf) != null ? usd(Math.round(median(ppsf)!)) : '',
+      market: m.medianPpsf != null ? usd(Math.round(m.medianPpsf)) : '',
+      pending: '',
+      active: '',
     },
     {
       label: 'Median days',
-      sales: median(doms) != null ? `${int(Math.round(median(doms)!))} days` : 'n/a',
-      market: m.medianDom != null ? `${int(m.medianDom)} days` : 'n/a',
-      pending: 'n/a',
-      active: 'n/a',
+      sales: median(doms) != null ? `${int(Math.round(median(doms)!))} days` : '',
+      market: m.medianDom != null ? `${int(m.medianDom)} days` : '',
+      pending: '',
+      active: '',
     },
   ]
 
@@ -134,9 +134,9 @@ export function marketPage(input: {
     </tbody>
   </table>
   <div class="stat-strip is-4">
-    <div class="stat"><div class="lbl">Months of supply</div><div class="val">${m.monthsOfSupply != null ? dec(m.monthsOfSupply, 1) : 'n/a'}</div></div>
-    <div class="stat"><div class="lbl">Sale to list</div><div class="val">${saleToList != null ? `${saleToList}%` : 'n/a'}</div></div>
-    <div class="stat"><div class="lbl">YoY median</div><div class="val">${m.yoyMedianPriceDeltaPct != null ? `${dec(m.yoyMedianPriceDeltaPct, 1)}%` : 'n/a'}</div></div>
+    ${m.monthsOfSupply != null ? `<div class="stat"><div class="lbl">Months of supply</div><div class="val">${dec(m.monthsOfSupply, 1)}</div></div>` : ''}
+    ${saleToList != null ? `<div class="stat"><div class="lbl">Sale to list</div><div class="val">${saleToList}%</div></div>` : ''}
+    ${m.yoyMedianPriceDeltaPct != null ? `<div class="stat"><div class="lbl">YoY median</div><div class="val">${dec(m.yoyMedianPriceDeltaPct, 1)}%</div></div>` : ''}
     <div class="stat"><div class="lbl">Verdict</div><div class="val">${esc(verdictLabel)}</div></div>
   </div>
   <h3 class="subhead">${esc(verdictLabel)}</h3>
@@ -154,7 +154,7 @@ export function marketPage(input: {
   ${yearMartBlock(m)}
   <div class="trace">
     <div class="t-hd">Source</div>
-    <code>market_stats_cache</code> geo <code>${esc(m.geoSlug)}</code>, period rolling_365d ending ${dateLong(m.periodEnd)}, methodology ${esc(m.methodologyVersion ?? 'n/a')}, computed ${dateLong(m.computedAt)} · <code>market_pulse_live</code> as of ${dateLong(m.pulseUpdatedAt)}.
+    Oregon Data Share MLS market statistics for ${esc(m.geoLabel)}, ${dateLong(m.periodStart)} to ${dateLong(m.periodEnd)}, pulled ${dateLong(m.computedAt ?? m.pulseUpdatedAt)}.
   </div>`,
   }
 }
@@ -168,6 +168,6 @@ function yearMartBlock(m: CmaMarketContext): string {
   <p>${esc(geo)} closed ${usd(Math.round(y.totalVolume))} across ${int(y.soldCount)} sales (${esc(y.typeLabel)}). The table above is the last 12 months of single-family sales.</p>
   <div class="trace">
     <div class="t-hd">Source</div>
-    <code>analytics_mart_market_annual</code> geo_type <code>${esc(y.geoType)}</code>, geo_slug <code>${esc(y.geoSlug)}</code>, year ${int(y.year)}, type_scope all, methodology ${esc(y.methodology)}, computed ${dateLong(y.computedAt)}.
+    Closed ${esc(y.typeLabel)} in ${esc(geo)} for ${esc(String(y.year))}, pulled ${dateLong(y.computedAt)}.
   </div>`
 }

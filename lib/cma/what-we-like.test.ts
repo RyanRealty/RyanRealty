@@ -238,7 +238,7 @@ describe('the single-doc fold', () => {
 
   it('one artifact, two media: screen hides the print page header', () => {
     const { html } = renderCmaHtml(args({}))
-    expect(html).toContain('@media screen { .pg-header { display: none; } }')
+    expect(html).toMatch(/@media screen \{\s*\.pg-header/)
     expect(html).toContain('@media print')
   })
 })
@@ -351,9 +351,10 @@ describe('report extras pages (when-to-list + competition)', () => {
     expect(html).toContain('Kenwood, the last 12 months')
     expect(html).toContain('31.5% closed in cash')
     expect(html).toContain('median of 40 photos')
-    expect(html).toContain('seasonality fixture')
-    expect(html).toContain('band fixture')
-    expect(html).toContain('financing fixture')
+    expect(html).toContain('Closed single-family sales in Bend, grouped by close month.')
+    expect(html).toContain('Active and pending listings in Bend in this price band.')
+    expect(html).toContain('Bend sales in the last 12 months that reported financing.')
+    expect(html).not.toMatch(/Supabase|seasonality fixture|band fixture|financing fixture/)
   })
 
   it('absent extras render neither page and no empty headings', () => {
@@ -408,8 +409,9 @@ describe('the subdivision story (print page + immersive scene)', () => {
     expect(html).toContain('A street that sells on consistency')
     expect(html).toContain('as large or larger than 72%')
     expect(html).toContain('$705,000')
-    expect(html).toContain('story fixture')
-    expect(html).toContain('Narrative written by claude-sonnet-4-5')
+    expect(html).toContain('Closed single-family sales in Stone Creek.')
+    expect(html).not.toContain('story fixture')
+    expect(html).not.toContain('claude-sonnet-4-5')
   })
 
   it('no story, no page', () => {

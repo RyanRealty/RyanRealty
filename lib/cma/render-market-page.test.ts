@@ -63,7 +63,7 @@ describe('marketPage', () => {
     expect(page!.body).not.toContain('trend-chart')
   })
 
-  it('cites analytics_mart_market_annual for the city year figure when present', () => {
+  it('prints the city year figure without pipeline table names', () => {
     const page = marketPage({
       subject,
       comps,
@@ -86,10 +86,11 @@ describe('marketPage', () => {
         },
       },
     })
-    expect(page!.body).toContain('analytics_mart_market_annual')
     expect(page!.body).toContain('all property types, 2024')
-    expect(page!.body).toContain('geo_type')
-    expect(page!.body).toContain('bend')
+    expect(page!.body).toContain('2,100')
+    expect(page!.body).not.toContain('analytics_mart_market_annual')
+    expect(page!.body).not.toContain('geo_type')
+    expect(page!.body).not.toMatch(/n\/a/i)
   })
 
   it('omits the year cube when the mart row is missing', () => {

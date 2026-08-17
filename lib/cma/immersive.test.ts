@@ -89,7 +89,7 @@ describe('renderImmersiveCmaHtml', () => {
             recordLow: { price: 498000, address: '20510 Byron', date: '2023-02-01' },
             medianDomRecent: 24, saleToListRecentPct: 98.6, subjectSqftPercentile: 72,
             vintageSpan: { min: 2019, max: 2025 },
-            source: 'story fixture source',
+            source: "Supabase listings, SubdivisionName='Stone Creek' story fixture",
           },
           sections: [{ heading: 'A tight band', body: 'Homes here sell close together.' }],
           notableSales: [{ listNumber: '2', address: '20572 Kira', closePrice: 705000, closeDate: '2025-06-10', sqft: 2526, photoUrl: 'https://cdn.example/kira.jpg', line: 'The record sale.' }],
@@ -104,7 +104,9 @@ describe('renderImmersiveCmaHtml', () => {
     expect(html).toContain('A tight band')
     expect(html).toContain('kira.jpg')
     expect(html).toContain('as large or larger than 72%')
-    expect(html).toContain('story fixture source')
+    expect(html).toContain('Closed single-family sales in Stone Creek.')
+    expect(html).not.toContain('claude-sonnet-4-5')
+    expect(html).not.toContain('story fixture source')
   })
 
   it('no story, no scene; no audit, no failed-listing scene', () => {
