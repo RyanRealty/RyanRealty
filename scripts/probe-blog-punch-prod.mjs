@@ -151,8 +151,27 @@ async function main() {
     await page.close()
   }
   await browser.close()
+  const layoutOk = SLUGS.every((slug) => {
+    const page = report.pages[slug]
+    const a390 = page.layout390
+    const a1280 = page.layout1280
+    if (!a390?.firstChar || !a390.h1 || !a1280?.firstChar || !a1280.h1) return false
+    const gutter390 = a390.firstChar.left >= a390.h1.left - 2
+    const gutter1280 = a1280.firstChar.left >= a1280.h1.left - 2
+    const share390 = a390.share && a390.share.left >= 16 && !a390.share.clipped
+    const share1280 = a1280.share && a1280.share.left >= 60 && !a1280.share.clipped
+    return gutter390 && gutter1280 && share390 && share1280
+  })
+  const mos = report.pages['understanding-months-of-supply']
+  const mosOk = mos.visible390?.has65 === false && mos.visible1280?.has65 === false
+  const navOk =
+    report.pages['retirement-central-oregon'].nav390?.changed === false &&
+    report.pages['retirement-central-oregon'].nav1280?.changed === false
+
+  report.accept = { layoutOk, mosOk, navUnchanged: navOk }
   writeFileSync(`${ART}/blog_punch_probe.json`, JSON.stringify(report, null, 2))
-  console.log(JSON.stringify(report, null, 2))
+  console.log(JSON.stringify(report.accept, null, 2))
+  if (!report.accept.layoutOk || !report.accept.mosOk) process.exit(1)
 }
 
 main().catch((err) => {
