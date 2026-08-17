@@ -413,6 +413,14 @@ html.lenis, html.lenis body{height:auto;}
 .kb-root .region-foot .note{font-size:.74rem;color:var(--cream-70);max-width:46ch;line-height:1.5;}
 .kb-root .towns{background:var(--cream);color:var(--navy);padding-bottom:54px;}
 .kb-root .towns .sec-head{border-color:var(--navy);}
+.kb-root .towns-remainder{
+  margin-top:18px;
+  max-width:46rem;
+  font-size:.82rem;
+  line-height:1.45;
+  color:var(--navy);
+}
+.kb-root .towns-remainder p + p{margin-top:8px;}
 .kb-root .towns-grid{
   display:grid;grid-template-columns:1fr;gap:0;
   border-top:0;

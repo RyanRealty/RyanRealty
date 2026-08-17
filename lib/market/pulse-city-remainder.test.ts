@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { namePulseCityRemainder, pulseCityHrefSlug } from './pulse-city-remainder'
+import {
+  formatPulseCityRemainderPublic,
+  namePulseCityRemainder,
+  pulseCityHrefSlug,
+} from './pulse-city-remainder'
 
 const HUB = [
   'Bend',
@@ -86,6 +90,32 @@ describe('namePulseCityRemainder', () => {
     expect(named.omitted).toEqual([])
     expect(named.remainder).toBe(0)
     expect(named.facts).toEqual([])
+  })
+})
+
+describe('formatPulseCityRemainderPublic', () => {
+  it('names omitted cities with an active unit and the TIGER remainder', () => {
+    const named = namePulseCityRemainder({
+      regionActive: 1840,
+      displayedLabels: HUB,
+      allCities: CITIES,
+    })
+    const lines = formatPulseCityRemainderPublic(named)
+    expect(lines[0]).toContain('Also in the regional count:')
+    expect(lines[0]).toContain('Madras 50 active')
+    expect(lines[0]).toContain('Powell Butte 63 active')
+    expect(lines[0]).not.toMatch(/Tumalo/)
+    expect(lines.join(' ')).toContain('649 more homes')
+    expect(lines.join(' ')).toContain('city boundary')
+  })
+
+  it('is quiet when the doors already cover every city with inventory', () => {
+    const named = namePulseCityRemainder({
+      regionActive: 1025,
+      displayedLabels: HUB,
+      allCities: CITIES.filter((c) => HUB.includes(c.label as (typeof HUB)[number])),
+    })
+    expect(formatPulseCityRemainderPublic(named)).toEqual([])
   })
 })
 
