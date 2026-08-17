@@ -1,12 +1,17 @@
 /**
  * GET /admin/cmas/[slug]/view — broker review of any status, including draft.
  * Not a public send. Registration gate is skipped.
+ *
+ * This is a route handler, not page.tsx: the document is a full HTML page and
+ * must not render inside ConsoleShell. next/link client-nav 404s here (no
+ * page segment) — Review CMA and Open report must be real <a target="_blank">.
  */
 
 import { NextResponse } from 'next/server'
 import { getAdminContext } from '@/lib/auth/guards'
 import { serveCmaDocument, CMA_DOC_HEADERS } from '@/lib/cma/serve-document'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export async function GET(

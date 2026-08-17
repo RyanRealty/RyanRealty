@@ -111,6 +111,10 @@ export default defineConfig({
       // Route-handler tests (e.g. the Twilio conversations-events webhook
       // regression locks) live next to their route.ts.
       'app/api/**/*.test.ts',
+      // CMA public + broker-view handlers, and the admin entity Review CMA control.
+      'app/cma/**/*.test.ts',
+      'app/admin/**/cmas/**/*.test.ts',
+      'app/admin/**/cmas/**/*.test.tsx',
       // LP form/filter logic tests colocate with their actions.
       'app/lp/**/*.test.ts',
       // Server-action contract tests (authz + refusal locks) colocate with the

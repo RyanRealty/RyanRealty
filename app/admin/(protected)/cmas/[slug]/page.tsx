@@ -56,7 +56,8 @@ import { CmaPublishControl } from '@/app/admin/(protected)/cmas/_components/CmaP
 import { cmaPublishConcerns, cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
-import { brokerCmaViewHref } from '@/lib/cma/draft-access'
+import { brokerCmaViewHref, canOpenCmaDocument } from '@/lib/cma/draft-access'
+import { CmaReviewDocumentButton } from '@/app/admin/(protected)/cmas/_components/CmaReviewDocumentButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -102,6 +103,7 @@ export default async function AdminCmaReviewPage({
   const hasStoredHtml = Boolean(row.html_content)
   const isLegacyFile = !hasStoredHtml && String(row.html_path ?? '').startsWith('public/cmas/')
   const hasDocument = hasStoredHtml || isLegacyFile
+  const canOpenDocument = canOpenCmaDocument(row)
   const buildError = (row.build_error as string | null) ?? null
   const summary = (row.build_summary as Record<string, unknown> | null) ?? null
   const marketSummary = (summary?.market as Record<string, unknown> | null) ?? null
@@ -124,6 +126,12 @@ export default async function AdminCmaReviewPage({
 
   return (
     <div className="av2-scope" style={{ maxWidth: 960, margin: '0 auto', padding: 16 }}>
+      {canOpenDocument ? (
+        <div style={{ margin: '0 0 16px' }}>
+          <CmaReviewDocumentButton slug={safeSlug} />
+        </div>
+      ) : null}
+
       <nav style={{ margin: '0 0 10px', fontSize: 'var(--a-text-xs)' }}>
         <Link href="/admin/cmas" style={{ color: 'var(--a-accent)', textDecoration: 'none' }}>
           CMAs
@@ -144,7 +152,7 @@ export default async function AdminCmaReviewPage({
 
       {hasDocument ? (
         <p style={{ margin: '12px 0 0' }}>
-          <Link
+          <a
             href={`/api/cma/${safeSlug}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
@@ -152,7 +160,7 @@ export default async function AdminCmaReviewPage({
             style={{ textDecoration: 'none' }}
           >
             Open PDF
-          </Link>
+          </a>
         </p>
       ) : null}
 

@@ -34,6 +34,7 @@
 import Link from 'next/link'
 import { Loader2, MoreHorizontal } from 'lucide-react'
 import { Button, Menu, type AdminMenuItem } from '@/components/admin/v2'
+import { brokerCmaViewHref } from '@/lib/cma/draft-access'
 import type { CmaWorklistRow } from './types'
 import { CmaStatusPill } from './CmaStatusPill.client'
 import { formatDate, formatPrice } from './format'
@@ -59,7 +60,7 @@ export function CmaCard({
   const menuItems: AdminMenuItem[] = [
     { label: 'Review', href: `/admin/cmas/${row.slug}` },
     ...(row.hasDocument
-      ? [{ label: 'Open report', href: `/admin/cmas/${row.slug}/view`, target: '_blank' as const }]
+      ? [{ label: 'Open report', href: brokerCmaViewHref(row.slug), target: '_blank' as const }]
       : []),
     ...(row.status === 'delivered' || row.status === 'archived'
       ? [{ label: 'Send again', onSelect: () => onSend(row.slug) }]
@@ -131,15 +132,15 @@ export function CmaCard({
             )}
           </Button>
         ) : row.hasDocument ? (
-          <Link
-            href={`/admin/cmas/${row.slug}/view`}
+          <a
+            href={brokerCmaViewHref(row.slug)}
             target="_blank"
             rel="noreferrer"
             className="av2-btn av2-btn--quiet av2-btn--touch w-full"
             style={{ textDecoration: 'none' }}
           >
             Open
-          </Link>
+          </a>
         ) : (
           <Link
             href={`/admin/cmas/${row.slug}`}
