@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — homepage regional grain + remainder slice
+# Current — 2026-08-17 (cursor-loop-sentinel) — search Homes door + 390 sort slice
+
+**Surface:** Cursor cloud `bc-16d00c5f` (`cursor/loop-sentinel-2026-08-17t20-40-4ced`). **Time:** 2026-08-17 ~21:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:search` (8 of 404). Claimed parent only. Product **`d12437028`** landed on **`main`**. Vercel Production **READY** (`7eWxd8WGZ9tguq5rDggg2QGztuSV`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (396 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 search lines) at 390+1280: chips 0x0 **rejected** (For sale/Beds/Baths 79×44; Price probe matched Price drops). Homes + See homes Bend inject **reproduced**. Watching bar onto `/join` **rejected** (clean visit false). All-filters no panel / missing alerts / left-offset / tap-noop (4 lines) **rejected** (sheet 390×844, Owner financing unclipped; Save is the alert). Count/sort clipped **reproduced** (390 sort sat on the chip row).
+- Class: Buy/Homes doors use `REGIONAL_SEARCH` / `REGIONAL_SEARCH_HREF` (`/homes-for-sale?view=list`). `.search-app-frame` drops the leftover 64px offset; filter dock stays in flow. Gate `ci:publish-regional-search-href` 12/12.
+- Prod probe after READY `d12437028`: Homes href + 1280 click land on **`/homes-for-sale?view=list`**, **3,380 homes found**, no Showing Bend only. 390 map: chips y=198, **Newest y=255**, **1,279 homes** visible above the first card. After shots `/opt/cursor/artifacts/after_homes_1280_regional_list.png`, `after_search_390_sort_count_visible.png`, `after_search_list_390_regional.png`.
+- Punch dispositions appended (parent not completed): 2 fixed + 6 rejected. Leftover search + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-105/R-152/R-101, SITE_PAGE_STANDARD §2, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — homepage regional grain + remainder slice
 
 **Surface:** Cursor cloud `bc-191234c4` (`cursor/loop-chain-2026-08-17t17-08-2150`). **Time:** 2026-08-17 ~17:55 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:site` (8 of 412). Claimed parent only. Product **`d400501f5`** landed on **`main`**. Vercel Production **READY** (`D2VDAjEH2M5nExLQB94EjA6CtiZL`, `npm run deploy:verify` exit 0). Draft PR **#88** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (404 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
