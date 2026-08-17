@@ -6,7 +6,7 @@
 
 import { dec, escapeHtml, usd } from '@/lib/cma/render-blocks'
 import { whyThisListPrice } from '@/lib/cma/client-facing'
-import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
+import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
@@ -30,7 +30,6 @@ export function expectedSale(p: CmaPricing): number {
 
 export function coverValueBlockHtml(a: CoverArgs): string {
   const p = a.pricing
-  const conf = displayConfidence(p)
   const range = pricingRangeDisplay(p)
   const sale = expectedSale(p)
   const hasClose = p.predictedClose != null && p.predictedClose > 0
@@ -41,16 +40,14 @@ export function coverValueBlockHtml(a: CoverArgs): string {
         <div class="vb-label">${hasClose ? 'Expected sale' : 'Recommended list price'}</div>
         <p class="vb-price">${usd(sale)}</p>
       </div>
-      <div class="vb-pill">${esc(conf)} confidence</div>
     </div>
-    <div class="vb-range">List this home ${usd(p.conservative)} to ${usd(p.highEnd)}. Recommended list ${usd(p.recommended)}.</div>
+    <div class="vb-range">${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}. List this home ${usd(p.conservative)} to ${usd(p.highEnd)}. Recommended list ${usd(p.recommended)}.</div>
     ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
-    <div class="vb-detail">${esc(whyThisListPrice(a).coverSentence)} ${a.comps.length} closed MLS sales, each adjusted for when it sold and how its size compares to yours. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}, not the ZIP.` : ''} ${esc(story.body)}</div>`
+    <div class="vb-detail">${esc(whyThisListPrice(a).coverSentence)} ${a.comps.length} closed MLS sales, each adjusted for when it sold and how its size compares to yours. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}.` : ''} ${esc(story.body)}</div>`
 }
 
 export function immersiveAnswerHtml(a: CoverArgs): string {
   const p = a.pricing
-  const conf = displayConfidence(p)
   const range = pricingRangeDisplay(p)
   const sale = expectedSale(p)
   const hasClose = p.predictedClose != null && p.predictedClose > 0
@@ -60,7 +57,6 @@ export function immersiveAnswerHtml(a: CoverArgs): string {
   return `
     <div class="ans-l r">${hasClose ? 'Expected sale' : 'Recommended list price'}</div>
     <div class="ans-n r" data-count>${usd(sale)}</div>
-    <div class="r"><span class="conf">Confidence: ${esc(conf)}</span></div>
     <div class="range r">
       <div class="range-track"><div class="range-fill" style="--w:100%"></div></div>
       <div class="range-marks">

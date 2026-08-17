@@ -75,6 +75,18 @@ img{max-width:100%;display:block;border-radius:0}
 .comp-nv{font-family:'Amboqia Boriango',Georgia,serif;font-size:26px;line-height:1}
 .comp-facts{font-size:14px;opacity:.7;font-variant-numeric:tabular-nums;margin-top:4px}
 .comp-why{font-size:15px;line-height:1.45;margin-top:12px;max-width:none}
+.rival-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:8px}
+.rival-card{background:#fff;border:1px solid var(--ink12);overflow:hidden}
+.sc-navy .rival-card{background:rgba(250,248,244,.06);border-color:rgba(250,248,244,.14)}
+.rival-ph{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.rival-ph.is-empty{min-height:96px;background:var(--navy)}
+.rival-body{padding:14px 16px 16px}
+.rival-addr{font-size:16px;font-weight:600}
+.rival-ask{font-family:'Amboqia Boriango',Georgia,serif;font-size:26px;margin-top:6px;font-variant-numeric:tabular-nums}
+.rival-meta{font-size:13px;opacity:.7;margin-top:4px}
+.pin-map-wrap{margin:12px 0 20px}
+.pin-map{width:100%;height:auto;display:block;border:1px solid var(--ink12)}
+.comp-row.is-on,.pin-sale.is-on,.pin-subject.is-on{outline:3px solid var(--navy)}
 .szn{margin:16px 0 8px}
 .szn svg{width:100%;height:auto;display:block}
 .srcgrid{display:grid;gap:10px;margin-top:8px}

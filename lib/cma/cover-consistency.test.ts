@@ -135,19 +135,18 @@ function byronArgs(pricingOverrides: Partial<CmaPricing> = {}): RenderCmaArgs {
   }
 }
 
-describe('print CMA cover — confidence never contradicts needsReview', () => {
-  it('never prints "High confidence" when the pricing engine flagged needsReview (the live byron defect)', () => {
-    const { html } = renderCmaHtml(byronArgs())
-    expect(html).not.toContain('High confidence')
-    expect(html).toContain('Moderate confidence')
+describe('print CMA cover — no confidence pills, community not ZIP', () => {
+  it('never prints a confidence pill, even when the engine is High or needsReview', () => {
+    const flagged = renderCmaHtml(byronArgs()).html
+    const clean = renderCmaHtml(byronArgs({ needsReview: false, reviewReason: null })).html
+    for (const html of [flagged, clean]) {
+      expect(html).not.toContain('High confidence')
+      expect(html).not.toContain('Moderate confidence')
+      expect(html).not.toMatch(/Confidence:/)
+    }
   })
 
-  it('still prints High confidence when needsReview is false', () => {
-    const { html } = renderCmaHtml(byronArgs({ needsReview: false, reviewReason: null }))
-    expect(html).toContain('High confidence')
-  })
-
-  it('says closed MLS sales and names the community, not the ZIP', () => {
+  it('says closed MLS sales and names the community', () => {
     const { html } = renderCmaHtml({
       ...byronArgs({ needsReview: false, reviewReason: null }),
       market: {
@@ -173,12 +172,8 @@ describe('print CMA cover — confidence never contradicts needsReview', () => {
     })
     expect(html).toContain('closed MLS sales')
     expect(html).toContain('Automated estimates are not used.')
-    expect(html).toContain('The market read is Caldera Springs, not the ZIP.')
-  })
-
-  it('the pricing page confidence line also never shows High under needsReview', () => {
-    const { html } = renderCmaHtml(byronArgs())
-    expect(html).not.toMatch(/Confidence: <strong>High<\/strong>/)
+    expect(html).toContain('The market read is Caldera Springs.')
+    expect(html).not.toMatch(/not the ZIP/i)
   })
 })
 
@@ -207,10 +202,10 @@ describe('print CMA cover — the recommendation never sits outside its own stat
 })
 
 describe('immersive CMA — same two contracts, same source data', () => {
-  it('degrades confidence and flags the out-of-range recommendation identically to the print doc', () => {
+  it('flags the out-of-range recommendation identically to the print doc and prints no confidence pill', () => {
     const html = renderImmersiveCmaHtml({ ...byronArgs(), broker }, 'https://ryan-realty.com')
     expect(html).not.toContain('Confidence: High')
-    expect(html).toContain('Confidence: Moderate')
+    expect(html).not.toContain('Confidence: Moderate')
     expect(html).toMatch(/capped below this range/)
     expect(html).toContain('The comp-supported range is $620,000 to $635,000')
   })

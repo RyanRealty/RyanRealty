@@ -33,16 +33,15 @@ function assertCBar(body: string, address: string | null) {
 }
 
 describe('inbound valuation first packet', () => {
-  it('names THIS address, markets this home, and cites verified numbers only', () => {
+  it('names THIS address, the number, and cites verified figures only', () => {
     const copy = composeInboundValuationCopy(FULL)
     assertCBar(copy.bodyText, '1842 NW Foo St')
     assertCBar(copy.subject, '1842 NW Foo St')
     assertCBar(copy.previewText, '1842 NW Foo St')
     expect(copy.subject).toBe('Your report on 1842 NW Foo St')
     expect(copy.mastheadLine).toBe('THIS HOME')
-    expect(copy.bodyText).toContain('listing video')
-    expect(copy.bodyText).toContain('flyers')
-    expect(copy.bodyText).toContain('photo set')
+    expect(copy.bodyText).toContain('The number for 1842 NW Foo St')
+    expect(copy.bodyText).not.toMatch(/how we would market|listing video|flyers/i)
     expect(copy.bodyText).toContain('$820,000')
     expect(copy.bodyText).toContain('$910,000')
     expect(copy.bodyText).toContain('$865,000')
@@ -58,7 +57,7 @@ describe('inbound valuation first packet', () => {
     assertCBar(copy.bodyText, '1842 NW Foo St')
     expect(copy.numbers).toBeNull()
     expect(copy.bodyText).not.toMatch(/\$\d/)
-    expect(copy.bodyText).toContain('listing video')
+    expect(copy.bodyText).toContain('The number for 1842 NW Foo St')
   })
 
   it('does not invent an address', () => {
@@ -82,16 +81,17 @@ describe('this-home plan fallback', () => {
 })
 
 describe('cover + immersive openers', () => {
-  it('name THIS home and the list-kit plan, never a worth-question', () => {
+  it('name THIS home and the price opinion, never a worth-question', () => {
     const cover = composeInboundCoverLine('1842 NW Foo St')
     const kick = inboundImmersiveHeroKick('1842 NW Foo St', '2026-08-13T18:00:00.000Z')
     const title = inboundImmersiveTitle('1842 NW Foo St')
     for (const line of [cover, kick, title]) {
       assertCBar(line, '1842 NW Foo St')
       expect(line).not.toMatch(/what your home is worth/i)
+      expect(line).not.toMatch(/how we would market/i)
     }
-    expect(cover).toContain('listing video')
-    expect(kick).toBe('How we would market 1842 NW Foo St · 2026-08-13')
-    expect(title).toContain('How we would market this home')
+    expect(cover).toBe('A price opinion for 1842 NW Foo St.')
+    expect(kick).toBe('Price opinion · 1842 NW Foo St · 2026-08-13')
+    expect(title).toContain('Price opinion')
   })
 })

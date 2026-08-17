@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeMarketArea, marketAreaPriceBand, similarBedRange } from './market-status'
 import { listingTrendSvg, medianCloseLineSvg } from './market-charts'
-import { immersiveMarketChapters, renderStatusGridHtml } from './market-area-chapters'
+import { immersiveWiderMarketChapters, renderStatusGridHtml } from './market-area-chapters'
 import { renderImmersiveCmaHtml } from './immersive'
 import type { RenderCmaArgs } from './render'
 import type { CmaAdjustedComp, CmaBroker, CmaPricing, CmaSubject } from './types'
@@ -329,18 +329,18 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
 }
 
 describe('chapter order', () => {
-  it('puts status, 90-day, inventory, photos, then the comps strip on the web view', () => {
+  it('puts why and the three sales before the wider-market charts', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    const status = html.indexOf('id="status-grid"')
+    const why = html.indexOf('id="why-this-price"')
+    const evidence = html.indexOf('id="evidence"')
     const sold = html.indexOf('id="sold-90"')
     const inv = html.indexOf('id="inventory"')
-    const photos = html.indexOf('id="photo-set"')
-    const evidence = html.indexOf('id="evidence"')
-    expect(status).toBeGreaterThan(0)
-    expect(sold).toBeGreaterThan(status)
+    expect(why).toBeGreaterThan(0)
+    expect(evidence).toBeGreaterThan(why)
+    expect(sold).toBeGreaterThan(evidence)
     expect(inv).toBeGreaterThan(sold)
-    expect(photos).toBeGreaterThan(inv)
-    expect(evidence).toBeGreaterThan(photos)
+    expect(html).not.toContain('id="status-grid"')
+    expect(html).not.toContain('id="photo-set"')
     expect(html).toContain('Same community and living area')
     expect(html).not.toMatch(/\bN\/A\b/)
     expect(html).not.toContain('2,420,000')
@@ -348,23 +348,23 @@ describe('chapter order', () => {
   })
 
   it('omits empty chapter HTML when extras are missing', () => {
-    const html = immersiveMarketChapters(args({ extras: null }))
+    const html = immersiveWiderMarketChapters(args({ extras: null }))
     expect(html).not.toContain('id="status-grid"')
     expect(html).toContain('id="inventory"')
-    expect(html).toContain('id="photo-set"')
+    expect(html).not.toContain('id="photo-set"')
   })
 
-  it('leads the market chapters with a featured sale board, a sold hero, and a supply punch', () => {
-    const html = immersiveMarketChapters(args())
-    expect(html).toContain('status-hero')
-    expect(html).toContain('status-tiles')
+  it('leads the wider market with a sold hero and a supply punch, not a status dump', () => {
+    const html = immersiveWiderMarketChapters(args())
+    expect(html).not.toContain('status-hero')
+    expect(html).not.toContain('status-tiles')
     expect(html).not.toContain('compare-board')
     expect(html).toContain('sold-hero')
     expect(html).toContain('id="sold-90"')
     expect(html).toContain('sc-navy')
     expect(html).toMatch(/Seller(&#39;|')s market/)
     expect(html).toContain('inv-hero')
-    expect(html).toContain('photo-lead')
+    expect(html).not.toContain('photo-lead')
     expect(html).not.toMatch(/>0 days</)
     expect(html).not.toMatch(/bedroom sales in \d+ to \d+ bedroom homes/)
   })

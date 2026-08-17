@@ -1,15 +1,14 @@
 /**
  * Inbound valuation first packet (Value my home → CMA send + report open).
  *
- * Same C bar as expired/FSBO first-touch: THIS home, and how we would market
- * THIS home. Compose only. Manual send. No auto-send. No invented numbers.
+ * Same C bar as expired/FSBO first-touch: THIS home, and the number.
+ * Compose only. Manual send. No auto-send. No invented numbers.
  * No worth-question CTA. No prior-agent blame.
  *
- * Plan lines come from buildThisHomeMarketingPlan (lib/cma/expired-audit.ts).
- * Do not duplicate or weaken that helper.
+ * resolveThisHomePlan still exists for admin/data. It does not render here.
  */
 
-import { composeThisHomeMarketClause, formatFirstTouchUsd } from '@/lib/crm/first-touch-copy'
+import { formatFirstTouchUsd } from '@/lib/crm/first-touch-copy'
 import { buildServicesList } from '@/lib/cma/expired-audit'
 
 export type InboundPacketFacts = {
@@ -61,22 +60,23 @@ export function inboundValuationMasthead(): string {
 
 export function inboundValuationPreview(address: string | null): string {
   const named = trim(address) ?? 'this home'
-  return `${named}: the number and how we would market this house.`
+  return `${named}: the number, then the sales that set it.`
 }
 
 export function inboundImmersiveHeroKick(streetAddress: string | null, generatedAtIso: string): string {
   const named = trim(streetAddress) ?? 'this home'
   const day = generatedAtIso.slice(0, 10)
-  return `How we would market ${named} · ${day}`
+  return `Price opinion · ${named} · ${day}`
 }
 
 export function inboundImmersiveTitle(streetAddress: string | null): string {
   const named = trim(streetAddress) ?? 'This home'
-  return `${named} · How we would market this home · Ryan Realty`
+  return `${named} · Price opinion · Ryan Realty`
 }
 
 export function composeInboundCoverLine(streetAddress: string | null): string {
-  return composeThisHomeMarketClause(streetAddress)
+  const named = trim(streetAddress)
+  return named ? `A price opinion for ${named}.` : 'A price opinion for this home.'
 }
 
 export function composeInboundNumbersClause(facts: InboundPacketFacts): string | null {
@@ -91,7 +91,8 @@ export function composeInboundNumbersClause(facts: InboundPacketFacts): string |
 export function composeInboundValuationCopy(facts: InboundPacketFacts): InboundValuationCopy {
   const first = trim(facts.firstName) ?? 'there'
   const greeting = `Hi ${first},`
-  const plan = composeThisHomeMarketClause(facts.address)
+  const named = trim(facts.address) ?? 'this home'
+  const plan = `The number for ${named}, and the sales that set it.`
   const numbers = composeInboundNumbersClause(facts)
   const close = 'The report is attached as a PDF. You can also read it online.'
   const bodyText = [greeting, '', plan, numbers, '', close]

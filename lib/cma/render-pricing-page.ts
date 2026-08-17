@@ -6,7 +6,7 @@
 import { dec, escapeHtml, int, usd, usdSigned } from '@/lib/cma/render-blocks'
 import { clientFacingNotes, whyThisListPrice } from '@/lib/cma/client-facing'
 import { expectedSale } from '@/lib/cma/cover-value'
-import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
+import { pricingRangeDisplay } from '@/lib/cma/pricing'
 import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
@@ -66,7 +66,7 @@ function howWePriced(n: number, market: CmaMarketContext | null, searchBody: str
     'In the same neighborhood we drop a subdivision whose typical dollar per foot is more than 15 percent off yours. Across the city that cut is 30 percent.',
   ]
   if (market?.geoLabel) {
-    bits.push(`The market read is ${market.geoLabel}, not the ZIP.`)
+    bits.push(`The market read is ${market.geoLabel}.`)
   }
   const stl = saleToListPct(market?.saleToListRatio ?? null)
   if (stl && market) {
@@ -133,6 +133,6 @@ export function pricingPage(input: {
   }
   <p>The similarity-weighted average of every fully adjusted sale lands at ${usd(p.method3)}. That check carries the market-conditions correction, so it anchors the recommendation.</p>
   ${notes.length > 0 ? `<ul class="note-list">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}
-  <p class="small">Confidence: <strong>${esc(displayConfidence(p))}</strong>. ${esc(p.confidenceReason)}</p>`,
+`,
   }
 }

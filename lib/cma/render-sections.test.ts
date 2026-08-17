@@ -246,8 +246,8 @@ describe('use-of-property and pricing pages in the assembled document', () => {
         resources: [],
       },
     })
-    expect(html).toContain('What this property can do')
-    expect(html).toContain('class="zm-code">R-2')
+    expect(html).not.toContain('What this property can do')
+    expect(html).not.toContain('class="zm-code">R-2')
     expect(html).toContain('How this home is priced')
     expect(html).toContain('How we priced this')
     expect(html).not.toContain('What You Can Do With This Property')

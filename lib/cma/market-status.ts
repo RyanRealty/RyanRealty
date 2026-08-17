@@ -217,7 +217,7 @@ export function computeMarketArea(input: {
   return {
     grain,
     label,
-    source: `Oregon Data Share MLS. ${label}, priced $${band.lo.toLocaleString('en-US')} to $${band.hi.toLocaleString('en-US')}, last 12 months. Not the whole ZIP.`,
+    source: `Oregon Data Share MLS. ${label}, priced $${band.lo.toLocaleString('en-US')} to $${band.hi.toLocaleString('en-US')}, last 12 months.`,
     priceLo: band.lo,
     priceHi: band.hi,
     selected: selectedBucket(input.comps),

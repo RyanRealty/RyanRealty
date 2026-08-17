@@ -48,7 +48,7 @@ export function renderCompStripHtml(comps: readonly CmaAdjustedComp[]): string {
         ? `<img class="comp-ph" src="${esc(photo)}" alt="${esc(c.address)}" />`
         : `<div class="comp-ph is-empty" aria-hidden="true">${pin}</div>`
       return `
-    <article class="comp-row">
+    <article class="comp-row" data-comp="${pin}">
       <div class="comp-media">
         ${img}
         <span class="comp-pin">${pin}</span>

@@ -132,24 +132,15 @@ function args(subject: Partial<CmaSubject>, extra?: Partial<RenderCmaArgs>): Ren
 }
 
 describe('what we like about this home', () => {
-  it('renders subject facts and nothing else', () => {
+  it('does not render a marketing likes section on the seller spine', () => {
     const { html } = renderCmaHtml(
       args({ yearBuilt: 2024, beds: 5, sqft: 3200, lotAcres: 1.2, viewDescription: 'Mountain(s), Pond' }),
     )
-    expect(html).toContain('What This Home Has')
-    expect(html).toContain('Built in 2024')
-    expect(html).toContain('5 bedrooms')
-    expect(html).toContain('3,200 square feet of living space')
-    expect(html).toContain('1.20 acres of ground')
-    expect(html).toContain('The view: Mountain(s), Pond')
-  })
-
-  it('skips the section when fewer than two facts earn a mention', () => {
-    const { html } = renderCmaHtml(args({ yearBuilt: 2024 }))
     expect(html).not.toContain('What This Home Has')
+    expect(html).not.toContain('How we would market')
   })
 
-  it('never pulls development or rental highlight prose into the warm read', () => {
+  it('never pulls development or rental highlight prose into the document', () => {
     const { html } = renderCmaHtml(
       args(
         { yearBuilt: 2024, beds: 5 },
@@ -164,8 +155,8 @@ describe('what we like about this home', () => {
         },
       ),
     )
-    const likeSection = html.split('What This Home Has')[1]?.split('<h2')[0] ?? ''
-    expect(likeSection).not.toContain('RENTAL_HIGHLIGHT_SENTINEL')
+    expect(html).not.toContain('RENTAL_HIGHLIGHT_SENTINEL')
+    expect(html).not.toContain('What This Home Has')
   })
 })
 
@@ -194,22 +185,22 @@ describe('the single-doc fold', () => {
     expect(html).not.toContain('NET_SHEET_SENTINEL')
   })
 
-  it('names THIS home on the cover and falls back to the this-home plan', () => {
+  it('names THIS home on the cover as a price opinion', () => {
     const { html } = renderCmaHtml(args({}))
-    expect(html).toContain('We built a market analysis for 123 Test Way')
-    expect(html).toContain('listing video')
-    expect(html).toContain('How we would market 123 Test Way')
+    expect(html).toContain('A price opinion for 123 Test Way.')
+    expect(html).not.toContain('How we would market')
+    expect(html).not.toContain('listing video')
     expect(html).not.toContain('What Every Listing Gets')
     expect(html).not.toMatch(/what your home is worth/i)
     const coverAt = html.indexOf('cover-title')
-    const planAt = html.indexOf('How we would market 123 Test Way')
-    const compsAt = html.indexOf('Where the comps sit')
+    const whyAt = html.indexOf('Why $')
+    const salesAt = html.indexOf('The three sales that set the number')
     expect(coverAt).toBeGreaterThan(0)
-    expect(planAt).toBeGreaterThan(coverAt)
-    expect(compsAt === -1 || planAt < compsAt).toBe(true)
+    expect(whyAt).toBeGreaterThan(coverAt)
+    expect(salesAt).toBeGreaterThan(whyAt)
   })
 
-  it('renders the this-home plan as the marketing hero when provided', () => {
+  it('does not render a this-home marketing plan when one is provided on the row', () => {
     const { html } = renderCmaHtml(
       args(
         {},
@@ -223,9 +214,9 @@ describe('the single-doc fold', () => {
         },
       ),
     )
-    expect(html).toContain('How we would market 123 Test Way')
-    expect(html).toContain('listing video')
-    expect(html).toContain('Also on this listing')
+    expect(html).not.toContain('How we would market 123 Test Way')
+    expect(html).not.toContain('listing video')
+    expect(html).not.toContain('Also on this listing')
     expect(html).not.toContain('What Every Listing Gets')
   })
 
@@ -339,36 +330,28 @@ describe('report extras pages (when-to-list + competition)', () => {
     },
   }
 
-  it('renders both pages with every block and its source trace', () => {
+  it('names band rivals and drops seasonality, cash mix, and photo-bench pages', () => {
     const { html } = renderCmaHtml(args({}, { extras }))
-    expect(html).toContain('When to List')
-    expect(html).toContain('480')
-    expect(html).toContain('Median days to pending by close month')
-    expect(html).toContain('May (9 days) and April')
-    expect(html).toContain('Your Competition')
-    expect(html).toContain('14 homes are for sale')
-    expect(html).toContain('$749,000')
-    expect(html).toContain('Kenwood, the last 12 months')
-    expect(html).toContain('31.5% closed in cash')
-    expect(html).toContain('median of 40 photos')
-    expect(html).toContain('Closed single-family sales in Bend, grouped by close month.')
-    expect(html).toContain('Active and pending listings in Bend in this price band.')
-    expect(html).toContain('Bend sales in the last 12 months that reported financing.')
+    expect(html).not.toContain('When to List')
+    expect(html).toContain('Who you are competing with at this price')
+    expect(html).toContain('14 homes for sale')
+    expect(html).not.toContain('31.5% closed in cash')
+    expect(html).not.toContain('median of 40 photos')
     expect(html).not.toMatch(/Supabase|seasonality fixture|band fixture|financing fixture/)
   })
 
-  it('absent extras render neither page and no empty headings', () => {
+  it('absent extras render neither marketing extras nor empty competition', () => {
     const { html } = renderCmaHtml(args({}))
     expect(html).not.toContain('When to List')
     expect(html).not.toContain('Your Competition')
+    expect(html).not.toContain('Who you are competing with at this price')
   })
 
-  it('a lone financing block still gets the competition page, without the others', () => {
+  it('a lone financing block does not invent a competition chapter', () => {
     const { html } = renderCmaHtml(args({}, { extras: { ...extras, seasonality: null, band: null, subdivisionPulse: null, photoBench: null } }))
     expect(html).not.toContain('When to List')
-    expect(html).toContain('Your Competition')
-    expect(html).toContain('Who is buying here')
-    expect(html).not.toContain('Your price band, live')
+    expect(html).not.toContain('Your Competition')
+    expect(html).not.toContain('Who is buying here')
     expect(html).not.toContain('Presentation bench')
   })
 })
@@ -404,18 +387,17 @@ describe('the subdivision story (print page + immersive scene)', () => {
 
   it('renders the story page with the year table, prose, and source', () => {
     const { html } = renderCmaHtml(args({}, { subdivisionStory: story }))
-    expect(html).toContain('The Story of Stone Creek')
+    expect(html).toContain('This subdivision, Stone Creek')
     expect(html).toContain('<td>2024</td><td>15</td><td>$590,000</td>')
     expect(html).toContain('A street that sells on consistency')
     expect(html).toContain('as large or larger than 72%')
     expect(html).toContain('$705,000')
-    expect(html).toContain('Closed single-family sales in Stone Creek.')
     expect(html).not.toContain('story fixture')
     expect(html).not.toContain('claude-sonnet-4-5')
   })
 
   it('no story, no page', () => {
     const { html } = renderCmaHtml(args({}))
-    expect(html).not.toContain('The Story of')
+    expect(html).not.toContain('This subdivision,')
   })
 })
