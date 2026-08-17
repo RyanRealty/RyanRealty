@@ -1,19 +1,28 @@
 {
   "versionGap": "G32",
   "requirement": "R-213",
-  "recordedAt": "2026-08-16T16:10:00.000Z",
+  "recordedAt": "2026-08-17T06:40:00.000Z",
   "docs": "https://docs.x.ai/overview",
+  "docsLoaded": [
+    "https://docs.x.ai/overview",
+    "https://docs.x.ai/developers/models",
+    "https://docs.x.ai/developers/model-capabilities/imagine",
+    "https://docs.x.ai/developers/model-capabilities/images/generation",
+    "https://docs.x.ai/developers/model-capabilities/audio/text-to-speech",
+    "https://docs.x.ai/developers/model-capabilities/audio/speech-to-text",
+    "https://docs.x.ai/developers/model-capabilities/audio/custom-voices"
+  ],
   "brief": "docs/plans/ENTERPRISE_MAP/xai-stack.md",
   "auth": "XAI_API_KEY → https://api.x.ai/v1",
   "chokepoint": {
     "image": "lib/grok-image.ts",
     "video": "lib/grok-video.ts",
     "text": "lib/grok-text.ts",
-    "voice": "lib/grok-voice.ts (add in this node)",
+    "voice": "lib/grok-voice.ts",
     "produce": "lib/social/imagine-produce.ts"
   },
-  "complete": false,
-  "note": "cancel-now rows are safe to cancel today. cancel-after-cutover rows still have a live code path — cancel only after G32 flips that path to xAI.",
+  "complete": true,
+  "note": "cancel-now rows are safe to cancel today. cancel-after-cutover rows still have a live code path — cancel only after that path calls lib/grok-*.ts only. No public post and no outbound in this evidence.",
   "cancelNow": [
     {
       "vendor": "fal.ai",
@@ -21,7 +30,7 @@
       "env": ["FAL_KEY"],
       "int": "INT-032",
       "paths": ["social_media_skills/content/automated-content-pipeline.md (docs only)"],
-      "why": "D10 already parked the zoo. No required live generate path. G13 probe treated FAL as optional.",
+      "why": "D10 already parked the zoo. No required live generate path. G13 probe treated FAL as optional. Gate ci:tool-discipline refuses new fal generate URLs.",
       "xaiReplacement": "Imagine Video 1.5 + Imagine Images",
       "cancelWhere": "https://fal.ai/dashboard/billing — cancel plan / revoke key"
     },
@@ -30,8 +39,8 @@
       "product": "Stock-avatar talking-head video",
       "env": ["SYNTHESIA_API_KEY", "SYNTHESIA_AVATAR_ID"],
       "int": "INT-032",
-      "paths": ["app/actions/synthesia.ts", "app/components/admin/broker/BrokerVideoStudio.tsx"],
-      "why": "D10: Imagine is the camera. Avatar studio is residue. One historical video on the account (G13). No cron depends on it.",
+      "paths": ["app/actions/synthesia.ts (refused)", "app/components/admin/broker/BrokerVideoStudio.tsx (upload remains)"],
+      "why": "createSynthesiaVideo returns refused. checkSynthesiaConfigured is false. Upload intro clip stays. No cron depends on it. Cancel the subscription today.",
       "xaiReplacement": "Imagine Video 1.5 (native audio) or TTS + Remotion",
       "cancelWhere": "https://www.synthesia.io — account / billing / cancel subscription"
     }
@@ -39,16 +48,15 @@
   "cancelAfterCutover": [
     {
       "vendor": "ElevenLabs",
-      "product": "Victoria TTS + forced-alignment + call STT (scribe)",
+      "product": "Victoria TTS + forced-alignment (legacy VO producers)",
       "env": ["ELEVENLABS_API_KEY", "ELEVENLABS_VOICE_ID", "ELEVENLABS_VOICE_ID_VICTORIA", "ELEVENLABS_VOICE_ID_ELLEN"],
       "int": "INT-019",
       "paths": [
         "lib/voice/alignment.ts",
-        "scripts/_voice_lib.py",
-        "app/api/twilio/recording/route.ts"
+        "scripts/_voice_lib.py"
       ],
-      "why": "Still the live VO + caption-align + recording-transcript path. CLAUDE.md §4 names Victoria. Do not cancel until grok-voice.ts is the only caller.",
-      "xaiReplacement": "POST /v1/tts (custom-clone Victoria or lock eve/ara) + with_timestamps; STT for Twilio recordings",
+      "why": "Still the live listing-video / market-report VO synth path. Twilio recording STT now uses lib/grok-voice.ts. Do not cancel until those two VO helpers call grok-voice only. New files cannot add api.elevenlabs.io (G36 ratchet).",
+      "xaiReplacement": "POST /v1/tts (XAI_VOICE_ID or eve) + with_timestamps; STT already on grok-voice",
       "cancelWhere": "https://elevenlabs.io/app/subscription"
     },
     {
@@ -59,7 +67,7 @@
       "paths": [
         "app/actions/broker-headshot.ts",
         "scripts/_enhance-photo.mjs",
-        "video/listing-tour/scripts/prepare-tour.ts (if still imported)"
+        "video/listing-tour/scripts/prepare-tour.ts"
       ],
       "why": "Today banner/social already uses Imagine. Headshot + enhance still call Replicate. Cancel after those two move to Imagine edits / i2v.",
       "xaiReplacement": "Imagine image edits + Imagine Video 1.5 i2v",
@@ -67,11 +75,11 @@
     },
     {
       "vendor": "OpenAI",
-      "product": "Vision photo tagging + leftover image/text calls",
+      "product": "Vision photo tagging + leftover text calls",
       "env": ["OPENAI_API_KEY"],
       "int": "INT-021",
       "paths": ["lib/photo-classification.ts"],
-      "why": "Not the social camera. Still a billed gen/vision vendor. Move classification to Grok vision, then cancel.",
+      "why": "Not the social camera. Still a billed gen/vision vendor. New OpenAI image generate URLs are refused. Move classification to Grok vision, then cancel.",
       "xaiReplacement": "Grok 4.6 image-input / Responses API",
       "cancelWhere": "https://platform.openai.com/settings/organization/billing"
     },
@@ -85,7 +93,7 @@
         "lib/cma/judge.ts",
         "app/actions/crm-inbox.ts"
       ],
-      "why": "One-product rule includes content text. Live money paths (CMA judge, producers). Cancel only after those call grok-text / Responses.",
+      "why": "One-product rule includes content text. Live money paths (CMA judge, producers). Cancel only after those call grok-text / Responses. Not flipped in this node.",
       "xaiReplacement": "grok-4.6 Responses API via lib/grok-text.ts",
       "cancelWhere": "https://console.anthropic.com/settings/billing"
     }

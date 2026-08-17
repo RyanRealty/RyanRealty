@@ -1,11 +1,13 @@
 /**
- * Generate short text using xAI Chat Completions (Grok).
- * Used for subdivision descriptions. Set XAI_API_KEY in .env.local.
+ * Generate short text using xAI Responses API (Grok 4.6).
+ * Chokepoint for content-model text (G32 / R-213). Set XAI_API_KEY in .env.local.
+ *
+ * Docs: https://docs.x.ai/overview · https://docs.x.ai/developers/models
  */
 
-const XAI_CHAT_URL = 'https://api.x.ai/v1/chat/completions'
-/** Use a model from https://docs.x.ai/docs/models (e.g. grok-2-1212, grok-3-mini). */
-const MODEL = 'grok-2-1212'
+const XAI_RESPONSES_URL = 'https://api.x.ai/v1/responses'
+/** Current text model from https://docs.x.ai/developers/models */
+export const GROK_TEXT_MODEL = 'grok-4.6'
 
 export type GrokTextOptions = {
   /** System or user prompt for the model */
@@ -23,31 +25,38 @@ export async function generateGrokText(options: GrokTextOptions): Promise<string
     throw new Error('XAI_API_KEY is not set. Add it to .env.local for text generation.')
   }
 
-  const res = await fetch(XAI_CHAT_URL, {
+  const res = await fetch(XAI_RESPONSES_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: 'user', content: options.prompt }],
-      max_tokens: options.max_tokens ?? 150,
+      model: GROK_TEXT_MODEL,
+      input: options.prompt,
+      max_output_tokens: options.max_tokens ?? 150,
     }),
   })
 
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`xAI chat API error ${res.status}: ${text}`)
+    throw new Error(`xAI responses API error ${res.status}: ${text}`)
   }
 
   const data = (await res.json()) as {
+    output_text?: string
+    output?: Array<{ content?: Array<{ text?: string }> }>
     choices?: Array<{ message?: { content?: string } }>
   }
-  const content = data?.choices?.[0]?.message?.content
-  if (content == null) {
-    throw new Error('xAI chat API did not return content')
+  const fromOutput = data.output
+    ?.flatMap((item) => item.content ?? [])
+    .map((part) => part.text)
+    .filter((t): t is string => Boolean(t?.trim()))
+    .join('\n')
+  const content = data.output_text ?? fromOutput ?? data.choices?.[0]?.message?.content
+  if (content == null || !String(content).trim()) {
+    throw new Error('xAI responses API did not return content')
   }
 
-  return content.trim()
+  return String(content).trim()
 }

@@ -244,7 +244,9 @@ export default function BrokerVideoStudio({ broker, initialGeneratedMedia, intro
         </div>
       )}
       {synthesiaConfigured === false && (
-        <p className="mt-2 text-xs text-muted-foreground">Add SYNTHESIA_API_KEY to enable AI intro video generation.</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Avatar generate is off. Upload a real intro clip. Imagine is the camera.
+        </p>
       )}
 
       {generatedMedia.length > 0 && (

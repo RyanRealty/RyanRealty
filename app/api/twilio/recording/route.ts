@@ -1,6 +1,6 @@
 /**
  * Recording-completed webhook: fetch the audio from Twilio, transcribe it with
- * ElevenLabs speech-to-text (scribe), and attach recording + transcript to the
+ * xAI STT (`lib/grok-voice.ts`), and attach recording + transcript to the
  * matching timeline entry (call or voicemail, matched by CallSid). Emails the
  * transcript to the assigned broker.
  */
@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { TWILIO_PUBLIC_ORIGIN, verifiedTwilioParams } from '@/lib/crm/twilio'
 import { CRM_MAILBOXES, sendCrmEmail } from '@/lib/crm/gmail'
+import { transcribeGrokAudio } from '@/lib/grok-voice'
 
 /** Twilio CallSid / RecordingSid shape — validate before using inside a PostgREST
  *  .or() filter so a crafted value can never inject filter syntax. */
@@ -19,24 +20,13 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 async function transcribe(audio: ArrayBuffer): Promise<string | null> {
-  const key = process.env.ELEVENLABS_API_KEY?.trim()
-  if (!key) return null
-  const form = new FormData()
-  form.append('file', new Blob([audio], { type: 'audio/mpeg' }), 'call.mp3')
-  form.append('model_id', 'scribe_v1')
-  form.append('diarize', 'true')
-  form.append('tag_audio_events', 'false')
-  const res = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
-    method: 'POST',
-    headers: { 'xi-api-key': key },
-    body: form,
+  return transcribeGrokAudio({
+    audio,
+    filename: 'call.mp3',
+    contentType: 'audio/mpeg',
+    language: 'en',
+    diarize: true,
   })
-  if (!res.ok) {
-    console.warn('[recording] STT failed:', res.status, (await res.text()).slice(0, 200))
-    return null
-  }
-  const data = (await res.json()) as { text?: string }
-  return data.text?.trim() || null
 }
 
 export async function POST(request: Request) {
@@ -74,7 +64,7 @@ export async function POST(request: Request) {
   // failed. Do NOT 200 (that permanently drops the voicemail + burns the STT
   // spend on a transcript we'd throw away). Return 503 so Twilio redelivers the
   // recording callback later, by which point the row exists. Guarded BEFORE the
-  // audio fetch/transcribe so a retry never double-charges ElevenLabs.
+  // audio fetch/transcribe so a retry never double-charges xAI STT.
   if (!row) {
     console.error('[recording] no call/vm row for CallSid', callSid, '— asking Twilio to retry')
     return NextResponse.json({ ok: false, error: 'row not ready' }, { status: 503 })

@@ -439,6 +439,20 @@ Source: Matt 2026-08-16. One product: xAI (https://docs.x.ai/overview). Cancel l
 | Cancel-now | fal.ai + Synthesia — no required live generate path | xai-stack-accept.json |
 | Cancel-after-cutover | ElevenLabs, Replicate, OpenAI, Anthropic | same SoR |
 
+## 2026-08-17 — G32 accept: xAI chokepoint + cancel list
+
+Source: loop-brief served G32 (`4323ea74`). Docs.x.ai overview / models / Imagine / TTS / STT / custom voices loaded this session. No public post. No outbound.
+
+| Move | Recorded | Evidence |
+|---|---|---|
+| Voice chokepoint | `lib/grok-voice.ts` — `eve` lock, IPA `replace`, `with_timestamps`, STT | `ci:xai-stack` |
+| Text chokepoint | `lib/grok-text.ts` upgraded off `grok-2-1212` → `grok-4.6` Responses | same |
+| Cancel-now live | Synthesia `createSynthesiaVideo` refused; configured=false | `app/actions/synthesia.ts` |
+| STT cutover | Twilio recording uses `transcribeGrokAudio` | `app/api/twilio/recording/route.ts` |
+| New-path refuse | G36 adds fal / Synthesia / OpenAI images; error points at `lib/grok-*.ts` | `scripts/check-tool-discipline.mjs` |
+| Accept artifact | `complete: true`; voice = `lib/grok-voice.ts` | `xai-stack-accept.json` |
+| R-213 | MISSING → PARTIAL (cutover remains) | REQUIREMENTS.md |
+
 ## 2026-08-16 — Place-page hero count grain (fleet 97c68da5)
 
 Production `/cities/bend/awbrey-butte` hero lead was `in Bend` under a neighborhood-scoped `activeCount`, so KbHero rendered "N homes for sale in Bend". Class: every KB place hero continues the count with `placeHeroLead` (this page's grain). Gate `ci:place-hero-grain`.
