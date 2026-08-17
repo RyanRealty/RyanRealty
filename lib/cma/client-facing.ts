@@ -7,6 +7,7 @@
 
 import { formatMlsMultiSelect } from '@/lib/data/listings/mls-multiselect'
 import { formatPriceExact } from '@/lib/format/money'
+import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { formatDate } from '@/lib/format/date'
 import { cleanText } from '@/lib/cma/render-blocks'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
@@ -153,7 +154,7 @@ function marketLine(market: CmaMarketContext | null): string | null {
   const stl = saleToListPct(market.saleToListRatio)
   if (stl) bits.push(`${market.geoLabel} sales have been closing at ${stl}% of list.`)
   if (market.monthsOfSupply != null && Number.isFinite(market.monthsOfSupply)) {
-    bits.push(`${market.geoLabel} is carrying ${market.monthsOfSupply.toFixed(1)} months of supply.`)
+    bits.push(`${market.geoLabel} is carrying ${formatMonthsOfSupply(market.monthsOfSupply)} months of supply.`)
   }
   return bits.length ? bits.join(' ') : null
 }
