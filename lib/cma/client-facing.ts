@@ -19,15 +19,33 @@ import type {
 } from '@/lib/cma/types'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
 import type { ExpiredAuditData } from '@/lib/cma/expired-audit'
+import type { ListingPlan, ListingPlanItem } from '@/lib/cma/listing-plan'
 
 const usd = formatPriceExact
 
 /** Pipeline / admin language that must never reach a seller page. */
 const CLIENT_INTERNAL_LEAK =
-  /adversarial|listing\s*key|supabase|claude-|sonnet-|opus-|gpt-4|needs_review|needs review|broker-selected|broker selected|accuracy audit|accuracy contract|comparability model|anthropic|build_summary|market_stats_cache|market_pulse_live|analytics_mart|verification trace|geo_slug|geo_type|methodology_version|rolling_365d/i
+  /adversarial|listing\s*key|supabase|claude-|sonnet-|opus-|gpt-4|needs_review|needs review|broker-selected|broker selected|accuracy audit|accuracy contract|comparability model|anthropic|build_summary|market_stats_cache|market_pulse_live|analytics_mart|verification trace|geo_slug|geo_type|methodology_version|rolling_365d|propertytype\s*=|pulled at build time|closedate\s*[≥>=]|listings where |standardstatus|days_to_pending|listprice \d+\.\./i
+
+/** Query / method footnotes that read as SQL, not seller copy. */
+const CLIENT_METHOD_SENTENCE =
+  /supabase|propertytype\s*=|pulled at build time|closedate\s*[≥>=]|listing\s*key|listings where |standardstatus|days_to_pending|listprice \d+\.\.|\b(?:City|PropertyType|SubdivisionName|StandardStatus|CloseDate|ListPrice|ClosePrice)\s*=|^\s*seasonality \w+ median \d|^\s*price band \d+ active vs/i
 
 export function isClientInternalLeak(text: string | null | undefined): boolean {
   return Boolean(text && CLIENT_INTERNAL_LEAK.test(text))
+}
+
+/** Drop query/method sentences. Keep the seller meaning if one remains. */
+export function stripClientMethodTrace(text: string | null | undefined): string | null {
+  const raw = (text ?? '').trim()
+  if (!raw) return null
+  const kept = raw
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((s) => !isClientInternalLeak(s) && !CLIENT_METHOD_SENTENCE.test(s))
+  const out = kept.join(' ').replace(/\s+/g, ' ').trim()
+  return out || null
 }
 
 /**
@@ -48,6 +66,7 @@ export function clientPlaceClause(
 
 export function clientFacingNotes(notes: readonly string[], pricing: CmaPricing): string[] {
   return notes
+    .map((n) => stripClientMethodTrace(n) ?? '')
     .map((n) => n.trim())
     .filter(Boolean)
     .filter((n) => !isClientInternalLeak(n))
@@ -62,9 +81,33 @@ export function clientFacingNotes(notes: readonly string[], pricing: CmaPricing)
 
 /** Replace a leaked source string with a seller-safe line. */
 export function clientSourceLine(raw: string | null | undefined, fallback: string): string {
-  const t = (raw ?? '').trim()
-  if (!t || isClientInternalLeak(t)) return fallback
-  return t
+  const stripped = stripClientMethodTrace(raw)
+  if (!stripped || isClientInternalLeak(stripped)) return fallback
+  return stripped
+}
+
+export function clientFacingPlanItem(item: ListingPlanItem): ListingPlanItem | null {
+  const trigger = stripClientMethodTrace(item.trigger)
+  const action = stripClientMethodTrace(item.action)
+  if (!trigger || !action) return null
+  return {
+    trigger,
+    action,
+    basis: stripClientMethodTrace(item.basis) ?? '',
+  }
+}
+
+/** Render-time plan hygiene so a stored draft cannot leak a query footnote. */
+export function clientFacingListingPlan(plan: ListingPlan | null | undefined): ListingPlan | null {
+  if (!plan) return null
+  const items = plan.items
+    .map(clientFacingPlanItem)
+    .filter((i): i is ListingPlanItem => i != null)
+  if (items.length === 0) return null
+  return {
+    items,
+    source: clientSourceLine(plan.source, 'Figures already computed in this report.'),
+  }
 }
 
 export type WhyBullet = { label: string; text: string }

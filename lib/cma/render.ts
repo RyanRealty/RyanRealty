@@ -38,6 +38,7 @@ import {
   verifyResourcesBlock,
 } from '@/lib/cma/render-blocks'
 import {
+  clientFacingListingPlan,
   clientPlaceClause,
   clientSourceLine,
   formatClientMlsField,
@@ -274,7 +275,7 @@ function compCardsAndTablePage(a: RenderCmaArgs): PageDef {
     toc: 'The comparable sales',
     body: `
   <h2 class="section">Comparable Closed Sales</h2>
-  <p>${a.comps.length} closed single-family sales, selected for similarity to the subject in size, lot character, location, and recency. Pin numbers match the map. ${competing > 0 ? `${competing} of them come from a competing market area.` : 'All of them sit in the subject\'s own market area.'} One-page flyers after this strip are the print drill-in, not the comparison.</p>
+  <p>${a.comps.length} closed single-family sales, selected for similarity to the subject in size, lot character, location, and recency.${a.mapDataUri ? ' Pin numbers match the map.' : ''} ${competing > 0 ? `${competing} of them come from a competing market area.` : 'All of them sit in the subject\'s own market area.'} One-page flyers after this strip are the print drill-in, not the comparison.</p>
   ${renderCompStripHtml(a.comps)}`,
   }
 }
@@ -490,12 +491,12 @@ function thisHomePlanPage(a: RenderCmaArgs): PageDef | null {
 }
 
 function listingPlanPage(a: RenderCmaArgs): PageDef | null {
-  const p = a.listingPlan
+  const p = clientFacingListingPlan(a.listingPlan)
   if (!p) return null
   const rows = p.items
     .map(
       (i) =>
-        `<li><strong>${esc(i.trigger)}</strong><div>${esc(i.action)}</div><div class="small">${esc(i.basis)}</div></li>`,
+        `<li><strong>${esc(i.trigger)}</strong><div>${esc(i.action)}</div>${i.basis ? `<div class="small">${esc(i.basis)}</div>` : ''}</li>`,
     )
     .join('')
   const address = a.subject.streetAddress.trim()

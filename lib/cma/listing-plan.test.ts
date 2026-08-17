@@ -371,20 +371,17 @@ describe('buildListingPlan', () => {
     // Regression for the cma-20513-byron adversarial audit finding: `basis`
     // strings were built with the raw code path ("subject.lastListPrice",
     // "extras.photoBench", ...) spliced directly into client-facing text.
-    // A dotted code identifier reads word.word with a letter on both sides
-    // of the dot — this deliberately does NOT match numeric ranges like
-    // "850000..1050000" or query fragments like "CloseDate 2024-01-01",
-    // which are legitimate parts of a source trace (§0 requires the trace
-    // to survive; only the code-identifier prefix must go).
     const DOTTED_CODE_IDENTIFIER = /\b[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*\b/
+    const QUERY_METHOD = /Supabase|PropertyType=|pulled at build time|CloseDate\s*[≥>=]|Seasonality \w+ median \d/
 
-    it('no basis string contains a raw dotted code identifier', () => {
+    it('no basis string contains a raw dotted code identifier or query footnote', () => {
       expect(plan).not.toBeNull()
       for (const item of plan!.items) {
         expect(
           DOTTED_CODE_IDENTIFIER.test(item.basis),
           `basis leaked a code path: "${item.basis}"`,
         ).toBe(false)
+        expect(item.basis, `basis leaked a query: "${item.basis}"`).not.toMatch(QUERY_METHOD)
       }
     })
   })

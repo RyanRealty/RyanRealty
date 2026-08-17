@@ -65,10 +65,10 @@ export function renderPrintChartSvg(
       if (plot.layout === 'horizontal') {
         return `<text x="${(b.x + 4).toFixed(2)}" y="${(b.y + 8).toFixed(2)}" font-size="9" fill="${colors.ink}">${esc(b.tick)} ${esc(b.label)}</text>`
       }
-      return `<text x="${(b.x + b.w / 2).toFixed(2)}" y="${(plot.vbH - 2).toFixed(2)}" text-anchor="middle" font-size="9" fill="${colors.muted}">${esc(b.tick)}</text>`
+      return `<text x="${(b.x + b.w / 2).toFixed(2)}" y="${(plot.vbH - 6).toFixed(2)}" text-anchor="middle" font-size="9" fill="${colors.muted}">${esc(b.tick)}</text>`
     })
     .join('')
-  return `<svg viewBox="0 0 ${plot.vbW} ${plot.vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" style="width:100%;height:auto;display:block;">${rects}${labels}</svg>`
+  return `<svg viewBox="0 0 ${plot.vbW} ${plot.vbH}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${aria}" overflow="visible" style="width:100%;height:auto;display:block;">${rects}${labels}</svg>`
 }
 
 /** Client-facing packets. Matches CLAUDE.md §3 navy / cream. */

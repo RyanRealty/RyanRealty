@@ -264,13 +264,16 @@ export function buildBarPlot(
   }
 
   const n = points.length
-  const plotW = VB_W - PAD.l - PAD.r
-  const plotH = VB_H - PAD.t - PAD.b
+  const padL = 16
+  const padR = 16
+  const padB = 18
+  const plotW = VB_W - padL - padR
+  const plotH = VB_H - PAD.t - padB
   const gap = plotW / n
   const barW = Math.max(4, gap * 0.62)
   points.forEach((p, i) => {
     const h = (p.value / yMax) * plotH
-    const x = PAD.l + i * gap + (gap - barW) / 2
+    const x = padL + i * gap + (gap - barW) / 2
     const y = PAD.t + plotH - h
     bars.push({
       name: source.name,
@@ -283,7 +286,7 @@ export function buildBarPlot(
       index: i,
       highlight: highlight.has(p.tick),
     })
-    ticks.push({ tick: p.tick, x: x + barW / 2, y: VB_H - 2 })
+    ticks.push({ tick: p.tick, x: x + barW / 2, y: VB_H - 6 })
   })
 
   return {

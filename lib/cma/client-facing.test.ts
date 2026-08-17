@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  clientFacingListingPlan,
   clientFacingNotes,
   clientPlaceClause,
   clientSourceLine,
   formatClientMlsField,
   isClientInternalLeak,
+  stripClientMethodTrace,
   whyThisListPrice,
 } from '@/lib/cma/client-facing'
 import { renderCmaHtml, type RenderCmaArgs } from '@/lib/cma/render'
@@ -235,11 +237,59 @@ function args(over: Partial<RenderCmaArgs> = {}): RenderCmaArgs {
     expiredAudit: null,
     development: null,
     rental: null,
+    extras: {
+      seasonality: {
+        byMonth: [
+          { month: 4, monthName: 'April', closedCount: 200, medianDaysToPending: 15 },
+          { month: 8, monthName: 'August', closedCount: 180, medianDaysToPending: 45 },
+        ],
+        fastestMonths: ['April'],
+        slowestMonths: ['August'],
+        yearsCovered: 3,
+        totalClosed: 2708,
+        source:
+          "Supabase listings, City='Redmond', PropertyType='A', Closed, CloseDate ≥ 2023-08-17; 2708 sales grouped by close month, median days_to_pending per month",
+      },
+      band: {
+        lo: 428000,
+        hi: 523000,
+        activeCount: 12,
+        pendingCount: 3,
+        activeMedianAsk: 475000,
+        activeMedianDom: 22,
+        source:
+          "Supabase listings, City='Redmond', PropertyType='A', Active + Pending, ListPrice 428000..523000, pulled at build time",
+      },
+      subdivisionPulse: null,
+      financing: null,
+      photoBench: null,
+    },
+    listingPlan: {
+      source: 'Every line above traces to a figure already computed in this report.',
+      items: [
+        {
+          trigger: '12 homes are active in this price band right now, against 3 pending.',
+          action: 'With 12 homes already listed in this band, we lead the launch on what makes this one different rather than on price alone.',
+          basis:
+            "Price band 12 active vs 3 pending, $428,000 to $523,000. Supabase listings, City='Redmond', PropertyType='A', Active + Pending, ListPrice 428000..523000, pulled at build time.",
+        },
+        {
+          trigger: 'April listings in this market reach pending in a median of 15 days. August listings take a median of 45.',
+          action: 'We aim the launch at April, when homes here have gone pending in a median of 15 days against 45 in August.',
+          basis: 'Seasonality April median 15 vs 45. Supabase listings, City=\'Redmond\', PropertyType=\'A\', Closed, CloseDate ≥ 2023-08-17; 2708 sales grouped by close month.',
+        },
+        {
+          trigger: 'Homes like yours are for sale in Redmond now.',
+          action: 'We price against the live band, not a citywide median.',
+          basis: "Supabase listings, City='Redmond', PropertyType='A', Active + Pending, pulled at build time",
+        },
+      ],
+    },
     ...over,
   }
 }
 
-const LEAK = /N\/A|ListingKey|Supabase|claude-sonnet|Adversarial accuracy audit|needs_review|broker-selected|\{"Mountain/i
+const LEAK = /N\/A|ListingKey|Supabase|claude-sonnet|Adversarial accuracy audit|needs_review|broker-selected|\{"Mountain|PropertyType=|pulled at build time/i
 
 describe('client field formatters', () => {
   it('omits N/A and other MLS sentinels', () => {
@@ -267,6 +317,31 @@ describe('client field formatters', () => {
   it('replaces leaked source lines', () => {
     expect(clientSourceLine('Supabase listings, ListingKey abc', 'Closed MLS sales.')).toBe('Closed MLS sales.')
     expect(isClientInternalLeak('claude-sonnet-4-5')).toBe(true)
+    expect(isClientInternalLeak("PropertyType='A'")).toBe(true)
+    expect(isClientInternalLeak('pulled at build time')).toBe(true)
+  })
+
+  it('strips query footnotes and keeps seller meaning', () => {
+    expect(
+      stripClientMethodTrace(
+        "12 homes like yours are for sale in Redmond now. Supabase listings, City='Redmond', PropertyType='A', pulled at build time.",
+      ),
+    ).toBe('12 homes like yours are for sale in Redmond now.')
+    expect(stripClientMethodTrace('Seasonality April median 15 vs 45.')).toBeNull()
+    expect(stripClientMethodTrace('Price band 12 active vs 3 pending, $428,000 to $523,000.')).toBeNull()
+    expect(
+      clientFacingListingPlan({
+        source: "Supabase listings, City='Redmond', PropertyType='A'",
+        items: [
+          {
+            trigger: '12 homes are active in this price band right now, against 3 pending.',
+            action: 'We lead the launch on what makes this one different.',
+            basis:
+              "Supabase listings, City='Redmond', PropertyType='A', Active + Pending, ListPrice 428000..523000, pulled at build time.",
+          },
+        ],
+      })?.items[0]?.basis,
+    ).toBe('')
   })
 })
 
@@ -350,6 +425,42 @@ describe('engine output no longer contains the Tumalo leaks', () => {
   })
 })
 
+describe('client document has no query junk or price tween', () => {
+  it('print and immersive HTML fail on method traces', () => {
+    const print = renderCmaHtml(args()).html
+    const immersive = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
+    for (const html of [print, immersive]) {
+      expect(html).not.toContain('Supabase')
+      expect(html).not.toContain('PropertyType=')
+      expect(html).not.toContain('pulled at build time')
+      expect(html).not.toMatch(/CloseDate\s*[≥>=]/)
+      expect(html).not.toMatch(/Seasonality April median 15 vs 45/)
+      expect(html).not.toMatch(/Price band 12 active vs 3 pending/)
+      expect(html).toMatch(/homes like yours are for sale in Redmond now/i)
+    }
+  })
+
+  it('prints the recommended list immediately with no count-up interpolation', () => {
+    const html = renderImmersiveCmaHtml(
+      { ...args({ pricing: { ...pricingOverride, recommended: 475000 } }), broker },
+      'https://ryan-realty.com',
+    )
+    expect(html).toContain('>$475,000<')
+    expect(html).toMatch(/class="ans-n r">\$475,000</)
+    expect(html).not.toMatch(/class="ans-n[^"]*"[^>]*data-count/)
+    expect(html).toContain("if(el.classList&&el.classList.contains('ans-n'))return")
+  })
+
+  it('web page does not claim pin numbers match a map that is not there', () => {
+    const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
+    expect(html).not.toMatch(/pin numbers match the map/i)
+    const printNoMap = renderCmaHtml(args()).html
+    expect(printNoMap).not.toMatch(/Pin numbers match the map/)
+    const printWithMap = renderCmaHtml(args({ mapDataUri: 'data:image/png;base64,aaa' })).html
+    expect(printWithMap).toContain('Pin numbers match the map')
+  })
+})
+
 describe('client document look', () => {
   it('immersive HTML has no page-number chrome', () => {
     const html = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
@@ -358,6 +469,9 @@ describe('client document look', () => {
     expect(html).not.toContain('class="pg-footer"')
     expect(html).not.toContain('<span class="p">')
     expect(html).toContain('.page-num,.pg-num,.pageNumber,.pg-footer,.toc .p{display:none}')
+    expect(html).toMatch(/#bar\{[^}]*background:var\(--cream\)/)
+    expect(html).not.toMatch(/#bar\{[^}]*backdrop-filter/)
+    expect(html).not.toMatch(/#bar\{[^}]*background:rgba\(250,248,244/)
   })
 
   it('photos are flush, not rounded cards', () => {
