@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — search count LIVE on main
+# Current — 2026-08-17 (cursor-loop-chain) — place-pages days figure slice
+
+**Surface:** Cursor cloud `bc-d246e9da` (`cursor/loop-chain-2026-08-17t00-32-e58c`). **Time:** 2026-08-17 ~01:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages`. Matt override: punch list is the inbox, not one job. One family, p0 first, max 8 lines. Search-count / Show 409 / 390 chips skipped (already on `main`). No child tickets. No review PR. Product **`949a01e5a`**. Vercel Production **READY** (`Fp9jYCrGV3h9bcvfAzUU9mRyWF3i`). `npm run deploy:verify` exit 0. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (inbox). Loop stays **ARMED**.
+
+**Done**
+- Slice (8 p0 place-pages days lines): Black Butte card 40 vs FAQ 39.5; NWX 11 vs 10.5; Broken Top 9 vs 8.5; Brasada 16 vs 15.5; Redmond 20 vs 19.5; Larkspur 7 vs 6.5. Sunriver 19.5 vs 20 and La Pine 50.5 vs 51 **do not reproduce** (all 18 / all 50).
+- Class: SoR `publishDaysFigure` / `publishDaysLabel`. Pulse medians land on half-days. Tenths grain. No `Math.round` on a public days figure. Gate `ci:publish-days-figure`.
+- Production probe `scripts/probe-days-figure-prod.mjs` **6/6** after READY: BBR 39.5, NWX 10.5, Broken Top 8.5, Brasada 15.5, Redmond 19.5, Larkspur 6.5. Screenshots `/opt/cursor/artifacts/black_butte_days_{1280,390}.png` (hero Pending in 39.5 days) and `redmond_days_{1280,390}.png`.
+- Punch dispositions appended (parent not completed): 6 fixed + 2 rejected. Larkspur price $1,238,000 vs $1,238,136 left on the inbox as a new remainder line. Search-count lines untouched.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, git-commit, fleet-intake-core / ship-class punch-slice (PR 59).
+
+# Prior — 2026-08-17 (cursor-loop-chain) — search count LIVE on main
 
 **Surface:** Cursor cloud `bc-4382906a` (`cursor/loop-chain-2026-08-16t23-45-84b5`). **Time:** 2026-08-17 ~01:05 UTC. Rebased onto `79fb9820b` (PRs 57/58 FLEET-PUNCH intake kept). Product **`735c31037`**. Vercel Production **READY** (`dpl_FUgkMxxiq34GmTuvnmbe8geq1iVK`). `npm run deploy:verify` exit 0. PR 59 punch-list serve (`811ecbefc`) landed after that SHA — not touched, not folded. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. Eight search-class nodes stay **done**. Do not start a new ship class.
 
