@@ -148,7 +148,7 @@ function RangeFieldRow({
       <p className="mb-1.5 text-xs text-muted-foreground">
         {unit ? `${def.label} (${unit})` : def.label}
       </p>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid min-w-0 grid-cols-2 gap-2">
         {min && (
           <Input
             type="number"
@@ -157,7 +157,7 @@ function RangeFieldRow({
             value={draft[min] ?? ''}
             disabled={disabled}
             onChange={(e) => setParam(min, e.target.value || undefined)}
-            className="tabular-nums"
+            className="min-w-0 tabular-nums"
             aria-label={`${def.label} minimum`}
           />
         )}
@@ -169,7 +169,7 @@ function RangeFieldRow({
             value={draft[max] ?? ''}
             disabled={disabled}
             onChange={(e) => setParam(max, e.target.value || undefined)}
-            className="tabular-nums"
+            className="min-w-0 tabular-nums"
             aria-label={`${def.label} maximum`}
           />
         )}
@@ -672,7 +672,10 @@ export default function AllFiltersSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="w-full min-w-0 overflow-x-hidden data-[side=right]:w-full sm:max-w-md"
+      >
         <SheetHeader className="px-4 pt-4 pb-0">
           <SheetTitle>All filters</SheetTitle>
           {closedScope && (
@@ -779,7 +782,7 @@ export default function AllFiltersSheet({
                       </div>
                     ))}
                     {booleans.length > 0 && (
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                      <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
                         {booleans.map((def) => {
                           const meta = conditionBoolean(def.key, artifact, classes, draft[def.key] === '1')
                           const zeroDisabled = meta.count === 0 && !meta.selected
@@ -787,7 +790,7 @@ export default function AllFiltersSheet({
                             <Label
                               key={def.key}
                               className={cn(
-                                'flex items-center gap-2',
+                                'flex min-w-0 items-start gap-2',
                                 fieldDisabled(def) || zeroDisabled
                                   ? 'cursor-not-allowed opacity-50'
                                   : 'cursor-pointer'
@@ -805,7 +808,7 @@ export default function AllFiltersSheet({
                               />
                               <span
                                 className={cn(
-                                  'text-sm text-foreground',
+                                  'min-w-0 text-sm text-foreground',
                                   meta.suspended && 'line-through decoration-2'
                                 )}
                               >
