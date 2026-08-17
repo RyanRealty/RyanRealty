@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-sentinel) — site regional See homes slice
+# Current — 2026-08-17 (cursor-loop-chain) — search punch slice
+
+**Surface:** Cursor cloud `bc-e5280baa` (`cursor/loop-chain-2026-08-17t03-23-70dd`). **Time:** 2026-08-17 ~04:00 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:search` (8 of 517). Claimed parent only. Product **`75b735c02`** (probe `c4b7c6b27`, G46 CMA mock `a2e1cd625`) on this branch. Draft PR **#70**. `npm run push` gates + build green. **Production is not this SHA** — cloud run stays off `main`. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (509 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 search lines) at 390+1280 on production: beds=4 timeout **does not reproduce** (372 / 244, no delayed). beds=3 count increase **does not reproduce** (1,294 → 875). Beds click navigates **does not reproduce** (dropdown, URL unchanged). Headline vs map **rejected** (labeled filter-match vs in this map view). Missing Alerts **rejected** (Save this search + Get listing alerts at 1280; chrome Listing alerts is closed panel). 654 Providence price history **does not reproduce** on search. 390 chips hidden **does not reproduce**. Owner financing clip **reproduced**.
+- Class: `AllFiltersSheet` is `data-[side=right]:w-full` + `overflow-x-hidden`. Boolean labels stack (`grid-cols-1 sm:grid-cols-2`). Gate `ci:publish-search-count` 8/8.
+- Probe `scripts/probe-search-punch-prod.mjs`. Screenshots `/opt/cursor/artifacts/search_punch_{home_1280_counts,beds_dropdown_1280,beds3_1280_counts,beds4_1280_ok,chips_390,sheet_390_before}.png`.
+- Punch dispositions appended (parent not completed): 1 fixed + 7 rejected. Leftover search + other families stay on the inbox.
+
+**Next**
+- Merge PR 70 so production picks up the 390 sheet width. Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-sentinel) — site regional See homes slice
 
 **Surface:** Cursor cloud `bc-a505260a` (`cursor/loop-sentinel-2026-08-17t02-40-c49f`). **Time:** 2026-08-17 ~03:20 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:site` (8 of 518). Claimed parent only. Product **`ebd0d0279`** on this branch. Draft PR **#69**. `npm run push` gates + build green. **Production is not this SHA** — cloud run stays off `main`; `deploy:verify` found no production deploy for `ebd0d02` (vercel ls hung). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (510 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 

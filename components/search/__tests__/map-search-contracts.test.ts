@@ -593,6 +593,17 @@ describe('search index H1 is visible in the filter dock (E-SEARCH-REFINE)', () =
   })
 })
 
+describe('All filters sheet stays inside 390', () => {
+  it('overrides the default 3/4 sheet width and stacks boolean labels', () => {
+    const sheet = readSrc('components/search/AllFiltersSheet.tsx')
+    expect(sheet).toMatch(/data-\[side=right\]:w-full/)
+    expect(sheet).toMatch(/overflow-x-hidden/)
+    expect(sheet).toMatch(/grid-cols-1/)
+    expect(sheet).toMatch(/sm:grid-cols-2/)
+    expect(sheet).not.toMatch(/grid grid-cols-2 gap-x-4 gap-y-3/)
+  })
+})
+
 describe('SearchFilters does not duplicate the collapsed alert ask (E-SEARCH-CHIP)', () => {
   it('keeps Save this search and drops the navy Get alerts chip', () => {
     const filters = readSrc('components/search/SearchFilters.tsx')

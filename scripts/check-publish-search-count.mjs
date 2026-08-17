@@ -37,6 +37,15 @@ checks.push({
     /publishSearchCount\(/.test(sheet) &&
     sheet.includes('onPointerDown={handleApply}'),
 })
+checks.push({
+  label: 'All filters sheet is full-width at 390 and boolean labels wrap',
+  ok:
+    sheet.includes('data-[side=right]:w-full') &&
+    sheet.includes('overflow-x-hidden') &&
+    sheet.includes('grid-cols-1') &&
+    sheet.includes('sm:grid-cols-2') &&
+    sheet.includes("'flex min-w-0 items-start gap-2'"),
+})
 
 const map = src('components/search/MapSearchView.tsx')
 checks.push({
