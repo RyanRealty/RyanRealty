@@ -53,6 +53,7 @@ checks.push({
   ok:
     !filters.includes('hidden flex-wrap items-center gap-2 sm:contents') &&
     filters.includes('overflow-x-auto') &&
+    filters.includes('min-h-11') &&
     filters.includes('All filters'),
 })
 
