@@ -36,9 +36,12 @@ export function deriveOpinion(
   opts: { priceOverride?: number | null } = {},
 ): BpoOpinion {
   const reasoning: string[] = []
-  const compAnchor = pricing.recommended
+  const compAnchor =
+    pricing.predictedClose != null && pricing.predictedClose > 0
+      ? pricing.predictedClose
+      : pricing.recommended
   reasoning.push(
-    `Comparable sales reconcile to ${usd(compAnchor)} (time- and size-adjusted, ${pricing.confidence.toLowerCase()} confidence, methods within ${pricing.convergenceSpreadPct ?? 0}%).`,
+    `Comparable sales reconcile to an expected sale of ${usd(compAnchor)} (time- and size-adjusted, ${pricing.confidence.toLowerCase()} confidence, methods within ${pricing.convergenceSpreadPct ?? 0}%).`,
   )
 
   // Apply demonstrated market rejection as a bounded downward pull on the anchor.

@@ -26,11 +26,10 @@ import {
 } from '@/lib/data/bpo/reads'
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { selectComps, MIN_COMPS } from '@/lib/cma/comps'
-import { getCmaMarketContext } from '@/lib/cma/market'
 import { adjustComps, computePricing } from '@/lib/cma/pricing'
+import { loadBpoEngineInputs, priceBpoAdjusted, bpoCompMap } from '@/lib/bpo/engine'
 import { judgeComps } from '@/lib/cma/judge'
 import { auditCma } from '@/lib/cma/audit'
-import { resolveCmaSiteData } from '@/lib/cma/county'
 import { resolveDevelopmentOpportunities } from '@/lib/cma/development'
 import { resolveRentalPotential } from '@/lib/cma/rental-potential'
 import { evaluateBpoAccuracyContract } from '@/lib/bpo/contract'
@@ -111,11 +110,8 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     const subject = resolved.subject
 
     // 2. Comps + market context in parallel (shared CMA engine).
-    const [selection, market, site] = await Promise.all([
-      selectComps(subject),
-      getCmaMarketContext(subject),
-      resolveCmaSiteData(subject),
-    ])
+    const { selection, market, site, marketIndex } = await loadBpoEngineInputs(subject)
+    void selectComps
     if (selection.comps.length < MIN_COMPS) {
       const err = `Only ${selection.comps.length} qualifying closed comps found (minimum ${MIN_COMPS}). ${selection.trace.join(' ')}`
       await recordFailure(slug, err)
@@ -155,14 +151,12 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // 4. Adjust comps + reconcile to the opinion (weak-tier comps carry half
     // weight in the reconciliation, matching the CMA engine).
     const deriveAll = (set: typeof selection.comps) => {
-      const adj = adjustComps(subject, set, market).map((c) => {
-        const tier = tierByKey.get(c.listingKey)
-        return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
+      const priced = priceBpoAdjusted({
+        subject, set, market, selection, marketIndex, asOf: generatedAtIso.slice(0, 10), tierByKey,
+        priceOverride: input.priceOverride ?? null, adjustComps, computePricing,
       })
-      const p = computePricing(subject, adj, market, { priceOverride: null })
-      if (!p) return null
-      const op = deriveOpinion(subject, p, market, history, { priceOverride: input.priceOverride ?? null })
-      return { adj, p, op }
+      if (!priced) return null
+      return { ...priced, op: deriveOpinion(subject, priced.p, market, history, { priceOverride: input.priceOverride ?? null }) }
     }
     const derived = deriveAll(compsForPricing)
     if (!derived) {
@@ -310,6 +304,7 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
     // Development + rental potential — pure functions over the verified zone.
     const development = resolveDevelopmentOpportunities(site, subject)
 
+    const map = await bpoCompMap(subject, adjusted, selection.tiersUsed)
     const { html, pageCount } = renderBpoHtml({
       subject,
       comps: adjusted,
@@ -324,6 +319,8 @@ export async function buildBpo(input: BpoBuildInput): Promise<BpoBuildResult> {
       site,
       development,
       rental: resolveRentalPotential(subject, site),
+      mapDataUri: map?.dataUri ?? null,
+      tiersUsed: selection.tiersUsed,
     })
 
     // 6. Citations — one entry per figure class (CLAUDE.md section 0).

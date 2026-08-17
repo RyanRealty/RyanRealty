@@ -310,6 +310,7 @@ describe('listPriceFromEngine is the only cover number', () => {
 
     const cover = applyEngineRecommendedList(out.pricing!, engine, { priceOverride: null })
     expect(cover.recommended).toBe(505_000)
+    expect(cover.predictedClose).toBe(495_000)
     expect(cover.notes[0]).toMatch(/pricing engine/i)
     expect(cover.method3).toBe(out.pricing!.method3)
 
@@ -343,6 +344,7 @@ describe('listPriceFromEngine is the only cover number', () => {
     )!
     const left = applyEngineRecommendedList(overridden, engine, { priceOverride: 489_000 })
     expect(left.recommended).toBe(490_000)
+    expect(left.predictedClose).toBe(495_000)
 
     const built = priceCmaSet({
       subject: { ...subject, sqft: 1602, lastListPrice: 505_100 },
@@ -379,6 +381,7 @@ describe('listPriceFromEngine is the only cover number', () => {
       asOf: '2026-01-15',
     })
     expect(built?.recommended).toBe(505_000)
+    expect(built?.predictedClose).toBe(495_000)
     expect(built?.method3).not.toBe(505_000)
   })
 })

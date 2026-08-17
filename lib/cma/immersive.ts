@@ -12,18 +12,18 @@
  * Self-contained: inline CSS + inline JS (site CSP allows both), photos from
  * the MLS CDN, Amboqia from /fonts on the serving origin. Every motion
  * respects prefers-reduced-motion, content is never hidden without JS, and
- * secondary counts may animate. The recommended list never tweens.
+ * count-ups always end at the exact markup number (snapped on print/hide).
  */
 
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
-import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
+import { immersiveAnswerHtml } from '@/lib/cma/cover-value'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle, resolveThisHomePlan } from '@/lib/cma/inbound-packet'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { formatDate } from '@/lib/format/date'
 import { cleanText } from '@/lib/cma/render-blocks'
-import { clientFacingListingPlan, clientSourceLine, formatClientMlsField, whyThisListPrice } from '@/lib/cma/client-facing'
+import { clientSourceLine, formatClientMlsField, whyThisListPrice } from '@/lib/cma/client-facing'
 import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
 import { renderCompStripHtml } from '@/lib/cma/comp-strip'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
@@ -167,14 +167,14 @@ function thisHomeScene(a: ImmersiveArgs): string {
 }
 
 function planScene(a: ImmersiveArgs): string {
-  const p = clientFacingListingPlan(a.listingPlan)
+  const p = a.listingPlan
   if (!p) return ''
   const cards = p.items
     .map(
       (i) => `<div class="plan r">
       <div class="plan-t">${esc(i.trigger)}</div>
       <div class="plan-a">${esc(i.action)}</div>
-      ${i.basis ? `<div class="plan-b">${esc(i.basis)}</div>` : ''}
+      <div class="plan-b">${esc(i.basis)}</div>
     </div>`,
     )
     .join('')
@@ -335,7 +335,7 @@ function compsScene(a: ImmersiveArgs): string {
     <div class="in wide">
       <div class="kick r">The evidence</div>
       <h2 class="h r">${a.comps.length} closed sales set this price</h2>
-      <p class="lede r">Each kept sale is adjusted to your home.</p>
+      <p class="lede r">Each kept sale is adjusted to your home. Pin numbers match the map in the print report.</p>
       <div class="r">${renderCompStripHtml(a.comps)}</div>
     </div>
   </section>`
@@ -474,7 +474,6 @@ function nextScene(a: ImmersiveArgs): string {
 
 export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): string {
   const s = a.subject
-  const p = a.pricing
   const heroImg = s.photoUrl ? `<img class="hero-img" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/>` : ''
   const specs = [
     s.beds != null ? `${s.beds} bed` : null,
@@ -484,12 +483,6 @@ export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): strin
   ]
     .filter(Boolean)
     .join(' · ')
-  const evLo = p.valueLow
-  const evHi = p.valueHigh
-  const span = Math.max(1, evHi - evLo)
-  const pos = (v: number) => Math.min(100, Math.max(0, ((v - evLo) / span) * 100))
-  const conf = displayConfidence(p)
-  const range = pricingRangeDisplay(p)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -521,18 +514,7 @@ ${immersiveStylesheet()}
 
 <section class="sc sc-cream" id="answer">
   <div class="in">
-    <div class="ans-l r">Recommended list price</div>
-    <div class="ans-n r">${usd(p.recommended)}</div>
-    <div class="r"><span class="conf">Confidence: ${esc(conf)}</span></div>
-    <div class="range r">
-      <div class="range-track"><div class="range-fill" style="--w:100%"></div></div>
-      <div class="range-marks">
-        <div class="rm"><div class="rm-v">${usd(p.conservative)}</div><div class="rm-l">Conservative</div></div>
-        <div class="rm mid"><div class="rm-v">${usd(p.recommended)}</div><div class="rm-l">Recommended</div></div>
-        <div class="rm" style="text-align:right"><div class="rm-v">${usd(p.highEnd)}</div><div class="rm-l">Ceiling, condition resolved</div></div>
-      </div>
-    </div>
-    <p class="body r">${esc(whyThisListPrice(a).coverSentence)} ${range.outOfRange ? 'The comp-supported range is' : 'The adjusted comparable sales bracket'} ${usd(evLo)} to ${usd(evHi)}${p.convergenceSpreadPct != null ? `, and the pricing methods behind this number land within ${dec(p.convergenceSpreadPct, 1)}% of each other` : ''}.${range.note ? ` ${esc(range.note)}` : ''}</p>
+    ${immersiveAnswerHtml(a)}
   </div>
 </section>
 
@@ -559,9 +541,7 @@ ${sourcesScene(a)}
     function onScroll(){
       var max=document.documentElement.scrollHeight-window.innerHeight
       var y=window.scrollY||0
-      var show=y>window.innerHeight*0.7
-      bar.classList.toggle('on',show)
-      document.documentElement.classList.toggle('bar-on',show)
+      bar.classList.toggle('on',y>window.innerHeight*0.7)
       prog.style.width=(max>0?Math.min(100,y/max*100):0)+'%'
     }
     window.addEventListener('scroll',onScroll,{passive:true});onScroll()
@@ -578,7 +558,6 @@ ${sourcesScene(a)}
     var cio=new IntersectionObserver(function(es){es.forEach(function(e){
       if(!e.isIntersecting)return;cio.unobserve(e.target)
       var el=e.target,f=el.textContent
-      if(el.classList&&el.classList.contains('ans-n'))return
       var m=/^([^0-9]*)([\\d,]+(?:\\.\\d+)?)(.*)$/.exec(f.trim());if(!m)return
       var t=parseFloat(m[2].replace(/,/g,''));if(!isFinite(t)||t===0)return
       var dcs=(m[2].split('.')[1]||'').length,a={el:el,f:f,done:false};live.push(a)

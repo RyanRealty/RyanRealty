@@ -101,13 +101,20 @@ const STYLE_PARAMS: string[] = [
   'feature:administrative.land_parcel|visibility:off',
 ]
 
-export function buildGoogleStaticMapUrl(points: CmaMapPoint[], apiKey: string): string {
+export function buildGoogleStaticMapUrl(
+  points: CmaMapPoint[],
+  apiKey: string,
+  paths: string[] = [],
+): string {
   const params = new URLSearchParams()
   params.set('size', '640x360')
   params.set('scale', '2') // → 1280×720 effective
   params.set('maptype', 'roadmap')
   for (const p of points) {
     params.append('markers', `color:${p.color}|label:${p.label}|size:mid|${p.lat},${p.lng}`)
+  }
+  for (const path of paths) {
+    if (path) params.append('path', path)
   }
   for (const s of STYLE_PARAMS) {
     params.append('style', s)

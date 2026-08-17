@@ -5,7 +5,9 @@
 
 import { dec, escapeHtml, int, usd, usdSigned } from '@/lib/cma/render-blocks'
 import { clientFacingNotes, whyThisListPrice } from '@/lib/cma/client-facing'
+import { expectedSale } from '@/lib/cma/cover-value'
 import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
+import { describeCompSearch } from '@/lib/pricing/search-story'
 import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '@/lib/cma/types'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
 
@@ -47,15 +49,16 @@ function sellerNetBlock(p: CmaPricing): string {
   <h3 class="subhead">Close price and seller net</h3>
   <p>The list tiers above are contract prices. Seller concessions come off the close before commission and closing costs.</p>
   <div class="stat-strip is-3">
-    <div class="stat"><div class="lbl">Close / list estimate</div><div class="val">${usd(p.recommended)}</div></div>
+    <div class="stat"><div class="lbl">${p.predictedClose != null && p.predictedClose > 0 ? 'Expected sale' : 'Close / list estimate'}</div><div class="val">${usd(expectedSale(p))}</div></div>
     ${n.expectedConcessions != null ? `<div class="stat"><div class="lbl">Expected concessions</div><div class="val">${usd(n.expectedConcessions)}</div></div>` : ''}
     ${n.predictedSellerNet != null ? `<div class="stat"><div class="lbl">Seller net from price</div><div class="val">${usd(n.predictedSellerNet)}</div></div>` : ''}
   </div>
   <p class="small">${n.givenCount} of ${n.knownCount} comparable sales reported a concession${n.medianWhenGiven != null ? `, median ${usd(n.medianWhenGiven)} when given` : ''}.</p>`
 }
 
-function howWePriced(n: number, market: CmaMarketContext | null): string {
+function howWePriced(n: number, market: CmaMarketContext | null, searchBody: string | null): string {
   const bits = [
+    ...(searchBody ? [searchBody] : []),
     `${n} closed ${n === 1 ? 'sale' : 'sales'}, each brought to today and to your living area.`,
     'Closed MLS sales only. Automated estimates are not used.',
     'The close is the contract price. Concessions come off after that.',
@@ -77,6 +80,7 @@ export function pricingPage(input: {
   comps: CmaAdjustedComp[]
   market: CmaMarketContext | null
   pricing: CmaPricing
+  tiersUsed?: string[]
 }): CmaPageDef {
   const p = input.pricing
   const s = input.subject
@@ -85,19 +89,22 @@ export function pricingPage(input: {
   const recPpsf = sqft ? usd(Math.round(p.recommended / sqft)) : null
   const why = whyThisListPrice({ subject: s, comps: input.comps, market: input.market, pricing: p })
   const notes = clientFacingNotes(p.notes, p)
+  const sale = expectedSale(p)
+  const hasClose = p.predictedClose != null && p.predictedClose > 0
+  const search = describeCompSearch({ subdivision: s.subdivision, tiersUsed: input.tiersUsed ?? [] })
   return {
     meta: `${esc(s.streetAddress)} · How this home is priced`,
     toc: 'How this home is priced',
     body: `
   <h2 class="section">How this home is priced</h2>
-  <p>${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}. Recommended list ${usd(p.recommended)}${recPpsf ? ` (${recPpsf} per square foot)` : ''}.</p>
+  <p>${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}. ${hasClose ? `Expected sale ${usd(sale)}. ` : ''}Recommended list ${usd(p.recommended)}${recPpsf ? ` (${recPpsf} per square foot)` : ''}.</p>
   <div class="stat-strip is-3">
-    <div class="stat"><div class="lbl">Conservative</div><div class="val">${usd(p.conservative)}</div></div>
-    <div class="stat"><div class="lbl">Recommended list</div><div class="val">${usd(p.recommended)}</div></div>
-    <div class="stat"><div class="lbl">High end</div><div class="val">${usd(p.highEnd)}</div></div>
+    <div class="stat"><div class="lbl">${hasClose ? 'Expected sale' : 'Recommended list'}</div><div class="val">${usd(sale)}</div></div>
+    <div class="stat"><div class="lbl">List low</div><div class="val">${usd(p.conservative)}</div></div>
+    <div class="stat"><div class="lbl">List high</div><div class="val">${usd(p.highEnd)}</div></div>
   </div>
   <h3 class="subhead">How we priced this</h3>
-  ${howWePriced(input.comps.length, input.market)}
+  ${howWePriced(input.comps.length, input.market, search.body)}
   ${adjustmentRows(input.comps)}
   <div class="tier-grid">
     <div class="tier">

@@ -285,6 +285,7 @@ export function computePricing(
     highEnd,
     valueLow: conservative,
     valueHigh: highEnd,
+    predictedClose: null,
     confidence,
     confidenceReason,
     needsReview,

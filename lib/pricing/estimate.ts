@@ -220,14 +220,18 @@ export function listPriceFromEngine(opts: {
 /** Write the engine list onto the CMA cover. A broker override still wins. */
 export function applyEngineRecommendedList(
   pricing: CmaPricing,
-  engine: Pick<EngineListResult, 'recommendedList'>,
+  engine: Pick<EngineListResult, 'recommendedList' | 'predictedClose'>,
   opts: { priceOverride?: number | null } = {},
 ): CmaPricing {
+  const close =
+    engine.predictedClose != null && engine.predictedClose > 0 ? engine.predictedClose : (pricing.predictedClose ?? null)
   if (opts.priceOverride != null && Number.isFinite(opts.priceOverride) && opts.priceOverride > 0) {
-    return pricing
+    return { ...pricing, predictedClose: close }
   }
   const list = engine.recommendedList
-  if (list == null || !Number.isFinite(list) || list <= 0) return pricing
+  if (list == null || !Number.isFinite(list) || list <= 0) {
+    return close != null ? { ...pricing, predictedClose: close } : pricing
+  }
   const conservative = pricing.conservative != null ? Math.min(pricing.conservative, list) : list
   const highEnd = pricing.highEnd != null ? Math.max(pricing.highEnd, list) : list
   return {
@@ -237,6 +241,7 @@ export function applyEngineRecommendedList(
     highEnd,
     valueLow: conservative,
     valueHigh: highEnd,
+    predictedClose: close,
     notes: [
       `List price is the pricing engine list ($${list.toLocaleString('en-US')}), not Method 3.`,
       ...pricing.notes,

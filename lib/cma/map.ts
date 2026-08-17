@@ -8,7 +8,11 @@
  * registry stays for the file-based CMAs).
  */
 
+import { getBoundaryGeoJSON } from '@/lib/data'
 import { buildGoogleStaticMapUrl, type CmaMapPoint } from '@/lib/cma-map'
+import { circlePath, pathParam, ringsFromGeometry } from '@/lib/cma/map-overlay'
+import { describeCompSearch } from '@/lib/pricing/search-story'
+import { slugify } from '@/lib/slug'
 import type { CmaComp, CmaSubject } from '@/lib/cma/types'
 
 export interface CmaMapResult {
@@ -16,11 +20,24 @@ export interface CmaMapResult {
   pointCount: number
 }
 
+async function subdivisionRings(subdivision: string | null | undefined) {
+  const slug = subdivision?.trim() ? slugify(subdivision.trim()) : ''
+  if (!slug) return []
+  try {
+    const geom = await getBoundaryGeoJSON({ geoType: 'subdivision', geoSlug: slug })
+    return ringsFromGeometry(geom)
+  } catch (e) {
+    console.warn('[buildCmaMapDataUri] boundary', e instanceof Error ? e.message : String(e))
+    return []
+  }
+}
+
 /** Build the subject + comps map as a base64 PNG data URI. Null when the API
  *  key is missing or no coordinates are available. */
 export async function buildCmaMapDataUri(
   subject: CmaSubject,
   comps: CmaComp[],
+  opts: { tiersUsed?: string[] } = {},
 ): Promise<CmaMapResult | null> {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim()
   if (!apiKey) return null
@@ -34,8 +51,26 @@ export async function buildCmaMapDataUri(
     }
   })
   if (points.length < 2) return null
+  const story = describeCompSearch({ subdivision: subject.subdivision, tiersUsed: opts.tiersUsed ?? [] })
+  const paths: string[] = []
+  for (const ring of await subdivisionRings(subject.subdivision)) {
+    const path = pathParam('0x102742CC', '0x10274222', ring)
+    if (path) paths.push(path)
+  }
+  if (
+    story.radiusMiles != null &&
+    subject.latitude != null &&
+    subject.longitude != null
+  ) {
+    const circle = pathParam(
+      '0x10274299',
+      '0x10274211',
+      circlePath({ lat: subject.latitude, lng: subject.longitude }, story.radiusMiles),
+    )
+    if (circle) paths.push(circle)
+  }
   try {
-    const url = buildGoogleStaticMapUrl(points, apiKey)
+    const url = buildGoogleStaticMapUrl(points, apiKey, paths)
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return null
     const buf = Buffer.from(await res.arrayBuffer())

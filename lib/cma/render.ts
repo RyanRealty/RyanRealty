@@ -42,7 +42,6 @@ import {
   clientPlaceClause,
   clientSourceLine,
   formatClientMlsField,
-  whyThisListPrice,
 } from '@/lib/cma/client-facing'
 import type {
   CmaAdjustedComp,
@@ -52,7 +51,6 @@ import type {
   CmaPricing,
   CmaSubject,
 } from '@/lib/cma/types'
-import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
 import type { CmaExtras } from '@/lib/cma/extras'
 import type { SubdivisionStory } from '@/lib/cma/subdivision-story'
 import type { CmaEquityPosition } from '@/lib/cma/equity'
@@ -68,6 +66,8 @@ import { marketPage as marketBoardPage } from '@/lib/cma/render-market-page'
 import { printMarketAreaPages } from '@/lib/cma/market-area-chapters'
 import { whyPage } from '@/lib/cma/render-why-page'
 import { renderCompMapKeyHtml, renderCompStripHtml } from '@/lib/cma/comp-strip'
+import { coverValueBlockHtml } from '@/lib/cma/cover-value'
+import { describeCompSearch } from '@/lib/pricing/search-story'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 
@@ -112,6 +112,8 @@ export interface RenderCmaArgs {
   listingPlan?: ListingPlan | null
   /** How we would market THIS address (list-kit hero). Not the /sell brochure. */
   thisHomePlan?: string[] | null
+  /** Pricing-ladder rungs that filled the set. Drives the map story. */
+  tiersUsed?: string[]
 }
 
 interface PageDef {
@@ -165,9 +167,6 @@ function subjectStatStrip(subject: CmaSubject): string {
  */
 function coverPage(a: RenderCmaArgs): PageDef {
   const hero = heroForSubject(a.subject)
-  const p = a.pricing
-  const conf = displayConfidence(p)
-  const range = pricingRangeDisplay(p)
   // ONE document (Matt 2026-08-05): the expired review is a section, not a
   // different doc — the label never changes with it.
   const docLabel = 'Comparative Market Analysis'
@@ -181,16 +180,7 @@ function coverPage(a: RenderCmaArgs): PageDef {
   ${hero.src ? `<img class="hero-photo" src="${esc(hero.src)}" alt="${esc(a.subject.streetAddress)}" />` : '<div class="hero-photo"></div>'}
   <div class="hero-caption">${esc(hero.caption)}</div>
   <div class="value-block">
-    <div class="vb-top">
-      <div>
-        <div class="vb-label">Recommended list price</div>
-        <p class="vb-price">${usd(p.recommended)}</p>
-      </div>
-      <div class="vb-pill">${esc(conf)} confidence</div>
-    </div>
-    <div class="vb-range">${esc(range.label)} ${usd(p.valueLow)} to ${usd(p.valueHigh)}</div>
-    ${range.note ? `<div class="vb-detail">${esc(range.note)}</div>` : ''}
-    <div class="vb-detail">${esc(whyThisListPrice(a).coverSentence)} ${a.comps.length} closed MLS sales, each adjusted for when it sold and how its size compares to yours. Automated estimates are not used.${a.market?.geoLabel ? ` The market read is ${esc(a.market.geoLabel)}, not the ZIP.` : ''}</div>
+    ${coverValueBlockHtml(a)}
   </div>
   ${subjectStatStrip(a.subject)}
   <div class="presented-by">
@@ -250,13 +240,14 @@ function subjectPage(a: RenderCmaArgs): PageDef {
 
 function mapPage(a: RenderCmaArgs): PageDef | null {
   if (!a.mapDataUri) return null
+  const story = describeCompSearch({ subdivision: a.subject.subdivision, tiersUsed: a.tiersUsed ?? [] })
   return {
     meta: `Comparable Sales Map · ${esc(a.subject.city)}`,
     toc: 'Where the comps sit',
     body: `
-  <h2 class="section">Where the comps sit</h2>
-  <p style="margin-bottom:14px;">Pin numbers match the comparison strip. Each marker carries the sold price, the adjusted price to the subject, and why that sale stayed in the set.</p>
-  <img class="map-img" src="${a.mapDataUri}" alt="Comparable sales map" />
+  <h2 class="section">${esc(story.headline)}</h2>
+  <p style="margin-bottom:14px;">${esc(story.body)} Pin numbers match the comparison strip.</p>
+  <img class="map-img" src="${a.mapDataUri}" alt="${esc(story.headline)}" />
   <h3 class="subhead" style="margin-top:0;">Marker key</h3>
   ${renderCompMapKeyHtml(a.subject, a.comps)}`,
   }
@@ -366,6 +357,7 @@ function pricedPage(a: RenderCmaArgs): PageDef {
     comps: a.comps,
     market: a.market,
     pricing: a.pricing,
+    tiersUsed: a.tiersUsed,
   })
 }
 
