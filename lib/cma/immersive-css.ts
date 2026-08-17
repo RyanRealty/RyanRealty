@@ -45,7 +45,8 @@ img{max-width:100%;display:block}
 .rm-v{font-size:clamp(18px,2.6vw,26px);font-weight:700;font-variant-numeric:tabular-nums}
 .rm-l{font-size:12.5px;opacity:.6;margin-top:2px}
 .rm.mid .rm-v{color:var(--navy)}
-.stat3,.stat4{display:grid;gap:28px;margin:44px 0}
+.stat2,.stat3,.stat4{display:grid;gap:28px;margin:44px 0}
+.stat2{grid-template-columns:repeat(2,1fr)}
 .stat3{grid-template-columns:repeat(3,1fr)}
 .stat4{grid-template-columns:repeat(4,1fr)}
 .st-n{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(34px,5vw,58px);line-height:1;font-variant-numeric:tabular-nums}
@@ -144,23 +145,36 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
 @media (prefers-reduced-motion:no-preference){.hero-img{animation:kb 26s ease-in-out infinite alternate}}
 @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
 @media (max-width:860px){
-  .stat3,.stat4{grid-template-columns:1fr 1fr}
+  .stat2,.stat3,.stat4{grid-template-columns:1fr 1fr}
   .comp-row,.story-grid,.like-grid,.cando-grid,.sty-grid,.plan-grid{grid-template-columns:1fr}
   .nb-grid{grid-template-columns:1fr 1fr}
   .yr{height:220px}
   .next-in{flex-direction:column;align-items:flex-start}
   .fin-l,.bench-l{width:120px}
   .sc{padding:72px 18px}
+  .status-tiles{grid-template-columns:1fr 1fr}
 }
-.status-grid{width:100%;border-collapse:collapse;margin:8px 0 18px;font-variant-numeric:tabular-nums}
-.status-grid th,.status-grid td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--ink12);font-size:14px}
-.status-grid th.v,.status-grid td.v{text-align:right}
+.status-hero{margin:8px 0 40px}
+.status-hero-n,.sold-hero-n,.inv-hero-n{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(72px,13vw,148px);line-height:0.92;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.status-hero-l,.sold-hero-l,.inv-hero-l{font-size:15px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;opacity:.65;margin-top:12px}
+.status-hero-m{font-size:clamp(18px,2.4vw,26px);font-weight:600;margin-top:10px;font-variant-numeric:tabular-nums}
+.status-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:8px 0 18px}
+.status-tile{background:#fff;border:1px solid var(--ink12);padding:20px 18px}
+.status-tile-n{font-family:'Amboqia Boriango',Georgia,serif;font-size:clamp(32px,4vw,48px);line-height:1;font-variant-numeric:tabular-nums}
+.status-tile-l{font-size:13px;opacity:.7;margin-top:8px;line-height:1.35}
+.status-tile-m{font-size:14px;font-weight:600;margin-top:10px;font-variant-numeric:tabular-nums}
+.sold-hero{margin:8px 0 28px}
+.inv-hero{margin:8px 0 28px}
+.inv-verdict{display:inline-block;margin-top:18px;padding:7px 16px;border:1px solid var(--ink12);border-radius:999px;font-size:13px;font-weight:600}
+.szn.is-hero{margin-top:36px}
 .photo-set{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
 .photo-tile{margin:0;overflow:hidden;background:var(--navy)}
 .photo-tile img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:0}
+.photo-lead{grid-column:1 / -1}
+.photo-lead img{aspect-ratio:16/9}
 .facts-block ul{margin:0 0 16px 18px}
 .facts-block li{margin:6px 0}
-@media (max-width:560px){.stat3,.stat4{grid-template-columns:1fr}.photo-set{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.stat2,.stat3,.stat4{grid-template-columns:1fr}.photo-set{grid-template-columns:1fr 1fr}.status-tiles{grid-template-columns:1fr}}
 @media print{
   .sc{min-height:0;padding:24px}
   #bar,.cue{display:none}
