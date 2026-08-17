@@ -41,7 +41,9 @@ checks.push({
     /resortTilesForSlug\(/.test(loader) &&
     /fetchAllCityActiveSfr\(/.test(loader) &&
     /cityPrefixed/.test(loader) &&
-    /city_slug}-\$\{resort\.slug\}/.test(loader),
+    /city_slug}-\$\{resort\.slug\}/.test(loader) &&
+    /mls_cities/.test(loader) &&
+    /Same city door/.test(loader),
 })
 
 const index = src('app/actions/communities.ts')
