@@ -2,19 +2,18 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — search count + 390 chrome class
+# Current — 2026-08-17 (cursor-loop-chain) — search count LIVE on main
 
-**Surface:** Cursor cloud `bc-4382906a` (`cursor/loop-chain-2026-08-16t23-45-84b5`). **Time:** 2026-08-17 ~00:40 UTC. Rebased onto `origin/main` **`79fb9820b`** (PRs 57/58 FLEET-PUNCH intake kept; not touched). Brief served **SHIP CLASS `fleet:public-ux:search`** — 8 nodes (cap). 33 leftover siblings stay open. Product commits survived rebase (`publish-search-count` + 44px chips). Shipping to `main` this session. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. Do not start a new ship class. Do not fold or touch the punch-list node.
+**Surface:** Cursor cloud `bc-4382906a` (`cursor/loop-chain-2026-08-16t23-45-84b5`). **Time:** 2026-08-17 ~00:52 UTC. Rebased onto `79fb9820b` (PRs 57/58 FLEET-PUNCH intake kept; punch-list node not touched). **`main` @ `735c31037`**. Vercel Production **READY** (`dpl_FUgkMxxiq34GmTuvnmbe8geq1iVK`). `npm run deploy:verify` exit 0. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. Eight search-class nodes stay **done**. Do not start a new ship class.
 
 **Done**
-- Reproduced: sheet **Show 409 homes** vs list **318 homes in this map view** after max $800K + beds 3+ (two unlabeled populations). City header **1,298** all-types vs FAQ **483** SFR. 390 Price/Beds/Baths were `hidden sm:contents` (0×0). Count/sort sat below the fold. First tap on Show N was lost on sheet re-render.
-- Class: SoR `publishSearchCount` / `publishSearchCountPair`. Filter-match is the URL-filter number. Viewport prints only when it differs, labeled **in this map view**. City header **N homes for sale, all types**. FAQ question names single-family. 390 chips in a horizontal row at **44×44**. Count+sort on the List/Map toggle. Apply uses `onPointerDown` + lock. Gate `ci:publish-search-count`.
-- Local accept (BASE_URL=http://127.0.0.1:3000): probe `scripts/probe-search-count-prod.mjs` **ok**. Show 409 === list 409. Header all-types. FAQ single-family. 5 chips ≥44×44. Count in first 390. First click closed the sheet. Screenshots `/opt/cursor/artifacts/search_{count_390_filtered,count_1280_filtered,filters_390_sheet,bend_1280,home_390}.png`.
-- R-024 coverage note only (still LOCKED). Do not mark G27 done. Eight nodes stay **done** — evidence updates to the live READY SHA after `deploy:verify`.
+- Rebased `cursor/loop-chain-2026-08-16t23-45-84b5` onto current main. Product commits survived. Fast-forward `main` + one `npm run push`.
+- Production 2026-08-17T00:50Z (MISS, dpl_FUgkMxxiq34GmTuvnmbe8geq1iVK): `/homes-for-sale/bend` **1,298 homes for sale, all types**. FAQ question **How many single-family homes are for sale**. Answer **active single-family listings**.
+- Class: SoR `publishSearchCount` / `publishSearchCountPair`. Gate `ci:publish-search-count`. Local probe ok before rebase; after rebase `ci:publish-search-count` + 190 tests including fleet-intake-core.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
 
 **Next**
-- One `npm run push` on `main`, one `deploy:verify` to READY, then stamp the 8 nodes with that SHA.
-- Leftover 33 `fleet:public-ux:search` siblings stay open for the next iteration. Do not start them here.
+- Leftover 33 `fleet:public-ux:search` siblings stay open for the next iteration. Do not start them from this session.
 
 **Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not touch FLEET-PUNCH. Disarm = Matt says "disarm the loop".
 
