@@ -482,6 +482,7 @@ export {
   findPropertiesByPostalAndStreet,
   selectNewExpiredListings,
   getExistingExpiredListingKeys,
+  selectListingHistoryForKey,
   listExpiredListingsForAdmin,
   updateExpiredListingById,
   getCmaBySlug,

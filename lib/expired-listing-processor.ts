@@ -22,7 +22,7 @@
  * Service-area + price floor (locked 2026-05-19 per Matt's directive):
  *   - Cities: Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine.
  *   - PropertyType='A' (SFR only).
- *   - ListPrice > $500,000.
+ *   - ListPrice >= $500,000.
  *   - Status transition within the last `lookbackHours` (default 24h).
  *
  * Deduplication is by `expired_listings.listing_key` — a listing only
@@ -50,6 +50,7 @@ import {
 // UI-configurable crm_automation_rules table. No hard-coded plan id needed here.
 import { sendExpiredAlertEmail } from '@/lib/expired-alert'
 import { CAPTURE_MIN_LIST_PRICE, CAPTURE_SERVICE_AREA_CITIES } from '@/lib/prospecting/capture-scope'
+import { buildListingNote, type ExpiredNoteHistoryRow, type ExpiredNoteListing } from '@/lib/expired-listing-note'
 
 // Capture scope is defined ONCE, in lib/prospecting/capture-scope.ts (Matt's
 // locked W6.8 decision: $500K+, SFR, six cities). These aliases keep the
@@ -70,6 +71,8 @@ interface ExpiredListingRow {
   ListPrice: number | string | null
   OriginalListPrice: number | string | null
   CumulativeDaysOnMarket: number | string | null
+  OnMarketDate: string | null
+  ListDate: string | null
   ListAgentName: string | null
   list_agent_email: string | null
   PropertyType: string | null
@@ -134,62 +137,21 @@ function num(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function buildListingNote(l: ExpiredListingRow, owner: OwnerLookupResult): string {
-  const lines: string[] = []
-  const addr = `${l.StreetNumber ?? ''} ${l.StreetName ?? ''}`.trim()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com'
-  lines.push(`EXPIRED LISTING ALERT. ${l.StandardStatus} on ${l.status_change_timestamp.slice(0, 10)}.`)
-  lines.push('')
-  lines.push(`Property: ${addr}, ${l.City}, OR ${l.PostalCode ?? ''}`)
-  lines.push(`MLS #: ${l.ListNumber ?? l.ListingKey}`)
-  if (l.SubdivisionName) lines.push(`Community: ${l.SubdivisionName}`)
-  if (owner.taxlot) lines.push(`County taxlot: ${owner.taxlot}`)
-  lines.push('')
-  const lp = num(l.ListPrice)
-  const olp = num(l.OriginalListPrice)
-  if (lp != null) lines.push(`Last list price: $${new Intl.NumberFormat('en-US').format(Math.round(lp))}`)
-  if (olp != null && lp != null && olp !== lp) {
-    const drop = olp - lp
-    const dropPct = ((drop / olp) * 100).toFixed(1)
-    lines.push(`Original list: $${new Intl.NumberFormat('en-US').format(Math.round(olp))} (dropped $${new Intl.NumberFormat('en-US').format(Math.round(drop))}, ${dropPct}%)`)
+async function loadHistoryForExpiredNote(listingKey: string): Promise<ExpiredNoteHistoryRow[]> {
+  const { selectListingHistoryForKey } = await import('@/lib/data')
+  let rows = await selectListingHistoryForKey(listingKey)
+  if (rows.length > 0) return rows
+  const token = (process.env.SPARK_API_KEY ?? '').trim()
+  if (!token) return []
+  try {
+    const { fetchAndInsertHistoryCore } = await import('@/lib/sync/fetchListingHistory')
+    await fetchAndInsertHistoryCore(token, listingKey)
+  } catch (err) {
+    console.error('[expired-listing-processor] history fetch failed', listingKey, err)
+    return []
   }
-  const dom = num(l.CumulativeDaysOnMarket)
-  if (dom != null) lines.push(`Days on market: ${dom} days`)
-  lines.push('')
-  if (l.BedroomsTotal) lines.push(`Beds: ${l.BedroomsTotal}`)
-  if (l.BathroomsTotal) lines.push(`Baths: ${l.BathroomsTotal}`)
-  const sqft = num(l.TotalLivingAreaSqFt)
-  if (sqft) lines.push(`Living area: ${new Intl.NumberFormat('en-US').format(Math.round(sqft))} sqft`)
-  lines.push('')
-  lines.push(`Prior list agent: ${l.ListAgentName ?? 'unknown'}${l.list_agent_email ? ` (${l.list_agent_email})` : ''}`)
-  lines.push('')
-  lines.push('OWNER CONTACT')
-  if (owner.ownerName) lines.push(`Name: ${owner.ownerName}`)
-  if (owner.ownerMailingAddress) lines.push(`Mailing: ${owner.ownerMailingAddress}`)
-  if (owner.ownerEmail) lines.push(`Email: ${owner.ownerEmail}`)
-  if (owner.ownerPhone) lines.push(`Phone: ${owner.ownerPhone}`)
-  if (owner.allPhones && owner.allPhones.length > 1) {
-    lines.push(`All phones: ${owner.allPhones.map((p) => `${p.value}${p.dnc ? ' (DNC)' : ''}`).join(', ')}`)
-  }
-  if (owner.allEmails && owner.allEmails.length > 1) {
-    lines.push(`All emails: ${owner.allEmails.join(', ')}`)
-  }
-  if (!hasReachableOwnerContact(owner)) {
-    lines.push('No verified email or phone yet. Do not cold-call until skip trace completes.')
-  }
-  if (owner.complianceTags?.length) {
-    lines.push(`Compliance: ${owner.complianceTags.join(', ')}`)
-  }
-  if (owner.notes) {
-    lines.push('')
-    lines.push(`Lookup detail: ${owner.notes}`)
-  }
-  lines.push('')
-  lines.push(`Expired LP: ${siteUrl}/lp/expired-listing`)
-  if (l.ListNumber) {
-    lines.push(`MLS history: ${siteUrl}/homes-for-sale/listing/${l.ListNumber}`)
-  }
-  return lines.join('\n')
+  rows = await selectListingHistoryForKey(listingKey)
+  return rows
 }
 
 async function fetchNewExpiredListings(
@@ -204,7 +166,7 @@ async function fetchNewExpiredListings(
     sinceIso: since,
     serviceAreaCities: SERVICE_AREA_CITIES,
     minListPrice: MIN_LIST_PRICE,
-    limit: maxPerRun * 2,
+    limit: maxPerRun,
   })
   const keys = data.map((d) => (d as { ListingKey: string }).ListingKey)
   if (keys.length === 0) return []
@@ -358,7 +320,7 @@ export async function processNewExpiredListings(
           assignedBroker: 'matt',
           originNote: {
             title: `Expired listing auto-detect. ${l.StandardStatus}`,
-            body: buildListingNote(l, owner),
+            body: buildListingNote(l as ExpiredNoteListing, owner, await loadHistoryForExpiredNote(l.ListingKey)),
           },
         })
         stats.notes_added++
