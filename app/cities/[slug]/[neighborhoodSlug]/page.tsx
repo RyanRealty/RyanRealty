@@ -60,6 +60,7 @@ import {
 } from '@/lib/kb/place-sections'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
+import { formatPlaceDays } from '@/lib/market/publish-place-days'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { slugify, subdivisionListingsPath } from '@/lib/slug'
@@ -266,7 +267,7 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
     ...(medianDays != null
-      ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }]
+      ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: formatPlaceDays(medianDays) }]
       : []),
     ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: kbMoneyFull(stats.medianSalePrice) ?? '—' }] : []),
     { label: 'City', value: cityName },

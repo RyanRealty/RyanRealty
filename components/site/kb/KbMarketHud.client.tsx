@@ -9,6 +9,7 @@ import { kbMoneyFull, type KbMarketData } from './types'
 import { KbMarketChart } from './KbMarketChart.client'
 import { valuationPath } from '@/lib/slug'
 import { monthsOfSupplyVerdict as verdictOf, formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { formatPlaceDays } from '@/lib/market/publish-place-days'
 
 function Kpi({ val, lbl }: { val: string | null; lbl: string }) {
   return (
@@ -156,9 +157,9 @@ export function KbMarketHud({
   else if (data.sold12mo != null) kpis.push({ val: data.sold12mo.toLocaleString('en-US'), lbl: 'Sold · 12 mo' })
   if (data.new30 != null) kpis.push({ val: data.new30.toLocaleString('en-US'), lbl: 'New · 30 days' })
   if (data.saleToList != null) kpis.push({ val: `${data.saleToList.toFixed(1)}%`, lbl: 'Sale to list' })
-  if (data.daysToPending != null) kpis.push({ val: `${Math.round(data.daysToPending)} days`, lbl: 'Median to pending' })
-  else if (data.medianDom12mo != null) kpis.push({ val: `${Math.round(data.medianDom12mo)} days`, lbl: 'Median on market · 12 mo' })
-  else if (data.medianDomActive != null) kpis.push({ val: `${Math.round(data.medianDomActive)} days`, lbl: 'Median on market · active' })
+  if (data.daysToPending != null) kpis.push({ val: formatPlaceDays(data.daysToPending), lbl: 'Median to pending' })
+  else if (data.medianDom12mo != null) kpis.push({ val: formatPlaceDays(data.medianDom12mo), lbl: 'Median on market · 12 mo' })
+  else if (data.medianDomActive != null) kpis.push({ val: formatPlaceDays(data.medianDomActive), lbl: 'Median on market · active' })
   if (data.monthsSupply != null) kpis.push({ val: `${formatMonthsOfSupply(data.monthsSupply)} mo`, lbl: 'Months of supply' })
 
   return (

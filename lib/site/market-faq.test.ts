@@ -87,6 +87,17 @@ describe('buildMarketFaq', () => {
     expect(r.faqs.find((f) => f.question.includes('homes are for sale'))?.answer).toContain('88 active')
   })
 
+  it('prints the pulse half-day instead of inventing a second integer (Black Butte founding)', () => {
+    const r = buildMarketFaq('Black Butte Ranch', {
+      medianDaysToPending: 39.5,
+      refreshedAt: null,
+    })
+    const days = r.faqs.find((f) => f.question.includes('take to sell'))
+    expect(days?.answer).toContain('39.5 days')
+    expect(days?.answer).not.toContain('40 days')
+    expect(r.datasetVariables.find((v) => v.name === 'Median Days to Pending')?.value).toBe(39.5)
+  })
+
   it('prints the master HOA when a higher sub-neighborhood estimate is also on file', () => {
     const r = buildMarketFaq('Tetherow', {
       hoaMasterAnnual: 1464,

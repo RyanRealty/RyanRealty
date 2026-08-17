@@ -9,9 +9,9 @@
  * fabricated stand-in, per CLAUDE.md §0.
  *
  * Brand-voice rules encoded here (CLAUDE.md §2): currency rounded to the
- * nearest thousand, days as an integer plus "days", percents at one decimal
- * with a signed arrow, sentence-case verdict phrases, the em-dash reserved as
- * the "unavailable" placeholder.
+ * nearest thousand, days via publishPlaceDays (half-days stay half), percents
+ * at one decimal with a signed arrow, sentence-case verdict phrases, the
+ * em-dash reserved as the "unavailable" placeholder.
  *
  * market-report-email.ts re-exports the public names, so existing importers
  * (app/actions/generate-market-report.ts, the test suite) keep working against
@@ -19,6 +19,7 @@
  */
 
 import type { MoSVerdict } from '@/lib/data/types/market'
+import { formatPlaceDays } from '@/lib/market/publish-place-days'
 
 /**
  * Round to the nearest thousand and format as $XXX,000. Pure. Returns the
@@ -30,10 +31,11 @@ export function formatCurrencyRounded(value: number | null | undefined): string 
   return '$' + rounded.toLocaleString('en-US')
 }
 
-/** Integer + " days" (e.g. "38 days"). Em-dash placeholder when unavailable. */
+/** Published days (e.g. "38 days" / "39.5 days"). Em-dash when unavailable. */
 export function formatDays(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return '—'
-  return `${Math.round(value)} days`
+  if (value <= 0) return '0 days'
+  return formatPlaceDays(value)
 }
 
 /** One-decimal signed-arrow YoY: "↑ 2.1% YoY" / "↓ 1.4% YoY" / flat. Em-dash when null. */

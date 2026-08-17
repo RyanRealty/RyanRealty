@@ -83,10 +83,10 @@ describe('formatCurrencyRounded (nearest thousand)', () => {
 })
 
 describe('formatDays', () => {
-  it('renders integer + " days"', () => {
+  it('renders published days without inventing a second integer', () => {
     expect(formatDays(38)).toBe('38 days')
-    expect(formatDays(25.4)).toBe('25 days')
-    expect(formatDays(47.5)).toBe('48 days')
+    expect(formatDays(25.4)).toBe('25.4 days')
+    expect(formatDays(47.5)).toBe('47.5 days')
   })
   it('em-dash when unavailable', () => {
     expect(formatDays(null)).toBe('—')

@@ -13,6 +13,7 @@
  */
 
 import type { MarketPulse } from '@/lib/data/types/market'
+import { formatPlaceDays } from '@/lib/market/publish-place-days'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -42,7 +43,7 @@ export function ExpiredMarketStatStrip({ pulse, className }: Props) {
 
   if (daysToPending != null) {
     stats.push({
-      value: `${Math.round(daysToPending)} days`,
+      value: formatPlaceDays(daysToPending),
       label: 'Median days to pending',
     })
   }

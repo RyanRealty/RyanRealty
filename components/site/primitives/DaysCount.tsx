@@ -1,11 +1,14 @@
+import { formatPlaceDays } from '@/lib/market/publish-place-days'
 import { cn } from '@/lib/utils'
 
 /**
- * DaysCount — integer + " days" or " day" suffix per brand voice rule
- * "Days = integer + 'days'". Always tabular-nums.
+ * DaysCount — published days + " day(s)" via publishPlaceDays.
+ * Pulse medians keep the half-day (39.5). Whole days stay whole.
+ * Zero (a listing just on market) prints "0 days". Always tabular-nums.
  *
  * Examples:
  *   <DaysCount value={38} />       → 38 days
+ *   <DaysCount value={39.5} />     → 39.5 days
  *   <DaysCount value={1} />        → 1 day
  *   <DaysCount value={0} />        → 0 days
  *   <DaysCount value={null} />     → —
@@ -22,11 +25,8 @@ export function DaysCount({ value, fallback = '—', className }: Props) {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return <span className={cn('tabular-nums', className)}>{fallback}</span>
   }
-  const rounded = Math.max(0, Math.round(value))
-  const unit = rounded === 1 ? 'day' : 'days'
-  return (
-    <span className={cn('tabular-nums', className)}>
-      {rounded.toLocaleString('en-US')} {unit}
-    </span>
-  )
+  if (value <= 0) {
+    return <span className={cn('tabular-nums', className)}>0 days</span>
+  }
+  return <span className={cn('tabular-nums', className)}>{formatPlaceDays(value)}</span>
 }
