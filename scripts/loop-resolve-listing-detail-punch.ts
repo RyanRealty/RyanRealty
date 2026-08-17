@@ -12,49 +12,49 @@ import { isLegalTransition } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
-const OWNER = 'bc-42b57373-e2ac-41eb-8e01-b44e28a1677d'
+const OWNER = 'cursor-loop-chain-2026-08-17t05-41-9db6'
 const ID = '3a6198cd-fcd5-4aa2-b51a-3b62c2c0e437'
 
 const RESOLUTIONS: PunchDisposition[] = [
   {
-    fingerprint: '1400f2fa89d1a2082646e324d4b8d8ba',
-    status: 'fixed',
-    note: 'publishListingContactKey prefers ListNumber. Contact page resolves listingKeys + listNumbers. Hilmer MLS 220222626 loads the tile.',
-  },
-  {
-    fingerprint: '1c49031c7eea8492a01ac8eedc219140',
-    status: 'fixed',
-    note: '7th Street: Facts + True cost share publishListingHoa $45. H1/drop/JSON-LD share publishListingAsk $424,990.',
-  },
-  {
-    fingerprint: '3ccb220656d54ed0d3cf6a81229e0e3d',
-    status: 'fixed',
-    note: 'Horse Back Facts + True cost share publishListingHoa $70. Gate ci:publish-listing-hoa.',
-  },
-  {
-    fingerprint: '5256872fd4a775785f71bfe1d609cdb1',
-    status: 'fixed',
-    note: 'Kokanee HOA $42 via publishListingHoa. Baths 3 vs 2.5 rejected: hero BathroomsTotal, remarks are MLS prose.',
-  },
-  {
-    fingerprint: '5c0dab89dd5d797b64c246eb068cc562',
-    status: 'fixed',
-    note: 'Hudspeth: HOA $160 exact. Ask/drop $629,500 / $15,500 from $645,000. Gate ci:publish-listing-ask.',
-  },
-  {
-    fingerprint: '494f1c5baa31a864708eccc537f3e67f',
-    status: 'fixed',
-    note: 'Canyons Facts + True cost share publishListingHoa $1,529. No thousand-round $2,000.',
-  },
-  {
-    fingerprint: '0ecadb61b89ea68364114df872400c76',
-    status: 'fixed',
-    note: 'Foley Facts + True cost share publishListingHoa $22. No $0 nearest-thousand.',
-  },
-  {
-    fingerprint: '61640c337085bbc293276ecde2c01ab4',
+    fingerprint: 'b11ab70e13b9265226b29434cf712a6f',
     status: 'rejected',
-    note: 'Bryant Albany 200 at 390+1280. Title and H1 $1,073,000. No crash. Stale.',
+    note: 'Bryant Albany 390+1280: H1 + strip $1,073,000. MLS ListPrice 1073000, type D. Tax $1,233 is extra, not the only figure. Stale.',
+  },
+  {
+    fingerprint: '1d85e5006ea519d4caac5da4e96056d5',
+    status: 'fixed',
+    note: '725 Broadway $0 was Spark type-G ListPrice 2.4. publishListingAsk withholds ask < $1000. Card prints Price on request / em dash, not $0.',
+  },
+  {
+    fingerprint: '5bd258939f7362b9707335e456ee6582',
+    status: 'fixed',
+    note: 'Old Farm $0 cards were lease crumbs 1.2 / 1.08. Same MIN_PUBLIC_SALE_ASK withhold. Gate ci:publish-listing-ask.',
+  },
+  {
+    fingerprint: 'f169f0418652a589589b62f66da95a81',
+    status: 'fixed',
+    note: 'Agness 23/22/1000 withheld by publishListingRooms. Living area stays. Hero/Facts/JSON-LD/alerts share that set. Gate ci:publish-listing-rooms.',
+  },
+  {
+    fingerprint: '4f21b7b8d2af4f756f7a5f6165ebbd8c',
+    status: 'rejected',
+    note: 'Empire HOA already shipped. Facts + True cost HOA $135. FINANCIAL no $0. Prior publishListingHoa class.',
+  },
+  {
+    fingerprint: 'c5679c0f72d8b7aba6981d157b37a405',
+    status: 'rejected',
+    note: 'Empire HOA $135 vs FINANCIAL $0 does not reproduce after publishListingHoa. Both $135.',
+  },
+  {
+    fingerprint: '22f88adc01ed31de6325ff802276e6ed',
+    status: 'rejected',
+    note: 'Empire wheel-down stayed on the listing. pageCount 1. No /neighborhoods navigation.',
+  },
+  {
+    fingerprint: '15f928e00adcc0b42ca16b74abab8679',
+    status: 'rejected',
+    note: 'Foley Facts + True cost HOA $22. FINANCIAL no $0. Prior publishListingHoa class.',
   },
 ]
 
