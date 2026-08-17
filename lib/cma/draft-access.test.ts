@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { brokerCmaViewHref, canBrokerReviewCma, isCmaClientReady } from './draft-access'
+import {
+  adminCmaEntityActions,
+  brokerCmaViewHref,
+  canBrokerReviewCma,
+  canOpenCmaDocument,
+  isCmaClientReady,
+} from './draft-access'
 
 describe('CMA draft review access', () => {
   it('keeps drafts off the public web', () => {
@@ -24,5 +30,26 @@ describe('CMA draft review access', () => {
     expect(brokerCmaViewHref('cma-850-quince-redmond-97756')).toBe(
       '/admin/cmas/cma-850-quince-redmond-97756/view',
     )
+  })
+
+  it('opens a draft that only has render_args', () => {
+    expect(canOpenCmaDocument({ render_args: { comps: [] }, html_content: null })).toBe(true)
+    expect(canOpenCmaDocument({ html_content: null, html_path: null, render_args: null })).toBe(false)
+  })
+
+  it('puts Review CMA first on the admin entity page', () => {
+    const actions = adminCmaEntityActions({
+      slug: 'cma-850-quince-redmond-97756',
+      canOpenDocument: true,
+      hasPdf: true,
+    })
+    expect(actions[0]).toEqual({
+      id: 'review-cma',
+      label: 'Review CMA',
+      href: '/admin/cmas/cma-850-quince-redmond-97756/view',
+      primary: true,
+    })
+    expect(actions[0]?.primary).toBe(true)
+    expect(actions.some((a) => a.id === 'review-cma' && a.primary)).toBe(true)
   })
 })

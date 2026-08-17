@@ -23,6 +23,7 @@ import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import type { CSSProperties, ReactNode } from 'react'
 import { Button } from '@/components/admin/v2'
+import { brokerCmaViewHref } from '@/lib/cma/draft-access'
 import type { CmaWorklistRow } from './types'
 import { CmaStatusPill } from './CmaStatusPill.client'
 import { formatDate, formatPrice } from './format'
@@ -173,15 +174,15 @@ export function CmaDetailPanel({
           </Button>
         ) : null}
         {detail.hasDocument ? (
-          <Link
-            href={`/admin/cmas/${detail.slug}/view`}
+          <a
+            href={brokerCmaViewHref(detail.slug)}
             target="_blank"
             rel="noreferrer"
             className="av2-btn av2-btn--quiet av2-btn--touch"
             style={{ flex: 1, textDecoration: 'none' }}
           >
             Open report
-          </Link>
+          </a>
         ) : null}
         <Link
           href={`/admin/cmas/${detail.slug}`}

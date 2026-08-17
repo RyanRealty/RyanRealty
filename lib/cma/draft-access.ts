@@ -20,3 +20,48 @@ export function canBrokerReviewCma(opts: {
 export function brokerCmaViewHref(slug: string): string {
   return `/admin/cmas/${slug.trim().toLowerCase()}/view`
 }
+
+/** Stored HTML, render_args (draft rebuild), or a legacy public file. */
+export function canOpenCmaDocument(row: {
+  html_content?: unknown
+  html_path?: unknown
+  render_args?: unknown
+}): boolean {
+  if (row.html_content) return true
+  if (row.render_args && typeof row.render_args === 'object') return true
+  return String(row.html_path ?? '').startsWith('public/cmas/')
+}
+
+export type AdminCmaEntityAction = {
+  id: 'review-cma' | 'open-pdf'
+  label: string
+  href: string
+  primary: boolean
+}
+
+/** Entity-page actions in visual order. Review CMA is first when a document exists. */
+export function adminCmaEntityActions(opts: {
+  slug: string
+  canOpenDocument: boolean
+  hasPdf: boolean
+}): AdminCmaEntityAction[] {
+  const slug = opts.slug.trim().toLowerCase()
+  const actions: AdminCmaEntityAction[] = []
+  if (opts.canOpenDocument) {
+    actions.push({
+      id: 'review-cma',
+      label: 'Review CMA',
+      href: brokerCmaViewHref(slug),
+      primary: true,
+    })
+  }
+  if (opts.hasPdf) {
+    actions.push({
+      id: 'open-pdf',
+      label: 'Open PDF',
+      href: `/api/cma/${slug}/pdf`,
+      primary: false,
+    })
+  }
+  return actions
+}

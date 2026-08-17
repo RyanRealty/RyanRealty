@@ -159,6 +159,10 @@ const nextConfig: NextConfig = {
       // SAMEORIGIN keeps cross-origin embedding blocked while letting the
       // admin surface frame the document. (Same-key headers: last match wins.)
       { source: '/cma/:slug', headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }] },
+      // Broker draft review lives at /admin/cmas/:slug/view (route handler).
+      // The entity page iframes that URL; without this override the global
+      // DENY wins and the preview is chrome-error:// (measured 2026-08-17).
+      { source: '/admin/cmas/:slug/view', headers: [{ key: 'X-Frame-Options', value: 'SAMEORIGIN' }] },
       // Legacy file-based CMAs live as static assets under /cmas/<slug>/cma.html
       // and /cma/[slug] 302-redirects there — the redirect target needs the
       // same frame policy or the admin preview iframe goes blank for old CMAs.
