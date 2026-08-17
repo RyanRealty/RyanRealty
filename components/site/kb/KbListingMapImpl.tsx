@@ -7,7 +7,7 @@ import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from '@googlema
 import { useGoogleMapsReady } from '@/lib/use-google-maps-ready'
 import { getExploreMapOptions } from '@/lib/maps/markers'
 import { PHOTO_STAMP_MIN_ZOOM } from '@/lib/maps/photo-stamp'
-import { kbMoneyFull } from './types'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 
 export type KbMapFeature = {
@@ -55,11 +55,10 @@ const PEAKS: { n: string; c: [number, number] }[] = [
   { n: 'Paulina Peak', c: [-121.243, 43.69] },
 ]
 
-// C-13: was `$2.2M` / `$715K` while the tiles on the SAME page rendered
-// `$3,200,000`. VOICE.md Mechanics: currency to the nearest thousand.
-// kbMoneyFull is the canon formatter — one implementation, not a second here.
+// Listing pins publish the exact ListPrice. Nearest-thousand made a
+// Southern Crossing pin $920,000 next to JSON-LD $919,500.
 function money(n: number | null): string {
-  return kbMoneyFull(n) ?? '—'
+  return formatPublishedAsk(n) ?? '—'
 }
 
 const REGION = { west: -121.98, south: 43.5, east: -120.9, north: 44.52 }

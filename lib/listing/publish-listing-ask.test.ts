@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatListingAsk, publishListingAsk, publishListingDrop } from './publish-listing-ask'
+import { formatListingAsk, formatPublishedAsk, publishListingAsk, publishListingDrop } from './publish-listing-ask'
 
 describe('publishListingAsk', () => {
   it('keeps the 7th Street and Hudspeth founding cases exact', () => {
@@ -14,6 +14,16 @@ describe('publishListingAsk', () => {
   it('withholds a missing or non-positive ask', () => {
     expect(publishListingAsk(0)).toBeNull()
     expect(publishListingAsk(null)).toBeNull()
+  })
+
+  it('keeps Boyd Acres and Old Bend place-card asks exact', () => {
+    expect(formatPublishedAsk(949900)).toBe('$949,900')
+    expect(formatPublishedAsk(949900)).not.toBe('$950,000')
+    expect(formatPublishedAsk(899900)).toBe('$899,900')
+    expect(formatPublishedAsk(1999500)).toBe('$1,999,500')
+    expect(formatPublishedAsk(1999500)).not.toBe('$2,000,000')
+    expect(formatPublishedAsk(919500)).toBe('$919,500')
+    expect(formatPublishedAsk(919500)).not.toBe('$920,000')
   })
 })
 

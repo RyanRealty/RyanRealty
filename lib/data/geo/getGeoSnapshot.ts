@@ -17,6 +17,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { makeResilientCached } from '@/lib/data/cache/resilient'
+import { pulseOnlyCitySnapshot, type PulseCityRow } from '@/lib/data/geo/pulse-only-city-snapshot'
 
 const GeoSnapshotSchema = z.object({
   geoType: z.enum(['city', 'community', 'neighborhood']),
@@ -71,15 +72,6 @@ function rowToSnapshot(row: GeoSnapshotMvRow): GeoSnapshot {
 // scoped). City-level snapshots therefore OVERRIDE count/median/pending with
 // the pulse row when one exists; the MV remains the resilient base and the
 // only source for community/neighborhood levels (the pulse has no rows there).
-
-type PulseCityRow = {
-  geo_slug: string
-  geo_label: string
-  active_count: number
-  pending_count: number
-  median_list_price: number | null
-  updated_at: string
-}
 
 async function fetchPulseCityMap(): Promise<Map<string, PulseCityRow>> {
   const map = new Map<string, PulseCityRow>()
@@ -141,7 +133,12 @@ async function fetchOneOrThrow(input: GeoSnapshotInput): Promise<GeoSnapshot | n
       .maybeSingle()
     if (!error) { // poison-null-ok — genuine miss only; the error branch below still throws
       // Success — a present row, or a genuine miss (null). Both are cacheable.
-      if (!data) return null
+      if (!data) {
+        if (parsed.geoType !== 'city') return null
+        const pulse = await fetchPulseCityMap()
+        const pulseRow = pulse.get(key)
+        return pulseRow ? pulseOnlyCitySnapshot(key, pulseRow) : null
+      }
       const snap = rowToSnapshot(data as GeoSnapshotMvRow)
       if (parsed.geoType !== 'city') return snap
       const pulse = await fetchPulseCityMap()
@@ -175,10 +172,10 @@ const getGeoSnapshotUncoalesced = async (input: GeoSnapshotInput): Promise<GeoSn
   const parsed = GeoSnapshotSchema.parse(input)
   const cached = unstable_cache(
     () => fetchOneOrThrow(parsed),
-    // v3 cache-key bump 2026-07-08 — evicts pre-pulse-override city entries
-    // (v2 bump 2026-05-31 evicted poison-nulls after the throw-on-error fix;
-    // Vercel's Data Cache persists across deploys, so old values linger to TTL).
-    ['geo-snapshot-v3', parsed.geoType, parsed.geoKey],
+    // v4 cache-key bump 2026-08-17 — pulse-only city doors (Tumalo) when the
+    // MV row is absent. v3 (2026-07-08) evicted pre-pulse-override city entries;
+    // v2 (2026-05-31) evicted poison-nulls after the throw-on-error fix.
+    ['geo-snapshot-v4', parsed.geoType, parsed.geoKey],
     {
       revalidate:
         parsed.geoType === 'city'

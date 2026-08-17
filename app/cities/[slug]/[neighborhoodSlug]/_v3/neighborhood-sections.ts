@@ -30,7 +30,8 @@ import {
   type V3LedgerFigureRow,
   type V3QuietItem,
 } from '@/components/site/v3'
-import { formatPrice } from '@/lib/format/money'
+import { formatPrice, formatPriceExact } from '@/lib/format/money'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishDaysFigure, publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { listingDetailPath } from '@/lib/slug'
@@ -300,7 +301,7 @@ export function liveFallbackFigures(
   if (shipsFigure(neighborhood.medianPrice) && neighborhood.medianPrice != null) {
     return [
       {
-        value: v3Text(formatPrice(neighborhood.medianPrice)),
+        value: v3Text(formatPriceExact(neighborhood.medianPrice)),
         label: v3Text('median list price'),
         href: browseHref,
       },
@@ -431,7 +432,7 @@ export function fieldItems(tiles: readonly FieldTile[]): V3FieldItem[] {
             { city: t.city, subdivision: t.subdivisionName },
             { mlsNumber: t.listNumber },
           ),
-          priceLabel: t.listPrice != null && t.listPrice > 0 ? formatPrice(t.listPrice) : 'Price on request',
+          priceLabel: formatPublishedAsk(t.listPrice) ?? 'Price on request',
           title: street || t.subdivisionName?.trim() || 'Address withheld',
           meta: meta || undefined,
           photoSrc: photo,
@@ -550,7 +551,7 @@ export function neighborhoodActivityRows(items: readonly ActivityRow[]): V3Ledge
         what: v3Text(address),
         ...(detail ? { detail: v3Text(detail) } : {}),
         value: v3Text(
-          item.price != null && item.price > 0 ? formatPrice(item.price) : 'Price on request',
+          formatPublishedAsk(item.price) ?? 'Price on request',
         ),
         ...(item.imageUrl?.trim() ? { media: { src: item.imageUrl.trim() } } : {}),
       },

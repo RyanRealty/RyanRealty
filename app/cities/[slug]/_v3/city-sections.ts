@@ -31,7 +31,8 @@ import {
   type V3QuietItem,
 } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
-import { formatPrice } from '@/lib/format/money'
+import { formatPriceExact } from '@/lib/format/money'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 
 /**
@@ -81,7 +82,7 @@ export type CityArticleItem = {
 
 /** The median line under a place name, or nothing when there is no median. */
 function medianDetail(medianPrice: number | null): string | null {
-  return medianPrice != null && medianPrice > 0 ? `${formatPrice(medianPrice)} median list` : null
+  return medianPrice != null && medianPrice > 0 ? `${formatPriceExact(medianPrice)} median list` : null
 }
 
 /** A row's photo, only when the caller resolved a verified one. */
@@ -193,7 +194,7 @@ export function activityRows(items: readonly CityActivityItem[]): V3LedgerFigure
         what: v3Text(address),
         ...(detail ? { detail: v3Text(detail) } : {}),
         value: v3Text(
-          item.price != null && item.price > 0 ? formatPrice(item.price) : 'Price on request',
+          formatPublishedAsk(item.price) ?? 'Price on request',
         ),
         ...(item.imageUrl?.trim() ? { media: { src: item.imageUrl.trim() } } : {}),
       },
@@ -242,7 +243,7 @@ export function marketFigures(
   const figures: V3InstrumentFigure[] = []
   if (pulse?.medianListPrice != null && pulse.medianListPrice > 0) {
     figures.push({
-      value: v3Text(formatPrice(pulse.medianListPrice)),
+      value: v3Text(formatPriceExact(pulse.medianListPrice)),
       label: v3Text('median list price, single-family'),
       href: links.marketReport,
     })

@@ -44,3 +44,9 @@ export function publishListingDrop(input: {
 export function formatListingAsk(ask: number): string {
   return `$${ask.toLocaleString('en-US')}`
 }
+
+/** Place-page listing cards and map pins. Null when there is no ask. */
+export function formatPublishedAsk(listPrice: number | null | undefined): string | null {
+  const published = publishListingAsk(listPrice)
+  return published ? formatListingAsk(published.ask) : null
+}

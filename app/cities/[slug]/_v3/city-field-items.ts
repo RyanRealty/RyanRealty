@@ -13,14 +13,14 @@
 
 import type { V3FieldItem } from '@/components/site/v3'
 import type { ListingTile } from '@/lib/data/types/listing'
-import { formatPrice } from '@/lib/format/money'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { listingDetailPath } from '@/lib/slug'
 
 /**
  * A tile earns a row when it carries a price and an address. Both are the row's
  * visible text: `priceLabel` is the figure and `title` is what the row is known
  * by, and V3FieldItem types neither as optional. A tile with no list price would
- * render `formatPrice(null)`, which is a lone em dash standing where a figure
+ * render a lone em dash standing where a figure
  * should be; a tile with no street would render an anonymous row. Dropping is
  * the honest answer to both, and the Field's count above the frame still states
  * the real total from its own query.
@@ -62,7 +62,7 @@ export function cityFieldItems(tiles: readonly ListingTile[], limit?: number): V
         { city: tile.city, subdivision: tile.subdivisionName },
         { mlsNumber: tile.listNumber },
       ),
-      priceLabel: formatPrice(tile.listPrice),
+      priceLabel: formatPublishedAsk(tile.listPrice) ?? 'Price on request',
       title: street,
       ...(photo ? { photoSrc: photo } : {}),
       ...(meta ? { meta } : {}),

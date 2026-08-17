@@ -80,8 +80,9 @@ export const NEWSLETTER_MARKET_CITY_SLUGS: readonly string[] = [
  * `Tumalo` and `Crooked River Ranch` were REMOVED here 2026-07-24 (Matt's call):
  * neither is a distinct MLS city — Tumalo files under Bend, CRR under Terrebonne,
  * by SubdivisionName — so each produced a permanently-empty city cache stub. CRR
- * now redirects to /communities/crooked-river-ranch; Tumalo already redirects to
- * /cities/bend (both in next.config.ts). `ci:market-city-mls-canon` (G57) fails
+ * now redirects to /communities/crooked-river-ranch. `/cities/tumalo` is a
+ * pulse-only city door (getGeoSnapshot), not a Bend impersonation.
+ * `ci:market-city-mls-canon` (G57) fails
  * CI if any entry here matches no `City` and is not exempted. (Tumalo still
  * appears in REPORT_CITIES + NEWSLETTER_MARKET_CITY_SLUGS — separate literals,
  * left as-is here; its exemption below still covers those.)
@@ -107,10 +108,11 @@ export const MARKET_REPORT_DEFAULT_CITIES = [
  * Every entry is a real MLS `listings."City"` value. `Tumalo` and `Crooked River
  * Ranch` were REMOVED 2026-07-24 (Matt's call) — neither is a distinct MLS city,
  * so their /cities pages were permanently empty. `/cities/crooked-river-ranch`
- * now redirects to /communities/crooked-river-ranch and `/cities/tumalo` to
- * /cities/bend (next.config.ts). (The /cities index `FEATURED_CITY_SLUGS` cards
- * and the `lib/map-constants.ts` pins are separate literals and still list both,
- * now leading to those redirects.) `ci:market-city-mls-canon` (G57) enforces
+ * now redirects to /communities/crooked-river-ranch. `/cities/tumalo` is a
+ * pulse-only city door (getGeoSnapshot), not a Bend impersonation.
+ * (The /cities index `FEATURED_CITY_SLUGS` cards
+ * and the `lib/map-constants.ts` pins are separate literals. Tumalo's card
+ * opens `/cities/tumalo`; CRR still redirects.) `ci:market-city-mls-canon` (G57) enforces
  * that every remaining name matches a real `City`.
  */
 export const PRIMARY_CITIES = [
@@ -154,8 +156,7 @@ export const PRIMARY_CITIES = [
  * Verified live 2026-07-24 (§0, PostgREST exact count):
  *   Tumalo — `City` rows = 0. LIVE inventory files under City="Bend",
  *     `SubdivisionName` ~ 'Tumalo Heights' / 'Tumalo Rim'. `/cities/tumalo`
- *     307-redirects to `/cities/bend` (next.config.ts). No aggregated Tumalo
- *     subdivision page exists yet.
+ *     renders from `market_pulse_live` when `geo_snapshot_mv` has no row.
  */
 export const NON_MLS_CITY_EXEMPTIONS: Readonly<
   Record<
@@ -175,6 +176,6 @@ export const NON_MLS_CITY_EXEMPTIONS: Readonly<
     reason: 'Bend-area community; the MLS files it under Bend by SubdivisionName, never as its own City.',
     mlsCity: 'Bend',
     subdivisionMatch: ['Tumalo%'],
-    servedAt: '/cities/bend',
+    servedAt: '/cities/tumalo',
   },
 }

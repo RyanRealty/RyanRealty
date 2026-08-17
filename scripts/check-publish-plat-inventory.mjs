@@ -27,7 +27,9 @@ checks.push({
     helper.includes("from('listing_tile_mv')") &&
     helper.includes("eq('property_type', 'A')") &&
     helper.includes("eq('property_sub_type', 'Single Family Residence')") &&
-    helper.includes('PUBLIC_ACTIVE_STATUSES'),
+    helper.includes('PUBLIC_ACTIVE_STATUSES') &&
+    /export function platCityAliases/.test(helper) &&
+    /export function rowMatchesPlat/.test(helper),
 })
 
 const index = src('app/subdivisions/page.tsx')

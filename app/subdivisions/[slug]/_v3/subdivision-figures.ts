@@ -34,7 +34,7 @@
  */
 
 import { v3Text, type V3InstrumentFigure, type V3ChartProps, type V3ChartPoint } from '@/components/site/v3'
-import { formatPrice } from '@/lib/format/money'
+import { formatPrice, formatPriceExact } from '@/lib/format/money'
 import type { MarketPulse, MarketStats } from '@/lib/data'
 import type { SubdivisionSalesYear } from '@/lib/data/subdivisions/getSubdivisionSalesHistory'
 
@@ -105,7 +105,7 @@ export function parentPulseFigures(
   const figures: V3InstrumentFigure[] = []
   if (pulse.medianListPrice != null) {
     figures.push({
-      value: v3Text(formatPrice(pulse.medianListPrice)),
+      value: v3Text(formatPriceExact(pulse.medianListPrice)),
       label: v3Text('median list price'),
       href,
     })

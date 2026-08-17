@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
-import { kbMoneyFull, type KbFeaturedItem } from './types'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
+import { type KbFeaturedItem } from './types'
 import { useInViewAutoplay } from './use-in-view-autoplay'
 
 /**
@@ -112,7 +113,7 @@ export function KbFeatured({
                 ref={register(it.href)}
                 className={`lst-card${playing ? ' playing' : ''}`}
                 href={it.href}
-                aria-label={`${it.address}, ${it.city}${it.price ? `, ${kbMoneyFull(it.price)}` : ''}${it.beds != null ? `, ${it.beds} bed` : ''}${it.baths != null ? `, ${it.baths} bath` : ''}. View listing.`}
+                aria-label={`${it.address}, ${it.city}${it.price ? `, ${formatPublishedAsk(it.price) ?? ''}` : ''}${it.beds != null ? `, ${it.beds} bed` : ''}${it.baths != null ? `, ${it.baths} bath` : ''}. View listing.`}
                 onMouseEnter={() => enter(it.href)}
                 onMouseLeave={() => leave(it.href)}
                 onFocus={() => enter(it.href)}
@@ -164,7 +165,7 @@ export function KbFeatured({
                 </div>
                 <div className="lst-info">
                   <div>
-                    <div className="lst-price mono-num">{kbMoneyFull(it.price)}</div>
+                    <div className="lst-price mono-num">{formatPublishedAsk(it.price)}</div>
                     <div className="lst-addr">
                       {it.address}
                       <span className="sub">
