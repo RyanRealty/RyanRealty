@@ -226,26 +226,40 @@ describe('mergeFleetIntake (one building node, not a drip)', () => {
       state: 'in_progress',
       owner_session: 'bc-13c50db8',
     })
+    const blockedClaimed = singleFindingNode('blocked-owned', 'abababababababababababababababab', {
+      state: 'blocked',
+      owner_session: 'bc-13c50db8',
+    })
     const regression = singleFindingNode('reg', 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', {
       objective: `${fleetFingerprintTag('eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')} — REGRESSION of G16 ("Search completeness" — was DONE and accepted). bot regression-certifier at https://ryan-realty.com/`,
     })
     expect(isFoldableFleetSingle(claimed)).toBe(false)
+    expect(isFoldableFleetSingle(blockedClaimed)).toBe(false)
     expect(isFoldableFleetSingle(regression)).toBe(false)
-    const plan = mergeFleetIntake([], [claimed, regression])
+    const plan = mergeFleetIntake([], [claimed, blockedClaimed, regression])
     expect(plan.fold).toHaveLength(0)
     expect(plan.punch).toBeNull()
   })
 
-  it('folds unclaimed OPEN Fleet finding [ singles into the punch list and keeps their fingerprint tags', () => {
+  it('folds unclaimed OPEN and BLOCKED Fleet finding [ singles into the punch list and keeps their fingerprint tags', () => {
     const orphan = singleFindingNode('orphan', 'ffffffffffffffffffffffffffffffff', {
       observed: 'Awbrey tile 52 vs place 63',
     })
-    const plan = mergeFleetIntake([], [orphan])
-    expect(plan.fold).toEqual([{ id: 'orphan', line: expect.stringContaining('fleet:ffffffffffffffffffffffffffffffff') }])
+    const blocked = singleFindingNode('blocked', '12121212121212121212121212121212', {
+      state: 'blocked',
+      owner_session: null,
+      url: 'https://ryan-realty.com/homes-for-sale',
+      observed: 'filter chips are 0x0',
+    })
+    const plan = mergeFleetIntake([], [orphan, blocked])
+    expect(plan.fold.map((f) => f.id).sort()).toEqual(['blocked', 'orphan'])
+    expect(plan.fold.some((f) => f.line.includes('fleet:ffffffffffffffffffffffffffffffff'))).toBe(true)
+    expect(plan.fold.some((f) => f.line.includes('fleet:12121212121212121212121212121212'))).toBe(true)
     expect(plan.punch?.created).toBe(true)
     expect(plan.punch?.appended).toBe(0)
     expect(plan.punch?.objective).toContain('fleet:ffffffffffffffffffffffffffffffff')
     expect(plan.punch?.objective).toContain('Awbrey tile 52 vs place 63')
+    expect(plan.punch?.objective).toContain('fleet:12121212121212121212121212121212')
     expect(punchLineFromSingleNode(orphan)).toContain('fleet:ffffffffffffffffffffffffffffffff')
   })
 

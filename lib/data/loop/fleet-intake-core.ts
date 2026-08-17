@@ -8,6 +8,7 @@
  *
  * Verbs mapping (COMPANY_IMPROVEMENT §How Matt steers):
  *   ADD    — minor/major/p0 finding → one durable punch-list node (appends).
+ *            Unclaimed OPEN/BLOCKED `Fleet finding [` singles fold into it.
  *   CHANGE — a regression finding on shipped work (caseId regress-G<n>)
  *            still gets its own node; do not fold those into the punch list.
  *   info   — recorded as confirmed baseline, no node (never noise the queue).
@@ -170,7 +171,7 @@ export function regressGapOf(caseId: string | null | undefined): string | null {
 }
 
 export function isFoldableFleetSingle(node: FleetIntakeActiveNode): boolean {
-  if (node.state !== 'open') return false
+  if (node.state !== 'open' && node.state !== 'blocked') return false
   if (node.owner_session) return false
   if (isFleetPunchListNode(node)) return false
   if (!FLEET_SINGLE_TITLE_RE.test(node.title)) return false
@@ -398,7 +399,7 @@ export async function runFleetIntake(sb: SupabaseClient): Promise<FleetIntakeRes
       }
       result.appended = plan.punch.appended
       for (const folded of plan.fold) {
-        const { error: killErr } = await sb
+        const { data: killed, error: killErr } = await sb
           .from('loop_work_nodes')
           .update({
             state: 'killed',
@@ -406,9 +407,12 @@ export async function runFleetIntake(sb: SupabaseClient): Promise<FleetIntakeRes
             updated_at: now,
           })
           .eq('id', folded.id)
-          .eq('state', 'open')
-        if (killErr) {
-          result.errors.push(`fold kill failed for ${folded.id}: ${killErr.message}`)
+          .in('state', ['open', 'blocked'])
+          .is('owner_session', null)
+          .select('id')
+          .maybeSingle()
+        if (killErr || !killed?.id) {
+          result.errors.push(`fold kill failed for ${folded.id}: ${killErr?.message ?? 'no matching unclaimed open/blocked row'}`)
           continue
         }
         await sb.from('fleet_findings').update({ node_id: punchId }).eq('node_id', folded.id)
