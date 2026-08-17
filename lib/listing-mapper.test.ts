@@ -50,6 +50,10 @@ describe('computeTier1 (sync derived fields, audit p3.2)', () => {
     expect(t.estimated_monthly_piti as number).toBeGreaterThan(0)
   })
 
+  it('withholds property age when year_built is sqft', () => {
+    expect(computeTier1({ ...NULLS, yearBuilt: null }).property_age).toBeNull()
+  })
+
   it('all-null input → null derived fields (no NaN/crash)', () => {
     const n = computeTier1(NULLS)
     expect(n.price_per_sqft).toBeNull()
@@ -84,6 +88,21 @@ describe('numeric(p,s) bound clamp (delta-cursor incident 2026-08-05)', () => {
       LotSizeSquareFeet: 99_000_000_000,
     } as Record<string, unknown>)
     expect(row.lot_size_sqft).toBeNull()
+  })
+})
+
+describe('publishYearBuilt on ingest', () => {
+  it('does not store LivingArea leaking into YearBuilt', async () => {
+    const { sparkToListingRow, computeTier1 } = await import('./listing-mapper')
+    const row = sparkToListingRow({
+      ListingKey: '997',
+      ListNumber: '220223541',
+      StandardStatus: 'Active',
+      YearBuilt: 3672,
+      LivingArea: 3672,
+    } as Record<string, unknown>)
+    expect(row.year_built).toBeNull()
+    expect(row.property_age).toBeNull()
   })
 })
 

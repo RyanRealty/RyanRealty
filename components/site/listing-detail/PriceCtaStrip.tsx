@@ -12,6 +12,7 @@ import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
+import { publishListingMoney } from '@/lib/listing/publish-listing-facts'
 
 /**
  * PriceCtaStrip — price + address + pill row + CTA hierarchy under the hero.
@@ -95,7 +96,7 @@ export function PriceCtaStrip({
   })
 
   const isClosed = listing.status === 'Closed'
-  const headlinePrice = isClosed ? listing.closePrice : listing.listPrice
+  const headlinePrice = publishListingMoney(isClosed ? listing.closePrice : listing.listPrice)
   const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
@@ -189,7 +190,7 @@ export function PriceCtaStrip({
         style={{ color: 'var(--navy)' }}
       >
         {street ? <span className="sr-only">{[street, cityWithCommunity].filter(Boolean).join(', ')} </span> : null}
-        <Price value={headlinePrice} />
+        <Price value={headlinePrice} exact />
       </DisplayHeading>
       {street ? (
         <div className="mt-1.5 text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
@@ -204,9 +205,9 @@ export function PriceCtaStrip({
 
       {drop ? (
         <div className="mt-2 text-sm" style={{ color: 'rgba(16,39,66,0.72)' }}>
-          Down <Price value={drop} /> from original list price{' '}
+          Down <Price value={publishListingMoney(drop)} exact /> from original list price{' '}
           <span style={{ color: 'rgba(16,39,66,0.72)' }}>
-            <Price value={listing.originalListPrice} className="line-through" />
+            <Price value={publishListingMoney(listing.originalListPrice)} exact className="line-through" />
           </span>
           {listing.priceDropCount && listing.priceDropCount > 1 ? (
             <> after {listing.priceDropCount} price changes.</>

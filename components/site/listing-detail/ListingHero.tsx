@@ -9,6 +9,7 @@ import type { VideoEmbed } from '@/lib/data/types/video'
 import { PhotoGalleryLightbox } from '@/components/site/PhotoGalleryLightbox'
 import { Button } from '@/components/ui/button'
 import { buildListingHeroStaticMapUrl } from '@/lib/listing-hero-static-map'
+import { formatListingMoney } from '@/lib/listing/publish-listing-facts'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
 
@@ -89,12 +90,6 @@ function getAutoplayEmbedUrl(video: VideoEmbed): string {
   } catch {
     return video.url
   }
-}
-
-function formatPrice(p: number): string {
-  if (p >= 1_000_000) return `$${(p / 1_000_000).toFixed(p % 1_000_000 === 0 ? 0 : 1)}M`
-  if (p >= 1_000) return `$${Math.round(p / 1_000)}K`
-  return `$${p.toLocaleString('en-US')}`
 }
 
 export function ListingHero({
@@ -300,7 +295,7 @@ export function ListingHero({
                   overflow: 'visible',
                 }}
               >
-                {formatPrice(price)}
+                {formatListingMoney(price)}
               </span>
             ) : null}
             {keyStats.length > 0 ? (

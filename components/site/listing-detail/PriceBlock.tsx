@@ -8,6 +8,7 @@ import {
   Stack,
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
+import { publishListingMoney } from '@/lib/listing/publish-listing-facts'
 import { cn } from '@/lib/utils'
 
 /**
@@ -61,7 +62,7 @@ function priceDropDelta(
 
 export function PriceBlock({ listing, className }: Props) {
   const isClosed = listing.status === 'Closed'
-  const headlinePrice = isClosed ? listing.closePrice : listing.listPrice
+  const headlinePrice = publishListingMoney(isClosed ? listing.closePrice : listing.listPrice)
   const ppsqft = isClosed ? listing.closePricePerSqft : listing.pricePerSqft
   const drop = priceDropDelta(listing.listPrice, listing.originalListPrice)
   const statusTone = STATUS_TONE[listing.status] ?? 'neutral'
@@ -80,13 +81,13 @@ export function PriceBlock({ listing, className }: Props) {
       </div>
 
       <H1 className="font-bold tracking-[-0.015em]">
-        <Price value={headlinePrice} />
+        <Price value={headlinePrice} exact />
       </H1>
 
       {drop ? (
         <Body size="small" tone="muted">
-          Down <Price value={drop} /> from original list price{' '}
-          <Price value={listing.originalListPrice} className="line-through text-foreground/70" />
+          Down <Price value={publishListingMoney(drop)} exact /> from original list price{' '}
+          <Price value={publishListingMoney(listing.originalListPrice)} exact className="line-through text-foreground/70" />
           {listing.priceDropCount && listing.priceDropCount > 1 ? (
             <> after {listing.priceDropCount} price changes.</>
           ) : (

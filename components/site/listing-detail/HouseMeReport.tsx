@@ -21,6 +21,7 @@ import {
   overUnderPhrase,
 } from '@/lib/pricing/public-read-copy'
 import { PublishedCmaDownload } from './PublishedCmaDownload.client'
+import { formatListingMoney, publishListingMoney } from '@/lib/listing/publish-listing-facts'
 
 export type HouseMeRowId = 'read' | 'comps' | 'ppsf' | 'dom' | 'true-cost' | 'investment'
 
@@ -156,11 +157,13 @@ export function buildHouseMeRows(facts: HouseMeReportFacts): HouseMeRow[] {
   }
 
   const costParts: string[] = []
-  if (isPositive(facts.hoaMonthly)) {
-    costParts.push(`HOA ${usdExact(facts.hoaMonthly)} per month`)
-  } else if (isPositive(facts.associationFee)) {
+  const hoaMonthly = publishListingMoney(facts.hoaMonthly)
+  const associationFee = publishListingMoney(facts.associationFee)
+  if (hoaMonthly != null) {
+    costParts.push(`HOA ${formatListingMoney(hoaMonthly)} per month`)
+  } else if (associationFee != null) {
     const freq = hoaFrequency(facts.associationFeeFrequency)
-    costParts.push(freq ? `HOA ${usdExact(facts.associationFee)} ${freq}` : `HOA ${usdExact(facts.associationFee)}`)
+    costParts.push(freq ? `HOA ${formatListingMoney(associationFee)} ${freq}` : `HOA ${formatListingMoney(associationFee)}`)
   }
   if (isPositive(facts.taxAnnualAmount)) {
     costParts.push(`Tax ${usdExact(facts.taxAnnualAmount)} per year`)

@@ -4,11 +4,8 @@
  * ONE canonical mapper used by all sync paths (delta, full, terminal).
  * Replaces mapSparkToRow() in sync-delta and sparkListingToSupabaseRow() in spark.ts.
  *
- * - Maps ALL Spark StandardFields to typed columns using RESO field names with v1 fallbacks
- * - Stores the FULL StandardFields object in `details` (never the thin 3-key version)
- * - Sanitizes masked "****" values via toNum()/toTimestamp()
- * - Extracts all 65 Tier 2 promoted fields
- * - Computes all 17 Tier 1 derived metrics
+ * Maps Spark StandardFields to typed columns, stores full StandardFields in
+ * `details`, sanitizes masked values, and computes Tier 1/2 fields.
  */
 
 import {
@@ -17,6 +14,7 @@ import {
   redactPublicDetails,
   stripMaskedValues,
 } from '@/lib/listing-customfields'
+import { publishYearBuilt } from '@/lib/listing/publish-listing-facts'
 
 // The CustomFields subsystem lives in lib/listing-customfields.ts —
 // re-exported here so existing importers keep working unchanged.
@@ -377,7 +375,7 @@ export function sparkToListingRow(
   const buildingAreaTotal = toNum(pick(fields, 'BuildingAreaTotal'))
   const aboveGrade = toNum(pick(fields, 'AboveGradeFinishedArea'))
   const belowGrade = toNum(pick(fields, 'BelowGradeFinishedArea'))
-  const yearBuilt = toInt(pick(fields, 'YearBuilt'))
+  const yearBuilt = publishYearBuilt(toInt(pick(fields, 'YearBuilt')))
   const roomsTotal = toInt(pick(fields, 'RoomsTotal'))
   const taxAnnual = toNum(pick(fields, 'TaxAmount', 'TaxAnnualAmount'))
   const taxAssessed = toNum(pick(fields, 'TaxAssessedValue'))
