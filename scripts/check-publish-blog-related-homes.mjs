@@ -21,6 +21,7 @@ function src(path) {
 }
 
 const helper = src('lib/blog/publish-blog-related-homes.ts')
+const geo = src('lib/blog-geo-links.ts')
 checks.push({
   label: 'matchBuyablePlaceForPost + publishBlogRelatedHomes withhold without a place',
   ok:
@@ -29,6 +30,16 @@ checks.push({
     /if \(!input\.place\) return null/.test(helper) &&
     /BUY_INTENT/.test(helper) &&
     /matchGeoLinksForPost/.test(helper),
+})
+
+checks.push({
+  label: 'community matcher accepts registry slug and NW Crossing aliases',
+  ok:
+    /export const COMMUNITY_ALIASES/.test(geo) &&
+    /northwest-crossing/.test(geo) &&
+    /nw crossing/.test(geo) &&
+    /tokensFor/.test(geo) &&
+    /norm\(community\.slug\)/.test(geo),
 })
 
 checks.push({

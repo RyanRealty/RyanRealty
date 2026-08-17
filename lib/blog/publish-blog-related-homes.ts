@@ -6,9 +6,11 @@
  * lifestyle / relocation → talk to a broker. Lifestyle posts (arts, retirement
  * with no named place) must not invent a rail.
  *
- * Community matches reuse matchGeoLinksForPost (slug / title / tags). City
- * matches require a buy-intent token in slug or title so a regional lifestyle
- * post tagged with a city does not grow a Bend inventory rail.
+ * Community matches reuse matchGeoLinksForPost (label, registry slug, or a
+ * short alias in slug / title / tags). City matches require a buy-intent
+ * token in slug or title so a regional lifestyle post tagged with a city
+ * does not grow a Bend inventory rail. A neighborhood short name
+ * (NW Crossing) wins over that city fallback.
  */
 import { matchGeoLinksForPost } from '@/lib/blog-geo-links'
 import { SITE_CITY_SLUGS } from '@/lib/central-oregon'

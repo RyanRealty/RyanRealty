@@ -40,4 +40,19 @@ describe('matchGeoLinksForPost', () => {
     // "tether" alone must not match Tetherow.
     expect(matchGeoLinksForPost({ slug: 'tether-your-budget' })).toEqual([])
   })
+
+  it('matches NW Crossing short names to NorthWest Crossing', () => {
+    expect(matchGeoLinksForPost({ slug: 'living-in-nw-crossing-bend' })[0]?.slug).toBe(
+      'northwest-crossing',
+    )
+    expect(
+      matchGeoLinksForPost({
+        slug: 'west-side-walkable',
+        tags: ['nw crossing', 'bend'],
+      })[0]?.slug,
+    ).toBe('northwest-crossing')
+    expect(matchGeoLinksForPost({ slug: 'nwx-farmers-market-guide' })[0]?.slug).toBe(
+      'northwest-crossing',
+    )
+  })
 })
