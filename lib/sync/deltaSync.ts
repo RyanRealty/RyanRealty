@@ -26,13 +26,10 @@
 import { computeNextDeltaCursor } from '@/lib/sync/deltaCursor'
 import { isTerminalStatus } from '@/lib/sync/terminalStatus'
 import { isActiveStatus, isPendingStatus, isClosedStatus } from '@/lib/listing-status'
-import { sparkToListingRow, extractPrivateDetails, sparkHistoryItemToRow } from '@/lib/listing-mapper'
-import {
-  fetchSparkListingsPage,
-  fetchSparkListingHistory,
-  fetchSparkPriceHistory,
-  type SparkListingHistoryItem,
-} from '@/lib/spark'
+import { sparkToListingRow, extractPrivateDetails } from '@/lib/listing-mapper'
+import { fetchSparkListingsPage } from '@/lib/spark'
+import { fetchAndInsertHistoryCore } from '@/lib/sync/fetchListingHistory'
+import { SCHEDULED_EXPIRED_CAPTURE } from '@/lib/expired-listing-select'
 import {
   getSyncState,
   getExistingListingsByListNumbers,
@@ -42,7 +39,6 @@ import {
   insertActivityEventRows,
   updateListingPhotoUrl,
   updateSyncStateLastDelta,
-  replaceListingHistoryForKey,
 } from '@/lib/data/sync/syncWrites'
 import { syncAuxiliaryTablesForFinalization } from '@/app/api/admin/sync/_shared/listing-completeness'
 import { processNewExpiredListings } from '@/lib/expired-listing-processor'
@@ -449,30 +445,6 @@ async function fetchAndPlan(opts: RunDeltaSyncOptions): Promise<PlanContext> {
   return { plan, sinceIso, pagesProcessed, truncated, runStartedAt, nowIso, accessToken }
 }
 
-/** Ported from the cron lane: fetch full history (with price-history fallback)
- *  and replace listing_history for the key. */
-async function fetchAndInsertHistoryCore(
-  accessToken: string,
-  listingKey: string,
-): Promise<{ inserted: number; ok: boolean; items: SparkListingHistoryItem[] }> {
-  let response = await fetchSparkListingHistory(accessToken, listingKey)
-  if (response.items.length === 0) {
-    const fallback = await fetchSparkPriceHistory(accessToken, listingKey)
-    if (fallback.items.length > 0) response = fallback
-  }
-  const hadSuccessfulFetch = response.ok && response.partial !== true
-  if (response.items.length > 0) {
-    const rows = response.items.map((item) => sparkHistoryItemToRow(listingKey, item))
-    const result = await replaceListingHistoryForKey(listingKey, rows)
-    if (!result.ok) {
-      console.error(`[deltaSync] listing_history replace error for ${listingKey}.`, result.error)
-      return { inserted: 0, ok: hadSuccessfulFetch, items: response.items }
-    }
-    return { inserted: result.inserted, ok: hadSuccessfulFetch, items: response.items }
-  }
-  return { inserted: 0, ok: hadSuccessfulFetch, items: response.items }
-}
-
 /** Ported from the cron lane: single-listing photo fetch for the photo-fix pass. */
 async function fetchPhotoForListingCore(accessToken: string, listingKey: string): Promise<string | null> {
   const baseUrl = (process.env.SPARK_API_BASE_URL ?? 'https://replication.sparkapi.com/v1').replace(/\/$/, '')
@@ -607,7 +579,7 @@ export async function runDeltaSync(opts: RunDeltaSyncOptions): Promise<ShadowRun
   // Expired-listing pipeline over anything that just went terminal (soft-fail).
   let expired: ExpiredStats | null = null
   try {
-    const r = await processNewExpiredListings(sb, { maxPerRun: 10, lookbackHours: 2 })
+    const r = await processNewExpiredListings(sb, SCHEDULED_EXPIRED_CAPTURE)
     expired = { scanned: r.scanned, new_processed: r.new_processed, alert_emails_sent: r.alert_emails_sent, errors: r.errors }
   } catch (err) {
     console.error('[deltaSync] processNewExpiredListings failed (non-fatal).', err instanceof Error ? err.message : err)

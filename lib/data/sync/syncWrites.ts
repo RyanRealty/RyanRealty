@@ -13,6 +13,12 @@
 import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 
+export {
+  selectNewExpiredListings,
+  getExistingExpiredListingKeys,
+  selectListingHistoryForKey,
+} from '@/lib/data/sync/expiredSelect'
+
 function client() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -643,45 +649,6 @@ export async function getPropertyById(id: string): Promise<{ unparsed_address?: 
     .eq('id', id)
     .single()
   return (data ?? null) as { unparsed_address?: string | null; street_number?: string | null; city?: string | null; postal_code?: string | null } | null
-}
-
-/** Fetch newly expired/canceled/withdrawn listings in our service area for the expired-listing pipeline. */
-export async function selectNewExpiredListings(options: {
-  sinceIso: string
-  serviceAreaCities: readonly string[]
-  minListPrice: number
-  limit: number
-}): Promise<Array<Record<string, unknown>>> {
-  const sb = client()
-  if (!sb) return []
-  const { data, error } = await sb
-    .from('listings')
-    .select(
-      'ListingKey,ListNumber,StandardStatus,status_change_timestamp,StreetNumber,StreetName,City,PostalCode,ListPrice,OriginalListPrice,CumulativeDaysOnMarket,ListAgentName,list_agent_email,PropertyType,BedroomsTotal,BathroomsTotal,TotalLivingAreaSqFt,SubdivisionName',
-    )
-    .in('StandardStatus', ['Expired', 'Canceled', 'Withdrawn'])
-    .gt('status_change_timestamp', options.sinceIso)
-    .in('City', options.serviceAreaCities as readonly string[])
-    .eq('PropertyType', 'A')
-    .gt('ListPrice', options.minListPrice)
-    .order('status_change_timestamp', { ascending: false })
-    .limit(options.limit)
-  if (error) {
-    console.error('[selectNewExpiredListings] error:', error.message)
-    return []
-  }
-  return (data ?? []) as unknown as Array<Record<string, unknown>>
-}
-
-/** Get the set of listing_keys already present in expired_listings (dedup check). */
-export async function getExistingExpiredListingKeys(keys: string[]): Promise<Set<string>> {
-  const sb = client()
-  if (!sb || keys.length === 0) return new Set()
-  const { data } = await sb
-    .from('expired_listings')
-    .select('listing_key')
-    .in('listing_key', keys.slice(0, 5000))
-  return new Set(((data ?? []) as Array<{ listing_key: string }>).map((r) => r.listing_key))
 }
 
 /** Closed listings for CMA comp pool (city + optional subdivision + lot range). */
