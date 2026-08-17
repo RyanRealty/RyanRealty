@@ -29,6 +29,8 @@ import {
 } from '@/lib/email/brand'
 import { wrapBrandedEmail, type ShellBroker } from '@/lib/email/shell'
 import { BRAND } from '@/lib/brand/contact'
+import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingRooms } from '@/lib/listing/publish-listing-rooms'
 
 const MUTED = EMAIL_BODY_MUTED
 
@@ -108,23 +110,25 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
-/** Exact list price with $ and commas. Null renders "Price on request". */
+/** Exact list price with $ and commas. Null or a non-sale crumb renders "Price on request". */
 export function formatListingPrice(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return 'Price on request'
-  return '$' + Math.round(value).toLocaleString('en-US')
+  const ask = publishListingAsk(value)
+  if (!ask) return 'Price on request'
+  return formatListingAsk(ask.ask)
 }
 
 /** "3 beds · 2.5 baths · 1,850 sqft" — every number carries its unit. */
 export function formatListingMeta(listing: ListingAlertListing): string {
+  const rooms = publishListingRooms({ beds: listing.beds, baths: listing.baths, sqft: listing.sqft })
   const parts: string[] = []
-  if (listing.beds != null && Number.isFinite(listing.beds) && listing.beds > 0) {
-    parts.push(`${listing.beds} ${listing.beds === 1 ? 'bed' : 'beds'}`)
+  if (rooms.beds != null) {
+    parts.push(`${rooms.beds} ${rooms.beds === 1 ? 'bed' : 'beds'}`)
   }
-  if (listing.baths != null && Number.isFinite(listing.baths) && listing.baths > 0) {
-    parts.push(`${listing.baths} ${listing.baths === 1 ? 'bath' : 'baths'}`)
+  if (rooms.baths != null) {
+    parts.push(`${rooms.baths} ${rooms.baths === 1 ? 'bath' : 'baths'}`)
   }
-  if (listing.sqft != null && Number.isFinite(listing.sqft) && listing.sqft > 0) {
-    parts.push(`${Math.round(listing.sqft).toLocaleString('en-US')} sqft`)
+  if (rooms.sqft != null) {
+    parts.push(`${Math.round(rooms.sqft).toLocaleString('en-US')} sqft`)
   }
   return parts.join(' · ')
 }

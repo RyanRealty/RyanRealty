@@ -15,6 +15,14 @@ describe('publishListingAsk', () => {
     expect(publishListingAsk(0)).toBeNull()
     expect(publishListingAsk(null)).toBeNull()
   })
+
+  it('withholds Spark lease crumbs that thousand-round to $0', () => {
+    expect(publishListingAsk(2.4)).toBeNull()
+    expect(publishListingAsk(1.2)).toBeNull()
+    expect(publishListingAsk(1.08)).toBeNull()
+    expect(publishListingAsk(999)).toBeNull()
+    expect(publishListingAsk(1000)).toEqual({ ask: 1000 })
+  })
 })
 
 describe('publishListingDrop', () => {

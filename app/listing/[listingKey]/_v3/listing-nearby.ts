@@ -1,5 +1,6 @@
 import { v3Text, type V3LedgerFigureRow, type V3QuietItem } from '@/components/site/v3'
-import { formatPrice } from '@/lib/format/money'
+import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingRooms } from '@/lib/listing/publish-listing-rooms'
 import { listingTileHref } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
 import type { ListingTile } from '@/lib/data/types/listing'
@@ -13,12 +14,13 @@ export function listingSimilarLedgerRows(tiles: ListingTile[]): V3LedgerFigureRo
   for (const tile of tiles) {
     const street = streetLine(tile)
     if (!street) continue
-    if (tile.listPrice == null || !Number.isFinite(tile.listPrice) || tile.listPrice <= 0) continue
-    const price = formatPrice(tile.listPrice)
-    if (!price.startsWith('$')) continue
-    const beds = tile.beds != null ? `${tile.beds} bed` : null
-    const baths = tile.baths != null ? `${tile.baths} bath` : null
-    const sqft = tile.sqft != null ? `${tile.sqft.toLocaleString('en-US')} sq ft` : null
+    const ask = publishListingAsk(tile.listPrice)
+    if (!ask) continue
+    const price = formatListingAsk(ask.ask)
+    const rooms = publishListingRooms({ beds: tile.beds, baths: tile.baths, sqft: tile.sqft })
+    const beds = rooms.beds != null ? `${rooms.beds} bed` : null
+    const baths = rooms.baths != null ? `${rooms.baths} bath` : null
+    const sqft = rooms.sqft != null ? `${rooms.sqft.toLocaleString('en-US')} sq ft` : null
     const detail = [beds, baths, sqft].filter(Boolean).join(' · ')
     const city = tile.city?.trim()
     rows.push({

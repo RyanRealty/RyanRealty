@@ -11,7 +11,8 @@
 import { useEffect, useRef } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import Link from 'next/link'
-import { formatPriceExact } from '@/lib/format/money'
+import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingRooms } from '@/lib/listing/publish-listing-rooms'
 import { MAP_NAVY, MAP_WHITE } from '@/lib/maps/markers'
 
 const CREAM = '#faf8f4'
@@ -39,10 +40,12 @@ type Props = {
 }
 
 function PopupCard({ listing, onClose }: { listing: MapListingPopupData; onClose: () => void }) {
+  const ask = publishListingAsk(listing.price)
+  const rooms = publishListingRooms({ beds: listing.beds, baths: listing.baths, sqft: listing.sqft })
   const stats: string[] = []
-  if (listing.beds != null) stats.push(`${Math.round(listing.beds)} bd`)
-  if (listing.baths != null) stats.push(`${Math.round(listing.baths)} ba`)
-  if (listing.sqft != null) stats.push(`${Math.round(listing.sqft).toLocaleString()} sqft`)
+  if (rooms.beds != null) stats.push(`${Math.round(rooms.beds)} bd`)
+  if (rooms.baths != null) stats.push(`${Math.round(rooms.baths)} ba`)
+  if (rooms.sqft != null) stats.push(`${Math.round(rooms.sqft).toLocaleString()} sqft`)
 
   return (
     <div
@@ -122,7 +125,7 @@ function PopupCard({ listing, onClose }: { listing: MapListingPopupData; onClose
             color: MAP_NAVY,
           }}
         >
-          {formatPriceExact(listing.price)}
+          {ask ? formatListingAsk(ask.ask) : '—'}
           {listing.isSaved ? (
             <span style={{ marginLeft: 6, color: '#dc2626', fontSize: 14 }} aria-hidden>
               ♥

@@ -37,6 +37,8 @@ describe('formatListingPrice (exact list price, §0)', () => {
   it('renders "Price on request" when unavailable', () => {
     expect(formatListingPrice(null)).toBe('Price on request')
     expect(formatListingPrice(Number.NaN)).toBe('Price on request')
+    expect(formatListingPrice(2.4)).toBe('Price on request')
+    expect(formatListingPrice(0)).toBe('Price on request')
   })
 })
 
@@ -49,6 +51,9 @@ describe('formatListingMeta (every number carries units)', () => {
   })
   it('omits missing fields', () => {
     expect(formatListingMeta(listing({ beds: null, baths: null, sqft: null }))).toBe('')
+  })
+  it('withholds the Agness lodge-count pair and keeps living area', () => {
+    expect(formatListingMeta(listing({ beds: 23, baths: 22, sqft: 1000 }))).toBe('1,000 sqft')
   })
 })
 
