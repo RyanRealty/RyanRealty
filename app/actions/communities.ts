@@ -138,7 +138,7 @@ async function _getCommunitiesForIndexUncached(): Promise<CommunityForIndex[]> {
   return result
 }
 
-export const getCommunitiesForIndex = unstable_cache(
+const getCommunitiesForIndexRaw = unstable_cache(
   _getCommunitiesForIndexUncached,
   // v5 (design-audit #131): v4's fix only patched the primary MV-snapshot
   // loop in listSubdivisionsWithFlags() -- two OTHER sources feeding that
@@ -151,6 +151,19 @@ export const getCommunitiesForIndex = unstable_cache(
   ['communities-index-v5'],
   { revalidate: 1800, tags: ['communities-index'] }
 )
+
+/** Index rows overlay alias-aware resort figures so homepage / A-Z match /communities/{slug}. */
+export const getCommunitiesForIndex = cache(async (): Promise<CommunityForIndex[]> => {
+  const { getRegistryResortPublicFigures } = await import('@/lib/kb/registry-resort-public-figures')
+  const [rows, overlay] = await Promise.all([getCommunitiesForIndexRaw(), getRegistryResortPublicFigures()])
+  if (overlay.size === 0) return rows
+  return rows.map((row) => {
+    const bare = row.entityKey.includes(':') ? row.entityKey.slice(row.entityKey.indexOf(':') + 1) : row.slug
+    const published = overlay.get(row.slug) ?? overlay.get(bare)
+    if (!published) return row
+    return { ...row, activeCount: published.activeCount, medianPrice: published.medianListPrice }
+  })
+})
 
 /** Get community by slug; returns null if not found. */
 async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetail | null> {
@@ -216,6 +229,9 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     bannerUrl = created.url ?? null
   }
   const citySlug = slugify(city)
+  const { getRegistryResortPublicFigures } = await import('@/lib/kb/registry-resort-public-figures')
+  const resortFigureMap = isResort ? await getRegistryResortPublicFigures() : null
+  const resortFigures = resortFigureMap?.get(slug) ?? resortFigureMap?.get(entityKeyToSlug(entityKey))
   return {
     slug,
     entityKey,
@@ -228,14 +244,14 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
     boundaryGeojson: comm?.boundary_geojson ?? null,
     isResort,
     resortContent: comm?.resort_content ?? null,
-    activeCount,
+    activeCount: resortFigures?.activeCount ?? activeCount,
     // §0 ASKING PRICES ONLY. `stats.medianListPrice` is null for every community
     // whose stats came from the cache (market_pulse_live has no neighborhood or
     // subdivision rows), so this is the literal-name snapshot median or nothing.
     // It used to fall through to a median CLOSED SALE price, which the community
-    // page renders under the label "Median list". The alias-aware asking median
-    // for resorts is computed on the page from its own active tiles.
-    medianPrice: medianFromRows ?? stats.medianListPrice,
+    // page renders under the label "Median list". Registry resorts overlay the
+    // same alias-aware asking median the community page prints.
+    medianPrice: resortFigures?.medianListPrice ?? medianFromRows ?? stats.medianListPrice,
     avgDom: stats.avgDom ?? null,
     closedLast12Months: stats.closedLast12Months,
     neighborhoodName: comm?.neighborhoods?.name ?? null,

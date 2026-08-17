@@ -13,8 +13,8 @@
  *      communities, curated order) — full-bleed alternating photo/content,
  *      curated communityImage() with labeled cityHero() fallback, one honest
  *      editorial sentence (getResortCommunityContent), the City · Oregon
- *      sublabel, a live stat band (active / median / pending) with
- *      geo_snapshot_mv + index fallback, and the two links per community
+ *      sublabel, a live stat band (active / median) from the alias-aware
+ *      resort set, and the two links per community
  *      (community guide / homes for sale in city).
  *   3. Every community, A to Z — the interactive CommunityIndexBrowser
  *      (search + collapsed alphabetical index). Kept fully working: every
@@ -33,7 +33,8 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
-import { getAllCommunitySnapshots, getAllCitySnapshots } from '@/lib/data'
+import { getRegistryResortPublicFigures } from '@/lib/kb/registry-resort-public-figures'
+import { formatPriceExact } from '@/lib/format/money'
 import { getResortCommunityContent } from '@/lib/resort-community-content'
 import { communityImage, cityHero } from '@/lib/geo-images'
 import { getSurfaceImages, pickSurfaceImage } from '@/lib/data'
@@ -91,47 +92,21 @@ function firstSentence(text: string): string {
   return (m ? m[0] : text).trim()
 }
 
-/** Brand-spec currency: rounded to the nearest thousand, full form ($1,425,000). */
-function fmtPrice(n: number | null | undefined): string | null {
-  if (n == null || !Number.isFinite(n)) return null
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
-}
-
 export default async function CommunitiesPage() {
   const registry = resortCommunitiesRegistry.communities as ReadonlyArray<RegistryCommunity>
 
-  const [allCommunities, snapshots, citySnapshots, heroPhotoPool] = await Promise.all([
+  const [allCommunities, heroPhotoPool, resortFigures] = await Promise.all([
     getCommunitiesForIndex(),
-    getAllCommunitySnapshots(),
-    getAllCitySnapshots(),
     getSurfaceImages('hero'),
+    getRegistryResortPublicFigures(),
   ])
 
-  // geo_snapshot_mv keys: lowercase "city:subdivision" with spaces preserved
-  // (e.g. "powell butte:brasada ranch") — same construction the community
-  // detail page uses, so index numbers and detail-page numbers agree.
-  const snapByKey = new Map(snapshots.map((s) => [s.geoKey, s]))
-  // Fallbacks (design-audit P1 — 11 of 19 flagship rows rendered em-dashes):
-  // 1. label-only: the registry city and the MLS "City" field disagree for some
-  //    resorts (e.g. Brasada rows carry Powell Butte). Pick the busiest row.
-  // 2. city row: Sunriver / Black Butte Ranch / Crooked River Ranch are CITIES
-  //    in the MLS, so their inventory lives on a city row, not city:subdivision.
-  const snapByLabel = new Map<string, (typeof snapshots)[number]>()
-  for (const s of snapshots) {
-    const label = s.geoKey.split(':')[1] ?? ''
-    const prev = snapByLabel.get(label)
-    if (!prev || s.activeSfrCount > prev.activeSfrCount) snapByLabel.set(label, s)
-  }
-  const cityByKey = new Map(citySnapshots.map((s) => [s.geoKey, s]))
   const indexByEntityKey = new Map(allCommunities.map((c) => [c.entityKey, c]))
 
   // The 14 registry communities — the editorial layer. Registry order is
   // curated (data/resort-communities.json is the source of truth).
   const resorts = await Promise.all(
     registry.map(async (r) => {
-      const labelKey = r.label.toLowerCase().trim()
-      const geoKey = `${r.city.toLowerCase().trim()}:${labelKey}`
-      const snap = snapByKey.get(geoKey) ?? snapByLabel.get(labelKey) ?? cityByKey.get(labelKey) ?? null
       const idx = indexByEntityKey.get(subdivisionEntityKey(r.city, r.label)) ?? null
       const content = await getResortCommunityContent(r.slug)
       const sentence = content?.aboutProse?.[0] ? firstSentence(content.aboutProse[0]) : null
@@ -159,12 +134,11 @@ export default async function CommunitiesPage() {
         // fallback's alt describes what the photo actually shows.
         photoAlt: curated ? `${r.label}, ${r.city} Oregon` : fallbackHero.alt,
         photoIsCommunity: curated != null,
-        // Registry resorts are permanent fixtures: no snapshot row means zero
-        // current inventory (the shared fetch drops 0-count rows), and "0
-        // active" is the honest ledger — an em-dash read as broken data.
-        activeCount: snap?.activeSfrCount ?? idx?.activeCount ?? 0,
-        pendingCount: snap?.pendingCount ?? null,
-        medianPrice: snap?.medianListPrice ?? idx?.medianPrice ?? null,
+        // Registry resorts print the alias-aware pair (same set as
+        // /communities/{slug}). Snapshot pending is a different set — withhold.
+        activeCount: resortFigures.get(r.slug)?.activeCount ?? idx?.activeCount ?? 0,
+        pendingCount: null,
+        medianPrice: resortFigures.get(r.slug)?.medianListPrice ?? idx?.medianPrice ?? null,
       }
     }),
   )
@@ -393,7 +367,7 @@ export default async function CommunitiesPage() {
                         </div>
                         <div>
                           <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
-                            {fmtPrice(r.medianPrice) ?? '—'}
+                            {r.medianPrice != null ? formatPriceExact(r.medianPrice) : '—'}
                           </p>
                           <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
                             Median list
