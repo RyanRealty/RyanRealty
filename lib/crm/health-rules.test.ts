@@ -4,6 +4,7 @@ import {
   INBOUND_STALE_HOURS,
   LIST_UNDERCOUNT_FACTOR,
   LIST_UNDERCOUNT_SIGNAL_MIN,
+  MV_STALE_REFRESH_HOURS,
   type HealthSignals,
 } from './health-rules'
 
@@ -20,6 +21,7 @@ function healthy(): HealthSignals {
     twilioReachable: true,
     geoSmartLists: [],
     mvLagDays: 0,
+    mvRefreshAgeHours: 0.2,
   }
 }
 
@@ -199,6 +201,7 @@ describe('evaluateHealthRules', () => {
         smsSendAttempts24h: 3,
         newLeads24h: 0,
         mvLagDays: 0,
+        mvRefreshAgeHours: 0.2,
         twilioReachable: false,
         geoSmartLists: [],
       })
@@ -221,6 +224,7 @@ describe('evaluateHealthRules', () => {
         twilioReachable: false,
         geoSmartLists: [{ id: 9, name: 'Bad list', exactCount: 0, signalCount: 100 }],
         mvLagDays: 8,
+        mvRefreshAgeHours: 8 * 24,
       })
       for (const a of alarms) {
         expect(a.key.length).toBeGreaterThan(0)
@@ -241,18 +245,45 @@ describe('rule 8: listing_tile_mv staleness', () => {
     twilioReachable: true,
     geoSmartLists: [],
     mvLagDays: 0,
+    mvRefreshAgeHours: 0.2,
   })
-  it('fires critical when the MV lags past the threshold (the 8-day incident)', () => {
-    const { alarms } = evaluateHealthRules({ ...healthySignals(), mvLagDays: 8 })
+  it('stays quiet on the Friday-to-Monday CloseDate gap while the refresh stamp is fresh', () => {
+    // 2026-08-17 18:11Z: first Monday close on listings, tile still Friday,
+    // refresh_listing_tile_mv_30min still running. Alert 1013.
+    const { alarms } = evaluateHealthRules({
+      ...healthySignals(),
+      mvLagDays: 3,
+      mvRefreshAgeHours: 0.53,
+    })
+    expect(alarms.map((a) => a.key)).not.toContain('listing-tile-mv-stale')
+  })
+  it('fires critical when the refresh stamp is stale (the 8-day incident)', () => {
+    const { alarms } = evaluateHealthRules({
+      ...healthySignals(),
+      mvLagDays: 8,
+      mvRefreshAgeHours: 8 * 24,
+    })
     const alarm = alarms.find((a) => a.key === 'listing-tile-mv-stale')
     expect(alarm).toBeDefined()
     expect(alarm!.severity).toBe('critical')
-    expect(alarm!.message).toContain('8 days')
+    expect(alarm!.message).toContain('192 hours')
+    expect(alarm!.message).toContain('refresh_listing_tile_mv_30min')
   })
-  it('stays quiet at or under the threshold and when the probe is unavailable', () => {
-    for (const lag of [0, 1, 2, null]) {
-      const { alarms } = evaluateHealthRules({ ...healthySignals(), mvLagDays: lag })
-      expect(alarms.map((a) => a.key)).not.toContain('listing-tile-mv-stale')
-    }
+  it('fires when the stamp is stale even if CloseDate has not jumped', () => {
+    expect(
+      keys({ ...healthySignals(), mvLagDays: 0, mvRefreshAgeHours: MV_STALE_REFRESH_HOURS }),
+    ).toContain('listing-tile-mv-stale')
+  })
+  it('stays quiet just under the stamp threshold and when the stamp is unreadable', () => {
+    expect(
+      keys({
+        ...healthySignals(),
+        mvLagDays: 3,
+        mvRefreshAgeHours: MV_STALE_REFRESH_HOURS - 0.1,
+      }),
+    ).not.toContain('listing-tile-mv-stale')
+    expect(
+      keys({ ...healthySignals(), mvLagDays: 3, mvRefreshAgeHours: null }),
+    ).not.toContain('listing-tile-mv-stale')
   })
 })

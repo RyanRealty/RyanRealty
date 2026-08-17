@@ -169,10 +169,11 @@ export async function GET(request: Request) {
 
   const geoSmartLists = await gatherGeoSmartLists(sb)
 
-  // DAL MV freshness: how far listing_tile_mv lags the listings table on max
-  // CloseDate (mv_freshness() probe, migration 20260716043000). null on any
-  // failure → the rule skips rather than false-alarming.
+  // DAL MV freshness. CloseDate lag (mv_freshness) is diagnostic — Friday-to-
+  // Monday is 3 calendar days with a live refresh. Rule 8 pages on the stamp
+  // in mv_refresh_state (written only after a completed tile refresh).
   let mvLagDays: number | null = null
+  let mvRefreshAgeHours: number | null = null
   try {
     const { data } = await sb.rpc('mv_freshness')
     const lag = (data as { lag_days?: number | string | null } | null)?.lag_days
@@ -180,6 +181,20 @@ export async function GET(request: Request) {
     mvLagDays = n != null && Number.isFinite(n) ? n : null
   } catch {
     mvLagDays = null
+  }
+  try {
+    const { data: stamp } = await sb
+      .from('mv_refresh_state')
+      .select('refreshed_at')
+      .eq('mv_name', 'listing_tile_mv_src')
+      .maybeSingle()
+    const refreshedAt = stamp?.refreshed_at
+    if (typeof refreshedAt === 'string' && refreshedAt.length > 0) {
+      const age = (now.getTime() - new Date(refreshedAt).getTime()) / 3600000
+      mvRefreshAgeHours = Number.isFinite(age) ? age : null
+    }
+  } catch {
+    mvRefreshAgeHours = null
   }
 
   const signals: HealthSignals = {
@@ -191,6 +206,7 @@ export async function GET(request: Request) {
     twilioReachable,
     geoSmartLists,
     mvLagDays,
+    mvRefreshAgeHours,
   }
 
   const { alarms } = evaluateHealthRules(signals)
