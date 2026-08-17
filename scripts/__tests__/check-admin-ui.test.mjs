@@ -17,10 +17,17 @@ import { execFileSync } from 'node:child_process'
  * Sandbox lives OUTSIDE the repo with node_modules symlinked in (so
  * `import ts from 'typescript'` resolves) — an in-repo scratch dir dies to a
  * concurrent session's `git clean -fd`.
+ *
+ * The sandbox path carries pid + a random suffix because setup and teardown
+ * BOTH rmSync the whole tree. On a fixed path any concurrent instance deletes
+ * a live one mid-test and the run dies on ENOENT reading a fixture it just
+ * wrote — and concurrency is the normal case here: vitest runs this file under
+ * both the `unit` and `gates` projects, and sibling worktrees run the suite at
+ * the same time. Same convention as scripts/check-entity-scope.test.ts.
  */
 
 const REPO = resolve(new URL('.', import.meta.url).pathname, '../..')
-const SANDBOX = join(tmpdir(), 'rr-admin-ui-gate-sandbox')
+const SANDBOX = join(tmpdir(), `rr-admin-ui-gate-sandbox-${process.pid}-${Math.random().toString(16).slice(2)}`)
 const GATE = join(SANDBOX, 'scripts/check-admin-ui.mjs')
 const ADMIN = join(SANDBOX, 'app/admin/(protected)')
 

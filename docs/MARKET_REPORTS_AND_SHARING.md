@@ -59,11 +59,28 @@
 
 Coverage is broad (110M+ properties, 99% U.S., weekly refresh). Delivery is API or bulk files; they offer 4-week sample files for evaluation.
 
-**Integration (implemented)**:
-- **Server action**: `app/actions/housingwire.ts` — `getHousingWireMarketContext()` fetches national context when credentials are set.
-- **Env**: `HOUSINGWIRE_API_KEY` (required for fetch), `HOUSINGWIRE_API_BASE_URL` (endpoint URL from HousingWire). If either is missing, the explore report shows a hint card instead of data.
-- **Explore report**: A “National market context” card appears below the report period when data is loaded. It shows U.S. inventory, 30-yr fixed rate, 10Y Treasury, and optional median list price when the API returns them. Response fields are normalized from common shapes (`nationalInventory`/`inventory`, `mortgageRate30Yr`/`mortgage_rate_30yr`/`rate30yr`, etc.). When the API is not configured, the card explains how to set the env vars.
-- **Types**: `lib/housingwire-types.ts` — `HousingWireMarketContext`. Adjust the action’s response mapping when HousingWire provides the actual API schema.
+**Integration status: none. Never contracted, and the scaffold is deleted (2026-08-17).**
+
+The prospect above was scaffolded as a `'use server'` action (`app/actions/housingwire.ts`) plus a types
+module (`lib/housingwire-types.ts`), rendered by a card on `/reports/explore`. That card and its client were
+deleted when the explore route was retired, leaving the action with zero callers — a server action that
+fetched a third party on the request path and that nothing could reach. Both files were deleted; the
+`HOUSINGWIRE_API_KEY` / `HOUSINGWIRE_API_BASE_URL` env slots are gone from `.env.example` with them.
+
+**What supplies national rate context today**: `/api/cron/market-history-snapshot` (Mondays 13:00 UTC) writes
+the 30-yr fixed mortgage rate, the 10Y treasury, and the computed spread into `public.market_history_weekly`
+under `geo_type='national', geo_slug='us'`. Sources are FRED (`MORTGAGE30US`, `DGS10`, needs `FRED_API_KEY`)
+with the keyless Freddie Mac PMMS history CSV as the 30-yr fallback — see `lib/market-national-series.ts`.
+Read it through the DAL (`getMarketHistoryWeekly`), never by refetching a vendor at request time. Each row
+carries `source` and `captured_at`, plus `observation_date` — the provider's own vintage — once migration
+`20260817120000_market_history_weekly_observation_date.sql` is applied.
+
+State as of 2026-08-17: `FRED_API_KEY` is not set in production, so only `mortgage_rate_30yr` is landing
+(4 weekly rows, `source=freddie:pmms30`, newest 6.67 for week 2026-08-17). `treasury_10yr` and
+`mortgage_treasury_spread` have no rows until the key is added.
+
+If HousingWire is ever contracted, it belongs in that cron as another ingest source writing dated rows to
+`market_history_weekly` — not as a request-path fetch.
 
 ## Optional: daily reports
 
