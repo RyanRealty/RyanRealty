@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-sentinel) — site regional See homes slice
+# Current — 2026-08-17 (cursor-loop-chain) — listing money + year slice
+
+**Surface:** Cursor cloud `bc-f2b85115` (`cursor/loop-chain-2026-08-17t04-19-2182`). **Time:** 2026-08-17 ~04:50 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 514). Claimed parent only. Product **`5a75bf8a7`** on this branch. Draft PR **#71**. `npm run push` gates 228/228 + build green. **Production is not this SHA** — cloud run stays off `main`; `deploy:verify` hung on Vercel CLI OAuth device login (`vercel ls`); GitHub has no Vercel production status for `5a75bf8`. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (506 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280 on production: Kilimanjaro hero `$615,000` / `$615K` vs rental `$614,995` **reproduced**. Hale True cost HOA `$22` vs Financial `$0` **reproduced**. Hale 5 vs remarks 6 bedrooms **rejected** (`BedroomsTotal=5` is SoR). Kilimanjaro 3 ba vs remarks 2.5 **rejected** (`BathroomsTotal=3` is SoR). Kilimanjaro `$123,000` vs `$122,999` **does not reproduce** (both `$122,999`). Kilimanjaro True cost HOA `$93` vs Financial `$0` **reproduced**. Albany Year built 3672 + New construction Yes **reproduced** (sqft leak; remarks 3.5BA rejected as SoR). Sunriver True cost HOA `$173` vs facts `$0` **reproduced**.
+- Class: `publishListingMoney` / `formatListingMoney` exact whole dollars (no thousand-round). `publishYearBuilt` withholds outside 1800..now+2. `publishNewConstructionYn` withholds when year cannot corroborate. Wired on DAL, ingest, hero, PriceBlock, PriceCtaStrip, PropertySpecs, HouseMe. Gate `ci:publish-listing-facts`.
+- Screenshots `/opt/cursor/artifacts/listing_kili_{1280,390}_hero_615k.png`, `listing_kili_1280_hoa_{93,0}.png`, `listing_hale_{1280,390}_hoa_22.png`, `listing_albany_{1280,390}_year_3672.png`, `listing_sunriver_{1280,390}_hoa_173.png`. Probe `scripts/probe-listing-facts-prod.mjs` after merge.
+- Punch dispositions appended (parent not completed): 5 fixed + 3 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Merge PR 71 so production picks up exact listing dollars and withheld years. Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, git-commit, DATABASE_FOR_AI_AGENTS lookup (listings year/HOA).
+
+# Prior — 2026-08-17 (cursor-loop-sentinel) — site regional See homes slice
 
 **Surface:** Cursor cloud `bc-a505260a` (`cursor/loop-sentinel-2026-08-17t02-40-c49f`). **Time:** 2026-08-17 ~03:20 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:site` (8 of 518). Claimed parent only. Product **`ebd0d0279`** on this branch. Draft PR **#69**. `npm run push` gates + build green. **Production is not this SHA** — cloud run stays off `main`; `deploy:verify` found no production deploy for `ebd0d02` (vercel ls hung). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (510 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
