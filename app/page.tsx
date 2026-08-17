@@ -14,7 +14,7 @@ import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
-import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
+import { V3SectionTracker } from '@/components/site/v3/V3SectionTracker.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
 import { KbExploreTowns } from '@/components/site/kb/KbExploreTowns.client'
 import { KbCommunities } from '@/components/site/kb/KbCommunities.client'
@@ -192,7 +192,7 @@ export default async function Home() {
 
   return (
     <main className="kb-root">
-      <KbSectionTracker pageType="homepage" />
+      <V3SectionTracker pageType="homepage" />
       <SmoothScrollProvider>
         {/* Hero Layer A (Matt 2026-08-10 exact-match discovery home):
             H1 matches money queries. Live count + median stay in the sub-line. */}

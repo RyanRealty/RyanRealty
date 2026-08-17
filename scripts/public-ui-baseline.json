@@ -9,7 +9,7 @@
     "v3": "components/site/v3 (the destination register, not debt)"
   },
   "totals": {
-    "nonV3ImportSites": 219,
+    "nonV3ImportSites": 218,
     "legacyPages": 10,
     "mixedPages": 44
   },
@@ -165,8 +165,8 @@
       "v3": 1
     },
     "app/blog/[slug]/page.tsx": {
-      "legacy": 1,
-      "v3": 1
+      "v3": 2,
+      "legacy": 1
     },
     "app/blog/page.tsx": {
       "legacy": 1,
@@ -338,7 +338,7 @@
       "v3": 1
     },
     "app/page.tsx": {
-      "kb": 16,
+      "kb": 15,
       "v3": 1
     },
     "app/parks/[slug]/page.tsx": {
