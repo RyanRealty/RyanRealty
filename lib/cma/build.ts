@@ -22,7 +22,7 @@ import {
 import { resolveCmaSubject } from '@/lib/cma/subject'
 import { selectCompsByKeys, MIN_COMPS } from '@/lib/cma/comps'
 import { selectCompsPreferringFacts } from '@/lib/pricing/select'
-import { adjustCompAlongMarket } from '@/lib/pricing/estimate'
+import { adjustCompAlongMarket, priceCmaSet } from '@/lib/pricing/estimate'
 import { attachSellerNet } from '@/lib/pricing/seller-net'
 import { classifyStory, citySlug } from '@/lib/pricing/classes'
 import type { CompSelectionDiagnostics } from '@/lib/cma/comp-trace'
@@ -277,10 +277,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         const tier = tierByKey.get(c.listingKey)
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
       })
-      const p = computePricing(subject, adj, market, {
-        sellerImprovementsTotal: input.sellerImprovementsTotal ?? null,
-        priceOverride: input.priceOverride ?? null,
-      })
+      const p = priceCmaSet({ subject, adjusted: adj, market, input, selection, marketIndex, asOf, computePricing })
       attachSellerNet(p, selection.pricingSales ?? set, p?.recommended ?? null)
       if (p && usePath) {
         p.notes.unshift(
