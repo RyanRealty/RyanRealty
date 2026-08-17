@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — blog MOS verdicts + index uniqueness slice
+# Current — 2026-08-17 (cursor-loop-chain) — search card ask + filter sheet slice
+
+**Surface:** Cursor cloud `bc-decba6c7` (`cursor/loop-chain-2026-08-17t13-06-4a94`). **Time:** 2026-08-17 ~13:50 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:search` (8 of 436). Claimed parent only. Product **`19ef79d81`** landed on **`main`**. Vercel Production **READY** (`8J6smhg5f6yasqpoNzKMMY9WAUwX`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (428 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 search lines) at 390+1280: Summerfield card $2,000,000 vs H1 $1,999,900 **reproduced**. Save/Alerts (2 lines) **rejected** (Save is the alert; Get listing alerts at 1280). All-filters Owner finan clip **reproduced**. Rainier price/status history **rejected** (listing-detail). Sold timeout **rejected** (200, empty map, no timeout). Chips 0x0 at 390 **rejected** (79x44 tappable). Dismiss without Apply **rejected** (cancel).
+- Class: `ListingCard` + `VideoListingCard` use `formatPublishedAsk`. All-filters `data-[side=right]:w-full` + wrapping boolean labels. Gate `ci:publish-listing-ask` 15/15.
+- Prod probe after READY `19ef79d81`: search card **$1,999,900** (0 of $2,000,000). Sheet **390 wide, Owner financing unclipped**. After shots `/opt/cursor/artifacts/after_summerfield_390_card_in_view.png`, `after_search_{390,1280}_filters.png`.
+- Punch dispositions appended (parent not completed): 2 fixed + 6 rejected. Leftover search + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-105/R-152/R-101, SITE_PAGE_STANDARD §2, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — blog MOS verdicts + index uniqueness slice
 
 **Surface:** Cursor cloud `bc-791e34a1` (`cursor/loop-chain-2026-08-17t12-16-0077`). **Time:** 2026-08-17 ~12:30 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 444). Claimed parent only. Product **`b4f03efdc`** landed on **`main`**. Vercel Production **READY** (`FxtYpHcRf1RTbkLxzKfCS1DWEgnw`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (436 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
