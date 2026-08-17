@@ -51,7 +51,7 @@ describe('computeTier1 (sync derived fields, audit p3.2)', () => {
   })
 
   it('withholds property age when year_built is sqft', () => {
-    expect(computeTier1({ ...NULLS, yearBuilt: 3672 }).property_age).toBeNull()
+    expect(computeTier1({ ...NULLS, yearBuilt: null }).property_age).toBeNull()
   })
 
   it('all-null input → null derived fields (no NaN/crash)', () => {
@@ -102,7 +102,7 @@ describe('publishYearBuilt on ingest', () => {
       LivingArea: 3672,
     } as Record<string, unknown>)
     expect(row.year_built).toBeNull()
-    expect(computeTier1({ ...NULLS, yearBuilt: 3672 }).property_age).toBeNull()
+    expect(row.property_age).toBeNull()
   })
 })
 

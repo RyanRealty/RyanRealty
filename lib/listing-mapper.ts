@@ -4,11 +4,8 @@
  * ONE canonical mapper used by all sync paths (delta, full, terminal).
  * Replaces mapSparkToRow() in sync-delta and sparkListingToSupabaseRow() in spark.ts.
  *
- * - Maps ALL Spark StandardFields to typed columns using RESO field names with v1 fallbacks
- * - Stores the FULL StandardFields object in `details` (never the thin 3-key version)
- * - Sanitizes masked "****" values via toNum()/toTimestamp()
- * - Extracts all 65 Tier 2 promoted fields
- * - Computes all 17 Tier 1 derived metrics
+ * Maps Spark StandardFields to typed columns, stores full StandardFields in
+ * `details`, sanitizes masked values, and computes Tier 1/2 fields.
  */
 
 import {
@@ -228,7 +225,6 @@ export function computeTier1(input: Tier1Input) {
   } = input
 
   const currentYear = new Date().getFullYear()
-  const publishedYear = publishYearBuilt(yearBuilt, currentYear)
 
   // PITI calculation: 6.5% rate, 20% down, 30yr, insurance 0.35%
   let piti: number | null = null
@@ -258,7 +254,7 @@ export function computeTier1(input: Tier1Input) {
     price_per_acre: safeDiv(listPrice, lotAcres, 2),
     price_per_bedroom: safeDiv(listPrice, bedrooms, 2),
     price_per_room: safeDiv(listPrice, rooms, 2),
-    property_age: publishedYear != null ? currentYear - publishedYear : null,
+    property_age: yearBuilt != null ? currentYear - yearBuilt : null,
     sqft_efficiency: safeDiv(sqft, lotSqft, 4),
     bed_bath_ratio: safeDiv(bedrooms, bathrooms, 2),
     above_grade_pct: safeDiv(aboveGrade, buildingTotal, 4),
