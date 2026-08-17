@@ -6,8 +6,12 @@ import {
   FLEET_PUNCH_GAP,
   FLEET_PUNCH_OUTPUT,
   FLEET_PUNCH_TITLE_BODY,
+  appendPunchDispositions,
   appendPunchLine,
+  canCompletePunchList,
   findFleetPunchListNode,
+  openPunchLines,
+  parsePunchLines,
   fleetFingerprintTag,
   fleetPunchListTitle,
   formatFleetPunchLine,
@@ -107,6 +111,41 @@ describe('punch-line append + duplicate fingerprint', () => {
     )
   })
 
+  it('puts expected, viewport, and bot back on the punch line when present', () => {
+    expect(
+      formatFleetPunchLine({
+        severity: 'p0',
+        url: 'https://ryan-realty.com/homes-for-sale/bend',
+        observed: 'chips are 0x0',
+        expected: 'filter chips are usable',
+        viewport: '390',
+        bot: 'walker-mobile',
+        fingerprint: 'abc123def456',
+      }),
+    ).toBe(
+      '- [p0] https://ryan-realty.com/homes-for-sale/bend [390] — expected "filter chips are usable" observed "chips are 0x0" walker-mobile fleet:abc123def456',
+    )
+    const parsed = parsePunchLines(
+      formatFleetPunchLine({
+        severity: 'major',
+        url: '/search/bend',
+        observed: 'empty pins',
+        expected: 'pins match the list',
+        viewport: '1280',
+        bot: 'stats-truth',
+        fingerprint: 'deadbeefdeadbeef',
+      }),
+    )
+    expect(parsed[0]).toMatchObject({
+      url: '/search/bend',
+      expected: 'pins match the list',
+      observed: 'empty pins',
+      viewport: '1280',
+      bot: 'stats-truth',
+      fingerprint: 'deadbeefdeadbeef',
+    })
+  })
+
   it('skips append when the fingerprint tag is already in the objective', () => {
     const line = formatFleetPunchLine({
       severity: 'major',
@@ -162,6 +201,36 @@ describe('mergeFleetIntake (one building node, not a drip)', () => {
     expect(plan.punch?.accept).toBe(FLEET_PUNCH_ACCEPT)
     expect(plan.punchFindingIds).toEqual(['f1', 'f2'])
     expect(plan.regressions).toHaveLength(0)
+  })
+
+  it('appends a new finding after a slice disposition without rewriting the store', () => {
+    const existing = punchNode('punch-1', {
+      state: 'in_progress',
+      owner_session: 'bc-slice',
+      objective: appendPunchDispositions(
+        `${FLEET_PUNCH_CONTRACT}\n${formatFleetPunchLine({
+          severity: 'p0',
+          url: 'https://ryan-realty.com/homes-for-sale/bend',
+          observed: 'chips are 0x0',
+          fingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        })}`,
+        [{ fingerprint: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', status: 'fixed', note: 'READY search' }],
+      ),
+    })
+    const f = finding({
+      id: 'f-new',
+      fingerprint: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      url: 'https://ryan-realty.com/team',
+      observed: 'bio wrap',
+    })
+    const plan = mergeFleetIntake([f], [existing])
+    expect(plan.punch?.id).toBe('punch-1')
+    expect(plan.punch?.objective).toContain('fleet:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    expect(plan.punch?.objective).toContain('- [fixed] fleet:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+    expect(plan.punch?.objective).toContain('fleet:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
+    expect(openPunchLines(plan.punch?.objective ?? '').map((l) => l.fingerprint)).toEqual([
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    ])
   })
 
   it('finds an existing punch list and grows its objective instead of creating', () => {
@@ -261,6 +330,39 @@ describe('mergeFleetIntake (one building node, not a drip)', () => {
     expect(plan.punch?.objective).toContain('Awbrey tile 52 vs place 63')
     expect(plan.punch?.objective).toContain('fleet:12121212121212121212121212121212')
     expect(punchLineFromSingleNode(orphan)).toContain('fleet:ffffffffffffffffffffffffffffffff')
+  })
+
+  it('parses punch lines and treats fixed/rejected fingerprints as closed', () => {
+    const a = formatFleetPunchLine({
+      severity: 'p0',
+      url: 'https://ryan-realty.com/homes-for-sale/bend',
+      observed: 'chips are 0x0',
+      fingerprint: 'aaaaaaaaaaaaaaaa',
+    })
+    const b = formatFleetPunchLine({
+      severity: 'major',
+      url: 'https://ryan-realty.com/communities/tetherow',
+      observed: 'hero 35 vs list 19',
+      fingerprint: 'bbbbbbbbbbbbbbbb',
+    })
+    const objective = `${FLEET_PUNCH_CONTRACT}\n${a}\n${b}`
+    expect(parsePunchLines(objective)).toHaveLength(2)
+    expect(canCompletePunchList(objective)).toBe(false)
+    const resolved = appendPunchDispositions(objective, [
+      { fingerprint: 'aaaaaaaaaaaaaaaa', status: 'fixed', note: 'READY abc · 390+1280' },
+    ])
+    expect(resolved).toContain(a)
+    expect(resolved).toContain('- [fixed] fleet:aaaaaaaaaaaaaaaa — READY abc · 390+1280')
+    expect(openPunchLines(resolved).map((l) => l.fingerprint)).toEqual(['bbbbbbbbbbbbbbbb'])
+    expect(canCompletePunchList(resolved)).toBe(false)
+    const done = appendPunchDispositions(resolved, [
+      { fingerprint: 'bbbbbbbbbbbbbbbb', status: 'rejected', note: 'does not reproduce' },
+    ])
+    expect(openPunchLines(done)).toHaveLength(0)
+    expect(canCompletePunchList(done)).toBe(true)
+    expect(appendPunchDispositions(done, [
+      { fingerprint: 'aaaaaaaaaaaaaaaa', status: 'rejected', note: 'rewrite attempt' },
+    ])).toBe(done)
   })
 
   it('does not fold the punch-list node into itself', () => {

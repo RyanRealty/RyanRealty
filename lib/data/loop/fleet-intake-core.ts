@@ -24,9 +24,9 @@
  *   key, the successor is found by that title + open/in_progress/blocked.
  *
  * Why not parent_id / ship-class: parent_id is a tree of children (Matt
- * does not want that). ship-class batches sibling OPEN tickets at serve
- * time — it does not stop intake from dripping a new node per finding.
- * The user-visible result is one building node.
+ * does not want that). Intake still writes one building node. At serve
+ * time `selectShipClass` slices punch *lines* into a virtual family class
+ * (cap SHIP_CLASS_MAX) without minting children.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isCompanyImprovementDomain } from './domains'
@@ -34,18 +34,42 @@ import { isCompanyImprovementDomain } from './domains'
 export const FLEET_PUNCH_GAP = 'FLEET-PUNCH'
 export const FLEET_PUNCH_TITLE_BODY = 'review punch list'
 export const FLEET_PUNCH_OUTPUT =
-  'Class fixes (or rejected findings) for every punch line, verified at 390+1280.'
+  'Class-fix (or reject) the served punch-line slice at 390+1280. Leftover lines stay on this inbox.'
 export const FLEET_PUNCH_ACCEPT =
-  'Each punch line is either fixed as a class or rejected with reproduce evidence.'
+  'Each served line is fixed as a class or rejected with reproduce evidence at 390+1280. Completing this node is only valid when no open punch lines remain.'
 export const FLEET_PUNCH_CONTRACT =
   'FLEET-PUNCH — one durable fleet-review punch list. Class-fix every line (or reject with reproduce evidence). FIRST STEP on each line: reproduce it yourself; if it does not reproduce, reject that line with the evidence.'
 
 const PUNCH_TITLE_RE = /^Fleet finding \[(p0|major)\]: review punch list$/
 const FLEET_SINGLE_TITLE_RE = /^Fleet finding \[(p0|major|minor)\]:/
 const PUNCH_LINE_SEV_RE = /^-\s*\[(p0|major|minor)\]\s+/
+const PUNCH_LINE_RE =
+  /^-\s*\[(p0|major|minor)\]\s+(\S+)(?:\s+\[([^\]]+)\])?\s+—\s+(.+?)\s+(fleet:([a-f0-9]{8,}))\s*$/i
+const PUNCH_EXPECTED_RE = /^expected "([^"]*)" observed "([^"]*)"(?:\s+(\S+))?$/i
+const PUNCH_DISPOSITION_RE = /^-\s*\[(fixed|rejected)\]\s+fleet:([a-f0-9]{8,})\b/i
 const FINGERPRINT_TAG_RE = /fleet:([a-f0-9]{8,})/i
 const REGRESS_GAP_RE = /^regress-(G\d+)$/
 const REGRESSION_MARK_RE = /REGRESSION of G\d+/
+
+export type PunchLineSeverity = 'p0' | 'major' | 'minor'
+export type PunchLineDisposition = 'fixed' | 'rejected'
+
+export type PunchLine = {
+  severity: PunchLineSeverity
+  url: string
+  observed: string
+  expected: string | null
+  viewport: string | null
+  bot: string | null
+  fingerprint: string
+  raw: string
+}
+
+export type PunchDisposition = {
+  fingerprint: string
+  status: PunchLineDisposition
+  note: string
+}
 
 export type FleetIntakeResult = {
   processed: number
@@ -125,9 +149,10 @@ export function isFleetPunchListTitle(title: string): boolean {
 export function isFleetPunchListNode(node: {
   title: string
   version_gap?: string | null
+  versionGap?: string | null
   objective?: string
 }): boolean {
-  if (node.version_gap === FLEET_PUNCH_GAP) return true
+  if (node.version_gap === FLEET_PUNCH_GAP || node.versionGap === FLEET_PUNCH_GAP) return true
   if (isFleetPunchListTitle(node.title)) return true
   return Boolean(node.objective?.includes('FLEET-PUNCH — one durable'))
 }
@@ -153,10 +178,21 @@ export function formatFleetPunchLine(input: {
   url: string
   observed: string
   fingerprint: string
+  expected?: string | null
+  viewport?: string | null
+  bot?: string | null
 }): string {
   const severity = ['p0', 'major', 'minor'].includes(input.severity) ? input.severity : 'minor'
-  const observed = String(input.observed).replace(/\s+/g, ' ').trim().slice(0, 160)
-  return `- [${severity}] ${input.url} — ${observed} ${fleetFingerprintTag(input.fingerprint)}`
+  const observed = String(input.observed).replace(/\s+/g, ' ').trim().slice(0, 120)
+  const expected = input.expected ? String(input.expected).replace(/\s+/g, ' ').trim().slice(0, 120) : ''
+  const viewport = input.viewport ? String(input.viewport).replace(/\s+/g, ' ').trim() : ''
+  const bot = input.bot ? String(input.bot).replace(/\s+/g, ' ').trim() : ''
+  const vp = viewport ? ` [${viewport}]` : ''
+  if (expected) {
+    const botBit = bot ? ` ${bot}` : ''
+    return `- [${severity}] ${input.url}${vp} — expected "${expected}" observed "${observed}"${botBit} ${fleetFingerprintTag(input.fingerprint)}`
+  }
+  return `- [${severity}] ${input.url}${vp} — ${observed} ${fleetFingerprintTag(input.fingerprint)}`
 }
 
 export function appendPunchLine(objective: string, line: string): string {
@@ -164,6 +200,67 @@ export function appendPunchLine(objective: string, line: string): string {
   if (tag && objective.includes(tag)) return objective
   const base = objective.trimEnd()
   return base ? `${base}\n${line}` : line
+}
+
+export function parsePunchLines(objective: string): PunchLine[] {
+  const lines: PunchLine[] = []
+  for (const raw of objective.split('\n')) {
+    const m = PUNCH_LINE_RE.exec(raw.trim())
+    if (!m) continue
+    const severity = m[1].toLowerCase() as PunchLineSeverity
+    const body = m[4].replace(/\s+/g, ' ').trim()
+    const expectedMatch = PUNCH_EXPECTED_RE.exec(body)
+    lines.push({
+      severity,
+      url: m[2],
+      viewport: m[3] ? m[3].trim() : null,
+      expected: expectedMatch?.[1] ?? null,
+      observed: expectedMatch?.[2] ?? body,
+      bot: expectedMatch?.[3] ?? null,
+      fingerprint: m[6].toLowerCase(),
+      raw: raw.trim(),
+    })
+  }
+  return lines
+}
+
+export function punchDispositionFingerprints(objective: string): Set<string> {
+  const found = new Set<string>()
+  for (const raw of objective.split('\n')) {
+    const m = PUNCH_DISPOSITION_RE.exec(raw.trim())
+    if (m) found.add(m[2].toLowerCase())
+  }
+  return found
+}
+
+export function openPunchLines(objective: string): PunchLine[] {
+  const resolved = punchDispositionFingerprints(objective)
+  return parsePunchLines(objective).filter((line) => !resolved.has(line.fingerprint))
+}
+
+export function canCompletePunchList(objective: string): boolean {
+  return openPunchLines(objective).length === 0
+}
+
+export function formatPunchDisposition(input: PunchDisposition): string {
+  const status = input.status === 'rejected' ? 'rejected' : 'fixed'
+  const note = String(input.note).replace(/\s+/g, ' ').trim().slice(0, 240)
+  return `- [${status}] ${fleetFingerprintTag(input.fingerprint)}${note ? ` — ${note}` : ''}`
+}
+
+/** Append-only dispositions. Original punch lines stay intact. */
+export function appendPunchDispositions(objective: string, resolutions: PunchDisposition[]): string {
+  const already = punchDispositionFingerprints(objective)
+  const extras: string[] = []
+  for (const resolution of resolutions) {
+    const fp = resolution.fingerprint.toLowerCase()
+    if (already.has(fp)) continue
+    extras.push(formatPunchDisposition({ ...resolution, fingerprint: fp }))
+    already.add(fp)
+  }
+  if (!extras.length) return objective
+  const base = objective.trimEnd()
+  return base ? `${base}\n${extras.join('\n')}` : extras.join('\n')
 }
 
 export function regressGapOf(caseId: string | null | undefined): string | null {
@@ -189,7 +286,10 @@ export function punchLineFromSingleNode(node: { title: string; objective: string
   const quoted = node.objective.match(/observed "([^"]*)"/i)?.[1]
   const fromTitle = node.title.replace(FLEET_SINGLE_TITLE_RE, '').trim()
   const observed = quoted || fromTitle
-  return formatFleetPunchLine({ severity, url, observed, fingerprint })
+  const expected = node.objective.match(/expected "([^"]*)"/i)?.[1] ?? null
+  const viewport = node.objective.match(/\[(\d{3,4})\]/)?.[1] ?? null
+  const bot = node.objective.match(/\bbot\s+(\S+)/i)?.[1] ?? null
+  return formatFleetPunchLine({ severity, url, observed, fingerprint, expected, viewport, bot })
 }
 
 export function initialPunchObjective(): string {

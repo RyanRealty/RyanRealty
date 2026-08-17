@@ -11,7 +11,7 @@ import 'server-only'
 
 import { createServiceClient } from '@/lib/supabase/service'
 import { listWorkNodes, type WorkNode } from './work-graph'
-import { shipClassKey } from './ship-class'
+import { selectShipClass, shipClassKey } from './ship-class'
 import { fleetNodePriority, type WorkNodeState } from './work-node'
 import { upcomingBucket } from './status-copy'
 import { isExpiredUnlearned, windowEndsAt } from './ledger-draft'
@@ -48,6 +48,14 @@ export type LoopUpcomingCounts = {
   plan: number
 }
 
+export type LoopNextShip = {
+  key: string
+  nodeCount: number
+  remaining: number
+  punchServed: number | null
+  punchLeftover: number | null
+}
+
 export type LoopLedgerWindow = {
   id: string
   domain: string
@@ -80,6 +88,8 @@ export type LoopStatus = {
     /** What the brief would serve next, in queue order. */
     queueNext: LoopNodeSummary[]
     upcomingCounts: LoopUpcomingCounts
+    /** Same picker as loop-brief / sentinel (punch list → one family slice). */
+    nextShip: LoopNextShip | null
   }
   version: { gapsTotal: number; gapsDone: number }
   findings: { newCount: number; recent: LoopFindingSummary[] }
@@ -87,19 +97,25 @@ export type LoopStatus = {
   sentinel: { launchesToday: number; recent: LoopSentinelLaunch[] }
 }
 
+function asShipInput(n: WorkNode) {
+  return {
+    id: n.id,
+    domain: n.domain,
+    title: n.title,
+    objective: n.objective,
+    versionGap: n.versionGap,
+  }
+}
+
 function summarize(n: WorkNode): LoopNodeSummary {
+  const input = asShipInput(n)
+  const served = selectShipClass([input], input)
   return {
     id: n.id,
     title: n.title,
     versionGap: n.versionGap,
     domain: n.domain,
-    shipClass: shipClassKey({
-      id: n.id,
-      domain: n.domain,
-      title: n.title,
-      objective: n.objective,
-      versionGap: n.versionGap,
-    }),
+    shipClass: served.punch ? served.key : shipClassKey(input),
     state: n.state,
     ownerSession: n.ownerSession,
     blockedReason: n.blockedReason,
@@ -156,6 +172,21 @@ export async function getLoopStatus(now: Date = new Date()): Promise<LoopStatus>
   const upcomingCounts: LoopUpcomingCounts = { urgent: 0, fix: 0, polish: 0, plan: 0 }
   for (const n of openSorted) upcomingCounts[upcomingBucket(n.title)] += 1
   const queueNext = openSorted.slice(0, 12).map(summarize)
+  const next = openSorted[0]
+  const nextShip = next
+    ? (() => {
+        const ship = selectShipClass(openSorted.map(asShipInput), asShipInput(next))
+        return {
+          key: ship.key,
+          nodeCount: ship.nodes.length,
+          remaining: ship.remaining,
+          punchServed: ship.punch ? ship.punch.served.length : null,
+          punchLeftover: ship.punch
+            ? ship.punch.leftoverInFamily + ship.punch.leftoverOtherFamilies
+            : null,
+        }
+      })()
+    : null
 
   const gapNodes = allNodes.filter((n) => n.versionGap)
   const gapsDone = gapNodes.filter((n) => n.state === 'done').length
@@ -194,7 +225,17 @@ export async function getLoopStatus(now: Date = new Date()): Promise<LoopStatus>
   return {
     generatedAt: now.toISOString(),
     armed: process.env.LOOP_SENTINEL !== 'off',
-    nodes: { total: allNodes.length, byState, runningNow, staleClaims, blocked, recentDone, queueNext, upcomingCounts },
+    nodes: {
+      total: allNodes.length,
+      byState,
+      runningNow,
+      staleClaims,
+      blocked,
+      recentDone,
+      queueNext,
+      upcomingCounts,
+      nextShip,
+    },
     version: { gapsTotal: gapNodes.length, gapsDone },
     findings: { newCount, recent: findings },
     ledger: { openWindows, expiredCount: openWindows.filter((w) => w.expired).length },
