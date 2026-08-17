@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { computePricing } from '@/lib/cma/pricing'
 import {
   adjustCompAlongMarket,
+  applyEngineRecommendedList,
   estimateClosePrice,
+  listPriceFromEngine,
   predictedCloseFromAdjusted,
+  priceCmaSet,
   reconcileAskAndComps,
   trimPpsfOutliers,
 } from '@/lib/pricing/estimate'
@@ -247,5 +251,134 @@ describe('reconcileAskAndComps', () => {
     expect(out.source).toBe('ask')
     expect(out.close).toBe(314_000)
     expect(out.offMarketAsk).toBe(false)
+  })
+})
+
+describe('listPriceFromEngine is the only cover number', () => {
+  const points = [
+    { month: '2025-12-01', ppsf: 290, n: 40, saleToOriginal: 0.98 },
+    { month: '2026-01-01', ppsf: 290, n: 40, saleToOriginal: 0.98 },
+  ]
+  const comps = [
+    sale({ sqft: 1600, closePrice: 430_000, originalAsk: 440_000, closeDate: '2025-12-01' }),
+    sale({ listingKey: 'C2', sqft: 1600, closePrice: 440_000, originalAsk: 450_000, closeDate: '2025-12-01' }),
+    sale({ listingKey: 'C3', sqft: 1600, closePrice: 450_000, originalAsk: 460_000, closeDate: '2025-12-01' }),
+  ]
+
+  it('does not use Method 3 as the list price when a last ask exists', () => {
+    const out = estimateClosePrice({
+      subject: { ...subject, sqft: 1602, lastListPrice: 505_100 },
+      subjectStory: 'one',
+      comps,
+      compStories: ['one', 'one', 'one'],
+      points,
+      asOf: '2026-01-15',
+      market: null,
+    })
+    expect(out.pricing).not.toBeNull()
+    expect(out.recommendedList).toBe(505_000)
+    expect(out.pricing!.recommended).not.toBe(out.recommendedList)
+    expect(out.pricing!.method3).not.toBe(out.recommendedList)
+  })
+
+  it('writes the engine list onto the CMA cover and leaves a broker override alone', () => {
+    const out = estimateClosePrice({
+      subject: { ...subject, sqft: 1602, lastListPrice: 505_100 },
+      subjectStory: 'one',
+      comps,
+      compStories: ['one', 'one', 'one'],
+      points,
+      asOf: '2026-01-15',
+      market: null,
+    })
+    const engine = listPriceFromEngine({
+      subjectSqft: 1602,
+      lastAsk: 505_100,
+      adjusted: out.pricing
+        ? [
+            { ppsfTimeAdjusted: 270 },
+            { ppsfTimeAdjusted: 275 },
+            { ppsfTimeAdjusted: 280 },
+          ]
+        : [],
+      saleToAskRatios: comps.map((c) => c.closePrice / c.originalAsk!),
+      asOfSaleToOriginal: 0.98,
+      qualitySet: true,
+      methodFallback: out.pricing!.method3,
+    })
+    expect(engine.recommendedList).toBe(505_000)
+
+    const cover = applyEngineRecommendedList(out.pricing!, engine, { priceOverride: null })
+    expect(cover.recommended).toBe(505_000)
+    expect(cover.notes[0]).toMatch(/pricing engine/i)
+    expect(cover.method3).toBe(out.pricing!.method3)
+
+    const overridden = computePricing(
+      { ...subject, sqft: 1602, lastListPrice: 505_100 },
+      out.pricing
+        ? [
+            sale({ listingKey: 'A', sqft: 1600, closePrice: 430_000, originalAsk: 440_000 }),
+            sale({ listingKey: 'B', sqft: 1600, closePrice: 440_000, originalAsk: 450_000 }),
+            sale({ listingKey: 'C', sqft: 1600, closePrice: 450_000, originalAsk: 460_000 }),
+          ].map((c) => ({
+            ...c,
+            monthsSinceClose: 1,
+            timeAdjustment: 0,
+            timeAdjustedPrice: c.closePrice,
+            ppsfTimeAdjusted: c.closePrice / c.sqft,
+            sizeAdjustment: 0,
+            adjustedPrice: c.closePrice,
+            weight: 1,
+            listPrice: c.originalAsk,
+            mlsNumber: null,
+            propertySubType: 'Single Family Residence',
+            photoUrl: null,
+            publicRemarks: null,
+            viewDescription: null,
+            taxAnnual: null,
+          }))
+        : [],
+      null,
+      { priceOverride: 489_000 },
+    )!
+    const left = applyEngineRecommendedList(overridden, engine, { priceOverride: 489_000 })
+    expect(left.recommended).toBe(490_000)
+
+    const built = priceCmaSet({
+      subject: { ...subject, sqft: 1602, lastListPrice: 505_100 },
+      adjusted: overridden
+        ? [
+            { ppsfTimeAdjusted: 270 },
+            { ppsfTimeAdjusted: 275 },
+            { ppsfTimeAdjusted: 280 },
+          ].map((row, i) => ({
+            ...sale({ listingKey: `P${i}` }),
+            monthsSinceClose: 1,
+            timeAdjustment: 0,
+            timeAdjustedPrice: 430_000 + i * 10_000,
+            ppsfTimeAdjusted: row.ppsfTimeAdjusted,
+            sizeAdjustment: 0,
+            adjustedPrice: 430_000 + i * 10_000,
+            weight: 1,
+            listPrice: 440_000 + i * 10_000,
+            mlsNumber: null,
+            propertySubType: 'Single Family Residence',
+            photoUrl: null,
+            publicRemarks: null,
+            viewDescription: null,
+            taxAnnual: null,
+          }))
+        : [],
+      market: null,
+      input: { priceOverride: null },
+      selection: {
+        pricingSales: comps,
+        tiersUsed: ['subdivision-3mo'],
+      },
+      marketIndex: points,
+      asOf: '2026-01-15',
+    })
+    expect(built?.recommended).toBe(505_000)
+    expect(built?.method3).not.toBe(505_000)
   })
 })

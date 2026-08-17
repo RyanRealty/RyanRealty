@@ -91,7 +91,7 @@ function rowPrice(row: CmaMarketAreaRow): number | null {
 
 function rowDom(row: CmaMarketAreaRow): number | null {
   const d = num(row.CumulativeDaysOnMarket) ?? num(row.DaysOnMarket)
-  return d != null && d >= 0 ? d : null
+  return d != null && d > 0 ? d : null
 }
 
 function rowSqft(row: CmaMarketAreaRow): number | null {
@@ -201,6 +201,7 @@ export function computeMarketArea(input: {
 
   const sold90Rows = closed.filter((r) => (r.CloseDate ?? '') >= since90)
   const sold90Prices = sold90Rows.map((r) => num(r.ClosePrice)).filter((n): n is number => n != null && n > 0)
+  const place = useSub ? subdivision : input.subject.city
   const sold90: CmaSoldBand | null =
     sold90Prices.length >= 3
       ? {
@@ -209,14 +210,14 @@ export function computeMarketArea(input: {
           median: median(sold90Prices),
           high: Math.max(...sold90Prices),
           bedsLabel,
-          source: `Oregon Data Share MLS. Closed ${bedsLabel} sales in ${label} in the last 90 days.`,
+          source: `Oregon Data Share MLS. Closed ${bedsLabel} sales in ${place} in the last 90 days.`,
         }
       : null
 
   return {
     grain,
     label,
-    source: `Oregon Data Share MLS. Single-family homes in ${label}, priced ${band.lo} to ${band.hi}, last 12 months. Not the whole ZIP.`,
+    source: `Oregon Data Share MLS. ${label}, priced $${band.lo.toLocaleString('en-US')} to $${band.hi.toLocaleString('en-US')}, last 12 months. Not the whole ZIP.`,
     priceLo: band.lo,
     priceHi: band.hi,
     selected: selectedBucket(input.comps),
