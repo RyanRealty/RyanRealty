@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { formatPrice } from '@/lib/format/money'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -133,8 +133,9 @@ export default function ListingCard({
       </div>
 
       <div className="px-4 pt-3.5 pb-4">
+        {/* Exact ListPrice. formatPrice thousand-rounds $1,999,900 to $2,000,000. */}
         <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-          {formatPrice(listing.price)}
+          {formatPublishedAsk(listing.price) ?? '—'}
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>

@@ -119,6 +119,24 @@ checks.push({
     !/formatPrice\(pulse\.medianListPrice\)/.test(faq),
 })
 
+const listingCard = src('components/site/ListingCard.tsx')
+checks.push({
+  label: 'search/site ListingCard publishes formatPublishedAsk, not formatPrice',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(listingCard) &&
+    /formatPublishedAsk\(listing\.price\)/.test(listingCard) &&
+    !/formatPrice\(listing\.price\)/.test(listingCard),
+})
+
+const videoCard = src('components/site/VideoListingCard.tsx')
+checks.push({
+  label: 'VideoListingCard publishes formatPublishedAsk, not formatPrice',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(videoCard) &&
+    /formatPublishedAsk\(listing\.price\)/.test(videoCard) &&
+    !/formatPrice\(listing\.price\)/.test(videoCard),
+})
+
 const activity = src('components/site/kb/KbActivity.client.tsx')
 checks.push({
   label: 'activity ledger publishes formatPublishedAsk',
