@@ -7,6 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { kbMoneyFull, type KbTownItem } from './types'
 import { CONTACT, BRAND, BROKERS } from '@/lib/brand/contact'
 import { KB_FOOTER_COLUMNS, LEGAL_LINKS, VALUATION_FORM } from '@/lib/site-nav'
+import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 
 /**
  * KB footer — dual-audience close + full sitemap. Per-town inventory fine print
@@ -78,7 +79,7 @@ export function KbFooter({
                 <Link href={VALUATION_FORM.href} className="btn">
                   {VALUATION_FORM.label} <span className="arr">→</span>
                 </Link>
-                <a href="/homes-for-sale" className="btn ghost">
+                <a href={publishRegionalSearchHref()} className="btn ghost">
                   See homes for sale
                 </a>
               </>

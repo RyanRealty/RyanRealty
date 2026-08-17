@@ -12,6 +12,7 @@ import { listingDetailPath } from '@/lib/slug'
 import { buildYearSeries } from '@/lib/kb/year-series'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
+import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { SmoothScrollProvider } from '@/components/site/kb/SmoothScrollProvider.client'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { KbHero } from '@/components/site/kb/KbHero.client'
@@ -206,15 +207,25 @@ export default async function Home() {
           titleTop="Central Oregon"
           titleBottom="Homes for Sale"
           lead="Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market."
+          cta={{ href: publishRegionalSearchHref(), label: 'See homes' }}
         />
         {/* C-07: the homepage was the only one of four callers omitting `title`, so
             it inherited the placeholder default and rendered a naked verb, "EXPLORE".
             The eyebrow had been given scent copy to compensate for a heading that said
             nothing — the fix belongs one line down. "The six towns" also went: it reads
             as a claim about the region, and the site carries Prineville and Madras too. */}
-        <KbExploreTowns towns={towns} eyebrow="By town" title={'Where the sales\nare happening'} />
+        <KbExploreTowns
+          towns={towns}
+          eyebrow="By town"
+          title={'Where the sales\nare happening'}
+          cta={{ href: publishRegionalSearchHref(), label: 'See homes for sale' }}
+        />
         <KbCommunities communities={communityItems} eyebrow="Resorts and planned communities" />
-        <KbFeatured items={featuredItems} eyebrow="Listed right now" />
+        <KbFeatured
+          items={featuredItems}
+          eyebrow="Listed right now"
+          viewAllHref={publishRegionalSearchHref()}
+        />
         {/* Mid-page buyer capture (E2 craft): navy band after inventory so the
             homepage is not sell-only until deep scroll. propertyType A = SFR
             across the regional MLS — honest Central Oregon filter without a
@@ -229,7 +240,12 @@ export default async function Home() {
         {/* fitToFeatures frames the actual inventory — the REGION box in this
             wide container padded half the visible map out to the Willamette
             Valley with zero pins (design-audit). */}
-        <KbListingMap geojson={mapGeo} totalActive={pulse?.activeCount ?? mapFeatures.length} fitToFeatures />
+        <KbListingMap
+          geojson={mapGeo}
+          totalActive={pulse?.activeCount ?? mapFeatures.length}
+          fitToFeatures
+          browseHref={publishRegionalSearchHref()}
+        />
         <KbTicker items={tickerItems} />
         {/* KbSell (the one seller-conversion surface) sits ahead of the review
             stack + team + market HUD — as section 10 of 11 it never surfaced in

@@ -7,6 +7,7 @@ import { kbMoneyFull, type KbHeroData } from './types'
 import { searchHrefForQuery } from '@/lib/parse-search-query'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
+import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 
 /**
  * KB hero — REUSABLE across page classes (homepage, city, community, …). All
@@ -94,7 +95,7 @@ export function KbHero({
   countNoun,
   // Buttons say what happens next (VOICE.md > Site pages). "Browse" named no
   // destination and "Home worth?" was a fragment, not an action.
-  cta = { href: '/homes-for-sale', label: 'See homes' },
+  cta = { href: publishRegionalSearchHref(), label: 'See homes' },
   // Value framing, not a bare one-word "Sell" — the ghost button was the whole
   // mobile seller path above the fold (design-audit P2).
   ctaSecondary = { href: '/sell/valuation', label: 'Value my home' },

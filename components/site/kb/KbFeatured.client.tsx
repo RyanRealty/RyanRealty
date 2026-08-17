@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { publishRegionalSearchHref } from '@/lib/search/publish-regional-search-href'
 import { kbMoneyFull, type KbFeaturedItem } from './types'
 import { useInViewAutoplay } from './use-in-view-autoplay'
 
@@ -18,7 +19,7 @@ import { useInViewAutoplay } from './use-in-view-autoplay'
 export function KbFeatured({
   items,
   eyebrow = 'Active listings',
-  viewAllHref = '/homes-for-sale',
+  viewAllHref = publishRegionalSearchHref(),
   viewAllLabel = 'See homes for sale',
   viewAllPlace,
   totalCount = null,
