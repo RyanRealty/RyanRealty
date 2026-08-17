@@ -14,42 +14,42 @@ const OWNER = 'cursor-loop-chain-2026-08-17t03-23-70dd'
 
 const RESOLUTIONS = [
   {
-    fingerprint: 'fleet:c5507dfbad0fa07a59ff32ed332c9f36',
+    fingerprint: 'c5507dfbad0fa07a59ff32ed332c9f36',
     status: 'rejected' as const,
     note: 'Does not reproduce at 390+1280. /homes-for-sale?beds=4 paints 372 homes / 244 in this map view. 0 of Search took too long.',
   },
   {
-    fingerprint: 'fleet:8dbca1d99a7c4b2ad2273fb5cde0b4aa',
+    fingerprint: '8dbca1d99a7c4b2ad2273fb5cde0b4aa',
     status: 'rejected' as const,
     note: 'Does not reproduce. Unfiltered 1,294 homes; beds=3 is 875 (decreases). Headline vs map is labeled filter-match vs in this map view (publishSearchCountPair).',
   },
   {
-    fingerprint: 'fleet:bd08fd51f91314013e636d4218550db4',
+    fingerprint: 'bd08fd51f91314013e636d4218550db4',
     status: 'rejected' as const,
     note: 'Does not reproduce. Beds click stays on /homes-for-sale and opens Min bedrooms. URL unchanged.',
   },
   {
-    fingerprint: 'fleet:705f2898188f7c5f6d15eb0b6e263009',
+    fingerprint: '705f2898188f7c5f6d15eb0b6e263009',
     status: 'rejected' as const,
     note: 'Does not reproduce as a defect. After beds=3: 875 homes + 594+ homes in this map view. Different populations, labeled (publishSearchCountPair).',
   },
   {
-    fingerprint: 'fleet:7d08fc7ab78acdf3e0525baf36ce52fb',
+    fingerprint: '7d08fc7ab78acdf3e0525baf36ce52fb',
     status: 'rejected' as const,
     note: 'Does not reproduce as a defect. Save this search is visible at 390+1280. Get listing alerts is visible at 1280. Footer Listing alerts is the closed V3 chrome panel (visibility:hidden by design).',
   },
   {
-    fingerprint: 'fleet:23a9ac8b87a2f093ef9bf05c550ac1e2',
+    fingerprint: '23a9ac8b87a2f093ef9bf05c550ac1e2',
     status: 'fixed' as const,
     note: 'Reproduced at 390: Owner financing clipped because default Sheet is w-3/4. Class: AllFiltersSheet is data-[side=right]:w-full + overflow-x-hidden; boolean labels stack (grid-cols-1 sm:grid-cols-2). Find-a-filter does not close the sheet (rejected that clause).',
   },
   {
-    fingerprint: 'fleet:e438ef63159977d30cf83cf4cdff71bc',
+    fingerprint: 'e438ef63159977d30cf83cf4cdff71bc',
     status: 'rejected' as const,
     note: 'Does not reproduce on the search surface. 654 Providence Drive is not in the /homes-for-sale result set. Listing-detail price history is a leftover listing family line.',
   },
   {
-    fingerprint: 'fleet:7644f0913c59ebe272f880261f804547',
+    fingerprint: '7644f0913c59ebe272f880261f804547',
     status: 'rejected' as const,
     note: 'Does not reproduce. Price/Beds/Baths/Home type chips are in the 390 layout (44px tall). All filters is not the only control. hidden sm:contents already gone.',
   },
