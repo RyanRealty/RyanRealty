@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { CAPTURE_MIN_LIST_PRICE } from '@/lib/prospecting/capture-scope'
+import { CAPTURE_MIN_LIST_PRICE, CAPTURE_SERVICE_AREA_CITIES } from '@/lib/prospecting/capture-scope'
 import {
   EXPIRED_CAPTURE_PRICE_OP,
   SCHEDULED_EXPIRED_CAPTURE,
@@ -19,12 +19,31 @@ function bodyOf(src: string, fnName: string, span = 2400): string {
 }
 
 describe('expired capture select filters', () => {
-  it('includes exactly $500,000 via gte against CAPTURE_MIN_LIST_PRICE', () => {
-    expect(CAPTURE_MIN_LIST_PRICE).toBe(500_000)
+  it('includes any list price via gte against CAPTURE_MIN_LIST_PRICE', () => {
+    expect(CAPTURE_MIN_LIST_PRICE).toBe(0)
     expect(EXPIRED_CAPTURE_PRICE_OP).toBe('gte')
     const body = bodyOf(SELECT_SRC, 'selectNewExpiredListings')
     expect(body).toMatch(/\.gte\(\s*'ListPrice',\s*options\.minListPrice\s*\)/)
     expect(body).not.toMatch(/\.gt\(\s*'ListPrice'/)
+    expect(body).not.toMatch(/500_000|500000/)
+  })
+
+  it('selects a $250k expired in Bend (six cities, any price)', () => {
+    const listPrice = 250_000
+    expect(CAPTURE_SERVICE_AREA_CITIES).toEqual([
+      'Bend',
+      'Redmond',
+      'Sisters',
+      'Sunriver',
+      'Tumalo',
+      'La Pine',
+    ])
+    expect(CAPTURE_SERVICE_AREA_CITIES).toContain('Bend')
+    expect(listPrice >= CAPTURE_MIN_LIST_PRICE).toBe(true)
+    expect(500_000 >= CAPTURE_MIN_LIST_PRICE).toBe(true)
+    const body = bodyOf(SELECT_SRC, 'selectNewExpiredListings')
+    expect(body).toMatch(/\.gte\(\s*'ListPrice',\s*options\.minListPrice\s*\)/)
+    expect(PROCESSOR_SRC).toMatch(/minListPrice:\s*MIN_LIST_PRICE/)
   })
 
   it('excludes keys already in expired_listings in SQL before limit', () => {

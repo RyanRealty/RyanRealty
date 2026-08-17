@@ -15,9 +15,9 @@ const validBend = {
 }
 
 describe('parseZillowItem (FSBO lead parser)', () => {
-  it('Bend is in the service area + floor is $500k', () => {
+  it('Bend is in the service area + any list price is in', () => {
     expect(FSBO_SERVICE_AREA_CITIES).toContain('Bend')
-    expect(FSBO_MIN_LIST_PRICE).toBe(500_000)
+    expect(FSBO_MIN_LIST_PRICE).toBe(0)
   })
 
   it('parses an in-service-area SFR above the price floor (and strips tracking query)', () => {
@@ -30,8 +30,9 @@ describe('parseZillowItem (FSBO lead parser)', () => {
     expect(r?.fsboUrl).not.toContain('?')
   })
 
-  it('rejects below the $500k floor', () => {
-    expect(parseZillowItem(mk({ ...validBend, unformattedPrice: 100000 }))).toBeNull()
+  it('keeps a $250k Bend listing (old $500k floor is retired)', () => {
+    expect(parseZillowItem(mk({ ...validBend, unformattedPrice: 250_000 }))).not.toBeNull()
+    expect(parseZillowItem(mk({ ...validBend, unformattedPrice: 500_000 }))).not.toBeNull()
   })
 
   it('rejects out-of-service-area cities', () => {

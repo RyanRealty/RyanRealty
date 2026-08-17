@@ -24,9 +24,9 @@
  *   - FSBO.com / ForSaleByOwner.com (lower volume; still candidates)
  *
  * Service area + price floor — matches the expired-listings cron exactly
- * per Matt's 2026-05-19 directive:
+ * (one constant in lib/prospecting/capture-scope.ts):
  *   - Cities: Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine
- *   - Price floor: $500,000
+ *   - Any list price
  *   - Property type: SFR
  */
 

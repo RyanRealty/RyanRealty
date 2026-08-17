@@ -2,9 +2,9 @@
 /**
  * check-capture-scope.mjs — ci:capture-scope (ledger row W6.8).
  *
- * Matt's locked decision (2026-07-24): prospecting capture scope stays at
- * $500K+, single-family, six cities. The ledger row promises that widening it
- * later is "the promised one-constant change".
+ * Matt's locked decision: prospecting capture scope is defined in ONE module
+ * (six cities, single-family, any list price as of 2026-08-17). The ledger
+ * row promises that widening it is "the promised one-constant change".
  *
  * It was not one constant. The scope was written out FOUR times: the six-city
  * list in `expired-listing-processor.ts` and again in `fsbo-detector.ts`, and

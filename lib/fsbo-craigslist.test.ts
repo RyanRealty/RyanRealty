@@ -109,10 +109,11 @@ describe('fixture end-to-end normalization', () => {
 })
 
 describe('craigslistCandidateToListing scope checks', () => {
-  it('rejects below the $500K floor and unknown prices', () => {
-    expect(craigslistCandidateToListing(mk({ price: 499_999 }))).toBeNull()
-    expect(craigslistCandidateToListing(mk({ price: null }))).toBeNull()
+  it('keeps any list price including $250k and $500k; rejects unknown prices', () => {
+    expect(craigslistCandidateToListing(mk({ price: 250_000 }))).not.toBeNull()
+    expect(craigslistCandidateToListing(mk({ price: 499_999 }))).not.toBeNull()
     expect(craigslistCandidateToListing(mk({ price: 500_000 }))).not.toBeNull()
+    expect(craigslistCandidateToListing(mk({ price: null }))).toBeNull()
   })
 
   it('rejects out-of-area and non-craigslist URLs', () => {
