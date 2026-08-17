@@ -39,8 +39,25 @@ checks.push({
 
 const page = src('app/listing/[listingKey]/page.tsx')
 checks.push({
-  label: 'listing JSON-LD offer uses listing.listPrice (exact ask)',
-  ok: /listPrice: listing\.listPrice/.test(page),
+  label: 'listing JSON-LD offer uses publishListingAsk',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(page) &&
+    /publishListingAsk\(/.test(page) &&
+    /listPrice: publishedAsk\?\.ask/.test(page),
+})
+
+const card = src('components/site/ListingCard.tsx')
+checks.push({
+  label: 'ListingCard price gates through publishListingAsk (no $0 from sub-$500 asks)',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(card) &&
+    /publishListingAsk\(/.test(card) &&
+    !/formatPrice\(listing\.price\)/.test(card),
+})
+
+checks.push({
+  label: 'publishListingAsk withholds a thousand-round-to-zero ask',
+  ok: helper.includes('Math.round(ask / 1000) * 1000 === 0'),
 })
 
 const failed = checks.filter((c) => !c.ok)

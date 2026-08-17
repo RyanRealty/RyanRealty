@@ -3,6 +3,8 @@ import Image from 'next/image'
 import { formatPrice } from '@/lib/format/money'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { publishListingAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingRooms } from '@/lib/listing/publish-listing-rooms'
 
 /**
  * Site v2 listing card — 4:3 photo on top, badge overlaid, info block below
@@ -53,7 +55,7 @@ function MetaRow({
   if (beds != null) parts.push(`${Math.round(beds).toLocaleString()} bd`)
   if (baths != null) parts.push(`${Math.round(baths).toLocaleString()} ba`)
   if (sqft != null) parts.push(`${Math.round(sqft).toLocaleString()} sqft`)
-  if (pricePerSqft != null && pricePerSqft > 0) parts.push(`$${Math.round(pricePerSqft).toLocaleString()}/sqft`)
+  if (pricePerSqft != null && pricePerSqft >= 1) parts.push(`$${Math.round(pricePerSqft).toLocaleString()}/sqft`)
   if (parts.length === 0) return null
   return (
     <div className="mt-2.5 text-xs text-muted-foreground tabular-nums flex flex-wrap gap-1.5 items-center">
@@ -97,6 +99,17 @@ export default function ListingCard({
   /** LCP: pass for the first few above-the-fold cards on search results (P7). */
   priority?: boolean
 }) {
+  const publishedAsk = publishListingAsk(listing.price)
+  const rooms = publishListingRooms({
+    beds: listing.beds,
+    baths: listing.baths,
+    livingSqft: listing.sqft,
+  })
+  const priceLabel = publishedAsk ? formatPrice(publishedAsk.ask) : 'Price on request'
+  const pricePerSqft =
+    showPricePerSqft && publishedAsk && listing.sqft != null && listing.sqft > 0
+      ? publishedAsk.ask / listing.sqft
+      : null
   return (
     <Link
       href={listing.href}
@@ -134,15 +147,15 @@ export default function ListingCard({
 
       <div className="px-4 pt-3.5 pb-4">
         <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-          {formatPrice(listing.price)}
+          {priceLabel}
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>
         <MetaRow
-          beds={listing.beds}
-          baths={listing.baths}
+          beds={rooms.beds}
+          baths={rooms.baths}
           sqft={listing.sqft}
-          pricePerSqft={showPricePerSqft ? listing.pricePerSqft : null}
+          pricePerSqft={pricePerSqft}
         />
       </div>
     </Link>

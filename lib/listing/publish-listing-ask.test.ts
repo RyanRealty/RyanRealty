@@ -15,6 +15,14 @@ describe('publishListingAsk', () => {
     expect(publishListingAsk(0)).toBeNull()
     expect(publishListingAsk(null)).toBeNull()
   })
+
+  it('withholds a positive ask that thousand-rounds to $0', () => {
+    expect(publishListingAsk(2.4)).toBeNull()
+    expect(publishListingAsk(1.08)).toBeNull()
+    expect(publishListingAsk(1.2)).toBeNull()
+    expect(publishListingAsk(499)).toBeNull()
+    expect(publishListingAsk(500)).toEqual({ ask: 500 })
+  })
 })
 
 describe('publishListingDrop', () => {
