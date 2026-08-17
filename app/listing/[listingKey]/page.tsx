@@ -46,7 +46,9 @@ import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentit
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
+import { publishListingAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
+import { publishListingRooms } from '@/lib/listing/publish-listing-rooms'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
@@ -349,14 +351,16 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
+  const publishedAsk = publishListingAsk(listing.listPrice)
+  const rooms = publishListingRooms({ beds: listing.beds, baths: listing.baths, livingSqft: listing.sqft ?? listing.totalLivingAreaSqFt })
   const hero = (
     <ListingHero
       photos={photos}
       videos={reelVideos}
       addressLine={street}
-      price={listing.listPrice}
-      beds={listing.beds}
-      baths={listing.baths}
+      price={publishedAsk?.ask ?? null}
+      beds={rooms.beds}
+      baths={rooms.baths}
       sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
       lat={listing.lat}
       lng={listing.lng}
@@ -403,16 +407,16 @@ export default async function ListingDetailPage({ params }: PageProps) {
           RoomRestyle next-step, and ListingAlertCoach. Single mount only. */}
       <ListingLikeThisAlerts
         city={listing.city}
-        listPrice={listing.listPrice}
-        beds={listing.beds}
+        listPrice={publishedAsk?.ask ?? listing.listPrice}
+        beds={rooms.beds}
       />
       {photos.some((p) => p.url) ? (
         <RoomRestyle
           photos={photos.map((p) => ({ url: p.url, caption: p.caption ?? null }))}
           listingKey={contactKey}
           city={listing.city}
-          listPrice={listing.listPrice}
-          beds={listing.beds}
+          listPrice={publishedAsk?.ask ?? listing.listPrice}
+          beds={rooms.beds}
         />
       ) : null}
       {virtualTours.length > 0 ? <ListingVideoEmbed videos={virtualTours} variant="tour" /> : null}
@@ -422,9 +426,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
         lifestyleLine={buildLifestyleLine({ city: listing.city })}
         addressLine={street}
         photoUrl={photos[0]?.url ?? listing.photoUrl}
-        price={listing.listPrice}
-        beds={listing.beds}
-        baths={listing.baths}
+        price={publishedAsk?.ask ?? null}
+        beds={rooms.beds}
+        baths={rooms.baths}
         sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
         cityLine={listing.city}
         href={listingHref}
@@ -531,9 +535,9 @@ export default async function ListingDetailPage({ params }: PageProps) {
         ? `${street}, ${listing.city ?? ''}, OR ${listing.postalCode ?? ''}`.trim().replace(/,\s*$/, '')
         : `Listing ${listingKey}`,
       description: listingShareSummary({
-        price: listing.listPrice,
-        beds: listing.beds,
-        baths: listing.baths,
+        price: publishedAsk?.ask ?? null,
+        beds: rooms.beds,
+        baths: rooms.baths,
         sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
         address: street || undefined,
         city: street ? undefined : (listing.city ?? undefined),
@@ -550,12 +554,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
         listing.lat != null && listing.lng != null
           ? { lat: listing.lat, lng: listing.lng }
           : undefined,
-      beds: listing.beds ?? undefined,
-      baths: listing.baths ?? undefined,
+      beds: rooms.beds ?? undefined,
+      baths: rooms.baths ?? undefined,
       livingAreaSqft: (listing.sqft ?? listing.totalLivingAreaSqFt) ?? undefined,
       lotSizeSqft: listing.lotSizeSqft ?? undefined,
       yearBuilt: listing.yearBuilt ?? undefined,
-      listPrice: listing.listPrice ?? undefined,
+      listPrice: publishedAsk?.ask ?? undefined,
       // Photos: already gated by media_suppressed in getListingPhotos().
       // Cap at 5 per schema.org convention (matching the builder's own slice).
       photos: photos.length > 0 ? photos.slice(0, 5).map((p) => p.url) : undefined,
@@ -576,11 +580,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <ListingTracker
         listingKey={listing.listingKey}
         listingId={contactKey}
-        price={listing.listPrice ?? undefined}
+        price={publishedAsk?.ask ?? undefined}
         community={listing.communityName ?? listing.subdivisionName ?? undefined}
         city={listing.city ?? undefined}
-        beds={listing.beds ?? undefined}
-        baths={listing.baths ?? undefined}
+        beds={rooms.beds ?? undefined}
+        baths={rooms.baths ?? undefined}
       />
       <KbSectionTracker pageType="listing" />
       <SmoothScrollProvider>

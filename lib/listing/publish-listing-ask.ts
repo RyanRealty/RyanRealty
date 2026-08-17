@@ -8,6 +8,10 @@
  *
  * The published ask is the exact whole-dollar ListPrice. Drop is exact
  * original minus exact ask. Do not thousand-round either under the same label.
+ *
+ * A positive ListPrice that thousand-rounds to $0 ($1.08 / $2.40 commercial
+ * rows on Old Bend / Old Farm under-$X cards) is withheld. Printing $0 next
+ * to a real ask is a different number. Fleet listing-detail punch 2026-08-17.
  */
 
 export type PublishedListingAsk = {
@@ -28,6 +32,8 @@ function asPositivePrice(value: number | null | undefined): number | null {
 export function publishListingAsk(listPrice: number | null | undefined): PublishedListingAsk | null {
   const ask = asPositivePrice(listPrice)
   if (ask == null) return null
+  // formatPrice / brand thousand-round would print $0. That is not the ask.
+  if (Math.round(ask / 1000) * 1000 === 0) return null
   return { ask }
 }
 
