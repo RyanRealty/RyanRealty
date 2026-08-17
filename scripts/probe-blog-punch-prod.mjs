@@ -40,7 +40,10 @@ async function boxes(page) {
         left: Math.round(r.left),
       }
     }
-    const firstText = document.querySelector('#article-body .prose p, #article-body p, #article-body')
+    const firstText =
+      document.querySelector('.v3-article-island .prose p') ||
+      document.querySelector('.v3-article-island .prose') ||
+      document.querySelector('.v3-article-island')
     const firstChar = firstText
       ? (() => {
           const r = firstText.getBoundingClientRect()
@@ -126,6 +129,12 @@ async function main() {
       const layout = await boxes(page)
       report.pages[slug][`layout${width}`] = layout
       await page.screenshot({ path: `${ART}/blog_${slug}_${width}_top.png` })
+      const prose = page.locator('.v3-article-island .prose, .v3-article-island').first()
+      if (await prose.count()) {
+        await prose.scrollIntoViewIfNeeded()
+        await page.waitForTimeout(200)
+        await page.screenshot({ path: `${ART}/blog_${slug}_${width}_body.png` })
+      }
       if (slug === 'retirement-central-oregon') {
         const start = page.url()
         await page.mouse.move(width - 40, 420)

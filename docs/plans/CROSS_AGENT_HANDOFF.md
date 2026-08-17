@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — place-pages days figure slice
+# Current — 2026-08-17 (cursor-loop-chain) — blog gutter + live MOS slice
+
+**Surface:** Cursor cloud `bc-1d79681c` (`cursor/loop-chain-2026-08-17t01-20-78f6`). **Time:** 2026-08-17 ~02:05 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 503). Claimed parent only. Product **`a17c3f4c0`** (accept probe `a58402a54`) landed on **`main` @ `18bb59e02`**. Vercel Production **READY** (`G8nDqmYjyuKXPXDmq59hbPm7LVEi`). `npm run deploy:verify` exit 0 in 734s. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (495 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 blog lines): body flush / Share clip on moving-to-redmond, preparing-home-for-sale, hb-2001, retirement (flush + first-char clip) **reproduced** at 390+1280. Self-nav on retirement **does not reproduce** (URL unchanged; related posts are arts-culture / working-remote / raising-kids). MOS 6.5 vs June 6.0 **reproduced**.
+- Class: article island shares `--v3-measure` + `--v3-gutter` (`V3ArticleIsland.css`). Current MOS rewrites through `publishBlogCurrentMos` ← `getMarketPulse` + `publishMonthsOfSupply`. June `X.X in 20XX` snapshots stay. Gate `ci:publish-months-of-supply` 11/11.
+- Production probe `scripts/probe-blog-punch-prod.mjs` after READY: `layoutOk` `mosOk` `navUnchanged`. Body/Share left = H1 gutter (20 @ 390, 84 @ 1280). Visible overall **Central Oregon overall: 5.7 months**. 0 of 6.5. Screenshots `/opt/cursor/artifacts/after_blog_{redmond_390_top,redmond_1280_body,mos_390,mos_1280}.png`.
+- Punch dispositions appended (parent not completed): 6 fixed + 2 rejected. Leftover blog + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-002/R-024, git-commit, DATABASE_FOR_AI_AGENTS lookup (pulse only).
+
+# Prior — 2026-08-17 (cursor-loop-chain) — place-pages days figure slice
 
 **Surface:** Cursor cloud `bc-d246e9da` (`cursor/loop-chain-2026-08-17t00-32-e58c`). **Time:** 2026-08-17 ~01:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages`. Matt override: punch list is the inbox, not one job. One family, p0 first, max 8 lines. Search-count / Show 409 / 390 chips skipped (already on `main`). No child tickets. No review PR. Product **`949a01e5a`**. Vercel Production **READY** (`Fp9jYCrGV3h9bcvfAzUU9mRyWF3i`). `npm run deploy:verify` exit 0. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (inbox). Loop stays **ARMED**.
 
