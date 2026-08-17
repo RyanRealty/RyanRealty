@@ -9,10 +9,10 @@ A session that generates social, video, voice, stills, or content-model text **m
 
 | Need | xAI surface | Model / endpoint | Our wrapper |
 |---|---|---|---|
-| Text, tools, structured out | Responses / chat | `grok-4.6` — `POST /v1/responses` (also `/v1/chat/completions`) | `lib/grok-text.ts` (upgrade off stale `grok-2-1212`) |
+| Text, tools, structured out | Responses / chat | `grok-4.6` — `POST /v1/responses` | `lib/grok-text.ts` |
 | Stills + edits | Imagine Images | `grok-imagine-image-quality` or `grok-imagine-image-2.0` — `POST /v1/images/generations` + `/v1/images/edits` | `lib/grok-image.ts` |
 | Video (t2v, i2v, ref, edit, extend) | Imagine Video | `grok-imagine-video-1.5` — `POST /v1/videos/generations` | `lib/grok-video.ts` |
-| Voiceover | Voice TTS | `POST /v1/tts` — `voice_id` (default `eve`), IPA `replace`, `with_timestamps` | `lib/grok-voice.ts` (G32 adds) |
+| Voiceover | Voice TTS | `POST /v1/tts` — `voice_id` (default `eve`, override `XAI_VOICE_ID`), IPA `replace`, `with_timestamps` | `lib/grok-voice.ts` |
 | Call transcripts | Voice STT | Speech-to-text REST / streaming | same voice module |
 | Realtime voice | Voice API | speech-to-speech `grok-voice-think-fast-2.0` | only if a product path needs it |
 

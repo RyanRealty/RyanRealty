@@ -257,7 +257,7 @@
 | **Evidence pointers** | `listing_video_v4/`; `video/`; Claude.md §4; `scripts/check_first_frame.py`; three caption modules only under `video_production_skills/`; EVIDENCE-LOG CAP-017 |
 | **Public risk** | Med |
 | **Broker product?** | Partial |
-| **Residual disposition** | **ACTIVE G32** (Matt ADD 2026-08-16) — G12 docket remains (`docs/plans/ENTERPRISE_MAP/video-decision-docket.json`). Rebuild path is now xAI Imagine + Voice, not ElevenLabs Turbo. R-045 stays LOCKED. Cancel list in `xai-stack-accept.json`. |
+| **Residual disposition** | **G32 DONE 2026-08-17** — chokepoint + cancel list live. G12 docket remains (`docs/plans/ENTERPRISE_MAP/video-decision-docket.json`). Rebuild path is xAI Imagine + Voice. R-045 stays LOCKED. Cancel-now: fal + Synthesia. Cancel-after-cutover: ElevenLabs VO, Replicate, OpenAI, Anthropic. |
 
 ---
 

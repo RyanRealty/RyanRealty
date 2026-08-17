@@ -6,9 +6,9 @@
  * Replicate calls with drifted settings instead of the shared helpers. This gate
  * bans NEW inline callers while grandfathering the known current ones via a
  * baseline that may only SHRINK (same ratchet pattern as G3/G6/G8).
- *   - All VO must go through scripts/_voice_lib.py or lib/voice/* (CLAUDE.md
- *     "every VO call goes through scripts/_voice_lib.py").
- *   - All Replicate video must go through the shared video helper.
+ *   - New generate paths go through lib/grok-*.ts (G32 / R-213).
+ *   - Legacy VO residue stays in scripts/_voice_lib.py / lib/voice/* until cutover.
+ *   - Legacy Replicate residue stays on the shrinking baseline.
  *
  * HISTORY: this gate originally also carried a "Layer 1" skill-auto-load contract
  * tying two skills (video_production_skills/tool-mastery, viral-playbook) into the
@@ -45,6 +45,7 @@ export const INLINE_RULES = [
       'scripts/_voice_lib.py',
       'lib/voice/',
       'scripts/check-tool-discipline.mjs', // this file names the API in comments
+      'scripts/check-xai-stack.mjs',
     ],
   },
   {
@@ -56,8 +57,41 @@ export const INLINE_RULES = [
       'lib/replicate-video.mjs',
       'lib/replicate.ts',
       'scripts/check-tool-discipline.mjs',
+      'scripts/check-xai-stack.mjs',
       'video_production_skills/', // skill docs may show example calls
       'docs/', // research docs show example calls
+    ],
+  },
+  {
+    id: 'fal-inline',
+    label: 'inline fal.ai generate call',
+    pattern: /fal\.run\/|queue\.fal\.ai|fal\.ai\/(fal-ai|models)\//,
+    allowedHomes: [
+      'scripts/check-tool-discipline.mjs',
+      'scripts/check-xai-stack.mjs',
+      'docs/',
+    ],
+  },
+  {
+    id: 'synthesia-inline',
+    label: 'inline Synthesia generate call',
+    pattern: /api\.synthesia\.io/,
+    allowedHomes: [
+      'scripts/check-tool-discipline.mjs',
+      'scripts/check-xai-stack.mjs',
+      'scripts/verify-env.ts',
+      'scripts/loop-probe-g13-live.ts',
+      'docs/',
+    ],
+  },
+  {
+    id: 'openai-images-inline',
+    label: 'inline OpenAI image generate call',
+    pattern: /api\.openai\.com\/v1\/images/,
+    allowedHomes: [
+      'scripts/check-tool-discipline.mjs',
+      'scripts/check-xai-stack.mjs',
+      'docs/',
     ],
   },
 ]
@@ -148,8 +182,8 @@ function main() {
 
   if (newViolations.length > 0) {
     console.error('\nG36 FAILED.')
-    console.error('• New inline AI-tool call: route VO through scripts/_voice_lib.py / lib/voice and')
-    console.error('  Replicate video through the shared helper. Do not inline the API with drifted settings.')
+    console.error('• New inline AI-tool call: route image/video/voice/text through lib/grok-*.ts.')
+    console.error('  Do not add ElevenLabs, Replicate, fal, Synthesia, or OpenAI images generate paths.')
     process.exit(1)
   }
 

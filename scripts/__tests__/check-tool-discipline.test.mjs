@@ -30,6 +30,16 @@ describe('inlineViolations', () => {
   it('returns nothing for source with no inline AI-tool call', () => {
     expect(inlineViolations('lib/foo.ts', `import { synth } from '@/lib/voice'`)).toHaveLength(0)
   })
+
+  it('FLAGS a new Synthesia or fal or OpenAI-images generate path', () => {
+    expect(inlineViolations('app/actions/new-gen.ts', `fetch('https://api.synthesia.io/v2/videos')`)).toContain(
+      'synthesia-inline',
+    )
+    expect(inlineViolations('lib/new-fal.ts', `fetch('https://queue.fal.ai/fal-ai/kling')`)).toContain('fal-inline')
+    expect(inlineViolations('lib/dalle.ts', `fetch('https://api.openai.com/v1/images/generations')`)).toContain(
+      'openai-images-inline',
+    )
+  })
 })
 
 describe('isAllowed', () => {
