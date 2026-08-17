@@ -330,7 +330,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
-    { label: 'Homes for sale', href: '/homes-for-sale' },
+    { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
     ...(listing.city && cityHref ? [{ label: listing.city, href: cityHref }] : []),
     { label: street || `Listing ${listingKey}` },
   ]

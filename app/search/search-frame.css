@@ -19,6 +19,13 @@
     z-index: 20;
   }
 
+  /* App-frame already locks the viewport. Sticky here overlays the
+     List/Map + count/sort row at 390. Keep the dock in flow. */
+  .search-app-frame .search-filter-dock {
+    position: relative;
+    top: auto;
+  }
+
   /* 390: one Filters control, short dock, so the first house address
      reaches the fold. Do not remount chrome. */
   @media (max-width: 639px) {

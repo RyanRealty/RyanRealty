@@ -82,6 +82,40 @@ checks.push({
     search.includes("const defaultCity = 'Bend'"),
 })
 
+const nav = src('lib/site-nav.ts')
+checks.push({
+  label: 'Homes / Buy nav door is the regional list href, not the Bend inject',
+  ok:
+    /export const REGIONAL_SEARCH: NavLink = \{[\s\S]*href: '\/homes-for-sale\?view=list'/.test(nav) &&
+    /href: REGIONAL_SEARCH\.href/.test(nav) &&
+    /children: \[\s*REGIONAL_SEARCH,/.test(nav),
+})
+
+const menu = src('lib/site-menu.ts')
+checks.push({
+  label: 'legacy MENU Buy door is the regional list href',
+  ok:
+    /label: 'Buy',\s*href: '\/homes-for-sale\?view=list'/.test(menu) &&
+    /label: 'All homes for sale', href: '\/homes-for-sale\?view=list'/.test(menu),
+})
+
+const frame = src('app/globals.css')
+checks.push({
+  label: 'search app-frame does not double-count a 64px fixed header',
+  ok:
+    /height:\s*calc\(100dvh - 3\.5rem\)/.test(frame) &&
+    /margin-top:\s*0/.test(frame) &&
+    !/\.search-app-frame \{[^}]*margin-top:\s*64px/.test(frame),
+})
+
+const dock = src('app/search/search-frame.css')
+checks.push({
+  label: 'app-frame filter dock stays in flow so it cannot cover count/sort',
+  ok:
+    /\.search-app-frame \.search-filter-dock/.test(dock) &&
+    /position:\s*relative/.test(dock),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)

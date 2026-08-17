@@ -27,6 +27,7 @@
  */
 
 import { getSurfaceImage } from '@/lib/data'
+import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import {
@@ -110,7 +111,7 @@ export default async function BuyPage() {
             headline="Buy a home in Central Oregon"
             posterSrc={heroSrc ?? OLD_MILL_HERO}
             overlayStrength="standard"
-            action={{ label: 'Search homes', href: '/homes-for-sale' }}
+            action={{ label: 'Search homes', href: REGIONAL_SEARCH_HREF }}
           />
           <div className="absolute inset-x-0 top-0 z-10 bg-primary/70">
             <V3Breadcrumb

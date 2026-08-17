@@ -139,12 +139,12 @@ export const MENU: MenuEntry[] = [
   {
     // Inventory + search presets. Places live under Areas.
     label: 'Buy',
-    href: '/homes-for-sale',
+    href: '/homes-for-sale?view=list',
     columns: [
       {
         heading: 'Browse',
         links: [
-          { label: 'All homes for sale', href: '/homes-for-sale' },
+          { label: 'All homes for sale', href: '/homes-for-sale?view=list' },
           { label: 'Map search', href: '/homes-for-sale?view=map' },
           { label: 'Open houses', href: '/open-houses' },
           { label: 'New this week', href: bendPreset('new-listings') },

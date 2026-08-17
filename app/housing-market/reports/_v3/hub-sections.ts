@@ -49,7 +49,7 @@ export function buildRegionFigures(
     figures.push({
       value: v3Text(pulse.activeCount.toLocaleString('en-US')),
       label: v3Text('homes for sale'),
-      href: '/homes-for-sale',
+      href: '/homes-for-sale?view=list',
     })
   }
   const mosRaw =

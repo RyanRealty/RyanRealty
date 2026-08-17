@@ -5,6 +5,7 @@
  * submitSearchAlertSignup (email + filters.propertyType A + company honeypot).
  */
 import { v3Text, type V3LedgerPlainRow, type V3QuietItem } from '@/components/site/v3'
+import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
 
 export const OLD_MILL_HERO = '/images/homepage/sisters-downtown-three-peaks.jpg'
 
@@ -115,7 +116,7 @@ export const BUY_FACTS: V3QuietItem[] = [
 ]
 
 export const BUY_EXITS: V3QuietItem[] = [
-  { label: 'Search homes', href: '/homes-for-sale' },
+  { label: 'Search homes', href: REGIONAL_SEARCH_HREF },
   { label: 'Open houses', href: '/open-houses' },
   { label: 'Price drops', href: '/price-drops' },
   { label: 'Talk to a broker', href: '/contact?inquiry=Buying' },

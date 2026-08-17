@@ -19,6 +19,7 @@ export function KbExploreTowns({
   eyebrow,
   title,
   sectionId = 'towns',
+  notes,
   // "See homes for sale" is the one verb pair for every /homes-for-sale CTA on a
   // page (design-audit P3: six different labels read as six different destinations).
   cta = { href: publishRegionalSearchHref(), label: 'See homes for sale' },
@@ -28,6 +29,8 @@ export function KbExploreTowns({
   eyebrow: string
   title: string
   sectionId?: string
+  /** Optional remainder facts when the list is a subset of a region pulse. */
+  notes?: string[]
   cta?: { href: string; label: string } | null
 }) {
   const root = useRef<HTMLElement>(null)
@@ -84,6 +87,13 @@ export function KbExploreTowns({
             </a>
           ))}
         </div>
+        {notes && notes.length > 0 ? (
+          <div className="towns-remainder">
+            {notes.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
+        ) : null}
         {cta ? (
           <div className="sec-cta">
             <a href={cta.href} className="btn alt">

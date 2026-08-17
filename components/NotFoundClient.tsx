@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ArrowRightHugeIcon } from '@/components/icons/HugeIcons'
+import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
 
 /**
  * Smart 404 body.
@@ -47,7 +48,7 @@ function suggestionsFor(pathname: string): Suggestion[] {
     push({ href: `/homes-for-sale/${cityHit}`, label: `Homes for sale in ${titleCase(cityHit)}` })
   }
   if (/listing|propert|homes-for-sale|odsmls|for-sale|mls/.test(p)) {
-    push({ href: '/homes-for-sale', label: 'Browse homes for sale' })
+    push({ href: REGIONAL_SEARCH_HREF, label: 'Browse homes for sale' })
   }
   if (/sell|valuation|home-value|cma|worth/.test(p)) {
     push({ href: '/sell', label: 'Sell your home' })
@@ -66,7 +67,7 @@ function suggestionsFor(pathname: string): Suggestion[] {
   }
 
   // Always-useful fallbacks so there are at least a few choices.
-  push({ href: '/homes-for-sale', label: 'Browse homes for sale' })
+  push({ href: REGIONAL_SEARCH_HREF, label: 'Browse homes for sale' })
   push({ href: '/housing-market', label: 'Market reports' })
   push({ href: '/sell', label: 'Sell your home' })
 
@@ -111,7 +112,7 @@ export function NotFoundClient() {
   function onSearch(e: React.FormEvent) {
     e.preventDefault()
     const term = q.trim()
-    router.push(term ? `/homes-for-sale?keywords=${encodeURIComponent(term)}` : '/homes-for-sale')
+    router.push(term ? `/homes-for-sale?keywords=${encodeURIComponent(term)}` : REGIONAL_SEARCH_HREF)
   }
 
   return (

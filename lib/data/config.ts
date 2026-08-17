@@ -1,20 +1,33 @@
 /**
- * getCalculatorDefaults — reads app_config rows that feed calculator defaults.
+ * getCalculatorDefaults — the numbers every public payment figure is built on.
  *
- * Keys read:
- *   mortgage_rate        → current 30-yr fixed rate (number, e.g. 6.875)
- *   default_tax_rate_pct → Deschutes County property-tax rate as a % of value (e.g. 0.75)
- *   insurance_rate_pct   → annual homeowners insurance as a % of value (e.g. 0.30)
+ * THE 30-YR RATE COMES FROM THE INGESTED SERIES, NOT A HAND-TYPED ROW.
+ * `market_history_weekly` (geo national/us, metric `mortgage_rate_30yr`,
+ * source `freddie:pmms30`) is refreshed every Monday by
+ * /api/cron/market-history-snapshot. `app_config.mortgage_rate` is a
+ * hand-maintained row with no writer — on 2026-08-17 it still held 6.5 from
+ * April while the ingested series carried 6.67 for that week. The live figure
+ * was already in the database and nothing public read it. That is exactly the
+ * drift a single statistics source exists to stop, so the precedence is:
  *
- * Falls back to the hardcoded defaults below if the row is absent or the DB
- * is unreachable, so calculators always render with a sensible value.
+ *   1. market_history_weekly  — ingested, dated, carries its own §0 source
+ *   2. app_config             — legacy hand-entered row, kept only as a floor
+ *   3. FALLBACKS              — last resort so a calculator always renders
  *
- * Cached 6 hours (rates change rarely; aligns with market_stats_cache freshness).
+ * Tax and insurance rates have no ingested equivalent yet and still read
+ * app_config.
+ *
+ * STILL ON THE OLD PATH: the SQL generated column `estimated_monthly_piti`
+ * reads app_config through `get_mortgage_rate()`. Repointing it needs a
+ * migration and is tracked separately — this change does not touch it.
+ *
+ * Cached 6 hours; the underlying series moves weekly.
  */
 
 import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { createServiceClient } from '@/lib/data/client'
+import { getMarketHistoryWeekly } from '@/lib/data/market/getMarketHistoryWeekly'
 
 export type CalculatorDefaults = {
   /** 30-yr fixed mortgage rate, e.g. 6.875 */
@@ -34,15 +47,39 @@ const FALLBACKS: CalculatorDefaults = {
   insuranceRatePct: 0.30,
 }
 
+/**
+ * Newest ingested 30-yr fixed rate, or null when the series has no usable
+ * point. Returns null rather than throwing so a missing series degrades to the
+ * legacy row instead of taking the calculators down.
+ */
+async function latestIngestedMortgageRate(): Promise<number | null> {
+  try {
+    const points = await getMarketHistoryWeekly({
+      geoType: 'national',
+      geoSlug: 'us',
+      metrics: ['mortgage_rate_30yr'],
+      weeks: 12,
+    })
+    if (!points.length) return null
+    const newest = points.reduce((a, b) => (b.weekStart > a.weekStart ? b : a))
+    return Number.isFinite(newest.value) && newest.value > 0 ? newest.value : null
+  } catch {
+    return null
+  }
+}
+
 async function _getCalculatorDefaults(): Promise<CalculatorDefaults> {
   const sb = createServiceClient()
+  const ingestedRate = await latestIngestedMortgageRate()
   const { data, error } = await sb
     .from('app_config')
     .select('key, value')
     .in('key', ['mortgage_rate', 'default_tax_rate_pct', 'insurance_rate_pct'])
 
-  if (error || !data) { // poison-null-ok — deliberate fallback; calculators render with hardcoded rates
-    return FALLBACKS
+  if (error || !data) { // poison-null-ok — deliberate fallback; calculators still render
+    // app_config is unreachable, but an ingested rate is independent of it and
+    // is the better number anyway — do not discard it here.
+    return { ...FALLBACKS, mortgageRate: ingestedRate ?? FALLBACKS.mortgageRate }
   }
 
   const byKey: Record<string, unknown> = {}
@@ -68,7 +105,15 @@ async function _getCalculatorDefaults(): Promise<CalculatorDefaults> {
 
   return {
     // A real 30-yr rate is 2–20%; anything below 1 is a stored fraction.
-    mortgageRate: asPercent(numOrFallback('mortgage_rate', FALLBACKS.mortgageRate), 1, 2, 20, FALLBACKS.mortgageRate),
+    // The ingested series wins; the hand-entered row is only the floor under it.
+    // Both run through asPercent so a bad value from either source is caught.
+    mortgageRate: asPercent(
+      ingestedRate ?? numOrFallback('mortgage_rate', FALLBACKS.mortgageRate),
+      1,
+      2,
+      20,
+      FALLBACKS.mortgageRate,
+    ),
     // Property tax runs ~0.3–2.5% of value; stored fractions land below 0.1.
     taxRatePct: asPercent(numOrFallback('default_tax_rate_pct', FALLBACKS.taxRatePct), 0.1, 0.1, 3, FALLBACKS.taxRatePct),
     // Homeowners insurance runs ~0.1–1% of value per year.

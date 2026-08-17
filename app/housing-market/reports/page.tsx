@@ -156,7 +156,7 @@ export default async function ReportsIndexPage({ searchParams }: PageProps) {
           heading="Keep reading"
           items={[
             { label: 'Housing market hub', href: '/housing-market' },
-            { label: 'Homes for sale', href: '/homes-for-sale' },
+            { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
             { label: 'Months of supply', href: '/months-of-supply' },
             { label: 'Value my home', href: SELL_HREF },
             { label: 'Oregon Data Share', href: 'https://www.oregondatashare.com' },

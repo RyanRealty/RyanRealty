@@ -77,7 +77,11 @@ const REQUIRED = [
       },
       {
         re: /Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne\. Live list prices and days on market\./,
-        msg: 'D11 homepage lead must appear as an exact literal in app/page.tsx',
+        msg: 'D11 homepage town list must appear as an exact literal in app/page.tsx',
+      },
+      {
+        re: /across Central Oregon\. Live list prices and days on market\./,
+        msg: 'Homepage hero lead must name the regional grain of the live count',
       },
       { re: /title:\s*['"]Homes for Sale/i, msg: 'metadata title must lead with "Homes for Sale"' },
     ],

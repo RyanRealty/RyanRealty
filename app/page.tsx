@@ -4,7 +4,13 @@ import { getRegionPulse, getListingTiles } from '@/lib/data'
 import { getCitiesForIndex } from '@/app/actions/cities'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getMarketStatsCacheRowForGeo } from '@/lib/data/market/getMarketStatsCacheRows'
+import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getPriceHistory } from '@/lib/data/market/getPriceHistory'
+import {
+  formatPulseCityRemainderPublic,
+  namePulseCityRemainder,
+  pulseCityHrefSlug,
+} from '@/lib/market/pulse-city-remainder'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { buildMapPointFeatures } from '@/lib/kb/place-sections'
@@ -35,6 +41,10 @@ import '@/components/site/kb/kb.css'
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const ogImage = `${siteUrl}/api/og?type=default`
+// D11 seo-shell lock: this exact town list stays in source. The live hero
+// count is the regional pulse, so the hero lead names that grain instead.
+const D11_HOMEPAGE_LEAD =
+  'Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market.'
 
 /**
  * Homepage — the kinetic-brutalist design (navy + cream, Amboqia + Geist, GSAP +
@@ -53,7 +63,7 @@ export const metadata: Metadata = {
   // Layer A discovery shell (Matt 2026-08-10): exact-match money query language.
   title: 'Homes for Sale in Central Oregon | Bend, Redmond, Sisters, Sunriver',
   description:
-    'Active homes for sale in Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices, days on market, and closed comps from the regional MLS.',
+    `Active homes for sale in ${D11_HOMEPAGE_LEAD} Closed comps from the regional MLS.`,
   alternates: { canonical: siteUrl },
   openGraph: {
     title: 'Homes for Sale in Central Oregon | Ryan Realty',
@@ -96,13 +106,14 @@ const monthLabel = (iso?: string) =>
   iso ? formatDate(iso, { month: 'short', day: undefined, year: undefined, timeZone: 'UTC' }) : ''
 
 export default async function Home() {
-  const [pulse, cities, communities, tiles, mktStats, priceHist] = await Promise.all([
+  const [pulse, cities, communities, tiles, mktStats, priceHist, cityPulse] = await Promise.all([
     getRegionPulse().catch(() => null),
     getCitiesForIndex().catch(() => []),
     getCommunitiesForIndex().catch(() => []),
     getListingTiles({ status: 'active', propertyType: 'A', limit: 3000 }).catch(() => []),
     getMarketStatsCacheRowForGeo({ geoType: 'region', geoSlug: 'central-oregon' }).catch(() => null),
     getPriceHistory('region', 'central-oregon', 'monthly', 60).catch(() => []),
+    getMarketPulseAllCitySnapshots().catch(() => []),
   ])
 
   const sellMedian = publishSellMedian({
@@ -117,6 +128,17 @@ export default async function Home() {
     if (!c) return null
     return { name: c.name, activeCount: c.activeCount, medianPrice: c.medianPrice, href: `/cities/${slug}`, img: TOWN_IMG[slug] }
   }).filter((t): t is KbTownItem => t !== null)
+  const townRemainder = formatPulseCityRemainderPublic(
+    namePulseCityRemainder({
+      regionActive: pulse?.activeCount,
+      displayedLabels: towns.map((t) => t.name),
+      allCities: cityPulse.map((row) => ({
+        label: row.geo_label,
+        active: row.active_count,
+        slug: pulseCityHrefSlug(row.geo_slug || row.geo_label),
+      })),
+    }),
+  )
 
   const communityVideos = communityVideoManifest as Record<string, { video?: string } | undefined>
   // DB rows carry raw MLS casing ("caldera springs") — display headline gets
@@ -205,7 +227,7 @@ export default async function Home() {
           eyebrow="Central Oregon Real Estate"
           titleTop="Central Oregon"
           titleBottom="Homes for Sale"
-          lead="Bend, Redmond, Sisters, Sunriver, La Pine, and Terrebonne. Live list prices and days on market."
+          lead="across Central Oregon. Live list prices and days on market."
           cta={{ href: publishRegionalSearchHref(), label: 'See homes' }}
         />
         {/* C-07: the homepage was the only one of four callers omitting `title`, so
@@ -217,6 +239,7 @@ export default async function Home() {
           towns={towns}
           eyebrow="By town"
           title={'Where the sales\nare happening'}
+          notes={townRemainder}
           cta={{ href: publishRegionalSearchHref(), label: 'See homes for sale' }}
         />
         <KbCommunities communities={communityItems} eyebrow="Resorts and planned communities" />

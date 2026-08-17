@@ -175,7 +175,7 @@ export default async function ComparePage({
                 kind: 'prose',
                 body: 'Add homes from any search or listing page. Up to 4 at a time: price, size, beds, baths, and the rest.',
               },
-              { label: 'Search homes', href: '/homes-for-sale' },
+              { label: 'Search homes', href: '/homes-for-sale?view=list' },
             ]}
           />
         ) : null}

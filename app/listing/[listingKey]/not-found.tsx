@@ -18,7 +18,7 @@ export default function ListingNotFound() {
               kind: 'prose',
               body: 'It may have sold or been taken off the market. Here is where to look next.',
             },
-            { label: 'Homes for sale', href: '/homes-for-sale' },
+            { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
             { label: 'Central Oregon housing market', href: '/housing-market/central-oregon' },
             { label: 'Value my home', href: valuationHref('/listing') },
             { label: 'Talk to a broker', href: '/contact' },

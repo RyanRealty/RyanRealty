@@ -73,6 +73,15 @@ export const MAP_SEARCH: NavLink = {
   label: 'Map search',
 }
 
+/**
+ * Regional inventory door. Bare `/homes-for-sale` is split/map and injects
+ * city=Bend. List view is the Central Oregon set (publishRegionalSearchHref).
+ */
+export const REGIONAL_SEARCH: NavLink = {
+  href: '/homes-for-sale?view=list',
+  label: 'All homes for sale',
+}
+
 /** Global chrome valuation CTA — on-page form on /sell (Matt Wave 0). */
 export const VALUATION_FORM: NavLink = {
   href: '/sell#get-value',
@@ -94,9 +103,9 @@ export const VALUATION_LP: NavLink = {
 export const KB_TOP_NAV: TopNavGroup[] = [
   {
     label: 'Buy',
-    href: '/homes-for-sale',
+    href: REGIONAL_SEARCH.href,
     children: [
-      { href: '/homes-for-sale', label: 'All homes for sale' },
+      REGIONAL_SEARCH,
       MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
@@ -192,7 +201,7 @@ export const KB_MENU_GROUPS: { title: string; links: NavLink[] }[] = [
   {
     title: 'Buy',
     links: [
-      { href: '/homes-for-sale', label: 'Search homes' },
+      { href: REGIONAL_SEARCH.href, label: 'Search homes' },
       MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
@@ -269,7 +278,7 @@ export const KB_FOOTER_COLUMNS: FooterGroup[] = [
   {
     heading: 'Buy',
     links: [
-      { href: '/homes-for-sale', label: 'Homes for sale' },
+      { href: REGIONAL_SEARCH.href, label: 'Homes for sale' },
       MAP_SEARCH,
       { href: '/open-houses', label: 'Open houses' },
       { href: '/price-drops', label: 'Price drops' },
@@ -336,7 +345,7 @@ export const FOOTER_NAV: FooterGroup[] = [
   {
     heading: 'Buy',
     links: [
-      { href: '/homes-for-sale', label: 'Homes for sale' },
+      { href: REGIONAL_SEARCH.href, label: 'Homes for sale' },
       MAP_SEARCH,
       { href: '/luxury-homes-bend', label: 'Luxury homes in Bend' },
       { href: '/open-houses', label: 'Open houses' },

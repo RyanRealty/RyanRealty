@@ -29,16 +29,24 @@ checks.push({
 
 const surfaces = [
   {
+    path: 'app/page.tsx',
+    label: 'homepage fetches all city pulse rows and passes regionActive',
+    regionActive: /regionActive:\s*pulse\?\.activeCount/,
+  },
+  {
     path: 'app/housing-market/page.tsx',
     label: 'housing-market hub fetches all city pulse rows and passes regionActive',
+    regionActive: /regionActive:\s*regionPulse\?\.activeCount/,
   },
   {
     path: 'app/housing-market/central-oregon/page.tsx',
     label: 'central-oregon report fetches all city pulse rows and passes regionActive',
+    regionActive: /regionActive:\s*regionPulse\?\.activeCount/,
   },
   {
     path: 'app/housing-market/annual-review/page.tsx',
     label: 'annual-review fetches all city pulse rows and passes regionActive',
+    regionActive: /regionActive:\s*regionPulse\?\.activeCount/,
   },
 ]
 
@@ -48,12 +56,13 @@ for (const surface of surfaces) {
     label: surface.label,
     ok:
       /getMarketPulseAllCitySnapshots\(/.test(text) &&
-      /regionActive:\s*regionPulse\?\.activeCount/.test(text) &&
+      surface.regionActive.test(text) &&
       !/getMarketPulseCitySnapshots\(/.test(text),
   })
 }
 
 const builders = [
+  'app/page.tsx',
   'app/housing-market/_v3/hub-sections.ts',
   'app/housing-market/central-oregon/_v3/region-sections.ts',
   'app/housing-market/annual-review/_v3/annual-sections.ts',

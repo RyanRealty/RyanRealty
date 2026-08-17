@@ -130,7 +130,7 @@ export default function AppreciationToolPage() {
               body: 'For an address-specific valuation based on real sales data, request a written home value report.',
             },
             { label: 'Value my home', href: VALUATION_HREF },
-            { label: 'Browse homes for sale', href: '/homes-for-sale' },
+            { label: 'Browse homes for sale', href: '/homes-for-sale?view=list' },
             { label: 'Mortgage calculator', href: '/tools/mortgage-calculator' },
           ]}
         />

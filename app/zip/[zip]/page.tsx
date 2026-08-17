@@ -384,7 +384,7 @@ export default async function ZipPage({ params }: { params: Promise<Params> }) {
       <KbBreadcrumb overlay
         trail={[
           { label: 'Home', href: '/' },
-          { label: 'Homes for sale', href: '/homes-for-sale' },
+          { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
           { label: zip },
         ]}
       />

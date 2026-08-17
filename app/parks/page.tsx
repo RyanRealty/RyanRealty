@@ -132,7 +132,7 @@ export default function ParksIndexPage() {
           eyebrow="Next"
           heading="Homes near open space"
           items={[
-            { label: 'Central Oregon homes for sale', href: '/homes-for-sale' },
+            { label: 'Central Oregon homes for sale', href: '/homes-for-sale?view=list' },
             { label: 'Search with filters', href: listingsBrowsePath() },
             { label: 'Bend homes', href: '/search?city=Bend' },
             { label: 'Cities', href: '/cities' },

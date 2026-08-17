@@ -10,7 +10,8 @@
  * by MLS city (`is_central_oregon_city`), city rows clip to the TIGER
  * incorporated-place polygon when one exists.
  *
- * reachability: housing-market hub, central-oregon region report, annual review
+ * reachability: homepage town doors, housing-market hub, central-oregon
+ * region report, annual review
  */
 
 export type PulseCityCount = {
@@ -74,4 +75,22 @@ export function namePulseCityRemainder(input: {
   }
 
   return { omitted, displayedSum, allCitySum, remainder, facts }
+}
+
+/** Visitor-facing remainder lines for a town/city door list next to a region pulse. */
+export function formatPulseCityRemainderPublic(named: PulseCityRemainder): string[] {
+  const lines: string[] = []
+  if (named.omitted.length > 0) {
+    lines.push(
+      `Also in the regional count: ${named.omitted
+        .map((city) => `${city.label} ${formatCount(city.active)} active`)
+        .join(', ')}.`,
+    )
+  }
+  if (named.remainder != null && named.remainder > 0) {
+    lines.push(
+      `${formatCount(named.remainder)} more homes sit outside these town rows. Region counts by MLS city. Town rows use the city boundary when one exists.`,
+    )
+  }
+  return lines
 }

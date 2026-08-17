@@ -1,7 +1,7 @@
 /**
  * Claim FLEET-PUNCH parent for the served fleet:public-ux:search slice.
  *
- *   npx tsx scripts/loop-claim-fleet-punch.ts
+ *   npx tsx scripts/loop-claim-fleet-punch-search-v3.ts
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
@@ -9,7 +9,7 @@ import { isLegalTransition } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
-const OWNER = 'cursor-loop-sentinel-bc-16d00c5f-2026-08-17t20-40'
+const OWNER = 'cursor-loop-chain-bc-1dc8ed53-2026-08-17t21-15'
 const ID = '3a6198cd-fcd5-4aa2-b51a-3b62c2c0e437'
 
 async function main() {

@@ -2156,3 +2156,11 @@ html.lenis, html.lenis body{height:auto;}
   .topbar .menu-btn,.menu-overlay .menu-btn{font-size:.78rem;letter-spacing:.06em;}
   .topbar a.nav-cta{padding:9px 12px;font-size:.72rem;letter-spacing:.03em;}
 }
+.kb-root .towns-remainder{
+  margin-top:18px;
+  max-width:46rem;
+  font-size:.82rem;
+  line-height:1.45;
+  color:var(--navy);
+}
+.kb-root .towns-remainder p + p{margin-top:8px;}
