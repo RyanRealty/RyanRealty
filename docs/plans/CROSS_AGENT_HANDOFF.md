@@ -2,7 +2,27 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-16 (cursor) — ship class: one rebuild per category
+# Current — 2026-08-17 (cursor-loop-chain) — search count + 390 chrome class
+
+**Surface:** Cursor cloud `bc-4382906a` (`cursor/loop-chain-2026-08-16t23-45-84b5`). **Time:** 2026-08-17 ~00:25 UTC. Brief served **SHIP CLASS `fleet:public-ux:search`** — 8 nodes (cap). 33 leftover siblings stay open. Product **`3e0bff3c2`** (class `c8f25e5ff` + 44px chip accept). Branch only — cloud rule forbids push to `main`. PR **#56**. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**.
+
+**Production:** `origin/main` **`3c79bfc3c`** is Vercel **READY** (inspector `ANshvRy2sxduHRkigvztWp942u8o`). `npm run deploy:verify` for HEAD `c8f25e5ff` / `3e0bff3c2` cannot go READY — that SHA is not on `main`. The script hung on unauthenticated `vercel ls`; GitHub Vercel status for the branch SHA is empty. This class is **not live** until merge.
+
+**Done**
+- Reproduced: sheet **Show 409 homes** vs list **318 homes in this map view** after max $800K + beds 3+ (two unlabeled populations). City header **1,298** all-types vs FAQ **483** SFR. 390 Price/Beds/Baths were `hidden sm:contents` (0×0). Count/sort sat below the fold. First tap on Show N was lost on sheet re-render.
+- Class: SoR `publishSearchCount` / `publishSearchCountPair`. Filter-match is the URL-filter number. Viewport prints only when it differs, labeled **in this map view**. City header **N homes for sale, all types**. FAQ question names single-family. 390 chips in a horizontal row at **44×44**. Count+sort on the List/Map toggle. Apply uses `onPointerDown` + lock. Gate `ci:publish-search-count`.
+- Local accept (BASE_URL=http://127.0.0.1:3000): probe `scripts/probe-search-count-prod.mjs` **ok**. Show 409 === list 409. Header all-types. FAQ single-family. 5 chips ≥44×44. Count in first 390. First click closed the sheet. Screenshots `/opt/cursor/artifacts/search_{count_390_filtered,count_1280_filtered,filters_390_sheet,bend_1280,home_390}.png`.
+- R-024 coverage note only (still LOCKED). Do not mark G27 done.
+
+**Next**
+- Merge PR #56 to `main` so production can READY this SHA, then the leftover 33 `fleet:public-ux:search` siblings.
+- Do not start another Tetherow/Awbrey/Ridge instance fix from this session.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-16 (cursor) — ship class: one rebuild per category
 
 **Surface:** Cursor Grok. **Time:** 2026-08-16 ~16:45 PT. Matt ADD (R-216). Not a fleet node. Product **`63422a30`**. Vercel Production **READY** (`dpl_4RWYnF4abxZ5wGE82DtWq1KQpVXH`). `npm run deploy:verify` exit 0. No hosted migration. No public-ux or factory ledger insert (open windows `2a5054ac` / `ba3435dd`). Loop stays **ARMED**. Southern Crossing reject stamp from `bc-b448549b` is Prior.
 
