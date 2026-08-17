@@ -414,55 +414,8 @@ export async function getCmaCityClosedSkinny(city: string, sinceIso: string): Pr
   return out
 }
 
-export type CmaBandInventory = {
-  activeAsks: number[]
-  activeDaysOnMarket: number[]
-  pendingCount: number
-}
-
-/** Live competition in the subject's price band: every Active ask + DOM in
- *  [lo, hi] for the city, plus the Pending count in the same band. */
-export async function getCmaBandInventory(city: string, lo: number, hi: number): Promise<CmaBandInventory | null> {
-  const sb = client()
-  if (!sb) return null
-  const [actives, pendings] = await Promise.all([
-    sb
-      .from('listings')
-      .select('ListPrice, CumulativeDaysOnMarket, DaysOnMarket')
-      .eq('City', city)
-      .eq('PropertyType', 'A')
-      .eq('StandardStatus', 'Active')
-      .gte('ListPrice', lo)
-      .lte('ListPrice', hi)
-      .limit(1000),
-    sb
-      .from('listings')
-      .select('ListingKey', { count: 'exact', head: true })
-      .eq('City', city)
-      .eq('PropertyType', 'A')
-      .eq('StandardStatus', 'Pending')
-      .gte('ListPrice', lo)
-      .lte('ListPrice', hi),
-  ])
-  if (actives.error || pendings.error) {
-    console.error('[getCmaBandInventory]', actives.error?.message ?? pendings.error?.message)
-    return null
-  }
-  const rows = (actives.data ?? []) as Array<{
-    ListPrice: number | null
-    CumulativeDaysOnMarket: number | null
-    DaysOnMarket: number | null
-  }>
-  return {
-    activeAsks: rows.map((r) => Number(r.ListPrice)).filter((n) => Number.isFinite(n) && n > 0),
-    // Active rows carry DaysOnMarket; CumulativeDaysOnMarket is only stamped
-    // on closed cycles (verified live 2026-08-05: 0/131 actives had CDOM).
-    activeDaysOnMarket: rows
-      .map((r) => Number(r.CumulativeDaysOnMarket ?? r.DaysOnMarket))
-      .filter((n) => Number.isFinite(n) && n >= 0),
-    pendingCount: pendings.count ?? 0,
-  }
-}
+export type { CmaBandInventory, CmaBandListingRow } from '@/lib/data/cma/bandInventory'
+export { getCmaBandInventory } from '@/lib/data/cma/bandInventory'
 
 export type CmaSubdivisionSaleRow = {
   ClosePrice: number

@@ -4,25 +4,26 @@ import { blamesPriorAgent, isWorthQuestionCopy } from '@/lib/crm/first-touch-cop
 import { decideCmaAccess, renderConsentShell, renderRegisterShell } from './register-gate'
 
 describe('CMA register shell — inbound packet', () => {
-  it('names THIS home and the list-kit plan, never a worth-question', () => {
+  it('names THIS home and the price opinion, never a worth-question', () => {
     const html = renderRegisterShell({
       slug: 'cma-1842-nw-foo',
       address: '1842 NW Foo St',
       clientName: 'Pat',
     })
     expect(html).toContain('Your report on 1842 NW Foo St')
-    expect(html).toContain('listing video')
-    expect(html).toContain('flyers')
-    expect(html).toContain('photo set')
+    expect(html).toContain('The recommended list for 1842 NW Foo St, and why')
+    expect(html).toContain('Who you are competing with at that price')
+    expect(html).toContain('The three sales that set the number')
+    expect(html).not.toMatch(/how we would market|listing video|flyers/i)
     expect(html).not.toMatch(/what your home is worth/i)
     expect(html).not.toMatch(/What every listing gets/i)
     expect(isWorthQuestionCopy(html)).toBe(false)
     expect(blamesPriorAgent(html)).toBe(false)
     const visible = [
       'Your report on 1842 NW Foo St is ready',
-      'How we would market 1842 NW Foo St: listing video, flyers, and a photo set made for this house',
-      'Closed sales near 1842 NW Foo St, each adjusted for when it sold and how its size compares',
-      'A licensed Oregon broker one text away',
+      'The recommended list for 1842 NW Foo St, and why',
+      'Who you are competing with at that price',
+      'The three sales that set the number',
     ]
     for (const line of visible) {
       const voice = checkBrandVoice(line)

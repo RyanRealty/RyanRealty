@@ -11,9 +11,11 @@ import {
   getCmaCityClosedSkinny,
   getCmaBandInventory,
   getCmaSubdivisionClosed,
+  type CmaBandListingRow,
   type CmaClosedSkinnyRow,
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
+import { pickBandRivals, rivalAddress, type CmaBandRival } from '@/lib/cma/band-rivals'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
 import { getCmaMarketAreaRows } from '@/lib/data/cma/marketAreaReads'
 import { computeMarketArea, type CmaMarketArea } from '@/lib/cma/market-status'
@@ -58,6 +60,8 @@ export interface CmaBandPosition {
   activeMedianAsk: number | null
   activeMedianDom: number | null
   source: string
+  /** Named houses in the band. Optional on older rows and listing-plan fixtures. */
+  rivals?: CmaBandRival[]
 }
 
 export interface CmaSubdivisionPulse {
@@ -178,13 +182,40 @@ export function computeFinancing(rows: CmaClosedSkinnyRow[], city: string, since
   }
 }
 
+function rowToRival(row: CmaBandListingRow, status: 'Active' | 'Pending'): CmaBandRival | null {
+  const address = rivalAddress(row)
+  const listPrice = Number(row.ListPrice)
+  if (!address || !Number.isFinite(listPrice) || listPrice <= 0) return null
+  return {
+    listingKey: row.ListingKey,
+    address,
+    listPrice,
+    status,
+    daysOnMarket: row.DaysOnMarket,
+    photoUrl: row.PhotoURL,
+    latitude: row.Latitude,
+    longitude: row.Longitude,
+  }
+}
+
 export function computeBandPosition(
-  inv: { activeAsks: number[]; activeDaysOnMarket: number[]; pendingCount: number } | null,
+  inv: {
+    activeAsks: number[]
+    activeDaysOnMarket: number[]
+    pendingCount: number
+    activeRows?: CmaBandListingRow[]
+    pendingRows?: CmaBandListingRow[]
+  } | null,
   city: string,
   lo: number,
   hi: number,
+  subject?: { latitude: number | null; longitude: number | null } | null,
 ): CmaBandPosition | null {
   if (!inv) return null
+  const raw = [
+    ...(inv.activeRows ?? []).map((r) => rowToRival(r, 'Active')),
+    ...(inv.pendingRows ?? []).map((r) => rowToRival(r, 'Pending')),
+  ].filter((r): r is CmaBandRival => r != null)
   return {
     lo,
     hi,
@@ -192,6 +223,7 @@ export function computeBandPosition(
     pendingCount: inv.pendingCount,
     activeMedianAsk: median(inv.activeAsks),
     activeMedianDom: median(inv.activeDaysOnMarket),
+    rivals: pickBandRivals(raw, subject),
     source: `Supabase listings, City='${city}', PropertyType='A', Active + Pending, ListPrice ${lo}..${hi}, pulled at build time`,
   }
 }
@@ -264,7 +296,7 @@ export async function buildCmaExtras(args: {
 
   return {
     seasonality: computeSeasonality(skinny, args.subject.city, since36),
-    band: computeBandPosition(bandInv, args.subject.city, lo, hi),
+    band: computeBandPosition(bandInv, args.subject.city, lo, hi, args.subject),
     subdivisionPulse: subdivision ? computeSubdivisionPulse(subRows, subdivision, SUBDIVISION_MONTHS, since12) : null,
     financing: computeFinancing(skinny, args.subject.city, since12),
     photoBench: computePhotoBench(args.subjectPhotosCount, args.comps),

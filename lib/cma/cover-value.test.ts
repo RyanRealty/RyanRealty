@@ -49,6 +49,7 @@ describe('cover and immersive value blocks', () => {
     expect(html).toContain('Recommended list $505,000')
     expect(html).toContain('opened to 1 mile')
     expect(html).not.toMatch(/[—;]/)
+    expect(html).not.toMatch(/confidence|not the ZIP/i)
   })
 
   it('keeps recommended list as the lead on old drafts without a close', () => {
