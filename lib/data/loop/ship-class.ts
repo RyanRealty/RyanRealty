@@ -45,8 +45,15 @@ const PLACE_PREFIXES = [
   '/central-oregon',
 ]
 
-/** URL the fleet-intake objective stamps after `at `. */
+/**
+ * URL from a fleet objective. Punch lines are `- [sev] url — …` (no `at `).
+ * Single-node intake still stamps `at https://…` / `at /…`.
+ */
 export function extractUrlFromObjective(objective: string): string | null {
+  const punchAbs = objective.match(/-\s*\[(?:p0|major|minor)\]\s+(https?:\/\/[^\s\]]+)/i)
+  if (punchAbs?.[1]) return punchAbs[1]
+  const punchRel = objective.match(/-\s*\[(?:p0|major|minor)\]\s+(\/[^\s\]]+)/)
+  if (punchRel?.[1]) return punchRel[1]
   const abs = objective.match(/at (https?:\/\/[^\s\]]+)/i)
   if (abs?.[1]) return abs[1]
   const rel = objective.match(/at (\/[^\s\]]+)/)
@@ -179,18 +186,39 @@ export function selectShipClass<T extends ShipClassInput>(
   return { key, nodes, remaining: Math.max(0, siblings.length - nodes.length), punch: null }
 }
 
+export function punchSliceContract(punch: PunchSlice): { objective: string; output: string; accept: string } {
+  const leftover = punch.leftoverInFamily + punch.leftoverOtherFamilies
+  const served = punch.served
+    .map((l) => `- [${l.severity}] ${l.url} — ${l.expected ? `expected "${l.expected}" observed "${l.observed}"` : l.observed} fleet:${l.fingerprint}`)
+    .join('\n')
+  return {
+    objective: served
+      ? `${punch.key} slice (${punch.served.length} of ${punch.openTotal} open ${punch.family} lines). Reproduce-or-reject each line. Do not work the leftover ${leftover} line(s) this cycle.\n${served}`
+      : `${punch.key} — no open punch lines remain.`,
+    output: punch.served.length
+      ? `Class-fix (or reject) these ${punch.served.length} ${punch.family} punch lines at 390+1280. Leftover lines stay on this inbox.`
+      : 'No open punch lines. Evidence that the inbox is empty.',
+    accept: leftover
+      ? `Each served line is fixed as a class or rejected with reproduce evidence at 390+1280. Do not complete FLEET-PUNCH — ${leftover} open line(s) remain.`
+      : 'Each served line is fixed as a class or rejected with reproduce evidence at 390+1280. Completing FLEET-PUNCH is valid only when no open punch lines remain.',
+  }
+}
+
 export function formatPunchSliceBrief(input: {
   punch: PunchSlice
   nodeId: string
+  title: string
+  domain: string
   reads: readonly string[]
 }): string[] {
-  const { punch, nodeId, reads } = input
+  const { punch, nodeId, title, domain, reads } = input
   const leftover = punch.leftoverInFamily + punch.leftoverOtherFamilies
+  const contract = punchSliceContract(punch)
   const lines: string[] = []
   lines.push(
     `class: ${punch.key} · punch-list slice ${punch.served.length} line(s) of ${punch.openTotal} open · family ${punch.family}${punch.leftoverInFamily ? ` · ${punch.leftoverInFamily} leftover in this family stay on the parent` : ''}${punch.leftoverOtherFamilies ? ` · ${punch.leftoverOtherFamilies} other-family line(s) stay on the parent` : ''}`,
   )
-  lines.push('PARENT is the inbox. Claim only this node. Do not mint child graph nodes.')
+  lines.push('PARENT is the inbox. Claim only this node. Do not mint child graph nodes. Do not attempt every punch line.')
   lines.push(`claim them: claimShipClass([${nodeId}], owner)  (lib/data/loop/work-graph.ts)`)
   lines.push(
     'Claim the parent so sentinel stands down. Intake may still append new punch lines while this slice is in flight.',
@@ -210,6 +238,13 @@ export function formatPunchSliceBrief(input: {
     for (const plane of COMPANY_BLAST_RADIUS) lines.push(`  - ${plane}`)
   }
   lines.push('')
+  lines.push('--- NODE 1/1 ---')
+  lines.push(`FLEET-PUNCH [${domain}] ${title}`)
+  lines.push(`id:        ${nodeId}`)
+  lines.push(`objective: ${contract.objective}`)
+  lines.push(`output:    ${contract.output}`)
+  lines.push(`accept:    ${contract.accept}`)
+  lines.push('')
   if (!punch.served.length) {
     lines.push('No open punch lines. completeWorkNode is allowed with evidence that the inbox is empty.')
     return lines
@@ -218,6 +253,9 @@ export function formatPunchSliceBrief(input: {
     lines.push(`--- PUNCH ${i + 1}/${punch.served.length} · ${punch.key} ---`)
     lines.push(`severity:     ${line.severity}`)
     lines.push(`url:          ${line.url}`)
+    if (line.viewport) lines.push(`viewport:     ${line.viewport}`)
+    if (line.bot) lines.push(`bot:          ${line.bot}`)
+    if (line.expected) lines.push(`expected:     ${line.expected}`)
     lines.push(`observed:     ${line.observed}`)
     lines.push(`fingerprint:  fleet:${line.fingerprint}`)
     lines.push(`family:       ${line.family}`)

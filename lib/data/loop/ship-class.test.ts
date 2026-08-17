@@ -46,6 +46,22 @@ describe('ship class (same-category fleet findings share one rebuild)', () => {
     ).toBe('https://ryan-realty.com/communities/tetherow')
   })
 
+  it('reads the punch-line URL shape (not only the old at-url stamp)', () => {
+    expect(
+      extractUrlFromObjective(
+        '- [p0] https://ryan-realty.com/homes-for-sale/bend [390] — expected "usable chips" observed "chips are 0x0" walker-mobile fleet:aaaaaaaaaaaaaaaa',
+      ),
+    ).toBe('https://ryan-realty.com/homes-for-sale/bend')
+    expect(
+      extractUrlFromObjective(
+        `${FLEET_PUNCH_CONTRACT}\n- [major] /search/bend — empty pins fleet:bbbbbbbbbbbbbbbb`,
+      ),
+    ).toBe('/search/bend')
+    expect(surfaceFamilyFromUrl(extractUrlFromObjective(
+      '- [p0] https://ryan-realty.com/homes-for-sale/bend — chips fleet:cccccccccccccccc',
+    )!)).toBe('search')
+  })
+
   it('groups community, city, neighborhood, and housing-market URLs as place-pages', () => {
     expect(surfaceFamilyFromUrl('https://ryan-realty.com/communities/tetherow')).toBe('place-pages')
     expect(surfaceFamilyFromUrl('https://ryan-realty.com/cities/la-pine')).toBe('place-pages')
@@ -234,9 +250,15 @@ describe('punch-list serve (virtual class from lines, parent stays the inbox)', 
     const brief = formatPunchSliceBrief({
       punch: ship.punch!,
       nodeId: punch.id,
+      title: punch.title,
+      domain: punch.domain,
       reads: ['.claude/skills/frontend-design/SKILL.md'],
     }).join('\n')
     expect(brief).toContain('fleet:public-ux:search')
+    expect(brief).toContain('--- NODE 1/1 ---')
+    expect(brief).toContain('objective:')
+    expect(brief).toContain('output:')
+    expect(brief).toContain('accept:')
     expect(brief).toContain('severity:     p0')
     expect(brief).toContain('url:          https://ryan-realty.com/homes-for-sale/bend')
     expect(brief).toContain('observed:     chips are 0x0')

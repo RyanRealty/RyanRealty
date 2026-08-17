@@ -111,6 +111,41 @@ describe('punch-line append + duplicate fingerprint', () => {
     )
   })
 
+  it('puts expected, viewport, and bot back on the punch line when present', () => {
+    expect(
+      formatFleetPunchLine({
+        severity: 'p0',
+        url: 'https://ryan-realty.com/homes-for-sale/bend',
+        observed: 'chips are 0x0',
+        expected: 'filter chips are usable',
+        viewport: '390',
+        bot: 'walker-mobile',
+        fingerprint: 'abc123def456',
+      }),
+    ).toBe(
+      '- [p0] https://ryan-realty.com/homes-for-sale/bend [390] — expected "filter chips are usable" observed "chips are 0x0" walker-mobile fleet:abc123def456',
+    )
+    const parsed = parsePunchLines(
+      formatFleetPunchLine({
+        severity: 'major',
+        url: '/search/bend',
+        observed: 'empty pins',
+        expected: 'pins match the list',
+        viewport: '1280',
+        bot: 'stats-truth',
+        fingerprint: 'deadbeefdeadbeef',
+      }),
+    )
+    expect(parsed[0]).toMatchObject({
+      url: '/search/bend',
+      expected: 'pins match the list',
+      observed: 'empty pins',
+      viewport: '1280',
+      bot: 'stats-truth',
+      fingerprint: 'deadbeefdeadbeef',
+    })
+  })
+
   it('skips append when the fingerprint tag is already in the objective', () => {
     const line = formatFleetPunchLine({
       severity: 'major',

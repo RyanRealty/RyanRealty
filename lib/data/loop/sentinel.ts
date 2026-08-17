@@ -36,7 +36,7 @@ Boot: read docs/plans/CROSS_AGENT_HANDOFF.md (Current block), then run \`npx tsx
 
 DO NOT run \`npm run push\` or \`npm run deploy:verify\` after an individual node. Commit locally if you need restore points. After every node in the served class is locally accepted or blocked with a concrete reason: ONE \`npm run push\`, ONE \`npm run deploy:verify\` to READY, hosted migrations in the same delivery. Then complete every shipped node with that READY SHA as evidence and update the handoff Current block. If the brief caps the class, do the printed set only — leftovers stay open for the next iteration of the same class.
 
-If the brief's next node is FLEET-PUNCH, the ship class is the printed punch-line slice (one surface family, capped), not the whole punch list. Claim the parent node only. After the slice: append fixed/rejected dispositions on the parent (resolvePunchLines). Do NOT completeWorkNode on FLEET-PUNCH unless the brief says zero open punch lines remain. Release the parent when you stop so leftover lines stay the inbox. Intake may append new lines while the parent is claimed.
+If the brief's next node is FLEET-PUNCH, work only the printed punch-line slice (one surface family, capped) — do not attempt every punch line. Reproduce-or-reject each served line at 390+1280. Claim the parent only. After the slice: resolvePunchLines (fixed/rejected). Do NOT completeWorkNode on FLEET-PUNCH unless zero open punch lines remain. Release the parent when you stop so leftover lines stay the inbox. Intake may append while the parent is claimed.
 
 If a node cannot proceed, block it with the reason and continue the rest of the class. If the brief serves nothing, update the handoff and finish cleanly without the final act.
 

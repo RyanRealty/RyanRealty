@@ -34,9 +34,9 @@ import { isCompanyImprovementDomain } from './domains'
 export const FLEET_PUNCH_GAP = 'FLEET-PUNCH'
 export const FLEET_PUNCH_TITLE_BODY = 'review punch list'
 export const FLEET_PUNCH_OUTPUT =
-  'Class fixes (or rejected findings) for every punch line, verified at 390+1280.'
+  'Class-fix (or reject) the served punch-line slice at 390+1280. Leftover lines stay on this inbox.'
 export const FLEET_PUNCH_ACCEPT =
-  'Each punch line is either fixed as a class or rejected with reproduce evidence.'
+  'Each served line is fixed as a class or rejected with reproduce evidence at 390+1280. Completing this node is only valid when no open punch lines remain.'
 export const FLEET_PUNCH_CONTRACT =
   'FLEET-PUNCH — one durable fleet-review punch list. Class-fix every line (or reject with reproduce evidence). FIRST STEP on each line: reproduce it yourself; if it does not reproduce, reject that line with the evidence.'
 
@@ -44,7 +44,8 @@ const PUNCH_TITLE_RE = /^Fleet finding \[(p0|major)\]: review punch list$/
 const FLEET_SINGLE_TITLE_RE = /^Fleet finding \[(p0|major|minor)\]:/
 const PUNCH_LINE_SEV_RE = /^-\s*\[(p0|major|minor)\]\s+/
 const PUNCH_LINE_RE =
-  /^-\s*\[(p0|major|minor)\]\s+(\S+)\s+—\s+(.+?)\s+(fleet:([a-f0-9]{8,}))\s*$/i
+  /^-\s*\[(p0|major|minor)\]\s+(\S+)(?:\s+\[([^\]]+)\])?\s+—\s+(.+?)\s+(fleet:([a-f0-9]{8,}))\s*$/i
+const PUNCH_EXPECTED_RE = /^expected "([^"]*)" observed "([^"]*)"(?:\s+(\S+))?$/i
 const PUNCH_DISPOSITION_RE = /^-\s*\[(fixed|rejected)\]\s+fleet:([a-f0-9]{8,})\b/i
 const FINGERPRINT_TAG_RE = /fleet:([a-f0-9]{8,})/i
 const REGRESS_GAP_RE = /^regress-(G\d+)$/
@@ -57,6 +58,9 @@ export type PunchLine = {
   severity: PunchLineSeverity
   url: string
   observed: string
+  expected: string | null
+  viewport: string | null
+  bot: string | null
   fingerprint: string
   raw: string
 }
@@ -174,10 +178,21 @@ export function formatFleetPunchLine(input: {
   url: string
   observed: string
   fingerprint: string
+  expected?: string | null
+  viewport?: string | null
+  bot?: string | null
 }): string {
   const severity = ['p0', 'major', 'minor'].includes(input.severity) ? input.severity : 'minor'
-  const observed = String(input.observed).replace(/\s+/g, ' ').trim().slice(0, 160)
-  return `- [${severity}] ${input.url} — ${observed} ${fleetFingerprintTag(input.fingerprint)}`
+  const observed = String(input.observed).replace(/\s+/g, ' ').trim().slice(0, 120)
+  const expected = input.expected ? String(input.expected).replace(/\s+/g, ' ').trim().slice(0, 120) : ''
+  const viewport = input.viewport ? String(input.viewport).replace(/\s+/g, ' ').trim() : ''
+  const bot = input.bot ? String(input.bot).replace(/\s+/g, ' ').trim() : ''
+  const vp = viewport ? ` [${viewport}]` : ''
+  if (expected) {
+    const botBit = bot ? ` ${bot}` : ''
+    return `- [${severity}] ${input.url}${vp} — expected "${expected}" observed "${observed}"${botBit} ${fleetFingerprintTag(input.fingerprint)}`
+  }
+  return `- [${severity}] ${input.url}${vp} — ${observed} ${fleetFingerprintTag(input.fingerprint)}`
 }
 
 export function appendPunchLine(objective: string, line: string): string {
@@ -193,11 +208,16 @@ export function parsePunchLines(objective: string): PunchLine[] {
     const m = PUNCH_LINE_RE.exec(raw.trim())
     if (!m) continue
     const severity = m[1].toLowerCase() as PunchLineSeverity
+    const body = m[4].replace(/\s+/g, ' ').trim()
+    const expectedMatch = PUNCH_EXPECTED_RE.exec(body)
     lines.push({
       severity,
       url: m[2],
-      observed: m[3].replace(/\s+/g, ' ').trim(),
-      fingerprint: m[5].toLowerCase(),
+      viewport: m[3] ? m[3].trim() : null,
+      expected: expectedMatch?.[1] ?? null,
+      observed: expectedMatch?.[2] ?? body,
+      bot: expectedMatch?.[3] ?? null,
+      fingerprint: m[6].toLowerCase(),
       raw: raw.trim(),
     })
   }
@@ -266,7 +286,10 @@ export function punchLineFromSingleNode(node: { title: string; objective: string
   const quoted = node.objective.match(/observed "([^"]*)"/i)?.[1]
   const fromTitle = node.title.replace(FLEET_SINGLE_TITLE_RE, '').trim()
   const observed = quoted || fromTitle
-  return formatFleetPunchLine({ severity, url, observed, fingerprint })
+  const expected = node.objective.match(/expected "([^"]*)"/i)?.[1] ?? null
+  const viewport = node.objective.match(/\[(\d{3,4})\]/)?.[1] ?? null
+  const bot = node.objective.match(/\bbot\s+(\S+)/i)?.[1] ?? null
+  return formatFleetPunchLine({ severity, url, observed, fingerprint, expected, viewport, bot })
 }
 
 export function initialPunchObjective(): string {

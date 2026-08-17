@@ -201,6 +201,8 @@ async function main() {
       for (const line of formatPunchSliceBrief({
         punch: ship.punch,
         nodeId: next.id,
+        title: next.title,
+        domain: next.domain,
         reads,
       })) {
         push(line)
