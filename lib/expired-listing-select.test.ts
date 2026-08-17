@@ -8,7 +8,7 @@ import {
   expiredListingSeenKeyFilter,
 } from './expired-listing-select'
 
-const SELECT_SRC = readFileSync(join(process.cwd(), 'lib/data/sync/syncWrites.ts'), 'utf8')
+const SELECT_SRC = readFileSync(join(process.cwd(), 'lib/data/sync/expiredSelect.ts'), 'utf8')
 const DELTA_SRC = readFileSync(join(process.cwd(), 'lib/sync/deltaSync.ts'), 'utf8')
 const PROCESSOR_SRC = readFileSync(join(process.cwd(), 'lib/expired-listing-processor.ts'), 'utf8')
 
