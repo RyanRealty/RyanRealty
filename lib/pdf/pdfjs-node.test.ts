@@ -1,11 +1,39 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import { inspectPdfPageSafety } from './assert-page-safety'
-import { configurePdfjsWorker, resolvePdfjsWorkerSrc } from './pdfjs-node'
+import {
+  configurePdfjsWorker,
+  isUsablePdfjsWorkerPath,
+  pdfjsWorkerCandidates,
+  resolvePdfjsWorkerSrc,
+} from './pdfjs-node'
 
 describe('pdfjs worker on Node (Vercel)', () => {
+  it('rejects webpack module ids so page-safety can fall through to a real file', () => {
+    expect(isUsablePdfjsWorkerPath('565956')).toBe(false)
+    expect(isUsablePdfjsWorkerPath('42')).toBe(false)
+    expect(isUsablePdfjsWorkerPath('')).toBe(false)
+
+    const cwdWorker = join(
+      process.cwd(),
+      'node_modules',
+      'pdfjs-dist',
+      'legacy',
+      'build',
+      'pdf.worker.mjs',
+    )
+    const candidates = pdfjsWorkerCandidates('565956')
+    expect(candidates).toContain('565956')
+    expect(candidates).toContain(cwdWorker)
+    const usable = candidates.filter(isUsablePdfjsWorkerPath)
+    expect(usable.length).toBeGreaterThan(0)
+    expect(usable[0]).toMatch(/pdf\.worker\.mjs$/)
+    expect(existsSync(usable[0])).toBe(true)
+  })
+
   it('resolves the legacy worker to a real file URL, not a relative path', () => {
     const src = resolvePdfjsWorkerSrc()
     expect(src.startsWith('file:')).toBe(true)
