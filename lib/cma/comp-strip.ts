@@ -75,7 +75,7 @@ export function renderCompMapKeyHtml(subject: CmaSubject, comps: readonly CmaAdj
   const subjectLine = joinFacts([
     subject.beds != null ? `${int(subject.beds)} bd` : null,
     subject.baths != null ? `${dec(subject.baths, subject.baths % 1 !== 0 ? 1 : 0)} ba` : null,
-    subject.sqft > 0 ? `${int(subject.sqft)} sqft` : null,
+    subject.sqft != null && subject.sqft > 0 ? `${int(subject.sqft)} sqft` : null,
   ])
   const items = [
     `<div class="k"><span class="pin subject">S</span><div class="txt"><strong>${esc(subject.streetAddress)}</strong>${subjectLine ? `<br/>${esc(subjectLine)}` : ''}<br/>Subject</div></div>`,
