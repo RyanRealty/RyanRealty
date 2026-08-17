@@ -15,7 +15,7 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
   it('top bar is the five intent labels in order', () => {
     expect(KB_TOP_LINKS.map((l) => l.label)).toEqual(['Buy', 'Areas', 'Market', 'Sell', 'About'])
     expect(KB_TOP_LINKS.map((l) => l.href)).toEqual([
-      '/homes-for-sale',
+      '/homes-for-sale?view=list',
       '/cities',
       '/housing-market',
       '/sell',
@@ -69,6 +69,15 @@ describe('KB nav SSOT (Buy · Areas · Market · Sell · About)', () => {
     ])
     const about = KB_MENU_GROUPS.find((g) => g.title === 'About')
     expect(about?.links.some((l) => l.href === '/join')).toBe(true)
+  })
+
+  it('uses the regional list door for Homes / All homes, not the Bend inject', () => {
+    const buy = KB_TOP_NAV.find((g) => g.label === 'Buy')
+    expect(buy?.href).toBe('/homes-for-sale?view=list')
+    expect(buy?.children[0]?.href).toBe('/homes-for-sale?view=list')
+    expect(KB_MENU_GROUPS.find((g) => g.title === 'Buy')?.links[0]?.href).toBe(
+      '/homes-for-sale?view=list',
+    )
   })
 
   it('uses canonical map + valuation destinations', () => {

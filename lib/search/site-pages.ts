@@ -16,7 +16,7 @@ export type SitePageEntry = {
 }
 
 export const SITE_PAGES: SitePageEntry[] = [
-  { label: 'Homes for sale', href: '/homes-for-sale', keywords: ['search', 'buy', 'listings', 'browse'] },
+  { label: 'Homes for sale', href: '/homes-for-sale?view=list', keywords: ['search', 'buy', 'listings', 'browse'] },
   { label: 'Map search', href: '/homes-for-sale?view=map', keywords: ['map'] },
   { label: 'Communities', href: '/communities', keywords: ['community', 'subdivision', 'resort'] },
   { label: 'Cities', href: '/cities', keywords: ['city', 'towns', 'area', 'guide', 'neighborhood'] },

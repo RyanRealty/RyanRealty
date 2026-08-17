@@ -217,7 +217,7 @@ export default async function SearchPage({
 
   const searchBreadcrumbItems: { label: string; href?: string }[] = [
     { label: 'Home', href: '/' },
-    { label: 'Homes for sale', href: '/homes-for-sale' },
+    { label: 'Homes for sale', href: '/homes-for-sale?view=list' },
   ]
   const cityLabel = city ?? (slug[0] ? decodeURIComponent(slug[0]) : '')
   // Visible breadcrumb hrefs are RELATIVE so they use the client-side router and

@@ -7,6 +7,7 @@ import {
   Section,
   Stack,
 } from '@/components/site/primitives'
+import { REGIONAL_SEARCH_HREF } from '@/lib/search/publish-regional-search-href'
 
 /**
  * Site v2 CTA duo — two conversion cards (buyer listing alerts + seller
@@ -87,7 +88,7 @@ export default function CtaDuo() {
             title="New listings, same day"
             body="Tell us the towns, beds, and budget. We email you when a matching home lists."
             primary={{ href: '/lp/buyer-listing-alerts', label: 'Set up alerts' }}
-            secondary={{ href: '/homes-for-sale', label: 'See homes for sale' }}
+            secondary={{ href: REGIONAL_SEARCH_HREF, label: 'See homes for sale' }}
           />
           <CtaCard
             icon={<PinIcon />}

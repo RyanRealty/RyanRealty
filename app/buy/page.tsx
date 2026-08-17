@@ -110,7 +110,7 @@ export default async function BuyPage() {
             headline="Buy a home in Central Oregon"
             posterSrc={heroSrc ?? OLD_MILL_HERO}
             overlayStrength="standard"
-            action={{ label: 'Search homes', href: '/homes-for-sale' }}
+            action={{ label: 'Search homes', href: BUY_EXITS[0].href }}
           />
           <div className="absolute inset-x-0 top-0 z-10 bg-primary/70">
             <V3Breadcrumb

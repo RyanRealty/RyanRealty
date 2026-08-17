@@ -45,7 +45,7 @@ export const metadata: Metadata = pageMetadata({
 })
 
 const HUBS = [
-  { href: '/homes-for-sale', label: 'Homes for sale' },
+  { href: '/homes-for-sale?view=list', label: 'Homes for sale' },
   { href: '/cities', label: 'Cities' },
   { href: '/communities', label: 'Communities' },
   { href: '/neighborhoods', label: 'Neighborhoods' },
