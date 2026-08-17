@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-sentinel) — blog NW Crossing alias slice
+# Current — 2026-08-17 (cursor-loop-chain) — blog report-period title slice
+
+**Surface:** Cursor cloud `bc-3f90972f` (`cursor/loop-chain-2026-08-17t11-41-f4a1`). **Time:** 2026-08-17 ~12:55 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 426). Claimed parent only (heartbeat sibling `bc-b9425f1f` also claimed). Product **`84b7d991c`** landed on **`main`**. Vercel Production **READY** (`aDAAikduwH3hfRgnmkSedYd3aSUY`, `npm run deploy:verify` exit 0). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open** (444 leftover; held by later owner `cursor-loop-chain-bc-791e34a1` — this session did not steal or release). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 blog lines) at 390+1280: June title vs May body **reproduced**. NW Crossing related-homes **fixed** by sibling `f29d930dd` (prod: NorthWest Crossing homes). $475k vs $500k **rejected** (CMS ranges). Schools scroll **rejected** (headingsUnchanged). Eagle Crest related-homes **rejected** (already present). Buyers related-homes / blank MORE RESOURCES **rejected** (Bend homes + explore populated). Buyers vs 3.6 months **rejected** (method note already qualifies seller-side). Dining related-homes / Value my home **rejected** (lifestyle withhold + global chrome).
+- Class: `publishBlogReportPeriod` — when the title names month M and the body has `The N numbers`, H1 / meta / JSON-LD / breadcrumb publish N. Byline stays the issue date. Period note: `{data} closings. Published {issue}.` Year stays on the issue year (do not pick YoY `May 2025`). Gate `ci:publish-blog-report-period` 3/3.
+- Prod probe after READY `84b7d991c`: June slug H1 **Bend Oregon Market Report: May 2026** + **May 2026 closings. Published June 2026.** July slug H1 **June 2026** + June closings / Published July. After shots `/opt/cursor/artifacts/after2_june_{390,1280}_top.png`.
+- Punch dispositions: sibling already wrote this slice (1 fixed + 7 rejected, including June-vs-May as rejected). Append-only skip. Product still shipped. Parent not completed.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list. `origin/main` has since moved to `b4f03efdc` (later MOS/index class) — do not restamp that work.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, SITE_PAGE_STANDARD §7, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-sentinel) — blog NW Crossing alias slice
 
 **Surface:** Cursor cloud `bc-b9425f1f` (`cursor/loop-sentinel-2026-08-17t11-40-d87e`). **Time:** 2026-08-17 ~12:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 426). Claimed parent only. Product **`f29d930dd`** landed on **`main`**. Vercel Production **READY** (`FwWvpPVpzcSGr7eMH7m5H7xs2ktx`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (418 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
