@@ -5,7 +5,7 @@
 **Dispositions:** LOCKED (standing rule in force) · VERIFIED (built; per the source doc or map evidence) · PARTIAL · MISSING (not built — must cite a covering gap G-row) · PARKED (deliberate not-now) · GATED (waits on a Matt per-action approval) · SUPERSEDED.
 **Honesty:** VERIFIED here inherits from source docs and map evidence statuses. The v1 certification pass (VERSION-1) re-verifies; a disposition an accept test contradicts gets corrected, never argued with.
 **Covers column:** MISSING/PARTIAL rows cite the VERSION-1 gap (G-row) or owner that carries them. Ad-hoc work that touches a row updates it in the same change.
-**Max:** R-221 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
+**Max:** R-222 (the tail pin — G57 fails if rows above this number vanish or the pin goes stale)
 
 ## The animals (what each is, how it improves)
 
@@ -309,6 +309,7 @@
 | R-219 | Analytics is page-tied: every public URL classifies to one `page_type`. Layout owns the hit. New pages inherit the map; do not add a per-page GTM tag. Hunt leftover the in-house CRM names out of analytics events and cookies | Matt 2026-08-18 (analytics rework) | VERIFIED | `lib/analytics/page-type.ts` + `ci:page-analytics`; GA4 `page_type` / `crm_person_id`; G34 |
 | R-220 | Redirect-only public aliases must emit a real HTTP 308 from `next.config.ts` (or named middleware). Page-level `permanentRedirect()` under Next 16 prerender is a 200 empty shell | Fleet 2026-08-19 `/motivated-sellers` 57eefae9; P5 IA lock | VERIFIED | `next.config.ts` + `ci:redirect-only`; G35 |
 | R-221 | Agents must not sit on GitHub Actions. One `ci:gates` per ship. do not poll GitHub Actions. Rematch main only when CONFLICTING. PR CI is `test:unit`; live-DB `test:int` is nightly | Matt 2026-08-19 (cloud session burned hundreds of dollars waiting on CI) | LOCKED | G44 + `.github/workflows/ci.yml` + `int-nightly.yml` |
+| R-222 | Every seller CMA is one price-opinion spine: price first, why, named band rivals, three sales with tap-pin, subdivision, wider-market charts. No marketing pitch, confidence pills, ZIP lines, or query traces. Numbers from `lib/pricing/` only. Applies to inbound, expired, FSBO, and rebuild — not a one-off | Matt 2026-08-17 ADD | PARTIAL | G16; gate `ci:cma-opinion-spine` |
 
 ## Standing Matt gates (never agent-closed)
 

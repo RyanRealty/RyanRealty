@@ -134,7 +134,7 @@ const SEEDS = [
     domain: 'sales-insights',
     title: 'CMA/pricing production residual',
     objective:
-      'REQUIREMENTS R-069/070/073/074/083/112: rebuild corpus under the live judge and measure flag rate, fix county/site resolver flags, one pricing engine across CMA/BPO/expired-audit, comp geography contract, send-to-reply funnel, listing Transparent-CMA after comp rework.',
+      'REQUIREMENTS R-069/070/073/074/083/112/218: rebuild corpus under the live judge and measure flag rate, fix county/site resolver flags, one pricing engine across CMA/BPO/expired-audit, comp geography contract, send-to-reply funnel, listing Transparent-CMA after comp rework, seller CMA price-opinion spine (R-218).',
     output: 'Corpus rebuilt with flag-rate report; one engine; funnel report live.',
     accept: 'Flag rate measured and reported; engines unified with tests; funnel renders from real engagement events.',
   },
