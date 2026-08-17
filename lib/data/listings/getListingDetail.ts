@@ -22,6 +22,11 @@ import { CACHE_WINDOWS, cacheTag } from '@/lib/data/cache/unstable-cache'
 import { cleanText, formatMlsMultiSelect } from './mls-multiselect'
 import type { ListingDetail, ListingStatus } from '@/lib/data/types/listing'
 import { isComingSoonStatus } from '@/lib/listing-status-public'
+import {
+  publishListingMoney,
+  publishNewConstructionYn,
+  publishYearBuilt,
+} from '@/lib/listing/publish-listing-facts'
 
 const InputSchema = z.object({
   listingKey: z.string().min(1).max(100),
@@ -264,10 +269,8 @@ function cleanNumber(n: number | string | null | undefined): number | null {
 }
 
 function rowToDetail(row: ListingRow): ListingDetail {
-  const propertyAge =
-    row.year_built && row.year_built > 1800
-      ? new Date().getFullYear() - row.year_built
-      : null
+  const yearBuilt = publishYearBuilt(row.year_built)
+  const propertyAge = yearBuilt != null ? new Date().getFullYear() - yearBuilt : null
   const closePricePerSqft =
     row.ClosePrice != null && row.TotalLivingAreaSqFt && row.TotalLivingAreaSqFt > 0
       ? Math.round(row.ClosePrice / row.TotalLivingAreaSqFt)
@@ -303,7 +306,7 @@ function rowToDetail(row: ListingRow): ListingDetail {
     modifiedAt: row.ModificationTimestamp,
     pricePerSqft: row.price_per_sqft,
     lotSizeAcres: row.lot_size_acres,
-    yearBuilt: row.year_built,
+    yearBuilt,
     garageSpaces: row.garage_spaces,
     poolYn: row.pool_yn,
     hasVirtualTour: row.has_virtual_tour,
@@ -327,14 +330,14 @@ function rowToDetail(row: ListingRow): ListingDetail {
     fireplaceYn: row.fireplace_yn,
     waterfrontYn: row.waterfront_yn,
     architecturalStyle: formatMlsMultiSelect(row.architectural_style),
-    newConstructionYn: row.new_construction_yn,
+    newConstructionYn: publishNewConstructionYn(row.new_construction_yn, row.year_built),
     schoolDistrict: cleanText(row.school_district),
     elementarySchool: row.elementary_school,
     middleSchool: row.middle_school,
     highSchool: row.high_school,
     taxAnnualAmount: row.tax_annual_amount,
     taxAssessedValue: row.tax_assessed_value,
-    hoaMonthly: row.hoa_monthly,
+    hoaMonthly: publishListingMoney(row.hoa_monthly),
     propertyAge,
     listingQualityScore: row.listing_quality_score,
     closePricePerSqft,

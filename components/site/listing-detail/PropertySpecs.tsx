@@ -3,6 +3,7 @@ import {
   TabularNumber,
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
+import { publishListingMoney, publishYearBuilt } from '@/lib/listing/publish-listing-facts'
 import { cn } from '@/lib/utils'
 
 /**
@@ -155,8 +156,9 @@ function buildGroups(listing: Props['listing']): Group[] {
   if (num(sqft))
     overview.push({ label: 'Living area', value: <><TabularNumber value={sqft} /> sq ft</> })
   if (ptypeLabel) overview.push({ label: 'Property type', value: ptypeLabel })
-  if (num(listing.yearBuilt))
-    overview.push({ label: 'Year built', value: <span className="tabular-nums">{listing.yearBuilt}</span> })
+  const yearBuilt = publishYearBuilt(listing.yearBuilt)
+  if (yearBuilt != null)
+    overview.push({ label: 'Year built', value: <span className="tabular-nums">{yearBuilt}</span> })
   if (num(listing.propertyAge))
     overview.push({ label: 'Property age', value: <><TabularNumber value={listing.propertyAge} /> years</> })
   if (txt(listing.architecturalStyle)) overview.push({ label: 'Style', value: listing.architecturalStyle })
@@ -229,14 +231,16 @@ function buildGroups(listing: Props['listing']): Group[] {
       label: 'Sale to list',
       value: <span className="tabular-nums">{(listing.saleToListRatio * 100).toFixed(1)}%</span>,
     })
-  if (num(listing.hoaMonthly))
-    financial.push({ label: 'HOA', value: <><Price value={listing.hoaMonthly} /> per month</> })
-  else if (num(listing.associationFee))
+  const hoaMonthly = publishListingMoney(listing.hoaMonthly)
+  const associationFee = publishListingMoney(listing.associationFee)
+  if (hoaMonthly != null)
+    financial.push({ label: 'HOA', value: <><Price value={hoaMonthly} exact /> per month</> })
+  else if (associationFee != null)
     financial.push({
       label: 'HOA',
       value: (
         <>
-          <Price value={listing.associationFee} /> {frequencyLabel(listing.associationFeeFrequency)}
+          <Price value={associationFee} exact /> {frequencyLabel(listing.associationFeeFrequency)}
         </>
       ),
     })

@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 import * as Sentry from '@sentry/nextjs'
 import type { SparkListing, SparkMediaItem } from './spark-odata'
+import { publishNewConstructionYn, publishYearBuilt } from '@/lib/listing/publish-listing-facts'
 
 function getServiceSupabase(): SupabaseClient {
   return createServiceClient()
@@ -208,7 +209,7 @@ export async function processSparkListing(raw: SparkListing): Promise<ProcessSpa
     living_area: parseNum(raw.LivingArea) ?? null,
     lot_size_acres: parseNum(raw.LotSizeAcres) ?? null,
     lot_size_sqft: parseNum(raw.LotSizeSquareFeet) ?? null,
-    year_built: parseNum(raw.YearBuilt) ?? null,
+    year_built: publishYearBuilt(parseNum(raw.YearBuilt)),
     levels: parseNum(raw.Levels) ?? null,
     garage_spaces: parseNum(raw.GarageSpaces) ?? null,
     property_type: raw.PropertyType ?? null,
@@ -242,7 +243,7 @@ export async function processSparkListing(raw: SparkListing): Promise<ProcessSpa
     photos_count: parseNum(raw.PhotosCount) ?? null,
     virtual_tour_url: raw.VirtualTourURLUnbranded ?? null,
     vow_avm_display_yn: raw.VOWAutomatedValuationDisplayYN === true,
-    new_construction_yn: raw.NewConstructionYN === true,
+    new_construction_yn: publishNewConstructionYn(raw.NewConstructionYN === true, parseNum(raw.YearBuilt)),
     senior_community_yn: raw.SeniorCommunityYN === true,
     days_on_market: parseNum(raw.DaysOnMarket) ?? null,
     cumulative_days_on_market: parseNum(raw.CumulativeDaysOnMarket) ?? null,

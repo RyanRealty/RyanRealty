@@ -17,6 +17,7 @@ import {
   redactPublicDetails,
   stripMaskedValues,
 } from '@/lib/listing-customfields'
+import { publishYearBuilt } from '@/lib/listing/publish-listing-facts'
 
 // The CustomFields subsystem lives in lib/listing-customfields.ts —
 // re-exported here so existing importers keep working unchanged.
@@ -227,6 +228,7 @@ export function computeTier1(input: Tier1Input) {
   } = input
 
   const currentYear = new Date().getFullYear()
+  const publishedYear = publishYearBuilt(yearBuilt, currentYear)
 
   // PITI calculation: 6.5% rate, 20% down, 30yr, insurance 0.35%
   let piti: number | null = null
@@ -256,7 +258,7 @@ export function computeTier1(input: Tier1Input) {
     price_per_acre: safeDiv(listPrice, lotAcres, 2),
     price_per_bedroom: safeDiv(listPrice, bedrooms, 2),
     price_per_room: safeDiv(listPrice, rooms, 2),
-    property_age: yearBuilt != null ? currentYear - yearBuilt : null,
+    property_age: publishedYear != null ? currentYear - publishedYear : null,
     sqft_efficiency: safeDiv(sqft, lotSqft, 4),
     bed_bath_ratio: safeDiv(bedrooms, bathrooms, 2),
     above_grade_pct: safeDiv(aboveGrade, buildingTotal, 4),
@@ -377,7 +379,7 @@ export function sparkToListingRow(
   const buildingAreaTotal = toNum(pick(fields, 'BuildingAreaTotal'))
   const aboveGrade = toNum(pick(fields, 'AboveGradeFinishedArea'))
   const belowGrade = toNum(pick(fields, 'BelowGradeFinishedArea'))
-  const yearBuilt = toInt(pick(fields, 'YearBuilt'))
+  const yearBuilt = publishYearBuilt(toInt(pick(fields, 'YearBuilt')))
   const roomsTotal = toInt(pick(fields, 'RoomsTotal'))
   const taxAnnual = toNum(pick(fields, 'TaxAmount', 'TaxAnnualAmount'))
   const taxAssessed = toNum(pick(fields, 'TaxAssessedValue'))
