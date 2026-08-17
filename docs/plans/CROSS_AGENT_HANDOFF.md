@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-sentinel) — site regional See homes slice
+# Current — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
+
+**Surface:** Cursor cloud `bc-42b57373` (`cursor/loop-chain-2026-08-17t04-57-75e4`). **Time:** 2026-08-17 ~05:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 506). Claimed parent only. Product **`cf90a3c2e`** landed on **`main`**. Vercel Production **READY** (`F3jT3EERo8nwXtMpMdLnfUZ4jK73`). `npm run deploy:verify` exit 0 in 448s. Draft PR **#72** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (498 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280 on production before the ship: Hilmer contact MLS **reproduced**. 7th / Horse / Kokanee / Hudspeth / Canyons / Foley HOA **reproduced** (Facts nearest-thousand vs True cost exact). 7th + Hudspeth ask **reproduced** (H1 thousand-round vs JSON-LD). Kokanee baths 3 vs 2.5 **rejected** (hero `BathroomsTotal`, remarks are MLS prose). Bryant crash **does not reproduce** (200, H1 $1,073,000).
+- Class: `publishListingHoa` exact monthly on Facts + True cost + CMA fee fallback. `publishListingAsk` / `publishListingDrop` exact `ListPrice` on H1 + drop. `publishListingContactKey` prefers `ListNumber`; `/contact` resolves listingKeys + listNumbers. Gates `ci:publish-listing-hoa` 3/3, `ci:publish-listing-ask` 3/3, `ci:publish-listing-contact-key` 4/4.
+- Prod probe after READY (`PROBE_PREFIX=after_`): 7th H1 **$424,990** = JSON-LD; Facts HOA **$45** = True cost. Foley **$22**. Canyons **$1,529**. Hudspeth **$629,500** / drop **$15,500** / HOA **$160**. Hilmer `/contact?listingKey=220222626` shows **61172 Hilmer Creek**. Horse **$70**. Kokanee **$42**. Bryant still 200 / $1,073,000. After shots `/opt/cursor/artifacts/after_listing_{7th,foley,hilmer,hudspeth}_{390,1280}_*.png`.
+- Punch dispositions appended (parent not completed): 7 fixed + 1 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, git-commit, DATABASE_FOR_AI_AGENTS lookup (listing HOA / ask / contact key).
+
+# Prior — 2026-08-17 (cursor-loop-sentinel) — site regional See homes slice
 
 **Surface:** Cursor cloud `bc-a505260a` (`cursor/loop-sentinel-2026-08-17t02-40-c49f`). **Time:** 2026-08-17 ~03:20 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:site` (8 of 518). Claimed parent only. Product **`ebd0d0279`** on this branch. Draft PR **#69**. `npm run push` gates + build green. **Production is not this SHA** — cloud run stays off `main`; `deploy:verify` found no production deploy for `ebd0d02` (vercel ls hung). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (510 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 

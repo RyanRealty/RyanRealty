@@ -2,9 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getCmaHtmlBySlug = vi.fn()
 const getCmaAccessIdentity = vi.fn()
-const renderImmersiveCmaHtml = vi.fn(
-  (..._args: unknown[]) => '<html><body>DRAFT CMA FROM RENDER_ARGS</body></html>',
-)
+const renderImmersiveCmaHtml = vi.fn(() => '<html><body>DRAFT CMA FROM RENDER_ARGS</body></html>')
 
 vi.mock('@/lib/data', () => ({
   getCmaHtmlBySlug: (...args: unknown[]) => getCmaHtmlBySlug(...args),
@@ -25,7 +23,8 @@ vi.mock('@/lib/data/cma/builderReads', () => ({
 }))
 
 vi.mock('@/lib/cma/immersive', () => ({
-  renderImmersiveCmaHtml: (...args: unknown[]) => renderImmersiveCmaHtml(...args),
+  renderImmersiveCmaHtml: (...args: unknown[]) =>
+    (renderImmersiveCmaHtml as (...inner: unknown[]) => string)(...args),
 }))
 
 vi.mock('@/lib/cma/market-area-hydrate', () => ({
