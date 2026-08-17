@@ -15,6 +15,7 @@ import {
 import LandingPageTracker from '@/components/LandingPageTracker'
 import SellerLPForm from './SellerLPForm'
 import { TESTIMONIALS } from '@/lib/testimonials'
+import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { CONTACT } from '@/lib/brand/contact'
 import {
   getBendMarketSnapshot,
@@ -122,10 +123,7 @@ export default async function SellerHomeValuePage({
       sub: 'Closed in the last 90 days',
     },
     {
-      value:
-        snap?.medianDaysToPending != null
-          ? `${Math.round(snap.medianDaysToPending)} days`
-          : MDASH,
+      value: publishDaysLabel(snap?.medianDaysToPending) ?? MDASH,
       label: 'Time to pending',
       sub: 'Median, list to under contract',
     },

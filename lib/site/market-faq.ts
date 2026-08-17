@@ -5,6 +5,7 @@ import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishPlaceHoa } from '@/lib/market/publish-place-hoa'
+import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 
 /**
  * Structural input — a full MarketPulse satisfies this, and a geo page can also
@@ -168,18 +169,20 @@ export function buildMarketFaq(geoName: string, pulse: MarketFaqInput | null): M
   // Days question: prefer medianDaysToPending (pulse, days-to-pending) over
   // medianDaysOnMarket (stats cache, days-on-market). Only emit one so the FAQ
   // does not show two nearly-identical time-to-sell questions. (§0)
-  if (pulse.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
+  const daysToPending = publishDaysFigure(pulse.medianDaysToPending)
+  const daysOnMarket = publishDaysFigure(pulse.medianDaysOnMarket)
+  if (daysToPending) {
     faqs.push({
       question: `How long do homes take to sell in ${geoName}?`,
-      answer: `Single-family homes in ${geoName} took a median of ${pulse.medianDaysToPending} days to go pending${asOf}.`,
+      answer: `Single-family homes in ${geoName} took a median of ${daysToPending} days to go pending${asOf}.`,
     })
-    datasetVariables.push({ name: 'Median Days to Pending', value: pulse.medianDaysToPending, unitText: 'days' })
-  } else if (pulse.medianDaysOnMarket != null && pulse.medianDaysOnMarket > 0) {
+    datasetVariables.push({ name: 'Median Days to Pending', value: Number(daysToPending), unitText: 'days' })
+  } else if (daysOnMarket) {
     faqs.push({
       question: `How long do homes stay on the market in ${geoName}?`,
-      answer: `Single-family homes in ${geoName} had a median of ${pulse.medianDaysOnMarket} days on market over the past 12 months${asOf}.`,
+      answer: `Single-family homes in ${geoName} had a median of ${daysOnMarket} days on market over the past 12 months${asOf}.`,
     })
-    datasetVariables.push({ name: 'Median Days on Market', value: pulse.medianDaysOnMarket, unitText: 'days' })
+    datasetVariables.push({ name: 'Median Days on Market', value: Number(daysOnMarket), unitText: 'days' })
   }
 
   // ── Extended community-specific questions (§0: only when data exists) ───────

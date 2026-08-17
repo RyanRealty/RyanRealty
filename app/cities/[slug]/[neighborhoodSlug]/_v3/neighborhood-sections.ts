@@ -32,6 +32,7 @@ import {
 } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { publishDaysFigure, publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { listingDetailPath } from '@/lib/slug'
 import type { ResortCommunityContent } from '@/lib/resort-community-content'
 
@@ -271,9 +272,10 @@ export function liveFigures(
       href: links.monthsOfSupply,
     })
   }
-  if (shipsFigure(pulse.medianDaysToPending) && pulse.medianDaysToPending != null) {
+  const daysToPending = publishDaysFigure(pulse.medianDaysToPending)
+  if (shipsFigure(pulse.medianDaysToPending) && daysToPending) {
     figures.push({
-      value: v3Text(String(Math.round(pulse.medianDaysToPending))),
+      value: v3Text(daysToPending),
       label: v3Text('median days to pending, single-family'),
       href: links.cityReport,
     })
@@ -348,9 +350,10 @@ export function soldFigures(stats: SoldStats): V3InstrumentFigure[] {
       label: v3Text('average sale to list, single-family'),
     })
   }
-  if (stats.medianDaysOnMarket != null && stats.medianDaysOnMarket > 0) {
+  const daysOnMarket = publishDaysLabel(stats.medianDaysOnMarket)
+  if (daysOnMarket) {
     figures.push({
-      value: v3Text(`${Math.round(stats.medianDaysOnMarket)} days`),
+      value: v3Text(daysOnMarket),
       label: v3Text('median days on market, single-family'),
     })
   }

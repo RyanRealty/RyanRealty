@@ -13,6 +13,7 @@ import { getAllCommunitySnapshots, getGeoSnapshot, getListingTiles } from '@/lib
 import { listingTileHref } from '@/lib/slug'
 import { communityImage } from '@/lib/geo-images'
 import { TESTIMONIALS } from '@/lib/testimonials'
+import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { ReviewStrip } from '@/components/landing/ReviewCard'
 import { TrustStrip } from '@/components/landing/TrustStrip'
 import ExitIntentPrompt from '@/components/landing/ExitIntentPrompt'
@@ -145,10 +146,7 @@ export default async function BuyerLPPage() {
       sub: 'Bend single-family',
     },
     {
-      value:
-        bendPulse?.medianDaysToPending != null
-          ? `${Math.round(bendPulse.medianDaysToPending)} days`
-          : MDASH,
+      value: publishDaysLabel(bendPulse?.medianDaysToPending) ?? MDASH,
       label: 'Time to pending',
       sub: 'Median, list to under contract',
     },

@@ -110,6 +110,17 @@ describe('buildMarketFaq', () => {
     expect(r.faqs.find((f) => f.question.includes('sold in Tetherow'))?.answer).toContain('36 single-family')
   })
 
+  it('prints the pulse half-day, not an integer-rounded second figure', () => {
+    const r = buildMarketFaq('Black Butte Ranch', {
+      medianDaysToPending: 39.5,
+      refreshedAt: null,
+    })
+    const days = r.faqs.find((f) => f.question.includes('take to sell'))
+    expect(days?.answer).toContain('39.5 days')
+    expect(days?.answer).not.toContain('40 days')
+    expect(r.datasetVariables.find((v) => v.name === 'Median Days to Pending')?.value).toBe(39.5)
+  })
+
   it('null or non-positive stats produce no question and no dataset variable', () => {
     const r = buildMarketFaq('Sisters', {
       activeCount: 0,

@@ -5,6 +5,7 @@ import { CITY_POPULAR_SEARCHES } from '@/lib/popular-searches'
 import { getCityContent } from '@/lib/city-content'
 import { homesForSalePath } from '@/lib/slug'
 import type { MarketFaqInput, MarketFaqItem } from '@/lib/site/market-faq'
+import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 
 /**
  * Preset-scoped editorial depth for the indexable search-preset pages
@@ -339,8 +340,9 @@ export function buildPresetFaq(
   if (cityPulse?.medianListPrice != null && cityPulse.medianListPrice > 0) {
     contextParts.push(`the median list price is ${roundedThousand(cityPulse.medianListPrice)}`)
   }
-  if (cityPulse?.medianDaysToPending != null && cityPulse.medianDaysToPending > 0) {
-    contextParts.push(`homes take a median of ${cityPulse.medianDaysToPending} days to go pending`)
+  const cityDays = publishDaysFigure(cityPulse?.medianDaysToPending)
+  if (cityDays) {
+    contextParts.push(`homes take a median of ${cityDays} days to go pending`)
   }
   if (contextParts.length > 0) {
     sentences.push(`Across ${city} as a whole, ${contextParts.join(' and ')}${asOf}.`)
@@ -370,10 +372,10 @@ export function buildPresetFaq(
     })
   }
 
-  if (cityPulse?.medianDaysToPending != null && cityPulse.medianDaysToPending > 0) {
+  if (cityDays) {
     faqs.push({
       question: `How fast are homes selling in ${city}?`,
-      answer: `City-wide, single-family homes in ${city} take a median of ${cityPulse.medianDaysToPending} days to go pending${asOf}. Pace varies by price range and neighborhood.`,
+      answer: `City-wide, single-family homes in ${city} take a median of ${cityDays} days to go pending${asOf}. Pace varies by price range and neighborhood.`,
     })
   }
 

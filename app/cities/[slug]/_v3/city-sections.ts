@@ -32,6 +32,7 @@ import {
 } from '@/components/site/v3'
 import { MOS_METHODOLOGY_CLAUSE, MOS_THRESHOLD_CLAUSE } from '@/lib/market/classify'
 import { formatPrice } from '@/lib/format/money'
+import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 
 /**
  * A place that has its own node: a neighborhood, a golf or master-planned
@@ -261,9 +262,10 @@ export function marketFigures(
   // statistic, two numbers, one page. The guard is `> 0` for the same reason the other
   // two figures carry it: it is buildMarketFaq's own condition, so the Instrument
   // cannot print a figure the shared builder declined to answer (invariant 2).
-  if (pulse?.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
+  const daysToPending = publishDaysFigure(pulse?.medianDaysToPending)
+  if (daysToPending) {
     figures.push({
-      value: v3Text(String(pulse.medianDaysToPending)),
+      value: v3Text(daysToPending),
       label: v3Text('median days to pending, single-family'),
       href: links.marketReport,
     })

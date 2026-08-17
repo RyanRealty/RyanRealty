@@ -14,6 +14,7 @@ import { parseRangePeriod, type RangePeriod, type CityRangeReport } from '@/lib/
 import type { CityReportSnapshot } from '@/lib/data/market/getCityReportSnapshot'
 import { formatPrice } from '@/lib/format/money'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import { marketVerdict } from '@/lib/market/classify'
 import type { MarketPulse } from '@/lib/data/types/market'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -63,9 +64,10 @@ export function buildRegionFigures(
       href: '/months-of-supply',
     })
   }
-  if (pulse.medianDaysToPending != null && pulse.medianDaysToPending > 0) {
+  const daysToPending = publishDaysFigure(pulse.medianDaysToPending)
+  if (daysToPending) {
     figures.push({
-      value: v3Text(String(Math.round(pulse.medianDaysToPending))),
+      value: v3Text(daysToPending),
       label: v3Text('median days to pending'),
       href: '/housing-market',
     })

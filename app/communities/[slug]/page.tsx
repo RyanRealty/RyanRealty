@@ -77,6 +77,7 @@ import { placeHeroLead } from '@/lib/kb/place-hero-lead'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { formatPlaceHoaAnnual, placeHoaGlanceLabel, publishPlaceHoa } from '@/lib/market/publish-place-hoa'
+import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
@@ -481,10 +482,13 @@ export default async function CommunityDetailPage({ params }: Props) {
     estimateAnnual: registryEntry?.hoa_annual_estimate,
     subEstimates: registryEntry?.sub_neighborhoods?.map((s) => s.hoa_annual_estimate),
   })
+  const daysFact = publishDaysLabel(medianDays)
   const aboutFacts: { label: string; value: string }[] = [
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(medianListPrice != null ? [{ label: 'Median list', value: kbMoneyFull(medianListPrice) ?? '—' }] : []),
-    ...(medianDays != null ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: `${Math.round(medianDays)} days` }] : []),
+    ...(daysFact
+      ? [{ label: pulse?.medianDaysToPending != null ? 'Median to pending' : 'Median days on market', value: daysFact }]
+      : []),
     ...(stats?.medianSalePrice != null ? [{ label: 'Median sold, 1 yr', value: kbMoneyFull(stats.medianSalePrice) ?? '—' }] : []),
     ...(publishedHoa ? [{ label: placeHoaGlanceLabel(publishedHoa.kind), value: formatPlaceHoaAnnual(publishedHoa.annual) }] : []),
     { label: 'City', value: cityName },

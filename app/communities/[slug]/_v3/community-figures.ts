@@ -20,6 +20,7 @@
 
 import { v3Text, type V3InstrumentFigure, type V3QuietItem } from '@/components/site/v3'
 import { formatPrice } from '@/lib/format/money'
+import { publishDaysFigure } from '@/lib/market/publish-days-figure'
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
 import { homesForSalePath } from '@/lib/slug'
 import { valuationHref } from '@/lib/site/valuation-href'
@@ -240,9 +241,10 @@ export function buildClosedFigures(input: {
       href: input.marketHref,
     })
   }
-  if (input.medianDaysOnMarket != null) {
+  const daysOnMarket = publishDaysFigure(input.medianDaysOnMarket)
+  if (daysOnMarket) {
     figures.push({
-      value: v3Text(String(Math.round(input.medianDaysOnMarket))),
+      value: v3Text(daysOnMarket),
       label: v3Text('median days on market'),
       href: input.marketHref,
     })

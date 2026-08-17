@@ -6,6 +6,7 @@ import { gsap } from 'gsap'
 import { kbMoneyFull, type KbHeroData } from './types'
 import { searchHrefForQuery } from '@/lib/parse-search-query'
 import VoiceSearchButton from '@/components/VoiceSearchButton'
+import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 
 /**
  * KB hero — REUSABLE across page classes (homepage, city, community, …). All
@@ -161,6 +162,8 @@ export function KbHero({
   }
 
   const median = kbMoneyFull(data.medianListPrice)
+  const pendingDays = publishDaysLabel(data.medianDaysToPending)
+  const activeDom = publishDaysLabel(data.medianDomActive)
   const showVideo = Boolean(videoSrc) && reduceMotion === false
 
   return (
@@ -272,15 +275,15 @@ export function KbHero({
                     Median list <b>{median}</b>.
                   </>
                 ) : null}
-                {data.medianDaysToPending != null ? (
+                {pendingDays ? (
                   <>
                     {' '}
-                    Pending in <b>{data.medianDaysToPending} days</b>.
+                    Pending in <b>{pendingDays}</b>.
                   </>
-                ) : data.medianDomActive != null ? (
+                ) : activeDom ? (
                   <>
                     {' '}
-                    On market a median of <b>{data.medianDomActive} days</b>.
+                    On market a median of <b>{activeDom}</b>.
                   </>
                 ) : null}
               </>

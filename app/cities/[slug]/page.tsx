@@ -41,6 +41,7 @@ import { getCoreChartSeries } from '@/lib/data/market/getCoreChartSeries'
 import { canonicalCityCacheSlug } from '@/lib/market/city-cache-slug'
 import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
+import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
@@ -237,11 +238,12 @@ export default async function CityDetailPage({ params }: Props) {
         medianPrice: pulse?.medianListPrice ?? snapshot.medianListPrice,
         communityCount: communitySnapshots.length,
       }).slice(0, 2)
+  const daysFact = publishDaysLabel(pulse?.medianDaysToPending)
   const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
     ...(pulse?.medianListPrice ? [{ label: 'Median list', value: kbMoneyFull(pulse.medianListPrice) ?? '—' }] : []),
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
-    ...(pulse?.medianDaysToPending != null ? [{ label: 'Median to pending', value: `${Math.round(pulse.medianDaysToPending)} days` }] : []),
+    ...(daysFact ? [{ label: 'Median to pending', value: daysFact }] : []),
     ...(quickFacts?.elevation ? [{ label: 'Elevation', value: quickFacts.elevation }] : []),
     ...(quickFacts?.county ? [{ label: 'County', value: `${quickFacts.county} County` }] : []),
   ]
