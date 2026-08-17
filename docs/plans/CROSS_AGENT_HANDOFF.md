@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
+# Current — 2026-08-17 (cursor-loop-chain) — G32 xAI-only gen stack
+
+**Surface:** Cursor cloud `bc-b827abde` (`cursor/loop-chain-2026-08-17t06-21-5b83`). **Time:** 2026-08-17 ~07:00 UTC. Brief served **G32** `[social-presence]` class of one (`4323ea74`). Claimed via claimShipClass. Product **`1e1b8996c`** on this branch. Draft PR **#77**. Isolated `npm run push` gates + build green. **Production is not this SHA** — cloud run stays off `main`; `deploy:verify` had no Vercel token, `vercel ls` hung >6m, GitHub status has no production context. No hosted migration. Social-presence ledger **`676d6c32`** (`xai-only-gen-stack`). G32 node **done** with that evidence. FLEET-PUNCH (`3a6198cd`) was already in_progress under `bc-b3bba897` — not claimed, not completed. Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Docs.x.ai overview / models / Imagine / TTS / STT / custom voices loaded. No public post. No outbound.
+- Class: `lib/grok-voice.ts` TTS+STT (`eve` lock, IPA replace, timestamps). `lib/grok-text.ts` → `grok-4.6` Responses. Synthesia generate refused. Twilio recording STT on grok-voice. G36 refuses new fal / Synthesia / OpenAI image generate URLs. Gate `ci:xai-stack` 8/8.
+- Accept `xai-stack-accept.json` `complete: true`. Cancel-now: fal + Synthesia. Cancel-after-cutover: ElevenLabs VO, Replicate, OpenAI vision, Anthropic. Keep-not-gen: xAI, Remotion, stock, product rails.
+- R-213 PARTIAL. VERSION-1 G32 DONE. CAP-017 residual = cutover remaining.
+
+**Next**
+- Merge PR 77 so production picks up the chokepoint + gate. Cancel fal + Synthesia in their dashboards (Matt). Do not cancel ElevenLabs / Replicate / OpenAI / Anthropic until those live paths flip. Next `loop-brief` serves the next class.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Do not create a custom Victoria clone this session. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, platform-best-practices, xai-stack.md, R-213, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
 
 **Surface:** Cursor cloud `bc-42b57373` (`cursor/loop-chain-2026-08-17t04-57-75e4`). **Time:** 2026-08-17 ~05:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 506). Claimed parent only. Product **`cf90a3c2e`** landed on **`main`**. Vercel Production **READY** (`F3jT3EERo8nwXtMpMdLnfUZ4jK73`). `npm run deploy:verify` exit 0 in 448s. Draft PR **#72** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (498 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
