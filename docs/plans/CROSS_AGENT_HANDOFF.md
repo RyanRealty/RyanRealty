@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — search count + 390 chrome class
+# Current — 2026-08-17 (cursor-loop-sentinel) — one published place days-to-pending
+
+**Surface:** Cursor cloud (`cursor/loop-sentinel-2026-08-17t00-40-3f01`). **Time:** 2026-08-17 ~00:55 UTC. Brief served **SHIP CLASS `fleet:public-ux:place-pages`** — FLEET-PUNCH node `3a6198cd` (193 place-pages lines). Claimed. Product **`6899359a6`**. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. FLEET-PUNCH stays open with leftover lines.
+
+**Done**
+- FIRST STEP reproduce: Black Butte / NWX / Broken Top / Brasada / Redmond / Larkspur print the pulse half-day on hero+FAQ and a rounded integer on the market card (39.5 vs 40, 10.5 vs 11, 8.5 vs 9, 15.5 vs 16, 19.5 vs 20, 6.5 vs 7). Class of one display rule.
+- Class: SoR `publishPlaceDays` keeps the pulse median at one decimal. Glance, KbMarketHud, FAQ/Dataset, DaysCount, expired LP strip, and CRM `formatDays` share it. Gate `ci:publish-place-days`. R-024 coverage note only (still LOCKED).
+- Rejected (does not reproduce): Ridge 12 vs 14/$535k/19.5, Southern Crossing 1 vs 23, Tetherow HOA $1,464 vs $2,244, Tetherow Regional median, Golden Butte / River Meadows / Skyliner city $756k, Sunriver 19.5 vs 20, La Pine 50.5 vs 51. 16 punch lines removed. 507 remain.
+- Local accept: `publish-place-days` tests + `ci:publish-place-days` 9/9. Probe `scripts/probe-place-days-prod.mjs` after READY.
+
+**Next**
+- One `npm run push`, one `deploy:verify` to READY, then production probe. Release FLEET-PUNCH to open for the next place-pages slice.
+
+**Do not:** insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT, database-canonical-reference, REQUIREMENTS R-024, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — search count + 390 chrome class
 
 **Surface:** Cursor cloud `bc-4382906a` (`cursor/loop-chain-2026-08-16t23-45-84b5`). **Time:** 2026-08-17 ~00:40 UTC. Rebased onto `origin/main` **`79fb9820b`** (PRs 57/58 FLEET-PUNCH intake kept; not touched). Brief served **SHIP CLASS `fleet:public-ux:search`** — 8 nodes (cap). 33 leftover siblings stay open. Product commits survived rebase (`publish-search-count` + 44px chips). Shipping to `main` this session. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. Do not start a new ship class. Do not fold or touch the punch-list node.
 
