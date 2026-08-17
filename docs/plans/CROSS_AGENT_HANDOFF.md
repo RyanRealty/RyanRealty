@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — place-pages exact list-median slice
+# Current — 2026-08-17 (cursor-loop-sentinel) — place-pages hero/list punch slice rejected
+
+**Surface:** Cursor cloud `bc-b73a7e1b` (`cursor/loop-sentinel-2026-08-17t08-20-894b`). **Time:** 2026-08-17 ~08:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 466). Claimed parent only. **No product change.** Production stays **READY** on `3168f52fc` (`8722cBnVRL22wcBTFxC8U4urHKHQ`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (458 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280 on production: Braydon / Brooktree / Choctaw / Canyon View / 1925 Townhomes hero-1-vs-empty **do not reproduce** (hero has no count; list+map show 1 listing). Centennial Glen empty list is honest (no hero 1; 111 closings since 2005). Aspen Meadows **0 homes** + empty list; **no** `4 Closed · 30 days`. Alstrup 1 card **$542,500** at 20431 Cider; **no** $756,000 / 155 Closed parent leak.
+- Class: none. FIRST STEP reject. Same inverse shape already rejected on Amber Springs / Bailey / Bradetich (`bc-96d8d9d5`). Do not invent a GIS-plat hero-count fix.
+- Probe `scripts/probe-place-pages-punch-v5.mjs` + shots `/opt/cursor/artifacts/repro_v5_{braydon_park,aspen_meadows,alstrup_estates,centennial_glen}_{390,1280}_{top,homes}.png`.
+- Punch dispositions appended (parent not completed): 8 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, git-commit, DATABASE_FOR_AI_AGENTS §0 plat row.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — place-pages exact list-median slice
 
 **Surface:** Cursor cloud `bc-96d8d9d5` (`cursor/loop-chain-2026-08-17t07-47-939f`). **Time:** 2026-08-17 ~08:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 474). Claimed parent only. Product **`3168f52fc`** landed on **`main`**. Vercel Production **READY** (`8722cBnVRL22wcBTFxC8U4urHKHQ`, `npm run deploy:verify` exit 0). Feature branch same SHA (no PR: no diff vs `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (466 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
