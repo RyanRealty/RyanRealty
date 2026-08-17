@@ -12,49 +12,49 @@ import { isLegalTransition } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
-const OWNER = 'cursor-loop-chain-bc-3a2506e2-2026-08-17t06-56'
+const OWNER = 'cursor-loop-sentinel-bc-b73a7e1b-2026-08-17t08-20'
 const ID = '3a6198cd-fcd5-4aa2-b51a-3b62c2c0e437'
 
 const RESOLUTIONS: PunchDisposition[] = [
   {
-    fingerprint: 'cf361ea46c820bff29a90d330ac62da4',
-    status: 'fixed',
-    note: 'South Meadow 3 / $795,000 after plat city aliases + v3 cache. READY d3bff1ccb. Not Sisters $699k.',
-  },
-  {
-    fingerprint: '68e429f53384684f4bff707cec907db9',
-    status: 'fixed',
-    note: 'Tumalo 200 at /cities/tumalo. Pulse-only snapshot. 0 homes honest empty. No Bend redirect.',
-  },
-  {
-    fingerprint: '53fbb339d4998dbc2b69d8375c772367',
+    fingerprint: '14ae20dcbfdea1fb4621389855014f62',
     status: 'rejected',
-    note: 'Deer Park 12=12. Plat median $862,498, not Sunriver $899k. Own inventory.',
+    note: 'Braydon Park hero is "Single-family homes…", not 1 homes. List+map 1 Active $500,000 at 1113 22nd. 390+1280.',
   },
   {
-    fingerprint: '57d1a8efa9cb58fea2fb01a302a340b7',
+    fingerprint: 'e48365e95b43140a3fdc70368aca9548',
     status: 'rejected',
-    note: 'Deschutes River Recreation Homesites 14=14. Own median $789,950. Not Bend city.',
+    note: 'Brooktree hero has no count. List has 1 href 432 Oak. Empty-list claim does not reproduce. 390+1280.',
   },
   {
-    fingerprint: 'c87427f1ebc63801eb23de0f36973fc8',
+    fingerprint: '8efc63671d79942215272b5a28a37ffe',
     status: 'rejected',
-    note: 'Rivers Edge Village 11=11. Own median $1,159,000. Not Bend city $756k.',
+    note: 'Centennial Glen hero has no count. Empty list is honest. 111 closings since 2005. No See-homes door. 390+1280.',
   },
   {
-    fingerprint: 'e2f333fbad215d6ad15de6fd92c2f85b',
-    status: 'fixed',
-    note: 'Boyd Acres cards $949,900 and $899,900 exact ListPrice. formatPublishedAsk.',
+    fingerprint: 'c04765fbe4e8fe853613693dc3db29d4',
+    status: 'rejected',
+    note: 'Choctaw Village hero has no count. List has 1 href 2849 Lotno. Not empty. 390+1280.',
   },
   {
-    fingerprint: '7060207100ba86d1265142be18789906',
-    status: 'fixed',
-    note: 'Old Bend 425 State Street $1,999,500 exact. No thousand-round $2,000,000.',
+    fingerprint: 'd24ef436e7695a27499cc90282c8e034',
+    status: 'rejected',
+    note: 'Aspen Meadows 0 homes + empty list. No 4 Closed · 30 days. YTD Homes sold 0 vs 33 since 1997 is grain, not leak.',
   },
   {
-    fingerprint: '75d190e8e72b7e04c338259a5feece40',
-    status: 'fixed',
-    note: 'Southern Crossing medianList $919,500. Bryanwood card $919,500. No $920,000.',
+    fingerprint: 'a88b100d354f325dfddc37d07ab3b149',
+    status: 'rejected',
+    note: 'Canyon View hero has no count. List has 1 href 1443 Canyon. Empty-list claim does not reproduce. 390+1280.',
+  },
+  {
+    fingerprint: '0b52d2f7aa35931445220efe444840fd',
+    status: 'rejected',
+    note: 'Alstrup 1 card $542,500 at 20431 Cider. No $756,000. No 155 Closed. Parent leak does not reproduce. 390+1280.',
+  },
+  {
+    fingerprint: '3516d9bd962819b2ab41edff9c2e893e',
+    status: 'rejected',
+    note: '1925 Townhomes hero has no count. List has 1 href 20339 Jack Benny. Empty-list claim does not reproduce. 390+1280.',
   },
 ]
 
