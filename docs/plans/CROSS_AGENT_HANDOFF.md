@@ -2,7 +2,23 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — search pending status chrome slice
+# Current — 2026-08-17 (cursor-loop-chain) — search overlay / pagination reject slice
+
+**Surface:** Cursor cloud `bc-e33bc1b4` (`cursor/loop-chain-2026-08-17t21-46-7365`). **Time:** 2026-08-17 ~22:00 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:search` (8 of 388). Claimed parent only. No product class-fix. Production stays **READY** at **`f7383a332`** (`6H84kwqZR9MjxdwkZbJHBFJK1REy`). Probe/handoff on this branch. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (380 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 search lines) at 390+1280: map/list overlay **rejected** (List/Map y=255; click Map pressed=on, 10 tiles). Page1/page2 overlap **rejected** (grid 9/9 disjoint; toolbar 10-18 of 1,280). White band at 1280 **rejected** (H1 y=57, bandAboveH1=0). All-filters wider than 390 **rejected** (sheet 390x844, no clipped inputs). Map tiles first-paint blank **rejected** (hydrate then tiles without click). Chips collapse / no Alerts **rejected** (chips 79-97x44; Save is the alert; Get listing alerts 121x28 at 1280). Unmute on photo hero **rejected** (63290 Ski, videoCount 0, unmute []). Sheet 374 vs applied 281+ **rejected** (both 365 homes; two grains already labeled).
+- No class-fix. Prior publishSearchCountPair, AllFiltersSheet `w-full`, ListingHero `hasVideo` unmute gate, and R-152 Save-is-alert already hold. Probe `scripts/probe-search-punch-v4.mjs`.
+- Punch dispositions appended (parent not completed): 0 fixed + 8 rejected. Leftover search + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-105/R-152/R-101, SITE_PAGE_STANDARD §2, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — search pending status chrome slice
 
 **Surface:** Cursor cloud `bc-1dc8ed53` (`cursor/loop-chain-2026-08-17t21-15-4427`). **Time:** 2026-08-17 ~21:50 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:search` (8 of 396). Claimed parent only. Product **`f7383a332`** landed on **`main`**. Vercel Production **READY** (`6H84kwqZR9MjxdwkZbJHBFJK1REy`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (388 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
