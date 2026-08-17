@@ -90,10 +90,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!post) return { title: 'Post Not Found | Ryan Realty', robots: { index: false, follow: true } }
 
   const title = post.seo_title?.trim() || `${post.title} | Ryan Realty Blog`
-  const description =
+  let description =
     post.seo_description?.trim() ||
     post.excerpt?.trim() ||
     'Central Oregon housing market writing from Ryan Realty.'
+  if (blogClaimsPlaceFigures(description)) {
+    const [redmondPulse, bendPulse] = await Promise.all([
+      getMarketPulse({ geoType: 'city', geoSlug: 'redmond' }),
+      getMarketPulse({ geoType: 'city', geoSlug: 'bend' }),
+    ])
+    description = rewriteBlogPlaceFigures(
+      description,
+      publishBlogMedianGap(redmondPulse, bendPulse),
+    )
+  }
   const canonical = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
   const ogImageUrl = post.hero_image_url
     ? post.hero_image_url.includes('.supabase.co/storage/')
@@ -134,17 +144,6 @@ export default async function BlogPostPage({ params }: PageProps) {
   const relatedPosts = await getRelatedBlogPosts(post.slug, post.category, 3)
   const pageUrl = `${siteUrl}/blog/${encodeURIComponent(post.slug)}`
   const readMinutes = estimateReadTime(post.content)
-  const articleSchema = generateBlogSchema({
-    title: post.title,
-    slug: post.slug,
-    excerpt: post.excerpt,
-    published_at: post.published_at,
-    updated_at: post.updated_at,
-    image: post.hero_image_url
-      ? `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
-      : undefined,
-    author_name: post.author_name,
-  })
   const rawBody = post.content?.trim() || post.excerpt?.trim() || ''
   const place = matchBlogPlace(post)
   const claimsPlaceFigures = blogClaimsPlaceFigures(rawBody)
@@ -184,6 +183,19 @@ export default async function BlogPostPage({ params }: PageProps) {
   const articleBody = claimsPlaceFigures
     ? rewriteBlogPlaceFigures(mosBody, publishBlogMedianGap(redmondPulse, bendPulse))
     : mosBody
+  const articleSchema = generateBlogSchema({
+    title: post.title,
+    slug: post.slug,
+    excerpt: claimsPlaceFigures
+      ? rewriteBlogPlaceFigures(post.excerpt ?? '', publishBlogMedianGap(redmondPulse, bendPulse))
+      : post.excerpt,
+    published_at: post.published_at,
+    updated_at: post.updated_at,
+    image: post.hero_image_url
+      ? `${siteUrl}/api/og?type=blog&id=${encodeURIComponent(post.slug)}`
+      : undefined,
+    author_name: post.author_name,
+  })
   const relatedHomes = place ? publishBlogRelatedHomes(place, placeTiles) : null
   const title = post.title.trim()
   if (!title) notFound()

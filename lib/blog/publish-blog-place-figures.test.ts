@@ -50,6 +50,12 @@ describe('rewriteBlogPlaceFigures', () => {
     expect(next).toContain('living 5 to 10 minutes from the airport')
     expect(next).toContain("The median list price in Redmond is $475,000, $150,000 below Bend's $625,000.")
     expect(next).not.toContain('$100,000 to $150,000 below')
+    expect(
+      rewriteBlogPlaceFigures(
+        "Redmond is Central Oregon's fastest-growing city, with home prices about $100,000 to $150,000 below Bend's median and Roberts Field airport within city limits.",
+        gap,
+      ),
+    ).toContain("$150,000 below Bend's $625,000 median")
     expect(next).not.toContain('about 15 minutes to Bend')
     expect(next).not.toContain('living five minutes from the airport')
     expect(next).toContain('18 to 22 minutes.')

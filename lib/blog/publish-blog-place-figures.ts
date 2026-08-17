@@ -86,6 +86,10 @@ export function rewriteBlogPlaceFigures(
       /The median home price in Redmond runs about \$100,000 to \$150,000 below Bend's median\./gi,
       gap.sentence,
     )
+    next = next.replace(
+      /about \$100,000 to \$150,000 below Bend's median/gi,
+      `${formatPrice(gap.gap)} below Bend's ${formatPrice(gap.bend)} median`,
+    )
   }
 
   return next

@@ -33,6 +33,8 @@ checks.push({
     /from ['"]@\/lib\/blog\/publish-blog-place-figures['"]/.test(page) &&
     /publishBlogMedianGap\(/.test(page) &&
     /rewriteBlogPlaceFigures\(/.test(page) &&
+    /generateBlogSchema\(/.test(page) &&
+    /rewriteBlogPlaceFigures\(post\.excerpt/.test(page) &&
     /getMarketPulse\(\{ geoType: 'city', geoSlug: 'redmond' \}\)/.test(page) &&
     /getMarketPulse\(\{ geoType: 'city', geoSlug: 'bend' \}\)/.test(page),
 })
