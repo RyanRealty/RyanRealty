@@ -377,6 +377,32 @@ describe('why this list price', () => {
     expect(why.strategy).toMatch(/did not sell/)
   })
 
+  it('does not call Method 3 the list when the cover is the engine number', () => {
+    const why = whyThisListPrice({
+      subject,
+      comps,
+      market: null,
+      pricing: {
+        ...pricingConverged,
+        converged: false,
+        method3: 477000,
+        recommended: 505000,
+        priceOverride: null,
+      },
+    })
+    expect(why.coverSentence).not.toMatch(/477,000/)
+    expect(why.coverSentence).not.toMatch(/That is the number/)
+  })
+
+  it('hides the pricing-engine board note from the seller', () => {
+    const kept = clientFacingNotes(
+      ['List price is the pricing engine list ($505,000), not Method 3.', 'Closed sales in Redmond.'],
+      { ...pricingConverged, recommended: 505000, method3: 477000 },
+    )
+    expect(kept.join(' ')).not.toMatch(/pricing engine/i)
+    expect(kept).toContain('Closed sales in Redmond.')
+  })
+
   it('keeps 3480-quality why when methods converge', () => {
     const why = whyThisListPrice({
       subject: { ...subject, streetAddress: '3480 SW 45th', lastListPrice: 650000 },

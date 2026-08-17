@@ -72,7 +72,10 @@ export function clientFacingNotes(notes: readonly string[], pricing: CmaPricing)
     .filter((n) => !isClientInternalLeak(n))
     .filter((n) => !/broker should confirm|verification trace|wide price-per-square-foot range/i.test(n))
     .filter((n) => {
-      if (/method 3.*governs the recommendation/i.test(n) && pricing.priceOverride != null && pricing.recommended !== pricing.method3) {
+      if (/method 3.*governs the recommendation/i.test(n) && pricing.recommended !== pricing.method3) {
+        return false
+      }
+      if (/pricing-engine list|pricing engine/i.test(n)) {
         return false
       }
       return true
@@ -172,7 +175,7 @@ function coverSentence(input: {
   if (p.priceOverride != null && p.priceOverride > 0 && p.recommended < p.method3) {
     return `Brought to ${usd(p.recommended)} on review, under the ${usd(p.method3)} adjusted-sales number.`
   }
-  if (!p.converged) {
+  if (!p.converged && Math.abs(p.recommended - p.method3) <= 5000) {
     return `The adjusted sales land at ${usd(p.method3)}. That is the number.`
   }
   return input.hasBest

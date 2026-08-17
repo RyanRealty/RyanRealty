@@ -18,6 +18,7 @@ import { PRICING_MIN_COMPS } from '@/lib/pricing/ladder'
 import type { SelectedPricingComp } from '@/lib/pricing/match'
 import {
   describePath,
+  INDEX_MIN_N,
   marketPath,
   timeAdjustAlongPath,
   type MarketIndexPoint,
@@ -171,6 +172,155 @@ export function adjustCompAlongMarket(opts: {
   return { adjusted, path, pathNote: `${sale.address}: ${describePath(path)}` }
 }
 
+export type EngineListResult = {
+  predictedClose: number | null
+  compsImpliedClose: number | null
+  recommendedList: number | null
+  source: 'ask' | 'comps' | 'none'
+  offMarketAsk?: boolean
+}
+
+/**
+ * The only list/close formula. Listing stamps and the CMA cover both call
+ * this. Method 1/2/3 stay on the evidence board; they do not pick the list.
+ */
+export function listPriceFromEngine(opts: {
+  subjectSqft: number
+  lastAsk: number | null | undefined
+  adjusted: Array<{ ppsfTimeAdjusted: number }>
+  saleToAskRatios: number[]
+  asOfSaleToOriginal?: number | null
+  qualitySet: boolean
+  methodFallback?: number | null
+}): EngineListResult {
+  const compsImpliedClose = predictedCloseFromAdjusted(opts.subjectSqft, opts.adjusted)
+  const reconciled = reconcileAskAndComps({
+    compClose: compsImpliedClose,
+    lastAsk: opts.lastAsk,
+    qualitySet: opts.qualitySet,
+  })
+  const predictedClose = reconciled.close
+  const mid = predictedClose ?? opts.methodFallback ?? null
+  const regimeRatio =
+    opts.asOfSaleToOriginal != null && opts.asOfSaleToOriginal > 0 ? opts.asOfSaleToOriginal : null
+  const ratios = opts.saleToAskRatios.filter((n) => Number.isFinite(n) && n > 0)
+  const medianRatio =
+    regimeRatio ?? (ratios.length ? [...ratios].sort((a, b) => a - b)[Math.floor(ratios.length / 2)]! : null)
+  const recommendedList =
+    mid != null && medianRatio != null && medianRatio > 0 ? Math.round(mid / medianRatio / 1000) * 1000 : mid
+  return {
+    predictedClose,
+    compsImpliedClose,
+    recommendedList,
+    source: reconciled.source,
+    offMarketAsk: reconciled.offMarketAsk,
+  }
+}
+
+/** Write the engine list onto the CMA cover. A broker override still wins. */
+export function applyEngineRecommendedList(
+  pricing: CmaPricing,
+  engine: Pick<EngineListResult, 'recommendedList'>,
+  opts: { priceOverride?: number | null } = {},
+): CmaPricing {
+  if (opts.priceOverride != null && Number.isFinite(opts.priceOverride) && opts.priceOverride > 0) {
+    return pricing
+  }
+  const list = engine.recommendedList
+  if (list == null || !Number.isFinite(list) || list <= 0) return pricing
+  const conservative = pricing.conservative != null ? Math.min(pricing.conservative, list) : list
+  const highEnd = pricing.highEnd != null ? Math.max(pricing.highEnd, list) : list
+  return {
+    ...pricing,
+    recommended: list,
+    conservative,
+    highEnd,
+    valueLow: conservative,
+    valueHigh: highEnd,
+    notes: [
+      `List price is the pricing engine list ($${list.toLocaleString('en-US')}), not Method 3.`,
+      ...pricing.notes,
+    ],
+  }
+}
+
+function asOfIndexPoint(points: MarketIndexPoint[], asOf: string): MarketIndexPoint | null {
+  if (points.length === 0) return null
+  const cutoff = asOf.slice(0, 7) + '-01'
+  return (
+    points
+      .filter((p) => p.n >= INDEX_MIN_N && p.month <= cutoff)
+      .sort((a, b) => b.month.localeCompare(a.month))[0] ?? null
+  )
+}
+
+/** CMA build cover: same engine list as the listing stamp, one call site. */
+export function applyEngineCoverToCmaPricing(
+  pricing: CmaPricing,
+  input: {
+    subjectSqft: number
+    lastAsk: number | null | undefined
+    adjusted: Array<{ ppsfTimeAdjusted: number }>
+    pricingSales: Array<{ closePrice: number; originalAsk: number | null; selectionTier?: string }>
+    marketIndex: MarketIndexPoint[]
+    asOf: string
+    usedTiers: string[]
+    priceOverride?: number | null
+  },
+): CmaPricing {
+  const asOfPpsf = asOfIndexPoint(input.marketIndex, input.asOf)
+  const saleToAskRatios = input.pricingSales
+    .map((s) => (s.originalAsk && s.originalAsk > 0 ? s.closePrice / s.originalAsk : null))
+    .filter((n): n is number => n != null && Number.isFinite(n) && n > 0)
+  const qualitySet =
+    input.pricingSales.length >= 3 &&
+    (input.pricingSales.every((s) => (s.selectionTier ?? '').startsWith('subdivision-')) ||
+      (input.usedTiers.length > 0 && input.usedTiers.every((t) => t.startsWith('subdivision-'))))
+  const engine = listPriceFromEngine({
+    subjectSqft: input.subjectSqft,
+    lastAsk: input.lastAsk,
+    adjusted: input.adjusted,
+    saleToAskRatios,
+    asOfSaleToOriginal: asOfPpsf?.saleToOriginal,
+    qualitySet,
+    methodFallback: pricing.method3 ?? pricing.method1Mid,
+  })
+  return applyEngineRecommendedList(pricing, engine, { priceOverride: input.priceOverride })
+}
+
+/** computePricing + engine cover. Keeps lib/cma/build.ts from growing. */
+export function priceCmaSet(args: {
+  subject: CmaSubject
+  adjusted: CmaAdjustedComp[]
+  market: CmaMarketContext | null
+  input: { sellerImprovementsTotal?: number | null; priceOverride?: number | null }
+  selection: {
+    pricingSales?: Array<{ closePrice: number; originalAsk: number | null; selectionTier?: string }>
+    tiersUsed: string[]
+  }
+  marketIndex: MarketIndexPoint[]
+  asOf: string
+  /** Build path passes the shared `computePricing` so the valuation-engine gate stays honest. */
+  computePricing?: typeof computePricing
+}): CmaPricing | null {
+  const priceFn = args.computePricing ?? computePricing
+  const pricing = priceFn(args.subject, args.adjusted, args.market, {
+    sellerImprovementsTotal: args.input.sellerImprovementsTotal ?? null,
+    priceOverride: args.input.priceOverride ?? null,
+  })
+  if (!pricing) return null
+  return applyEngineCoverToCmaPricing(pricing, {
+    subjectSqft: args.subject.sqft ?? 0,
+    lastAsk: args.subject.lastListPrice,
+    adjusted: args.adjusted,
+    pricingSales: args.selection.pricingSales ?? [],
+    marketIndex: args.marketIndex,
+    asOf: args.asOf,
+    usedTiers: args.selection.tiersUsed,
+    priceOverride: args.input.priceOverride,
+  })
+}
+
 export function estimateClosePrice(opts: {
   subject: CmaSubject
   subjectStory: StoryClass
@@ -205,42 +355,35 @@ export function estimateClosePrice(opts: {
     return row.adjusted
   })
   const pricing = computePricing(opts.subject, adjusted, opts.market)
-  const compClose = predictedCloseFromAdjusted(opts.subject.sqft ?? 0, adjusted)
   const qualitySet =
     opts.comps.length >= 3 && opts.comps.every((c) => c.selectionTier.startsWith('subdivision-'))
-  const reconciled = reconcileAskAndComps({
-    compClose,
+  const asOfPpsf = asOfIndexPoint(opts.points, opts.asOf)
+  const ratios = opts.comps
+    .map((c) => (c.originalAsk && c.originalAsk > 0 ? c.closePrice / c.originalAsk : null))
+    .filter((n): n is number => n != null && n > 0)
+  const engine = listPriceFromEngine({
+    subjectSqft: opts.subject.sqft ?? 0,
     lastAsk: opts.subject.lastListPrice,
+    adjusted,
+    saleToAskRatios: ratios,
+    asOfSaleToOriginal: asOfPpsf?.saleToOriginal,
     qualitySet,
+    methodFallback: pricing?.method3 ?? pricing?.method1Mid ?? null,
   })
-  const predictedClose = reconciled.close
+  const predictedClose = engine.predictedClose
   attachSellerNet(pricing, opts.comps, predictedClose)
   if (pricing && predictedClose != null) {
     pricing.notes.unshift(
-      reconciled.source === 'ask'
+      engine.source === 'ask'
         ? `Close estimate is 98% of the last ask, $${predictedClose.toLocaleString('en-US')}.${
-            reconciled.offMarketAsk
+            engine.offMarketAsk
               ? ' The last ask is more than 40% away from the same-subdivision close. Review the list price before a seller signs it.'
               : ''
           }`
         : `Close estimate is the median time-adjusted price per square foot of the comparable set, applied to the subject's living area ($${predictedClose.toLocaleString('en-US')}). No last ask on the subject, so the comparable path is the close.`,
     )
   }
-  const asOfPpsf = opts.points.length
-    ? opts.points
-        .filter((p) => p.n >= 8 && p.month <= opts.asOf.slice(0, 7) + '-01')
-        .sort((a, b) => b.month.localeCompare(a.month))[0]
-    : null
-  const ratios = opts.comps
-    .map((c) => (c.originalAsk && c.originalAsk > 0 ? c.closePrice / c.originalAsk : null))
-    .filter((n): n is number => n != null && n > 0)
   const days = opts.comps.map((c) => c.daysToOffer).filter((n): n is number => n != null && n >= 0)
-  const mid = predictedClose ?? pricing?.method3 ?? pricing?.method1Mid ?? null
-  const regimeRatio = asOfPpsf?.saleToOriginal && asOfPpsf.saleToOriginal > 0 ? asOfPpsf.saleToOriginal : null
-  const medianRatio = regimeRatio
-    ?? (ratios.length ? [...ratios].sort((a, b) => a - b)[Math.floor(ratios.length / 2)]! : null)
-  const recommendedList =
-    mid != null && medianRatio != null && medianRatio > 0 ? Math.round(mid / medianRatio / 1000) * 1000 : mid
   const medianDaysToOffer =
     asOfPpsf?.daysToOffer != null
       ? Math.round(asOfPpsf.daysToOffer)
@@ -249,5 +392,13 @@ export function estimateClosePrice(opts: {
         : null
   const regime =
     regimes.size === 0 ? 'flat' : regimes.size === 1 ? ( [...regimes][0] as 'rising' | 'flat' | 'falling') : 'mixed'
-  return { pricing, predictedClose, compsImpliedClose: compClose, recommendedList, medianDaysToOffer, pathNotes, regime }
+  return {
+    pricing,
+    predictedClose,
+    compsImpliedClose: engine.compsImpliedClose,
+    recommendedList: engine.recommendedList,
+    medianDaysToOffer,
+    pathNotes,
+    regime,
+  }
 }
