@@ -7,8 +7,8 @@ export function immersiveStylesheet(): string {
   return `
 :root{--navy:#102742;--cream:#faf8f4;--ink:rgba(16,39,66,1);--ink70:rgba(16,39,66,.7);--ink12:rgba(16,39,66,.12)}
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:Geist,system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;background:var(--cream);border-radius:0;min-height:100%}
+body{font-family:Geist,system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;border-radius:0;min-height:100svh;margin:0}
 img{max-width:100%;display:block;border-radius:0}
 .page-num,.pg-num,.pageNumber,.pg-footer,.toc .p{display:none}
 .sc{min-height:100svh;display:flex;align-items:center;padding:96px 24px;position:relative}
