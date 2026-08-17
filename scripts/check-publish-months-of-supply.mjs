@@ -62,7 +62,22 @@ const surfaces = [
     path: 'app/api/reports/export/route.ts',
     label: 'report export gates live MOS through publishMonthsOfSupply',
   },
+  {
+    path: 'lib/blog/publish-blog-current-mos.ts',
+    label: 'blog current-MOS rewriter gates figures through publishMonthsOfSupply',
+  },
 ]
+
+const blogPage = src('app/blog/[slug]/page.tsx')
+checks.push({
+  label: 'blog post page rewrites current MOS from pulse and sits on the v3 gutter',
+  ok:
+    /from ['"]@\/lib\/blog\/publish-blog-current-mos['"]/.test(blogPage) &&
+    /publishBlogCurrentMos\(/.test(blogPage) &&
+    /getMarketPulse\(/.test(blogPage) &&
+    /v3-article-island/.test(blogPage) &&
+    /V3ArticleIsland\.css/.test(blogPage),
+})
 
 for (const surface of surfaces) {
   const text = src(surface.path)
