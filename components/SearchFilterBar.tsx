@@ -22,6 +22,10 @@ const AllFiltersSheet = dynamic(() => import('@/components/search/AllFiltersShee
   loading: () => null,
 })
 import { parseSearchQuery, searchHrefForQuery } from '@/lib/parse-search-query'
+import {
+  publishSearchStatusChip,
+  SEARCH_STATUS_FILTER_CHIPS,
+} from '@/lib/search/publish-search-status'
 import { listingsBrowsePath } from '@/lib/slug'
 import { cn } from '@/lib/utils'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -32,13 +36,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 
-const STATUS_OPTIONS = [
-  { value: 'active', label: 'For Sale' },
-  { value: 'active_and_pending', label: 'Active + under contract' },
-  { value: 'pending', label: 'Under contract only' },
-  { value: 'closed', label: 'Sold' },
-  { value: 'all', label: 'All statuses' },
-] as const
+const STATUS_OPTIONS = SEARCH_STATUS_FILTER_CHIPS
 
 const PRICE_PRESETS = [
   { label: 'Any', min: undefined, max: undefined },
@@ -312,7 +310,7 @@ export default function SearchFilterBar(props: SearchFilterBarProps) {
           aria-expanded={open === 'status'}
           aria-haspopup="true"
         >
-          For Sale
+          {publishSearchStatusChip(props.statusFilter)}
           <HugeiconsIcon icon={ArrowDown01Icon} className="size-3.5 opacity-70" aria-hidden />
         </Button>
         {open === 'status' && (

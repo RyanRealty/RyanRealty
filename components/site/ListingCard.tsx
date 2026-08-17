@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
  * Mirrors design_system/ryan-realty/ui_kits/website/index.html §featured-listings .listing.
  */
 
-export type ListingBadge = 'hot' | 'new' | 'drop' | 'open' | 'sold' | 'video'
+export type ListingBadge = 'hot' | 'new' | 'drop' | 'open' | 'sold' | 'pending' | 'video'
 
 export type ListingCardData = {
   listingKey: string
@@ -73,6 +73,7 @@ const BADGE_CLASS: Record<ListingBadge, string> = {
   drop: 'bg-primary text-primary-foreground',
   open: 'bg-card text-foreground border border-border',
   sold: 'bg-primary text-primary-foreground',
+  pending: 'bg-primary text-primary-foreground',
   video: 'bg-card/95 text-primary border border-border',
 }
 

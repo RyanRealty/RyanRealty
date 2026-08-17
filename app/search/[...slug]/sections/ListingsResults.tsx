@@ -1,5 +1,6 @@
 import { type ListingCardData } from '@/components/site/ListingCard'
 import HideAwareListingGrid, { type HideAwareItem } from '@/components/search/HideAwareListingGrid'
+import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
 import SearchListingsToolbar from '../../../../components/SearchListingsToolbar'
 import { listingTileHref } from '../../../../lib/slug'
 import { type getListingsWithAdvanced } from '../../../actions/listings'
@@ -83,7 +84,9 @@ export function ListingsResults({
             beds: listing.BedroomsTotal ?? null,
             baths: listing.BathroomsTotal ?? null,
             sqft: listing.TotalLivingAreaSqFt ?? null,
-            ...(key && priceChangeKeys.has(key) ? { badge: { kind: 'drop' as const, label: 'Price drop' } } : {}),
+            badge:
+              publishListingStatusBadge(listing.StandardStatus) ??
+              (key && priceChangeKeys.has(key) ? { kind: 'drop' as const, label: 'Price drop' } : undefined),
           }
           return { card, ListingKey: listing.ListingKey ?? null, ListNumber: listing.ListNumber ?? null }
         })}

@@ -37,6 +37,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import AreaPicker from '@/components/search/AreaPicker'
 import ListingCard, { type ListingBadge } from '@/components/site/ListingCard'
+import { publishListingStatusBadge } from '@/lib/search/publish-search-status'
 import ListingCardHideControl from '@/components/listing/ListingCardHideControl'
 
 const SearchMapClustered = dynamic(() => import('@/components/SearchMapClustered'), {
@@ -122,22 +123,16 @@ const NEW_LISTING_WINDOW_DAYS = 7
 
 /**
  * Map viewport badge → ListingCard badge prop.
- * Only kinds that exist on ListingBadge ship; free-form status strings (Pending,
- * Active Under Contract, …) are omitted rather than inventing a kind.
- * `nowMs` is a server-passed wall-clock prop so SSR HTML matches hydration
- * (do not sample the clock inside this pure helper).
+ * Non-active MLS status uses publishListingStatusBadge (Pending / Under
+ * contract / Sold). `nowMs` is a server-passed wall-clock prop so SSR HTML
+ * matches hydration (do not sample the clock inside this pure helper).
  */
 function cardBadge(
   l: ListingTileRow,
   nowMs: number
 ): { kind: ListingBadge; label: string } | undefined {
-  const status = l.StandardStatus?.trim()
-  if (status && status !== 'Active' && status !== 'Closed') {
-    const lower = status.toLowerCase()
-    if (lower === 'sold' || lower.includes('sold')) return { kind: 'sold', label: status }
-    // No ListingBadge kind for pending / AUC / contingent — omit.
-    return undefined
-  }
+  const statusBadge = publishListingStatusBadge(l.StandardStatus)
+  if (statusBadge) return statusBadge
   if (l.OnMarketDate) {
     const days = (nowMs - new Date(l.OnMarketDate).getTime()) / 86_400_000
     if (Number.isFinite(days) && days >= 0 && days <= NEW_LISTING_WINDOW_DAYS) {
