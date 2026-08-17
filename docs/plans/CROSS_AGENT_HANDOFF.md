@@ -4,7 +4,7 @@
 
 # Current — 2026-08-17 (cursor-loop-chain) — place-pages hero-empty / regional / ask slice
 
-**Surface:** Cursor cloud `bc-2843f15f` (`cursor/loop-chain-2026-08-17t09-06-ba29`). **Time:** 2026-08-17 ~09:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 458). Claimed parent only. No product change (all 8 rejected). Handoff + probe scripts on this branch. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open**. Loop stays **ARMED**. Do not start a new ship class from this session.
+**Surface:** Cursor cloud `bc-2843f15f` (`cursor/loop-chain-2026-08-17t09-06-ba29`). **Time:** 2026-08-17 ~09:45 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 458). Claimed parent only. Docs/probe **`2d8accfe5`** landed on **`main`**. Vercel Production **READY** (`BMKP2RCrCs7BAKvShrAykFtDpjMy`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (450 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
 **Done**
 - Slice (8 place-pages lines) at 390+1280: Calaveras / Blakley / Aspenwood / Canyon Breeze / Aubrey Heights hero-count vs empty list **rejected** (hero silent; lists 5 / 8 / 1 / 1 / 1). 1925 Townhomes 155 Closed + $756k/18 days **rejected** (sales history 33 SFR; 1 card $999,000). Bend Park $756k/18 days **rejected** (hero silent; 4 cards). Summit West $2,035,000 vs $2,034,500 **rejected** (list + ticker both $2,034,500 / $1,999,900).
