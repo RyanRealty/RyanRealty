@@ -343,16 +343,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
       : `/cities/${marketGeo.geoSlug}`
     : '/housing-market'
 
-  // Videos and virtual tours are DIFFERENT media (Matt). A marketing video (or
-  // the photo grid) is the hero; interactive 3D / virtual tours get their own
-  // viewer in the main column so a tour-only listing still leads with photos.
+  // Videos ≠ virtual tours (Matt): hero gets reels; tours get their own viewer.
   const virtualTours = videos.filter((v) => v.isVirtualTour)
   const reelVideos = videos.filter((v) => !v.isVirtualTour)
   const contactKey =
-    publishListingContactKey({
-      listNumber: listing.listNumber,
-      listingKey: listing.listingKey,
-    }) ?? listing.listingKey
+    publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
+    listing.listingKey
   const hero = (
     <ListingHero
       photos={photos}
@@ -493,15 +489,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
     />
   ) : null
 
-  // -------------------------------------------------------------------------
-  // JSON-LD — RealEstateListing + BreadcrumbList.
-  // Values come exclusively from the already-fetched listing object (§0).
-  // Media suppression: listing.photoUrl is already null when suppressed, and
-  // photos[] comes from getListingPhotos which also respects the flag —
-  // so we use the same gated sources here without any additional guard.
-  // -------------------------------------------------------------------------
-  // Canonical path — same helper + same inputs the generateMetadata export uses
-  // so the JSON-LD url matches the sitemap + canonical link exactly.
+  // JSON-LD from the fetched listing only (§0). Photos already honor suppression.
+  // Canonical path matches generateMetadata / sitemap / canonical link.
   const canonicalSubdivisionForLd =
     listing.subdivisionName && listing.subdivisionName !== 'N/A' ? listing.subdivisionName : null
   const canonicalPath = listingDetailPath(
