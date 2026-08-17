@@ -137,7 +137,6 @@ export default async function CommunitiesPage() {
         // Registry resorts print the alias-aware pair (same set as
         // /communities/{slug}). Snapshot pending is a different set — withhold.
         activeCount: resortFigures.get(r.slug)?.activeCount ?? idx?.activeCount ?? 0,
-        pendingCount: null,
         medianPrice: resortFigures.get(r.slug)?.medianListPrice ?? idx?.medianPrice ?? null,
       }
     }),
@@ -373,16 +372,6 @@ export default async function CommunitiesPage() {
                             Median list
                           </p>
                         </div>
-                        {r.pendingCount != null && r.pendingCount > 0 ? (
-                          <div>
-                            <p className="display mono-num" style={{ fontSize: 'clamp(1.6rem,4vw,2.3rem)', lineHeight: 1 }}>
-                              {r.pendingCount.toLocaleString()}
-                            </p>
-                            <p className="mono-lab" style={{ color: 'var(--navy-70)', marginTop: '7px' }}>
-                              Pending
-                            </p>
-                          </div>
-                        ) : null}
                       </div>
 
                       {/* Links into the community */}
