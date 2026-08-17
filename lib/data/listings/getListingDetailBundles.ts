@@ -10,6 +10,7 @@ import { supabaseAnon } from '@/lib/data/client'
 import { fetchPagedRows } from '@/lib/supabase/paginate'
 import { toIsoDate, to24hTime } from '@/lib/data/open-houses/getUpcomingOpenHouses'
 import { resolveCanonicalListingKey } from '@/lib/data/listings/resolveCanonicalListingKey'
+import { publishListingHistory } from '@/lib/listing/publish-listing-history'
 
 export type ListingDetailPhotoRow = {
   id: string
@@ -351,13 +352,48 @@ export async function getListingDetailHistory(
   const canonicalKey = await resolveCanonicalListingKey(listingKey)
   const sb = supabaseAnon()
   if (!sb) return []
-  const { data } = await sb
-    .from('listing_history')
-    .select('id, listing_key, event, event_date, price, price_change, description, raw')
-    .eq('listing_key', canonicalKey)
-    .order('event_date', { ascending: true })
-    .limit(100)
-  return (data ?? []) as ListingHistoryEventRow[]
+  const [historyRes, statusRes, priceRes, listingRes] = await Promise.all([
+    sb
+      .from('listing_history')
+      .select('id, listing_key, event, event_date, price, price_change, description, raw')
+      .eq('listing_key', canonicalKey)
+      .order('event_date', { ascending: true })
+      .limit(100),
+    sb
+      .from('status_history')
+      .select('old_status, new_status, changed_at')
+      .eq('listing_key', canonicalKey)
+      .order('changed_at', { ascending: true })
+      .limit(100),
+    sb
+      .from('price_history')
+      .select('old_price, new_price, changed_at, change_pct')
+      .eq('listing_key', canonicalKey)
+      .order('changed_at', { ascending: true })
+      .limit(100),
+    sb
+      .from('listings')
+      .select('OnMarketDate, ListPrice')
+      .eq('ListingKey', canonicalKey)
+      .maybeSingle(),
+  ])
+  const listingRow = listingRes.data as { OnMarketDate?: string | null; ListPrice?: number | null } | null
+  const published = publishListingHistory({
+    listingHistory: (historyRes.data ?? []) as ListingHistoryEventRow[],
+    statusHistory: statusRes.data ?? [],
+    priceHistory: priceRes.data ?? [],
+    onMarketDate: listingRow?.OnMarketDate ?? null,
+    listPrice: listingRow?.ListPrice ?? null,
+  })
+  return published.map((row, i) => ({
+    id: `pub-hist-${canonicalKey}-${i}`,
+    listing_key: canonicalKey,
+    event: row.event,
+    event_date: row.event_date,
+    price: row.price ?? null,
+    price_change: row.price_change ?? null,
+    description: row.description ?? null,
+  }))
 }
 
 /** Community + neighborhood + city resolution by community slug. */

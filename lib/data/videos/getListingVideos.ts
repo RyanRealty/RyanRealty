@@ -26,6 +26,7 @@ import { makeResilientCached } from '@/lib/data/cache/resilient'
 import { supabaseAnon } from '@/lib/data/client'
 import { normalizeEmbed } from '@/lib/video-embed'
 import type { VideoEmbed, VideoSource } from '@/lib/data/types/video'
+import { isListingVirtualTour } from '@/lib/listing/publish-listing-hero-video'
 
 // normalizeEmbed moved to the pure (client-safe) lib/video-embed module so the
 // VideoListingCard client component can resolve a scalar tour URL to the same
@@ -261,7 +262,13 @@ async function fetchVideos(listingKey: string): Promise<VideoEmbed[]> {
           // (Dropbox, Aryeo) for others. deriveRawUrl handles all shapes;
           // normalizeEmbed picks the embeddable form (or a watch-link).
           const hint = typeof vid.Source === 'string' ? vid.Source : null
-          pushEmbed(deriveRawUrl(vid), hint)
+          const name = typeof vid.Name === 'string' ? vid.Name : null
+          const raw = deriveRawUrl(vid)
+          pushEmbed(
+            raw,
+            hint,
+            isListingVirtualTour({ url: raw, name, hint }) ? { isVirtualTour: true } : {},
+          )
         }
       }
 
@@ -326,7 +333,9 @@ export const getListingVideos = (listingKey: string): Promise<VideoEmbed[]> =>
     // of pinning empty for the videos window. v9 entries may be poisoned.
     // v11 bump 2026-06-18 — media_suppressed gate added (owner media-removal
     // requests); evicts entries cached before the suppression check existed.
-    ['listing-videos-v11', listingKey],
+    // v12 bump 2026-08-17 — details.Videos 3D / Zillow-pano rows tagged
+    // isVirtualTour so the hero Unmute path stays on marketing reels.
+    ['listing-videos-v12', listingKey],
     {
       revalidate: CACHE_WINDOWS.videos,
       tags: [cacheTag.listing(listingKey), cacheTag.videos],
