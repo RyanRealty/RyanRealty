@@ -225,7 +225,7 @@ After every public-UI step: recapture home, browse, city, neighborhood, Tetherow
 
 ### 1. Arrival and memory — LIVE (quiz unmounted; Matt CHANGE 2026-08-16)
 
-V3Chrome is the one public header. Buy/Sell/Look is not a nav and does not render on `/`. Intent declaration is left for Google sign-on. Welcome back may still name the last thing when that island is mounted; do not remount a second bar. Stitch Google email / `rr_vid` / person before any ask. No modal.
+V3Chrome is the one public header. Buy/Sell/Look is not a nav and does not render on `/`. Intent declaration is left for Google sign-on. Do not remount a second bar. Stitch Google email / `rr_vid` / person before any ask. No modal.
 
 ### 2. Field cards and maps (Buy) — LIVE (Field earlier; sentence `65d22965`)
 

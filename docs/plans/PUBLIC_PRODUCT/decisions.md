@@ -722,8 +722,9 @@ surface. Wire the job into Field / Instrument / Ledger / Stage / Sheet /
 Quiet, or into the search and auth that already exist. A new
 `components/**/*.tsx` that draws its own chrome is a lock break.
 
-Leftover files that already shipped against this (`ArrivalIntent.client.tsx`,
-`SentenceSearch.tsx`, `GoogleCommsCard.tsx`) do not license a next one.
+Leftover files that already shipped against this (`SentenceSearch.tsx`,
+`GoogleCommsCard.tsx`) do not license a next one. ArrivalIntent.client.tsx
+was deleted 2026-08-17 (Matt CHANGE / R-218) — do not recreate it.
 Do not migrate orphan charts onto V3Chart just to keep a component alive.
 
 ## 2026-08-14 — Visual lock amendment: one shop, five place rhythms (Matt)
