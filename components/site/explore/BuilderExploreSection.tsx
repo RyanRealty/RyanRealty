@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ListingTile } from '@/lib/data/types/listing'
 import { listingDetailPath, slugify } from '@/lib/slug'
-import { formatPrice } from '@/lib/format/money'
+import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
 
 type Props = {
   builderName: string
@@ -53,6 +53,7 @@ export function BuilderExploreSection({ builderName, tiles }: Props) {
               { city: t.city, subdivision: t.subdivisionName },
               { mlsNumber: t.listNumber },
             )
+            const ask = publishListingAsk(t.listPrice)
             return (
               <li
                 key={t.listingKey}
@@ -80,7 +81,7 @@ export function BuilderExploreSection({ builderName, tiles }: Props) {
                     ) : null}
                   </span>
                   <span className="mono-num" style={{ color: 'var(--navy-70)', flexShrink: 0 }}>
-                    {formatPrice(t.listPrice)}
+                    {ask ? formatListingAsk(ask.ask) : '—'}
                   </span>
                 </Link>
               </li>

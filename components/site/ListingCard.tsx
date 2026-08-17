@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { formatPrice } from '@/lib/format/money'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
+import { publishListingRooms } from '@/lib/listing/publish-listing-rooms'
 
 /**
  * Site v2 listing card — 4:3 photo on top, badge overlaid, info block below
@@ -97,6 +98,8 @@ export default function ListingCard({
   /** LCP: pass for the first few above-the-fold cards on search results (P7). */
   priority?: boolean
 }) {
+  const publishedAsk = publishListingAsk(listing.price)
+  const rooms = publishListingRooms({ beds: listing.beds, baths: listing.baths, sqft: listing.sqft })
   return (
     <Link
       href={listing.href}
@@ -134,14 +137,14 @@ export default function ListingCard({
 
       <div className="px-4 pt-3.5 pb-4">
         <div className="text-[22px] font-bold tabular-nums tracking-[-0.01em] text-foreground">
-          {formatPrice(listing.price)}
+          {publishedAsk ? formatListingAsk(publishedAsk.ask) : '—'}
         </div>
         <div className="text-[13px] text-foreground mt-0.5">{listing.addressLine}</div>
         <div className="text-xs text-muted-foreground mt-px">{listing.cityLine}</div>
         <MetaRow
-          beds={listing.beds}
-          baths={listing.baths}
-          sqft={listing.sqft}
+          beds={rooms.beds}
+          baths={rooms.baths}
+          sqft={rooms.sqft}
           pricePerSqft={showPricePerSqft ? listing.pricePerSqft : null}
         />
       </div>

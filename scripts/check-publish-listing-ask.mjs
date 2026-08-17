@@ -23,6 +23,8 @@ checks.push({
     /export function publishListingAsk/.test(helper) &&
     /export function publishListingDrop/.test(helper) &&
     helper.includes('original - ask') &&
+    helper.includes('MIN_PUBLIC_SALE_ASK') &&
+    helper.includes('ask < MIN_PUBLIC_SALE_ASK') &&
     !helper.includes('Math.round(n / 1000)'),
 })
 
@@ -39,8 +41,30 @@ checks.push({
 
 const page = src('app/listing/[listingKey]/page.tsx')
 checks.push({
-  label: 'listing JSON-LD offer uses listing.listPrice (exact ask)',
-  ok: /listPrice: listing\.listPrice/.test(page),
+  label: 'listing JSON-LD offer uses publishedAsk (exact ask, withhold crumbs)',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(page) &&
+    /publishListingAsk\(listing\.listPrice\)/.test(page) &&
+    /listPrice: publishedAsk\?\.ask \?\? undefined/.test(page),
+})
+
+const card = src('components/site/ListingCard.tsx')
+checks.push({
+  label: 'ListingCard gates list price through publishListingAsk',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(card) &&
+    /publishListingAsk\(/.test(card) &&
+    /formatListingAsk\(/.test(card) &&
+    !/formatPrice\(listing\.price\)/.test(card),
+})
+
+const video = src('components/site/VideoListingCard.tsx')
+checks.push({
+  label: 'VideoListingCard gates list price through publishListingAsk',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(video) &&
+    /publishListingAsk\(/.test(video) &&
+    !/formatPrice\(listing\.price\)/.test(video),
 })
 
 const failed = checks.filter((c) => !c.ok)

@@ -46,7 +46,9 @@ import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentit
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
+import { publishListingAsk } from '@/lib/listing/publish-listing-ask'
 import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
+import { publishListingRooms } from '@/lib/listing/publish-listing-rooms'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
@@ -349,15 +351,19 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const contactKey =
     publishListingContactKey({ listNumber: listing.listNumber, listingKey: listing.listingKey }) ??
     listing.listingKey
+  const publishedAsk = publishListingAsk(listing.listPrice)
+  const publishedRooms = publishListingRooms({
+    beds: listing.beds, baths: listing.baths, sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
+  })
   const hero = (
     <ListingHero
       photos={photos}
       videos={reelVideos}
       addressLine={street}
-      price={listing.listPrice}
-      beds={listing.beds}
-      baths={listing.baths}
-      sqft={listing.sqft ?? listing.totalLivingAreaSqFt}
+      price={publishedAsk?.ask ?? null}
+      beds={publishedRooms.beds}
+      baths={publishedRooms.baths}
+      sqft={publishedRooms.sqft}
       lat={listing.lat}
       lng={listing.lng}
     />
@@ -531,12 +537,8 @@ export default async function ListingDetailPage({ params }: PageProps) {
         ? `${street}, ${listing.city ?? ''}, OR ${listing.postalCode ?? ''}`.trim().replace(/,\s*$/, '')
         : `Listing ${listingKey}`,
       description: listingShareSummary({
-        price: listing.listPrice,
-        beds: listing.beds,
-        baths: listing.baths,
-        sqft: listing.sqft ?? listing.totalLivingAreaSqFt,
-        address: street || undefined,
-        city: street ? undefined : (listing.city ?? undefined),
+        price: publishedAsk?.ask ?? null, beds: publishedRooms.beds, baths: publishedRooms.baths, sqft: publishedRooms.sqft,
+        address: street || undefined, city: street ? undefined : (listing.city ?? undefined),
       }) || undefined,
       url: canonicalPath,
       address: {
@@ -550,12 +552,12 @@ export default async function ListingDetailPage({ params }: PageProps) {
         listing.lat != null && listing.lng != null
           ? { lat: listing.lat, lng: listing.lng }
           : undefined,
-      beds: listing.beds ?? undefined,
-      baths: listing.baths ?? undefined,
-      livingAreaSqft: (listing.sqft ?? listing.totalLivingAreaSqFt) ?? undefined,
+      beds: publishedRooms.beds ?? undefined,
+      baths: publishedRooms.baths ?? undefined,
+      livingAreaSqft: publishedRooms.sqft ?? undefined,
       lotSizeSqft: listing.lotSizeSqft ?? undefined,
       yearBuilt: listing.yearBuilt ?? undefined,
-      listPrice: listing.listPrice ?? undefined,
+      listPrice: publishedAsk?.ask ?? undefined,
       // Photos: already gated by media_suppressed in getListingPhotos().
       // Cap at 5 per schema.org convention (matching the builder's own slice).
       photos: photos.length > 0 ? photos.slice(0, 5).map((p) => p.url) : undefined,

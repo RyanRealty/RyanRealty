@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { KbListingMap, type KbMapGeo } from '@/components/site/kb/KbListingMap.client'
-import { formatPrice } from '@/lib/format/money'
+import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
 import { placeListShowingLabel } from '@/lib/explore/place-list-showing'
 
 export type PlaceMapListRow = {
@@ -100,6 +100,7 @@ export function PlaceMapListSplit({
               <ul className="m-0 list-none p-0">
                 {list.map((row) => {
                   const selected = activeKey === row.key
+                  const ask = publishListingAsk(row.price)
                   return (
                     <li
                       key={row.key}
@@ -136,7 +137,7 @@ export function PlaceMapListSplit({
                         )}
                         <div className="min-w-0 flex-1">
                           <div className="mono-num text-base font-bold">
-                            {formatPrice(row.price)}
+                            {ask ? formatListingAsk(ask.ask) : '—'}
                           </div>
                           <div className="truncate font-semibold" style={{ fontSize: '0.85rem' }}>
                             {row.title}

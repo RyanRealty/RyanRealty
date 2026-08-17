@@ -4,6 +4,7 @@ import {
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
 import { publishListingHoa } from '@/lib/listing/publish-listing-hoa'
+import { publishListingRooms } from '@/lib/listing/publish-listing-rooms'
 import { cn } from '@/lib/utils'
 
 /**
@@ -124,23 +125,28 @@ function txt(v: string | null | undefined): v is string {
 function buildGroups(listing: Props['listing']): Group[] {
   const groups: Group[] = []
 
-  const sqft = listing.sqft ?? listing.totalLivingAreaSqFt ?? null
+  const rooms = publishListingRooms({
+    beds: listing.beds,
+    baths: listing.baths,
+    sqft: listing.sqft ?? listing.totalLivingAreaSqFt ?? null,
+  })
+  const sqft = rooms.sqft
   const subType = txt(listing.propertySubType) ? listing.propertySubType : null
   const ptypeLabel = propertyTypeLabel(subType) ?? propertyTypeLabel(listing.propertyType)
 
   // ── Overview ──────────────────────────────────────────────────────────────
   const overview: Spec[] = []
-  if (num(listing.beds)) overview.push({ label: 'Bedrooms', value: <TabularNumber value={listing.beds} /> })
-  if (num(listing.baths))
+  if (num(rooms.beds)) overview.push({ label: 'Bedrooms', value: <TabularNumber value={rooms.beds} /> })
+  if (num(rooms.baths))
     // Trailing .0 on a whole bath count read as a formatting bug ("2.0") next
-    // to the whole-number bedroom count beside it (design-audit P3) — only
+    // to the whole-number bedroom count beside it (design-audit P3). Only
     // show a decimal when the value genuinely has one (half-baths).
     overview.push({
       label: 'Bathrooms',
       value: (
         <TabularNumber
-          value={listing.baths as number}
-          fractionDigits={Number.isInteger(listing.baths) ? 0 : 1}
+          value={rooms.baths as number}
+          fractionDigits={Number.isInteger(rooms.baths) ? 0 : 1}
         />
       ),
     })

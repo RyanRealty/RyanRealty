@@ -6,9 +6,18 @@
  * A drop line rounded the delta separately ($16,000 from $645,000 = $629,000
  * next to ask $630,000 / JSON-LD $629,500). Fleet listing-detail punch 2026-08-17.
  *
- * The published ask is the exact whole-dollar ListPrice. Drop is exact
- * original minus exact ask. Do not thousand-round either under the same label.
+ * Spark type G (commercial) stores lease crumbs in ListPrice ($1.08 / $1.20 /
+ * $2.40). `formatPrice` thousand-rounds those to $0 on homes-for-sale cards
+ * (725 Broadway, 61400 American, 20748 Carmen). A public sale ask is the
+ * exact whole-dollar ListPrice at or above MIN_PUBLIC_SALE_ASK. Below that
+ * floor, withhold — do not print $0 or $2 as a home price.
+ *
+ * Drop is exact original minus exact ask. Do not thousand-round either
+ * under the same label.
  */
+
+/** Spark lease crumbs and $0 ListPrice are not a public home ask. */
+export const MIN_PUBLIC_SALE_ASK = 1000
 
 export type PublishedListingAsk = {
   ask: number
@@ -27,7 +36,7 @@ function asPositivePrice(value: number | null | undefined): number | null {
 
 export function publishListingAsk(listPrice: number | null | undefined): PublishedListingAsk | null {
   const ask = asPositivePrice(listPrice)
-  if (ask == null) return null
+  if (ask == null || ask < MIN_PUBLIC_SALE_ASK) return null
   return { ask }
 }
 
