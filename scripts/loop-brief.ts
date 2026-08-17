@@ -19,7 +19,7 @@ import { config } from 'dotenv'
 import { DOMAIN_REQUIRED_READS, type CompanyImprovementDomain } from '../lib/data/loop/domains'
 import { runFleetIntake } from '../lib/data/loop/fleet-intake-core'
 import { collectCompanyScoreboardSignals } from '../lib/data/loop/signals'
-import { selectShipClass } from '../lib/data/loop/ship-class'
+import { formatPunchSliceBrief, selectShipClass } from '../lib/data/loop/ship-class'
 import { fleetNodePriority, isStaleInProgress, type WorkNodeState } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
@@ -196,22 +196,32 @@ async function main() {
     const shipNodes = ship.nodes
       .map((s) => eligible.find((n) => n.id === s.id))
       .filter((n): n is NodeRow => n != null)
-    push(`class: ${ship.key} · ${shipNodes.length} node(s)${ship.remaining ? ` · ${ship.remaining} leftover sibling(s) stay open for the next ship of this class` : ''}`)
-    push('DO NOT run npm run push or deploy:verify until every node below is locally accepted or blocked.')
-    push('Then ONE push, ONE deploy:verify, complete all shipped nodes with that READY SHA.')
-    push(`claim them: claimShipClass([${shipNodes.map((n) => n.id).join(', ')}], owner)  (lib/data/loop/work-graph.ts)`)
     const reads = DOMAIN_REQUIRED_READS[next.domain as CompanyImprovementDomain] ?? []
-    push('load first (this animal\'s discipline — read before working):')
-    for (const r of reads) push(`  - ${r}`)
-    push('  - REQUIREMENTS.md rows covering this class (grep the gap ref) + the canon preflight for whatever the change touches')
-    push('')
-    for (const [i, n] of shipNodes.entries()) {
-      push(`--- NODE ${i + 1}/${shipNodes.length} ---`)
-      push(`${n.version_gap ?? '(ad-hoc)'} [${n.domain}] ${n.title}`)
-      push(`id:        ${n.id}`)
-      push(`objective: ${n.objective}`)
-      push(`output:    ${n.output}`)
-      push(`accept:    ${n.accept}`)
+    if (ship.punch) {
+      for (const line of formatPunchSliceBrief({
+        punch: ship.punch,
+        nodeId: next.id,
+        reads,
+      })) {
+        push(line)
+      }
+    } else {
+      push(`class: ${ship.key} · ${shipNodes.length} node(s)${ship.remaining ? ` · ${ship.remaining} leftover sibling(s) stay open for the next ship of this class` : ''}`)
+      push('DO NOT run npm run push or deploy:verify until every node below is locally accepted or blocked.')
+      push('Then ONE push, ONE deploy:verify, complete all shipped nodes with that READY SHA.')
+      push(`claim them: claimShipClass([${shipNodes.map((n) => n.id).join(', ')}], owner)  (lib/data/loop/work-graph.ts)`)
+      push('load first (this animal\'s discipline — read before working):')
+      for (const r of reads) push(`  - ${r}`)
+      push('  - REQUIREMENTS.md rows covering this class (grep the gap ref) + the canon preflight for whatever the change touches')
+      push('')
+      for (const [i, n] of shipNodes.entries()) {
+        push(`--- NODE ${i + 1}/${shipNodes.length} ---`)
+        push(`${n.version_gap ?? '(ad-hoc)'} [${n.domain}] ${n.title}`)
+        push(`id:        ${n.id}`)
+        push(`objective: ${n.objective}`)
+        push(`output:    ${n.output}`)
+        push(`accept:    ${n.accept}`)
+      }
     }
   }
   push('')

@@ -11,6 +11,13 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { CompanyImprovementDomain } from './domains'
 import {
+  appendPunchDispositions,
+  canCompletePunchList,
+  isFleetPunchListNode,
+  openPunchLines,
+  type PunchDisposition,
+} from './fleet-intake-core'
+import {
   assertTransition,
   assertWorkNodeDraft,
   isStaleInProgress,
@@ -166,10 +173,69 @@ export async function completeWorkNode(input: {
   if (!input.evidence.trim()) {
     return { data: null, error: 'evidence is required — a node is done when the environment says so, not the session' }
   }
+  const sb = createServiceClient()
+  const { data: row, error: readErr } = await sb
+    .from('loop_work_nodes')
+    .select('title,objective,version_gap')
+    .eq('id', input.id)
+    .single()
+  if (readErr || !row) return { data: null, error: readErr?.message ?? 'node not found' }
+  if (
+    isFleetPunchListNode({
+      title: String(row.title),
+      version_gap: row.version_gap == null ? null : String(row.version_gap),
+      objective: String(row.objective ?? ''),
+    }) &&
+    !canCompletePunchList(String(row.objective ?? ''))
+  ) {
+    const open = openPunchLines(String(row.objective ?? '')).length
+    return {
+      data: null,
+      error: `FLEET-PUNCH cannot be done while ${open} open punch line(s) remain. Resolve this slice (fixed/rejected) and leave the parent open.`,
+    }
+  }
   return transition(input.id, 'done', {
     evidence: input.evidence,
     ledger_row_id: input.ledgerRowId ?? null,
   })
+}
+
+/** Append-only punch-line dispositions. Does not complete the parent. */
+export async function resolvePunchLines(input: {
+  id: string
+  resolutions: PunchDisposition[]
+}): Promise<{ data: { id: string; openRemaining: number } | null; error: string | null }> {
+  if (!input.resolutions.length) return { data: null, error: 'resolutions are required' }
+  try {
+    const sb = createServiceClient()
+    const { data: row, error: readErr } = await sb
+      .from('loop_work_nodes')
+      .select('title,objective,version_gap')
+      .eq('id', input.id)
+      .single()
+    if (readErr || !row) return { data: null, error: readErr?.message ?? 'node not found' }
+    if (
+      !isFleetPunchListNode({
+        title: String(row.title),
+        version_gap: row.version_gap == null ? null : String(row.version_gap),
+        objective: String(row.objective ?? ''),
+      })
+    ) {
+      return { data: null, error: 'resolvePunchLines only applies to the FLEET-PUNCH inbox' }
+    }
+    const objective = appendPunchDispositions(String(row.objective ?? ''), input.resolutions)
+    const { data, error } = await sb
+      .from('loop_work_nodes')
+      .update({ objective, updated_at: new Date().toISOString() })
+      .eq('id', input.id)
+      .select('id,objective')
+      .single()
+    if (error || !data?.id) return { data: null, error: error?.message ?? 'punch disposition update failed' }
+    return { data: { id: String(data.id), openRemaining: openPunchLines(String(data.objective ?? '')).length }, error: null }
+  } catch (err) {
+    console.error('[resolvePunchLines]', err)
+    return { data: null, error: err instanceof Error ? err.message : 'resolve failed' }
+  }
 }
 
 export async function killWorkNode(id: string, reason: string) {

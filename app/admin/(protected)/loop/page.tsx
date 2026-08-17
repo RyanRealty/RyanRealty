@@ -83,9 +83,16 @@ export default async function LoopStatusPage() {
 
   const running = status.nodes.runningNow
   const next = status.nodes.queueNext[0] ?? null
+  const nextShip = status.nodes.nextShip
   const nextClass = next
-    ? status.nodes.queueNext.filter((n) => n.shipClass === next.shipClass)
+    ? nextShip?.punchServed != null
+      ? [next]
+      : status.nodes.queueNext.filter((n) => n.shipClass === next.shipClass)
     : []
+  const nextTogether =
+    nextShip?.punchServed != null
+      ? nextShip.punchServed
+      : nextClass.length
   const remainingAfterShown = Math.max(0, status.nodes.byState.open - status.nodes.queueNext.length)
   const attention =
     status.nodes.staleClaims.length +
@@ -129,8 +136,8 @@ export default async function LoopStatusPage() {
           ) : next ? (
             <>
               <b>On.</b> Next up: {plainNodeTitle(next.title)}
-              {nextClass.length > 1
-                ? ` and ${nextClass.length - 1} more ${plainShipClass(next.shipClass)} ${nextClass.length - 1 === 1 ? 'item' : 'items'} that rebuild with it`
+              {nextTogether > 1
+                ? ` and ${nextTogether - 1} more ${plainShipClass(nextShip?.key ?? next.shipClass)} ${nextTogether - 1 === 1 ? 'item' : 'items'} that rebuild with it`
                 : ''}
             </>
           ) : (
@@ -167,8 +174,8 @@ export default async function LoopStatusPage() {
             <p className="av2-fold__lede">
               In the order the loop will take them. Urgent website problems go first, then other website
               fixes, then items you asked for, then the company list.
-              {next && nextClass.length > 1
-                ? ` The next ${nextClass.length} ${plainShipClass(next.shipClass)} items ship together so the site rebuilds once.`
+              {next && nextTogether > 1
+                ? ` The next ${nextTogether} ${plainShipClass(nextShip?.key ?? next.shipClass)} items ship together so the site rebuilds once.`
                 : ''}
             </p>
             <ul className="av2-queue" style={{ marginTop: 8 }}>
