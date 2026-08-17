@@ -39,7 +39,7 @@ const RESOLUTIONS: PunchDisposition[] = [
   {
     fingerprint: 'a7a6038f1d78857572e7e2199cf399bf',
     status: 'fixed',
-    note: 'Homepage Tetherow 12 vs /communities/tetherow 35. Alias-aware overlay on index + homepage. After READY both 35 / $1,499,000.',
+    note: 'Homepage Tetherow 12 vs /communities/tetherow 35. Alias-aware overlay scoped to city+mls_cities. After READY f76383e76 both 35 / $1,499,000.',
   },
   {
     fingerprint: 'bfcad1b5eb5efd9a4e7e7941bcd996b6',
@@ -54,7 +54,7 @@ const RESOLUTIONS: PunchDisposition[] = [
   {
     fingerprint: '44b5c2688b202267e285e7e3cd3eee38',
     status: 'fixed',
-    note: 'Home 12 / communities A-Z 12 / page 35. 19 does not reproduce. Same alias-aware overlay class as a7a6038f.',
+    note: 'Home 12 / A-Z 12 / page 35. 19 does not reproduce. After READY f76383e76 all three print 35. Same overlay class as a7a6038f.',
   },
 ]
 
