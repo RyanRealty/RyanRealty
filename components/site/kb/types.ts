@@ -123,8 +123,14 @@ export interface KbMarketData {
   yearSeries?: { year: number; points: { m: number; value: number }[] }[]
 }
 
-/** Full currency to the nearest thousand: 740123 -> "$740,000". */
+/**
+ * Full currency, exact whole dollars.
+ *
+ * Place heroes already print list medians through formatPriceExact
+ * ($919,500). Thousand-rounding here printed $920,000 on the same page
+ * (HUD, sell, FAQ facts, activity). Fleet place-pages punch 2026-08-17.
+ */
 export function kbMoneyFull(n: number | null | undefined): string | null {
   if (n == null || !Number.isFinite(n)) return null
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
+  return `$${Math.round(n).toLocaleString('en-US')}`
 }

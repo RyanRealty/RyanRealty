@@ -9,7 +9,7 @@ import { isLegalTransition } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
-const OWNER = 'cursor-loop-chain-bc-3a2506e2-2026-08-17t06-56'
+const OWNER = 'cursor-loop-chain-bc-96d8d9d5-2026-08-17t07-47'
 const ID = '3a6198cd-fcd5-4aa2-b51a-3b62c2c0e437'
 
 async function main() {

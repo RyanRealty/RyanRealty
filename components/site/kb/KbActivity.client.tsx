@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { kbMoneyFull } from './types'
+import { formatPublishedAsk } from '@/lib/listing/publish-listing-ask'
 
 export interface KbActivityItem {
   /** Drives the kind-tag + its weight. Known kinds get a fixed label/intent;
@@ -104,7 +104,7 @@ export function KbActivity({
 
         <div className="act-ledger" role="list">
           {items.map((it, i) => {
-            const money = kbMoneyFull(it.price)
+            const money = formatPublishedAsk(it.price)
             const Row = it.href ? 'a' : 'div'
             return (
               <Row

@@ -13,7 +13,7 @@ describe('buildMarketFaq', () => {
     expect(r.asOfLabel).toBeNull()
   })
 
-  it('builds all four Q&A from a full pulse, rounding price to the nearest $1,000', () => {
+  it('builds all four Q&A from a full pulse, keeping the list median exact', () => {
     const r = buildMarketFaq('Bend', {
       activeCount: 120,
       medianListPrice: 894750,
@@ -25,7 +25,8 @@ describe('buildMarketFaq', () => {
     expect(r.asOfIso).toBe('2026-05-15')
     expect(r.asOfLabel).toBe('May 2026')
     const price = r.faqs.find((f) => f.question.includes('median home price'))
-    expect(price?.answer).toContain('$895,000') // 894750 -> nearest $1,000
+    expect(price?.answer).toContain('$894,750')
+    expect(price?.answer).not.toContain('$895,000')
     expect(price?.answer).toContain('as of May 2026')
     const mos = r.faqs.find((f) => f.question.includes("buyer's or seller's"))
     expect(mos?.answer).toContain('3.3 months of supply') // 3.25 -> 1 decimal
@@ -72,6 +73,15 @@ describe('buildMarketFaq', () => {
     expect(
       justUnderSix.datasetVariables.find((v) => v.name === 'Months of Supply')?.value,
     ).toBe(5.9)
+  })
+
+  it('keeps Southern Crossing and NorthWest Crossing list medians off the thousand-round', () => {
+    const south = buildMarketFaq('Southern Crossing', { medianListPrice: 919500 })
+    expect(south.faqs[0]?.answer).toContain('$919,500')
+    expect(south.faqs[0]?.answer).not.toContain('$920,000')
+    const nwx = buildMarketFaq('NorthWest Crossing', { medianListPrice: 1199900 })
+    expect(nwx.faqs[0]?.answer).toContain('$1,199,900')
+    expect(nwx.faqs[0]?.answer).not.toContain('$1,200,000')
   })
 
   it('visible numbers and dataset variables come from one source (cannot diverge)', () => {

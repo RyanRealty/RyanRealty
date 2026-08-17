@@ -101,6 +101,33 @@ checks.push({
     !/kbMoneyFull\(it\.price\)/.test(featured),
 })
 
+const kbMoney = src('components/site/kb/types.ts')
+checks.push({
+  label: 'kbMoneyFull prints exact whole dollars, not nearest thousand',
+  ok:
+    /export function kbMoneyFull/.test(kbMoney) &&
+    kbMoney.includes('Math.round(n).toLocaleString') &&
+    !kbMoney.includes('Math.round(n / 1000)'),
+})
+
+const faq = src('lib/site/market-faq.ts')
+checks.push({
+  label: 'place FAQ median list uses formatPriceExact',
+  ok:
+    /from ['"]@\/lib\/format\/money['"]/.test(faq) &&
+    /formatPriceExact\(pulse\.medianListPrice\)/.test(faq) &&
+    !/formatPrice\(pulse\.medianListPrice\)/.test(faq),
+})
+
+const activity = src('components/site/kb/KbActivity.client.tsx')
+checks.push({
+  label: 'activity ledger publishes formatPublishedAsk',
+  ok:
+    /from ['"]@\/lib\/listing\/publish-listing-ask['"]/.test(activity) &&
+    /formatPublishedAsk\(it\.price\)/.test(activity) &&
+    !/kbMoneyFull\(it\.price\)/.test(activity),
+})
+
 const failed = checks.filter((c) => !c.ok)
 for (const c of checks) {
   console.log(`${c.ok ? 'ok' : 'FAIL'}  ${c.label}`)
