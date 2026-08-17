@@ -212,44 +212,6 @@ export function evalAudienceSync(maxRanAt: string | null, now: Date): PipelineCh
 }
 
 /**
- * INT-007 / G11: any meta_audience_log row (CRM or westside) must land daily.
- * Consecutive-day hold (7 days ending ≥ 2026-08-22) is scored separately so a
- * still-open hold window does not page Matt.
- */
-export function evalMetaAudienceHold(input: {
-  status: 'ok' | 'unreadable'
-  lastRanAt: string | null
-  consecutiveDays: number
-  lastDay: string | null
-  holdMet: boolean
-  current: boolean
-}): PipelineCheck {
-  if (input.status === 'unreadable') {
-    return {
-      name: 'pipeline:meta-audience-hold',
-      status: 'red',
-      value: 'meta_audience_log unreadable',
-      note: 'Scoreboard cannot grade the INT-007 hold. Check service-role reads of meta_audience_log.',
-    }
-  }
-  if (!input.current) {
-    return {
-      name: 'pipeline:meta-audience-hold',
-      status: 'red',
-      value: `last ran_at ${input.lastRanAt ?? 'never'} · ${input.consecutiveDays} consecutive UTC days ending ${input.lastDay ?? '—'}`,
-      note: 'Meta audience heartbeat missed a daily run (36h). /api/cron/meta-audience-sync (09:00 UTC) or /api/cron/meta-westside-audience (14:00 UTC) is dark. Spend stays Matt-gated; this is the list refresh, not an ad change.',
-    }
-  }
-  return {
-    name: 'pipeline:meta-audience-hold',
-    status: 'green',
-    value: input.holdMet
-      ? `hold met · ${input.consecutiveDays} consecutive UTC days ending ${input.lastDay}`
-      : `holding ${input.consecutiveDays}/7 consecutive UTC days · last ${input.lastDay} · KEEP waits for a day ≥ 2026-08-22`,
-  }
-}
-
-/**
  * SkySlope inbound recon mirror. Daily cron stamps
  * skyslope_transactions.synced_at. A 67-day-stale sample (2026-06-10) is the
  * founding failure: the only refresh was a Mac-local script with no cron.

@@ -24,7 +24,6 @@ import { requireCronAuth } from '@/lib/auth/cron-auth'
 import { sendEmail } from '@/lib/resend'
 import {
   evalAudienceSync,
-  evalMetaAudienceHold,
   evalSkySlopeMirror,
   evalExpired,
   evalFsbo,
@@ -38,7 +37,6 @@ import {
 } from '@/lib/pipeline-heartbeat'
 import { WESTSIDE_AUDIENCE_ID } from '@/lib/meta-westside-audience'
 import { getSkySlopeMirrorFreshness } from '@/lib/data/tc/skyslope-mirror'
-import { readMetaAudienceHold } from '@/lib/data/loop/meta-audience-hold'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -370,12 +368,6 @@ export async function GET(req: NextRequest) {
     } else {
       pipeline.push(evalSkySlopeMirror(freshness.latestSyncedAt, now))
     }
-  }
-
-  // 9. INT-007 Meta audience daily hold (CRM + westside ledger).
-  {
-    const hold = await readMetaAudienceHold(supabase, now)
-    pipeline.push(evalMetaAudienceHold(hold))
   }
 
   for (const pc of pipeline) push(pc.name, pc.status, pc.value, pc.note)

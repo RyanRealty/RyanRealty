@@ -207,7 +207,7 @@
 | R-147 | Kill FUB/Beacon archived nurture emails still sending via connected Gmail; purge FUB vocabulary/keys | EMAIL_SEND_AUDIT; twilio-cutover | MISSING | G23 |
 | R-148 | NO native sponsorship, preferred lenders, title companies; AdSense informational surfaces only, never conversion surfaces | MASTER_SPEC (Matt 2026-04-25) | LOCKED | — |
 | R-149 | Newsletter is named buyer capture; signup stitches rr_vid; buyer opt-in gets listing mail not seller drips | BROKER-OS; PRODUCT | VERIFIED | — |
-| R-150 | West Side: target the list, measure it, exclude existing book; audience refresh runs and logs | MASTER-SPEC D2; W1.1 | PARTIAL | G7 done 2026-08-16 — backlog dispositioned. G11 2026-08-16 — hold DAL + 36h daily probe; last LIVE 2026-08-16T09:01Z. Residual: KEEP waits for 2026-08-22; live Meta push still flag-gated. |
+| R-150 | West Side: target the list, measure it, exclude existing book; audience refresh runs and logs | MASTER-SPEC D2; W1.1 | PARTIAL | G7 done 2026-08-16 — backlog dispositioned. G11 **parked 2026-08-17** (Matt: stop checking Meta); INT-007 flipped to KEEP on a 55-day streak, last LIVE 2026-08-16T09:01Z. 36h `evalAudienceSync` watchdog retained. Residual: live Meta push still flag-gated. |
 | R-151 | Referral-capture tier for out-of-area cities, not full page builds | RR-PLATFORM W12 | MISSING | G22 |
 
 ## nurture

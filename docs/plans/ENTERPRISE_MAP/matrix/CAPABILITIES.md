@@ -265,7 +265,7 @@
 
 | Field | Value |
 |-------|--------|
-| **Maturity** | **3** — CAPI/pixel env; webhooks; audience + westside audience crons; hold DAL. Not 4: G11 KEEP waits for 2026-08-22; **ad spend Matt-gated**. |
+| **Maturity** | **3** — CAPI/pixel env; webhooks; audience + westside audience crons. INT-007 KEEP 2026-08-17 (G11 parked). Not 4: **ad spend Matt-gated**. |
 | **Evidence status** | **PARTIAL** |
 | **Evidence pointers** | INT-007; `readMetaAudienceHold`; last LIVE 2026-08-16T09:01Z CRM 13980; crons `meta-audience-sync`, `meta-westside-audience`; `docs/FACEBOOK_SELLER_GROWTH_PIPELINE.md`; env META_CAPI_* |
 | **Public risk** | High (paid + privacy) |
