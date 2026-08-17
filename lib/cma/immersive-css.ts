@@ -152,7 +152,15 @@ html.anim .on .r:nth-child(5){transition-delay:.24s}
   .fin-l,.bench-l{width:120px}
   .sc{padding:72px 18px}
 }
-@media (max-width:560px){.stat3,.stat4{grid-template-columns:1fr}}
+.status-grid{width:100%;border-collapse:collapse;margin:8px 0 18px;font-variant-numeric:tabular-nums}
+.status-grid th,.status-grid td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--ink12);font-size:14px}
+.status-grid th.v,.status-grid td.v{text-align:right}
+.photo-set{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
+.photo-tile{margin:0;overflow:hidden;background:var(--navy)}
+.photo-tile img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:0}
+.facts-block ul{margin:0 0 16px 18px}
+.facts-block li{margin:6px 0}
+@media (max-width:560px){.stat3,.stat4{grid-template-columns:1fr}.photo-set{grid-template-columns:1fr 1fr}}
 @media print{
   .sc{min-height:0;padding:24px}
   #bar,.cue{display:none}

@@ -174,7 +174,7 @@ export function CmaDetailPanel({
         ) : null}
         {detail.hasDocument ? (
           <Link
-            href={`/cma/${detail.slug}`}
+            href={`/admin/cmas/${detail.slug}/view`}
             target="_blank"
             rel="noreferrer"
             className="av2-btn av2-btn--quiet av2-btn--touch"

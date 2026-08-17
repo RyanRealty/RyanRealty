@@ -15,6 +15,8 @@ import {
   type CmaSubdivisionSaleRow,
 } from '@/lib/data/cma/builderReads'
 import type { CmaAdjustedComp, CmaSubject, CmaPricing } from '@/lib/cma/types'
+import { getCmaMarketAreaRows } from '@/lib/data/cma/marketAreaReads'
+import { computeMarketArea, type CmaMarketArea } from '@/lib/cma/market-status'
 
 export const MONTH_NAMES = [
   'January',
@@ -90,6 +92,8 @@ export interface CmaExtras {
   subdivisionPulse: CmaSubdivisionPulse | null
   financing: CmaFinancingProfile | null
   photoBench: CmaPhotoBench | null
+  /** Status grid, 90-day sold band, listing trend. Optional on older rows. */
+  marketArea?: CmaMarketArea | null
 }
 
 function median(values: number[]): number | null {
@@ -251,10 +255,11 @@ export async function buildCmaExtras(args: {
   const hi = Math.round((args.pricing.recommended * (1 + BAND_HALF_WIDTH_PCT)) / 1000) * 1000
   const subdivision = args.subject.subdivision?.trim() ?? ''
 
-  const [skinny, bandInv, subRows] = await Promise.all([
+  const [skinny, bandInv, subRows, areaRows] = await Promise.all([
     getCmaCityClosedSkinny(args.subject.city, since36).catch(() => []),
     getCmaBandInventory(args.subject.city, lo, hi).catch(() => null),
     subdivision ? getCmaSubdivisionClosed(subdivision, since12).catch(() => []) : Promise.resolve([]),
+    getCmaMarketAreaRows(args.subject.city, since12).catch(() => []),
   ])
 
   return {
@@ -263,5 +268,12 @@ export async function buildCmaExtras(args: {
     subdivisionPulse: subdivision ? computeSubdivisionPulse(subRows, subdivision, SUBDIVISION_MONTHS, since12) : null,
     financing: computeFinancing(skinny, args.subject.city, since12),
     photoBench: computePhotoBench(args.subjectPhotosCount, args.comps),
+    marketArea: computeMarketArea({
+      rows: areaRows,
+      subject: args.subject,
+      comps: args.comps,
+      pricing: args.pricing,
+      asOf,
+    }),
   }
 }

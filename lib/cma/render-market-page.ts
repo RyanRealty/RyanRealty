@@ -5,8 +5,9 @@
  */
 
 import { dateLong, dec, escapeHtml, int, usd } from '@/lib/cma/render-blocks'
+import { medianCloseLineSvg } from '@/lib/cma/market-charts'
 import type { CmaPageDef } from '@/lib/cma/render-use-of-property'
-import type { CmaAdjustedComp, CmaMarketContext, CmaMarketTrendPoint, CmaSubject } from '@/lib/cma/types'
+import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
 
 const esc = escapeHtml
 
@@ -21,40 +22,13 @@ function cell(v: string): string {
   return `<td class="v">${v}</td>`
 }
 
-function trendChart(points: CmaMarketTrendPoint[]): string {
-  const priced = [...points]
-    .filter((p) => p.medianSalePrice != null && p.medianSalePrice > 0)
-    .sort((a, b) => a.periodStart.localeCompare(b.periodStart))
-  if (priced.length < 6) return ''
-  const W = 720
-  const H = 200
-  const plotTop = 22
-  const plotBottom = 160
-  const vals = priced.map((p) => p.medianSalePrice!)
-  const min = Math.min(...vals)
-  const max = Math.max(...vals)
-  const span = Math.max(max - min, 1)
-  const barW = Math.min(44, (W - 24) / priced.length - 8)
-  const gap = (W - priced.length * barW) / (priced.length + 1)
-  const bars = priced
-    .map((p, i) => {
-      const cx = gap + i * (barW + gap)
-      const h = Math.max(8, ((plotBottom - plotTop) * (p.medianSalePrice! - min)) / span)
-      const y = plotBottom - h
-      const d = new Date(p.periodStart)
-      const label = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })
-      return `<text x="${cx + barW / 2}" y="${plotBottom + 16}" text-anchor="middle" font-size="11" fill="#102742" opacity="0.75">${label}</text>
-      <rect x="${cx}" y="${y}" width="${barW}" height="${h}" rx="4" fill="#102742"/>`
-    })
-    .join('\n')
+function trendChart(points: CmaMarketContext['trend']): string {
+  const svg = medianCloseLineSvg(points ?? [])
+  if (!svg) return ''
   return `
   <h3 class="subhead">Median close by month</h3>
   <p>Completed months with a median close. A month with too few sales is omitted.</p>
-  <div class="trend-chart">${''}<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Median close by month" class="trend-svg">
-    <line x1="0" y1="${plotBottom}" x2="${W}" y2="${plotBottom}" stroke="#102742" stroke-opacity="0.25" stroke-width="1"/>
-    ${bars}
-  </svg></div>
-  <p class="small">Range ${usd(min)} to ${usd(max)}.</p>`
+  <div class="trend-chart">${svg}</div>`
 }
 
 export function marketPage(input: {

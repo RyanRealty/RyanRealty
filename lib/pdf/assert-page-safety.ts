@@ -30,7 +30,7 @@ import {
   marginsToPt,
   type Margins,
 } from '@/lib/pdf/page-contract'
-import { configurePdfjsWorker } from '@/lib/pdf/pdfjs-node'
+import { configurePdfjsWorker, pdfjsGetDocumentOptions } from '@/lib/pdf/pdfjs-node'
 
 export type PageSafetyViolation = {
   /** 1-indexed physical sheet. */
@@ -88,14 +88,7 @@ async function extractRuns(data: Uint8Array): Promise<{ pages: TextRun[][]; size
   // this keeps it out of cold-start on every other route.
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
   configurePdfjsWorker(pdfjs)
-  const doc = await pdfjs.getDocument({
-    data,
-    isEvalSupported: false,
-    // Font programs are irrelevant to geometry and loading them in a serverless
-    // runtime is both slow and a source of spurious warnings.
-    disableFontFace: true,
-    useSystemFonts: false,
-  }).promise
+  const doc = await pdfjs.getDocument(pdfjsGetDocumentOptions(data)).promise
 
   const pages: TextRun[][] = []
   const sizes: { w: number; h: number }[] = []

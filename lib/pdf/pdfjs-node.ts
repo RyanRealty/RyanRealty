@@ -71,26 +71,39 @@ function tryNodeResolve(): string | undefined {
   }
 }
 
-export function resolvePdfjsWorkerPath(): string {
+export function resolvePdfjsWorkerPath(): string | null {
   const resolved = tryNodeResolve()
   const candidates = pdfjsWorkerCandidates(resolved)
   for (const candidate of candidates) {
     if (isUsablePdfjsWorkerPath(candidate)) return candidate
   }
-  throw new Error(
-    `pdfjs worker missing at ${resolved ?? 'unresolved'} (tried ${candidates.length} path(s))`,
-  )
+  return null
 }
 
-/** Absolute filesystem path of the first usable worker. */
-export const PDFJS_WORKER_PATH = resolvePdfjsWorkerPath()
+export function resolvePdfjsWorkerSrc(): string | null {
+  const path = resolvePdfjsWorkerPath()
+  return path ? pathToFileURL(path).href : null
+}
 
-export function resolvePdfjsWorkerSrc(): string {
-  return pathToFileURL(resolvePdfjsWorkerPath()).href
+export function pdfjsGetDocumentOptions(data: Uint8Array): {
+  data: Uint8Array
+  isEvalSupported: false
+  disableFontFace: true
+  useSystemFonts: false
+  disableWorker: boolean
+} {
+  return {
+    data,
+    isEvalSupported: false,
+    disableFontFace: true,
+    useSystemFonts: false,
+    disableWorker: resolvePdfjsWorkerPath() == null,
+  }
 }
 
 export function configurePdfjsWorker(pdfjs: {
   GlobalWorkerOptions: { workerSrc: string }
 }): void {
-  pdfjs.GlobalWorkerOptions.workerSrc = resolvePdfjsWorkerSrc()
+  const src = resolvePdfjsWorkerSrc()
+  if (src) pdfjs.GlobalWorkerOptions.workerSrc = src
 }

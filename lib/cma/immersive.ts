@@ -27,6 +27,7 @@ import { clientSourceLine, formatClientMlsField, whyThisListPrice } from '@/lib/
 import { compsPriceChartSvg } from '@/lib/cma/comps-price-chart'
 import { renderCompStripHtml } from '@/lib/cma/comp-strip'
 import { immersiveStylesheet } from '@/lib/cma/immersive-css'
+import { immersiveMarketChapters } from '@/lib/cma/market-area-chapters'
 
 type ImmersiveArgs = RenderCmaArgs & { broker: CmaBroker }
 
@@ -536,6 +537,7 @@ ${immersiveStylesheet()}
 </section>
 
 ${whyScene(a)}
+${immersiveMarketChapters(a)}
 ${thisHomeScene(a)}
 ${compsScene(a)}
 ${subdivisionStoryScene(a)}

@@ -56,6 +56,7 @@ import { CmaPublishControl } from '@/app/admin/(protected)/cmas/_components/CmaP
 import { cmaPublishConcerns, cmaPublishRefusals } from '@/app/actions/cma-publish-preconditions'
 import { formatPriceExact } from '@/lib/format/money'
 import { formatDate } from '@/lib/format/date'
+import { brokerCmaViewHref } from '@/lib/cma/draft-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,8 +116,8 @@ export default async function AdminCmaReviewPage({
   // own words rather than summarised into a flag.
   const concerns = cmaPublishConcerns(row)
 
-  const previewSrc = hasStoredHtml
-    ? `/cma/${safeSlug}`
+  const previewSrc = hasStoredHtml || Boolean(row.render_args)
+    ? brokerCmaViewHref(safeSlug)
     : isLegacyFile
       ? String(row.html_path).replace(/^public/, '')
       : null

@@ -7,6 +7,7 @@ import { inspectPdfPageSafety } from './assert-page-safety'
 import {
   configurePdfjsWorker,
   isUsablePdfjsWorkerPath,
+  pdfjsGetDocumentOptions,
   pdfjsWorkerCandidates,
   resolvePdfjsWorkerSrc,
 } from './pdfjs-node'
@@ -36,9 +37,10 @@ describe('pdfjs worker on Node (Vercel)', () => {
 
   it('resolves the legacy worker to a real file URL, not a relative path', () => {
     const src = resolvePdfjsWorkerSrc()
-    expect(src.startsWith('file:')).toBe(true)
-    expect(src.includes('pdf.worker.mjs')).toBe(true)
-    expect(existsSync(fileURLToPath(src))).toBe(true)
+    expect(src).toBeTruthy()
+    expect(src!.startsWith('file:')).toBe(true)
+    expect(src!.includes('pdf.worker.mjs')).toBe(true)
+    expect(existsSync(fileURLToPath(src!))).toBe(true)
   })
 
   it('pins GlobalWorkerOptions.workerSrc so the fake worker can import it', async () => {
@@ -57,6 +59,12 @@ describe('pdfjs worker on Node (Vercel)', () => {
     const report = await inspectPdfPageSafety(Buffer.from(bytes), { runningMarksInBody: true })
     expect(report.ok).toBe(true)
     expect(report.pageCount).toBe(1)
+  })
+
+  it('keeps page-safety on the main thread when no worker file exists', () => {
+    const opts = pdfjsGetDocumentOptions(new Uint8Array([1, 2, 3]))
+    expect(opts.disableWorker).toBe(false)
+    expect(opts.isEvalSupported).toBe(false)
   })
 
   it('traces the worker into the CMA PDF function bundle', () => {

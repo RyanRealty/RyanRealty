@@ -1,6 +1,6 @@
 /**
- * GET /cma/[slug] — public view of a built CMA.
- * Drafts 404 for the public. Brokers with an admin session can review a draft.
+ * GET /admin/cmas/[slug]/view — broker review of any status, including draft.
+ * Not a public send. Registration gate is skipped.
  */
 
 import { NextResponse } from 'next/server'
@@ -13,14 +13,17 @@ export async function GET(
   request: Request,
   context: { params: Promise<{ slug: string }> },
 ) {
+  const admin = await getAdminContext()
+  if (!admin || admin.role === 'report_viewer') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const { slug } = await context.params
-  const ctx = await getAdminContext()
-  const isAdmin = Boolean(ctx && ctx.role !== 'report_viewer')
   const result = await serveCmaDocument({
     slug: String(slug ?? ''),
     requestUrl: request.url,
-    isAdmin,
-    viewerEmail: ctx?.email ?? null,
+    isAdmin: true,
+    viewerEmail: admin.email,
+    skipRegisterGate: true,
   })
   if (result.kind === 'redirect') {
     return NextResponse.redirect(new URL(result.url, request.url), result.status)

@@ -64,6 +64,7 @@ import type { RentalPotential } from '@/lib/cma/rental-potential'
 import { propertyUsePage } from '@/lib/cma/render-use-of-property'
 import { pricingPage } from '@/lib/cma/render-pricing-page'
 import { marketPage as marketBoardPage } from '@/lib/cma/render-market-page'
+import { printMarketAreaPages } from '@/lib/cma/market-area-chapters'
 import { whyPage } from '@/lib/cma/render-why-page'
 import { renderCompMapKeyHtml, renderCompStripHtml } from '@/lib/cma/comp-strip'
 
@@ -750,6 +751,7 @@ export function renderCmaHtml(a: RenderCmaArgs): { html: string; pageCount: numb
   if (likes) rest.push(likes)
   const thisHome = thisHomePlanPage(a)
   if (thisHome) rest.push(thisHome)
+  rest.push(...printMarketAreaPages(a))
   rest.push(compCardsAndTablePage(a))
   const map = mapPage(a)
   if (map) rest.push(map)
