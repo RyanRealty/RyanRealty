@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — place-pages exact list-median slice
+# Current — 2026-08-17 (cursor-loop-chain) — homepage ArrivalIntent quiz unmount
+
+**Surface:** Cursor cloud `bc-8f43d00f` (`cursor/loop-chain-2026-08-17t08-22-7277`). **Time:** 2026-08-17 ~09:05 UTC. Brief served **solo Matt CHANGE** `08152acc` (class of one). Claimed that node. Product **`df1a8bfd8`** landed on **`main`**. Vercel Production **READY** (`3doPtMka2BFtvCg7uLj2c8GbthAS`, `npm run deploy:verify` exit 0). Draft PR **#80** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Node **`08152acc` done**. FLEET-PUNCH parent stays open (other session). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Clean-cookie `/` at 390+1280: Buy/Sell/Look quiz under V3Chrome **reproduced** (`quizNav` y=57, links y=69, hero 512/423).
+- Class: unmounted ArrivalIntent from `app/page.tsx`, deleted `ArrivalIntent.client.tsx` (reachable-exports), mounted `V3SectionTracker` so public-ui B does not grow. D103 + homepage-v6 parity + R-218. No new modal.
+- Prod probe after READY `df1a8bfd8`: `quizNav` false, no Buy/Look quiz, header Sell only, hero 444/355. After shots `/opt/cursor/artifacts/after_home_{390,1280}_top.png`.
+- Node `08152acc` completed with READY SHA evidence.
+
+**Next**
+- Next `loop-brief` serves the next ship class. Leftover punch families stay on FLEET-PUNCH.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-113/R-218, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — place-pages exact list-median slice
 
 **Surface:** Cursor cloud `bc-96d8d9d5` (`cursor/loop-chain-2026-08-17t07-47-939f`). **Time:** 2026-08-17 ~08:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 474). Claimed parent only. Product **`3168f52fc`** landed on **`main`**. Vercel Production **READY** (`8722cBnVRL22wcBTFxC8U4urHKHQ`, `npm run deploy:verify` exit 0). Feature branch same SHA (no PR: no diff vs `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (466 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
