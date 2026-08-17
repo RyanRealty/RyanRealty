@@ -481,7 +481,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     <ListingBrokerCTA
       defaultBroker={ctaBroker}
       brokers={brokers}
-      listingKey={listingKey}
+      listingKey={listing.listingKey}
       reviews={genericReviews}
       lockToDefault={listingAgent != null}
     />
