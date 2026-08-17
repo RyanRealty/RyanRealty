@@ -32,11 +32,13 @@ export function cmaStylesheet(siteUrl: string): string {
   }
 
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  img { border-radius: 0; }
 
   html, body {
     margin: 0;
     padding: 0;
-    background: #e8e3d8;
+    background: var(--cream);
+    border-radius: 0;
     font-family: 'Geist', system-ui, -apple-system, sans-serif;
     color: var(--navy);
     font-variant-numeric: tabular-nums;
@@ -58,31 +60,28 @@ export function cmaStylesheet(siteUrl: string): string {
   .page {
     background: var(--cream);
     position: relative;
+    border-radius: 0;
     break-before: page;
     page-break-before: always;
   }
   .page:first-child { break-before: auto; page-break-before: auto; }
 
   @media screen {
-    /* Screen only: show sheets on a desk. Print takes its box from @page. */
+    /* Web is a page, not a floating letter on a desk. Print takes its box from @page. */
+    html, body { background: var(--cream); border-radius: 0; }
     .page {
-      width: 8.5in;
-      min-height: 11in;
-      margin: 0.4in auto;
-      padding: 0.4in 0.6in 0.7in 0.6in;
-      box-shadow: 0 6px 24px rgba(16, 39, 66, 0.18);
+      width: 100%;
+      max-width: 8.5in;
+      min-height: 0;
+      margin: 0 auto;
+      padding: 28px 24px 40px;
+      box-shadow: none;
+      border-radius: 0;
     }
   }
 
   @media screen and (max-width: 700px) {
-    html, body { background: var(--cream); }
-    .page {
-      width: 100%;
-      min-height: 0;
-      margin: 0;
-      padding: 20px 16px 32px;
-      box-shadow: none;
-    }
+    .page { padding: 20px 16px 32px; }
   }
 
   .pg-header {
@@ -181,7 +180,7 @@ export function cmaStylesheet(siteUrl: string): string {
     color: var(--cream);
     padding: 24px 28px;
     margin: 0 0 18px 0;
-    border-radius: 10px;
+    border-radius: 0;
   }
   .value-block .vb-top {
     display: flex;
@@ -407,7 +406,7 @@ export function cmaStylesheet(siteUrl: string): string {
   }
   .tier {
     border: 1px solid var(--navy-line);
-    border-radius: 10px;
+    border-radius: 0;
     padding: 16px 14px;
     background: white;
   }

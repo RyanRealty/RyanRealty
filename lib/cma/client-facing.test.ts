@@ -474,16 +474,32 @@ describe('client document look', () => {
     expect(html).not.toMatch(/#bar\{[^}]*background:rgba\(250,248,244/)
   })
 
-  it('photos are flush, not rounded cards', () => {
+  it('photos and listing cards are square, not app-card rounded', () => {
     const { html } = renderCmaHtml(args())
-    expect(html).toMatch(/\.hero-photo\s*\{[^}]*border-radius:\s*0/)
-    expect(html).toMatch(/\.comp-card\s*\{[^}]*border-radius:\s*0/)
-    expect(html).toMatch(/\.flyer-hero\s*\{[^}]*border-radius:\s*0/)
-    expect(html).not.toMatch(/\.hero-photo\s*\{[^}]*border-radius:\s*[1-9]/)
-    expect(html).not.toMatch(/\.comp-card\s*\{[^}]*border-radius:\s*[1-9]/)
     const immersive = renderImmersiveCmaHtml({ ...args(), broker }, 'https://ryan-realty.com')
-    expect(immersive).toContain('.comp-ph{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;border-radius:0}')
-    expect(immersive).not.toMatch(/\.comp-ph\{[^}]*border-radius:1[68]px/)
+    const printCards = ['.hero-photo', '.comp-card', '.flyer-hero', '.comp-ph', '.comp-row', '.value-block', '.tier', '.hl', '.use-card', '.zone-mast', '.glance-row', '.photo-tile']
+    const immersiveCards = ['.hero-img', '.comp-ph', '.comp-row', '.nb', '.nb-img', '.photo-tile', '.story-card', '.like,.cando', '.plan']
+    for (const sel of printCards) {
+      const re = new RegExp(`${sel.replace(/[.*,]/g, '\\$&')}\\s*\\{[^}]*border-radius:\\s*(\\d+)(?:px)?`)
+      const m = html.match(re)
+      expect(m, `${sel} should declare a radius`).toBeTruthy()
+      expect(Number(m![1]), `${sel} radius`).toBeLessThanOrEqual(2)
+    }
+    for (const sel of immersiveCards) {
+      const re = new RegExp(`${sel.replace(/[.*,]/g, '\\$&')}\\{[^}]*border-radius:(\\d+)`)
+      const m = immersive.match(re)
+      expect(m, `${sel} should declare a radius`).toBeTruthy()
+      expect(Number(m![1]), `${sel} radius`).toBeLessThanOrEqual(2)
+    }
+    expect(immersive).toContain('img{max-width:100%;display:block;border-radius:0}')
+    expect(immersive).toContain('html{scroll-behavior:smooth;background:var(--cream);border-radius:0;min-height:100%}')
+    expect(html).toMatch(/img\s*\{\s*border-radius:\s*0/)
+    expect(html).toMatch(/html,\s*body\s*\{[^}]*border-radius:\s*0/)
+    expect(html).toMatch(/\.page\s*\{[^}]*border-radius:\s*0/)
+    expect(html).not.toMatch(/background:\s*#e8e3d8/)
+    expect(html).not.toMatch(/box-shadow:\s*0\s+6px\s+24px/)
+    expect(html).not.toMatch(/\.(hero-photo|comp-card|flyer-hero|comp-ph|comp-row)\s*\{[^}]*border-radius:\s*(1[2-9]|2[0-4])px/)
+    expect(immersive).not.toMatch(/\.(hero-img|comp-ph|comp-row|nb|nb-img|photo-tile)\s*\{[^}]*border-radius:(1[2-9]|2[0-4])px/)
   })
 
   it('print CSS keeps safe @page margins', () => {

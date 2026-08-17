@@ -238,7 +238,7 @@ export default async function AdminCmaReviewPage({
         <div
           style={{
             overflow: 'hidden',
-            borderRadius: 'var(--a-r-lg)',
+            borderRadius: 0,
             border: '1px solid var(--a-border)',
             background: 'var(--a-inset)',
           }}
