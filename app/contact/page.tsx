@@ -20,7 +20,7 @@ import { getSession } from '@/app/actions/auth'
 import { getPersonIdFromCookie } from '@/app/actions/identity-bridge'
 import { getCanonicalSiteUrl } from '@/lib/share-metadata'
 import { getBrokers, getListingTiles } from '@/lib/data'
-import { formatPrice } from '@/lib/format/money'
+import { formatListingAsk, publishListingAsk } from '@/lib/listing/publish-listing-ask'
 import { listingTileHref } from '@/lib/slug'
 import { generateBreadcrumbSchema, generateFAQSchema } from '@/lib/structured-data'
 import { CONTACT } from '@/lib/brand/contact'
@@ -78,20 +78,25 @@ export default async function ContactPage({ searchParams }: PageProps) {
     params.intent === 'tour' ? ('tour' as const) : params.intent === 'question' ? ('question' as const) : undefined
 
   const listingTile = params.listingKey
-    ? ((await getListingTiles({ listingKeys: [params.listingKey], status: 'all', limit: 1 }).catch(() => []))[0] ??
-      null)
+    ? await (async () => {
+        const key = params.listingKey
+        const [byKey, byNumber] = await Promise.all([
+          getListingTiles({ listingKeys: [key], status: 'all', limit: 1 }).catch(() => []),
+          getListingTiles({ listNumbers: [key], status: 'all', limit: 1 }).catch(() => []),
+        ])
+        return byKey[0] ?? byNumber[0] ?? null
+      })()
     : null
 
   const cmsTitle = pageContent?.title?.trim() ?? ''
   const contactTitle = !cmsTitle || /^contact(\s+us)?$/i.test(cmsTitle) ? 'Call, text, or write' : cmsTitle
 
+  const publishedAsk = listingTile ? publishListingAsk(listingTile.listPrice) : null
   const listingSummary = listingTile
     ? [
         [listingTile.streetNumber, listingTile.streetName, listingTile.streetSuffix].filter(Boolean).join(' '),
         listingTile.city,
-        listingTile.listPrice != null && formatPrice(listingTile.listPrice) !== '\u2014'
-          ? formatPrice(listingTile.listPrice)
-          : '',
+        publishedAsk ? formatListingAsk(publishedAsk.ask) : '',
         listingTile.beds != null ? `${listingTile.beds} bd` : '',
         listingTile.baths != null ? `${listingTile.baths} ba` : '',
       ]

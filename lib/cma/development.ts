@@ -42,6 +42,7 @@
 import type { CmaSiteData } from '@/lib/cma/county'
 import type { CmaSubject } from '@/lib/cma/types'
 import { getAllResortCommunities } from '@/lib/data/communities/registry'
+import { publishListingHoa } from '@/lib/listing/publish-listing-hoa'
 import { resolveZoningExplainer } from '@/lib/cma/zoning-explainer'
 import type { DevZoningExplainer } from '@/lib/cma/zoning-types'
 import { REGS_REVERIFIED_DATE, REGS_VERIFIED_DATE } from '@/lib/cma/development-types'
@@ -199,7 +200,10 @@ function formatFee(f: HoaFactsInput): string | null {
     if (hit) return `${money(f.associationFee)} ${hit[1]}`
     return `${money(f.associationFee)}, and the MLS did not report how often it is charged`
   }
-  if (f.hoaMonthly != null && f.hoaMonthly > 0) return `${money(f.hoaMonthly)} per month`
+  if (f.hoaMonthly != null && f.hoaMonthly > 0) {
+    const published = publishListingHoa({ hoaMonthly: f.hoaMonthly })
+    return published ? `${money(published.monthly)} per month` : null
+  }
   if (f.hoaAnnualCost != null && f.hoaAnnualCost > 0) return `${money(f.hoaAnnualCost)} per year`
   return null
 }

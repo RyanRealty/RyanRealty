@@ -8,6 +8,7 @@ import {
   Stack,
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
+import { publishListingAsk, publishListingDrop } from '@/lib/listing/publish-listing-ask'
 import { cn } from '@/lib/utils'
 
 /**
@@ -50,20 +51,18 @@ const STATUS_TONE: Record<string, 'navy' | 'success' | 'warning' | 'danger' | 'n
   Canceled: 'neutral',
 }
 
-function priceDropDelta(
-  listPrice: number | null,
-  originalListPrice: number | null,
-): number | null {
-  if (listPrice == null || originalListPrice == null) return null
-  if (originalListPrice <= listPrice) return null
-  return originalListPrice - listPrice
-}
-
 export function PriceBlock({ listing, className }: Props) {
   const isClosed = listing.status === 'Closed'
-  const headlinePrice = isClosed ? listing.closePrice : listing.listPrice
+  const headlinePrice = isClosed
+    ? publishListingAsk(listing.closePrice)?.ask ?? null
+    : publishListingAsk(listing.listPrice)?.ask ?? null
   const ppsqft = isClosed ? listing.closePricePerSqft : listing.pricePerSqft
-  const drop = priceDropDelta(listing.listPrice, listing.originalListPrice)
+  const publishedDrop = isClosed
+    ? null
+    : publishListingDrop({
+        listPrice: listing.listPrice,
+        originalListPrice: listing.originalListPrice,
+      })
   const statusTone = STATUS_TONE[listing.status] ?? 'neutral'
 
   return (
@@ -80,13 +79,13 @@ export function PriceBlock({ listing, className }: Props) {
       </div>
 
       <H1 className="font-bold tracking-[-0.015em]">
-        <Price value={headlinePrice} />
+        <Price value={headlinePrice} exact />
       </H1>
 
-      {drop ? (
+      {publishedDrop ? (
         <Body size="small" tone="muted">
-          Down <Price value={drop} /> from original list price{' '}
-          <Price value={listing.originalListPrice} className="line-through text-foreground/70" />
+          Down <Price value={publishedDrop.drop} exact /> from original list price{' '}
+          <Price value={publishedDrop.original} exact className="line-through text-foreground/70" />
           {listing.priceDropCount && listing.priceDropCount > 1 ? (
             <> after {listing.priceDropCount} price changes.</>
           ) : (

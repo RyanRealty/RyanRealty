@@ -12,6 +12,8 @@ import { displaySubdivision } from '@/lib/slug'
 import { redirectToLoginForSave } from '@/lib/pending-save'
 import { useResumePendingSave } from '@/lib/hooks/useResumePendingSave'
 import type { ListingDetail } from '@/lib/data/types/listing'
+import { publishListingAsk, publishListingDrop } from '@/lib/listing/publish-listing-ask'
+import { listingContactHref, publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 
 /**
  * PriceCtaStrip — price + address + pill row + CTA hierarchy under the hero.
@@ -33,6 +35,7 @@ type Props = {
   listing: Pick<
     ListingDetail,
     | 'listingKey'
+    | 'listNumber'
     | 'listPrice'
     | 'closePrice'
     | 'closeDate'
@@ -95,7 +98,20 @@ export function PriceCtaStrip({
   })
 
   const isClosed = listing.status === 'Closed'
-  const headlinePrice = isClosed ? listing.closePrice : listing.listPrice
+  const publishedAsk = isClosed
+    ? publishListingAsk(listing.closePrice)
+    : publishListingAsk(listing.listPrice)
+  const headlinePrice = publishedAsk?.ask ?? null
+  const publishedDrop = isClosed
+    ? null
+    : publishListingDrop({
+        listPrice: listing.listPrice,
+        originalListPrice: listing.originalListPrice,
+      })
+  const contactKey = publishListingContactKey({
+    listNumber: listing.listNumber,
+    listingKey: listing.listingKey,
+  })
   const street = [listing.streetNumber, listing.streetName, listing.streetSuffix].filter(Boolean).join(' ').trim()
   const cityLine = [listing.city ? `${listing.city}, OR` : null, listing.postalCode]
     .filter(Boolean)
@@ -107,13 +123,6 @@ export function PriceCtaStrip({
   const cityWithCommunity = cleanSubdivision
     ? [cityLine, cleanSubdivision].filter(Boolean).join(' · ')
     : cityLine
-
-  const drop =
-    listing.listPrice != null &&
-    listing.originalListPrice != null &&
-    listing.originalListPrice > listing.listPrice
-      ? listing.originalListPrice - listing.listPrice
-      : null
 
   // Accessible names for the Save + Share controls. The visible labels are bare
   // verbs ("Save", "Share"), so a screen-reader visitor heard an action with no
@@ -129,9 +138,9 @@ export function PriceCtaStrip({
         : `Save ${propertyName} to your saved homes`
 
   const tourHref =
-    scheduleHref ?? `/contact?listingKey=${encodeURIComponent(listing.listingKey)}&intent=tour`
+    scheduleHref ?? listingContactHref(contactKey, 'tour') ?? `/contact?intent=tour`
   const askHrefResolved =
-    askHref ?? `/contact?listingKey=${encodeURIComponent(listing.listingKey)}&intent=question`
+    askHref ?? listingContactHref(contactKey, 'question') ?? `/contact?intent=question`
 
   async function handleSave() {
     if (!onSave || saveState === 'saving') return
@@ -189,7 +198,7 @@ export function PriceCtaStrip({
         style={{ color: 'var(--navy)' }}
       >
         {street ? <span className="sr-only">{[street, cityWithCommunity].filter(Boolean).join(', ')} </span> : null}
-        <Price value={headlinePrice} />
+        <Price value={headlinePrice} exact />
       </DisplayHeading>
       {street ? (
         <div className="mt-1.5 text-lg font-medium sm:text-xl" style={{ color: 'var(--navy)' }}>
@@ -202,11 +211,11 @@ export function PriceCtaStrip({
         </div>
       ) : null}
 
-      {drop ? (
+      {publishedDrop ? (
         <div className="mt-2 text-sm" style={{ color: 'rgba(16,39,66,0.72)' }}>
-          Down <Price value={drop} /> from original list price{' '}
+          Down <Price value={publishedDrop.drop} exact /> from original list price{' '}
           <span style={{ color: 'rgba(16,39,66,0.72)' }}>
-            <Price value={listing.originalListPrice} className="line-through" />
+            <Price value={publishedDrop.original} exact className="line-through" />
           </span>
           {listing.priceDropCount && listing.priceDropCount > 1 ? (
             <> after {listing.priceDropCount} price changes.</>

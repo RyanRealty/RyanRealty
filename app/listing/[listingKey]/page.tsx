@@ -46,6 +46,7 @@ import { PlaceIdentityLine } from '@/components/site/listing-detail/PlaceIdentit
 import { KbFeatured } from '@/components/site/kb/KbFeatured.client'
 import { ListingLikeThisAlerts } from '@/components/site/listing-detail/ListingLikeThisAlerts'
 import { resolveListingPlaceAndMarket } from '@/lib/listing/listing-place-market'
+import { publishListingContactKey } from '@/lib/listing/publish-listing-contact-key'
 import { buildLifestyleLine } from '@/components/site/listing-detail/listing-city-lifestyle'
 import { PublishedCmaSection } from '@/components/site/listing-detail/PublishedCmaSection'
 import ListingBrokerCTA from '@/components/site/listing-detail/ListingBrokerCTA.client'
@@ -347,6 +348,11 @@ export default async function ListingDetailPage({ params }: PageProps) {
   // viewer in the main column so a tour-only listing still leads with photos.
   const virtualTours = videos.filter((v) => v.isVirtualTour)
   const reelVideos = videos.filter((v) => !v.isVirtualTour)
+  const contactKey =
+    publishListingContactKey({
+      listNumber: listing.listNumber,
+      listingKey: listing.listingKey,
+    }) ?? listing.listingKey
   const hero = (
     <ListingHero
       photos={photos}
@@ -407,7 +413,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       {photos.some((p) => p.url) ? (
         <RoomRestyle
           photos={photos.map((p) => ({ url: p.url, caption: p.caption ?? null }))}
-          listingKey={listing.listingKey}
+          listingKey={contactKey}
           city={listing.city}
           listPrice={listing.listPrice}
           beds={listing.beds}
@@ -481,7 +487,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
     <ListingBrokerCTA
       defaultBroker={ctaBroker}
       brokers={brokers}
-      listingKey={listingKey}
+      listingKey={contactKey}
       reviews={genericReviews}
       lockToDefault={listingAgent != null}
     />
@@ -580,7 +586,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
       <MetadataBlock schemas={listingJsonLdSchemas} />
       <ListingTracker
         listingKey={listing.listingKey}
-        listingId={listing.listingKey}
+        listingId={contactKey}
         price={listing.listPrice ?? undefined}
         community={listing.communityName ?? listing.subdivisionName ?? undefined}
         city={listing.city ?? undefined}
@@ -612,7 +618,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         {listing.builderName && builderTiles.length > 0 ? (
           <BuilderExploreSection builderName={listing.builderName} tiles={builderTiles} />
         ) : null}
-        <KbFooter towns={[]} listingKey={listing.listingKey} />
+        <KbFooter towns={[]} listingKey={contactKey} />
       </SmoothScrollProvider>
     </main>
   )

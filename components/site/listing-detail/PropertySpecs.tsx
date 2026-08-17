@@ -3,6 +3,7 @@ import {
   TabularNumber,
 } from '@/components/site/primitives'
 import type { ListingDetail } from '@/lib/data/types/listing'
+import { publishListingHoa } from '@/lib/listing/publish-listing-hoa'
 import { cn } from '@/lib/utils'
 
 /**
@@ -119,15 +120,6 @@ function txt(v: string | null | undefined): v is string {
   return typeof v === 'string' && v.trim().length > 0 && !v.startsWith('***')
 }
 
-function frequencyLabel(freq: string | null | undefined): string {
-  if (!txt(freq)) return ''
-  const f = freq.toLowerCase()
-  if (f.startsWith('month')) return 'per month'
-  if (f.startsWith('annual') || f.startsWith('year')) return 'per year'
-  if (f.startsWith('quarter')) return 'per quarter'
-  if (f.startsWith('semi')) return 'twice a year'
-  return `per ${freq.toLowerCase()}`
-}
 
 function buildGroups(listing: Props['listing']): Group[] {
   const groups: Group[] = []
@@ -229,17 +221,13 @@ function buildGroups(listing: Props['listing']): Group[] {
       label: 'Sale to list',
       value: <span className="tabular-nums">{(listing.saleToListRatio * 100).toFixed(1)}%</span>,
     })
-  if (num(listing.hoaMonthly))
-    financial.push({ label: 'HOA', value: <><Price value={listing.hoaMonthly} /> per month</> })
-  else if (num(listing.associationFee))
-    financial.push({
-      label: 'HOA',
-      value: (
-        <>
-          <Price value={listing.associationFee} /> {frequencyLabel(listing.associationFeeFrequency)}
-        </>
-      ),
-    })
+  const hoa = publishListingHoa({
+    hoaMonthly: listing.hoaMonthly,
+    associationFee: listing.associationFee,
+    associationFeeFrequency: listing.associationFeeFrequency,
+  })
+  if (hoa)
+    financial.push({ label: 'HOA', value: <><Price value={hoa.monthly} exact /> per month</> })
   if (num(listing.taxAnnualAmount))
     // exact: a tax bill is a filed dollar figure, not a marketing price.
     // Rounding to the nearest thousand made this cell disagree with the
