@@ -137,10 +137,11 @@ export function rollupPlatPublicInventory(
     byKey.set(platInventoryKey(plat.citySlug, plat.slug), { keys: [], prices: [] })
   }
   for (const row of rows) {
-    if (!row.listing_key || !row.subdivision_lower || !row.city_lower) continue
+    const cityLower = row.city_lower
+    if (!row.listing_key || !row.subdivision_lower || !cityLower) continue
     const matches = plats.filter((plat) => rowMatchesPlat(row, plat))
     const plat =
-      matches.find((p) => p.citySlug === slugify(row.city_lower)) ?? matches[0] ?? null
+      matches.find((p) => p.citySlug === slugify(cityLower)) ?? matches[0] ?? null
     if (!plat) continue
     const key = platInventoryKey(plat.citySlug, plat.slug)
     const bucket = byKey.get(key) ?? { keys: [], prices: [] }
