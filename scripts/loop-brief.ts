@@ -157,9 +157,9 @@ async function main() {
   push('')
   push('--- FLEET INTAKE (ran at this boot) ---')
   push(
-    intake.processed === 0
+    intake.processed === 0 && intake.created.length === 0 && intake.folded === 0
       ? 'no new bot findings'
-      : `processed ${intake.processed}: ${intake.created.length} new node(s) · ${intake.duplicates} duplicate(s) · ${intake.baselines} baseline(s)${intake.errors.length ? ` · ERRORS: ${intake.errors.join('; ')}` : ''}`,
+      : `processed ${intake.processed}: ${intake.created.length} new node(s) · ${intake.appended} punch-list append(s) · ${intake.folded} folded · ${intake.duplicates} duplicate(s) · ${intake.baselines} baseline(s)${intake.errors.length ? ` · ERRORS: ${intake.errors.join('; ')}` : ''}`,
   )
   for (const c of intake.created) push(`  + ${c.title}`)
   push('')

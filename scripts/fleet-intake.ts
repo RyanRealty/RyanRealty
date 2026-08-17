@@ -23,7 +23,7 @@ async function main() {
   const sb = createClient(url, key)
   const r = await runFleetIntake(sb)
   console.log(
-    `findings processed: ${r.processed} · nodes created: ${r.created.length} · duplicates: ${r.duplicates} · baselines: ${r.baselines}`,
+    `findings processed: ${r.processed} · nodes created: ${r.created.length} · appended: ${r.appended} · folded: ${r.folded} · duplicates: ${r.duplicates} · baselines: ${r.baselines}`,
   )
   for (const c of r.created) console.log(`  -> node ${c.nodeId.slice(0, 8)}: ${c.title}`)
   for (const e of r.errors) console.error(`  ERROR: ${e}`)

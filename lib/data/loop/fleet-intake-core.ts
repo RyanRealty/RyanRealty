@@ -7,24 +7,314 @@
  * loop, the loop reshapes what bots test, automatically, every cycle.
  *
  * Verbs mapping (COMPANY_IMPROVEMENT §How Matt steers):
- *   ADD    — minor/major/p0 finding → OPEN work node (reproduce-or-reject).
+ *   ADD    — minor/major/p0 finding → one durable punch-list node (appends).
  *   CHANGE — a regression finding on shipped work (caseId regress-G<n>)
- *            carries the register-correction instruction in its contract.
+ *            still gets its own node; do not fold those into the punch list.
  *   info   — recorded as confirmed baseline, no node (never noise the queue).
+ *
+ * Punch-list identity (deterministic find-or-create):
+ *   version_gap = FLEET-PUNCH. That string is not a G-gap (`G\d+`), so it
+ *   does not collide with planned-gap numbering, the regress-G* CHANGE
+ *   path, or gap-order in the brief. The unique index on version_gap makes
+ *   the active row a singleton. Title stays queue-visible to
+ *   fleetNodePriority: `Fleet finding [p0]: review punch list` when any
+ *   punch line is p0, otherwise `Fleet finding [major]: review punch list`.
+ *   If a prior punch list is already done/killed and still holds the gap
+ *   key, the successor is found by that title + open/in_progress/blocked.
+ *
+ * Why not parent_id / ship-class: parent_id is a tree of children (Matt
+ * does not want that). ship-class batches sibling OPEN tickets at serve
+ * time — it does not stop intake from dripping a new node per finding.
+ * The user-visible result is one building node.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isCompanyImprovementDomain } from './domains'
 
+export const FLEET_PUNCH_GAP = 'FLEET-PUNCH'
+export const FLEET_PUNCH_TITLE_BODY = 'review punch list'
+export const FLEET_PUNCH_OUTPUT =
+  'Class fixes (or rejected findings) for every punch line, verified at 390+1280.'
+export const FLEET_PUNCH_ACCEPT =
+  'Each punch line is either fixed as a class or rejected with reproduce evidence.'
+export const FLEET_PUNCH_CONTRACT =
+  'FLEET-PUNCH — one durable fleet-review punch list. Class-fix every line (or reject with reproduce evidence). FIRST STEP on each line: reproduce it yourself; if it does not reproduce, reject that line with the evidence.'
+
+const PUNCH_TITLE_RE = /^Fleet finding \[(p0|major)\]: review punch list$/
+const FLEET_SINGLE_TITLE_RE = /^Fleet finding \[(p0|major|minor)\]:/
+const PUNCH_LINE_SEV_RE = /^-\s*\[(p0|major|minor)\]\s+/
+const FINGERPRINT_TAG_RE = /fleet:([a-f0-9]{8,})/i
+const REGRESS_GAP_RE = /^regress-(G\d+)$/
+const REGRESSION_MARK_RE = /REGRESSION of G\d+/
+
 export type FleetIntakeResult = {
   processed: number
   created: Array<{ nodeId: string; title: string }>
+  appended: number
+  folded: number
   duplicates: number
   baselines: number
   errors: string[]
 }
 
+export type FleetIntakeFinding = {
+  id: string
+  bot: string
+  case_id: string | null
+  url: string
+  viewport: string | null
+  expected: string
+  observed: string
+  severity: string
+  fingerprint: string
+  domain?: string | null
+}
+
+export type FleetIntakeActiveNode = {
+  id: string
+  title: string
+  objective: string
+  state: string
+  owner_session: string | null
+  version_gap: string | null
+  domain: string
+}
+
+export type FleetPunchDraft = {
+  id: string | null
+  title: string
+  objective: string
+  output: string
+  accept: string
+  versionGap: string | null
+  created: boolean
+  appended: number
+}
+
+export type FleetRegressionDraft = {
+  findingId: string
+  gap: string
+  domain: string
+  title: string
+  objective: string
+  output: string
+  accept: string
+}
+
+export type FleetIntakePlan = {
+  punch: FleetPunchDraft | null
+  punchFindingIds: string[]
+  regressions: FleetRegressionDraft[]
+  fold: Array<{ id: string; line: string }>
+  duplicates: string[]
+  baselines: string[]
+}
+
+export function fleetFingerprintTag(fingerprint: string): string {
+  return `fleet:${fingerprint}`
+}
+
+export function objectiveHasFingerprint(objective: string, fingerprint: string): boolean {
+  return objective.includes(fleetFingerprintTag(fingerprint))
+}
+
+export function isFleetPunchListTitle(title: string): boolean {
+  return PUNCH_TITLE_RE.test(title.trim())
+}
+
+export function isFleetPunchListNode(node: {
+  title: string
+  version_gap?: string | null
+  objective?: string
+}): boolean {
+  if (node.version_gap === FLEET_PUNCH_GAP) return true
+  if (isFleetPunchListTitle(node.title)) return true
+  return Boolean(node.objective?.includes('FLEET-PUNCH — one durable'))
+}
+
+export function findFleetPunchListNode<T extends FleetIntakeActiveNode>(nodes: T[]): T | null {
+  return nodes.find((n) => isFleetPunchListNode(n)) ?? null
+}
+
+export function fleetPunchListTitle(severity: 'p0' | 'major'): string {
+  return `Fleet finding [${severity}]: ${FLEET_PUNCH_TITLE_BODY}`
+}
+
+export function punchTitleSeverity(objective: string, incoming?: string): 'p0' | 'major' {
+  if (incoming === 'p0') return 'p0'
+  for (const line of objective.split('\n')) {
+    if (PUNCH_LINE_SEV_RE.exec(line)?.[1] === 'p0') return 'p0'
+  }
+  return 'major'
+}
+
+export function formatFleetPunchLine(input: {
+  severity: string
+  url: string
+  observed: string
+  fingerprint: string
+}): string {
+  const severity = ['p0', 'major', 'minor'].includes(input.severity) ? input.severity : 'minor'
+  const observed = String(input.observed).replace(/\s+/g, ' ').trim().slice(0, 160)
+  return `- [${severity}] ${input.url} — ${observed} ${fleetFingerprintTag(input.fingerprint)}`
+}
+
+export function appendPunchLine(objective: string, line: string): string {
+  const tag = line.match(FINGERPRINT_TAG_RE)?.[0]
+  if (tag && objective.includes(tag)) return objective
+  const base = objective.trimEnd()
+  return base ? `${base}\n${line}` : line
+}
+
+export function regressGapOf(caseId: string | null | undefined): string | null {
+  return String(caseId ?? '').match(REGRESS_GAP_RE)?.[1] ?? null
+}
+
+export function isFoldableFleetSingle(node: FleetIntakeActiveNode): boolean {
+  if (node.state !== 'open') return false
+  if (node.owner_session) return false
+  if (isFleetPunchListNode(node)) return false
+  if (!FLEET_SINGLE_TITLE_RE.test(node.title)) return false
+  if (REGRESSION_MARK_RE.test(node.objective)) return false
+  return true
+}
+
+export function punchLineFromSingleNode(node: { title: string; objective: string }): string | null {
+  const severity = node.title.match(FLEET_SINGLE_TITLE_RE)?.[1] ?? 'minor'
+  const fingerprint = node.objective.match(FINGERPRINT_TAG_RE)?.[1]
+  if (!fingerprint) return null
+  const abs = node.objective.match(/at (https?:\/\/[^\s\]]+)/i)?.[1]
+  const rel = node.objective.match(/at (\/[^\s\]]+)/)?.[1]
+  const url = abs ?? rel ?? ''
+  const quoted = node.objective.match(/observed "([^"]*)"/i)?.[1]
+  const fromTitle = node.title.replace(FLEET_SINGLE_TITLE_RE, '').trim()
+  const observed = quoted || fromTitle
+  return formatFleetPunchLine({ severity, url, observed, fingerprint })
+}
+
+export function initialPunchObjective(): string {
+  return FLEET_PUNCH_CONTRACT
+}
+
+function emptyPlan(): FleetIntakePlan {
+  return {
+    punch: null,
+    punchFindingIds: [],
+    regressions: [],
+    fold: [],
+    duplicates: [],
+    baselines: [],
+  }
+}
+
+function punchDraftFrom(
+  existing: FleetIntakeActiveNode | null,
+  objective: string,
+  appended: number,
+): FleetPunchDraft {
+  return {
+    id: existing?.id ?? null,
+    title: fleetPunchListTitle(punchTitleSeverity(objective)),
+    objective,
+    output: FLEET_PUNCH_OUTPUT,
+    accept: FLEET_PUNCH_ACCEPT,
+    versionGap: existing?.version_gap === FLEET_PUNCH_GAP ? FLEET_PUNCH_GAP : existing ? existing.version_gap : FLEET_PUNCH_GAP,
+    created: existing == null,
+    appended,
+  }
+}
+
+/**
+ * Pure merge: decide punch-list appends, regression singles, duplicates,
+ * baselines, and which unclaimed Fleet finding [ OPEN nodes to fold.
+ * runFleetIntake applies this plan to Supabase.
+ */
+export function mergeFleetIntake(
+  findings: FleetIntakeFinding[],
+  nodes: FleetIntakeActiveNode[],
+  originals: Record<string, { domain?: string | null; title?: string | null }> = {},
+): FleetIntakePlan {
+  const plan = emptyPlan()
+  const existingPunch = findFleetPunchListNode(nodes)
+  let punchObjective = existingPunch?.objective ?? initialPunchObjective()
+  let punchTouched = false
+  let appended = 0
+  const seenObjectives = nodes.map((n) => n.objective)
+
+  const alreadyOpen = (fingerprint: string) =>
+    seenObjectives.some((o) => objectiveHasFingerprint(o, fingerprint)) ||
+    objectiveHasFingerprint(punchObjective, fingerprint)
+
+  for (const f of findings) {
+    if (alreadyOpen(f.fingerprint)) {
+      plan.duplicates.push(f.id)
+      continue
+    }
+    if (f.severity === 'info') {
+      plan.baselines.push(f.id)
+      continue
+    }
+
+    const gap = regressGapOf(f.case_id)
+    if (gap) {
+      const original = originals[gap]
+      const domain =
+        original?.domain && isCompanyImprovementDomain(String(original.domain))
+          ? String(original.domain)
+          : f.domain && isCompanyImprovementDomain(String(f.domain))
+            ? String(f.domain)
+            : 'public-ux'
+      const regressionPrefix = `REGRESSION of ${gap} ("${original?.title ?? 'shipped work'}" — was DONE and accepted). `
+      const tag = fleetFingerprintTag(f.fingerprint)
+      const node = {
+        findingId: f.id,
+        gap,
+        domain,
+        title: `Fleet finding [${f.severity}]: ${String(f.observed).slice(0, 90)}`,
+        objective: `${tag} — ${regressionPrefix}bot ${f.bot} (case ${f.case_id ?? 'ad-hoc'}) at ${f.url}${f.viewport ? ` [${f.viewport}]` : ''}: expected "${f.expected}" but observed "${f.observed}". FIRST STEP: reproduce it yourself; if it does not reproduce, reject the finding and release this node with the evidence. ON FIX (CHANGE verb): restore the original accept, then update the REQUIREMENTS rows covering ${gap} with the new evidence.`,
+        output:
+          'Regression fixed as a class; original accept restored; covering register rows corrected with evidence.',
+        accept: `The original expected state holds at ${f.url} (and everywhere the class occurs), verified at 390+1280 with evidence.`,
+      }
+      plan.regressions.push(node)
+      seenObjectives.push(node.objective)
+      continue
+    }
+
+    const line = formatFleetPunchLine(f)
+    punchObjective = appendPunchLine(punchObjective, line)
+    seenObjectives.push(line)
+    plan.punchFindingIds.push(f.id)
+    appended += 1
+    punchTouched = true
+  }
+
+  for (const n of nodes) {
+    if (!isFoldableFleetSingle(n)) continue
+    const line = punchLineFromSingleNode(n)
+    if (!line) continue
+    const fp = line.match(FINGERPRINT_TAG_RE)?.[1]
+    if (fp && objectiveHasFingerprint(punchObjective, fp)) continue
+    punchObjective = appendPunchLine(punchObjective, line)
+    plan.fold.push({ id: n.id, line })
+    punchTouched = true
+  }
+
+  if (punchTouched) {
+    plan.punch = punchDraftFrom(existingPunch ?? null, punchObjective, appended)
+  }
+  return plan
+}
+
 export async function runFleetIntake(sb: SupabaseClient): Promise<FleetIntakeResult> {
-  const result: FleetIntakeResult = { processed: 0, created: [], duplicates: 0, baselines: 0, errors: [] }
+  const result: FleetIntakeResult = {
+    processed: 0,
+    created: [],
+    appended: 0,
+    folded: 0,
+    duplicates: 0,
+    baselines: 0,
+    errors: [],
+  }
 
   const { data: findings, error } = await sb
     .from('fleet_findings')
@@ -35,75 +325,153 @@ export async function runFleetIntake(sb: SupabaseClient): Promise<FleetIntakeRes
     result.errors.push(`findings unreadable: ${error.message}`)
     return result
   }
-  if (!findings?.length) return result
 
   const { data: openNodes } = await sb
     .from('loop_work_nodes')
-    .select('id,objective,state')
+    .select('id,title,objective,state,owner_session,version_gap,domain')
     .in('state', ['open', 'in_progress', 'blocked'])
-  const openObjectives = (openNodes ?? []).map((n) => String(n.objective))
 
-  for (const f of findings) {
-    result.processed += 1
-    const tag = `fleet:${f.fingerprint}`
+  const nodes = (openNodes ?? []) as FleetIntakeActiveNode[]
+  const incoming = (findings ?? []) as FleetIntakeFinding[]
+  result.processed = incoming.length
 
-    if (openObjectives.some((o) => o.includes(tag))) {
-      await sb
-        .from('fleet_findings')
-        .update({ status: 'duplicate', triaged_at: new Date().toISOString() })
-        .eq('id', f.id)
-      result.duplicates += 1
-      continue
+  const originals: Record<string, { domain?: string | null; title?: string | null }> = {}
+  const regressGaps = [
+    ...new Set(incoming.map((f) => regressGapOf(f.case_id)).filter((g): g is string => Boolean(g))),
+  ]
+  if (regressGaps.length) {
+    const { data: originalRows } = await sb
+      .from('loop_work_nodes')
+      .select('version_gap,domain,title')
+      .in('version_gap', regressGaps)
+    for (const row of originalRows ?? []) {
+      const gap = String(row.version_gap ?? '')
+      if (gap) originals[gap] = { domain: row.domain, title: row.title }
     }
+  }
 
-    if (f.severity === 'info') {
-      await sb
-        .from('fleet_findings')
-        .update({ status: 'confirmed', triaged_at: new Date().toISOString() })
-        .eq('id', f.id)
-      result.baselines += 1
-      continue
-    }
+  const plan = mergeFleetIntake(incoming, nodes, originals)
+  if (!incoming.length && !plan.punch) return result
 
-    // CHANGE mapping: a regression on shipped work names its original gap and
-    // carries the register-correction duty into the fix node's contract.
-    const regressGap = String(f.case_id ?? '').match(/^regress-(G\d+)$/)?.[1] ?? null
-    let domain = f.domain && isCompanyImprovementDomain(String(f.domain)) ? String(f.domain) : 'public-ux'
-    let regressionPrefix = ''
-    if (regressGap) {
-      const { data: original } = await sb
-        .from('loop_work_nodes')
-        .select('domain,title')
-        .eq('version_gap', regressGap)
-        .maybeSingle()
-      if (original?.domain && isCompanyImprovementDomain(String(original.domain))) {
-        domain = String(original.domain)
-      }
-      regressionPrefix = `REGRESSION of ${regressGap} ("${original?.title ?? 'shipped work'}" — was DONE and accepted). `
-    }
+  const now = new Date().toISOString()
 
-    const node = {
-      domain,
-      title: `Fleet finding [${f.severity}]: ${String(f.observed).slice(0, 90)}`,
-      objective: `${tag} — ${regressionPrefix}bot ${f.bot} (case ${f.case_id ?? 'ad-hoc'}) at ${f.url}${f.viewport ? ` [${f.viewport}]` : ''}: expected "${f.expected}" but observed "${f.observed}". FIRST STEP: reproduce it yourself; if it does not reproduce, reject the finding and release this node with the evidence.${regressGap ? ` ON FIX (CHANGE verb): restore the original accept, then update the REQUIREMENTS rows covering ${regressGap} with the new evidence.` : ''}`,
-      output: regressGap
-        ? 'Regression fixed as a class; original accept restored; covering register rows corrected with evidence.'
-        : 'Defect fixed as a CLASS everywhere it occurs, or the finding rejected with reproduction evidence.',
-      accept: `The original expected state holds at ${f.url} (and everywhere the class occurs), verified at 390+1280 with evidence.`,
-    }
+  for (const id of plan.duplicates) {
+    await sb.from('fleet_findings').update({ status: 'duplicate', triaged_at: now }).eq('id', id)
+    result.duplicates += 1
+  }
+  for (const id of plan.baselines) {
+    await sb.from('fleet_findings').update({ status: 'confirmed', triaged_at: now }).eq('id', id)
+    result.baselines += 1
+  }
 
-    const { data: created, error: nodeErr } = await sb.from('loop_work_nodes').insert(node).select('id').single()
+  for (const r of plan.regressions) {
+    const { data: created, error: nodeErr } = await sb
+      .from('loop_work_nodes')
+      .insert({
+        domain: r.domain,
+        title: r.title,
+        objective: r.objective,
+        output: r.output,
+        accept: r.accept,
+      })
+      .select('id')
+      .single()
     if (nodeErr || !created?.id) {
-      result.errors.push(`node create failed for ${f.id}: ${nodeErr?.message}`)
+      result.errors.push(`node create failed for ${r.findingId}: ${nodeErr?.message}`)
       continue
     }
     await sb
       .from('fleet_findings')
-      .update({ status: 'node_created', node_id: created.id, triaged_at: new Date().toISOString() })
-      .eq('id', f.id)
-    openObjectives.push(node.objective)
-    result.created.push({ nodeId: String(created.id), title: node.title })
+      .update({ status: 'node_created', node_id: created.id, triaged_at: now })
+      .eq('id', r.findingId)
+    result.created.push({ nodeId: String(created.id), title: r.title })
+  }
+
+  if (plan.punch) {
+    const punchId = await persistPunchList(sb, plan.punch, result)
+    if (punchId) {
+      for (const id of plan.punchFindingIds) {
+        await sb
+          .from('fleet_findings')
+          .update({ status: 'node_created', node_id: punchId, triaged_at: now })
+          .eq('id', id)
+      }
+      result.appended = plan.punch.appended
+      for (const folded of plan.fold) {
+        const { error: killErr } = await sb
+          .from('loop_work_nodes')
+          .update({
+            state: 'killed',
+            blocked_reason: `Folded into FLEET-PUNCH punch list (node ${punchId}).`,
+            updated_at: now,
+          })
+          .eq('id', folded.id)
+          .eq('state', 'open')
+        if (killErr) {
+          result.errors.push(`fold kill failed for ${folded.id}: ${killErr.message}`)
+          continue
+        }
+        await sb.from('fleet_findings').update({ node_id: punchId }).eq('node_id', folded.id)
+        result.folded += 1
+      }
+    }
   }
 
   return result
+}
+
+async function persistPunchList(
+  sb: SupabaseClient,
+  punch: FleetPunchDraft,
+  result: FleetIntakeResult,
+): Promise<string | null> {
+  const now = new Date().toISOString()
+  if (punch.id) {
+    const { error } = await sb
+      .from('loop_work_nodes')
+      .update({
+        title: punch.title,
+        objective: punch.objective,
+        output: punch.output,
+        accept: punch.accept,
+        updated_at: now,
+      })
+      .eq('id', punch.id)
+    if (error) {
+      result.errors.push(`punch list update failed: ${error.message}`)
+      return null
+    }
+    return punch.id
+  }
+
+  const insert = {
+    domain: 'public-ux',
+    title: punch.title,
+    objective: punch.objective,
+    output: punch.output,
+    accept: punch.accept,
+    version_gap: FLEET_PUNCH_GAP,
+  }
+  const { data: created, error: nodeErr } = await sb.from('loop_work_nodes').insert(insert).select('id').single()
+  if (!nodeErr && created?.id) {
+    result.created.push({ nodeId: String(created.id), title: punch.title })
+    return String(created.id)
+  }
+  // Unique version_gap: a done/killed row still holds FLEET-PUNCH. Successor
+  // uses the documented title identity and a null gap.
+  if (nodeErr?.code === '23505') {
+    const { data: retry, error: retryErr } = await sb
+      .from('loop_work_nodes')
+      .insert({ ...insert, version_gap: null })
+      .select('id')
+      .single()
+    if (retryErr || !retry?.id) {
+      result.errors.push(`punch list create failed after gap collision: ${retryErr?.message}`)
+      return null
+    }
+    result.created.push({ nodeId: String(retry.id), title: punch.title })
+    return String(retry.id)
+  }
+  result.errors.push(`punch list create failed: ${nodeErr?.message}`)
+  return null
 }
