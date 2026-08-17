@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { publishResortIndexFigures } from './publish-resort-index-figures'
+import {
+  lookupRegistryResortFigures,
+  publishResortIndexFigures,
+  registryResortOverlayKeys,
+} from './publish-resort-index-figures'
 
 describe('publishResortIndexFigures', () => {
   it('publishes the alias-aware count and median together', () => {
@@ -21,5 +25,29 @@ describe('publishResortIndexFigures', () => {
       activeCount: null,
       medianListPrice: null,
     })
+  })
+})
+
+describe('lookupRegistryResortFigures', () => {
+  const overlay = new Map([
+    ['eagle-crest', { activeCount: 73, medianListPrice: 549_000 }],
+    ['redmond-eagle-crest', { activeCount: 73, medianListPrice: 549_000 }],
+  ])
+
+  it('resolves the A-Z -resort slug (Eagle Crest founding)', () => {
+    expect(
+      lookupRegistryResortFigures(overlay, {
+        slug: 'redmond-eagle-crest-resort',
+        citySlug: 'redmond',
+        name: 'Eagle Crest Resort',
+        entityKey: 'redmond:eagle-crest-resort',
+      }),
+    ).toEqual({ activeCount: 73, medianListPrice: 549_000 })
+  })
+
+  it('stamps -resort overlay keys', () => {
+    expect(registryResortOverlayKeys({ slug: 'eagle-crest', citySlug: 'redmond', label: 'Eagle Crest' })).toEqual(
+      expect.arrayContaining(['eagle-crest', 'redmond-eagle-crest', 'redmond-eagle-crest-resort']),
+    )
   })
 })

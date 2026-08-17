@@ -1,7 +1,7 @@
 /**
- * Claim FLEET-PUNCH parent for the served fleet:public-ux:search slice.
+ * Claim FLEET-PUNCH parent for the served fleet:public-ux:place-pages slice.
  *
- *   npx tsx scripts/loop-claim-fleet-punch.ts
+ *   npx tsx scripts/loop-claim-fleet-punch-place-v7.ts
  */
 import { createClient } from '@supabase/supabase-js'
 import { config } from 'dotenv'
@@ -9,7 +9,7 @@ import { isLegalTransition } from '../lib/data/loop/work-node'
 
 config({ path: '.env.local' })
 
-const OWNER = 'cursor-loop-chain-bc-decba6c7-2026-08-17t13-06'
+const OWNER = 'cursor-loop-sentinel-bc-4e9a76be-2026-08-17t13-50'
 const ID = '3a6198cd-fcd5-4aa2-b51a-3b62c2c0e437'
 
 async function main() {
@@ -22,7 +22,7 @@ async function main() {
   const sb = createClient(url, key)
   const { data: row, error: readErr } = await sb
     .from('loop_work_nodes')
-    .select('id,state,title,owner_session,updated_at')
+    .select('id,state,title,owner_session,updated_at,objective')
     .eq('id', ID)
     .single()
   if (readErr || !row) {
@@ -30,7 +30,7 @@ async function main() {
     process.exit(1)
   }
   if (row.state === 'in_progress' && row.owner_session === OWNER) {
-    console.log(JSON.stringify({ ok: true, already: row }, null, 2))
+    console.log(JSON.stringify({ ok: true, already: { ...row, objective: undefined } }, null, 2))
     return
   }
   if (row.state === 'in_progress' && row.owner_session !== OWNER) {

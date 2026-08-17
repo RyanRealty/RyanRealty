@@ -18,6 +18,7 @@ import {
   registryChildPlats,
 } from '@/lib/data/geo/plat-public-inventory'
 import { communityImage, cityHero } from '@/lib/geo-images'
+import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import CommunityIndexBrowser from '@/components/community/CommunityIndexBrowser'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -50,8 +51,7 @@ type FeaturedPlat = {
 }
 
 function fmtPrice(n: number | null | undefined): string | null {
-  if (n == null || !Number.isFinite(n)) return null
-  return `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
+  return formatIndexMedianUsd(n)
 }
 
 function pickFeaturedPlats(children: FeaturedPlat[], cap = 12): FeaturedPlat[] {

@@ -659,6 +659,13 @@ describe('SEARCH_UX_WAVE3 P6/P7 polish (2026-08-11)', () => {
     }
   })
 
+  it('All filters sheet is full width at 390 so boolean labels are not clipped', () => {
+    const sheet = readSrc('components/search/AllFiltersSheet.tsx')
+    expect(sheet).toMatch(/data-\[side=right\]:w-full/)
+    expect(sheet).toMatch(/whitespace-normal break-words/)
+    expect(sheet).toMatch(/min-w-0/)
+  })
+
   it('P7: first four search cards request image priority for LCP', () => {
     const card = readSrc('components/site/ListingCard.tsx')
     expect(card).toMatch(/priority\?: boolean/)

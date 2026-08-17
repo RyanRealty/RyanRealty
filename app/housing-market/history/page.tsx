@@ -23,7 +23,7 @@ import {
   CO_FEATURE_LABELS,
   type CoFeatureKey,
 } from '@/lib/data/analytics/getCoFeatureAnnual'
-import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
+import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { formatDate } from '@/lib/format/date'
 import { formatPrice } from '@/lib/format/money'
@@ -195,7 +195,7 @@ export default async function HousingMarketHistoryPage({ searchParams }: { searc
             headline={v3Text(`Closed sales explorer, ${year}`)}
             figures={[firstKpi, ...restKpi]}
             source={v3Text(
-              `${ANALYTICS_METHODOLOGY_V1}. Active query: ${filterBits.join(' · ')}. Aggregates only. No sold addresses on this page. Source ${result.source}`,
+              `${PUBLIC_CLOSED_SALES_METHODOLOGY} ${filterBits.join(' · ')}. Aggregates only. No sold addresses on this page.`,
             )}
             updated={computedLabel ? v3Text(computedLabel) : undefined}
             action={{

@@ -43,6 +43,9 @@ import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
+import { CITY_TILE_FETCH_LIMIT, publishCityInventory } from '@/lib/market/publish-city-inventory'
+import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
+import { isStockPlaceHeroUrl } from '@/lib/market/publish-place-hero'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -50,7 +53,7 @@ import { getCityMetadataByName } from '@/lib/data/cities/getCityMetadata'
 import { getCityContent, buildDataDrivenCityAbout } from '@/lib/city-content'
 import { CITY_QUICK_FACTS, PRIMARY_CITIES } from '@/lib/cities'
 import bendNeighborhoodPolygons from '@/data/bend/bend-neighborhood-polygons.json'
-import { cityHero, GOLF_COMMUNITY_IMAGES } from '@/lib/geo-images'
+import { cityHero } from '@/lib/geo-images'
 import { resolveFeaturedItems } from '@/lib/kb/resolve-featured-items'
 import { curateFeaturedTiles } from '@/lib/kb/curate-featured'
 import { placeHeroLead } from '@/lib/kb/place-hero-lead'
@@ -58,7 +61,7 @@ import { buildYearSeries } from '@/lib/kb/year-series'
 import { assignNeighborhoodPhotos } from '@/lib/kb/neighborhood-photos'
 import { resortActiveSfrCounts, resortLabelToSlug, cityResorts } from '@/lib/kb/resort-active-counts'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
-import { CITY_HERO_VIDEO, CITY_MARQUEE_COMMUNITIES, communityVideoUrl } from '@/lib/kb/city-page-config'
+import { CITY_HERO_VIDEO, CITY_MARQUEE_COMMUNITIES, CITY_RESORT_LEDGER_IMG, communityVideoUrl } from '@/lib/kb/city-page-config'
 // Row-to-prop shaping shared with the neighborhood + community place pages —
 // one copy, so a fix cannot land on one of the three and drift on the others.
 import {
@@ -120,27 +123,6 @@ export const revalidate = 60
 
 type Props = { params: Promise<{ slug: string }> }
 
-// Hover photo for each resort/golf community in the master-planned ledger, keyed by
-// the resort-registry slug. The literal-name image lookups miss for resorts (their
-// banner rows are tagged under alias subdivisions), so this curated map is the
-// primary source. Every path is a verified file under public/.
-const RESORT_IMG: Record<string, string> = {
-  // KB hero imagery (non-golf-lp slugs) stays as KB literals.
-  tetherow: '/images/kb/tetherow-golf-aerial.jpg',
-  'broken-top': '/images/kb/broken-top.jpg',
-  'northwest-crossing': '/images/kb/northwest-crossing.jpg',
-  'vandevert-ranch': '/images/kb/vandevert-ranch.jpg',
-  'three-rivers': '/images/kb/three-rivers.jpg',
-  'caldera-springs': '/images/kb/caldera-springs.jpg',
-  // Golf/master-community tile imagery from the canonical source (D86 / G30).
-  pronghorn: GOLF_COMMUNITY_IMAGES.pronghorn,
-  'awbrey-glen': GOLF_COMMUNITY_IMAGES['awbrey-glen'],
-  'widgi-creek': GOLF_COMMUNITY_IMAGES['widgi-creek'],
-  crosswater: GOLF_COMMUNITY_IMAGES.crosswater,
-  'eagle-crest': GOLF_COMMUNITY_IMAGES['eagle-crest'],
-  'brasada-ranch': GOLF_COMMUNITY_IMAGES['brasada-ranch'],
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const snapshot = await getGeoSnapshot({ geoType: 'city', geoKey: slug })
@@ -191,7 +173,7 @@ export default async function CityDetailPage({ params }: Props) {
     // market_pulse_live's SFR activeCount. All-types tiles here made the badge read
     // 1,000 against a hero of 491 on /cities/bend. The 1500 cap also stops binding
     // once the pull is SFR-only.
-    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: 1500 }), [], 4500, 'city:mapTiles'),
+    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: CITY_TILE_FETCH_LIMIT }), [], 4500, 'city:mapTiles'),
     // Wide SFR pool for curateFeaturedTiles below — the old price-desc top-14
     // pull had ONLY luxury outliers in it, so curation ran but had nothing
     // mid-market to pick from (design-audit P2).
@@ -212,11 +194,25 @@ export default async function CityDetailPage({ params }: Props) {
   // (a city without one renders the LABELED regional fallback, never a wrong-city
   // photo). DB hero_image_url override wins. (§D86)
   // §0 UNKNOWN IS NOT ZERO: `?? 0` published a fabricated "0 homes for sale" whenever the pulse read timed out.
-  const activeCount: number | null = pulse?.activeCount ?? null
-  const sellMedian = publishSellMedian({ placeMedian: pulse?.medianListPrice ?? null, grain: 'city', placeName: cityName })
+  // When the address-set tile fetch is complete (under the cap), publish that
+  // count so hero / facts / JSON-LD cannot say 6 against a 24-door list.
+  const publishedInventory = publishCityInventory({
+    pulseCount: pulse?.activeCount ?? null,
+    pulseMedian: pulse?.medianListPrice ?? null,
+    tileCount: mapTiles.length,
+    tileMedian: medianListPriceOfTiles(mapTiles),
+    tileLimit: CITY_TILE_FETCH_LIMIT,
+    tileFetchOk: mapTiles.length > 0,
+  })
+  const activeCount: number | null = publishedInventory.count
+  const publishedMedian = publishedInventory.medianListPrice
+  const sellMedian = publishSellMedian({ placeMedian: publishedMedian, grain: 'city', placeName: cityName })
   const curatedHero = cityHero(slug)
   const heroImageUrl = cityMeta?.hero_image_url ?? null
-  const heroPhoto = heroImageUrl ? { src: heroImageUrl, verified: true } : curatedHero
+  const heroPhoto =
+    heroImageUrl && !isStockPlaceHeroUrl(heroImageUrl)
+      ? { src: heroImageUrl, verified: true }
+      : curatedHero
   const heroVideoCfg = CITY_HERO_VIDEO[slug]
   const heroVideoSrc = heroVideoCfg?.videoSrc ?? null
   const heroPosterSrc = heroVideoCfg?.posterSrc ?? heroPhoto.src
@@ -235,13 +231,13 @@ export default async function CityDetailPage({ params }: Props) {
         schoolDistrict: quickFacts?.schoolDistrict ?? null,
         nearestAirport: quickFacts?.nearestAirport ?? null,
         activeCount: activeCount ?? 0,
-        medianPrice: pulse?.medianListPrice ?? snapshot.medianListPrice,
+        medianPrice: publishedMedian ?? snapshot.medianListPrice,
         communityCount: communitySnapshots.length,
       }).slice(0, 2)
   const daysFact = publishDaysLabel(pulse?.medianDaysToPending)
   const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
-    ...(pulse?.medianListPrice ? [{ label: 'Median list', value: kbMoneyFull(pulse.medianListPrice) ?? '—' }] : []),
+    ...(publishedMedian ? [{ label: 'Median list', value: kbMoneyFull(publishedMedian) ?? '—' }] : []),
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(daysFact ? [{ label: 'Median to pending', value: daysFact }] : []),
     ...(quickFacts?.elevation ? [{ label: 'Elevation', value: quickFacts.elevation }] : []),
@@ -250,7 +246,7 @@ export default async function CityDetailPage({ params }: Props) {
 
   // Featured + map + ticker. Curated like the homepage rail (Phase D) so
   // price-desc doesn't lead with pure luxury outliers (design-audit P2).
-  const cityMedians = pulse?.medianListPrice != null ? Array(4).fill({ name: cityName, medianPrice: pulse.medianListPrice }) : []
+  const cityMedians = publishedMedian != null ? Array(4).fill({ name: cityName, medianPrice: publishedMedian }) : []
   const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(curateFeaturedTiles(featuredTiles, cityMedians, 14))
   const mapFeatures = buildMapPointFeatures(mapTiles)
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
@@ -334,7 +330,7 @@ export default async function CityDetailPage({ params }: Props) {
       href: getPlaceLinks({ type: 'community', slug: c.slug, citySlug: slug }).placeUrl,
       activeCount: resortSfrCounts.get(c.slug) ?? communitySfrBySlug.get(c.slug) ?? 0,
       medianPrice: null,
-      img: RESORT_IMG[c.slug] ?? commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
+      img: CITY_RESORT_LEDGER_IMG[c.slug] ?? commImgBySlug.get(c.slug) ?? commImgByName.get(c.label.toLowerCase().trim()) ?? '',
     }))
 
   // Communities rail — EVERY community in the city that has a banner photo, with
@@ -394,10 +390,10 @@ export default async function CityDetailPage({ params }: Props) {
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: pulse?.activeCount ?? snapshot.activeSfrCount })
   const marketData: KbMarketData = {
-    active: pulse?.activeCount ?? null,
+    active: activeCount,
     closed30: pulse?.closedLast30Days ?? null,
     new30: null,
-    medianList: pulse?.medianListPrice ?? null,
+    medianList: publishedMedian,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
@@ -412,7 +408,12 @@ export default async function CityDetailPage({ params }: Props) {
   // must not vanish when getMarketPulse times out or has no row. Fall back to the
   // always-present geo snapshot (active SFR count + median list + as-of), which is
   // awaited above and never null. Every figure stays verified (§0).
-  const marketFaqInput: MarketFaqInput = { ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }), monthsOfSupply }
+  const marketFaqInput: MarketFaqInput = {
+    ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }),
+    activeCount: activeCount ?? snapshot.activeSfrCount,
+    medianListPrice: publishedMedian ?? snapshot.medianListPrice,
+    monthsOfSupply,
+  }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)
   const hasMap = mapFeatures.length > 0
   const citySchemas: SchemaInput[] = [
@@ -454,7 +455,7 @@ export default async function CityDetailPage({ params }: Props) {
         cityName={cityName}
         slug={slug}
         listingCount={activeCount}
-        medianPrice={pulse?.medianListPrice ?? null}
+        medianPrice={publishedMedian}
         communityCount={communitySnapshots.length}
       />
       <KbSectionTracker pageType="city" />
@@ -463,14 +464,14 @@ export default async function CityDetailPage({ params }: Props) {
       <SmoothScrollProvider>
         <KbHero
           data={{
-            activeCount: pulse?.activeCount ?? null,
-            medianListPrice: pulse?.medianListPrice ?? null,
+            activeCount,
+            medianListPrice: publishedMedian,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow={`${cityName} · Oregon`}
           titleTop={cityName}
           titleBottom="Homes for Sale"
-          lead={placeHeroLead({ placeName: cityName, activeCount: pulse?.activeCount ?? null })}
+          lead={placeHeroLead({ placeName: cityName, activeCount })}
           videoSrc={heroVideoSrc}
           posterSrc={heroPosterSrc}
           posterAlt={`${cityName}, Oregon`}

@@ -162,17 +162,16 @@ describe('design directive contracts', () => {
     expect(src).not.toMatch(/company:\s*['"]{2}/)
   })
 
-  it('D78 — city hero active count comes from getMarketPulse, not geo_snapshot all-count', () => {
+  it('D78 — city hero active count comes from publishCityInventory, not geo_snapshot all-count', () => {
     const src = readSrc('app/cities/[slug]/page.tsx')
-    // Hero activeCount must derive from the market pulse (same source as
-    // the MarketSnapshot card), never from snapshot.activeAllCount. The
-    // `: number | null` annotation is required (§0 below), so allow it here.
+    // Complete address-set tiles win when the fetch is under the cap.
+    // Empty / timed-out / capped fetches keep the pulse (R-020). Never
+    // snapshot.activeAllCount.
     expect(src).toMatch(/getMarketPulse\s*\(/)
-    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*pulse\?\.activeCount/)
+    expect(src).toMatch(/publishCityInventory\s*\(/)
+    expect(src).toMatch(/activeCount(?::[^=]*)?=\s*publishedInventory\.count/)
     expect(src).not.toMatch(/activeCount\s*=\s*snapshot\.activeAllCount/)
-    // §0 UNKNOWN IS NOT ZERO. `pulse` is a withTimeoutFallback whose fallback is
-    // null, so `?? 0` published a fabricated "0 homes for sale" on every timeout.
-    expect(src).not.toMatch(/activeCount(?::[^=]*)?=\s*pulse\?\.activeCount\s*\?\?\s*0/)
+    expect(src).not.toMatch(/activeCount(?::[^=]*)?=[\s\S]{0,80}\?\?\s*0\b/)
   })
 
   it('§0 — neighborhood active count is the public inventory DAL, never a second population', () => {
@@ -325,7 +324,7 @@ describe('design directive contracts', () => {
     expect(src).toMatch(/golfCommunityItems: KbTownItem\[\] = cityResorts\(slug\)/)
     expect(src).toMatch(/resortSfrCounts = resortActiveSfrCounts\(slug, resortTiles\)/)
     // golf/master-planned hover photos resolve from the curated resort image map
-    expect(src).toMatch(/RESORT_IMG\[c\.slug\]/)
+    expect(src).toMatch(/CITY_RESORT_LEDGER_IMG\[c\.slug\]/)
   })
 
   it('D93 — activity section is "Latest market activity" with per-row listing thumbnails', () => {

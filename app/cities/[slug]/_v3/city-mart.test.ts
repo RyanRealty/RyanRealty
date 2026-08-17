@@ -65,5 +65,8 @@ describe('place mart shaping', () => {
     expect(regionMartContextTrace({ ...row(), grain: 'region' })).toMatch(
       /Central Oregon 2024, all property types/,
     )
+    expect(regionMartContextTrace({ ...row(), grain: 'region' })).not.toMatch(
+      /analytics_mart|closed_cte|ILIKE/,
+    )
   })
 })

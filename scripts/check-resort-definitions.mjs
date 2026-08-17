@@ -146,7 +146,7 @@ if (cityPageSrc) {
       // golf-ledger membership source
       { token: 'cityResorts(slug)', why: 'golf-ledger resort membership' },
       // hover photo map lookup
-      { token: 'RESORT_IMG[', why: 'resort hover photos' },
+      { token: 'CITY_RESORT_LEDGER_IMG[', why: 'resort hover photos' },
     ]
     for (const { token, why } of required) {
       if (!cityPageSrc.includes(token)) {
@@ -288,6 +288,26 @@ for (const [pagePath, pageSrc] of [
     })
     for (const slug of uncovered) {
       warnings.push(`${pagePath}: Bend resort "${slug}" has no RESORT_IMG key (hover photo falls back to community/empty)`)
+    }
+  }
+}
+
+const CITY_RESORT_IMG = 'lib/kb/city-page-config.ts'
+const cityResortImgSrc = readFileSync(CITY_RESORT_IMG, 'utf8')
+if (cityPageSrc.includes('CITY_RESORT_LEDGER_IMG[')) {
+  const declMatch = cityResortImgSrc.match(/export const\s+CITY_RESORT_LEDGER_IMG[^=]*=\s*\{([\s\S]*?)\n\}/)
+  if (!declMatch) {
+    fails.push(`${CITY_PAGE}: reads CITY_RESORT_LEDGER_IMG[...] but ${CITY_RESORT_IMG} has no map declaration`)
+  } else if (registry) {
+    const mapBody = declMatch[1]
+    const bendResortSlugs = (registry.communities ?? [])
+      .filter((c) => c?.is_resort === true && c.city_slug === 'bend')
+      .map((c) => c.slug)
+    for (const slug of bendResortSlugs) {
+      const keyRe = new RegExp(`(^|[\\s{,])(['"\`]?)${slug.replace(/[-/\\^$*+?.()|[\\]{}]/g, '\\$&')}\\2\\s*:`, 'm')
+      if (!keyRe.test(mapBody)) {
+        warnings.push(`${CITY_RESORT_IMG}: Bend resort "${slug}" has no CITY_RESORT_LEDGER_IMG key (hover photo falls back to community/empty)`)
+      }
     }
   }
 }

@@ -24,6 +24,8 @@ describe('publishListingAsk', () => {
     expect(formatPublishedAsk(1999500)).not.toBe('$2,000,000')
     expect(formatPublishedAsk(919500)).toBe('$919,500')
     expect(formatPublishedAsk(919500)).not.toBe('$920,000')
+    expect(formatPublishedAsk(1999900)).toBe('$1,999,900')
+    expect(formatPublishedAsk(1999900)).not.toBe('$2,000,000')
   })
 })
 

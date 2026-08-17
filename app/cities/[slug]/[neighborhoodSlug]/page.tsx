@@ -92,6 +92,7 @@ import { MarketSources } from '@/components/site/MarketSources'
 import { FAQBlock } from '@/components/site/FAQBlock'
 import { KbSectionTracker } from '@/components/site/kb/KbSectionTracker.client'
 import { formatPriceExact } from '@/lib/format/money'
+import { publishNeighborhoodHero } from '@/lib/market/publish-place-hero'
 import { kbMoneyFull } from '@/components/site/kb/types'
 import type { KbTownItem, KbMarketData } from '@/components/site/kb/types'
 import { TESTIMONIALS } from '@/lib/testimonials'
@@ -243,9 +244,11 @@ export default async function NeighborhoodDetailPage({ params }: Props) {
   // Curated communityImage by boundary slug (handles a neighborhood sharing its
   // name with a resort), then the DB hero, then the city photo with a labeled
   // regional fallback.
-  const curatedHero = communityImage(boundaryNeighborhoodSlug) ?? communityImage(neighborhoodSlug)
-  const heroPhoto = curatedHero ?? neighborhood.heroImageUrl ?? cityHero(citySlug).src
-  const heroVerified = Boolean(curatedHero || neighborhood.heroImageUrl)
+  const { src: heroPhoto, verified: heroVerified } = publishNeighborhoodHero({
+    curated: communityImage(boundaryNeighborhoodSlug) ?? communityImage(neighborhoodSlug),
+    dbUrl: neighborhood.heroImageUrl,
+    cityFallbackSrc: cityHero(citySlug).src,
+  })
   const mediaCaption = heroVerified ? undefined : 'Regional view · Cascade Range'
 
   const neighborhoodLabel = `${neighborhood.name} · ${cityName}`

@@ -5,7 +5,7 @@
  * A missing mart row is omitted, never printed as zero.
  */
 import { v3Text, type V3ChartProps, type V3InstrumentFigure } from '@/components/site/v3'
-import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
+import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
 import { CLOSED_SALES_YEAR } from '@/app/housing-market/_v3/hub-constants'
 import { closedMartRow, compositionParts, volumeCompact } from '@/app/housing-market/_v3/closed-kpis'
@@ -59,15 +59,14 @@ export function placeMartFigures(
 export function placeMartTrace(mart: PlaceMartFigure, cityName: string): string {
   if (mart.grain === 'city') {
     return (
-      `closed MLS sales through Oregon Data Share, ${cityName}, all property types, ` +
-      `calendar year ${mart.year}, analytics_mart_market_annual city row. Not active inventory. ` +
-      ANALYTICS_METHODOLOGY_V1
+      `Closed MLS sales through Oregon Data Share, ${cityName}, all property types, ` +
+      `calendar year ${mart.year}. Not active inventory. ${PUBLIC_CLOSED_SALES_METHODOLOGY}`
     )
   }
   return (
-    `closed MLS sales through Oregon Data Share, Central Oregon service-area cities, ` +
-    `all property types, calendar year ${mart.year}, analytics_mart_market_annual region row. ` +
-    `Not ${cityName} city volume. Not active inventory. ${ANALYTICS_METHODOLOGY_V1}`
+    `Closed MLS sales through Oregon Data Share, Central Oregon service-area cities, ` +
+    `all property types, calendar year ${mart.year}. ` +
+    `Not ${cityName} city volume. Not active inventory. ${PUBLIC_CLOSED_SALES_METHODOLOGY}`
   )
 }
 
@@ -81,7 +80,7 @@ export function cityInstrumentSource(pulseTrace: string, mart: PlaceMartFigure |
 export function regionMartContextTrace(mart: PlaceMartFigure): string {
   return (
     `Calendar-year dollar volume is Central Oregon ${mart.year}, all property types, ` +
-    `analytics_mart_market_annual region row, not this neighborhood.`
+    `not this neighborhood.`
   )
 }
 

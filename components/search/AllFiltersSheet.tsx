@@ -672,7 +672,10 @@ export default function AllFiltersSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="w-full data-[side=right]:w-full sm:max-w-md sm:data-[side=right]:max-w-md"
+      >
         <SheetHeader className="px-4 pt-4 pb-0">
           <SheetTitle>All filters</SheetTitle>
           {closedScope && (
@@ -787,7 +790,7 @@ export default function AllFiltersSheet({
                             <Label
                               key={def.key}
                               className={cn(
-                                'flex items-center gap-2',
+                                'flex min-w-0 items-start gap-2',
                                 fieldDisabled(def) || zeroDisabled
                                   ? 'cursor-not-allowed opacity-50'
                                   : 'cursor-pointer'
@@ -805,7 +808,7 @@ export default function AllFiltersSheet({
                               />
                               <span
                                 className={cn(
-                                  'text-sm text-foreground',
+                                  'min-w-0 whitespace-normal break-words text-sm text-foreground',
                                   meta.suspended && 'line-through decoration-2'
                                 )}
                               >
