@@ -12,7 +12,10 @@ import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
 import resortRegistry from '@/data/resort-communities.json' assert { type: 'json' }
 import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
-import { publishResortIndexFigures } from '@/lib/market/publish-resort-index-figures'
+import {
+  publishResortIndexFigures,
+  registryResortOverlayKeys,
+} from '@/lib/market/publish-resort-index-figures'
 import { fetchAllCityActiveSfr } from '@/lib/kb/city-active-sfr'
 import { resortActiveSfrCounts, resortTilesForSlug } from '@/lib/kb/resort-active-counts'
 import type { ListingTile } from '@/lib/data'
@@ -24,6 +27,7 @@ export type RegistryResortPublicFigures = {
 
 type RegistryRow = {
   slug: string
+  label?: string
   city: string
   city_slug: string
   is_resort?: boolean
@@ -68,16 +72,21 @@ async function loadRegistryResortPublicFigures(): Promise<
       medianListPrice: published.medianListPrice,
     }
     // Registry URLs use the bare slug (`tetherow`). Index rows use the
-    // city-prefixed entity slug (`bend-tetherow`). Key both so homepage
-    // tiles and the A-Z list cannot miss the overlay.
-    out[resort.slug] = figures
-    const cityPrefixed = `${resort.city_slug}-${resort.slug}`
-    if (cityPrefixed !== resort.slug) out[cityPrefixed] = figures
+    // city-prefixed entity slug (`bend-tetherow`) and sometimes a `-resort`
+    // alias (`redmond-eagle-crest-resort`). Stamp every overlay key so A-Z
+    // cannot miss the alias-aware pair.
+    for (const key of registryResortOverlayKeys({
+      slug: resort.slug,
+      citySlug: resort.city_slug,
+      label: resort.label,
+    })) {
+      out[key] = figures
+    }
   }
   return out
 }
 
-const cached = unstable_cache(loadRegistryResortPublicFigures, ['registry-resort-public-figures-v3'], {
+const cached = unstable_cache(loadRegistryResortPublicFigures, ['registry-resort-public-figures-v4'], {
   revalidate: 900,
   tags: ['communities-index', 'community-detail'],
 })

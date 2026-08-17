@@ -104,7 +104,7 @@ import {
 } from '@/lib/data'
 import { getMarketPulseAllCitySnapshots } from '@/lib/data/market/getMarketPulseSnapshot'
 import { getCoMarketAnnualSeries } from '@/lib/data/analytics/getCoMarketAnnual'
-import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
+import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
 import { buildMarketFaq } from '@/lib/site/market-faq'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import type { SchemaInput } from '@/lib/site/json-ld'
@@ -500,7 +500,7 @@ export default async function CentralOregonRegionPage() {
             )}
             rows={[firstClosedRow, ...restClosedRows]}
             source={v3Text(
-              `closed MLS sales through Oregon Data Share, Central Oregon service-area cities, all property types, calendar years ${CLOSED_SALES_FROM_YEAR} through ${CLOSED_SALES_TO_YEAR}. ${ANALYTICS_METHODOLOGY_V1}`,
+              `Closed MLS sales through Oregon Data Share, Central Oregon service-area cities, all property types, calendar years ${CLOSED_SALES_FROM_YEAR} through ${CLOSED_SALES_TO_YEAR}. ${PUBLIC_CLOSED_SALES_METHODOLOGY}`,
             )}
             updated={closedLedger.stamp ? v3Text(formatDate(closedLedger.stamp)) : undefined}
             action={{

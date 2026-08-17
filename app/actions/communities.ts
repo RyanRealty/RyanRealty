@@ -155,11 +155,16 @@ const getCommunitiesForIndexRaw = unstable_cache(
 /** Index rows overlay alias-aware resort figures so homepage / A-Z match /communities/{slug}. */
 export const getCommunitiesForIndex = cache(async (): Promise<CommunityForIndex[]> => {
   const { getRegistryResortPublicFigures } = await import('@/lib/kb/registry-resort-public-figures')
+  const { lookupRegistryResortFigures } = await import('@/lib/market/publish-resort-index-figures')
   const [rows, overlay] = await Promise.all([getCommunitiesForIndexRaw(), getRegistryResortPublicFigures()])
   if (overlay.size === 0) return rows
   return rows.map((row) => {
-    const bare = row.entityKey.includes(':') ? row.entityKey.slice(row.entityKey.indexOf(':') + 1) : row.slug
-    const published = overlay.get(row.slug) ?? overlay.get(bare)
+    const published = lookupRegistryResortFigures(overlay, {
+      slug: row.slug,
+      citySlug: slugify(row.city),
+      name: row.subdivision,
+      entityKey: row.entityKey,
+    })
     if (!published) return row
     return { ...row, activeCount: published.activeCount, medianPrice: published.medianListPrice }
   })
@@ -231,7 +236,15 @@ async function _getCommunityBySlugUncached(slug: string): Promise<CommunityDetai
   const citySlug = slugify(city)
   const { getRegistryResortPublicFigures } = await import('@/lib/kb/registry-resort-public-figures')
   const resortFigureMap = isResort ? await getRegistryResortPublicFigures() : null
-  const resortFigures = resortFigureMap?.get(slug) ?? resortFigureMap?.get(entityKeyToSlug(entityKey))
+  const { lookupRegistryResortFigures } = await import('@/lib/market/publish-resort-index-figures')
+  const resortFigures = resortFigureMap
+    ? lookupRegistryResortFigures(resortFigureMap, {
+        slug,
+        citySlug,
+        name: comm?.name ?? subdivision,
+        entityKey,
+      })
+    : null
   return {
     slug,
     entityKey,

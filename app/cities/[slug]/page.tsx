@@ -43,6 +43,9 @@ import { publishMonthsOfSupply } from '@/lib/market/publish-months-of-supply'
 import { publishSellMedian } from '@/lib/market/publish-median-caption'
 import { publishDaysLabel } from '@/lib/market/publish-days-figure'
 import { toPublicCoreChartSeries } from '@/lib/market/publish-public-chart-source'
+import { CITY_TILE_FETCH_LIMIT, publishCityInventory } from '@/lib/market/publish-city-inventory'
+import { medianListPriceOfTiles } from '@/lib/market/tile-medians'
+import { isStockPlaceHeroUrl } from '@/lib/market/publish-place-hero'
 import { getCommunitiesForIndex } from '@/app/actions/communities'
 import { getOpenHousesWithListings } from '@/app/actions/open-houses'
 import { getActivityFeedWithFallbackMulti } from '@/app/actions/activity-feed'
@@ -191,7 +194,7 @@ export default async function CityDetailPage({ params }: Props) {
     // market_pulse_live's SFR activeCount. All-types tiles here made the badge read
     // 1,000 against a hero of 491 on /cities/bend. The 1500 cap also stops binding
     // once the pull is SFR-only.
-    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: 1500 }), [], 4500, 'city:mapTiles'),
+    withTimeoutFallback(getCityListings(cityName, { status: 'active', sort: 'newest', propertyType: 'A', limit: CITY_TILE_FETCH_LIMIT }), [], 4500, 'city:mapTiles'),
     // Wide SFR pool for curateFeaturedTiles below — the old price-desc top-14
     // pull had ONLY luxury outliers in it, so curation ran but had nothing
     // mid-market to pick from (design-audit P2).
@@ -212,11 +215,25 @@ export default async function CityDetailPage({ params }: Props) {
   // (a city without one renders the LABELED regional fallback, never a wrong-city
   // photo). DB hero_image_url override wins. (§D86)
   // §0 UNKNOWN IS NOT ZERO: `?? 0` published a fabricated "0 homes for sale" whenever the pulse read timed out.
-  const activeCount: number | null = pulse?.activeCount ?? null
-  const sellMedian = publishSellMedian({ placeMedian: pulse?.medianListPrice ?? null, grain: 'city', placeName: cityName })
+  // When the address-set tile fetch is complete (under the cap), publish that
+  // count so hero / facts / JSON-LD cannot say 6 against a 24-door list.
+  const publishedInventory = publishCityInventory({
+    pulseCount: pulse?.activeCount ?? null,
+    pulseMedian: pulse?.medianListPrice ?? null,
+    tileCount: mapTiles.length,
+    tileMedian: medianListPriceOfTiles(mapTiles),
+    tileLimit: CITY_TILE_FETCH_LIMIT,
+    tileFetchOk: mapTiles.length > 0,
+  })
+  const activeCount: number | null = publishedInventory.count
+  const publishedMedian = publishedInventory.medianListPrice
+  const sellMedian = publishSellMedian({ placeMedian: publishedMedian, grain: 'city', placeName: cityName })
   const curatedHero = cityHero(slug)
   const heroImageUrl = cityMeta?.hero_image_url ?? null
-  const heroPhoto = heroImageUrl ? { src: heroImageUrl, verified: true } : curatedHero
+  const heroPhoto =
+    heroImageUrl && !isStockPlaceHeroUrl(heroImageUrl)
+      ? { src: heroImageUrl, verified: true }
+      : curatedHero
   const heroVideoCfg = CITY_HERO_VIDEO[slug]
   const heroVideoSrc = heroVideoCfg?.videoSrc ?? null
   const heroPosterSrc = heroVideoCfg?.posterSrc ?? heroPhoto.src
@@ -235,13 +252,13 @@ export default async function CityDetailPage({ params }: Props) {
         schoolDistrict: quickFacts?.schoolDistrict ?? null,
         nearestAirport: quickFacts?.nearestAirport ?? null,
         activeCount: activeCount ?? 0,
-        medianPrice: pulse?.medianListPrice ?? snapshot.medianListPrice,
+        medianPrice: publishedMedian ?? snapshot.medianListPrice,
         communityCount: communitySnapshots.length,
       }).slice(0, 2)
   const daysFact = publishDaysLabel(pulse?.medianDaysToPending)
   const aboutFacts: { label: string; value: string }[] = [
     ...(quickFacts?.population ? [{ label: 'Population', value: quickFacts.population }] : []),
-    ...(pulse?.medianListPrice ? [{ label: 'Median list', value: kbMoneyFull(pulse.medianListPrice) ?? '—' }] : []),
+    ...(publishedMedian ? [{ label: 'Median list', value: kbMoneyFull(publishedMedian) ?? '—' }] : []),
     ...(activeCount != null ? [{ label: 'Active single-family', value: activeCount.toLocaleString('en-US') }] : []),
     ...(daysFact ? [{ label: 'Median to pending', value: daysFact }] : []),
     ...(quickFacts?.elevation ? [{ label: 'Elevation', value: quickFacts.elevation }] : []),
@@ -250,7 +267,7 @@ export default async function CityDetailPage({ params }: Props) {
 
   // Featured + map + ticker. Curated like the homepage rail (Phase D) so
   // price-desc doesn't lead with pure luxury outliers (design-audit P2).
-  const cityMedians = pulse?.medianListPrice != null ? Array(4).fill({ name: cityName, medianPrice: pulse.medianListPrice }) : []
+  const cityMedians = publishedMedian != null ? Array(4).fill({ name: cityName, medianPrice: publishedMedian }) : []
   const featuredItems: KbFeaturedItem[] = await resolveFeaturedItems(curateFeaturedTiles(featuredTiles, cityMedians, 14))
   const mapFeatures = buildMapPointFeatures(mapTiles)
   const mapGeo: KbMapGeo = { type: 'FeatureCollection', features: mapFeatures }
@@ -394,10 +411,10 @@ export default async function CityDetailPage({ params }: Props) {
   const sltRaw = mktStats?.avg_sale_to_list_ratio ?? null
   const monthsOfSupply = publishMonthsOfSupply({ pulseMos: pulse?.monthsOfSupply, pulseActiveCount: pulse?.activeCount, displayedActiveCount: pulse?.activeCount ?? snapshot.activeSfrCount })
   const marketData: KbMarketData = {
-    active: pulse?.activeCount ?? null,
+    active: activeCount,
     closed30: pulse?.closedLast30Days ?? null,
     new30: null,
-    medianList: pulse?.medianListPrice ?? null,
+    medianList: publishedMedian,
     saleToList: sltRaw != null ? (sltRaw < 2 ? sltRaw * 100 : sltRaw) : null,
     daysToPending: pulse?.medianDaysToPending ?? null,
     monthsSupply: monthsOfSupply,
@@ -412,7 +429,12 @@ export default async function CityDetailPage({ params }: Props) {
   // must not vanish when getMarketPulse times out or has no row. Fall back to the
   // always-present geo snapshot (active SFR count + median list + as-of), which is
   // awaited above and never null. Every figure stays verified (§0).
-  const marketFaqInput: MarketFaqInput = { ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }), monthsOfSupply }
+  const marketFaqInput: MarketFaqInput = {
+    ...(pulse ?? { activeCount: snapshot.activeSfrCount, medianListPrice: snapshot.medianListPrice, refreshedAt: snapshot.refreshedAt }),
+    activeCount: activeCount ?? snapshot.activeSfrCount,
+    medianListPrice: publishedMedian ?? snapshot.medianListPrice,
+    monthsOfSupply,
+  }
   const { faqs, datasetVariables, asOfIso, asOfLabel } = buildMarketFaq(cityName, marketFaqInput)
   const hasMap = mapFeatures.length > 0
   const citySchemas: SchemaInput[] = [
@@ -454,7 +476,7 @@ export default async function CityDetailPage({ params }: Props) {
         cityName={cityName}
         slug={slug}
         listingCount={activeCount}
-        medianPrice={pulse?.medianListPrice ?? null}
+        medianPrice={publishedMedian}
         communityCount={communitySnapshots.length}
       />
       <KbSectionTracker pageType="city" />
@@ -463,14 +485,14 @@ export default async function CityDetailPage({ params }: Props) {
       <SmoothScrollProvider>
         <KbHero
           data={{
-            activeCount: pulse?.activeCount ?? null,
-            medianListPrice: pulse?.medianListPrice ?? null,
+            activeCount,
+            medianListPrice: publishedMedian,
             medianDaysToPending: pulse?.medianDaysToPending ?? null,
           }}
           eyebrow={`${cityName} · Oregon`}
           titleTop={cityName}
           titleBottom="Homes for Sale"
-          lead={placeHeroLead({ placeName: cityName, activeCount: pulse?.activeCount ?? null })}
+          lead={placeHeroLead({ placeName: cityName, activeCount })}
           videoSrc={heroVideoSrc}
           posterSrc={heroPosterSrc}
           posterAlt={`${cityName}, Oregon`}

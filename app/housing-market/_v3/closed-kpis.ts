@@ -7,7 +7,7 @@
  */
 
 import type { CoMarketAnnualRow } from '@/lib/data/analytics/getCoMarketAnnual'
-import { ANALYTICS_METHODOLOGY_V1 } from '@/lib/data/analytics/co-cities'
+import { PUBLIC_CLOSED_SALES_METHODOLOGY } from '@/lib/market/publish-public-methodology'
 import { labelPropertyType } from '@/lib/data/analytics/property-type-labels'
 import { formatPriceExact } from '@/lib/format/money'
 import { v3Text, type V3InstrumentFigure } from '@/components/site/v3'
@@ -144,8 +144,8 @@ export function buildCompositionFigures(opts: {
 
 export function closedMartSource(year: number): string {
   return (
-    `closed MLS sales through Oregon Data Share, Central Oregon service-area cities, ` +
-    `ALL-TYPE, calendar year ${year}. Not active inventory. ${ANALYTICS_METHODOLOGY_V1}`
+    `Closed MLS sales through Oregon Data Share, Central Oregon service-area cities, ` +
+    `all property types, calendar year ${year}. Not active inventory. ${PUBLIC_CLOSED_SALES_METHODOLOGY}`
   )
 }
 

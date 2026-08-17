@@ -34,6 +34,7 @@ import { getCityContent } from '@/lib/city-content'
 import { cityHero } from '@/lib/geo-images'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
 import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { buildMarketFaq, type MarketFaqInput } from '@/lib/site/market-faq'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
@@ -96,12 +97,9 @@ function firstSentence(text: string): string {
 }
 
 function fmtMedian(n: number | null | undefined): string | null {
-  // design-audit CMP-5: full rounded-to-thousand format ($742,000), matching
-  // kbMoneyFull used on home/market — not the abbreviated $742K that made the
-  // same regional median read three different ways across the site.
-  return n != null && Number.isFinite(n)
-    ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
-    : null
+  // Exact whole dollars — same as the city page hero. Thousand-rounding
+  // made /cities La Pine $500,000 against /cities/la-pine $499,900.
+  return formatIndexMedianUsd(n)
 }
 
 function verdictFromMos(mos: number | null): string | null {

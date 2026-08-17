@@ -15,6 +15,7 @@ import {
 } from '@/lib/data'
 import { BEND_NEIGHBORHOOD_DISTRICTS } from '@/lib/data/geo/getBendNeighborhoodLedger'
 import { cityHero } from '@/lib/geo-images'
+import { formatIndexMedianUsd } from '@/lib/market/publish-index-median'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { MetadataBlock } from '@/components/site/MetadataBlock'
 import { MarketSources } from '@/components/site/MarketSources'
@@ -53,9 +54,7 @@ const NEIGHBORHOOD_SENTENCE: Record<string, string> = {
 }
 
 function fmtMedian(n: number | null | undefined): string | null {
-  return n != null && Number.isFinite(n)
-    ? `$${(Math.round(n / 1000) * 1000).toLocaleString('en-US')}`
-    : null
+  return formatIndexMedianUsd(n)
 }
 
 export default async function NeighborhoodsPage() {

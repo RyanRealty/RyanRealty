@@ -40,20 +40,19 @@ checks.push({
     /resortActiveSfrCounts\(/.test(loader) &&
     /resortTilesForSlug\(/.test(loader) &&
     /fetchAllCityActiveSfr\(/.test(loader) &&
-    /cityPrefixed/.test(loader) &&
-    /city_slug}-\$\{resort\.slug\}/.test(loader) &&
+    /registryResortOverlayKeys/.test(loader) &&
     /mls_cities/.test(loader) &&
     /Same city door/.test(loader),
 })
 
 const index = src('app/actions/communities.ts')
 checks.push({
-  label: 'getCommunitiesForIndex overlays registry resort figures on bare and city-prefixed slugs',
+  label: 'getCommunitiesForIndex overlays registry resort figures via lookupRegistryResortFigures',
   ok:
     /getRegistryResortPublicFigures/.test(index) &&
+    /lookupRegistryResortFigures/.test(index) &&
     /published\.activeCount/.test(index) &&
-    /published\.medianListPrice/.test(index) &&
-    /overlay\.get\(row\.slug\) \?\? overlay\.get\(bare\)/.test(index),
+    /published\.medianListPrice/.test(index),
 })
 
 checks.push({
