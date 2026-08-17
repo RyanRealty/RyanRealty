@@ -1,3 +1,5 @@
+import { zonedDateKey } from '@/lib/format/date'
+
 /**
  * One published price/status timeline for a listing detail page.
  *
@@ -46,11 +48,9 @@ export type PriceHistorySourceRow = {
 
 function dateOnly(iso: string | null | undefined): string | null {
   if (!iso?.trim()) return null
-  const m = iso.trim().match(/^(\d{4}-\d{2}-\d{2})/)
-  if (m) return m[1]
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' })
+  const trimmed = iso.trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+  return zonedDateKey(trimmed) || null
 }
 
 function normalizeEvent(raw: string | null | undefined): string {
