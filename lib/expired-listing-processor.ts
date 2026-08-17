@@ -19,10 +19,10 @@
  *      schedule (2026-05-22) but is still hittable for backfills or one-off
  *      triage runs.
  *
- * Service-area + price floor (locked 2026-05-19 per Matt's directive):
+ * Service-area + price floor (Matt 2026-08-17: any list price):
  *   - Cities: Bend, Redmond, Sisters, Sunriver, Tumalo, La Pine.
  *   - PropertyType='A' (SFR only).
- *   - ListPrice >= $500,000.
+ *   - Any list price (CAPTURE_MIN_LIST_PRICE = 0).
  *   - Status transition within the last `lookbackHours` (default 24h).
  *
  * Deduplication is by `expired_listings.listing_key` — a listing only
@@ -52,10 +52,10 @@ import { sendExpiredAlertEmail } from '@/lib/expired-alert'
 import { CAPTURE_MIN_LIST_PRICE, CAPTURE_SERVICE_AREA_CITIES } from '@/lib/prospecting/capture-scope'
 import { buildListingNote, type ExpiredNoteHistoryRow, type ExpiredNoteListing } from '@/lib/expired-listing-note'
 
-// Capture scope is defined ONCE, in lib/prospecting/capture-scope.ts (Matt's
-// locked W6.8 decision: $500K+, SFR, six cities). These aliases keep the
-// existing import names working. ci:capture-scope fails the build if the values
-// are spelled out again anywhere in the prospecting path.
+// Capture scope is defined ONCE, in lib/prospecting/capture-scope.ts (six
+// cities, SFR, any list price). These aliases keep the existing import names
+// working. ci:capture-scope fails the build if the values are spelled out
+// again anywhere in the prospecting path.
 export const SERVICE_AREA_CITIES = CAPTURE_SERVICE_AREA_CITIES
 export const MIN_LIST_PRICE = CAPTURE_MIN_LIST_PRICE
 

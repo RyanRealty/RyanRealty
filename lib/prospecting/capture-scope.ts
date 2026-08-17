@@ -2,11 +2,12 @@
  * capture-scope — the ONE definition of which listings the prospecting pipelines
  * capture. PURE.
  *
- * THE DECISION (Matt, 2026-07-24, RR-PLATFORM-DECISIONS ledger row W6.8):
- * capture scope stays at $500K+, single-family, six cities. Asked whether to
- * widen, the answer was KEEP. That decision is recorded here rather than in a
- * document, because a scope that lives in prose drifts and a scope that lives in
- * one constant does not.
+ * THE DECISION (Matt, 2026-08-17):
+ * capture scope is six cities, single-family, any list price. The $500K floor
+ * is retired. Asked whether to keep excluding under-$500K expireds, the answer
+ * was CAPTURE ALL PRICES. That decision is recorded here rather than in a
+ * document, because a scope that lives in prose drifts and a scope that lives
+ * in one constant does not.
  *
  * WHY ONE MODULE. The scope was written out four times — the city list in
  * `expired-listing-processor.ts` and again in `fsbo-detector.ts`, the price
@@ -29,10 +30,10 @@
  */
 
 /**
- * Minimum list price, in dollars. Below this a lead is out of scope for the
- * expired and FSBO pipelines regardless of anything else.
+ * Minimum list price, in dollars. 0 = every list price is in. `.gte` against
+ * this still drops null and non-positive prices, which is intended.
  */
-export const CAPTURE_MIN_LIST_PRICE = 500_000
+export const CAPTURE_MIN_LIST_PRICE = 0
 
 /**
  * The six service-area cities, as the display spellings both pipelines match on.

@@ -15,7 +15,7 @@
  *     price, location). That fallback is what we parse — a tight regex pass,
  *     no cheerio, no headless browser.
  *   - `min_price` is honored server-side and survives the redirect, so the
- *     $500K floor is applied at the source AND re-checked in code (the code
+ *     capture floor is applied at the source AND re-checked in code (the code
  *     filter remains the source of truth).
  *
  * Coverage: bend.craigslist.org is the regional site for all of Central
@@ -251,7 +251,7 @@ function extractSqft(title: string): number | null {
 /**
  * Normalize one parsed candidate into the shared FsboListing shape the
  * processor consumes. Returns null when the posting fails scope checks
- * (out of area, below the $500K floor, land-only, unusable URL).
+ * (out of area, below the capture floor, land-only, unusable URL).
  */
 export function craigslistCandidateToListing(c: CraigslistCandidate): FsboListing | null {
   const url = canonicalCraigslistUrl(c.url)
