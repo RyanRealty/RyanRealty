@@ -43,6 +43,7 @@
 | **What monthly HOA may a listing print?** | `publishListingHoa` in `lib/listing/publish-listing-hoa.ts`. Prefer `hoa_monthly`. Else normalize `association_fee` by frequency. Facts and True cost share that monthly. Display exact dollars, never nearest-thousand. | `hoa_monthly`, `association_fee` | n/a (pure) |
 | **What asking price may a listing print?** | `publishListingAsk` / `publishListingDrop` in `lib/listing/publish-listing-ask.ts`. Exact whole-dollar `ListPrice`. Drop is exact original minus exact ask. H1, drop line, JSON-LD, and payment share that ask. | `ListPrice`, `OriginalListPrice` | n/a (pure) |
 | **Which key may a listing contact href use?** | `publishListingContactKey` in `lib/listing/publish-listing-contact-key.ts`. Public id is `ListNumber`. `/contact?listingKey=` resolves ListingKey or ListNumber. | `ListNumber`, `ListingKey` | n/a (pure) |
+| **What price/status timeline may a listing detail print?** | `publishListingHistory` via `getListingDetailHistory`. Merge `listing_history` + live `status_history` + `price_history` + `OnMarketDate`/`ListPrice`. Do not read `listing_history` alone (recent rows are empty until strict verify). | `event`, `event_date`, `price` | delta ≤ 10 min; Spark history when verified |
 | **Which URL opens the regional homes set the homepage names?** | `publishRegionalSearchHref` in `lib/search/publish-regional-search-href.ts` → `/homes-for-sale?view=list`. Split/map `/homes-for-sale` injects city=Bend when the URL has no city. A control next to the region count must not use the bare path. | n/a | n/a (pure) |
 | **Which subdivisions roll up into a community** | `neighborhood_subdivisions WHERE neighborhood_slug=<slug>` | `subdivision_label` (the MLS SubdivisionName values) | manual |
 | **Is this a resort community?** | `subdivision_flags WHERE entity_key='<city>:<slug>'` | `is_resort` | manual |
@@ -145,7 +146,7 @@ GEOGRAPHY SOURCE-OF-TRUTH (manually curated, rarely changes):
 | Table | Rows | Purpose |
 |---|---|---|
 | `public.listings` | **589,193** | Every MLS listing past + present. PK = `ListingKey`. PascalCase Spark columns + ~30 computed/promoted columns. **See §4 for the column quoting rule and tier breakdown.** |
-| `public.listing_history` | 200K+ | MLS history events per listing (price changes, status changes). Use for price/status timelines. |
+| `public.listing_history` | 200K+ | Spark full-history events. Public listing-detail timelines do **not** read this table alone — `getListingDetailHistory` merges it with live `status_history` + `price_history` + `OnMarketDate` via `publishListingHistory`. Recent listings are often empty here until strict verify. |
 | `public.listings_historical` | 0 | Spark `/v1/listings/historical` mirror (off-market/expired/cancelled/withdrawn). Same key fields as `listings`. |
 | `public.price_history` | 100K+ | One row per price change event: `old_price`, `new_price`, `change_pct`, `timestamp`. Join via `listing_key`. |
 | `public.status_history` | 200K+ | One row per status transition (Active → Pending → Closed, etc.). Join via `listing_key`. |

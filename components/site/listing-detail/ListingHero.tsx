@@ -9,6 +9,7 @@ import type { VideoEmbed } from '@/lib/data/types/video'
 import { PhotoGalleryLightbox } from '@/components/site/PhotoGalleryLightbox'
 import { Button } from '@/components/ui/button'
 import { buildListingHeroStaticMapUrl } from '@/lib/listing-hero-static-map'
+import { publishListingHeroUnmute, publishListingHeroVideo } from '@/lib/listing/publish-listing-hero-video'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { MapsLocation01Icon, Cancel01Icon } from '@hugeicons/core-free-icons'
 
@@ -145,12 +146,13 @@ export function ListingHero({
   if (total === 0 && videos.length === 0 && !canShowMap) return null
 
   const altBase = addressLine ? `Photo of ${addressLine}` : 'Listing photo'
-  const heroVideo = videos.find((v) => v.embedType === 'iframe' || v.embedType === 'video-tag') ?? null
+  const heroVideo = publishListingHeroVideo(videos)
   const hasVideo = heroVideo != null
+  const canUnmute = publishListingHeroUnmute(heroVideo)
   // Pause/play is only wired for the native <video> path — that's the one
   // element this component directly controls via videoRef. The iframe path
   // (external embed) has no reliable cross-origin pause API here.
-  const canTogglePlay = hasVideo && heroVideo?.embedType === 'video-tag'
+  const canTogglePlay = canUnmute
 
   function toggleMute() {
     if (videoRef.current) {
@@ -347,7 +349,7 @@ export function ListingHero({
 
         {/* Video mute + pause. Parked top-right of the media so UNMUTE never
             sits on the address / price / beds-baths-sqft row (Look 2026-08-13). */}
-        {!mapOpen && hasVideo ? (
+        {!mapOpen && canUnmute ? (
           <div
             style={{
               position: 'absolute',

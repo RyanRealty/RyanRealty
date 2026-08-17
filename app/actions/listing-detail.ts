@@ -8,6 +8,7 @@ import {
   getCityListings as getCityListingsDAL,
 } from '@/lib/data'
 import type { ListingTile } from '@/lib/data'
+import { mapPublishedHistoryEvent } from '@/lib/listing/map-published-history-event'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -875,9 +876,16 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
   const virtualTours = extractVirtualToursFromRow(listingRow)
 
   // DAL: listing_history + engagement_metrics in parallel via lib/data.
-  const { getListingDetailHistory, getEngagementForListing } = await import('@/lib/data')
+  const { getEngagementForListing } = await import('@/lib/data')
+  const { listingHistorySeedFrom, readListingDetailHistory } = await import('@/lib/listing/read-listing-detail-history')
   const [histRowsRaw, engagementRaw] = await Promise.all([
-    withTimeout(getListingDetailHistory(canonicalKey), [], 2500),
+    readListingDetailHistory(
+      canonicalKey,
+      listingHistorySeedFrom({
+        onMarketDate: (listingRow.OnMarketDate as string | null | undefined) ?? null,
+        listPrice: safeNum(listingRow.ListPrice),
+      }),
+    ),
     withTimeout(getEngagementForListing(canonicalKey), null, 1200),
   ])
 
@@ -944,31 +952,8 @@ export async function getListingDetailData(listingKey: string): Promise<ListingD
     const eventDate = h.event_date ?? ''
     let evt: ListingHistoryEvent | null = null
 
-    if (h.event === 'NewListing') {
-      evt = {
-        id: h.id ?? `lh-new-${listingHistory.length}`,
-        listing_key: canonicalKey,
-        event_date: eventDate,
-        event_type: 'new_listing',
-        label: `Listed at ${formatHistoryPrice(h.price)}`,
-        price: h.price ?? null,
-        old_value: null,
-        new_value: null,
-        change_pct: null,
-      }
-    } else if (h.event === 'BackOnMarket') {
-      evt = {
-        id: h.id ?? `lh-bom-${listingHistory.length}`,
-        listing_key: canonicalKey,
-        event_date: eventDate,
-        event_type: 'back_on_market',
-        label: `Back on market at ${formatHistoryPrice(h.price)}`,
-        price: h.price ?? null,
-        old_value: null,
-        new_value: null,
-        change_pct: null,
-      }
-    } else if (field === 'ListPrice') {
+    evt = mapPublishedHistoryEvent(h, canonicalKey, listingHistory.length)
+    if (!evt && field === 'ListPrice') {
       const oldP = safeNum(raw.PreviousValue)
       const newP = safeNum(raw.NewValue)
       if (oldP != null && newP != null) {

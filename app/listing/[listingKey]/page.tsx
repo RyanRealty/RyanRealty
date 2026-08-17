@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import {
   getListingDetail,
-  getListingDetailHistory,
   getListingPhotos,
   getListingVideos,
   getListingDetailOpenHouses,
@@ -20,6 +19,7 @@ import { LifestyleNearSection } from '@/components/site/explore/LifestyleNearSec
 import { PlaceParentsSection } from '@/components/site/explore/PlaceParentsSection'
 import { BuilderExploreSection } from '@/components/site/explore/BuilderExploreSection'
 import { withTimeoutFallback } from '@/lib/with-timeout-fallback'
+import { listingHistorySeedFrom, readListingDetailHistory } from '@/lib/listing/read-listing-detail-history'
 import { pageMetadata } from '@/lib/site/page-metadata'
 import { listingShareSummary } from '@/lib/share-metadata'
 import { homesForSalePath, listingDetailPath, subdivisionListingsPath } from '@/lib/slug'
@@ -219,7 +219,7 @@ export default async function ListingDetailPage({ params }: PageProps) {
         4500,
         'listing:related',
       ),
-      withTimeoutFallback(getListingDetailHistory(listingKey), [], 3000, 'listing:history'),
+      readListingDetailHistory(listing.listingKey, listingHistorySeedFrom(listing)),
       withTimeoutFallback(getListingPhotos(listingKey), [], 4000, 'listing:photos'),
       withTimeoutFallback(getListingVideos(listingKey), [], 3000, 'listing:videos'),
       withTimeoutFallback(getBrokers(), [], 3000, 'listing:brokers'),

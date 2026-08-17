@@ -2,7 +2,43 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — search pending status chrome slice
+# Current — 2026-08-17 (cursor-loop-chain) — listing-detail history + unmute slice
+
+**Surface:** Cursor cloud `bc-738b62c1` (`cursor/loop-chain-2026-08-17t22-07-294b`). **Time:** 2026-08-17 ~23:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 380). Claimed parent only. Product **`8ce73d3d2`** landed on **`main`** (history merge `386ad65da` + `zonedDateKey` `5f2aaea32` + timeout seed). Vercel Production **READY** for `8ce73d3d2` (GitHub Vercel success `EVe1nnE1ozvKACJeuxHk3Emydmfn`). Draft PR **#90**. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (372 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 listing-detail lines) at 390+1280: Borden / Rockway / Breezes missing history **reproduced** (`listing_history` empty; live `status_history` + `OnMarketDate` unused). Rockway UNMUTE on still **reproduced** (Zillow view-imx in `details.Videos`, zero `<video>`). Stale Aug 15 open house **rejected** (`OpenHouses` null, Pending, no Open houses heading).
+- Class: `publishListingHistory` merges `listing_history` + `status_history` + `price_history` + Listed from `OnMarketDate`. `publishListingHeroUnmute` is video-tag only; 3D/Zillow rows are virtual tours. Timeout seed: `readListingDetailHistory` falls back to Listed from the already-loaded listing so a 3s empty ISR cannot hide the section. Gate `ci:publish-listing-history` 5/5.
+- Prod probe after READY `8ce73d3d2`: Borden **listed-2026-07-22 $487,000**; Rockway **pending-2026-08-17 + listed-2026-07-31 $649,000**, no UNMUTE; Breezes **listed-2026-08-08 $1,250,000**. After shots `/opt/cursor/artifacts/after_history_{borden,rockway,breezes}_{390,1280}.png`.
+- Punch dispositions appended (parent not completed): 7 fixed + 1 rejected. Leftover listing-detail + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+- Known leftover on this family: `PropertyHistory` `formatDate` shifts date-only `YYYY-MM-DD` one calendar day earlier in PT (`new Date('2026-07-22')` → Jul 21). Event keys are correct; display is not. Next listing-detail slice should format through `zonedDateKey`, not UTC midnight.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-094/R-105/R-152/R-101, SITE_PAGE_STANDARD §3, git-commit.
+
+# Prior — 2026-08-17 (cursor-grok-tile-mv-probe) — listing_tile_mv health probe
+
+**Surface:** Cursor desktop on `/Users/matthewryan/RyanRealty`. **Time:** 2026-08-17 ~22:45 UTC. Matt asked to fix the CRM health text that paged on `listing-tile-mv-stale`. This is **not** a FLEET-PUNCH / `fleet:public-ux:search` ship. Claimed data-sync node **`56aa39db`** only. Product **`9e06e018`** landed on **`main`**. Vercel Production **READY** (`dpl_AuMtN6UH4Dre8CAQ4XGSvVVDhDqS`, `npm run deploy:verify` exit 0). No PR. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` stays open**. Loop stays **ARMED**. Do not start leftover search from this session.
+
+**Done**
+- Rule 8 pages on `mv_refresh_state.listing_tile_mv_src.refreshed_at` age ≥ 2 hours, not `mv_freshness().lag_days`. Friday-to-Monday CloseDate gap (alert 1013, 2026-08-17 18:11Z) stays quiet while the `:02/:32` tile job is live. The 8-day stamp-stale class still critical.
+- Cron message names `refresh_listing_tile_mv_30min` and `/api/cron/refresh-mvs`.
+- 54 `lib/crm/health-rules` tests. Node **`56aa39db` done** with READY evidence.
+- CMA WIP remains on `cursor/cma-client-document-7fc3` + stash `cma-wip-keep-probe`. Do not mix it into this ship.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice.
+- Optional later: `mv_freshness()` can return `refresh_age_hours`; residual Sat/Sun `server restarted` on long tile refreshes.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, git-commit, deployments-cicd.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — search pending status chrome slice
 
 **Surface:** Cursor cloud `bc-1dc8ed53` (`cursor/loop-chain-2026-08-17t21-15-4427`). **Time:** 2026-08-17 ~21:50 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:search` (8 of 396). Claimed parent only. Product **`f7383a332`** landed on **`main`**. Vercel Production **READY** (`6H84kwqZR9MjxdwkZbJHBFJK1REy`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main` at product). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (388 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 

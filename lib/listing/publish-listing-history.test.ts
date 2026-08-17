@@ -1,0 +1,62 @@
+import { describe, expect, it } from 'vitest'
+import { publishListingHistory } from './publish-listing-history'
+
+describe('publishListingHistory', () => {
+  it('Borden: listed from OnMarketDate when listing_history is empty', () => {
+    const rows = publishListingHistory({
+      listingHistory: [],
+      statusHistory: [],
+      priceHistory: [],
+      onMarketDate: '2026-07-22T15:46:02+00:00',
+      listPrice: 487000,
+    })
+    expect(rows).toEqual([
+      { event: 'listed', event_date: '2026-07-22', price: 487000, price_change: null, description: null },
+    ])
+  })
+
+  it('Rockway: listed + pending from status_history, skip same-day Coming Soon → Active', () => {
+    const rows = publishListingHistory({
+      listingHistory: [],
+      statusHistory: [
+        { old_status: 'Coming Soon', new_status: 'Active', changed_at: '2026-07-31T07:18:49.235+00:00' },
+        { old_status: 'Active', new_status: 'Pending', changed_at: '2026-08-17T20:48:16.238+00:00' },
+      ],
+      onMarketDate: '2026-07-31T07:15:03+00:00',
+      listPrice: 649000,
+    })
+    expect(rows.map((r) => r.event)).toEqual(['listed', 'pending'])
+    expect(rows[0]).toMatchObject({ event_date: '2026-07-31', price: 649000 })
+    expect(rows[1]).toMatchObject({ event_date: '2026-08-17', event: 'pending', price: 649000 })
+  })
+
+  it('Mountain Breezes: listed only when the only status row is same-day Active', () => {
+    const rows = publishListingHistory({
+      statusHistory: [
+        { old_status: 'Coming Soon', new_status: 'Active', changed_at: '2026-08-08T07:18:48.184+00:00' },
+      ],
+      onMarketDate: '2026-08-08T07:15:02+00:00',
+      listPrice: 1250000,
+    })
+    expect(rows).toEqual([
+      { event: 'listed', event_date: '2026-08-08', price: 1250000, price_change: null, description: null },
+    ])
+  })
+
+  it('keeps listing_history rows and adds a later price change', () => {
+    const rows = publishListingHistory({
+      listingHistory: [
+        { event: 'listed', event_date: '2026-06-01', price: 500000 },
+      ],
+      priceHistory: [
+        { old_price: 500000, new_price: 485000, changed_at: '2026-06-20T12:00:00Z' },
+      ],
+    })
+    expect(rows.map((r) => r.event)).toEqual(['listed', 'pricechange'])
+    expect(rows[1]).toMatchObject({ price: 485000, price_change: -15000, event_date: '2026-06-20' })
+  })
+
+  it('does not invent a listed row without OnMarketDate', () => {
+    expect(publishListingHistory({ listPrice: 100000 })).toEqual([])
+  })
+})
