@@ -35,8 +35,8 @@
       "blocking": true
     },
     {
-      "name": "getMarketPulseCitySnapshots",
-      "section": "Ledger \u2014 live per-city active count and median.",
+      "name": "getMarketPulseAllCitySnapshots",
+      "section": "Ledger \u2014 live per-city active count and median, including remainder cities the featured cards omit.",
       "blocking": true
     },
     {

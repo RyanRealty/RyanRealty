@@ -14,7 +14,7 @@
  *      VERIFIED cityHero() photography (Family 4 curation), one honest
  *      editorial sentence per city (getCityContent, geographic-fact fallback),
  *      a live stat band (active / median / median DOM / verdict) from
- *      getMarketPulseCitySnapshots with geo_snapshot_mv fallback, and the
+ *      getMarketPulseAllCitySnapshots with geo_snapshot_mv fallback, and the
  *      three links per city (city guide / homes for sale / open houses).
  *   3. Other-areas compact ledger (every remaining city, live count + median).
  *   4. Mid-page RegionalSfrAlertsBand + navy search CTA.
