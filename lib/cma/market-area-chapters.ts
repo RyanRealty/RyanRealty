@@ -4,7 +4,7 @@
 
 import { dec, escapeHtml, int, propertyIntelligenceBlock, usd } from '@/lib/cma/render-blocks'
 import { clientSourceLine } from '@/lib/cma/client-facing'
-import { formatMonthsOfSupply } from '@/lib/format/months-of-supply'
+import { formatMonthsOfSupply, monthsOfSupplyVerdict } from '@/lib/format/months-of-supply'
 import { listingTrendSvg, medianCloseLineSvg } from '@/lib/cma/market-charts'
 import type { CmaMarketArea, CmaStatusBucket } from '@/lib/cma/market-status'
 import type { CmaAdjustedComp, CmaMarketContext, CmaSubject } from '@/lib/cma/types'
@@ -26,47 +26,55 @@ function money(n: number | null | undefined): string | null {
   return usd(Math.round(n))
 }
 
-function bucketCells(b: CmaStatusBucket): string[] {
-  return [
-    int(b.count),
-    money(b.low) ?? '',
-    money(b.median) ?? '',
-    money(b.high) ?? '',
-    b.medianPpsf != null ? `${usd(Math.round(b.medianPpsf))}/sf` : '',
-    b.medianDom != null ? `${int(Math.round(b.medianDom))} days` : '',
-  ]
+function tileMeta(b: CmaStatusBucket): string {
+  const bits = [
+    money(b.median),
+    b.medianPpsf != null ? `${usd(Math.round(b.medianPpsf))}/sf` : null,
+    b.medianDom != null && b.medianDom > 0 ? `${int(Math.round(b.medianDom))} days` : null,
+  ].filter(Boolean)
+  return bits.join(' · ')
 }
 
-function statusTable(area: CmaMarketArea): string {
-  const cols = [area.selected, area.active, area.pending, area.expired, area.closed].filter(
+function statusBoards(area: CmaMarketArea): string {
+  const selected = area.selected
+  if (!selected || selected.count <= 0) return ''
+  const others = [area.active, area.pending, area.expired, area.closed].filter(
     (b): b is CmaStatusBucket => Boolean(b && b.count > 0),
   )
-  if (cols.length === 0) return ''
-  const labels = ['Homes', 'Low', 'Median', 'High', '$ / sf', 'DOM']
-  const head = `<tr><th></th>${cols.map((c) => `<th class="v">${esc(c.label)}</th>`).join('')}</tr>`
-  const body = labels
-    .map((label, i) => {
-      const cells = cols.map((c) => bucketCells(c)[i] ?? '')
-      if (cells.every((c) => !c)) return ''
-      return `<tr><td>${esc(label)}</td>${cells.map((c) => `<td class="v">${c}</td>`).join('')}</tr>`
-    })
+  const heroMeta = tileMeta(selected)
+  const tiles = others
+    .map(
+      (b) => `<div class="status-tile">
+        <div class="status-tile-n">${int(b.count)}</div>
+        <div class="status-tile-l">${esc(b.label)}</div>
+        ${tileMeta(b) ? `<div class="status-tile-m">${esc(tileMeta(b))}</div>` : ''}
+      </div>`,
+    )
     .join('')
-  return `<table class="kv is-wide compare-board status-grid"><thead>${head}</thead><tbody>${body}</tbody></table>`
+  return `<div class="status-hero">
+      <div class="status-hero-n">${int(selected.count)}</div>
+      <div class="status-hero-l">${esc(selected.label)}</div>
+      ${heroMeta ? `<div class="status-hero-m">${esc(heroMeta)}</div>` : ''}
+    </div>
+    ${tiles ? `<div class="status-tiles">${tiles}</div>` : ''}`
 }
 
 export function renderStatusGridHtml(area: CmaMarketArea | null | undefined): string {
   if (!area) return ''
-  const table = statusTable(area)
-  if (!table) return ''
-  return `${table}<p class="small">${esc(clientSourceLine(area.source, `Similar homes in ${area.label}.`))}</p>`
+  const boards = statusBoards(area)
+  if (!boards) return ''
+  return `${boards}<p class="small">${esc(clientSourceLine(area.source, `Similar homes in ${area.label}.`))}</p>`
 }
 
 export function renderSold90Html(area: CmaMarketArea | null | undefined): string {
   const s = area?.sold90
   if (!s || s.count < 3) return ''
-  return `<div class="stat3">
+  return `<div class="sold-hero">
+    <div class="sold-hero-n">${money(s.median) ?? ''}</div>
+    <div class="sold-hero-l">median sold</div>
+  </div>
+  <div class="stat2">
     <div class="st"><div class="st-n">${int(s.count)}</div><div class="st-l">closed in 90 days</div></div>
-    <div class="st"><div class="st-n">${money(s.median) ?? ''}</div><div class="st-l">median sold</div></div>
     <div class="st"><div class="st-n">${money(s.low) ?? ''} to ${money(s.high) ?? ''}</div><div class="st-l">${esc(s.bedsLabel)} band</div></div>
   </div>
   <p class="small">${esc(clientSourceLine(s.source, 'Closed sales in this market area over the last 90 days.'))}</p>`
@@ -75,23 +83,32 @@ export function renderSold90Html(area: CmaMarketArea | null | undefined): string
 export function renderInventoryBoardHtml(market: CmaMarketContext | null | undefined): string {
   if (!market) return ''
   const mos = market.monthsOfSupply
+  const verdict = mos != null ? monthsOfSupplyVerdict(mos) : null
   const saleToList =
     market.saleToListRatio != null
       ? dec(market.saleToListRatio <= 2 ? market.saleToListRatio * 100 : market.saleToListRatio, 1)
       : null
   const chart = medianCloseLineSvg(market.trend ?? [])
-  return `<div class="stat4">
-    ${mos != null ? `<div class="st"><div class="st-n">${esc(formatMonthsOfSupply(mos))}</div><div class="st-l">months of supply</div></div>` : ''}
+  return `${
+    mos != null
+      ? `<div class="inv-hero">
+    <div class="inv-hero-n">${esc(formatMonthsOfSupply(mos))}</div>
+    <div class="inv-hero-l">months of supply</div>
+    ${verdict ? `<div class="inv-verdict">${esc(verdict.label)}</div>` : ''}
+  </div>`
+      : ''
+  }
+  <div class="stat3">
     ${saleToList != null ? `<div class="st"><div class="st-n">${saleToList}%</div><div class="st-l">sold to list</div></div>` : ''}
     ${market.medianDom != null ? `<div class="st"><div class="st-n">${int(market.medianDom)}</div><div class="st-l">median days on market</div></div>` : ''}
     ${market.medianSalePrice != null ? `<div class="st"><div class="st-n">${usd(market.medianSalePrice)}</div><div class="st-l">median sold</div></div>` : ''}
   </div>
-  ${chart ? `<div class="szn" data-anim="chart">${chart}</div>` : ''}`
+  ${chart ? `<div class="szn is-hero" data-anim="chart">${chart}</div>` : ''}`
 }
 
 export function renderListingTrendHtml(area: CmaMarketArea | null | undefined): string {
   const svg = area?.listingTrend ? listingTrendSvg(area.listingTrend) : ''
-  return svg ? `<div class="szn" data-anim="chart">${svg}</div>` : ''
+  return svg ? `<div class="szn is-hero" data-anim="chart">${svg}</div>` : ''
 }
 
 export function renderPhotoSetHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps'>): string {
@@ -102,10 +119,11 @@ export function renderPhotoSetHtml(a: Pick<MarketChapterArgs, 'subject' | 'comps
   const unique = [...new Set(urls)].slice(0, 12)
   if (unique.length === 0) return ''
   const tiles = unique
-    .map(
-      (src, i) =>
-        `<figure class="photo-tile"><img src="${esc(src)}" alt="${i === 0 ? esc(a.subject.streetAddress) : 'Comparable sale'}" loading="lazy" referrerpolicy="no-referrer"/></figure>`,
-    )
+    .map((src, i) => {
+      const lead = i === 0 ? ' photo-lead' : ''
+      const eager = i < 4 ? 'eager' : 'lazy'
+      return `<figure class="photo-tile${lead}"><img src="${esc(src)}" alt="${i === 0 ? esc(a.subject.streetAddress) : 'Comparable sale'}" loading="${eager}" referrerpolicy="no-referrer"/></figure>`
+    })
     .join('')
   return `<div class="photo-set">${tiles}</div>`
 }
@@ -122,18 +140,18 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
   if (status) {
     parts.push(`<section class="sc sc-cream" id="status-grid">
       <div class="in wide">
-        <div class="kick r">This market area</div>
+        <div class="kick r">This market</div>
         <h2 class="h r">${esc(area!.label)}</h2>
-        <p class="lede r">Selected sales against what is for sale, under contract, expired, and closed. Same product class. Not the whole ZIP.</p>
+        <p class="lede r">The sales we kept, against what is for sale, under contract, expired, and closed. Same product class. Not the whole ZIP.</p>
         <div class="r">${status}</div>
       </div>
     </section>`)
   }
   if (sold90) {
-    parts.push(`<section class="sc sc-cream tight" id="sold-90">
+    parts.push(`<section class="sc sc-navy" id="sold-90">
       <div class="in">
         <div class="kick r">Last 90 days</div>
-        <h2 class="h r">What ${esc(area!.sold90!.bedsLabel)} homes actually sold for</h2>
+        <h2 class="h r">What ${esc(area!.sold90!.bedsLabel)} homes sold for</h2>
         <div class="r">${sold90}</div>
       </div>
     </section>`)
@@ -142,7 +160,7 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
     parts.push(`<section class="sc sc-cream" id="inventory">
       <div class="in">
         <div class="kick r">${esc(a.market?.geoLabel ?? a.subject.city)}</div>
-        <h2 class="h r">Supply, sold-to-list, and the sold line</h2>
+        <h2 class="h r">How fast this market is moving</h2>
         <div class="r">${inventory}</div>
       </div>
     </section>`)
@@ -169,7 +187,7 @@ export function immersiveMarketChapters(a: MarketChapterArgs): string {
     parts.push(`<section class="sc sc-cream tight" id="photo-set">
       <div class="in wide">
         <div class="kick r">The house</div>
-        <h2 class="h r">Photo set</h2>
+        <h2 class="h r">${esc(a.subject.streetAddress)}</h2>
         <div class="r">${photos}</div>
       </div>
     </section>`)
@@ -184,9 +202,9 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
   if (status && area) {
     pages.push({
       meta: `${esc(a.subject.streetAddress)} · Market area`,
-      toc: 'This market area',
+      toc: 'This market',
       body: `<h2 class="section">${esc(area.label)}</h2>
-      <p>Selected sales against what is for sale, under contract, expired, and closed. Same product class. Not the whole ZIP.</p>
+      <p>The sales we kept, against what is for sale, under contract, expired, and closed. Same product class. Not the whole ZIP.</p>
       ${status}`,
     })
   }
@@ -202,8 +220,8 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
   if (inventory) {
     pages.push({
       meta: `${esc(a.subject.streetAddress)} · Inventory`,
-      toc: 'Supply and the sold line',
-      body: `<h2 class="section">Supply, sold-to-list, and the sold line</h2>${inventory}`,
+      toc: 'How fast this market is moving',
+      body: `<h2 class="section">How fast this market is moving</h2>${inventory}`,
     })
   }
   const trend = renderListingTrendHtml(area)
@@ -218,8 +236,8 @@ export function printMarketAreaPages(a: MarketChapterArgs): CmaPageDef[] {
   if (photos) {
     pages.push({
       meta: `${esc(a.subject.streetAddress)} · Photos`,
-      toc: 'Photo set',
-      body: `<h2 class="section">Photo set</h2>${photos}`,
+      toc: a.subject.streetAddress,
+      body: `<h2 class="section">${esc(a.subject.streetAddress)}</h2>${photos}`,
     })
   }
   return pages

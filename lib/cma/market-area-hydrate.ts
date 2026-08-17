@@ -13,9 +13,8 @@ const EMPTY_EXTRAS: CmaExtras = {
   marketArea: null,
 }
 
-/** Fill market-area chapters on an already-built draft so broker review does not wait on a rebuild. */
+/** Live market-area chapters on broker review. Does not write the row or change the price. */
 export async function hydrateCmaMarketArea(args: RenderCmaArgs): Promise<RenderCmaArgs> {
-  if (args.extras?.marketArea) return args
   const since12 = new Date(Date.now() - 12 * 30.44 * 24 * 3600e3).toISOString().slice(0, 10)
   const rows = await getCmaMarketAreaRows(args.subject.city, since12).catch(() => [])
   const marketArea = computeMarketArea({

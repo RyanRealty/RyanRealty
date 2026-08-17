@@ -199,6 +199,30 @@ describe('market status grain', () => {
     })
     expect(area!.sold90?.count).toBe(3)
     expect(similarBedRange(4)).toEqual({ lo: 3, hi: 5 })
+    expect(area!.sold90?.source).toMatch(/Closed 3 to 5 bedroom sales in Tetherow/)
+    expect(area!.sold90?.source).not.toMatch(/bedroom sales in 3 to 5 bedroom homes/)
+    expect(area!.source).toMatch(/Tetherow, priced/)
+    expect(area!.source).not.toMatch(/Single-family homes in 3 to 5 bedroom homes/)
+  })
+
+  it('treats a zero days-on-market as missing on market-area rows', () => {
+    const area = computeMarketArea({
+      subject,
+      comps: [comp({ domTotal: 32 })],
+      pricing,
+      asOf: new Date('2026-08-17T00:00:00Z'),
+      rows: [
+        row({ StandardStatus: 'Active', ListPrice: 2_175_000, ClosePrice: null, CloseDate: null, DaysOnMarket: 0, CumulativeDaysOnMarket: 0 }),
+        row({ ClosePrice: 2_000_000, DaysOnMarket: 0, CumulativeDaysOnMarket: 0 }),
+        row({ ClosePrice: 2_100_000, CloseDate: '2026-06-01', DaysOnMarket: 0, CumulativeDaysOnMarket: 0 }),
+        row({ ClosePrice: 2_200_000, CloseDate: '2026-05-01', DaysOnMarket: 0, CumulativeDaysOnMarket: 0 }),
+        row({ ClosePrice: 1_980_000, CloseDate: '2026-04-01', DaysOnMarket: 0, CumulativeDaysOnMarket: 0 }),
+        row({ ClosePrice: 2_050_000, CloseDate: '2026-03-01', DaysOnMarket: 0, CumulativeDaysOnMarket: 0 }),
+      ],
+    })
+    expect(area!.active?.medianDom).toBeNull()
+    expect(area!.closed?.medianDom).toBeNull()
+    expect(area!.selected.medianDom).toBe(32)
   })
 })
 
@@ -328,5 +352,20 @@ describe('chapter order', () => {
     expect(html).not.toContain('id="status-grid"')
     expect(html).toContain('id="inventory"')
     expect(html).toContain('id="photo-set"')
+  })
+
+  it('leads the market chapters with a featured sale board, a sold hero, and a supply punch', () => {
+    const html = immersiveMarketChapters(args())
+    expect(html).toContain('status-hero')
+    expect(html).toContain('status-tiles')
+    expect(html).not.toContain('compare-board')
+    expect(html).toContain('sold-hero')
+    expect(html).toContain('id="sold-90"')
+    expect(html).toContain('sc-navy')
+    expect(html).toMatch(/Seller(&#39;|')s market/)
+    expect(html).toContain('inv-hero')
+    expect(html).toContain('photo-lead')
+    expect(html).not.toMatch(/>0 days</)
+    expect(html).not.toMatch(/bedroom sales in \d+ to \d+ bedroom homes/)
   })
 })

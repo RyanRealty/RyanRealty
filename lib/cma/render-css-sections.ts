@@ -245,6 +245,18 @@ export function cmaSectionStyles(): string {
   .photo-set { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .photo-tile { margin: 0; overflow: hidden; border-radius: 0; }
   .photo-tile img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0; display: block; }
+  .photo-lead { grid-column: 1 / -1; }
+  .photo-lead img { aspect-ratio: 16 / 9; }
+  .status-hero, .sold-hero, .inv-hero { margin: 4px 0 14px; }
+  .status-hero-n, .sold-hero-n, .inv-hero-n { font-family: var(--display); font-size: 42px; line-height: 1; }
+  .status-hero-l, .sold-hero-l, .inv-hero-l { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .status-hero-m, .status-tile-m { font-size: 11px; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .status-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 8px 0; }
+  .status-tile { border: 1px solid var(--navy-line); padding: 8px; }
+  .status-tile-n { font-family: var(--display); font-size: 22px; line-height: 1; }
+  .status-tile-l { font-size: 9px; color: var(--muted); margin-top: 4px; }
+  .inv-verdict { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 600; }
+  .stat2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0; }
   table.kv.is-wide td.b, table.kv.is-wide th.b { color: var(--muted); font-size: 9px; }
   table.kv thead th { font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; border-bottom: 2px solid var(--navy); }
 
