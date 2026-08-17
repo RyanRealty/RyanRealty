@@ -4,7 +4,7 @@
 
 # Current — 2026-08-17 (cursor-loop-chain) — search count LIVE on main
 
-**Surface:** Cursor cloud `bc-4382906a` (`cursor/loop-chain-2026-08-16t23-45-84b5`). **Time:** 2026-08-17 ~00:52 UTC. Rebased onto `79fb9820b` (PRs 57/58 FLEET-PUNCH intake kept; punch-list node not touched). **`main` @ `735c31037`**. Vercel Production **READY** (`dpl_FUgkMxxiq34GmTuvnmbe8geq1iVK`). `npm run deploy:verify` exit 0. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. Eight search-class nodes stay **done**. Do not start a new ship class.
+**Surface:** Cursor cloud `bc-4382906a` (`cursor/loop-chain-2026-08-16t23-45-84b5`). **Time:** 2026-08-17 ~01:05 UTC. Rebased onto `79fb9820b` (PRs 57/58 FLEET-PUNCH intake kept). Product **`735c31037`**. Vercel Production **READY** (`dpl_FUgkMxxiq34GmTuvnmbe8geq1iVK`). `npm run deploy:verify` exit 0. PR 59 punch-list serve (`811ecbefc`) landed after that SHA — not touched, not folded. No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). Loop stays **ARMED**. Eight search-class nodes stay **done**. Do not start a new ship class.
 
 **Done**
 - Rebased `cursor/loop-chain-2026-08-16t23-45-84b5` onto current main. Product commits survived. Fast-forward `main` + one `npm run push`.
