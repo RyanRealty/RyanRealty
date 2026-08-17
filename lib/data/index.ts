@@ -184,7 +184,6 @@ export {
   getOpenHouseById,
   getListingDetailVideos,
   getListingDetailHistory,
-  seedListingDetailHistory,
   getListingKeysWithPriceChangeSince,
   getHeroPhotosByListingKeys,
   getOpenHousesInRange,
@@ -197,7 +196,6 @@ export type {
   ListingDetailOpenHouseRow,
   ListingDetailVideoRow,
   ListingHistoryEventRow,
-  ListingHistorySeed,
   CommunityResolution,
 } from '@/lib/data/listings/getListingDetailBundles'
 export type {

@@ -44,26 +44,28 @@ const page = src('app/listing/[listingKey]/page.tsx')
 checks.push({
   label: 'listing detail renders PropertyHistory from getListingDetailHistory',
   ok:
-    /getListingDetailHistory/.test(page) &&
+    /readListingDetailHistory/.test(page) &&
     /<PropertyHistory history=\{history\}/.test(page),
 })
+
+const reader = src('lib/listing/read-listing-detail-history.ts')
 checks.push({
   label: 'listing history timeout falls back to OnMarketDate seed, not empty',
   ok:
-    /seedListingDetailHistory/.test(page) &&
-    /listing\.listingKey/.test(page) &&
-    /onMarketDate:\s*listing\.onMarketDate/.test(page) &&
-    /4500/.test(page),
+    /seedListingDetailHistory/.test(reader) &&
+    /getListingDetailHistory/.test(reader) &&
+    /4500/.test(reader),
 })
 
+const mapper = src('lib/listing/map-published-history-event.ts')
 const action = src('app/actions/listing-detail.ts')
 checks.push({
   label: 'listing-detail action maps published listed/pending without raw.Field',
   ok:
-    /seedListingDetailHistory/.test(action) &&
-    /publishedEvent === 'listed'/.test(action) &&
-    /publishedEvent === 'pending'/.test(action) &&
-    /4500/.test(action),
+    /readListingDetailHistory/.test(action) &&
+    /mapPublishedHistoryEvent/.test(action) &&
+    /publishedEvent === 'listed'/.test(mapper) &&
+    /publishedEvent === 'pending'/.test(mapper),
 })
 
 const failed = checks.filter((c) => !c.ok)
