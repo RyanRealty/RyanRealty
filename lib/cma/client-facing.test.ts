@@ -328,6 +328,7 @@ describe('client field formatters', () => {
       ),
     ).toBe('12 homes like yours are for sale in Redmond now.')
     expect(stripClientMethodTrace('Seasonality April median 15 vs 45.')).toBeNull()
+    expect(stripClientMethodTrace('Price band 12 active vs 3 pending, $428,000 to $523,000.')).toBeNull()
     expect(
       clientFacingListingPlan({
         source: "Supabase listings, City='Redmond', PropertyType='A'",
@@ -434,6 +435,7 @@ describe('client document has no query junk or price tween', () => {
       expect(html).not.toContain('pulled at build time')
       expect(html).not.toMatch(/CloseDate\s*[≥>=]/)
       expect(html).not.toMatch(/Seasonality April median 15 vs 45/)
+      expect(html).not.toMatch(/Price band 12 active vs 3 pending/)
       expect(html).toMatch(/homes like yours are for sale in Redmond now/i)
     }
   })

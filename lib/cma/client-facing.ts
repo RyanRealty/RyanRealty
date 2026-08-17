@@ -29,7 +29,7 @@ const CLIENT_INTERNAL_LEAK =
 
 /** Query / method footnotes that read as SQL, not seller copy. */
 const CLIENT_METHOD_SENTENCE =
-  /supabase|propertytype\s*=|pulled at build time|closedate\s*[≥>=]|listing\s*key|listings where |standardstatus|days_to_pending|listprice \d+\.\.|\b(?:City|PropertyType|SubdivisionName|StandardStatus|CloseDate|ListPrice|ClosePrice)\s*=|^\s*seasonality \w+ median \d/i
+  /supabase|propertytype\s*=|pulled at build time|closedate\s*[≥>=]|listing\s*key|listings where |standardstatus|days_to_pending|listprice \d+\.\.|\b(?:City|PropertyType|SubdivisionName|StandardStatus|CloseDate|ListPrice|ClosePrice)\s*=|^\s*seasonality \w+ median \d|^\s*price band \d+ active vs/i
 
 export function isClientInternalLeak(text: string | null | undefined): boolean {
   return Boolean(text && CLIENT_INTERNAL_LEAK.test(text))
