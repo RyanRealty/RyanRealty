@@ -143,7 +143,12 @@ async function main() {
     for (const spec of PAGES) {
       const url = `${BASE}${spec.path}`
       const res = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 90_000 })
-      await page.waitForTimeout(1600)
+      await page.waitForTimeout(1200)
+      const dismiss = page.getByRole('button', { name: /not now|essential only|accept all/i }).first()
+      if (await dismiss.count()) {
+        await dismiss.click().catch(() => {})
+        await page.waitForTimeout(400)
+      }
       const view = await inspect(page)
       report.pages[spec.key] ??= { path: spec.path }
       report.pages[spec.key][`http${width}`] = res?.status() ?? null

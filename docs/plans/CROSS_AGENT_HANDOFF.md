@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-sentinel) — blog NW Crossing alias slice
+# Current — 2026-08-17 (cursor-loop-chain) — blog MOS verdicts + index uniqueness slice
+
+**Surface:** Cursor cloud `bc-791e34a1` (`cursor/loop-chain-2026-08-17t12-16-0077`). **Time:** 2026-08-17 ~12:30 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 444). Claimed parent only. Product **`b4f03efdc`** landed on **`main`**. Vercel Production **READY** (`FxtYpHcRf1RTbkLxzKfCS1DWEgnw`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (436 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 blog lines) at 390+1280: CO July 5.4 as middle + buyer **reproduced**. Bend July 474 vs 512 **rejected** (June 30 vs July 9 grains). Index Vacation Rental on p2 and p3 **reproduced**. MOS excerpt July vs body Aug 17 **rejected**. Checklist days 6-24 **rejected** (range headings). Redmond related-homes / See Redmond homes **rejected**. Closing Talk to a broker **rejected**. Sell-Bend overflow **rejected** (`scrollWidth===clientWidth`).
+- Class: `rewriteBlogMosVerdicts` uses `marketVerdict()` (≤4 seller's, <6 balanced, ≥6 buyer's) after `rewriteBlogCurrentMos`. `publishBlogIndexItemList` uses collection-global positions + `published_at`+`id` order (`published-blog-posts-v4`). Gates `ci:publish-blog-mos-verdicts` + `ci:publish-blog-index-list`.
+- Prod probe after READY `b4f03efdc`: CO July **Sunriver 12.0 + La Pine 11.4 buyer; Madras 5.4 balanced**. `/blog?page=2` positions 13-24; `/blog?page=3` 25-36; overlap empty. After shots `/opt/cursor/artifacts/after_co_july_1280_body.png`, `after_*_{390,1280}_*.png`.
+- Punch dispositions appended (parent not completed): 2 fixed + 6 rejected. Leftover blog + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not remount ArrivalIntent. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-002/R-024, SITE_PAGE_STANDARD §7, git-commit.
+
+# Prior — 2026-08-17 (cursor-loop-sentinel) — blog NW Crossing alias slice
 
 **Surface:** Cursor cloud `bc-b9425f1f` (`cursor/loop-sentinel-2026-08-17t11-40-d87e`). **Time:** 2026-08-17 ~12:15 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:blog` (8 of 426). Claimed parent only. Product **`f29d930dd`** landed on **`main`**. Vercel Production **READY** (`FwWvpPVpzcSGr7eMH7m5H7xs2ktx`, `npm run deploy:verify` exit 0). No PR (branch SHA equals `main`). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (418 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
