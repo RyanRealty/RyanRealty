@@ -2,7 +2,24 @@
 > **NEWEST SUBJECT: Reality Law retired. Place chrome may be reference-conditioned. Do not invent a listing.**
 > Prior: Form catalog T2.1b LIVE `caa92e2a`. Incoming agent referrals LIVE `b4bf6b8d`. Seller net `104c01cc`.
 
-# Current — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
+# Current — 2026-08-17 (cursor-loop-chain) — place-pages inventory / ask / Tumalo slice
+
+**Surface:** Cursor cloud `bc-3a2506e2` (`cursor/loop-chain-2026-08-17t06-56-2ebd`). **Time:** 2026-08-17 ~07:50 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:place-pages` (8 of 482). Claimed parent only. Product **`d3bff1ccb`** landed on **`main`**. Vercel Production **READY** (`npm run deploy:verify` exit 0). Draft PR **#78** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (~474 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
+
+**Done**
+- Slice (8 place-pages lines) at 390+1280: South Meadow 0 vs 3 MLS **reproduced**. Tumalo 307→Bend **reproduced**. Deer Park / Deschutes River Recreation Homesites / Rivers Edge Village count+median **rejected** (own inventory). Boyd Acres / Old Bend / Southern Crossing thousand-round asks **reproduced**.
+- Class: plat city aliases (`rowMatchesPlat`) so Sisters-keyed South Meadow matches City=`Black Butte Ranch`. Pulse-only city door for Tumalo (redirect removed). `formatPublishedAsk` / `formatPriceExact` on place-owned list and median. Do not cache empty plat inventory when supabase is missing (`registry-plat-public-inventory-v3`).
+- Prod probe after READY `d3bff1ccb`: South Meadow **3 / $795,000**. Tumalo **200** at `/cities/tumalo`, 0 homes, Tumalo copy. Deer Park 12 / $862,498. DRRH 14 / $789,950. Rivers Edge 11 / $1,159,000. Boyd **$949,900** / **$899,900**. Old Bend **$1,999,500**. Southern Crossing median **$919,500**. After shots `/opt/cursor/artifacts/after_v3_{south_meadow,tumalo,boyd_acres,old_bend,southern_crossing}_{390,1280}_top.png`.
+- Punch dispositions appended (parent not completed): 5 fixed + 3 rejected. Leftover place-pages + other families stay on the inbox.
+
+**Next**
+- Leftover punch families stay on FLEET-PUNCH. Next `loop-brief` serves the next family slice. Do not class-fix the whole punch list.
+
+**Do not:** completeWorkNode on FLEET-PUNCH. Do not mint child tickets. Do not insert another public-ux or factory ledger row. Do not resume page-grade. Do not SMS, publish, spend, or OAuth. Do not invent a listing. Disarm = Matt says "disarm the loop".
+
+**Skills read:** growth-loop, DEVELOPMENT_PROCESS, SESSION_HANDOFF, CROSS_AGENT_HANDOFF, frontend-design, design_system/ryan-realty, PUBLIC_PRODUCT/decisions, COMPANY_IMPROVEMENT blast-radius, REQUIREMENTS R-024, git-commit, DATABASE_FOR_AI_AGENTS §0 plat row.
+
+# Prior — 2026-08-17 (cursor-loop-chain) — listing-detail HOA / ask / contact slice
 
 **Surface:** Cursor cloud `bc-42b57373` (`cursor/loop-chain-2026-08-17t04-57-75e4`). **Time:** 2026-08-17 ~05:35 UTC. Brief served **FLEET-PUNCH** as `fleet:public-ux:listing-detail` (8 of 506). Claimed parent only. Product **`cf90a3c2e`** landed on **`main`**. Vercel Production **READY** (`F3jT3EERo8nwXtMpMdLnfUZ4jK73`). `npm run deploy:verify` exit 0 in 448s. Draft PR **#72** (same SHA). No hosted migration. No public-ux or factory ledger insert (open window `2a5054ac`). FLEET-PUNCH parent **`3a6198cd` released, stays open** (498 leftover lines). Loop stays **ARMED**. Do not start a new ship class from this session.
 
