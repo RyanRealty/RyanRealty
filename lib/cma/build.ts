@@ -278,7 +278,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
         return tier === 'weak' ? { ...c, weight: +(c.weight * 0.5).toFixed(4) } : c
       })
       const p = priceCmaSet({ subject, adjusted: adj, market, input, selection, marketIndex, asOf, computePricing })
-      attachSellerNet(p, selection.pricingSales ?? set, p?.recommended ?? null)
+      attachSellerNet(p, selection.pricingSales ?? set, p?.predictedClose ?? p?.recommended ?? null)
       if (p && usePath) {
         p.notes.unshift(
           `Time adjustment follows the monthly ${subject.city} sale-price path between each comparable close and ${asOf}.`,
@@ -602,7 +602,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       : null
 
     // 5. Map (best effort — the report ships without it if the key is absent).
-    const map = await buildCmaMapDataUri(subject, adjusted)
+    const map = await buildCmaMapDataUri(subject, adjusted, { tiersUsed: selection.tiersUsed })
 
     // 5.5. Brand-voice hard-fail gate (W11.2 / CLAUDE.md §"Brand Voice") over
     // every composed PROSE string in the report: the pricing rationale/
@@ -707,6 +707,7 @@ export async function buildCma(input: CmaBuildInput): Promise<CmaBuildResult> {
       equity,
       listingPlan,
       thisHomePlan,
+      tiersUsed: selection.tiersUsed,
     }
 
     // Spread, never a second hand-written list: a field added to one list and

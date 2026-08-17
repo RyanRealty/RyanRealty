@@ -160,6 +160,8 @@ export interface CmaPricing {
   highEnd: number
   valueLow: number
   valueHigh: number
+  /** Engine close. Listed = last ask × 0.98. Unlisted = comps $/sf × GLA. */
+  predictedClose?: number | null
   confidence: 'High' | 'Moderate' | 'Supportable'
   confidenceReason: string
   /** True when the comp set is too heterogeneous to trust without broker review. */

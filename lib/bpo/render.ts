@@ -37,6 +37,7 @@ import {
   marketingHighlightsBlock,
   collectHighlights,
 } from '@/lib/cma/render-blocks'
+import { describeCompSearch } from '@/lib/pricing/search-story'
 
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ryan-realty.com').replace(/\/$/, '')
 const usd = formatPriceExact
@@ -117,6 +118,8 @@ export interface RenderBpoArgs {
   site?: CmaSiteData | null
   development?: DevelopmentOpportunities | null
   rental?: RentalPotential | null
+  mapDataUri?: string | null
+  tiersUsed?: string[]
 }
 
 function stylesheet(): string {
@@ -247,6 +250,7 @@ function stylesheet(): string {
   .sig .name { font-size: 14px; font-weight: 600; }
   .sig .meta { font-size: 11px; color: var(--muted); }
   .disclosure { font-size: 9.5px; line-height: 1.5; color: var(--muted); margin-top: 14px; }
+  .map-img { width: 100%; height: auto; display: block; margin: 8px 0 12px; }
   `
 }
 
@@ -361,6 +365,7 @@ export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: n
     .split('\n\n')
     .map((p) => `<p>${escapeHtml(p)}</p>`)
     .join('')
+  const search = describeCompSearch({ subdivision: subject.subdivision, tiersUsed: args.tiersUsed ?? [] })
 
   const kpis: Array<[string, string]> = market
     ? [
@@ -419,7 +424,10 @@ export function renderBpoHtml(args: RenderBpoArgs): { html: string; pageCount: n
   <div class="page">
     <div class="eyebrow">Broker Price Opinion · ${escapeHtml(subject.streetAddress)}</div>
     ${OFFER_MARK_START}${offerBlock(offer)}${OFFER_MARK_END}
-    <h2 class="sec" style="margin-top:12px;">Comparable sales</h2>
+    <h2 class="sec" style="margin-top:12px;">${escapeHtml(search.headline)}</h2>
+    <p class="sub">${escapeHtml(search.body)}</p>
+    ${args.mapDataUri ? `<img class="map-img" src="${args.mapDataUri}" alt="${escapeHtml(search.headline)}" />` : ''}
+    <h2 class="sec">Comparable sales</h2>
     <table>
       <thead><tr><th>Address</th><th>Sold</th><th>Date</th><th>Sq ft</th><th>$/sf</th><th>DOM</th><th>Adjusted</th></tr></thead>
       <tbody>${compRows(comps)}</tbody>

@@ -110,7 +110,9 @@ export async function rebrandCma(input: { slug: string; brokerSlug: string }): P
   // the map because an unrelated API had a bad minute.
   let mapDataUri: string | null = null
   try {
-    const map = await buildCmaMapDataUri(storedArgs.subject, storedArgs.comps)
+    const map = await buildCmaMapDataUri(storedArgs.subject, storedArgs.comps, {
+      tiersUsed: storedArgs.tiersUsed,
+    })
     mapDataUri = map?.dataUri ?? null
   } catch {
     mapDataUri = null

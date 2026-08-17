@@ -17,8 +17,8 @@
 
 import type { RenderCmaArgs } from '@/lib/cma/render'
 import type { CmaBroker } from '@/lib/cma/types'
-import { displayConfidence, pricingRangeDisplay } from '@/lib/cma/pricing'
 import { FAILED_ASK_BACKTEST } from '@/lib/cma/expired-audit'
+import { immersiveAnswerHtml } from '@/lib/cma/cover-value'
 import { inboundImmersiveHeroKick, inboundImmersiveTitle, resolveThisHomePlan } from '@/lib/cma/inbound-packet'
 import { seasonalityChartSvg } from '@/lib/cma/seasonality-chart'
 import { formatDate } from '@/lib/format/date'
@@ -474,7 +474,6 @@ function nextScene(a: ImmersiveArgs): string {
 
 export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): string {
   const s = a.subject
-  const p = a.pricing
   const heroImg = s.photoUrl ? `<img class="hero-img" src="${esc(s.photoUrl)}" alt="" aria-hidden="true"/>` : ''
   const specs = [
     s.beds != null ? `${s.beds} bed` : null,
@@ -484,12 +483,6 @@ export function renderImmersiveCmaHtml(a: ImmersiveArgs, siteUrl: string): strin
   ]
     .filter(Boolean)
     .join(' · ')
-  const evLo = p.valueLow
-  const evHi = p.valueHigh
-  const span = Math.max(1, evHi - evLo)
-  const pos = (v: number) => Math.min(100, Math.max(0, ((v - evLo) / span) * 100))
-  const conf = displayConfidence(p)
-  const range = pricingRangeDisplay(p)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -521,18 +514,7 @@ ${immersiveStylesheet()}
 
 <section class="sc sc-cream" id="answer">
   <div class="in">
-    <div class="ans-l r">Recommended list price</div>
-    <div class="ans-n r" data-count>${usd(p.recommended)}</div>
-    <div class="r"><span class="conf">Confidence: ${esc(conf)}</span></div>
-    <div class="range r">
-      <div class="range-track"><div class="range-fill" style="--w:100%"></div></div>
-      <div class="range-marks">
-        <div class="rm"><div class="rm-v">${usd(p.conservative)}</div><div class="rm-l">Conservative</div></div>
-        <div class="rm mid"><div class="rm-v">${usd(p.recommended)}</div><div class="rm-l">Recommended</div></div>
-        <div class="rm" style="text-align:right"><div class="rm-v">${usd(p.highEnd)}</div><div class="rm-l">Ceiling, condition resolved</div></div>
-      </div>
-    </div>
-    <p class="body r">${esc(whyThisListPrice(a).coverSentence)} ${range.outOfRange ? 'The comp-supported range is' : 'The adjusted comparable sales bracket'} ${usd(evLo)} to ${usd(evHi)}${p.convergenceSpreadPct != null ? `, and the pricing methods behind this number land within ${dec(p.convergenceSpreadPct, 1)}% of each other` : ''}.${range.note ? ` ${esc(range.note)}` : ''}</p>
+    ${immersiveAnswerHtml(a)}
   </div>
 </section>
 

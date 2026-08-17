@@ -212,8 +212,12 @@ export function whyThisListPrice(input: {
     })
   }
 
+  const sale =
+    input.pricing.predictedClose != null && input.pricing.predictedClose > 0
+      ? input.pricing.predictedClose
+      : input.pricing.recommended
   return {
-    heading: `Why ${usd(input.pricing.recommended)}`,
+    heading: `Why ${usd(sale)}`,
     coverSentence: coverSentence({
       pricing: input.pricing,
       failedAsk,

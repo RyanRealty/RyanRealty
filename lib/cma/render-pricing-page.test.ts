@@ -5,6 +5,7 @@ import type { CmaAdjustedComp, CmaMarketContext, CmaPricing, CmaSubject } from '
 const subject = {
   streetAddress: '3480 SW 45th',
   city: 'Redmond',
+  subdivision: 'Cascade Vista',
   sqft: 1631,
 } as CmaSubject
 
@@ -35,6 +36,7 @@ const pricing = {
   improvementsValueAdd: null,
   notes: [],
   sellerNet: null,
+  predictedClose: 640000,
 } as unknown as CmaPricing
 
 const market = {
@@ -44,12 +46,21 @@ const market = {
 
 describe('pricingPage', () => {
   it('leads with the number, then how the matcher works, then the tiers', () => {
-    const page = pricingPage({ subject, comps, market, pricing })
+    const page = pricingPage({
+      subject,
+      comps,
+      market,
+      pricing,
+      tiersUsed: ['subdivision-3mo'],
+    })
     expect(page.toc).toBe('How this home is priced')
     const html = page.body
     expect(html).toContain('How this home is priced')
     expect(html).toContain('How we priced this')
+    expect(html).toContain('Expected sale')
+    expect(html).toContain('$640,000')
     expect(html).toContain('$655,000')
+    expect(html).toContain('We stayed inside the Cascade Vista subdivision')
     expect(html).toContain('The close is the contract price.')
     expect(html).toContain('Closed MLS sales only. Automated estimates are not used.')
     expect(html).toContain('The market read is Redmond, not the ZIP.')
